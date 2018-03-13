@@ -1,0 +1,6 @@
+[package]
+name = "kms"
+version = "0.1.0"
+authors = ["Tony Arcieri <bascule@gmail.com>"]
+
+[dependencies]
