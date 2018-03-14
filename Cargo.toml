@@ -4,3 +4,14 @@ version = "0.1.0"
 authors = ["Tony Arcieri <bascule@gmail.com>"]
 
 [dependencies]
+failure = "0.1"
+failure_derive = "0.1"
+signatory = "0.2.0"
+
+[patch.crates-io]
+signatory = { git = "https://github.com/tendermint/signatory" }
+
+[features]
+dalek-provider = ["signatory/dalek-provider"]
+default = ["dalek-provider", "yubihsm-provider"]
+yubihsm-provider = ["signatory/yubihsm-provider"]
