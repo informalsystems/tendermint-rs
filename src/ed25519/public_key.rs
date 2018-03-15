@@ -1,8 +1,7 @@
 use signatory::ed25519::PublicKey as SignatoryKey;
 pub use signatory::ed25519::PUBLIC_KEY_SIZE;
-use std::hash::{Hash, Hasher};
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct PublicKey(SignatoryKey);
 
 impl PublicKey {
@@ -22,11 +21,5 @@ impl PublicKey {
 impl From<SignatoryKey> for PublicKey {
     fn from(key: SignatoryKey) -> PublicKey {
         PublicKey(key)
-    }
-}
-
-impl Hash for PublicKey {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.as_ref().hash(state);
     }
 }
