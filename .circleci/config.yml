@@ -1,0 +1,54 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+      - image: tarcieri/rust-yubihsm-sdk:20180312
+    environment:
+      # NOTE: RUST_NIGHTLY_VERSION is set in the Dockerfile
+      - RUSTFLAGS: -C target-feature=+aes
+      - CARGO_FEATURES: dalek-provider,yubihsm-mockhsm
+
+    steps:
+      - checkout
+      - restore_cache:
+          key: cache-20180312
+      - run:
+          name: rustfmt
+          command: |
+            rustup run $RUST_NIGHTLY_VERSION rustfmt --version
+            rustup run $RUST_NIGHTLY_VERSION cargo fmt -- --write-mode=diff
+      - run:
+          name: clippy
+          command: |
+            rustup run $RUST_NIGHTLY_VERSION cargo clippy --version
+            rustup run $RUST_NIGHTLY_VERSION cargo clippy --verbose --features=$CARGO_FEATURES
+      - run:
+          name: build (stable, default features only)
+          command: |
+            rustup run $RUST_NIGHTLY_VERSION rustc --version --verbose
+            cargo --version --verbose
+            cargo build
+      - run:
+          name: test (stable, default features only)
+          command: |
+            rustc --version --verbose
+            cargo --version --verbose
+            cargo test
+      - run:
+          name: build (nightly, all features)
+          command: |
+            rustup run $RUST_NIGHTLY_VERSION rustc --version --verbose
+            rustup run $RUST_NIGHTLY_VERSION cargo --version --verbose
+            rustup run $RUST_NIGHTLY_VERSION cargo build --features=$CARGO_FEATURES
+      - run:
+          name: test (nightly, all features)
+          command: |
+            rustup run $RUST_NIGHTLY_VERSION rustc --version --verbose
+            rustup run $RUST_NIGHTLY_VERSION cargo --version --verbose
+            rustup run $RUST_NIGHTLY_VERSION cargo test --features=$CARGO_FEATURES
+      - save_cache:
+          key: cache-20180312
+          paths:
+            - "~/.cargo"
+            - "./target"

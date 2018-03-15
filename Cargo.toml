@@ -7,11 +7,13 @@ authors = ["Tony Arcieri <bascule@gmail.com>"]
 failure = "0.1"
 failure_derive = "0.1"
 signatory = "0.2.0"
-
-[patch.crates-io]
-signatory = { git = "https://github.com/tendermint/signatory" }
+yubihsm = { version = "0.1", optional = true }
 
 [features]
 dalek-provider = ["signatory/dalek-provider"]
-default = ["dalek-provider", "yubihsm-provider"]
+default = ["dalek-provider"]
 yubihsm-provider = ["signatory/yubihsm-provider"]
+yubihsm-mockhsm = ["yubihsm-provider", "yubihsm/mockhsm"]
+
+[patch.crates-io]
+signatory = { git = "https://github.com/tendermint/signatory" }
