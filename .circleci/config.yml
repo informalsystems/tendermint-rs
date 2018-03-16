@@ -24,18 +24,6 @@ jobs:
             rustup run $RUST_NIGHTLY_VERSION cargo clippy --version
             rustup run $RUST_NIGHTLY_VERSION cargo clippy --verbose --features=$CARGO_FEATURES
       - run:
-          name: build (stable, default features only)
-          command: |
-            rustup run $RUST_NIGHTLY_VERSION rustc --version --verbose
-            cargo --version --verbose
-            cargo build
-      - run:
-          name: test (stable, default features only)
-          command: |
-            rustc --version --verbose
-            cargo --version --verbose
-            cargo test
-      - run:
           name: build (nightly, all features)
           command: |
             rustup run $RUST_NIGHTLY_VERSION rustc --version --verbose
