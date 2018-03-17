@@ -1,6 +1,6 @@
 # KMS
 
-Key Management Service
+Key Management System for Cosmos Validators
 
 # About
 
