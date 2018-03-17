@@ -1,17 +1,21 @@
 [package]
 name = "kms"
 version = "0.1.0"
-authors = ["Tony Arcieri <bascule@gmail.com>"]
+authors = ["Tony Arcieri <tony@iqlusion.io>"]
 
 [dependencies]
 failure = "0.1"
 failure_derive = "0.1"
+serde = "1.0"
+serde_derive = "1.0"
 signatory = "0.2.0"
-yubihsm = { version = "0.1", optional = true }
+structopt = "0.2"
+toml = "0.4"
+yubihsm = { version = "0.2", optional = true }
 
 [features]
 dalek-provider = ["signatory/dalek-provider"]
-default = ["dalek-provider"]
+default = ["dalek-provider", "yubihsm-provider"]
 yubihsm-provider = ["signatory/yubihsm-provider"]
 yubihsm-mockhsm = ["yubihsm-provider", "yubihsm/mockhsm"]
 
