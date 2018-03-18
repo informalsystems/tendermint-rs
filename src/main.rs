@@ -14,8 +14,6 @@ mod config;
 mod error;
 mod ed25519;
 
-use std::fs::File;
-use std::io::Read;
 use structopt::StructOpt;
 
 use config::Config;
@@ -45,16 +43,5 @@ fn main() {
 
 /// Run the KMS
 fn run(config_file: &str, _verbose: bool) {
-    let _config = read_config(config_file);
-}
-
-/// Parse the configuration TOML, returning a Config struct
-fn read_config(filename: &str) -> Config {
-    let mut file =
-        File::open(filename).unwrap_or_else(|e| panic!("couldn't open {}: {}", filename, e));
-
-    let mut data = String::new();
-    file.read_to_string(&mut data).unwrap();
-
-    toml::from_str(&data).unwrap_or_else(|e| panic!("couldn't parse {}: {:?}", filename, e))
+    let _config = Config::load(config_file);
 }

@@ -8,6 +8,10 @@ mod dalek;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
 
+use std::fs::File;
+use std::io::Read;
+use toml;
+
 #[cfg(feature = "dalek")]
 pub use self::dalek::DalekConfig;
 
@@ -21,6 +25,19 @@ pub struct Config {
 
     /// Cryptographic signature provider configuration
     pub providers: ProviderConfig,
+}
+
+impl Config {
+    /// Parse the configuration TOML, returning a Config struct
+    pub fn load(filename: &str) -> Config {
+        let mut file =
+            File::open(filename).unwrap_or_else(|e| panic!("couldn't open {}: {}", filename, e));
+
+        let mut data = String::new();
+        file.read_to_string(&mut data).unwrap();
+
+        toml::from_str(&data).unwrap_or_else(|e| panic!("couldn't parse {}: {:?}", filename, e))
+    }
 }
 
 #[derive(Deserialize, Debug)]
