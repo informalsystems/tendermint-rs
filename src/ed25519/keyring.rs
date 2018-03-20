@@ -1,19 +1,20 @@
 use std::collections::HashMap;
 
+use error::Error;
 use super::{PublicKey, Signer};
 
-pub struct Keyring<'a> {
-    keys: HashMap<PublicKey, Signer<'a>>,
+pub struct Keyring {
+    keys: HashMap<PublicKey, Signer>,
 }
 
-impl<'a> Keyring<'a> {
-    pub fn from_signers(signers: Vec<Signer<'a>>) -> Self {
+impl Keyring {
+    pub fn from_signers(signers: Vec<Signer>) -> Result<Self, Error> {
         let mut keys = HashMap::new();
 
         for mut signer in signers {
-            keys.insert(*signer.public_key(), signer);
+            keys.insert(signer.public_key()?, signer);
         }
 
-        Self { keys }
+        Ok(Self { keys })
     }
 }

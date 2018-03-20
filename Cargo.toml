@@ -8,7 +8,7 @@ failure = "0.1"
 failure_derive = "0.1"
 serde = "1.0"
 serde_derive = "1.0"
-signatory = "0.2.0"
+signatory = "0.3"
 structopt = "0.2"
 toml = "0.4"
 yubihsm = { version = "0.2", optional = true }
@@ -18,6 +18,3 @@ dalek-provider = ["signatory/dalek-provider"]
 default = ["dalek-provider", "yubihsm-provider"]
 yubihsm-provider = ["signatory/yubihsm-provider"]
 yubihsm-mockhsm = ["yubihsm-provider", "yubihsm/mockhsm"]
-
-[patch.crates-io]
-signatory = { git = "https://github.com/tendermint/signatory" }
