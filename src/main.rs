@@ -3,45 +3,95 @@
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
+extern crate gumdrop;
+#[macro_use]
+extern crate gumdrop_derive;
 #[macro_use]
 extern crate serde_derive;
 extern crate signatory;
-#[macro_use]
-extern crate structopt;
 extern crate toml;
+
+use std::{env, process};
 
 mod config;
 mod error;
 mod ed25519;
 
-use structopt::StructOpt;
-
 use config::Config;
+use gumdrop::Options;
 
-/// Command line arguments (using structopt as the parser)
-#[derive(StructOpt, Debug)]
-#[structopt(name = "kms", about = "Key Management System for Cosmos Validators")]
+/// Command line arguments (using gumdrop as the parser)
+#[derive(Debug, Options)]
 enum Opts {
-    #[structopt(name = "run", about = "")]
-    Run {
-        /// Path to configuration file
-        #[structopt(short = "c", long = "config", default_value = "kms.toml")]
-        config: String,
+    #[options(help = "show help for a command")]
+    Help(HelpOpts),
 
-        /// Print debugging information
-        #[structopt(short = "v", long = "verbose")]
-        verbose: bool,
-    },
+    #[options(help = "run the KMS application")]
+    Run(RunOpts),
+}
+
+/// Options for the `help` command
+#[derive(Debug, Default, Options)]
+struct HelpOpts {
+    #[options(free)]
+    free: Vec<String>,
+}
+
+/// Options for the `run` command
+#[derive(Debug, Options)]
+struct RunOpts {
+    /// Path to configuration file
+    #[options(short = "c", long = "config")]
+    config: String,
+
+    /// Print debugging information
+    #[options(short = "v", long = "verbose")]
+    verbose: bool,
+}
+
+impl Default for RunOpts {
+    fn default() -> Self {
+        Self {
+            config: "kms.toml".to_owned(),
+            verbose: false,
+        }
+    }
 }
 
 /// Main entry point
 fn main() {
-    match Opts::from_args() {
-        Opts::Run { config, verbose } => run(&config, verbose),
+    let args: Vec<_> = env::args().collect();
+
+    let opts = Opts::parse_args_default(&args[1..]).unwrap_or_else(|e| {
+        match e.to_string().as_ref() {
+            // Show usage if no command name is given or if "help" is given
+            "missing command name" => help(),
+            string => eprintln!("{}: {}", args[0], string),
+        }
+
+        process::exit(2);
+    });
+
+    match opts {
+        Opts::Run(opts) => run(&opts.config, opts.verbose),
+        Opts::Help(_commands) => help(),
     }
+}
+
+/// Print help message
+fn help() {
+    println!("Usage: {} [COMMAND] [OPTIONS]", env::args().next().unwrap());
+    println!();
+    println!("Available commands:");
+    println!();
+    println!("{}", Opts::command_list().unwrap());
+    println!();
 }
 
 /// Run the KMS
 fn run(config_file: &str, _verbose: bool) {
     let _config = Config::load(config_file);
+
+    // TODO: do something
+    println!("Running!");
 }
