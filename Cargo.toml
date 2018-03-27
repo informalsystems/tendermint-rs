@@ -12,7 +12,7 @@ serde = "1.0"
 serde_derive = "1.0"
 signatory = "0.3"
 toml = "0.4"
-yubihsm = { version = "0.2", optional = true }
+yubihsm = { version = "0.7", optional = true }
 
 [features]
 dalek-provider = ["signatory/dalek-provider"]
