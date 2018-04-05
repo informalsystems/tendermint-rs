@@ -1,36 +1,34 @@
 //! Error types
 
-use failure::Context;
+use std::io;
 
 /// Error type
-#[derive(Debug)]
-pub struct Error {
-    inner: Context<ErrorKind>,
+#[derive(Clone, Eq, PartialEq, Debug, Fail)]
+pub enum Error {
+    /// Error in configuration file
+    #[fail(display = "{}", description)]
+    ConfigError {
+        /// Description of the error
+        description: String,
+    },
+
+    /// Malformatted or otherwise invalid cryptographic key
+    #[fail(display = "{}", description)]
+    InvalidKey {
+        /// Description of the error
+        description: String,
+    },
+
+    /// Input/output error
+    #[fail(display = "{}", description)]
+    IoError {
+        /// Description of the error
+        description: String,
+    },
 }
 
-impl Error {
-    /// Obtain the ErrorKind for this Error
-    pub fn kind(&self) -> ErrorKind {
-        *self.inner.get_context()
+impl From<io::Error> for Error {
+    fn from(other: io::Error) -> Self {
+        err!(IoError, "{}", other)
     }
-}
-
-impl From<ErrorKind> for Error {
-    fn from(kind: ErrorKind) -> Error {
-        Error { inner: kind.into() }
-    }
-}
-
-impl From<Context<ErrorKind>> for Error {
-    fn from(inner: Context<ErrorKind>) -> Error {
-        Error { inner }
-    }
-}
-
-/// Kinds of errors
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum ErrorKind {
-    /// Internal error within a configured signing backend
-    #[fail(display = "signer error")]
-    SignerError,
 }

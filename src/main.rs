@@ -13,6 +13,9 @@ extern crate toml;
 
 use std::{env, process};
 
+#[macro_use]
+mod macros;
+
 mod config;
 mod error;
 mod ed25519;
