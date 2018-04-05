@@ -1,7 +1,7 @@
 use signatory::ed25519::PublicKey as SignatoryKey;
 pub use signatory::ed25519::PUBLIC_KEY_SIZE;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct PublicKey(SignatoryKey);
 
 impl PublicKey {
