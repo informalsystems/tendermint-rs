@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: tarcieri/rust-yubihsm-sdk:20180312
+      - image: iqlusion/rust-ci:201804050 # bump cache keys when modifying this
     environment:
       # NOTE: RUST_NIGHTLY_VERSION is set in the Dockerfile
       - RUSTFLAGS: -C target-feature=+aes
@@ -12,7 +12,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: cache-20180312
+          key: cache-201804050 # bump save_cache key below too
       - run:
           name: rustfmt
           command: |
@@ -36,7 +36,7 @@ jobs:
             rustup run $RUST_NIGHTLY_VERSION cargo --version --verbose
             rustup run $RUST_NIGHTLY_VERSION cargo test --features=$CARGO_FEATURES
       - save_cache:
-          key: cache-20180312
+          key: cache-201804050 # bump restore_cache key above too
           paths:
             - "~/.cargo"
             - "./target"
