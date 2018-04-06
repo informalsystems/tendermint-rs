@@ -1,4 +1,4 @@
-//! Configuration for the YubiHSM backend
+//! Configuration for the `YubiHSM` backend
 
 use std::collections::HashMap;
 

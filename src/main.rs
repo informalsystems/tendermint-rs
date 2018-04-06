@@ -7,19 +7,27 @@ extern crate gumdrop;
 #[macro_use]
 extern crate gumdrop_derive;
 #[macro_use]
+extern crate log;
+extern crate simplelog;
+#[macro_use]
 extern crate serde_derive;
 extern crate signatory;
 extern crate toml;
 
+use simplelog::{CombinedLogger, LevelFilter, TermLogger};
+use simplelog::Config as LoggingConfig;
 use std::{env, process};
 
 #[macro_use]
 mod macros;
 
+mod client;
 mod config;
 mod error;
 mod ed25519;
+mod session;
 
+use client::Client;
 use config::Config;
 use gumdrop::Options;
 
@@ -92,9 +100,40 @@ fn help() {
 }
 
 /// Run the KMS
-fn run(config_file: &str, _verbose: bool) {
-    let _config = Config::load(config_file);
+fn run(config_file: &str, verbose: bool) {
+    let config = Config::load(config_file);
+    init_logging(verbose);
 
-    // TODO: do something
-    println!("Running!");
+    info!(
+        "{} {} starting up...",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION")
+    );
+
+    // Spawn the validator client threads
+    let client_handles: Vec<Client> = config
+        .validators
+        .iter()
+        .map(|(_, validator_config)| {
+            Client::spawn(validator_config.addr.clone(), validator_config.port)
+        })
+        .collect();
+
+    // Wait for the validator client threads to exit
+    for handle in client_handles {
+        handle.join();
+    }
+}
+
+/// Initialize the logger
+fn init_logging(verbose: bool) {
+    let level_filter = if verbose {
+        LevelFilter::Debug
+    } else {
+        LevelFilter::Info
+    };
+
+    CombinedLogger::init(vec![
+        TermLogger::new(level_filter, LoggingConfig::default()).unwrap(),
+    ]).unwrap();
 }

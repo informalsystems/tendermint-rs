@@ -8,9 +8,11 @@ failure = "0.1"
 failure_derive = "0.1"
 gumdrop = "0.4"
 gumdrop_derive = "0.4"
+log = "0.4"
 serde = "1.0"
 serde_derive = "1.0"
 signatory = "0.4"
+simplelog = "0.5"
 toml = "0.4"
 yubihsm = { version = "0.7", optional = true }
 
