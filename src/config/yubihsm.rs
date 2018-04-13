@@ -1,6 +1,6 @@
 //! Configuration for the `YubiHSM` backend
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 /// Configuration for a particular yubihsm-connector process
 #[derive(Deserialize, Debug)]
@@ -17,7 +17,7 @@ pub struct YubihsmConnectorConfig {
     pub password: String,
 
     /// Map of labels to private key configurations
-    pub keys: HashMap<String, YubihsmPrivateKey>,
+    pub keys: BTreeMap<String, YubihsmPrivateKey>,
 }
 
 #[derive(Deserialize, Debug)]
