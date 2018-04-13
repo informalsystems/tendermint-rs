@@ -1,5 +1,7 @@
 use signatory::ed25519::Signer as SignerTrait;
 #[cfg(feature = "dalek-provider")]
+use signatory::ed25519::FromSeed;
+#[cfg(feature = "dalek-provider")]
 use signatory::providers::dalek::Ed25519Signer as DalekSigner;
 
 use error::Error;
