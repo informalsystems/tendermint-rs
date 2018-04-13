@@ -4,14 +4,16 @@ version = "0.0.0"
 authors = ["Tony Arcieri <tony@iqlusion.io>"]
 
 [dependencies]
+clear_on_drop = "0.2"
 failure = "0.1"
 failure_derive = "0.1"
 gumdrop = "0.4"
 gumdrop_derive = "0.4"
 log = "0.4"
+rand = "0.4"
 serde = "1.0"
 serde_derive = "1.0"
-signatory = "0.5"
+signatory = "0.5.1"
 simplelog = "0.5"
 toml = "0.4"
 yubihsm = { version = "0.8", optional = true }

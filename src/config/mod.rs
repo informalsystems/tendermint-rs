@@ -1,27 +1,30 @@
 //! Configuration file structures (with serde-derived parser)
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
-#[cfg(feature = "dalek")]
+#[cfg(feature = "dalek-provider")]
 mod dalek;
 
-#[cfg(feature = "yubihsm")]
+#[cfg(feature = "yubihsm-provider")]
 mod yubihsm;
 
 use std::fs::File;
 use std::io::Read;
+use std::path::Path;
 use toml;
 
-#[cfg(feature = "dalek")]
+use error::Error;
+
+#[cfg(feature = "dalek-provider")]
 pub use self::dalek::DalekConfig;
 
-#[cfg(feature = "yubihsm")]
+#[cfg(feature = "yubihsm-provider")]
 pub use self::yubihsm::YubihsmConnectorConfig;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
     /// Addresses of validator nodes
-    pub validators: HashMap<String, ValidatorConfig>,
+    pub validators: BTreeMap<String, ValidatorConfig>,
 
     /// Cryptographic signature provider configuration
     pub providers: ProviderConfig,
@@ -29,14 +32,13 @@ pub struct Config {
 
 impl Config {
     /// Parse the configuration TOML, returning a Config struct
-    pub fn load(filename: &str) -> Config {
-        let mut file =
-            File::open(filename).unwrap_or_else(|e| panic!("couldn't open {}: {}", filename, e));
+    pub fn load(filename: &Path) -> Result<Config, Error> {
+        let mut file = File::open(filename)?;
 
         let mut data = String::new();
         file.read_to_string(&mut data).unwrap();
 
-        toml::from_str(&data).unwrap_or_else(|e| panic!("couldn't parse {}: {:?}", filename, e))
+        toml::from_str(&data).map_err(|e| err!(ConfigError, "parse error: {}", e))
     }
 }
 
@@ -52,10 +54,10 @@ pub struct ValidatorConfig {
 #[derive(Deserialize, Debug)]
 pub struct ProviderConfig {
     /// ed25519-dalek configuration
-    #[cfg(feature = "dalek")]
+    #[cfg(feature = "dalek-provider")]
     pub dalek: DalekConfig,
 
     /// Map of yubihsm-connector labels to their configurations
-    #[cfg(feature = "yubihsm")]
-    pub yubihsm: HashMap<String, YubihsmConnectorConfig>,
+    #[cfg(feature = "yubihsm-provider")]
+    pub yubihsm: BTreeMap<String, YubihsmConnectorConfig>,
 }

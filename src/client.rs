@@ -6,9 +6,11 @@
 //! as a "Key Management System".
 
 use std::panic;
+use std::sync::Arc;
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
+use ed25519::Keyring;
 use session::Session;
 
 /// How long to wait after a crash before respawning (in seconds)
@@ -21,15 +23,19 @@ pub const RESPAWN_DELAY: u64 = 5;
 /// the `Session`. Instead, the `Client` type manages threading and respawning
 /// sessions in the event of errors.
 pub struct Client {
+    /// Identifier for this validator from the config
+    label: String,
+
     /// Handle to the client thread
     handle: JoinHandle<()>,
 }
 
 impl Client {
     /// Spawn a new client, returning a handle so it can be joined
-    pub fn spawn<'k>(addr: String, port: u16) -> Self {
+    pub fn spawn(label: String, addr: String, port: u16, keyring: Arc<Keyring>) -> Self {
         Self {
-            handle: thread::spawn(move || client_loop(&addr, port)),
+            label,
+            handle: thread::spawn(move || client_loop(&addr, port, keyring)),
         }
     }
 
@@ -40,9 +46,13 @@ impl Client {
 }
 
 /// Main loop for all clients. Handles reconnecting in the event of an error
-fn client_loop(addr: &str, port: u16) {
+fn client_loop(addr: &str, port: u16, keyring: Arc<Keyring>) {
     loop {
-        match panic::catch_unwind(|| Session::new(addr, port)?.handle_requests()) {
+        let catch_unwind_result = panic::catch_unwind(|| {
+            Session::new(addr, port, Arc::clone(&keyring))?.handle_requests()
+        });
+
+        match catch_unwind_result {
             Ok(result) => match result {
                 Ok(_) => {
                     info!("[{}:{}] session closed gracefully", addr, port);
