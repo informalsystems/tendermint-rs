@@ -15,6 +15,11 @@ extern crate simplelog;
 extern crate serde_derive;
 extern crate signatory;
 extern crate toml;
+extern crate amino;
+#[macro_use]
+extern crate serde_json;
+extern crate hex;
+extern crate bytes;
 
 use gumdrop::Options;
 use simplelog::{CombinedLogger, LevelFilter, TermLogger};
@@ -36,6 +41,7 @@ mod config;
 mod error;
 mod ed25519;
 mod session;
+mod types;
 
 use clear_on_drop::ClearOnDrop;
 use client::Client;
