@@ -49,7 +49,6 @@ impl Amino for Heartbeat{
                 let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength); 
                 buf.put(field_prefix);
             }
-            encode_varint(20, &mut buf);
 
             amino_bytes::encode(&self.validator_address.0, &mut buf);
         }
@@ -57,7 +56,7 @@ impl Amino for Heartbeat{
         {
             let field_prefix = 2 << 3 |typ3_to_byte(Typ3Byte::Typ3_Varint);
             buf.put(field_prefix);
-            encode_varint(self.validator_index as u64, &mut buf);
+            encode_varint(self.validator_index as i64, &mut buf);
         }
         {
             let field_prefix = 3 << 3 |typ3_to_byte(Typ3Byte::Typ3_8Byte);
@@ -67,18 +66,24 @@ impl Amino for Heartbeat{
         {
             let field_prefix = 4 << 3 |typ3_to_byte(Typ3Byte::Typ3_Varint);
             buf.put(field_prefix);
-            encode_varint(self.round as u64, &mut buf);
+            encode_varint(self.round as i64, &mut buf);
         }
         {
             let field_prefix = 5 << 3 |typ3_to_byte(Typ3Byte::Typ3_Varint);
             buf.put(field_prefix);
-            encode_varint(self.sequence as u64, &mut buf);
+            encode_varint(self.sequence as i64, &mut buf);
         }
 
         println!("{:x?}",buf );
 
+        // buf
 
-        buf
+        let mut length_buf = vec![];
+
+        encode_uvarint(buf.len() as u64, &mut length_buf);
+
+        length_buf.append(&mut buf);
+        length_buf
     }
 
     fn deserialize(self, data: &[u8]){
@@ -94,7 +99,12 @@ mod tests {
     fn test_serialization() {
         let addr:[u8;20] =[0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35];
         let heartbeat = Heartbeat{ validator_address:ValidatorAddress(addr), validator_index:1, height: 15, round: 10, sequence: 30, signature:None };
-        let _ = heartbeat.serialize();
+        
+        
+        let have = heartbeat.serialize();
 
+        let want = vec![0x2c, 0xbf, 0x58, 0xca, 0xeb, 0xb, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35, 0x10, 0x2, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1e, 0x20, 0x14, 0x28, 0x1e, 0x4, 0x4];
+
+        assert_eq!(have, want)
     }
 }
