@@ -74,15 +74,20 @@ impl Amino for Heartbeat{
             encode_varint(self.sequence as i64, &mut buf);
         }
 
-        println!("{:x?}",buf );
+        {
+            let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
+            buf.put(struct_end_postfix);
+            buf.put(struct_end_postfix);
+        }
 
-        // buf
 
         let mut length_buf = vec![];
 
         encode_uvarint(buf.len() as u64, &mut length_buf);
 
         length_buf.append(&mut buf);
+
+        println!("{:x?}",length_buf );
         length_buf
     }
 
