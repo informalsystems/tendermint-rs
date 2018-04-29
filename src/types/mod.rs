@@ -4,6 +4,7 @@ mod heartbeat;
 mod proposal;
 mod vote;
 
+#[derive(PartialEq,Debug)]
 pub struct ValidatorAddress([u8;20]);
 
 pub trait TendermintSign{
