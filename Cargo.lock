@@ -10,7 +10,7 @@ dependencies = [
 [[package]]
 name = "amino"
 version = "0.1.0"
-source = "git+https://github.com/tendermint/amino_rs#9b78ec8afb615ea26715aee64269db482afba176"
+source = "git+https://github.com/tendermint/amino_rs#d4bb4ff67a5c0bd5c0fe7a090e06e3b9003a7cac"
 dependencies = [
  "amino-derive 0.1.0 (git+https://github.com/tendermint/amino_rs)",
  "byteorder 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -22,7 +22,7 @@ dependencies = [
 [[package]]
 name = "amino-derive"
 version = "0.1.0"
-source = "git+https://github.com/tendermint/amino_rs#9b78ec8afb615ea26715aee64269db482afba176"
+source = "git+https://github.com/tendermint/amino_rs#d4bb4ff67a5c0bd5c0fe7a090e06e3b9003a7cac"
 dependencies = [
  "digest 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",

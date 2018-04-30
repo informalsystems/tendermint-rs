@@ -158,7 +158,7 @@ pub fn deserialize_heartbeat(data: &[u8]) -> Result<Heartbeat,DecodeError> {
             return Err(DecodeError::new("invalid type for struct field 2"));
         }
     }
-    let validator_index = decode_uvarint(&mut buf)? as i64;
+    let validator_index = decode_varint(&mut buf)? as i64;
     {
         let typ3=buf.get_u8();
         let field_prefix = 3 << 3 |typ3_to_byte(Typ3Byte::Typ3_8Byte);
