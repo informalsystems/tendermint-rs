@@ -5,7 +5,7 @@ mod proposal;
 mod vote;
 
 #[derive(PartialEq,Debug)]
-pub struct ValidatorAddress([u8;20]);
+pub struct ValidatorAddress(pub [u8;20]);
 
 pub trait TendermintSign{
     fn cannonicalize(self, chain_id:&str)->String;

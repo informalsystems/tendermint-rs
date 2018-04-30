@@ -1,5 +1,5 @@
 
-use signatory::ed25519::Signature;
+use signatory::ed25519::{Signature, SIGNATURE_SIZE};
 use super::{ValidatorAddress,TendermintSign};
 use amino::*;
 use hex::encode;
@@ -75,6 +75,7 @@ impl Amino for Heartbeat{
         {
             let field_prefix = 5 << 3 |typ3_to_byte(Typ3Byte::Typ3_Varint);
             buf.put(field_prefix);
+            //TODO something weird is going on here. Why is the a uvarint?
             encode_uvarint(self.sequence as u64, &mut buf);
         }
 
@@ -147,10 +148,75 @@ pub fn deserialize_heartbeat(data: &[u8]) -> Result<Heartbeat,DecodeError> {
             return Err(DecodeError::new("invalid type for inner struct field 1"));
         }
     }
-    let validator_address = amino_bytes::decode(&mut buf)?;
+    let mut validator_address_array:[u8;20] =[0;20];
+    validator_address_array.copy_from_slice(amino_bytes::decode(&mut buf)?.as_slice());
+    let validator_address = ValidatorAddress(validator_address_array);
+    {
+        let typ3=buf.get_u8();
+        let field_prefix = 2 << 3 |typ3_to_byte(Typ3Byte::Typ3_Varint);
+        if typ3 != field_prefix{
+            return Err(DecodeError::new("invalid type for struct field 2"));
+        }
+    }
+    let validator_index = decode_uvarint(&mut buf)? as i64;
+    {
+        let typ3=buf.get_u8();
+        let field_prefix = 3 << 3 |typ3_to_byte(Typ3Byte::Typ3_8Byte);
+        if typ3 != field_prefix{
+            return Err(DecodeError::new("invalid type for struct field 3"));
+        }
+    }
+    let height = decode_int64(&mut buf)?;
+    {
+        let typ3=buf.get_u8();
+        let field_prefix = 4 << 3 |typ3_to_byte(Typ3Byte::Typ3_Varint);
+        if typ3 != field_prefix{
+            return Err(DecodeError::new("invalid type for struct field 4"));
+        }
+    }
+    let round = decode_varint(&mut buf)?;
 
-    unimplemented!()
+    {
+        let typ3=buf.get_u8();
+        let field_prefix = 5 << 3 |typ3_to_byte(Typ3Byte::Typ3_Varint);
+        if typ3 != field_prefix{
+            return Err(DecodeError::new("invalid type for struct field 5"));
+        }
+    }
+    let sequence = decode_uvarint(&mut buf)? as i64;
+    let mut sig:Option<Signature> = None;
 
+    let mut optional_typ3 = buf.get_u8();
+
+    let sig_field_prefix = 6 <<3 | typ3_to_byte(Typ3Byte::Typ3_Interface);
+
+    if optional_typ3 == sig_field_prefix{
+        let mut signature_array:[u8;SIGNATURE_SIZE] =[0;SIGNATURE_SIZE];
+        signature_array.copy_from_slice(amino_bytes::decode(&mut buf)?.as_slice());
+
+        sig = Some(Signature(signature_array));
+
+        optional_typ3= buf.get_u8();
+    }
+    let struct_term_typ3 = buf.get_u8();
+    let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
+    if optional_typ3 != struct_end_postfix{
+            return Err(DecodeError::new("invalid type for first struct term"));
+    }
+
+    if struct_term_typ3 != struct_end_postfix{
+            return Err(DecodeError::new("invalid type for second struct term"));
+    }
+
+
+    Ok(Heartbeat{
+        validator_address:validator_address,
+        validator_index:validator_index,
+        height:height,
+        round:round,
+        sequence:sequence,
+        signature:sig
+    })
 }    
 
 #[cfg(test)]
