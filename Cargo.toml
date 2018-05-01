@@ -21,6 +21,7 @@ amino = { git = "https://github.com/tendermint/amino_rs" }
 serde_json = "1.0"
 hex = "0.3.2"
 bytes = "0.4"
+chrono = "0.4.2"
 
 
 

@@ -20,6 +20,7 @@ extern crate amino;
 extern crate serde_json;
 extern crate hex;
 extern crate bytes;
+extern crate chrono;
 
 use gumdrop::Options;
 use simplelog::{CombinedLogger, LevelFilter, TermLogger};
