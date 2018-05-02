@@ -2,6 +2,9 @@
 
 use std::collections::BTreeMap;
 
+/// The (optional) `[providers.yubihsm]` config section
+pub type YubihsmConfig = BTreeMap<String, YubihsmConnectorConfig>;
+
 /// Configuration for a particular yubihsm-connector process
 #[derive(Deserialize, Debug)]
 pub struct YubihsmConnectorConfig {

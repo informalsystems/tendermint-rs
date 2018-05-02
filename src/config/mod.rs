@@ -19,7 +19,7 @@ use error::Error;
 pub use self::dalek::DalekConfig;
 
 #[cfg(feature = "yubihsm-provider")]
-pub use self::yubihsm::YubihsmConnectorConfig;
+pub use self::yubihsm::YubihsmConfig;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -42,22 +42,25 @@ impl Config {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct ValidatorConfig {
     /// Validator hostname or IP address
     pub addr: String,
 
     /// Validator port
     pub port: u16,
+
+    /// Automatically reconnect on error? (default: true)
+    pub reconnect: Option<bool>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct ProviderConfig {
     /// ed25519-dalek configuration
     #[cfg(feature = "dalek-provider")]
-    pub dalek: DalekConfig,
+    pub dalek: Option<DalekConfig>,
 
     /// Map of yubihsm-connector labels to their configurations
     #[cfg(feature = "yubihsm-provider")]
-    pub yubihsm: BTreeMap<String, YubihsmConnectorConfig>,
+    pub yubihsm: Option<YubihsmConfig>,
 }

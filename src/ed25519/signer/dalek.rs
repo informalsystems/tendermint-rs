@@ -1,3 +1,7 @@
+//! ed25519-dalek software-based signer
+//!
+//! This is mainly intended for testing/CI. Ideally real validators will use HSMs
+
 use signatory::ed25519::FromSeed;
 use signatory::providers::dalek::Ed25519Signer as DalekSigner;
 use std::fs::File;
@@ -8,12 +12,16 @@ use config::DalekConfig;
 use error::Error;
 use super::Signer;
 
-/// Label for ed25519-dalek providers
+/// Label for ed25519-dalek provider
 pub const DALEK_PROVIDER_LABEL: &str = "dalek";
 
-/// Create software-backed Ed25519 signers from the given configuration
-pub fn create_signers(signers: &mut Vec<Signer>, config: DalekConfig) -> Result<(), Error> {
-    for (key_id, key_config) in config.keys {
+/// Create software-backed Ed25519 signer objects from the given configuration
+pub fn create_signers(signers: &mut Vec<Signer>, config: Option<DalekConfig>) -> Result<(), Error> {
+    if config.is_none() {
+        return Ok(());
+    }
+
+    for (key_id, key_config) in config.unwrap().keys {
         let mut file = File::open(&key_config.path).map_err(|e| {
             err!(
                 ConfigError,

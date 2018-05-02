@@ -1,3 +1,4 @@
+use signatory::ed25519::Signature;
 use std::collections::HashMap;
 
 use config::ProviderConfig;
@@ -7,6 +8,9 @@ use super::{PublicKey, Signer};
 
 #[cfg(feature = "dalek-provider")]
 use super::signer::dalek;
+
+#[cfg(feature = "yubihsm-provider")]
+use super::signer::yubihsm;
 
 pub struct Keyring {
     keys: HashMap<PublicKey, Signer>,
@@ -19,6 +23,9 @@ impl Keyring {
 
         #[cfg(feature = "dalek-provider")]
         dalek::create_signers(&mut signers, config.dalek)?;
+
+        #[cfg(feature = "yubihsm-provider")]
+        yubihsm::create_signers(&mut signers, &config.yubihsm)?;
 
         Self::from_signers(signers)
     }
@@ -37,6 +44,16 @@ impl Keyring {
         }
 
         Ok(Self { keys })
+    }
+
+    /// Sign a message using the secret key associated with the given public key
+    /// (if it is in our keyring)
+    pub fn sign(&self, public_key: &PublicKey, msg: &[u8]) -> Result<Signature, Error> {
+        let signer = self.keys
+            .get(public_key)
+            .ok_or_else(|| err!(InvalidKey, "not in keyring: {}", public_key))?;
+
+        signer.sign(msg)
     }
 }
 

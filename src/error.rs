@@ -25,10 +25,29 @@ pub enum Error {
         /// Description of the error
         description: String,
     },
+
+    /// Signing operation failed
+    #[fail(display = "{}", description)]
+    SigningError {
+        /// Description of the error
+        description: String,
+    },
 }
 
 impl From<io::Error> for Error {
     fn from(other: io::Error) -> Self {
-        err!(IoError, "{}", other)
+        Error::IoError {
+            description: other.to_string(),
+        }
     }
+}
+
+/// Create a new error (of a given enum variant) with a formatted message
+macro_rules! err {
+    ($variant:ident, $msg:expr) => {
+        ::error::Error::$variant { description: $msg.to_owned() }
+    };
+    ($variant:ident, $fmt:expr, $($arg:tt)+) => {
+        ::error::Error::$variant { description: format!($fmt, $($arg)+) }
+    };
 }
