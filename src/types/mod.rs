@@ -7,6 +7,21 @@ mod vote;
 #[derive(PartialEq,Debug)]
 pub struct ValidatorAddress(pub [u8;20]);
 
+
+#[derive(PartialEq, Debug)]
+struct PartsSetHeader{
+    total: i64,
+    hash: Vec<u8>
+}
+
+
+#[derive(PartialEq, Debug)]
+struct BlockID{
+    hash: Vec<u8>,
+    parts_header: PartsSetHeader
+}
+
+
 pub trait TendermintSign{
     fn cannonicalize(self, chain_id:&str)->String;
 }

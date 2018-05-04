@@ -1,6 +1,6 @@
 use chrono::{DateTime,Utc};
 use signatory::ed25519::{Signature, SIGNATURE_SIZE};
-use super::{TendermintSign};
+use super::{TendermintSign, BlockID};
 use hex::encode_upper;
 
 
@@ -10,11 +10,6 @@ struct PartsSetHeader{
     hash: Vec<u8>
 }
 
-#[derive(PartialEq, Debug)]
-struct BlockID{
-    hash: Vec<u8>,
-    parts_header: PartsSetHeader
-}
 
 #[derive(PartialEq, Debug)]
 pub struct Proposal{
