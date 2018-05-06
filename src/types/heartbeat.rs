@@ -105,11 +105,8 @@ impl Amino for Heartbeat{
         println!("{:x?}",length_buf );
         length_buf
     }
-}
 
-pub fn deserialize_heartbeat(data: &[u8]) -> Result<Heartbeat,DecodeError> {
-    
-    
+ fn deserialize(data: &[u8]) -> Result<Heartbeat,DecodeError> {
     let mut buf = Cursor::new(data);
 
     {
@@ -218,6 +215,7 @@ pub fn deserialize_heartbeat(data: &[u8]) -> Result<Heartbeat,DecodeError> {
         signature:sig
     })
 }    
+}
 
 #[cfg(test)]
 mod tests {
@@ -242,7 +240,7 @@ mod tests {
 
         let data = vec![0x2c, 0xbf, 0x58, 0xca, 0xeb, 0xb, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35, 0x10, 0x2, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1e, 0x20, 0x14, 0x28, 0x1e, 0x4, 0x4];
 
-        match deserialize_heartbeat(&data){
+        match Heartbeat::deserialize(&data){
             Err(err) => assert!(false,err.description().to_string()),
             Ok(have) => assert_eq!(have,want)
         }

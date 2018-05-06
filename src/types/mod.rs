@@ -9,7 +9,7 @@ pub struct ValidatorAddress(pub [u8;20]);
 
 
 #[derive(PartialEq, Debug)]
-struct PartsSetHeader{
+pub struct PartsSetHeader{
     total: i64,
     hash: Vec<u8>
 }
