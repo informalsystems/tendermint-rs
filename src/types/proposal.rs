@@ -1,14 +1,8 @@
 use chrono::{DateTime,Utc};
 use signatory::ed25519::{Signature, SIGNATURE_SIZE};
-use super::{TendermintSign, BlockID};
+use super::{TendermintSign, BlockID, PartsSetHeader};
 use hex::encode_upper;
 
-
-#[derive(PartialEq, Debug)]
-struct PartsSetHeader{
-    total: i64,
-    hash: Vec<u8>
-}
 
 
 #[derive(PartialEq, Debug)]
