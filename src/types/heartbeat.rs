@@ -219,7 +219,9 @@ impl Amino for Heartbeat{
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+        use super::*;
+        use chrono::prelude::*;
+        use std::error::Error;
 
     #[test]
     fn test_serialization() {
@@ -247,6 +249,5 @@ mod tests {
 
 
     }
-
     //ToDo Serialization with Signature
 }
