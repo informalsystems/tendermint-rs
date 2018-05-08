@@ -62,7 +62,10 @@ impl Amino for Proposal {
         pre[3] |= typ3_to_byte(Typ3Byte::Typ3_Struct);
 
         buf.put_slice(pre.as_slice());
-
+        {
+            let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_Struct);
+            buf.put(field_prefix);
+        }
         {
             let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_8Byte);
             buf.put(field_prefix);
