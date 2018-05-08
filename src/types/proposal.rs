@@ -51,13 +51,13 @@ impl Amino for Proposal{
 
         let  (dis, mut pre) = compute_disfix("tendermint/socketpv/SignProposalMsg");
 
-        pre[3] |= typ3_to_byte(Typ3Byte::Typ3_Struct); 
+        pre[3] |= typ3_to_byte(Typ3Byte::Typ3_Struct);
 
         buf.put_slice(pre.as_slice());
 
         print!("\n Proposal encoded {:?}\n",encode(&buf));
         print!("\n disfix encoded {:?}\n",encode(&dis));
-        unimplemented!()
+            unimplemented!()
 
         }
         fn deserialize(data: &[u8])->Result<Proposal,DecodeError>{
@@ -72,9 +72,9 @@ impl Amino for Proposal{
         use std::error::Error;
         #[test]
         fn test_serialization() {
-            let proposal = Proposal{ 
-                height: 12345, 
-                round: 23456, 
+            let proposal = Proposal{
+                height: 12345,
+                round: 23456,
                 timestamp:"2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap(),
                 block_parts_header:PartsSetHeader{
                     total:111,
@@ -88,10 +88,10 @@ impl Amino for Proposal{
                         hash:vec![]
                     },
                 },
-                signature:None 
+                signature:None
                 };
-            
-            
+
+
             let have = proposal.serialize();
 
             let want = vec![0x3d, 0x5d, 0x48, 0x70, 0x3, 0xb, 0x9, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x30, 0x39, 0x10, 0xc0, 0xee, 0x2, 0x1b, 0x9, 0x0, 0x0, 0x0, 0x0, 0x5a, 0x7f, 0xec, 0x22, 0x15, 0x2d, 0x98, 0xf9, 0x40, 0x4, 0x23, 0x8, 0xde, 0x1, 0x12, 0xa, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70, 0x61, 0x72, 0x74, 0x73, 0x4, 0x28, 0x1, 0x33, 0x13, 0x8, 0x0, 0x4, 0x4, 0x4, 0x4];
@@ -100,9 +100,9 @@ impl Amino for Proposal{
         }
         #[test]
         fn test_deserialization(){
-        let want = Proposal{ 
-            height: 12345, 
-            round: 23456, 
+        let want = Proposal{
+            height: 12345,
+            round: 23456,
             timestamp:"2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap(),
             block_parts_header:PartsSetHeader{
                 total:111,
@@ -116,9 +116,9 @@ impl Amino for Proposal{
                 hash:vec![]
                 },
             },
-            signature:None 
+            signature:None
             };
-        
+
             let data = vec![0x3d, 0x5d, 0x48, 0x70, 0x3, 0xb, 0x9, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x30, 0x39, 0x10, 0xc0, 0xee, 0x2, 0x1b, 0x9, 0x0, 0x0, 0x0, 0x0, 0x5a, 0x7f, 0xec, 0x22, 0x15, 0x2d, 0x98, 0xf9, 0x40, 0x4, 0x23, 0x8, 0xde, 0x1, 0x12, 0xa, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70, 0x61, 0x72, 0x74, 0x73, 0x4, 0x28, 0x1, 0x33, 0x13, 0x8, 0x0, 0x4, 0x4, 0x4, 0x4];
 
             match Proposal::deserialize(&data){
