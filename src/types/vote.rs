@@ -76,9 +76,93 @@ impl Amino for Vote{
 
         buf.put_slice(pre.as_slice());
 
-        print!("\n Vote encoded {:?}\n",encode(&buf));
-        print!("\n disfix encoded {:?}\n",encode(&dis));
-        unimplemented!()
+//Encode the Validator Address
+        {
+            {
+                let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_Struct); 
+                buf.put(field_prefix);
+            }
+            {
+                let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength); 
+                buf.put(field_prefix);
+            }
+
+            amino_bytes::encode(&self.validator_address.0, &mut buf);
+        }
+//Encode the validator index        
+        {
+            let field_prefix = 2 << 3 |typ3_to_byte(Typ3Byte::Typ3_Varint);
+            buf.put(field_prefix);
+            encode_varint(self.validator_index as i64, &mut buf);
+        }
+// //Encode the validator height        
+        {
+            let field_prefix = 3 << 3 |typ3_to_byte(Typ3Byte::Typ3_8Byte);
+            buf.put(field_prefix);
+            encode_int64(self.height as i64, &mut buf);
+        }
+        {
+            let field_prefix = 4 << 3 |typ3_to_byte(Typ3Byte::Typ3_Varint);
+            buf.put(field_prefix);
+            encode_varint(self.round as i64, &mut buf);
+        }
+        {
+            let field_prefix = 5 << 3 |typ3_to_byte(Typ3Byte::Typ3_Struct);
+            buf.put(field_prefix);
+            amino_time::encode(self.timestamp, &mut buf);
+        }
+        {
+            let field_prefix = 6 << 3 |typ3_to_byte(Typ3Byte::Typ3_Varint);
+            buf.put(field_prefix);
+            encode_uint8(vote_type_to_char(self.vote_type) as u8, &mut buf);
+        }
+        {
+            let field_prefix = 7 << 3 |typ3_to_byte(Typ3Byte::Typ3_Struct);
+            {
+            buf.put(field_prefix);
+            {
+                let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength); 
+                buf.put(field_prefix);
+            }
+            amino_bytes::encode(&self.block_id.hash, &mut buf);
+            }
+            {
+                let field_prefix = 2 << 3 | typ3_to_byte(Typ3Byte::Typ3_Struct); 
+                buf.put(field_prefix);
+                {
+                    let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_Varint); 
+                    buf.put(field_prefix);
+                    encode_varint(self.block_id.parts_header.total, &mut buf);
+                }
+                {
+                    let field_prefix = 2 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength); 
+                    buf.put(field_prefix);
+                    amino_bytes::encode(&self.block_id.parts_header.hash, &mut buf)
+                }
+            }
+            {
+            if let Some(sig) = self.signature {
+                let field_prefix = 8 <<3 | typ3_to_byte(Typ3Byte::Typ3_Interface);
+                buf.put(field_prefix);
+                amino_bytes::encode(&sig.0, &mut buf)
+                }
+            }
+            {
+                let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
+                buf.put(struct_end_postfix);
+                buf.put(struct_end_postfix);
+                buf.put(struct_end_postfix);
+                buf.put(struct_end_postfix);
+            }
+        }
+
+        let mut length_buf = vec![];
+
+        encode_uvarint(buf.len() as u64, &mut length_buf);
+
+        length_buf.append(&mut buf);
+
+        length_buf
 
 
         }
