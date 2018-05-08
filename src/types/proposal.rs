@@ -1,8 +1,9 @@
 use chrono::{DateTime,Utc};
 use signatory::ed25519::{Signature, SIGNATURE_SIZE};
 use super::{TendermintSign, BlockID, PartsSetHeader};
-use hex::encode_upper;
+use hex::{encode_upper,encode};
 use amino::*;
+use bytes::{Buf,BufMut};
 
 
 
@@ -57,7 +58,6 @@ impl Amino for Proposal{
         use super::*;
         use chrono::prelude::*;
         use std::error::Error;
-
         #[test]
         fn test_serialization() {
             let proposal = Proposal{ 

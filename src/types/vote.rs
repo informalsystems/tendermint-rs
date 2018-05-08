@@ -1,8 +1,10 @@
 use chrono::{DateTime,Utc};
 use signatory::ed25519::{Signature, SIGNATURE_SIZE};
 use super::{ValidatorAddress,TendermintSign, BlockID, PartsSetHeader};
-use hex::encode_upper;
+use hex::{encode_upper,encode};
 use amino::*;
+use bytes::{Buf,BufMut};
+
 
 #[derive(PartialEq, Debug)]
 enum VoteType{
