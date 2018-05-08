@@ -45,16 +45,6 @@ impl TendermintSign for Proposal {
 
 impl Amino for Proposal {
     fn serialize(self) -> Vec<u8> {
-
-        /* TODO(ismail): delete:
-        height: i64,
-        round: i64,
-        timestamp: DateTime<Utc>,
-        block_parts_header: PartsSetHeader,
-        pol_round: i64,
-        pol_block_id: BlockID,
-        signature: Option<Signature>,
-        */
         let mut buf = vec![];
 
         let (dis, mut pre) = compute_disfix("tendermint/socketpv/SignProposalMsg");
@@ -62,61 +52,87 @@ impl Amino for Proposal {
         pre[3] |= typ3_to_byte(Typ3Byte::Typ3_Struct);
 
         buf.put_slice(pre.as_slice());
+        encode_field_number_typ3( 1,Typ3Byte::Typ3_Struct, &mut buf);
+
+        // height:
         {
-            let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_Struct);
-            buf.put(field_prefix);
-        }
-        {
-            let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_8Byte);
-            buf.put(field_prefix);
+            encode_field_number_typ3(1, Typ3Byte::Typ3_8Byte, &mut buf);
             encode_int64(self.height as i64, &mut buf);
         }
+        // round:
         {
-            let field_prefix = 2 << 3 | typ3_to_byte(Typ3Byte::Typ3_Varint);
-            buf.put(field_prefix);
+            encode_field_number_typ3(2, Typ3Byte::Typ3_Varint, &mut buf);
             encode_varint(self.round as i64, &mut buf);
         }
+        // timestamp
         {
-            let field_prefix = 3 << 3 |typ3_to_byte(Typ3Byte::Typ3_Varint);
-            buf.put(field_prefix);
-
+            encode_field_number_typ3(3, Typ3Byte::Typ3_Struct, &mut buf);
             amino_time::encode(self.timestamp, &mut buf);
         }
-        // Encode the block parts header:
+        // block parts header:
         {
+            encode_field_number_typ3(4, Typ3Byte::Typ3_Struct, &mut buf);
             {
-                let field_prefix = 4 << 3 | typ3_to_byte(Typ3Byte::Typ3_Struct);
-                buf.put(field_prefix);
+                encode_field_number_typ3(1 ,Typ3Byte::Typ3_Varint, &mut buf);
+                encode_varint(self.block_parts_header.total as i64, &mut buf);
+
+                encode_field_number_typ3(2,Typ3Byte::Typ3_ByteLength, &mut buf);
+                amino_bytes::encode(&self.block_parts_header.hash, &mut buf);
             }
-            {
-                {
-                    let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_Varint);
-                    buf.put(field_prefix);
-                    encode_varint(self.block_parts_header.total as i64, &mut buf);
-                }
-                {
-                    let field_prefix = 2 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength);
-                    buf.put(field_prefix);
-                    amino_bytes::encode(&self.block_parts_header.hash, &mut buf);
-                }
-            }
+            let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
+            buf.put(struct_end_postfix);
         }
         // Proof of Lock Round:
         {
-            let field_prefix = 5 << 3 | typ3_to_byte(Typ3Byte::Typ3_Varint);
-            buf.put(field_prefix);
+            encode_field_number_typ3(5, Typ3Byte::Typ3_Varint, &mut buf);
             encode_varint(self.pol_round as i64, &mut buf);
         }
+        // Proof of Lock block ID:
+        {
+            encode_field_number_typ3(6, Typ3Byte::Typ3_Struct, &mut buf);
+            {
+                // hash:
+                {
+                    // TODO(ismail): only write prefix if there is any data (otherwise it's omitted)
+                    let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength);
+                    //buf.put(field_prefix);
+                    //amino_bytes::encode(&self.pol_block_id.hash, &mut buf);
+                }
+                // parts header:
+                {
+                    let field_prefix = 2 << 3 | typ3_to_byte(Typ3Byte::Typ3_Struct);
+                    buf.put(field_prefix);
+                    {
+                        {
+                            let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_Varint);
+                            buf.put(field_prefix);
+                            encode_varint(self.pol_block_id.parts_header.total as i64, &mut buf);
+                        }
+                        {
+                            // TODO(ismail): only write prefix if there is any data (otherwise it's omitted)
+                            let field_prefix = 2 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength);
+                            //buf.put(field_prefix);
+                            //amino_bytes::encode(&self.pol_block_id.parts_header.hash, &mut buf);
+                        }
+                    }
+                }
+            }
+            let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
+            buf.put(struct_end_postfix);
+        }
+        // Signature:
         {
             if let Some(sig) = self.signature {
-                let field_prefix = 6 << 3 | typ3_to_byte(Typ3Byte::Typ3_Interface);
+                let field_prefix = 7 << 3 | typ3_to_byte(Typ3Byte::Typ3_Interface);
                 buf.put(field_prefix);
                 amino_bytes::encode(&sig.0, &mut buf)
             }
         }
 
         {
+            // remaining struct terminators:
             let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
+            buf.put(struct_end_postfix);
             buf.put(struct_end_postfix);
             buf.put(struct_end_postfix);
         }
@@ -146,7 +162,7 @@ mod tests {
             timestamp: "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap(),
             block_parts_header: PartsSetHeader {
                 total: 111,
-                hash: "parts_hash".as_bytes().to_vec(),
+                hash: "blockparts".as_bytes().to_vec(),
             },
             pol_round: -1,
             pol_block_id: BlockID {
