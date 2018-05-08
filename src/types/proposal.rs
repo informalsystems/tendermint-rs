@@ -46,7 +46,19 @@ impl TendermintSign for Proposal{
 
 impl Amino for Proposal{
         fn serialize(self)->Vec<u8>{
-            unimplemented!()
+
+        let mut buf =  vec![];
+
+        let  (dis, mut pre) = compute_disfix("tendermint/socketpv/SignProposalMsg");
+
+        pre[3] |= typ3_to_byte(Typ3Byte::Typ3_Struct); 
+
+        buf.put_slice(pre.as_slice());
+
+        print!("\n Proposal encoded {:?}\n",encode(&buf));
+        print!("\n disfix encoded {:?}\n",encode(&dis));
+        unimplemented!()
+
         }
         fn deserialize(data: &[u8])->Result<Proposal,DecodeError>{
             unimplemented!()

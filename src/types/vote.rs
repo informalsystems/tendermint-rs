@@ -67,7 +67,20 @@ impl TendermintSign for Vote{
 
 impl Amino for Vote{
         fn serialize(self)->Vec<u8>{
-            unimplemented!()
+
+        let mut buf =  vec![];
+
+        let  (dis, mut pre) = compute_disfix("tendermint/socketpv/SignVoteMsg");
+
+        pre[3] |= typ3_to_byte(Typ3Byte::Typ3_Struct); 
+
+        buf.put_slice(pre.as_slice());
+
+        print!("\n Vote encoded {:?}\n",encode(&buf));
+        print!("\n disfix encoded {:?}\n",encode(&dis));
+        unimplemented!()
+
+
         }
         fn deserialize(data: &[u8])->Result<Vote,DecodeError>{
             unimplemented!()
@@ -82,7 +95,7 @@ impl Amino for Vote{
         use chrono::prelude::*;
         use std::error::Error;
         #[test]
-        fn test_serialization() {
+        fn test_vote_serialization() {
             let addr:[u8;20] =[0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35];
             let vote = Vote{ 
             validator_address:ValidatorAddress(addr), 
