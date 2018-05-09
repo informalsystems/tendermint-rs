@@ -52,90 +52,89 @@ impl Amino for Proposal {
         pre[3] |= typ3_to_byte(Typ3Byte::Typ3_Struct);
 
         buf.put_slice(pre.as_slice());
-        encode_field_number_typ3( 1,Typ3Byte::Typ3_Struct, &mut buf);
-
-        // height:
         {
-            encode_field_number_typ3(1, Typ3Byte::Typ3_8Byte, &mut buf);
-            encode_int64(self.height as i64, &mut buf);
-        }
-        // round:
-        {
-            encode_field_number_typ3(2, Typ3Byte::Typ3_Varint, &mut buf);
-            encode_varint(self.round as i64, &mut buf);
-        }
-        // timestamp
-        {
-            encode_field_number_typ3(3, Typ3Byte::Typ3_Struct, &mut buf);
-            amino_time::encode(self.timestamp, &mut buf);
-        }
-        // block parts header:
-        {
-            encode_field_number_typ3(4, Typ3Byte::Typ3_Struct, &mut buf);
+            encode_field_number_typ3(1, Typ3Byte::Typ3_Struct, &mut buf);
             {
-                encode_field_number_typ3(1 ,Typ3Byte::Typ3_Varint, &mut buf);
-                encode_varint(self.block_parts_header.total as i64, &mut buf);
-
-                encode_field_number_typ3(2,Typ3Byte::Typ3_ByteLength, &mut buf);
-                amino_bytes::encode(&self.block_parts_header.hash, &mut buf);
-            }
-            let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
-            buf.put(struct_end_postfix);
-        }
-        // Proof of Lock Round:
-        {
-            encode_field_number_typ3(5, Typ3Byte::Typ3_Varint, &mut buf);
-            encode_varint(self.pol_round as i64, &mut buf);
-        }
-        // Proof of Lock block ID:
-        {
-            encode_field_number_typ3(6, Typ3Byte::Typ3_Struct, &mut buf);
-            {
-                // hash:
+                // height:
                 {
-                    // TODO(ismail): only write prefix if there is any data (otherwise it's omitted)
-                    let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength);
-                    //buf.put(field_prefix);
-                    //amino_bytes::encode(&self.pol_block_id.hash, &mut buf);
+                    encode_field_number_typ3(1, Typ3Byte::Typ3_8Byte, &mut buf);
+                    encode_int64(self.height as i64, &mut buf);
                 }
-                // parts header:
+                // round:
                 {
-                    let field_prefix = 2 << 3 | typ3_to_byte(Typ3Byte::Typ3_Struct);
-                    buf.put(field_prefix);
+                    encode_field_number_typ3(2, Typ3Byte::Typ3_Varint, &mut buf);
+                    encode_varint(self.round as i64, &mut buf);
+                }
+                // timestamp
+                {
+                    encode_field_number_typ3(3, Typ3Byte::Typ3_Struct, &mut buf);
+                    amino_time::encode(self.timestamp, &mut buf);
+                }
+                // block parts header:
+                {
+                    encode_field_number_typ3(4, Typ3Byte::Typ3_Struct, &mut buf);
                     {
-                        {
-                            let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_Varint);
-                            buf.put(field_prefix);
-                            encode_varint(self.pol_block_id.parts_header.total as i64, &mut buf);
-                        }
+                        encode_field_number_typ3(1, Typ3Byte::Typ3_Varint, &mut buf);
+                        encode_varint(self.block_parts_header.total as i64, &mut buf);
+
+                        encode_field_number_typ3(2, Typ3Byte::Typ3_ByteLength, &mut buf);
+                        amino_bytes::encode(&self.block_parts_header.hash, &mut buf);
+                    }
+                    let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
+                    buf.put(struct_end_postfix);
+                }
+                // Proof of Lock Round:
+                {
+                    encode_field_number_typ3(5, Typ3Byte::Typ3_Varint, &mut buf);
+                    encode_varint(self.pol_round as i64, &mut buf);
+                }
+                // Proof of Lock block ID:
+                {
+                    encode_field_number_typ3(6, Typ3Byte::Typ3_Struct, &mut buf);
+                    {
+                        // hash:
                         {
                             // TODO(ismail): only write prefix if there is any data (otherwise it's omitted)
-                            let field_prefix = 2 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength);
+                            let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength);
                             //buf.put(field_prefix);
-                            //amino_bytes::encode(&self.pol_block_id.parts_header.hash, &mut buf);
+                            //amino_bytes::encode(&self.pol_block_id.hash, &mut buf);
                         }
+                        // parts header:
+                        {
+                            encode_field_number_typ3(2, Typ3Byte::Typ3_Struct, &mut buf);
+                            {
+                                {
+                                    encode_field_number_typ3(1, Typ3Byte::Typ3_Varint, &mut buf);
+                                    encode_varint(self.pol_block_id.parts_header.total as i64, &mut buf);
+                                }
+                                {
+                                    // TODO(ismail): only write prefix if there is any data (otherwise it's omitted)
+                                    let field_prefix = 2 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength);
+                                    //buf.put(field_prefix);
+                                    //amino_bytes::encode(&self.pol_block_id.parts_header.hash, &mut buf);
+                                }
+                            }
+                            let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
+                            buf.put(struct_end_postfix);
+                        }
+                    }
+                    let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
+                    buf.put(struct_end_postfix);
+                }
+                // Signature:
+                {
+                    if let Some(sig) = self.signature {
+                        let field_prefix = 7 << 3 | typ3_to_byte(Typ3Byte::Typ3_Interface);
+                        buf.put(field_prefix);
+                        amino_bytes::encode(&sig.0, &mut buf)
                     }
                 }
             }
             let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
             buf.put(struct_end_postfix);
         }
-        // Signature:
-        {
-            if let Some(sig) = self.signature {
-                let field_prefix = 7 << 3 | typ3_to_byte(Typ3Byte::Typ3_Interface);
-                buf.put(field_prefix);
-                amino_bytes::encode(&sig.0, &mut buf)
-            }
-        }
-
-        {
-            // remaining struct terminators:
-            let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
-            buf.put(struct_end_postfix);
-            buf.put(struct_end_postfix);
-            buf.put(struct_end_postfix);
-        }
+        let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
+        buf.put(struct_end_postfix);
 
         let mut res = vec![];
         encode_uvarint(buf.len() as u64, &mut res);
