@@ -150,7 +150,7 @@ impl Amino for Heartbeat {
             }
         }
         let sequence = decode_varint(&mut buf)? as i64;
-        let mut sig: Option<Signature> = None;
+        let mut signature: Option<Signature> = None;
 
         let mut optional_typ3 = buf.get_u8();
 
@@ -160,7 +160,7 @@ impl Amino for Heartbeat {
             let mut signature_array: [u8; SIGNATURE_SIZE] = [0; SIGNATURE_SIZE];
             signature_array.copy_from_slice(amino_bytes::decode(&mut buf)?.as_slice());
 
-            sig = Some(Signature(signature_array));
+            signature = Some(Signature(signature_array));
 
             optional_typ3 = buf.get_u8();
         }
@@ -181,7 +181,7 @@ impl Amino for Heartbeat {
             height,
             round,
             sequence,
-            sig,
+            signature,
         })
     }
 }
