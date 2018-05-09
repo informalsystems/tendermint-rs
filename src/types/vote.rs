@@ -4,6 +4,7 @@ use super::{ValidatorAddress,TendermintSign, BlockID, PartsSetHeader};
 use hex::{encode_upper,encode};
 use amino::*;
 use bytes::{Buf,BufMut};
+use std::io::Cursor;
 
 
 #[derive(PartialEq, Debug)]
@@ -167,7 +168,51 @@ impl Amino for Vote{
 
         }
         fn deserialize(data: &[u8])->Result<Vote,DecodeError>{
-            unimplemented!()
+
+        let mut buf = Cursor::new(data);
+
+        {
+            let len_field = decode_uvarint(&mut buf)?;
+            let data_length = buf.remaining() as u64;
+
+            if data_length != len_field{
+                return Err(DecodeError::new("invalid length field"));
+            }
+        }
+
+        {
+
+            let (_, mut pre) = compute_disfix("tendermint/socketpv/SignVoteMsg");
+
+            pre[3] |= typ3_to_byte(Typ3Byte::Typ3_Struct); 
+            let mut actual_prefix =pre.clone();
+            buf.copy_to_slice(actual_prefix.as_mut_slice());
+            if actual_prefix != pre{
+                return Err(DecodeError::new("invalid prefix"));
+            }
+        }
+        {
+            {
+                let typ3=buf.get_u8();
+                let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_Struct); 
+                if typ3 != field_prefix{
+                    return Err(DecodeError::new("invalid type for field 1"));
+                }
+            }
+            {
+                let typ3=buf.get_u8();
+                let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength); 
+                if typ3 != field_prefix{
+                    return Err(DecodeError::new("invalid type for inner struct field 1"));
+                }
+            }
+        }
+        
+        let mut validator_address_array:[u8;20] =[0;20];
+        validator_address_array.copy_from_slice(amino_bytes::decode(&mut buf)?.as_slice());
+        let validator_address = ValidatorAddress(validator_address_array);
+            
+        unimplemented!()
         }
 }
 
@@ -205,7 +250,7 @@ impl Amino for Vote{
             assert_eq!(have, want)
         }
         #[test]
-        fn test_derialization(){
+        fn test_vote_deserialization(){
             let addr:[u8;20] =[0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35];
             let want = Vote{ 
             validator_address:ValidatorAddress(addr), 
