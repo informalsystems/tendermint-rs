@@ -76,7 +76,7 @@ impl Amino for Vote {
             {
                 //Encode the Validator Address
                 encode_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf);
-                amino_bytes::encode(&self.validator_address.0, &mut buf);
+                amino_bytes::encode(&self.validator_address, &mut buf);
 
                 //Encode the validator index
                 encode_field_number_typ3(2, Typ3Byte::Typ3_Varint, &mut buf);
@@ -151,7 +151,7 @@ mod tests {
     fn test_vote_serialization() {
         let addr: [u8; 20] = [0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35];
         let vote = Vote {
-            validator_address: ValidatorAddress(addr),
+            validator_address: addr,
             validator_index: 56789,
             height: 12345,
             round: 2,
@@ -178,7 +178,7 @@ mod tests {
     fn test_derialization() {
         let addr: [u8; 20] = [0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35];
         let want = Vote {
-            validator_address: ValidatorAddress(addr),
+            validator_address: addr,
             validator_index: 56789,
             height: 12345,
             round: 2,

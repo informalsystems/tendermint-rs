@@ -25,7 +25,7 @@ impl TendermintSign for Heartbeat {
             "height":self.height,
             "round":self.round,
             "sequence":self.sequence,
-            "validator_address": encode(self.validator_address.0),
+            "validator_address": encode(self.validator_address),
             "validator_index": self.validator_index,
             });
         value.to_string()
@@ -45,7 +45,7 @@ impl Amino for Heartbeat {
             encode_field_number_typ3(1, Typ3Byte::Typ3_Struct, &mut buf);
             {
                 encode_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf);
-                amino_bytes::encode(&self.validator_address.0, &mut buf);
+                amino_bytes::encode(&self.validator_address, &mut buf);
 
                 //Encode the validator index
                 encode_field_number_typ3(2, Typ3Byte::Typ3_Varint, &mut buf);
@@ -116,7 +116,7 @@ impl Amino for Heartbeat {
         }
         let mut validator_address_array: [u8; 20] = [0; 20];
         validator_address_array.copy_from_slice(amino_bytes::decode(&mut buf)?.as_slice());
-        let validator_address = ValidatorAddress(validator_address_array);
+        let validator_address = validator_address_array;
         {
             let typ3 = buf.get_u8();
             let field_prefix = 2 << 3 | typ3_to_byte(Typ3Byte::Typ3_Varint);
@@ -195,20 +195,18 @@ mod tests {
     #[test]
     fn test_serialization() {
         let addr: [u8; 20] = [0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35];
-        let heartbeat = Heartbeat { validator_address: ValidatorAddress(addr), validator_index: 1, height: 15, round: 10, sequence: 30, signature: None };
-
+        let heartbeat = Heartbeat { validator_address: addr, validator_index: 1, height: 15, round: 10, sequence: 30, signature: None };
 
         let have = heartbeat.serialize();
-
         let want = vec![0x2c, 0xbf, 0x58, 0xca, 0xeb, 0xb, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35, 0x10, 0x2, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xf, 0x20, 0x14, 0x28, 0x3c, 0x4, 0x4];
 
         assert_eq!(have, want)
     }
 
     #[test]
-    fn test_derialization() {
+    fn test_deserialization() {
         let addr: [u8; 20] = [0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35];
-        let want = Heartbeat { validator_address: ValidatorAddress(addr), validator_index: 1, height: 15, round: 10, sequence: 30, signature: None };
+        let want = Heartbeat { validator_address: addr, validator_index: 1, height: 15, round: 10, sequence: 30, signature: None };
 
         let data = vec![0x2c, 0xbf, 0x58, 0xca, 0xeb, 0xb, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35, 0x10, 0x2, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xf, 0x20, 0x14, 0x28, 0x3c, 0x4, 0x4];
 
