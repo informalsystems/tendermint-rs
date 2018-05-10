@@ -1,9 +1,10 @@
-use signatory::ed25519::Signer as SignerTrait;
+use signatory::ed25519::{Signature, Signer as SignerTrait};
 
 #[cfg(feature = "dalek-provider")]
 pub mod dalek;
 
-// TODO: #[cfg(feature = "yubihsm-provider")] pub mod yubihsm;
+#[cfg(feature = "yubihsm-provider")]
+pub mod yubihsm;
 
 use error::Error;
 use super::PublicKey;
@@ -31,10 +32,18 @@ impl Signer {
     }
 
     /// Obtain the Ed25519 public key which corresponds to this signer's private key
-    pub fn public_key(&mut self) -> Result<PublicKey, Error> {
+    pub fn public_key(&self) -> Result<PublicKey, Error> {
         Ok(self.provider
             .public_key()
             .map_err(|e| err!(InvalidKey, "{}", e))?
             .into())
+    }
+
+    /// Sign the given message using this signer
+    #[inline]
+    pub fn sign(&self, msg: &[u8]) -> Result<Signature, Error> {
+        Ok(self.provider
+            .sign(msg)
+            .map_err(|e| err!(SigningError, "{}", e))?)
     }
 }

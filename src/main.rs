@@ -29,12 +29,12 @@ use std::process::exit;
 use std::sync::Arc;
 
 #[macro_use]
-mod macros;
+mod error;
 
 mod client;
 mod config;
-mod error;
 mod ed25519;
+mod rpc;
 mod session;
 
 use clear_on_drop::ClearOnDrop;
@@ -64,7 +64,7 @@ enum Opts {
 #[derive(Debug, Default, Options)]
 struct HelpOpts {
     #[options(free)]
-    free: Vec<String>,
+    commands: Vec<String>,
 }
 
 /// Options for the `keygen` command
@@ -103,7 +103,7 @@ fn main() {
     let opts = Opts::parse_args_default(&args[1..]).unwrap_or_else(|e| {
         match e.to_string().as_ref() {
             // Show usage if no command name is given or if "help" is given
-            "missing command name" => help(),
+            "missing command name" => help(&[]),
             string => eprintln!("{}: {}", args[0], string),
         }
 
@@ -111,7 +111,7 @@ fn main() {
     });
 
     match opts {
-        Opts::Help(_commands) => help(),
+        Opts::Help(opts) => help(opts.commands.as_slice()),
         #[cfg(feature = "dalek-provider")]
         Opts::Keygen(opts) => keygen(opts.path.as_ref()),
         Opts::Run(opts) => run(&opts.config, opts.verbose),
@@ -121,7 +121,20 @@ fn main() {
 }
 
 /// Print help message
-fn help() {
+fn help(commands: &[String]) {
+    let exe_name = env::args().next().unwrap();
+
+    if commands.len() == 1 {
+        let cmd = &commands[0];
+
+        if let Some(usage) = Opts::command_usage(cmd) {
+            println!("Usage: {} {} [OPTIONS]", exe_name, cmd);
+            println!();
+            println!("{}", usage);
+            exit(2);
+        }
+    }
+
     println!("Usage: {} [COMMAND] [OPTIONS]", env::args().next().unwrap());
     println!();
     println!("Available commands:");
@@ -187,7 +200,7 @@ fn run(config_file: &Path, verbose: bool) {
     let keyring = Arc::new(init_keyring(providers));
 
     // Spawn the validator client threads
-    let validator_clients = spawn_validator_clients(validators, &keyring);
+    let validator_clients = spawn_validator_clients(&validators, &keyring);
 
     // Wait for the validator client threads to exit
     // TODO: Find something more useful for this thread to do
@@ -204,9 +217,9 @@ fn init_logging(verbose: bool) {
         LevelFilter::Info
     };
 
-    CombinedLogger::init(vec![
-        TermLogger::new(level_filter, LoggingConfig::default()).unwrap(),
-    ]).unwrap();
+    if let Some(logger) = TermLogger::new(level_filter, LoggingConfig::default()) {
+        CombinedLogger::init(vec![logger]).unwrap();
+    }
 }
 
 /// Load the configuration file
@@ -227,18 +240,13 @@ fn init_keyring(config: ProviderConfig) -> Keyring {
 
 /// Spawn the validator clients (which expose the KMS "service")
 fn spawn_validator_clients(
-    config: BTreeMap<String, ValidatorConfig>,
+    config: &BTreeMap<String, ValidatorConfig>,
     keyring: &Arc<Keyring>,
 ) -> Vec<Client> {
     config
         .iter()
         .map(|(label, validator_config)| {
-            Client::spawn(
-                label.clone(),
-                validator_config.addr.clone(),
-                validator_config.port,
-                Arc::clone(&keyring),
-            )
+            Client::spawn(label.clone(), validator_config.clone(), Arc::clone(keyring))
         })
         .collect()
 }

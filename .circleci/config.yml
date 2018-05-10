@@ -6,8 +6,9 @@ jobs:
       - image: iqlusion/rust-ci:201804050 # bump cache keys when modifying this
     environment:
       # NOTE: RUST_NIGHTLY_VERSION is set in the Dockerfile
-      - RUSTFLAGS: -C target-feature=+aes
       - CARGO_FEATURES: dalek-provider,yubihsm-mockhsm
+      - RUSTFLAGS: -Ctarget-feature=+aes
+      - RUST_BACKTRACE: full
 
     steps:
       - checkout

@@ -1,26 +1,28 @@
 use signatory::ed25519::PublicKey as SignatoryKey;
 pub use signatory::ed25519::PUBLIC_KEY_SIZE;
-use std::fmt;
+use std::fmt::{self, Display};
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+use error::Error;
+
+/// Ed25519 public keys
+#[derive(Clone, Eq, PartialEq, Hash)]
 pub struct PublicKey(SignatoryKey);
 
 impl PublicKey {
+    /// Convert a bytestring to a public key
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        Ok(PublicKey(SignatoryKey::from_bytes(bytes).map_err(|e| err!(InvalidKey, "{}", e))?))
+    }
+
     /// Obtain public key as a byte array reference
     #[inline]
     pub fn as_bytes(&self) -> &[u8; PUBLIC_KEY_SIZE] {
         self.0.as_bytes()
     }
-
-    /// Convert public key into owned byte array
-    #[inline]
-    pub fn into_bytes(self) -> [u8; PUBLIC_KEY_SIZE] {
-        self.0.into_bytes()
-    }
 }
 
 // TODO: public key serialization formats (cosmos-bech32)
-impl fmt::Display for PublicKey {
+impl Display for PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "ed25519(")?;
 
