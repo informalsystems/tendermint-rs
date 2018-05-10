@@ -101,10 +101,10 @@ impl Amino for Heartbeat {
             }
         }
         {
-            let typ3 = buf.get_u8();
-            let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_Struct);
-            if typ3 != field_prefix {
-                return Err(DecodeError::new("invalid type for field 1"));
+            let (field_number, typ3) = decode_field_number_typ3(&mut buf)?  ;
+            if field_number != 1 || typ3 != Typ3Byte::Typ3_Struct {
+                return Err(DecodeError::new(format!("invalid type for field 1, \
+                got typp3={:?}, field_number={:?}", typ3_to_byte(typ3), field_number)));
             }
         }
         {
