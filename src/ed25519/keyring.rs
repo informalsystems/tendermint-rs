@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
+use super::{PublicKey, Signer};
 use config::ProviderConfig;
 use error::Error;
 use std::panic::RefUnwindSafe;
-use super::{PublicKey, Signer};
 
 #[cfg(feature = "dalek-provider")]
 use super::signer::dalek;

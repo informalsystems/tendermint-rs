@@ -12,17 +12,14 @@ pub struct PartsSetHeader {
     hash: Vec<u8>,
 }
 
-
 #[derive(PartialEq, Debug)]
 struct BlockID {
     hash: Vec<u8>,
     parts_header: PartsSetHeader,
 }
 
-
 pub trait TendermintSign {
     fn cannonicalize(self, chain_id: &str) -> String;
 }
-
 
 pub use self::heartbeat::Heartbeat;
