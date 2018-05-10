@@ -15,15 +15,15 @@ enum VoteType {
 fn vote_type_to_char(vt: VoteType) -> char {
     match vt {
         VoteType::PreVote => 0x01 as char,
-        VoteType::PreCommit => 0x02 as char
+        VoteType::PreCommit => 0x02 as char,
     }
 }
 
 fn char_to_vote_type(data: char) -> Result<VoteType, DecodeError> {
     match data {
         '\u{1}' => Ok(VoteType::PreVote),
-        '\u{2}' =>  Ok(VoteType::PreCommit),
-        _ => Err(DecodeError::new("Invalid vote type"))
+        '\u{2}' => Ok(VoteType::PreCommit),
+        _ => Err(DecodeError::new("Invalid vote type")),
     }
 }
 

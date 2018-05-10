@@ -62,7 +62,7 @@ impl Amino for Heartbeat {
                 encode_varint(self.sequence as i64, &mut buf);
 
                 if let Some(sig) = self.signature {
-                    encode_field_number_typ3( 6 ,Typ3Byte::Typ3_Interface, &mut buf);
+                    encode_field_number_typ3(6, Typ3Byte::Typ3_Interface, &mut buf);
                     amino_bytes::encode(&sig.0, &mut buf)
                 }
             }
@@ -100,10 +100,14 @@ impl Amino for Heartbeat {
             }
         }
         {
-            let (field_number, typ3) = decode_field_number_typ3(&mut buf)?  ;
+            let (field_number, typ3) = decode_field_number_typ3(&mut buf)?;
             if field_number != 1 || typ3 != Typ3Byte::Typ3_Struct {
-                return Err(DecodeError::new(format!("invalid type for field 1, \
-                got typp3={:?}, field_number={:?}", typ3_to_byte(typ3), field_number)));
+                return Err(DecodeError::new(format!(
+                    "invalid type for field 1, \
+                     got typp3={:?}, field_number={:?}",
+                    typ3_to_byte(typ3),
+                    field_number
+                )));
             }
         }
         {
@@ -192,27 +196,38 @@ mod tests {
     #[test]
     fn test_serialization() {
         {
-            let addr = vec![0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35];
-            let heartbeat = Heartbeat { validator_address: addr, validator_index: 1, height: 15, round: 10, sequence: 30, signature: None };
-            let addr: [u8; 20] = [
+            let addr = vec![
                 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
                 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
             ];
-        let heartbeat = Heartbeat {
-            validator_address: addr,
-            validator_index: 1,
-            height: 15,
-            round: 10,
-            sequence: 30,
-            signature: None,
-        };
+            let heartbeat = Heartbeat {
+                validator_address: addr,
+                validator_index: 1,
+                height: 15,
+                round: 10,
+                sequence: 30,
+                signature: None,
+            };
+            let addr = vec![
+                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+            ];
+            let heartbeat = Heartbeat {
+                validator_address: addr,
+                validator_index: 1,
+                height: 15,
+                round: 10,
+                sequence: 30,
+                signature: None,
+            };
 
             let have = heartbeat.serialize();
             let want = vec![
-            0x2c, 0xbf, 0x58, 0xca, 0xeb, 0xb, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1,
-            0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35, 0x10,
-            0x2, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xf, 0x20, 0x14, 0x28, 0x3c, 0x4, 0x4,
-        ];
+                0x2c, 0xbf, 0x58, 0xca, 0xeb, 0xb, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86,
+                0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+                0x10, 0x2, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xf, 0x20, 0x14, 0x28, 0x3c,
+                0x4, 0x4,
+            ];
 
             assert_eq!(have, want)
         }
@@ -220,11 +235,18 @@ mod tests {
             // identical to above but without validator_adress:
             let heartbeat = Heartbeat {
                 validator_address: vec![],
-                validator_index: 1, height: 15, round: 10, sequence: 30, signature: None,
+                validator_index: 1,
+                height: 15,
+                round: 10,
+                sequence: 30,
+                signature: None,
             };
 
             let have = heartbeat.serialize();
-            let want = vec![0x16, 0xbf, 0x58, 0xca, 0xeb, 0xb, 0x10, 0x2, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xf, 0x20, 0x14, 0x28, 0x3c, 0x4, 0x4];
+            let want = vec![
+                0x16, 0xbf, 0x58, 0xca, 0xeb, 0xb, 0x10, 0x2, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                0x0, 0xf, 0x20, 0x14, 0x28, 0x3c, 0x4, 0x4,
+            ];
 
             assert_eq!(have, want)
         }

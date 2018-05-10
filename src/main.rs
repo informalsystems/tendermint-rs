@@ -54,18 +54,18 @@ use rand::{OsRng, Rng};
 pub const PRIVATE_KEY_PERMISSIONS: u32 = 0o600;
 
 /// Command line arguments (using gumdrop as the parser)
-//#[derive(Debug, Options)]
-//enum Opts {
-//    #[options(help = "show help for a command")]
-//    Help(HelpOpts),
-//
-//    #[cfg(feature = "dalek-provider")]
-//    #[options(help = "generate a new signing key")]
-//    Keygen(KeygenOpts),
-//
-//    #[options(help = "run the KMS application")]
-//    Run(RunOpts),
-//}
+#[derive(Debug, Options)]
+enum Opts {
+    #[options(help = "show help for a command")]
+    Help(HelpOpts),
+
+    #[cfg(feature = "dalek-provider")]
+    #[options(help = "generate a new signing key")]
+    Keygen(KeygenOpts),
+
+    #[options(help = "run the KMS application")]
+    Run(RunOpts),
+}
 
 /// Options for the `help` command
 #[derive(Debug, Default, Options)]
@@ -75,54 +75,54 @@ struct HelpOpts {
 }
 
 /// Options for the `keygen` command
-//#[cfg(feature = "dalek-provider")]
-//#[derive(Debug, Default, Options)]
-//struct KeygenOpts {
-//    #[options(free)]
-//    path: Vec<PathBuf>,
-//}
+#[cfg(feature = "dalek-provider")]
+#[derive(Debug, Default, Options)]
+struct KeygenOpts {
+    #[options(free)]
+    path: Vec<PathBuf>,
+}
 
 /// Options for the `run` command
-//#[derive(Debug, Options)]
-//struct RunOpts {
-//    /// Path to configuration file
-//    #[options(short = "c", long = "config")]
-//    config: PathBuf,
-//
-//    /// Print debugging information
-//    #[options(short = "v", long = "verbose")]
-//    verbose: bool,
-//}
+#[derive(Debug, Options)]
+struct RunOpts {
+    /// Path to configuration file
+    #[options(short = "c", long = "config")]
+    config: PathBuf,
 
-//impl Default for RunOpts {
-//    fn default() -> Self {
-//        Self {
-//            config: "kms.toml".into(),
-//            verbose: false,
-//        }
-//    }
-//}
+    /// Print debugging information
+    #[options(short = "v", long = "verbose")]
+    verbose: bool,
+}
+
+impl Default for RunOpts {
+    fn default() -> Self {
+        Self {
+            config: "kms.toml".into(),
+            verbose: false,
+        }
+    }
+}
 
 /// Main entry point
 fn main() {
     let args: Vec<_> = env::args().collect();
 
-    //    let opts = Opts::parse_args_default(&args[1..]).unwrap_or_else(|e| {
-    //        match e.to_string().as_ref() {
-    //            // Show usage if no command name is given or if "help" is given
-    //            "missing command name" => help(),
-    //            string => eprintln!("{}: {}", args[0], string),
-    //        }
-    //
-    //        exit(2);
-    //    });
-    //
-    //    match opts {
-    //        Opts::Help(_commands) => help(),
-    //        #[cfg(feature = "dalek-provider")]
-    //        Opts::Keygen(opts) => keygen(opts.path.as_ref()),
-    //        Opts::Run(opts) => run(&opts.config, opts.verbose),
-    //    }
+    let opts = Opts::parse_args_default(&args[1..]).unwrap_or_else(|e| {
+        match e.to_string().as_ref() {
+            // Show usage if no command name is given or if "help" is given
+            "missing command name" => help(),
+            string => eprintln!("{}: {}", args[0], string),
+        }
+
+        exit(2);
+    });
+
+    match opts {
+        Opts::Help(_commands) => help(),
+        #[cfg(feature = "dalek-provider")]
+        Opts::Keygen(opts) => keygen(opts.path.as_ref()),
+        Opts::Run(opts) => run(&opts.config, opts.verbose),
+    }
 
     exit(0);
 }
@@ -133,7 +133,7 @@ fn help() {
     println!();
     println!("Available commands:");
     println!();
-    //println!("{}", Opts::command_list().unwrap());
+    println!("{}", Opts::command_list().unwrap());
     println!();
 }
 
