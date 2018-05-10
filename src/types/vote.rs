@@ -14,8 +14,8 @@ enum VoteType {
 
 fn vote_type_to_char(vt: VoteType) -> char {
     match vt {
-        pre_vote => 0x01 as char,
-        pre_commit => 0x02 as char
+        VoteType::PreVote => 0x01 as char,
+        VoteType::PreCommit => 0x02 as char
     }
 }
 
