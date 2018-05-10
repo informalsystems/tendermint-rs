@@ -184,7 +184,7 @@ impl Amino for Vote {
         
         let mut validator_address_array:[u8;20] =[0;20];
         validator_address_array.copy_from_slice(amino_bytes::decode(&mut buf)?.as_slice());
-        let validator_address = ValidatorAddress(validator_address_array);
+        let validator_address = validator_address_array;
         {
             let typ3=buf.get_u8();
             let field_prefix = 2 << 3 |typ3_to_byte(Typ3Byte::Typ3_Varint);

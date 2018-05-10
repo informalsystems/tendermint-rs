@@ -25,7 +25,7 @@ impl TendermintSign for Heartbeat {
             "height":self.height,
             "round":self.round,
             "sequence":self.sequence,
-            "validator_address": encode(self.validator_address),
+            "validator_address": encode(&self.validator_address),
             "validator_index": self.validator_index,
             });
         value.to_string()
