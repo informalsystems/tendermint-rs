@@ -13,18 +13,18 @@ extern crate rand;
 extern crate simplelog;
 #[macro_use]
 extern crate serde_derive;
+extern crate amino;
 extern crate signatory;
 extern crate toml;
-extern crate amino;
 #[macro_use]
 extern crate serde_json;
-extern crate hex;
 extern crate bytes;
 extern crate chrono;
+extern crate hex;
 
 use gumdrop::Options;
-use simplelog::{CombinedLogger, LevelFilter, TermLogger};
 use simplelog::Config as LoggingConfig;
+use simplelog::{CombinedLogger, LevelFilter, TermLogger};
 use std::collections::BTreeMap;
 use std::env;
 use std::fs::OpenOptions;
@@ -39,16 +39,16 @@ mod macros;
 
 mod client;
 mod config;
-mod error;
 mod ed25519;
+mod error;
 mod session;
 mod types;
 
 use clear_on_drop::ClearOnDrop;
 use client::Client;
 use config::{Config, ProviderConfig, ValidatorConfig};
-use rand::{OsRng, Rng};
 use ed25519::Keyring;
+use rand::{OsRng, Rng};
 
 /// Unix file permissions required for private keys (i.e. owner-readable only)
 pub const PRIVATE_KEY_PERMISSIONS: u32 = 0o600;
@@ -107,22 +107,22 @@ struct HelpOpts {
 fn main() {
     let args: Vec<_> = env::args().collect();
 
-//    let opts = Opts::parse_args_default(&args[1..]).unwrap_or_else(|e| {
-//        match e.to_string().as_ref() {
-//            // Show usage if no command name is given or if "help" is given
-//            "missing command name" => help(),
-//            string => eprintln!("{}: {}", args[0], string),
-//        }
-//
-//        exit(2);
-//    });
-//
-//    match opts {
-//        Opts::Help(_commands) => help(),
-//        #[cfg(feature = "dalek-provider")]
-//        Opts::Keygen(opts) => keygen(opts.path.as_ref()),
-//        Opts::Run(opts) => run(&opts.config, opts.verbose),
-//    }
+    //    let opts = Opts::parse_args_default(&args[1..]).unwrap_or_else(|e| {
+    //        match e.to_string().as_ref() {
+    //            // Show usage if no command name is given or if "help" is given
+    //            "missing command name" => help(),
+    //            string => eprintln!("{}: {}", args[0], string),
+    //        }
+    //
+    //        exit(2);
+    //    });
+    //
+    //    match opts {
+    //        Opts::Help(_commands) => help(),
+    //        #[cfg(feature = "dalek-provider")]
+    //        Opts::Keygen(opts) => keygen(opts.path.as_ref()),
+    //        Opts::Run(opts) => run(&opts.config, opts.verbose),
+    //    }
 
     exit(0);
 }
