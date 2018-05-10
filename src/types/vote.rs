@@ -75,8 +75,10 @@ impl Amino for Vote {
             encode_field_number_typ3(1, Typ3Byte::Typ3_Struct, &mut buf);
             {
                 //Encode the Validator Address
-                encode_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf);
-                amino_bytes::encode(&self.validator_address, &mut buf);
+                if !&self.validator_address.is_empty() {
+                    encode_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf);
+                    amino_bytes::encode(&self.validator_address, &mut buf);
+                }
 
                 //Encode the validator index
                 encode_field_number_typ3(2, Typ3Byte::Typ3_Varint, &mut buf);
@@ -156,7 +158,7 @@ mod tests {
         let addr: [u8; 20] = [0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35];
         {
             let vote = Vote {
-                validator_address: addr,
+                validator_address: addr.to_vec(),
                 validator_index: 56789,
                 height: 12345,
                 round: 2,
@@ -179,7 +181,7 @@ mod tests {
         }
         {
             let vote = Vote {
-                validator_address: addr,
+                validator_address: addr.to_vec(),
                 validator_index: 56789,
                 height: 12345,
                 round: 2,
@@ -204,7 +206,7 @@ mod tests {
 
     #[test]
     fn test_derialization() {
-        let addr: [u8; 20] = [0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35];
+        let addr = vec![0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35];
         let want = Vote {
             validator_address: addr,
             validator_index: 56789,
