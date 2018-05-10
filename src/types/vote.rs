@@ -77,7 +77,7 @@ impl Amino for Vote {
             {
                 //Encode the Validator Address
                 encode_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf);
-                amino_bytes::encode(&self.validator_address.0, &mut buf);
+                amino_bytes::encode(&self.validator_address, &mut buf);
 
                 //Encode the validator index
                 encode_field_number_typ3(2, Typ3Byte::Typ3_Varint, &mut buf);
@@ -100,16 +100,20 @@ impl Amino for Vote {
                 // Encode BlockID (struct)
                 encode_field_number_typ3(7, Typ3Byte::Typ3_Struct, &mut buf);
                 {
-                    encode_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf);
-                    amino_bytes::encode(&self.block_id.hash, &mut buf);
+                    if !&self.block_id.hash.is_empty() {
+                        encode_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf);
+                        amino_bytes::encode(&self.block_id.hash, &mut buf);
+                    }
 
                     encode_field_number_typ3(2, Typ3Byte::Typ3_Struct, &mut buf);
                     {
                         encode_field_number_typ3(1,Typ3Byte::Typ3_Varint, &mut buf);
                         encode_varint(self.block_id.parts_header.total, &mut buf);
 
-                        encode_field_number_typ3(2,Typ3Byte::Typ3_ByteLength, &mut buf);
-                        amino_bytes::encode(&self.block_id.parts_header.hash, &mut buf)
+                        if !&self.block_id.parts_header.hash.is_empty() {
+                            encode_field_number_typ3(2, Typ3Byte::Typ3_ByteLength, &mut buf);
+                            amino_bytes::encode(&self.block_id.parts_header.hash, &mut buf)
+                        }
                     }
                     // end of embedded PartsSetHeader struct
                     buf.put(typ3_to_byte(Typ3Byte::Typ3_StructTerm));
@@ -203,35 +207,59 @@ mod tests {
     #[test]
     fn test_vote_serialization() {
         let addr: [u8; 20] = [0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35];
-        let vote = Vote {
-            validator_address: ValidatorAddress(addr),
-            validator_index: 56789,
-            height: 12345,
-            round: 2,
-            block_id: BlockID {
-                hash: "hash".as_bytes().to_vec(),
-                parts_header: PartsSetHeader {
-                    total: 1000000,
-                    hash: "parts_hash".as_bytes().to_vec(),
+        {
+            let vote = Vote {
+                validator_address: addr,
+                validator_index: 56789,
+                height: 12345,
+                round: 2,
+                block_id: BlockID {
+                    hash: "hash".as_bytes().to_vec(),
+                    parts_header: PartsSetHeader {
+                        total: 1000000,
+                        hash: "parts_hash".as_bytes().to_vec(),
+                    },
                 },
-            },
-            timestamp: "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap(),
-            vote_type: VoteType::PreVote,
-            signature: None,
-        };
+                timestamp: "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap(),
+                vote_type: VoteType::PreVote,
+                signature: None,
+            };
 
 
-        let have = vote.serialize();
+            let have = vote.serialize();
+            let want = vec![0x58, 0x6c, 0x1d, 0x3a, 0x33, 0xb, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35, 0x10, 0xaa, 0xf7, 0x6, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x30, 0x39, 0x20, 0x4, 0x2b, 0x9, 0x0, 0x0, 0x0, 0x0, 0x5a, 0x40, 0x69, 0xb1, 0x15, 0xd, 0xf2, 0x8e, 0x80, 0x4, 0x30, 0x1, 0x3b, 0xa, 0x4, 0x68, 0x61, 0x73, 0x68, 0x13, 0x8, 0x80, 0x89, 0x7a, 0x12, 0xa, 0x70, 0x61, 0x72, 0x74, 0x73, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x4, 0x4, 0x4, 0x4];
+            assert_eq!(have, want)
+        }
+        {
+            let vote = Vote {
+                validator_address: addr,
+                validator_index: 56789,
+                height: 12345,
+                round: 2,
+                block_id: BlockID {
+                    hash: "hash".as_bytes().to_vec(),
+                    parts_header: PartsSetHeader {
+                        total: 0,
+                        hash: vec![],
+                    },
+                },
+                timestamp: "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap(),
+                vote_type: VoteType::PreVote,
+                signature: None,
+            };
 
-        let want = vec![0x58, 0x6c, 0x1d, 0x3a, 0x33, 0xb, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35, 0x10, 0xaa, 0xf7, 0x6, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x30, 0x39, 0x20, 0x4, 0x2b, 0x9, 0x0, 0x0, 0x0, 0x0, 0x5a, 0x40, 0x69, 0xb1, 0x15, 0xd, 0xf2, 0x8e, 0x80, 0x4, 0x30, 0x1, 0x3b, 0xa, 0x4, 0x68, 0x61, 0x73, 0x68, 0x13, 0x8, 0x80, 0x89, 0x7a, 0x12, 0xa, 0x70, 0x61, 0x72, 0x74, 0x73, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x4, 0x4, 0x4, 0x4];
-        assert_eq!(have, want)
+
+            let have = vote.serialize();
+            let want = vec![0x4a, 0x6c, 0x1d, 0x3a, 0x33, 0xb, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35, 0x10, 0xaa, 0xf7, 0x6, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x30, 0x39, 0x20, 0x4, 0x2b, 0x9, 0x0, 0x0, 0x0, 0x0, 0x5a, 0x40, 0x69, 0xb1, 0x15, 0xd, 0xf2, 0x8e, 0x80, 0x4, 0x30, 0x1, 0x3b, 0xa, 0x4, 0x68, 0x61, 0x73, 0x68, 0x13, 0x8, 0x0, 0x4, 0x4, 0x4, 0x4];
+            assert_eq!(have, want)
+        }
     }
 
     #[test]
     fn test_derialization() {
         let addr: [u8; 20] = [0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35];
         let want = Vote {
-            validator_address: ValidatorAddress(addr),
+            validator_address: addr,
             validator_index: 56789,
             height: 12345,
             round: 2,
