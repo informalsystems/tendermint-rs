@@ -4,7 +4,7 @@ mod heartbeat;
 mod proposal;
 mod vote;
 
-pub type ValidatorAddress = [u8; 20];
+pub type ValidatorAddress = Vec<u8>;
 
 #[derive(PartialEq, Debug)]
 pub struct PartsSetHeader {
