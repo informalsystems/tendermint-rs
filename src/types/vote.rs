@@ -160,34 +160,24 @@ impl Amino for Vote {
                 return Err(DecodeError::new("invalid prefix"));
             }
         }
-        {
-            {
-                let typ3 = buf.get_u8();
-                let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_Struct);
-                if typ3 != field_prefix {
-                    return Err(DecodeError::new("invalid type for field 1"));
-                }
-            }
-            {
-                let typ3 = buf.get_u8();
-                let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength);
-                if typ3 != field_prefix {
-                    return Err(DecodeError::new("invalid type for inner struct field 1"));
-                }
-            }
-        }
 
+        check_field_number_typ3(1, Typ3Byte::Typ3_Struct,&mut buf)?;
+        check_field_number_typ3( 1, Typ3Byte::Typ3_ByteLength,&mut buf)?;
         let mut validator_address_array: [u8; 20] = [0; 20];
         validator_address_array.copy_from_slice(amino_bytes::decode(&mut buf)?.as_slice());
         let validator_address = validator_address_array;
-        {
-            let typ3 = buf.get_u8();
-            let field_prefix = 2 << 3 | typ3_to_byte(Typ3Byte::Typ3_Varint);
-            if typ3 != field_prefix {
-                return Err(DecodeError::new("invalid type for struct field 2"));
-            }
-        }
+        check_field_number_typ3( 2, Typ3Byte::Typ3_Varint, &mut buf)?;
         let validator_index = decode_varint(&mut buf)? as i64;
+        check_field_number_typ3(3,Typ3Byte::Typ3_8Byte,&mut buf,)?;
+        let height = decode_int64(&mut buf)?;
+        check_field_number_typ3(4, Typ3Byte::Typ3_Varint,&mut buf)?;
+        let round = decode_varint(&mut buf)?;
+        check_field_number_typ3( 5, Typ3Byte::Typ3_Struct,&mut buf)?;
+        let timestamp = amino_time::decode(&mut buf)?;
+        check_field_number_typ3(6, Typ3Byte::Typ3_Varint,&mut buf)?;
+        let vote_type = char_to_vote_type(decode_uint8(&mut buf)? as char)?;
+        check_field_number_typ3(7, Typ3Byte::Typ3_Struct,&mut buf)?;
+        
         unimplemented!()
     }
 }
