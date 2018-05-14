@@ -32,6 +32,60 @@ impl TendermintSign for Heartbeat {
 }
 
 impl Amino for Heartbeat {
+    fn deserialize(data: &[u8]) -> Result<Heartbeat, DecodeError> {
+        let mut buf = Cursor::new(data);
+        consume_length(&mut buf)?;
+        consume_prefix(&mut buf, "tendermint/socketpv/SignHeartbeatMsg")?;
+
+        check_field_number_typ3(1, Typ3Byte::Typ3_Struct, &mut buf)?;
+
+        check_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf)?;
+        let mut validator_address_array = amino_bytes::decode(&mut buf)?;
+        let validator_address = validator_address_array;
+
+        check_field_number_typ3(2, Typ3Byte::Typ3_Varint, &mut buf)?;
+        let validator_index = decode_varint(&mut buf)? as i64;
+
+        check_field_number_typ3(3, Typ3Byte::Typ3_8Byte, &mut buf)?;
+        let height = decode_int64(&mut buf)?;
+
+        check_field_number_typ3(4, Typ3Byte::Typ3_Varint, &mut buf)?;
+        let round = decode_varint(&mut buf)?;
+
+        check_field_number_typ3(5, Typ3Byte::Typ3_Varint, &mut buf)?;
+        let sequence = decode_varint(&mut buf)? as i64;
+
+        let mut signature: Option<Signature> = None;
+        let mut optional_typ3 = buf.get_u8();
+        // TODO(ismail): find a more clever way to deal with optional fields:
+        let sig_field_prefix = 6 << 3 | typ3_to_byte(Typ3Byte::Typ3_Interface);
+        if optional_typ3 == sig_field_prefix {
+            let mut signature_array: [u8; SIGNATURE_SIZE] = [0; SIGNATURE_SIZE];
+            signature_array.copy_from_slice(amino_bytes::decode(&mut buf)?.as_slice());
+            signature = Some(Signature(signature_array));
+
+            optional_typ3 = buf.get_u8();
+        }
+        // TODO(ismail): check if this logic does still work when there is a signature:
+        let struct_term_typ3 = buf.get_u8();
+        let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
+        if optional_typ3 != struct_end_postfix {
+            return Err(DecodeError::new("invalid type for first struct term"));
+        }
+        if struct_term_typ3 != struct_end_postfix {
+            return Err(DecodeError::new("invalid type for second struct term"));
+        }
+
+        Ok(Heartbeat {
+            validator_address,
+            validator_index,
+            height,
+            round,
+            sequence,
+            signature,
+        })
+    }
+
     fn serialize(self) -> Vec<u8> {
         let mut buf = vec![];
 
@@ -76,115 +130,6 @@ impl Amino for Heartbeat {
 
         length_buf
     }
-
-    fn deserialize(data: &[u8]) -> Result<Heartbeat, DecodeError> {
-        let mut buf = Cursor::new(data);
-
-        {
-            let len_field = decode_uvarint(&mut buf)?;
-            let data_length = buf.remaining() as u64;
-
-            if data_length != len_field {
-                return Err(DecodeError::new("invalid length field"));
-            }
-        }
-
-        {
-            let (_, mut pre) = compute_disfix("tendermint/socketpv/SignHeartbeatMsg");
-
-            pre[3] |= typ3_to_byte(Typ3Byte::Typ3_Struct);
-            let mut actual_prefix = pre.clone();
-            buf.copy_to_slice(actual_prefix.as_mut_slice());
-            if actual_prefix != pre {
-                return Err(DecodeError::new("invalid prefix"));
-            }
-        }
-        {
-            let (field_number, typ3) = decode_field_number_typ3(&mut buf)?;
-            if field_number != 1 || typ3 != Typ3Byte::Typ3_Struct {
-                return Err(DecodeError::new(format!(
-                    "invalid type for field 1, \
-                     got typp3={:?}, field_number={:?}",
-                    typ3_to_byte(typ3),
-                    field_number
-                )));
-            }
-        }
-        {
-            let typ3 = buf.get_u8();
-            let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength);
-            if typ3 != field_prefix {
-                return Err(DecodeError::new("invalid type for inner struct field 1"));
-            }
-        }
-        let mut validator_address_array = amino_bytes::decode(&mut buf)?;
-        let validator_address = validator_address_array;
-        {
-            let typ3 = buf.get_u8();
-            let field_prefix = 2 << 3 | typ3_to_byte(Typ3Byte::Typ3_Varint);
-            if typ3 != field_prefix {
-                return Err(DecodeError::new("invalid type for struct field 2"));
-            }
-        }
-        let validator_index = decode_varint(&mut buf)? as i64;
-        {
-            let typ3 = buf.get_u8();
-            let field_prefix = 3 << 3 | typ3_to_byte(Typ3Byte::Typ3_8Byte);
-            if typ3 != field_prefix {
-                return Err(DecodeError::new("invalid type for struct field 3"));
-            }
-        }
-        let height = decode_int64(&mut buf)?;
-        {
-            let typ3 = buf.get_u8();
-            let field_prefix = 4 << 3 | typ3_to_byte(Typ3Byte::Typ3_Varint);
-            if typ3 != field_prefix {
-                return Err(DecodeError::new("invalid type for struct field 4"));
-            }
-        }
-        let round = decode_varint(&mut buf)?;
-
-        {
-            let typ3 = buf.get_u8();
-            let field_prefix = 5 << 3 | typ3_to_byte(Typ3Byte::Typ3_Varint);
-            if typ3 != field_prefix {
-                return Err(DecodeError::new("invalid type for struct field 5"));
-            }
-        }
-        let sequence = decode_varint(&mut buf)? as i64;
-        let mut signature: Option<Signature> = None;
-
-        let mut optional_typ3 = buf.get_u8();
-
-        let sig_field_prefix = 6 << 3 | typ3_to_byte(Typ3Byte::Typ3_Interface);
-
-        if optional_typ3 == sig_field_prefix {
-            let mut signature_array: [u8; SIGNATURE_SIZE] = [0; SIGNATURE_SIZE];
-            signature_array.copy_from_slice(amino_bytes::decode(&mut buf)?.as_slice());
-
-            signature = Some(Signature(signature_array));
-
-            optional_typ3 = buf.get_u8();
-        }
-        let struct_term_typ3 = buf.get_u8();
-        let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
-        if optional_typ3 != struct_end_postfix {
-            return Err(DecodeError::new("invalid type for first struct term"));
-        }
-
-        if struct_term_typ3 != struct_end_postfix {
-            return Err(DecodeError::new("invalid type for second struct term"));
-        }
-
-        Ok(Heartbeat {
-            validator_address,
-            validator_index,
-            height,
-            round,
-            sequence,
-            signature,
-        })
-    }
 }
 
 #[cfg(test)]
@@ -196,18 +141,6 @@ mod tests {
     #[test]
     fn test_serialization() {
         {
-            let addr = vec![
-                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
-                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
-            ];
-            let heartbeat = Heartbeat {
-                validator_address: addr,
-                validator_index: 1,
-                height: 15,
-                round: 10,
-                sequence: 30,
-                signature: None,
-            };
             let addr = vec![
                 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
                 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
