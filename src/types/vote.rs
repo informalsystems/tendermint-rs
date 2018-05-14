@@ -139,55 +139,101 @@ impl Amino for Vote {
 
     fn deserialize(data: &[u8]) -> Result<Vote, DecodeError> {
         let mut buf = Cursor::new(data);
+        consume_length(&mut buf)?;
+        consume_prefix(&mut buf, "tendermint/socketpv/SignVoteMsg")?;
+        check_field_number_typ3(1, Typ3Byte::Typ3_Struct, &mut buf)?;
 
-        {
-            let len_field = decode_uvarint(&mut buf)?;
-            let data_length = buf.remaining() as u64;
+        check_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf)?;
+        let validator_address = amino_bytes::decode(&mut buf)?;
 
-            if data_length != len_field {
-                return Err(DecodeError::new("invalid length field"));
-            }
-        }
-
-        {
-            let (_, mut pre) = compute_disfix("tendermint/socketpv/SignVoteMsg");
-
-            pre[3] |= typ3_to_byte(Typ3Byte::Typ3_Struct);
-            let mut actual_prefix = pre.clone();
-            buf.copy_to_slice(actual_prefix.as_mut_slice());
-            if actual_prefix != pre {
-                return Err(DecodeError::new("invalid prefix"));
-            }
-        }
-        {
-            {
-                let typ3 = buf.get_u8();
-                let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_Struct);
-                if typ3 != field_prefix {
-                    return Err(DecodeError::new("invalid type for field 1"));
-                }
-            }
-            {
-                let typ3 = buf.get_u8();
-                let field_prefix = 1 << 3 | typ3_to_byte(Typ3Byte::Typ3_ByteLength);
-                if typ3 != field_prefix {
-                    return Err(DecodeError::new("invalid type for inner struct field 1"));
-                }
-            }
-        }
-
-        let mut validator_address_array: [u8; 20] = [0; 20];
-        validator_address_array.copy_from_slice(amino_bytes::decode(&mut buf)?.as_slice());
-        let validator_address = validator_address_array;
-        {
-            let typ3 = buf.get_u8();
-            let field_prefix = 2 << 3 | typ3_to_byte(Typ3Byte::Typ3_Varint);
-            if typ3 != field_prefix {
-                return Err(DecodeError::new("invalid type for struct field 2"));
-            }
-        }
+        check_field_number_typ3(2, Typ3Byte::Typ3_Varint, &mut buf)?;
         let validator_index = decode_varint(&mut buf)? as i64;
-        unimplemented!()
+
+        check_field_number_typ3(3, Typ3Byte::Typ3_8Byte, &mut buf)?;
+        let height = decode_int64(&mut buf)?;
+
+        check_field_number_typ3(4, Typ3Byte::Typ3_Varint, &mut buf)?;
+        let round = decode_varint(&mut buf)?;
+
+        // TODO(ismail): make checking for this consitent in amino_rs:
+        check_field_number_typ3(5, Typ3Byte::Typ3_Struct, &mut buf)?;
+        let timestamp = amino_time::decode(&mut buf)?;
+
+        check_field_number_typ3(6, Typ3Byte::Typ3_Varint, &mut buf)?;
+        let vote_type = char_to_vote_type(decode_uint8(&mut buf)? as char)?;
+
+        // blockid:
+        let block_id_res: Result<BlockID, DecodeError> = {
+            check_field_number_typ3(7, Typ3Byte::Typ3_Struct, &mut buf)?;
+            // see what we get next hash (1) or embedded struct 2
+            let mut hash :Vec<u8> =  Vec::new();
+            let (field_number, typ3) = decode_field_number_typ3(&mut buf)?;
+            if field_number == 1 && typ3 == Typ3Byte::Typ3_ByteLength {
+                hash = amino_bytes::decode(&mut buf)?;
+            } else if field_number == 2 && typ3 == Typ3Byte::Typ3_Struct {
+                // we are OK and we continue decoding partset_header below ...
+            } else {
+                return Err(DecodeError::new("Write sth. useful here"));
+            }
+            // if the first field was not empty:
+            if field_number == 1 {
+                check_field_number_typ3(2, Typ3Byte::Typ3_Struct, &mut buf)?;
+            }
+
+            let parts_header_res = {
+                check_field_number_typ3(1, Typ3Byte::Typ3_Varint, &mut buf)?;
+                let total = decode_varint( &mut buf)?;
+                let mut hash :Vec<u8> =  Vec::new();
+
+                // peek into the buffer without consuming it and only read if necessary:
+                if byte_to_type3(buf.bytes()[0] & 0x07) == Typ3Byte::Typ3_ByteLength && ((buf.bytes()[0] as u64)  >> 3) == 2   {
+                    check_field_number_typ3(2, Typ3Byte::Typ3_ByteLength, &mut buf)?;
+                    hash = amino_bytes::decode(&mut buf)?;
+                }
+                Ok(PartsSetHeader {
+                    total,
+                    hash,
+                })
+            };
+
+            let parts_header = parts_header_res?;
+            Ok(BlockID {
+                hash,
+                parts_header,
+            })
+        };
+        let block_id = block_id_res?;
+
+
+        let mut signature: Option<Signature> = None;
+        let mut optional_typ3 = buf.get_u8();
+        // TODO(ismail): find a more clever way to deal with optional fields:
+        let sig_field_prefix = 6 << 3 | typ3_to_byte(Typ3Byte::Typ3_Interface);
+        if optional_typ3 == sig_field_prefix {
+            let mut signature_array: [u8; SIGNATURE_SIZE] = [0; SIGNATURE_SIZE];
+            signature_array.copy_from_slice(amino_bytes::decode(&mut buf)?.as_slice());
+            signature = Some(Signature(signature_array));
+
+            optional_typ3 = buf.get_u8();
+        }
+        let struct_term_typ3 = buf.get_u8();
+        let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
+        if optional_typ3 != struct_end_postfix {
+            return Err(DecodeError::new("invalid type for first struct term"));
+        }
+        if struct_term_typ3 != struct_end_postfix {
+            return Err(DecodeError::new("invalid type for second struct term"));
+        }
+        Ok(Vote {
+            validator_address,
+            validator_index,
+            height,
+            round,
+            timestamp,
+            vote_type,
+            block_id,
+            signature,
+        })
     }
 }
 
@@ -209,6 +255,8 @@ mod tests {
                 validator_index: 56789,
                 height: 12345,
                 round: 2,
+                timestamp: "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap(),
+                vote_type: VoteType::PreVote,
                 block_id: BlockID {
                     hash: "hash".as_bytes().to_vec(),
                     parts_header: PartsSetHeader {
@@ -216,8 +264,6 @@ mod tests {
                         hash: "parts_hash".as_bytes().to_vec(),
                     },
                 },
-                timestamp: "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap(),
-                vote_type: VoteType::PreVote,
                 signature: None,
             };
 
@@ -239,6 +285,8 @@ mod tests {
                 validator_index: 56789,
                 height: 12345,
                 round: 2,
+                timestamp: "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap(),
+                vote_type: VoteType::PreVote,
                 block_id: BlockID {
                     hash: "hash".as_bytes().to_vec(),
                     parts_header: PartsSetHeader {
@@ -246,8 +294,6 @@ mod tests {
                         hash: vec![],
                     },
                 },
-                timestamp: "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap(),
-                vote_type: VoteType::PreVote,
                 signature: None,
             };
 
