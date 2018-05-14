@@ -17,7 +17,7 @@ signatory = "0.5.1"
 simplelog = "0.5"
 toml = "0.4"
 yubihsm = { version = "0.8", optional = true }
-amino = { git = "https://github.com/tendermint/amino_rs", branch = "master"}
+amino = { git = "https://github.com/zmanian/go-wire-rs", branch = "check_field_num_typ3"}
 serde_json = "1.0"
 hex = "0.3.2"
 bytes = "0.4"
