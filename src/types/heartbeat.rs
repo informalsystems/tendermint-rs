@@ -66,6 +66,7 @@ impl Amino for Heartbeat {
 
             optional_typ3 = buf.get_u8();
         }
+        // TODO(ismail): check if this logic does still work when there is a signature:
         let struct_term_typ3 = buf.get_u8();
         let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
         if optional_typ3 != struct_end_postfix {
