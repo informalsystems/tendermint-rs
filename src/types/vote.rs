@@ -155,7 +155,6 @@ impl Amino for Vote {
         check_field_number_typ3(4, Typ3Byte::Typ3_Varint, &mut buf)?;
         let round = decode_varint(&mut buf)?;
 
-        // TODO(ismail): make checking for this consitent in amino_rs:
         check_field_number_typ3(5, Typ3Byte::Typ3_Struct, &mut buf)?;
         let timestamp = amino_time::decode(&mut buf)?;
 
@@ -163,47 +162,8 @@ impl Amino for Vote {
         let vote_type = char_to_vote_type(decode_uint8(&mut buf)? as char)?;
 
         // blockid:
-        let block_id_res: Result<BlockID, DecodeError> = {
-            check_field_number_typ3(7, Typ3Byte::Typ3_Struct, &mut buf)?;
-            // see what we get next hash (1) or embedded struct 2
-            let mut hash :Vec<u8> =  Vec::new();
-            let (field_number, typ3) = decode_field_number_typ3(&mut buf)?;
-            if field_number == 1 && typ3 == Typ3Byte::Typ3_ByteLength {
-                hash = amino_bytes::decode(&mut buf)?;
-            } else if field_number == 2 && typ3 == Typ3Byte::Typ3_Struct {
-                // we are OK and we continue decoding partset_header below ...
-            } else {
-                return Err(DecodeError::new("Write sth. useful here"));
-            }
-            // if the first field was not empty:
-            if field_number == 1 {
-                check_field_number_typ3(2, Typ3Byte::Typ3_Struct, &mut buf)?;
-            }
-
-            let parts_header_res = {
-                check_field_number_typ3(1, Typ3Byte::Typ3_Varint, &mut buf)?;
-                let total = decode_varint( &mut buf)?;
-                let mut hash :Vec<u8> =  Vec::new();
-
-                // peek into the buffer without consuming it and only read if necessary:
-                if byte_to_type3(buf.bytes()[0] & 0x07) == Typ3Byte::Typ3_ByteLength && ((buf.bytes()[0] as u64)  >> 3) == 2   {
-                    check_field_number_typ3(2, Typ3Byte::Typ3_ByteLength, &mut buf)?;
-                    hash = amino_bytes::decode(&mut buf)?;
-                }
-                Ok(PartsSetHeader {
-                    total,
-                    hash,
-                })
-            };
-
-            let parts_header = parts_header_res?;
-            Ok(BlockID {
-                hash,
-                parts_header,
-            })
-        };
+        let block_id_res: Result<BlockID, DecodeError> = BlockID::decode(7, &mut buf);
         let block_id = block_id_res?;
-
 
         let mut signature: Option<Signature> = None;
         let mut optional_typ3 = buf.get_u8();
@@ -221,9 +181,7 @@ impl Amino for Vote {
         if optional_typ3 != struct_end_postfix {
             return Err(DecodeError::new("invalid type for first struct term"));
         }
-        if struct_term_typ3 != struct_end_postfix {
-            return Err(DecodeError::new("invalid type for second struct term"));
-        }
+
         Ok(Vote {
             validator_address,
             validator_index,

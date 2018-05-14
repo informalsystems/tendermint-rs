@@ -1,9 +1,10 @@
 use super::{BlockID, PartsSetHeader, TendermintSign};
 use amino::*;
-use bytes::BufMut;
+use bytes::{Buf, BufMut};
 use chrono::{DateTime, Utc};
 use hex::encode_upper;
 use signatory::ed25519::{Signature, SIGNATURE_SIZE};
+use std::io::Cursor;
 
 #[derive(PartialEq, Debug)]
 pub struct Proposal {
@@ -125,8 +126,59 @@ impl Amino for Proposal {
 
         res
     }
+
     fn deserialize(data: &[u8]) -> Result<Proposal, DecodeError> {
-        unimplemented!()
+        let mut buf = Cursor::new(data);
+        consume_length(&mut buf)?;
+        consume_prefix(&mut buf, "tendermint/socketpv/SignProposalMsg")?;
+        check_field_number_typ3(1, Typ3Byte::Typ3_Struct, &mut buf)?;
+
+        check_field_number_typ3(1, Typ3Byte::Typ3_8Byte, &mut buf)?;
+        let height = decode_int64(&mut buf)?;
+
+        check_field_number_typ3(2, Typ3Byte::Typ3_Varint, &mut buf)?;
+        let round = decode_varint(&mut buf)?;
+
+        check_field_number_typ3(3, Typ3Byte::Typ3_Struct, &mut buf)?;
+        let timestamp = amino_time::decode(&mut buf)?;
+
+        // field 4: PartSetHeader:
+        check_field_number_typ3(4, Typ3Byte::Typ3_Struct, &mut buf)?;
+        let parts_header_res = PartsSetHeader::decode(1, &mut buf);
+        let block_parts_header = parts_header_res?;
+
+        check_field_number_typ3(5, Typ3Byte::Typ3_Varint, &mut buf)?;
+        let pol_round = decode_varint(&mut buf)? as i64;
+
+        let block_id_res: Result<BlockID, DecodeError> = BlockID::decode(6, &mut buf);
+        let pol_block_id = block_id_res?;
+
+        let mut signature: Option<Signature> = None;
+        let mut optional_typ3 = buf.get_u8();
+        // TODO(ismail): find a more clever way to deal with optional fields:
+        let sig_field_prefix = 6 << 3 | typ3_to_byte(Typ3Byte::Typ3_Interface);
+        if optional_typ3 == sig_field_prefix {
+            let mut signature_array: [u8; SIGNATURE_SIZE] = [0; SIGNATURE_SIZE];
+            signature_array.copy_from_slice(amino_bytes::decode(&mut buf)?.as_slice());
+            signature = Some(Signature(signature_array));
+
+            optional_typ3 = buf.get_u8();
+        }
+        let struct_term_typ3 = buf.get_u8();
+        let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
+        if optional_typ3 != struct_end_postfix {
+            return Err(DecodeError::new("invalid type for first struct term"));
+        }
+
+        Ok(Proposal {
+            height,
+            round,
+            timestamp,
+            block_parts_header,
+            pol_round,
+            pol_block_id,
+            signature,
+        })
     }
 }
 
@@ -176,7 +228,7 @@ mod tests {
             timestamp: "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap(),
             block_parts_header: PartsSetHeader {
                 total: 111,
-                hash: "parts_hash".as_bytes().to_vec(),
+                hash: "blockparts".as_bytes().to_vec(),
             },
             pol_round: -1,
             pol_block_id: BlockID {
