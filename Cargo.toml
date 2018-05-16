@@ -4,6 +4,7 @@ version = "0.0.0"
 authors = ["Tony Arcieri <tony@iqlusion.io>"]
 
 [dependencies]
+bincode = "1"
 clear_on_drop = "0.2"
 failure = "0.1"
 failure_derive = "0.1"

@@ -10,7 +10,9 @@ use std::sync::Arc;
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
+use config::ValidatorConfig;
 use ed25519::Keyring;
+use error::Error;
 use session::Session;
 
 /// How long to wait after a crash before respawning (in seconds)
@@ -23,19 +25,15 @@ pub const RESPAWN_DELAY: u64 = 5;
 /// the `Session`. Instead, the `Client` type manages threading and respawning
 /// sessions in the event of errors.
 pub struct Client {
-    /// Identifier for this validator from the config
-    label: String,
-
     /// Handle to the client thread
     handle: JoinHandle<()>,
 }
 
 impl Client {
     /// Spawn a new client, returning a handle so it can be joined
-    pub fn spawn(label: String, addr: String, port: u16, keyring: Arc<Keyring>) -> Self {
+    pub fn spawn(label: String, config: ValidatorConfig, keyring: Arc<Keyring>) -> Self {
         Self {
-            label,
-            handle: thread::spawn(move || client_loop(&addr, port, keyring)),
+            handle: thread::spawn(move || client_loop(&label, &config, &keyring)),
         }
     }
 
@@ -46,32 +44,44 @@ impl Client {
 }
 
 /// Main loop for all clients. Handles reconnecting in the event of an error
-fn client_loop(addr: &str, port: u16, keyring: Arc<Keyring>) {
-    loop {
-        let catch_unwind_result = panic::catch_unwind(|| {
-            Session::new(addr, port, Arc::clone(&keyring))?.handle_requests()
-        });
+fn client_loop(label: &str, config: &ValidatorConfig, keyring: &Arc<Keyring>) {
+    let addr = &config.addr;
+    let port = config.port;
+    let info = format!("{} ({}:{})", label, addr, port);
 
-        match catch_unwind_result {
+    loop {
+        match panic::catch_unwind(|| client_session(addr, port, keyring)) {
             Ok(result) => match result {
                 Ok(_) => {
-                    info!("[{}:{}] session closed gracefully", addr, port);
+                    info!("[{}] session closed gracefully", &info);
                     return;
                 }
-                Err(e) => error!("[{}:{}] {}", addr, port, e),
+                Err(e) => error!("[{}] {}", &info, e),
             },
             Err(val) => {
                 if let Some(e) = val.downcast_ref::<String>() {
-                    error!("[{}:{}] client panic! {}", addr, port, e);
+                    error!("[{}] client panic! {}", &info, e);
                 } else if let Some(e) = val.downcast_ref::<&str>() {
-                    error!("[{}:{}] client panic! {}", addr, port, e);
+                    error!("[{}] client panic! {}", &info, e);
                 } else {
-                    error!("[{}:{}] client panic! (unknown cause)", addr, port);
+                    error!("[{}] client panic! (unknown cause)", &info);
                 }
             }
         }
 
-        // TODO: exponential backoff?
+        // Break out of the loop if auto-reconnect is explicitly disabled
+        if config.reconnect.is_some() && !config.reconnect.unwrap() {
+            break;
+        }
+
+        // TODO: configurable respawn delay
         thread::sleep(Duration::from_secs(RESPAWN_DELAY))
     }
+}
+
+/// Establish a session with the validator and handle incoming requests
+fn client_session(addr: &str, port: u16, keyring: &Arc<Keyring>) -> Result<(), Error> {
+    let mut session = Session::new(addr, port, Arc::clone(keyring))?;
+    while session.handle_request()? {}
+    Ok(())
 }
