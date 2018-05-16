@@ -183,10 +183,7 @@ fn keygen(output_paths: &[String]) {
         exit(1);
     });
 
-    info!(
-        "Wrote random Ed25519 private key to {}",
-        output_path
-    );
+    info!("Wrote random Ed25519 private key to {}", output_path);
 }
 
 /// Run the KMS
