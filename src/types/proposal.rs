@@ -185,7 +185,6 @@ impl Amino for Proposal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::prelude::*;
     use std::error::Error;
 
     #[test]
