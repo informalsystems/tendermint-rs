@@ -1,4 +1,4 @@
-use super::{BlockID, TendermintSign, ValidatorAddress};
+use super::{BlockID,TendermintSign, ValidatorAddress};
 use amino::*;
 use bytes::{Buf, BufMut};
 use chrono::{DateTime, Utc};
@@ -197,10 +197,10 @@ impl Amino for Vote {
 
 #[cfg(test)]
 mod tests {
+    use types::PartsSetHeader;
     use super::*;
-    use chrono::prelude::*;
     use std::error::Error;
-
+    
     #[test]
     fn test_vote_serialization() {
         let addr: [u8; 20] = [

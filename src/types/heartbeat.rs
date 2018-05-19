@@ -134,7 +134,6 @@ impl Amino for Heartbeat {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::prelude::*;
     use std::error::Error;
 
     #[test]
