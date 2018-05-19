@@ -6,8 +6,8 @@ pub mod dalek;
 #[cfg(feature = "yubihsm-provider")]
 pub mod yubihsm;
 
-use error::Error;
 use super::PublicKey;
+use error::Error;
 
 /// Wrapper for an Ed25519 signing provider (i.e. trait object)
 pub struct Signer {

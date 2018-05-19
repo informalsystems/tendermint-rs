@@ -18,9 +18,14 @@ signatory = "0.5.1"
 simplelog = "0.5"
 toml = "0.4"
 yubihsm = { version = "0.8", optional = true }
+amino = { git = "https://github.com/tendermint/amino_rs", branch = "master"}
+serde_json = "1.0"
+hex = "0.3.2"
+bytes = "0.4"
+chrono = "0.4.2"
 
 [features]
 dalek-provider = ["signatory/dalek-provider"]
-default = ["dalek-provider", "yubihsm-provider"]
+default = ["dalek-provider"]
 yubihsm-provider = ["signatory/yubihsm-provider"]
 yubihsm-mockhsm = ["yubihsm-provider", "yubihsm/mockhsm"]

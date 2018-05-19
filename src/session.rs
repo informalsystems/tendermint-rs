@@ -4,9 +4,9 @@ use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
 
+use ed25519::{Keyring, PublicKey};
 use error::Error;
 use rpc::{Request, Response, SignRequest, SignResponse};
-use ed25519::{Keyring, PublicKey};
 
 /// A (soon-to-be-encrypted) session with a validator node
 pub struct Session {

@@ -7,10 +7,10 @@ use signatory::providers::dalek::Ed25519Signer as DalekSigner;
 use std::fs::File;
 use std::io::Read;
 
+use super::Signer;
 use clear_on_drop::ClearOnDrop;
 use config::DalekConfig;
 use error::Error;
-use super::Signer;
 
 /// Label for ed25519-dalek provider
 pub const DALEK_PROVIDER_LABEL: &str = "dalek";

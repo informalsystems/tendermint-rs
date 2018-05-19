@@ -13,12 +13,18 @@ extern crate rand;
 extern crate simplelog;
 #[macro_use]
 extern crate serde_derive;
+extern crate amino;
 extern crate signatory;
 extern crate toml;
+#[macro_use]
+extern crate serde_json;
+extern crate bytes;
+extern crate chrono;
+extern crate hex;
 
 use gumdrop::Options;
-use simplelog::{CombinedLogger, LevelFilter, TermLogger};
 use simplelog::Config as LoggingConfig;
+use simplelog::{CombinedLogger, LevelFilter, TermLogger};
 use std::collections::BTreeMap;
 use std::env;
 use std::fs::OpenOptions;
@@ -36,12 +42,13 @@ mod config;
 mod ed25519;
 mod rpc;
 mod session;
+mod types;
 
 use clear_on_drop::ClearOnDrop;
 use client::Client;
 use config::{Config, ProviderConfig, ValidatorConfig};
-use rand::{OsRng, Rng};
 use ed25519::Keyring;
+use rand::{OsRng, Rng};
 
 /// Unix file permissions required for private keys (i.e. owner-readable only)
 pub const PRIVATE_KEY_PERMISSIONS: u32 = 0o600;
@@ -72,7 +79,7 @@ struct HelpOpts {
 #[derive(Debug, Default, Options)]
 struct KeygenOpts {
     #[options(free)]
-    path: Vec<PathBuf>,
+    path: Vec<String>,
 }
 
 /// Options for the `run` command
@@ -80,7 +87,7 @@ struct KeygenOpts {
 struct RunOpts {
     /// Path to configuration file
     #[options(short = "c", long = "config")]
-    config: PathBuf,
+    config: String,
 
     /// Print debugging information
     #[options(short = "v", long = "verbose")]
@@ -145,7 +152,7 @@ fn help(commands: &[String]) {
 
 /// Generate an Ed25519 secret key for use with a software provider (i.e. ed25519-dalek)
 #[cfg(feature = "dalek-provider")]
-fn keygen(output_paths: &[PathBuf]) {
+fn keygen(output_paths: &[String]) {
     init_logging(true);
 
     if output_paths.len() != 1 {
@@ -166,24 +173,21 @@ fn keygen(output_paths: &[PathBuf]) {
         .mode(PRIVATE_KEY_PERMISSIONS)
         .open(output_path)
         .unwrap_or_else(|e| {
-            error!("couldn't open {} for writing: {}", output_path.display(), e);
+            error!("couldn't open {} for writing: {}", output_path, e);
             exit(1);
         });
 
     // TODO: some sort of serialization format for the private key? Raw is easy for now
     output_file.write_all(&*seed).unwrap_or_else(|e| {
-        error!("couldn't write to {}: {}", output_path.display(), e);
+        error!("couldn't write to {}: {}", output_path, e);
         exit(1);
     });
 
-    info!(
-        "Wrote random Ed25519 private key to {}",
-        output_path.display()
-    );
+    info!("Wrote random Ed25519 private key to {}", output_path);
 }
 
 /// Run the KMS
-fn run(config_file: &Path, verbose: bool) {
+fn run(config_file_path: &str, verbose: bool) {
     init_logging(verbose);
 
     info!(
@@ -191,6 +195,8 @@ fn run(config_file: &Path, verbose: bool) {
         env!("CARGO_PKG_NAME"),
         env!("CARGO_PKG_VERSION")
     );
+
+    let config_file = Path::new(config_file_path);
 
     let Config {
         validators,
