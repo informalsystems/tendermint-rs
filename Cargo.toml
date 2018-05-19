@@ -24,10 +24,6 @@ hex = "0.3.2"
 bytes = "0.4"
 chrono = "0.4.2"
 
-
-
-
-
 [features]
 dalek-provider = ["signatory/dalek-provider"]
 default = ["dalek-provider"]
