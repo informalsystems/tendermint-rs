@@ -3,7 +3,6 @@ use amino::*;
 use bytes::{Buf, BufMut};
 use hex::encode;
 use signatory::ed25519::{Signature, SIGNATURE_SIZE};
-use std::error::Error;
 use std::io::Cursor;
 
 #[derive(PartialEq, Debug)]
@@ -40,7 +39,7 @@ impl Amino for Heartbeat {
         check_field_number_typ3(1, Typ3Byte::Typ3_Struct, &mut buf)?;
 
         check_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf)?;
-        let mut validator_address_array = amino_bytes::decode(&mut buf)?;
+        let validator_address_array = amino_bytes::decode(&mut buf)?;
         let validator_address = validator_address_array;
 
         check_field_number_typ3(2, Typ3Byte::Typ3_Varint, &mut buf)?;

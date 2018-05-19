@@ -30,7 +30,7 @@ use std::env;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::os::unix::fs::OpenOptionsExt;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::exit;
 use std::sync::Arc;
 

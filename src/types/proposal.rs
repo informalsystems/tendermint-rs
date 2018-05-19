@@ -164,7 +164,7 @@ impl Amino for Proposal {
 
             optional_typ3 = buf.get_u8();
         }
-        let struct_term_typ3 = buf.get_u8();
+        let _struct_term_typ3 = buf.get_u8();
         let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
         if optional_typ3 != struct_end_postfix {
             return Err(DecodeError::new("invalid type for first struct term"));

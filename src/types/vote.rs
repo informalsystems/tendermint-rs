@@ -1,8 +1,8 @@
-use super::{BlockID, PartsSetHeader, TendermintSign, ValidatorAddress};
+use super::{BlockID, TendermintSign, ValidatorAddress};
 use amino::*;
 use bytes::{Buf, BufMut};
 use chrono::{DateTime, Utc};
-use hex::{encode, encode_upper};
+use hex::encode_upper;
 use signatory::ed25519::{Signature, SIGNATURE_SIZE};
 use std::io::Cursor;
 
@@ -63,7 +63,7 @@ impl TendermintSign for Vote {
 impl Amino for Vote {
     fn serialize(self) -> Vec<u8> {
         let mut buf = vec![];
-        let (dis, mut pre) = compute_disfix("tendermint/socketpv/SignVoteMsg");
+        let (_dis, mut pre) = compute_disfix("tendermint/socketpv/SignVoteMsg");
 
         pre[3] |= typ3_to_byte(Typ3Byte::Typ3_Struct);
         buf.put_slice(pre.as_slice());
@@ -176,7 +176,7 @@ impl Amino for Vote {
 
             optional_typ3 = buf.get_u8();
         }
-        let struct_term_typ3 = buf.get_u8();
+        let _struct_term_typ3 = buf.get_u8();
         let struct_end_postfix = typ3_to_byte(Typ3Byte::Typ3_StructTerm);
         if optional_typ3 != struct_end_postfix {
             return Err(DecodeError::new("invalid type for first struct term"));

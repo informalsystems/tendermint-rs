@@ -24,7 +24,7 @@ impl PartsSetHeader {
         let total = decode_varint(&mut buf)?;
         // peek into the buffer without consuming it and only read if necessary:
         let next_u8 = buf.bytes()[0];
-        let mut hash: Vec<u8> = if ((next_u8 as u64) >> 3) == 2
+        let hash: Vec<u8> = if ((next_u8 as u64) >> 3) == 2
             && byte_to_type3(next_u8 & 0x07) == Typ3Byte::Typ3_ByteLength
         {
             buf.advance(1);
