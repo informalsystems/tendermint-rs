@@ -11,7 +11,9 @@ pub struct PublicKey(SignatoryKey);
 impl PublicKey {
     /// Convert a bytestring to a public key
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
-        Ok(PublicKey(SignatoryKey::from_bytes(bytes).map_err(|e| err!(InvalidKey, "{}", e))?))
+        Ok(PublicKey(
+            SignatoryKey::from_bytes(bytes).map_err(|e| err!(InvalidKey, "{}", e))?,
+        ))
     }
 
     /// Obtain public key as a byte array reference

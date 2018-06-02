@@ -33,7 +33,8 @@ impl Signer {
 
     /// Obtain the Ed25519 public key which corresponds to this signer's private key
     pub fn public_key(&self) -> Result<PublicKey, Error> {
-        Ok(self.provider
+        Ok(self
+            .provider
             .public_key()
             .map_err(|e| err!(InvalidKey, "{}", e))?
             .into())
@@ -42,7 +43,8 @@ impl Signer {
     /// Sign the given message using this signer
     #[inline]
     pub fn sign(&self, msg: &[u8]) -> Result<Signature, Error> {
-        Ok(self.provider
+        Ok(self
+            .provider
             .sign(msg)
             .map_err(|e| err!(SigningError, "{}", e))?)
     }
