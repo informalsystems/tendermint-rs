@@ -1,7 +1,16 @@
 [package]
-name = "cosmos-kms"
-version = "0.0.0"
-authors = ["Tony Arcieri <tony@iqlusion.io>"]
+name        = "cosmos-kms"
+description = "Key Management System for Cosmos Validators"
+version     = "0.0.0"
+authors     = ["Tony Arcieri <tony@iqlusion.io>"]
+license     = "Apache-2.0"
+homepage    = "https://github.com/tendermint/kms/"
+readme      = "README.md"
+categories  = ["cryptography"]
+keywords    = ["cosmos", "kms", "key-management"]
+
+[badges]
+circle-ci = { repository = "tendermint/kms" }
 
 [dependencies]
 bincode = "1"
