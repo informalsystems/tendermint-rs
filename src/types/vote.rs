@@ -197,9 +197,9 @@ impl Amino for Vote {
 
 #[cfg(test)]
 mod tests {
-    use types::PartsSetHeader;
     use super::*;
     use std::error::Error;
+    use types::PartsSetHeader;
 
     #[test]
     fn test_vote_serialization() {

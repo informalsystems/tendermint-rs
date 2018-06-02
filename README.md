@@ -46,6 +46,42 @@ The `kms.toml.example` file contains an example configuration for the KMS.
 Copy it to your preferred location, rename it to `kms.toml`, and edit it
 to match your preferred configuration.
 
+## Development
+
+The following are instructions for setting up a development environment.
+They assume you've already followed steps 1 & 2 from the Installation
+section above (i.e. installed rustup and the noted nightly Rust released).
+
+1. Install **rustfmt**: `rustup component add rustfmt-preview --toolchain nightly-2018-06-02`
+2. Install **clippy**: `cargo +nightly-2018-06-02 install clippy`
+3. Clone the repo: `$ git clone https://github.com/tendermint/kms`
+
+Before opening a pull request, please run the checks below:
+
+### Testing
+
+Run the test suite with:
+
+```
+cargo +nightly-2018-06-02 test --features=dalek-provider,yubihsm-mockhsm
+```
+
+### Format checking (rustfmt)
+
+Make sure your code is well-formatted by running:
+
+```
+cargo +nightly-2018-06-02 fmt
+```
+
+### Lint (clippy)
+
+Lint your code (i.e. check it for common issues) with:
+
+```
+cargo +nightly-2018-06-02 clippy
+```
+
 ## License
 
 Copyright © 2018 Tendermint
