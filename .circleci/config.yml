@@ -14,25 +14,25 @@ jobs:
       - run:
           name: rustfmt
           command: |
-            rustup run $RUST_NIGHTLY_VERSION rustfmt --version
-            rustup run $RUST_NIGHTLY_VERSION cargo fmt -- --write-mode=diff
+            cargo +$RUST_NIGHTLY_VERSION fmt --version
+            cargo +$RUST_NIGHTLY_VERSION fmt -- --check
       - run:
           name: clippy
           command: |
-            rustup run $RUST_NIGHTLY_VERSION cargo clippy --version
-            rustup run $RUST_NIGHTLY_VERSION cargo clippy --verbose --features=$CARGO_FEATURES
+            cargo +$RUST_NIGHTLY_VERSION clippy --version
+            cargo +$RUST_NIGHTLY_VERSION clippy --verbose --features=$CARGO_FEATURES
       - run:
           name: build (nightly, all features)
           command: |
             rustup run $RUST_NIGHTLY_VERSION rustc --version --verbose
-            rustup run $RUST_NIGHTLY_VERSION cargo --version --verbose
-            rustup run $RUST_NIGHTLY_VERSION cargo build --features=$CARGO_FEATURES
+            cargo +$RUST_NIGHTLY_VERSION --version --verbose
+            cargo +$RUST_NIGHTLY_VERSION build --features=$CARGO_FEATURES
       - run:
           name: test (nightly, all features)
           command: |
             rustup run $RUST_NIGHTLY_VERSION rustc --version --verbose
-            rustup run $RUST_NIGHTLY_VERSION cargo --version --verbose
-            rustup run $RUST_NIGHTLY_VERSION cargo test --features=$CARGO_FEATURES
+            cargo +$RUST_NIGHTLY_VERSION --version --verbose
+            cargo +$RUST_NIGHTLY_VERSION test --features=$CARGO_FEATURES
       - save_cache:
           key: cache-20180602.2 # bump restore_cache key above too
           paths:
