@@ -23,7 +23,7 @@ extern crate chrono;
 extern crate hex;
 extern crate rust_sodium;
 extern crate sha2;
-extern crate ripemd160;
+extern crate hkdf;
 
 use gumdrop::Options;
 use simplelog::Config as LoggingConfig;

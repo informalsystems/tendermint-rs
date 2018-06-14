@@ -2,9 +2,8 @@
 mod conn {
     use rust_sodium::crypto::secretbox::{NONCEBYTES, MACBYTES};
     use rust_sodium::randombytes::randombytes_into;
-    use sha2::{Sha256, Digest as sha256_digest};
-    use ripemd160::{Ripemd160, Digest as ripemd_digest};
-
+    use sha2::Sha256;
+    use hkdf::Hkdf;
 
     // 4 + 1024 == 1028 total frame size
     const DATA_LEN_SIZE: u32 = 4;
@@ -45,10 +44,10 @@ mod conn {
     }
 
     // Returns 32 byte challenge
-    fn gen_challenge(loPubKey:[u8; 32], hiPubKey:[u8; 32]) -> [u8; 32] {
+    fn gen_challenge(lo_pubkey:[u8; 32], hi_pubkey:[u8; 32]) -> [u8; 32] {
         let mut aggregated_pubkey: [u8; 64] = [0; 64];
-        aggregated_pubkey[0..32].copy_from_slice(&loPubKey[0..32]);
-        aggregated_pubkey[32..64].copy_from_slice(&hiPubKey[0..32]);
+        aggregated_pubkey[0..32].copy_from_slice(&lo_pubkey[0..32]);
+        aggregated_pubkey[32..64].copy_from_slice(&hi_pubkey[0..32]);
     	return hash32(&aggregated_pubkey)
     }
     //
@@ -97,29 +96,35 @@ mod conn {
 
 
     // Basically copied from rust_sodium, because I was having issues with their wrapper Nonce type
-    pub fn gen_nonce() -> [u8; 24] {
+    pub fn gen_rand_nonce() -> [u8; 24] {
         let mut nonce = [0; NONCEBYTES];
         randombytes_into(&mut nonce);
         return nonce;
     }
 
-    // sha256
     fn hash32(input:&[u8]) -> [u8; 32] {
-	    let mut sh = Sha256::default();
-        sh.input(input);
-        let res_slice = sh.result();
-        let mut res: [u8; 32] = Default::default();
-        res.copy_from_slice(&res_slice[0..32]);
+        let salt = "".as_bytes();
+        let info = "TENDERMINT_SECRET_CONNECTION_KEY_GEN".as_bytes();
+
+        let hk = Hkdf::<Sha256>::extract(Some(salt), input);
+        let res_vector = hk.expand(&info, 32);
+        // Now convert res_vector into fix sized 32 byte u8 arr
+        let mut res:[u8; 32] = [0; 32];
+        let res_vector = &res_vector[..res.len()]; // panics if not enough data
+        res.copy_from_slice(res_vector);
         return res;
     }
 
-    // We only fill in the first 20 bytes with ripemd160
     fn hash24(input:&[u8]) -> [u8; 24] {
-        let mut rmd = Ripemd160::default();
-        rmd.input(input);
-        let res_slice = rmd.result();
-        let mut res: [u8; 24] = Default::default();
-        res[..20].copy_from_slice(&res_slice[0..20]);
+        let salt = "".as_bytes();
+        let info = "TENDERMINT_SECRET_CONNECTION_NONCE_GEN".as_bytes();
+
+        let hk = Hkdf::<Sha256>::extract(Some(salt), input);
+        let res_vector = hk.expand(&info, 24);
+        // Now convert res_vector into fix sized 24 byte u8 arr
+        let mut res:[u8; 24] = [0; 24];
+        let res_vector = &res_vector[..res.len()]; // panics if not enough data
+        res.copy_from_slice(res_vector);
         return res;
     }
 
@@ -148,7 +153,7 @@ mod conn {
         #[test]
         fn incr2_nonce() {
             // TODO: Create test vectors instead of just printing the result.
-            let mut x = conn::gen_nonce();
+            let mut x = conn::gen_rand_nonce();
             conn::incr2_nonce(&mut x);
         }
 
@@ -162,18 +167,18 @@ mod conn {
         }
 
         #[test]
-        fn sha2() {
-            // Single test vector created with python's hashlib
-            let t = conn::hash32(&[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
-            let expected : [u8; 32] = [102, 104, 122, 173, 248, 98, 189, 119, 108, 143, 193, 139, 142, 159, 142, 32, 8, 151, 20, 133, 110, 226, 51, 179, 144, 42, 89, 29, 13, 95, 41, 37];
+        fn test_hash32() {
+            // Single test vector created against go implementation
+            let t = conn::hash32(&[0,0,0,0]);
+            let expected : [u8; 32] = [20, 4, 134, 42, 238, 181, 232, 222, 228, 231, 42, 153, 251, 130, 165, 55, 53, 121, 78, 134, 189, 245, 251, 252, 129, 73, 2, 52, 163, 111, 7, 71];
             assert_eq!(t, expected);
         }
 
         #[test]
-        fn ripemd160() {
-            // Single test vector created with python's hashlib
-            let t = conn::hash24(&[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
-            let expected : [u8; 24] = [249, 36, 109, 210, 219, 4, 0, 89, 203, 207, 170, 22, 60, 54, 71, 150, 205, 171, 220, 146,0,0,0,0];
+        fn test_hash24() {
+            // Single test vector created against go implementation
+            let t = conn::hash24(&[0,0,0,0]);
+            let expected : [u8; 24] = [201, 60, 46, 37, 116, 170, 172, 244, 248, 110, 1, 142, 64, 194, 90, 157, 98, 143, 226, 116, 219, 55, 115, 243];
             assert_eq!(t, expected);
         }
     }
