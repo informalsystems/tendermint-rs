@@ -21,6 +21,9 @@ extern crate serde_json;
 extern crate bytes;
 extern crate chrono;
 extern crate hex;
+extern crate rust_sodium;
+extern crate sha2;
+extern crate ripemd160;
 
 use gumdrop::Options;
 use simplelog::Config as LoggingConfig;
@@ -43,6 +46,7 @@ mod ed25519;
 mod rpc;
 mod session;
 mod types;
+mod secret_connection;
 
 use clear_on_drop::ClearOnDrop;
 use client::Client;
