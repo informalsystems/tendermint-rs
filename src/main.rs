@@ -21,7 +21,6 @@ extern crate serde_json;
 extern crate bytes;
 extern crate chrono;
 extern crate hex;
-extern crate rust_sodium;
 extern crate sha2;
 extern crate hkdf;
 
