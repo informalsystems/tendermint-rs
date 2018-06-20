@@ -24,6 +24,7 @@ extern crate hex;
 extern crate sha2;
 extern crate hkdf;
 extern crate ring;
+extern crate byteorder;
 
 use gumdrop::Options;
 use simplelog::Config as LoggingConfig;
@@ -47,6 +48,7 @@ mod rpc;
 mod session;
 mod types;
 mod secret_connection;
+mod hkdfchachapoly;
 
 use clear_on_drop::ClearOnDrop;
 use client::Client;
