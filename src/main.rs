@@ -25,6 +25,7 @@ extern crate sha2;
 extern crate hkdf;
 extern crate ring;
 extern crate byteorder;
+extern crate x25519_dalek;
 
 use gumdrop::Options;
 use simplelog::Config as LoggingConfig;
