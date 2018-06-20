@@ -79,6 +79,10 @@ impl Aead for HkdfChaChaPoly {
     }
 }
 
+pub fn new_hkdfchachapoly(key: [u8; 32]) -> HkdfChaChaPoly {
+    return HkdfChaChaPoly{key: key}
+}
+
 // Returns subkey and chacha nonce
 fn get_subkey_and_chacha_nonce_from_hkdf(cKey: &[u8; KEY_SIZE], nonce: &[u8; NONCE_SIZE])
  -> ([u8; KEY_SIZE], [u8; CHACHA_NONCE_SIZE]){

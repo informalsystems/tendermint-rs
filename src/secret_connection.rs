@@ -8,7 +8,8 @@ use std::io;
 use x25519_dalek::{diffie_hellman, generate_secret, generate_public};
 use rand::OsRng;
 use byteorder::{ByteOrder, BigEndian, LittleEndian};
-use hkdfchachapoly::{Aead, HkdfChaChaPoly, TAG_SIZE};
+use hkdfchachapoly::{Aead, HkdfChaChaPoly, TAG_SIZE, new_hkdfchachapoly};
+use std::cmp;
 
 // 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: u32 = 4;
@@ -27,6 +28,7 @@ struct SecretConnection<IoHandler: io::Read + io::Write>  {
 	recv_buffer: [u8],
 }
 
+// TODO: Test read/write
 impl <IoHandler: io::Read + io::Write> SecretConnection<IoHandler> {
     // Returns authenticated remote pubkey
     fn RemotePubKey(&self) -> [u8; 32] {
@@ -35,79 +37,80 @@ impl <IoHandler: io::Read + io::Write> SecretConnection<IoHandler> {
 
     // Writes encrypted frames of `sealedFrameSize`
     // CONTRACT: data smaller than dataMaxSize is read atomically.
-    // fn Write(&self, data: &[u8]) -> Result<u32, ()> {
-    // 	while 0 < data.len() {
-    // 		let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
-    // 		let mut chunk: &[u8];
-    // 		if DATA_MAX_SIZE < (data.len() as u32) {
-    // 			chunk = &data[..(DATA_MAX_SIZE as usize)];
-    // 			data = &data[(DATA_MAX_SIZE as usize)..];
-    // 		} else {
-    // 			chunk = data;
-    // 			data = &[0u8; 0];
-    // 		}
-    // 		let chunkLength = chunk.len();
-    //         BigEndian::write_u32_into(&[chunkLength as u32], &mut frame[..8]);
-    //         frame[(DATA_LEN_SIZE as usize)..].copy_from_slice(chunk);
-    //
-    //         let aead = HkdfChaChaPoly{key: self.shared_secret};
-    // 		// encrypt the frame
-    //
-    // 		let sealedFrame = [0u8; TAG_SIZE+TOTAL_FRAME_SIZE];
-    // 		aead.Seal(sealedFrame[:0], sc.sendNonce[:], frame, nil)
-    // 		// fmt.Printf("secretbox.Seal(sealed:%X,sendNonce:%X,shrSecret:%X\n", sealedFrame, sc.sendNonce, sc.shrSecret)
-    // 		incr2Nonce(sc.sendNonce)
-    // 		// end encryption
-    //
-    // 		_, err = sc.conn.Write(sealedFrame)
-    // 		if err != nil {
-    // 			return n, err
-    // 		}
-    // 		n += len(chunk)
-    // 	}
-    // 	return
-    // }
+    fn write(&mut self, data: &[u8]) -> Result<usize, ()> {
+        let mut n = 0usize;
+        let mut data_copy = &data[..];
+    	while 0 < data_copy.len() {
+    		let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
+    		let mut chunk: &[u8];
+    		if DATA_MAX_SIZE < (data.len() as u32) {
+    			chunk = &data[..(DATA_MAX_SIZE as usize)];
+    			data_copy = &data_copy[(DATA_MAX_SIZE as usize)..];
+    		} else {
+    			chunk = data_copy;
+    			data_copy = &[0u8; 0];
+    		}
+    		let chunkLength = chunk.len();
+            BigEndian::write_u32_into(&[chunkLength as u32], &mut frame[..8]);
+            frame[(DATA_LEN_SIZE as usize)..].copy_from_slice(chunk);
 
+            let aead = new_hkdfchachapoly(self.shared_secret);
+    		// encrypt the frame
 
+    		let mut sealedFrame = [0u8; TAG_SIZE+(TOTAL_FRAME_SIZE as usize)];
+    		aead.seal(&self.send_nonce, &[0u8;0], &frame, &mut sealedFrame);
+    		incr2_nonce(&mut self.send_nonce);
+    		// end encryption
 
-    // // CONTRACT: data smaller than dataMaxSize is read atomically.
-    // func (sc *SecretConnection) Read(data []byte) (n int, err error) {
-    // 	if 0 < len(sc.recvBuffer) {
-    // 		n = copy(data, sc.recvBuffer)
-    // 		sc.recvBuffer = sc.recvBuffer[n:]
-    // 		return
-    // 	}
-    //
-    // 	aead, err := xchacha20poly1305.New(sc.shrSecret[:])
-    // 	if err != nil {
-    // 		return n, errors.New("Invalid SecretConnection Key")
-    // 	}
-    // 	sealedFrame := make([]byte, totalFrameSize+aead.Overhead())
-    // 	_, err = io.ReadFull(sc.conn, sealedFrame)
-    // 	if err != nil {
-    // 		return
-    // 	}
-    //
-    // 	// decrypt the frame
-    // 	var frame = make([]byte, totalFrameSize)
-    // 	// fmt.Printf("secretbox.Open(sealed:%X,recvNonce:%X,shrSecret:%X\n", sealedFrame, sc.recvNonce, sc.shrSecret)
-    // 	_, err = aead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
-    // 	if err != nil {
-    // 		return n, errors.New("Failed to decrypt SecretConnection")
-    // 	}
-    // 	incr2Nonce(sc.recvNonce)
-    // 	// end decryption
-    //
-    // 	var chunkLength = binary.BigEndian.Uint32(frame) // read the first two bytes
-    // 	if chunkLength > dataMaxSize {
-    // 		return 0, errors.New("chunkLength is greater than dataMaxSize")
-    // 	}
-    // 	var chunk = frame[dataLenSize : dataLenSize+chunkLength]
-    //
-    // 	n = copy(data, chunk)
-    // 	sc.recvBuffer = chunk[n:]
-    // 	return
-    // }
+            self.conn.write(&sealedFrame);
+    		n = n + chunk.len();
+    	}
+    	return Ok(n)
+    }
+
+    // CONTRACT: data smaller than dataMaxSize is read atomically.
+    fn read(&mut self, data: &mut [u8]) -> Result<usize, ()> {
+        let mut n = 0usize;
+    	if 0 < self.recv_buffer.len() {
+            n = cmp::min(data.len(), self.recv_buffer.len());
+            data.copy_from_slice(&self.recv_buffer[..n]);
+            let mut leftover_portion = vec![0; self.recv_buffer.len() - n];
+            leftover_portion.clone_from_slice(&self.recv_buffer[n..]);
+    		self.recv_buffer.clone_from_slice(&leftover_portion);
+    		return Ok(n)
+    	}
+
+        let aead = new_hkdfchachapoly(self.shared_secret);
+        let mut sealedFrame = [0u8; TAG_SIZE+(TOTAL_FRAME_SIZE as usize)];
+        self.conn.read_exact(&mut sealedFrame);
+
+    	// decrypt the frame
+		let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
+        let res = aead.open(&self.send_nonce, &[0u8;0], &sealedFrame, &mut frame);
+        let mut frame_copy = [0u8; TOTAL_FRAME_SIZE as usize];
+        frame_copy.clone_from_slice(&frame);
+        if res.is_err() {
+            return res;
+        }
+        incr2_nonce(&mut self.send_nonce);
+    	// end decryption
+
+        let mut chunk_length_specifier = vec![0; 2];
+        chunk_length_specifier.clone_from_slice(&frame[..2]);
+
+        let chunk_length = BigEndian::read_u32(&chunk_length_specifier);
+    	if chunk_length > DATA_MAX_SIZE {
+            // TODO: Err should say "chunk_length is greater than dataMaxSize", confused as to how to do this
+            return Err(())
+    	} else {
+            let mut chunk = vec![0; chunk_length as usize];
+            chunk.clone_from_slice(&frame_copy[(DATA_LEN_SIZE as usize)..(DATA_LEN_SIZE as usize + chunk_length as usize)]);
+            n = cmp::min(data.len(), chunk.len());
+            data.copy_from_slice(&chunk[..n]);
+    		self.recv_buffer.copy_from_slice(&chunk[n..]);
+        	return Ok(n)
+        }
+    }
 }
 
 //
