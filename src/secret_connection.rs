@@ -7,7 +7,8 @@ use error::Error;
 use std::io;
 use x25519_dalek::{diffie_hellman, generate_secret, generate_public};
 use rand::OsRng;
-
+use byteorder::{ByteOrder, BigEndian, LittleEndian};
+use hkdfchachapoly::{Aead, HkdfChaChaPoly, TAG_SIZE};
 
 // 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: u32 = 4;
@@ -36,25 +37,23 @@ impl <IoHandler: io::Read + io::Write> SecretConnection<IoHandler> {
     // CONTRACT: data smaller than dataMaxSize is read atomically.
     // fn Write(&self, data: &[u8]) -> Result<u32, ()> {
     // 	while 0 < data.len() {
-    // 		let frame = [0u8; TOTAL_FRAME_SIZE as usize];
-    // 		let chunk: [u8];
+    // 		let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
+    // 		let mut chunk: &[u8];
     // 		if DATA_MAX_SIZE < (data.len() as u32) {
-    // 			chunk = data[:DATA_MAX_SIZE];
-    // 			data = data[DATA_MAX_SIZE:];
+    // 			chunk = &data[..(DATA_MAX_SIZE as usize)];
+    // 			data = &data[(DATA_MAX_SIZE as usize)..];
     // 		} else {
     // 			chunk = data;
-    // 			data = nil;
+    // 			data = &[0u8; 0];
     // 		}
     // 		let chunkLength = chunk.len();
-    // 		binary.BigEndian.PutUint32(frame, uint32(chunkLength));
-    // 		copy(frame[dataLenSize:], chunk);
+    //         BigEndian::write_u32_into(&[chunkLength as u32], &mut frame[..8]);
+    //         frame[(DATA_LEN_SIZE as usize)..].copy_from_slice(chunk);
     //
-    // 		aead, err := xchacha20poly1305.New(sc.shrSecret[:])
-    // 		if err != nil {
-    // 			return n, errors.New("Invalid SecretConnection Key")
-    // 		}
+    //         let aead = HkdfChaChaPoly{key: self.shared_secret};
     // 		// encrypt the frame
-    // 		var sealedFrame = make([]byte, aead.Overhead()+totalFrameSize)
+    //
+    // 		let sealedFrame = [0u8; TAG_SIZE+TOTAL_FRAME_SIZE];
     // 		aead.Seal(sealedFrame[:0], sc.sendNonce[:], frame, nil)
     // 		// fmt.Printf("secretbox.Seal(sealed:%X,sendNonce:%X,shrSecret:%X\n", sealedFrame, sc.sendNonce, sc.shrSecret)
     // 		incr2Nonce(sc.sendNonce)
@@ -68,47 +67,51 @@ impl <IoHandler: io::Read + io::Write> SecretConnection<IoHandler> {
     // 	}
     // 	return
     // }
+
+
+
+    // // CONTRACT: data smaller than dataMaxSize is read atomically.
+    // func (sc *SecretConnection) Read(data []byte) (n int, err error) {
+    // 	if 0 < len(sc.recvBuffer) {
+    // 		n = copy(data, sc.recvBuffer)
+    // 		sc.recvBuffer = sc.recvBuffer[n:]
+    // 		return
+    // 	}
+    //
+    // 	aead, err := xchacha20poly1305.New(sc.shrSecret[:])
+    // 	if err != nil {
+    // 		return n, errors.New("Invalid SecretConnection Key")
+    // 	}
+    // 	sealedFrame := make([]byte, totalFrameSize+aead.Overhead())
+    // 	_, err = io.ReadFull(sc.conn, sealedFrame)
+    // 	if err != nil {
+    // 		return
+    // 	}
+    //
+    // 	// decrypt the frame
+    // 	var frame = make([]byte, totalFrameSize)
+    // 	// fmt.Printf("secretbox.Open(sealed:%X,recvNonce:%X,shrSecret:%X\n", sealedFrame, sc.recvNonce, sc.shrSecret)
+    // 	_, err = aead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
+    // 	if err != nil {
+    // 		return n, errors.New("Failed to decrypt SecretConnection")
+    // 	}
+    // 	incr2Nonce(sc.recvNonce)
+    // 	// end decryption
+    //
+    // 	var chunkLength = binary.BigEndian.Uint32(frame) // read the first two bytes
+    // 	if chunkLength > dataMaxSize {
+    // 		return 0, errors.New("chunkLength is greater than dataMaxSize")
+    // 	}
+    // 	var chunk = frame[dataLenSize : dataLenSize+chunkLength]
+    //
+    // 	n = copy(data, chunk)
+    // 	sc.recvBuffer = chunk[n:]
+    // 	return
+    // }
 }
 
 //
-// // CONTRACT: data smaller than dataMaxSize is read atomically.
-// func (sc *SecretConnection) Read(data []byte) (n int, err error) {
-// 	if 0 < len(sc.recvBuffer) {
-// 		n = copy(data, sc.recvBuffer)
-// 		sc.recvBuffer = sc.recvBuffer[n:]
-// 		return
-// 	}
-//
-// 	aead, err := xchacha20poly1305.New(sc.shrSecret[:])
-// 	if err != nil {
-// 		return n, errors.New("Invalid SecretConnection Key")
-// 	}
-// 	sealedFrame := make([]byte, totalFrameSize+aead.Overhead())
-// 	_, err = io.ReadFull(sc.conn, sealedFrame)
-// 	if err != nil {
-// 		return
-// 	}
-//
-// 	// decrypt the frame
-// 	var frame = make([]byte, totalFrameSize)
-// 	// fmt.Printf("secretbox.Open(sealed:%X,recvNonce:%X,shrSecret:%X\n", sealedFrame, sc.recvNonce, sc.shrSecret)
-// 	_, err = aead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
-// 	if err != nil {
-// 		return n, errors.New("Failed to decrypt SecretConnection")
-// 	}
-// 	incr2Nonce(sc.recvNonce)
-// 	// end decryption
-//
-// 	var chunkLength = binary.BigEndian.Uint32(frame) // read the first two bytes
-// 	if chunkLength > dataMaxSize {
-// 		return 0, errors.New("chunkLength is greater than dataMaxSize")
-// 	}
-// 	var chunk = frame[dataLenSize : dataLenSize+chunkLength]
-//
-// 	n = copy(data, chunk)
-// 	sc.recvBuffer = chunk[n:]
-// 	return
-// }
+
 //
 // // Implements net.Conn
 // func (sc *SecretConnection) Close() error                  { return sc.conn.Close() }

@@ -18,18 +18,18 @@ pub trait Aead {
 }
 
 // KEY_SIZE is the size of the key used by this AEAD, in bytes.
-const KEY_SIZE: usize = 32;
+pub const KEY_SIZE: usize = 32;
 // NONCE_SIZE is the size of the nonce used with this AEAD, in bytes.
-const NONCE_SIZE: usize = 24;
+pub const NONCE_SIZE: usize = 24;
 // CHACHA_NONCE_SIZE is the size of the nonce used in Chacha
-const CHACHA_NONCE_SIZE: usize = 12;
+pub const CHACHA_NONCE_SIZE: usize = 12;
 // TAG_SIZE is the size added from poly1305
-const TAG_SIZE: usize = 16;
+pub const TAG_SIZE: usize = 16;
 // MAX_PLAINTEXT_SIZE is the max size that can be passed into a single call of Seal
-const MAX_PLAINTEXT_SIZE: usize = (1 << 38) - 64;
+pub const MAX_PLAINTEXT_SIZE: usize = (1 << 38) - 64;
 // MAX_CIPHERTEXT_SIZE is the max size that can be passed into a single call of Open,
 // this differs from plaintext size due to the tag
-const MAX_CIPHERTEXT_SIZE: usize = MAX_PLAINTEXT_SIZE - 16;
+pub const MAX_CIPHERTEXT_SIZE: usize = MAX_PLAINTEXT_SIZE - 16;
 // HKDF_INFO is the parameter used internally for Hkdf's info parameter.
 const HKDF_INFO: &str = "TENDERMINT_SECRET_CONNECTION_FRAME_KEY_DERIVE";
 
@@ -48,9 +48,9 @@ impl Aead for HkdfChaChaPoly {
         //     return error!("Plaintext is greater than the maximum size")
         // }
 
-        let (subkey, chachaNonce) = get_subkey_and_chacha_nonce_from_hkdf(&self.key, &nonce);
+        let (subkey, chacha_nonce) = get_subkey_and_chacha_nonce_from_hkdf(&self.key, &nonce);
         let sealing_key = aead::SealingKey::new(&aead::CHACHA20_POLY1305, &subkey).unwrap();
-        aead::seal_in_place(&sealing_key, &chachaNonce, authtext, &mut out[..plaintext.len()+TAG_SIZE], 16).unwrap();
+        let res = aead::seal_in_place(&sealing_key, &chacha_nonce, authtext, &mut out[..plaintext.len()+TAG_SIZE], 16);
         Ok(plaintext.len() + TAG_SIZE)
     }
 
@@ -59,21 +59,20 @@ impl Aead for HkdfChaChaPoly {
         //     return error!("Plaintext is greater than the maximum size")
         // }
 
-        let (subkey, chachaNonce) = get_subkey_and_chacha_nonce_from_hkdf(&self.key, &nonce);
+        let (subkey, chacha_nonce) = get_subkey_and_chacha_nonce_from_hkdf(&self.key, &nonce);
         let opening_key = aead::OpeningKey::new(&aead::CHACHA20_POLY1305, &subkey).unwrap();
         // optimize if the provided buffer is sufficiently large
         if out.len() >= ciphertext.len() {
             let in_out = &mut out[..ciphertext.len()];
             in_out.copy_from_slice(ciphertext);
 
-            let len = aead::open_in_place(&opening_key, &chachaNonce, authtext, 0, in_out).map_err(|_| ())?
-                .len();
+            let len = aead::open_in_place(&opening_key, &chacha_nonce, authtext, 0, in_out).map_err(|_| ())?.len();
 
             Ok(len)
         } else {
             let mut in_out = ciphertext.to_vec();
 
-            let out0 = aead::open_in_place(&opening_key, &chachaNonce, authtext, 0, &mut in_out).map_err(|_| ())?;
+            let out0 = aead::open_in_place(&opening_key, &chacha_nonce, authtext, 0, &mut in_out).map_err(|_| ())?;
             out[..out0.len()].copy_from_slice(out0);
             Ok(out0.len())
         }
@@ -86,8 +85,10 @@ fn get_subkey_and_chacha_nonce_from_hkdf(cKey: &[u8; KEY_SIZE], nonce: &[u8; NON
     let info = HKDF_INFO.as_bytes();
 
     let hk = Hkdf::<Sha256>::extract(Some(nonce), cKey);
-    let subkey_vec = hk.expand(&info, KEY_SIZE);
-    let chacha_nonce_vec = hk.expand(&info, CHACHA_NONCE_SIZE);
+    let subkey_and_nonce_vec = hk.expand(&info, KEY_SIZE + CHACHA_NONCE_SIZE);
+
+    let subkey_vec = &subkey_and_nonce_vec[..KEY_SIZE];
+    let chacha_nonce_vec = &subkey_and_nonce_vec[KEY_SIZE..];
     // Now convert vectors into fix sized byte arr
     let mut subkey: [u8; KEY_SIZE] = [0; KEY_SIZE];
     let subkey_vec = &subkey_vec[..KEY_SIZE]; // panics if not enough data
@@ -134,8 +135,14 @@ mod tests {
             let mut nonce = [0u8; hkdfchachapoly::NONCE_SIZE];
             nonce[0] = byte_arr[0];
 
-            aead_instance.open(&nonce, &ciphertext, &byte_arr, &mut out);
+            let res = aead_instance.open(&nonce, &byte_arr, &ciphertext, &mut out);
+            assert_eq!(res.unwrap(), 1);
+            let mut expected = [0u8; 17];
+            expected[0] = byte_arr[0];
             assert_eq!(out, byte_arr);
+            let mut ct = [0u8; 17];
+            aead_instance.seal(&nonce, &byte_arr, &byte_arr, &mut ct);
+            assert_eq!(ct, ciphertext);
         }
     }
 
