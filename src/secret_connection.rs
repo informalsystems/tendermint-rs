@@ -131,64 +131,63 @@ impl <IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync> Secre
 // 	return sc.conn.(net.Conn).SetWriteDeadline(t)
 // }
 
-// // Performs handshake and returns a new authenticated SecretConnection.
-// fn MakeSecretConnection<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>(
-//      reader: IoReader, writer: IoWriter, local_privkey: Signer) -> SecretConnection<IoReader, IoWriter> {
-// 	let local_pubkey = generate_public(&local_privkey);
-//
-// 	// Generate ephemeral keys for perfect forward secrecy.
-// 	// let (local_eph_pubkey, local_eph_privkey) = genEphKeys();
-//     //
-// 	// // Write local ephemeral pubkey and receive one too.
-// 	// // NOTE: every 32-byte string is accepted as a Curve25519 public key
-// 	// // (see DJB's Curve25519 paper: http://cr.yp.to/ecdh/curve25519-20060209.pdf)
-// 	// remEphPub, err := shareEphPubKey(conn, locEphPub)
-// 	// if err != nil {
-// 	// 	return nil, err
-// 	// }
-//     //
-// 	// // Compute common shared secret.
-// 	// shrSecret := computeSharedSecret(remEphPub, locEphPriv)
-//     //
-// 	// // Sort by lexical order.
-// 	// loEphPub, hiEphPub := sort32(locEphPub, remEphPub)
-//     //
-// 	// // Check if the local ephemeral public key
-// 	// // was the least, lexicographically sorted.
-// 	// locIsLeast := bytes.Equal(locEphPub[:], loEphPub[:])
-//     //
-// 	// // Generate nonces to use for secretbox.
-// 	// recvNonce, sendNonce := genNonces(loEphPub, hiEphPub, locIsLeast)
-//     //
-// 	// // Generate common challenge to sign.
-// 	// challenge := genChallenge(loEphPub, hiEphPub)
-//     //
-// 	// // Construct SecretConnection.
-// 	// sc := &SecretConnection{
-// 	// 	conn:       conn,
-// 	// 	recvBuffer: nil,
-// 	// 	recvNonce:  recvNonce,
-// 	// 	sendNonce:  sendNonce,
-// 	// 	shrSecret:  shrSecret,
-// 	// }
-//     //
-// 	// // Sign the challenge bytes for authentication.
-// 	// locSignature := signChallenge(challenge, locPrivKey)
-//     //
-// 	// // Share (in secret) each other's pubkey & challenge signature
-// 	// authSigMsg, err := shareAuthSignature(sc, locPubKey, locSignature)
-// 	// if err != nil {
-// 	// 	return nil, err
-// 	// }
-// 	// remPubKey, remSignature := authSigMsg.Key, authSigMsg.Sig
-// 	// if !remPubKey.VerifyBytes(challenge[:], remSignature) {
-// 	// 	return nil, errors.New("Challenge verification failed")
-// 	// }
-//     //
-// 	// // We've authorized.
-// 	// sc.remPubKey = remPubKey
-// 	// return sc, nil
-// }
+// Performs handshake and returns a new authenticated SecretConnection.
+fn MakeSecretConnection<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>(
+     reader: IoReader, writer: IoWriter, local_privkey: Signer)
+     // -> SecretConnection<IoReader, IoWriter>
+     {
+	let local_pubkey = local_privkey.public_key();
+
+	// Generate ephemeral keys for perfect forward secrecy.
+	let (local_eph_pubkey, local_eph_privkey) = genEphKeys();
+
+	// Write local ephemeral pubkey and receive one too.
+	// NOTE: every 32-byte string is accepted as a Curve25519 public key
+	// (see DJB's Curve25519 paper: http://cr.yp.to/ecdh/curve25519-20060209.pdf)
+    // TODO: Figure out how to do static
+	let remote_eph_pubkey = share_eph_pubkey(&mut reader, &mut writer, &local_eph_pubkey).unwrap();
+
+	// Compute common shared secret.
+	let shared_secret = compute_shared_secret(&remote_eph_pubkey, &local_eph_privkey);
+
+	// Sort by lexical order.
+	let (low_eph_pubkey, high_eph_pubkey) = sort32(local_eph_pubkey, remote_eph_pubkey);
+
+	// Check if the local ephemeral public key
+	// was the least, lexicographically sorted.
+	let locIsLeast = (local_eph_pubkey == low_eph_pubkey);
+
+	// Generate nonces to use for secretbox.
+	let (recv_nonce, send_nonce) = gen_nonces(local_eph_pubkey, high_eph_pubkey, locIsLeast);
+
+	// Generate common challenge to sign.
+	let challenge = gen_challenge(local_eph_pubkey, high_eph_pubkey);
+
+	// Construct SecretConnection.
+	let sc = &SecretConnection{
+		reader:       reader,
+		writer:       writer,
+		recv_buffer: [0u8;0],
+		recv_nonce:  recv_nonce,
+		send_nonce:  send_nonce,
+		shared_secret:  shared_secret,
+	};
+
+	// Sign the challenge bytes for authentication.
+	let local_signature = sign_challenge(challenge, local_privkey);
+
+	// Share (in secret) each other's pubkey & challenge signature
+	// let authSigMsg = share_auth_signature(sc, locPubKey, locSignature).unwrap();
+    //
+	// let remote_pubkey, remote_signature = authSigMsg.Key, authSigMsg.Sig
+	// if !remPubKey.VerifyBytes(challenge[:], remSignature) {
+	// 	return nil, errors.New("Challenge verification failed")
+	// }
+    //
+	// // We've authorized.
+	// sc.remote_pubkey = remote_pubkey
+	// return sc, nil
+}
 
 // Returns pubkey, private key
 fn genEphKeys() -> ([u8; 32], [u8; 32]) {
@@ -200,8 +199,8 @@ fn genEphKeys() -> ([u8; 32], [u8; 32]) {
 
 // Returns remote_eph_pubkey
 // TODO: Ask if this is the correct way to have the readers and writers in threads
-fn share_eph_pubkey<IoWriter: io::Write + Send + Sync + io::Read, IoReader: io::Read + Send + Sync>
- (writer: &'static mut IoWriter, reader: &'static mut IoReader, local_eph_pubkey: &'static [u8;32])
+fn share_eph_pubkey<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>
+ (reader: &'static mut IoReader, writer: &'static mut IoWriter, local_eph_pubkey: &'static [u8;32])
 -> Result<[u8;32], ()>
   {
 	// Send our pubkey and receive theirs in tandem.
