@@ -5,12 +5,13 @@ use ed25519::{Signer};
 use signatory::ed25519::Signature;
 use error::Error;
 use std::{io, cmp};
+use bytes::{Buf, BufMut};
 use x25519_dalek::{diffie_hellman, generate_secret, generate_public};
 use rand::OsRng;
-use byteorder::{ByteOrder, BigEndian, LittleEndian};
+use byteorder::{ByteOrder, BigEndian};
 use hkdfchachapoly::{Aead, TAG_SIZE, new_hkdfchachapoly};
 use std::marker::{Sync, Send};
-use amino::amino_bytes;
+use amino::*;
 use std::thread;
 use std::io::Cursor;
 
@@ -20,9 +21,10 @@ const DATA_LEN_SIZE: u32 = 4;
 const DATA_MAX_SIZE: u32 = 1024;
 const TOTAL_FRAME_SIZE: u32 = DATA_MAX_SIZE + DATA_LEN_SIZE;
 // 16 is the size of the mac tag
-const SEALED_FRAME_SIZE: u32 = TOTAL_FRAME_SIZE + 16;
+const SEALED_FRAME_SIZE: u32 = TOTAL_FRAME_SIZE + TAG_SIZE as u32;
 
 // Implements net.Conn
+// TODO: Fix errors due to the last element not being constant size
 struct SecretConnection<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>  {
 	io_reader:       IoReader,
     io_writer:       IoWriter,
@@ -164,14 +166,14 @@ fn MakeSecretConnection<IoReader: io::Read + Send + Sync, IoWriter: io::Write + 
 	let challenge = gen_challenge(local_eph_pubkey, high_eph_pubkey);
 
 	// Construct SecretConnection.
-	let sc = &SecretConnection{
-		reader:       reader,
-		writer:       writer,
-		recv_buffer: [0u8;0],
-		recv_nonce:  recv_nonce,
-		send_nonce:  send_nonce,
-		shared_secret:  shared_secret,
-	};
+	// let sc = &SecretConnection{
+	// 	reader:       reader,
+	// 	writer:       writer,
+	// 	recv_buffer: [0u8;0],
+	// 	recv_nonce:  recv_nonce,
+	// 	send_nonce:  send_nonce,
+	// 	shared_secret:  shared_secret,
+	// };
 
 	// Sign the challenge bytes for authentication.
 	let local_signature = sign_challenge(challenge, local_privkey);
@@ -287,44 +289,78 @@ fn gen_challenge(lo_pubkey: [u8; 32], hi_pubkey: [u8; 32]) -> [u8; 32] {
 fn sign_challenge(challenge: [u8; 32], local_privkey: Signer) -> Result<Signature, Error> {
 	return local_privkey.sign(&challenge[0..32])
 }
-//
-// type authSigMessage struct {
-// 	Key crypto.PubKey
-// 	Sig crypto.Signature
-// }
-//
-// fn shareAuthSignature(sc *SecretConnection, pubKey crypto.PubKey, signature crypto.Signature) (recvMsg authSigMessage, err error) {
-//
-// 	// Send our info and receive theirs in tandem.
-// 	var trs, _ = cmn.Parallel(
-// 		func(_ int) (val interface{}, err error, abort bool) {
-// 			var _, err1 = cdc.MarshalBinaryWriter(sc, authSigMessage{pubKey, signature})
-// 			if err1 != nil {
-// 				return nil, err1, true // abort
-// 			} else {
-// 				return nil, nil, false
-// 			}
-// 		},
-// 		func(_ int) (val interface{}, err error, abort bool) {
-// 			var _recvMsg authSigMessage
-// 			var _, err2 = cdc.UnmarshalBinaryReader(sc, &_recvMsg, 1024*1024) // TODO
-// 			if err2 != nil {
-// 				return nil, err2, true // abort
-// 			} else {
-// 				return _recvMsg, nil, false
-// 			}
-// 		},
-// 	)
-//
-// 	// If error:
-// 	if trs.FirstError() != nil {
-// 		err = trs.FirstError()
-// 		return
-// 	}
-//
-// 	var _recvMsg = trs.FirstValue().(authSigMessage)
-// 	return _recvMsg, nil
-// }
+
+struct auth_sig_message {
+	Key: [u8; 32],
+	Sig: [u8; 64],
+}
+
+// TODO: Test if this works, I have no idea what the encoding is doing underneath.
+impl Amino for auth_sig_message {
+    fn deserialize(data: &[u8]) -> Result<auth_sig_message, DecodeError> {
+        let mut buf = Cursor::new(data);
+        consume_length(&mut buf)?;
+
+        check_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf)?;
+        let key_vec = amino_bytes::decode(&mut buf)?;
+        let mut key = [0u8; 32];
+        key.copy_from_slice(&key_vec);
+
+        check_field_number_typ3(2, Typ3Byte::Typ3_ByteLength, &mut buf)?;
+        let sig_vec = amino_bytes::decode(&mut buf)?;
+        let mut sig = [0u8; 64];
+        sig.copy_from_slice(&sig_vec);
+
+        Ok(auth_sig_message {
+            Key: key,
+            Sig: sig,
+        })
+    }
+
+    fn serialize(self) -> Vec<u8> {
+        let mut buf = vec![];
+
+        // encode the Validator Address
+        encode_field_number_typ3(1, Typ3Byte::Typ3_Struct, &mut buf);
+        {
+            // encode the Key
+            encode_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf);
+            amino_bytes::encode(&self.Key, &mut buf);
+            // encode the Key
+            encode_field_number_typ3(2, Typ3Byte::Typ3_ByteLength, &mut buf);
+            amino_bytes::encode(&self.Sig, &mut buf);
+        }
+        buf.put(typ3_to_byte(Typ3Byte::Typ3_StructTerm));
+
+        let mut length_buf = vec![];
+        encode_uvarint(buf.len() as u64, &mut length_buf);
+        length_buf.append(&mut buf);
+
+        return length_buf;
+    }
+}
+
+fn share_auth_signature<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>
+(sc: SecretConnection<IoReader, IoWriter>, pubkey: [u8; 32], signature: Signature) ->
+Result<auth_sig_message, DecodeError> {
+    let amsg = auth_sig_message{Key: pubkey, Sig: signature.into_bytes()};
+    let handle1 = thread::spawn(move || {
+        let mut buf = vec![0; 0];
+        // TODO: Figure out how to amino decode/encode this struct, check errors
+        sc.io_writer.write(&amsg.serialize());
+    });
+    let handle2 = thread::spawn(move || {
+        let mut buf = vec![];
+        sc.io_reader.read(&mut buf);
+        // TODO: Figure out how to amino decode/encode this struct, check errors
+        &auth_sig_message::deserialize(&buf)
+    });
+
+    handle1.join().unwrap();
+    let remote_auth_sig_message = handle2.join().unwrap();
+
+    return *remote_auth_sig_message
+}
 
 fn hash32(input: &[u8]) -> [u8; 32] {
     let salt = "".as_bytes();
