@@ -1,11 +1,11 @@
-use ring::aead;
-use byteorder::{ByteOrder, BigEndian, LittleEndian};
-use hkdf::Hkdf;
-use sha2::Sha256;
+use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use error::Error;
+use hkdf::Hkdf;
+use ring::aead;
+use sha2::Sha256;
 
 pub struct HkdfChaChaPoly {
-    key: [u8; 32]
+    key: [u8; 32],
 }
 
 /// Provides aead operations
@@ -13,8 +13,20 @@ pub trait Aead {
     fn name(&self) -> &'static str;
 
     fn set(&mut self, key: [u8; 32]);
-    fn seal(&self, nonce: &[u8; NONCE_SIZE], authtext: &[u8], plaintext: &[u8], out: &mut[u8]) -> Result<usize, ()>;
-    fn open(&self, nonce: &[u8; NONCE_SIZE], authtext: &[u8], ciphertext: &[u8], out: &mut[u8]) -> Result<usize, ()>;
+    fn seal(
+        &self,
+        nonce: &[u8; NONCE_SIZE],
+        authtext: &[u8],
+        plaintext: &[u8],
+        out: &mut [u8],
+    ) -> Result<usize, ()>;
+    fn open(
+        &self,
+        nonce: &[u8; NONCE_SIZE],
+        authtext: &[u8],
+        ciphertext: &[u8],
+        out: &mut [u8],
+    ) -> Result<usize, ()>;
 }
 
 // KEY_SIZE is the size of the key used by this AEAD, in bytes.
@@ -42,7 +54,13 @@ impl Aead for HkdfChaChaPoly {
         self.key = key;
     }
 
-    fn seal(&self, nonce: &[u8; NONCE_SIZE], authtext: &[u8], plaintext: &[u8], out: &mut [u8]) -> Result<usize, ()> {
+    fn seal(
+        &self,
+        nonce: &[u8; NONCE_SIZE],
+        authtext: &[u8],
+        plaintext: &[u8],
+        out: &mut [u8],
+    ) -> Result<usize, ()> {
         out[..plaintext.len()].copy_from_slice(plaintext);
         // if plaintext.len() > MAX_PLAINTEXT_SIZE {
         //     return error!("Plaintext is greater than the maximum size")
@@ -50,11 +68,23 @@ impl Aead for HkdfChaChaPoly {
 
         let (subkey, chacha_nonce) = get_subkey_and_chacha_nonce_from_hkdf(&self.key, &nonce);
         let sealing_key = aead::SealingKey::new(&aead::CHACHA20_POLY1305, &subkey).unwrap();
-        let res = aead::seal_in_place(&sealing_key, &chacha_nonce, authtext, &mut out[..plaintext.len()+TAG_SIZE], 16);
+        let res = aead::seal_in_place(
+            &sealing_key,
+            &chacha_nonce,
+            authtext,
+            &mut out[..plaintext.len() + TAG_SIZE],
+            16,
+        );
         Ok(plaintext.len() + TAG_SIZE)
     }
 
-    fn open(&self, nonce: &[u8; NONCE_SIZE], authtext: &[u8], ciphertext: &[u8], out: &mut [u8]) -> Result<usize, ()> {
+    fn open(
+        &self,
+        nonce: &[u8; NONCE_SIZE],
+        authtext: &[u8],
+        ciphertext: &[u8],
+        out: &mut [u8],
+    ) -> Result<usize, ()> {
         // if ciphertext.len() > MAX_CIPHERTEXT_SIZE {
         //     return error!("Plaintext is greater than the maximum size")
         // }
@@ -66,13 +96,16 @@ impl Aead for HkdfChaChaPoly {
             let in_out = &mut out[..ciphertext.len()];
             in_out.copy_from_slice(ciphertext);
 
-            let len = aead::open_in_place(&opening_key, &chacha_nonce, authtext, 0, in_out).map_err(|_| ())?.len();
+            let len = aead::open_in_place(&opening_key, &chacha_nonce, authtext, 0, in_out)
+                .map_err(|_| ())?
+                .len();
 
             Ok(len)
         } else {
             let mut in_out = ciphertext.to_vec();
 
-            let out0 = aead::open_in_place(&opening_key, &chacha_nonce, authtext, 0, &mut in_out).map_err(|_| ())?;
+            let out0 = aead::open_in_place(&opening_key, &chacha_nonce, authtext, 0, &mut in_out)
+                .map_err(|_| ())?;
             out[..out0.len()].copy_from_slice(out0);
             Ok(out0.len())
         }
@@ -80,12 +113,14 @@ impl Aead for HkdfChaChaPoly {
 }
 
 pub fn new_hkdfchachapoly(key: [u8; 32]) -> HkdfChaChaPoly {
-    return HkdfChaChaPoly{key: key}
+    return HkdfChaChaPoly { key: key };
 }
 
 // Returns subkey and chacha nonce
-fn get_subkey_and_chacha_nonce_from_hkdf(cKey: &[u8; KEY_SIZE], nonce: &[u8; NONCE_SIZE])
- -> ([u8; KEY_SIZE], [u8; CHACHA_NONCE_SIZE]){
+fn get_subkey_and_chacha_nonce_from_hkdf(
+    cKey: &[u8; KEY_SIZE],
+    nonce: &[u8; NONCE_SIZE],
+) -> ([u8; KEY_SIZE], [u8; CHACHA_NONCE_SIZE]) {
     let info = HKDF_INFO.as_bytes();
 
     let hk = Hkdf::<Sha256>::extract(Some(nonce), cKey);
@@ -101,23 +136,25 @@ fn get_subkey_and_chacha_nonce_from_hkdf(cKey: &[u8; KEY_SIZE], nonce: &[u8; NON
     let mut chacha_nonce: [u8; CHACHA_NONCE_SIZE] = [0; CHACHA_NONCE_SIZE];
     let chacha_nonce_vec = &chacha_nonce_vec[..CHACHA_NONCE_SIZE]; // panics if not enough data
     chacha_nonce.copy_from_slice(chacha_nonce_vec);
-	return (subkey, chacha_nonce);
+    return (subkey, chacha_nonce);
 }
 
 #[cfg(test)]
 mod tests {
+    use hex;
     use hkdfchachapoly;
     use hkdfchachapoly::Aead;
-    use hex;
     #[test]
     fn test_vector() {
-        let key_vec = hex::decode("56f8de45d3c294c7675bcaf457bdd4b71c380b9b2408ce9412b348d0f08b69ee").unwrap();
+        let key_vec = hex::decode(
+            "56f8de45d3c294c7675bcaf457bdd4b71c380b9b2408ce9412b348d0f08b69ee",
+        ).unwrap();
         // Now convert vector into fix sized byte arr
         let mut key: [u8; hkdfchachapoly::KEY_SIZE] = [0; hkdfchachapoly::KEY_SIZE];
         let key_vec = &key_vec[..hkdfchachapoly::KEY_SIZE]; // panics if not enough data
         key.copy_from_slice(key_vec);
 
-        let aead_instance = hkdfchachapoly::HkdfChaChaPoly{key: key};
+        let aead_instance = hkdfchachapoly::HkdfChaChaPoly { key: key };
 
         let mut ciphertexts: [&str; 10] = [""; 10];
         ciphertexts[0] = "e20a8bf42c535ac30125cfc52031577f0b";

@@ -1,20 +1,19 @@
+use amino::*;
+use byteorder::{BigEndian, ByteOrder};
+use bytes::{Buf, BufMut};
+use ed25519::Signer;
+use error::Error;
 #[allow(dead_code)]
 use hkdf::Hkdf;
-use sha2::Sha256;
-use ed25519::{Signer};
-use signatory::ed25519::Signature;
-use error::Error;
-use std::{io, cmp};
-use bytes::{Buf, BufMut};
-use x25519_dalek::{diffie_hellman, generate_secret, generate_public};
+use hkdfchachapoly::{new_hkdfchachapoly, Aead, TAG_SIZE};
 use rand::OsRng;
-use byteorder::{ByteOrder, BigEndian};
-use hkdfchachapoly::{Aead, TAG_SIZE, new_hkdfchachapoly};
-use std::marker::{Sync, Send};
-use amino::*;
-use std::thread;
+use sha2::Sha256;
+use signatory::ed25519::Signature;
 use std::io::Cursor;
-
+use std::marker::{Send, Sync};
+use std::thread;
+use std::{cmp, io};
+use x25519_dalek::{diffie_hellman, generate_public, generate_secret};
 
 // 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: u32 = 4;
@@ -25,18 +24,20 @@ const SEALED_FRAME_SIZE: u32 = TOTAL_FRAME_SIZE + TAG_SIZE as u32;
 
 // Implements net.Conn
 // TODO: Fix errors due to the last element not being constant size
-struct SecretConnection<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>  {
-	io_reader:       IoReader,
-    io_writer:       IoWriter,
-	recv_nonce:  [u8; 24],
-	send_nonce:  [u8; 24],
-	remote_pubkey:  [u8; 32],
-	shared_secret:  [u8; 32], // shared secret
-	recv_buffer: [u8;1024],
+struct SecretConnection<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync> {
+    io_reader: IoReader,
+    io_writer: IoWriter,
+    recv_nonce: [u8; 24],
+    send_nonce: [u8; 24],
+    remote_pubkey: [u8; 32],
+    shared_secret: [u8; 32], // shared secret
+    recv_buffer: [u8; 1024],
 }
 
 // TODO: Test read/write
-impl <IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync> SecretConnection<IoReader, IoWriter> {
+impl<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>
+    SecretConnection<IoReader, IoWriter>
+{
     // Returns authenticated remote pubkey
     fn RemotePubKey(&self) -> [u8; 32] {
         self.remote_pubkey
@@ -47,75 +48,78 @@ impl <IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync> Secre
     fn write(&mut self, data: &[u8]) -> Result<usize, ()> {
         let mut n = 0usize;
         let mut data_copy = &data[..];
-    	while 0 < data_copy.len() {
-    		let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
-    		let mut chunk: &[u8];
-    		if DATA_MAX_SIZE < (data.len() as u32) {
-    			chunk = &data[..(DATA_MAX_SIZE as usize)];
-    			data_copy = &data_copy[(DATA_MAX_SIZE as usize)..];
-    		} else {
-    			chunk = data_copy;
-    			data_copy = &[0u8; 0];
-    		}
-    		let chunkLength = chunk.len();
+        while 0 < data_copy.len() {
+            let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
+            let mut chunk: &[u8];
+            if DATA_MAX_SIZE < (data.len() as u32) {
+                chunk = &data[..(DATA_MAX_SIZE as usize)];
+                data_copy = &data_copy[(DATA_MAX_SIZE as usize)..];
+            } else {
+                chunk = data_copy;
+                data_copy = &[0u8; 0];
+            }
+            let chunkLength = chunk.len();
             BigEndian::write_u32_into(&[chunkLength as u32], &mut frame[..8]);
             frame[(DATA_LEN_SIZE as usize)..].copy_from_slice(chunk);
 
             let aead = new_hkdfchachapoly(self.shared_secret);
-    		// encrypt the frame
+            // encrypt the frame
 
-    		let mut sealedFrame = [0u8; TAG_SIZE+(TOTAL_FRAME_SIZE as usize)];
-    		aead.seal(&self.send_nonce, &[0u8;0], &frame, &mut sealedFrame);
-    		incr2_nonce(&mut self.send_nonce);
-    		// end encryption
+            let mut sealedFrame = [0u8; TAG_SIZE + (TOTAL_FRAME_SIZE as usize)];
+            aead.seal(&self.send_nonce, &[0u8; 0], &frame, &mut sealedFrame);
+            incr2_nonce(&mut self.send_nonce);
+            // end encryption
 
             self.io_writer.write(&sealedFrame);
-    		n = n + chunk.len();
-    	}
-    	return Ok(n)
+            n = n + chunk.len();
+        }
+        return Ok(n);
     }
 
     // CONTRACT: data smaller than dataMaxSize is read atomically.
     fn read(&mut self, data: &mut [u8]) -> Result<usize, ()> {
         let mut n = 0usize;
-    	if 0 < self.recv_buffer.len() {
+        if 0 < self.recv_buffer.len() {
             n = cmp::min(data.len(), self.recv_buffer.len());
             data.copy_from_slice(&self.recv_buffer[..n]);
             let mut leftover_portion = vec![0; self.recv_buffer.len() - n];
             leftover_portion.clone_from_slice(&self.recv_buffer[n..]);
-    		self.recv_buffer.clone_from_slice(&leftover_portion);
-    		return Ok(n)
-    	}
+            self.recv_buffer.clone_from_slice(&leftover_portion);
+            return Ok(n);
+        }
 
         let aead = new_hkdfchachapoly(self.shared_secret);
-        let mut sealedFrame = [0u8; TAG_SIZE+(TOTAL_FRAME_SIZE as usize)];
+        let mut sealedFrame = [0u8; TAG_SIZE + (TOTAL_FRAME_SIZE as usize)];
         self.io_reader.read_exact(&mut sealedFrame);
 
-    	// decrypt the frame
-		let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
-        let res = aead.open(&self.send_nonce, &[0u8;0], &sealedFrame, &mut frame);
+        // decrypt the frame
+        let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
+        let res = aead.open(&self.send_nonce, &[0u8; 0], &sealedFrame, &mut frame);
         let mut frame_copy = [0u8; TOTAL_FRAME_SIZE as usize];
         frame_copy.clone_from_slice(&frame);
         if res.is_err() {
             return res;
         }
         incr2_nonce(&mut self.send_nonce);
-    	// end decryption
+        // end decryption
 
         let mut chunk_length_specifier = vec![0; 2];
         chunk_length_specifier.clone_from_slice(&frame[..2]);
 
         let chunk_length = BigEndian::read_u32(&chunk_length_specifier);
-    	if chunk_length > DATA_MAX_SIZE {
+        if chunk_length > DATA_MAX_SIZE {
             // TODO: Err should say "chunk_length is greater than dataMaxSize", confused as to how to do this
-            return Err(())
-    	} else {
+            return Err(());
+        } else {
             let mut chunk = vec![0; chunk_length as usize];
-            chunk.clone_from_slice(&frame_copy[(DATA_LEN_SIZE as usize)..(DATA_LEN_SIZE as usize + chunk_length as usize)]);
+            chunk.clone_from_slice(
+                &frame_copy
+                    [(DATA_LEN_SIZE as usize)..(DATA_LEN_SIZE as usize + chunk_length as usize)],
+            );
             n = cmp::min(data.len(), chunk.len());
             data.copy_from_slice(&chunk[..n]);
-    		self.recv_buffer.copy_from_slice(&chunk[n..]);
-        	return Ok(n)
+            self.recv_buffer.copy_from_slice(&chunk[n..]);
+            return Ok(n);
         }
     }
 }
@@ -134,82 +138,89 @@ impl <IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync> Secre
 // }
 
 // Performs handshake and returns a new authenticated SecretConnection.
-fn MakeSecretConnection<'a, IoReader: io::Read + Send + Sync+'a, IoWriter: io::Write + Send + Sync +'a>(
-     mut reader: IoReader, mut writer: IoWriter, local_privkey: Signer)-> SecretConnection<IoReader, IoWriter>
-     {
-	let local_pubkey = local_privkey.public_key();
+fn MakeSecretConnection<
+    'a,
+    IoReader: io::Read + Send + Sync + 'a,
+    IoWriter: io::Write + Send + Sync + 'a,
+>(
+    mut reader: IoReader,
+    mut writer: IoWriter,
+    local_privkey: Signer,
+) -> SecretConnection<IoReader, IoWriter> {
+    let local_pubkey = local_privkey.public_key();
 
-	// Generate ephemeral keys for perfect forward secrecy.
-	let (local_eph_pubkey, local_eph_privkey) = genEphKeys();
+    // Generate ephemeral keys for perfect forward secrecy.
+    let (local_eph_pubkey, local_eph_privkey) = genEphKeys();
 
-	// Write local ephemeral pubkey and receive one too.
-	// NOTE: every 32-byte string is accepted as a Curve25519 public key
-	// (see DJB's Curve25519 paper: http://cr.yp.to/ecdh/curve25519-20060209.pdf)
+    // Write local ephemeral pubkey and receive one too.
+    // NOTE: every 32-byte string is accepted as a Curve25519 public key
+    // (see DJB's Curve25519 paper: http://cr.yp.to/ecdh/curve25519-20060209.pdf)
     // TODO: Figure out how to do static
-	let remote_eph_pubkey = share_eph_pubkey(&mut reader, &mut writer, &local_eph_pubkey).unwrap();
+    let remote_eph_pubkey = share_eph_pubkey(&mut reader, &mut writer, &local_eph_pubkey).unwrap();
 
-	// Compute common shared secret.
-	let shared_secret = compute_shared_secret(&remote_eph_pubkey, &local_eph_privkey);
+    // Compute common shared secret.
+    let shared_secret = compute_shared_secret(&remote_eph_pubkey, &local_eph_privkey);
 
-	// Sort by lexical order.
-	let (low_eph_pubkey, high_eph_pubkey) = sort32(local_eph_pubkey, remote_eph_pubkey);
+    // Sort by lexical order.
+    let (low_eph_pubkey, high_eph_pubkey) = sort32(local_eph_pubkey, remote_eph_pubkey);
 
-	// Check if the local ephemeral public key
-	// was the least, lexicographically sorted.
-	let locIsLeast = (local_eph_pubkey == low_eph_pubkey);
+    // Check if the local ephemeral public key
+    // was the least, lexicographically sorted.
+    let locIsLeast = (local_eph_pubkey == low_eph_pubkey);
 
-	// Generate nonces to use for secretbox.
-	let (recv_nonce, send_nonce) = gen_nonces(local_eph_pubkey, high_eph_pubkey, locIsLeast);
+    // Generate nonces to use for secretbox.
+    let (recv_nonce, send_nonce) = gen_nonces(local_eph_pubkey, high_eph_pubkey, locIsLeast);
 
-	// Generate common challenge to sign.
-	let challenge = gen_challenge(local_eph_pubkey, high_eph_pubkey);
+    // Generate common challenge to sign.
+    let challenge = gen_challenge(local_eph_pubkey, high_eph_pubkey);
 
-	// Construct SecretConnection.
-	let sc = SecretConnection{
-		io_reader:       reader,
-		io_writer:       writer,
-		recv_buffer: [0u8;1024],
-		recv_nonce:  recv_nonce,
-		send_nonce:  send_nonce,
-		shared_secret:  shared_secret,
-        remote_pubkey:remote_eph_pubkey,
-	};
+    // Construct SecretConnection.
+    let sc = SecretConnection {
+        io_reader: reader,
+        io_writer: writer,
+        recv_buffer: [0u8; 1024],
+        recv_nonce: recv_nonce,
+        send_nonce: send_nonce,
+        shared_secret: shared_secret,
+        remote_pubkey: remote_eph_pubkey,
+    };
 
-	// Sign the challenge bytes for authentication.
-	let local_signature = sign_challenge(challenge, local_privkey);
+    // Sign the challenge bytes for authentication.
+    let local_signature = sign_challenge(challenge, local_privkey);
 
-	// Share (in secret) each other's pubkey & challenge signature
-	// let authSigMsg = share_auth_signature(sc, locPubKey, locSignature).unwrap();
+    // Share (in secret) each other's pubkey & challenge signature
+    // let authSigMsg = share_auth_signature(sc, locPubKey, locSignature).unwrap();
     //
-	// let remote_pubkey, remote_signature = authSigMsg.Key, authSigMsg.Sig
-	// if !remPubKey.VerifyBytes(challenge[:], remSignature) {
-	// 	return nil, errors.New("Challenge verification failed")
-	// }
+    // let remote_pubkey, remote_signature = authSigMsg.Key, authSigMsg.Sig
+    // if !remPubKey.VerifyBytes(challenge[:], remSignature) {
+    // 	return nil, errors.New("Challenge verification failed")
+    // }
     //
-	// // We've authorized.
-	// sc.remote_pubkey = remote_pubkey
-	return sc;
+    // // We've authorized.
+    // sc.remote_pubkey = remote_pubkey
+    return sc;
 }
 
 // Returns pubkey, private key
 fn genEphKeys() -> ([u8; 32], [u8; 32]) {
     let mut local_csprng = OsRng::new().unwrap();
-    let     local_privkey = generate_secret(&mut local_csprng);
-    let     local_pubkey = generate_public(&local_privkey);
-	return (local_pubkey.to_bytes(), local_privkey)
+    let local_privkey = generate_secret(&mut local_csprng);
+    let local_pubkey = generate_public(&local_privkey);
+    return (local_pubkey.to_bytes(), local_privkey);
 }
 
 // Returns remote_eph_pubkey
 // TODO: Ask if this is the correct way to have the readers and writers in threads
-fn share_eph_pubkey<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>
- (reader: &mut IoReader, writer: &mut IoWriter, local_eph_pubkey: &[u8;32])
--> Result<[u8;32], ()>
-  {
-	// Send our pubkey and receive theirs in tandem.
+fn share_eph_pubkey<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>(
+    reader: &mut IoReader,
+    writer: &mut IoWriter,
+    local_eph_pubkey: &[u8; 32],
+) -> Result<[u8; 32], ()> {
+    // Send our pubkey and receive theirs in tandem.
     let mut buf = vec![0; 0];
     amino_bytes::encode(local_eph_pubkey, &mut buf);
     writer.write(&buf);
-   
+
     let mut buf = vec![];
     reader.read(&mut buf);
     let mut amino_buf = Cursor::new(buf);
@@ -281,12 +292,12 @@ fn gen_challenge(lo_pubkey: [u8; 32], hi_pubkey: [u8; 32]) -> [u8; 32] {
 
 // Sign the challenge with the local private key
 fn sign_challenge(challenge: [u8; 32], local_privkey: Signer) -> Result<Signature, Error> {
-	return local_privkey.sign(&challenge[0..32])
+    return local_privkey.sign(&challenge[0..32]);
 }
 
 struct auth_sig_message {
-	Key: [u8; 32],
-	Sig: [u8; 64],
+    Key: [u8; 32],
+    Sig: [u8; 64],
 }
 
 // TODO: Test if this works, I have no idea what the encoding is doing underneath.
@@ -305,10 +316,7 @@ impl Amino for auth_sig_message {
         let mut sig = [0u8; 64];
         sig.copy_from_slice(&sig_vec);
 
-        Ok(auth_sig_message {
-            Key: key,
-            Sig: sig,
-        })
+        Ok(auth_sig_message { Key: key, Sig: sig })
     }
 
     fn serialize(self) -> Vec<u8> {
@@ -334,16 +342,20 @@ impl Amino for auth_sig_message {
     }
 }
 
-fn share_auth_signature<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>
-(mut sc: SecretConnection<IoReader, IoWriter>, pubkey: [u8; 32], signature: Signature) ->
-Result<auth_sig_message, DecodeError> {
-    let amsg = auth_sig_message{Key: pubkey, Sig: signature.into_bytes()};
-     // TODO: Figure out how to amino decode/encode this struct, check errors
+fn share_auth_signature<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>(
+    mut sc: SecretConnection<IoReader, IoWriter>,
+    pubkey: [u8; 32],
+    signature: Signature,
+) -> Result<auth_sig_message, DecodeError> {
+    let amsg = auth_sig_message {
+        Key: pubkey,
+        Sig: signature.into_bytes(),
+    };
+    // TODO: Figure out how to amino decode/encode this struct, check errors
     sc.io_writer.write(&amsg.serialize());
     let mut buf = vec![];
     sc.io_reader.read(&mut buf);
     auth_sig_message::deserialize(&buf)
-
 }
 
 fn hash32(input: &[u8]) -> [u8; 32] {
@@ -402,12 +414,12 @@ mod tests {
     fn test_sort() {
         // sanity check
         let t1 = [
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
         ];
         let t2 = [
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 1,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1,
         ];
         let (ref t3, ref t4) = secret_connection::sort32(t1, t2);
         assert_eq!(t1, *t3);
@@ -419,8 +431,8 @@ mod tests {
         // Single test vector created against go implementation
         let t = secret_connection::hash32(&[0, 0, 0, 0]);
         let expected: [u8; 32] = [
-            20, 4, 134, 42, 238, 181, 232, 222, 228, 231, 42, 153, 251, 130, 165, 55, 53, 121,
-            78, 134, 189, 245, 251, 252, 129, 73, 2, 52, 163, 111, 7, 71,
+            20, 4, 134, 42, 238, 181, 232, 222, 228, 231, 42, 153, 251, 130, 165, 55, 53, 121, 78,
+            134, 189, 245, 251, 252, 129, 73, 2, 52, 163, 111, 7, 71,
         ];
         assert_eq!(t, expected);
     }
@@ -430,8 +442,8 @@ mod tests {
         // Single test vector created against go implementation
         let t = secret_connection::hash24(&[0, 0, 0, 0]);
         let expected: [u8; 24] = [
-            201, 60, 46, 37, 116, 170, 172, 244, 248, 110, 1, 142, 64, 194, 90, 157, 98, 143,
-            226, 116, 219, 55, 115, 243,
+            201, 60, 46, 37, 116, 170, 172, 244, 248, 110, 1, 142, 64, 194, 90, 157, 98, 143, 226,
+            116, 219, 55, 115, 243,
         ];
         assert_eq!(t, expected);
     }
