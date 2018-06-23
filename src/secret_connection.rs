@@ -32,7 +32,7 @@ struct SecretConnection<IoReader: io::Read + Send + Sync, IoWriter: io::Write + 
 	send_nonce:  [u8; 24],
 	remote_pubkey:  [u8; 32],
 	shared_secret:  [u8; 32], // shared secret
-	recv_buffer: [u8],
+	recv_buffer: [u8;1024],
 }
 
 // TODO: Test read/write
@@ -134,9 +134,8 @@ impl <IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync> Secre
 // }
 
 // Performs handshake and returns a new authenticated SecretConnection.
-fn MakeSecretConnection<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>(
-     reader: IoReader, writer: IoWriter, local_privkey: Signer)
-     // -> SecretConnection<IoReader, IoWriter>
+fn MakeSecretConnection<'a, IoReader: io::Read + Send + Sync+'a, IoWriter: io::Write + Send + Sync +'a>(
+     mut reader: IoReader, mut writer: IoWriter, local_privkey: Signer)-> SecretConnection<IoReader, IoWriter>
      {
 	let local_pubkey = local_privkey.public_key();
 
@@ -166,14 +165,15 @@ fn MakeSecretConnection<IoReader: io::Read + Send + Sync, IoWriter: io::Write + 
 	let challenge = gen_challenge(local_eph_pubkey, high_eph_pubkey);
 
 	// Construct SecretConnection.
-	// let sc = &SecretConnection{
-	// 	reader:       reader,
-	// 	writer:       writer,
-	// 	recv_buffer: [0u8;0],
-	// 	recv_nonce:  recv_nonce,
-	// 	send_nonce:  send_nonce,
-	// 	shared_secret:  shared_secret,
-	// };
+	let sc = SecretConnection{
+		io_reader:       reader,
+		io_writer:       writer,
+		recv_buffer: [0u8;1024],
+		recv_nonce:  recv_nonce,
+		send_nonce:  send_nonce,
+		shared_secret:  shared_secret,
+        remote_pubkey:remote_eph_pubkey,
+	};
 
 	// Sign the challenge bytes for authentication.
 	let local_signature = sign_challenge(challenge, local_privkey);
@@ -188,7 +188,7 @@ fn MakeSecretConnection<IoReader: io::Read + Send + Sync, IoWriter: io::Write + 
     //
 	// // We've authorized.
 	// sc.remote_pubkey = remote_pubkey
-	// return sc, nil
+	return sc;
 }
 
 // Returns pubkey, private key
@@ -202,27 +202,21 @@ fn genEphKeys() -> ([u8; 32], [u8; 32]) {
 // Returns remote_eph_pubkey
 // TODO: Ask if this is the correct way to have the readers and writers in threads
 fn share_eph_pubkey<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>
- (reader: &'static mut IoReader, writer: &'static mut IoWriter, local_eph_pubkey: &'static [u8;32])
+ (reader: &mut IoReader, writer: &mut IoWriter, local_eph_pubkey: &[u8;32])
 -> Result<[u8;32], ()>
   {
 	// Send our pubkey and receive theirs in tandem.
-
-    let handle1 = thread::spawn(move || {
-        let mut buf = vec![0; 0];
-        amino_bytes::encode(local_eph_pubkey, &mut buf);
-        writer.write(&buf);
-    });
-    let handle2 = thread::spawn(move || {
-        let mut buf = vec![];
-        reader.read(&mut buf);
-        let mut amino_buf = Cursor::new(buf);
-        amino_bytes::decode(&mut amino_buf).unwrap()
-    });
+    let mut buf = vec![0; 0];
+    amino_bytes::encode(local_eph_pubkey, &mut buf);
+    writer.write(&buf);
+   
+    let mut buf = vec![];
+    reader.read(&mut buf);
+    let mut amino_buf = Cursor::new(buf);
 
     // TODO: Add error checking here
     // Don't need output of this
-    handle1.join().unwrap();
-    let remote_eph_pubkey_vec = handle2.join().unwrap();
+    let remote_eph_pubkey_vec = amino_bytes::decode(&mut amino_buf).unwrap();
     // move this vector into a fixed size array
     let mut remote_eph_pubkey = [0u8; 32];
     let remote_eph_pubkey_vec = &remote_eph_pubkey_vec[..32]; // panics if not enough data
@@ -341,25 +335,15 @@ impl Amino for auth_sig_message {
 }
 
 fn share_auth_signature<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>
-(sc: SecretConnection<IoReader, IoWriter>, pubkey: [u8; 32], signature: Signature) ->
+(mut sc: SecretConnection<IoReader, IoWriter>, pubkey: [u8; 32], signature: Signature) ->
 Result<auth_sig_message, DecodeError> {
     let amsg = auth_sig_message{Key: pubkey, Sig: signature.into_bytes()};
-    let handle1 = thread::spawn(move || {
-        let mut buf = vec![0; 0];
-        // TODO: Figure out how to amino decode/encode this struct, check errors
-        sc.io_writer.write(&amsg.serialize());
-    });
-    let handle2 = thread::spawn(move || {
-        let mut buf = vec![];
-        sc.io_reader.read(&mut buf);
-        // TODO: Figure out how to amino decode/encode this struct, check errors
-        &auth_sig_message::deserialize(&buf)
-    });
+     // TODO: Figure out how to amino decode/encode this struct, check errors
+    sc.io_writer.write(&amsg.serialize());
+    let mut buf = vec![];
+    sc.io_reader.read(&mut buf);
+    auth_sig_message::deserialize(&buf)
 
-    handle1.join().unwrap();
-    let remote_auth_sig_message = handle2.join().unwrap();
-
-    return *remote_auth_sig_message
 }
 
 fn hash32(input: &[u8]) -> [u8; 32] {
