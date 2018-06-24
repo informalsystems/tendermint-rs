@@ -1,14 +1,14 @@
 use amino::*;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{Buf, BufMut};
-use ed25519::Signer;
+use ed25519::{Signer};
 use error::Error;
 #[allow(dead_code)]
 use hkdf::Hkdf;
 use hkdfchachapoly::{new_hkdfchachapoly, Aead, TAG_SIZE};
 use rand::OsRng;
 use sha2::Sha256;
-use signatory::ed25519::Signature;
+use signatory::ed25519::{Signature, PublicKey, Verifier, DefaultVerifier};
 use std::io::Cursor;
 use std::marker::{Send, Sync};
 use std::{cmp, io};
@@ -125,8 +125,9 @@ impl<IoHandler: io::Read + io::Write + Send + Sync>
 	fn new(
 	    mut handler: IoHandler,
 	    local_privkey: Signer,
-	) -> SecretConnection<IoHandler> {
-	    let local_pubkey = local_privkey.public_key();
+	) -> Result<SecretConnection<IoHandler>, ()> {
+		// TODO: Error check
+	    let local_pubkey = local_privkey.public_key().unwrap();
 
 	    // Generate ephemeral keys for perfect forward secrecy.
 	    let (local_eph_pubkey, local_eph_privkey) = gen_eph_keys();
@@ -134,7 +135,6 @@ impl<IoHandler: io::Read + io::Write + Send + Sync>
 	    // Write local ephemeral pubkey and receive one too.
 	    // NOTE: every 32-byte string is accepted as a Curve25519 public key
 	    // (see DJB's Curve25519 paper: http://cr.yp.to/ecdh/curve25519-20060209.pdf)
-	    // TODO: Figure out how to do static
 	    let remote_eph_pubkey = share_eph_pubkey(&mut handler, &local_eph_pubkey).unwrap();
 
 	    // Compute common shared secret.
@@ -154,7 +154,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync>
 	    let challenge = gen_challenge(local_eph_pubkey, high_eph_pubkey);
 
 	    // Construct SecretConnection.
-	    let sc = SecretConnection {
+	    let mut sc = SecretConnection {
 	        io_handler: handler,
 	        recv_buffer: [0u8; 1024],
 	        recv_nonce: recv_nonce,
@@ -164,23 +164,27 @@ impl<IoHandler: io::Read + io::Write + Send + Sync>
 	    };
 
 	    // Sign the challenge bytes for authentication.
-	    let local_signature = sign_challenge(challenge, local_privkey);
+		// TODO: Error check
+	    let local_signature = sign_challenge(challenge, local_privkey).unwrap();
 
 	    // Share (in secret) each other's pubkey & challenge signature
-	    // let authSigMsg = share_auth_signature(sc, locPubKey, locSignature).unwrap();
-	    //
-	    // let remote_pubkey, remote_signature = authSigMsg.Key, authSigMsg.Sig
-	    // if !remPubKey.VerifyBytes(challenge[:], remSignature) {
-	    // 	return nil, errors.New("Challenge verification failed")
-	    // }
-	    //
-	    // // We've authorized.
-	    // sc.remote_pubkey = remote_pubkey
-	    return sc;
+		// TODO: Error check
+	    let auth_sig_msg = share_auth_signature(&mut sc, local_pubkey.as_bytes(), local_signature).unwrap();
+
+		let remote_pubkey = PublicKey::from_bytes(&auth_sig_msg.Key).unwrap();
+		let remote_signature: &[u8] = &auth_sig_msg.Sig;
+		let remote_sig = Signature::from_bytes(remote_signature).unwrap();
+
+		let valid_sig = DefaultVerifier::verify(&remote_pubkey, &challenge, &remote_sig);
+		if valid_sig.is_err() {
+			// TODO: Add error message "Challenge verification failed"
+			return Err(());
+		}
+	    // We've authorized.
+	    sc.remote_pubkey = auth_sig_msg.Key;
+	    return Ok(sc);
 	}
 }
-
-//
 
 //
 // // Implements net.Conn
@@ -334,12 +338,12 @@ impl Amino for auth_sig_message {
 }
 
 fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
-    mut sc: SecretConnection<IoHandler>,
-    pubkey: [u8; 32],
+    mut sc: &mut SecretConnection<IoHandler>,
+    pubkey: &[u8; 32],
     signature: Signature,
 ) -> Result<auth_sig_message, DecodeError> {
     let amsg = auth_sig_message {
-        Key: pubkey,
+        Key: *pubkey,
         Sig: signature.into_bytes(),
     };
     // TODO: Figure out how to amino decode/encode this struct, check errors
