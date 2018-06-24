@@ -11,7 +11,6 @@ use sha2::Sha256;
 use signatory::ed25519::Signature;
 use std::io::Cursor;
 use std::marker::{Send, Sync};
-use std::thread;
 use std::{cmp, io};
 use x25519_dalek::{diffie_hellman, generate_public, generate_secret};
 
@@ -24,9 +23,8 @@ const SEALED_FRAME_SIZE: u32 = TOTAL_FRAME_SIZE + TAG_SIZE as u32;
 
 // Implements net.Conn
 // TODO: Fix errors due to the last element not being constant size
-struct SecretConnection<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync> {
-    io_reader: IoReader,
-    io_writer: IoWriter,
+struct SecretConnection<IoHandler: io::Read + io::Write + Send + Sync> {
+    io_handler: IoHandler,
     recv_nonce: [u8; 24],
     send_nonce: [u8; 24],
     remote_pubkey: [u8; 32],
@@ -35,11 +33,11 @@ struct SecretConnection<IoReader: io::Read + Send + Sync, IoWriter: io::Write + 
 }
 
 // TODO: Test read/write
-impl<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>
-    SecretConnection<IoReader, IoWriter>
+impl<IoHandler: io::Read + io::Write + Send + Sync>
+    SecretConnection<IoHandler>
 {
     // Returns authenticated remote pubkey
-    fn RemotePubKey(&self) -> [u8; 32] {
+    fn remote_pubkey(&self) -> [u8; 32] {
         self.remote_pubkey
     }
 
@@ -70,7 +68,7 @@ impl<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>
             incr2_nonce(&mut self.send_nonce);
             // end encryption
 
-            self.io_writer.write(&sealedFrame);
+            self.io_handler.write(&sealedFrame);
             n = n + chunk.len();
         }
         return Ok(n);
@@ -90,7 +88,7 @@ impl<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>
 
         let aead = new_hkdfchachapoly(self.shared_secret);
         let mut sealedFrame = [0u8; TAG_SIZE + (TOTAL_FRAME_SIZE as usize)];
-        self.io_reader.read_exact(&mut sealedFrame);
+        self.io_handler.read_exact(&mut sealedFrame);
 
         // decrypt the frame
         let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
@@ -122,6 +120,64 @@ impl<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>
             return Ok(n);
         }
     }
+
+	// Performs handshake and returns a new authenticated SecretConnection.
+	fn new(
+	    mut handler: IoHandler,
+	    local_privkey: Signer,
+	) -> SecretConnection<IoHandler> {
+	    let local_pubkey = local_privkey.public_key();
+
+	    // Generate ephemeral keys for perfect forward secrecy.
+	    let (local_eph_pubkey, local_eph_privkey) = gen_eph_keys();
+
+	    // Write local ephemeral pubkey and receive one too.
+	    // NOTE: every 32-byte string is accepted as a Curve25519 public key
+	    // (see DJB's Curve25519 paper: http://cr.yp.to/ecdh/curve25519-20060209.pdf)
+	    // TODO: Figure out how to do static
+	    let remote_eph_pubkey = share_eph_pubkey(&mut handler, &local_eph_pubkey).unwrap();
+
+	    // Compute common shared secret.
+	    let shared_secret = compute_shared_secret(&remote_eph_pubkey, &local_eph_privkey);
+
+	    // Sort by lexical order.
+	    let (low_eph_pubkey, high_eph_pubkey) = sort32(local_eph_pubkey, remote_eph_pubkey);
+
+	    // Check if the local ephemeral public key
+	    // was the least, lexicographically sorted.
+	    let locIsLeast = (local_eph_pubkey == low_eph_pubkey);
+
+	    // Generate nonces to use for secretbox.
+	    let (recv_nonce, send_nonce) = gen_nonces(local_eph_pubkey, high_eph_pubkey, locIsLeast);
+
+	    // Generate common challenge to sign.
+	    let challenge = gen_challenge(local_eph_pubkey, high_eph_pubkey);
+
+	    // Construct SecretConnection.
+	    let sc = SecretConnection {
+	        io_handler: handler,
+	        recv_buffer: [0u8; 1024],
+	        recv_nonce: recv_nonce,
+	        send_nonce: send_nonce,
+	        shared_secret: shared_secret,
+	        remote_pubkey: remote_eph_pubkey,
+	    };
+
+	    // Sign the challenge bytes for authentication.
+	    let local_signature = sign_challenge(challenge, local_privkey);
+
+	    // Share (in secret) each other's pubkey & challenge signature
+	    // let authSigMsg = share_auth_signature(sc, locPubKey, locSignature).unwrap();
+	    //
+	    // let remote_pubkey, remote_signature = authSigMsg.Key, authSigMsg.Sig
+	    // if !remPubKey.VerifyBytes(challenge[:], remSignature) {
+	    // 	return nil, errors.New("Challenge verification failed")
+	    // }
+	    //
+	    // // We've authorized.
+	    // sc.remote_pubkey = remote_pubkey
+	    return sc;
+	}
 }
 
 //
@@ -137,72 +193,8 @@ impl<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>
 // 	return sc.conn.(net.Conn).SetWriteDeadline(t)
 // }
 
-// Performs handshake and returns a new authenticated SecretConnection.
-fn MakeSecretConnection<
-    'a,
-    IoReader: io::Read + Send + Sync + 'a,
-    IoWriter: io::Write + Send + Sync + 'a,
->(
-    mut reader: IoReader,
-    mut writer: IoWriter,
-    local_privkey: Signer,
-) -> SecretConnection<IoReader, IoWriter> {
-    let local_pubkey = local_privkey.public_key();
-
-    // Generate ephemeral keys for perfect forward secrecy.
-    let (local_eph_pubkey, local_eph_privkey) = genEphKeys();
-
-    // Write local ephemeral pubkey and receive one too.
-    // NOTE: every 32-byte string is accepted as a Curve25519 public key
-    // (see DJB's Curve25519 paper: http://cr.yp.to/ecdh/curve25519-20060209.pdf)
-    // TODO: Figure out how to do static
-    let remote_eph_pubkey = share_eph_pubkey(&mut reader, &mut writer, &local_eph_pubkey).unwrap();
-
-    // Compute common shared secret.
-    let shared_secret = compute_shared_secret(&remote_eph_pubkey, &local_eph_privkey);
-
-    // Sort by lexical order.
-    let (low_eph_pubkey, high_eph_pubkey) = sort32(local_eph_pubkey, remote_eph_pubkey);
-
-    // Check if the local ephemeral public key
-    // was the least, lexicographically sorted.
-    let locIsLeast = (local_eph_pubkey == low_eph_pubkey);
-
-    // Generate nonces to use for secretbox.
-    let (recv_nonce, send_nonce) = gen_nonces(local_eph_pubkey, high_eph_pubkey, locIsLeast);
-
-    // Generate common challenge to sign.
-    let challenge = gen_challenge(local_eph_pubkey, high_eph_pubkey);
-
-    // Construct SecretConnection.
-    let sc = SecretConnection {
-        io_reader: reader,
-        io_writer: writer,
-        recv_buffer: [0u8; 1024],
-        recv_nonce: recv_nonce,
-        send_nonce: send_nonce,
-        shared_secret: shared_secret,
-        remote_pubkey: remote_eph_pubkey,
-    };
-
-    // Sign the challenge bytes for authentication.
-    let local_signature = sign_challenge(challenge, local_privkey);
-
-    // Share (in secret) each other's pubkey & challenge signature
-    // let authSigMsg = share_auth_signature(sc, locPubKey, locSignature).unwrap();
-    //
-    // let remote_pubkey, remote_signature = authSigMsg.Key, authSigMsg.Sig
-    // if !remPubKey.VerifyBytes(challenge[:], remSignature) {
-    // 	return nil, errors.New("Challenge verification failed")
-    // }
-    //
-    // // We've authorized.
-    // sc.remote_pubkey = remote_pubkey
-    return sc;
-}
-
 // Returns pubkey, private key
-fn genEphKeys() -> ([u8; 32], [u8; 32]) {
+fn gen_eph_keys() -> ([u8; 32], [u8; 32]) {
     let mut local_csprng = OsRng::new().unwrap();
     let local_privkey = generate_secret(&mut local_csprng);
     let local_pubkey = generate_public(&local_privkey);
@@ -211,18 +203,17 @@ fn genEphKeys() -> ([u8; 32], [u8; 32]) {
 
 // Returns remote_eph_pubkey
 // TODO: Ask if this is the correct way to have the readers and writers in threads
-fn share_eph_pubkey<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>(
-    reader: &mut IoReader,
-    writer: &mut IoWriter,
+fn share_eph_pubkey<IoHandler: io::Read +io::Write + Send + Sync>(
+    handler: &mut IoHandler,
     local_eph_pubkey: &[u8; 32],
 ) -> Result<[u8; 32], ()> {
     // Send our pubkey and receive theirs in tandem.
     let mut buf = vec![0; 0];
     amino_bytes::encode(local_eph_pubkey, &mut buf);
-    writer.write(&buf);
+    handler.write(&buf);
 
     let mut buf = vec![];
-    reader.read(&mut buf);
+    handler.read(&mut buf);
     let mut amino_buf = Cursor::new(buf);
 
     // TODO: Add error checking here
@@ -342,8 +333,8 @@ impl Amino for auth_sig_message {
     }
 }
 
-fn share_auth_signature<IoReader: io::Read + Send + Sync, IoWriter: io::Write + Send + Sync>(
-    mut sc: SecretConnection<IoReader, IoWriter>,
+fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
+    mut sc: SecretConnection<IoHandler>,
     pubkey: [u8; 32],
     signature: Signature,
 ) -> Result<auth_sig_message, DecodeError> {
@@ -352,9 +343,9 @@ fn share_auth_signature<IoReader: io::Read + Send + Sync, IoWriter: io::Write + 
         Sig: signature.into_bytes(),
     };
     // TODO: Figure out how to amino decode/encode this struct, check errors
-    sc.io_writer.write(&amsg.serialize());
+    sc.io_handler.write(&amsg.serialize());
     let mut buf = vec![];
-    sc.io_reader.read(&mut buf);
+    sc.io_handler.read(&mut buf);
     auth_sig_message::deserialize(&buf)
 }
 

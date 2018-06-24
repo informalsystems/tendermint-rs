@@ -118,12 +118,12 @@ pub fn new_hkdfchachapoly(key: [u8; 32]) -> HkdfChaChaPoly {
 
 // Returns subkey and chacha nonce
 fn get_subkey_and_chacha_nonce_from_hkdf(
-    cKey: &[u8; KEY_SIZE],
+    c_key: &[u8; KEY_SIZE],
     nonce: &[u8; NONCE_SIZE],
 ) -> ([u8; KEY_SIZE], [u8; CHACHA_NONCE_SIZE]) {
     let info = HKDF_INFO.as_bytes();
 
-    let hk = Hkdf::<Sha256>::extract(Some(nonce), cKey);
+    let hk = Hkdf::<Sha256>::extract(Some(nonce), c_key);
     let subkey_and_nonce_vec = hk.expand(&info, KEY_SIZE + CHACHA_NONCE_SIZE);
 
     let subkey_vec = &subkey_and_nonce_vec[..KEY_SIZE];
