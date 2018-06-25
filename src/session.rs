@@ -4,14 +4,15 @@ use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
 
-use ed25519::{Keyring, PublicKey};
+use ed25519::{Keyring, PublicKey, Signer};
 use error::Error;
 use rpc::{Request, Response, SignRequest, SignResponse};
+use secret_connection::SecretConnection;
 
 /// A (soon-to-be-encrypted) session with a validator node
 pub struct Session {
     /// TCP connection to a validator node
-    socket: TcpStream,
+    connection: SecretConnection<TcpStream>,
 
     /// Keyring of signature keys
     keyring: Arc<Keyring>,
@@ -19,10 +20,11 @@ pub struct Session {
 
 impl Session {
     /// Create a new session with the validator at the given address/port
-    pub fn new(addr: &str, port: u16, keyring: Arc<Keyring>) -> Result<Self, Error> {
+    pub fn new(addr: &str, port: u16,p2p_key:Signer, keyring: Arc<Keyring>) -> Result<Self, Error> {
         debug!("Connecting to {}:{}...", addr, port);
         let socket = TcpStream::connect(format!("{}:{}", addr, port))?;
-        Ok(Self { socket, keyring })
+        let connection = SecretConnection::new(socket,p2p_key)?;
+        Ok(Self { connection, keyring })
     }
 
     /// Handle an incoming request from the validator

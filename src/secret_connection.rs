@@ -2,7 +2,8 @@ use amino::*;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{Buf, BufMut};
 use ed25519::{Signer};
-use error::Error;
+use failure::{Error, err_msg};
+use error::Error as LegacyErr;
 #[allow(dead_code)]
 use hkdf::Hkdf;
 use hkdfchachapoly::{new_hkdfchachapoly, Aead, TAG_SIZE};
@@ -23,7 +24,7 @@ const SEALED_FRAME_SIZE: u32 = TOTAL_FRAME_SIZE + TAG_SIZE as u32;
 
 // Implements net.Conn
 // TODO: Fix errors due to the last element not being constant size
-struct SecretConnection<IoHandler: io::Read + io::Write + Send + Sync> {
+pub struct SecretConnection<IoHandler: io::Read + io::Write + Send + Sync> {
     io_handler: IoHandler,
     recv_nonce: [u8; 24],
     send_nonce: [u8; 24],
@@ -122,10 +123,10 @@ impl<IoHandler: io::Read + io::Write + Send + Sync>
     }
 
 	// Performs handshake and returns a new authenticated SecretConnection.
-	fn new(
+	pub fn new(
 	    mut handler: IoHandler,
 	    local_privkey: Signer,
-	) -> Result<SecretConnection<IoHandler>, ()> {
+	) -> Result<SecretConnection<IoHandler>, Error> {
 		// TODO: Error check
 	    let local_pubkey = local_privkey.public_key().unwrap();
 
@@ -178,7 +179,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync>
 		let valid_sig = DefaultVerifier::verify(&remote_pubkey, &challenge, &remote_sig);
 		if valid_sig.is_err() {
 			// TODO: Add error message "Challenge verification failed"
-			return Err(());
+			return Err(err_msg("Challenge verification failed"));
 		}
 	    // We've authorized.
 	    sc.remote_pubkey = auth_sig_msg.Key;
@@ -286,7 +287,7 @@ fn gen_challenge(lo_pubkey: [u8; 32], hi_pubkey: [u8; 32]) -> [u8; 32] {
 }
 
 // Sign the challenge with the local private key
-fn sign_challenge(challenge: [u8; 32], local_privkey: Signer) -> Result<Signature, Error> {
+fn sign_challenge(challenge: [u8; 32], local_privkey: Signer) -> Result<Signature, LegacyErr> {
     return local_privkey.sign(&challenge[0..32]);
 }
 
