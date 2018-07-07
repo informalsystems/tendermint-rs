@@ -84,3 +84,5 @@ pub trait TendermintSign {
 }
 
 pub use self::heartbeat::Heartbeat;
+pub use self::proposal::Proposal;
+pub use self::vote::Vote;

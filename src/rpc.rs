@@ -3,12 +3,15 @@
 extern crate bincode;
 
 use std::io::{self, Read};
+use types::{Heartbeat,Proposal,Vote};
 
 /// Requests to the KMS
-#[derive(Serialize, Deserialize, Debug)]
 pub enum Request {
     /// Sign the given message
-    Sign(SignRequest),
+    SignHeartbeat(Heartbeat),
+    SignProposal(Proposal),
+    SignVote(Vote),
+    ShowPublicKey(),    
 
     /// Instruct the KMS to terminate
     #[cfg(debug_assertions)]

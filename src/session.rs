@@ -5,7 +5,7 @@ use std::net::TcpStream;
 use std::sync::Arc;
 
 use ed25519::{Keyring, PublicKey, Signer};
-use error::Error;
+use failure::Error;
 use rpc::{Request, Response, SignRequest, SignResponse};
 use secret_connection::SecretConnection;
 
@@ -29,7 +29,7 @@ impl Session {
 
     /// Handle an incoming request from the validator
     pub fn handle_request(&mut self) -> Result<bool, Error> {
-        let response = match Request::read(&mut self.socket)? {
+        let response = match Request::read(&mut self.connection)? {
             Request::Sign(ref req) => self.sign(req)?,
             #[cfg(debug_assertions)]
             Request::PoisonPill => return Ok(false),
