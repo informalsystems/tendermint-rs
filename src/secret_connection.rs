@@ -40,40 +40,6 @@ impl<IoHandler: io::Read + io::Write + Send + Sync>
     fn remote_pubkey(&self) -> [u8; 32] {
         self.remote_pubkey
     }
-
-    // Writes encrypted frames of `sealedFrameSize`
-    // CONTRACT: data smaller than dataMaxSize is read atomically.
-    fn write(&mut self, data: &[u8]) -> Result<usize, ()> {
-        let mut n = 0usize;
-        let mut data_copy = &data[..];
-        while 0 < data_copy.len() {
-            let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
-            let mut chunk: &[u8];
-            if DATA_MAX_SIZE < (data.len() as u32) {
-                chunk = &data[..(DATA_MAX_SIZE as usize)];
-                data_copy = &data_copy[(DATA_MAX_SIZE as usize)..];
-            } else {
-                chunk = data_copy;
-                data_copy = &[0u8; 0];
-            }
-            let chunkLength = chunk.len();
-            BigEndian::write_u32_into(&[chunkLength as u32], &mut frame[..8]);
-            frame[(DATA_LEN_SIZE as usize)..].copy_from_slice(chunk);
-
-            let aead = new_hkdfchachapoly(self.shared_secret);
-            // encrypt the frame
-
-            let mut sealedFrame = [0u8; TAG_SIZE + (TOTAL_FRAME_SIZE as usize)];
-            aead.seal(&self.send_nonce, &[0u8; 0], &frame, &mut sealedFrame);
-            incr2_nonce(&mut self.send_nonce);
-            // end encryption
-
-            self.io_handler.write(&sealedFrame);
-            n = n + chunk.len();
-        }
-        return Ok(n);
-    }
-
 	// Performs handshake and returns a new authenticated SecretConnection.
 	pub fn new(
 	    mut handler: IoHandler,
@@ -162,7 +128,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
         let mut frame_copy = [0u8; TOTAL_FRAME_SIZE as usize];
         frame_copy.clone_from_slice(&frame);
         if res.is_err() {
-            return Err("");
+            return Err(io::Error::new(io::ErrorKind::Other, "decryption error"));
         }
         incr2_nonce(&mut self.send_nonce);
         // end decryption
@@ -172,8 +138,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
 
         let chunk_length = BigEndian::read_u32(&chunk_length_specifier);
         if chunk_length > DATA_MAX_SIZE {
-            // TODO: Err should say "chunk_length is greater than dataMaxSize", confused as to how to do this
-            return Err(());
+            return Err(io::Error::new(io::ErrorKind::Other, "chunk_length is greater than dataMaxSize"));
         } else {
             let mut chunk = vec![0; chunk_length as usize];
             chunk.clone_from_slice(
@@ -186,6 +151,48 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
             return Ok(n);
         }
     }
+}
+
+impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnection<IoHandler>{
+
+
+    // Writes encrypted frames of `sealedFrameSize`
+    // CONTRACT: data smaller than dataMaxSize is read atomically.
+    fn write(&mut self, data: &[u8]) -> Result<usize, io::Error> {
+        let mut n = 0usize;
+        let mut data_copy = &data[..];
+        while 0 < data_copy.len() {
+            let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
+            let mut chunk: &[u8];
+            if DATA_MAX_SIZE < (data.len() as u32) {
+                chunk = &data[..(DATA_MAX_SIZE as usize)];
+                data_copy = &data_copy[(DATA_MAX_SIZE as usize)..];
+            } else {
+                chunk = data_copy;
+                data_copy = &[0u8; 0];
+            }
+            let chunkLength = chunk.len();
+            BigEndian::write_u32_into(&[chunkLength as u32], &mut frame[..8]);
+            frame[(DATA_LEN_SIZE as usize)..].copy_from_slice(chunk);
+
+            let aead = new_hkdfchachapoly(self.shared_secret);
+            // encrypt the frame
+
+            let mut sealedFrame = [0u8; TAG_SIZE + (TOTAL_FRAME_SIZE as usize)];
+            aead.seal(&self.send_nonce, &[0u8; 0], &frame, &mut sealedFrame);
+            incr2_nonce(&mut self.send_nonce);
+            // end encryption
+
+            self.io_handler.write(&sealedFrame)?;
+            n = n + chunk.len();
+        }
+        return Ok(n);
+    }
+
+    fn flush(&mut self) -> Result<(), io::Error>{
+        self.io_handler.flush()
+    } 
+
 }
 
 //
