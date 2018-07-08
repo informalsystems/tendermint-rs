@@ -1,5 +1,5 @@
-use signatory::ed25519::PublicKey as SignatoryKey;
 pub use signatory::ed25519::PUBLIC_KEY_SIZE;
+use signatory::ed25519::PublicKey as SignatoryKey;
 use std::fmt::{self, Display};
 
 use error::Error;
@@ -11,9 +11,7 @@ pub struct PublicKey(SignatoryKey);
 impl PublicKey {
     /// Convert a bytestring to a public key
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
-        Ok(PublicKey(
-            SignatoryKey::from_bytes(bytes).map_err(|e| err!(InvalidKey, "{}", e))?,
-        ))
+        Ok(PublicKey(SignatoryKey::from_bytes(bytes).map_err(|e| err!(InvalidKey, "{}", e))?))
     }
 
     /// Obtain public key as a byte array reference

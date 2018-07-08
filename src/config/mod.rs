@@ -29,7 +29,7 @@ pub struct Config {
     /// Cryptographic signature provider configuration
     pub providers: ProviderConfig,
 
-    pub secret_connection_key_path:PathBuf,
+    pub secret_connection_key_path: PathBuf,
 }
 
 impl Config {

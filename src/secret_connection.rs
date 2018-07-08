@@ -1,15 +1,15 @@
 use amino::*;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{Buf, BufMut};
-use signatory::providers::dalek::Ed25519Signer as DalekSigner;
-use signatory::ed25519::Signer;
 use error::Error;
 #[allow(dead_code)]
 use hkdf::Hkdf;
 use hkdfchachapoly::{new_hkdfchachapoly, Aead, TAG_SIZE};
 use rand::OsRng;
 use sha2::Sha256;
-use signatory::ed25519::{Signature, PublicKey, Verifier, DefaultVerifier};
+use signatory::ed25519::Signer;
+use signatory::ed25519::{DefaultVerifier, PublicKey, Signature, Verifier};
+use signatory::providers::dalek::Ed25519Signer as DalekSigner;
 use std::io::Cursor;
 use std::marker::{Send, Sync};
 use std::{cmp, io};
@@ -33,79 +33,78 @@ pub struct SecretConnection<IoHandler: io::Read + io::Write + Send + Sync> {
     recv_buffer: [u8; 1024],
 }
 // TODO: Test read/write
-impl<IoHandler: io::Read + io::Write + Send + Sync>
-    SecretConnection<IoHandler>
-{
+impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> {
     // Returns authenticated remote pubkey
     fn remote_pubkey(&self) -> [u8; 32] {
         self.remote_pubkey
     }
-	// Performs handshake and returns a new authenticated SecretConnection.
-	pub fn new(
-	    mut handler: IoHandler,
-	    local_privkey: DalekSigner,
-	) -> Result<SecretConnection<IoHandler>, Error> {
-		// TODO: Error check
-	    let local_pubkey = local_privkey.public_key().unwrap();
+    // Performs handshake and returns a new authenticated SecretConnection.
+    pub fn new(
+        mut handler: IoHandler,
+        local_privkey: DalekSigner,
+    ) -> Result<SecretConnection<IoHandler>, Error> {
+        // TODO: Error check
+        let local_pubkey = local_privkey.public_key().unwrap();
 
-	    // Generate ephemeral keys for perfect forward secrecy.
-	    let (local_eph_pubkey, local_eph_privkey) = gen_eph_keys();
+        // Generate ephemeral keys for perfect forward secrecy.
+        let (local_eph_pubkey, local_eph_privkey) = gen_eph_keys();
 
-	    // Write local ephemeral pubkey and receive one too.
-	    // NOTE: every 32-byte string is accepted as a Curve25519 public key
-	    // (see DJB's Curve25519 paper: http://cr.yp.to/ecdh/curve25519-20060209.pdf)
-	    let remote_eph_pubkey = share_eph_pubkey(&mut handler, &local_eph_pubkey).unwrap();
+        // Write local ephemeral pubkey and receive one too.
+        // NOTE: every 32-byte string is accepted as a Curve25519 public key
+        // (see DJB's Curve25519 paper: http://cr.yp.to/ecdh/curve25519-20060209.pdf)
+        let remote_eph_pubkey = share_eph_pubkey(&mut handler, &local_eph_pubkey).unwrap();
 
-	    // Compute common shared secret.
-	    let shared_secret = compute_shared_secret(&remote_eph_pubkey, &local_eph_privkey);
+        // Compute common shared secret.
+        let shared_secret = compute_shared_secret(&remote_eph_pubkey, &local_eph_privkey);
 
-	    // Sort by lexical order.
-	    let (low_eph_pubkey, high_eph_pubkey) = sort32(local_eph_pubkey, remote_eph_pubkey);
+        // Sort by lexical order.
+        let (low_eph_pubkey, high_eph_pubkey) = sort32(local_eph_pubkey, remote_eph_pubkey);
 
-	    // Check if the local ephemeral public key
-	    // was the least, lexicographically sorted.
-	    let locIsLeast = (local_eph_pubkey == low_eph_pubkey);
+        // Check if the local ephemeral public key
+        // was the least, lexicographically sorted.
+        let locIsLeast = (local_eph_pubkey == low_eph_pubkey);
 
-	    // Generate nonces to use for secretbox.
-	    let (recv_nonce, send_nonce) = gen_nonces(local_eph_pubkey, high_eph_pubkey, locIsLeast);
+        // Generate nonces to use for secretbox.
+        let (recv_nonce, send_nonce) = gen_nonces(local_eph_pubkey, high_eph_pubkey, locIsLeast);
 
-	    // Generate common challenge to sign.
-	    let challenge = gen_challenge(local_eph_pubkey, high_eph_pubkey);
+        // Generate common challenge to sign.
+        let challenge = gen_challenge(local_eph_pubkey, high_eph_pubkey);
 
-	    // Construct SecretConnection.
-	    let mut sc = SecretConnection {
-	        io_handler: handler,
-	        recv_buffer: [0u8; 1024],
-	        recv_nonce: recv_nonce,
-	        send_nonce: send_nonce,
-	        shared_secret: shared_secret,
-	        remote_pubkey: remote_eph_pubkey,
-	    };
+        // Construct SecretConnection.
+        let mut sc = SecretConnection {
+            io_handler: handler,
+            recv_buffer: [0u8; 1024],
+            recv_nonce: recv_nonce,
+            send_nonce: send_nonce,
+            shared_secret: shared_secret,
+            remote_pubkey: remote_eph_pubkey,
+        };
 
-	    // Sign the challenge bytes for authentication.
-		// TODO: Error check
-	    let local_signature = sign_challenge(challenge, local_privkey).unwrap();
+        // Sign the challenge bytes for authentication.
+        // TODO: Error check
+        let local_signature = sign_challenge(challenge, local_privkey).unwrap();
 
-	    // Share (in secret) each other's pubkey & challenge signature
-		// TODO: Error check
-	    let auth_sig_msg = share_auth_signature(&mut sc, local_pubkey.as_bytes(), local_signature).unwrap();
+        // Share (in secret) each other's pubkey & challenge signature
+        // TODO: Error check
+        let auth_sig_msg =
+            share_auth_signature(&mut sc, local_pubkey.as_bytes(), local_signature).unwrap();
 
-		let remote_pubkey = PublicKey::from_bytes(&auth_sig_msg.Key).unwrap();
-		let remote_signature: &[u8] = &auth_sig_msg.Sig;
-		let remote_sig = Signature::from_bytes(remote_signature).unwrap();
+        let remote_pubkey = PublicKey::from_bytes(&auth_sig_msg.Key).unwrap();
+        let remote_signature: &[u8] = &auth_sig_msg.Sig;
+        let remote_sig = Signature::from_bytes(remote_signature).unwrap();
 
-		let valid_sig = DefaultVerifier::verify(&remote_pubkey, &challenge, &remote_sig);
+        let valid_sig = DefaultVerifier::verify(&remote_pubkey, &challenge, &remote_sig);
 
-		valid_sig.map_err(|e| err!(ChallengeVerification, "{}", e))?;
+        valid_sig.map_err(|e| err!(ChallengeVerification, "{}", e))?;
 
-	    // We've authorized.
-	    sc.remote_pubkey = auth_sig_msg.Key;
-	    return Ok(sc);
-	}
+        // We've authorized.
+        sc.remote_pubkey = auth_sig_msg.Key;
+        return Ok(sc);
+    }
 }
 
-impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnection<IoHandler>{
-        // CONTRACT: data smaller than dataMaxSize is read atomically.
+impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnection<IoHandler> {
+    // CONTRACT: data smaller than dataMaxSize is read atomically.
     fn read(&mut self, data: &mut [u8]) -> Result<usize, io::Error> {
         let mut n = 0usize;
         if 0 < self.recv_buffer.len() {
@@ -137,7 +136,10 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
 
         let chunk_length = BigEndian::read_u32(&chunk_length_specifier);
         if chunk_length > DATA_MAX_SIZE {
-            return Err(io::Error::new(io::ErrorKind::Other, "chunk_length is greater than dataMaxSize"));
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "chunk_length is greater than dataMaxSize",
+            ));
         } else {
             let mut chunk = vec![0; chunk_length as usize];
             chunk.clone_from_slice(
@@ -152,9 +154,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
     }
 }
 
-impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnection<IoHandler>{
-
-
+impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnection<IoHandler> {
     // Writes encrypted frames of `sealedFrameSize`
     // CONTRACT: data smaller than dataMaxSize is read atomically.
     fn write(&mut self, data: &[u8]) -> Result<usize, io::Error> {
@@ -188,10 +188,9 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnecti
         return Ok(n);
     }
 
-    fn flush(&mut self) -> Result<(), io::Error>{
+    fn flush(&mut self) -> Result<(), io::Error> {
         self.io_handler.flush()
-    } 
-
+    }
 }
 
 //
@@ -215,7 +214,7 @@ fn gen_eph_keys() -> ([u8; 32], [u8; 32]) {
 
 // Returns remote_eph_pubkey
 // TODO: Ask if this is the correct way to have the readers and writers in threads
-fn share_eph_pubkey<IoHandler: io::Read +io::Write + Send + Sync>(
+fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
     handler: &mut IoHandler,
     local_eph_pubkey: &[u8; 32],
 ) -> Result<[u8; 32], ()> {
@@ -295,7 +294,9 @@ fn gen_challenge(lo_pubkey: [u8; 32], hi_pubkey: [u8; 32]) -> [u8; 32] {
 
 // Sign the challenge with the local private key
 fn sign_challenge(challenge: [u8; 32], local_privkey: DalekSigner) -> Result<Signature, Error> {
-    return local_privkey.sign(&challenge[0..32]).map_err(|e| err!(SigningError, "{}", e));
+    return local_privkey
+        .sign(&challenge[0..32])
+        .map_err(|e| err!(SigningError, "{}", e));
 }
 
 struct auth_sig_message {

@@ -28,6 +28,7 @@ extern crate sha2;
 extern crate x25519_dalek;
 
 use gumdrop::Options;
+use signatory::ed25519::{FromSeed, Seed};
 use simplelog::Config as LoggingConfig;
 use simplelog::{CombinedLogger, LevelFilter, TermLogger};
 use std::collections::BTreeMap;
@@ -38,15 +39,13 @@ use std::os::unix::fs::OpenOptionsExt;
 use std::path::Path;
 use std::process::exit;
 use std::sync::Arc;
-use signatory::ed25519::{FromSeed, Seed};
 
 use signatory::providers::dalek::Ed25519Signer as DalekSigner;
-use std::path::PathBuf;
 use std::fs::File;
 use std::io::Read;
+use std::path::PathBuf;
 
 use clear_on_drop::ClearOnDrop;
-
 
 #[macro_use]
 mod error;
@@ -266,29 +265,33 @@ fn init_keyring(config: ProviderConfig) -> Keyring {
 fn spawn_validator_clients(
     config: &BTreeMap<String, ValidatorConfig>,
     keyring: &Arc<Keyring>,
-    secret_connection_key : & Arc<DalekSigner>,
+    secret_connection_key: &Arc<DalekSigner>,
 ) -> Vec<Client> {
     config
         .iter()
         .map(|(label, validator_config)| {
-            Client::spawn(label.clone(), validator_config.clone(), Arc::clone(keyring),Arc::clone(secret_connection_key))
+            Client::spawn(
+                label.clone(),
+                validator_config.clone(),
+                Arc::clone(keyring),
+                Arc::clone(secret_connection_key),
+            )
         })
         .collect()
 }
 
-fn load_secret_connection_key(key_path:PathBuf)-> DalekSigner{
-        match File::open(&key_path){
-            Ok(seed_file) =>{
+fn load_secret_connection_key(key_path: PathBuf) -> DalekSigner {
+    match File::open(&key_path) {
+        Ok(seed_file) => {
             let mut key_material = ClearOnDrop::new(vec![]);
             seed_file.read_to_end(key_material.as_mut()).unwrap();
             return DalekSigner::from_seed(Seed::from_slice(&key_material).unwrap());
-            },
-            Err(_)=>{
-                let seed = Seed::generate();
-                let seed_file = File::create(&key_path).unwrap();
-                seed_file.write(seed.as_secret_slice());
-                return DalekSigner::from_seed(seed);
-            },
-
         }
+        Err(_) => {
+            let seed = Seed::generate();
+            let seed_file = File::create(&key_path).unwrap();
+            seed_file.write(seed.as_secret_slice());
+            return DalekSigner::from_seed(seed);
+        }
+    }
 }

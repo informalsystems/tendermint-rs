@@ -1,15 +1,15 @@
 // TODO: replace this with amino
 
-use std::io::{self, Read};
-use types::{Heartbeat,Proposal,Vote};
 use amino::Amino;
+use std::io::{self, Read};
+use types::{Heartbeat, Proposal, Vote};
 /// Requests to the KMS
 pub enum Request {
     /// Sign the given message
     SignHeartbeat(Heartbeat),
     SignProposal(Proposal),
     SignVote(Vote),
-    ShowPublicKey(),    
+    ShowPublicKey(),
 
     /// Instruct the KMS to terminate
     #[cfg(debug_assertions)]

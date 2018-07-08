@@ -90,7 +90,7 @@ pub enum ErrorKind {
     /// Signing operation failed
     #[fail(display = "signing operation failed")]
     SigningError,
-    
+
     #[fail(display = "secret connection challenge verification failed")]
     ChallengeVerification,
 }
