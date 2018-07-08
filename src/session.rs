@@ -39,7 +39,7 @@ impl Session {
     /// Handle an incoming request from the validator
     pub fn handle_request(&mut self) -> Result<bool, Error> {
         let response = match Request::read(&mut self.connection)? {
-            Request::Sign(ref req) => self.sign(req)?,
+            Request::SignProposal(ref req) => self.sign(req)?,
             #[cfg(debug_assertions)]
             Request::PoisonPill => return Ok(false),
         };

@@ -1,7 +1,7 @@
 // TODO: replace this with amino
 
 use amino::Amino;
-use std::io::{self, Read};
+use std::io::{self, Error, ErrorKind, Read};
 use types::{Heartbeat, Proposal, Vote};
 /// Requests to the KMS
 pub enum Request {
@@ -20,26 +20,31 @@ impl Request {
     /// Read a request from the given readable
     #[allow(dead_code)]
     pub fn read<R: Read>(r: &mut R) -> io::Result<Self> {
-        // Read the length
-        let mut len = [0u8];
-        r.read_exact(&mut len)?;
-
         let mut buf = vec![];
-        for _ in 0..len[0] {
-            buf.push(0u8);
+        r.read(&mut buf)?;
+        if let Ok(hb) = Heartbeat::deserialize(&buf) {
+            return Ok(Request::SignHeartbeat(hb));
+        }
+        if let Ok(vote) = Vote::deserialize(&buf) {
+            return Ok(Request::SignVote(vote));
+        }
+        if let Ok(prop) = Proposal::deserialize(&buf) {
+            return Ok(Request::SignProposal(prop));
         }
 
-        r.read_exact(&mut buf)?;
-
         // TODO: don't unwrap, but really... switch to amino
-        Ok()
+        Err(Error::new(ErrorKind::Other, "Invalid RPC message"))
     }
 
     /// Serialize a request as a byte vector
     #[allow(dead_code)]
     pub fn to_vec(&self) -> Vec<u8> {
         // TODO: don't unwrap, but really... switch to amino
-        let mut body = bincode::serialize(self).unwrap();
+
+        let mut body = match self {
+            Request::SignProposal(prop) => prop.serialize(),
+        };
+
         let mut msg = vec![body.len() as u8];
         msg.append(body.as_mut());
         msg
