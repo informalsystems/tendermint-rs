@@ -12,8 +12,10 @@ use std::time::Duration;
 
 use config::ValidatorConfig;
 use ed25519::Keyring;
-use error::Error;
+use failure::Error;
 use session::Session;
+use signatory::providers::dalek::Ed25519Signer as DalekSigner;
+
 
 /// How long to wait after a crash before respawning (in seconds)
 pub const RESPAWN_DELAY: u64 = 5;
@@ -31,9 +33,9 @@ pub struct Client {
 
 impl Client {
     /// Spawn a new client, returning a handle so it can be joined
-    pub fn spawn(label: String, config: ValidatorConfig, keyring: Arc<Keyring>) -> Self {
+    pub fn spawn(label: String, config: ValidatorConfig, keyring: Arc<Keyring>, secret_connection_key: Arc<DalekSigner>) -> Self {
         Self {
-            handle: thread::spawn(move || client_loop(&label, &config, &keyring)),
+            handle: thread::spawn(move || client_loop(&label, &config, &keyring, &secret_connection_key)),
         }
     }
 
@@ -44,13 +46,13 @@ impl Client {
 }
 
 /// Main loop for all clients. Handles reconnecting in the event of an error
-fn client_loop(label: &str, config: &ValidatorConfig, keyring: &Arc<Keyring>) {
+fn client_loop(label: &str, config: &ValidatorConfig, keyring: &Arc<Keyring>, secret_connection_key:&Arc<DalekSigner>) {
     let addr = &config.addr;
     let port = config.port;
     let info = format!("{} ({}:{})", label, addr, port);
 
     loop {
-        match panic::catch_unwind(|| client_session(addr, port, keyring)) {
+        match panic::catch_unwind(|| client_session(addr, port, keyring,secret_connection_key)) {
             Ok(result) => match result {
                 Ok(_) => {
                     info!("[{}] session closed gracefully", &info);
@@ -80,8 +82,8 @@ fn client_loop(label: &str, config: &ValidatorConfig, keyring: &Arc<Keyring>) {
 }
 
 /// Establish a session with the validator and handle incoming requests
-fn client_session(addr: &str, port: u16, keyring: &Arc<Keyring>) -> Result<(), Error> {
-    let mut session = Session::new(addr, port, Arc::clone(keyring))?;
+fn client_session(addr: &str, port: u16, keyring: &Arc<Keyring>,secret_connection_key: &Arc<DalekSigner> ) -> Result<(), Error> {
+    let mut session = Session::new(addr, port, Arc::clone(keyring),Arc::clone(secret_connection_key))?;
     while session.handle_request()? {}
     Ok(())
 }

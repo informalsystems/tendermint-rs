@@ -10,7 +10,7 @@ mod yubihsm;
 
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use toml;
 
 use error::Error;
@@ -28,6 +28,8 @@ pub struct Config {
 
     /// Cryptographic signature provider configuration
     pub providers: ProviderConfig,
+
+    pub secret_connection_key_path:PathBuf,
 }
 
 impl Config {

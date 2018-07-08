@@ -4,7 +4,8 @@ use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
 
-use ed25519::{Keyring, PublicKey, Signer};
+use ed25519::{Keyring, PublicKey};
+use signatory::providers::dalek::Ed25519Signer as DalekSigner;
 use failure::Error;
 use rpc::{Request, Response, SignRequest, SignResponse};
 use secret_connection::SecretConnection;
@@ -20,10 +21,10 @@ pub struct Session {
 
 impl Session {
     /// Create a new session with the validator at the given address/port
-    pub fn new(addr: &str, port: u16,p2p_key:Signer, keyring: Arc<Keyring>) -> Result<Self, Error> {
+    pub fn new(addr: &str, port: u16,keyring: Arc<Keyring>, secret_connection_key:Arc<DalekSigner>) -> Result<Self, Error> {
         debug!("Connecting to {}:{}...", addr, port);
         let socket = TcpStream::connect(format!("{}:{}", addr, port))?;
-        let connection = SecretConnection::new(socket,p2p_key)?;
+        let connection = SecretConnection::new(socket,*secret_connection_key)?;
         Ok(Self { connection, keyring })
     }
 
@@ -35,7 +36,7 @@ impl Session {
             Request::PoisonPill => return Ok(false),
         };
 
-        self.socket.write_all(&response.to_vec())?;
+        self.connection.write_all(&response.to_vec())?;
         Ok(true)
     }
 

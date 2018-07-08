@@ -1,9 +1,9 @@
 use amino::*;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{Buf, BufMut};
-use ed25519::{Signer};
-use failure::{Error, err_msg};
-use error::Error as LegacyErr;
+use signatory::providers::dalek::Ed25519Signer as DalekSigner;
+use signatory::ed25519::Signer;
+use error::Error;
 #[allow(dead_code)]
 use hkdf::Hkdf;
 use hkdfchachapoly::{new_hkdfchachapoly, Aead, TAG_SIZE};
@@ -43,7 +43,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync>
 	// Performs handshake and returns a new authenticated SecretConnection.
 	pub fn new(
 	    mut handler: IoHandler,
-	    local_privkey: Signer,
+	    local_privkey: DalekSigner,
 	) -> Result<SecretConnection<IoHandler>, Error> {
 		// TODO: Error check
 	    let local_pubkey = local_privkey.public_key().unwrap();
@@ -95,10 +95,9 @@ impl<IoHandler: io::Read + io::Write + Send + Sync>
 		let remote_sig = Signature::from_bytes(remote_signature).unwrap();
 
 		let valid_sig = DefaultVerifier::verify(&remote_pubkey, &challenge, &remote_sig);
-		if valid_sig.is_err() {
-			// TODO: Add error message "Challenge verification failed"
-			return Err(err_msg("Challenge verification failed"));
-		}
+
+		valid_sig.map_err(|e| err!(ChallengeVerification, "{}", e))?;
+
 	    // We've authorized.
 	    sc.remote_pubkey = auth_sig_msg.Key;
 	    return Ok(sc);
@@ -295,8 +294,8 @@ fn gen_challenge(lo_pubkey: [u8; 32], hi_pubkey: [u8; 32]) -> [u8; 32] {
 }
 
 // Sign the challenge with the local private key
-fn sign_challenge(challenge: [u8; 32], local_privkey: Signer) -> Result<Signature, LegacyErr> {
-    return local_privkey.sign(&challenge[0..32]);
+fn sign_challenge(challenge: [u8; 32], local_privkey: DalekSigner) -> Result<Signature, Error> {
+    return local_privkey.sign(&challenge[0..32]).map_err(|e| err!(SigningError, "{}", e));
 }
 
 struct auth_sig_message {

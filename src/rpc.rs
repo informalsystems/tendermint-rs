@@ -1,10 +1,8 @@
 // TODO: replace this with amino
 
-extern crate bincode;
-
 use std::io::{self, Read};
 use types::{Heartbeat,Proposal,Vote};
-
+use amino::Amino;
 /// Requests to the KMS
 pub enum Request {
     /// Sign the given message
@@ -34,7 +32,7 @@ impl Request {
         r.read_exact(&mut buf)?;
 
         // TODO: don't unwrap, but really... switch to amino
-        Ok(bincode::deserialize(&buf).unwrap())
+        Ok()
     }
 
     /// Serialize a request as a byte vector
