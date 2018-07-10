@@ -1,6 +1,7 @@
 use super::{BlockID, TendermintSign, Time, PartsSetHeader};
 use bytes::{Buf, BufMut};
 use chrono::{DateTime, Utc};
+use std::time::{SystemTime, UNIX_EPOCH};
 use hex::encode_upper;
 use std::io::Cursor;
 // TODO(ismail): we might not want to use this error type here
@@ -20,7 +21,7 @@ fn vote_type_to_char(vt: VoteType) -> char {
     }
 }
 
-fn char_to_vote_type(data: u32) -> Result<VoteType, DecodeError> {
+fn u32_to_vote_type(data: u32) -> Result<VoteType, DecodeError> {
     match data {
         1 => Ok(VoteType::PreVote),
         2 => Ok(VoteType::PreCommit),
@@ -56,26 +57,56 @@ pub struct SignVoteMsg {
     vote: Option<Vote>,
 }
 
-//impl TendermintSign for Vote {
-//    fn cannonicalize(self, chain_id: &str) -> String {
-//        let value = json!({
-//            "@chain_id":chain_id,
-//            "@type":"vote",
-//            "block_id":{
-//                "hash":encode_upper(self.block_id.hash),
-//                "parts":{
-//                    "hash":encode_upper(self.block_id.parts_header.hash),
-//                    "total":self.block_id.parts_header.total
-//                }
-//            },
-//            "height":self.height,
-//            "round":self.round,
-//            "timestamp":self.timestamp.to_rfc3339(),
-//            "type":vote_type_to_char(self.vote_type)
-//            });
-//        value.to_string()
-//    }
-//}
+impl TendermintSign for Vote {
+
+    fn cannonicalize(self, chain_id: &str) -> String {
+        let empty: Vec<u8> = "".as_bytes().to_vec();
+        let value = json!({
+            "@chain_id":chain_id,
+            "@type":"vote",
+            "block_id":{
+                "hash":encode_upper(match &self.block_id {
+                    Some(ref block_id) => &block_id.hash,
+                    None => &empty,
+                }),
+                "parts":{
+                    "hash":encode_upper(match &self.block_id {
+                        Some(block_id) => match &block_id.parts_header {
+                            Some(ref parts_header) => &parts_header.hash,
+                            None => &empty,
+                        },
+                        None => &empty,
+
+                    }),
+                    "total":match self.block_id {
+                        Some(block_id) => match block_id.parts_header {
+                            Some(parts_header) => parts_header.total,
+                            None => 0,
+                        },
+                        None => 0,
+                    }
+                }
+            },
+            "height":self.height,
+            "round":self.round,
+            "timestamp": match self.timestamp  {
+                   Some(timestamp) =>  {
+                        let ts: DateTime<Utc> =  DateTime::from(SystemTime::from(timestamp));
+                        ts.to_rfc3339()
+                   },
+                   None => {
+                    let ts: DateTime<Utc> =   DateTime::from(UNIX_EPOCH);
+                    ts.to_rfc3339()
+                   }
+            },
+            "type": match u32_to_vote_type(self.vote_type) {
+                Ok(vt) => vote_type_to_char(vt),
+                Err(e) => 0 as char,
+            }
+            });
+        value.to_string()
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -183,7 +214,10 @@ mod tests {
         };
         let want = SignVoteMsg{vote: Some(vote)};
         match SignVoteMsg::decode(&encoded) {
-            Ok(have) => assert_eq!(have, want),
+            Ok(have) => {
+                assert_eq!(have, want);
+                println!("{}", have.vote.unwrap().cannonicalize("chain_iddddd"));
+            },
             Err(err) => assert!(false, err.to_string()),
         }
     }
