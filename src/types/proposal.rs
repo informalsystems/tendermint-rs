@@ -1,7 +1,7 @@
 use super::{TendermintSign, PartsSetHeader, BlockID, Time};
 use bytes::{Buf, BufMut};
 use chrono::{DateTime, Utc};
-use std::time::SystemTime;
+use std::time::{SystemTime, UNIX_EPOCH};
 use hex::encode_upper;
 use std::io::Cursor;
 
@@ -35,8 +35,12 @@ pub struct SignProposalMsg {
 
 impl TendermintSign for Proposal {
     fn cannonicalize(self, chain_id: &str) -> String {
-        // TODO deal with the cases where any optional field is None otherwise this will panic:
-        let block_parts_header = self.block_parts_header.unwrap();
+        let block_parts_header = {
+            match self.block_parts_header {
+                Some(block_parts_header) => block_parts_header,
+                None => PartsSetHeader{total:0, hash: vec![]}
+            }
+        };
         let pol_block_id = {
             match self.pol_block_id {
                 Some(pol_block_id) => pol_block_id,
@@ -48,7 +52,11 @@ impl TendermintSign for Proposal {
         };
         // this can not be None (see above)
         let pol_block_id_parts_header = pol_block_id.parts_header.unwrap();
-        let ts: DateTime<Utc> = DateTime::from(SystemTime::from(self.timestamp.unwrap()));
+        let ts: DateTime<Utc> = match self.timestamp  {
+            Some(timestamp) => DateTime::from(SystemTime::from(timestamp)),
+            None => DateTime::from(UNIX_EPOCH)
+        };
+
         let value = json!({
             "@chain_id":chain_id,
             "@type":"proposal",
