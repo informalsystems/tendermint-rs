@@ -1,12 +1,7 @@
-use super::{TendermintSign, PartsSetHeader, BlockID, Time};
-use bytes::{Buf, BufMut};
+use super::{BlockID, PartsSetHeader, TendermintSign, Time};
 use chrono::{DateTime, Utc};
-use std::time::{SystemTime, UNIX_EPOCH};
 use hex::encode_upper;
-use std::io::Cursor;
-
-use prost::Message;
-
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
@@ -38,23 +33,29 @@ impl TendermintSign for Proposal {
         let block_parts_header = {
             match self.block_parts_header {
                 Some(block_parts_header) => block_parts_header,
-                None => PartsSetHeader{total:0, hash: vec![]}
+                None => PartsSetHeader {
+                    total: 0,
+                    hash: vec![],
+                },
             }
         };
         let pol_block_id = {
             match self.pol_block_id {
                 Some(pol_block_id) => pol_block_id,
-                None => BlockID{hash:vec![], parts_header: Some(PartsSetHeader{
-                    total: 0,
-                    hash: vec![]})
-                }
+                None => BlockID {
+                    hash: vec![],
+                    parts_header: Some(PartsSetHeader {
+                        total: 0,
+                        hash: vec![],
+                    }),
+                },
             }
         };
         // this can not be None (see above)
         let pol_block_id_parts_header = pol_block_id.parts_header.unwrap();
-        let ts: DateTime<Utc> = match self.timestamp  {
+        let ts: DateTime<Utc> = match self.timestamp {
             Some(timestamp) => DateTime::from(SystemTime::from(timestamp)),
-            None => DateTime::from(UNIX_EPOCH)
+            None => DateTime::from(UNIX_EPOCH),
         };
 
         let value = json!({
@@ -81,10 +82,10 @@ impl TendermintSign for Proposal {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use prost::Message;
     use std::error::Error;
 
     #[test]
@@ -108,12 +109,14 @@ mod tests {
         };
         let mut got = vec![];
 
-        let have = SignProposalMsg { proposal: Some(proposal) }.encode(&mut got);
+        let _have = SignProposalMsg {
+            proposal: Some(proposal),
+        }.encode(&mut got);
         let want = vec![
             0x31, 0x5d, 0x48, 0x70, 0x4, 0xa, 0x2b, 0x8, 0xf2, 0xc0, 0x1, 0x10, 0xc0, 0xee, 0x2,
             0x1a, 0xe, 0x9, 0x22, 0xec, 0x7f, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x40, 0xf9, 0x98,
             0x2d, 0x22, 0xf, 0x8, 0xde, 0x1, 0x12, 0xa, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70, 0x61,
-            0x72, 0x74, 0x73, 0x28, 0x1
+            0x72, 0x74, 0x73, 0x28, 0x1,
         ];
 
         assert_eq!(got, want)
@@ -138,13 +141,15 @@ mod tests {
             pol_block_id: None,
             signature: None,
         };
-        let want = SignProposalMsg { proposal: Some(proposal) };
+        let want = SignProposalMsg {
+            proposal: Some(proposal),
+        };
 
         let data = vec![
             0x31, 0x5d, 0x48, 0x70, 0x4, 0xa, 0x2b, 0x8, 0xf2, 0xc0, 0x1, 0x10, 0xc0, 0xee, 0x2,
             0x1a, 0xe, 0x9, 0x22, 0xec, 0x7f, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x40, 0xf9, 0x98,
             0x2d, 0x22, 0xf, 0x8, 0xde, 0x1, 0x12, 0xa, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70, 0x61,
-            0x72, 0x74, 0x73, 0x28, 0x1
+            0x72, 0x74, 0x73, 0x28, 0x1,
         ];
 
         match SignProposalMsg::decode(&data) {
