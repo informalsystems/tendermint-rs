@@ -1,4 +1,4 @@
-use super::{TendermintSign};
+use super::TendermintSign;
 use bytes::{Buf, BufMut};
 use hex::encode;
 use std::io::Cursor;
@@ -7,7 +7,7 @@ use prost::Message;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Heartbeat {
-    #[prost(bytes, tag="1")]
+    #[prost(bytes, tag = "1")]
     pub validator_address: Vec<u8>,
     #[prost(sint64)]
     validator_index: i64,
@@ -22,9 +22,9 @@ pub struct Heartbeat {
 }
 
 #[derive(Clone, PartialEq, Message)]
-#[aminoName="tendermint/socketpv/SignHeartbeatMsg"]
+#[aminoName = "tendermint/socketpv/SignHeartbeatMsg"]
 struct SignHeartbeatMsg {
-    #[prost(message, tag="1")]
+    #[prost(message, tag = "1")]
     heartbeat: Option<Heartbeat>,
 }
 
@@ -49,52 +49,51 @@ mod tests {
     use std::error::Error;
 
     #[test]
-    fn test_serialization() {
-        {
-            let addr = vec![
-                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
-                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
-            ];
-            let heartbeat = Heartbeat {
-                validator_address: addr,
-                validator_index: 1,
-                height: 15,
-                round: 10,
-                sequence: 30,
-                signature: None,
-            };
-            let mut got = vec![];
-            let have = heartbeat.encode(&mut got);
-            let want = vec![0x24, 0xbf, 0x58, 0xca, 0xef, 0xa, 0x1e, 0xa, 0x14, 0xa3,
-                            0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48,
-                            0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35, 0x10, 0x2, 0x18, 0x1e,
-                            0x20, 0x14, 0x28, 0x3c];
+    fn test_serializationuns_unsigned() {
+        let addr = vec![
+            0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+            0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+        ];
+        let heartbeat = Heartbeat {
+            validator_address: addr,
+            validator_index: 1,
+            height: 15,
+            round: 10,
+            sequence: 30,
+            signature: None,
+        };
+        let mut got = vec![];
+        let have = SignHeartbeatMsg{heartbeat: Some(heartbeat)}.encode(&mut got);
+        let want = vec![
+            0x24, 0xbf, 0x58, 0xca, 0xef, 0xa, 0x1e, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71,
+            0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b,
+            0x35, 0x10, 0x2, 0x18, 0x1e, 0x20, 0x14, 0x28, 0x3c];
 
-            assert_eq!(got, want)
-        }
-        {
-            // identical to above but without validator_adress:
-            let heartbeat = Heartbeat {
-                validator_address: vec![],
-                validator_index: 1,
-                height: 15,
-                round: 10,
-                sequence: 30,
-                signature: None,
-            };
-            let msg = SignHeartbeatMsg {
-                heartbeat: Some(heartbeat),
-            };
+        assert_eq!(got, want)
+    }
 
-            let mut got = vec![];
-            let have = msg.encode(&mut got);
-            let want = vec![
-                0x16, 0xbf, 0x58, 0xca, 0xeb, 0xb, 0x10, 0x2, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-                0x0, 0xf, 0x20, 0x14, 0x28, 0x3c, 0x4, 0x4,
-            ];
+    #[test]
+    fn test_serializationuns_withoutaddr() {
+        // identical to above but without validator_adress:
+        let heartbeat = Heartbeat {
+            validator_address: vec![],
+            validator_index: 1,
+            height: 15,
+            round: 10,
+            sequence: 30,
+            signature: None,
+        };
+        let msg = SignHeartbeatMsg {
+            heartbeat: Some(heartbeat),
+        };
 
-            assert_eq!(got, want)
-        }
+        let mut got = vec![];
+        let have = msg.encode(&mut got);
+        let want = vec![
+            0xe, 0xbf, 0x58, 0xca, 0xef, 0xa, 0x8, 0x10, 0x2, 0x18, 0x1e, 0x20, 0x14, 0x28, 0x3c
+        ];
+
+        assert_eq!(got, want)
     }
 
     #[test]
@@ -103,7 +102,7 @@ mod tests {
             0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
             0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
         ];
-        let want = Heartbeat {
+        let hb = Heartbeat {
             validator_address: addr,
             validator_index: 1,
             height: 15,
@@ -111,14 +110,15 @@ mod tests {
             sequence: 30,
             signature: None,
         };
+        let want = SignHeartbeatMsg{heartbeat:Some(hb)};
 
         let data = vec![
-            0x2c, 0xbf, 0x58, 0xca, 0xeb, 0xb, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1,
-            0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35, 0x10,
-            0x2, 0x19, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xf, 0x20, 0x14, 0x28, 0x3c, 0x4, 0x4,
+            0x24, 0xbf, 0x58, 0xca, 0xef, 0xa, 0x1e, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71,
+            0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b,
+            0x35, 0x10, 0x2, 0x18, 0x1e, 0x20, 0x14, 0x28, 0x3c
         ];
 
-        match Heartbeat::decode(&data) {
+        match SignHeartbeatMsg::decode(&data) {
             Err(err) => assert!(false, err.description().to_string()),
             Ok(have) => assert_eq!(have, want),
         }
