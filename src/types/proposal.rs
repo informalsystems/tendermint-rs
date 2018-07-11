@@ -22,7 +22,7 @@ pub struct Proposal {
 }
 
 #[derive(Clone, PartialEq, Message)]
-#[aminoName = "tendermint/socketpv/SignProposalMsg"]
+#[amino_name = "tendermint/socketpv/SignProposalMsg"]
 pub struct SignProposalMsg {
     #[prost(message, tag = "1")]
     proposal: Option<Proposal>,

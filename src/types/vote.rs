@@ -47,7 +47,7 @@ pub struct Vote {
 }
 
 #[derive(Clone, PartialEq, Message)]
-#[aminoName = "tendermint/socketpv/SignVoteMsg"]
+#[amino_name = "tendermint/socketpv/SignVoteMsg"]
 pub struct SignVoteMsg {
     #[prost(message, tag = "1")]
     vote: Option<Vote>,
