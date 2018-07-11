@@ -37,6 +37,8 @@ bytes = "0.4"
 chrono = "0.4.2"
 byteorder = "^1.2"
 x25519-dalek = "^0.1"
+prost = { git = "https://github.com/Liamsi/prost", branch = "prost_amino_derive"}
+prost-derive = {git = "https://github.com/Liamsi/prost", branch = "prost_amino_derive"}
 
 [features]
 dalek-provider = ["signatory/dalek-provider"]
