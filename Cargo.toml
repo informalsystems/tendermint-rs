@@ -27,7 +27,8 @@ signatory = "0.5.1"
 simplelog = "0.5"
 toml = "0.4"
 yubihsm = { version = "0.8", optional = true }
-amino = { git = "https://github.com/tendermint/amino_rs", branch = "master"}
+prost = { git = "https://github.com/Liamsi/prost", branch = "prost_amino_derive"}
+prost-derive = {git = "https://github.com/Liamsi/prost", branch = "prost_amino_derive"}
 serde_json = "1.0"
 hex = "0.3.2"
 bytes = "0.4"
