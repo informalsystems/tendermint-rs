@@ -19,7 +19,7 @@ pub struct Heartbeat {
 
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/socketpv/SignHeartbeatMsg"]
-struct SignHeartbeatMsg {
+pub struct SignHeartbeatMsg {
     #[prost(message, tag = "1")]
     heartbeat: Option<Heartbeat>,
 }

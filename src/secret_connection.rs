@@ -1,4 +1,3 @@
-use amino::*;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{Buf, BufMut};
 use error::Error;
@@ -14,6 +13,7 @@ use std::io::Cursor;
 use std::marker::{Send, Sync};
 use std::{cmp, io};
 use x25519_dalek::{diffie_hellman, generate_public, generate_secret};
+use prost::encoding::bytes::{encode,merge, WireType};
 
 // 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: u32 = 4;
@@ -220,7 +220,7 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
 ) -> Result<[u8; 32], ()> {
     // Send our pubkey and receive theirs in tandem.
     let mut buf = vec![0; 0];
-    amino_bytes::encode(local_eph_pubkey, &mut buf);
+    encode(0,&local_eph_pubkey.to_vec(), &mut buf);
     handler.write(&buf);
 
     let mut buf = vec![];
@@ -229,7 +229,8 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
 
     // TODO: Add error checking here
     // Don't need output of this
-    let remote_eph_pubkey_vec = amino_bytes::decode(&mut amino_buf).unwrap();
+    let mut remote_eph_pubkey_vec = vec![];
+    merge(WireType::LengthDelimited, &mut remote_eph_pubkey_vec, &mut amino_buf).unwrap();
     // move this vector into a fixed size array
     let mut remote_eph_pubkey = [0u8; 32];
     let remote_eph_pubkey_vec = &remote_eph_pubkey_vec[..32]; // panics if not enough data
@@ -299,52 +300,55 @@ fn sign_challenge(challenge: [u8; 32], local_privkey: DalekSigner) -> Result<Sig
         .map_err(|e| err!(SigningError, "{}", e));
 }
 
+#[derive(Clone, PartialEq, Message)]
 struct auth_sig_message {
+    #[prost(bytes, tag = "1")]
     Key: [u8; 32],
+    #[prost(bytes, tag = "2")]
     Sig: [u8; 64],
 }
 
-// TODO: Test if this works, I have no idea what the encoding is doing underneath.
-impl Amino for auth_sig_message {
-    fn deserialize(data: &[u8]) -> Result<auth_sig_message, DecodeError> {
-        let mut buf = Cursor::new(data);
-        consume_length(&mut buf)?;
+// // TODO: Test if this works, I have no idea what the encoding is doing underneath.
+// impl Amino for auth_sig_message {
+//     fn deserialize(data: &[u8]) -> Result<auth_sig_message, DecodeError> {
+//         let mut buf = Cursor::new(data);
+//         consume_length(&mut buf)?;
 
-        check_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf)?;
-        let key_vec = amino_bytes::decode(&mut buf)?;
-        let mut key = [0u8; 32];
-        key.copy_from_slice(&key_vec);
+//         check_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf)?;
+//         let key_vec = amino_bytes::decode(&mut buf)?;
+//         let mut key = [0u8; 32];
+//         key.copy_from_slice(&key_vec);
 
-        check_field_number_typ3(2, Typ3Byte::Typ3_ByteLength, &mut buf)?;
-        let sig_vec = amino_bytes::decode(&mut buf)?;
-        let mut sig = [0u8; 64];
-        sig.copy_from_slice(&sig_vec);
+//         check_field_number_typ3(2, Typ3Byte::Typ3_ByteLength, &mut buf)?;
+//         let sig_vec = amino_bytes::decode(&mut buf)?;
+//         let mut sig = [0u8; 64];
+//         sig.copy_from_slice(&sig_vec);
 
-        Ok(auth_sig_message { Key: key, Sig: sig })
-    }
+//         Ok(auth_sig_message { Key: key, Sig: sig })
+//     }
 
-    fn serialize(self) -> Vec<u8> {
-        let mut buf = vec![];
+//     fn serialize(self) -> Vec<u8> {
+//         let mut buf = vec![];
 
-        // encode the Validator Address
-        encode_field_number_typ3(1, Typ3Byte::Typ3_Struct, &mut buf);
-        {
-            // encode the Key
-            encode_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf);
-            amino_bytes::encode(&self.Key, &mut buf);
-            // encode the Key
-            encode_field_number_typ3(2, Typ3Byte::Typ3_ByteLength, &mut buf);
-            amino_bytes::encode(&self.Sig, &mut buf);
-        }
-        buf.put(typ3_to_byte(Typ3Byte::Typ3_StructTerm));
+//         // encode the Validator Address
+//         encode_field_number_typ3(1, Typ3Byte::Typ3_Struct, &mut buf);
+//         {
+//             // encode the Key
+//             encode_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf);
+//             amino_bytes::encode(&self.Key, &mut buf);
+//             // encode the Key
+//             encode_field_number_typ3(2, Typ3Byte::Typ3_ByteLength, &mut buf);
+//             amino_bytes::encode(&self.Sig, &mut buf);
+//         }
+//         buf.put(typ3_to_byte(Typ3Byte::Typ3_StructTerm));
 
-        let mut length_buf = vec![];
-        encode_uvarint(buf.len() as u64, &mut length_buf);
-        length_buf.append(&mut buf);
+//         let mut length_buf = vec![];
+//         encode_uvarint(buf.len() as u64, &mut length_buf);
+//         length_buf.append(&mut buf);
 
-        return length_buf;
-    }
-}
+//         return length_buf;
+//     }
+// }
 
 fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
     mut sc: &mut SecretConnection<IoHandler>,

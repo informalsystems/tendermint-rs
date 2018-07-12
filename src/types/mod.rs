@@ -45,6 +45,6 @@ pub trait TendermintSign {
     fn cannonicalize(self, chain_id: &str) -> String;
 }
 
-pub use self::heartbeat::Heartbeat;
-pub use self::proposal::Proposal;
-pub use self::vote::Vote;
+pub use self::heartbeat::SignHeartbeatMsg;
+pub use self::proposal::SignProposalMsg;
+pub use self::vote::SignVoteMsg;
