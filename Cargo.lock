@@ -28,32 +28,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "amino"
-version = "0.1.0"
-source = "git+https://github.com/tendermint/amino_rs#14908e9295e05b155466a40eb2b40a32b5828e1e"
-dependencies = [
- "amino-derive 0.1.0 (git+https://github.com/tendermint/amino_rs)",
- "byteorder 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "bytes 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "chrono 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "sha2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "amino-derive"
-version = "0.1.0"
-source = "git+https://github.com/tendermint/amino_rs#14908e9295e05b155466a40eb2b40a32b5828e1e"
-dependencies = [
- "digest 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "failure 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "itertools 0.7.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "proc-macro2 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "sha2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.12.15 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "arrayref"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -206,7 +180,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "cosmos-kms"
 version = "0.0.0"
 dependencies = [
- "amino 0.1.0 (git+https://github.com/tendermint/amino_rs)",
  "bincode 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -567,14 +540,6 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "unicode-xid 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "proc-macro2"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
@@ -616,14 +581,6 @@ dependencies = [
 name = "quote"
 version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "quote"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "proc-macro2 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "quote"
@@ -813,16 +770,6 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "0.12.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "proc-macro2 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "unicode-xid 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "syn"
 version = "0.13.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
@@ -998,8 +945,6 @@ dependencies = [
 "checksum aes 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0275405eedf13afd19de588add12a3b0d481a50b194eeb826e9dece11e741331"
 "checksum aes-soft 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "91f401742d8c1b0a3d01f53563f98d8ef0beea460b8d37322faf9fb4c7977cfa"
 "checksum aesni 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "b1ca074691b47c3dc585e05e45f6d069c75d0209069ca09b1c49ea37720e7b5f"
-"checksum amino 0.1.0 (git+https://github.com/tendermint/amino_rs)" = "<none>"
-"checksum amino-derive 0.1.0 (git+https://github.com/tendermint/amino_rs)" = "<none>"
 "checksum arrayref 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "0fd1479b7c29641adbd35ff3b5c293922d696a92f25c8c975da3e0acbc87258f"
 "checksum arrayvec 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)" = "a1e964f9e24d588183fcb43503abda40d288c8657dfc27311516ce2f05675aef"
 "checksum backtrace 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "89a47830402e9981c5c41223151efcced65a0510c13097c769cede7efb34782a"
@@ -1062,13 +1007,11 @@ dependencies = [
 "checksum num_cpus 1.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c51a3322e4bca9d212ad9a158a02abc6934d005490c054a2778df73a70aa0a30"
 "checksum opaque-debug 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d620c9c26834b34f039489ac0dfdb12c7ac15ccaf818350a64c9b5334a452ad7"
 "checksum pbkdf2 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6d389750af68dcb6d6b2d6cf4aa234d2929b311a31a74aa8bb33e13a27784b8d"
-"checksum proc-macro2 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "cd07deb3c6d1d9ff827999c7f9b04cdfd66b1b17ae508e14fe47b620f2282ae0"
 "checksum proc-macro2 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)" = "1b06e2f335f48d24442b35a19df506a835fb3547bc3c06ef27340da9acf5cae7"
 "checksum proc-macro2 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)" = "effdb53b25cdad54f8f48843d67398f7ef2e14f12c1b4cb4effc549a6462a4d6"
 "checksum prost 0.4.0 (git+https://github.com/Liamsi/prost?branch=prost_amino_derive)" = "<none>"
 "checksum prost-derive 0.4.0 (git+https://github.com/Liamsi/prost?branch=prost_amino_derive)" = "<none>"
 "checksum quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "7a6e920b65c65f10b2ae65c831a81a073a89edd28c7cce89475bff467ab4167a"
-"checksum quote 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1eca14c727ad12702eb4b6bfb5a232287dcf8385cb8ca83a3eeaf6519c44c408"
 "checksum quote 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "9949cfe66888ffe1d53e6ec9d9f3b70714083854be20fd5e271b232a017401e8"
 "checksum quote 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)" = "e44651a0dc4cdd99f71c83b561e221f714912d11af1a4dff0631f923d53af035"
 "checksum rand 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)" = "15a732abf9d20f0ad8eeb6f909bf6868722d9a06e1e50802b6a70351f40b4eb1"
@@ -1091,7 +1034,6 @@ dependencies = [
 "checksum subtle 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)" = "b3d2ddb6e9a9cc03eb7806a1c994ae1221259669bbe4efe9dd2dff136d3a117d"
 "checksum subtle 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8daf2e8fdde6bc5ae2d5f39716ec1f8b2c0435cda89211e3334071b5208e8515"
 "checksum syn 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)" = "d3b891b9015c88c576343b9b3e41c2c11a51c219ef067b264bd9c8aa9b441dad"
-"checksum syn 0.12.15 (registry+https://github.com/rust-lang/crates.io-index)" = "c97c05b8ebc34ddd6b967994d5c6e9852fa92f8b82b3858c39451f97346dcce5"
 "checksum syn 0.13.11 (registry+https://github.com/rust-lang/crates.io-index)" = "14f9bf6292f3a61d2c716723fdb789a41bbe104168e6f496dc6497e531ea1b9b"
 "checksum syn 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "2beff8ebc3658f07512a413866875adddd20f4fd47b2a4e6c9da65cd281baaea"
 "checksum synom 0.11.3 (registry+https://github.com/rust-lang/crates.io-index)" = "a393066ed9010ebaed60b9eafa373d4b1baac186dd7e008555b0f702b51945b6"
