@@ -3,6 +3,7 @@ extern crate prost;
 mod heartbeat;
 mod proposal;
 mod vote;
+mod ed25519sig;
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
