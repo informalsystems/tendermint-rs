@@ -29,16 +29,15 @@ NOTE: Cosmos KMS is not ready for general use.
 No releases of Cosmos KMS are presently available. Eager early adopters can
 build and install the latest code from `master` as follows:
 
-1. Install rustup (the Rust installer): https://rustup.rs/
-2. Install Rust nightly: `$ rustup install nightly-2018-06-02`
-3. Run the following to install Cosmos KMS from `master`:
+- Install rustup (the Rust installer): https://rustup.rs/
+- Configure `RUSTFLAGS`: `export RUSTFLAGS=-Ctarget-feature=+aes`
+- Run the following to install Cosmos KMS from `master`:
 
 ```
-$ cargo +nightly-2018-06-02 install --git https://github.com/tendermint/kms
+$ cargo install --git https://github.com/tendermint/kms
 ```
 
-Cosmos KMS presently requires a nightly Rust release. It should be able to
-support stable Rust after the 1.27 stable release.
+Cosmos KMS builds on Rust 1.27+ (stable).
 
 ## Configuration
 
@@ -52,9 +51,14 @@ The following are instructions for setting up a development environment.
 They assume you've already followed steps 1 & 2 from the Installation
 section above (i.e. installed rustup and the noted nightly Rust released).
 
-1. Install **rustfmt**: `rustup component add rustfmt-preview --toolchain nightly-2018-06-02`
-2. Install **clippy**: `cargo +nightly-2018-06-02 install clippy`
-3. Clone the repo: `$ git clone https://github.com/tendermint/kms`
+1. Install Rust nightly: `rustup install nightly-2018-07-14`
+1. Install **rustfmt**: `rustup component add rustfmt-preview --toolchain nightly-2018-07-14`
+2. Install **clippy**: `cargo +nightly-2018-07-14 install clippy --version 0.0.212`
+
+Alternatively, you can build a Docker image from the [Dockerfile] in the top
+level of the repository, which is what is used to run tests in CI.
+
+[Dockerfile]: https://github.com/tendermint/kms/blob/master/Dockerfile
 
 Before opening a pull request, please run the checks below:
 
@@ -63,7 +67,7 @@ Before opening a pull request, please run the checks below:
 Run the test suite with:
 
 ```
-cargo +nightly-2018-06-02 test --features=dalek-provider,yubihsm-mockhsm
+cargo +stable test --all-features
 ```
 
 ### Format checking (rustfmt)
@@ -71,7 +75,7 @@ cargo +nightly-2018-06-02 test --features=dalek-provider,yubihsm-mockhsm
 Make sure your code is well-formatted by running:
 
 ```
-cargo +nightly-2018-06-02 fmt
+cargo +nightly-2018-07-14 fmt
 ```
 
 ### Lint (clippy)
@@ -79,7 +83,7 @@ cargo +nightly-2018-06-02 fmt
 Lint your code (i.e. check it for common issues) with:
 
 ```
-cargo +nightly-2018-06-02 clippy
+cargo +nightly-2018-07-14 clippy
 ```
 
 ## License
