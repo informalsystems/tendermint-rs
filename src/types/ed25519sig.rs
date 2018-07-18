@@ -6,13 +6,9 @@
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/socketpv/PubKeyMsg"]
 pub struct PubKeyMsg {
-    #[prost(message, tag = "1")]
-    pub_key_ed25519: Option<Vec<u8>>,
+    #[prost(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
+    pub_key_ed25519: Vec<u8>,
 }
-
-// TODO
-//#[derive(Copy, Clone, PartialEq, Message)]
-//pub struct PubKeyEd25519(pub [u8; PUBLIC_KEY_SIZE]);
 
 #[cfg(test)]
 mod tests {
@@ -52,7 +48,7 @@ mod tests {
         //
 
         let want = vec![0x4, 0x82, 0x7b, 0xe, 0x9e];
-        let msg = PubKeyMsg { pub_key_ed25519: None };
+        let msg = PubKeyMsg { pub_key_ed25519: vec![] };
         let mut got = vec![];
         let _have = msg.encode(&mut got);
 
@@ -61,6 +57,7 @@ mod tests {
 
     #[test]
     fn test_ed25519_pubkey_msg() {
+
         // test-vector generated exactly as for test_empty_pubkey_msg
         // but with the following modifications:
         //  var pubKey [32]byte
@@ -71,8 +68,9 @@ mod tests {
         //	b, _ = cdc.MarshalBinary(&privval.PubKeyMsg{PubKey: crypto.PubKeyEd25519(pubKey)})
         //	fmt.Printf("%#v\n\n", b)
         //
-        let want = vec![0x2b, 0x82, 0x7b, 0xe, 0x9e, 0xa, 0x25, 0x16, 0x24,
-                        0xde, 0x64, 0x20,
+        let want = vec![0x2b, // len
+                        0x82, 0x7b, 0xe, 0x9e, // prefix (130, 123, 14, 158) for "tendermint/socketpv/PubKeyMsg"
+                        0xa, 0x25, 0x16, 0x24, 0xde, 0x64, 0x20,
                         // raw pub key bytes:
                         0x79, 0xce, 0xd, 0xe0, 0x43, 0x33, 0x4a,
                         0xec, 0xe0, 0x8b, 0x7b, 0xb5, 0x61, 0xbc, 0xe7, 0xc1, 0xd4,
@@ -80,12 +78,11 @@ mod tests {
                         0x4d, 0x37, 0x32, 0xef, 0xed];
 
         let msg = PubKeyMsg {
-            pub_key_ed25519: Some(vec![0x79, 0xce, 0xd, 0xe0, 0x43, 0x33, 0x4a, 0xec, 0xe0, 0x8b,
+            pub_key_ed25519: vec![0x79, 0xce, 0xd, 0xe0, 0x43, 0x33, 0x4a, 0xec, 0xe0, 0x8b,
                                        0x7b, 0xb5, 0x61, 0xbc, 0xe7, 0xc1, 0xd4, 0x69, 0xc3, 0x44,
                                        0x26, 0xec, 0xef, 0xc0, 0x72, 0xa, 0x52, 0x4d, 0x37, 0x32,
-                                       0xef, 0xed])
+                                       0xef, 0xed]
         };
-
         let mut got = vec![];
         let _have = msg.encode(&mut got);
 
