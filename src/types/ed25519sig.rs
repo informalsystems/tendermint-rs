@@ -14,6 +14,8 @@ pub struct PubKeyMsg {
 mod tests {
     use super::*;
     use prost::Message;
+    use std::error::Error;
+
 
     #[test]
     fn test_empty_pubkey_msg() {
@@ -53,6 +55,11 @@ mod tests {
         let _have = msg.encode(&mut got);
 
         assert_eq!(got, want);
+
+        match PubKeyMsg::decode(&want) {
+            Err(err) => assert!(false, err.description().to_string()),
+            Ok(have) => assert_eq!(have, msg),
+        }
     }
 
     #[test]
@@ -68,7 +75,7 @@ mod tests {
         //	b, _ = cdc.MarshalBinary(&privval.PubKeyMsg{PubKey: crypto.PubKeyEd25519(pubKey)})
         //	fmt.Printf("%#v\n\n", b)
         //
-        let want = vec![0x2b, // len
+        let encoded = vec![0x2b, // len
                         0x82, 0x7b, 0xe, 0x9e, // prefix (130, 123, 14, 158) for "tendermint/socketpv/PubKeyMsg"
                         0xa, 0x25, 0x16, 0x24, 0xde, 0x64, 0x20,
                         // raw pub key bytes:
@@ -86,6 +93,11 @@ mod tests {
         let mut got = vec![];
         let _have = msg.encode(&mut got);
 
-        assert_eq!(got, want);
+        assert_eq!(got, encoded);
+
+        match PubKeyMsg::decode(&encoded) {
+            Ok(have) => assert_eq!(have, msg),
+            Err(err) => assert!(false, err),
+        }
     }
 }
