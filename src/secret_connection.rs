@@ -1,19 +1,18 @@
 use byteorder::{BigEndian, ByteOrder};
-use bytes::{Buf, BufMut};
 use error::Error;
 #[allow(dead_code)]
 use hkdf::Hkdf;
 use hkdfchachapoly::{new_hkdfchachapoly, Aead, TAG_SIZE};
+use prost::encoding::bytes::encode;
+use prost::{DecodeError, Message};
 use rand::OsRng;
 use sha2::Sha256;
 use signatory::ed25519::Signer;
 use signatory::ed25519::{DefaultVerifier, PublicKey, Signature, Verifier};
 use signatory::providers::dalek::Ed25519Signer as DalekSigner;
-use std::io::Cursor;
 use std::marker::{Send, Sync};
-use std::{cmp, io};
+use std::{cmp, io, io::Cursor};
 use x25519_dalek::{diffie_hellman, generate_public, generate_secret};
-use prost::encoding::bytes::{encode,merge, WireType};
 
 // 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: u32 = 4;
@@ -41,7 +40,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
     // Performs handshake and returns a new authenticated SecretConnection.
     pub fn new(
         mut handler: IoHandler,
-        local_privkey: DalekSigner,
+        local_privkey: &DalekSigner,
     ) -> Result<SecretConnection<IoHandler>, Error> {
         // TODO: Error check
         let local_pubkey = local_privkey.public_key().unwrap();
@@ -98,7 +97,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
         valid_sig.map_err(|e| err!(ChallengeVerification, "{}", e))?;
 
         // We've authorized.
-        sc.remote_pubkey = auth_sig_msg.Key;
+        sc.remote_pubkey.copy_from_slice(&auth_sig_msg.Key);
         return Ok(sc);
     }
 }
@@ -220,7 +219,7 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
 ) -> Result<[u8; 32], ()> {
     // Send our pubkey and receive theirs in tandem.
     let mut buf = vec![0; 0];
-    encode(0,&local_eph_pubkey.to_vec(), &mut buf);
+    encode(0, &local_eph_pubkey.to_vec(), &mut buf);
     handler.write(&buf);
 
     let mut buf = vec![];
@@ -230,7 +229,7 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
     // TODO: Add error checking here
     // Don't need output of this
     let mut remote_eph_pubkey_vec = vec![];
-    merge(WireType::LengthDelimited, &mut remote_eph_pubkey_vec, &mut amino_buf).unwrap();
+    // merge(WireType::LengthDelimited, &mut remote_eph_pubkey_vec, &mut amino_buf).unwrap();
     // move this vector into a fixed size array
     let mut remote_eph_pubkey = [0u8; 32];
     let remote_eph_pubkey_vec = &remote_eph_pubkey_vec[..32]; // panics if not enough data
@@ -294,7 +293,7 @@ fn gen_challenge(lo_pubkey: [u8; 32], hi_pubkey: [u8; 32]) -> [u8; 32] {
 }
 
 // Sign the challenge with the local private key
-fn sign_challenge(challenge: [u8; 32], local_privkey: DalekSigner) -> Result<Signature, Error> {
+fn sign_challenge(challenge: [u8; 32], local_privkey: &DalekSigner) -> Result<Signature, Error> {
     return local_privkey
         .sign(&challenge[0..32])
         .map_err(|e| err!(SigningError, "{}", e));
@@ -303,9 +302,9 @@ fn sign_challenge(challenge: [u8; 32], local_privkey: DalekSigner) -> Result<Sig
 #[derive(Clone, PartialEq, Message)]
 struct auth_sig_message {
     #[prost(bytes, tag = "1")]
-    Key: [u8; 32],
+    Key: Vec<u8>,
     #[prost(bytes, tag = "2")]
-    Sig: [u8; 64],
+    Sig: Vec<u8>,
 }
 
 // // TODO: Test if this works, I have no idea what the encoding is doing underneath.
@@ -356,14 +355,16 @@ fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
     signature: Signature,
 ) -> Result<auth_sig_message, DecodeError> {
     let amsg = auth_sig_message {
-        Key: *pubkey,
-        Sig: signature.into_bytes(),
+        Key: pubkey.to_vec(),
+        Sig: signature.into_bytes().to_vec(),
     };
     // TODO: Figure out how to amino decode/encode this struct, check errors
-    sc.io_handler.write(&amsg.serialize());
-    let mut buf = vec![];
+    let mut buf: Vec<u8> = vec![];
+    amsg.encode(&mut buf).unwrap();
+    sc.io_handler.write(&buf);
+    buf.clear();
     sc.io_handler.read(&mut buf);
-    auth_sig_message::deserialize(&buf)
+    auth_sig_message::decode(&buf).map_err(|e| e.into())
 }
 
 fn hash32(input: &[u8]) -> [u8; 32] {

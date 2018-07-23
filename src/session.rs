@@ -3,10 +3,11 @@
 use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
+use types::TendermintSign;
 
 use ed25519::{Keyring, PublicKey};
 use failure::Error;
-use rpc::{Request, Response, SignRequest, SignResponse};
+use rpc::{Request, Response};
 use secret_connection::SecretConnection;
 use signatory::providers::dalek::Ed25519Signer as DalekSigner;
 
@@ -29,7 +30,7 @@ impl Session {
     ) -> Result<Self, Error> {
         debug!("Connecting to {}:{}...", addr, port);
         let socket = TcpStream::connect(format!("{}:{}", addr, port))?;
-        let connection = SecretConnection::new(socket, *secret_connection_key)?;
+        let connection = SecretConnection::new(socket, &secret_connection_key)?;
         Ok(Self {
             connection,
             keyring,
@@ -39,22 +40,18 @@ impl Session {
     /// Handle an incoming request from the validator
     pub fn handle_request(&mut self) -> Result<bool, Error> {
         let response = match Request::read(&mut self.connection)? {
-            Request::SignProposal(ref req) => self.sign(req)?,
+            Request::SignProposal(req) => self.sign(req)?,
+            _ => return Ok(false),
             #[cfg(debug_assertions)]
             Request::PoisonPill => return Ok(false),
         };
 
-        self.connection.write_all(&response.to_vec())?;
+        // self.connection.write_all(&response.to_vec())?;
         Ok(true)
     }
 
     /// Perform a digital signature operation
-    fn sign(&mut self, request: &SignRequest) -> Result<Response, Error> {
-        let pk = PublicKey::from_bytes(&request.public_key)?;
-        let signature = self.keyring.sign(&pk, &request.msg)?;
-
-        Ok(Response::Sign(SignResponse {
-            sig: signature.as_bytes().to_vec(),
-        }))
+    fn sign(&mut self, request: impl TendermintSign) -> Result<(), Error> {
+        unimplemented!()
     }
 }

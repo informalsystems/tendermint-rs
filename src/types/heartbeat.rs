@@ -24,18 +24,26 @@ pub struct SignHeartbeatMsg {
     heartbeat: Option<Heartbeat>,
 }
 
-impl TendermintSign for Heartbeat {
+impl TendermintSign for SignHeartbeatMsg {
     fn cannonicalize(self, chain_id: &str) -> String {
-        let value = json!({
+        match self.heartbeat {
+            Some(hb) => {
+                let value = json!({
             "@chain_id":chain_id,
             "@type":"heartbeat",
-            "height":self.height,
-            "round":self.round,
-            "sequence":self.sequence,
-            "validator_address": encode(&self.validator_address),
-            "validator_index": self.validator_index,
+            "height":hb.height,
+            "round":hb.round,
+            "sequence":hb.sequence,
+            "validator_address": encode(&hb.validator_address),
+            "validator_index": hb.validator_index,
             });
-        value.to_string()
+                return value.to_string();
+            }
+            None => "".to_owned(),
+        }
+    }
+    fn sign(&mut self) {
+        unimplemented!();
     }
 }
 

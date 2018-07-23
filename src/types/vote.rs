@@ -53,19 +53,21 @@ pub struct SignVoteMsg {
     vote: Option<Vote>,
 }
 
-impl TendermintSign for Vote {
+impl TendermintSign for SignVoteMsg {
     fn cannonicalize(self, chain_id: &str) -> String {
-        let empty: Vec<u8> = b"".to_vec();
-        let value = json!({
+        match self.vote {
+            Some(vote) => {
+                let empty: Vec<u8> = b"".to_vec();
+                let value = json!({
             "@chain_id":chain_id,
             "@type":"vote",
             "block_id":{
-                "hash":encode_upper(match &self.block_id {
+                "hash":encode_upper(match &vote.block_id {
                     Some(ref block_id) => &block_id.hash,
                     None => &empty,
                 }),
                 "parts":{
-                    "hash":encode_upper(match &self.block_id {
+                    "hash":encode_upper(match &vote.block_id {
                         Some(block_id) => match &block_id.parts_header {
                             Some(ref parts_header) => &parts_header.hash,
                             None => &empty,
@@ -73,7 +75,7 @@ impl TendermintSign for Vote {
                         None => &empty,
 
                     }),
-                    "total":match self.block_id {
+                    "total":match vote.block_id {
                         Some(block_id) => match block_id.parts_header {
                             Some(parts_header) => parts_header.total,
                             None => 0,
@@ -82,9 +84,9 @@ impl TendermintSign for Vote {
                     }
                 }
             },
-            "height":self.height,
-            "round":self.round,
-            "timestamp": match self.timestamp  {
+            "height":vote.height,
+            "round":vote.round,
+            "timestamp": match vote.timestamp  {
                    Some(timestamp) =>  {
                         let ts: DateTime<Utc> =  DateTime::from(SystemTime::from(timestamp));
                         ts.to_rfc3339()
@@ -94,12 +96,18 @@ impl TendermintSign for Vote {
                     ts.to_rfc3339()
                    }
             },
-            "type": match u32_to_vote_type(self.vote_type) {
+            "type": match u32_to_vote_type(vote.vote_type) {
                 Ok(ref vt) => vote_type_to_char(vt),
                 Err(_e) => 0 as char,
             }
             });
-        value.to_string()
+                value.to_string()
+            }
+            None => "".to_owned(),
+        }
+    }
+    fn sign(&mut self) {
+        unimplemented!()
     }
 }
 
@@ -217,7 +225,7 @@ mod tests {
         match SignVoteMsg::decode(&encoded) {
             Ok(have) => {
                 assert_eq!(have, want);
-                println!("{}", have.vote.unwrap().cannonicalize("chain_iddddd"));
+                println!("{}", have.cannonicalize("chain_iddddd"));
             }
             Err(err) => assert!(false, err.to_string()),
         }

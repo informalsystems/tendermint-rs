@@ -43,6 +43,7 @@ impl From<Time> for SystemTime {
 
 pub trait TendermintSign {
     fn cannonicalize(self, chain_id: &str) -> String;
+    fn sign(&mut self);
 }
 
 pub use self::heartbeat::SignHeartbeatMsg;

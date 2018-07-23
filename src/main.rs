@@ -285,14 +285,14 @@ fn spawn_validator_clients(
 
 fn load_secret_connection_key(key_path: PathBuf) -> DalekSigner {
     match File::open(&key_path) {
-        Ok(seed_file) => {
+        Ok(mut seed_file) => {
             let mut key_material = ClearOnDrop::new(vec![]);
             seed_file.read_to_end(key_material.as_mut()).unwrap();
             return DalekSigner::from_seed(Seed::from_slice(&key_material).unwrap());
         }
         Err(_) => {
             let seed = Seed::generate();
-            let seed_file = File::create(&key_path).unwrap();
+            let mut seed_file = File::create(&key_path).unwrap();
             seed_file.write(seed.as_secret_slice());
             return DalekSigner::from_seed(seed);
         }
