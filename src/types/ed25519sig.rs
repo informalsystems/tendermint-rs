@@ -57,8 +57,8 @@ mod tests {
         assert_eq!(got, want);
 
         match PubKeyMsg::decode(&want) {
-            Err(err) => assert!(false, err.description().to_string()),
             Ok(have) => assert_eq!(have, msg),
+            Err(err) => assert!(false, err.description().to_string()),
         }
     }
 
