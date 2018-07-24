@@ -20,7 +20,7 @@ dependencies = [
  "backtrace-sys 0.1.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "cfg-if 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.42 (registry+https://github.com/rust-lang/crates.io-index)",
- "rustc-demangle 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-demangle 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -90,7 +90,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "bytes"
-version = "0.4.8"
+version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "byteorder 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -145,7 +145,7 @@ name = "cosmos-kms"
 version = "0.0.0"
 dependencies = [
  "bincode 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "bytes 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bytes 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "clear_on_drop 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -378,7 +378,7 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "0.4.8"
+version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "unicode-xid 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -387,24 +387,24 @@ dependencies = [
 [[package]]
 name = "prost"
 version = "0.4.0"
-source = "git+https://github.com/Liamsi/prost?branch=prost_amino_derive#065a413ef65ee6f6cda6b544acde7c0342293364"
+source = "git+https://github.com/Liamsi/prost?branch=prost_amino_derive#4954933a364016d50b65ec8316ce0ce73563e22b"
 dependencies = [
  "byteorder 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "bytes 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bytes 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "prost-derive"
 version = "0.4.0"
-source = "git+https://github.com/Liamsi/prost?branch=prost_amino_derive#065a413ef65ee6f6cda6b544acde7c0342293364"
+source = "git+https://github.com/Liamsi/prost?branch=prost_amino_derive#4954933a364016d50b65ec8316ce0ce73563e22b"
 dependencies = [
  "digest 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.7.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "proc-macro2 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 0.14.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -422,10 +422,10 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "proc-macro2 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -445,7 +445,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "rustc-demangle"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -458,9 +458,9 @@ name = "serde_derive"
 version = "1.0.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "proc-macro2 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 0.14.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -531,11 +531,11 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "0.14.4"
+version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "proc-macro2 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-xid 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -691,7 +691,7 @@ dependencies = [
 "checksum block-padding 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "75bc2cfa52dc218b47ea000b15e6e5d00ca2f831db31e41592383c14d8802907"
 "checksum byte-tools 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "560c32574a12a89ecd91f5e742165893f86e3ab98d21f8ea548658eb9eef5f40"
 "checksum byteorder 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "74c0b906e9446b0a2e4f760cdb3fa4b2c48cdc6db8766a845c54b6ff063fd2e9"
-"checksum bytes 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)" = "7dd32989a66957d3f0cba6588f15d4281a733f4e9ffc43fcd2385f57d3bf99ff"
+"checksum bytes 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)" = "e178b8e0e239e844b083d5a0d4a156b2654e67f9f80144d48398fcd736a24fb8"
 "checksum cc 1.0.18 (registry+https://github.com/rust-lang/crates.io-index)" = "2119ea4867bd2b8ed3aecab467709720b2d55b1bcfe09f772fd68066eaf15275"
 "checksum cfg-if 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "efe5c877e17a9c717a0bf3613b2709f723202c4e4675cc8f12926ded29bcb17e"
 "checksum chrono 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "6962c635d530328acc53ac6a955e83093fedc91c5809dfac1fa60fa470830a37"
@@ -725,15 +725,15 @@ dependencies = [
 "checksum opaque-debug 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d620c9c26834b34f039489ac0dfdb12c7ac15ccaf818350a64c9b5334a452ad7"
 "checksum pbkdf2 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6d389750af68dcb6d6b2d6cf4aa234d2929b311a31a74aa8bb33e13a27784b8d"
 "checksum proc-macro2 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)" = "1b06e2f335f48d24442b35a19df506a835fb3547bc3c06ef27340da9acf5cae7"
-"checksum proc-macro2 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)" = "c65b1ea15bb859d922cade2d1765b4b88beac339cbfad545ef2d2ef8c8215ee6"
+"checksum proc-macro2 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)" = "cccdc7557a98fe98453030f077df7f3a042052fae465bb61d2c2c41435cfd9b6"
 "checksum prost 0.4.0 (git+https://github.com/Liamsi/prost?branch=prost_amino_derive)" = "<none>"
 "checksum prost-derive 0.4.0 (git+https://github.com/Liamsi/prost?branch=prost_amino_derive)" = "<none>"
 "checksum quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "7a6e920b65c65f10b2ae65c831a81a073a89edd28c7cce89475bff467ab4167a"
 "checksum quote 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "9949cfe66888ffe1d53e6ec9d9f3b70714083854be20fd5e271b232a017401e8"
-"checksum quote 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)" = "e44651a0dc4cdd99f71c83b561e221f714912d11af1a4dff0631f923d53af035"
+"checksum quote 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b71f9f575d55555aa9c06188be9d4e2bfc83ed02537948ac0d520c24d0419f1a"
 "checksum rand 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "eba5f8cb59cc50ed56be8880a5c7b496bfd9bd26394e176bc67884094145c2c5"
 "checksum redox_syscall 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)" = "c214e91d3ecf43e9a4e41e578973adeb14b474f2bee858742d127af75a0112b1"
-"checksum rustc-demangle 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "76d7ba1feafada44f2d38eed812bd2489a03c0f5abb975799251518b68848649"
+"checksum rustc-demangle 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)" = "bcfe5b13211b4d78e5c2cadfebd7769197d95c639c35a50057eb4c05de811395"
 "checksum serde 1.0.70 (registry+https://github.com/rust-lang/crates.io-index)" = "0c3adf19c07af6d186d91dae8927b83b0553d07ca56cbf7f2f32560455c91920"
 "checksum serde_derive 1.0.70 (registry+https://github.com/rust-lang/crates.io-index)" = "3525a779832b08693031b8ecfb0de81cd71cfd3812088fafe9a7496789572124"
 "checksum serde_json 1.0.24 (registry+https://github.com/rust-lang/crates.io-index)" = "c3c6908c7b925cd6c590358a4034de93dbddb20c45e1d021931459fd419bf0e2"
@@ -743,7 +743,7 @@ dependencies = [
 "checksum subtle 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)" = "b3d2ddb6e9a9cc03eb7806a1c994ae1221259669bbe4efe9dd2dff136d3a117d"
 "checksum syn 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)" = "d3b891b9015c88c576343b9b3e41c2c11a51c219ef067b264bd9c8aa9b441dad"
 "checksum syn 0.13.11 (registry+https://github.com/rust-lang/crates.io-index)" = "14f9bf6292f3a61d2c716723fdb789a41bbe104168e6f496dc6497e531ea1b9b"
-"checksum syn 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)" = "2beff8ebc3658f07512a413866875adddd20f4fd47b2a4e6c9da65cd281baaea"
+"checksum syn 0.14.5 (registry+https://github.com/rust-lang/crates.io-index)" = "4bad7abdf6633f07c7046b90484f1d9dc055eca39f8c991177b1046ce61dba9a"
 "checksum synom 0.11.3 (registry+https://github.com/rust-lang/crates.io-index)" = "a393066ed9010ebaed60b9eafa373d4b1baac186dd7e008555b0f702b51945b6"
 "checksum synstructure 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "3a761d12e6d8dcb4dcf952a7a89b475e3a9d69e4a69307e01a470977642914bd"
 "checksum term 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "5e6b677dd1e8214ea1ef4297f85dbcbed8e8cdddb561040cc998ca2551c37561"
