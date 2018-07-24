@@ -1,3 +1,5 @@
+use signatory::ed25519::{PublicKey, PUBLIC_KEY_SIZE};
+
 // Note:On the golang side this is generic in the sense that it could everything that implements
 // github.com/tendermint/tendermint/crypto.PubKey
 // While this is meant to be used with different key-types, it currently only uses a PubKeyEd25519
@@ -8,6 +10,25 @@
 pub struct PubKeyMsg {
     #[prost(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
     pub_key_ed25519: Vec<u8>,
+}
+
+impl Into<PublicKey> for PubKeyMsg {
+    // This does not check if the underlying pub_key_ed25519 has the right size.
+    // The caller needs to make sure that this is actually the case.
+    fn into(self) -> PublicKey {
+        let mut public_key = [0u8; PUBLIC_KEY_SIZE];
+        public_key.copy_from_slice(self.pub_key_ed25519.as_ref());
+        PublicKey(public_key)
+    }
+}
+
+impl Into<PubKeyMsg> for PublicKey {
+    fn into(self) -> PubKeyMsg {
+        let pk = self.0.to_vec();
+        PubKeyMsg {
+            pub_key_ed25519: pk,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -98,5 +119,40 @@ mod tests {
             Ok(have) => assert_eq!(have, msg),
             Err(err) => assert!(false, err),
         }
+    }
+
+    #[test]
+    fn test_into() {
+        let raw_pk: [u8; PUBLIC_KEY_SIZE] = [
+            0x79, 0xce, 0xd, 0xe0, 0x43, 0x33, 0x4a, 0xec, 0xe0, 0x8b, 0x7b, 0xb5, 0x61, 0xbc,
+            0xe7, 0xc1, 0xd4, 0x69, 0xc3, 0x44, 0x26, 0xec, 0xef, 0xc0, 0x72, 0xa, 0x52, 0x4d,
+            0x37, 0x32, 0xef, 0xed,
+        ];
+        let want = PublicKey(raw_pk);
+        let pk = PubKeyMsg {
+            pub_key_ed25519: vec![
+                0x79, 0xce, 0xd, 0xe0, 0x43, 0x33, 0x4a, 0xec, 0xe0, 0x8b, 0x7b, 0xb5, 0x61, 0xbc,
+                0xe7, 0xc1, 0xd4, 0x69, 0xc3, 0x44, 0x26, 0xec, 0xef, 0xc0, 0x72, 0xa, 0x52, 0x4d,
+                0x37, 0x32, 0xef, 0xed,
+            ],
+        };
+        let orig = pk.clone();
+        let got: PublicKey = pk.into();
+
+        assert_eq!(got, want);
+
+        // and back:
+        let round_trip_pk: PubKeyMsg = got.into();
+        assert_eq!(round_trip_pk, orig);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_empty_into() {
+        let empty_msg = PubKeyMsg {
+            pub_key_ed25519: vec![],
+        };
+        // we expect this to panic:
+        let _got: PublicKey = empty_msg.into();
     }
 }
