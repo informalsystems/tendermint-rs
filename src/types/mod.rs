@@ -1,6 +1,6 @@
 extern crate prost;
 
-mod ed25519sig;
+mod ed25519msg;
 mod heartbeat;
 mod proposal;
 mod vote;
