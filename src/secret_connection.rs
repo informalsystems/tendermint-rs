@@ -2,7 +2,7 @@ use byteorder::{BigEndian, ByteOrder};
 use error::Error;
 #[allow(dead_code)]
 use hkdf::Hkdf;
-use hkdfchachapoly::{new_hkdfchachapoly, Aead, TAG_SIZE};
+use ring::aead;
 use prost::encoding::bytes::encode;
 use prost::{DecodeError, Message};
 use rand::OsRng;
@@ -18,6 +18,7 @@ use x25519_dalek::{diffie_hellman, generate_public, generate_secret};
 const DATA_LEN_SIZE: u32 = 4;
 const DATA_MAX_SIZE: u32 = 1024;
 const TOTAL_FRAME_SIZE: u32 = DATA_MAX_SIZE + DATA_LEN_SIZE;
+const TAG_SIZE: usize = 16;
 // 16 is the size of the mac tag
 const SEALED_FRAME_SIZE: u32 = TOTAL_FRAME_SIZE + TAG_SIZE as u32;
 
@@ -25,10 +26,11 @@ const SEALED_FRAME_SIZE: u32 = TOTAL_FRAME_SIZE + TAG_SIZE as u32;
 // TODO: Fix errors due to the last element not being constant size
 pub struct SecretConnection<IoHandler: io::Read + io::Write + Send + Sync> {
     io_handler: IoHandler,
-    recv_nonce: [u8; 24],
-    send_nonce: [u8; 24],
+    recv_nonce: [u8; 12],
+    send_nonce: [u8; 12],
+    recv_secret: aead::OpeningKey,
+    send_secret: aead::SealingKey,
     remote_pubkey: [u8; 32],
-    shared_secret: [u8; 32], // shared secret
     recv_buffer: [u8; 1024],
 }
 // TODO: Test read/write
@@ -54,7 +56,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
         let remote_eph_pubkey = share_eph_pubkey(&mut handler, &local_eph_pubkey).unwrap();
 
         // Compute common shared secret.
-        let shared_secret = compute_shared_secret(&remote_eph_pubkey, &local_eph_privkey);
+        let shared_secret = diffie_hellman(&remote_eph_pubkey, &local_eph_privkey);
 
         // Sort by lexical order.
         let (low_eph_pubkey, high_eph_pubkey) = sort32(local_eph_pubkey, remote_eph_pubkey);
@@ -63,19 +65,16 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
         // was the least, lexicographically sorted.
         let locIsLeast = (local_eph_pubkey == low_eph_pubkey);
 
-        // Generate nonces to use for secretbox.
-        let (recv_nonce, send_nonce) = gen_nonces(local_eph_pubkey, high_eph_pubkey, locIsLeast);
-
-        // Generate common challenge to sign.
-        let challenge = gen_challenge(local_eph_pubkey, high_eph_pubkey);
+        let (recv_secret, send_secret, challenge) = derive_secrets_and_challenge(&shared_secret, locIsLeast);
 
         // Construct SecretConnection.
         let mut sc = SecretConnection {
             io_handler: handler,
             recv_buffer: [0u8; 1024],
-            recv_nonce: recv_nonce,
-            send_nonce: send_nonce,
-            shared_secret: shared_secret,
+            recv_nonce: [0u8; 12],
+            send_nonce: [0u8; 12],
+            recv_secret: aead::OpeningKey::new(&aead::CHACHA20_POLY1305, &recv_secret).unwrap(),
+            send_secret: aead::SealingKey::new(&aead::CHACHA20_POLY1305, &send_secret).unwrap(),
             remote_pubkey: remote_eph_pubkey,
         };
 
@@ -102,6 +101,30 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
     }
 }
 
+fn open(
+    opening_key: &aead::OpeningKey,
+    nonce: &[u8; 12],
+    authtext: &[u8],
+    ciphertext: &[u8],
+    out: &mut [u8],
+) -> Result<usize, ()> {
+    // optimize if the provided buffer is sufficiently large
+    if out.len() >= ciphertext.len() {
+        let in_out = &mut out[..ciphertext.len()];
+        in_out.copy_from_slice(ciphertext);
+        let len = aead::open_in_place(opening_key, nonce, authtext, 0, in_out)
+            .map_err(|_| ())?
+            .len();
+        Ok(len)
+    } else {
+        let mut in_out = ciphertext.to_vec();
+        let out0 = aead::open_in_place(opening_key, nonce, authtext, 0, &mut in_out)
+            .map_err(|_| ())?;
+        out[..out0.len()].copy_from_slice(out0);
+        Ok(out0.len())
+    }
+}
+
 impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnection<IoHandler> {
     // CONTRACT: data smaller than dataMaxSize is read atomically.
     fn read(&mut self, data: &mut [u8]) -> Result<usize, io::Error> {
@@ -115,19 +138,18 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
             return Ok(n);
         }
 
-        let aead = new_hkdfchachapoly(self.shared_secret);
         let mut sealedFrame = [0u8; TAG_SIZE + (TOTAL_FRAME_SIZE as usize)];
         self.io_handler.read_exact(&mut sealedFrame);
 
         // decrypt the frame
         let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
-        let res = aead.open(&self.send_nonce, &[0u8; 0], &sealedFrame, &mut frame);
+        let res = open(&self.recv_secret, &self.recv_nonce, &[0u8; 0], &sealedFrame, &mut frame);
         let mut frame_copy = [0u8; TOTAL_FRAME_SIZE as usize];
         frame_copy.clone_from_slice(&frame);
         if res.is_err() {
             return Err(io::Error::new(io::ErrorKind::Other, "decryption error"));
         }
-        incr2_nonce(&mut self.send_nonce);
+        incr_nonce(&mut self.recv_nonce);
         // end decryption
 
         let mut chunk_length_specifier = vec![0; 2];
@@ -173,12 +195,15 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnecti
             BigEndian::write_u32_into(&[chunkLength as u32], &mut frame[..8]);
             frame[(DATA_LEN_SIZE as usize)..].copy_from_slice(chunk);
 
-            let aead = new_hkdfchachapoly(self.shared_secret);
-            // encrypt the frame
-
             let mut sealedFrame = [0u8; TAG_SIZE + (TOTAL_FRAME_SIZE as usize)];
-            aead.seal(&self.send_nonce, &[0u8; 0], &frame, &mut sealedFrame);
-            incr2_nonce(&mut self.send_nonce);
+            aead::seal_in_place(
+                &self.send_secret,
+                &self.send_nonce,
+                &[0u8; 0],
+                &mut sealedFrame,
+                16,
+            );
+            incr_nonce(&mut self.send_nonce);
             // end encryption
 
             self.io_handler.write(&sealedFrame)?;
@@ -191,17 +216,6 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnecti
         self.io_handler.flush()
     }
 }
-
-//
-// // Implements net.Conn
-// func (sc *SecretConnection) Close() error                  { return sc.conn.Close() }
-// func (sc *SecretConnection) SetDeadline(t time.Time) error { return sc.conn.(net.Conn).SetDeadline(t) }
-// func (sc *SecretConnection) SetReadDeadline(t time.Time) error {
-// 	return sc.conn.(net.Conn).SetReadDeadline(t)
-// }
-// func (sc *SecretConnection) SetWriteDeadline(t time.Time) error {
-// 	return sc.conn.(net.Conn).SetWriteDeadline(t)
-// }
 
 // Returns pubkey, private key
 fn gen_eph_keys() -> ([u8; 32], [u8; 32]) {
@@ -237,20 +251,26 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
     return Ok(remote_eph_pubkey);
 }
 
-// Returns shared secret as 32 byte array
-fn compute_shared_secret(remote_eph_pubkey: &[u8; 32], local_eph_privkey: &[u8; 32]) -> [u8; 32] {
-    let shared_key = diffie_hellman(local_eph_privkey, remote_eph_pubkey);
-
+// Returns recv secret, send secret, challenge as 32 byte arrays
+fn derive_secrets_and_challenge(shared_secret: &[u8; 32], loc_is_lo: bool) -> ([u8; 32], [u8; 32], [u8; 32]) {
     let salt = "".as_bytes();
     let info = "TENDERMINT_SECRET_CONNECTION_SHARED_SECRET_GEN".as_bytes();
+    let hk = Hkdf::<Sha256>::extract(Some(salt), shared_secret);
+    let hkdf_vector = hk.expand(&info, 96);
 
-    let hk = Hkdf::<Sha256>::extract(Some(salt), &shared_key);
-    let shared_secret_vector = hk.expand(&info, 32);
-    // Now convert res_vector into fix sized 32 byte u8 arr
-    let mut shared_secret: [u8; 32] = [0; 32];
-    let shared_secret_vector = &shared_secret_vector[..shared_secret.len()]; // panics if not enough data
-    shared_secret.copy_from_slice(shared_secret_vector);
-    return shared_secret;
+    let challenge_vector = &hkdf_vector[64..96];
+    let mut challenge: [u8; 32] = [0; 32];
+    challenge.copy_from_slice(challenge_vector);
+    let mut recv_secret = [0u8; 32];
+    let mut send_secret = [0u8; 32];
+    if loc_is_lo {
+        recv_secret.copy_from_slice(&hkdf_vector[0..32]);
+        send_secret.copy_from_slice(&hkdf_vector[32..64]);
+    } else {
+        send_secret.copy_from_slice(&hkdf_vector[0..32]);
+        recv_secret.copy_from_slice(&hkdf_vector[32..64]);
+    }
+    return (recv_secret, send_secret, challenge);
 }
 
 // Return is of the form lo, hi
@@ -393,16 +413,10 @@ fn hash24(input: &[u8]) -> [u8; 24] {
     return res;
 }
 
-// increment nonce big-endian by 2 with wraparound.
-fn incr2_nonce(nonce: &mut [u8; 24]) {
-    incr_nonce(nonce);
-    incr_nonce(nonce);
-}
-
 // TODO: Check if internal representation is big or small endian
 // increment nonce big-endian by 2 with wraparound.
-fn incr_nonce(nonce: &mut [u8; 24]) {
-    for i in (0..24).rev() {
+fn incr_nonce(nonce: &mut [u8; 12]) {
+    for i in (0..12).rev() {
         nonce[i] = nonce[i] + 1;
         if nonce[i] != 0 {
             return;

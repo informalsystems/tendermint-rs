@@ -56,7 +56,6 @@ mod error;
 mod client;
 mod config;
 mod ed25519;
-mod hkdfchachapoly;
 mod rpc;
 mod secret_connection;
 mod session;
