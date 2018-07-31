@@ -4,8 +4,8 @@
 extern crate serde_derive;
 extern crate signatory;
 
-use signatory::ed25519::{FromSeed, PublicKey, Signature, Signer};
-use signatory::providers::dalek::Ed25519Signer;
+use signatory::ed25519::{self, FromSeed, Signer};
+use signatory::providers::dalek;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Read, Write};
@@ -57,7 +57,7 @@ impl KmsConnection {
     }
 
     /// Sign the given message with the given public key using the KMS
-    pub fn sign(&mut self, public_key: &PublicKey, msg: &[u8]) -> Signature {
+    pub fn sign(&mut self, public_key: &ed25519::PublicKey, msg: &[u8]) -> ed25519::Signature {
         let req = Request::Sign(SignRequest {
             public_key: public_key.as_bytes().to_vec(),
             msg: msg.to_owned(),
@@ -66,7 +66,7 @@ impl KmsConnection {
         self.socket.write_all(&req.to_vec()).unwrap();
 
         match Response::read(&mut self.socket).unwrap() {
-            Response::Sign(ref response) => Signature::from_bytes(&response.sig).unwrap(),
+            Response::Sign(ref response) => ed25519::Signature::from_bytes(&response.sig).unwrap(),
         }
     }
 
@@ -80,12 +80,13 @@ impl KmsConnection {
 }
 
 /// Get the public key associated with the testing private key
-fn test_public_key() -> PublicKey {
+fn test_public_key() -> ed25519::PublicKey {
     let mut file = File::open("tests/test.key").unwrap();
     let mut key_material = vec![];
     file.read_to_end(key_material.as_mut()).unwrap();
 
-    let signer = Ed25519Signer::from_seed(&key_material).unwrap();
+    let seed = ed25519::Seed::from_slice(&key_material).unwrap();
+    let signer = dalek::Ed25519Signer::from_seed(seed);
     signer.public_key().unwrap()
 }
 
