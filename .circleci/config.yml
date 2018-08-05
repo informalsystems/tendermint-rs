@@ -3,14 +3,11 @@ version: 2
 jobs:
   build:
     docker:
-      - image: iqlusion/rust-ci:20180602.2 # bump cache keys when modifying this
-    environment:
-      - CARGO_FEATURES: dalek-provider,yubihsm-mockhsm
-
+      - image: iqlusion/cosmos-kms:20180715.0 # bump cache keys when modifying this
     steps:
       - checkout
       - restore_cache:
-          key: cache-20180602.2 # bump save_cache key below too
+          key: cache-20180715.0 # bump save_cache key below too
       - run:
           name: rustfmt
           command: |
@@ -20,21 +17,29 @@ jobs:
           name: clippy
           command: |
             cargo +$RUST_NIGHTLY_VERSION clippy --version
-            cargo +$RUST_NIGHTLY_VERSION clippy --verbose --features=$CARGO_FEATURES
+            cargo +$RUST_NIGHTLY_VERSION clippy --verbose --all-features
       - run:
-          name: build (nightly, all features)
+          name: build (default features)
           command: |
-            rustup run $RUST_NIGHTLY_VERSION rustc --version --verbose
-            cargo +$RUST_NIGHTLY_VERSION --version --verbose
-            cargo +$RUST_NIGHTLY_VERSION build --features=$CARGO_FEATURES
+            rustc --version --verbose
+            cargo --version --verbose
+            cargo build
+            cargo build --release
       - run:
-          name: test (nightly, all features)
+          name: build (all features)
           command: |
-            rustup run $RUST_NIGHTLY_VERSION rustc --version --verbose
-            cargo +$RUST_NIGHTLY_VERSION --version --verbose
-            cargo +$RUST_NIGHTLY_VERSION test --features=$CARGO_FEATURES
+            rustc --version --verbose
+            cargo --version --verbose
+            cargo build --all-features
+            cargo build --all-features --release
+      - run:
+          name: test (all features)
+          command: |
+            rustc --version --verbose
+            cargo --version --verbose
+            cargo test --all-features
       - save_cache:
-          key: cache-20180602.2 # bump restore_cache key above too
+          key: cache-20180715.0 # bump restore_cache key above too
           paths:
             - "~/.cargo"
             - "./target"

@@ -1,9 +1,9 @@
-//! ed25519-dalek software-based signer
-//!
-//! This is mainly intended for testing/CI. Ideally real validators will use HSMs
+// ed25519-dalek software-based signer
+//
+// This is mainly intended for testing/CI. Ideally real validators will use HSMs
 
-use signatory::ed25519::{FromSeed, Seed};
-use signatory::providers::dalek::Ed25519Signer as DalekSigner;
+use signatory::ed25519::{self, FromSeed};
+use signatory::providers::dalek;
 use std::fs::File;
 use std::io::Read;
 
@@ -34,9 +34,8 @@ pub fn create_signers(signers: &mut Vec<Signer>, config: Option<DalekConfig>) ->
         let mut key_material = ClearOnDrop::new(vec![]);
         file.read_to_end(key_material.as_mut())?;
 
-        let signer = Box::new(DalekSigner::from_seed(
-            Seed::from_slice(&key_material).unwrap(),
-        ));
+        let seed = ed25519::Seed::from_slice(&key_material).unwrap();
+        let signer = Box::new(dalek::Ed25519Signer::from_seed(seed));
         signers.push(Signer::new(DALEK_PROVIDER_LABEL, key_id, signer));
     }
 
