@@ -2,10 +2,10 @@ use byteorder::{BigEndian, ByteOrder};
 use error::Error;
 #[allow(dead_code)]
 use hkdf::Hkdf;
-use ring::aead;
 use prost::encoding::bytes::encode;
 use prost::{DecodeError, Message};
 use rand::OsRng;
+use ring::aead;
 use sha2::Sha256;
 use signatory::ed25519::Signer;
 use signatory::ed25519::{DefaultVerifier, PublicKey, Signature, Verifier};
@@ -65,7 +65,8 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
         // was the least, lexicographically sorted.
         let locIsLeast = (local_eph_pubkey == low_eph_pubkey);
 
-        let (recv_secret, send_secret, challenge) = derive_secrets_and_challenge(&shared_secret, locIsLeast);
+        let (recv_secret, send_secret, challenge) =
+            derive_secrets_and_challenge(&shared_secret, locIsLeast);
 
         // Construct SecretConnection.
         let mut sc = SecretConnection {
@@ -118,8 +119,8 @@ fn open(
         Ok(len)
     } else {
         let mut in_out = ciphertext.to_vec();
-        let out0 = aead::open_in_place(opening_key, nonce, authtext, 0, &mut in_out)
-            .map_err(|_| ())?;
+        let out0 =
+            aead::open_in_place(opening_key, nonce, authtext, 0, &mut in_out).map_err(|_| ())?;
         out[..out0.len()].copy_from_slice(out0);
         Ok(out0.len())
     }
@@ -143,7 +144,13 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
 
         // decrypt the frame
         let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
-        let res = open(&self.recv_secret, &self.recv_nonce, &[0u8; 0], &sealedFrame, &mut frame);
+        let res = open(
+            &self.recv_secret,
+            &self.recv_nonce,
+            &[0u8; 0],
+            &sealedFrame,
+            &mut frame,
+        );
         let mut frame_copy = [0u8; TOTAL_FRAME_SIZE as usize];
         frame_copy.clone_from_slice(&frame);
         if res.is_err() {
@@ -252,7 +259,10 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
 }
 
 // Returns recv secret, send secret, challenge as 32 byte arrays
-fn derive_secrets_and_challenge(shared_secret: &[u8; 32], loc_is_lo: bool) -> ([u8; 32], [u8; 32], [u8; 32]) {
+fn derive_secrets_and_challenge(
+    shared_secret: &[u8; 32],
+    loc_is_lo: bool,
+) -> ([u8; 32], [u8; 32], [u8; 32]) {
     let salt = "".as_bytes();
     let info = "TENDERMINT_SECRET_CONNECTION_SHARED_SECRET_GEN".as_bytes();
     let hk = Hkdf::<Sha256>::extract(Some(salt), shared_secret);

@@ -278,8 +278,7 @@ fn spawn_validator_clients(
                 Arc::clone(keyring),
                 Arc::clone(secret_connection_key),
             )
-        })
-        .collect()
+        }).collect()
 }
 
 fn load_secret_connection_key(key_path: PathBuf) -> DalekSigner {
