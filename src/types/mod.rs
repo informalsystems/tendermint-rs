@@ -47,6 +47,7 @@ pub trait TendermintSign {
     fn sign(&mut self);
 }
 
+pub use self::ed25519msg::PubKeyMsg;
 pub use self::heartbeat::SignHeartbeatMsg;
 pub use self::proposal::SignProposalMsg;
 pub use self::vote::SignVoteMsg;

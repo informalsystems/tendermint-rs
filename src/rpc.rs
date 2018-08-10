@@ -1,15 +1,13 @@
-// TODO: replace this with amino
-
 use prost::Message;
 use std::io::{self, Error, ErrorKind, Read};
-use types::{SignHeartbeatMsg, SignProposalMsg, SignVoteMsg};
+use types::{PubKeyMsg, SignHeartbeatMsg, SignProposalMsg, SignVoteMsg};
 /// Requests to the KMS
 pub enum Request {
     /// Sign the given message
     SignHeartbeat(SignHeartbeatMsg),
     SignProposal(SignProposalMsg),
     SignVote(SignVoteMsg),
-    ShowPublicKey(),
+    ShowPublicKey(PubKeyMsg),
 
     /// Instruct the KMS to terminate
     #[cfg(debug_assertions)]
@@ -43,5 +41,5 @@ pub enum Response {
     SignedHeartBeat(SignHeartbeatMsg),
     SignedVote(SignVoteMsg),
     SignedProposal(SignProposalMsg),
-    PublicKey(),
+    PublicKey(PubKeyMsg),
 }
