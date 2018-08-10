@@ -29,6 +29,9 @@ impl Request {
         if let Ok(prop) = SignProposalMsg::decode(&buf) {
             return Ok(Request::SignProposal(prop));
         }
+        if let Ok(prop) = PubKeyMsg::decode(&buf) {
+            return Ok(Request::ShowPublicKey(prop));
+        }
 
         // TODO: don't unwrap, but really... switch to amino
         Err(Error::new(ErrorKind::Other, "Invalid RPC message"))

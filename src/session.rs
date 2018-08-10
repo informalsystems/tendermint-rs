@@ -41,6 +41,9 @@ impl Session {
     pub fn handle_request(&mut self) -> Result<bool, Error> {
         let response = match Request::read(&mut self.connection)? {
             Request::SignProposal(req) => self.sign(req)?,
+            Request::SignHeartbeat(req) => self.sign(req)?,
+            Request::SignVote(req) => self.sign(req)?,
+            Request::ShowPublicKey(req) => self.getPubKey(req),
             _ => return Ok(false),
             #[cfg(debug_assertions)]
             Request::PoisonPill => return Ok(false),
@@ -51,7 +54,8 @@ impl Session {
     }
 
     /// Perform a digital signature operation
-    fn sign(&mut self, request: impl TendermintSign) -> Result<(), Error> {
+    fn sign(&mut self, request: impl TendermintSign) -> Result<Response, Error> {
         unimplemented!()
     }
+    fn 
 }
