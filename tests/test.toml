@@ -2,6 +2,8 @@
 #
 # This file is passed to the KMS executable during integration tests
 
+secret_connection_key_path  = "tests/test.key"
+
 [validators]
 example1 = { addr = "127.0.0.1", port = 23456, reconnect = false }
 

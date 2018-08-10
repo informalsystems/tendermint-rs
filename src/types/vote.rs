@@ -5,6 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 // TODO(ismail): we might not want to use this error type here
 // see below: those aren't prost errors
 use prost::error::DecodeError;
+use prost::Message;
 
 enum VoteType {
     PreVote,

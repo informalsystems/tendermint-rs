@@ -1,5 +1,9 @@
 //! KMS integration test
 
+extern crate prost;
+#[macro_use]
+extern crate prost_derive;
+
 #[macro_use]
 extern crate serde_derive;
 extern crate signatory;
@@ -22,6 +26,23 @@ pub const MOCK_VALIDATOR_PORT: u16 = 23456;
 pub const KMS_TEST_ARGS: &[&str] = &["run", "-c", "tests/test.toml"];
 
 /// Hacks for accessing the RPC types in tests
+
+#[macro_use]
+extern crate serde_json;
+extern crate byteorder;
+extern crate bytes;
+extern crate chrono;
+extern crate hex;
+extern crate hkdf;
+extern crate ring;
+extern crate sha2;
+extern crate x25519_dalek;
+
+mod types {
+    use prost::Message;
+    include!("../src/types/mod.rs");
+}
+
 mod rpc {
     include!("../src/rpc.rs");
 }
@@ -58,7 +79,9 @@ impl KmsConnection {
 
     /// Sign the given message with the given public key using the KMS
     pub fn sign(&mut self, public_key: &ed25519::PublicKey, msg: &[u8]) -> ed25519::Signature {
-        let req = Request::Sign(SignRequest {
+        // TODO(ismail) SignRequest ->  now one of:
+        // SignHeartbeat(SignHeartbeatMsg), SignProposal(SignProposalMsg), SignVote(SignVoteMsg), ShowPublicKey(PubKeyMsg),
+        /*let req = Request::SignHeartbeat(types::heartbeat::SignHeartbeatMsg {
             public_key: public_key.as_bytes().to_vec(),
             msg: msg.to_owned(),
         });
@@ -67,14 +90,20 @@ impl KmsConnection {
 
         match Response::read(&mut self.socket).unwrap() {
             Response::Sign(ref response) => ed25519::Signature::from_bytes(&response.sig).unwrap(),
-        }
+        }*/
+        // TODO(ismail): better sign something ... this should panic as we can't
+        // decode this
+        let mut NOT_A_signature = [0u8; ed25519::SIGNATURE_SIZE];
+        ed25519::Signature(NOT_A_signature)
     }
 
     /// Instruct the KMS to terminate by sending it the "poison pill" message
     pub fn terminate(mut self) {
-        self.socket
-            .write_all(&Request::PoisonPill.to_vec())
-            .unwrap();
+        // TODO(ismail): this is a bit odd: PoisonPill does not have to_vec anymore but isn't
+        // amino / prost encodable either yet
+        //        self.socket
+        //            .write_all(&Request::PoisonPill.to_vec())
+        //            .unwrap();
         self.process.wait().unwrap();
     }
 }
