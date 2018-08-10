@@ -1,6 +1,9 @@
-use prost::Message;
 use std::io::{self, Error, ErrorKind, Read};
 use types::{PubKeyMsg, SignHeartbeatMsg, SignProposalMsg, SignVoteMsg};
+
+use prost;
+use prost::Message;
+
 /// Requests to the KMS
 pub enum Request {
     /// Sign the given message
@@ -30,8 +33,12 @@ impl Request {
             return Ok(Request::SignProposal(prop));
         }
 
+        // TODO(ismail) PoisonPill is missing here
+        println!("TODO: we just assume we want to terminate here ...");
+        Ok(Request::PoisonPill)
+
         // TODO: don't unwrap, but really... switch to amino
-        Err(Error::new(ErrorKind::Other, "Invalid RPC message"))
+        // Err(Error::new(ErrorKind::Other, "Invalid RPC message"))
     }
 }
 

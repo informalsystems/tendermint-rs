@@ -3,6 +3,9 @@ use chrono::{DateTime, Utc};
 use hex::encode_upper;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use prost;
+use prost::Message;
+
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
     #[prost(sint64, tag = "1")]
