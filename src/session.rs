@@ -3,7 +3,7 @@
 use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
-use types::{TendermintSign,PubKeyMsg};
+use types::{PubKeyMsg, TendermintSign};
 
 use ed25519::{Keyring, PublicKey};
 use failure::Error;
@@ -57,7 +57,7 @@ impl Session {
     fn sign(&mut self, request: impl TendermintSign) -> Result<Response, Error> {
         unimplemented!()
     }
-    fn getPubKey(&mut self, request:PubKeyMsg ) -> Response{
+    fn getPubKey(&mut self, request: PubKeyMsg) -> Response {
         unimplemented!()
     }
 }

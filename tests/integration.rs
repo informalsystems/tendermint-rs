@@ -10,7 +10,7 @@ use signatory::ed25519::{self, FromSeed, Signer};
 use signatory::providers::dalek;
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io::{Read};
+use std::io::Read;
 use std::net::{TcpListener, TcpStream};
 use std::process::{Child, Command};
 
