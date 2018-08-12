@@ -1,7 +1,6 @@
-use std::io::{self, Error, ErrorKind, Read};
+use std::io::{self, Read};
 use types::{PubKeyMsg, SignHeartbeatMsg, SignProposalMsg, SignVoteMsg};
 
-use prost;
 use prost::Message;
 
 /// Requests to the KMS

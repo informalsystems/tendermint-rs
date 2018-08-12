@@ -4,15 +4,13 @@ extern crate prost;
 #[macro_use]
 extern crate prost_derive;
 
-#[macro_use]
-extern crate serde_derive;
 extern crate signatory;
 
 use signatory::ed25519::{self, FromSeed, Signer};
 use signatory::providers::dalek;
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{Read};
 use std::net::{TcpListener, TcpStream};
 use std::process::{Child, Command};
 
@@ -39,7 +37,6 @@ extern crate sha2;
 extern crate x25519_dalek;
 
 mod types {
-    use prost::Message;
     include!("../src/types/mod.rs");
 }
 
@@ -93,8 +90,8 @@ impl KmsConnection {
         }*/
         // TODO(ismail): better sign something ... this should panic as we can't
         // decode this
-        let mut NOT_A_signature = [0u8; ed25519::SIGNATURE_SIZE];
-        ed25519::Signature(NOT_A_signature)
+        let not_a_signature = [0u8; ed25519::SIGNATURE_SIZE];
+        ed25519::Signature(not_a_signature)
     }
 
     /// Instruct the KMS to terminate by sending it the "poison pill" message
