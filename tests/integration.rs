@@ -75,7 +75,7 @@ impl KmsConnection {
     }
 
     /// Sign the given message with the given public key using the KMS
-    pub fn sign(&mut self, public_key: &ed25519::PublicKey, msg: &[u8]) -> ed25519::Signature {
+    pub fn sign(&mut self, public_key: &ed25519::PublicKey, request: impl types::TendermintSign) -> ed25519::Signature {
         // TODO(ismail) SignRequest ->  now one of:
         // SignHeartbeat(SignHeartbeatMsg), SignProposal(SignProposalMsg), SignVote(SignVoteMsg), ShowPublicKey(PubKeyMsg),
         /*let req = Request::SignHeartbeat(types::heartbeat::SignHeartbeatMsg {
@@ -119,13 +119,29 @@ fn test_public_key() -> ed25519::PublicKey {
 #[test]
 fn test_sign() {
     let mut kms = KmsConnection::create(KMS_TEST_ARGS);
+    let addr = vec![
+        0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+        0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+    ];
+    let heartbeat = types::heartbeat::Heartbeat {
+        validator_address: addr,
+        validator_index: 1,
+        height: 15,
+        round: 10,
+        sequence: 30,
+        signature: None,
+    };
 
-    let test_message = b"Hello, world!";
+    let test_message = types::heartbeat::SignHeartbeatMsg {
+        heartbeat: Some(heartbeat),
+    };
     let pubkey = test_public_key();
     let signature = kms.sign(&pubkey, test_message);
 
     // Ensure the signature verifies
-    pubkey.verify(test_message, &signature).unwrap();
+    // TODO verify signature on JSON stuff
+    // let msg_was_signed = test_message.cannonicalize()
+    // pubkey.verify(test_message, &signature).unwrap();
 
     kms.terminate();
 }

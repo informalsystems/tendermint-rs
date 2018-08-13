@@ -63,7 +63,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
 
         // Check if the local ephemeral public key
         // was the least, lexicographically sorted.
-        let locIsLeast = (local_eph_pubkey == low_eph_pubkey);
+        let locIsLeast = local_eph_pubkey == low_eph_pubkey;
 
         let (recv_secret, send_secret, challenge) =
             derive_secrets_and_challenge(&shared_secret, locIsLeast);
@@ -98,7 +98,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
 
         // We've authorized.
         sc.remote_pubkey.copy_from_slice(&auth_sig_msg.Key);
-        return Ok(sc);
+        Ok(sc)
     }
 }
 
@@ -164,10 +164,10 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
 
         let chunk_length = BigEndian::read_u32(&chunk_length_specifier);
         if chunk_length > DATA_MAX_SIZE {
-            return Err(io::Error::new(
+            Err(io::Error::new(
                 io::ErrorKind::Other,
                 "chunk_length is greater than dataMaxSize",
-            ));
+            ))
         } else {
             let mut chunk = vec![0; chunk_length as usize];
             chunk.clone_from_slice(
@@ -177,7 +177,8 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
             n = cmp::min(data.len(), chunk.len());
             data.copy_from_slice(&chunk[..n]);
             self.recv_buffer.copy_from_slice(&chunk[n..]);
-            return Ok(n);
+
+            Ok(n)
         }
     }
 }
@@ -216,7 +217,8 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnecti
             self.io_handler.write(&sealedFrame)?;
             n = n + chunk.len();
         }
-        return Ok(n);
+
+        Ok(n)
     }
 
     fn flush(&mut self) -> Result<(), io::Error> {
@@ -229,7 +231,7 @@ fn gen_eph_keys() -> ([u8; 32], [u8; 32]) {
     let mut local_csprng = OsRng::new().unwrap();
     let local_privkey = generate_secret(&mut local_csprng);
     let local_pubkey = generate_public(&local_privkey);
-    return (local_pubkey.to_bytes(), local_privkey);
+    (local_pubkey.to_bytes(), local_privkey)
 }
 
 // Returns remote_eph_pubkey
@@ -255,7 +257,7 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
     let mut remote_eph_pubkey = [0u8; 32];
     let remote_eph_pubkey_vec = &remote_eph_pubkey_vec[..32]; // panics if not enough data
     remote_eph_pubkey.copy_from_slice(remote_eph_pubkey_vec);
-    return Ok(remote_eph_pubkey);
+    Ok(remote_eph_pubkey)
 }
 
 // Returns recv secret, send secret, challenge as 32 byte arrays
@@ -280,15 +282,15 @@ fn derive_secrets_and_challenge(
         send_secret.copy_from_slice(&hkdf_vector[0..32]);
         recv_secret.copy_from_slice(&hkdf_vector[32..64]);
     }
-    return (recv_secret, send_secret, challenge);
+    (recv_secret, send_secret, challenge)
 }
 
 // Return is of the form lo, hi
 fn sort32(foo: [u8; 32], bar: [u8; 32]) -> ([u8; 32], [u8; 32]) {
     if bar > foo {
-        return (foo, bar);
+        (foo, bar)
     } else {
-        return (bar, foo);
+        (bar, foo)
     }
 }
 
