@@ -10,6 +10,7 @@ use failure::Error;
 use rpc::{Request, Response};
 use secret_connection::SecretConnection;
 use signatory::providers::dalek::Ed25519Signer as DalekSigner;
+use prost::{Message};
 
 /// A (soon-to-be-encrypted) session with a validator node
 pub struct Session {
@@ -43,21 +44,35 @@ impl Session {
             Request::SignProposal(req) => self.sign(req)?,
             Request::SignHeartbeat(req) => self.sign(req)?,
             Request::SignVote(req) => self.sign(req)?,
-            Request::ShowPublicKey(req) => self.getPubKey(req),
+            Request::ShowPublicKey(req) => self.get_pub_key(req),
             _ => return Ok(false),
             #[cfg(debug_assertions)]
             Request::PoisonPill => return Ok(false),
         };
-
-        // self.connection.write_all(&response.to_vec())?;
+        //
+        let mut buf = vec![];
+        match response {
+            Response::SignedHeartBeat(shb) => shb.encode(&mut buf)?,
+            Response::SignedProposal(sp) => sp.encode(&mut buf)?,
+            Response::SignedVote(sv) => sv.encode(&mut buf)?,
+            Response::PublicKey(pk) => pk.encode(&mut buf)?,
+        }
+        // TODO(ismail): do some proper error handling
+        self.connection.write_all(&mut buf)?;
         Ok(true)
     }
 
     /// Perform a digital signature operation
     fn sign(&mut self, request: impl TendermintSign) -> Result<Response, Error> {
+        // TODO(ismail) figure out if chain_id is a constant / field of the kms?
+        let chain_id = "TODO";
+        let json = request.cannonicalize(chain_id);
+        // TODO(ismail): figure out which key to use here
+        //match self.keyring.sign( &PublicKey(vec![]), &json.into_bytes()) { }
         unimplemented!()
     }
-    fn getPubKey(&mut self, request: PubKeyMsg) -> Response {
+
+    fn get_pub_key(&mut self, request: PubKeyMsg) -> Response {
         unimplemented!()
     }
 }

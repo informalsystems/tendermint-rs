@@ -59,14 +59,15 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
         let shared_secret = diffie_hellman(&remote_eph_pubkey, &local_eph_privkey);
 
         // Sort by lexical order.
-        let (low_eph_pubkey, high_eph_pubkey) = sort32(local_eph_pubkey, remote_eph_pubkey);
+        // TODO(ismail): verify that we do not need _high_eph_pubkey here:
+        let (low_eph_pubkey, _high_eph_pubkey) = sort32(local_eph_pubkey, remote_eph_pubkey);
 
         // Check if the local ephemeral public key
         // was the least, lexicographically sorted.
-        let locIsLeast = local_eph_pubkey == low_eph_pubkey;
+        let loc_is_least = local_eph_pubkey == low_eph_pubkey;
 
         let (recv_secret, send_secret, challenge) =
-            derive_secrets_and_challenge(&shared_secret, locIsLeast);
+            derive_secrets_and_challenge(&shared_secret, loc_is_least);
 
         // Construct SecretConnection.
         let mut sc = SecretConnection {
@@ -129,9 +130,8 @@ fn open(
 impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnection<IoHandler> {
     // CONTRACT: data smaller than dataMaxSize is read atomically.
     fn read(&mut self, data: &mut [u8]) -> Result<usize, io::Error> {
-        let mut n = 0usize;
         if 0 < self.recv_buffer.len() {
-            n = cmp::min(data.len(), self.recv_buffer.len());
+            let n = cmp::min(data.len(), self.recv_buffer.len());
             data.copy_from_slice(&self.recv_buffer[..n]);
             let mut leftover_portion = vec![0; self.recv_buffer.len() - n];
             leftover_portion.clone_from_slice(&self.recv_buffer[n..]);
@@ -174,7 +174,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
                 &frame_copy
                     [(DATA_LEN_SIZE as usize)..(DATA_LEN_SIZE as usize + chunk_length as usize)],
             );
-            n = cmp::min(data.len(), chunk.len());
+            let n = cmp::min(data.len(), chunk.len());
             data.copy_from_slice(&chunk[..n]);
             self.recv_buffer.copy_from_slice(&chunk[n..]);
 
@@ -245,18 +245,20 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
     encode(0, &local_eph_pubkey.to_vec(), &mut buf);
     handler.write(&buf);
 
+    // TODO(ismail) the remote key is currently never read here!
+    // we want this to happen here:
+    // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
+
     let mut buf = vec![];
     handler.read(&mut buf);
-    let mut amino_buf = Cursor::new(buf);
-
-    // TODO: Add error checking here
-    // Don't need output of this
+    let mut _amino_buf = Cursor::new(buf);
     let mut remote_eph_pubkey_vec = vec![];
     // merge(WireType::LengthDelimited, &mut remote_eph_pubkey_vec, &mut amino_buf).unwrap();
     // move this vector into a fixed size array
     let mut remote_eph_pubkey = [0u8; 32];
     let remote_eph_pubkey_vec = &remote_eph_pubkey_vec[..32]; // panics if not enough data
     remote_eph_pubkey.copy_from_slice(remote_eph_pubkey_vec);
+
     Ok(remote_eph_pubkey)
 }
 
@@ -321,7 +323,7 @@ fn gen_challenge(lo_pubkey: [u8; 32], hi_pubkey: [u8; 32]) -> [u8; 32] {
     let mut aggregated_pubkey: [u8; 64] = [0; 64];
     aggregated_pubkey[0..32].copy_from_slice(&lo_pubkey[0..32]);
     aggregated_pubkey[32..64].copy_from_slice(&hi_pubkey[0..32]);
-    return hash32(&aggregated_pubkey);
+    hash32(&aggregated_pubkey)
 }
 
 // Sign the challenge with the local private key
@@ -332,61 +334,19 @@ fn sign_challenge(challenge: [u8; 32], local_privkey: &DalekSigner) -> Result<Si
 }
 
 #[derive(Clone, PartialEq, Message)]
-struct auth_sig_message {
+struct AuthSigMessage {
     #[prost(bytes, tag = "1")]
     Key: Vec<u8>,
     #[prost(bytes, tag = "2")]
     Sig: Vec<u8>,
 }
 
-// // TODO: Test if this works, I have no idea what the encoding is doing underneath.
-// impl Amino for auth_sig_message {
-//     fn deserialize(data: &[u8]) -> Result<auth_sig_message, DecodeError> {
-//         let mut buf = Cursor::new(data);
-//         consume_length(&mut buf)?;
-
-//         check_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf)?;
-//         let key_vec = amino_bytes::decode(&mut buf)?;
-//         let mut key = [0u8; 32];
-//         key.copy_from_slice(&key_vec);
-
-//         check_field_number_typ3(2, Typ3Byte::Typ3_ByteLength, &mut buf)?;
-//         let sig_vec = amino_bytes::decode(&mut buf)?;
-//         let mut sig = [0u8; 64];
-//         sig.copy_from_slice(&sig_vec);
-
-//         Ok(auth_sig_message { Key: key, Sig: sig })
-//     }
-
-//     fn serialize(self) -> Vec<u8> {
-//         let mut buf = vec![];
-
-//         // encode the Validator Address
-//         encode_field_number_typ3(1, Typ3Byte::Typ3_Struct, &mut buf);
-//         {
-//             // encode the Key
-//             encode_field_number_typ3(1, Typ3Byte::Typ3_ByteLength, &mut buf);
-//             amino_bytes::encode(&self.Key, &mut buf);
-//             // encode the Key
-//             encode_field_number_typ3(2, Typ3Byte::Typ3_ByteLength, &mut buf);
-//             amino_bytes::encode(&self.Sig, &mut buf);
-//         }
-//         buf.put(typ3_to_byte(Typ3Byte::Typ3_StructTerm));
-
-//         let mut length_buf = vec![];
-//         encode_uvarint(buf.len() as u64, &mut length_buf);
-//         length_buf.append(&mut buf);
-
-//         return length_buf;
-//     }
-// }
-
 fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
     mut sc: &mut SecretConnection<IoHandler>,
     pubkey: &[u8; 32],
     signature: Signature,
-) -> Result<auth_sig_message, DecodeError> {
-    let amsg = auth_sig_message {
+) -> Result<AuthSigMessage, DecodeError> {
+    let amsg = AuthSigMessage {
         Key: pubkey.to_vec(),
         Sig: signature.into_bytes().to_vec(),
     };
@@ -396,7 +356,7 @@ fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
     sc.io_handler.write(&buf);
     buf.clear();
     sc.io_handler.read(&mut buf);
-    auth_sig_message::decode(&buf).map_err(|e| e.into())
+    AuthSigMessage::decode(&buf).map_err(|e| e.into())
 }
 
 fn hash32(input: &[u8]) -> [u8; 32] {

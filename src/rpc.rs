@@ -18,7 +18,6 @@ pub enum Request {
 
 impl Request {
     /// Read a request from the given readable
-    #[allow(dead_code)]
     pub fn read<R: Read>(r: &mut R) -> io::Result<Self> {
         let mut buf = vec![];
         r.read(&mut buf)?;

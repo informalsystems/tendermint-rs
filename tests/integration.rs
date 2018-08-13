@@ -75,7 +75,13 @@ impl KmsConnection {
     }
 
     /// Sign the given message with the given public key using the KMS
-    pub fn sign(&mut self, public_key: &ed25519::PublicKey, request: impl types::TendermintSign) -> ed25519::Signature {
+    pub fn sign(
+        &mut self,
+        public_key: &ed25519::PublicKey,
+        signer: signatory::providers::dalek::Ed25519Signer,
+        request: impl types::TendermintSign,
+    ) -> ed25519::Signature {
+        
         // TODO(ismail) SignRequest ->  now one of:
         // SignHeartbeat(SignHeartbeatMsg), SignProposal(SignProposalMsg), SignVote(SignVoteMsg), ShowPublicKey(PubKeyMsg),
         /*let req = Request::SignHeartbeat(types::heartbeat::SignHeartbeatMsg {
@@ -106,22 +112,22 @@ impl KmsConnection {
 }
 
 /// Get the public key associated with the testing private key
-fn test_public_key() -> ed25519::PublicKey {
+fn test_public_key() -> (ed25519::PublicKey, signatory::providers::dalek::Ed25519Signer) {
     let mut file = File::open("tests/test.key").unwrap();
     let mut key_material = vec![];
     file.read_to_end(key_material.as_mut()).unwrap();
 
     let seed = ed25519::Seed::from_slice(&key_material).unwrap();
     let signer = dalek::Ed25519Signer::from_seed(seed);
-    signer.public_key().unwrap()
+    (signer.public_key().unwrap(), signer)
 }
 
 #[test]
-fn test_sign() {
+fn test_sign_heartbeat() {
     let mut kms = KmsConnection::create(KMS_TEST_ARGS);
     let addr = vec![
-        0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
-        0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+        0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb,
+        0x34, 0x46, 0xa8, 0x4b, 0x35,
     ];
     let heartbeat = types::heartbeat::Heartbeat {
         validator_address: addr,
@@ -135,8 +141,8 @@ fn test_sign() {
     let test_message = types::heartbeat::SignHeartbeatMsg {
         heartbeat: Some(heartbeat),
     };
-    let pubkey = test_public_key();
-    let signature = kms.sign(&pubkey, test_message);
+    let (pubkey, signer) = test_public_key();
+    let signature = kms.sign(&pubkey, signer,test_message);
 
     // Ensure the signature verifies
     // TODO verify signature on JSON stuff

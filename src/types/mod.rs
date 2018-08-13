@@ -44,6 +44,11 @@ impl From<Time> for SystemTime {
 
 pub trait TendermintSign {
     fn cannonicalize(self, chain_id: &str) -> String;
+    // TODO(ismail): can't the signing op time out or error in another way
+    // (e.g.hsm module not found)
+    // also, if we want to keep this method, we need the signer / priv key to be known here
+    // probably the cannonicalize method is sufficient and the actual signing happens
+    // outside of the type:
     fn sign(&mut self);
 }
 
