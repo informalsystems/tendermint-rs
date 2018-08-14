@@ -5,12 +5,12 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use types::{PubKeyMsg, TendermintSign};
 
-use ed25519::{Keyring};
+use ed25519::Keyring;
 use failure::Error;
+use prost::Message;
 use rpc::{Request, Response};
 use secret_connection::SecretConnection;
 use signatory::providers::dalek::Ed25519Signer as DalekSigner;
-use prost::{Message};
 
 /// A (soon-to-be-encrypted) session with a validator node
 pub struct Session {

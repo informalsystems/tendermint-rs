@@ -1,11 +1,11 @@
 use byteorder::{BigEndian, ByteOrder};
+use bytes::BufMut;
 use error::Error;
 #[allow(dead_code)]
 use hkdf::Hkdf;
 use prost::encoding::bytes::merge;
-use prost::encoding::WireType;
 use prost::encoding::encode_varint;
-use bytes::BufMut;
+use prost::encoding::WireType;
 use prost::{DecodeError, Message};
 use rand::OsRng;
 use ring::aead;
@@ -252,7 +252,9 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
     // this is the sending part of:
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
     // TODO(ismail): handle error here! This currently would panic on failure:
-    handler.write_all(&buf).expect("couldn't share local key with peer");
+    handler
+        .write_all(&buf)
+        .expect("couldn't share local key with peer");
 
     let mut buf = vec![];
     handler.read_to_end(&mut buf);
@@ -260,7 +262,11 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
     // this is the receiving part of:
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
     let mut remote_eph_pubkey = vec![0u8; 32];
-    merge(WireType::LengthDelimited, &mut remote_eph_pubkey, &mut amino_buf).unwrap();
+    merge(
+        WireType::LengthDelimited,
+        &mut remote_eph_pubkey,
+        &mut amino_buf,
+    ).unwrap();
     let mut remote_eph_pubkey_fixed: [u8; 32] = Default::default();
     remote_eph_pubkey_fixed.copy_from_slice(&remote_eph_pubkey[..32]);
 

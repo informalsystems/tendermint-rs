@@ -6,7 +6,6 @@ extern crate prost_derive;
 
 extern crate signatory;
 
-use types::TendermintSign;
 use signatory::ed25519::{self, FromSeed, Signer};
 use signatory::providers::dalek;
 use std::ffi::OsStr;
@@ -14,6 +13,7 @@ use std::fs::File;
 use std::io::Read;
 use std::net::{TcpListener, TcpStream};
 use std::process::{Child, Command};
+use types::TendermintSign;
 
 /// Address the mock validator listens on
 pub const MOCK_VALIDATOR_ADDR: &str = "127.0.0.1";
@@ -81,7 +81,7 @@ impl KmsConnection {
         public_key: &ed25519::PublicKey,
         signer: signatory::providers::dalek::Ed25519Signer,
         request: impl types::TendermintSign,
-    ) -> ed25519::Signature  {
+    ) -> ed25519::Signature {
         // TODO(ismail) SignRequest ->  now one of:
         // SignHeartbeat(SignHeartbeatMsg), SignProposal(SignProposalMsg), SignVote(SignVoteMsg), ShowPublicKey(PubKeyMsg),
         /*let req = Request::SignHeartbeat(types::heartbeat::SignHeartbeatMsg {
@@ -110,7 +110,10 @@ impl KmsConnection {
 }
 
 /// Get the public key associated with the testing private key
-fn test_public_key() -> (ed25519::PublicKey, signatory::providers::dalek::Ed25519Signer) {
+fn test_public_key() -> (
+    ed25519::PublicKey,
+    signatory::providers::dalek::Ed25519Signer,
+) {
     let mut file = File::open("tests/test.key").unwrap();
     let mut key_material = vec![];
     file.read_to_end(key_material.as_mut()).unwrap();
@@ -140,7 +143,7 @@ fn test_sign_heartbeat() {
         heartbeat: Some(heartbeat),
     };
     let (pubkey, signer) = test_public_key();
-    let signature = kms.sign(&pubkey, signer,test_message.clone());
+    let signature = kms.sign(&pubkey, signer, test_message.clone());
 
     // Ensure the signature on cannonicalized JSON verifies:
     let signed_msg = test_message.cannonicalize("chain_id");
