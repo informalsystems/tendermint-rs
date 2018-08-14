@@ -6,6 +6,7 @@ extern crate prost_derive;
 
 extern crate signatory;
 
+use types::TendermintSign;
 use signatory::ed25519::{self, FromSeed, Signer};
 use signatory::providers::dalek;
 use std::ffi::OsStr;
@@ -80,8 +81,7 @@ impl KmsConnection {
         public_key: &ed25519::PublicKey,
         signer: signatory::providers::dalek::Ed25519Signer,
         request: impl types::TendermintSign,
-    ) -> ed25519::Signature {
-        
+    ) -> ed25519::Signature  {
         // TODO(ismail) SignRequest ->  now one of:
         // SignHeartbeat(SignHeartbeatMsg), SignProposal(SignProposalMsg), SignVote(SignVoteMsg), ShowPublicKey(PubKeyMsg),
         /*let req = Request::SignHeartbeat(types::heartbeat::SignHeartbeatMsg {
@@ -94,10 +94,8 @@ impl KmsConnection {
         match Response::read(&mut self.socket).unwrap() {
             Response::Sign(ref response) => ed25519::Signature::from_bytes(&response.sig).unwrap(),
         }*/
-        // TODO(ismail): better sign something ... this should panic as we can't
-        // decode this
-        let not_a_signature = [0u8; ed25519::SIGNATURE_SIZE];
-        ed25519::Signature(not_a_signature)
+        let json_msg = request.cannonicalize("chain_id");
+        signer.sign(&json_msg.into_bytes()).unwrap()
     }
 
     /// Instruct the KMS to terminate by sending it the "poison pill" message
@@ -142,12 +140,11 @@ fn test_sign_heartbeat() {
         heartbeat: Some(heartbeat),
     };
     let (pubkey, signer) = test_public_key();
-    let signature = kms.sign(&pubkey, signer,test_message);
+    let signature = kms.sign(&pubkey, signer,test_message.clone());
 
-    // Ensure the signature verifies
-    // TODO verify signature on JSON stuff
-    // let msg_was_signed = test_message.cannonicalize()
-    // pubkey.verify(test_message, &signature).unwrap();
+    // Ensure the signature on cannonicalized JSON verifies:
+    let signed_msg = test_message.cannonicalize("chain_id");
+    pubkey.verify(&signed_msg.into_bytes(), &signature).unwrap();
 
     kms.terminate();
 }

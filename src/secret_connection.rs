@@ -242,7 +242,7 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
 ) -> Result<[u8; 32], ()> {
     // Send our pubkey and receive theirs in tandem.
     let mut buf = vec![0; 0];
-    encode(0, &local_eph_pubkey.to_vec(), &mut buf);
+    encode(1, &local_eph_pubkey.to_vec(), &mut buf);
     handler.write(&buf);
 
     // TODO(ismail) the remote key is currently never read here!
