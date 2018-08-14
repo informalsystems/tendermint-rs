@@ -252,10 +252,10 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
     // this is the sending part of:
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
     // TODO(ismail): handle error here! This currently would panic on failure:
-    handler.write(&buf).expect("couldn't share local key with peer");
+    handler.write_all(&buf).expect("couldn't share local key with peer");
 
     let mut buf = vec![];
-    handler.read(&mut buf);
+    handler.read_to_end(&mut buf);
     let mut amino_buf = Cursor::new(buf);
     // this is the receiving part of:
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
