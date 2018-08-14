@@ -2,7 +2,11 @@ use byteorder::{BigEndian, ByteOrder};
 use error::Error;
 #[allow(dead_code)]
 use hkdf::Hkdf;
-use prost::encoding::bytes::encode;
+use prost::encoding::bytes::merge;
+use prost::encoding::WireType;
+use prost::encoding::encode_varint;
+use prost::encoding::decode_varint;
+use bytes::BufMut;
 use prost::{DecodeError, Message};
 use rand::OsRng;
 use ring::aead;
@@ -242,24 +246,26 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
 ) -> Result<[u8; 32], ()> {
     // Send our pubkey and receive theirs in tandem.
     let mut buf = vec![0; 0];
-    encode(1, &local_eph_pubkey.to_vec(), &mut buf);
-    handler.write(&buf);
-
-    // TODO(ismail) the remote key is currently never read here!
-    // we want this to happen here:
+    let mut local_eph_pubkey_vec = &local_eph_pubkey.to_vec();
+    // Note: this is not regular protobuf encoding but raw length prefixed amino encoding:
+    encode_varint(local_eph_pubkey_vec.len() as u64, &mut buf);
+    buf.put_slice(local_eph_pubkey_vec);
+    // this is the sending part of:
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
+    handler.write(&buf);
 
     let mut buf = vec![];
     handler.read(&mut buf);
-    let mut _amino_buf = Cursor::new(buf);
-    let mut remote_eph_pubkey_vec = vec![];
-    // merge(WireType::LengthDelimited, &mut remote_eph_pubkey_vec, &mut amino_buf).unwrap();
-    // move this vector into a fixed size array
-    let mut remote_eph_pubkey = [0u8; 32];
-    let remote_eph_pubkey_vec = &remote_eph_pubkey_vec[..32]; // panics if not enough data
-    remote_eph_pubkey.copy_from_slice(remote_eph_pubkey_vec);
+    let mut amino_buf = Cursor::new(buf);
+    let remote_key_len = decode_varint(&mut amino_buf).unwrap();
+    // this is the receiving part of:
+    // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
+    let mut remote_eph_pubkey = vec![0u8; 32];
+    merge(WireType::LengthDelimited, &mut remote_eph_pubkey, &mut amino_buf).unwrap();
+    let mut remote_eph_pubkey_fixed: [u8; 32] = Default::default();
+    remote_eph_pubkey_fixed.copy_from_slice(&remote_eph_pubkey[..32]);
 
-    Ok(remote_eph_pubkey)
+    Ok(remote_eph_pubkey_fixed)
 }
 
 // Returns recv secret, send secret, challenge as 32 byte arrays
