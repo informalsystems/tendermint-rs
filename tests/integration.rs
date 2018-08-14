@@ -146,5 +146,6 @@ fn test_sign_heartbeat() {
     let signed_msg = test_message.cannonicalize("chain_id");
     pubkey.verify(&signed_msg.into_bytes(), &signature).unwrap();
 
+    println!("signature: {:#?}", signature);
     kms.terminate();
 }

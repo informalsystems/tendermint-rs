@@ -5,7 +5,6 @@ use hkdf::Hkdf;
 use prost::encoding::bytes::merge;
 use prost::encoding::WireType;
 use prost::encoding::encode_varint;
-use prost::encoding::decode_varint;
 use bytes::BufMut;
 use prost::{DecodeError, Message};
 use rand::OsRng;
@@ -195,7 +194,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnecti
         let mut data_copy = &data[..];
         while 0 < data_copy.len() {
             let mut frame = [0u8; TOTAL_FRAME_SIZE as usize];
-            let mut chunk: &[u8];
+            let chunk: &[u8];
             if DATA_MAX_SIZE < (data.len() as u32) {
                 chunk = &data[..(DATA_MAX_SIZE as usize)];
                 data_copy = &data_copy[(DATA_MAX_SIZE as usize)..];
@@ -203,22 +202,22 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnecti
                 chunk = data_copy;
                 data_copy = &[0u8; 0];
             }
-            let chunkLength = chunk.len();
-            BigEndian::write_u32_into(&[chunkLength as u32], &mut frame[..8]);
+            let chunk_length = chunk.len();
+            BigEndian::write_u32_into(&[chunk_length as u32], &mut frame[..8]);
             frame[(DATA_LEN_SIZE as usize)..].copy_from_slice(chunk);
 
-            let mut sealedFrame = [0u8; TAG_SIZE + (TOTAL_FRAME_SIZE as usize)];
+            let mut sealed_frame = [0u8; TAG_SIZE + (TOTAL_FRAME_SIZE as usize)];
             aead::seal_in_place(
                 &self.send_secret,
                 &self.send_nonce,
                 &[0u8; 0],
-                &mut sealedFrame,
+                &mut sealed_frame,
                 16,
             );
             incr_nonce(&mut self.send_nonce);
             // end encryption
 
-            self.io_handler.write(&sealedFrame)?;
+            self.io_handler.write(&sealed_frame)?;
             n = n + chunk.len();
         }
 
@@ -246,18 +245,18 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
 ) -> Result<[u8; 32], ()> {
     // Send our pubkey and receive theirs in tandem.
     let mut buf = vec![0; 0];
-    let mut local_eph_pubkey_vec = &local_eph_pubkey.to_vec();
+    let local_eph_pubkey_vec = &local_eph_pubkey.to_vec();
     // Note: this is not regular protobuf encoding but raw length prefixed amino encoding:
     encode_varint(local_eph_pubkey_vec.len() as u64, &mut buf);
     buf.put_slice(local_eph_pubkey_vec);
     // this is the sending part of:
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
-    handler.write(&buf);
+    // TODO(ismail): handle error here! This currently would panic on failure:
+    handler.write(&buf).expect("couldn't share local key with peer");
 
     let mut buf = vec![];
     handler.read(&mut buf);
     let mut amino_buf = Cursor::new(buf);
-    let remote_key_len = decode_varint(&mut amino_buf).unwrap();
     // this is the receiving part of:
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
     let mut remote_eph_pubkey = vec![0u8; 32];
@@ -321,7 +320,7 @@ fn gen_nonces(lo_pubkey: [u8; 32], hi_pubkey: [u8; 32], loc_is_lo: bool) -> ([u8
         recv_nonce = nonce2;
         send_nonce = nonce1;
     }
-    return (recv_nonce, send_nonce);
+    (recv_nonce, send_nonce)
 }
 
 // Returns 32 byte challenge
@@ -334,9 +333,9 @@ fn gen_challenge(lo_pubkey: [u8; 32], hi_pubkey: [u8; 32]) -> [u8; 32] {
 
 // Sign the challenge with the local private key
 fn sign_challenge(challenge: [u8; 32], local_privkey: &DalekSigner) -> Result<Signature, Error> {
-    return local_privkey
+    local_privkey
         .sign(&challenge[0..32])
-        .map_err(|e| err!(SigningError, "{}", e));
+        .map_err(|e| err!(SigningError, "{}", e))
 }
 
 #[derive(Clone, PartialEq, Message)]
@@ -348,7 +347,7 @@ struct AuthSigMessage {
 }
 
 fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
-    mut sc: &mut SecretConnection<IoHandler>,
+    sc: &mut SecretConnection<IoHandler>,
     pubkey: &[u8; 32],
     signature: Signature,
 ) -> Result<AuthSigMessage, DecodeError> {
@@ -375,7 +374,8 @@ fn hash32(input: &[u8]) -> [u8; 32] {
     let mut res: [u8; 32] = [0; 32];
     let res_vector = &res_vector[..res.len()]; // panics if not enough data
     res.copy_from_slice(res_vector);
-    return res;
+
+    res
 }
 
 fn hash24(input: &[u8]) -> [u8; 24] {
@@ -388,7 +388,8 @@ fn hash24(input: &[u8]) -> [u8; 24] {
     let mut res: [u8; 24] = [0; 24];
     let res_vector = &res_vector[..res.len()]; // panics if not enough data
     res.copy_from_slice(res_vector);
-    return res;
+
+    res
 }
 
 // TODO: Check if internal representation is big or small endian

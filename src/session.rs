@@ -5,7 +5,7 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use types::{PubKeyMsg, TendermintSign};
 
-use ed25519::{Keyring, PublicKey};
+use ed25519::{Keyring};
 use failure::Error;
 use rpc::{Request, Response};
 use secret_connection::SecretConnection;
@@ -45,7 +45,6 @@ impl Session {
             Request::SignHeartbeat(req) => self.sign(req)?,
             Request::SignVote(req) => self.sign(req)?,
             Request::ShowPublicKey(req) => self.get_pub_key(req),
-            _ => return Ok(false),
             #[cfg(debug_assertions)]
             Request::PoisonPill => return Ok(false),
         };
@@ -66,13 +65,13 @@ impl Session {
     fn sign(&mut self, request: impl TendermintSign) -> Result<Response, Error> {
         // TODO(ismail) figure out if chain_id is a constant / field of the kms?
         let chain_id = "TODO";
-        let json = request.cannonicalize(chain_id);
+        let _json = request.cannonicalize(chain_id);
         // TODO(ismail): figure out which key to use here
         //match self.keyring.sign( &PublicKey(vec![]), &json.into_bytes()) { }
         unimplemented!()
     }
 
-    fn get_pub_key(&mut self, request: PubKeyMsg) -> Response {
+    fn get_pub_key(&mut self, _request: PubKeyMsg) -> Response {
         unimplemented!()
     }
 }

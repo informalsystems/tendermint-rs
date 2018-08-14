@@ -37,7 +37,7 @@ impl TendermintSign for SignHeartbeatMsg {
             "validator_address": encode(&hb.validator_address),
             "validator_index": hb.validator_index,
             });
-                return value.to_string();
+                value.to_string()
             }
             None => "".to_owned(),
         }
