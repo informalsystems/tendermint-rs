@@ -13,11 +13,9 @@ use signatory::providers::dalek;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::net::{TcpListener, TcpStream};
 use std::process::{Child, Command};
 use types::TendermintSign;
-
-use x25519_dalek::{generate_public, generate_secret};
 
 /// Address the mock validator listens on
 pub const MOCK_VALIDATOR_ADDR: &str = "127.0.0.1";
@@ -122,7 +120,6 @@ impl KmsConnection {
         println!("Encoded poison pill {:?}", buf);
         self.socket.write_all(&buf).unwrap();
         println!("Done writing poison pill {:?}", buf);
-        // TODO: this should be sent through the secret connection instead:
         self.process.wait().unwrap();
         println!("Done waiting");
     }
@@ -146,10 +143,12 @@ fn test_public_key() -> (
 fn test_sign_heartbeat() {
     // this spawns a process which wants to share ephermal keys and blocks until it reads a reply:
     let mut kms = KmsConnection::create(KMS_TEST_ARGS);
-    let (pubkey, signer) = test_public_key();
+    let (_pubkey, signer) = test_public_key();
 
-    // Here we try to reply with a "remote" ephermal key, auth signnature etc:
-    let connection = SecretConnection::new(&kms.socket, &signer);
+    {
+        // Here we reply to the kms with a "remote" ephermal key, auth signnature etc:
+        let _connection = SecretConnection::new(&kms.socket, &signer);
+    }
     // TODO use this connection instead of manually signing below:
 
     let addr = vec![
