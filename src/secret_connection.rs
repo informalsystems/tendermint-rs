@@ -16,6 +16,7 @@ use signatory::providers::dalek::Ed25519Signer as DalekSigner;
 use std::marker::{Send, Sync};
 use std::{cmp, io, io::Cursor};
 use x25519_dalek::{diffie_hellman, generate_public, generate_secret};
+use std::io::{Read, Write};
 
 // 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: u32 = 4;
@@ -371,9 +372,9 @@ fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
     };
     let mut buf: Vec<u8> = vec![];
     amsg.encode(&mut buf).unwrap();
-    sc.io_handler.write_all(&buf);
+    sc.write_all(&buf);
     let mut rbuf = vec![0; 100];
-    sc.io_handler.read_exact(&mut rbuf).unwrap();
+    sc.read_exact(&mut rbuf).unwrap();
     // TODO: proper error handling:
     Ok(AuthSigMessage::decode(&rbuf)?)
 }
