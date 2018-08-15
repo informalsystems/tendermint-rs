@@ -63,8 +63,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
         let shared_secret = diffie_hellman(&remote_eph_pubkey, &local_eph_privkey);
 
         // Sort by lexical order.
-        // TODO(ismail): verify that we do not need _high_eph_pubkey here:
-        let (low_eph_pubkey, _high_eph_pubkey) = sort32(local_eph_pubkey, remote_eph_pubkey);
+        let (low_eph_pubkey, _) = sort32(local_eph_pubkey, remote_eph_pubkey);
 
         // Check if the local ephemeral public key
         // was the least, lexicographically sorted.
@@ -288,9 +287,8 @@ fn derive_secrets_and_challenge(
     shared_secret: &[u8; 32],
     loc_is_lo: bool,
 ) -> ([u8; 32], [u8; 32], [u8; 32]) {
-    let salt = "".as_bytes();
     let info = "TENDERMINT_SECRET_CONNECTION_SHARED_SECRET_GEN".as_bytes();
-    let hk = Hkdf::<Sha256>::extract(Some(salt), shared_secret);
+    let hk = Hkdf::<Sha256>::extract(None, shared_secret);
     let hkdf_vector = hk.expand(&info, 96);
 
     let challenge_vector = &hkdf_vector[64..96];
@@ -465,5 +463,39 @@ mod tests {
             116, 219, 55, 115, 243,
         ];
         assert_eq!(t, expected);
+    }
+
+    #[test]
+    fn test_derive_secrets_and_challenge_golden_test_vectors() {
+        extern crate hex;
+        use hex::decode;
+        use std::io::BufReader;
+        use std::io::BufRead;
+        use std::fs::File;
+        use std::str::FromStr;
+
+
+        let f = File::open("src/TestDeriveSecretsAndChallenge.golden").unwrap();
+        let mut file = BufReader::new(&f);
+        for line in file.lines() {
+            let l = line.unwrap();
+            let params: Vec<&str> = l.split(',').collect();
+
+            let rand_secret_vector: Vec<u8> = hex::decode(params.get(0).unwrap()).unwrap();
+            let mut rand_secret: [u8; 32] = [0x0; 32];
+            rand_secret.copy_from_slice(&rand_secret_vector);
+
+            let loc_is_least = bool::from_str(params.get(1).unwrap()).unwrap();
+            let expected_recv_secret =  hex::decode(params.get(2).unwrap()).unwrap();
+            let expected_send_secret = hex::decode(params.get(3).unwrap()).unwrap();
+            let expected_challenge = hex::decode(params.get(4).unwrap()).unwrap();
+            let (recv_secret, send_secret, challenge) =
+                secret_connection::derive_secrets_and_challenge(&rand_secret, loc_is_least);
+
+            assert_eq!(expected_recv_secret, recv_secret, "Recv Secrets aren't equal");
+            assert_eq!(expected_send_secret, send_secret, "Send Secrets aren't equal");
+            assert_eq!(expected_challenge, challenge, "challenges aren't equal");
+        }
+
     }
 }
