@@ -143,9 +143,16 @@ fn test_public_key() -> (
 fn test_sign_heartbeat() {
     // this spawns a process which wants to share ephermal keys and blocks until it reads a reply:
     let mut kms = KmsConnection::create(KMS_TEST_ARGS);
-    let (_pubkey, signer) = test_public_key();
 
     {
+        // we could also use another key instead:
+        //        let mut file = File::open("tests/sc_key.key").unwrap();
+        //        let mut key_material = vec![];
+        //        file.read_to_end(key_material.as_mut()).unwrap();
+        //
+        //        let seed = ed25519::Seed::from_slice(&key_material).unwrap();
+        //        let signer = dalek::Ed25519Signer::from_seed(seed);
+        let (_, signer) = test_public_key();
         // Here we reply to the kms with a "remote" ephermal key, auth signnature etc:
         let _connection = SecretConnection::new(&kms.socket, &signer);
     }
