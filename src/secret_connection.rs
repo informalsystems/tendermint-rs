@@ -36,6 +36,7 @@ pub struct SecretConnection<IoHandler: io::Read + io::Write + Send + Sync> {
     remote_pubkey: [u8; 32],
     recv_buffer: [u8; 1024],
 }
+
 // TODO: Test read/write
 impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> {
     // Returns authenticated remote pubkey
@@ -92,10 +93,12 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
         let auth_sig_msg =
             share_auth_signature(&mut sc, local_pubkey.as_bytes(), local_signature).unwrap();
 
+        println!("key={:?}", auth_sig_msg.Key);
         let remote_pubkey = PublicKey::from_bytes(&auth_sig_msg.Key).unwrap();
         let remote_signature: &[u8] = &auth_sig_msg.Sig;
         let remote_sig = Signature::from_bytes(remote_signature).unwrap();
 
+        // TODO(ismail): figure out why the challenge doesn't verify here:
         let valid_sig = DefaultVerifier::verify(&remote_pubkey, &challenge, &remote_sig);
 
         valid_sig.map_err(|e| err!(ChallengeVerification, "{}", e))?;
@@ -244,20 +247,27 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
     local_eph_pubkey: &[u8; 32],
 ) -> Result<[u8; 32], ()> {
     // Send our pubkey and receive theirs in tandem.
+    // TODO(ismail): on the go side this is done in parallel, here we do send and receive after
+    // each other. thread::spawm would require a static lifetime.
+    // Should still work though.
+
     let mut buf = vec![0; 0];
     let local_eph_pubkey_vec = &local_eph_pubkey.to_vec();
     // Note: this is not regular protobuf encoding but raw length prefixed amino encoding:
     encode_varint(local_eph_pubkey_vec.len() as u64, &mut buf);
     buf.put_slice(local_eph_pubkey_vec);
+    println!("buf.len {}", buf.len());
     // this is the sending part of:
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
     // TODO(ismail): handle error here! This currently would panic on failure:
     handler
         .write_all(&buf)
         .expect("couldn't share local key with peer");
+    println!("written eph key");
 
-    let mut buf = vec![];
-    handler.read_to_end(&mut buf);
+    let mut buf = vec![0; 33];
+    handler.read_exact(&mut buf);
+    println!("read to end");
     let mut amino_buf = Cursor::new(buf);
     // this is the receiving part of:
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
@@ -361,13 +371,13 @@ fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
         Key: pubkey.to_vec(),
         Sig: signature.into_bytes().to_vec(),
     };
-    // TODO: Figure out how to amino decode/encode this struct, check errors
     let mut buf: Vec<u8> = vec![];
     amsg.encode(&mut buf).unwrap();
-    sc.io_handler.write(&buf);
-    buf.clear();
-    sc.io_handler.read(&mut buf);
-    AuthSigMessage::decode(&buf).map_err(|e| e.into())
+    sc.io_handler.write_all(&buf);
+    let mut rbuf = vec![0; 100];
+    sc.io_handler.read_exact(&mut rbuf).unwrap();
+    // TODO: proper error handling:
+    Ok(AuthSigMessage::decode(&rbuf)?)
 }
 
 fn hash32(input: &[u8]) -> [u8; 32] {
@@ -412,6 +422,7 @@ fn incr_nonce(nonce: &mut [u8; 12]) {
 #[cfg(test)]
 mod tests {
     use secret_connection;
+
     #[test]
     fn incr2_nonce() {
         // TODO: Create test vectors for this instead of just printing the result.

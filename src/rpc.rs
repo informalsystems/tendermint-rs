@@ -1,7 +1,7 @@
-use std::io::{self, Read};
-use types::{PubKeyMsg, SignHeartbeatMsg, SignProposalMsg, SignVoteMsg};
-
 use prost::Message;
+use std::io::{self, Read};
+use std::io::{Error, ErrorKind};
+use types::{PoisonPillMsg, PubKeyMsg, SignHeartbeatMsg, SignProposalMsg, SignVoteMsg};
 
 /// Requests to the KMS
 pub enum Request {
@@ -12,15 +12,16 @@ pub enum Request {
     ShowPublicKey(PubKeyMsg),
 
     /// Instruct the KMS to terminate
-    #[cfg(debug_assertions)]
-    PoisonPill,
+    PoisonPill(PoisonPillMsg),
 }
 
 impl Request {
     /// Read a request from the given readable
     pub fn read<R: Read>(r: &mut R) -> io::Result<Self> {
         let mut buf = vec![];
-        r.read(&mut buf)?;
+        println!("reading ....");
+        r.read_to_end(&mut buf)?;
+        println!("got request!!");
         if let Ok(hb) = SignHeartbeatMsg::decode(&buf) {
             return Ok(Request::SignHeartbeat(hb));
         }
@@ -33,13 +34,14 @@ impl Request {
         if let Ok(prop) = PubKeyMsg::decode(&buf) {
             return Ok(Request::ShowPublicKey(prop));
         }
+        if let Ok(pill) = PoisonPillMsg::decode(&buf) {
+            return Ok(Request::PoisonPill(pill));
+        }
 
-        // TODO(ismail) PoisonPill is missing here
-        println!("TODO: we just assume we want to terminate here ...");
-        Ok(Request::PoisonPill)
-
-        // TODO: don't unwrap, but really... switch to amino
-        // Err(Error::new(ErrorKind::Other, "Invalid RPC message"))
+        Err(Error::new(
+            ErrorKind::InvalidData,
+            "Received unknown RPC message.",
+        ))
     }
 }
 

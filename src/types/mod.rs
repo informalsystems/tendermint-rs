@@ -2,6 +2,7 @@ extern crate prost;
 
 pub mod ed25519msg;
 pub mod heartbeat;
+pub mod poisonpill;
 pub mod proposal;
 pub mod vote;
 
@@ -54,5 +55,6 @@ pub trait TendermintSign {
 
 pub use self::ed25519msg::PubKeyMsg;
 pub use self::heartbeat::SignHeartbeatMsg;
+pub use self::poisonpill::PoisonPillMsg;
 pub use self::proposal::SignProposalMsg;
 pub use self::vote::SignVoteMsg;

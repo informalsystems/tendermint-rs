@@ -40,13 +40,13 @@ impl Session {
 
     /// Handle an incoming request from the validator
     pub fn handle_request(&mut self) -> Result<bool, Error> {
+        println!("handling request ... ");
         let response = match Request::read(&mut self.connection)? {
             Request::SignProposal(req) => self.sign(req)?,
             Request::SignHeartbeat(req) => self.sign(req)?,
             Request::SignVote(req) => self.sign(req)?,
             Request::ShowPublicKey(req) => self.get_pub_key(req),
-            #[cfg(debug_assertions)]
-            Request::PoisonPill => return Ok(false),
+            Request::PoisonPill(_req) => return Ok(false),
         };
         //
         let mut buf = vec![];

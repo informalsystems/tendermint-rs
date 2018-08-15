@@ -4,16 +4,20 @@ extern crate prost;
 #[macro_use]
 extern crate prost_derive;
 
+extern crate rand;
 extern crate signatory;
 
+use prost::Message;
 use signatory::ed25519::{self, FromSeed, Signer};
 use signatory::providers::dalek;
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io::Read;
-use std::net::{TcpListener, TcpStream};
+use std::io::{Read, Write};
+use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::process::{Child, Command};
 use types::TendermintSign;
+
+use x25519_dalek::{generate_public, generate_secret};
 
 /// Address the mock validator listens on
 pub const MOCK_VALIDATOR_ADDR: &str = "127.0.0.1";
@@ -25,17 +29,19 @@ pub const MOCK_VALIDATOR_PORT: u16 = 23456;
 pub const KMS_TEST_ARGS: &[&str] = &["run", "-c", "tests/test.toml"];
 
 /// Hacks for accessing the RPC types in tests
-
 #[macro_use]
 extern crate serde_json;
 extern crate byteorder;
 extern crate bytes;
 extern crate chrono;
+extern crate failure;
 extern crate hex;
 extern crate hkdf;
 extern crate ring;
 extern crate sha2;
 extern crate x25519_dalek;
+#[macro_use]
+extern crate failure_derive;
 
 mod types {
     include!("../src/types/mod.rs");
@@ -45,7 +51,17 @@ mod rpc {
     include!("../src/rpc.rs");
 }
 
+#[macro_use]
+mod error {
+    include!("../src/error.rs");
+}
+
+mod secret_connection {
+    include!("../src/secret_connection.rs");
+}
+
 use rpc::*;
+use secret_connection::*;
 
 /// Receives incoming KMS connection then sends commands
 struct KmsConnection {
@@ -100,12 +116,15 @@ impl KmsConnection {
 
     /// Instruct the KMS to terminate by sending it the "poison pill" message
     pub fn terminate(mut self) {
-        // TODO(ismail): this is a bit odd: PoisonPill does not have to_vec anymore but isn't
-        // amino / prost encodable either yet
-        //        self.socket
-        //            .write_all(&Request::PoisonPill.to_vec())
-        //            .unwrap();
+        let pill = types::PoisonPillMsg {};
+        let mut buf = vec![];
+        pill.encode(&mut buf);
+        println!("Encoded poison pill {:?}", buf);
+        self.socket.write_all(&buf).unwrap();
+        println!("Done writing poison pill {:?}", buf);
+        // TODO: this should be sent through the secret connection instead:
         self.process.wait().unwrap();
+        println!("Done waiting");
     }
 }
 
@@ -125,7 +144,14 @@ fn test_public_key() -> (
 
 #[test]
 fn test_sign_heartbeat() {
+    // this spawns a process which wants to share ephermal keys and blocks until it reads a reply:
     let mut kms = KmsConnection::create(KMS_TEST_ARGS);
+    let (pubkey, signer) = test_public_key();
+
+    // Here we try to reply with a "remote" ephermal key, auth signnature etc:
+    let connection = SecretConnection::new(&kms.socket, &signer);
+    // TODO use this connection instead of manually signing below:
+
     let addr = vec![
         0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb,
         0x34, 0x46, 0xa8, 0x4b, 0x35,
