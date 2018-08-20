@@ -19,9 +19,12 @@ impl Request {
     /// Read a request from the given readable
     pub fn read<R: Read>(r: &mut R) -> io::Result<Self> {
         let mut buf = vec![];
-        println!("reading ....");
+        // TODO(ismail): this won't work. We need to change it to sth that does a general
+        // Message::decode(buf_from_reader);
+        // or probalbly a length decoded version of that
+        // and then switch over the known message types
+        println!("started decoding message:");
         r.read_to_end(&mut buf)?;
-        println!("got request!!");
         if let Ok(hb) = SignHeartbeatMsg::decode(&buf) {
             return Ok(Request::SignHeartbeat(hb));
         }
