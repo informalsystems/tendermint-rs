@@ -13,10 +13,10 @@ use sha2::Sha256;
 use signatory::ed25519::Signer;
 use signatory::ed25519::{DefaultVerifier, PublicKey, Signature, Verifier};
 use signatory::providers::dalek::Ed25519Signer as DalekSigner;
+use std::io::{Read, Write};
 use std::marker::{Send, Sync};
 use std::{cmp, io, io::Cursor};
 use x25519_dalek::{diffie_hellman, generate_public, generate_secret};
-use std::io::{Read, Write};
 
 // 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: usize = 4;
@@ -97,7 +97,6 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
         let remote_signature: &[u8] = &auth_sig_msg.Sig;
         let remote_sig = Signature::from_bytes(remote_signature).unwrap();
 
-        // TODO(ismail): figure out why the challenge doesn't verify here:
         let valid_sig = DefaultVerifier::verify(&remote_pubkey, &challenge, &remote_sig);
 
         valid_sig.map_err(|e| err!(ChallengeVerification, "{}", e))?;
@@ -178,8 +177,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
         } else {
             let mut chunk = vec![0; chunk_length as usize];
             chunk.clone_from_slice(
-                &frame_copy
-                    [DATA_LEN_SIZE ..(DATA_LEN_SIZE + chunk_length as usize)],
+                &frame_copy[DATA_LEN_SIZE..(DATA_LEN_SIZE + chunk_length as usize)],
             );
             let n = cmp::min(data.len(), chunk.len());
             data[..n].copy_from_slice(&chunk[..n]);
@@ -198,7 +196,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnecti
         let mut data_copy = &data[..];
         let mut cnt = 0;
         while 0 < data_copy.len() {
-            cnt+=1;
+            cnt += 1;
             let mut frame = [0u8; TOTAL_FRAME_SIZE];
             let chunk: &[u8];
             if DATA_MAX_SIZE < data.len() {
@@ -211,7 +209,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnecti
             let chunk_length = chunk.len();
 
             BigEndian::write_u32_into(&[chunk_length as u32], &mut frame[..DATA_LEN_SIZE]);
-            frame[DATA_LEN_SIZE..DATA_LEN_SIZE+chunk_length].copy_from_slice(chunk);
+            frame[DATA_LEN_SIZE..DATA_LEN_SIZE + chunk_length].copy_from_slice(chunk);
             let mut sealed_frame = [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
             sealed_frame[..frame.len()].copy_from_slice(&frame);
 
@@ -398,11 +396,20 @@ mod tests {
 
     #[test]
     fn test_dh_compatibility() {
-        let local_priv = &[15, 54, 189, 54, 63, 255, 158, 244, 56, 168, 155, 63, 246, 79, 208, 192, 35, 194, 39, 232, 170, 187, 179, 36, 65, 36, 237, 12, 225, 176, 201, 54];
-        let remote_pub = &[193, 34, 183, 46, 148, 99, 179, 185, 242, 148, 38, 40, 37, 150, 76, 251, 25, 51, 46, 143, 189, 201, 169, 218, 37, 136, 51, 144, 88, 196, 10, 20];
+        let local_priv = &[
+            15, 54, 189, 54, 63, 255, 158, 244, 56, 168, 155, 63, 246, 79, 208, 192, 35, 194, 39,
+            232, 170, 187, 179, 36, 65, 36, 237, 12, 225, 176, 201, 54,
+        ];
+        let remote_pub = &[
+            193, 34, 183, 46, 148, 99, 179, 185, 242, 148, 38, 40, 37, 150, 76, 251, 25, 51, 46,
+            143, 189, 201, 169, 218, 37, 136, 51, 144, 88, 196, 10, 20,
+        ];
 
         // generated using computeDHSecret in go
-        let expected_dh = &[92, 56, 205, 118, 191, 208, 49, 3, 226, 150, 30, 205, 230, 157, 163, 7, 36, 28, 223, 84, 165, 43, 78, 38, 126, 200, 40, 217, 29, 36, 43, 37];
+        let expected_dh = &[
+            92, 56, 205, 118, 191, 208, 49, 3, 226, 150, 30, 205, 230, 157, 163, 7, 36, 28, 223,
+            84, 165, 43, 78, 38, 126, 200, 40, 217, 29, 36, 43, 37,
+        ];
         let got_dh = diffie_hellman(local_priv, remote_pub);
 
         assert_eq!(expected_dh, &got_dh);

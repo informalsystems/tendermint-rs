@@ -128,23 +128,23 @@ fn test_key() -> (
 
 #[test]
 fn test_sign_heartbeat() {
-    use std::io::{Read, Write};
     use secret_connection::SecretConnection;
+    use std::io::{Read, Write};
     // this spawns a process which wants to share ephermal keys and blocks until it reads a reply:
     let mut kms = KmsConnection::create(KMS_TEST_ARGS);
 
-        // we could also use another key instead:
-        //        let mut file = File::open("tests/sc_key.key").unwrap();
-        //        let mut key_material = vec![];
-        //        file.read_to_end(key_material.as_mut()).unwrap();
-        //
-        //        let seed = ed25519::Seed::from_slice(&key_material).unwrap();
-        //        let signer = dalek::Ed25519Signer::from_seed(seed);
-        let (_, signer) = test_key();
-        // Here we reply to the kms with a "remote" ephermal key, auth signature etc:
-        let socket_cp = kms.socket.try_clone().unwrap();
-        let mut connection = SecretConnection::new(socket_cp, &signer).unwrap();
-        // TODO use this connection instead of manually signing below:
+    // we could also use another key instead:
+    //        let mut file = File::open("tests/sc_key.key").unwrap();
+    //        let mut key_material = vec![];
+    //        file.read_to_end(key_material.as_mut()).unwrap();
+    //
+    //        let seed = ed25519::Seed::from_slice(&key_material).unwrap();
+    //        let signer = dalek::Ed25519Signer::from_seed(seed);
+    let (_, signer) = test_key();
+    // Here we reply to the kms with a "remote" ephermal key, auth signature etc:
+    let socket_cp = kms.socket.try_clone().unwrap();
+    let mut connection = SecretConnection::new(socket_cp, &signer).unwrap();
+    // TODO use this connection instead of manually signing below:
 
     let addr = vec![
         0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb,
