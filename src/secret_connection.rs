@@ -93,8 +93,8 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
         let auth_sig_msg =
             share_auth_signature(&mut sc, local_pubkey.as_bytes(), local_signature).unwrap();
 
-        let remote_pubkey = PublicKey::from_bytes(&auth_sig_msg.Key).unwrap();
-        let remote_signature: &[u8] = &auth_sig_msg.Sig;
+        let remote_pubkey = PublicKey::from_bytes(&auth_sig_msg.key).unwrap();
+        let remote_signature: &[u8] = &auth_sig_msg.sig;
         let remote_sig = Signature::from_bytes(remote_signature).unwrap();
 
         let valid_sig = DefaultVerifier::verify(&remote_pubkey, &challenge, &remote_sig);
@@ -102,7 +102,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
         valid_sig.map_err(|e| err!(ChallengeVerification, "{}", e))?;
 
         // We've authorized.
-        sc.remote_pubkey.copy_from_slice(&auth_sig_msg.Key);
+        sc.remote_pubkey.copy_from_slice(&auth_sig_msg.key);
         Ok(sc)
     }
 }
@@ -147,6 +147,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
 
         let mut sealed_frame = [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
         self.io_handler.read_exact(&mut sealed_frame).unwrap();
+        println!("reading exactly ....");
 
         // decrypt the frame
         let mut frame = [0u8; TOTAL_FRAME_SIZE];
@@ -328,9 +329,9 @@ fn sign_challenge(challenge: [u8; 32], local_privkey: &DalekSigner) -> Result<Si
 #[derive(Clone, PartialEq, Message)]
 struct AuthSigMessage {
     #[prost(bytes, tag = "1")]
-    Key: Vec<u8>,
+    key: Vec<u8>,
     #[prost(bytes, tag = "2")]
-    Sig: Vec<u8>,
+    sig: Vec<u8>,
 }
 
 // TODO(ismail): change from DecodeError to something more generic
@@ -341,8 +342,8 @@ fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
     signature: Signature,
 ) -> Result<AuthSigMessage, DecodeError> {
     let amsg = AuthSigMessage {
-        Key: pubkey.to_vec(),
-        Sig: signature.into_bytes().to_vec(),
+        key: pubkey.to_vec(),
+        sig: signature.into_bytes().to_vec(),
     };
     let mut buf: Vec<u8> = vec![];
     amsg.encode(&mut buf).unwrap();

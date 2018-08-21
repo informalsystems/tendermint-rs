@@ -40,6 +40,8 @@ extern crate sha2;
 extern crate x25519_dalek;
 #[macro_use]
 extern crate failure_derive;
+#[macro_use]
+extern crate lazy_static;
 
 mod types {
     include!("../src/types/mod.rs");
@@ -171,7 +173,7 @@ fn test_sign_heartbeat() {
 
     let pill = types::PoisonPillMsg {};
     let mut buf = vec![];
-    pill.encode_length_delimited(&mut buf).unwrap();
+    pill.encode(&mut buf).unwrap();
     connection.write_all(&buf).unwrap();
     println!("sent poison pill");
     kms.process.wait().unwrap();

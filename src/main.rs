@@ -1,8 +1,10 @@
-//! Key Management System for Cosmos Validators
+//! key Management System for Cosmos Validators
 
 extern crate prost;
 #[macro_use]
 extern crate prost_derive;
+#[macro_use]
+extern crate lazy_static;
 
 extern crate clear_on_drop;
 extern crate failure;

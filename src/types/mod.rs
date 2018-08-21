@@ -54,7 +54,12 @@ pub trait TendermintSign {
 }
 
 pub use self::ed25519msg::PubKeyMsg;
+pub use self::ed25519msg::AMINO_NAME as PUBKEY_AMINO_NAME;
 pub use self::heartbeat::SignHeartbeatMsg;
+pub use self::heartbeat::AMINO_NAME as HEARTBEAT_AMINO_NAME;
 pub use self::poisonpill::PoisonPillMsg;
+pub use self::poisonpill::AMINO_NAME as POISON_PILL_AMINO_NAME;
 pub use self::proposal::SignProposalMsg;
+pub use self::proposal::AMINO_NAME as PROPOSAL_AMINO_NAME;
 pub use self::vote::SignVoteMsg;
+pub use self::vote::AMINO_NAME as VOTE_AMINO_NAME;

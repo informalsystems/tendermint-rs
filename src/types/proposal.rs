@@ -21,6 +21,8 @@ pub struct Proposal {
     signature: Option<Vec<u8>>,
 }
 
+pub const AMINO_NAME: &'static str = "tendermint/socketpv/SignProposalMsg";
+
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/socketpv/SignProposalMsg"]
 pub struct SignProposalMsg {
