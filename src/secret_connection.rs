@@ -349,13 +349,18 @@ fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
     Ok(AuthSigMessage::decode(&rbuf)?)
 }
 
-// TODO: Check if internal representation is big or small endian
 // increment nonce big-endian by 2 with wraparound.
 fn incr_nonce(nonce: &mut [u8; 12]) {
-    for i in (0..AEAD_NONCE_SIZE).rev() {
-        nonce[i] += 1;
-        if nonce[i] != 0 {
-            break;
+    for i in nonce.iter_mut().rev() {
+        match (*i).checked_add(1) {
+            Some(res) => {
+                // we can increment this without overflowing:
+                *i = res;
+                return;
+            }
+            // this byte would wrap around to zero if incremented; set it to zero and
+            // we need to increment the next byte
+            None => *i = 0u8,
         }
     }
 }
@@ -363,14 +368,14 @@ fn incr_nonce(nonce: &mut [u8; 12]) {
 #[cfg(test)]
 mod tests {
     use secret_connection;
-    use secret_connection::incr_nonce;
+    use secret_connection::{incr_nonce, AEAD_NONCE_SIZE};
     use x25519_dalek::diffie_hellman;
 
     #[test]
     fn test_incr_nonce() {
-        let mut nonce = [0u8; 12];
+        let mut nonce = [0u8; AEAD_NONCE_SIZE];
         for _i in 0..1024 {
-            // TODO:  panicked at 'attempt to add with overflow'
+            // TODO: do we really want test-vectors here?
             incr_nonce(&mut nonce);
             //println!("{:?}", nonce);
         }
