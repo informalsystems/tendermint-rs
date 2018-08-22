@@ -56,8 +56,6 @@ impl Request {
     pub fn read<R: Read>(r: &mut R) -> io::Result<Self> {
         // this buffer contains the overall length and the amino prefix (for the registered types)
         let mut buf = vec![0; MAX_MSG_LEN];
-        // TODO handle read amount returned or use `Read::read_exact` instead
-
         let bytes_read = r.read(&mut buf)?;
         if bytes_read < 4 {
             return Err(Error::new(

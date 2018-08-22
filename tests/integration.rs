@@ -122,7 +122,7 @@ fn test_key() -> (
 }
 
 #[test]
-fn test_sign_heartbeat() {
+fn test_handle_poisonpill() {
     use secret_connection::SecretConnection;
     // this spawns a process which wants to share ephermal keys and blocks until it reads a reply:
     let mut kms = KmsConnection::create(KMS_TEST_ARGS);
@@ -132,31 +132,8 @@ fn test_sign_heartbeat() {
     // Here we reply to the kms with a "remote" ephermal key, auth signature etc:
     let socket_cp = kms.socket.try_clone().unwrap();
     let mut connection = SecretConnection::new(socket_cp, &signer).unwrap();
-    // TODO use this connection instead of manually signing below:
 
-    let addr = vec![
-        0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb,
-        0x34, 0x46, 0xa8, 0x4b, 0x35,
-    ];
-    let heartbeat = types::heartbeat::Heartbeat {
-        validator_address: addr,
-        validator_index: 1,
-        height: 15,
-        round: 10,
-        sequence: 30,
-        signature: None,
-    };
-
-    let test_message = types::heartbeat::SignHeartbeatMsg {
-        heartbeat: Some(heartbeat),
-    };
-    let (pubkey, signer) = test_key();
-    let signature = kms.sign(&pubkey, signer, test_message.clone());
-
-    // Ensure the signature on cannonicalized JSON verifies:
-    let signed_msg = test_message.cannonicalize("chain_id");
-    pubkey.verify(&signed_msg.into_bytes(), &signature).unwrap();
-
+    // use the secret connection to send a message
     let pill = types::PoisonPillMsg {};
     let mut buf = vec![];
     pill.encode(&mut buf).unwrap();
