@@ -66,7 +66,7 @@ mod types;
 use client::Client;
 use config::{Config, ProviderConfig, ValidatorConfig};
 use ed25519::Keyring;
-use rand::{OsRng, Rng};
+use rand::{OsRng, RngCore};
 
 /// Unix file permissions required for private keys (i.e. owner-readable only)
 pub const PRIVATE_KEY_PERMISSIONS: u32 = 0o600;

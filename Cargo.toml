@@ -20,7 +20,7 @@ failure_derive = "0.1"
 gumdrop = "0.4"
 gumdrop_derive = "0.4"
 log = "0.4"
-rand = "0.4"
+rand = "0.5"
 serde = "1.0"
 serde_derive = "1.0"
 sha2 = "^0.7"
@@ -36,7 +36,7 @@ bytes = "0.4"
 chrono = "0.4.2"
 byteorder = "^1.2"
 lazy_static = "1.1.0"
-x25519-dalek = "^0.1"
+x25519-dalek = "0.3"
 prost = { git = "https://github.com/Liamsi/prost", branch = "prost_amino_derive"}
 prost-derive = {git = "https://github.com/Liamsi/prost", branch = "prost_amino_derive"}
 
