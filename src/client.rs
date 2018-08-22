@@ -103,7 +103,7 @@ fn client_session(
         addr,
         port,
         Arc::clone(keyring),
-        Arc::clone(secret_connection_key),
+        &Arc::clone(secret_connection_key),
     )?;
     while session.handle_request()? {}
     Ok(())

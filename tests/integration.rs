@@ -12,6 +12,7 @@ use signatory::ed25519::{self, FromSeed, Signer};
 use signatory::providers::dalek;
 use std::ffi::OsStr;
 use std::fs::File;
+#[allow(unused_imports)]
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::process::{Child, Command};
@@ -40,15 +41,9 @@ extern crate sha2;
 extern crate x25519_dalek;
 #[macro_use]
 extern crate failure_derive;
-#[macro_use]
-extern crate lazy_static;
 
 mod types {
     include!("../src/types/mod.rs");
-}
-
-mod rpc {
-    include!("../src/rpc.rs");
 }
 
 #[macro_use]
@@ -59,8 +54,6 @@ mod error {
 mod secret_connection {
     include!("../src/secret_connection.rs");
 }
-
-use rpc::*;
 
 /// Receives incoming KMS connection then sends commands
 struct KmsConnection {
@@ -131,17 +124,10 @@ fn test_key() -> (
 #[test]
 fn test_sign_heartbeat() {
     use secret_connection::SecretConnection;
-    use std::io::{Read, Write};
     // this spawns a process which wants to share ephermal keys and blocks until it reads a reply:
     let mut kms = KmsConnection::create(KMS_TEST_ARGS);
 
-    // we could also use another key instead:
-    //        let mut file = File::open("tests/sc_key.key").unwrap();
-    //        let mut key_material = vec![];
-    //        file.read_to_end(key_material.as_mut()).unwrap();
-    //
-    //        let seed = ed25519::Seed::from_slice(&key_material).unwrap();
-    //        let signer = dalek::Ed25519Signer::from_seed(seed);
+    // we use the same key for both sides:
     let (_, signer) = test_key();
     // Here we reply to the kms with a "remote" ephermal key, auth signature etc:
     let socket_cp = kms.socket.try_clone().unwrap();

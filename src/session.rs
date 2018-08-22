@@ -27,11 +27,11 @@ impl Session {
         addr: &str,
         port: u16,
         keyring: Arc<Keyring>,
-        secret_connection_key: Arc<DalekSigner>,
+        secret_connection_key: &Arc<DalekSigner>,
     ) -> Result<Self, Error> {
         debug!("Connecting to {}:{}...", addr, port);
         let socket = TcpStream::connect(format!("{}:{}", addr, port))?;
-        let connection = SecretConnection::new(socket, &secret_connection_key)?;
+        let connection = SecretConnection::new(socket, secret_connection_key)?;
         Ok(Self {
             connection,
             keyring,
@@ -57,7 +57,7 @@ impl Session {
             Response::PublicKey(pk) => pk.encode(&mut buf)?,
         }
         // TODO(ismail): do some proper error handling
-        self.connection.write_all(&mut buf)?;
+        self.connection.write_all(&buf)?;
         Ok(true)
     }
 

@@ -6,7 +6,7 @@ use signatory::ed25519::{PublicKey, PUBLIC_KEY_SIZE};
 // version.
 // TODO(ismail): make this more generic (by modifying prost and adding a trait for PubKey)
 
-pub const AMINO_NAME: &'static str = "tendermint/socketpv/PubKeyMsg";
+pub const AMINO_NAME: &str = "tendermint/socketpv/PubKeyMsg";
 
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/socketpv/PubKeyMsg"]

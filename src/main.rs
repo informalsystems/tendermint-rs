@@ -1,4 +1,4 @@
-//! key Management System for Cosmos Validators
+//! Key Management System for Cosmos Validators
 
 extern crate prost;
 #[macro_use]
@@ -222,7 +222,7 @@ fn run(config_file_path: &str, verbose: bool) {
         secret_connection_key_path,
     } = load_config(config_file);
 
-    let secret_connection_key = Arc::new(load_secret_connection_key(secret_connection_key_path));
+    let secret_connection_key = Arc::new(load_secret_connection_key(&secret_connection_key_path));
 
     let keyring = Arc::new(init_keyring(providers));
 
@@ -284,7 +284,7 @@ fn spawn_validator_clients(
         .collect()
 }
 
-fn load_secret_connection_key(key_path: PathBuf) -> DalekSigner {
+fn load_secret_connection_key(key_path: &PathBuf) -> DalekSigner {
     match File::open(&key_path) {
         Ok(mut seed_file) => {
             let mut key_material = ClearOnDrop::new(vec![]);

@@ -1,7 +1,6 @@
 use byteorder::{BigEndian, ByteOrder};
 use bytes::BufMut;
 use error::Error;
-#[allow(dead_code)]
 use hkdf::Hkdf;
 use prost::encoding::bytes::merge;
 use prost::encoding::encode_varint;
@@ -22,9 +21,8 @@ use x25519_dalek::{diffie_hellman, generate_public, generate_secret};
 const DATA_LEN_SIZE: usize = 4;
 const DATA_MAX_SIZE: usize = 1024;
 const TOTAL_FRAME_SIZE: usize = DATA_MAX_SIZE + DATA_LEN_SIZE;
-const TAG_SIZE: usize = 16;
 // 16 is the size of the mac tag
-const SEALED_FRAME_SIZE: usize = TOTAL_FRAME_SIZE + TAG_SIZE;
+const TAG_SIZE: usize = 16;
 
 // Implements net.Conn
 // TODO: Fix errors due to the last element not being constant size
@@ -134,8 +132,7 @@ fn open(
 impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnection<IoHandler> {
     // CONTRACT: data smaller than dataMaxSize is read atomically.
     fn read(&mut self, data: &mut [u8]) -> Result<usize, io::Error> {
-        println!("reading ....");
-        if 0 < self.recv_buffer.len() {
+        if !self.recv_buffer.is_empty() {
             let n = cmp::min(data.len(), self.recv_buffer.len());
             data.copy_from_slice(&self.recv_buffer[..n]);
             let mut leftover_portion = vec![0; self.recv_buffer.len() - n];
@@ -147,7 +144,6 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
 
         let mut sealed_frame = [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
         self.io_handler.read_exact(&mut sealed_frame).unwrap();
-        println!("reading exactly ....");
 
         // decrypt the frame
         let mut frame = [0u8; TOTAL_FRAME_SIZE];
@@ -178,7 +174,8 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
         } else {
             let mut chunk = vec![0; chunk_length as usize];
             chunk.clone_from_slice(
-                &frame_copy[DATA_LEN_SIZE..(DATA_LEN_SIZE + chunk_length as usize)],
+                &frame_copy
+                    [DATA_LEN_SIZE..(DATA_LEN_SIZE.checked_add(chunk_length as usize).unwrap())],
             );
             let n = cmp::min(data.len(), chunk.len());
             data[..n].copy_from_slice(&chunk[..n]);
@@ -195,9 +192,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnecti
     fn write(&mut self, data: &[u8]) -> Result<usize, io::Error> {
         let mut n = 0usize;
         let mut data_copy = &data[..];
-        let mut cnt = 0;
-        while 0 < data_copy.len() {
-            cnt += 1;
+        while !data_copy.is_empty() {
             let mut frame = [0u8; TOTAL_FRAME_SIZE];
             let chunk: &[u8];
             if DATA_MAX_SIZE < data.len() {
@@ -225,7 +220,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnecti
             // end encryption
 
             self.io_handler.write_all(&sealed_frame)?;
-            n = n + chunk.len();
+            n += chunk.len();
         }
 
         Ok(n)
@@ -260,7 +255,6 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
     // Note: this is not regular protobuf encoding but raw length prefixed amino encoding:
     encode_varint(local_eph_pubkey_vec.len() as u64, &mut buf);
     buf.put_slice(local_eph_pubkey_vec);
-    println!("buf.len {}", buf.len());
     // this is the sending part of:
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
     // TODO(ismail): handle error here! This currently would panic on failure:
@@ -291,9 +285,9 @@ fn derive_secrets_and_challenge(
     shared_secret: &[u8; 32],
     loc_is_lo: bool,
 ) -> ([u8; 32], [u8; 32], [u8; 32]) {
-    let info = "TENDERMINT_SECRET_CONNECTION_KEY_AND_CHALLENGE_GEN".as_bytes();
+    let info = b"TENDERMINT_SECRET_CONNECTION_KEY_AND_CHALLENGE_GEN";
     let hk = Hkdf::<Sha256>::extract(None, shared_secret);
-    let hkdf_vector = hk.expand(&info, 96);
+    let hkdf_vector = hk.expand(&*info, 96);
 
     let challenge_vector = &hkdf_vector[64..96];
     let mut challenge: [u8; 32] = [0; 32];
@@ -311,11 +305,11 @@ fn derive_secrets_and_challenge(
 }
 
 // Return is of the form lo, hi
-fn sort32(foo: [u8; 32], bar: [u8; 32]) -> ([u8; 32], [u8; 32]) {
-    if bar > foo {
-        (foo, bar)
+fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
+    if second > first {
+        (first, second)
     } else {
-        (bar, foo)
+        (second, first)
     }
 }
 
@@ -348,7 +342,7 @@ fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
     let mut buf: Vec<u8> = vec![];
     amsg.encode(&mut buf).unwrap();
 
-    sc.write_all(&mut buf).unwrap();
+    sc.write_all(&buf).unwrap();
 
     let mut rbuf = vec![0; 100]; // 100 = 32 + 64 + (amino overhead)
     sc.read_exact(&mut rbuf).unwrap();
@@ -361,7 +355,7 @@ fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
 // increment nonce big-endian by 2 with wraparound.
 fn incr_nonce(nonce: &mut [u8; 12]) {
     for i in (0..12).rev() {
-        nonce[i] = nonce[i] + 1;
+        nonce[i] += 1;
         if nonce[i] != 0 {
             return;
         }
@@ -419,7 +413,6 @@ mod tests {
     #[test]
     fn test_derive_secrets_and_challenge_golden_test_vectors() {
         extern crate hex;
-        use hex::decode;
         use std::fs::File;
         use std::io::BufRead;
         use std::io::BufReader;

@@ -1,6 +1,5 @@
 use super::TendermintSign;
 use hex::encode;
-use sha2::{Digest, Sha256};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Heartbeat {
@@ -18,7 +17,7 @@ pub struct Heartbeat {
     pub signature: Option<Vec<u8>>,
 }
 
-pub const AMINO_NAME: &'static str = "tendermint/socketpv/SignHeartbeatMsg";
+pub const AMINO_NAME: &str = "tendermint/socketpv/SignHeartbeatMsg";
 
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/socketpv/SignHeartbeatMsg"]
