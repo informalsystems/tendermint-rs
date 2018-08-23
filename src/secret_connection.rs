@@ -28,8 +28,8 @@ const AEAD_NONCE_SIZE: usize = 12;
 // Implements net.Conn
 pub struct SecretConnection<IoHandler: io::Read + io::Write + Send + Sync> {
     io_handler: IoHandler,
-    recv_nonce: [u8; 12],
-    send_nonce: [u8; 12],
+    recv_nonce: Nonce,
+    send_nonce: Nonce,
     recv_secret: aead::OpeningKey,
     send_secret: aead::SealingKey,
     remote_pubkey: [u8; 32],
@@ -74,8 +74,8 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
         let mut sc = SecretConnection {
             io_handler: handler,
             recv_buffer: vec![],
-            recv_nonce: [0u8; AEAD_NONCE_SIZE],
-            send_nonce: [0u8; AEAD_NONCE_SIZE],
+            recv_nonce: Nonce::default(),
+            send_nonce: Nonce::default(),
             recv_secret: aead::OpeningKey::new(&aead::CHACHA20_POLY1305, &recv_secret).unwrap(),
             send_secret: aead::SealingKey::new(&aead::CHACHA20_POLY1305, &send_secret).unwrap(),
             remote_pubkey: remote_eph_pubkey,
@@ -106,7 +106,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
 
 fn open(
     opening_key: &aead::OpeningKey,
-    nonce: &[u8; 12],
+    nonce: &Nonce,
     authtext: &[u8],
     ciphertext: &[u8],
     out: &mut [u8],
@@ -115,20 +115,23 @@ fn open(
     if out.len() >= ciphertext.len() {
         let in_out = &mut out[..ciphertext.len()];
         in_out.copy_from_slice(ciphertext);
-        let len = aead::open_in_place(opening_key, nonce, authtext, 0, in_out)
+        let len = aead::open_in_place(opening_key, &nonce.to_bytes(), authtext, 0, in_out)
             .map_err(|_| ())?
             .len();
         Ok(len)
     } else {
         let mut in_out = ciphertext.to_vec();
         let out0 =
-            aead::open_in_place(opening_key, nonce, authtext, 0, &mut in_out).map_err(|_| ())?;
+            aead::open_in_place(opening_key, &nonce.to_bytes(), authtext, 0, &mut in_out).map_err(|_| ())?;
         out[..out0.len()].copy_from_slice(out0);
         Ok(out0.len())
     }
 }
 
-impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnection<IoHandler> {
+impl<IoHandler> io::Read for SecretConnection<IoHandler>
+    where
+        IoHandler: io::Read + io::Write + Send + Sync
+{
     // CONTRACT: data smaller than dataMaxSize is read atomically.
     fn read(&mut self, data: &mut [u8]) -> Result<usize, io::Error> {
         if !self.recv_buffer.is_empty() {
@@ -158,7 +161,8 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
         if res.is_err() {
             return Err(io::Error::new(io::ErrorKind::Other, "decryption error"));
         }
-        incr_nonce(&mut self.recv_nonce);
+        self.recv_nonce.increment();
+        //incr_nonce(&mut self.recv_nonce);
         // end decryption
 
         let mut chunk_length_specifier = vec![0; 4];
@@ -185,7 +189,10 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Read for SecretConnectio
     }
 }
 
-impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnection<IoHandler> {
+impl<IoHandler> io::Write for SecretConnection<IoHandler>
+    where
+        IoHandler: io::Read + io::Write + Send + Sync
+{
     // Writes encrypted frames of `sealedFrameSize`
     // CONTRACT: data smaller than dataMaxSize is read atomically.
     fn write(&mut self, data: &[u8]) -> Result<usize, io::Error> {
@@ -210,12 +217,13 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> io::Write for SecretConnecti
 
             aead::seal_in_place(
                 &self.send_secret,
-                &self.send_nonce,
+                &self.send_nonce.to_bytes(),
                 &[0u8; 0],
                 &mut sealed_frame,
                 TAG_SIZE,
             ).unwrap();
-            incr_nonce(&mut self.send_nonce);
+            self.send_nonce.increment();
+            //incr_nonce(&mut self.send_nonce);
             // end encryption
 
             self.io_handler.write_all(&sealed_frame)?;
@@ -349,36 +357,76 @@ fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
     Ok(AuthSigMessage::decode(&rbuf)?)
 }
 
-// increment nonce big-endian by 2 with wraparound.
-fn incr_nonce(nonce: &mut [u8; 12]) {
-    for i in nonce.iter_mut().rev() {
-        match (*i).checked_add(1) {
-            Some(res) => {
-                // we can increment this without overflowing:
-                *i = res;
-                return;
+struct Nonce(pub [u8; 12]);
+
+impl Default for Nonce {
+    fn default() -> Nonce {
+        Nonce([0u8; AEAD_NONCE_SIZE])
+    }
+}
+
+impl Nonce {
+    fn increment(&mut self) {
+        let counter64: u64 = BigEndian::read_u64(&self.0[4..]);
+        let counter32: u32 = BigEndian::read_u32(&self.0[..4]);
+        match counter64.checked_add(1) {
+            Some(res) => BigEndian::write_u64(&mut self.0[4..], res),
+            None => {
+                BigEndian::write_u64(&mut self.0[4..], 0);
+                match counter32.checked_add(1) {
+                    Some(res2) => BigEndian::write_u32(&mut self.0[..4], res2),
+                    None => BigEndian::write_u32(&mut self.0[..4], 0),
+                }
             }
-            // this byte would wrap around to zero if incremented; set it to zero and
-            // we need to increment the next byte
-            None => *i = 0u8,
         }
+    }
+
+    #[inline]
+    fn to_bytes(&self) -> &[u8] {
+        &self.0[..]
     }
 }
 
 #[cfg(test)]
 mod tests {
     use secret_connection;
-    use secret_connection::{incr_nonce, AEAD_NONCE_SIZE};
+    use secret_connection::{Nonce, AEAD_NONCE_SIZE};
     use x25519_dalek::diffie_hellman;
+    use std::collections::HashMap;
 
     #[test]
     fn test_incr_nonce() {
-        let mut nonce = [0u8; AEAD_NONCE_SIZE];
-        for _i in 0..1024 {
-            // TODO: do we really want test-vectors here?
-            incr_nonce(&mut nonce);
-            //println!("{:?}", nonce);
+        // make sure we match the golang implementation
+        let mut check_points: HashMap<i32, &[u8]> = HashMap::new();
+        check_points.insert(0, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+        check_points.insert(1, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]);
+        check_points.insert(510, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255]);
+        check_points.insert(511, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0]);
+        check_points.insert(512, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1]);
+        check_points.insert(1023, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0]);
+
+        let mut nonce = Nonce::default();
+        assert_eq!(nonce.to_bytes().len(), AEAD_NONCE_SIZE);
+
+        for i in 0..1024 {
+            nonce.increment();
+            match check_points.get(&i) {
+                Some(want) => {
+                    let got = &nonce.to_bytes();
+                    assert_eq!(got, want);
+                }
+                None => (),
+            }
         }
+
+        nonce = Nonce([0u8, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255]);
+        nonce.increment();
+        assert_eq!(nonce.to_bytes(), &[0u8, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]);
+
+        nonce = Nonce([255u8, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]);
+        nonce.increment();
+        // we are back to where we started after soooooooo many increments
+        assert_eq!(nonce.to_bytes(), &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     }
 
     #[test]
