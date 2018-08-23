@@ -1,4 +1,4 @@
-use byteorder::{BigEndian, ByteOrder};
+use byteorder::{LittleEndian, BigEndian, ByteOrder};
 use bytes::BufMut;
 use error::Error;
 use hkdf::Hkdf;
@@ -230,7 +230,7 @@ where
                 chunk = data_copy;
                 data_copy = &[0u8; 0];
             }
-            let mut sealed_frame = &mut [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
+            let sealed_frame = &mut [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
             let res = self.seal(chunk, sealed_frame);
             if res.is_err() {
                 return Err(io::Error::new(
@@ -382,18 +382,8 @@ impl Default for Nonce {
 
 impl Nonce {
     fn increment(&mut self) {
-        let counter64: u64 = BigEndian::read_u64(&self.0[4..]);
-        let counter32: u32 = BigEndian::read_u32(&self.0[..4]);
-        match counter64.checked_add(1) {
-            Some(res) => BigEndian::write_u64(&mut self.0[4..], res),
-            None => {
-                BigEndian::write_u64(&mut self.0[4..], 0);
-                match counter32.checked_add(1) {
-                    Some(res2) => BigEndian::write_u32(&mut self.0[..4], res2),
-                    None => BigEndian::write_u32(&mut self.0[..4], 0),
-                }
-            }
-        }
+        let counter: u64 = LittleEndian::read_u64(&self.0[4..]);
+        LittleEndian::write_u64(&mut self.0[4..], counter.checked_add(1).unwrap());
     }
 
     #[inline]
@@ -413,12 +403,12 @@ mod tests {
     fn test_incr_nonce() {
         // make sure we match the golang implementation
         let mut check_points: HashMap<i32, &[u8]> = HashMap::new();
-        check_points.insert(0, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
-        check_points.insert(1, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]);
-        check_points.insert(510, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255]);
-        check_points.insert(511, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0]);
-        check_points.insert(512, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1]);
-        check_points.insert(1023, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0]);
+        check_points.insert(0, &[0u8, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
+        check_points.insert(1, &[0u8, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0]);
+        check_points.insert(510, &[0u8, 0, 0, 0, 255, 1, 0, 0, 0, 0, 0, 0]);
+        check_points.insert(511, &[0u8, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0]);
+        check_points.insert(512, &[0u8, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0]);
+        check_points.insert(1023, &[0u8, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0]);
 
         let mut nonce = Nonce::default();
         assert_eq!(nonce.to_bytes().len(), AEAD_NONCE_SIZE);
@@ -433,15 +423,15 @@ mod tests {
                 None => (),
             }
         }
-
-        nonce = Nonce([0u8, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255]);
+    }
+    #[test]
+    #[should_panic]
+    fn test_incr_nonce_overflow() {
+        // other than in the golang implementation we panic if we incremented more than 64
+        // bits allow.
+        // In golang this would reset to an all zeroes nonce.
+        let mut nonce = Nonce([0u8, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255]);
         nonce.increment();
-        assert_eq!(nonce.to_bytes(), &[0u8, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]);
-
-        nonce = Nonce([255u8, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]);
-        nonce.increment();
-        // we will never see this happen but we are back to where we started:
-        assert_eq!(nonce.to_bytes(), &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     }
 
     #[test]
