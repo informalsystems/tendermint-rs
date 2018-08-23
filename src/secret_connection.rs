@@ -100,44 +100,71 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
 
         // We've authorized.
         sc.remote_pubkey.copy_from_slice(&auth_sig_msg.key);
+
         Ok(sc)
     }
-}
 
-fn open(
-    opening_key: &aead::OpeningKey,
-    nonce: &Nonce,
-    authtext: &[u8],
-    ciphertext: &[u8],
-    out: &mut [u8],
-) -> Result<usize, ()> {
-    // optimize if the provided buffer is sufficiently large
-    if out.len() >= ciphertext.len() {
-        let in_out = &mut out[..ciphertext.len()];
-        in_out.copy_from_slice(ciphertext);
-        let len = aead::open_in_place(opening_key, &nonce.to_bytes(), authtext, 0, in_out)
-            .map_err(|_| ())?
+    fn open(&self, authtext: &[u8], ciphertext: &[u8], out: &mut [u8]) -> Result<usize, Error> {
+        // optimize if the provided buffer is sufficiently large
+        if out.len() >= ciphertext.len() {
+            let in_out = &mut out[..ciphertext.len()];
+            in_out.copy_from_slice(ciphertext);
+            let len = aead::open_in_place(
+                &self.recv_secret,
+                &self.recv_nonce.to_bytes(),
+                authtext,
+                0,
+                in_out,
+            ).map_err(|e| err!(AuthCryptoError, "open_in_place failed: {}", e))?
             .len();
-        Ok(len)
-    } else {
-        let mut in_out = ciphertext.to_vec();
-        let out0 =
-            aead::open_in_place(opening_key, &nonce.to_bytes(), authtext, 0, &mut in_out).map_err(|_| ())?;
-        out[..out0.len()].copy_from_slice(out0);
-        Ok(out0.len())
+            Ok(len)
+        } else {
+            let mut in_out = ciphertext.to_vec();
+            let out0 = aead::open_in_place(
+                &self.recv_secret,
+                &self.recv_nonce.to_bytes(),
+                authtext,
+                0,
+                &mut in_out,
+            ).map_err(|e| err!(AuthCryptoError, "open_in_place: {}", e))?;
+            out[..out0.len()].copy_from_slice(out0);
+            Ok(out0.len())
+        }
+    }
+
+    fn seal(
+        &self,
+        chunk: &[u8],
+        sealed_frame: &mut [u8; TAG_SIZE + TOTAL_FRAME_SIZE],
+    ) -> Result<(), Error> {
+        let chunk_length = chunk.len();
+        let mut frame = [0u8; TOTAL_FRAME_SIZE];
+        BigEndian::write_u32(&mut frame[..DATA_LEN_SIZE], chunk_length as u32);
+        frame[DATA_LEN_SIZE..DATA_LEN_SIZE + chunk_length].copy_from_slice(chunk);
+        sealed_frame[..frame.len()].copy_from_slice(&frame);
+
+        aead::seal_in_place(
+            &self.send_secret,
+            &self.send_nonce.to_bytes(),
+            &[0u8; 0],
+            sealed_frame,
+            TAG_SIZE,
+        ).map_err(|e| err!(AuthCryptoError, "seal_in_place failed: {}", e))?;
+
+        Ok(())
     }
 }
 
 impl<IoHandler> io::Read for SecretConnection<IoHandler>
-    where
-        IoHandler: io::Read + io::Write + Send + Sync
+where
+    IoHandler: io::Read + io::Write + Send + Sync,
 {
     // CONTRACT: data smaller than dataMaxSize is read atomically.
     fn read(&mut self, data: &mut [u8]) -> Result<usize, io::Error> {
         if !self.recv_buffer.is_empty() {
             let n = cmp::min(data.len(), self.recv_buffer.len());
             data.copy_from_slice(&self.recv_buffer[..n]);
-            let mut leftover_portion = vec![0; self.recv_buffer.len() - n];
+            let mut leftover_portion = vec![0; self.recv_buffer.len().checked_sub(n).unwrap()];
             leftover_portion.clone_from_slice(&self.recv_buffer[n..]);
             self.recv_buffer = leftover_portion;
 
@@ -149,20 +176,16 @@ impl<IoHandler> io::Read for SecretConnection<IoHandler>
 
         // decrypt the frame
         let mut frame = [0u8; TOTAL_FRAME_SIZE];
-        let res = open(
-            &self.recv_secret,
-            &self.recv_nonce,
-            &[0u8; 0],
-            &sealed_frame,
-            &mut frame,
-        );
+        let res = self.open(&[0u8; 0], &sealed_frame, &mut frame);
         let mut frame_copy = [0u8; TOTAL_FRAME_SIZE];
         frame_copy.clone_from_slice(&frame);
         if res.is_err() {
-            return Err(io::Error::new(io::ErrorKind::Other, "decryption error"));
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                res.err().unwrap().to_string(),
+            ));
         }
         self.recv_nonce.increment();
-        //incr_nonce(&mut self.recv_nonce);
         // end decryption
 
         let mut chunk_length_specifier = vec![0; 4];
@@ -190,8 +213,8 @@ impl<IoHandler> io::Read for SecretConnection<IoHandler>
 }
 
 impl<IoHandler> io::Write for SecretConnection<IoHandler>
-    where
-        IoHandler: io::Read + io::Write + Send + Sync
+where
+    IoHandler: io::Read + io::Write + Send + Sync,
 {
     // Writes encrypted frames of `sealedFrameSize`
     // CONTRACT: data smaller than dataMaxSize is read atomically.
@@ -199,7 +222,6 @@ impl<IoHandler> io::Write for SecretConnection<IoHandler>
         let mut n = 0usize;
         let mut data_copy = &data[..];
         while !data_copy.is_empty() {
-            let mut frame = [0u8; TOTAL_FRAME_SIZE];
             let chunk: &[u8];
             if DATA_MAX_SIZE < data.len() {
                 chunk = &data[..DATA_MAX_SIZE];
@@ -208,26 +230,19 @@ impl<IoHandler> io::Write for SecretConnection<IoHandler>
                 chunk = data_copy;
                 data_copy = &[0u8; 0];
             }
-            let chunk_length = chunk.len();
-
-            BigEndian::write_u32_into(&[chunk_length as u32], &mut frame[..DATA_LEN_SIZE]);
-            frame[DATA_LEN_SIZE..DATA_LEN_SIZE + chunk_length].copy_from_slice(chunk);
-            let mut sealed_frame = [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
-            sealed_frame[..frame.len()].copy_from_slice(&frame);
-
-            aead::seal_in_place(
-                &self.send_secret,
-                &self.send_nonce.to_bytes(),
-                &[0u8; 0],
-                &mut sealed_frame,
-                TAG_SIZE,
-            ).unwrap();
+            let mut sealed_frame = &mut [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
+            let res = self.seal(chunk, sealed_frame);
+            if res.is_err() {
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    res.err().unwrap().to_string(),
+                ));
+            }
             self.send_nonce.increment();
-            //incr_nonce(&mut self.send_nonce);
             // end encryption
 
-            self.io_handler.write_all(&sealed_frame)?;
-            n += chunk.len();
+            self.io_handler.write_all(&sealed_frame[..])?;
+            n = n.checked_add(chunk.len()).unwrap();
         }
 
         Ok(n)
@@ -391,8 +406,8 @@ impl Nonce {
 mod tests {
     use secret_connection;
     use secret_connection::{Nonce, AEAD_NONCE_SIZE};
-    use x25519_dalek::diffie_hellman;
     use std::collections::HashMap;
+    use x25519_dalek::diffie_hellman;
 
     #[test]
     fn test_incr_nonce() {
@@ -425,7 +440,7 @@ mod tests {
 
         nonce = Nonce([255u8, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]);
         nonce.increment();
-        // we are back to where we started after soooooooo many increments
+        // we will never see this happen but we are back to where we started:
         assert_eq!(nonce.to_bytes(), &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     }
 

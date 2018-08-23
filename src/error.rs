@@ -93,6 +93,10 @@ pub enum ErrorKind {
 
     #[fail(display = "secret connection challenge verification failed")]
     ChallengeVerification,
+
+    /// AEAD::Seal or AEAD::Open failed
+    #[fail(display = "secret connection failed to encrypt/decrypt data")]
+    AuthCryptoError,
 }
 
 /// Create a new error (of a given enum variant) with a formatted message
