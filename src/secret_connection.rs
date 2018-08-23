@@ -116,7 +116,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
                 0,
                 in_out,
             ).map_err(|e| err!(AuthCryptoError, "open_in_place failed: {}", e))?
-            .len();
+                .len();
             Ok(len)
         } else {
             let mut in_out = ciphertext.to_vec();
