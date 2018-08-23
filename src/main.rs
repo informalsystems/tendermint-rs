@@ -3,6 +3,8 @@
 extern crate prost;
 #[macro_use]
 extern crate prost_derive;
+#[macro_use]
+extern crate lazy_static;
 
 extern crate clear_on_drop;
 extern crate failure;
@@ -21,11 +23,17 @@ extern crate signatory;
 extern crate toml;
 #[macro_use]
 extern crate serde_json;
+extern crate byteorder;
 extern crate bytes;
 extern crate chrono;
 extern crate hex;
+extern crate hkdf;
+extern crate ring;
+extern crate sha2;
+extern crate x25519_dalek;
 
 use gumdrop::Options;
+use signatory::ed25519::{FromSeed, Seed};
 use simplelog::Config as LoggingConfig;
 use simplelog::{CombinedLogger, LevelFilter, TermLogger};
 use std::collections::BTreeMap;
@@ -37,6 +45,13 @@ use std::path::Path;
 use std::process::exit;
 use std::sync::Arc;
 
+use signatory::providers::dalek::Ed25519Signer as DalekSigner;
+use std::fs::File;
+use std::io::Read;
+use std::path::PathBuf;
+
+use clear_on_drop::ClearOnDrop;
+
 #[macro_use]
 mod error;
 
@@ -44,14 +59,14 @@ mod client;
 mod config;
 mod ed25519;
 mod rpc;
+mod secret_connection;
 mod session;
 mod types;
 
-use clear_on_drop::ClearOnDrop;
 use client::Client;
 use config::{Config, ProviderConfig, ValidatorConfig};
 use ed25519::Keyring;
-use rand::{OsRng, Rng};
+use rand::{OsRng, RngCore};
 
 /// Unix file permissions required for private keys (i.e. owner-readable only)
 pub const PRIVATE_KEY_PERMISSIONS: u32 = 0o600;
@@ -204,12 +219,15 @@ fn run(config_file_path: &str, verbose: bool) {
     let Config {
         validators,
         providers,
+        secret_connection_key_path,
     } = load_config(config_file);
+
+    let secret_connection_key = Arc::new(load_secret_connection_key(&secret_connection_key_path));
 
     let keyring = Arc::new(init_keyring(providers));
 
     // Spawn the validator client threads
-    let validator_clients = spawn_validator_clients(&validators, &keyring);
+    let validator_clients = spawn_validator_clients(&validators, &keyring, &secret_connection_key);
 
     // Wait for the validator client threads to exit
     // TODO: Find something more useful for this thread to do
@@ -251,11 +269,33 @@ fn init_keyring(config: ProviderConfig) -> Keyring {
 fn spawn_validator_clients(
     config: &BTreeMap<String, ValidatorConfig>,
     keyring: &Arc<Keyring>,
+    secret_connection_key: &Arc<DalekSigner>,
 ) -> Vec<Client> {
     config
         .iter()
         .map(|(label, validator_config)| {
-            Client::spawn(label.clone(), validator_config.clone(), Arc::clone(keyring))
+            Client::spawn(
+                label.clone(),
+                validator_config.clone(),
+                Arc::clone(keyring),
+                Arc::clone(secret_connection_key),
+            )
         })
         .collect()
+}
+
+fn load_secret_connection_key(key_path: &PathBuf) -> DalekSigner {
+    match File::open(&key_path) {
+        Ok(mut seed_file) => {
+            let mut key_material = ClearOnDrop::new(vec![]);
+            seed_file.read_to_end(key_material.as_mut()).unwrap();
+            DalekSigner::from_seed(Seed::from_slice(&key_material).unwrap())
+        }
+        Err(_) => {
+            let seed = Seed::generate();
+            let mut seed_file = File::create(&key_path).unwrap();
+            seed_file.write(seed.as_secret_slice());
+            DalekSigner::from_seed(seed)
+        }
+    }
 }

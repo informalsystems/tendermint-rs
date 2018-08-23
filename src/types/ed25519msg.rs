@@ -5,6 +5,9 @@ use signatory::ed25519::{PublicKey, PUBLIC_KEY_SIZE};
 // While this is meant to be used with different key-types, it currently only uses a PubKeyEd25519
 // version.
 // TODO(ismail): make this more generic (by modifying prost and adding a trait for PubKey)
+
+pub const AMINO_NAME: &str = "tendermint/socketpv/PubKeyMsg";
+
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/socketpv/PubKeyMsg"]
 pub struct PubKeyMsg {

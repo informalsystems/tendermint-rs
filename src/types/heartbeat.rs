@@ -6,36 +6,46 @@ pub struct Heartbeat {
     #[prost(bytes, tag = "1")]
     pub validator_address: Vec<u8>,
     #[prost(sint64)]
-    validator_index: i64,
+    pub validator_index: i64,
     #[prost(sint64)]
-    height: i64,
+    pub height: i64,
     #[prost(sint64)]
-    round: i64,
+    pub round: i64,
     #[prost(sint64)]
-    sequence: i64,
+    pub sequence: i64,
     #[prost(message)]
-    signature: Option<Vec<u8>>,
+    pub signature: Option<Vec<u8>>,
 }
+
+pub const AMINO_NAME: &str = "tendermint/socketpv/SignHeartbeatMsg";
 
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/socketpv/SignHeartbeatMsg"]
-struct SignHeartbeatMsg {
+pub struct SignHeartbeatMsg {
     #[prost(message, tag = "1")]
-    heartbeat: Option<Heartbeat>,
+    pub heartbeat: Option<Heartbeat>,
 }
 
-impl TendermintSign for Heartbeat {
+impl TendermintSign for SignHeartbeatMsg {
     fn cannonicalize(self, chain_id: &str) -> String {
-        let value = json!({
+        match self.heartbeat {
+            Some(hb) => {
+                let value = json!({
             "@chain_id":chain_id,
             "@type":"heartbeat",
-            "height":self.height,
-            "round":self.round,
-            "sequence":self.sequence,
-            "validator_address": encode(&self.validator_address),
-            "validator_index": self.validator_index,
+            "height":hb.height,
+            "round":hb.round,
+            "sequence":hb.sequence,
+            "validator_address": encode(&hb.validator_address),
+            "validator_index": hb.validator_index,
             });
-        value.to_string()
+                value.to_string()
+            }
+            None => "".to_owned(),
+        }
+    }
+    fn sign(&mut self) {
+        unimplemented!();
     }
 }
 

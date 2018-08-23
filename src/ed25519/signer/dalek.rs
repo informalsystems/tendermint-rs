@@ -1,6 +1,6 @@
-//! ed25519-dalek software-based signer
-//!
-//! This is mainly intended for testing/CI. Ideally real validators will use HSMs
+// ed25519-dalek software-based signer
+//
+// This is mainly intended for testing/CI. Ideally real validators will use HSMs
 
 use signatory::ed25519::{self, FromSeed};
 use signatory::providers::dalek;

@@ -1,9 +1,10 @@
 extern crate prost;
 
-mod ed25519msg;
-mod heartbeat;
-mod proposal;
-mod vote;
+pub mod ed25519msg;
+pub mod heartbeat;
+pub mod poisonpill;
+pub mod proposal;
+pub mod vote;
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -44,4 +45,21 @@ impl From<Time> for SystemTime {
 
 pub trait TendermintSign {
     fn cannonicalize(self, chain_id: &str) -> String;
+    // TODO(ismail): can't the signing op time out or error in another way
+    // (e.g.hsm module not found)
+    // also, if we want to keep this method, we need the signer / priv key to be known here
+    // probably the cannonicalize method is sufficient and the actual signing happens
+    // outside of the type:
+    fn sign(&mut self);
 }
+
+pub use self::ed25519msg::PubKeyMsg;
+pub use self::ed25519msg::AMINO_NAME as PUBKEY_AMINO_NAME;
+pub use self::heartbeat::SignHeartbeatMsg;
+pub use self::heartbeat::AMINO_NAME as HEARTBEAT_AMINO_NAME;
+pub use self::poisonpill::PoisonPillMsg;
+pub use self::poisonpill::AMINO_NAME as POISON_PILL_AMINO_NAME;
+pub use self::proposal::SignProposalMsg;
+pub use self::proposal::AMINO_NAME as PROPOSAL_AMINO_NAME;
+pub use self::vote::SignVoteMsg;
+pub use self::vote::AMINO_NAME as VOTE_AMINO_NAME;
