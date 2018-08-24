@@ -1,4 +1,4 @@
-use byteorder::{BigEndian, ByteOrder};
+use byteorder::{ByteOrder, LittleEndian};
 use bytes::BufMut;
 use error::Error;
 use hkdf::Hkdf;
@@ -139,7 +139,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
     ) -> Result<(), Error> {
         let chunk_length = chunk.len();
         let mut frame = [0u8; TOTAL_FRAME_SIZE];
-        BigEndian::write_u32(&mut frame[..DATA_LEN_SIZE], chunk_length as u32);
+        LittleEndian::write_u32(&mut frame[..DATA_LEN_SIZE], chunk_length as u32);
         frame[DATA_LEN_SIZE..DATA_LEN_SIZE + chunk_length].copy_from_slice(chunk);
         sealed_frame[..frame.len()].copy_from_slice(&frame);
 
@@ -191,7 +191,7 @@ where
         let mut chunk_length_specifier = vec![0; 4];
         chunk_length_specifier.clone_from_slice(&frame[..4]);
 
-        let chunk_length = BigEndian::read_u32(&chunk_length_specifier);
+        let chunk_length = LittleEndian::read_u32(&chunk_length_specifier);
         if chunk_length > DATA_MAX_SIZE as u32 {
             Err(io::Error::new(
                 io::ErrorKind::Other,
@@ -382,8 +382,8 @@ impl Default for Nonce {
 
 impl Nonce {
     fn increment(&mut self) {
-        let counter: u64 = BigEndian::read_u64(&self.0[4..]);
-        BigEndian::write_u64(&mut self.0[4..], counter.checked_add(1).unwrap());
+        let counter: u64 = LittleEndian::read_u64(&self.0[4..]);
+        LittleEndian::write_u64(&mut self.0[4..], counter.checked_add(1).unwrap());
     }
 
     #[inline]
@@ -403,12 +403,12 @@ mod tests {
     fn test_incr_nonce() {
         // make sure we match the golang implementation
         let mut check_points: HashMap<i32, &[u8]> = HashMap::new();
-        check_points.insert(0, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
-        check_points.insert(1, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]);
-        check_points.insert(510, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 255]);
-        check_points.insert(511, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0]);
-        check_points.insert(512, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1]);
-        check_points.insert(1023, &[0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0]);
+        check_points.insert(0, &[0u8, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
+        check_points.insert(1, &[0u8, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0]);
+        check_points.insert(510, &[0u8, 0, 0, 0, 255, 1, 0, 0, 0, 0, 0, 0]);
+        check_points.insert(511, &[0u8, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0]);
+        check_points.insert(512, &[0u8, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0]);
+        check_points.insert(1023, &[0u8, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0]);
 
         let mut nonce = Nonce::default();
         assert_eq!(nonce.to_bytes().len(), AEAD_NONCE_SIZE);
