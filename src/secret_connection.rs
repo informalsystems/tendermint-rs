@@ -1,4 +1,4 @@
-use byteorder::{LittleEndian, BigEndian, ByteOrder};
+use byteorder::{ByteOrder, LittleEndian};
 use bytes::BufMut;
 use error::Error;
 use hkdf::Hkdf;
@@ -139,7 +139,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
     ) -> Result<(), Error> {
         let chunk_length = chunk.len();
         let mut frame = [0u8; TOTAL_FRAME_SIZE];
-        BigEndian::write_u32(&mut frame[..DATA_LEN_SIZE], chunk_length as u32);
+        LittleEndian::write_u32(&mut frame[..DATA_LEN_SIZE], chunk_length as u32);
         frame[DATA_LEN_SIZE..DATA_LEN_SIZE + chunk_length].copy_from_slice(chunk);
         sealed_frame[..frame.len()].copy_from_slice(&frame);
 
@@ -191,7 +191,7 @@ where
         let mut chunk_length_specifier = vec![0; 4];
         chunk_length_specifier.clone_from_slice(&frame[..4]);
 
-        let chunk_length = BigEndian::read_u32(&chunk_length_specifier);
+        let chunk_length = LittleEndian::read_u32(&chunk_length_specifier);
         if chunk_length > DATA_MAX_SIZE as u32 {
             Err(io::Error::new(
                 io::ErrorKind::Other,
