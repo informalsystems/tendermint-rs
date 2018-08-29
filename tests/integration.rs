@@ -1,13 +1,13 @@
 //! KMS integration test
 
-extern crate prost;
+extern crate prost_amino;
 #[macro_use]
 extern crate prost_derive;
 
 extern crate rand;
 extern crate signatory;
 
-use prost::Message;
+use prost_amino::Message;
 use signatory::ed25519::{self, FromSeed, Signer};
 use signatory::providers::dalek;
 use std::ffi::OsStr;

@@ -95,7 +95,7 @@ impl TendermintSign for SignProposalMsg {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use prost::Message;
+    use prost_amino::Message;
     use std::error::Error;
 
     #[test]

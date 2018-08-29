@@ -7,7 +7,7 @@ use types::{PubKeyMsg, TendermintSign};
 
 use ed25519::Keyring;
 use failure::Error;
-use prost::Message;
+use prost_amino::Message;
 use rpc::{Request, Response};
 use secret_connection::SecretConnection;
 use signatory::providers::dalek::Ed25519Signer as DalekSigner;

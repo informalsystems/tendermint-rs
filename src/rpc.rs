@@ -1,6 +1,6 @@
 use bytes::IntoBuf;
-use prost::encoding::decode_varint;
-use prost::Message;
+use prost_amino::encoding::decode_varint;
+use prost_amino::Message;
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
 use std::io::{self, Read};

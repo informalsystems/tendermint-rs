@@ -4,7 +4,7 @@ use hex::encode_upper;
 use std::time::{SystemTime, UNIX_EPOCH};
 // TODO(ismail): we might not want to use this error type here
 // see below: those aren't prost errors
-use prost::error::DecodeError;
+use prost_amino::error::DecodeError;
 
 enum VoteType {
     PreVote,
@@ -117,7 +117,7 @@ impl TendermintSign for SignVoteMsg {
 mod tests {
     use super::super::PartsSetHeader;
     use super::*;
-    use prost::Message;
+    use prost_amino::Message;
 
     #[test]
     fn test_vote_serialization() {

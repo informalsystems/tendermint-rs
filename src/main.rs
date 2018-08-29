@@ -1,6 +1,6 @@
 //! Key Management System for Cosmos Validators
 
-extern crate prost;
+extern crate prost_amino;
 #[macro_use]
 extern crate prost_derive;
 #[macro_use]
