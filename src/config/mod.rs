@@ -1,6 +1,7 @@
 //! Configuration file structures (with serde-derived parser)
 
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 
 #[cfg(feature = "dalek-provider")]
 mod dalek;
@@ -8,41 +9,32 @@ mod dalek;
 #[cfg(feature = "yubihsm-provider")]
 mod yubihsm;
 
-use std::fs::File;
-use std::io::Read;
-use std::path::{Path, PathBuf};
-use toml;
-
-use error::Error;
-
 #[cfg(feature = "dalek-provider")]
 pub use self::dalek::DalekConfig;
 
 #[cfg(feature = "yubihsm-provider")]
 pub use self::yubihsm::YubihsmConfig;
 
-#[derive(Deserialize, Debug)]
-pub struct Config {
+/// Name of the KMS configuration file
+pub const CONFIG_FILE_NAME: &str = "kms.toml";
+
+/// KMS configuration (i.e. TOML file parsed with serde)
+#[derive(Clone, Deserialize, Debug)]
+pub struct KMSConfig {
     /// Addresses of validator nodes
     pub validators: BTreeMap<String, ValidatorConfig>,
 
     /// Cryptographic signature provider configuration
     pub providers: ProviderConfig,
 
-    pub secret_connection_key_path: PathBuf,
+    /// Secret connection configuration
+    #[serde(rename = "secret-connection")]
+    pub secret_connection: SecretConnectionConfig,
 }
 
-impl Config {
-    /// Parse the configuration TOML, returning a Config struct
-    pub fn load(filename: &Path) -> Result<Config, Error> {
-        let mut file = File::open(filename)?;
-
-        let mut data = String::new();
-        file.read_to_string(&mut data).unwrap();
-
-        toml::from_str(&data).map_err(|e| err!(ConfigError, "parse error: {}", e))
-    }
-}
+// Impl the `abscissa::GlobalConfig` trait, storing the configuration in the
+// `GLOBAL_CONFIG` static value
+impl_global_config!(KMSConfig, GLOBAL_CONFIG);
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct ValidatorConfig {
@@ -56,7 +48,7 @@ pub struct ValidatorConfig {
     pub reconnect: Option<bool>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct ProviderConfig {
     /// ed25519-dalek configuration
     #[cfg(feature = "dalek-provider")]
@@ -65,4 +57,11 @@ pub struct ProviderConfig {
     /// Map of yubihsm-connector labels to their configurations
     #[cfg(feature = "yubihsm-provider")]
     pub yubihsm: Option<YubihsmConfig>,
+}
+
+#[derive(Clone, Deserialize, Debug)]
+pub struct SecretConnectionConfig {
+    /// Path to our identity key
+    #[serde(rename = "secret-key-path")]
+    pub secret_key_path: PathBuf,
 }
