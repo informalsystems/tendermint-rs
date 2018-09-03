@@ -16,27 +16,28 @@ use error::Error;
 pub const DALEK_PROVIDER_LABEL: &str = "dalek";
 
 /// Create software-backed Ed25519 signer objects from the given configuration
-pub fn create_signers(signers: &mut Vec<Signer>, config: Option<DalekConfig>) -> Result<(), Error> {
-    if config.is_none() {
-        return Ok(());
-    }
+pub fn create_signers(
+    signers: &mut Vec<Signer>,
+    config_option: Option<&DalekConfig>,
+) -> Result<(), Error> {
+    if let Some(ref config) = config_option {
+        for (key_id, key_config) in &config.keys {
+            let mut file = File::open(&key_config.path).map_err(|e| {
+                err!(
+                    ConfigError,
+                    "can't open {}: {}",
+                    key_config.path.display(),
+                    e
+                )
+            })?;
 
-    for (key_id, key_config) in config.unwrap().keys {
-        let mut file = File::open(&key_config.path).map_err(|e| {
-            err!(
-                ConfigError,
-                "can't open {}: {}",
-                key_config.path.display(),
-                e
-            )
-        })?;
+            let mut key_material = ClearOnDrop::new(vec![]);
+            file.read_to_end(key_material.as_mut())?;
 
-        let mut key_material = ClearOnDrop::new(vec![]);
-        file.read_to_end(key_material.as_mut())?;
-
-        let seed = ed25519::Seed::from_slice(&key_material).unwrap();
-        let signer = Box::new(dalek::Ed25519Signer::from_seed(seed));
-        signers.push(Signer::new(DALEK_PROVIDER_LABEL, key_id, signer));
+            let seed = ed25519::Seed::from_slice(&key_material).unwrap();
+            let signer = Box::new(dalek::Ed25519Signer::from_seed(seed));
+            signers.push(Signer::new(DALEK_PROVIDER_LABEL, key_id.to_owned(), signer));
+        }
     }
 
     Ok(())

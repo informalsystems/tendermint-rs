@@ -1,11 +1,28 @@
 //! KMS integration test
 
+#[allow(unused_imports)]
+#[macro_use]
+extern crate abscissa_derive;
+#[macro_use]
+extern crate failure_derive;
 extern crate prost;
 #[macro_use]
 extern crate prost_derive;
-
 extern crate rand;
 extern crate signatory;
+
+/// Hacks for accessing the RPC types in tests
+#[macro_use]
+extern crate serde_json;
+extern crate byteorder;
+extern crate bytes;
+extern crate chrono;
+extern crate failure;
+extern crate hex;
+extern crate hkdf;
+extern crate ring;
+extern crate sha2;
+extern crate x25519_dalek;
 
 use prost::Message;
 use signatory::ed25519::{self, FromSeed, Signer};
@@ -26,21 +43,6 @@ pub const MOCK_VALIDATOR_PORT: u16 = 23456;
 
 /// Arguments to pass when launching the KMS
 pub const KMS_TEST_ARGS: &[&str] = &["run", "-c", "tests/test.toml"];
-
-/// Hacks for accessing the RPC types in tests
-#[macro_use]
-extern crate serde_json;
-extern crate byteorder;
-extern crate bytes;
-extern crate chrono;
-extern crate failure;
-extern crate hex;
-extern crate hkdf;
-extern crate ring;
-extern crate sha2;
-extern crate x25519_dalek;
-#[macro_use]
-extern crate failure_derive;
 
 mod types {
     include!("../src/types/mod.rs");
@@ -112,7 +114,7 @@ fn test_key() -> (
     ed25519::PublicKey,
     signatory::providers::dalek::Ed25519Signer,
 ) {
-    let mut file = File::open("tests/test.key").unwrap();
+    let mut file = File::open("tests/signing.key").unwrap();
     let mut key_material = vec![];
     file.read_to_end(key_material.as_mut()).unwrap();
 
