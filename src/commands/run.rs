@@ -66,6 +66,5 @@ fn spawn_validator_clients(
         .iter()
         .map(|(label, validator_config)| {
             Client::spawn(label.clone(), validator_config.clone(), Arc::clone(keyring))
-        })
-        .collect()
+        }).collect()
 }

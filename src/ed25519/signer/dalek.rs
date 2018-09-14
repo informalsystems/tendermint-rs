@@ -2,27 +2,29 @@
 //
 // This is mainly intended for testing/CI. Ideally real validators will use HSMs
 
-use signatory::ed25519::{self, FromSeed};
-use signatory::providers::dalek;
-use std::fs::File;
-use std::io::Read;
+use signatory::{
+    ed25519::{FromSeed, Seed},
+    encoding::{Decode, Encoding},
+    PublicKeyed,
+};
+use signatory_dalek::Ed25519Signer;
 
-use super::Signer;
-use clear_on_drop::ClearOnDrop;
 use config::DalekConfig;
+use ed25519::{PublicKey, Signer};
 use error::Error;
 
 /// Label for ed25519-dalek provider
 pub const DALEK_PROVIDER_LABEL: &str = "dalek";
 
 /// Create software-backed Ed25519 signer objects from the given configuration
+// TODO: return an iterator rather than taking an `&mut Vec<Signer>`?
 pub fn create_signers(
     signers: &mut Vec<Signer>,
     config_option: Option<&DalekConfig>,
 ) -> Result<(), Error> {
     if let Some(ref config) = config_option {
         for (key_id, key_config) in &config.keys {
-            let mut file = File::open(&key_config.path).map_err(|e| {
+            let seed = Seed::decode_from_file(&key_config.path, Encoding::Raw).map_err(|e| {
                 err!(
                     ConfigError,
                     "can't open {}: {}",
@@ -31,12 +33,15 @@ pub fn create_signers(
                 )
             })?;
 
-            let mut key_material = ClearOnDrop::new(vec![]);
-            file.read_to_end(key_material.as_mut())?;
+            let signer = Box::new(Ed25519Signer::from_seed(seed));
+            let public_key = PublicKey::from_bytes(signer.public_key().unwrap().as_ref()).unwrap();
 
-            let seed = ed25519::Seed::from_slice(&key_material).unwrap();
-            let signer = Box::new(dalek::Ed25519Signer::from_seed(seed));
-            signers.push(Signer::new(DALEK_PROVIDER_LABEL, key_id.to_owned(), signer));
+            signers.push(Signer::new(
+                DALEK_PROVIDER_LABEL,
+                key_id.to_owned(),
+                public_key,
+                signer,
+            ));
         }
     }
 

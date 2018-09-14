@@ -1,4 +1,4 @@
-use signatory::ed25519::{PublicKey, PUBLIC_KEY_SIZE};
+use signatory::ed25519::{Ed25519PublicKey, PUBLIC_KEY_SIZE};
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
 // github.com/tendermint/tendermint/crypto.PubKey
@@ -15,17 +15,17 @@ pub struct PubKeyMsg {
     pub_key_ed25519: Vec<u8>,
 }
 
-impl Into<PublicKey> for PubKeyMsg {
+impl Into<Ed25519PublicKey> for PubKeyMsg {
     // This does not check if the underlying pub_key_ed25519 has the right size.
     // The caller needs to make sure that this is actually the case.
-    fn into(self) -> PublicKey {
+    fn into(self) -> Ed25519PublicKey {
         let mut public_key = [0u8; PUBLIC_KEY_SIZE];
         public_key.copy_from_slice(self.pub_key_ed25519.as_ref());
-        PublicKey(public_key)
+        Ed25519PublicKey(public_key)
     }
 }
 
-impl Into<PubKeyMsg> for PublicKey {
+impl Into<PubKeyMsg> for Ed25519PublicKey {
     fn into(self) -> PubKeyMsg {
         let pk = self.0.to_vec();
         PubKeyMsg {
@@ -131,7 +131,7 @@ mod tests {
             0xe7, 0xc1, 0xd4, 0x69, 0xc3, 0x44, 0x26, 0xec, 0xef, 0xc0, 0x72, 0xa, 0x52, 0x4d,
             0x37, 0x32, 0xef, 0xed,
         ];
-        let want = PublicKey(raw_pk);
+        let want = Ed25519PublicKey(raw_pk);
         let pk = PubKeyMsg {
             pub_key_ed25519: vec![
                 0x79, 0xce, 0xd, 0xe0, 0x43, 0x33, 0x4a, 0xec, 0xe0, 0x8b, 0x7b, 0xb5, 0x61, 0xbc,
@@ -140,7 +140,7 @@ mod tests {
             ],
         };
         let orig = pk.clone();
-        let got: PublicKey = pk.into();
+        let got: Ed25519PublicKey = pk.into();
 
         assert_eq!(got, want);
 
@@ -156,6 +156,6 @@ mod tests {
             pub_key_ed25519: vec![],
         };
         // we expect this to panic:
-        let _got: PublicKey = empty_msg.into();
+        let _got: Ed25519PublicKey = empty_msg.into();
     }
 }

@@ -1,6 +1,6 @@
 //! The `version` subcommand
 
-#![allow(unknown_lints, never_loop)]
+#![allow(unknown_lints, renamed_and_removed_lints, never_loop)]
 
 use abscissa::Command as CommandTrait;
 
