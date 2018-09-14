@@ -19,8 +19,7 @@ pub enum KMSCommand {
     #[options(help = "show help for a command")]
     Help(HelpCommand),
 
-    #[cfg(feature = "dalek-provider")]
-    #[options(help = "generate a new signing key")]
+    #[options(help = "generate a new software signing key")]
     Keygen(KeygenCommand),
 
     #[options(help = "run the KMS application")]
@@ -65,7 +64,6 @@ impl Callable for KMSCommand {
     fn call(&self) {
         match self {
             KMSCommand::Help(help) => help.call(),
-            #[cfg(feature = "dalek-provider")]
             KMSCommand::Keygen(keygen) => keygen.call(),
             KMSCommand::Run(run) => run.call(),
             KMSCommand::Version(version) => version.call(),

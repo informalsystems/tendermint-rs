@@ -11,7 +11,7 @@ use prost::Message;
 use rpc::{Request, Response};
 use secret_connection::SecretConnection;
 
-/// A (soon-to-be-encrypted) session with a validator node
+/// Encrypted session with a validator node
 pub struct Session {
     /// TCP connection to a validator node
     connection: SecretConnection<TcpStream>,

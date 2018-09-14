@@ -24,9 +24,14 @@ extern crate ring;
 extern crate serde_derive;
 extern crate sha2;
 extern crate signatory;
+extern crate signatory_dalek;
+#[cfg(feature = "yubihsm-provider")]
+extern crate signatory_yubihsm;
 #[macro_use]
 extern crate serde_json;
 extern crate x25519_dalek;
+#[cfg(feature = "yubihsm-provider")]
+extern crate yubihsm;
 
 #[macro_use]
 mod error;

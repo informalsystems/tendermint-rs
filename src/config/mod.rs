@@ -3,15 +3,11 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-#[cfg(feature = "dalek-provider")]
 mod dalek;
+pub use self::dalek::DalekConfig;
 
 #[cfg(feature = "yubihsm-provider")]
 mod yubihsm;
-
-#[cfg(feature = "dalek-provider")]
-pub use self::dalek::DalekConfig;
-
 #[cfg(feature = "yubihsm-provider")]
 pub use self::yubihsm::YubihsmConfig;
 
@@ -51,7 +47,6 @@ pub struct ValidatorConfig {
 #[derive(Clone, Deserialize, Debug)]
 pub struct ProviderConfig {
     /// ed25519-dalek configuration
-    #[cfg(feature = "dalek-provider")]
     pub dalek: Option<DalekConfig>,
 
     /// Map of yubihsm-connector labels to their configurations

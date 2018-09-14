@@ -1,18 +1,18 @@
-use signatory::ed25519::PublicKey as SignatoryKey;
+use signatory::ed25519::Ed25519PublicKey;
 pub use signatory::ed25519::PUBLIC_KEY_SIZE;
 use std::fmt::{self, Display};
 
 use error::Error;
 
 /// Ed25519 public keys
-#[derive(Clone, Eq, PartialEq, Hash)]
-pub struct PublicKey(SignatoryKey);
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+pub struct PublicKey(Ed25519PublicKey);
 
 impl PublicKey {
     /// Convert a bytestring to a public key
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         Ok(PublicKey(
-            SignatoryKey::from_bytes(bytes).map_err(|e| err!(InvalidKey, "{}", e))?,
+            Ed25519PublicKey::from_bytes(bytes).map_err(|e| err!(InvalidKey, "{}", e))?,
         ))
     }
 
@@ -37,8 +37,8 @@ impl Display for PublicKey {
     }
 }
 
-impl From<SignatoryKey> for PublicKey {
-    fn from(key: SignatoryKey) -> PublicKey {
+impl From<Ed25519PublicKey> for PublicKey {
+    fn from(key: Ed25519PublicKey) -> PublicKey {
         PublicKey(key)
     }
 }

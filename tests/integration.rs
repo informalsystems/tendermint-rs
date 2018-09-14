@@ -10,6 +10,7 @@ extern crate prost;
 extern crate prost_derive;
 extern crate rand;
 extern crate signatory;
+extern crate signatory_dalek;
 
 /// Hacks for accessing the RPC types in tests
 #[macro_use]
@@ -25,10 +26,13 @@ extern crate sha2;
 extern crate x25519_dalek;
 
 use prost::Message;
-use signatory::ed25519::{self, FromSeed, Signer};
-use signatory::providers::dalek;
+use signatory::{
+    ed25519::{Ed25519PublicKey, Ed25519Signature, FromSeed, Seed as Ed25519Seed},
+    encoding::{Decode, Encoding},
+    ByteSigner,
+};
+use signatory_dalek::Ed25519Signer;
 use std::ffi::OsStr;
-use std::fs::File;
 #[allow(unused_imports)]
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -88,10 +92,10 @@ impl KmsConnection {
     /// Sign the given message with the given public key using the KMS
     pub fn sign(
         &mut self,
-        public_key: &ed25519::PublicKey,
-        signer: signatory::providers::dalek::Ed25519Signer,
+        public_key: &Ed25519PublicKey,
+        signer: &ByteSigner<Ed25519Signature>,
         request: impl types::TendermintSign,
-    ) -> ed25519::Signature {
+    ) -> Ed25519Signature {
         // TODO(ismail) SignRequest ->  now one of:
         // SignHeartbeat(SignHeartbeatMsg), SignProposal(SignProposalMsg), SignVote(SignVoteMsg), ShowPublicKey(PubKeyMsg),
         /*let req = Request::SignHeartbeat(types::heartbeat::SignHeartbeatMsg {
@@ -105,22 +109,15 @@ impl KmsConnection {
             Response::Sign(ref response) => ed25519::Signature::from_bytes(&response.sig).unwrap(),
         }*/
         let json_msg = request.cannonicalize("chain_id");
-        signer.sign(&json_msg.into_bytes()).unwrap()
+        signatory::sign(signer, &json_msg.into_bytes()).unwrap()
     }
 }
 
 /// Get the public key associated with the testing private key
-fn test_key() -> (
-    ed25519::PublicKey,
-    signatory::providers::dalek::Ed25519Signer,
-) {
-    let mut file = File::open("tests/signing.key").unwrap();
-    let mut key_material = vec![];
-    file.read_to_end(key_material.as_mut()).unwrap();
-
-    let seed = ed25519::Seed::from_slice(&key_material).unwrap();
-    let signer = dalek::Ed25519Signer::from_seed(seed);
-    (signer.public_key().unwrap(), signer)
+fn test_key() -> (Ed25519PublicKey, Ed25519Signer) {
+    let seed = Ed25519Seed::decode_from_file("tests/signing.key", Encoding::Raw).unwrap();
+    let signer = Ed25519Signer::from_seed(seed);
+    (signatory::public_key(&signer).unwrap(), signer)
 }
 
 #[test]
