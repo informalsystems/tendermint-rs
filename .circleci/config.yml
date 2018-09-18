@@ -3,43 +3,53 @@ version: 2
 jobs:
   build:
     docker:
-      - image: iqlusion/cosmos-kms:20180715.0 # bump cache keys when modifying this
+    - image: iqlusion/cosmos-kms:20180913.0 # bump cache keys when modifying this
     steps:
-      - checkout
-      - restore_cache:
-          key: cache-20180715.0 # bump save_cache key below too
-      - run:
-          name: rustfmt
-          command: |
-            cargo +$RUST_NIGHTLY_VERSION fmt --version
-            cargo +$RUST_NIGHTLY_VERSION fmt -- --check
-      - run:
-          name: clippy
-          command: |
-            cargo +$RUST_NIGHTLY_VERSION clippy --version
-            cargo +$RUST_NIGHTLY_VERSION clippy --verbose --all-features
-      - run:
-          name: build (default features)
-          command: |
-            rustc --version --verbose
-            cargo --version --verbose
-            cargo build
-            cargo build --release
-      - run:
-          name: build (all features)
-          command: |
-            rustc --version --verbose
-            cargo --version --verbose
-            cargo build --all-features
-            cargo build --all-features --release
-      - run:
-          name: test (all features)
-          command: |
-            rustc --version --verbose
-            cargo --version --verbose
-            cargo test --all-features
-      - save_cache:
-          key: cache-20180715.0 # bump restore_cache key above too
-          paths:
-            - "~/.cargo"
-            - "./target"
+    - checkout
+    - restore_cache:
+        key: cache-20180913.0 # bump save_cache key below too
+    - run:
+        name: rustfmt
+        command: |
+          cargo fmt --version
+          cargo fmt -- --check
+    - run:
+        name: clippy
+        command: |
+          cargo clippy --version
+          cargo clippy --all-features
+    - run:
+        name: build (default features)
+        command: |
+          rustc --version 
+          cargo --version 
+          cargo build
+          cargo build --release
+    - run:
+        name: build (all features)
+        command: |
+          rustc --version 
+          cargo --version 
+          cargo build --all-features
+    - run:
+        name: build (--features=yubihsm-provider --release)
+        command: |
+          rustc --version 
+          cargo --version 
+          cargo build --features=yubihsm-provider --release
+    - run:
+        name: test (all features)
+        command: |
+          rustc --version 
+          cargo --version 
+          cargo test --all-features
+    - run:
+        name: audit
+        command: |
+          cargo audit --version
+          cargo audit
+    - save_cache:
+        key: cache-20180913.0 # bump restore_cache key above too
+        paths:
+        - "~/.cargo"
+        - "./target"

@@ -1,7 +1,7 @@
-use super::{BlockID, PartsSetHeader, TendermintSignable, Time, Signature};
+use super::{BlockID, Ed25519Signature, PartsSetHeader, TendermintSignable, Time};
+use bytes::BufMut;
 use chrono::{DateTime, Utc};
 use hex::encode_upper;
-use bytes::BufMut;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
@@ -32,12 +32,16 @@ pub struct SignProposalMsg {
 }
 
 impl TendermintSignable for SignProposalMsg {
-    fn sign_bytes<B>(&mut self, sign_bytes: &mut B) where B: BufMut {unimplemented!()}
-    fn set_signature(&mut self, sig: Signature) {
+    fn sign_bytes<B>(&mut self, sign_bytes: &mut B)
+    where
+        B: BufMut,
+    {
+        unimplemented!()
+    }
+    fn set_signature(&mut self, sig: &Ed25519Signature) {
         unimplemented!()
     }
 }
-
 
 #[cfg(test)]
 mod tests {

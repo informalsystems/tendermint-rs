@@ -2,13 +2,14 @@ use bytes::IntoBuf;
 use prost::encoding::decode_varint;
 use prost::Message;
 use sha2::{Digest, Sha256};
-use signatory::ed25519::Signature;
+use signatory::Signature;
 use std::io::Cursor;
 use std::io::{self, Read};
 use std::io::{Error, ErrorKind};
 use types::{
-    TendermintSignable, PoisonPillMsg, PubKeyMsg, SignHeartbeatMsg, SignProposalMsg, SignVoteMsg, HEARTBEAT_AMINO_NAME,
-    POISON_PILL_AMINO_NAME, PROPOSAL_AMINO_NAME, PUBKEY_AMINO_NAME, VOTE_AMINO_NAME,
+    PoisonPillMsg, PubKeyMsg, SignHeartbeatMsg, SignProposalMsg, SignVoteMsg, TendermintSignable,
+    HEARTBEAT_AMINO_NAME, POISON_PILL_AMINO_NAME, PROPOSAL_AMINO_NAME, PUBKEY_AMINO_NAME,
+    VOTE_AMINO_NAME,
 };
 
 pub const MAX_MSG_LEN: usize = 1024;
@@ -88,7 +89,7 @@ impl Request {
         buff.read_exact(&mut amino_pre)?;
         buff.set_position(0);
         // TODO: find a way to get back the buffer without cloning the cursor here:
-        let rem: Vec<u8> = buff.clone().into_inner()[..((len+1) as usize)].to_vec();
+        let rem: Vec<u8> = buff.clone().into_inner()[..((len + 1) as usize)].to_vec();
         if amino_pre == *PP_PREFIX {
             // do not spent any time decoding, we are going down anyways
             return Ok(Request::PoisonPill(PoisonPillMsg {}));
@@ -135,4 +136,3 @@ impl TendermintResponse for SignProposalMsg {
         Response::SignedProposal(self)
     }
 }
-

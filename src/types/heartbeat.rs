@@ -1,6 +1,6 @@
-use super::{TendermintSignable, Signature};
-use hex::encode;
+use super::{Ed25519Signature, TendermintSignable};
 use bytes::BufMut;
+use hex::encode;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Heartbeat {
@@ -28,8 +28,13 @@ pub struct SignHeartbeatMsg {
 }
 
 impl TendermintSignable for SignHeartbeatMsg {
-    fn sign_bytes<B>(&mut self, sign_bytes: &mut B) where B: BufMut {unimplemented!()}
-    fn set_signature(&mut self, sig: Signature) {
+    fn sign_bytes<B>(&mut self, sign_bytes: &mut B)
+    where
+        B: BufMut,
+    {
+        unimplemented!()
+    }
+    fn set_signature(&mut self, sig: &Ed25519Signature) {
         unimplemented!()
     }
 }

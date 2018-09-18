@@ -8,11 +8,10 @@ use types::{PubKeyMsg, TendermintSignable};
 use ed25519::{Keyring, PublicKey};
 use failure::Error;
 use prost::Message;
-use rpc::{Request, Response};
+use rpc::{Request, Response, TendermintResponse};
 use secret_connection::SecretConnection;
-use signatory::providers::dalek::Ed25519Signer as DalekSigner;
 
-/// A (soon-to-be-encrypted) session with a validator node
+/// Encrypted session with a validator node
 pub struct Session {
     /// TCP connection to a validator node
     connection: SecretConnection<TcpStream>,
@@ -23,15 +22,10 @@ pub struct Session {
 
 impl Session {
     /// Create a new session with the validator at the given address/port
-    pub fn new(
-        addr: &str,
-        port: u16,
-        keyring: Arc<Keyring>,
-        secret_connection_key: &Arc<DalekSigner>,
-    ) -> Result<Self, Error> {
+    pub fn new(addr: &str, port: u16, keyring: Arc<Keyring>) -> Result<Self, Error> {
         debug!("Connecting to {}:{}...", addr, port);
         let socket = TcpStream::connect(format!("{}:{}", addr, port))?;
-        let connection = SecretConnection::new(socket, secret_connection_key)?;
+        let connection = SecretConnection::new(socket, keyring.secret_connection_signer())?;
         Ok(Self {
             connection,
             keyring,
@@ -46,7 +40,7 @@ impl Session {
             Request::SignHeartbeat(req) => self.sign(req)?,
             Request::SignVote(req) => self.sign(req)?,
             // non-signable requests:
-            Request::ShowPublicKey(req) => self.get_pub_key(req),
+            Request::ShowPublicKey(ref req) => self.get_public_key(req),
             Request::PoisonPill(_req) => return Ok(false),
         };
         //
@@ -69,15 +63,16 @@ impl Session {
 
         // TODO(ismail): figure out which key to use here
         // this can't work
-        let mut nokey = PublicKey::from_bytes(&vec![]).unwrap();
         let mut to_sign = vec![];
         request.sign_bytes(&mut to_sign);
-        let sig = self.keyring.sign( &nokey, &to_sign).unwrap();
-        request.set_signature(sig);
+        let signer = self.keyring.get_default_signer();
+
+        let sig = self.keyring.sign(&signer.public_key, &to_sign).unwrap();
+        request.set_signature(&sig);
         Ok(request.build_response())
     }
 
-    fn get_pub_key(&mut self, _request: PubKeyMsg) -> Response {
+    fn get_public_key(&mut self, _request: &PubKeyMsg) -> Response {
         unimplemented!()
     }
 }

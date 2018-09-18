@@ -6,9 +6,9 @@ pub mod poisonpill;
 pub mod proposal;
 pub mod vote;
 
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use signatory::ed25519::Signature;
 use bytes::BufMut;
+use signatory::ed25519::Ed25519Signature;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct PartsSetHeader {
@@ -46,8 +46,10 @@ impl From<Time> for SystemTime {
 }
 
 pub trait TendermintSignable {
-    fn sign_bytes<B>(&mut self, sign_bytes: &mut B) where B: BufMut;
-    fn set_signature(&mut self, sig: Signature);
+    fn sign_bytes<B>(&mut self, sign_bytes: &mut B)
+    where
+        B: BufMut;
+    fn set_signature(&mut self, sig: &Ed25519Signature);
 }
 
 pub use self::ed25519msg::PubKeyMsg;

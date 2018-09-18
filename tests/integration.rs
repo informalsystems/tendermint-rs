@@ -1,17 +1,38 @@
 //! KMS integration test
 
+#[allow(unused_imports)]
+#[macro_use]
+extern crate abscissa_derive;
+#[macro_use]
+extern crate failure_derive;
 extern crate prost;
 #[macro_use]
 extern crate prost_derive;
-
 extern crate rand;
 extern crate signatory;
+extern crate signatory_dalek;
+
+/// Hacks for accessing the RPC types in tests
+#[macro_use]
+extern crate serde_json;
+extern crate byteorder;
+extern crate bytes;
+extern crate chrono;
+extern crate failure;
+extern crate hex;
+extern crate hkdf;
+extern crate ring;
+extern crate sha2;
+extern crate x25519_dalek;
 
 use prost::Message;
-use signatory::ed25519::{self, FromSeed, Signer};
-use signatory::providers::dalek;
+use signatory::{
+    ed25519::{Ed25519PublicKey, Ed25519Signature, FromSeed, Seed as Ed25519Seed},
+    encoding::{Decode, Encoding},
+    ByteSigner,
+};
+use signatory_dalek::Ed25519Signer;
 use std::ffi::OsStr;
-use std::fs::File;
 #[allow(unused_imports)]
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -26,21 +47,6 @@ pub const MOCK_VALIDATOR_PORT: u16 = 23456;
 
 /// Arguments to pass when launching the KMS
 pub const KMS_TEST_ARGS: &[&str] = &["run", "-c", "tests/test.toml"];
-
-/// Hacks for accessing the RPC types in tests
-#[macro_use]
-extern crate serde_json;
-extern crate byteorder;
-extern crate bytes;
-extern crate chrono;
-extern crate failure;
-extern crate hex;
-extern crate hkdf;
-extern crate ring;
-extern crate sha2;
-extern crate x25519_dalek;
-#[macro_use]
-extern crate failure_derive;
 
 mod types {
     include!("../src/types/mod.rs");
@@ -86,10 +92,10 @@ impl KmsConnection {
     /// Sign the given message with the given public key using the KMS
     pub fn sign(
         &mut self,
-        public_key: &ed25519::PublicKey,
-        signer: signatory::providers::dalek::Ed25519Signer,
+        public_key: &Ed25519PublicKey,
+        signer: &ByteSigner<Ed25519Signature>,
         mut request: impl types::TendermintSignable,
-    ) -> ed25519::Signature {
+    ) -> Ed25519Signature {
         // TODO(ismail) SignRequest ->  now one of:
         // SignHeartbeat(SignHeartbeatMsg), SignProposal(SignProposalMsg), SignVote(SignVoteMsg), ShowPublicKey(PubKeyMsg),
         /*let req = Request::SignHeartbeat(types::heartbeat::SignHeartbeatMsg {
@@ -104,22 +110,15 @@ impl KmsConnection {
         }*/
         let mut to_sign = vec![];
         request.sign_bytes(&mut to_sign);
-        signer.sign(&mut to_sign).unwrap()
+        signatory::sign(signer, &mut to_sign).unwrap()
     }
 }
 
 /// Get the public key associated with the testing private key
-fn test_key() -> (
-    ed25519::PublicKey,
-    signatory::providers::dalek::Ed25519Signer,
-) {
-    let mut file = File::open("tests/test.key").unwrap();
-    let mut key_material = vec![];
-    file.read_to_end(key_material.as_mut()).unwrap();
-
-    let seed = ed25519::Seed::from_slice(&key_material).unwrap();
-    let signer = dalek::Ed25519Signer::from_seed(seed);
-    (signer.public_key().unwrap(), signer)
+fn test_key() -> (Ed25519PublicKey, Ed25519Signer) {
+    let seed = Ed25519Seed::decode_from_file("tests/signing.key", Encoding::Raw).unwrap();
+    let signer = Ed25519Signer::from_seed(seed);
+    (signatory::public_key(&signer).unwrap(), signer)
 }
 
 #[test]
@@ -157,8 +156,8 @@ fn test_handle_sign_request() {
 
     // prep a request:
     let addr = vec![
-        0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
-        0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+        0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb,
+        0x34, 0x46, 0xa8, 0x4b, 0x35,
     ];
 
     let hb = types::heartbeat::Heartbeat {
@@ -179,7 +178,6 @@ fn test_handle_sign_request() {
     hb_msg.encode(&mut buf).unwrap();
     println!("encoded: {:?}", buf);
     connection.write_all(&buf).unwrap();
-
 
     let pill = types::PoisonPillMsg {};
     let mut buf = vec![];

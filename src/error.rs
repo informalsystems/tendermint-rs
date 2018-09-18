@@ -1,6 +1,9 @@
 // Error types
 
 use failure::{Backtrace, Context, Fail};
+use prost;
+use ring;
+use signatory;
 use std::fmt::{self, Display};
 use std::io;
 
@@ -75,9 +78,16 @@ impl Display for Error {
 /// Kinds of errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
+    #[fail(display = "secret connection challenge verification failed")]
+    ChallengeVerification,
+
     /// Error in configuration file
     #[fail(display = "config error")]
     ConfigError,
+
+    /// Cryptographic operation failed
+    #[fail(display = "cryptographic error")]
+    CryptoError,
 
     /// Malformatted or otherwise invalid cryptographic key
     #[fail(display = "invalid key")]
@@ -87,16 +97,13 @@ pub enum ErrorKind {
     #[fail(display = "I/O error")]
     IoError,
 
+    /// Network protocol-related errors
+    #[fail(display = "protocl error")]
+    ProtocolError,
+
     /// Signing operation failed
     #[fail(display = "signing operation failed")]
     SigningError,
-
-    #[fail(display = "secret connection challenge verification failed")]
-    ChallengeVerification,
-
-    /// AEAD::Seal or AEAD::Open failed
-    #[fail(display = "secret connection failed to encrypt/decrypt data")]
-    AuthCryptoError,
 }
 
 /// Create a new error (of a given enum variant) with a formatted message
@@ -118,5 +125,30 @@ macro_rules! err {
 impl From<io::Error> for Error {
     fn from(other: io::Error) -> Self {
         err!(IoError, other)
+    }
+}
+
+impl From<prost::DecodeError> for Error {
+    fn from(other: prost::DecodeError) -> Self {
+        err!(ProtocolError, other)
+    }
+}
+
+impl From<prost::EncodeError> for Error {
+    fn from(other: prost::EncodeError) -> Self {
+        err!(ProtocolError, other)
+    }
+}
+
+impl From<ring::error::Unspecified> for Error {
+    fn from(other: ring::error::Unspecified) -> Self {
+        err!(CryptoError, other)
+    }
+}
+
+impl From<signatory::Error> for Error {
+    fn from(other: signatory::Error) -> Self {
+        // TODO: better map error types
+        err!(SigningError, other)
     }
 }
