@@ -27,7 +27,7 @@ serde_derive = "1.0"
 sha2 = "0.7"
 hkdf = "0.5"
 ring = "0.13"
-signatory = "0.9.0-alpha3"
+signatory = { version = "0.9.0-alpha3", features = ["ed25519"] }
 signatory-dalek = "0.9.0-alpha3"
 signatory-yubihsm = { version = "0.9.0-alpha3", optional = true }
 yubihsm = { version = "0.16", optional = true }
@@ -42,3 +42,8 @@ prost-derive = {git = "https://github.com/Liamsi/prost", branch = "prost_amino_d
 [features]
 yubihsm-provider = ["signatory-yubihsm/usb", "yubihsm/usb"]
 yubihsm-mockhsm = ["yubihsm-provider", "signatory-yubihsm/mockhsm", "yubihsm/mockhsm"]
+
+[patch.crates-io]
+signatory = { git = "https://github.com/tendermint/signatory.git" }
+signatory-dalek = { git = "https://github.com/tendermint/signatory.git" }
+signatory-yubihsm = { git = "https://github.com/tendermint/signatory.git" }

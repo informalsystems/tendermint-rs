@@ -9,11 +9,11 @@ use prost::Message;
 use rand::OsRng;
 use ring::aead;
 use sha2::Sha256;
-use signatory::{ed25519, Ed25519PublicKey, Ed25519Signature, Signature};
-use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
-use std::io::{Read, Write};
+use signatory::{ed25519, Ed25519PublicKey, Ed25519Signature, Signature, Signer};
+use signatory_dalek::Ed25519Verifier;
+use std::cmp;
+use std::io::{self, Cursor, Read, Write};
 use std::marker::{Send, Sync};
-use std::{cmp, io, io::Cursor};
 use x25519_dalek::{diffie_hellman, generate_public, generate_secret};
 
 // 4 + 1024 == 1028 total frame size
@@ -43,11 +43,9 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
     // Performs handshake and returns a new authenticated SecretConnection.
     pub fn new(
         mut handler: IoHandler,
-        local_privkey: &Ed25519Signer,
+        local_pubkey: &Ed25519PublicKey,
+        local_privkey: &Signer<Ed25519Signature>,
     ) -> Result<SecretConnection<IoHandler>, Error> {
-        // TODO: Error check
-        let local_pubkey = ed25519::public_key(local_privkey)?;
-
         // Generate ephemeral keys for perfect forward secrecy.
         let (local_eph_pubkey, local_eph_privkey) = gen_eph_keys();
 
@@ -91,9 +89,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
         let remote_sig = Ed25519Signature::from_bytes(remote_signature)?;
 
         let remote_verifier = Ed25519Verifier::from(&remote_pubkey);
-        let valid_sig = ed25519::verify(&remote_verifier, &challenge, &remote_sig);
-
-        valid_sig.map_err(|e| err!(ChallengeVerification, "{}", e))?;
+        ed25519::verify(&remote_verifier, &challenge, &remote_sig)?;
 
         // We've authorized.
         sc.remote_pubkey.copy_from_slice(&auth_sig_msg.key);
@@ -331,7 +327,7 @@ fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
 // Sign the challenge with the local private key
 fn sign_challenge(
     challenge: [u8; 32],
-    local_privkey: &Ed25519Signer,
+    local_privkey: &Signer<Ed25519Signature>,
 ) -> Result<Ed25519Signature, Error> {
     ed25519::sign(local_privkey, &challenge).map_err(|e| err!(SigningError, "{}", e))
 }

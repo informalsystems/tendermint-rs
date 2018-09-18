@@ -41,7 +41,8 @@ pub struct ValidatorConfig {
     pub port: u16,
 
     /// Automatically reconnect on error? (default: true)
-    pub reconnect: Option<bool>,
+    #[serde(default = "reconnect_default")]
+    pub reconnect: bool,
 }
 
 #[derive(Clone, Deserialize, Debug)]
@@ -59,4 +60,9 @@ pub struct SecretConnectionConfig {
     /// Path to our identity key
     #[serde(rename = "secret-key-path")]
     pub secret_key_path: PathBuf,
+}
+
+/// Default value for the `ValidatorConfig` reconnect field
+fn reconnect_default() -> bool {
+    true
 }

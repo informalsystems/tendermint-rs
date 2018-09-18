@@ -251,9 +251,9 @@ dependencies = [
  "serde_derive 1.0.79 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory-dalek 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory-yubihsm 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory 0.9.0-alpha3 (git+https://github.com/tendermint/signatory.git)",
+ "signatory-dalek 0.9.0-alpha3 (git+https://github.com/tendermint/signatory.git)",
+ "signatory-yubihsm 0.9.0-alpha3 (git+https://github.com/tendermint/signatory.git)",
  "x25519-dalek 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "yubihsm 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -654,7 +654,7 @@ dependencies = [
 [[package]]
 name = "signatory"
 version = "0.9.0-alpha3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/tendermint/signatory.git#a09eaae7bea74ccd935ff2fbf45fc0bd98189502"
 dependencies = [
  "clear_on_drop 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "digest 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -666,21 +666,21 @@ dependencies = [
 [[package]]
 name = "signatory-dalek"
 version = "0.9.0-alpha3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/tendermint/signatory.git#a09eaae7bea74ccd935ff2fbf45fc0bd98189502"
 dependencies = [
  "digest 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "ed25519-dalek 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory 0.9.0-alpha3 (git+https://github.com/tendermint/signatory.git)",
 ]
 
 [[package]]
 name = "signatory-yubihsm"
 version = "0.9.0-alpha3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/tendermint/signatory.git#a09eaae7bea74ccd935ff2fbf45fc0bd98189502"
 dependencies = [
  "lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory 0.9.0-alpha3 (git+https://github.com/tendermint/signatory.git)",
  "yubihsm 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -923,9 +923,9 @@ dependencies = [
 "checksum serde_derive 1.0.79 (registry+https://github.com/rust-lang/crates.io-index)" = "31569d901045afbff7a9479f793177fe9259819aff10ab4f89ef69bbc5f567fe"
 "checksum serde_json 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)" = "59790990c5115d16027f00913e2e66de23a51f70422e549d2ad68c8c5f268f1c"
 "checksum sha2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "9eb6be24e4c23a84d7184280d2722f7f2731fcdd4a9d886efbfe4413e4847ea0"
-"checksum signatory 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)" = "edfb9222245fe8ff185016fa4e4560fded1143e665e27d8cb7763e840dfb1692"
-"checksum signatory-dalek 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)" = "1437be1a9e57397e6e8c07b0cbc435215320cdc75ce9132b8aee637c9e807e03"
-"checksum signatory-yubihsm 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)" = "b54edd56d0e3a6c5491e2be0659968e79cf0c61944c6f362d219f69dc23ed152"
+"checksum signatory 0.9.0-alpha3 (git+https://github.com/tendermint/signatory.git)" = "<none>"
+"checksum signatory-dalek 0.9.0-alpha3 (git+https://github.com/tendermint/signatory.git)" = "<none>"
+"checksum signatory-yubihsm 0.9.0-alpha3 (git+https://github.com/tendermint/signatory.git)" = "<none>"
 "checksum simplelog 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "9cc12b39fdf4c9a07f88bffac2d628f0118ed5ac077a4b0feece61fadf1429e5"
 "checksum subtle 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "5938f1b89f10d6356339f071eca74209deeae0b6891c2678d655feb78637e369"
 "checksum syn 0.14.9 (registry+https://github.com/rust-lang/crates.io-index)" = "261ae9ecaa397c42b960649561949d69311f08eeaea86a65696e6e46517cf741"

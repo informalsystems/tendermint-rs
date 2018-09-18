@@ -4,8 +4,28 @@ use failure::{Backtrace, Context, Fail};
 use prost;
 use ring;
 use signatory;
-use std::fmt::{self, Display};
-use std::io;
+use std::{
+    any::Any,
+    error::Error as StdError,
+    fmt::{self, Display},
+    io,
+};
+
+/// Create a new error (of a given enum variant) with a formatted message
+macro_rules! err {
+    ($variant:ident, $msg:expr) => {
+        ::error::Error::with_description(
+            ::error::ErrorKind::$variant,
+            $msg.to_string()
+        )
+    };
+    ($variant:ident, $fmt:expr, $($arg:tt)+) => {
+        ::error::Error::with_description(
+            ::error::ErrorKind::$variant,
+            format!($fmt, $($arg)+)
+        )
+    };
+}
 
 /// Error type
 #[derive(Debug)]
@@ -38,6 +58,17 @@ impl Error {
     #[allow(dead_code)]
     pub fn kind(&self) -> ErrorKind {
         *self.inner.get_context()
+    }
+
+    /// Create an error from a panic
+    pub fn from_panic(msg: &Any) -> Self {
+        if let Some(e) = msg.downcast_ref::<String>() {
+            err!(PanicError, e)
+        } else if let Some(e) = msg.downcast_ref::<&str>() {
+            err!(PanicError, e)
+        } else {
+            err!(PanicError, "unknown cause")
+        }
     }
 }
 
@@ -78,12 +109,13 @@ impl Display for Error {
 /// Kinds of errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
-    #[fail(display = "secret connection challenge verification failed")]
-    ChallengeVerification,
-
     /// Error in configuration file
     #[fail(display = "config error")]
     ConfigError,
+
+    /// KMS internal panic
+    #[fail(display = "internal crash")]
+    PanicError,
 
     /// Cryptographic operation failed
     #[fail(display = "cryptographic error")]
@@ -97,29 +129,21 @@ pub enum ErrorKind {
     #[fail(display = "I/O error")]
     IoError,
 
+    /// Parse error
+    #[fail(display = "parse error")]
+    ParseError,
+
     /// Network protocol-related errors
-    #[fail(display = "protocl error")]
+    #[fail(display = "protocol error")]
     ProtocolError,
 
     /// Signing operation failed
     #[fail(display = "signing operation failed")]
     SigningError,
-}
 
-/// Create a new error (of a given enum variant) with a formatted message
-macro_rules! err {
-    ($variant:ident, $msg:expr) => {
-        ::error::Error::with_description(
-            ::error::ErrorKind::$variant,
-            $msg.to_string()
-        )
-    };
-    ($variant:ident, $fmt:expr, $($arg:tt)+) => {
-        ::error::Error::with_description(
-            ::error::ErrorKind::$variant,
-            format!($fmt, $($arg)+)
-        )
-    };
+    /// Verification operation failed
+    #[fail(display = "verification failed")]
+    VerificationError,
 }
 
 impl From<io::Error> for Error {
@@ -148,7 +172,14 @@ impl From<ring::error::Unspecified> for Error {
 
 impl From<signatory::Error> for Error {
     fn from(other: signatory::Error) -> Self {
-        // TODO: better map error types
-        err!(SigningError, other)
+        let kind = match other.kind() {
+            signatory::ErrorKind::Io => ErrorKind::IoError,
+            signatory::ErrorKind::KeyInvalid => ErrorKind::InvalidKey,
+            signatory::ErrorKind::ParseError => ErrorKind::ParseError,
+            signatory::ErrorKind::ProviderError => ErrorKind::SigningError,
+            signatory::ErrorKind::SignatureInvalid => ErrorKind::VerificationError,
+        };
+
+        Error::with_description(kind, other.description().to_owned())
     }
 }
