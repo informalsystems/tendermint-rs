@@ -27,9 +27,8 @@ extern crate x25519_dalek;
 
 use prost::Message;
 use signatory::{
-    ed25519::{Ed25519PublicKey, Ed25519Signature, FromSeed, Seed as Ed25519Seed},
     encoding::{Decode, Encoding},
-    ByteSigner,
+    Ed25519PublicKey, Ed25519Seed, Ed25519Signature, Signer,
 };
 use signatory_dalek::Ed25519Signer;
 use std::ffi::OsStr;
@@ -93,7 +92,7 @@ impl KmsConnection {
     pub fn sign(
         &mut self,
         public_key: &Ed25519PublicKey,
-        signer: &ByteSigner<Ed25519Signature>,
+        signer: &Signer<Ed25519Signature>,
         mut request: impl types::TendermintSignable,
     ) -> Ed25519Signature {
         // TODO(ismail) SignRequest ->  now one of:
@@ -117,7 +116,7 @@ impl KmsConnection {
 /// Get the public key associated with the testing private key
 fn test_key() -> (Ed25519PublicKey, Ed25519Signer) {
     let seed = Ed25519Seed::decode_from_file("tests/signing.key", Encoding::Raw).unwrap();
-    let signer = Ed25519Signer::from_seed(seed);
+    let signer = Ed25519Signer::from(&seed);
     (signatory::public_key(&signer).unwrap(), signer)
 }
 

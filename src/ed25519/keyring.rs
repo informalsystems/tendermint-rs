@@ -1,7 +1,7 @@
 use signatory::{
     self,
-    ed25519::{Ed25519Signature, FromSeed, Seed},
     encoding::{Decode, Encode, Encoding},
+    Ed25519Seed, Ed25519Signature,
 };
 use signatory_dalek::Ed25519Signer as DalekSigner;
 use std::{collections::HashMap, panic::RefUnwindSafe, path::Path};
@@ -88,14 +88,14 @@ const SECCON_KEY_ENCODING: Encoding = Encoding::Raw;
 /// Load the key for the `SecretConnection`
 fn create_seccon_signer(key_path: &Path) -> Result<DalekSigner, Error> {
     let seed = if key_path.exists() {
-        Seed::decode_from_file(key_path, SECCON_KEY_ENCODING)?
+        Ed25519Seed::decode_from_file(key_path, SECCON_KEY_ENCODING)?
     } else {
-        let s = Seed::generate();
+        let s = Ed25519Seed::generate();
         s.encode_to_file(key_path, SECCON_KEY_ENCODING)?;
         s
     };
 
-    let signer = DalekSigner::from_seed(seed);
+    let signer = DalekSigner::from(&seed);
 
     info!(
         "KMS node ID: {}",
