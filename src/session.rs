@@ -3,9 +3,9 @@
 use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
-use types::{PubKeyMsg, TendermintSign};
+use types::{PubKeyMsg, TendermintSignable};
 
-use ed25519::Keyring;
+use ed25519::{Keyring, PublicKey};
 use failure::Error;
 use prost::Message;
 use rpc::{Request, Response};
@@ -45,6 +45,7 @@ impl Session {
             Request::SignProposal(req) => self.sign(req)?,
             Request::SignHeartbeat(req) => self.sign(req)?,
             Request::SignVote(req) => self.sign(req)?,
+            // non-signable requests:
             Request::ShowPublicKey(req) => self.get_pub_key(req),
             Request::PoisonPill(_req) => return Ok(false),
         };
@@ -62,13 +63,18 @@ impl Session {
     }
 
     /// Perform a digital signature operation
-    fn sign(&mut self, request: impl TendermintSign) -> Result<Response, Error> {
-        // TODO(ismail) figure out if chain_id is a constant / field of the kms?
-        let chain_id = "TODO";
-        let _json = request.cannonicalize(chain_id);
+    fn sign(&mut self, mut request: impl TendermintResponse) -> Result<Response, Error> {
+        // TODO(ismail) figure out if chain_id is a constant / field of the kms or if it should
+        // always be embedded with any sign request.
+
         // TODO(ismail): figure out which key to use here
-        //match self.keyring.sign( &PublicKey(vec![]), &json.into_bytes()) { }
-        unimplemented!()
+        // this can't work
+        let mut nokey = PublicKey::from_bytes(&vec![]).unwrap();
+        let mut to_sign = vec![];
+        request.sign_bytes(&mut to_sign);
+        let sig = self.keyring.sign( &nokey, &to_sign).unwrap();
+        request.set_signature(sig);
+        Ok(request.build_response())
     }
 
     fn get_pub_key(&mut self, _request: PubKeyMsg) -> Response {

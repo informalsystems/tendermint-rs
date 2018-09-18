@@ -1,5 +1,6 @@
-use super::TendermintSign;
+use super::{TendermintSignable, Signature};
 use hex::encode;
+use bytes::BufMut;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Heartbeat {
@@ -26,26 +27,10 @@ pub struct SignHeartbeatMsg {
     pub heartbeat: Option<Heartbeat>,
 }
 
-impl TendermintSign for SignHeartbeatMsg {
-    fn cannonicalize(self, chain_id: &str) -> String {
-        match self.heartbeat {
-            Some(hb) => {
-                let value = json!({
-            "@chain_id":chain_id,
-            "@type":"heartbeat",
-            "height":hb.height,
-            "round":hb.round,
-            "sequence":hb.sequence,
-            "validator_address": encode(&hb.validator_address),
-            "validator_index": hb.validator_index,
-            });
-                value.to_string()
-            }
-            None => "".to_owned(),
-        }
-    }
-    fn sign(&mut self) {
-        unimplemented!();
+impl TendermintSignable for SignHeartbeatMsg {
+    fn sign_bytes<B>(&mut self, sign_bytes: &mut B) where B: BufMut {unimplemented!()}
+    fn set_signature(&mut self, sig: Signature) {
+        unimplemented!()
     }
 }
 

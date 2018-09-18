@@ -1,6 +1,7 @@
-use super::{BlockID, TendermintSign, Time};
+use super::{BlockID, TendermintSignable, Time, Signature};
 use chrono::{DateTime, Utc};
 use hex::encode_upper;
+use bytes::BufMut;
 use std::time::{SystemTime, UNIX_EPOCH};
 // TODO(ismail): we might not want to use this error type here
 // see below: those aren't prost errors
@@ -55,63 +56,13 @@ pub struct SignVoteMsg {
     vote: Option<Vote>,
 }
 
-impl TendermintSign for SignVoteMsg {
-    fn cannonicalize(self, chain_id: &str) -> String {
-        match self.vote {
-            Some(vote) => {
-                let empty: Vec<u8> = b"".to_vec();
-                let value = json!({
-            "@chain_id":chain_id,
-            "@type":"vote",
-            "block_id":{
-                "hash":encode_upper(match &vote.block_id {
-                    Some(ref block_id) => &block_id.hash,
-                    None => &empty,
-                }),
-                "parts":{
-                    "hash":encode_upper(match &vote.block_id {
-                        Some(block_id) => match &block_id.parts_header {
-                            Some(ref parts_header) => &parts_header.hash,
-                            None => &empty,
-                        },
-                        None => &empty,
-
-                    }),
-                    "total":match vote.block_id {
-                        Some(block_id) => match block_id.parts_header {
-                            Some(parts_header) => parts_header.total,
-                            None => 0,
-                        },
-                        None => 0,
-                    }
-                }
-            },
-            "height":vote.height,
-            "round":vote.round,
-            "timestamp": match vote.timestamp  {
-                   Some(timestamp) =>  {
-                        let ts: DateTime<Utc> =  DateTime::from(SystemTime::from(timestamp));
-                        ts.to_rfc3339()
-                   },
-                   None => {
-                    let ts: DateTime<Utc> =   DateTime::from(UNIX_EPOCH);
-                    ts.to_rfc3339()
-                   }
-            },
-            "type": match u32_to_vote_type(vote.vote_type) {
-                Ok(ref vt) => vote_type_to_char(vt),
-                Err(_e) => 0 as char,
-            }
-            });
-                value.to_string()
-            }
-            None => "".to_owned(),
-        }
-    }
-    fn sign(&mut self) {
+impl TendermintSignable for SignVoteMsg {
+    fn sign_bytes<B>(&mut self, sign_bytes: &mut B) where B: BufMut {unimplemented!()}
+    fn set_signature(&mut self, sig: Signature) {
         unimplemented!()
     }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -227,7 +178,6 @@ mod tests {
         match SignVoteMsg::decode(&encoded) {
             Ok(have) => {
                 assert_eq!(have, want);
-                println!("{}", have.cannonicalize("chain_iddddd"));
             }
             Err(err) => assert!(false, err.to_string()),
         }

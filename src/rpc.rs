@@ -2,11 +2,12 @@ use bytes::IntoBuf;
 use prost::encoding::decode_varint;
 use prost::Message;
 use sha2::{Digest, Sha256};
+use signatory::ed25519::Signature;
 use std::io::Cursor;
 use std::io::{self, Read};
 use std::io::{Error, ErrorKind};
 use types::{
-    PoisonPillMsg, PubKeyMsg, SignHeartbeatMsg, SignProposalMsg, SignVoteMsg, HEARTBEAT_AMINO_NAME,
+    TendermintSignable, PoisonPillMsg, PubKeyMsg, SignHeartbeatMsg, SignProposalMsg, SignVoteMsg, HEARTBEAT_AMINO_NAME,
     POISON_PILL_AMINO_NAME, PROPOSAL_AMINO_NAME, PUBKEY_AMINO_NAME, VOTE_AMINO_NAME,
 };
 
@@ -22,6 +23,19 @@ pub enum Request {
 
     /// Instruct the KMS to terminate
     PoisonPill(PoisonPillMsg),
+}
+
+/// Responses from the KMS
+pub enum Response {
+    /// Signature response
+    SignedHeartBeat(SignHeartbeatMsg),
+    SignedVote(SignVoteMsg),
+    SignedProposal(SignProposalMsg),
+    PublicKey(PubKeyMsg),
+}
+
+pub trait TendermintResponse: TendermintSignable {
+    fn build_response(self) -> Response;
 }
 
 fn compute_prefix(name: &str) -> (Vec<u8>) {
@@ -74,11 +88,12 @@ impl Request {
         buff.read_exact(&mut amino_pre)?;
         buff.set_position(0);
         // TODO: find a way to get back the buffer without cloning the cursor here:
-        let rem: Vec<u8> = buff.clone().into_inner();
+        let rem: Vec<u8> = buff.clone().into_inner()[..((len+1) as usize)].to_vec();
         if amino_pre == *PP_PREFIX {
             // do not spent any time decoding, we are going down anyways
             return Ok(Request::PoisonPill(PoisonPillMsg {}));
         } else if amino_pre == *HEART_BEAT_PREFIX {
+            println!("{:?}", rem);
             if let Ok(hb) = SignHeartbeatMsg::decode(&rem) {
                 return Ok(Request::SignHeartbeat(hb));
             }
@@ -103,11 +118,21 @@ impl Request {
     }
 }
 
-/// Responses from the KMS
-pub enum Response {
-    /// Signature response
-    SignedHeartBeat(SignHeartbeatMsg),
-    SignedVote(SignVoteMsg),
-    SignedProposal(SignProposalMsg),
-    PublicKey(PubKeyMsg),
+impl TendermintResponse for SignHeartbeatMsg {
+    fn build_response(self) -> Response {
+        Response::SignedHeartBeat(self)
+    }
 }
+
+impl TendermintResponse for SignVoteMsg {
+    fn build_response(self) -> Response {
+        Response::SignedVote(self)
+    }
+}
+
+impl TendermintResponse for SignProposalMsg {
+    fn build_response(self) -> Response {
+        Response::SignedProposal(self)
+    }
+}
+

@@ -1,6 +1,7 @@
-use super::{BlockID, PartsSetHeader, TendermintSign, Time};
+use super::{BlockID, PartsSetHeader, TendermintSignable, Time, Signature};
 use chrono::{DateTime, Utc};
 use hex::encode_upper;
+use bytes::BufMut;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
@@ -30,67 +31,13 @@ pub struct SignProposalMsg {
     proposal: Option<Proposal>,
 }
 
-impl TendermintSign for SignProposalMsg {
-    fn cannonicalize(self, chain_id: &str) -> String {
-        match self.proposal {
-            Some(prop) => {
-                let block_parts_header = {
-                    match prop.block_parts_header {
-                        Some(block_parts_header) => block_parts_header,
-                        None => PartsSetHeader {
-                            total: 0,
-                            hash: vec![],
-                        },
-                    }
-                };
-                let pol_block_id = {
-                    match prop.pol_block_id {
-                        Some(pol_block_id) => pol_block_id,
-                        None => BlockID {
-                            hash: vec![],
-                            parts_header: Some(PartsSetHeader {
-                                total: 0,
-                                hash: vec![],
-                            }),
-                        },
-                    }
-                };
-                // this can not be None (see above)
-                let pol_block_id_parts_header = pol_block_id.parts_header.unwrap();
-                let ts: DateTime<Utc> = match prop.timestamp {
-                    Some(timestamp) => DateTime::from(SystemTime::from(timestamp)),
-                    None => DateTime::from(UNIX_EPOCH),
-                };
-
-                let value = json!({
-            "@chain_id":chain_id,
-            "@type":"proposal",
-            "round":prop.round,
-            "block_parts_header":{
-                "hash":encode_upper(block_parts_header.hash),
-                "total":block_parts_header.total
-            },
-            "height":prop.height,
-            "pol_block_id":{
-                "hash":encode_upper(pol_block_id.hash),
-                "parts":{
-                    "hash":encode_upper(pol_block_id_parts_header.hash),
-                    "total":pol_block_id_parts_header.total,
-                }
-            },
-            "pol_round":prop.pol_round,
-            "round":prop.round,
-            "timestamp": ts.to_rfc3339(),
-            });
-                value.to_string()
-            }
-            None => "".to_owned(),
-        }
-    }
-    fn sign(&mut self) {
+impl TendermintSignable for SignProposalMsg {
+    fn sign_bytes<B>(&mut self, sign_bytes: &mut B) where B: BufMut {unimplemented!()}
+    fn set_signature(&mut self, sig: Signature) {
         unimplemented!()
     }
 }
+
 
 #[cfg(test)]
 mod tests {

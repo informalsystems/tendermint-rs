@@ -7,6 +7,8 @@ pub mod proposal;
 pub mod vote;
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use signatory::ed25519::Signature;
+use bytes::BufMut;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct PartsSetHeader {
@@ -43,14 +45,9 @@ impl From<Time> for SystemTime {
     }
 }
 
-pub trait TendermintSign {
-    fn cannonicalize(self, chain_id: &str) -> String;
-    // TODO(ismail): can't the signing op time out or error in another way
-    // (e.g.hsm module not found)
-    // also, if we want to keep this method, we need the signer / priv key to be known here
-    // probably the cannonicalize method is sufficient and the actual signing happens
-    // outside of the type:
-    fn sign(&mut self);
+pub trait TendermintSignable {
+    fn sign_bytes<B>(&mut self, sign_bytes: &mut B) where B: BufMut;
+    fn set_signature(&mut self, sig: Signature);
 }
 
 pub use self::ed25519msg::PubKeyMsg;
