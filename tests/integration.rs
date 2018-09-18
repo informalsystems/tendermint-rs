@@ -122,34 +122,17 @@ fn test_key() -> (Ed25519PublicKey, Ed25519Signer) {
 }
 
 #[test]
-fn test_handle_poisonpill() {
-    use secret_connection::SecretConnection;
-    // this spawns a process which wants to share ephemeral keys and blocks until it reads a reply:
-    let mut kms = KmsConnection::create(KMS_TEST_ARGS);
-
-    // we use the same key for both sides:
-    let (_, signer) = test_key();
-    // Here we reply to the kms with a "remote" ephemeral key, auth signature etc:
-    let socket_cp = kms.socket.try_clone().unwrap();
-    let mut connection = SecretConnection::new(socket_cp, &signer).unwrap();
-
-    // use the secret connection to send a message
-    let pill = types::PoisonPillMsg {};
-    let mut buf = vec![];
-    pill.encode(&mut buf).unwrap();
-    connection.write_all(&buf).unwrap();
-    println!("sent poison pill");
-    kms.process.wait().unwrap();
-}
-
-#[test]
 fn test_handle_sign_request() {
+    use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
+    use signatory::ed25519;
+    use signatory::Signature;
+
     use secret_connection::SecretConnection;
     // this spawns a process which wants to share ephemeral keys and blocks until it reads a reply:
     let mut kms = KmsConnection::create(KMS_TEST_ARGS);
 
     // we use the same key for both sides:
-    let (_, signer) = test_key();
+    let (pub_key, signer) = test_key();
     // Here we reply to the kms with a "remote" ephemeral key, auth signature etc:
     let socket_cp = kms.socket.try_clone().unwrap();
     let mut connection = SecretConnection::new(socket_cp, &signer).unwrap();
@@ -179,6 +162,56 @@ fn test_handle_sign_request() {
     println!("encoded: {:?}", buf);
     connection.write_all(&buf).unwrap();
 
+    // recv response:
+    let mut resp_buf = vec![0u8; 512];
+    connection.read(&mut resp_buf).unwrap();
+
+    let actual_len = resp_buf[0];
+    let mut resp = vec![0u8; (actual_len+1) as usize];
+    resp.copy_from_slice(&resp_buf[..(actual_len+1) as usize]);
+
+    match types::heartbeat::SignHeartbeatMsg::decode(&resp) {
+        Ok(mut hbm) => {
+            println!("yay");
+            // verify signature:
+            let mut sign_bytes = vec![];
+            hbm.sign_bytes(&mut sign_bytes);
+            println!("this was signed: {:?}", sign_bytes);
+            if let Some(ref mut hb) = hbm.heartbeat {
+                if let Some(ref sig) =  hb.signature {
+                    let verifier = Ed25519Verifier::from(&pub_key);
+                    let signature = Ed25519Signature::from_bytes(sig).unwrap();
+                    assert!(ed25519::verify(&verifier, &sign_bytes, &signature).is_ok());
+                } else { panic!("no signature included"); }
+            } else { panic!("no heartbeat embedded"); }
+
+
+        },
+        Err(e) => println!("nay {}", e),
+    }
+
+
+    let pill = types::PoisonPillMsg {};
+    let mut buf = vec![];
+    pill.encode(&mut buf).unwrap();
+    connection.write_all(&buf).unwrap();
+    println!("sent poison pill");
+    kms.process.wait().unwrap();
+}
+
+#[test]
+fn test_handle_poisonpill() {
+    use secret_connection::SecretConnection;
+    // this spawns a process which wants to share ephemeral keys and blocks until it reads a reply:
+    let mut kms = KmsConnection::create(KMS_TEST_ARGS);
+
+    // we use the same key for both sides:
+    let (_, signer) = test_key();
+    // Here we reply to the kms with a "remote" ephemeral key, auth signature etc:
+    let socket_cp = kms.socket.try_clone().unwrap();
+    let mut connection = SecretConnection::new(socket_cp, &signer).unwrap();
+
+    // use the secret connection to send a message
     let pill = types::PoisonPillMsg {};
     let mut buf = vec![];
     pill.encode(&mut buf).unwrap();
