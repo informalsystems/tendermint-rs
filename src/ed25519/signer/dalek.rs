@@ -9,18 +9,14 @@ use signatory::{
 use signatory_dalek::Ed25519Signer;
 
 use config::DalekConfig;
-use ed25519::{PublicKey, Signer};
+use ed25519::{KeyRing, PublicKey, Signer};
 use error::Error;
 
 /// Label for ed25519-dalek provider
 pub const DALEK_PROVIDER_LABEL: &str = "dalek";
 
 /// Create software-backed Ed25519 signer objects from the given configuration
-// TODO: return an iterator rather than taking an `&mut Vec<Signer>`?
-pub fn create_signers(
-    signers: &mut Vec<Signer>,
-    config_option: Option<&DalekConfig>,
-) -> Result<(), Error> {
+pub fn init(keyring: &mut KeyRing, config_option: Option<&DalekConfig>) -> Result<(), Error> {
     if let Some(ref config) = config_option {
         for (key_id, key_config) in &config.keys {
             let seed =
@@ -36,12 +32,10 @@ pub fn create_signers(
             let signer = Box::new(Ed25519Signer::from(&seed));
             let public_key = PublicKey::from_bytes(signer.public_key().unwrap().as_ref()).unwrap();
 
-            signers.push(Signer::new(
-                DALEK_PROVIDER_LABEL,
-                key_id.to_owned(),
+            keyring.add(
                 public_key,
-                signer,
-            ));
+                Signer::new(DALEK_PROVIDER_LABEL, key_id.to_owned(), signer),
+            )?;
         }
     }
 

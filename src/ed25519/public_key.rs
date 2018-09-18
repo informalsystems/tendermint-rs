@@ -5,7 +5,7 @@ use std::fmt::{self, Display};
 use error::Error;
 
 /// Ed25519 public keys
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub struct PublicKey(Ed25519PublicKey);
 
 impl PublicKey {

@@ -5,14 +5,15 @@
 //! To dance around the fact the KMS isn't actually a service, we refer to it
 //! as a "Key Management System".
 
-use std::panic;
-use std::sync::Arc;
-use std::thread::{self, JoinHandle};
-use std::time::Duration;
+use signatory::Ed25519Seed;
+use std::{
+    panic,
+    thread::{self, JoinHandle},
+    time::Duration,
+};
 
 use config::ValidatorConfig;
-use ed25519::Keyring;
-use failure::Error;
+use error::Error;
 use session::Session;
 
 /// How long to wait after a crash before respawning (in seconds)
@@ -31,9 +32,13 @@ pub struct Client {
 
 impl Client {
     /// Spawn a new client, returning a handle so it can be joined
-    pub fn spawn(label: String, config: ValidatorConfig, keyring: Arc<Keyring>) -> Self {
+    pub fn spawn(
+        label: String,
+        config: ValidatorConfig,
+        secret_connection_key: Ed25519Seed,
+    ) -> Self {
         Self {
-            handle: thread::spawn(move || client_loop(&label, &config, &keyring)),
+            handle: thread::spawn(move || client_loop(&label, config, &secret_connection_key)),
         }
     }
 
@@ -44,44 +49,38 @@ impl Client {
 }
 
 /// Main loop for all clients. Handles reconnecting in the event of an error
-fn client_loop(label: &str, config: &ValidatorConfig, keyring: &Arc<Keyring>) {
-    let addr = &config.addr;
-    let port = config.port;
-    let info = format!("{} ({}:{})", label, addr, port);
+fn client_loop(label: &str, config: ValidatorConfig, secret_connection_key: &Ed25519Seed) {
+    let ValidatorConfig {
+        addr,
+        port,
+        reconnect,
+    } = config;
+    let peer_info = format!("{} ({}:{})", label, &addr, port);
 
-    loop {
-        match panic::catch_unwind(|| client_session(addr, port, keyring)) {
-            Ok(result) => match result {
-                Ok(_) => {
-                    info!("[{}] session closed gracefully", &info);
-                    return;
-                }
-                Err(e) => error!("[{}] {}", &info, e),
-            },
-            Err(val) => {
-                if let Some(e) = val.downcast_ref::<String>() {
-                    error!("[{}] client panic! {}", &info, e);
-                } else if let Some(e) = val.downcast_ref::<&str>() {
-                    error!("[{}] client panic! {}", &info, e);
-                } else {
-                    error!("[{}] client panic! (unknown cause)", &info);
-                }
-            }
-        }
+    while let Err(e) = client_session(addr.clone(), port, secret_connection_key) {
+        error!("[{}] {}", &peer_info, e);
 
         // Break out of the loop if auto-reconnect is explicitly disabled
-        if config.reconnect.is_some() && !config.reconnect.unwrap() {
-            break;
+        if reconnect {
+            // TODO: configurable respawn delay
+            thread::sleep(Duration::from_secs(RESPAWN_DELAY));
+        } else {
+            return;
         }
-
-        // TODO: configurable respawn delay
-        thread::sleep(Duration::from_secs(RESPAWN_DELAY))
     }
+
+    info!("[{}] session closed gracefully", &peer_info);
 }
 
 /// Establish a session with the validator and handle incoming requests
-fn client_session(addr: &str, port: u16, keyring: &Arc<Keyring>) -> Result<(), Error> {
-    let mut session = Session::new(addr, port, Arc::clone(keyring))?;
-    while session.handle_request()? {}
-    Ok(())
+fn client_session(
+    addr: String,
+    port: u16,
+    secret_connection_key: &Ed25519Seed,
+) -> Result<(), Error> {
+    panic::catch_unwind(move || {
+        let mut session = Session::new(&addr, port, &secret_connection_key)?;
+        while session.handle_request()? {}
+        Ok(())
+    }).unwrap_or_else(|e| Err(Error::from_panic(&e)))
 }
