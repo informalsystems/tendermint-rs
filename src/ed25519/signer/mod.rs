@@ -1,4 +1,4 @@
-use signatory::{self, ByteSigner, Ed25519Signature};
+use signatory::{self, Ed25519Signature, Signer as SignerTrait};
 
 pub mod dalek;
 #[cfg(feature = "yubihsm-provider")]
@@ -19,7 +19,7 @@ pub struct Signer {
     pub public_key: PublicKey,
 
     /// Signer trait object
-    provider: Box<ByteSigner<Ed25519Signature>>,
+    provider: Box<SignerTrait<Ed25519Signature>>,
 }
 
 impl Signer {
@@ -28,7 +28,7 @@ impl Signer {
         provider_name: &'static str,
         key_id: String,
         public_key: PublicKey,
-        provider: Box<ByteSigner<Ed25519Signature>>,
+        provider: Box<SignerTrait<Ed25519Signature>>,
     ) -> Self {
         Self {
             provider_name,

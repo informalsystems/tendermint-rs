@@ -251,11 +251,11 @@ dependencies = [
  "serde_derive 1.0.79 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.9.0-alpha2 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory-dalek 0.9.0-alpha2 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory-yubihsm 0.9.0-alpha2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory-dalek 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory-yubihsm 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
  "x25519-dalek 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "yubihsm 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "yubihsm 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -278,7 +278,7 @@ dependencies = [
 
 [[package]]
 name = "curve25519-dalek"
-version = "0.19.0"
+version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "byteorder 1.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -311,7 +311,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "clear_on_drop 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "curve25519-dalek 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "curve25519-dalek 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "digest 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "generic-array 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -653,7 +653,7 @@ dependencies = [
 
 [[package]]
 name = "signatory"
-version = "0.9.0-alpha2"
+version = "0.9.0-alpha3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "clear_on_drop 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -665,23 +665,23 @@ dependencies = [
 
 [[package]]
 name = "signatory-dalek"
-version = "0.9.0-alpha2"
+version = "0.9.0-alpha3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "digest 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "ed25519-dalek 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.9.0-alpha2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "signatory-yubihsm"
-version = "0.9.0-alpha2"
+version = "0.9.0-alpha3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.9.0-alpha2 (registry+https://github.com/rust-lang/crates.io-index)",
- "yubihsm 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "yubihsm 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -814,13 +814,13 @@ name = "x25519-dalek"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "curve25519-dalek 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "curve25519-dalek 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_core 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "yubihsm"
-version = "0.16.0"
+version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "aes 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -877,7 +877,7 @@ dependencies = [
 "checksum constant_time_eq 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "8ff012e225ce166d4422e0e78419d901719760f62ae2b7969ca6b564d1b54a9e"
 "checksum crypto-mac 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "0999b4ff4d3446d4ddb19a63e9e00c1876e75cd7000d20e57a693b4b3f08d958"
 "checksum crypto-mac 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7afa06d05a046c7a47c3a849907ec303504608c927f4e85f7bfff22b7180d971"
-"checksum curve25519-dalek 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8fc999958669630eca818b3d1fe5ed748573e40d2d1800ddd0e67d1c71d63205"
+"checksum curve25519-dalek 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)" = "15d6d81c070d8090389f752510ce22c7d571100a78fa4e7c06e6f6d95585bb49"
 "checksum dbl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "920e117b69060a961c4164ccf83af573292cb167ccdd918950bcf0f5afc32c1c"
 "checksum digest 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)" = "5b29c278aa8fd30796bd977169e8004b4aa88cdcd2f32a6eb22bc2d5d38df94a"
 "checksum ed25519-dalek 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "cf4ffe2ac7f79a25e95c0521e6200635c352ea89080aa4f56fb3612e5f900157"
@@ -923,9 +923,9 @@ dependencies = [
 "checksum serde_derive 1.0.79 (registry+https://github.com/rust-lang/crates.io-index)" = "31569d901045afbff7a9479f793177fe9259819aff10ab4f89ef69bbc5f567fe"
 "checksum serde_json 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)" = "59790990c5115d16027f00913e2e66de23a51f70422e549d2ad68c8c5f268f1c"
 "checksum sha2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "9eb6be24e4c23a84d7184280d2722f7f2731fcdd4a9d886efbfe4413e4847ea0"
-"checksum signatory 0.9.0-alpha2 (registry+https://github.com/rust-lang/crates.io-index)" = "01f98e52c6e4be4d15d11e8316d97dfb66d02dff064e9fbefaa9c8ef9d8b0c97"
-"checksum signatory-dalek 0.9.0-alpha2 (registry+https://github.com/rust-lang/crates.io-index)" = "65daa4a1f89d2992390bd22cfa398a918a97852bbe8f768d50547fdb49196342"
-"checksum signatory-yubihsm 0.9.0-alpha2 (registry+https://github.com/rust-lang/crates.io-index)" = "dad569137a366d50d5f6e82a919aee58f7076239128bbe87ba817333ae398a45"
+"checksum signatory 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)" = "edfb9222245fe8ff185016fa4e4560fded1143e665e27d8cb7763e840dfb1692"
+"checksum signatory-dalek 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)" = "1437be1a9e57397e6e8c07b0cbc435215320cdc75ce9132b8aee637c9e807e03"
+"checksum signatory-yubihsm 0.9.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)" = "b54edd56d0e3a6c5491e2be0659968e79cf0c61944c6f362d219f69dc23ed152"
 "checksum simplelog 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "9cc12b39fdf4c9a07f88bffac2d628f0118ed5ac077a4b0feece61fadf1429e5"
 "checksum subtle 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "5938f1b89f10d6356339f071eca74209deeae0b6891c2678d655feb78637e369"
 "checksum syn 0.14.9 (registry+https://github.com/rust-lang/crates.io-index)" = "261ae9ecaa397c42b960649561949d69311f08eeaea86a65696e6e46517cf741"
@@ -944,4 +944,4 @@ dependencies = [
 "checksum winapi-i686-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
 "checksum winapi-x86_64-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 "checksum x25519-dalek 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "538296831e9794ec5b3ec9d4a1a8c3e3c86271e9635a0e776e3214fec9c727de"
-"checksum yubihsm 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c17732ed33652c08966d0102897b44dff9eff521f7c6a1d210aeda62c9fc6fa4"
+"checksum yubihsm 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ee2590010dc43781626f02c34e6b73226e5a59dcd0110e11774c1f0a9d7e5b67"
