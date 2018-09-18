@@ -7,7 +7,7 @@ pub mod proposal;
 pub mod vote;
 
 use bytes::BufMut;
-use signatory::ed25519::Ed25519Signature;
+use signatory::{ed25519::Ed25519Signature, Signature};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
