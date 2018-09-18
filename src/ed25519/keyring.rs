@@ -59,18 +59,11 @@ impl Keyring {
     }
     /// Sign a message using the secret key associated with the given public key
     /// (if it is in our keyring)
-    pub fn sign(&self, _public_key: &PublicKey, msg: &[u8]) -> Result<Ed25519Signature, Error> {
-        if self.signing_keys.len() != 0 {
-            err!(ConfigError, "There isn't only one signer");
-        }
-        let mut vals = self.signing_keys.values();
-        let signer = vals.next().unwrap();
-        // TODO(ismail): this is what this ought to look like
-        // - make sure we actually have a pubkey at hand for each signing request
-        //        let signer = self
-        //            .signing_keys
-        //            .get(public_key)
-        //            .ok_or_else(|| err!(InvalidKey, "not in keyring: {}", public_key))?;
+    pub fn sign(&self, public_key: &PublicKey, msg: &[u8]) -> Result<Ed25519Signature, Error> {
+        let signer = self
+            .signing_keys
+            .get(public_key)
+            .ok_or_else(|| err!(InvalidKey, "not in keyring: {}", public_key))?;
 
         signer.sign(msg)
     }

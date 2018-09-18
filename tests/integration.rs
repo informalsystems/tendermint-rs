@@ -87,30 +87,6 @@ impl KmsConnection {
         let (socket, _) = listener.accept().unwrap();
         Self { process, socket }
     }
-
-    /// Sign the given message with the given public key using the KMS
-    pub fn sign(
-        &mut self,
-        public_key: &Ed25519PublicKey,
-        signer: &Signer<Ed25519Signature>,
-        mut request: impl types::TendermintSignable,
-    ) -> Ed25519Signature {
-        // TODO(ismail) SignRequest ->  now one of:
-        // SignHeartbeat(SignHeartbeatMsg), SignProposal(SignProposalMsg), SignVote(SignVoteMsg), ShowPublicKey(PubKeyMsg),
-        /*let req = Request::SignHeartbeat(types::heartbeat::SignHeartbeatMsg {
-            public_key: public_key.as_bytes().to_vec(),
-            msg: msg.to_owned(),
-        });
-
-        self.socket.write_all(&req.to_vec()).unwrap();
-
-        match Response::read(&mut self.socket).unwrap() {
-            Response::Sign(ref response) => ed25519::Signature::from_bytes(&response.sig).unwrap(),
-        }*/
-        let mut to_sign = vec![];
-        request.sign_bytes(&mut to_sign);
-        signatory::sign(signer, &mut to_sign).unwrap()
-    }
 }
 
 /// Get the public key associated with the testing private key
@@ -122,9 +98,9 @@ fn test_key() -> (Ed25519PublicKey, Ed25519Signer) {
 
 #[test]
 fn test_handle_sign_request() {
-    use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
     use signatory::ed25519;
     use signatory::Signature;
+    use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
 
     use secret_connection::SecretConnection;
     // this spawns a process which wants to share ephemeral keys and blocks until it reads a reply:
@@ -166,8 +142,8 @@ fn test_handle_sign_request() {
     connection.read(&mut resp_buf).unwrap();
 
     let actual_len = resp_buf[0];
-    let mut resp = vec![0u8; (actual_len+1) as usize];
-    resp.copy_from_slice(&resp_buf[..(actual_len+1) as usize]);
+    let mut resp = vec![0u8; (actual_len + 1) as usize];
+    resp.copy_from_slice(&resp_buf[..(actual_len + 1) as usize]);
 
     match types::heartbeat::SignHeartbeatMsg::decode(&resp) {
         Ok(mut hbm) => {
@@ -177,18 +153,22 @@ fn test_handle_sign_request() {
             hbm.sign_bytes(&mut sign_bytes);
             println!("this was signed: {:?}", sign_bytes);
             if let Some(ref mut hb) = hbm.heartbeat {
-                if let Some(ref sig) =  hb.signature {
+                if let Some(ref sig) = hb.signature {
                     let verifier = Ed25519Verifier::from(&pub_key);
+                    // println!("sig len: {}", sig.len());
+                    // println!("sign_bytes len: {}", sign_bytes.len());
+                    // println!("verifier len: {}", pub_key.as_bytes().len());
                     let signature = Ed25519Signature::from_bytes(sig).unwrap();
                     assert!(ed25519::verify(&verifier, &sign_bytes, &signature).is_ok());
-                } else { panic!("no signature included"); }
-            } else { panic!("no heartbeat embedded"); }
-
-
-        },
+                } else {
+                    panic!("no signature included");
+                }
+            } else {
+                panic!("no heartbeat embedded");
+            }
+        }
         Err(e) => println!("nay {}", e),
     }
-
 
     let pill = types::PoisonPillMsg {};
     let mut buf = vec![];

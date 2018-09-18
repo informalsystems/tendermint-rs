@@ -1,4 +1,4 @@
-use super::{Ed25519Signature, TendermintSignable, Signature};
+use super::{Ed25519Signature, Signature, TendermintSignable};
 use bytes::BufMut;
 use hex::encode;
 use prost::Message;
