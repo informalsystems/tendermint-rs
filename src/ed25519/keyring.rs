@@ -1,5 +1,5 @@
 use signatory::Ed25519Signature;
-use std::{collections::BTreeMap, sync::RwLock, sync::RwLockReadGuard};
+use std::{collections::BTreeMap, sync::RwLock};
 
 use super::{PublicKey, Signer};
 use config::ProviderConfig;
@@ -36,7 +36,7 @@ impl KeyRing {
 
     // TODO(ismail): figure out where we get the pubkey from and delete this:
     pub fn sign_with_only_signer(&self, msg: &[u8]) -> Result<Ed25519Signature, Error> {
-        let keyring: RwLockReadGuard<KeyRing> = GLOBAL_KEYRING.read().unwrap();
+        let keyring = GLOBAL_KEYRING.read().unwrap();
 
         let mut vals = keyring.0.values();
         if vals.len() > 1 {

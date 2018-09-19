@@ -175,19 +175,3 @@ fn send_poison_pill(kms: &mut KmsConnection, connection: &mut SecretConnection<T
     println!("sent poison pill");
     kms.process.wait().unwrap();
 }
-
-#[test]
-fn test_handle_poisonpill() {
-    use secret_connection::SecretConnection;
-    // this spawns a process which wants to share ephemeral keys and blocks until it reads a reply:
-    let mut kms = KmsConnection::create(KMS_TEST_ARGS);
-
-    // we use the same key for both sides:
-    let (pub_key, signer) = test_key();
-    // Here we reply to the kms with a "remote" ephemeral key, auth signature etc:
-    let socket_cp = kms.socket.try_clone().unwrap();
-    let mut connection = SecretConnection::new(socket_cp, &pub_key, &signer).unwrap();
-
-    // use the secret connection to send a message
-    send_poison_pill(&mut kms, &mut connection);
-}
