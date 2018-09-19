@@ -89,12 +89,11 @@ impl Request {
         buff.read_exact(&mut amino_pre)?;
         buff.set_position(0);
         // TODO: find a way to get back the buffer without cloning the cursor here:
-        let rem: Vec<u8> = buff.clone().into_inner()[..((len + 1) as usize)].to_vec();
+        let rem: Vec<u8> = buff.clone().into_inner()[..(len.checked_add(1).unwrap() as usize)].to_vec();
         if amino_pre == *PP_PREFIX {
             // do not spent any time decoding, we are going down anyways
             return Ok(Request::PoisonPill(PoisonPillMsg {}));
         } else if amino_pre == *HEART_BEAT_PREFIX {
-            println!("{:?}", rem);
             if let Ok(hb) = SignHeartbeatMsg::decode(&rem) {
                 return Ok(Request::SignHeartbeat(hb));
             }

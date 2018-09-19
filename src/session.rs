@@ -58,9 +58,6 @@ impl Session {
 
     /// Perform a digital signature operation
     fn sign(&mut self, mut request: impl TendermintResponse) -> Result<Response, Error> {
-        // TODO(ismail) figure out if chain_id is a constant / field of the kms or if it should
-        // always be embedded with any sign request.
-
         let mut to_sign = vec![];
         request.sign_bytes(&mut to_sign)?;
         // TODO(ismail): figure out which key to use here instead of taking the only key
