@@ -1,7 +1,7 @@
 use super::{BlockID, Ed25519Signature, PartsSetHeader, TendermintSignable, Time};
 use bytes::BufMut;
 use chrono::{DateTime, Utc};
-use prost::{EncodeError};
+use prost::EncodeError;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {

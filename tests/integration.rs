@@ -14,8 +14,6 @@ extern crate rand;
 extern crate signatory;
 extern crate signatory_dalek;
 
-/// Hacks for accessing the RPC types in tests
-extern crate serde_json;
 extern crate byteorder;
 extern crate bytes;
 extern crate chrono;
@@ -23,6 +21,8 @@ extern crate failure;
 extern crate hex;
 extern crate hkdf;
 extern crate ring;
+/// Hacks for accessing the RPC types in tests
+extern crate serde_json;
 extern crate sha2;
 extern crate x25519_dalek;
 
@@ -101,7 +101,7 @@ fn test_key() -> (Ed25519PublicKey, Ed25519Signer) {
 fn test_handle_and_sign_heartbeat() {
     use signatory::ed25519;
     use signatory::Signature;
-    use signatory_dalek::{Ed25519Verifier};
+    use signatory_dalek::Ed25519Verifier;
     use types::heartbeat::{Heartbeat, SignHeartbeatMsg};
 
     use secret_connection::SecretConnection;
@@ -153,7 +153,9 @@ fn test_handle_and_sign_heartbeat() {
     let mut sign_bytes: Vec<u8> = vec![];
     hbm.sign_bytes(&mut sign_bytes).unwrap();
 
-    let hb: Heartbeat = hbm.heartbeat.expect("heartbeat should be embedded but none was found");
+    let hb: Heartbeat = hbm
+        .heartbeat
+        .expect("heartbeat should be embedded but none was found");
     let sig: Vec<u8> = hb.signature.expect("expected signature was not found");
     let verifier = Ed25519Verifier::from(&pub_key);
     let signature = Ed25519Signature::from_bytes(sig).unwrap();
