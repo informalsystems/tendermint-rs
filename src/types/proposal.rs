@@ -1,8 +1,7 @@
 use super::{BlockID, Ed25519Signature, PartsSetHeader, TendermintSignable, Time};
 use bytes::BufMut;
 use chrono::{DateTime, Utc};
-use hex::encode_upper;
-use std::time::{SystemTime, UNIX_EPOCH};
+use prost::{EncodeError};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
@@ -32,7 +31,7 @@ pub struct SignProposalMsg {
 }
 
 impl TendermintSignable for SignProposalMsg {
-    fn sign_bytes<B>(&mut self, sign_bytes: &mut B)
+    fn sign_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, EncodeError>
     where
         B: BufMut,
     {
@@ -118,6 +117,4 @@ mod tests {
             Err(err) => assert!(false, err.description().to_string()),
         }
     }
-    // TODO Serialization with Signature should be fairly easy as the signature is just
-    // an Option<bytes> now
 }

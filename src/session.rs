@@ -61,10 +61,10 @@ impl Session {
         // TODO(ismail) figure out if chain_id is a constant / field of the kms or if it should
         // always be embedded with any sign request.
 
-        // TODO(ismail): figure out which key to use here
-        // this can't work
         let mut to_sign = vec![];
-        request.sign_bytes(&mut to_sign);
+        request.sign_bytes(&mut to_sign)?;
+        // TODO(ismail): figure out which key to use here instead of taking the only key
+        // from keyring here:
         let signer = self.keyring.get_default_signer();
 
         let sig = self.keyring.sign(&signer.public_key, &to_sign).unwrap();

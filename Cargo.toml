@@ -15,7 +15,6 @@ circle-ci = { repository = "tendermint/kms" }
 [dependencies]
 abscissa = "0.0.4"
 abscissa_derive = "0.0.2"
-bincode = "1"
 byteorder = "1.2"
 clear_on_drop = "0.2"
 failure = "0.1"

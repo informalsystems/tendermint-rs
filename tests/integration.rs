@@ -13,7 +13,6 @@ extern crate signatory;
 extern crate signatory_dalek;
 
 /// Hacks for accessing the RPC types in tests
-#[macro_use]
 extern crate serde_json;
 extern crate byteorder;
 extern crate bytes;
@@ -26,9 +25,10 @@ extern crate sha2;
 extern crate x25519_dalek;
 
 use prost::Message;
+use secret_connection::SecretConnection;
 use signatory::{
     encoding::{Decode, Encoding},
-    Ed25519PublicKey, Ed25519Seed, Ed25519Signature, Signer,
+    Ed25519PublicKey, Ed25519Seed, Ed25519Signature,
 };
 use signatory_dalek::Ed25519Signer;
 use std::ffi::OsStr;
@@ -97,10 +97,11 @@ fn test_key() -> (Ed25519PublicKey, Ed25519Signer) {
 }
 
 #[test]
-fn test_handle_sign_request() {
+fn test_handle_and_sign_heartbeat() {
     use signatory::ed25519;
     use signatory::Signature;
-    use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
+    use signatory_dalek::{Ed25519Verifier};
+    use types::heartbeat::{Heartbeat, SignHeartbeatMsg};
 
     use secret_connection::SecretConnection;
     // this spawns a process which wants to share ephemeral keys and blocks until it reads a reply:
@@ -137,7 +138,7 @@ fn test_handle_sign_request() {
     println!("encoded: {:?}", buf);
     connection.write_all(&buf).unwrap();
 
-    // recv response:
+    // receive response:
     let mut resp_buf = vec![0u8; 512];
     connection.read(&mut resp_buf).unwrap();
 
@@ -145,31 +146,24 @@ fn test_handle_sign_request() {
     let mut resp = vec![0u8; (actual_len + 1) as usize];
     resp.copy_from_slice(&resp_buf[..(actual_len + 1) as usize]);
 
-    match types::heartbeat::SignHeartbeatMsg::decode(&resp) {
-        Ok(mut hbm) => {
-            println!("yay");
-            // verify signature:
-            let mut sign_bytes = vec![];
-            hbm.sign_bytes(&mut sign_bytes);
-            println!("this was signed: {:?}", sign_bytes);
-            if let Some(ref mut hb) = hbm.heartbeat {
-                if let Some(ref sig) = hb.signature {
-                    let verifier = Ed25519Verifier::from(&pub_key);
-                    // println!("sig len: {}", sig.len());
-                    // println!("sign_bytes len: {}", sign_bytes.len());
-                    // println!("verifier len: {}", pub_key.as_bytes().len());
-                    let signature = Ed25519Signature::from_bytes(sig).unwrap();
-                    assert!(ed25519::verify(&verifier, &sign_bytes, &signature).is_ok());
-                } else {
-                    panic!("no signature included");
-                }
-            } else {
-                panic!("no heartbeat embedded");
-            }
-        }
-        Err(e) => println!("nay {}", e),
-    }
+    let mut hbm: SignHeartbeatMsg =
+        SignHeartbeatMsg::decode(&resp).expect("decoding heartbeat failed");
+    let mut sign_bytes: Vec<u8> = vec![];
+    hbm.sign_bytes(&mut sign_bytes).unwrap();
 
+    let mut hb: Heartbeat = hbm.heartbeat.expect("heartbeat should be embedded but none was found");
+    let mut sig: Vec<u8> = hb.signature.expect("expected signature was not found");
+    let verifier = Ed25519Verifier::from(&pub_key);
+    let signature = Ed25519Signature::from_bytes(sig).unwrap();
+    let msg: &[u8] = sign_bytes.as_slice();
+
+    ed25519::verify(&verifier, msg, &signature).unwrap();
+
+    // it all worked; send the kms the message to quit:
+    send_poison_pill(&mut kms, &mut connection);
+}
+
+fn send_poison_pill(kms: &mut KmsConnection, connection: &mut SecretConnection<TcpStream>) {
     let pill = types::PoisonPillMsg {};
     let mut buf = vec![];
     pill.encode(&mut buf).unwrap();
@@ -191,10 +185,5 @@ fn test_handle_poisonpill() {
     let mut connection = SecretConnection::new(socket_cp, &signer).unwrap();
 
     // use the secret connection to send a message
-    let pill = types::PoisonPillMsg {};
-    let mut buf = vec![];
-    pill.encode(&mut buf).unwrap();
-    connection.write_all(&buf).unwrap();
-    println!("sent poison pill");
-    kms.process.wait().unwrap();
+    send_poison_pill(&mut kms, &mut connection);
 }

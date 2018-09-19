@@ -1,7 +1,6 @@
 use super::{Ed25519Signature, Signature, TendermintSignable};
 use bytes::BufMut;
-use hex::encode;
-use prost::Message;
+use prost::{EncodeError, Message};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Heartbeat {
@@ -29,11 +28,17 @@ pub struct SignHeartbeatMsg {
 }
 
 impl TendermintSignable for SignHeartbeatMsg {
-    fn sign_bytes<B>(&mut self, sign_bytes: &mut B)
+    // Get the amino encoded bytes; excluding the signature (even if it was set):
+    fn sign_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, EncodeError>
     where
         B: BufMut,
     {
-        self.encode(sign_bytes);
+        let mut hbm = self.clone();
+        if let Some(ref mut hbm) = hbm.heartbeat {
+            hbm.signature = None
+        }
+        hbm.encode(sign_bytes)?;
+        Ok(true)
     }
     fn set_signature(&mut self, sig: &Ed25519Signature) {
         if let Some(ref mut hb) = self.heartbeat {
@@ -128,5 +133,4 @@ mod tests {
             Ok(have) => assert_eq!(have, want),
         }
     }
-    //ToDo Serialization with Signature
 }

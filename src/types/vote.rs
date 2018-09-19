@@ -1,8 +1,7 @@
 use super::{BlockID, Ed25519Signature, TendermintSignable, Time};
 use bytes::BufMut;
 use chrono::{DateTime, Utc};
-use hex::encode_upper;
-use std::time::{SystemTime, UNIX_EPOCH};
+use prost::{EncodeError, Message};
 // TODO(ismail): we might not want to use this error type here
 // see below: those aren't prost errors
 use prost::error::DecodeError;
@@ -57,7 +56,7 @@ pub struct SignVoteMsg {
 }
 
 impl TendermintSignable for SignVoteMsg {
-    fn sign_bytes<B>(&mut self, sign_bytes: &mut B)
+    fn sign_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, EncodeError>
     where
         B: BufMut,
     {

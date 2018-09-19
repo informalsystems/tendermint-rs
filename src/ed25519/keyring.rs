@@ -51,11 +51,9 @@ impl Keyring {
     pub fn secret_connection_signer(&self) -> &DalekSigner {
         &self.secret_connection_signer
     }
-
     pub fn get_default_signer(&self) -> &Signer {
         let mut vals = self.signing_keys.values();
-        let signer = vals.next().unwrap();
-        signer
+        vals.next().unwrap()
     }
     /// Sign a message using the secret key associated with the given public key
     /// (if it is in our keyring)

@@ -46,7 +46,7 @@ impl From<Time> for SystemTime {
 }
 
 pub trait TendermintSignable {
-    fn sign_bytes<B>(&mut self, sign_bytes: &mut B)
+    fn sign_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, prost::EncodeError>
     where
         B: BufMut;
     fn set_signature(&mut self, sig: &Ed25519Signature);
