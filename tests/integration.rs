@@ -1,6 +1,8 @@
 //! KMS integration test
 
-#[allow(unused_imports)]
+// TODO: get rid of hacks for using RPC types in tests
+#![allow(unused_imports, unused_variables, dead_code)]
+
 #[macro_use]
 extern crate abscissa_derive;
 #[macro_use]
@@ -32,7 +34,6 @@ use signatory::{
 };
 use signatory_dalek::Ed25519Signer;
 use std::ffi::OsStr;
-#[allow(unused_imports)]
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::process::{Child, Command};
@@ -111,7 +112,8 @@ fn test_handle_and_sign_heartbeat() {
     let (pub_key, signer) = test_key();
     // Here we reply to the kms with a "remote" ephemeral key, auth signature etc:
     let socket_cp = kms.socket.try_clone().unwrap();
-    let mut connection = SecretConnection::new(socket_cp, &signer).unwrap();
+    let public_key = signatory::public_key(&signer).unwrap();
+    let mut connection = SecretConnection::new(socket_cp, &public_key, &signer).unwrap();
 
     // prep a request:
     let addr = vec![

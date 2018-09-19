@@ -3,7 +3,7 @@
 # Copy this to 'kms.toml' and edit for your own purposes
 
 [providers.dalek.keys]
-example-key-1 = { path = "path/to/example.key" }
+validator-key-1 = { path = "path/to/validator.key" }
 
 [providers.yubihsm.connector1]
 http = { addr = "127.0.0.1", port = 12345 }
@@ -11,7 +11,7 @@ auth = { key-id = 1, password = "example" } # password-file = "path/to/password.
 keys = { example-key-42 = { key-id = 42 }, example-key-42 = { key-id = 43 } }
 
 [secret-connection]
-secret-key-path = "/tmp/lolkey2"
+secret-key-path = "path/to/kms-node.key"
 
 [validators]
 example1 = { addr = "example1.example.com", port = 26657 }

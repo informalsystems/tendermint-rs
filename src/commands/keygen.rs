@@ -1,9 +1,7 @@
-use clear_on_drop::ClearOnDrop;
-use rand::{OsRng, RngCore};
-use std::{env, fs::OpenOptions, io::Write, os::unix::fs::OpenOptionsExt, process};
+use signatory::{Ed25519Seed, Encode};
+use std::{env, process};
 
-/// Unix file permissions required for private keys (i.e. owner-readable only)
-pub const PRIVATE_KEY_PERMISSIONS: u32 = 0o600;
+use ed25519::SECRET_KEY_ENCODING;
 
 /// Options for the `keygen` command
 #[derive(Debug, Default, Options)]
@@ -22,26 +20,12 @@ impl KeygenCommand {
 
         let output_path = &self.output_paths[0];
 
-        // Buffer which will receive the random seed value
-        let mut seed = ClearOnDrop::new(vec![0u8; 32]);
-        OsRng::new().unwrap().fill_bytes(seed.as_mut());
-
-        let mut output_file = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .mode(PRIVATE_KEY_PERMISSIONS)
-            .open(output_path)
+        let seed = Ed25519Seed::generate();
+        seed.encode_to_file(output_path, SECRET_KEY_ENCODING)
             .unwrap_or_else(|e| {
-                status_err!("couldn't open {} for writing: {}", output_path, e);
+                status_err!("couldn't write to {}: {}", output_path, e);
                 process::exit(1);
             });
-
-        // TODO: some sort of serialization format for the private key? Raw is easy for now
-        output_file.write_all(&*seed).unwrap_or_else(|e| {
-            status_err!("couldn't write to {}: {}", output_path, e);
-            process::exit(1);
-        });
 
         info!("Wrote random Ed25519 private key to {}", output_path);
     }
