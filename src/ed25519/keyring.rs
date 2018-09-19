@@ -1,5 +1,5 @@
 use signatory::Ed25519Signature;
-use std::{collections::BTreeMap, sync::RwLock};
+use std::{collections::BTreeMap, sync::RwLock, sync::RwLockReadGuard};
 
 use super::{PublicKey, Signer};
 use config::ProviderConfig;
@@ -10,7 +10,7 @@ use super::signer::dalek;
 use super::signer::yubihsm;
 
 lazy_static! {
-    static ref GLOBAL_KEYRING: RwLock<KeyRing> = RwLock::new(KeyRing(BTreeMap::default()));
+    pub static ref GLOBAL_KEYRING: RwLock<KeyRing> = RwLock::new(KeyRing(BTreeMap::default()));
 }
 
 pub struct KeyRing(BTreeMap<PublicKey, Signer>);
@@ -33,10 +33,20 @@ impl KeyRing {
 
         Ok(())
     }
-    pub fn get_default_signer(&self) -> &Signer {
-        let mut vals = self.signing_keys.values();
-        vals.next().unwrap()
+
+    // TODO(ismail): figure out where we get the pubkey from and delete this:
+    pub fn sign_with_only_signer(&self, msg: &[u8]) -> Result<Ed25519Signature, Error> {
+        let keyring: RwLockReadGuard<KeyRing>  = GLOBAL_KEYRING.read().unwrap();
+
+        let mut vals = keyring.0.values();
+        if vals.len() > 1 {
+            return Err(err!(SigningError, "expected only one key in keyring"));
+        }
+        let signer = vals.next().unwrap();
+
+        signer.sign(msg)
     }
+
     /// Sign a message using the secret key associated with the given public key
     /// (if it is in our keyring)
     pub fn sign(public_key: &PublicKey, msg: &[u8]) -> Result<Ed25519Signature, Error> {

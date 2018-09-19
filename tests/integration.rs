@@ -153,8 +153,8 @@ fn test_handle_and_sign_heartbeat() {
     let mut sign_bytes: Vec<u8> = vec![];
     hbm.sign_bytes(&mut sign_bytes).unwrap();
 
-    let mut hb: Heartbeat = hbm.heartbeat.expect("heartbeat should be embedded but none was found");
-    let mut sig: Vec<u8> = hb.signature.expect("expected signature was not found");
+    let hb: Heartbeat = hbm.heartbeat.expect("heartbeat should be embedded but none was found");
+    let sig: Vec<u8> = hb.signature.expect("expected signature was not found");
     let verifier = Ed25519Verifier::from(&pub_key);
     let signature = Ed25519Signature::from_bytes(sig).unwrap();
     let msg: &[u8] = sign_bytes.as_slice();
@@ -181,10 +181,10 @@ fn test_handle_poisonpill() {
     let mut kms = KmsConnection::create(KMS_TEST_ARGS);
 
     // we use the same key for both sides:
-    let (_, signer) = test_key();
+    let (pub_key, signer) = test_key();
     // Here we reply to the kms with a "remote" ephemeral key, auth signature etc:
     let socket_cp = kms.socket.try_clone().unwrap();
-    let mut connection = SecretConnection::new(socket_cp, &signer).unwrap();
+    let mut connection = SecretConnection::new(socket_cp, &pub_key, &signer).unwrap();
 
     // use the secret connection to send a message
     send_poison_pill(&mut kms, &mut connection);

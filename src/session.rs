@@ -11,6 +11,8 @@ use prost::Message;
 use rpc::{Request, Response, TendermintResponse};
 use secret_connection::SecretConnection;
 
+use ed25519::keyring::GLOBAL_KEYRING;
+
 /// Encrypted session with a validator node
 pub struct Session {
     /// TCP connection to a validator node
@@ -58,9 +60,9 @@ impl Session {
         request.sign_bytes(&mut to_sign)?;
         // TODO(ismail): figure out which key to use here instead of taking the only key
         // from keyring here:
-        let signer = self.keyring.get_default_signer();
+        let keyring = GLOBAL_KEYRING.read().unwrap();
+        let sig = keyring.sign_with_only_signer(&to_sign).unwrap();
 
-        let sig = self.keyring.sign(&signer.public_key, &to_sign).unwrap();
         request.set_signature(&sig);
         Ok(request.build_response())
     }
