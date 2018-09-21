@@ -65,7 +65,7 @@ pub struct SignedVoteReply {
 }
 
 impl TendermintSignable for SignVoteRequest {
-    fn sign_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, EncodeError>
+    fn sign_bytes<B>(&self, chain_id: &str, sign_bytes: &mut B) -> Result<bool, EncodeError>
     where
         B: BufMut,
     {

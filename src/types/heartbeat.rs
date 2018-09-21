@@ -39,9 +39,39 @@ pub struct SignedHeartbeatReply {
     pub err: Option<RemoteErr>,
 }
 
+// tendermint type:
+//
+// type CanonicalHeartbeat struct {
+//    ChainID          string  `json:"@chain_id"`
+//    Type             string  `json:"@type"`
+//    Height           int64   `json:"height"`
+//    Round            int     `json:"round"`
+//    Sequence         int     `json:"sequence"`
+//    ValidatorAddress Address `json:"validator_address"`
+//    ValidatorIndex   int     `json:"validator_index"`
+//}
+#[derive(Clone, PartialEq, Message)]
+struct ConicalHeartbeat {
+    #[prost(string, tag = "1")]
+    pub chain_id: String,
+    // TODO(ismail): most probably this field can be deleted:
+    #[prost(string)]
+    pub type_str: String,
+    #[prost(sint64)]
+    pub height: i64,
+    #[prost(sint64)]
+    pub round: i64,
+    #[prost(sint64)]
+    pub sequence: i64,
+    #[prost(bytes)]
+    pub validator_address: Vec<u8>,
+    #[prost(sint64)]
+    pub validator_index: i64,
+}
+
 impl TendermintSignable for SignHeartbeatRequest {
     // Get the amino encoded bytes; excluding the signature (even if it was set):
-    fn sign_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, EncodeError>
+    fn sign_bytes<B>(&self, chain_id: &str, sign_bytes: &mut B) -> Result<bool, EncodeError>
     where
         B: BufMut,
     {
@@ -49,7 +79,17 @@ impl TendermintSignable for SignHeartbeatRequest {
         if let Some(ref mut hbm) = hbm.heartbeat {
             hbm.signature = None
         }
-        hbm.encode(sign_bytes)?;
+        let hb = hbm.heartbeat.unwrap();
+        let chb = ConicalHeartbeat {
+            chain_id: chain_id.to_string(),
+            type_str: "heartbeat".to_string(),
+            height: hb.height,
+            round: hb.round,
+            sequence: hb.sequence,
+            validator_address: hb.validator_address,
+            validator_index: hb.validator_index,
+        };
+        chb.encode(sign_bytes)?;
         Ok(true)
     }
     fn set_signature(&mut self, sig: &Ed25519Signature) {

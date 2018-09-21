@@ -151,7 +151,8 @@ fn test_handle_and_sign_heartbeat() {
     let mut hb_req: SignHeartbeatRequest =
         SignHeartbeatRequest::decode(&resp).expect("decoding heartbeat failed");
     let mut sign_bytes: Vec<u8> = vec![];
-    hb_req.sign_bytes(&mut sign_bytes).unwrap();
+    let chain_id = "test_chain_id";
+    hb_req.sign_bytes(chain_id, &mut sign_bytes).unwrap();
 
     let hb: Heartbeat = hb_req
         .heartbeat

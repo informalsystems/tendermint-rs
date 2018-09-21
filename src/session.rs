@@ -56,7 +56,9 @@ impl Session {
     /// Perform a digital signature operation
     fn sign(&mut self, mut request: impl TendermintResponse) -> Result<Response, Error> {
         let mut to_sign = vec![];
-        request.sign_bytes(&mut to_sign)?;
+        // TODO(ismail): this should either be a config param, or, included in the request!
+        let chain_id = "test_chain_id";
+        request.sign_bytes(chain_id, &mut to_sign)?;
         // TODO(ismail): figure out which key to use here instead of taking the only key
         // from keyring here:
         let keyring = GLOBAL_KEYRING.read().unwrap();
