@@ -2,11 +2,11 @@ use signatory::Ed25519Signature;
 use std::{collections::BTreeMap, sync::RwLock};
 
 use super::{PublicKey, Signer};
-use config::ProviderConfig;
+use config::provider::ProviderConfig;
 use error::Error;
 
-use super::signer::dalek;
-#[cfg(feature = "yubihsm-provider")]
+use super::signer::softsign;
+#[cfg(feature = "yubihsm")]
 use super::signer::yubihsm;
 
 lazy_static! {
@@ -22,16 +22,21 @@ impl KeyRing {
 
         // Clear the current global keyring
         if !keyring.0.is_empty() {
-            info!("Clearing keyring");
+            info!("[keyring:*] Clearing keyring");
             keyring.0.clear();
         }
 
-        dalek::init(&mut keyring, config.dalek.as_ref())?;
+        #[cfg(feature = "softsign")]
+        softsign::init(&mut keyring, &config.softsign)?;
 
-        #[cfg(feature = "yubihsm-provider")]
+        #[cfg(feature = "yubihsm")]
         yubihsm::init(&mut keyring, &config.yubihsm)?;
 
-        Ok(())
+        if keyring.0.is_empty() {
+            Err(err!(ConfigError, "no signing keys configured!"))
+        } else {
+            Ok(())
+        }
     }
 
     /// Sign a message using the secret key associated with the given public key
@@ -51,7 +56,7 @@ impl KeyRing {
     /// signer registered for the given public key
     pub(super) fn add(&mut self, public_key: PublicKey, signer: Signer) -> Result<(), Error> {
         info!(
-            "Adding {}:{} {}",
+            "[keyring:{}:{}] added validator key {}",
             signer.provider_name, signer.key_id, public_key
         );
 

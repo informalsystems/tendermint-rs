@@ -17,33 +17,33 @@ abscissa = "0.0.4"
 abscissa_derive = "0.0.2"
 bincode = "1"
 byteorder = "1.2"
-clear_on_drop = "0.2"
-failure = "0.1"
-failure_derive = "0.1"
-lazy_static = "1"
-rand = "0.5"
-serde = "1.0"
-serde_derive = "1.0"
-sha2 = "0.7"
-hkdf = "0.5"
-ring = "0.13"
-signatory = { version = "0.9.0-alpha3", features = ["ed25519"] }
-signatory-dalek = "0.9.0-alpha3"
-signatory-yubihsm = { version = "0.9.0-alpha3", optional = true }
-yubihsm = { version = "0.16", optional = true }
-serde_json = "1.0"
-hex = "0.3.2"
 bytes = "0.4"
 chrono = "0.4.2"
+failure = "0.1"
+failure_derive = "0.1"
+hkdf = "0.5"
+lazy_static = "1"
+prost = { git = "https://github.com/Liamsi/prost", branch = "prost_amino_derive" }
+prost-derive = { git = "https://github.com/Liamsi/prost", branch = "prost_amino_derive" }
+rand = "0.5"
+ring = "0.13"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+sha2 = "0.7"
+signatory = { version = "0.9", features = ["ed25519"] }
+signatory-dalek = "0.9"
+signatory-yubihsm = { version = "0.9", optional = true }
+subtle-encoding = "0.2"
 x25519-dalek = { version = "0.3", default-features = false, features = ["std", "u64_backend"] }
-prost = { git = "https://github.com/Liamsi/prost", branch = "prost_amino_derive"}
-prost-derive = {git = "https://github.com/Liamsi/prost", branch = "prost_amino_derive"}
+zeroize = "0.1"
 
 [features]
-yubihsm-provider = ["signatory-yubihsm/usb", "yubihsm/usb"]
-yubihsm-mockhsm = ["yubihsm-provider", "signatory-yubihsm/mockhsm", "yubihsm/mockhsm"]
+default = ["softsign"]
+softsign = []
+yubihsm = ["signatory-yubihsm/usb"] # USB only for now
+yubihsm-mock = ["yubihsm", "signatory-yubihsm/mockhsm"]
 
 [patch.crates-io]
-signatory = { git = "https://github.com/tendermint/signatory.git" }
-signatory-dalek = { git = "https://github.com/tendermint/signatory.git" }
-signatory-yubihsm = { git = "https://github.com/tendermint/signatory.git" }
+abscissa = { git = "https://github.com/iqlusioninc/abscissa.git", rev = "a90d312" }
+yubihsm = { git = "https://github.com/tendermint/yubihsm-rs.git", rev = "9d8b749" }

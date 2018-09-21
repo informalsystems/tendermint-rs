@@ -1,7 +1,8 @@
 use signatory::{self, Ed25519Signature, Signer as SignerTrait};
 
-pub mod dalek;
-#[cfg(feature = "yubihsm-provider")]
+#[cfg(feature = "softsign")]
+pub mod softsign;
+#[cfg(feature = "yubihsm")]
 pub mod yubihsm;
 
 use error::Error;

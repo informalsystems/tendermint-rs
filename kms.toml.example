@@ -2,18 +2,21 @@
 #
 # Copy this to 'kms.toml' and edit for your own purposes
 
-[providers.dalek.keys]
-validator-key-1 = { path = "path/to/validator.key" }
+[[validator]]
+addr = "example1.example.com"
+port = 26657
 
-[providers.yubihsm.connector1]
-http = { addr = "127.0.0.1", port = 12345 }
-auth = { key-id = 1, password = "example" } # password-file = "path/to/password.file"
-keys = { example-key-42 = { key-id = 42 }, example-key-42 = { key-id = 43 } }
+[[providers.softsign]]
+id = "gaia-8000"
+path = "path/to/validator.key"
+
+[[providers.yubihsm]]
+adapter = { type = "usb" }
+auth = { key = 1, password = "example" }
+serial-number = "0123456789"
+keys = [{ id = "gaia-9000", key = 42 }, { id = "gaia-9001", key = 43 }]
 
 [secret-connection]
 secret-key-path = "path/to/kms-node.key"
 
-[validators]
-example1 = { addr = "example1.example.com", port = 26657 }
-example2 = { addr = "example1.example.com", port = 26657 }
-example3 = { addr = "example1.example.com", port = 26657 }
+

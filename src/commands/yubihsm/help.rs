@@ -1,10 +1,8 @@
-//! The `help` subcommand
-
 use abscissa::{Callable, Command};
 
-use super::KmsCommand;
+use super::YubihsmCommand;
 
-/// The `help` subcommand
+/// The `yubihsm help` subcommand
 #[derive(Debug, Default, Options)]
 pub struct HelpCommand {
     #[options(free)]
@@ -12,8 +10,8 @@ pub struct HelpCommand {
 }
 
 impl Callable for HelpCommand {
-    /// Print help message
+    /// Print help for the `yubihsm` subcommand
     fn call(&self) {
-        KmsCommand::print_usage(self.args.as_slice());
+        YubihsmCommand::print_usage(self.args.as_slice());
     }
 }

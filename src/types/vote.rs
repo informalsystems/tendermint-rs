@@ -1,7 +1,7 @@
 use super::{BlockID, TendermintSign, Time};
 use chrono::{DateTime, Utc};
-use hex::encode_upper;
 use std::time::{SystemTime, UNIX_EPOCH};
+use subtle_encoding::hex::encode_upper;
 // TODO(ismail): we might not want to use this error type here
 // see below: those aren't prost errors
 use prost::error::DecodeError;

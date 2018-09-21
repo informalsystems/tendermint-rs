@@ -10,6 +10,8 @@ use std::{
     fmt::{self, Display},
     io,
 };
+#[cfg(feature = "yubihsm")]
+use yubihsm;
 
 /// Create a new error (of a given enum variant) with a formatted message
 macro_rules! err {
@@ -109,6 +111,11 @@ impl Display for Error {
 /// Kinds of errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
+    /// Access denied
+    #[fail(display = "access denied")]
+    #[cfg(feature = "yubihsm")]
+    AccessError,
+
     /// Error in configuration file
     #[fail(display = "config error")]
     ConfigError,
@@ -178,6 +185,26 @@ impl From<signatory::Error> for Error {
             signatory::ErrorKind::ParseError => ErrorKind::ParseError,
             signatory::ErrorKind::ProviderError => ErrorKind::SigningError,
             signatory::ErrorKind::SignatureInvalid => ErrorKind::VerificationError,
+        };
+
+        Error::with_description(kind, other.description().to_owned())
+    }
+}
+
+#[cfg(feature = "yubihsm")]
+impl From<yubihsm::connector::ConnectionError> for Error {
+    fn from(other: yubihsm::connector::ConnectionError) -> Self {
+        use yubihsm::connector::ConnectionErrorKind;
+
+        let kind = match other.kind() {
+            ConnectionErrorKind::AddrInvalid => ErrorKind::ConfigError,
+            ConnectionErrorKind::AccessDenied => ErrorKind::AccessError,
+            ConnectionErrorKind::IoError
+            | ConnectionErrorKind::ConnectionFailed
+            | ConnectionErrorKind::DeviceBusyError
+            | ConnectionErrorKind::RequestError
+            | ConnectionErrorKind::ResponseError
+            | ConnectionErrorKind::UsbError => ErrorKind::IoError,
         };
 
         Error::with_description(kind, other.description().to_owned())

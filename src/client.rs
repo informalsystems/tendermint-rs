@@ -32,13 +32,9 @@ pub struct Client {
 
 impl Client {
     /// Spawn a new client, returning a handle so it can be joined
-    pub fn spawn(
-        label: String,
-        config: ValidatorConfig,
-        secret_connection_key: Ed25519Seed,
-    ) -> Self {
+    pub fn spawn(config: ValidatorConfig, secret_connection_key: Ed25519Seed) -> Self {
         Self {
-            handle: thread::spawn(move || client_loop(&label, config, &secret_connection_key)),
+            handle: thread::spawn(move || client_loop(&config, &secret_connection_key)),
         }
     }
 
@@ -49,19 +45,12 @@ impl Client {
 }
 
 /// Main loop for all clients. Handles reconnecting in the event of an error
-fn client_loop(label: &str, config: ValidatorConfig, secret_connection_key: &Ed25519Seed) {
-    let ValidatorConfig {
-        addr,
-        port,
-        reconnect,
-    } = config;
-    let peer_info = format!("{} ({}:{})", label, &addr, port);
-
-    while let Err(e) = client_session(addr.clone(), port, secret_connection_key) {
-        error!("[{}] {}", &peer_info, e);
+fn client_loop(config: &ValidatorConfig, secret_connection_key: &Ed25519Seed) {
+    while let Err(e) = client_session(&config.addr, config.port, secret_connection_key) {
+        error!("[{}] {}", config.uri(), e);
 
         // Break out of the loop if auto-reconnect is explicitly disabled
-        if reconnect {
+        if config.reconnect {
             // TODO: configurable respawn delay
             thread::sleep(Duration::from_secs(RESPAWN_DELAY));
         } else {
@@ -69,17 +58,17 @@ fn client_loop(label: &str, config: ValidatorConfig, secret_connection_key: &Ed2
         }
     }
 
-    info!("[{}] session closed gracefully", &peer_info);
+    info!("[{}] session closed gracefully", config.uri());
 }
 
 /// Establish a session with the validator and handle incoming requests
-fn client_session(
-    addr: String,
-    port: u16,
-    secret_connection_key: &Ed25519Seed,
-) -> Result<(), Error> {
+fn client_session(addr: &str, port: u16, secret_connection_key: &Ed25519Seed) -> Result<(), Error> {
     panic::catch_unwind(move || {
-        let mut session = Session::new(&addr, port, &secret_connection_key)?;
+        let mut session = Session::new(addr, port, &secret_connection_key)?;
+        info!(
+            "[gaia-rpc://{}:{}] connected to validator successfully",
+            addr, port
+        );
         while session.handle_request()? {}
         Ok(())
     }).unwrap_or_else(|e| Err(Error::from_panic(&e)))

@@ -464,11 +464,11 @@ mod tests {
 
     #[test]
     fn test_derive_secrets_and_challenge_golden_test_vectors() {
-        extern crate hex;
         use std::fs::File;
         use std::io::BufRead;
         use std::io::BufReader;
         use std::str::FromStr;
+        use subtle_encoding::hex;
 
         let f = File::open("src/TestDeriveSecretsAndChallenge.golden").unwrap();
         let file = BufReader::new(&f);
