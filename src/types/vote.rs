@@ -1,4 +1,4 @@
-use super::{BlockID, Ed25519Signature, TendermintSignable, Time};
+use super::{BlockID, Ed25519Signature, RemoteErr, TendermintSignable, Time};
 use bytes::BufMut;
 use chrono::{DateTime, Utc};
 use prost::{EncodeError, Message};
@@ -46,16 +46,25 @@ pub struct Vote {
     signature: Option<Vec<u8>>,
 }
 
-pub const AMINO_NAME: &str = "tendermint/socketpv/SignVoteMsg";
+pub const AMINO_NAME: &str = "tendermint/socketpv/SignVoteRequest";
 
 #[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/socketpv/SignVoteMsg"]
-pub struct SignVoteMsg {
+#[amino_name = "tendermint/socketpv/SignVoteRequest"]
+pub struct SignVoteRequest {
     #[prost(message, tag = "1")]
-    vote: Option<Vote>,
+    pub vote: Option<Vote>,
 }
 
-impl TendermintSignable for SignVoteMsg {
+#[derive(Clone, PartialEq, Message)]
+#[amino_name = "tendermint/socketpv/SignedVoteReply"]
+pub struct SignedVoteReply {
+    #[prost(message, tag = "1")]
+    pub vote: Option<Vote>,
+    #[prost(message, tag = "2")]
+    pub err: Option<RemoteErr>,
+}
+
+impl TendermintSignable for SignVoteRequest {
     fn sign_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, EncodeError>
     where
         B: BufMut,
@@ -99,7 +108,7 @@ mod tests {
             }),
             signature: None,
         };
-        let sign_vote_msg = SignVoteMsg { vote: Some(vote) };
+        let sign_vote_msg = SignVoteRequest { vote: Some(vote) };
         let mut got = vec![];
         let _have = sign_vote_msg.encode(&mut got);
         // the following vector is generated via:
@@ -177,8 +186,8 @@ mod tests {
             }),
             signature: None,
         };
-        let want = SignVoteMsg { vote: Some(vote) };
-        match SignVoteMsg::decode(&encoded) {
+        let want = SignVoteRequest { vote: Some(vote) };
+        match SignVoteRequest::decode(&encoded) {
             Ok(have) => {
                 assert_eq!(have, want);
             }

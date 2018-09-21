@@ -1,4 +1,4 @@
-use super::{BlockID, Ed25519Signature, PartsSetHeader, TendermintSignable, Time};
+use super::{BlockID, Ed25519Signature, PartsSetHeader, RemoteErr, TendermintSignable, Time};
 use bytes::BufMut;
 use chrono::{DateTime, Utc};
 use prost::EncodeError;
@@ -21,16 +21,25 @@ pub struct Proposal {
     signature: Option<Vec<u8>>,
 }
 
-pub const AMINO_NAME: &str = "tendermint/socketpv/SignProposalMsg";
+pub const AMINO_NAME: &str = "tendermint/socketpv/SignProposalRequest";
 
 #[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/socketpv/SignProposalMsg"]
-pub struct SignProposalMsg {
+#[amino_name = "tendermint/socketpv/SignProposalRequest"]
+pub struct SignProposalRequest {
     #[prost(message, tag = "1")]
-    proposal: Option<Proposal>,
+    pub proposal: Option<Proposal>,
 }
 
-impl TendermintSignable for SignProposalMsg {
+#[derive(Clone, PartialEq, Message)]
+#[amino_name = "tendermint/socketpv/SignedProposalReply"]
+pub struct SignedProposalReply {
+    #[prost(message, tag = "1")]
+    pub proposal: Option<Proposal>,
+    #[prost(message, tag = "2")]
+    pub err: Option<RemoteErr>,
+}
+
+impl TendermintSignable for SignProposalRequest {
     fn sign_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, EncodeError>
     where
         B: BufMut,
@@ -69,7 +78,7 @@ mod tests {
         };
         let mut got = vec![];
 
-        let _have = SignProposalMsg {
+        let _have = SignProposalRequest {
             proposal: Some(proposal),
         }.encode(&mut got);
         let want = vec![
@@ -101,7 +110,7 @@ mod tests {
             pol_block_id: None,
             signature: None,
         };
-        let want = SignProposalMsg {
+        let want = SignProposalRequest {
             proposal: Some(proposal),
         };
 
@@ -112,7 +121,7 @@ mod tests {
             0x72, 0x74, 0x73, 0x28, 0x1,
         ];
 
-        match SignProposalMsg::decode(&data) {
+        match SignProposalRequest::decode(&data) {
             Ok(have) => assert_eq!(have, want),
             Err(err) => assert!(false, err.description().to_string()),
         }

@@ -7,7 +7,8 @@ use std::io::Cursor;
 use std::io::{self, Read};
 use std::io::{Error, ErrorKind};
 use types::{
-    PoisonPillMsg, PubKeyMsg, SignHeartbeatMsg, SignProposalMsg, SignVoteMsg, TendermintSignable,
+    PoisonPillMsg, PubKeyMsg, SignHeartbeatRequest, SignedProposalReply, SignProposalRequest,
+    SignVoteRequest, SignedHeartbeatReply, SignedVoteReply, TendermintSignable,
     HEARTBEAT_AMINO_NAME, POISON_PILL_AMINO_NAME, PROPOSAL_AMINO_NAME, PUBKEY_AMINO_NAME,
     VOTE_AMINO_NAME,
 };
@@ -17,9 +18,9 @@ pub const MAX_MSG_LEN: usize = 1024;
 /// Requests to the KMS
 pub enum Request {
     /// Sign the given message
-    SignHeartbeat(SignHeartbeatMsg),
-    SignProposal(SignProposalMsg),
-    SignVote(SignVoteMsg),
+    SignHeartbeat(SignHeartbeatRequest),
+    SignProposal(SignProposalRequest),
+    SignVote(SignVoteRequest),
     ShowPublicKey(PubKeyMsg),
 
     /// Instruct the KMS to terminate
@@ -29,13 +30,14 @@ pub enum Request {
 /// Responses from the KMS
 pub enum Response {
     /// Signature response
-    SignedHeartBeat(SignHeartbeatMsg),
-    SignedVote(SignVoteMsg),
-    SignedProposal(SignProposalMsg),
+    SignedHeartBeat(SignedHeartbeatReply),
+    SignedVote(SignedVoteReply),
+    SignedProposal(SignedProposalReply),
     PublicKey(PubKeyMsg),
 }
 
 pub trait TendermintResponse: TendermintSignable {
+    // TODO(ismail): this should take an error as an argument:
     fn build_response(self) -> Response;
 }
 
@@ -95,15 +97,15 @@ impl Request {
             // do not spent any time decoding, we are going down anyways
             return Ok(Request::PoisonPill(PoisonPillMsg {}));
         } else if amino_pre == *HEART_BEAT_PREFIX {
-            if let Ok(hb) = SignHeartbeatMsg::decode(&rem) {
+            if let Ok(hb) = SignHeartbeatRequest::decode(&rem) {
                 return Ok(Request::SignHeartbeat(hb));
             }
         } else if amino_pre == *VOTE_PREFIX {
-            if let Ok(vote) = SignVoteMsg::decode(&rem) {
+            if let Ok(vote) = SignVoteRequest::decode(&rem) {
                 return Ok(Request::SignVote(vote));
             }
         } else if amino_pre == *PROPOSAL_PREFIX {
-            if let Ok(prop) = SignProposalMsg::decode(&rem) {
+            if let Ok(prop) = SignProposalRequest::decode(&rem) {
                 return Ok(Request::SignProposal(prop));
             }
         } else if amino_pre == *PUBKEY_PREFIX {
@@ -119,20 +121,29 @@ impl Request {
     }
 }
 
-impl TendermintResponse for SignHeartbeatMsg {
+impl TendermintResponse for SignHeartbeatRequest {
     fn build_response(self) -> Response {
-        Response::SignedHeartBeat(self)
+        Response::SignedHeartBeat(SignedHeartbeatReply {
+            heartbeat: self.heartbeat,
+            err: None,
+        })
     }
 }
 
-impl TendermintResponse for SignVoteMsg {
+impl TendermintResponse for SignVoteRequest {
     fn build_response(self) -> Response {
-        Response::SignedVote(self)
+        Response::SignedVote(SignedVoteReply {
+            vote: self.vote,
+            err: None,
+        })
     }
 }
 
-impl TendermintResponse for SignProposalMsg {
+impl TendermintResponse for SignProposalRequest {
     fn build_response(self) -> Response {
-        Response::SignedProposal(self)
+        Response::SignedProposal(SignedProposalReply {
+            proposal: self.proposal,
+            err: None,
+        })
     }
 }

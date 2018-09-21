@@ -102,7 +102,7 @@ fn test_handle_and_sign_heartbeat() {
     use signatory::ed25519;
     use signatory::Signature;
     use signatory_dalek::Ed25519Verifier;
-    use types::heartbeat::{Heartbeat, SignHeartbeatMsg};
+    use types::heartbeat::{Heartbeat, SignHeartbeatRequest};
 
     use secret_connection::SecretConnection;
     // this spawns a process which wants to share ephemeral keys and blocks until it reads a reply:
@@ -130,7 +130,7 @@ fn test_handle_and_sign_heartbeat() {
         signature: None,
     };
 
-    let hb_msg = types::heartbeat::SignHeartbeatMsg {
+    let hb_msg = types::heartbeat::SignHeartbeatRequest {
         heartbeat: Some(hb),
     };
 
@@ -148,12 +148,12 @@ fn test_handle_and_sign_heartbeat() {
     let mut resp = vec![0u8; (actual_len + 1) as usize];
     resp.copy_from_slice(&resp_buf[..(actual_len + 1) as usize]);
 
-    let mut hbm: SignHeartbeatMsg =
-        SignHeartbeatMsg::decode(&resp).expect("decoding heartbeat failed");
+    let mut hb_req: SignHeartbeatRequest =
+        SignHeartbeatRequest::decode(&resp).expect("decoding heartbeat failed");
     let mut sign_bytes: Vec<u8> = vec![];
-    hbm.sign_bytes(&mut sign_bytes).unwrap();
+    hb_req.sign_bytes(&mut sign_bytes).unwrap();
 
-    let hb: Heartbeat = hbm
+    let hb: Heartbeat = hb_req
         .heartbeat
         .expect("heartbeat should be embedded but none was found");
     let sig: Vec<u8> = hb.signature.expect("expected signature was not found");

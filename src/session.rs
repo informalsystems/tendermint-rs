@@ -49,7 +49,6 @@ impl Session {
             Response::SignedVote(sv) => sv.encode(&mut buf)?,
             Response::PublicKey(pk) => pk.encode(&mut buf)?,
         }
-        // TODO(ismail): do some proper error handling
         self.connection.write_all(&buf)?;
         Ok(true)
     }

@@ -28,10 +28,21 @@ pub struct BlockID {
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Time {
+    // TODO(ismail): switch to protobuf's well known type as soon as
+    // https://github.com/tendermint/go-amino/pull/224 was merged
+    // and tendermint caught up on the latest amino release.
     #[prost(sfixed64, tag = "1")]
     pub seconds: i64,
     #[prost(sfixed32, tag = "2")]
     pub nanos: i32,
+}
+
+#[derive(Clone, PartialEq, Message)]
+pub struct RemoteErr {
+    #[prost(sint32, tag = "1")]
+    pub code: i32,
+    #[prost(string, tag = "2")]
+    pub description: String,
 }
 
 /// Converts `Time` to a `SystemTime`.
@@ -54,11 +65,14 @@ pub trait TendermintSignable {
 
 pub use self::ed25519msg::PubKeyMsg;
 pub use self::ed25519msg::AMINO_NAME as PUBKEY_AMINO_NAME;
-pub use self::heartbeat::SignHeartbeatMsg;
+pub use self::heartbeat::SignHeartbeatRequest;
+pub use self::heartbeat::SignedHeartbeatReply;
 pub use self::heartbeat::AMINO_NAME as HEARTBEAT_AMINO_NAME;
 pub use self::poisonpill::PoisonPillMsg;
 pub use self::poisonpill::AMINO_NAME as POISON_PILL_AMINO_NAME;
-pub use self::proposal::SignProposalMsg;
+pub use self::proposal::SignProposalRequest;
+pub use self::proposal::SignedProposalReply;
 pub use self::proposal::AMINO_NAME as PROPOSAL_AMINO_NAME;
-pub use self::vote::SignVoteMsg;
+pub use self::vote::SignVoteRequest;
+pub use self::vote::SignedVoteReply;
 pub use self::vote::AMINO_NAME as VOTE_AMINO_NAME;

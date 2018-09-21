@@ -1,4 +1,4 @@
-use super::{Ed25519Signature, Signature, TendermintSignable};
+use super::{Ed25519Signature, RemoteErr, Signature, TendermintSignable};
 use bytes::BufMut;
 use prost::{EncodeError, Message};
 
@@ -18,16 +18,28 @@ pub struct Heartbeat {
     pub signature: Option<Vec<u8>>,
 }
 
-pub const AMINO_NAME: &str = "tendermint/socketpv/SignHeartbeatMsg";
+pub const AMINO_NAME: &str = "tendermint/socketpv/SignHeartbeatRequest";
+
+// TODO(ismail): the Request / Reply types should live in a separate module!
+// (same for proposal and vote)
 
 #[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/socketpv/SignHeartbeatMsg"]
-pub struct SignHeartbeatMsg {
+#[amino_name = "tendermint/socketpv/SignHeartbeatRequest"]
+pub struct SignHeartbeatRequest {
     #[prost(message, tag = "1")]
     pub heartbeat: Option<Heartbeat>,
 }
 
-impl TendermintSignable for SignHeartbeatMsg {
+#[derive(Clone, PartialEq, Message)]
+#[amino_name = "tendermint/socketpv/SignedHeartbeatReply"]
+pub struct SignedHeartbeatReply {
+    #[prost(message, tag = "1")]
+    pub heartbeat: Option<Heartbeat>,
+    #[prost(message, tag = "2")]
+    pub err: Option<RemoteErr>,
+}
+
+impl TendermintSignable for SignHeartbeatRequest {
     // Get the amino encoded bytes; excluding the signature (even if it was set):
     fn sign_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, EncodeError>
     where
@@ -68,7 +80,7 @@ mod tests {
             signature: None,
         };
         let mut got = vec![];
-        let _have = SignHeartbeatMsg {
+        let _have = SignHeartbeatRequest {
             heartbeat: Some(heartbeat),
         }.encode(&mut got);
         let want = vec![
@@ -91,7 +103,7 @@ mod tests {
             sequence: 30,
             signature: None,
         };
-        let msg = SignHeartbeatMsg {
+        let msg = SignHeartbeatRequest {
             heartbeat: Some(heartbeat),
         };
 
@@ -118,7 +130,7 @@ mod tests {
             sequence: 30,
             signature: None,
         };
-        let want = SignHeartbeatMsg {
+        let want = SignHeartbeatRequest {
             heartbeat: Some(hb),
         };
 
@@ -128,7 +140,7 @@ mod tests {
             0x10, 0x2, 0x18, 0x1e, 0x20, 0x14, 0x28, 0x3c,
         ];
 
-        match SignHeartbeatMsg::decode(&data) {
+        match SignHeartbeatRequest::decode(&data) {
             Err(err) => assert!(false, err.description().to_string()),
             Ok(have) => assert_eq!(have, want),
         }
