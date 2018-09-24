@@ -1,4 +1,4 @@
-use super::{Ed25519Signature, RemoteErr, Signature, TendermintSignable};
+use super::{Ed25519Signature, RemoteError, Signature, TendermintSignable};
 use bytes::BufMut;
 use prost::{EncodeError, Message};
 
@@ -31,12 +31,12 @@ pub struct SignHeartbeatRequest {
 }
 
 #[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/socketpv/SignedHeartbeatReply"]
-pub struct SignedHeartbeatReply {
+#[amino_name = "tendermint/socketpv/SignedHeartbeatResponse"]
+pub struct SignedHeartbeatResponse {
     #[prost(message, tag = "1")]
     pub heartbeat: Option<Heartbeat>,
     #[prost(message, tag = "2")]
-    pub err: Option<RemoteErr>,
+    pub err: Option<RemoteError>,
 }
 
 // tendermint type:

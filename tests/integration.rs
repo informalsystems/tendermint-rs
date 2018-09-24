@@ -98,11 +98,13 @@ fn test_key() -> (Ed25519PublicKey, Ed25519Signer) {
 }
 
 #[test]
-fn test_handle_and_sign_heartbeat() {
+fn test_handle_and_sign_requests() {
+    use chrono::{DateTime, Utc};
     use signatory::ed25519;
     use signatory::Signature;
     use signatory_dalek::Ed25519Verifier;
     use types::heartbeat::{Heartbeat, SignHeartbeatRequest};
+    use types::*;
 
     use secret_connection::SecretConnection;
     // this spawns a process which wants to share ephemeral keys and blocks until it reads a reply:
@@ -115,54 +117,161 @@ fn test_handle_and_sign_heartbeat() {
     let public_key = signatory::public_key(&signer).unwrap();
     let mut connection = SecretConnection::new(socket_cp, &public_key, &signer).unwrap();
 
-    // prep a request:
-    let addr = vec![
-        0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb,
-        0x34, 0x46, 0xa8, 0x4b, 0x35,
-    ];
-
-    let hb = types::heartbeat::Heartbeat {
-        validator_address: addr,
-        validator_index: 1,
-        height: 15,
-        round: 10,
-        sequence: 30,
-        signature: None,
-    };
-
-    let hb_msg = types::heartbeat::SignHeartbeatRequest {
-        heartbeat: Some(hb),
-    };
-
-    // send request:
-    let mut buf = vec![];
-    hb_msg.encode(&mut buf).unwrap();
-    println!("encoded: {:?}", buf);
-    connection.write_all(&buf).unwrap();
-
-    // receive response:
-    let mut resp_buf = vec![0u8; 512];
-    connection.read(&mut resp_buf).unwrap();
-
-    let actual_len = resp_buf[0];
-    let mut resp = vec![0u8; (actual_len + 1) as usize];
-    resp.copy_from_slice(&resp_buf[..(actual_len + 1) as usize]);
-
-    let mut hb_req: SignHeartbeatRequest =
-        SignHeartbeatRequest::decode(&resp).expect("decoding heartbeat failed");
-    let mut sign_bytes: Vec<u8> = vec![];
     let chain_id = "test_chain_id";
-    hb_req.sign_bytes(chain_id, &mut sign_bytes).unwrap();
+    let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
+    let t = Time {
+        seconds: dt.timestamp(),
+        nanos: dt.timestamp_subsec_nanos() as i32,
+    };
+    let t2 = t.clone();
 
-    let hb: Heartbeat = hb_req
-        .heartbeat
-        .expect("heartbeat should be embedded but none was found");
-    let sig: Vec<u8> = hb.signature.expect("expected signature was not found");
-    let verifier = Ed25519Verifier::from(&pub_key);
-    let signature = Ed25519Signature::from_bytes(sig).unwrap();
-    let msg: &[u8] = sign_bytes.as_slice();
+    // Sign Heartbeat:
+    {
+        // prep a request:
+        let addr = vec![
+            0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+            0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+        ];
 
-    ed25519::verify(&verifier, msg, &signature).unwrap();
+        let hb = types::heartbeat::Heartbeat {
+            validator_address: addr,
+            validator_index: 1,
+            height: 15,
+            round: 10,
+            sequence: 30,
+            signature: None,
+        };
+
+        let hb_msg = SignHeartbeatRequest {
+            heartbeat: Some(hb),
+        };
+
+        // send request:
+        let mut buf = vec![];
+        hb_msg.encode(&mut buf).unwrap();
+        connection.write_all(&buf).unwrap();
+
+        // receive response:
+        let mut resp_buf = vec![0u8; 512];
+        connection.read(&mut resp_buf).unwrap();
+
+        let actual_len = resp_buf[0];
+        let mut resp = vec![0u8; (actual_len + 1) as usize];
+        resp.copy_from_slice(&resp_buf[..(actual_len + 1) as usize]);
+
+        let hb_req: SignHeartbeatRequest =
+            SignHeartbeatRequest::decode(&resp).expect("decoding heartbeat failed");
+        let mut sign_bytes: Vec<u8> = vec![];
+
+        hb_req.sign_bytes(chain_id, &mut sign_bytes).unwrap();
+
+        let hb: Heartbeat = hb_req
+            .heartbeat
+            .expect("heartbeat should be embedded but none was found");
+        let sig: Vec<u8> = hb.signature.expect("expected signature was not found");
+        let verifier = Ed25519Verifier::from(&pub_key);
+        let signature = Ed25519Signature::from_bytes(sig).unwrap();
+        let msg: &[u8] = sign_bytes.as_slice();
+
+        ed25519::verify(&verifier, msg, &signature).unwrap();
+    }
+
+    // Sign Proposal:
+    {
+        let proposal = types::proposal::Proposal {
+            height: 12345,
+            round: 23456,
+            timestamp: Some(t),
+            block_parts_header: Some(PartsSetHeader {
+                total: 111,
+                hash: "blockparts".as_bytes().to_vec(),
+            }),
+            pol_round: -1,
+            pol_block_id: None,
+            signature: None,
+        };
+        let spr = types::proposal::SignProposalRequest {
+            proposal: Some(proposal),
+        };
+
+        let mut buf = vec![];
+        spr.encode(&mut buf).unwrap();
+        connection.write_all(&buf).unwrap();
+
+        // receive response:
+        let mut resp_buf = vec![0u8; 1024];
+        connection.read(&mut resp_buf).unwrap();
+
+        let actual_len = resp_buf[0];
+        let mut resp = vec![0u8; (actual_len + 1) as usize];
+        resp.copy_from_slice(&resp_buf[..(actual_len + 1) as usize]);
+
+        let p_req: SignProposalRequest =
+            SignProposalRequest::decode(&resp).expect("decoding proposal failed");
+        let mut sign_bytes: Vec<u8> = vec![];
+        p_req.sign_bytes(chain_id, &mut sign_bytes).unwrap();
+
+        let prop: types::proposal::Proposal = p_req
+            .proposal
+            .expect("proposal should be embedded but none was found");
+        let sig: Vec<u8> = prop.signature.expect("expected signature was not found");
+        let verifier = Ed25519Verifier::from(&pub_key);
+        let signature = Ed25519Signature::from_bytes(sig).unwrap();
+        let msg: &[u8] = sign_bytes.as_slice();
+
+        ed25519::verify(&verifier, msg, &signature).unwrap();
+    }
+    // Sign Vote:
+    {
+        let vote = types::vote::Vote {
+            validator_address: vec![
+                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+            ],
+            validator_index: 56789,
+            height: 12345,
+            round: 2,
+            timestamp: Some(t2),
+            vote_type: 0x01,
+            block_id: Some(BlockID {
+                hash: "hash".as_bytes().to_vec(),
+                parts_header: Some(PartsSetHeader {
+                    total: 1000000,
+                    hash: "parts_hash".as_bytes().to_vec(),
+                }),
+            }),
+            signature: None,
+        };
+        let svr = types::vote::SignVoteRequest { vote: Some(vote) };
+        let mut buf = vec![];
+        svr.encode(&mut buf).unwrap();
+        println!("encoded vote: {:?}", buf);
+        connection.write_all(&buf).unwrap();
+
+        // receive response:
+        let mut resp_buf = vec![0u8; 1024];
+        connection.read(&mut resp_buf).unwrap();
+
+        let actual_len = resp_buf[0];
+        let mut resp = vec![0u8; (actual_len + 2) as usize];
+        resp.copy_from_slice(&resp_buf[..(actual_len + 2) as usize]);
+        println!("got response: {:?}", resp);
+        let v_req: SignVoteRequest =
+            SignVoteRequest::decode(&resp).expect("decoding vote failed");
+        println!("decoded vote: {:?}", v_req);
+        let mut sign_bytes: Vec<u8> = vec![];
+        //v_req.sign_bytes(chain_id, &mut sign_bytes).unwrap();
+//
+//        let vote: types::vote::Vote = v_req
+//            .vote
+//            .expect("vote should be embedded but none was found");
+//        let sig: Vec<u8> = vote.signature.expect("expected signature was not found");
+//        let verifier = Ed25519Verifier::from(&pub_key);
+//        let signature = Ed25519Signature::from_bytes(sig).unwrap();
+//        let msg: &[u8] = sign_bytes.as_slice();
+//
+//        ed25519::verify(&verifier, msg, &signature).unwrap();
+    }
 
     // it all worked; send the kms the message to quit:
     send_poison_pill(&mut kms, &mut connection);

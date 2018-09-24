@@ -49,6 +49,7 @@ impl Session {
             Response::SignedVote(sv) => sv.encode(&mut buf)?,
             Response::PublicKey(pk) => pk.encode(&mut buf)?,
         }
+        // println!("handled, signed, and encoded: {:?}", buf);
         self.connection.write_all(&buf)?;
         Ok(true)
     }

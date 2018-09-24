@@ -1,4 +1,7 @@
-use super::{BlockID, Ed25519Signature, RemoteErr, TendermintSignable, Time};
+use super::{
+    BlockID, CanonicalBlockID, CanonicalPartSetHeader, Ed25519Signature, RemoteError, Signature,
+    TendermintSignable, Time,
+};
 use bytes::BufMut;
 use chrono::{DateTime, Utc};
 use prost::{EncodeError, Message};
@@ -29,21 +32,21 @@ fn u32_to_vote_type(data: u32) -> Result<VoteType, DecodeError> {
 #[derive(Clone, PartialEq, Message)]
 pub struct Vote {
     #[prost(bytes, tag = "1")]
-    validator_address: Vec<u8>,
+    pub validator_address: Vec<u8>,
     #[prost(sint64)]
-    validator_index: i64,
+    pub validator_index: i64,
     #[prost(sint64)]
-    height: i64,
+    pub height: i64,
     #[prost(sint64)]
-    round: i64,
+    pub round: i64,
     #[prost(message)]
-    timestamp: Option<Time>,
+    pub timestamp: Option<Time>,
     #[prost(uint32)]
-    vote_type: u32,
+    pub vote_type: u32,
     #[prost(message)]
-    block_id: Option<BlockID>,
+    pub block_id: Option<BlockID>,
     #[prost(message)]
-    signature: Option<Vec<u8>>,
+    pub signature: Option<Vec<u8>>,
 }
 
 pub const AMINO_NAME: &str = "tendermint/socketpv/SignVoteRequest";
@@ -56,12 +59,42 @@ pub struct SignVoteRequest {
 }
 
 #[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/socketpv/SignedVoteReply"]
-pub struct SignedVoteReply {
+#[amino_name = "tendermint/socketpv/SignedVoteResponse"]
+pub struct SignedVoteResponse {
     #[prost(message, tag = "1")]
     pub vote: Option<Vote>,
     #[prost(message, tag = "2")]
-    pub err: Option<RemoteErr>,
+    pub err: Option<RemoteError>,
+}
+
+// go struct (will be amino encoded):
+//
+//type CanonicalVote struct {
+//    ChainID   string          `json:"@chain_id"`
+//    Type      string          `json:"@type"`
+//    BlockID   CanonicalBlockID `json:"block_id"`
+//    Height    int64           `json:"height"`
+//    Round     int             `json:"round"`
+//    Timestamp time.Time       `json:"timestamp"`
+//    VoteType  byte            `json:"type"`
+//}
+#[derive(Clone, PartialEq, Message)]
+pub struct CanonicalVote {
+    #[prost(string, tag = "1")]
+    pub chain_id: String,
+    // TODO(ismail): this field probably will be deleted:
+    #[prost(string, tag = "2")]
+    pub type_str: String,
+    #[prost(message)]
+    pub block_id: Option<CanonicalBlockID>,
+    #[prost(sint64)]
+    pub height: i64,
+    #[prost(sint64)]
+    pub round: i64,
+    #[prost(message)]
+    pub timestamp: Option<Time>,
+    #[prost(uint32)]
+    pub vote_type: u32,
 }
 
 impl TendermintSignable for SignVoteRequest {
@@ -69,10 +102,41 @@ impl TendermintSignable for SignVoteRequest {
     where
         B: BufMut,
     {
-        unimplemented!()
+        let mut svr = self.clone();
+        if let Some(ref mut vo) = svr.vote {
+            vo.signature = None
+        }
+        let vote = svr.vote.unwrap();
+        let cv = CanonicalVote {
+            chain_id: chain_id.to_string(),
+            type_str: "vote".to_string(),
+            block_id: match vote.block_id {
+                Some(bid) => Some(CanonicalBlockID {
+                    hash: bid.hash,
+                    parts_header: match bid.parts_header {
+                        Some(psh) => Some(CanonicalPartSetHeader {
+                            hash: psh.hash,
+                            total: psh.total,
+                        }),
+                        None => None,
+                    },
+                }),
+                None => None,
+            },
+            height: vote.height,
+            round: vote.round,
+            timestamp: vote.timestamp,
+            vote_type: vote.vote_type,
+        };
+
+        cv.encode(sign_bytes)?;
+        Ok(true)
     }
     fn set_signature(&mut self, sig: &Ed25519Signature) {
-        unimplemented!()
+        if let Some(ref mut vt) = self.vote {
+            vt.signature = Some(sig.clone().into_vec());
+            println!("vote signature: {:?}", sig.clone().into_vec());
+        }
     }
 }
 
@@ -106,7 +170,7 @@ mod tests {
                     hash: "parts_hash".as_bytes().to_vec(),
                 }),
             }),
-            signature: None,
+            signature: Some(vec![130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233, 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6, 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118, 192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10]),
         };
         let sign_vote_msg = SignVoteRequest { vote: Some(vote) };
         let mut got = vec![];
@@ -142,20 +206,22 @@ mod tests {
         //		},
         //	}
         let want = vec![
-            0x52, 0x6c, 0x1d, 0x3a, 0x35, 0xa, 0x4c, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86,
+            0x52, 0x2f, 0x62, 0x2d, 0xa6, 0xa, 0x4c, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86,
             0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
             0x10, 0xaa, 0xf7, 0x6, 0x18, 0xf2, 0xc0, 0x1, 0x20, 0x4, 0x2a, 0xe, 0x9, 0xb1, 0x69,
             0x40, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x80, 0x8e, 0xf2, 0xd, 0x30, 0x1, 0x3a, 0x18,
             0xa, 0x4, 0x68, 0x61, 0x73, 0x68, 0x12, 0x10, 0x8, 0x80, 0x89, 0x7a, 0x12, 0xa, 0x70,
             0x61, 0x72, 0x74, 0x73, 0x5f, 0x68, 0x61, 0x73, 0x68,
         ];
+        let svr = SignVoteRequest::decode(&got).unwrap();
+        println!("got back: {:?}", svr);
         assert_eq!(got, want);
     }
 
     #[test]
     fn test_deserialization() {
         let encoded = vec![
-            0x52, 0x6c, 0x1d, 0x3a, 0x35, 0xa, 0x4c, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86,
+            0x52, 0x2f, 0x62, 0x2d, 0xa6, 0xa, 0x4c, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86,
             0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
             0x10, 0xaa, 0xf7, 0x6, 0x18, 0xf2, 0xc0, 0x1, 0x20, 0x4, 0x2a, 0xe, 0x9, 0xb1, 0x69,
             0x40, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x80, 0x8e, 0xf2, 0xd, 0x30, 0x1, 0x3a, 0x18,
@@ -192,6 +258,51 @@ mod tests {
                 assert_eq!(have, want);
             }
             Err(err) => assert!(false, err.to_string()),
+        }
+    }
+
+    #[test]
+    fn test_vote_rountrip_with_sig() {
+        let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
+        let t = Time {
+            seconds: dt.timestamp(),
+            nanos: dt.timestamp_subsec_nanos() as i32,
+        };
+        let vote = Vote {
+            validator_address: vec![
+                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+            ],
+            validator_index: 56789,
+            height: 12345,
+            round: 2,
+            timestamp: Some(t),
+            vote_type: 0x01,
+            block_id: Some(BlockID {
+                hash: "hash".as_bytes().to_vec(),
+                parts_header: Some(PartsSetHeader {
+                    total: 1000000,
+                    hash: "parts_hash".as_bytes().to_vec(),
+                }),
+            }),
+            // signature: None,
+            signature: Some(vec![130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233, 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6, 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118, 192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10]),
+        };
+        let mut got = vec![];
+        let _have = vote.encode(&mut got);
+        println!("encoded: {:?}", got);
+        let v = Vote::decode(&got).unwrap();
+
+        assert_eq!(v, vote);
+        // SignVoteRequest
+        {
+            let svr = SignVoteRequest { vote: Some(vote) };
+            let mut got = vec![];
+            let _have = svr.encode(&mut got);
+            println!("encoded2: {:?}", got);
+
+            let svr2 = SignVoteRequest::decode(&got).unwrap();
+            assert_eq!(svr, svr2);
         }
     }
 }

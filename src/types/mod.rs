@@ -13,17 +13,33 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 #[derive(Clone, PartialEq, Message)]
 pub struct PartsSetHeader {
     #[prost(sint64, tag = "1")]
-    total: i64,
+    pub total: i64,
     #[prost(bytes, tag = "2")]
+    pub hash: Vec<u8>,
+}
+
+#[derive(Clone, PartialEq, Message)]
+pub struct CanonicalPartSetHeader {
+    #[prost(bytes, tag = "1")]
     hash: Vec<u8>,
+    #[prost(sint64, tag = "2")]
+    total: i64,
 }
 
 #[derive(Clone, PartialEq, Message)]
 pub struct BlockID {
     #[prost(bytes, tag = "1")]
-    hash: Vec<u8>,
+    pub hash: Vec<u8>,
     #[prost(message, tag = "2")]
-    parts_header: Option<PartsSetHeader>,
+    pub parts_header: Option<PartsSetHeader>,
+}
+
+#[derive(Clone, PartialEq, Message)]
+pub struct CanonicalBlockID {
+    #[prost(bytes, tag = "1")]
+    pub hash: Vec<u8>,
+    #[prost(message, tag = "2")]
+    pub parts_header: Option<CanonicalPartSetHeader>,
 }
 
 #[derive(Clone, PartialEq, Message)]
@@ -38,7 +54,7 @@ pub struct Time {
 }
 
 #[derive(Clone, PartialEq, Message)]
-pub struct RemoteErr {
+pub struct RemoteError {
     #[prost(sint32, tag = "1")]
     pub code: i32,
     #[prost(string, tag = "2")]
@@ -66,13 +82,13 @@ pub trait TendermintSignable {
 pub use self::ed25519msg::PubKeyMsg;
 pub use self::ed25519msg::AMINO_NAME as PUBKEY_AMINO_NAME;
 pub use self::heartbeat::SignHeartbeatRequest;
-pub use self::heartbeat::SignedHeartbeatReply;
+pub use self::heartbeat::SignedHeartbeatResponse;
 pub use self::heartbeat::AMINO_NAME as HEARTBEAT_AMINO_NAME;
 pub use self::poisonpill::PoisonPillMsg;
 pub use self::poisonpill::AMINO_NAME as POISON_PILL_AMINO_NAME;
 pub use self::proposal::SignProposalRequest;
-pub use self::proposal::SignedProposalReply;
+pub use self::proposal::SignedProposalResponse;
 pub use self::proposal::AMINO_NAME as PROPOSAL_AMINO_NAME;
 pub use self::vote::SignVoteRequest;
-pub use self::vote::SignedVoteReply;
+pub use self::vote::SignedVoteResponse;
 pub use self::vote::AMINO_NAME as VOTE_AMINO_NAME;

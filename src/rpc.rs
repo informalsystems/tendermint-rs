@@ -7,8 +7,8 @@ use std::io::Cursor;
 use std::io::{self, Read};
 use std::io::{Error, ErrorKind};
 use types::{
-    PoisonPillMsg, PubKeyMsg, SignHeartbeatRequest, SignedProposalReply, SignProposalRequest,
-    SignVoteRequest, SignedHeartbeatReply, SignedVoteReply, TendermintSignable,
+    PoisonPillMsg, PubKeyMsg, SignHeartbeatRequest, SignProposalRequest, SignVoteRequest,
+    SignedHeartbeatResponse, SignedProposalResponse, SignedVoteResponse, TendermintSignable,
     HEARTBEAT_AMINO_NAME, POISON_PILL_AMINO_NAME, PROPOSAL_AMINO_NAME, PUBKEY_AMINO_NAME,
     VOTE_AMINO_NAME,
 };
@@ -30,9 +30,9 @@ pub enum Request {
 /// Responses from the KMS
 pub enum Response {
     /// Signature response
-    SignedHeartBeat(SignedHeartbeatReply),
-    SignedVote(SignedVoteReply),
-    SignedProposal(SignedProposalReply),
+    SignedHeartBeat(SignedHeartbeatResponse),
+    SignedVote(SignedVoteResponse),
+    SignedProposal(SignedProposalResponse),
     PublicKey(PubKeyMsg),
 }
 
@@ -123,7 +123,7 @@ impl Request {
 
 impl TendermintResponse for SignHeartbeatRequest {
     fn build_response(self) -> Response {
-        Response::SignedHeartBeat(SignedHeartbeatReply {
+        Response::SignedHeartBeat(SignedHeartbeatResponse {
             heartbeat: self.heartbeat,
             err: None,
         })
@@ -132,7 +132,7 @@ impl TendermintResponse for SignHeartbeatRequest {
 
 impl TendermintResponse for SignVoteRequest {
     fn build_response(self) -> Response {
-        Response::SignedVote(SignedVoteReply {
+        Response::SignedVote(SignedVoteResponse {
             vote: self.vote,
             err: None,
         })
@@ -141,7 +141,7 @@ impl TendermintResponse for SignVoteRequest {
 
 impl TendermintResponse for SignProposalRequest {
     fn build_response(self) -> Response {
-        Response::SignedProposal(SignedProposalReply {
+        Response::SignedProposal(SignedProposalResponse {
             proposal: self.proposal,
             err: None,
         })

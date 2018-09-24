@@ -1,24 +1,27 @@
-use super::{BlockID, Ed25519Signature, PartsSetHeader, RemoteErr, TendermintSignable, Time};
+use super::{
+    BlockID, CanonicalBlockID, CanonicalPartSetHeader, Ed25519Signature, PartsSetHeader,
+    RemoteError, Signature, TendermintSignable, Time,
+};
 use bytes::BufMut;
 use chrono::{DateTime, Utc};
-use prost::EncodeError;
+use prost::{EncodeError, Message};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
     #[prost(sint64, tag = "1")]
-    height: i64,
+    pub height: i64,
     #[prost(sint64)]
-    round: i64,
+    pub round: i64,
     #[prost(message)]
-    timestamp: Option<Time>,
+    pub timestamp: Option<Time>,
     #[prost(message)]
-    block_parts_header: Option<PartsSetHeader>,
+    pub block_parts_header: Option<PartsSetHeader>,
     #[prost(sint64)]
-    pol_round: i64,
+    pub pol_round: i64,
     #[prost(message)]
-    pol_block_id: Option<BlockID>,
+    pub pol_block_id: Option<BlockID>,
     #[prost(message)]
-    signature: Option<Vec<u8>>,
+    pub signature: Option<Vec<u8>>,
 }
 
 pub const AMINO_NAME: &str = "tendermint/socketpv/SignProposalRequest";
@@ -31,12 +34,45 @@ pub struct SignProposalRequest {
 }
 
 #[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/socketpv/SignedProposalReply"]
-pub struct SignedProposalReply {
+#[amino_name = "tendermint/socketpv/SignedProposalResponse"]
+pub struct SignedProposalResponse {
     #[prost(message, tag = "1")]
     pub proposal: Option<Proposal>,
     #[prost(message, tag = "2")]
-    pub err: Option<RemoteErr>,
+    pub err: Option<RemoteError>,
+}
+
+// CanonicalProposal matches with golang type:
+//
+//type CanonicalProposal struct {
+//    ChainID          string                 `json:"@chain_id"`
+//    Type             string                 `json:"@type"`
+//    BlockPartsHeader CanonicalPartSetHeader `json:"block_parts_header"`
+//    Height           int64                  `json:"height"`
+//    POLBlockID       CanonicalBlockID       `json:"pol_block_id"`
+//    POLRound         int                    `json:"pol_round"`
+//    Round            int                    `json:"round"`
+//    Timestamp        time.Time              `json:"timestamp"`
+//}
+#[derive(Clone, PartialEq, Message)]
+struct CanonicalProposal {
+    #[prost(string, tag = "1")]
+    pub chain_id: String,
+    // TODO(ismail): this field probably will be deleted:
+    #[prost(string, tag = "2")]
+    pub type_str: String,
+    #[prost(message)]
+    block_parts_header: Option<CanonicalPartSetHeader>,
+    #[prost(sint64)]
+    pub height: i64,
+    #[prost(message)]
+    pol_block_id: Option<CanonicalBlockID>,
+    #[prost(sint64)]
+    pol_round: i64,
+    #[prost(sint64)]
+    round: i64,
+    #[prost(message)]
+    timestamp: Option<Time>,
 }
 
 impl TendermintSignable for SignProposalRequest {
@@ -44,10 +80,47 @@ impl TendermintSignable for SignProposalRequest {
     where
         B: BufMut,
     {
-        unimplemented!()
+        let mut spr = self.clone();
+        if let Some(ref mut pr) = spr.proposal {
+            pr.signature = None
+        }
+        let proposal = spr.proposal.unwrap();
+        let cp = CanonicalProposal {
+            chain_id: chain_id.to_string(),
+            type_str: "proposal".to_string(),
+            block_parts_header: match proposal.block_parts_header {
+                Some(ph) => Some(CanonicalPartSetHeader {
+                    hash: ph.hash,
+                    total: ph.total,
+                }),
+                None => None,
+            },
+            height: proposal.height,
+            pol_block_id: match proposal.pol_block_id {
+                Some(bid) => Some(CanonicalBlockID {
+                    hash: bid.hash,
+                    parts_header: match bid.parts_header {
+                        Some(psh) => Some(CanonicalPartSetHeader {
+                            hash: psh.hash,
+                            total: psh.total,
+                        }),
+                        None => None,
+                    },
+                }),
+                None => None,
+            },
+            pol_round: proposal.pol_round,
+            round: proposal.round,
+            timestamp: proposal.timestamp,
+        };
+
+        cp.encode(sign_bytes)?;
+        Ok(true)
     }
     fn set_signature(&mut self, sig: &Ed25519Signature) {
-        unimplemented!()
+        if let Some(ref mut prop) = self.proposal {
+            prop.signature = Some(sig.clone().into_vec());
+        }
     }
 }
 
@@ -82,7 +155,7 @@ mod tests {
             proposal: Some(proposal),
         }.encode(&mut got);
         let want = vec![
-            0x31, 0x5d, 0x48, 0x70, 0x4, 0xa, 0x2b, 0x8, 0xf2, 0xc0, 0x1, 0x10, 0xc0, 0xee, 0x2,
+            0x31, 0x0d, 0xd5, 0x94, 0xf4, 0xa, 0x2b, 0x8, 0xf2, 0xc0, 0x1, 0x10, 0xc0, 0xee, 0x2,
             0x1a, 0xe, 0x9, 0x22, 0xec, 0x7f, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x40, 0xf9, 0x98,
             0x2d, 0x22, 0xf, 0x8, 0xde, 0x1, 0x12, 0xa, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70, 0x61,
             0x72, 0x74, 0x73, 0x28, 0x1,
@@ -115,7 +188,7 @@ mod tests {
         };
 
         let data = vec![
-            0x31, 0x5d, 0x48, 0x70, 0x4, 0xa, 0x2b, 0x8, 0xf2, 0xc0, 0x1, 0x10, 0xc0, 0xee, 0x2,
+            0x31, 0x0d, 0xd5, 0x94, 0xf4, 0xa, 0x2b, 0x8, 0xf2, 0xc0, 0x1, 0x10, 0xc0, 0xee, 0x2,
             0x1a, 0xe, 0x9, 0x22, 0xec, 0x7f, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x40, 0xf9, 0x98,
             0x2d, 0x22, 0xf, 0x8, 0xde, 0x1, 0x12, 0xa, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70, 0x61,
             0x72, 0x74, 0x73, 0x28, 0x1,
