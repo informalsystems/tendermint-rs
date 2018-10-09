@@ -1,3 +1,6 @@
 /target
 **/*.rs.bk
 kms.toml
+
+# Ignore VIM swap files
+*.swp
