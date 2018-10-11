@@ -107,10 +107,8 @@ fn client_session(config: &ConnectionConfig) -> Result<(), Error> {
                         let mut session = Session::new_seccon(
                             &conf.addr, conf.port, &key)?;
 
-                        info!(
-                            "[gaia-rpc://{}:{}] connected to validator successfully",
-                            &conf.addr, conf.port
-                            );
+                        info!("[{}] connected to validator successfully",
+                              conf.uri());
 
                         while session.handle_request()? {}
                     },
@@ -124,8 +122,7 @@ fn client_session(config: &ConnectionConfig) -> Result<(), Error> {
                 // Construct a UNIX connection session
                 let mut session = Session::new_unix(&conf.socket_path)?;
 
-                info!("waiting for validator connection on {}",
-                      conf.socket_path.to_str().unwrap());
+                info!("[{}] waiting for a validator connection", conf.uri());
 
                 while session.handle_request()? {}
             },
