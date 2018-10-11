@@ -43,6 +43,7 @@ mod config;
 mod ed25519;
 mod rpc;
 mod secret_connection;
+mod unix_connection;
 mod session;
 mod types;
 
