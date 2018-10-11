@@ -1,12 +1,9 @@
 use abscissa::{Callable, GlobalConfig};
-use signatory::{self, Decode, Ed25519Seed, Encode};
-use signatory_dalek::Ed25519Signer;
 use std::{collections::BTreeMap, process};
 
 use client::Client;
-use config::{KMSConfig, SecretConnectionConfig, ValidatorConfig};
-use ed25519::{KeyRing, PublicKey, SECRET_KEY_ENCODING};
-use error::Error;
+use config::{KMSConfig, ValidatorConfig};
+use ed25519::KeyRing;
 
 /// The `run` command
 #[derive(Debug, Options)]
@@ -40,21 +37,13 @@ impl Callable for RunCommand {
 
         let config = KMSConfig::get_global();
 
-        let secret_connection_key = load_secret_connection_key(&config.secret_connection)
-            .unwrap_or_else(|e| {
-                status_err!("couldn't load secret connection key: {}", e);
-                process::exit(1);
-            });
-
-        log_kms_node_id(&secret_connection_key);
-
         KeyRing::load_from_config(&config.providers).unwrap_or_else(|e| {
             status_err!("couldn't load keyring: {}", e);
             process::exit(1);
         });
 
         // Spawn the validator client threads
-        let validator_clients = spawn_validator_clients(&config.validators, &secret_connection_key);
+        let validator_clients = spawn_validator_clients(&config.validators);
 
         // Wait for the validator client threads to exit
         // TODO: Find something more useful for this thread to do
@@ -64,39 +53,14 @@ impl Callable for RunCommand {
     }
 }
 
-/// Initialize KMS secret connection private key
-fn load_secret_connection_key(config: &SecretConnectionConfig) -> Result<Ed25519Seed, Error> {
-    let key_path = &config.secret_key_path;
-
-    if key_path.exists() {
-        Ok(Ed25519Seed::decode_from_file(key_path, SECRET_KEY_ENCODING)
-            .map_err(|e| err!(ConfigError, "error loading {}: {}", key_path.display(), e))?)
-    } else {
-        let seed = Ed25519Seed::generate();
-        seed.encode_to_file(key_path, SECRET_KEY_ENCODING)?;
-        Ok(seed)
-    }
-}
-
-/// Log the KMS node ID
-fn log_kms_node_id(seed: &Ed25519Seed) {
-    let public_key = PublicKey::from(signatory::public_key(&Ed25519Signer::from(seed)).unwrap());
-    info!("KMS node ID: {}", &public_key);
-}
-
 /// Spawn validator client threads (which provide KMS service to the
 /// validators they connect to)
-fn spawn_validator_clients(
-    config: &BTreeMap<String, ValidatorConfig>,
-    secret_connection_key: &Ed25519Seed,
-) -> Vec<Client> {
-    config
-        .iter()
+fn spawn_validator_clients(config: &BTreeMap<String, ValidatorConfig>) -> Vec<Client> {
+    config.iter()
         .map(|(label, validator_config)| {
             Client::spawn(
                 label.clone(),
                 validator_config.clone(),
-                secret_connection_key.clone(),
             )
         }).collect()
 }
