@@ -10,10 +10,9 @@ http = { addr = "127.0.0.1", port = 12345 }
 auth = { key-id = 1, password = "example" } # password-file = "path/to/password.file"
 keys = { example-key-42 = { key-id = 42 }, example-key-42 = { key-id = 43 } }
 
-[secret-connection]
-secret-key-path = "path/to/kms-node.key"
+[validators.example1]
+reconnect = false # true is default
+seccon = { addr = "example1.example.com", port = 26657, secret-key-path = "path/to/kms-node.key" }
 
-[validators]
-example1 = { addr = "example1.example.com", port = 26657 }
-example2 = { addr = "example1.example.com", port = 26657 }
-example3 = { addr = "example1.example.com", port = 26657 }
+[validators.example2]
+unix = { socket-path = "/tmp/example2.sock" }

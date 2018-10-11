@@ -22,10 +22,6 @@ pub struct KMSConfig {
 
     /// Cryptographic signature provider configuration
     pub providers: ProviderConfig,
-
-    /// Secret connection configuration
-    #[serde(rename = "secret-connection")]
-    pub secret_connection: SecretConnectionConfig,
 }
 
 // Impl the `abscissa::GlobalConfig` trait, storing the configuration in the
@@ -34,11 +30,11 @@ impl_global_config!(KMSConfig, GLOBAL_CONFIG);
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct ValidatorConfig {
-    /// Validator hostname or IP address
-    pub addr: String,
+    /// Secret Connection config
+    pub seccon: Option<SecretConnectionConfig>,
 
-    /// Validator port
-    pub port: u16,
+    /// UNIX socket config
+    pub unix: Option<UNIXConnectionConfig>,
 
     /// Automatically reconnect on error? (default: true)
     #[serde(default = "reconnect_default")]
@@ -60,6 +56,28 @@ pub struct SecretConnectionConfig {
     /// Path to our identity key
     #[serde(rename = "secret-key-path")]
     pub secret_key_path: PathBuf,
+
+    /// Validator hostname or IP address
+    pub addr: String,
+
+    /// Validator port
+    pub port: u16,
+}
+
+#[derive(Clone, Deserialize, Debug)]
+pub struct UNIXConnectionConfig {
+    /// A UNIX socket path
+    #[serde(rename = "socket-path")]
+    pub socket_path: PathBuf,
+}
+
+#[derive(Debug)]
+pub enum ConnectionConfig {
+    /// A secret connection config kind
+    SecretConnection(SecretConnectionConfig),
+
+    /// A UNIX connection config kind
+    UNIXConnection(UNIXConnectionConfig),
 }
 
 /// Default value for the `ValidatorConfig` reconnect field
