@@ -1,8 +1,8 @@
 use abscissa::{Callable, GlobalConfig};
-use std::{collections::BTreeMap, process};
+use std::process;
 
 use client::Client;
-use config::{KMSConfig, ValidatorConfig};
+use config::{KmsConfig, ValidatorConfig};
 use ed25519::KeyRing;
 
 /// The `run` command
@@ -43,7 +43,7 @@ impl Callable for RunCommand {
         });
 
         // Spawn the validator client threads
-        let validator_clients = spawn_validator_clients(&config.validators);
+        let validator_clients = spawn_validator_clients(&config.validator);
 
         // Wait for the validator client threads to exit
         // TODO: Find something more useful for this thread to do
@@ -55,12 +55,8 @@ impl Callable for RunCommand {
 
 /// Spawn validator client threads (which provide KMS service to the
 /// validators they connect to)
-fn spawn_validator_clients(config: &BTreeMap<String, ValidatorConfig>) -> Vec<Client> {
+fn spawn_validator_clients(config: &[ValidatorConfig]) -> Vec<Client> {
     config.iter()
-        .map(|(label, validator_config)| {
-            Client::spawn(
-                label.clone(),
-                validator_config.clone(),
-            )
-        }).collect()
+        .map(|validator| Client::spawn(validator.clone()))
+        .collect()
 }

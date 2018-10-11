@@ -34,12 +34,9 @@ pub struct Client {
 
 impl Client {
     /// Spawn a new client, returning a handle so it can be joined
-    pub fn spawn(
-        label: String,
-        config: ValidatorConfig,
-    ) -> Self {
+    pub fn spawn(config: ValidatorConfig) -> Self {
         Self {
-            handle: thread::spawn(move || client_loop(&label, config)),
+            handle: thread::spawn(move || client_loop(config)),
         }
     }
 
@@ -50,7 +47,7 @@ impl Client {
 }
 
 /// Main loop for all clients. Handles reconnecting in the event of an error
-fn client_loop(label: &str, config: ValidatorConfig) {
+fn client_loop(config: ValidatorConfig) {
     let ValidatorConfig {
         seccon,
         unix,
@@ -59,13 +56,15 @@ fn client_loop(label: &str, config: ValidatorConfig) {
 
     // Error out if the same validator has both seccon and unix configured
     if seccon.is_some() && unix.is_some() {
-        error!("{} validator has seccon and unix connection specified, can only chose one", label);
+        error!(
+            "a validator has {} and {} specified, can only chose one",
+            seccon.unwrap().uri(), unix.unwrap().uri());
         return;
     }
 
     // Error out if a validator doesn't specify any connection configuration
     if seccon.is_none() && unix.is_none() {
-        error!("{} validator has no connection configuration", label);
+        error!("a validator has no connection configuration");
         return;
     }
 
@@ -76,25 +75,12 @@ fn client_loop(label: &str, config: ValidatorConfig) {
         ConnectionConfig::UNIXConnection(unix.unwrap())
     };
 
-    // Resolve peer info
-    let peer_info;
-
-    match conn_config {
-        ConnectionConfig::SecretConnection(ref conf) => {
-            peer_info = format!("{} ({}:{})", label, &conf.addr, conf.port);
-        },
-
-        ConnectionConfig::UNIXConnection(ref conf) => {
-            peer_info = format!("{} ({})", label, conf.socket_path.to_str().unwrap());
-        },
-    }
-
     // Engage main I/O loop
     while let Err(e) = client_session(&conn_config) {
-        error!("[{}] {}", &peer_info, e);
+        error!("[{}] {}", conn_config.uri(), e);
 
         // Break out of the loop if auto-reconnect is explicitly disabled
-        if config.reconnect {
+        if reconnect {
             // TODO: configurable respawn delay
             thread::sleep(Duration::from_secs(RESPAWN_DELAY));
         } else {
@@ -102,7 +88,7 @@ fn client_loop(label: &str, config: ValidatorConfig) {
         }
     }
 
-    info!("[{}] session closed gracefully", config.uri());
+    info!("[{}] session closed gracefully", conn_config.uri());
 }
 
 /// Establish a session with the validator and handle incoming requests
@@ -123,8 +109,8 @@ fn client_session(config: &ConnectionConfig) -> Result<(), Error> {
 
                         info!(
                             "[gaia-rpc://{}:{}] connected to validator successfully",
-                            addr, port
-                        );
+                            &conf.addr, conf.port
+                            );
 
                         while session.handle_request()? {}
                     },
