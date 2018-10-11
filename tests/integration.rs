@@ -54,7 +54,7 @@ pub const MOCK_VALIDATOR_ADDR: &str = "127.0.0.1";
 pub const MOCK_VALIDATOR_PORT: u16 = 23456;
 
 /// Path to the KMS executable
-pub const KMS_EXE_PATH: &str = "./target/debug/cosmos-kms";
+pub const KMS_EXE_PATH: &str = "./target/debug/tmkms";
 
 /// Arguments to pass when launching the KMS
 pub const KMS_TEST_ARGS: &[&str] = &["run", "-c", "tests/kms-test.toml"];

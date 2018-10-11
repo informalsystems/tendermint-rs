@@ -9,7 +9,7 @@ use self::provider::ProviderConfig;
 pub use self::validator::*;
 
 /// Name of the KMS configuration file
-pub const CONFIG_FILE_NAME: &str = "kms.toml";
+pub const CONFIG_FILE_NAME: &str = "tmkms.toml";
 
 /// KMS configuration (i.e. TOML file parsed with serde)
 #[derive(Clone, Deserialize, Debug)]
