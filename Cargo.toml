@@ -1,13 +1,13 @@
 [package]
-name        = "cosmos-kms"
-description = "Key Management System for Cosmos Validators"
+name        = "tmkms"
+description = "Tendermint Key Management System"
 version     = "0.0.0"
 authors     = ["Tony Arcieri <tony@iqlusion.io>"]
 license     = "Apache-2.0"
 homepage    = "https://github.com/tendermint/kms/"
 readme      = "README.md"
 categories  = ["cryptography"]
-keywords    = ["cosmos", "kms", "key-management"]
+keywords    = ["cosmos", "ed25519", "kms", "key-management", "yubihsm"]
 
 [badges]
 circle-ci = { repository = "tendermint/kms" }

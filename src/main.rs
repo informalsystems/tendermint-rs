@@ -1,4 +1,4 @@
-//! Key Management System for Cosmos Validators
+//! Tendermint Key Management System
 
 #[macro_use]
 extern crate abscissa;

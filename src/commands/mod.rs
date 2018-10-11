@@ -1,4 +1,4 @@
-//! Subcommands of the `cosmos-kms` command-line application
+//! Subcommands of the `tmkms` command-line application
 
 #![allow(unknown_lints, renamed_and_removed_lints, never_loop)]
 

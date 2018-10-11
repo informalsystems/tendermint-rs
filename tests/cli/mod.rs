@@ -6,13 +6,12 @@ use std::{
     process::{Command, Output},
 };
 
-/// Path to the KMS executable
-pub const KMS_EXE_PATH: &str = "./target/debug/cosmos-kms";
+use super::KMS_EXE_PATH;
 
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
 
-/// Run the `cosmos-kms` CLI command with the given arguments
+/// Run the `tmkms` CLI command with the given arguments
 pub fn run<I, S>(args: I) -> Output
 where
     I: IntoIterator<Item = S>,
@@ -21,7 +20,7 @@ where
     Command::new(KMS_EXE_PATH).args(args).output().unwrap()
 }
 
-/// Run the `cosmos-kms` CLI command with the expectation that it will exit successfully,
+/// Run the `tmkms` CLI command with the expectation that it will exit successfully,
 /// panicking and printing stdout/stderr if it does not
 pub fn run_successfully<I, S>(args: I) -> Output
 where
