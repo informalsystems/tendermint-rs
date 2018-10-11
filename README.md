@@ -1,4 +1,4 @@
-# Cosmos KMS 🔐
+# Tendermint KMS 🔐
 
 [![Build Status][build-image]][build-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
@@ -14,7 +14,7 @@ https://cosmos.network/
 
 ## About
 
-This repository contains `cosmos-kms`, a lightweight service intended to be deployed
+This repository contains `tmkms`, a lightweight service intended to be deployed
 alongside the `gaiad` service (ideally on separate physical hosts) which provides
 the following:
 
@@ -24,20 +24,20 @@ the following:
 
 ## Installation
 
-NOTE: Cosmos KMS is not ready for general use.
+NOTE: Tendermint KMS is not ready for general use.
 
-No releases of Cosmos KMS are presently available. Eager early adopters can
+No releases of Tendermint KMS are presently available. Eager early adopters can
 build and install the latest code from `master` as follows:
 
 - Install rustup (the Rust installer): https://rustup.rs/
 - Configure `RUSTFLAGS`: `export RUSTFLAGS=-Ctarget-feature=+aes`
-- Run the following to install Cosmos KMS from `master`:
+- Run the following to install Tendermint KMS from `master`:
 
 ```
 $ cargo install --git https://github.com/tendermint/kms
 ```
 
-Cosmos KMS builds on Rust 1.27+ (stable).
+Tendermint KMS builds on Rust 1.27+ (stable).
 
 ## Configuration
 

@@ -1,18 +1,16 @@
 //! The `version` subcommand
 
-#![allow(unknown_lints, renamed_and_removed_lints, never_loop)]
+use abscissa::{Callable, Command as CommandTrait};
 
-use abscissa::Command as CommandTrait;
-
-use super::KMSCommand;
+use super::KmsCommand;
 
 /// The `version` subcommand
 #[derive(Debug, Default, Options)]
 pub struct VersionCommand {}
 
-impl VersionCommand {
+impl Callable for VersionCommand {
     /// Print version message
-    pub fn call(&self) {
-        KMSCommand::print_package_info();
+    fn call(&self) {
+        KmsCommand::print_package_info();
     }
 }

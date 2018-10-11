@@ -1,4 +1,4 @@
-# Cosmos KMS Dockerfile
+# Tendermint KMS Dockerfile
 
 FROM centos:7.5.1804
 

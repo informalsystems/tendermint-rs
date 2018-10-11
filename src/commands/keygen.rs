@@ -1,3 +1,4 @@
+use abscissa::Callable;
 use signatory::{Ed25519Seed, Encode};
 use std::{env, process};
 
@@ -10,9 +11,9 @@ pub struct KeygenCommand {
     output_paths: Vec<String>,
 }
 
-impl KeygenCommand {
+impl Callable for KeygenCommand {
     /// Generate an Ed25519 secret key for use with a software provider (i.e. ed25519-dalek)
-    pub fn call(&self) {
+    fn call(&self) {
         if self.output_paths.len() != 1 {
             eprintln!("Usage: {} keygen [PATH]", env::args().next().unwrap());
             process::exit(2);

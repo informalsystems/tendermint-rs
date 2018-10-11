@@ -1,4 +1,6 @@
-//! Subcommands of the `cosmos-kms` command-line application
+//! Subcommands of the `tmkms` command-line application
+
+#![allow(unknown_lints, renamed_and_removed_lints, never_loop)]
 
 use abscissa::{Callable, LoadConfig};
 use std::path::PathBuf;
@@ -7,15 +9,19 @@ mod help;
 mod keygen;
 mod run;
 mod version;
+#[cfg(feature = "yubihsm")]
+mod yubihsm;
 
+#[cfg(feature = "yubihsm")]
+pub use self::yubihsm::YubihsmCommand;
 pub use self::{
     help::HelpCommand, keygen::KeygenCommand, run::RunCommand, version::VersionCommand,
 };
-use config::{KMSConfig, CONFIG_FILE_NAME};
+use config::{KmsConfig, CONFIG_FILE_NAME};
 
 /// Subcommands of the KMS command-line application
 #[derive(Debug, Options)]
-pub enum KMSCommand {
+pub enum KmsCommand {
     #[options(help = "show help for a command")]
     Help(HelpCommand),
 
@@ -27,46 +33,51 @@ pub enum KMSCommand {
 
     #[options(help = "display version information")]
     Version(VersionCommand),
+
+    #[cfg(feature = "yubihsm")]
+    #[options(help = "subcommands for YubiHSM2")]
+    Yubihsm(YubihsmCommand),
 }
 
 // TODO: refactor abscissa internally so this is all part of the proc macro
-impl_command!(KMSCommand);
+impl_command!(KmsCommand);
 
-impl KMSCommand {
+impl KmsCommand {
     /// Are we configured for verbose logging?
     pub fn verbose(&self) -> bool {
         match self {
-            KMSCommand::Run(run) => run.verbose,
+            KmsCommand::Run(run) => run.verbose,
             _ => false,
         }
     }
 }
 
-impl LoadConfig<KMSConfig> for KMSCommand {
+impl LoadConfig<KmsConfig> for KmsCommand {
     /// Get the path to the configuration file, either from selected subcommand
     /// or the default
     fn config_path(&self) -> Option<PathBuf> {
-        match self {
-            KMSCommand::Run(run) => Some(PathBuf::from(
-                run.config
-                    .as_ref()
-                    .map(|s| s.as_ref())
-                    .unwrap_or(CONFIG_FILE_NAME),
-            )),
-            _ => None,
-        }
+        let config = match self {
+            KmsCommand::Run(run) => run.config.as_ref().map(|s| s.as_ref()),
+            #[cfg(feature = "yubihsm")]
+            KmsCommand::Yubihsm(yubihsm) => yubihsm.config_path(),
+            _ => return None,
+        };
+
+        Some(PathBuf::from(config.unwrap_or(CONFIG_FILE_NAME)))
     }
 }
 
 // TODO: refactor abscissa internally so this is all part of the proc macro
-impl Callable for KMSCommand {
+impl Callable for KmsCommand {
     /// Call the given command chosen via the CLI
     fn call(&self) {
         match self {
-            KMSCommand::Help(help) => help.call(),
-            KMSCommand::Keygen(keygen) => keygen.call(),
-            KMSCommand::Run(run) => run.call(),
-            KMSCommand::Version(version) => version.call(),
+            KmsCommand::Help(help) => help.call(),
+            KmsCommand::Keygen(keygen) => keygen.call(),
+            KmsCommand::Run(run) => run.call(),
+            KmsCommand::Version(version) => version.call(),
+            #[cfg(feature = "yubihsm")]
+            KmsCommand::Yubihsm(yubihsm) => yubihsm.call(),
         }
     }
 }

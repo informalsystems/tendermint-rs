@@ -1,24 +1,22 @@
 //! Configuration file structures (with serde-derived parser)
 
-use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-mod dalek;
-pub use self::dalek::DalekConfig;
+pub mod provider;
+mod validator;
 
-#[cfg(feature = "yubihsm-provider")]
-mod yubihsm;
-#[cfg(feature = "yubihsm-provider")]
-pub use self::yubihsm::YubihsmConfig;
+use self::provider::ProviderConfig;
+pub use self::validator::*;
 
 /// Name of the KMS configuration file
-pub const CONFIG_FILE_NAME: &str = "kms.toml";
+pub const CONFIG_FILE_NAME: &str = "tmkms.toml";
 
 /// KMS configuration (i.e. TOML file parsed with serde)
 #[derive(Clone, Deserialize, Debug)]
-pub struct KMSConfig {
+#[serde(deny_unknown_fields)]
+pub struct KmsConfig {
     /// Addresses of validator nodes
-    pub validators: BTreeMap<String, ValidatorConfig>,
+    pub validator: Vec<ValidatorConfig>,
 
     /// Cryptographic signature provider configuration
     pub providers: ProviderConfig,
@@ -78,9 +76,4 @@ pub enum ConnectionConfig {
 
     /// A UNIX connection config kind
     UNIXConnection(UNIXConnectionConfig),
-}
-
-/// Default value for the `ValidatorConfig` reconnect field
-fn reconnect_default() -> bool {
-    true
 }

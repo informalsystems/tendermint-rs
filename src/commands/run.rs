@@ -35,7 +35,7 @@ impl Callable for RunCommand {
             env!("CARGO_PKG_VERSION")
         );
 
-        let config = KMSConfig::get_global();
+        let config = KmsConfig::get_global();
 
         KeyRing::load_from_config(&config.providers).unwrap_or_else(|e| {
             status_err!("couldn't load keyring: {}", e);

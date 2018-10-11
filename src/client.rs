@@ -94,7 +94,7 @@ fn client_loop(label: &str, config: ValidatorConfig) {
         error!("[{}] {}", &peer_info, e);
 
         // Break out of the loop if auto-reconnect is explicitly disabled
-        if reconnect {
+        if config.reconnect {
             // TODO: configurable respawn delay
             thread::sleep(Duration::from_secs(RESPAWN_DELAY));
         } else {
@@ -102,7 +102,7 @@ fn client_loop(label: &str, config: ValidatorConfig) {
         }
     }
 
-    info!("[{}] session closed gracefully", &peer_info);
+    info!("[{}] session closed gracefully", config.uri());
 }
 
 /// Establish a session with the validator and handle incoming requests
@@ -121,6 +121,11 @@ fn client_session(config: &ConnectionConfig) -> Result<(), Error> {
                         let mut session = Session::new_seccon(
                             &conf.addr, conf.port, &key)?;
 
+                        info!(
+                            "[gaia-rpc://{}:{}] connected to validator successfully",
+                            addr, port
+                        );
+
                         while session.handle_request()? {}
                     },
 
@@ -132,6 +137,9 @@ fn client_session(config: &ConnectionConfig) -> Result<(), Error> {
             ConnectionConfig::UNIXConnection(ref conf) => {
                 // Construct a UNIX connection session
                 let mut session = Session::new_unix(&conf.socket_path)?;
+
+                info!("waiting for validator connection on {}",
+                      conf.socket_path.to_str().unwrap());
 
                 while session.handle_request()? {}
             },
