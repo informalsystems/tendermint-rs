@@ -1,7 +1,7 @@
 use super::{BlockID, PartsSetHeader, TendermintSign, Time};
 use chrono::{DateTime, Utc};
-use hex::encode_upper;
 use std::time::{SystemTime, UNIX_EPOCH};
+use subtle_encoding::hex::encode_upper;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {

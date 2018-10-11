@@ -21,27 +21,29 @@ jobs:
     - run:
         name: build (default features)
         command: |
-          rustc --version 
-          cargo --version 
+          rustc --version
+          cargo --version
           cargo build
           cargo build --release
     - run:
-        name: build (all features)
+        name: build --all-features (debug)
         command: |
-          rustc --version 
-          cargo --version 
+          rustc --version
+          cargo --version
           cargo build --all-features
     - run:
-        name: build (--features=yubihsm-provider --release)
+        # NOTE: we can't build --all-features --release because one of the
+        # features is `yubihsm-mock` which can't be used in release builds
+        name: build --features=yubihsm --release
         command: |
-          rustc --version 
-          cargo --version 
-          cargo build --features=yubihsm-provider --release
+          rustc --version
+          cargo --version
+          cargo build --features=yubihsm --release
     - run:
-        name: test (all features)
+        name: test --all-features
         command: |
-          rustc --version 
-          cargo --version 
+          rustc --version
+          cargo --version
           cargo test --all-features
     - run:
         name: audit

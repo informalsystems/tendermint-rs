@@ -1,4 +1,4 @@
-use signatory;
+use subtle_encoding;
 
 mod keyring;
 mod public_key;
@@ -9,4 +9,4 @@ pub use self::public_key::{PublicKey, PUBLIC_KEY_SIZE};
 pub use self::signer::Signer;
 
 /// Encoding for secret keys
-pub const SECRET_KEY_ENCODING: signatory::Encoding = signatory::Encoding::Raw;
+pub const SECRET_KEY_ENCODING: &subtle_encoding::Identity = subtle_encoding::IDENTITY;

@@ -1,5 +1,5 @@
 use super::TendermintSign;
-use hex::encode;
+use subtle_encoding::hex::encode;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Heartbeat {
