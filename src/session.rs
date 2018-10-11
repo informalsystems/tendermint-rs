@@ -2,24 +2,27 @@
 
 use signatory::{ed25519, Ed25519Seed};
 use signatory_dalek::Ed25519Signer;
-use std::io::Write;
+use std::io;
 use std::net::TcpStream;
+use std::path::PathBuf;
+use std::marker::{Send, Sync};
 use types::{PubKeyMsg, TendermintSign};
 
 use error::Error;
 use prost::Message;
 use rpc::{Request, Response};
 use secret_connection::SecretConnection;
+use unix_connection::UNIXConnection;
 
 /// Encrypted session with a validator node
-pub struct Session {
+pub struct Session<Connection> {
     /// TCP connection to a validator node
-    connection: SecretConnection<TcpStream>,
+    connection: Connection,
 }
 
-impl Session {
+impl Session<SecretConnection<TcpStream>> {
     /// Create a new session with the validator at the given address/port
-    pub fn new(addr: &str, port: u16, secret_connection_key: &Ed25519Seed) -> Result<Self, Error> {
+    pub fn new_seccon(addr: &str, port: u16, secret_connection_key: &Ed25519Seed) -> Result<Self, Error> {
         debug!("Connecting to {}:{}...", addr, port);
         let socket = TcpStream::connect(format!("{}:{}", addr, port))?;
         let signer = Ed25519Signer::from(secret_connection_key);
@@ -27,7 +30,19 @@ impl Session {
         let connection = SecretConnection::new(socket, &public_key, &signer)?;
         Ok(Self { connection })
     }
+}
 
+impl Session<UNIXConnection> {
+    pub fn new_unix(socket_path: &PathBuf) -> Result<Self, Error> {
+        let path = socket_path.to_str().unwrap();
+
+        debug!("Binding UNIX socket to {}...", path);
+        let connection = UNIXConnection::new(socket_path)?;
+        Ok(Self { connection })
+    }
+}
+
+impl<Connection: io::Read + io::Write + Sync + Send> Session<Connection> {
     /// Handle an incoming request from the validator
     pub fn handle_request(&mut self) -> Result<bool, Error> {
         println!("handling request ... ");
