@@ -13,7 +13,7 @@ keywords    = ["cosmos", "ed25519", "kms", "key-management", "yubihsm"]
 circle-ci = { repository = "tendermint/kms" }
 
 [dependencies]
-abscissa = "0.0.4"
+abscissa = "0.0.6"
 abscissa_derive = "0.0.2"
 bincode = "1"
 byteorder = "1.2"
@@ -36,7 +36,6 @@ signatory-dalek = "0.9"
 signatory-yubihsm = { version = "0.9", optional = true }
 subtle-encoding = "0.2"
 x25519-dalek = { version = "0.3", default-features = false, features = ["std", "u64_backend"] }
-zeroize = "0.1"
 
 [features]
 default = ["softsign"]
@@ -45,5 +44,4 @@ yubihsm = ["signatory-yubihsm/usb"] # USB only for now
 yubihsm-mock = ["yubihsm", "signatory-yubihsm/mockhsm"]
 
 [patch.crates-io]
-abscissa = { git = "https://github.com/iqlusioninc/abscissa.git", rev = "a90d312" }
 yubihsm = { git = "https://github.com/tendermint/yubihsm-rs.git", rev = "9d8b749" }

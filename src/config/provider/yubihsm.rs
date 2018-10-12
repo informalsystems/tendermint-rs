@@ -1,6 +1,9 @@
 //! Configuration for the `YubiHSM` backend
 
-use abscissa::secrets::{BorrowSecret, DebugSecret, Secret};
+use abscissa::{
+    secrets::{BorrowSecret, DebugSecret, Secret},
+    util::Zeroize,
+};
 use std::process;
 use yubihsm::{Credentials, HttpConfig, SerialNumber, UsbConfig};
 
@@ -98,10 +101,9 @@ impl DebugSecret for Password {
     }
 }
 
-// Needed by clear_on_drop
-impl Default for Password {
-    fn default() -> Self {
-        Password("".to_owned())
+impl Zeroize for Password {
+    fn zeroize(&mut self) {
+        self.0.zeroize();
     }
 }
 
