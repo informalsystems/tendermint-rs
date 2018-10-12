@@ -29,7 +29,6 @@ extern crate signatory_dalek;
 extern crate signatory_yubihsm;
 extern crate subtle_encoding;
 extern crate x25519_dalek;
-extern crate zeroize;
 
 #[macro_use]
 mod error;
