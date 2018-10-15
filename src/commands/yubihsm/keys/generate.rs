@@ -30,7 +30,7 @@ pub struct GenerateCommand {
 
     /// Key IDs to generate
     #[options(free)]
-    key_ids: Vec<String>,
+    key_ids: Vec<u16>,
 }
 
 impl Callable for GenerateCommand {
@@ -54,17 +54,12 @@ impl Callable for GenerateCommand {
 
         let mut hsm = yubihsm::get_hsm_client();
 
-        for key_id_str in &self.key_ids {
-            let key_id = key_id_str.parse::<yubihsm::ObjectId>().unwrap_or_else(|e| {
-                status_err!("bad key id: {} ({})", key_id_str, e);
-                process::exit(1);
-            });
-
+        for key_id in &self.key_ids {
             let label =
                 yubihsm::ObjectLabel::from(self.label.as_ref().map(|l| l.as_ref()).unwrap_or(""));
 
             if let Err(e) = hsm.generate_asymmetric_key(
-                key_id,
+                *key_id,
                 label,
                 DEFAULT_DOMAINS,
                 DEFAULT_CAPABILITIES,
@@ -74,7 +69,7 @@ impl Callable for GenerateCommand {
                 process::exit(1);
             }
 
-            let public_key = PublicKey::from(hsm.get_pubkey(key_id).unwrap_or_else(|e| {
+            let public_key = PublicKey::from(hsm.get_pubkey(*key_id).unwrap_or_else(|e| {
                 status_err!("couldn't get public key for key #{}: {}", key_id, e);
                 process::exit(1);
             }));

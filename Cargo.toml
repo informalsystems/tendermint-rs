@@ -38,7 +38,7 @@ subtle-encoding = "0.2"
 x25519-dalek = { version = "0.3", default-features = false, features = ["std", "u64_backend"] }
 
 [features]
-default = ["softsign"]
+default = ["softsign", "yubihsm"]
 softsign = []
 yubihsm = ["signatory-yubihsm/usb"] # USB only for now
 yubihsm-mock = ["yubihsm", "signatory-yubihsm/mockhsm"]
