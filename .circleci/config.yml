@@ -19,11 +19,16 @@ jobs:
           cargo clippy --version
           cargo clippy --all-features
     - run:
-        name: build (default features)
+        name: build
         command: |
           rustc --version
           cargo --version
           cargo build
+    - run:
+        name: build --release
+        command: |
+          rustc --version
+          cargo --version
           cargo build --release
     - run:
         name: build --all-features (debug)
@@ -31,14 +36,6 @@ jobs:
           rustc --version
           cargo --version
           cargo build --all-features
-    - run:
-        # NOTE: we can't build --all-features --release because one of the
-        # features is `yubihsm-mock` which can't be used in release builds
-        name: build --features=yubihsm --release
-        command: |
-          rustc --version
-          cargo --version
-          cargo build --features=yubihsm --release
     - run:
         name: test --all-features
         command: |
