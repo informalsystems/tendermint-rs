@@ -38,8 +38,8 @@ issues for the remaining blockers:
 ## Supported Platforms
 
 `tmkms` should build on any [supported Rust platform] which is also supported
-by [libusb]. Here are some of the available tier 1, 2, and 3 Rust platforms which
-are also supported by **libusb**:
+by [libusb]. Below are some of the available tier 1, 2, and 3 Rust platforms
+which are also supported by **libusb**.
 
 NOTE: `tmkms` is presently tested on Linux/x86_64. We don't otherwise guarantee
 support for any of the platforms below, but they theoretically meet the necessary
@@ -175,4 +175,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 [supported Rust platform]: https://forge.rust-lang.org/platform-support.html
+[libusb]: https://libusb.info/
 [Dockerfile]: https://github.com/tendermint/kms/blob/master/Dockerfile
