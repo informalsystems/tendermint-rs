@@ -29,7 +29,7 @@ impl Callable for ListCommand {
             process::exit(1);
         });
 
-        let objects = hsm.list_objects().unwrap_or_else(|e| {
+        let objects = hsm.list_objects(&[]).unwrap_or_else(|e| {
             status_err!("couldn't list YubiHSM objects: {}", e);
             process::exit(1);
         });
