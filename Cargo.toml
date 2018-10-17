@@ -37,8 +37,8 @@ chrono = "0.4.2"
 byteorder = "^1.2"
 lazy_static = "1.1.0"
 x25519-dalek = { version = "0.3", default-features = false, features = ["std", "u64_backend"] }
-prost-amino = { path = "../amino_rs/"}
-prost-derive = {path = "../amino_rs/prost-derive/"}
+prost-amino = { git = "https://github.com/tendermint/amino_rs", branch = "master"}
+prost-derive = { git = "https://github.com/tendermint/amino_rs/", branch = "master"}
 
 
 [features]

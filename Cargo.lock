@@ -185,8 +185,8 @@ dependencies = [
  "hkdf 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "prost-amino 0.4.0",
- "prost-derive 0.4.0",
+ "prost-amino 0.4.0 (git+https://github.com/tendermint/amino_rs)",
+ "prost-derive 0.4.0 (git+https://github.com/tendermint/amino_rs)",
  "rand 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "ring 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.70 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -458,6 +458,7 @@ dependencies = [
 [[package]]
 name = "prost-amino"
 version = "0.4.0"
+source = "git+https://github.com/tendermint/amino_rs#266da550c32e871d1f8b9e4e702490cabbb1ea49"
 dependencies = [
  "byteorder 1.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -466,6 +467,7 @@ dependencies = [
 [[package]]
 name = "prost-derive"
 version = "0.4.0"
+source = "git+https://github.com/tendermint/amino_rs#266da550c32e871d1f8b9e4e702490cabbb1ea49"
 dependencies = [
  "digest 0.7.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -794,6 +796,8 @@ dependencies = [
 "checksum pbkdf2 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6d389750af68dcb6d6b2d6cf4aa234d2929b311a31a74aa8bb33e13a27784b8d"
 "checksum proc-macro2 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)" = "1b06e2f335f48d24442b35a19df506a835fb3547bc3c06ef27340da9acf5cae7"
 "checksum proc-macro2 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)" = "cccdc7557a98fe98453030f077df7f3a042052fae465bb61d2c2c41435cfd9b6"
+"checksum prost-amino 0.4.0 (git+https://github.com/tendermint/amino_rs)" = "<none>"
+"checksum prost-derive 0.4.0 (git+https://github.com/tendermint/amino_rs)" = "<none>"
 "checksum quote 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "9949cfe66888ffe1d53e6ec9d9f3b70714083854be20fd5e271b232a017401e8"
 "checksum quote 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)" = "3372dc35766b36a99ce2352bd1b6ea0137c38d215cc0c8780bf6de6df7842ba9"
 "checksum rand 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)" = "12397506224b2f93e6664ffc4f664b29be8208e5157d3d90b44f09b5fae470ea"
