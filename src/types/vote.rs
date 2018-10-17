@@ -9,6 +9,7 @@ use prost::{EncodeError, Message};
 // see below: those aren't prost errors
 use prost::error::DecodeError;
 
+#[derive(Debug, Copy)]
 enum VoteType {
     PreVote,
     PreCommit,
@@ -29,6 +30,21 @@ fn u32_to_vote_type(data: u32) -> Result<VoteType, DecodeError> {
     }
 }
 
+impl VoteType {
+    fn to_u32(&self) -> u32 {
+        match *self {
+            VoteType::PreVote => 0x01,
+            VoteType::PreCommit => 0x02,
+        }
+    }
+}
+
+impl Clone for VoteType {
+    fn clone(&self) -> VoteType {
+        *self
+    }
+}
+
 #[derive(Clone, PartialEq, Message)]
 pub struct Vote {
     #[prost(bytes, tag = "1")]
@@ -45,8 +61,8 @@ pub struct Vote {
     pub vote_type: u32,
     #[prost(message)]
     pub block_id: Option<BlockID>,
-    #[prost(message)]
-    pub signature: Option<Vec<u8>>,
+    #[prost(bytes)]
+    pub signature: Vec<u8>,
 }
 
 pub const AMINO_NAME: &str = "tendermint/socketpv/SignVoteRequest";
@@ -67,49 +83,32 @@ pub struct SignedVoteResponse {
     pub err: Option<RemoteError>,
 }
 
-// go struct (will be amino encoded):
-//
-//type CanonicalVote struct {
-//    ChainID   string          `json:"@chain_id"`
-//    Type      string          `json:"@type"`
-//    BlockID   CanonicalBlockID `json:"block_id"`
-//    Height    int64           `json:"height"`
-//    Round     int             `json:"round"`
-//    Timestamp time.Time       `json:"timestamp"`
-//    VoteType  byte            `json:"type"`
-//}
 #[derive(Clone, PartialEq, Message)]
 pub struct CanonicalVote {
-    #[prost(string, tag = "1")]
-    pub chain_id: String,
-    // TODO(ismail): this field probably will be deleted:
-    #[prost(string, tag = "2")]
-    pub type_str: String,
-    #[prost(message)]
-    pub block_id: Option<CanonicalBlockID>,
-    #[prost(sint64)]
+    #[prost(sfixed64, tag = "1")]
+    pub version: i64,
+    #[prost(sfixed64)]
     pub height: i64,
-    #[prost(sint64)]
+    #[prost(sfixed64)]
     pub round: i64,
+    #[prost(uint32)]
+    pub vote_type: u32, // TODO(ismail): this is a byte in golang, which is a varint encoded UInt8 (using amino's EncodeUvarint)
     #[prost(message)]
     pub timestamp: Option<Time>,
-    #[prost(uint32)]
-    pub vote_type: u32,
+    #[prost(message)]
+    pub block_id: Option<CanonicalBlockID>,
+    #[prost(string)]
+    pub chain_id: String,
 }
 
-impl TendermintSignable for SignVoteRequest {
-    fn sign_bytes<B>(&self, chain_id: &str, sign_bytes: &mut B) -> Result<bool, EncodeError>
-    where
-        B: BufMut,
-    {
-        let mut svr = self.clone();
-        if let Some(ref mut vo) = svr.vote {
-            vo.signature = None
-        }
-        let vote = svr.vote.unwrap();
-        let cv = CanonicalVote {
+impl CanonicalVote {
+    fn new(vote: Vote, chain_id: &str) -> CanonicalVote {
+        CanonicalVote {
+            // TODO(ismail): this needs to be updated in tendermint 1st
+            // blocked by: https://github.com/tendermint/tendermint/pull/2644
+            // and follow up work in tm
+            version: 0,
             chain_id: chain_id.to_string(),
-            type_str: "vote".to_string(),
             block_id: match vote.block_id {
                 Some(bid) => Some(CanonicalBlockID {
                     hash: bid.hash,
@@ -125,16 +124,36 @@ impl TendermintSignable for SignVoteRequest {
             },
             height: vote.height,
             round: vote.round,
-            timestamp: vote.timestamp,
+            timestamp: match vote.timestamp {
+                None => Some(Time {
+                seconds: -62135596800,
+                nanos: 0
+            }),
+                Some(t) => Some(t),
+            },
             vote_type: vote.vote_type,
-        };
+        }
+    }
+}
+
+impl TendermintSignable for SignVoteRequest {
+    fn sign_bytes<B>(&self, chain_id: &str, sign_bytes: &mut B) -> Result<bool, EncodeError>
+    where
+        B: BufMut,
+    {
+        let mut svr = self.clone();
+        if let Some(ref mut vo) = svr.vote {
+            vo.signature = vec![];
+        }
+        let vote = svr.vote.unwrap();
+        let cv = CanonicalVote::new(vote, chain_id);
 
         cv.encode(sign_bytes)?;
         Ok(true)
     }
     fn set_signature(&mut self, sig: &Ed25519Signature) {
         if let Some(ref mut vt) = self.vote {
-            vt.signature = Some(sig.clone().into_vec());
+            vt.signature = sig.clone().into_vec();
             println!("vote signature: {:?}", sig.clone().into_vec());
         }
     }
@@ -162,7 +181,7 @@ mod tests {
             height: 12345,
             round: 2,
             timestamp: Some(t),
-            vote_type: 0x01,
+            vote_type: VoteType::PreVote.to_u32(),
             block_id: Some(BlockID {
                 hash: "hash".as_bytes().to_vec(),
                 parts_header: Some(PartsSetHeader {
@@ -170,11 +189,14 @@ mod tests {
                     hash: "parts_hash".as_bytes().to_vec(),
                 }),
             }),
-            signature: Some(vec![130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233, 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6, 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118, 192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10]),
+            signature: vec![],
+            //signature: vec![130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233, 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6, 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118, 192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10],
         };
         let sign_vote_msg = SignVoteRequest { vote: Some(vote) };
         let mut got = vec![];
         let _have = sign_vote_msg.encode(&mut got);
+        println!("encoded: {:?}", got);
+
         // the following vector is generated via:
         //  cdc := amino.NewCodec()
         //	cdc.RegisterInterface((*privval.SocketPVMsg)(nil), nil)
@@ -213,9 +235,120 @@ mod tests {
             0xa, 0x4, 0x68, 0x61, 0x73, 0x68, 0x12, 0x10, 0x8, 0x80, 0x89, 0x7a, 0x12, 0xa, 0x70,
             0x61, 0x72, 0x74, 0x73, 0x5f, 0x68, 0x61, 0x73, 0x68,
         ];
-        let svr = SignVoteRequest::decode(&got).unwrap();
+        let svr = SignVoteRequest::decode(got.clone()).unwrap();
         println!("got back: {:?}", svr);
         assert_eq!(got, want);
+    }
+
+    #[test]
+    fn test_sign_bytes_compatibility() {
+        let cv = CanonicalVote::new(Vote::default(), "");
+        let mut got = vec![];
+        // SignBytes are encoded using MarshalBinary and not MarshalBinaryBare
+        cv.encode_length_delimited(&mut got).unwrap();
+        let want = vec![0xb, 0x2a, 0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff];
+        assert_eq!(got, want);
+
+        let mut vt_precommit = Vote::default();
+        vt_precommit.height = 1;
+        vt_precommit.round = 1;
+        vt_precommit.vote_type = VoteType::PreCommit.to_u32(); // precommit
+        println!("{:?}", vt_precommit);
+        let cv_precommit = CanonicalVote::new( vt_precommit, "");
+        got = vec![];
+        cv_precommit.encode_length_delimited(&mut got).unwrap();
+        let want = vec![0x1f,                                   // total length
+                        0x11,                                   // (field_number << 3) | wire_type (version is missing)
+                        0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // height
+                        0x19,                                   // (field_number << 3) | wire_type
+                        0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
+                        0x20, // (field_number << 3) | wire_type
+                        0x2,  // PrecommitType
+                        0x2a, // (field_number << 3) | wire_type
+                        // remaining fields (timestamp):
+                        0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff];
+        assert_eq!(got, want);
+
+        let mut no_vote_type = Vote::default();
+        no_vote_type.height = 1;
+        no_vote_type.round = 1;
+
+        got = vec![];
+        let mut cv_with_version =CanonicalVote::new(no_vote_type, "");
+        cv_with_version.version = 123;
+        cv_with_version.encode_length_delimited(&mut got).unwrap();
+
+        let want = vec![0x26,                                    // total length
+                        0x9,                                     // (field_number << 3) | wire_type
+                        0x7b, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // version (123)
+                        0x11,                                   // (field_number << 3) | wire_type
+                        0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // height
+                        0x19,                                   // (field_number << 3) | wire_type
+                        0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
+                        // remaining fields (timestamp):
+                        0x2a,
+                        0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff];
+        assert_eq!(got, want);
+
+        let with_chain_id = CanonicalVote::new(no_vote_type, "test_chain_id");
+        got = vec![];
+        with_chain_id.encode_length_delimited(&mut got).unwrap();
+        let want = vec![0x2c,                                   // total length
+            0x11,                                   // (field_number << 3) | wire_type
+            0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // height
+            0x19,                                   // (field_number << 3) | wire_type
+            0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
+            // remaprost_aminoining fields:
+            0x2a,                                                   // (field_number << 3) | wire_type
+            0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff, // timestamp
+            0x3a,                                                                               // (field_number << 3) | wire_type
+            0xd, 0x74, 0x65, 0x73, 0x74, 0x5f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64];
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn test_vote_rountrip_with_sig() {
+        let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
+        let t = Time {
+            seconds: dt.timestamp(),
+            nanos: dt.timestamp_subsec_nanos() as i32,
+        };
+        let vote = Vote {
+            validator_address: vec![
+                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+            ],
+            validator_index: 56789,
+            height: 12345,
+            round: 2,
+            timestamp: Some(t),
+            vote_type: 0x01,
+            block_id: Some(BlockID {
+                hash: "hash".as_bytes().to_vec(),
+                parts_header: Some(PartsSetHeader {
+                    total: 1000000,
+                    hash: "parts_hash".as_bytes().to_vec(),
+                }),
+            }),
+            // signature: None,
+            signature: vec![130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233, 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6, 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118, 192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10],
+        };
+        let mut got = vec![];
+        let _have = vote.encode(&mut got);
+        println!("encoded: {:?}", got);
+        let v = Vote::decode(&got).unwrap();
+
+        assert_eq!(v, vote);
+        // SignVoteRequest
+        {
+            let svr = SignVoteRequest { vote: Some(vote) };
+            let mut got = vec![];
+            let _have = svr.encode(&mut got);
+            println!("encoded2: {:?}", got);
+
+            let svr2 = SignVoteRequest::decode(&got).unwrap();
+            assert_eq!(svr, svr2);
+        }
     }
 
     #[test]
@@ -250,7 +383,7 @@ mod tests {
                     hash: "parts_hash".as_bytes().to_vec(),
                 }),
             }),
-            signature: None,
+            signature: vec![],
         };
         let want = SignVoteRequest { vote: Some(vote) };
         match SignVoteRequest::decode(&encoded) {
@@ -258,51 +391,6 @@ mod tests {
                 assert_eq!(have, want);
             }
             Err(err) => assert!(false, err.to_string()),
-        }
-    }
-
-    #[test]
-    fn test_vote_rountrip_with_sig() {
-        let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
-        let t = Time {
-            seconds: dt.timestamp(),
-            nanos: dt.timestamp_subsec_nanos() as i32,
-        };
-        let vote = Vote {
-            validator_address: vec![
-                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
-                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
-            ],
-            validator_index: 56789,
-            height: 12345,
-            round: 2,
-            timestamp: Some(t),
-            vote_type: 0x01,
-            block_id: Some(BlockID {
-                hash: "hash".as_bytes().to_vec(),
-                parts_header: Some(PartsSetHeader {
-                    total: 1000000,
-                    hash: "parts_hash".as_bytes().to_vec(),
-                }),
-            }),
-            // signature: None,
-            signature: Some(vec![130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233, 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6, 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118, 192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10]),
-        };
-        let mut got = vec![];
-        let _have = vote.encode(&mut got);
-        println!("encoded: {:?}", got);
-        let v = Vote::decode(&got).unwrap();
-
-        assert_eq!(v, vote);
-        // SignVoteRequest
-        {
-            let svr = SignVoteRequest { vote: Some(vote) };
-            let mut got = vec![];
-            let _have = svr.encode(&mut got);
-            println!("encoded2: {:?}", got);
-
-            let svr2 = SignVoteRequest::decode(&got).unwrap();
-            assert_eq!(svr, svr2);
         }
     }
 }
