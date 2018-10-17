@@ -1,45 +1,32 @@
-//! UNIX IPC wire protocol implementation
-
 use std::io;
-use std::fs;
-use std::path::PathBuf;
-use std::os::unix::net::{UnixStream, UnixListener};
+use std::marker::{Send, Sync};
 
 use error::Error;
 
-pub struct UNIXConnection {
-    path: PathBuf,
-    listener: UnixListener,
-    socket: UnixStream,
+pub struct UNIXConnection<IoHandler> {
+    socket: IoHandler,
 }
 
-impl UNIXConnection {
-    pub fn new(socket_path: &PathBuf) -> Result<Self, Error> {
-        // Try to unlink the socket path, shouldn't fail if it doesn't exist
-        if let Err(e) = fs::remove_file(socket_path) {
-            if e.kind() != io::ErrorKind::NotFound {
-                return Err(Error::from(e));
-            }
-        }
-
-        // Create a listener and wait for a connection
-        let path = socket_path.clone();
-        let listener = UnixListener::bind(&path)?;
-        let (socket, _addr) = listener.accept()?;
-
-        Ok(Self { path, listener, socket })
+impl<IoHandler: io::Read + io::Write + Send + Sync>  UNIXConnection<IoHandler> {
+    pub fn new(socket: IoHandler) -> Result<Self, Error> {
+        Ok(Self { socket })
     }
 }
 
-impl io::Read for UNIXConnection {
+impl<IoHandler> io::Read for UNIXConnection<IoHandler>
+where
+    IoHandler: io::Read + io::Write + Send + Sync,
+{
 
     fn read (&mut self, data: &mut [u8]) -> Result<usize, io::Error> {
         self.socket.read(data)
     }
 }
 
-impl io::Write for UNIXConnection {
-
+impl<IoHandler> io::Write for UNIXConnection<IoHandler>
+where
+    IoHandler: io::Read + io::Write + Send + Sync,
+{
     fn write(&mut self, data: &[u8]) -> Result<usize, io::Error> {
         self.socket.write(data)
     }

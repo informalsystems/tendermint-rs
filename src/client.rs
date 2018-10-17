@@ -100,7 +100,7 @@ fn client_session(config: &ConnectionConfig) -> Result<(), Error> {
                 // Load secret connection key
                 match load_secret_connection_key(conf) {
                     Ok(key) => {
-                        // Prompt secret connection node ID
+                        // Output secret connection node ID
                         log_kms_node_id(&key);
 
                         // Construct a secret connection session
