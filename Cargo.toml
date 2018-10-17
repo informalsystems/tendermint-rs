@@ -23,8 +23,8 @@ failure = "0.1"
 failure_derive = "0.1"
 hkdf = "0.5"
 lazy_static = "1"
-prost = { git = "https://github.com/Liamsi/prost", branch = "prost_amino_derive" }
-prost-derive = { git = "https://github.com/Liamsi/prost", branch = "prost_amino_derive" }
+prost-amino = "0.4.0"
+prost-amino-derive = "0.4.0"
 rand = "0.5"
 ring = "0.13"
 serde = "1.0"
@@ -36,6 +36,7 @@ signatory-dalek = "0.10"
 signatory-yubihsm = { version = "0.10", optional = true }
 subtle-encoding = "0.2"
 x25519-dalek = { version = "0.3", default-features = false, features = ["std", "u64_backend"] }
+
 
 [features]
 default = ["softsign", "yubihsm"]

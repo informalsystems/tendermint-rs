@@ -7,11 +7,12 @@
 extern crate abscissa_derive;
 #[macro_use]
 extern crate failure_derive;
-extern crate prost;
+extern crate prost_amino as prost;
 #[macro_use]
-extern crate prost_derive;
+extern crate prost_amino_derive as prost_derive;
 extern crate rand;
 extern crate signatory;
+
 extern crate signatory_dalek;
 #[cfg(feature = "yubihsm")]
 extern crate signatory_yubihsm;

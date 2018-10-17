@@ -1,5 +1,6 @@
 //! Tendermint Key Management System
 
+extern crate prost_amino as prost;
 #[macro_use]
 extern crate abscissa;
 #[macro_use]
@@ -13,9 +14,8 @@ extern crate failure_derive;
 extern crate hkdf;
 #[macro_use]
 extern crate lazy_static;
-extern crate prost;
 #[macro_use]
-extern crate prost_derive;
+extern crate prost_amino_derive as prost_derive;
 extern crate rand;
 extern crate ring;
 #[macro_use]
