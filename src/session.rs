@@ -2,10 +2,11 @@
 
 use signatory::{ed25519, Ed25519Seed};
 use signatory_dalek::Ed25519Signer;
-use std::io;
+use std::{io, fs};
 use std::net::TcpStream;
 use std::path::PathBuf;
 use std::marker::{Send, Sync};
+use std::os::unix::net::{UnixListener, UnixStream};
 use types::{PubKeyMsg, TendermintSign};
 
 use error::Error;
@@ -32,12 +33,25 @@ impl Session<SecretConnection<TcpStream>> {
     }
 }
 
-impl Session<UNIXConnection> {
+impl Session<UNIXConnection<UnixStream>> {
     pub fn new_unix(socket_path: &PathBuf) -> Result<Self, Error> {
-        let path = socket_path.to_str().unwrap();
+        // Try to unlink the socket path, shouldn't fail if it doesn't exist
+        if let Err(e) = fs::remove_file(socket_path) {
+            if e.kind() != io::ErrorKind::NotFound {
+                return Err(Error::from(e));
+            }
+        }
 
-        debug!("Binding UNIX socket to {}...", path);
-        let connection = UNIXConnection::new(socket_path)?;
+        debug!("Waiting for a connection at {}...",
+               socket_path.to_str().unwrap());
+
+        let listener = UnixListener::bind(&socket_path)?;
+        let (socket, addr) = listener.accept()?;
+
+        debug!("Accepted connection from {:?}", addr);
+        debug!("Stopped listening on {}", socket_path.to_str().unwrap());
+
+        let connection = UNIXConnection::new(socket)?;
         Ok(Self { connection })
     }
 }
