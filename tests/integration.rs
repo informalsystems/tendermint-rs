@@ -9,7 +9,7 @@ extern crate abscissa_derive;
 extern crate failure_derive;
 extern crate prost_amino as prost;
 #[macro_use]
-extern crate prost_derive;
+extern crate prost_amino_derive as prost_derive;
 extern crate rand;
 extern crate signatory;
 

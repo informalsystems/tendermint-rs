@@ -15,7 +15,7 @@ extern crate hkdf;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
-extern crate prost_derive;
+extern crate prost_amino_derive as prost_derive;
 extern crate rand;
 extern crate ring;
 #[macro_use]

@@ -536,16 +536,16 @@ dependencies = [
 [[package]]
 name = "prost-amino"
 version = "0.4.0"
-source = "git+https://github.com/tendermint/amino_rs#266da550c32e871d1f8b9e4e702490cabbb1ea49"
+source = "git+https://github.com/tendermint/amino_rs#0c3043f8ac2fc142da355943b55458c06db1c805"
 dependencies = [
  "byteorder 1.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "prost-derive"
+name = "prost-amino-derive"
 version = "0.4.0"
-source = "git+https://github.com/tendermint/amino_rs#266da550c32e871d1f8b9e4e702490cabbb1ea49"
+source = "git+https://github.com/tendermint/amino_rs#0c3043f8ac2fc142da355943b55458c06db1c805"
 dependencies = [
  "digest 0.7.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -809,7 +809,7 @@ dependencies = [
  "hkdf 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "prost-amino 0.4.0 (git+https://github.com/tendermint/amino_rs)",
- "prost-derive 0.4.0 (git+https://github.com/tendermint/amino_rs)",
+ "prost-amino-derive 0.4.0 (git+https://github.com/tendermint/amino_rs)",
  "rand 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "ring 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.80 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -994,7 +994,7 @@ dependencies = [
 "checksum pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)" = "676e8eb2b1b4c9043511a9b7bea0915320d7e502b0a079fb03f9635a5252b18c"
 "checksum proc-macro2 0.4.20 (registry+https://github.com/rust-lang/crates.io-index)" = "3d7b7eaaa90b4a90a932a9ea6666c95a389e424eff347f0f793979289429feee"
 "checksum prost-amino 0.4.0 (git+https://github.com/tendermint/amino_rs)" = "<none>"
-"checksum prost-derive 0.4.0 (git+https://github.com/tendermint/amino_rs)" = "<none>"
+"checksum prost-amino-derive 0.4.0 (git+https://github.com/tendermint/amino_rs)" = "<none>"
 "checksum quote 0.6.8 (registry+https://github.com/rust-lang/crates.io-index)" = "dd636425967c33af890042c483632d33fa7a18f19ad1d7ea72e8998c6ef8dea5"
 "checksum rand 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)" = "e464cd887e869cddcae8792a4ee31d23c7edd516700695608f5b98c67ee0131c"
 "checksum rand_core 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1961a422c4d189dfb50ffa9320bf1f2a9bd54ecb92792fb9477f99a1045f3372"
