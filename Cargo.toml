@@ -1,48 +1,45 @@
 [package]
-name        = "cosmos-kms"
-description = "Key Management System for Cosmos Validators"
+name        = "tmkms"
+description = "Tendermint Key Management System"
 version     = "0.0.0"
 authors     = ["Tony Arcieri <tony@iqlusion.io>"]
 license     = "Apache-2.0"
 homepage    = "https://github.com/tendermint/kms/"
 readme      = "README.md"
 categories  = ["cryptography"]
-keywords    = ["cosmos", "kms", "key-management"]
+keywords    = ["cosmos", "ed25519", "kms", "key-management", "yubihsm"]
 
 [badges]
 circle-ci = { repository = "tendermint/kms" }
 
 [dependencies]
+abscissa = "0.0.6"
+abscissa_derive = "0.0.2"
 bincode = "1"
-clear_on_drop = "0.2"
-failure = "0.1"
-failure_derive = "0.1"
-gumdrop = "0.4"
-gumdrop_derive = "0.4"
-log = "0.4"
-rand = "0.5"
-serde = "1.0"
-serde_derive = "1.0"
-sha2 = "^0.7"
-hkdf = "^0.5"
-ring = "0.13"
-signatory = "0.6"
-simplelog = "0.5"
-toml = "0.4"
-yubihsm = { version = "0.14", optional = true }
-serde_json = "1.0"
-hex = "0.3.2"
+byteorder = "1.2"
 bytes = "0.4"
 chrono = "0.4.2"
-byteorder = "^1.2"
-lazy_static = "1.1.0"
-x25519-dalek = { version = "0.3", default-features = false, features = ["std", "u64_backend"] }
+failure = "0.1"
+failure_derive = "0.1"
+hkdf = "0.5"
+lazy_static = "1"
 prost-amino = { git = "https://github.com/tendermint/amino_rs", branch = "master"}
 prost-derive = { git = "https://github.com/tendermint/amino_rs/", branch = "master"}
+rand = "0.5"
+ring = "0.13"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+sha2 = "0.7"
+signatory = { version = "0.10", features = ["ed25519"] }
+signatory-dalek = "0.10"
+signatory-yubihsm = { version = "0.10", optional = true }
+subtle-encoding = "0.2"
+x25519-dalek = { version = "0.3", default-features = false, features = ["std", "u64_backend"] }
 
 
 [features]
-dalek-provider = ["signatory/dalek-provider"]
-default = ["dalek-provider"]
-yubihsm-provider = ["signatory/yubihsm-provider"]
-yubihsm-mockhsm = ["yubihsm-provider", "signatory/yubihsm-mockhsm", "yubihsm/mockhsm"]
+default = ["softsign", "yubihsm"]
+softsign = []
+yubihsm = ["signatory-yubihsm/usb"] # USB only for now
+yubihsm-mock = ["yubihsm", "signatory-yubihsm/mockhsm"]

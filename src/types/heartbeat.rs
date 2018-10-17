@@ -1,5 +1,5 @@
 use super::TendermintSign;
-use hex::encode;
+use subtle_encoding::hex::encode;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Heartbeat {
@@ -52,7 +52,7 @@ impl TendermintSign for SignHeartbeatMsg {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use prost_amino::Message;
+    use types::prost_amino::Message;
     use std::error::Error;
 
     #[test]

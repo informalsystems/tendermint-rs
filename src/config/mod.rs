@@ -1,68 +1,38 @@
 //! Configuration file structures (with serde-derived parser)
 
-use std::collections::BTreeMap;
+use std::path::PathBuf;
 
-#[cfg(feature = "dalek-provider")]
-mod dalek;
+pub mod provider;
+mod validator;
 
-#[cfg(feature = "yubihsm-provider")]
-mod yubihsm;
+use self::provider::ProviderConfig;
+pub use self::validator::*;
 
-use std::fs::File;
-use std::io::Read;
-use std::path::{Path, PathBuf};
-use toml;
+/// Name of the KMS configuration file
+pub const CONFIG_FILE_NAME: &str = "tmkms.toml";
 
-use error::Error;
-
-#[cfg(feature = "dalek-provider")]
-pub use self::dalek::DalekConfig;
-
-#[cfg(feature = "yubihsm-provider")]
-pub use self::yubihsm::YubihsmConfig;
-
-#[derive(Deserialize, Debug)]
-pub struct Config {
+/// KMS configuration (i.e. TOML file parsed with serde)
+#[derive(Clone, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct KmsConfig {
     /// Addresses of validator nodes
-    pub validators: BTreeMap<String, ValidatorConfig>,
+    pub validator: Vec<ValidatorConfig>,
 
     /// Cryptographic signature provider configuration
     pub providers: ProviderConfig,
 
-    pub secret_connection_key_path: PathBuf,
+    /// Secret connection configuration
+    #[serde(rename = "secret-connection")]
+    pub secret_connection: SecretConnectionConfig,
 }
 
-impl Config {
-    /// Parse the configuration TOML, returning a Config struct
-    pub fn load(filename: &Path) -> Result<Config, Error> {
-        let mut file = File::open(filename)?;
-
-        let mut data = String::new();
-        file.read_to_string(&mut data).unwrap();
-
-        toml::from_str(&data).map_err(|e| err!(ConfigError, "parse error: {}", e))
-    }
-}
+// Impl the `abscissa::GlobalConfig` trait, storing the configuration in the
+// `GLOBAL_CONFIG` static value
+impl_global_config!(KmsConfig, GLOBAL_CONFIG);
 
 #[derive(Clone, Deserialize, Debug)]
-pub struct ValidatorConfig {
-    /// Validator hostname or IP address
-    pub addr: String,
-
-    /// Validator port
-    pub port: u16,
-
-    /// Automatically reconnect on error? (default: true)
-    pub reconnect: Option<bool>,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct ProviderConfig {
-    /// ed25519-dalek configuration
-    #[cfg(feature = "dalek-provider")]
-    pub dalek: Option<DalekConfig>,
-
-    /// Map of yubihsm-connector labels to their configurations
-    #[cfg(feature = "yubihsm-provider")]
-    pub yubihsm: Option<YubihsmConfig>,
+pub struct SecretConnectionConfig {
+    /// Path to our identity key
+    #[serde(rename = "secret-key-path")]
+    pub secret_key_path: PathBuf,
 }

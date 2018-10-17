@@ -1,18 +1,20 @@
-use signatory::ed25519::PublicKey as SignatoryKey;
+use signatory::ed25519;
 pub use signatory::ed25519::PUBLIC_KEY_SIZE;
 use std::fmt::{self, Display};
+#[cfg(feature = "yubihsm")]
+use yubihsm;
 
 use error::Error;
 
 /// Ed25519 public keys
-#[derive(Clone, Eq, PartialEq, Hash)]
-pub struct PublicKey(SignatoryKey);
+#[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Ord)]
+pub struct PublicKey(ed25519::PublicKey);
 
 impl PublicKey {
     /// Convert a bytestring to a public key
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         Ok(PublicKey(
-            SignatoryKey::from_bytes(bytes).map_err(|e| err!(InvalidKey, "{}", e))?,
+            ed25519::PublicKey::from_bytes(bytes).map_err(|e| err!(InvalidKey, "{}", e))?,
         ))
     }
 
@@ -37,8 +39,16 @@ impl Display for PublicKey {
     }
 }
 
-impl From<SignatoryKey> for PublicKey {
-    fn from(key: SignatoryKey) -> PublicKey {
+impl From<ed25519::PublicKey> for PublicKey {
+    fn from(key: ed25519::PublicKey) -> PublicKey {
         PublicKey(key)
+    }
+}
+
+#[cfg(feature = "yubihsm")]
+impl From<yubihsm::client::PublicKey> for PublicKey {
+    fn from(key: yubihsm::client::PublicKey) -> PublicKey {
+        assert_eq!(key.algorithm, yubihsm::AsymmetricAlg::Ed25519);
+        Self::from_bytes(key.as_slice()).unwrap()
     }
 }

@@ -1,8 +1,33 @@
 // Error types
 
 use failure::{Backtrace, Context, Fail};
-use std::fmt::{self, Display};
-use std::io;
+use prost;
+use ring;
+use signatory;
+use std::{
+    any::Any,
+    error::Error as StdError,
+    fmt::{self, Display},
+    io,
+};
+#[cfg(feature = "yubihsm")]
+use yubihsm;
+
+/// Create a new error (of a given enum variant) with a formatted message
+macro_rules! err {
+    ($variant:ident, $msg:expr) => {
+        ::error::Error::with_description(
+            ::error::ErrorKind::$variant,
+            $msg.to_string()
+        )
+    };
+    ($variant:ident, $fmt:expr, $($arg:tt)+) => {
+        ::error::Error::with_description(
+            ::error::ErrorKind::$variant,
+            format!($fmt, $($arg)+)
+        )
+    };
+}
 
 /// Error type
 #[derive(Debug)]
@@ -35,6 +60,17 @@ impl Error {
     #[allow(dead_code)]
     pub fn kind(&self) -> ErrorKind {
         *self.inner.get_context()
+    }
+
+    /// Create an error from a panic
+    pub fn from_panic(msg: &Any) -> Self {
+        if let Some(e) = msg.downcast_ref::<String>() {
+            err!(PanicError, e)
+        } else if let Some(e) = msg.downcast_ref::<&str>() {
+            err!(PanicError, e)
+        } else {
+            err!(PanicError, "unknown cause")
+        }
     }
 }
 
@@ -75,9 +111,22 @@ impl Display for Error {
 /// Kinds of errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
+    /// Access denied
+    #[fail(display = "access denied")]
+    #[cfg(feature = "yubihsm")]
+    AccessError,
+
     /// Error in configuration file
     #[fail(display = "config error")]
     ConfigError,
+
+    /// KMS internal panic
+    #[fail(display = "internal crash")]
+    PanicError,
+
+    /// Cryptographic operation failed
+    #[fail(display = "cryptographic error")]
+    CryptoError,
 
     /// Malformatted or otherwise invalid cryptographic key
     #[fail(display = "invalid key")]
@@ -87,36 +136,77 @@ pub enum ErrorKind {
     #[fail(display = "I/O error")]
     IoError,
 
+    /// Parse error
+    #[fail(display = "parse error")]
+    ParseError,
+
+    /// Network protocol-related errors
+    #[fail(display = "protocol error")]
+    ProtocolError,
+
     /// Signing operation failed
     #[fail(display = "signing operation failed")]
     SigningError,
 
-    #[fail(display = "secret connection challenge verification failed")]
-    ChallengeVerification,
-
-    /// AEAD::Seal or AEAD::Open failed
-    #[fail(display = "secret connection failed to encrypt/decrypt data")]
-    AuthCryptoError,
-}
-
-/// Create a new error (of a given enum variant) with a formatted message
-macro_rules! err {
-    ($variant:ident, $msg:expr) => {
-        ::error::Error::with_description(
-            ::error::ErrorKind::$variant,
-            $msg.to_string()
-        )
-    };
-    ($variant:ident, $fmt:expr, $($arg:tt)+) => {
-        ::error::Error::with_description(
-            ::error::ErrorKind::$variant,
-            format!($fmt, $($arg)+)
-        )
-    };
+    /// Verification operation failed
+    #[fail(display = "verification failed")]
+    VerificationError,
 }
 
 impl From<io::Error> for Error {
     fn from(other: io::Error) -> Self {
         err!(IoError, other)
+    }
+}
+
+impl From<prost::DecodeError> for Error {
+    fn from(other: prost::DecodeError) -> Self {
+        err!(ProtocolError, other)
+    }
+}
+
+impl From<prost::EncodeError> for Error {
+    fn from(other: prost::EncodeError) -> Self {
+        err!(ProtocolError, other)
+    }
+}
+
+impl From<ring::error::Unspecified> for Error {
+    fn from(other: ring::error::Unspecified) -> Self {
+        err!(CryptoError, other)
+    }
+}
+
+impl From<signatory::Error> for Error {
+    fn from(other: signatory::Error) -> Self {
+        let kind = match other.kind() {
+            signatory::ErrorKind::Io => ErrorKind::IoError,
+            signatory::ErrorKind::KeyInvalid => ErrorKind::InvalidKey,
+            signatory::ErrorKind::ParseError => ErrorKind::ParseError,
+            signatory::ErrorKind::ProviderError => ErrorKind::SigningError,
+            signatory::ErrorKind::SignatureInvalid => ErrorKind::VerificationError,
+        };
+
+        Error::with_description(kind, other.description().to_owned())
+    }
+}
+
+#[cfg(feature = "yubihsm")]
+impl From<yubihsm::connector::ConnectionError> for Error {
+    fn from(other: yubihsm::connector::ConnectionError) -> Self {
+        use yubihsm::connector::ConnectionErrorKind;
+
+        let kind = match other.kind() {
+            ConnectionErrorKind::AddrInvalid => ErrorKind::ConfigError,
+            ConnectionErrorKind::AccessDenied => ErrorKind::AccessError,
+            ConnectionErrorKind::IoError
+            | ConnectionErrorKind::ConnectionFailed
+            | ConnectionErrorKind::DeviceBusyError
+            | ConnectionErrorKind::RequestError
+            | ConnectionErrorKind::ResponseError
+            | ConnectionErrorKind::UsbError => ErrorKind::IoError,
+        };
+
+        Error::with_description(kind, other.description().to_owned())
     }
 }

@@ -1,10 +1,10 @@
 use super::{BlockID, TendermintSign, Time};
 use chrono::{DateTime, Utc};
-use hex::encode_upper;
 use std::time::{SystemTime, UNIX_EPOCH};
+use subtle_encoding::hex::encode_upper;
 // TODO(ismail): we might not want to use this error type here
 // see below: those aren't prost errors
-use prost_amino::error::DecodeError;
+use types::prost_amino::error::DecodeError;
 
 enum VoteType {
     PreVote,
@@ -117,7 +117,7 @@ impl TendermintSign for SignVoteMsg {
 mod tests {
     use super::super::PartsSetHeader;
     use super::*;
-    use prost_amino::Message;
+    use types::prost_amino::Message;
 
     #[test]
     fn test_vote_serialization() {

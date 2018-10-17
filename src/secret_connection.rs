@@ -1,20 +1,19 @@
-use byteorder::{ByteOrder, LittleEndian};
+use byteorder::{ByteOrder, LE};
 use bytes::BufMut;
 use error::Error;
 use hkdf::Hkdf;
-use prost_amino::encoding::bytes::merge;
-use prost_amino::encoding::encode_varint;
-use prost_amino::encoding::WireType;
-use prost_amino::{DecodeError, Message};
+use prost::encoding::bytes::merge;
+use prost::encoding::encode_varint;
+use prost::encoding::WireType;
+use prost::Message;
 use rand::OsRng;
 use ring::aead;
 use sha2::Sha256;
-use signatory::ed25519::Signer;
-use signatory::ed25519::{DefaultVerifier, PublicKey, Signature, Verifier};
-use signatory::providers::dalek::Ed25519Signer as DalekSigner;
-use std::io::{Read, Write};
+use signatory::{ed25519, Ed25519PublicKey, Ed25519Signature, Signature, Signer};
+use signatory_dalek::Ed25519Verifier;
+use std::cmp;
+use std::io::{self, Cursor, Read, Write};
 use std::marker::{Send, Sync};
-use std::{cmp, io, io::Cursor};
 use x25519_dalek::{diffie_hellman, generate_public, generate_secret};
 
 // 4 + 1024 == 1028 total frame size
@@ -44,18 +43,16 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
     // Performs handshake and returns a new authenticated SecretConnection.
     pub fn new(
         mut handler: IoHandler,
-        local_privkey: &DalekSigner,
+        local_pubkey: &Ed25519PublicKey,
+        local_privkey: &Signer<Ed25519Signature>,
     ) -> Result<SecretConnection<IoHandler>, Error> {
-        // TODO: Error check
-        let local_pubkey = local_privkey.public_key().unwrap();
-
         // Generate ephemeral keys for perfect forward secrecy.
         let (local_eph_pubkey, local_eph_privkey) = gen_eph_keys();
 
         // Write local ephemeral pubkey and receive one too.
         // NOTE: every 32-byte string is accepted as a Curve25519 public key
         // (see DJB's Curve25519 paper: http://cr.yp.to/ecdh/curve25519-20060209.pdf)
-        let remote_eph_pubkey = share_eph_pubkey(&mut handler, &local_eph_pubkey).unwrap();
+        let remote_eph_pubkey = share_eph_pubkey(&mut handler, &local_eph_pubkey)?;
 
         // Compute common shared secret.
         let shared_secret = diffie_hellman(&local_eph_privkey, &remote_eph_pubkey);
@@ -76,27 +73,23 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
             recv_buffer: vec![],
             recv_nonce: Nonce::default(),
             send_nonce: Nonce::default(),
-            recv_secret: aead::OpeningKey::new(&aead::CHACHA20_POLY1305, &recv_secret).unwrap(),
-            send_secret: aead::SealingKey::new(&aead::CHACHA20_POLY1305, &send_secret).unwrap(),
+            recv_secret: aead::OpeningKey::new(&aead::CHACHA20_POLY1305, &recv_secret)?,
+            send_secret: aead::SealingKey::new(&aead::CHACHA20_POLY1305, &send_secret)?,
             remote_pubkey: remote_eph_pubkey,
         };
 
         // Sign the challenge bytes for authentication.
-        // TODO: Error check
-        let local_signature = sign_challenge(challenge, local_privkey).unwrap();
+        let local_signature = sign_challenge(challenge, local_privkey)?;
 
         // Share (in secret) each other's pubkey & challenge signature
-        // TODO: Error check
-        let auth_sig_msg =
-            share_auth_signature(&mut sc, local_pubkey.as_bytes(), local_signature).unwrap();
+        let auth_sig_msg = share_auth_signature(&mut sc, local_pubkey.as_bytes(), local_signature)?;
 
-        let remote_pubkey = PublicKey::from_bytes(&auth_sig_msg.key).unwrap();
+        let remote_pubkey = Ed25519PublicKey::from_bytes(&auth_sig_msg.key)?;
         let remote_signature: &[u8] = &auth_sig_msg.sig;
-        let remote_sig = Signature::from_bytes(remote_signature).unwrap();
+        let remote_sig = Ed25519Signature::from_bytes(remote_signature)?;
 
-        let valid_sig = DefaultVerifier::verify(&remote_pubkey, &challenge, &remote_sig);
-
-        valid_sig.map_err(|e| err!(ChallengeVerification, "{}", e))?;
+        let remote_verifier = Ed25519Verifier::from(&remote_pubkey);
+        ed25519::verify(&remote_verifier, &challenge, &remote_sig)?;
 
         // We've authorized.
         sc.remote_pubkey.copy_from_slice(&auth_sig_msg.key);
@@ -115,8 +108,8 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
                 authtext,
                 0,
                 in_out,
-            ).map_err(|e| err!(AuthCryptoError, "open_in_place failed: {}", e))?
-                .len();
+            ).map_err(|_| err!(CryptoError, "open_in_place failed"))?
+            .len();
             Ok(len)
         } else {
             let mut in_out = ciphertext.to_vec();
@@ -126,7 +119,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
                 authtext,
                 0,
                 &mut in_out,
-            ).map_err(|e| err!(AuthCryptoError, "open_in_place: {}", e))?;
+            ).map_err(|_| err!(CryptoError, "open_in_place: failed"))?;
             out[..out0.len()].copy_from_slice(out0);
             Ok(out0.len())
         }
@@ -139,7 +132,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
     ) -> Result<(), Error> {
         let chunk_length = chunk.len();
         let mut frame = [0u8; TOTAL_FRAME_SIZE];
-        LittleEndian::write_u32(&mut frame[..DATA_LEN_SIZE], chunk_length as u32);
+        LE::write_u32(&mut frame[..DATA_LEN_SIZE], chunk_length as u32);
         frame[DATA_LEN_SIZE..DATA_LEN_SIZE + chunk_length].copy_from_slice(chunk);
         sealed_frame[..frame.len()].copy_from_slice(&frame);
 
@@ -149,7 +142,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
             &[0u8; 0],
             sealed_frame,
             TAG_SIZE,
-        ).map_err(|e| err!(AuthCryptoError, "seal_in_place failed: {}", e))?;
+        ).map_err(|_| err!(CryptoError, "seal_in_place failed"))?;
 
         Ok(())
     }
@@ -191,7 +184,7 @@ where
         let mut chunk_length_specifier = vec![0; 4];
         chunk_length_specifier.clone_from_slice(&frame[..4]);
 
-        let chunk_length = LittleEndian::read_u32(&chunk_length_specifier);
+        let chunk_length = LE::read_u32(&chunk_length_specifier);
         if chunk_length > DATA_MAX_SIZE as u32 {
             Err(io::Error::new(
                 io::ErrorKind::Other,
@@ -265,7 +258,7 @@ fn gen_eph_keys() -> ([u8; 32], [u8; 32]) {
 fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
     handler: &mut IoHandler,
     local_eph_pubkey: &[u8; 32],
-) -> Result<[u8; 32], ()> {
+) -> Result<[u8; 32], Error> {
     // Send our pubkey and receive theirs in tandem.
     // TODO(ismail): on the go side this is done in parallel, here we do send and receive after
     // each other. thread::spawn would require a static lifetime.
@@ -278,13 +271,10 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
     buf.put_slice(local_eph_pubkey_vec);
     // this is the sending part of:
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
-    // TODO(ismail): handle error here! This currently would panic on failure:
-    handler
-        .write_all(&buf)
-        .expect("couldn't share local key with peer");
+    handler.write_all(&buf)?;
 
     let mut buf = vec![0; 33];
-    handler.read_exact(&mut buf).unwrap();
+    handler.read_exact(&mut buf)?;
 
     let mut amino_buf = Cursor::new(buf);
     // this is the receiving part of:
@@ -335,10 +325,11 @@ fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
 }
 
 // Sign the challenge with the local private key
-fn sign_challenge(challenge: [u8; 32], local_privkey: &DalekSigner) -> Result<Signature, Error> {
-    local_privkey
-        .sign(&challenge)
-        .map_err(|e| err!(SigningError, "{}", e))
+fn sign_challenge(
+    challenge: [u8; 32],
+    local_privkey: &Signer<Ed25519Signature>,
+) -> Result<Ed25519Signature, Error> {
+    ed25519::sign(local_privkey, &challenge).map_err(|e| err!(SigningError, "{}", e))
 }
 
 #[derive(Clone, PartialEq, Message)]
@@ -354,19 +345,19 @@ struct AuthSigMessage {
 fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
     sc: &mut SecretConnection<IoHandler>,
     pubkey: &[u8; 32],
-    signature: Signature,
-) -> Result<AuthSigMessage, DecodeError> {
+    signature: Ed25519Signature,
+) -> Result<AuthSigMessage, Error> {
     let amsg = AuthSigMessage {
         key: pubkey.to_vec(),
         sig: signature.into_bytes().to_vec(),
     };
     let mut buf: Vec<u8> = vec![];
-    amsg.encode(&mut buf).unwrap();
+    amsg.encode(&mut buf)?;
 
-    sc.write_all(&buf).unwrap();
+    sc.write_all(&buf)?;
 
     let mut rbuf = vec![0; 100]; // 100 = 32 + 64 + (amino overhead)
-    sc.read_exact(&mut rbuf).unwrap();
+    sc.read_exact(&mut rbuf)?;
 
     // TODO: proper error handling:
     Ok(AuthSigMessage::decode(&rbuf)?)
@@ -382,8 +373,8 @@ impl Default for Nonce {
 
 impl Nonce {
     fn increment(&mut self) {
-        let counter: u64 = LittleEndian::read_u64(&self.0[4..]);
-        LittleEndian::write_u64(&mut self.0[4..], counter.checked_add(1).unwrap());
+        let counter: u64 = LE::read_u64(&self.0[4..]);
+        LE::write_u64(&mut self.0[4..], counter.checked_add(1).unwrap());
     }
 
     #[inline]
@@ -473,11 +464,11 @@ mod tests {
 
     #[test]
     fn test_derive_secrets_and_challenge_golden_test_vectors() {
-        extern crate hex;
         use std::fs::File;
         use std::io::BufRead;
         use std::io::BufReader;
         use std::str::FromStr;
+        use subtle_encoding::hex;
 
         let f = File::open("src/TestDeriveSecretsAndChallenge.golden").unwrap();
         let file = BufReader::new(&f);

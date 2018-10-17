@@ -37,7 +37,7 @@ impl Into<PubKeyMsg> for PublicKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use prost_amino::Message;
+    use types::prost_amino::Message;
     use std::error::Error;
 
     #[test]

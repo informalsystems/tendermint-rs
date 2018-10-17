@@ -1,63 +1,75 @@
-use signatory::ed25519::Signature;
-use std::collections::HashMap;
+use signatory::Ed25519Signature;
+use std::{collections::BTreeMap, sync::RwLock};
 
 use super::{PublicKey, Signer};
-use config::ProviderConfig;
+use config::provider::ProviderConfig;
 use error::Error;
-use std::panic::RefUnwindSafe;
 
-#[cfg(feature = "dalek-provider")]
-use super::signer::dalek;
-
-#[cfg(feature = "yubihsm-provider")]
+use super::signer::softsign;
+#[cfg(feature = "yubihsm")]
 use super::signer::yubihsm;
 
-pub struct Keyring {
-    keys: HashMap<PublicKey, Signer>,
+lazy_static! {
+    static ref GLOBAL_KEYRING: RwLock<KeyRing> = RwLock::new(KeyRing(BTreeMap::default()));
 }
 
-impl Keyring {
+pub struct KeyRing(BTreeMap<PublicKey, Signer>);
+
+impl KeyRing {
     /// Create a keyring from the given provider configuration
-    pub fn from_config(config: ProviderConfig) -> Result<Self, Error> {
-        let mut signers = vec![];
+    pub fn load_from_config(config: &ProviderConfig) -> Result<(), Error> {
+        let mut keyring = GLOBAL_KEYRING.write().unwrap();
 
-        #[cfg(feature = "dalek-provider")]
-        dalek::create_signers(&mut signers, config.dalek)?;
-
-        #[cfg(feature = "yubihsm-provider")]
-        yubihsm::create_signers(&mut signers, &config.yubihsm)?;
-
-        Self::from_signers(signers)
-    }
-
-    /// Create a keyring from the given vector of signer objects
-    pub fn from_signers(signers: Vec<Signer>) -> Result<Self, Error> {
-        let mut keys = HashMap::new();
-
-        for mut signer in signers {
-            let public_key = signer.public_key()?;
-            debug!(
-                "Added {}:{} {}",
-                signer.provider_name, signer.key_id, &public_key
-            );
-            keys.insert(public_key, signer);
+        // Clear the current global keyring
+        if !keyring.0.is_empty() {
+            info!("[keyring:*] Clearing keyring");
+            keyring.0.clear();
         }
 
-        Ok(Self { keys })
+        #[cfg(feature = "softsign")]
+        softsign::init(&mut keyring, &config.softsign)?;
+
+        #[cfg(feature = "yubihsm")]
+        yubihsm::init(&mut keyring, &config.yubihsm)?;
+
+        if keyring.0.is_empty() {
+            Err(err!(ConfigError, "no signing keys configured!"))
+        } else {
+            Ok(())
+        }
     }
 
     /// Sign a message using the secret key associated with the given public key
     /// (if it is in our keyring)
-    pub fn sign(&self, public_key: &PublicKey, msg: &[u8]) -> Result<Signature, Error> {
-        let signer = self
-            .keys
+    pub fn sign(public_key: &PublicKey, msg: &[u8]) -> Result<Ed25519Signature, Error> {
+        let keyring = GLOBAL_KEYRING.read().unwrap();
+
+        let signer = keyring
+            .0
             .get(public_key)
             .ok_or_else(|| err!(InvalidKey, "not in keyring: {}", public_key))?;
 
         signer.sign(msg)
     }
-}
 
-// TODO: push this down and enforce it inside of Signatory.
-// Right now it just "happens to be true"
-impl RefUnwindSafe for Keyring {}
+    /// Add a key to the keyring, returning an error if we already have a
+    /// signer registered for the given public key
+    pub(super) fn add(&mut self, public_key: PublicKey, signer: Signer) -> Result<(), Error> {
+        info!(
+            "[keyring:{}:{}] added validator key {}",
+            signer.provider_name, signer.key_id, public_key
+        );
+
+        if let Some(other) = self.0.insert(public_key, signer) {
+            Err(err!(
+                InvalidKey,
+                "duplicate signer for {}: {}:{}",
+                public_key,
+                other.provider_name,
+                other.key_id
+            ))
+        } else {
+            Ok(())
+        }
+    }
+}

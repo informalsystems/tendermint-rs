@@ -1,12 +1,10 @@
-use signatory::ed25519::{Signature, Signer as SignerTrait};
+use signatory::{self, Ed25519Signature, Signer as SignerTrait};
 
-#[cfg(feature = "dalek-provider")]
-pub mod dalek;
-
-#[cfg(feature = "yubihsm-provider")]
+#[cfg(feature = "softsign")]
+pub mod softsign;
+#[cfg(feature = "yubihsm")]
 pub mod yubihsm;
 
-use super::PublicKey;
 use error::Error;
 
 /// Wrapper for an Ed25519 signing provider (i.e. trait object)
@@ -18,12 +16,16 @@ pub struct Signer {
     pub key_id: String,
 
     /// Signer trait object
-    provider: Box<SignerTrait>,
+    provider: Box<SignerTrait<Ed25519Signature>>,
 }
 
 impl Signer {
     /// Create a new signer
-    pub fn new(provider_name: &'static str, key_id: String, provider: Box<SignerTrait>) -> Self {
+    pub fn new(
+        provider_name: &'static str,
+        key_id: String,
+        provider: Box<SignerTrait<Ed25519Signature>>,
+    ) -> Self {
         Self {
             provider_name,
             key_id,
@@ -31,21 +33,12 @@ impl Signer {
         }
     }
 
-    /// Obtain the Ed25519 public key which corresponds to this signer's private key
-    pub fn public_key(&self) -> Result<PublicKey, Error> {
-        Ok(self
-            .provider
-            .public_key()
-            .map_err(|e| err!(InvalidKey, "{}", e))?
-            .into())
-    }
-
     /// Sign the given message using this signer
     #[inline]
-    pub fn sign(&self, msg: &[u8]) -> Result<Signature, Error> {
-        Ok(self
-            .provider
-            .sign(msg)
-            .map_err(|e| err!(SigningError, "{}", e))?)
+    pub fn sign(&self, msg: &[u8]) -> Result<Ed25519Signature, Error> {
+        Ok(
+            signatory::sign(self.provider.as_ref(), msg)
+                .map_err(|e| err!(SigningError, "{}", e))?,
+        )
     }
 }
