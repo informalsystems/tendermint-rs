@@ -37,6 +37,7 @@ signatory-yubihsm = { version = "0.9", optional = true }
 subtle-encoding = "0.2"
 x25519-dalek = { version = "0.3", default-features = false, features = ["std", "u64_backend"] }
 zeroize = "0.1"
+tempfile = "3.0.4"
 
 [features]
 default = ["softsign"]
