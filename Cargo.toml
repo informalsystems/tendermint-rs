@@ -23,8 +23,8 @@ failure = "0.1"
 failure_derive = "0.1"
 hkdf = "0.5"
 lazy_static = "1"
-prost-amino = { git = "https://github.com/tendermint/amino_rs", branch = "master"}
-prost-amino-derive = { git = "https://github.com/tendermint/amino_rs/", branch = "master"}
+prost-amino = "0.4.0"
+prost-amino-derive = "0.4.0"
 rand = "0.5"
 ring = "0.13"
 serde = "1.0"
