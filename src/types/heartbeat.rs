@@ -52,8 +52,8 @@ impl TendermintSign for SignHeartbeatMsg {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use types::prost_amino::Message;
     use std::error::Error;
+    use types::prost_amino::Message;
 
     #[test]
     fn test_serializationuns_unsigned() {
