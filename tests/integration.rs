@@ -169,9 +169,9 @@ fn test_handle_and_sign_requests() {
         let mut resp_buf = vec![0u8; 512];
         connection.read(&mut resp_buf).unwrap();
 
-        let actual_len = resp_buf[0];
-        let mut resp = vec![0u8; (actual_len + 1) as usize];
-        resp.copy_from_slice(&resp_buf[..(actual_len + 1) as usize]);
+        let actual_len = extract_actual_len(&resp_buf).unwrap();
+        let mut resp = vec![0u8; actual_len as usize];
+        resp.copy_from_slice(&resp_buf[..actual_len as usize]);
 
         let hb_req: SignHeartbeatRequest =
             SignHeartbeatRequest::decode(&resp).expect("decoding heartbeat failed");
@@ -216,9 +216,9 @@ fn test_handle_and_sign_requests() {
         let mut resp_buf = vec![0u8; 1024];
         connection.read(&mut resp_buf).unwrap();
 
-        let actual_len = resp_buf[0];
-        let mut resp = vec![0u8; (actual_len + 1) as usize];
-        resp.copy_from_slice(&resp_buf[..(actual_len + 1) as usize]);
+        let actual_len = extract_actual_len(&resp_buf).unwrap();
+        let mut resp = vec![0u8; actual_len as usize];
+        resp.copy_from_slice(&mut resp_buf[..(actual_len as usize)]);
 
         let p_req: SignedProposalResponse =
             SignedProposalResponse::decode(&resp).expect("decoding proposal failed");
@@ -265,9 +265,10 @@ fn test_handle_and_sign_requests() {
         let mut resp_buf = vec![0u8; 1024];
         connection.read(&mut resp_buf).unwrap();
 
-        let actual_len = resp_buf[0];
-        let mut resp = vec![0u8; (actual_len + 2) as usize];
-        resp.copy_from_slice(&resp_buf[..(actual_len + 2) as usize]);
+        let actual_len = extract_actual_len(&resp_buf).unwrap();
+        let mut resp = vec![0u8; actual_len as usize];
+        resp.copy_from_slice(&resp_buf[..actual_len as usize]);
+
         let v_resp: SignedVoteResponse =
             SignedVoteResponse::decode(&resp).expect("decoding vote failed");
         let mut sign_bytes: Vec<u8> = vec![];

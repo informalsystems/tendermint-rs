@@ -1,4 +1,4 @@
-use super::{ed25519, Ed25519Signature, RemoteError, Signature, TendermintSignable};
+use super::{Ed25519Signature, RemoteError, Signature, TendermintSignable};
 use bytes::BufMut;
 use prost::{EncodeError, Message};
 

@@ -6,9 +6,11 @@ pub mod poisonpill;
 pub mod proposal;
 pub mod vote;
 
-use self::prost_amino::DecodeError;
 use bytes::BufMut;
-use signatory::{ed25519, Ed25519Signature, Signature};
+use prost::encoding::{decode_varint, encoded_len_varint};
+use prost::DecodeError;
+use signatory::{Ed25519Signature, Signature};
+use std::io::Cursor;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
@@ -99,6 +101,15 @@ enum SignedMsgType {
     Heartbeat,
 }
 
+pub fn extract_actual_len(buf: &[u8]) -> Result<u64, DecodeError> {
+    let mut buff = Cursor::new(buf);
+    let actual_len = decode_varint(&mut buff)?;
+    if actual_len == 0 {
+        return Ok(1);
+    }
+    Ok(actual_len + (encoded_len_varint(actual_len) as u64))
+}
+
 impl SignedMsgType {
     fn to_u32(self) -> u32 {
         match self {
@@ -111,6 +122,7 @@ impl SignedMsgType {
             SignedMsgType::Heartbeat => 0x30,
         }
     }
+
     fn from(data: u32) -> Result<SignedMsgType, DecodeError> {
         match data {
             0x01 => Ok(SignedMsgType::PreVote),
@@ -120,6 +132,7 @@ impl SignedMsgType {
             _ => Err(DecodeError::new("Invalid vote type")),
         }
     }
+
     fn is_valid_vote_type(msg_type: SignedMsgType) -> bool {
         match msg_type {
             SignedMsgType::PreVote => true,

@@ -1,11 +1,9 @@
 use super::{
-    ed25519, BlockID, CanonicalBlockID, CanonicalPartSetHeader, Ed25519Signature, RemoteError,
-    Signature, SignedMsgType, TendermintSignable, Time,
+    BlockID, CanonicalBlockID, CanonicalPartSetHeader, Ed25519Signature, RemoteError, Signature,
+    TendermintSignable, Time,
 };
 use bytes::BufMut;
-use chrono::{DateTime, Utc};
 use prost::Message;
-use std::time::{SystemTime, UNIX_EPOCH};
 use types::prost_amino::error::EncodeError;
 
 #[derive(Clone, PartialEq, Message)]
@@ -89,7 +87,7 @@ impl CanonicalVote {
             round: vote.round,
             timestamp: match vote.timestamp {
                 None => Some(Time {
-                    seconds: -62135596800,
+                    seconds: -62_135_596_800,
                     nanos: 0,
                 }),
                 Some(t) => Some(t),
@@ -125,7 +123,9 @@ impl TendermintSignable for SignVoteRequest {
 mod tests {
     use super::super::PartsSetHeader;
     use super::*;
+    use chrono::{DateTime, Utc};
     use types::prost_amino::Message;
+    use types::SignedMsgType;
 
     #[test]
     fn test_vote_serialization() {

@@ -1,9 +1,8 @@
 use super::{
-    ed25519, BlockID, CanonicalBlockID, CanonicalPartSetHeader, Ed25519Signature, PartsSetHeader,
+    BlockID, CanonicalBlockID, CanonicalPartSetHeader, Ed25519Signature, PartsSetHeader,
     RemoteError, Signature, SignedMsgType, TendermintSignable, Time,
 };
 use bytes::BufMut;
-use chrono::{DateTime, Utc};
 use prost::{EncodeError, Message};
 
 #[derive(Clone, PartialEq, Message)]
@@ -121,6 +120,7 @@ impl TendermintSignable for SignProposalRequest {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::{DateTime, Utc};
     use std::error::Error;
     use types::prost_amino::Message;
 
