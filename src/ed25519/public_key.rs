@@ -46,8 +46,8 @@ impl From<ed25519::PublicKey> for PublicKey {
 }
 
 #[cfg(feature = "yubihsm")]
-impl From<yubihsm::client::get_pubkey::PublicKey> for PublicKey {
-    fn from(key: yubihsm::client::get_pubkey::PublicKey) -> PublicKey {
+impl From<yubihsm::client::PublicKey> for PublicKey {
+    fn from(key: yubihsm::client::PublicKey) -> PublicKey {
         assert_eq!(key.algorithm, yubihsm::AsymmetricAlg::Ed25519);
         Self::from_bytes(key.as_slice()).unwrap()
     }

@@ -1,4 +1,4 @@
-extern crate prost;
+extern crate prost_amino;
 
 pub mod ed25519msg;
 pub mod heartbeat;

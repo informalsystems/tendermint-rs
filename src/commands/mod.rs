@@ -47,6 +47,8 @@ impl KmsCommand {
     pub fn verbose(&self) -> bool {
         match self {
             KmsCommand::Run(run) => run.verbose,
+            #[cfg(feature = "yubihsm")]
+            KmsCommand::Yubihsm(yubihsm) => yubihsm.verbose(),
             _ => false,
         }
     }
