@@ -26,17 +26,17 @@ pub struct Vote {
     pub signature: Vec<u8>,
 }
 
-pub const AMINO_NAME: &str = "tendermint/socketpv/SignVoteRequest";
+pub const AMINO_NAME: &str = "tendermint/remotesigner/SignVoteRequest";
 
 #[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/socketpv/SignVoteRequest"]
+#[amino_name = "tendermint/remotesigner/SignVoteRequest"]
 pub struct SignVoteRequest {
     #[prost(message, tag = "1")]
     pub vote: Option<Vote>,
 }
 
 #[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/socketpv/SignedVoteResponse"]
+#[amino_name = "tendermint/remotesigner/SignedVoteResponse"]
 pub struct SignedVoteResponse {
     #[prost(message, tag = "1")]
     pub vote: Option<Vote>,
@@ -157,7 +157,6 @@ mod tests {
         let sign_vote_msg = SignVoteRequest { vote: Some(vote) };
         let mut got = vec![];
         let _have = sign_vote_msg.encode(&mut got);
-        println!("encoded: {:?}", got);
 
         // the following vector is generated via:
         //  cdc := amino.NewCodec()
@@ -166,10 +165,10 @@ mod tests {
         //	cdc.RegisterConcrete(crypto.SignatureEd25519{},
         //		"tendermint/SignatureEd25519", nil)
         //
-        //	cdc.RegisterConcrete(&privval.PubKeyMsg{}, "tendermint/socketpv/PubKeyMsg", nil)
-        //	cdc.RegisterConcrete(&privval.SignVoteMsg{}, "tendermint/socketpv/SignVoteMsg", nil)
-        //	cdc.RegisterConcrete(&privval.SignProposalMsg{}, "tendermint/socketpv/SignProposalMsg", nil)
-        //	cdc.RegisterConcrete(&privval.SignHeartbeatMsg{}, "tendermint/socketpv/SignHeartbeatMsg", nil)
+        //	cdc.RegisterConcrete(&privval.PubKeyMsg{}, "tendermint/remotesigner/PubKeyMsg", nil)
+        //	cdc.RegisterConcrete(&privval.SignVoteMsg{}, "tendermint/remotesigner/SignVoteMsg", nil)
+        //	cdc.RegisterConcrete(&privval.SignProposalMsg{}, "tendermint/remotesigner/SignProposalMsg", nil)
+        //	cdc.RegisterConcrete(&privval.SignHeartbeatMsg{}, "tendermint/remotesigner/SignHeartbeatMsg", nil)
         //	data, _ := cdc.MarshalBinary(privval.SignVoteMsg{Vote: vote})
         //
         // where vote is equal to
@@ -190,12 +189,12 @@ mod tests {
         //		},
         //	}
         let want = vec![
-            0x52, 0x2f, 0x62, 0x2d, 0xa6, 0xa, 0x4c, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86,
-            0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
-            0x10, 0xaa, 0xf7, 0x6, 0x18, 0xf2, 0xc0, 0x1, 0x20, 0x4, 0x2a, 0xe, 0x9, 0xb1, 0x69,
-            0x40, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x80, 0x8e, 0xf2, 0xd, 0x30, 0x1, 0x3a, 0x18,
-            0xa, 0x4, 0x68, 0x61, 0x73, 0x68, 0x12, 0x10, 0x8, 0x80, 0x89, 0x7a, 0x12, 0xa, 0x70,
-            0x61, 0x72, 0x74, 0x73, 0x5f, 0x68, 0x61, 0x73, 0x68,
+            0x52, 243, 244, 18, 4, 0xa, 0x4c, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1,
+            0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35, 0x10,
+            0xaa, 0xf7, 0x6, 0x18, 0xf2, 0xc0, 0x1, 0x20, 0x4, 0x2a, 0xe, 0x9, 0xb1, 0x69, 0x40,
+            0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x80, 0x8e, 0xf2, 0xd, 0x30, 0x1, 0x3a, 0x18, 0xa, 0x4,
+            0x68, 0x61, 0x73, 0x68, 0x12, 0x10, 0x8, 0x80, 0x89, 0x7a, 0x12, 0xa, 0x70, 0x61, 0x72,
+            0x74, 0x73, 0x5f, 0x68, 0x61, 0x73, 0x68,
         ];
         let svr = SignVoteRequest::decode(got.clone()).unwrap();
         println!("got back: {:?}", svr);
@@ -313,7 +312,6 @@ mod tests {
         };
         let mut got = vec![];
         let _have = vote.encode(&mut got);
-        println!("encoded: {:?}", got);
         let v = Vote::decode(&got).unwrap();
 
         assert_eq!(v, vote);
@@ -322,7 +320,6 @@ mod tests {
             let svr = SignVoteRequest { vote: Some(vote) };
             let mut got = vec![];
             let _have = svr.encode(&mut got);
-            println!("encoded2: {:?}", got);
 
             let svr2 = SignVoteRequest::decode(&got).unwrap();
             assert_eq!(svr, svr2);

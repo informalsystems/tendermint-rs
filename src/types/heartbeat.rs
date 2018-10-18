@@ -18,20 +18,20 @@ pub struct Heartbeat {
     pub signature: Option<Vec<u8>>,
 }
 
-pub const AMINO_NAME: &str = "tendermint/socketpv/SignHeartbeatRequest";
+pub const AMINO_NAME: &str = "tendermint/remotesigner/SignHeartbeatRequest";
 
 // TODO(ismail): the Request / Reply types should live in a separate module!
 // (same for proposal and vote)
 
 #[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/socketpv/SignHeartbeatRequest"]
+#[amino_name = "tendermint/remotesigner/SignHeartbeatRequest"]
 pub struct SignHeartbeatRequest {
     #[prost(message, tag = "1")]
     pub heartbeat: Option<Heartbeat>,
 }
 
 #[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/socketpv/SignedHeartbeatResponse"]
+#[amino_name = "tendermint/remotesigner/SignedHeartbeatResponse"]
 pub struct SignedHeartbeatResponse {
     #[prost(message, tag = "1")]
     pub heartbeat: Option<Heartbeat>,
@@ -113,7 +113,7 @@ mod tests {
         }.encode(&mut got);
         let want = vec![
             0x24, // len
-            157, 144, 158, 106, // prefix
+            187, 19, 63, 7, // prefix
             0xa, 0x1e, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71,
             0x86, // remaining proto3 encoding of data
             0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
@@ -142,7 +142,7 @@ mod tests {
         let _have = msg.encode(&mut got);
         let want = vec![
             0xe, // len
-            157, 144, 158, 106, // amino prefix
+            187, 19, 63, 7, // amino prefix
             0xa, 0x8, 0x10, 0x2, 0x18, 0x1e, 0x20, 0x14, 0x28, 0x3c,
         ];
 

@@ -2,6 +2,7 @@ extern crate prost_amino;
 
 pub mod ed25519msg;
 pub mod heartbeat;
+pub mod ping;
 pub mod poisonpill;
 pub mod proposal;
 pub mod vote;
@@ -148,16 +149,13 @@ impl Clone for SignedMsgType {
     }
 }
 
-pub use self::ed25519msg::PubKeyMsg;
-pub use self::ed25519msg::AMINO_NAME as PUBKEY_AMINO_NAME;
-pub use self::heartbeat::SignHeartbeatRequest;
-pub use self::heartbeat::SignedHeartbeatResponse;
-pub use self::heartbeat::AMINO_NAME as HEARTBEAT_AMINO_NAME;
-pub use self::poisonpill::PoisonPillMsg;
-pub use self::poisonpill::AMINO_NAME as POISON_PILL_AMINO_NAME;
-pub use self::proposal::SignProposalRequest;
-pub use self::proposal::SignedProposalResponse;
-pub use self::proposal::AMINO_NAME as PROPOSAL_AMINO_NAME;
-pub use self::vote::SignVoteRequest;
-pub use self::vote::SignedVoteResponse;
-pub use self::vote::AMINO_NAME as VOTE_AMINO_NAME;
+pub use self::ed25519msg::{PubKeyMsg, AMINO_NAME as PUBKEY_AMINO_NAME};
+pub use self::heartbeat::{
+    SignHeartbeatRequest, SignedHeartbeatResponse, AMINO_NAME as HEARTBEAT_AMINO_NAME,
+};
+pub use self::ping::{PingRequest, PingResponse, AMINO_NAME as PING_AMINO_NAME};
+pub use self::poisonpill::{PoisonPillMsg, AMINO_NAME as POISON_PILL_AMINO_NAME};
+pub use self::proposal::{
+    SignProposalRequest, SignedProposalResponse, AMINO_NAME as PROPOSAL_AMINO_NAME,
+};
+pub use self::vote::{SignVoteRequest, SignedVoteResponse, AMINO_NAME as VOTE_AMINO_NAME};

@@ -4,7 +4,7 @@ use signatory::{ed25519, Ed25519Seed};
 use signatory_dalek::Ed25519Signer;
 use std::io::Write;
 use std::net::TcpStream;
-use types::PubKeyMsg;
+use types::{PingRequest, PingResponse, PubKeyMsg};
 
 use error::Error;
 use prost::Message;
@@ -37,6 +37,7 @@ impl Session {
             Request::SignHeartbeat(req) => self.sign(req)?,
             Request::SignVote(req) => self.sign(req)?,
             // non-signable requests:
+            Request::ReplyPing(ref req) => self.reply_ping(req),
             Request::ShowPublicKey(ref req) => self.get_public_key(req),
             Request::PoisonPill(_req) => return Ok(false),
         };
@@ -46,9 +47,9 @@ impl Session {
             Response::SignedHeartBeat(shb) => shb.encode(&mut buf)?,
             Response::SignedProposal(sp) => sp.encode(&mut buf)?,
             Response::SignedVote(sv) => sv.encode(&mut buf)?,
+            Response::Ping(ping) => ping.encode(&mut buf)?,
             Response::PublicKey(pk) => pk.encode(&mut buf)?,
         }
-        // println!("handled, signed, and encoded: {:?}", buf);
         self.connection.write_all(&buf)?;
         Ok(true)
     }
@@ -67,7 +68,9 @@ impl Session {
         request.set_signature(&sig);
         Ok(request.build_response())
     }
-
+    fn reply_ping(&mut self, _request: &PingRequest) -> Response {
+        Response::Ping(PingResponse {})
+    }
     fn get_public_key(&mut self, _request: &PubKeyMsg) -> Response {
         unimplemented!()
     }

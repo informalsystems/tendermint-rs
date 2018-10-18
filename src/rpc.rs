@@ -6,10 +6,10 @@ use std::io::Cursor;
 use std::io::{self, Read};
 use std::io::{Error, ErrorKind};
 use types::{
-    PoisonPillMsg, PubKeyMsg, SignHeartbeatRequest, SignProposalRequest, SignVoteRequest,
-    SignedHeartbeatResponse, SignedProposalResponse, SignedVoteResponse, TendermintSignable,
-    HEARTBEAT_AMINO_NAME, POISON_PILL_AMINO_NAME, PROPOSAL_AMINO_NAME, PUBKEY_AMINO_NAME,
-    VOTE_AMINO_NAME,
+    PingRequest, PingResponse, PoisonPillMsg, PubKeyMsg, SignHeartbeatRequest, SignProposalRequest,
+    SignVoteRequest, SignedHeartbeatResponse, SignedProposalResponse, SignedVoteResponse,
+    TendermintSignable, HEARTBEAT_AMINO_NAME, PING_AMINO_NAME, POISON_PILL_AMINO_NAME,
+    PROPOSAL_AMINO_NAME, PUBKEY_AMINO_NAME, VOTE_AMINO_NAME,
 };
 
 pub const MAX_MSG_LEN: usize = 1024;
@@ -22,6 +22,9 @@ pub enum Request {
     SignVote(SignVoteRequest),
     ShowPublicKey(PubKeyMsg),
 
+    // PingRequest is a PrivValidatorSocket message to keep the connection alive.
+    ReplyPing(PingRequest),
+
     /// Instruct the KMS to terminate
     PoisonPill(PoisonPillMsg),
 }
@@ -32,6 +35,7 @@ pub enum Response {
     SignedHeartBeat(SignedHeartbeatResponse),
     SignedVote(SignedVoteResponse),
     SignedProposal(SignedProposalResponse),
+    Ping(PingResponse),
     PublicKey(PubKeyMsg),
 }
 
@@ -65,6 +69,7 @@ lazy_static! {
     static ref VOTE_PREFIX: Vec<u8> = compute_prefix(VOTE_AMINO_NAME);
     static ref PROPOSAL_PREFIX: Vec<u8> = compute_prefix(PROPOSAL_AMINO_NAME);
     static ref PUBKEY_PREFIX: Vec<u8> = compute_prefix(PUBKEY_AMINO_NAME);
+    static ref PING_PREFIX: Vec<u8> = compute_prefix(PING_AMINO_NAME);
 }
 
 impl Request {
@@ -110,6 +115,10 @@ impl Request {
         } else if amino_pre == *PUBKEY_PREFIX {
             if let Ok(prop) = PubKeyMsg::decode(&rem) {
                 return Ok(Request::ShowPublicKey(prop));
+            }
+        } else if amino_pre == *PING_PREFIX {
+            if let Ok(ping) = PingRequest::decode(&rem) {
+                return Ok(Request::ReplyPing(ping));
             }
         }
 

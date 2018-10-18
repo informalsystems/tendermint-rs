@@ -6,10 +6,10 @@ use signatory::ed25519::{PublicKey, PUBLIC_KEY_SIZE};
 // version.
 // TODO(ismail): make this more generic (by modifying prost and adding a trait for PubKey)
 
-pub const AMINO_NAME: &str = "tendermint/socketpv/PubKeyMsg";
+pub const AMINO_NAME: &str = "tendermint/remotesigner/PubKeyMsg";
 
 #[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/socketpv/PubKeyMsg"]
+#[amino_name = "tendermint/remotesigner/PubKeyMsg"]
 pub struct PubKeyMsg {
     #[prost(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
     pub_key_ed25519: Vec<u8>,
@@ -62,7 +62,7 @@ mod tests {
         //	cdc.RegisterConcrete(crypto.PubKeyEd25519{},
         //		"tendermint/PubKeyEd25519", nil)
         //	cdc.RegisterConcrete(&privval.PubKeyMsg{},
-        //      "tendermint/socketpv/PubKeyMsg", nil)
+        //      "tendermint/remotesigner/PubKeyMsg", nil)
         //	b, _ := cdc.MarshalBinary(&privval.PubKeyMsg{})
         //	fmt.Printf("%#v\n\n", b)
         //}
