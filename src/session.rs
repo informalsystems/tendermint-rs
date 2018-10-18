@@ -4,7 +4,7 @@ use signatory::{ed25519, Ed25519Seed};
 use signatory_dalek::Ed25519Signer;
 use std::io::Write;
 use std::net::TcpStream;
-use types::{PubKeyMsg, TendermintSignable};
+use types::PubKeyMsg;
 
 use error::Error;
 use prost::Message;

@@ -39,22 +39,10 @@ pub struct SignedHeartbeatResponse {
     pub err: Option<RemoteError>,
 }
 
-// tendermint type:
-//
-// type CanonicalHeartbeat struct {
-//    ChainID          string  `json:"@chain_id"`
-//    Type             string  `json:"@type"`
-//    Height           int64   `json:"height"`
-//    Round            int     `json:"round"`
-//    Sequence         int     `json:"sequence"`
-//    ValidatorAddress Address `json:"validator_address"`
-//    ValidatorIndex   int     `json:"validator_index"`
-//}
 #[derive(Clone, PartialEq, Message)]
 struct ConicalHeartbeat {
     #[prost(string, tag = "1")]
     pub chain_id: String,
-    // TODO(ismail): most probably this field can be deleted:
     #[prost(string)]
     pub type_str: String,
     #[prost(sint64)]
@@ -124,7 +112,10 @@ mod tests {
             heartbeat: Some(heartbeat),
         }.encode(&mut got);
         let want = vec![
-            0x24, 0xbf, 0x58, 0xca, 0xef, 0xa, 0x1e, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86,
+            0x24, // len
+            157, 144, 158, 106, // prefix
+            0xa, 0x1e, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71,
+            0x86, // remaining proto3 encoding of data
             0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
             0x10, 0x2, 0x18, 0x1e, 0x20, 0x14, 0x28, 0x3c,
         ];
@@ -134,7 +125,7 @@ mod tests {
 
     #[test]
     fn test_serializationuns_withoutaddr() {
-        // identical to above but without validator_adress:
+        // identical to above but without validator_address:
         let heartbeat = Heartbeat {
             validator_address: vec![],
             validator_index: 1,
@@ -150,7 +141,9 @@ mod tests {
         let mut got = vec![];
         let _have = msg.encode(&mut got);
         let want = vec![
-            0xe, 0xbf, 0x58, 0xca, 0xef, 0xa, 0x8, 0x10, 0x2, 0x18, 0x1e, 0x20, 0x14, 0x28, 0x3c,
+            0xe, // len
+            157, 144, 158, 106, // amino prefix
+            0xa, 0x8, 0x10, 0x2, 0x18, 0x1e, 0x20, 0x14, 0x28, 0x3c,
         ];
 
         assert_eq!(got, want)

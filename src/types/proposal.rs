@@ -1,6 +1,6 @@
 use super::{
     ed25519, BlockID, CanonicalBlockID, CanonicalPartSetHeader, Ed25519Signature, PartsSetHeader,
-    RemoteError, Signature, TendermintSignable, Time,
+    RemoteError, Signature, SignedMsgType, TendermintSignable, Time,
 };
 use bytes::BufMut;
 use chrono::{DateTime, Utc};
@@ -42,37 +42,27 @@ pub struct SignedProposalResponse {
     pub err: Option<RemoteError>,
 }
 
-// CanonicalProposal matches with golang type:
-//
-//type CanonicalProposal struct {
-//    ChainID          string                 `json:"@chain_id"`
-//    Type             string                 `json:"@type"`
-//    BlockPartsHeader CanonicalPartSetHeader `json:"block_parts_header"`
-//    Height           int64                  `json:"height"`
-//    POLBlockID       CanonicalBlockID       `json:"pol_block_id"`
-//    POLRound         int                    `json:"pol_round"`
-//    Round            int                    `json:"round"`
-//    Timestamp        time.Time              `json:"timestamp"`
-//}
 #[derive(Clone, PartialEq, Message)]
 struct CanonicalProposal {
-    #[prost(string, tag = "1")]
-    pub chain_id: String,
-    // TODO(ismail): this field probably will be deleted:
-    #[prost(string, tag = "2")]
-    pub type_str: String,
+    #[prost(sfixed64, tag = "1")]
+    pub version: i64,
+    #[prost(sint64)]
+    pub height: i64,
+    #[prost(sint64)]
+    round: i64,
+    #[prost(uint32)]
+    pub msg_type: u32, // this is a byte in golang, which is a varint encoded UInt8 (using amino's EncodeUvarint)
+
+    #[prost(message)]
+    timestamp: Option<Time>,
     #[prost(message)]
     block_parts_header: Option<CanonicalPartSetHeader>,
     #[prost(sint64)]
-    pub height: i64,
+    pol_round: i64,
     #[prost(message)]
     pol_block_id: Option<CanonicalBlockID>,
-    #[prost(sint64)]
-    pol_round: i64,
-    #[prost(sint64)]
-    round: i64,
-    #[prost(message)]
-    timestamp: Option<Time>,
+    #[prost(string)]
+    pub chain_id: String,
 }
 
 impl TendermintSignable for SignProposalRequest {
@@ -86,8 +76,12 @@ impl TendermintSignable for SignProposalRequest {
         }
         let proposal = spr.proposal.unwrap();
         let cp = CanonicalProposal {
+            // TODO(ismail): add version as soon as
+            // https://github.com/tendermint/tendermint/issues/2468
+            // is closed
+            version: 0,
             chain_id: chain_id.to_string(),
-            type_str: "proposal".to_string(),
+            msg_type: SignedMsgType::Proposal.to_u32(),
             block_parts_header: match proposal.block_parts_header {
                 Some(ph) => Some(CanonicalPartSetHeader {
                     hash: ph.hash,

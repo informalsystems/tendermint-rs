@@ -1,50 +1,12 @@
 use super::{
     ed25519, BlockID, CanonicalBlockID, CanonicalPartSetHeader, Ed25519Signature, RemoteError,
-    Signature, TendermintSignable, Time,
+    Signature, SignedMsgType, TendermintSignable, Time,
 };
 use bytes::BufMut;
 use chrono::{DateTime, Utc};
 use prost::Message;
 use std::time::{SystemTime, UNIX_EPOCH};
-// TODO(ismail): we might not want to use this error type here
-// see below: those aren't prost errors
-use types::prost_amino::error::{DecodeError, EncodeError};
-
-#[derive(Debug, Copy)]
-enum VoteType {
-    PreVote,
-    PreCommit,
-}
-
-fn vote_type_to_char(vt: &VoteType) -> char {
-    match *vt {
-        VoteType::PreVote => 0x01 as char,
-        VoteType::PreCommit => 0x02 as char,
-    }
-}
-
-fn u32_to_vote_type(data: u32) -> Result<VoteType, DecodeError> {
-    match data {
-        1 => Ok(VoteType::PreVote),
-        2 => Ok(VoteType::PreCommit),
-        _ => Err(DecodeError::new("Invalid vote type")),
-    }
-}
-
-impl VoteType {
-    fn to_u32(&self) -> u32 {
-        match *self {
-            VoteType::PreVote => 0x01,
-            VoteType::PreCommit => 0x02,
-        }
-    }
-}
-
-impl Clone for VoteType {
-    fn clone(&self) -> VoteType {
-        *self
-    }
-}
+use types::prost_amino::error::EncodeError;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Vote {
@@ -155,7 +117,6 @@ impl TendermintSignable for SignVoteRequest {
     fn set_signature(&mut self, sig: &Ed25519Signature) {
         if let Some(ref mut vt) = self.vote {
             vt.signature = sig.clone().into_vec();
-            println!("vote signature: {:?}", sig.clone().into_vec());
         }
     }
 }
@@ -182,7 +143,7 @@ mod tests {
             height: 12345,
             round: 2,
             timestamp: Some(t),
-            vote_type: VoteType::PreVote.to_u32(),
+            vote_type: SignedMsgType::PreVote.to_u32(),
             block_id: Some(BlockID {
                 hash: "hash".as_bytes().to_vec(),
                 parts_header: Some(PartsSetHeader {
@@ -255,7 +216,7 @@ mod tests {
         let mut vt_precommit = Vote::default();
         vt_precommit.height = 1;
         vt_precommit.round = 1;
-        vt_precommit.vote_type = VoteType::PreCommit.to_u32(); // precommit
+        vt_precommit.vote_type = SignedMsgType::PreCommit.to_u32(); // precommit
         println!("{:?}", vt_precommit);
         let cv_precommit = CanonicalVote::new(vt_precommit, "");
         got = vec![];

@@ -2,7 +2,6 @@ use bytes::IntoBuf;
 use prost::encoding::decode_varint;
 use prost::Message;
 use sha2::{Digest, Sha256};
-use signatory::Signature;
 use std::io::Cursor;
 use std::io::{self, Read};
 use std::io::{Error, ErrorKind};

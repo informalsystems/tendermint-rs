@@ -6,8 +6,9 @@ pub mod poisonpill;
 pub mod proposal;
 pub mod vote;
 
+use self::prost_amino::DecodeError;
 use bytes::BufMut;
-use signatory::{ed25519, encoding::Decode, Ed25519Signature, Signature};
+use signatory::{ed25519, Ed25519Signature, Signature};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
@@ -81,6 +82,57 @@ pub trait TendermintSignable {
     where
         B: BufMut;
     fn set_signature(&mut self, sig: &Ed25519Signature);
+}
+
+// This follows:
+// https://github.com/tendermint/tendermint/blob/455d34134cc53c334ebd3195ac22ea444c4b59bb/types/signed_msg_type.go#L3-L16
+#[derive(Debug, Copy)]
+enum SignedMsgType {
+    // Votes
+    PreVote,
+    PreCommit,
+
+    // Proposals
+    Proposal,
+
+    // Heartbeat
+    Heartbeat,
+}
+
+impl SignedMsgType {
+    fn to_u32(self) -> u32 {
+        match self {
+            // Votes
+            SignedMsgType::PreVote => 0x01,
+            SignedMsgType::PreCommit => 0x02,
+            // Proposals
+            SignedMsgType::Proposal => 0x20,
+            // Heartbeat
+            SignedMsgType::Heartbeat => 0x30,
+        }
+    }
+    fn from(data: u32) -> Result<SignedMsgType, DecodeError> {
+        match data {
+            0x01 => Ok(SignedMsgType::PreVote),
+            0x02 => Ok(SignedMsgType::PreCommit),
+            0x20 => Ok(SignedMsgType::Proposal),
+            0x30 => Ok(SignedMsgType::Heartbeat),
+            _ => Err(DecodeError::new("Invalid vote type")),
+        }
+    }
+    fn is_valid_vote_type(msg_type: SignedMsgType) -> bool {
+        match msg_type {
+            SignedMsgType::PreVote => true,
+            SignedMsgType::PreCommit => true,
+            _ => false,
+        }
+    }
+}
+
+impl Clone for SignedMsgType {
+    fn clone(&self) -> SignedMsgType {
+        *self
+    }
 }
 
 pub use self::ed25519msg::PubKeyMsg;
