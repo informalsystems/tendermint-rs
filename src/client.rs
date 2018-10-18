@@ -5,7 +5,7 @@
 //! To dance around the fact the KMS isn't actually a service, we refer to it
 //! as a "Key Management System".
 
-use signatory::{self, Ed25519Seed, Encode, Decode};
+use signatory::{self, Decode, Ed25519Seed, Encode};
 use signatory_dalek::Ed25519Signer;
 use std::{
     panic,
@@ -13,10 +13,10 @@ use std::{
     time::Duration,
 };
 
-use config::{ValidatorConfig, ConnectionConfig, SecretConnectionConfig};
+use config::{ConnectionConfig, SecretConnectionConfig, ValidatorConfig};
+use ed25519::{PublicKey, SECRET_KEY_ENCODING};
 use error::Error;
 use session::Session;
-use ed25519::{PublicKey, SECRET_KEY_ENCODING};
 
 /// How long to wait after a crash before respawning (in seconds)
 pub const RESPAWN_DELAY: u64 = 5;
@@ -58,7 +58,9 @@ fn client_loop(config: ValidatorConfig) {
     if seccon.is_some() && unix.is_some() {
         error!(
             "a validator has {} and {} specified, can only chose one",
-            seccon.unwrap().uri(), unix.unwrap().uri());
+            seccon.unwrap().uri(),
+            unix.unwrap().uri()
+        );
         return;
     }
 
@@ -104,18 +106,16 @@ fn client_session(config: &ConnectionConfig) -> Result<(), Error> {
                         log_kms_node_id(&key);
 
                         // Construct a secret connection session
-                        let mut session = Session::new_seccon(
-                            &conf.addr, conf.port, &key)?;
+                        let mut session = Session::new_seccon(&conf.addr, conf.port, &key)?;
 
-                        info!("[{}] connected to validator successfully",
-                              conf.uri());
+                        info!("[{}] connected to validator successfully", conf.uri());
 
                         while session.handle_request()? {}
-                    },
+                    }
 
                     Err(e) => error!("couldn't load secret connection key: {}", e),
                 }
-            },
+            }
 
             // This validator will use a UNIX connection
             ConnectionConfig::UNIXConnection(ref conf) => {
@@ -125,7 +125,7 @@ fn client_session(config: &ConnectionConfig) -> Result<(), Error> {
                 info!("[{}] waiting for a validator connection", conf.uri());
 
                 while session.handle_request()? {}
-            },
+            }
         };
 
         Ok(())

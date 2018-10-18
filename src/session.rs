@@ -2,11 +2,11 @@
 
 use signatory::{ed25519, Ed25519Seed};
 use signatory_dalek::Ed25519Signer;
-use std::{io, fs};
-use std::net::TcpStream;
-use std::path::PathBuf;
 use std::marker::{Send, Sync};
+use std::net::TcpStream;
 use std::os::unix::net::{UnixListener, UnixStream};
+use std::path::PathBuf;
+use std::{fs, io};
 use types::{PubKeyMsg, TendermintSign};
 
 use error::Error;
@@ -23,7 +23,11 @@ pub struct Session<Connection> {
 
 impl Session<SecretConnection<TcpStream>> {
     /// Create a new session with the validator at the given address/port
-    pub fn new_seccon(addr: &str, port: u16, secret_connection_key: &Ed25519Seed) -> Result<Self, Error> {
+    pub fn new_seccon(
+        addr: &str,
+        port: u16,
+        secret_connection_key: &Ed25519Seed,
+    ) -> Result<Self, Error> {
         debug!("Connecting to {}:{}...", addr, port);
         let socket = TcpStream::connect(format!("{}:{}", addr, port))?;
         let signer = Ed25519Signer::from(secret_connection_key);
@@ -42,8 +46,10 @@ impl Session<UNIXConnection<UnixStream>> {
             }
         }
 
-        debug!("Waiting for a connection at {}...",
-               socket_path.to_str().unwrap());
+        debug!(
+            "Waiting for a connection at {}...",
+            socket_path.to_str().unwrap()
+        );
 
         let listener = UnixListener::bind(&socket_path)?;
         let (socket, addr) = listener.accept()?;

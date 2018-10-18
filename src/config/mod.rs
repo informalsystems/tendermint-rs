@@ -1,12 +1,12 @@
 //! Configuration file structures (with serde-derived parser)
 
+mod connection;
 pub mod provider;
 mod validator;
-mod connection;
 
+pub use self::connection::*;
 use self::provider::ProviderConfig;
 pub use self::validator::*;
-pub use self::connection::*;
 
 /// Name of the KMS configuration file
 pub const CONFIG_FILE_NAME: &str = "tmkms.toml";

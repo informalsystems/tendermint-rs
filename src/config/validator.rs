@@ -1,4 +1,4 @@
-use config::connection::{UNIXConnectionConfig, SecretConnectionConfig};
+use config::connection::{SecretConnectionConfig, UNIXConnectionConfig};
 
 /// Validator configuration
 #[derive(Clone, Deserialize, Debug)]

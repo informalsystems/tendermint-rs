@@ -8,7 +8,7 @@ pub struct UNIXConnection<IoHandler> {
     socket: IoHandler,
 }
 
-impl<IoHandler: io::Read + io::Write + Send + Sync>  UNIXConnection<IoHandler> {
+impl<IoHandler: io::Read + io::Write + Send + Sync> UNIXConnection<IoHandler> {
     pub fn new(socket: IoHandler) -> Result<Self, Error> {
         Ok(Self { socket })
     }
@@ -18,8 +18,7 @@ impl<IoHandler> io::Read for UNIXConnection<IoHandler>
 where
     IoHandler: io::Read + io::Write + Send + Sync,
 {
-
-    fn read (&mut self, data: &mut [u8]) -> Result<usize, io::Error> {
+    fn read(&mut self, data: &mut [u8]) -> Result<usize, io::Error> {
         self.socket.read(data)
     }
 }

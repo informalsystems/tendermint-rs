@@ -56,7 +56,8 @@ impl Callable for RunCommand {
 /// Spawn validator client threads (which provide KMS service to the
 /// validators they connect to)
 fn spawn_validator_clients(config: &[ValidatorConfig]) -> Vec<Client> {
-    config.iter()
+    config
+        .iter()
         .map(|validator| Client::spawn(validator.clone()))
         .collect()
 }

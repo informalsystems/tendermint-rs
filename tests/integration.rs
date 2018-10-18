@@ -32,10 +32,16 @@ extern crate sha2;
 extern crate x25519_dalek;
 
 use prost::Message;
+use rand::Rng;
 use signatory::{ed25519, encoding::Decode, Signer};
 use signatory_dalek::Ed25519Signer;
 #[cfg(feature = "yubihsm")]
 use signatory_yubihsm::yubihsm;
+use std::io;
+use std::marker::{Send, Sync};
+use std::os::unix::net::UnixStream;
+use std::thread;
+use std::time;
 use std::{
     ffi::OsStr,
     io::{Read, Write},
@@ -43,15 +49,9 @@ use std::{
     path::Path,
     process::{Child, Command},
 };
-use std::io;
-use std::time;
-use std::thread;
-use std::marker::{Send, Sync};
-use std::os::unix::net::UnixStream;
 use subtle_encoding::Encoding;
-use types::TendermintSign;
 use tempfile::NamedTempFile;
-use rand::Rng;
+use types::TendermintSign;
 
 /// Integration tests for the KMS command-line interface
 mod cli;
@@ -128,8 +128,7 @@ impl KmsDevice {
         let config = KmsDevice::create_tcp_config(port);
 
         // Listen on a random port
-        let listener =
-            TcpListener::bind(format!("{}:{}", "127.0.0.1", port)).unwrap();
+        let listener = TcpListener::bind(format!("{}:{}", "127.0.0.1", port)).unwrap();
 
         let args = &["run", "-c", config.path().to_str().unwrap()];
         let process = Command::new(KMS_EXE_PATH).args(args).spawn().unwrap();
@@ -168,7 +167,9 @@ impl KmsDevice {
     /// Create a config file for a TCP KMS and return its path
     fn create_tcp_config(port: u16) -> NamedTempFile {
         let mut config_file = NamedTempFile::new().unwrap();
-        writeln!(config_file, r#"
+        writeln!(
+            config_file,
+            r#"
             [[providers.softsign]]
             id = "example-key-1"
             path = "tests/signing.key"
@@ -180,7 +181,9 @@ impl KmsDevice {
                 addr = "127.0.0.1"
                 port = {}
                 secret-key-path = "tests/seccon.key"
-        "#, port);
+        "#,
+            port
+        );
 
         config_file
     }
@@ -188,7 +191,9 @@ impl KmsDevice {
     /// Create a config file for a UNIX KMS and return its path
     fn create_unix_config(socket_path: &str) -> NamedTempFile {
         let mut config_file = NamedTempFile::new().unwrap();
-        writeln!(config_file, r#"
+        writeln!(
+            config_file,
+            r#"
             [[providers.softsign]]
             id = "example-key-1"
             path = "tests/signing.key"
@@ -197,7 +202,9 @@ impl KmsDevice {
 
                 [validator.unix]
                     socket-path = "{}"
-        "#, socket_path);
+        "#,
+            socket_path
+        );
 
         config_file
     }
@@ -214,14 +221,14 @@ impl KmsDevice {
                 let public_key = signatory::public_key(&signer).unwrap();
 
                 KmsConnection::SecretConnection(
-                    SecretConnection::new(socket_cp, &public_key, &signer).unwrap())
-            },
+                    SecretConnection::new(socket_cp, &public_key, &signer).unwrap(),
+                )
+            }
 
             KmsSocket::UNIX(ref sock) => {
                 let socket_cp = sock.try_clone().unwrap();
 
-                KmsConnection::UNIXConnection(
-                    UNIXConnection::new(socket_cp).unwrap())
+                KmsConnection::UNIXConnection(UNIXConnection::new(socket_cp).unwrap())
             }
         }
     }
@@ -260,7 +267,8 @@ struct ProtocolTester {
 
 impl ProtocolTester {
     pub fn apply<F>(functor: F)
-        where F: FnOnce(ProtocolTester)
+    where
+        F: FnOnce(ProtocolTester),
     {
         let tcp_device = KmsDevice::create_tcp();
         let tcp_connection = tcp_device.create_connection();
