@@ -1,5 +1,6 @@
-//! Key Management System for Cosmos Validators
+//! Tendermint Key Management System
 
+extern crate prost_amino as prost;
 #[macro_use]
 extern crate abscissa;
 #[macro_use]
@@ -7,31 +8,27 @@ extern crate abscissa_derive;
 extern crate byteorder;
 extern crate bytes;
 extern crate chrono;
-extern crate clear_on_drop;
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
-extern crate hex;
 extern crate hkdf;
 #[macro_use]
 extern crate lazy_static;
-extern crate prost;
 #[macro_use]
-extern crate prost_derive;
+extern crate prost_amino_derive as prost_derive;
 extern crate rand;
 extern crate ring;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
+extern crate serde_json;
 extern crate sha2;
 extern crate signatory;
 extern crate signatory_dalek;
-#[cfg(feature = "yubihsm-provider")]
+#[cfg(feature = "yubihsm")]
 extern crate signatory_yubihsm;
-#[macro_use]
-extern crate serde_json;
+extern crate subtle_encoding;
 extern crate x25519_dalek;
-#[cfg(feature = "yubihsm-provider")]
-extern crate yubihsm;
 
 #[macro_use]
 mod error;
@@ -45,10 +42,12 @@ mod rpc;
 mod secret_connection;
 mod session;
 mod types;
+#[cfg(feature = "yubihsm")]
+mod yubihsm;
 
-use application::KMSApplication;
+use application::KmsApplication;
 
 /// Main entry point
 fn main() {
-    abscissa::boot(KMSApplication);
+    abscissa::boot(KmsApplication);
 }

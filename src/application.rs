@@ -2,17 +2,17 @@
 
 use abscissa::{Application, LoggingConfig};
 
-use commands::KMSCommand;
-use config::KMSConfig;
+use commands::KmsCommand;
+use config::KmsConfig;
 
 #[derive(Debug)]
-pub struct KMSApplication;
+pub struct KmsApplication;
 
-impl Application for KMSApplication {
-    type Cmd = KMSCommand;
-    type Config = KMSConfig;
+impl Application for KmsApplication {
+    type Cmd = KmsCommand;
+    type Config = KmsConfig;
 
-    fn logging_config(&self, command: &KMSCommand) -> LoggingConfig {
+    fn logging_config(&self, command: &KmsCommand) -> LoggingConfig {
         if command.verbose() {
             LoggingConfig::verbose()
         } else {

@@ -19,29 +19,28 @@ jobs:
           cargo clippy --version
           cargo clippy --all-features
     - run:
-        name: build (default features)
+        name: build
         command: |
-          rustc --version 
-          cargo --version 
+          rustc --version
+          cargo --version
           cargo build
+    - run:
+        name: build --release
+        command: |
+          rustc --version
+          cargo --version
           cargo build --release
     - run:
-        name: build (all features)
+        name: build --all-features (debug)
         command: |
-          rustc --version 
-          cargo --version 
+          rustc --version
+          cargo --version
           cargo build --all-features
     - run:
-        name: build (--features=yubihsm-provider --release)
+        name: test --all-features
         command: |
-          rustc --version 
-          cargo --version 
-          cargo build --features=yubihsm-provider --release
-    - run:
-        name: test (all features)
-        command: |
-          rustc --version 
-          cargo --version 
+          rustc --version
+          cargo --version
           cargo test --all-features
     - run:
         name: audit

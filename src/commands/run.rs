@@ -1,10 +1,10 @@
 use abscissa::{Callable, GlobalConfig};
 use signatory::{self, Decode, Ed25519Seed, Encode};
 use signatory_dalek::Ed25519Signer;
-use std::{collections::BTreeMap, process};
+use std::process;
 
 use client::Client;
-use config::{KMSConfig, SecretConnectionConfig, ValidatorConfig};
+use config::{KmsConfig, SecretConnectionConfig, ValidatorConfig};
 use ed25519::{KeyRing, PublicKey, SECRET_KEY_ENCODING};
 use error::Error;
 
@@ -38,7 +38,7 @@ impl Callable for RunCommand {
             env!("CARGO_PKG_VERSION")
         );
 
-        let config = KMSConfig::get_global();
+        let config = KmsConfig::get_global();
 
         let secret_connection_key = load_secret_connection_key(&config.secret_connection)
             .unwrap_or_else(|e| {
@@ -54,7 +54,7 @@ impl Callable for RunCommand {
         });
 
         // Spawn the validator client threads
-        let validator_clients = spawn_validator_clients(&config.validators, &secret_connection_key);
+        let validator_clients = spawn_validator_clients(&config.validator, &secret_connection_key);
 
         // Wait for the validator client threads to exit
         // TODO: Find something more useful for this thread to do
@@ -81,22 +81,17 @@ fn load_secret_connection_key(config: &SecretConnectionConfig) -> Result<Ed25519
 /// Log the KMS node ID
 fn log_kms_node_id(seed: &Ed25519Seed) {
     let public_key = PublicKey::from(signatory::public_key(&Ed25519Signer::from(seed)).unwrap());
-    info!("KMS node ID: {}", &public_key);
+    info!("{} node ID: {}", env!("CARGO_PKG_NAME"), &public_key);
 }
 
 /// Spawn validator client threads (which provide KMS service to the
 /// validators they connect to)
 fn spawn_validator_clients(
-    config: &BTreeMap<String, ValidatorConfig>,
+    config: &[ValidatorConfig],
     secret_connection_key: &Ed25519Seed,
 ) -> Vec<Client> {
     config
         .iter()
-        .map(|(label, validator_config)| {
-            Client::spawn(
-                label.clone(),
-                validator_config.clone(),
-                secret_connection_key.clone(),
-            )
-        }).collect()
+        .map(|validator| Client::spawn(validator.clone(), secret_connection_key.clone()))
+        .collect()
 }

@@ -1,0 +1,22 @@
+# Example KMS configuration file
+#
+# Copy this to 'kms.toml' and edit for your own purposes
+
+[[validator]]
+addr = "example1.example.com"
+port = 26657
+
+[[providers.softsign]]
+id = "gaia-8000"
+path = "path/to/validator.key"
+
+[[providers.yubihsm]]
+adapter = { type = "usb" }
+auth = { key = 1, password = "password" } # Default YubiHSM admin password. Change ASAP!
+keys = [{ id = "gaia-9000", key = 42 }, { id = "gaia-9001", key = 43 }]
+#serial-number = "0123456789"
+
+[secret-connection]
+secret-key-path = "path/to/kms-node.key"
+
+

@@ -1,4 +1,4 @@
-extern crate prost;
+extern crate prost_amino;
 
 pub mod ed25519msg;
 pub mod heartbeat;
@@ -7,7 +7,7 @@ pub mod proposal;
 pub mod vote;
 
 use bytes::BufMut;
-use signatory::{ed25519::Ed25519Signature, Signature};
+use signatory::{ed25519, encoding::Decode, Ed25519Signature, Signature};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
@@ -73,7 +73,11 @@ impl From<Time> for SystemTime {
 }
 
 pub trait TendermintSignable {
-    fn sign_bytes<B>(&self, chain_id: &str, sign_bytes: &mut B) -> Result<bool, prost::EncodeError>
+    fn sign_bytes<B>(
+        &self,
+        chain_id: &str,
+        sign_bytes: &mut B,
+    ) -> Result<bool, prost_amino::EncodeError>
     where
         B: BufMut;
     fn set_signature(&mut self, sig: &Ed25519Signature);

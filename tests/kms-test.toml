@@ -2,11 +2,14 @@
 #
 # This file is passed to the KMS executable during integration tests
 
-[providers.dalek.keys]
-example-key-1 = { path = "tests/signing.key" }
+[[validator]]
+addr = "127.0.0.1"
+port = 23456
+reconnect = false
+
+[[providers.softsign]]
+id = "example-key-1"
+path = "tests/signing.key"
 
 [secret-connection]
 secret-key-path = "tests/seccon.key"
-
-[validators]
-example1 = { addr = "127.0.0.1", port = 23456, reconnect = false }

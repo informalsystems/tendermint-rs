@@ -1,5 +1,5 @@
 use super::{
-    BlockID, CanonicalBlockID, CanonicalPartSetHeader, Ed25519Signature, PartsSetHeader,
+    ed25519, BlockID, CanonicalBlockID, CanonicalPartSetHeader, Ed25519Signature, PartsSetHeader,
     RemoteError, Signature, TendermintSignable, Time,
 };
 use bytes::BufMut;
@@ -127,8 +127,8 @@ impl TendermintSignable for SignProposalRequest {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use prost::Message;
     use std::error::Error;
+    use types::prost_amino::Message;
 
     #[test]
     fn test_serialization() {

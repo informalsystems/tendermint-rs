@@ -1,4 +1,4 @@
-use super::{Ed25519Signature, RemoteError, Signature, TendermintSignable};
+use super::{ed25519, Ed25519Signature, RemoteError, Signature, TendermintSignable};
 use bytes::BufMut;
 use prost::{EncodeError, Message};
 
@@ -102,8 +102,8 @@ impl TendermintSignable for SignHeartbeatRequest {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use prost::Message;
     use std::error::Error;
+    use types::prost_amino::Message;
 
     #[test]
     fn test_serializationuns_unsigned() {

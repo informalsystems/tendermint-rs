@@ -7,37 +7,44 @@
 extern crate abscissa_derive;
 #[macro_use]
 extern crate failure_derive;
-extern crate prost;
+extern crate prost_amino as prost;
 #[macro_use]
-extern crate prost_derive;
+extern crate prost_amino_derive as prost_derive;
 extern crate rand;
 extern crate signatory;
+
 extern crate signatory_dalek;
+#[cfg(feature = "yubihsm")]
+extern crate signatory_yubihsm;
+extern crate subtle_encoding;
 
 extern crate byteorder;
 extern crate bytes;
 extern crate chrono;
 extern crate failure;
-extern crate hex;
 extern crate hkdf;
 extern crate ring;
-/// Hacks for accessing the RPC types in tests
-extern crate serde_json;
 extern crate sha2;
 extern crate x25519_dalek;
 
 use prost::Message;
 use secret_connection::SecretConnection;
-use signatory::{
-    encoding::{Decode, Encoding},
-    Ed25519PublicKey, Ed25519Seed, Ed25519Signature,
-};
+use signatory::{ed25519, Decode, Ed25519PublicKey, Ed25519Seed, Ed25519Signature};
 use signatory_dalek::Ed25519Signer;
-use std::ffi::OsStr;
-use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
-use std::process::{Child, Command};
+#[cfg(feature = "yubihsm")]
+use signatory_yubihsm::yubihsm;
+use std::{
+    ffi::OsStr,
+    io::{Read, Write},
+    net::{TcpListener, TcpStream},
+    path::Path,
+    process::{Child, Command},
+};
+use subtle_encoding::Encoding;
 use types::TendermintSignable;
+
+/// Integration tests for the KMS command-line interface
+mod cli;
 
 /// Address the mock validator listens on
 pub const MOCK_VALIDATOR_ADDR: &str = "127.0.0.1";
@@ -45,8 +52,11 @@ pub const MOCK_VALIDATOR_ADDR: &str = "127.0.0.1";
 /// Port the mock validator listens on
 pub const MOCK_VALIDATOR_PORT: u16 = 23456;
 
+/// Path to the KMS executable
+pub const KMS_EXE_PATH: &str = "./target/debug/tmkms";
+
 /// Arguments to pass when launching the KMS
-pub const KMS_TEST_ARGS: &[&str] = &["run", "-c", "tests/test.toml"];
+pub const KMS_TEST_ARGS: &[&str] = &["run", "-c", "tests/kms-test.toml"];
 
 mod types {
     include!("../src/types/mod.rs");
@@ -80,19 +90,23 @@ impl KmsConnection {
         let listener =
             TcpListener::bind(format!("{}:{}", MOCK_VALIDATOR_ADDR, MOCK_VALIDATOR_PORT)).unwrap();
 
-        let process = Command::new("./target/debug/cosmos-kms")
-            .args(args)
-            .spawn()
-            .unwrap();
+        let process = Command::new(KMS_EXE_PATH).args(args).spawn().unwrap();
 
         let (socket, _) = listener.accept().unwrap();
         Self { process, socket }
     }
 }
 
+impl Default for KmsConnection {
+    fn default() -> KmsConnection {
+        KmsConnection::create(KMS_TEST_ARGS)
+    }
+}
+
 /// Get the public key associated with the testing private key
 fn test_key() -> (Ed25519PublicKey, Ed25519Signer) {
-    let seed = Ed25519Seed::decode_from_file("tests/signing.key", Encoding::Raw).unwrap();
+    let seed =
+        ed25519::Seed::decode_from_file("tests/signing.key", subtle_encoding::IDENTITY).unwrap();
     let signer = Ed25519Signer::from(&seed);
     (signatory::public_key(&signer).unwrap(), signer)
 }
@@ -108,7 +122,7 @@ fn test_handle_and_sign_requests() {
 
     use secret_connection::SecretConnection;
     // this spawns a process which wants to share ephemeral keys and blocks until it reads a reply:
-    let mut kms = KmsConnection::create(KMS_TEST_ARGS);
+    let mut kms = KmsConnection::default();
 
     // we use the same key for both sides:
     let (pub_key, signer) = test_key();
@@ -240,7 +254,7 @@ fn test_handle_and_sign_requests() {
                     hash: "parts_hash".as_bytes().to_vec(),
                 }),
             }),
-            signature: None,
+            signature: vec![],
         };
         let svr = types::vote::SignVoteRequest { vote: Some(vote) };
         let mut buf = vec![];
@@ -256,21 +270,20 @@ fn test_handle_and_sign_requests() {
         let mut resp = vec![0u8; (actual_len + 2) as usize];
         resp.copy_from_slice(&resp_buf[..(actual_len + 2) as usize]);
         println!("got response: {:?}", resp);
-        let v_req: SignVoteRequest =
-            SignVoteRequest::decode(&resp).expect("decoding vote failed");
+        let v_req: SignVoteRequest = SignVoteRequest::decode(&resp).expect("decoding vote failed");
         println!("decoded vote: {:?}", v_req);
         let mut sign_bytes: Vec<u8> = vec![];
         //v_req.sign_bytes(chain_id, &mut sign_bytes).unwrap();
-//
-//        let vote: types::vote::Vote = v_req
-//            .vote
-//            .expect("vote should be embedded but none was found");
-//        let sig: Vec<u8> = vote.signature.expect("expected signature was not found");
-//        let verifier = Ed25519Verifier::from(&pub_key);
-//        let signature = Ed25519Signature::from_bytes(sig).unwrap();
-//        let msg: &[u8] = sign_bytes.as_slice();
-//
-//        ed25519::verify(&verifier, msg, &signature).unwrap();
+        //
+        //        let vote: types::vote::Vote = v_req
+        //            .vote
+        //            .expect("vote should be embedded but none was found");
+        //        let sig: Vec<u8> = vote.signature.expect("expected signature was not found");
+        //        let verifier = Ed25519Verifier::from(&pub_key);
+        //        let signature = Ed25519Signature::from_bytes(sig).unwrap();
+        //        let msg: &[u8] = sign_bytes.as_slice();
+        //
+        //        ed25519::verify(&verifier, msg, &signature).unwrap();
     }
 
     // it all worked; send the kms the message to quit:

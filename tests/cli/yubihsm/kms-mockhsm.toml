@@ -1,0 +1,17 @@
+# KMS configuration for testing `yubihsm` subcommands
+#
+# This file is passed to the KMS executable during integration tests
+
+[[validator]]
+addr = "127.0.0.1"
+port = 23456
+reconnect = false
+
+[[providers.yubihsm]]
+adapter = { type = "usb" }
+auth = { key = 1, password = "password" }
+serial-number = "0123456789"
+keys = [{ id = "gaia-9000", key = 1 }]
+
+[secret-connection]
+secret-key-path = "tests/seccon.key"
