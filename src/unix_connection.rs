@@ -3,6 +3,7 @@ use std::marker::{Send, Sync};
 
 use error::Error;
 
+/// Protocol implementation of the UNIX socket domain connection
 pub struct UNIXConnection<IoHandler> {
     socket: IoHandler,
 }
