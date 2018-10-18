@@ -32,7 +32,6 @@ impl Session {
 
     /// Handle an incoming request from the validator
     pub fn handle_request(&mut self) -> Result<bool, Error> {
-        println!("handling request ... ");
         let response = match Request::read(&mut self.connection)? {
             Request::SignProposal(req) => self.sign(req)?,
             Request::SignHeartbeat(req) => self.sign(req)?,

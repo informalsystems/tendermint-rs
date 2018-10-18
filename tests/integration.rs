@@ -220,10 +220,10 @@ fn test_handle_and_sign_requests() {
         let mut resp = vec![0u8; (actual_len + 1) as usize];
         resp.copy_from_slice(&resp_buf[..(actual_len + 1) as usize]);
 
-        let p_req: SignProposalRequest =
-            SignProposalRequest::decode(&resp).expect("decoding proposal failed");
+        let p_req: SignedProposalResponse =
+            SignedProposalResponse::decode(&resp).expect("decoding proposal failed");
         let mut sign_bytes: Vec<u8> = vec![];
-        p_req.sign_bytes(chain_id, &mut sign_bytes).unwrap();
+        spr.sign_bytes(chain_id, &mut sign_bytes).unwrap();
 
         let prop: types::proposal::Proposal = p_req
             .proposal
@@ -259,7 +259,6 @@ fn test_handle_and_sign_requests() {
         let svr = types::vote::SignVoteRequest { vote: Some(vote) };
         let mut buf = vec![];
         svr.encode(&mut buf).unwrap();
-        println!("encoded vote: {:?}", buf);
         connection.write_all(&buf).unwrap();
 
         // receive response:
@@ -269,21 +268,21 @@ fn test_handle_and_sign_requests() {
         let actual_len = resp_buf[0];
         let mut resp = vec![0u8; (actual_len + 2) as usize];
         resp.copy_from_slice(&resp_buf[..(actual_len + 2) as usize]);
-        println!("got response: {:?}", resp);
-        let v_req: SignVoteRequest = SignVoteRequest::decode(&resp).expect("decoding vote failed");
-        println!("decoded vote: {:?}", v_req);
+        let v_resp: SignedVoteResponse =
+            SignedVoteResponse::decode(&resp).expect("decoding vote failed");
         let mut sign_bytes: Vec<u8> = vec![];
-        //v_req.sign_bytes(chain_id, &mut sign_bytes).unwrap();
-        //
-        //        let vote: types::vote::Vote = v_req
-        //            .vote
-        //            .expect("vote should be embedded but none was found");
-        //        let sig: Vec<u8> = vote.signature.expect("expected signature was not found");
-        //        let verifier = Ed25519Verifier::from(&pub_key);
-        //        let signature = Ed25519Signature::from_bytes(sig).unwrap();
-        //        let msg: &[u8] = sign_bytes.as_slice();
-        //
-        //        ed25519::verify(&verifier, msg, &signature).unwrap();
+        svr.sign_bytes(chain_id, &mut sign_bytes).unwrap();
+
+        let vote: types::vote::Vote = v_resp
+            .vote
+            .expect("vote should be embedded int the response but none was found");
+        let sig: Vec<u8> = vote.signature;
+        assert_ne!(sig, vec![]);
+        let verifier = Ed25519Verifier::from(&pub_key);
+        let signature = Ed25519Signature::from_bytes(sig).unwrap();
+        let msg: &[u8] = sign_bytes.as_slice();
+
+        ed25519::verify(&verifier, msg, &signature).unwrap();
     }
 
     // it all worked; send the kms the message to quit:
