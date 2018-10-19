@@ -22,6 +22,7 @@ extern crate ring;
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
+extern crate iq_bech32;
 extern crate sha2;
 extern crate signatory;
 extern crate signatory_dalek;
@@ -29,7 +30,6 @@ extern crate signatory_dalek;
 extern crate signatory_yubihsm;
 extern crate subtle_encoding;
 extern crate x25519_dalek;
-extern crate iq_bech32;
 
 #[macro_use]
 mod error;
