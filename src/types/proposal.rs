@@ -43,9 +43,7 @@ pub struct SignedProposalResponse {
 
 #[derive(Clone, PartialEq, Message)]
 struct CanonicalProposal {
-    #[prost(sfixed64, tag = "1")]
-    pub version: i64,
-    #[prost(sint64)]
+    #[prost(sint64, tag = "1")]
     pub height: i64,
     #[prost(sint64)]
     round: i64,
@@ -75,10 +73,6 @@ impl TendermintSignable for SignProposalRequest {
         }
         let proposal = spr.proposal.unwrap();
         let cp = CanonicalProposal {
-            // TODO(ismail): add version as soon as
-            // https://github.com/tendermint/tendermint/issues/2468
-            // is closed
-            version: 0,
             chain_id: chain_id.to_string(),
             msg_type: SignedMsgType::Proposal.to_u32(),
             block_parts_header: match proposal.block_parts_header {

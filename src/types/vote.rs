@@ -47,8 +47,6 @@ pub struct SignedVoteResponse {
 #[derive(Clone, PartialEq, Message)]
 pub struct CanonicalVote {
     #[prost(sfixed64, tag = "1")]
-    pub version: i64,
-    #[prost(sfixed64)]
     pub height: i64,
     #[prost(sfixed64)]
     pub round: i64,
@@ -65,10 +63,6 @@ pub struct CanonicalVote {
 impl CanonicalVote {
     fn new(vote: Vote, chain_id: &str) -> CanonicalVote {
         CanonicalVote {
-            // TODO(ismail): this needs to be updated in tendermint 1st
-            // blocked by: https://github.com/tendermint/tendermint/pull/2644
-            // and follow up work in tm
-            version: 0,
             chain_id: chain_id.to_string(),
             block_id: match vote.block_id {
                 Some(bid) => Some(CanonicalBlockID {
@@ -208,74 +202,103 @@ mod tests {
         // SignBytes are encoded using MarshalBinary and not MarshalBinaryBare
         cv.encode_length_delimited(&mut got).unwrap();
         let want = vec![
-            0xb, 0x2a, 0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
+            0xb, 0x22, 0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
         ];
         assert_eq!(got, want);
 
-        let mut vt_precommit = Vote::default();
-        vt_precommit.height = 1;
-        vt_precommit.round = 1;
-        vt_precommit.vote_type = SignedMsgType::PreCommit.to_u32(); // precommit
-        println!("{:?}", vt_precommit);
-        let cv_precommit = CanonicalVote::new(vt_precommit, "");
-        got = vec![];
-        cv_precommit.encode_length_delimited(&mut got).unwrap();
-        let want = vec![
-            0x1f, // total length
-            0x11, // (field_number << 3) | wire_type (version is missing)
-            0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
-            0x19, // (field_number << 3) | wire_type
-            0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
-            0x20, // (field_number << 3) | wire_type
-            0x2,  // PrecommitType
-            0x2a, // (field_number << 3) | wire_type
-            // remaining fields (timestamp):
-            0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
-        ];
-        assert_eq!(got, want);
+        // with proper (fixed size) height and round (PreCommit):
+        {
+            let mut vt_precommit = Vote::default();
+            vt_precommit.height = 1;
+            vt_precommit.round = 1;
+            vt_precommit.vote_type = SignedMsgType::PreCommit.to_u32(); // precommit
+            println!("{:?}", vt_precommit);
+            let cv_precommit = CanonicalVote::new(vt_precommit, "");
+            got = vec![];
+            cv_precommit.encode_length_delimited(&mut got).unwrap();
+            let want = vec![
+                0x1f, // total length
+                0x9,  // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
+                0x11, // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
+                0x18, // (field_number << 3) | wire_type
+                0x2,  // PrecommitType
+                0x22, // (field_number << 3) | wire_type
+                // remaining fields (timestamp):
+                0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
+            ];
+            assert_eq!(got, want);
+        }
+        // with proper (fixed size) height and round (PreVote):
+        {
+            let mut vt_prevote = Vote::default();
+            vt_prevote.height = 1;
+            vt_prevote.round = 1;
+            vt_prevote.vote_type = SignedMsgType::PreVote.to_u32();
 
-        let mut no_vote_type = Vote::default();
-        no_vote_type.height = 1;
-        no_vote_type.round = 1;
+            got = vec![];
+            let cv_prevote = CanonicalVote::new(vt_prevote, "");
 
-        got = vec![];
-        let mut cv_with_version = CanonicalVote::new(no_vote_type, "");
-        cv_with_version.version = 123;
-        cv_with_version.encode_length_delimited(&mut got).unwrap();
+            cv_prevote.encode_length_delimited(&mut got).unwrap();
 
-        let want = vec![
-            0x26, // total length
-            0x9,  // (field_number << 3) | wire_type
-            0x7b, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // version (123)
-            0x11, // (field_number << 3) | wire_type
-            0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
-            0x19, // (field_number << 3) | wire_type
-            0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
-            // remaining fields (timestamp):
-            0x2a, 0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
-        ];
-        assert_eq!(got, want);
+            let want = vec![
+                0x1f, // total length
+                0x9,  // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
+                0x11, // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
+                0x18, // (field_number << 3) | wire_type
+                0x1,  // PrevoteTypef
+                // remaining fields (timestamp):
+                0x22, 0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
+            ];
+            assert_eq!(got, want);
+        }
+        // with proper (fixed size) height and round (msg typ missing):
+        {
+            let mut vt_no_type = Vote::default();
+            vt_no_type.height = 1;
+            vt_no_type.round = 1;
 
-        let mut no_vote_type2 = Vote::default();
-        no_vote_type2.height = 1;
-        no_vote_type2.round = 1;
+            got = vec![];
+            let cv = CanonicalVote::new(vt_no_type, "");
+            cv.encode_length_delimited(&mut got).unwrap();
 
-        let with_chain_id = CanonicalVote::new(no_vote_type2, "test_chain_id");
-        got = vec![];
-        with_chain_id.encode_length_delimited(&mut got).unwrap();
-        let want = vec![
-            0x2c, // total length
-            0x11, // (field_number << 3) | wire_type
-            0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
-            0x19, // (field_number << 3) | wire_type
-            0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
-            // remaining fields:
-            0x2a, // (field_number << 3) | wire_type
-            0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff, // timestamp
-            0x3a, // (field_number << 3) | wire_type
-            0xd, 0x74, 0x65, 0x73, 0x74, 0x5f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64,
-        ];
-        assert_eq!(got, want);
+            let want = vec![
+                0x1d, // total length
+                0x9,  // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
+                0x11, // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
+                // remaining fields (timestamp):
+                0x22, 0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
+            ];
+            assert_eq!(got, want);
+        }
+        // containing non-empty chain_id:
+        {
+            let mut no_vote_type2 = Vote::default();
+            no_vote_type2.height = 1;
+            no_vote_type2.round = 1;
+
+            let with_chain_id = CanonicalVote::new(no_vote_type2, "test_chain_id");
+            got = vec![];
+            with_chain_id.encode_length_delimited(&mut got).unwrap();
+            let want = vec![
+                0x2c, // total length
+                0x9,  // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
+                0x11, // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
+                // remaining fields:
+                0x22, // (field_number << 3) | wire_type
+                0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff, // timestamp
+                0x32, // (field_number << 3) | wire_type
+                0xd, 0x74, 0x65, 0x73, 0x74, 0x5f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64,
+            ];
+            assert_eq!(got, want);
+        }
     }
 
     #[test]
