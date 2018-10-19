@@ -12,7 +12,7 @@ pub const AMINO_NAME: &str = "tendermint/remotesigner/PubKeyMsg";
 #[amino_name = "tendermint/remotesigner/PubKeyMsg"]
 pub struct PubKeyMsg {
     #[prost(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
-    pub_key_ed25519: Vec<u8>,
+    pub pub_key_ed25519: Vec<u8>,
 }
 
 impl Into<PublicKey> for PubKeyMsg {

@@ -220,8 +220,7 @@ fn test_handle_and_sign_requests() {
         let mut resp = vec![0u8; actual_len as usize];
         resp.copy_from_slice(&mut resp_buf[..(actual_len as usize)]);
 
-        let p_req: SignedProposalResponse =
-            SignedProposalResponse::decode(&resp).expect("decoding proposal failed");
+        let p_req = SignedProposalResponse::decode(&resp).expect("decoding proposal failed");
         let mut sign_bytes: Vec<u8> = vec![];
         spr.sign_bytes(chain_id, &mut sign_bytes).unwrap();
 
@@ -269,8 +268,7 @@ fn test_handle_and_sign_requests() {
         let mut resp = vec![0u8; actual_len as usize];
         resp.copy_from_slice(&resp_buf[..actual_len as usize]);
 
-        let v_resp: SignedVoteResponse =
-            SignedVoteResponse::decode(&resp).expect("decoding vote failed");
+        let v_resp = SignedVoteResponse::decode(&resp).expect("decoding vote failed");
         let mut sign_bytes: Vec<u8> = vec![];
         svr.sign_bytes(chain_id, &mut sign_bytes).unwrap();
 
@@ -284,6 +282,39 @@ fn test_handle_and_sign_requests() {
         let msg: &[u8] = sign_bytes.as_slice();
 
         ed25519::verify(&verifier, msg, &signature).unwrap();
+    }
+    // get public key
+    {
+        let mut buf = vec![];
+        PubKeyMsg {
+            pub_key_ed25519: vec![],
+        }.encode(&mut buf)
+        .unwrap();
+        connection.write_all(&buf).unwrap();
+        // receive response:
+        let mut resp_buf = vec![0u8; 1024];
+        connection.read(&mut resp_buf).unwrap();
+
+        let actual_len = extract_actual_len(&resp_buf).unwrap();
+        let mut resp = vec![0u8; actual_len as usize];
+        resp.copy_from_slice(&resp_buf[..actual_len as usize]);
+        let pk_resp = PubKeyMsg::decode(&resp).expect("decoding public key failed");
+        assert_ne!(pk_resp.pub_key_ed25519, vec![]);
+        println!("got public key: {:?}", pk_resp.pub_key_ed25519);
+    }
+    // ping pong
+    {
+        let mut buf = vec![];
+        PingRequest {}.encode(&mut buf).unwrap();
+        connection.write_all(&buf).unwrap();
+        // receive response:
+        let mut resp_buf = vec![0u8; 1024];
+        connection.read(&mut resp_buf).unwrap();
+
+        let actual_len = extract_actual_len(&resp_buf).unwrap();
+        let mut resp = vec![0u8; actual_len as usize];
+        resp.copy_from_slice(&resp_buf[..actual_len as usize]);
+        let pong = PingResponse::decode(&resp).expect("decoding ping response failed");
     }
 
     // it all worked; send the kms the message to quit:

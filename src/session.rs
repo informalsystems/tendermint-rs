@@ -6,12 +6,11 @@ use std::io::Write;
 use std::net::TcpStream;
 use types::{PingRequest, PingResponse, PubKeyMsg};
 
+use ed25519::keyring::KeyRing;
 use error::Error;
 use prost::Message;
 use rpc::{Request, Response, TendermintResponse};
 use secret_connection::SecretConnection;
-
-use ed25519::keyring::GLOBAL_KEYRING;
 
 /// Encrypted session with a validator node
 pub struct Session {
@@ -38,7 +37,7 @@ impl Session {
             Request::SignVote(req) => self.sign(req)?,
             // non-signable requests:
             Request::ReplyPing(ref req) => self.reply_ping(req),
-            Request::ShowPublicKey(ref req) => self.get_public_key(req),
+            Request::ShowPublicKey(ref req) => self.get_public_key(req)?,
             Request::PoisonPill(_req) => return Ok(false),
         };
         //
@@ -62,8 +61,7 @@ impl Session {
         request.sign_bytes(chain_id, &mut to_sign)?;
         // TODO(ismail): figure out which key to use here instead of taking the only key
         // from keyring here:
-        let keyring = GLOBAL_KEYRING.read().unwrap();
-        let sig = keyring.sign_with_only_signer(&to_sign).unwrap();
+        let sig = KeyRing::sign_with_only_signer(&to_sign)?;
 
         request.set_signature(&sig);
         Ok(request.build_response())
@@ -71,7 +69,13 @@ impl Session {
     fn reply_ping(&mut self, _request: &PingRequest) -> Response {
         Response::Ping(PingResponse {})
     }
-    fn get_public_key(&mut self, _request: &PubKeyMsg) -> Response {
-        unimplemented!()
+
+    fn get_public_key(&mut self, _request: &PubKeyMsg) -> Result<Response, Error> {
+        let pubkey = KeyRing::get_only_signing_pubkey()?;
+        let pubkey_bytes = pubkey.as_bytes();
+
+        Ok(Response::PublicKey(PubKeyMsg {
+            pub_key_ed25519: pubkey_bytes.to_vec(),
+        }))
     }
 }
