@@ -36,6 +36,7 @@ signatory-dalek = "0.10"
 signatory-yubihsm = { version = "0.10", optional = true }
 subtle-encoding = "0.2"
 x25519-dalek = { version = "0.3", default-features = false, features = ["std", "u64_backend"] }
+iq-bech32 = "0.1"
 
 
 [features]

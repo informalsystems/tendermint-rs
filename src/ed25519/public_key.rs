@@ -1,4 +1,5 @@
 use signatory::ed25519;
+use iq_bech32::Bech32;
 pub use signatory::ed25519::PUBLIC_KEY_SIZE;
 use std::fmt::{self, Display};
 #[cfg(feature = "yubihsm")]
@@ -25,16 +26,15 @@ impl PublicKey {
     }
 }
 
-// TODO: public key serialization formats (cosmos-bech32)
 impl Display for PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ed25519(")?;
 
-        for (i, byte) in self.as_bytes().iter().enumerate() {
-            write!(f, "{:02x}", byte)?;
-            write!(f, "{}", if i == PUBLIC_KEY_SIZE - 1 { ")" } else { ":" })?;
-        }
+        let bech: Bech32 = Default::default();
 
+        let bech_str = bech.encode("cosmosvalconspub", self.as_bytes());
+
+
+        write!(f,"{}", bech_str)?;
         Ok(())
     }
 }
