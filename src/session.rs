@@ -61,7 +61,7 @@ impl Session {
         request.sign_bytes(chain_id, &mut to_sign)?;
         // TODO(ismail): figure out which key to use here instead of taking the only key
         // from keyring here:
-        let sig = KeyRing::sign_with_only_signer(&to_sign)?;
+        let sig = KeyRing::sign(None, &to_sign)?;
 
         request.set_signature(&sig);
         Ok(request.build_response())

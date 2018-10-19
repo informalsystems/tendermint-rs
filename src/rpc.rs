@@ -5,12 +5,7 @@ use sha2::{Digest, Sha256};
 use std::io::Cursor;
 use std::io::{self, Read};
 use std::io::{Error, ErrorKind};
-use types::{
-    PingRequest, PingResponse, PoisonPillMsg, PubKeyMsg, SignHeartbeatRequest, SignProposalRequest,
-    SignVoteRequest, SignedHeartbeatResponse, SignedProposalResponse, SignedVoteResponse,
-    TendermintSignable, HEARTBEAT_AMINO_NAME, PING_AMINO_NAME, POISON_PILL_AMINO_NAME,
-    PROPOSAL_AMINO_NAME, PUBKEY_AMINO_NAME, VOTE_AMINO_NAME,
-};
+use types::*;
 
 pub const MAX_MSG_LEN: usize = 1024;
 
@@ -90,42 +85,30 @@ impl Request {
         if len > MAX_MSG_LEN as u64 {
             return Err(Error::new(ErrorKind::InvalidData, "RPC message too large."));
         }
-        // we read that many bytes:
         let mut amino_pre = vec![0; 4];
         buff.read_exact(&mut amino_pre)?;
         buff.set_position(0);
         // TODO: find a way to get back the buffer without cloning the cursor here:
         let rem: Vec<u8> =
             buff.clone().into_inner()[..(len.checked_add(1).unwrap() as usize)].to_vec();
-        if amino_pre == *PP_PREFIX {
-            // do not spent any time decoding, we are going down anyways
-            return Ok(Request::PoisonPill(PoisonPillMsg {}));
-        } else if amino_pre == *HEART_BEAT_PREFIX {
-            if let Ok(hb) = SignHeartbeatRequest::decode(&rem) {
-                return Ok(Request::SignHeartbeat(hb));
+        match amino_pre {
+            ref pp if *pp == *PP_PREFIX => Ok(Request::PoisonPill(PoisonPillMsg {})),
+            ref hb if *hb == *HEART_BEAT_PREFIX => {
+                Ok(Request::SignHeartbeat(SignHeartbeatRequest::decode(&rem)?))
             }
-        } else if amino_pre == *VOTE_PREFIX {
-            if let Ok(vote) = SignVoteRequest::decode(&rem) {
-                return Ok(Request::SignVote(vote));
+            ref vt if *vt == *VOTE_PREFIX => Ok(Request::SignVote(SignVoteRequest::decode(&rem)?)),
+            ref pr if *pr == *PROPOSAL_PREFIX => {
+                Ok(Request::SignProposal(SignProposalRequest::decode(&rem)?))
             }
-        } else if amino_pre == *PROPOSAL_PREFIX {
-            if let Ok(prop) = SignProposalRequest::decode(&rem) {
-                return Ok(Request::SignProposal(prop));
+            ref pubk if *pubk == *PUBKEY_PREFIX => {
+                Ok(Request::ShowPublicKey(PubKeyMsg::decode(&rem)?))
             }
-        } else if amino_pre == *PUBKEY_PREFIX {
-            if let Ok(prop) = PubKeyMsg::decode(&rem) {
-                return Ok(Request::ShowPublicKey(prop));
-            }
-        } else if amino_pre == *PING_PREFIX {
-            if let Ok(ping) = PingRequest::decode(&rem) {
-                return Ok(Request::ReplyPing(ping));
-            }
+            ref ping if *ping == *PING_PREFIX => Ok(Request::ReplyPing(PingRequest::decode(&rem)?)),
+            _ => Err(Error::new(
+                ErrorKind::InvalidData,
+                "Received unknown RPC message.",
+            )),
         }
-
-        Err(Error::new(
-            ErrorKind::InvalidData,
-            "Received unknown RPC message.",
-        ))
     }
 }
 
