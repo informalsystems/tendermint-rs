@@ -4,11 +4,12 @@ use signatory::{ed25519, Ed25519Seed};
 use signatory_dalek::Ed25519Signer;
 use std::io::Write;
 use std::net::TcpStream;
-use types::{PubKeyMsg, TendermintSign};
+use types::{PingRequest, PingResponse, PubKeyMsg};
 
+use ed25519::keyring::KeyRing;
 use error::Error;
 use prost::Message;
-use rpc::{Request, Response};
+use rpc::{Request, Response, TendermintResponse};
 use secret_connection::SecretConnection;
 
 /// Encrypted session with a validator node
@@ -30,12 +31,13 @@ impl Session {
 
     /// Handle an incoming request from the validator
     pub fn handle_request(&mut self) -> Result<bool, Error> {
-        println!("handling request ... ");
         let response = match Request::read(&mut self.connection)? {
             Request::SignProposal(req) => self.sign(req)?,
             Request::SignHeartbeat(req) => self.sign(req)?,
             Request::SignVote(req) => self.sign(req)?,
-            Request::ShowPublicKey(ref req) => self.get_public_key(req),
+            // non-signable requests:
+            Request::ReplyPing(ref req) => self.reply_ping(req),
+            Request::ShowPublicKey(ref req) => self.get_public_key(req)?,
             Request::PoisonPill(_req) => return Ok(false),
         };
         //
@@ -44,24 +46,36 @@ impl Session {
             Response::SignedHeartBeat(shb) => shb.encode(&mut buf)?,
             Response::SignedProposal(sp) => sp.encode(&mut buf)?,
             Response::SignedVote(sv) => sv.encode(&mut buf)?,
+            Response::Ping(ping) => ping.encode(&mut buf)?,
             Response::PublicKey(pk) => pk.encode(&mut buf)?,
         }
-        // TODO(ismail): do some proper error handling
         self.connection.write_all(&buf)?;
         Ok(true)
     }
 
     /// Perform a digital signature operation
-    fn sign(&mut self, request: impl TendermintSign) -> Result<Response, Error> {
-        // TODO(ismail) figure out if chain_id is a constant / field of the kms?
-        let chain_id = "TODO";
-        let _json = request.cannonicalize(chain_id);
-        // TODO(ismail): figure out which key to use here
-        //match self.keyring.sign( &PublicKey(vec![]), &json.into_bytes()) { }
-        unimplemented!()
+    fn sign(&mut self, mut request: impl TendermintResponse) -> Result<Response, Error> {
+        let mut to_sign = vec![];
+        // TODO(ismail): this should either be a config param, or, included in the request!
+        let chain_id = "test_chain_id";
+        request.sign_bytes(chain_id, &mut to_sign)?;
+        // TODO(ismail): figure out which key to use here instead of taking the only key
+        // from keyring here:
+        let sig = KeyRing::sign(None, &to_sign)?;
+
+        request.set_signature(&sig);
+        Ok(request.build_response())
+    }
+    fn reply_ping(&mut self, _request: &PingRequest) -> Response {
+        Response::Ping(PingResponse {})
     }
 
-    fn get_public_key(&mut self, _request: &PubKeyMsg) -> Response {
-        unimplemented!()
+    fn get_public_key(&mut self, _request: &PubKeyMsg) -> Result<Response, Error> {
+        let pubkey = KeyRing::get_only_signing_pubkey()?;
+        let pubkey_bytes = pubkey.as_bytes();
+
+        Ok(Response::PublicKey(PubKeyMsg {
+            pub_key_ed25519: pubkey_bytes.to_vec(),
+        }))
     }
 }

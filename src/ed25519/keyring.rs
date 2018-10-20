@@ -39,19 +39,6 @@ impl KeyRing {
         }
     }
 
-    /// Sign a message using the secret key associated with the given public key
-    /// (if it is in our keyring)
-    pub fn sign(public_key: &PublicKey, msg: &[u8]) -> Result<Ed25519Signature, Error> {
-        let keyring = GLOBAL_KEYRING.read().unwrap();
-
-        let signer = keyring
-            .0
-            .get(public_key)
-            .ok_or_else(|| err!(InvalidKey, "not in keyring: {}", public_key))?;
-
-        signer.sign(msg)
-    }
-
     /// Add a key to the keyring, returning an error if we already have a
     /// signer registered for the given public key
     pub(super) fn add(&mut self, public_key: PublicKey, signer: Signer) -> Result<(), Error> {
@@ -71,5 +58,37 @@ impl KeyRing {
         } else {
             Ok(())
         }
+    }
+
+    pub fn get_only_signing_pubkey() -> Result<PublicKey, Error> {
+        let keyring = GLOBAL_KEYRING.read().unwrap();
+
+        let mut keys = keyring.0.keys();
+        if keys.len() > 1 {
+            return Err(err!(InvalidKey, "expected only one key in keyring"));
+        }
+        Ok(*keys.next().unwrap())
+    }
+
+    /// Sign a message using the secret key associated with the given public key
+    /// (if it is in our keyring)
+    pub fn sign(public_key: Option<&PublicKey>, msg: &[u8]) -> Result<Ed25519Signature, Error> {
+        let keyring = GLOBAL_KEYRING.read().unwrap();
+        let signer: &Signer = match public_key {
+            Some(public_key) => keyring
+                .0
+                .get(public_key)
+                .ok_or_else(|| err!(InvalidKey, "not in keyring: {}", public_key))?,
+            None => {
+                let mut vals = keyring.0.values();
+                if vals.len() > 1 {
+                    return Err(err!(SigningError, "expected only one key in keyring"));
+                }
+                vals.next()
+                    .ok_or_else(|| err!(InvalidKey, "could not get only signer"))?
+            }
+        };
+
+        signer.sign(msg)
     }
 }
