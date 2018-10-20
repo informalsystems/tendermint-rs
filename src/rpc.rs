@@ -5,23 +5,38 @@ use sha2::{Digest, Sha256};
 use std::io::Cursor;
 use std::io::{self, Read};
 use std::io::{Error, ErrorKind};
-use types::{
-    PoisonPillMsg, PubKeyMsg, SignHeartbeatMsg, SignProposalMsg, SignVoteMsg, HEARTBEAT_AMINO_NAME,
-    POISON_PILL_AMINO_NAME, PROPOSAL_AMINO_NAME, PUBKEY_AMINO_NAME, VOTE_AMINO_NAME,
-};
+use types::*;
 
 pub const MAX_MSG_LEN: usize = 1024;
 
 /// Requests to the KMS
 pub enum Request {
     /// Sign the given message
-    SignHeartbeat(SignHeartbeatMsg),
-    SignProposal(SignProposalMsg),
-    SignVote(SignVoteMsg),
+    SignHeartbeat(SignHeartbeatRequest),
+    SignProposal(SignProposalRequest),
+    SignVote(SignVoteRequest),
     ShowPublicKey(PubKeyMsg),
+
+    // PingRequest is a PrivValidatorSocket message to keep the connection alive.
+    ReplyPing(PingRequest),
 
     /// Instruct the KMS to terminate
     PoisonPill(PoisonPillMsg),
+}
+
+/// Responses from the KMS
+pub enum Response {
+    /// Signature response
+    SignedHeartBeat(SignedHeartbeatResponse),
+    SignedVote(SignedVoteResponse),
+    SignedProposal(SignedProposalResponse),
+    Ping(PingResponse),
+    PublicKey(PubKeyMsg),
+}
+
+pub trait TendermintResponse: TendermintSignable {
+    // TODO(ismail): this should take an error as an argument:
+    fn build_response(self) -> Response;
 }
 
 fn compute_prefix(name: &str) -> (Vec<u8>) {
@@ -49,6 +64,7 @@ lazy_static! {
     static ref VOTE_PREFIX: Vec<u8> = compute_prefix(VOTE_AMINO_NAME);
     static ref PROPOSAL_PREFIX: Vec<u8> = compute_prefix(PROPOSAL_AMINO_NAME);
     static ref PUBKEY_PREFIX: Vec<u8> = compute_prefix(PUBKEY_AMINO_NAME);
+    static ref PING_PREFIX: Vec<u8> = compute_prefix(PING_AMINO_NAME);
 }
 
 impl Request {
@@ -69,45 +85,56 @@ impl Request {
         if len > MAX_MSG_LEN as u64 {
             return Err(Error::new(ErrorKind::InvalidData, "RPC message too large."));
         }
-        // we read that many bytes:
         let mut amino_pre = vec![0; 4];
         buff.read_exact(&mut amino_pre)?;
         buff.set_position(0);
         // TODO: find a way to get back the buffer without cloning the cursor here:
-        let rem: Vec<u8> = buff.clone().into_inner();
-        if amino_pre == *PP_PREFIX {
-            // do not spent any time decoding, we are going down anyways
-            return Ok(Request::PoisonPill(PoisonPillMsg {}));
-        } else if amino_pre == *HEART_BEAT_PREFIX {
-            if let Ok(hb) = SignHeartbeatMsg::decode(&rem) {
-                return Ok(Request::SignHeartbeat(hb));
+        let rem: Vec<u8> =
+            buff.clone().into_inner()[..(len.checked_add(1).unwrap() as usize)].to_vec();
+        match amino_pre {
+            ref pp if *pp == *PP_PREFIX => Ok(Request::PoisonPill(PoisonPillMsg {})),
+            ref hb if *hb == *HEART_BEAT_PREFIX => {
+                Ok(Request::SignHeartbeat(SignHeartbeatRequest::decode(&rem)?))
             }
-        } else if amino_pre == *VOTE_PREFIX {
-            if let Ok(vote) = SignVoteMsg::decode(&rem) {
-                return Ok(Request::SignVote(vote));
+            ref vt if *vt == *VOTE_PREFIX => Ok(Request::SignVote(SignVoteRequest::decode(&rem)?)),
+            ref pr if *pr == *PROPOSAL_PREFIX => {
+                Ok(Request::SignProposal(SignProposalRequest::decode(&rem)?))
             }
-        } else if amino_pre == *PROPOSAL_PREFIX {
-            if let Ok(prop) = SignProposalMsg::decode(&rem) {
-                return Ok(Request::SignProposal(prop));
+            ref pubk if *pubk == *PUBKEY_PREFIX => {
+                Ok(Request::ShowPublicKey(PubKeyMsg::decode(&rem)?))
             }
-        } else if amino_pre == *PUBKEY_PREFIX {
-            if let Ok(prop) = PubKeyMsg::decode(&rem) {
-                return Ok(Request::ShowPublicKey(prop));
-            }
+            ref ping if *ping == *PING_PREFIX => Ok(Request::ReplyPing(PingRequest::decode(&rem)?)),
+            _ => Err(Error::new(
+                ErrorKind::InvalidData,
+                "Received unknown RPC message.",
+            )),
         }
-
-        Err(Error::new(
-            ErrorKind::InvalidData,
-            "Received unknown RPC message.",
-        ))
     }
 }
 
-/// Responses from the KMS
-pub enum Response {
-    /// Signature response
-    SignedHeartBeat(SignHeartbeatMsg),
-    SignedVote(SignVoteMsg),
-    SignedProposal(SignProposalMsg),
-    PublicKey(PubKeyMsg),
+impl TendermintResponse for SignHeartbeatRequest {
+    fn build_response(self) -> Response {
+        Response::SignedHeartBeat(SignedHeartbeatResponse {
+            heartbeat: self.heartbeat,
+            err: None,
+        })
+    }
+}
+
+impl TendermintResponse for SignVoteRequest {
+    fn build_response(self) -> Response {
+        Response::SignedVote(SignedVoteResponse {
+            vote: self.vote,
+            err: None,
+        })
+    }
+}
+
+impl TendermintResponse for SignProposalRequest {
+    fn build_response(self) -> Response {
+        Response::SignedProposal(SignedProposalResponse {
+            proposal: self.proposal,
+            err: None,
+        })
+    }
 }
