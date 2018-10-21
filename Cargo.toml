@@ -35,9 +35,11 @@ signatory = { version = "0.10", features = ["ed25519"] }
 signatory-dalek = "0.10"
 signatory-yubihsm = { version = "0.10", optional = true }
 subtle-encoding = "0.2"
-tempfile = "3.0.4"
 tm-secret-connection = { version = "0", path = "tm-secret-connection" }
 iq-bech32 = "0.1"
+
+[dev-dependencies]
+tempfile = "3.0.4"
 
 [features]
 default = ["softsign", "yubihsm"]
