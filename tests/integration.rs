@@ -28,10 +28,9 @@ extern crate failure;
 extern crate sha2;
 extern crate tm_secret_connection;
 
+use chrono::{DateTime, Utc};
 use prost::Message;
 use rand::Rng;
-use tm_secret_connection::SecretConnection;
-use unix_connection::UNIXConnection;
 use signatory::{ed25519, Decode, Ed25519PublicKey, Ed25519Seed, Ed25519Signature, Signature};
 use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
 #[cfg(feature = "yubihsm")]
@@ -50,8 +49,9 @@ use std::{
 };
 use subtle_encoding::Encoding;
 use tempfile::NamedTempFile;
-use chrono::{DateTime, Utc};
+use tm_secret_connection::SecretConnection;
 use types::*;
+use unix_connection::UNIXConnection;
 
 /// Integration tests for the KMS command-line interface
 mod cli;
@@ -296,7 +296,10 @@ impl io::Read for ProtocolTester {
         let unix_sz = self.unix_connection.read(&mut unix_buf)?;
 
         // Assert handler sanity
-        assert!(unix_buf == data, "binary protocol differs between TCP and UNIX sockets");
+        assert!(
+            unix_buf == data,
+            "binary protocol differs between TCP and UNIX sockets"
+        );
 
         Ok(unix_sz)
     }
@@ -421,7 +424,8 @@ fn test_handle_and_sign_proposal() {
         let mut resp = vec![0u8; actual_len as usize];
         resp.copy_from_slice(&mut resp_buf[..(actual_len as usize)]);
 
-        let p_req = proposal::SignedProposalResponse::decode(&resp).expect("decoding proposal failed");
+        let p_req =
+            proposal::SignedProposalResponse::decode(&resp).expect("decoding proposal failed");
         let mut sign_bytes: Vec<u8> = vec![];
         spr.sign_bytes(chain_id, &mut sign_bytes).unwrap();
 
@@ -471,7 +475,9 @@ fn test_handle_and_sign_vote() {
             signature: vec![],
         };
 
-        let svr = types::vote::SignVoteRequest { vote: Some(vote_msg) };
+        let svr = types::vote::SignVoteRequest {
+            vote: Some(vote_msg),
+        };
         let mut buf = vec![];
         svr.encode(&mut buf).unwrap();
         pt.write_all(&buf).unwrap();
@@ -502,7 +508,6 @@ fn test_handle_and_sign_vote() {
         send_poison_pill(&mut pt);
     });
 }
-
 
 #[test]
 fn test_handle_and_sign_get_publickey() {

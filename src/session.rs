@@ -13,8 +13,8 @@ use ed25519::keyring::KeyRing;
 use error::KmsError;
 use prost::Message;
 use rpc::{Request, Response, TendermintResponse};
-use unix_connection::UNIXConnection;
 use tm_secret_connection::SecretConnection;
+use unix_connection::UNIXConnection;
 
 /// Encrypted session with a validator node
 pub struct Session<Connection> {

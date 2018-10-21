@@ -137,8 +137,16 @@ fn load_secret_connection_key(config: &SecretConnectionConfig) -> Result<Ed25519
     let key_path = &config.secret_key_path;
 
     if key_path.exists() {
-        Ok(Ed25519Seed::decode_from_file(key_path, SECRET_KEY_ENCODING)
-            .map_err(|e| err!(KmsErrorKind::ConfigError, "error loading {}: {}", key_path.display(), e))?)
+        Ok(
+            Ed25519Seed::decode_from_file(key_path, SECRET_KEY_ENCODING).map_err(|e| {
+                err!(
+                    KmsErrorKind::ConfigError,
+                    "error loading {}: {}",
+                    key_path.display(),
+                    e
+                )
+            })?,
+        )
     } else {
         let seed = Ed25519Seed::generate();
         seed.encode_to_file(key_path, SECRET_KEY_ENCODING)?;
