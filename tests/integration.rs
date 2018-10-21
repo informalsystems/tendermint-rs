@@ -4,6 +4,8 @@
 #![allow(unused_imports, unused_variables, dead_code)]
 
 #[macro_use]
+extern crate abscissa;
+#[macro_use]
 extern crate abscissa_derive;
 #[macro_use]
 extern crate failure_derive;

@@ -5,24 +5,24 @@ use signatory_yubihsm::{self, KeyId};
 
 use config::provider::yubihsm::YubihsmConfig;
 use ed25519::{KeyRing, PublicKey, Signer};
-use error::Error;
+use error::{KmsError, KmsErrorKind::*};
 
 /// Label for ed25519-dalek provider
 // TODO: use a non-string type for these, e.g. an enum
 pub const YUBIHSM_PROVIDER_LABEL: &str = "yubihsm";
 
 /// Create hardware-backed YubiHSM signer objects from the given configuration
-pub fn init(keyring: &mut KeyRing, yubihsm_configs: &[YubihsmConfig]) -> Result<(), Error> {
+pub fn init(keyring: &mut KeyRing, yubihsm_configs: &[YubihsmConfig]) -> Result<(), KmsError> {
     if yubihsm_configs.is_empty() {
         return Ok(());
     }
 
     if yubihsm_configs.len() != 1 {
-        return Err(err!(
+        fail!(
             ConfigError,
             "expected one [yubihsm.provider] in config, found: {}",
             yubihsm_configs.len()
-        ));
+        );
     }
 
     let yubihsm_config = &yubihsm_configs[0];
