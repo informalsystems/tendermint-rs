@@ -1,10 +1,10 @@
 //! Configuration file structures (with serde-derived parser)
 
-use std::path::PathBuf;
-
+mod connection;
 pub mod provider;
 mod validator;
 
+pub use self::connection::*;
 use self::provider::ProviderConfig;
 pub use self::validator::*;
 
@@ -20,19 +20,8 @@ pub struct KmsConfig {
 
     /// Cryptographic signature provider configuration
     pub providers: ProviderConfig,
-
-    /// Secret connection configuration
-    #[serde(rename = "secret-connection")]
-    pub secret_connection: SecretConnectionConfig,
 }
 
 // Impl the `abscissa::GlobalConfig` trait, storing the configuration in the
 // `GLOBAL_CONFIG` static value
 impl_global_config!(KmsConfig, GLOBAL_CONFIG);
-
-#[derive(Clone, Deserialize, Debug)]
-pub struct SecretConnectionConfig {
-    /// Path to our identity key
-    #[serde(rename = "secret-key-path")]
-    pub secret_key_path: PathBuf,
-}

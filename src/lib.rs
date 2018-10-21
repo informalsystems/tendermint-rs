@@ -49,6 +49,7 @@ mod ed25519;
 mod rpc;
 mod session;
 mod types;
+mod unix_connection;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
 

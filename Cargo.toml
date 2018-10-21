@@ -38,6 +38,8 @@ subtle-encoding = "0.2"
 tm-secret-connection = { version = "0", path = "tm-secret-connection" }
 iq-bech32 = "0.1"
 
+[dev-dependencies]
+tempfile = "3.0.4"
 
 [features]
 default = ["softsign", "yubihsm"]
