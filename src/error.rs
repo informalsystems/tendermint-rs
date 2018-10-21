@@ -2,7 +2,6 @@
 
 use failure::{Backtrace, Context, Fail};
 use prost;
-use ring;
 use signatory;
 use std::{
     any::Any,
@@ -10,6 +9,7 @@ use std::{
     fmt::{self, Display},
     io,
 };
+use tm_secret_connection;
 #[cfg(feature = "yubihsm")]
 use yubihsm;
 
@@ -171,12 +171,6 @@ impl From<prost::EncodeError> for Error {
     }
 }
 
-impl From<ring::error::Unspecified> for Error {
-    fn from(other: ring::error::Unspecified) -> Self {
-        err!(CryptoError, other)
-    }
-}
-
 impl From<signatory::Error> for Error {
     fn from(other: signatory::Error) -> Self {
         let kind = match other.kind() {
@@ -188,6 +182,19 @@ impl From<signatory::Error> for Error {
         };
 
         Error::with_description(kind, other.description().to_owned())
+    }
+}
+
+impl From<tm_secret_connection::Error> for Error {
+    fn from(other: tm_secret_connection::Error) -> Self {
+        match other {
+            tm_secret_connection::Error::CryptoError => ErrorKind::CryptoError,
+            tm_secret_connection::Error::InvalidKey => ErrorKind::InvalidKey,
+            tm_secret_connection::Error::IoError => ErrorKind::IoError,
+            tm_secret_connection::Error::ProtocolError => ErrorKind::ProtocolError,
+            tm_secret_connection::Error::SigningError => ErrorKind::SigningError,
+            tm_secret_connection::Error::VerificationError => ErrorKind::VerificationError,
+        }.into()
     }
 }
 

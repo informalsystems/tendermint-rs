@@ -2,12 +2,15 @@
 name        = "tmkms"
 description = "Tendermint Key Management System"
 version     = "0.0.1"
-authors     = ["Tony Arcieri <tony@iqlusion.io>"]
+authors     = ["Tony Arcieri <tony@iqlusion.io>", "Ismail Khoffi <Ismail.Khoffi@gmail.com>"]
 license     = "Apache-2.0"
 homepage    = "https://github.com/tendermint/kms/"
 readme      = "README.md"
 categories  = ["cryptography"]
 keywords    = ["cosmos", "ed25519", "kms", "key-management", "yubihsm"]
+
+[workspace]
+members = [".", "tm-secret-connection"]
 
 [badges]
 circle-ci = { repository = "tendermint/kms" }
@@ -20,12 +23,10 @@ bytes = "0.4"
 chrono = "0.4.2"
 failure = "0.1"
 failure_derive = "0.1"
-hkdf = "0.5"
 lazy_static = "1"
 prost-amino = "0.4.0"
 prost-amino-derive = "0.4.0"
 rand = "0.5"
-ring = "0.13"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
@@ -34,8 +35,7 @@ signatory = { version = "0.10", features = ["ed25519"] }
 signatory-dalek = "0.10"
 signatory-yubihsm = { version = "0.10", optional = true }
 subtle-encoding = "0.2"
-x25519-dalek = { version = "0.3", default-features = false, features = ["std", "u64_backend"] }
-
+tm-secret-connection = { version = "0", path = "tm-secret-connection" }
 
 [features]
 default = ["softsign", "yubihsm"]

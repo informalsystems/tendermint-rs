@@ -10,7 +10,7 @@ use ed25519::keyring::KeyRing;
 use error::Error;
 use prost::Message;
 use rpc::{Request, Response, TendermintResponse};
-use secret_connection::SecretConnection;
+use tm_secret_connection::SecretConnection;
 
 /// Encrypted session with a validator node
 pub struct Session {
