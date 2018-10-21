@@ -1,7 +1,7 @@
 use std::io;
 use std::marker::{Send, Sync};
 
-use error::Error;
+use error::KmsError;
 
 /// Protocol implementation of the UNIX socket domain connection
 pub struct UNIXConnection<IoHandler> {
@@ -9,7 +9,7 @@ pub struct UNIXConnection<IoHandler> {
 }
 
 impl<IoHandler: io::Read + io::Write + Send + Sync> UNIXConnection<IoHandler> {
-    pub fn new(socket: IoHandler) -> Result<Self, Error> {
+    pub fn new(socket: IoHandler) -> Result<Self, KmsError> {
         Ok(Self { socket })
     }
 }

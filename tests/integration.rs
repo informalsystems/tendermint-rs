@@ -4,6 +4,8 @@
 #![allow(unused_imports, unused_variables, dead_code)]
 
 #[macro_use]
+extern crate abscissa;
+#[macro_use]
 extern crate abscissa_derive;
 #[macro_use]
 extern crate failure_derive;
@@ -23,14 +25,12 @@ extern crate byteorder;
 extern crate bytes;
 extern crate chrono;
 extern crate failure;
-extern crate hkdf;
-extern crate ring;
 extern crate sha2;
-extern crate x25519_dalek;
+extern crate tm_secret_connection;
 
 use prost::Message;
 use rand::Rng;
-use secret_connection::SecretConnection;
+use tm_secret_connection::SecretConnection;
 use unix_connection::UNIXConnection;
 use signatory::{ed25519, Decode, Ed25519PublicKey, Ed25519Seed, Ed25519Signature, Signature};
 use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
@@ -66,10 +66,6 @@ mod types {
 #[macro_use]
 mod error {
     include!("../src/error.rs");
-}
-
-mod secret_connection {
-    include!("../src/secret_connection.rs");
 }
 
 mod unix_connection {
@@ -117,6 +113,7 @@ impl io::Read for KmsConnection {
     }
 }
 
+/// Receives incoming KMS connection then sends commands
 struct KmsDevice {
     /// KMS child process
     process: Child,

@@ -1,10 +1,11 @@
+use iq_bech32::Bech32;
 use signatory::ed25519;
 pub use signatory::ed25519::PUBLIC_KEY_SIZE;
 use std::fmt::{self, Display};
 #[cfg(feature = "yubihsm")]
 use yubihsm;
 
-use error::Error;
+use error::{KmsError, KmsErrorKind::*};
 
 /// Ed25519 public keys
 #[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Ord)]
@@ -12,7 +13,7 @@ pub struct PublicKey(ed25519::PublicKey);
 
 impl PublicKey {
     /// Convert a bytestring to a public key
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, KmsError> {
         Ok(PublicKey(
             ed25519::PublicKey::from_bytes(bytes).map_err(|e| err!(InvalidKey, "{}", e))?,
         ))
@@ -25,16 +26,26 @@ impl PublicKey {
     }
 }
 
-// TODO: public key serialization formats (cosmos-bech32)
 impl Display for PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ed25519(")?;
+        let bech: Bech32 = Default::default();
 
-        for (i, byte) in self.as_bytes().iter().enumerate() {
-            write!(f, "{:02x}", byte)?;
-            write!(f, "{}", if i == PUBLIC_KEY_SIZE - 1 { ")" } else { ":" })?;
-        }
+        let bech_str = bech.encode("rawed25519", self.as_bytes());
 
+        write!(f, "{}", bech_str)?;
+        Ok(())
+    }
+}
+
+pub struct ConsensusKey(pub PublicKey);
+
+impl Display for ConsensusKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let bech: Bech32 = Default::default();
+
+        let bech_str = bech.encode("cosmosvalconspub", self.0.as_bytes());
+
+        write!(f, "{}", bech_str)?;
         Ok(())
     }
 }

@@ -15,7 +15,7 @@ use std::{
 
 use config::{ConnectionConfig, SecretConnectionConfig, ValidatorConfig};
 use ed25519::{PublicKey, SECRET_KEY_ENCODING};
-use error::Error;
+use error::{KmsError, KmsErrorKind};
 use session::Session;
 
 /// How long to wait after a crash before respawning (in seconds)
@@ -94,7 +94,7 @@ fn client_loop(config: ValidatorConfig) {
 }
 
 /// Establish a session with the validator and handle incoming requests
-fn client_session(config: &ConnectionConfig) -> Result<(), Error> {
+fn client_session(config: &ConnectionConfig) -> Result<(), KmsError> {
     panic::catch_unwind(move || {
         match config {
             // This validator will use a secret connection
@@ -129,16 +129,16 @@ fn client_session(config: &ConnectionConfig) -> Result<(), Error> {
         };
 
         Ok(())
-    }).unwrap_or_else(|e| Err(Error::from_panic(&e)))
+    }).unwrap_or_else(|e| Err(KmsError::from_panic(&e)))
 }
 
 /// Initialize KMS secret connection private key
-fn load_secret_connection_key(config: &SecretConnectionConfig) -> Result<Ed25519Seed, Error> {
+fn load_secret_connection_key(config: &SecretConnectionConfig) -> Result<Ed25519Seed, KmsError> {
     let key_path = &config.secret_key_path;
 
     if key_path.exists() {
         Ok(Ed25519Seed::decode_from_file(key_path, SECRET_KEY_ENCODING)
-            .map_err(|e| err!(ConfigError, "error loading {}: {}", key_path.display(), e))?)
+            .map_err(|e| err!(KmsErrorKind::ConfigError, "error loading {}: {}", key_path.display(), e))?)
     } else {
         let seed = Ed25519Seed::generate();
         seed.encode_to_file(key_path, SECRET_KEY_ENCODING)?;

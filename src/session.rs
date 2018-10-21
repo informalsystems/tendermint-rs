@@ -10,11 +10,11 @@ use std::{fs, io};
 use types::{PingRequest, PingResponse, PubKeyMsg};
 
 use ed25519::keyring::KeyRing;
-use error::Error;
+use error::KmsError;
 use prost::Message;
 use rpc::{Request, Response, TendermintResponse};
-use secret_connection::SecretConnection;
 use unix_connection::UNIXConnection;
+use tm_secret_connection::SecretConnection;
 
 /// Encrypted session with a validator node
 pub struct Session<Connection> {
@@ -28,7 +28,7 @@ impl Session<SecretConnection<TcpStream>> {
         addr: &str,
         port: u16,
         secret_connection_key: &Ed25519Seed,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, KmsError> {
         debug!("Connecting to {}:{}...", addr, port);
         let socket = TcpStream::connect(format!("{}:{}", addr, port))?;
         let signer = Ed25519Signer::from(secret_connection_key);
@@ -39,11 +39,11 @@ impl Session<SecretConnection<TcpStream>> {
 }
 
 impl Session<UNIXConnection<UnixStream>> {
-    pub fn new_unix(socket_path: &PathBuf) -> Result<Self, Error> {
+    pub fn new_unix(socket_path: &PathBuf) -> Result<Self, KmsError> {
         // Try to unlink the socket path, shouldn't fail if it doesn't exist
         if let Err(e) = fs::remove_file(socket_path) {
             if e.kind() != io::ErrorKind::NotFound {
-                return Err(Error::from(e));
+                return Err(KmsError::from(e));
             }
         }
 
@@ -65,7 +65,7 @@ impl Session<UNIXConnection<UnixStream>> {
 
 impl<Connection: io::Read + io::Write + Sync + Send> Session<Connection> {
     /// Handle an incoming request from the validator
-    pub fn handle_request(&mut self) -> Result<bool, Error> {
+    pub fn handle_request(&mut self) -> Result<bool, KmsError> {
         let response = match Request::read(&mut self.connection)? {
             Request::SignProposal(req) => self.sign(req)?,
             Request::SignHeartbeat(req) => self.sign(req)?,
@@ -89,7 +89,7 @@ impl<Connection: io::Read + io::Write + Sync + Send> Session<Connection> {
     }
 
     /// Perform a digital signature operation
-    fn sign(&mut self, mut request: impl TendermintResponse) -> Result<Response, Error> {
+    fn sign(&mut self, mut request: impl TendermintResponse) -> Result<Response, KmsError> {
         let mut to_sign = vec![];
         // TODO(ismail): this should either be a config param, or, included in the request!
         let chain_id = "test_chain_id";
@@ -105,7 +105,7 @@ impl<Connection: io::Read + io::Write + Sync + Send> Session<Connection> {
         Response::Ping(PingResponse {})
     }
 
-    fn get_public_key(&mut self, _request: &PubKeyMsg) -> Result<Response, Error> {
+    fn get_public_key(&mut self, _request: &PubKeyMsg) -> Result<Response, KmsError> {
         let pubkey = KeyRing::get_only_signing_pubkey()?;
         let pubkey_bytes = pubkey.as_bytes();
 
