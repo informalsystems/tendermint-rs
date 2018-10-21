@@ -1,7 +1,7 @@
 use signatory::Ed25519Signature;
 use std::{collections::BTreeMap, sync::RwLock};
 
-use super::{PublicKey, Signer};
+use super::{PublicKey, Signer, ConsensusKey};
 use config::provider::ProviderConfig;
 use error::Error;
 
@@ -47,7 +47,7 @@ impl KeyRing {
         let signer = keyring
             .0
             .get(public_key)
-            .ok_or_else(|| err!(InvalidKey, "not in keyring: {}", public_key))?;
+            .ok_or_else(|| err!(InvalidKey, "not in keyring: {}", ConsensusKey(*public_key)))?;
 
         signer.sign(msg)
     }
@@ -57,14 +57,14 @@ impl KeyRing {
     pub(super) fn add(&mut self, public_key: PublicKey, signer: Signer) -> Result<(), Error> {
         info!(
             "[keyring:{}:{}] added validator key {}",
-            signer.provider_name, signer.key_id, public_key
+            signer.provider_name, signer.key_id, ConsensusKey(public_key)
         );
 
         if let Some(other) = self.0.insert(public_key, signer) {
             Err(err!(
                 InvalidKey,
                 "duplicate signer for {}: {}:{}",
-                public_key,
+                ConsensusKey(public_key),
                 other.provider_name,
                 other.key_id
             ))

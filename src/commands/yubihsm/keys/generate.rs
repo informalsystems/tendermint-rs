@@ -1,7 +1,7 @@
 use abscissa::Callable;
 use std::process;
 
-use ed25519::PublicKey;
+use ed25519::{PublicKey,ConsensusKey};
 use yubihsm;
 
 /// Default key type to generate
@@ -74,7 +74,7 @@ impl Callable for GenerateCommand {
                 process::exit(1);
             }));
 
-            status_ok!("Generated", "key #{}: {}", key_id, public_key);
+            status_ok!("Generated", "key #{}: {}", key_id, ConsensusKey(public_key));
         }
     }
 }
