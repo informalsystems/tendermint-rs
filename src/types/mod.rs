@@ -100,7 +100,6 @@ enum SignedMsgType {
     // Proposals
     Proposal,
 
-    // TODO: Heartbeat
     #[allow(dead_code)]
     Heartbeat,
 }

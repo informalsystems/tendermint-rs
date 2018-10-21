@@ -46,12 +46,12 @@ pub struct SignedVoteResponse {
 
 #[derive(Clone, PartialEq, Message)]
 pub struct CanonicalVote {
-    #[prost(sfixed64, tag = "1")]
+    #[prost(uint32, tag = "1")]
+    pub vote_type: u32,
+    #[prost(sfixed64)]
     pub height: i64,
     #[prost(sfixed64)]
     pub round: i64,
-    #[prost(uint32)]
-    pub vote_type: u32, // TODO(ismail): this is a byte in golang, which is a varint encoded UInt8 (using amino's EncodeUvarint)
     #[prost(message)]
     pub timestamp: Option<Time>,
     #[prost(message)]
@@ -63,6 +63,7 @@ pub struct CanonicalVote {
 impl CanonicalVote {
     fn new(vote: Vote, chain_id: &str) -> CanonicalVote {
         CanonicalVote {
+            vote_type: vote.vote_type,
             chain_id: chain_id.to_string(),
             block_id: match vote.block_id {
                 Some(bid) => Some(CanonicalBlockID {
@@ -86,7 +87,6 @@ impl CanonicalVote {
                 }),
                 Some(t) => Some(t),
             },
-            vote_type: vote.vote_type,
         }
     }
 }
@@ -218,12 +218,12 @@ mod tests {
             cv_precommit.encode_length_delimited(&mut got).unwrap();
             let want = vec![
                 0x1f, // total length
-                0x9,  // (field_number << 3) | wire_type
-                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
-                0x11, // (field_number << 3) | wire_type
-                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
-                0x18, // (field_number << 3) | wire_type
+                0x8,  // (field_number << 3) | wire_type
                 0x2,  // PrecommitType
+                0x11, // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
+                0x19, // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
                 0x22, // (field_number << 3) | wire_type
                 // remaining fields (timestamp):
                 0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
@@ -244,14 +244,15 @@ mod tests {
 
             let want = vec![
                 0x1f, // total length
-                0x9,  // (field_number << 3) | wire_type
-                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
+                0x8,  // (field_number << 3) | wire_type
+                0x1,  // PrevoteType
                 0x11, // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
+                0x19, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
-                0x18, // (field_number << 3) | wire_type
-                0x1,  // PrevoteTypef
+                0x22, // (field_number << 3) | wire_type
                 // remaining fields (timestamp):
-                0x22, 0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
+                0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
             ];
             assert_eq!(got, want);
         }
@@ -267,9 +268,9 @@ mod tests {
 
             let want = vec![
                 0x1d, // total length
-                0x9,  // (field_number << 3) | wire_type
-                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
                 0x11, // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
+                0x19, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
                 // remaining fields (timestamp):
                 0x22, 0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
@@ -287,9 +288,9 @@ mod tests {
             with_chain_id.encode_length_delimited(&mut got).unwrap();
             let want = vec![
                 0x2c, // total length
-                0x9,  // (field_number << 3) | wire_type
-                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
                 0x11, // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
+                0x19, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
                 // remaining fields:
                 0x22, // (field_number << 3) | wire_type
