@@ -1,7 +1,7 @@
 use abscissa::Callable;
 use std::process;
 
-use ed25519::{PublicKey,ConsensusKey};
+use ed25519::{ConsensusKey, PublicKey};
 use yubihsm;
 
 /// The `yubihsm keys list` subcommand

@@ -3,6 +3,7 @@ use sha2::{Digest, Sha256};
 use signatory::ed25519;
 pub use signatory::ed25519::PUBLIC_KEY_SIZE;
 use std::fmt::{self, Display};
+use subtle_encoding::hex;
 #[cfg(feature = "yubihsm")]
 use yubihsm;
 
@@ -56,13 +57,11 @@ impl Display for SecretConnectionKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut sh = Sha256::default();
         sh.input(self.0.as_bytes());
-        for val in sh.result().iter().take(20) {
-            write!(f, "{:x}", val);
-        }
+        let hex_str = hex::encode(&sh.result().as_slice()[0..20]);
+        write!(f, "{}", String::from_utf8(hex_str).unwrap())?;
         Ok(())
     }
 }
-
 impl From<ed25519::PublicKey> for PublicKey {
     fn from(key: ed25519::PublicKey) -> PublicKey {
         PublicKey(key)
