@@ -91,17 +91,21 @@ pub trait TendermintSignable {
 // https://github.com/tendermint/tendermint/blob/455d34134cc53c334ebd3195ac22ea444c4b59bb/types/signed_msg_type.go#L3-L16
 #[derive(Debug, Copy)]
 enum SignedMsgType {
-    // Votes
+    // TODO: Votes
+    #[allow(dead_code)]
     PreVote,
+    #[allow(dead_code)]
     PreCommit,
 
     // Proposals
     Proposal,
 
-    // Heartbeat
+    // TODO: Heartbeat
+    #[allow(dead_code)]
     Heartbeat,
 }
 
+#[allow(dead_code)]
 pub fn extract_actual_len(buf: &[u8]) -> Result<u64, DecodeError> {
     let mut buff = Cursor::new(buf);
     let actual_len = decode_varint(&mut buff)?;
@@ -124,6 +128,7 @@ impl SignedMsgType {
         }
     }
 
+    #[allow(dead_code)]
     fn from(data: u32) -> Result<SignedMsgType, DecodeError> {
         match data {
             0x01 => Ok(SignedMsgType::PreVote),
@@ -134,6 +139,7 @@ impl SignedMsgType {
         }
     }
 
+    #[allow(dead_code)]
     fn is_valid_vote_type(msg_type: SignedMsgType) -> bool {
         match msg_type {
             SignedMsgType::PreVote => true,

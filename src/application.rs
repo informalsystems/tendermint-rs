@@ -1,12 +1,21 @@
 //! Abscissa `Application` for the KMS
 
-use abscissa::{Application, LoggingConfig};
+use abscissa::{self, Application, LoggingConfig};
 
 use commands::KmsCommand;
 use config::KmsConfig;
 
+/// The `tmkms` application
 #[derive(Debug)]
 pub struct KmsApplication;
+
+impl KmsApplication {
+    /// Boot the application
+    // TODO: use the upstream implementation of this method
+    pub fn boot() {
+        abscissa::boot(KmsApplication)
+    }
+}
 
 impl Application for KmsApplication {
     type Cmd = KmsCommand;

@@ -1,5 +1,15 @@
 //! Tendermint Key Management System
 
+#![crate_name = "tmkms"]
+#![crate_type = "rlib"]
+#![deny(
+    warnings,
+    missing_docs,
+    unsafe_code,
+    unused_import_braces,
+    unused_qualifications
+)]
+
 extern crate prost_amino as prost;
 #[macro_use]
 extern crate abscissa;
@@ -41,9 +51,4 @@ mod types;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
 
-use application::KmsApplication;
-
-/// Main entry point
-fn main() {
-    abscissa::boot(KmsApplication);
-}
+pub use application::KmsApplication;
