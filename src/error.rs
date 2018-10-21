@@ -1,6 +1,6 @@
 // Error types
 
-use failure::{Backtrace, Context, Fail};
+use abscissa::Error;
 use prost;
 use signatory;
 use std::{
@@ -13,104 +13,26 @@ use tm_secret_connection;
 #[cfg(feature = "yubihsm")]
 use yubihsm;
 
-/// Create a new error (of a given enum variant) with a formatted message
-macro_rules! err {
-    ($variant:ident, $msg:expr) => {
-        ::error::Error::with_description(
-            ::error::ErrorKind::$variant,
-            $msg.to_string()
-        )
-    };
-    ($variant:ident, $fmt:expr, $($arg:tt)+) => {
-        ::error::Error::with_description(
-            ::error::ErrorKind::$variant,
-            format!($fmt, $($arg)+)
-        )
-    };
-}
-
 /// Error type
 #[derive(Debug)]
-pub struct Error {
-    /// Contextual information about the error
-    inner: Context<ErrorKind>,
+pub struct KmsError(Error<KmsErrorKind>);
 
-    /// Optional description message
-    description: Option<String>,
-}
-
-impl Error {
-    /// Create a new error
-    pub fn new(kind: ErrorKind) -> Self {
-        Self {
-            inner: Context::new(kind),
-            description: None,
-        }
-    }
-
-    /// Create a new error with the given description
-    pub fn with_description(kind: ErrorKind, description: String) -> Self {
-        Self {
-            inner: Context::new(kind),
-            description: Some(description),
-        }
-    }
-
-    /// Obtain the inner `ErrorKind` for this error
-    #[allow(dead_code)]
-    pub fn kind(&self) -> ErrorKind {
-        *self.inner.get_context()
-    }
-
+impl KmsError {
     /// Create an error from a panic
     pub fn from_panic(msg: &Any) -> Self {
         if let Some(e) = msg.downcast_ref::<String>() {
-            err!(PanicError, e)
+            err!(KmsErrorKind::PanicError, e)
         } else if let Some(e) = msg.downcast_ref::<&str>() {
-            err!(PanicError, e)
+            err!(KmsErrorKind::PanicError, e)
         } else {
-            err!(PanicError, "unknown cause")
-        }
-    }
-}
-
-impl Fail for Error {
-    fn cause(&self) -> Option<&Fail> {
-        self.inner.cause()
-    }
-
-    fn backtrace(&self) -> Option<&Backtrace> {
-        self.inner.backtrace()
-    }
-}
-
-impl From<ErrorKind> for Error {
-    fn from(kind: ErrorKind) -> Self {
-        Self::new(kind)
-    }
-}
-
-impl From<Context<ErrorKind>> for Error {
-    fn from(inner: Context<ErrorKind>) -> Self {
-        Self {
-            inner,
-            description: None,
-        }
-    }
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.description {
-            Some(ref desc) => write!(f, "{}: {}", &self.inner, desc),
-            None => Display::fmt(&self.inner, f),
-        }
+            err!(KmsErrorKind::PanicError, "unknown cause")
+        }.into()
     }
 }
 
 /// Kinds of errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum ErrorKind {
+pub enum KmsErrorKind {
     /// Access denied
     #[fail(display = "access denied")]
     #[cfg(feature = "yubihsm")]
@@ -153,67 +75,81 @@ pub enum ErrorKind {
     VerificationError,
 }
 
-impl From<io::Error> for Error {
+impl Display for KmsError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl From<Error<KmsErrorKind>> for KmsError {
+    fn from(other: Error<KmsErrorKind>) -> Self {
+        KmsError(other)
+    }
+}
+
+impl From<io::Error> for KmsError {
     fn from(other: io::Error) -> Self {
-        err!(IoError, other)
+        err!(KmsErrorKind::IoError, other).into()
     }
 }
 
-impl From<prost::DecodeError> for Error {
+impl From<prost::DecodeError> for KmsError {
     fn from(other: prost::DecodeError) -> Self {
-        err!(ProtocolError, other)
+        err!(KmsErrorKind::ProtocolError, other).into()
     }
 }
 
-impl From<prost::EncodeError> for Error {
+impl From<prost::EncodeError> for KmsError {
     fn from(other: prost::EncodeError) -> Self {
-        err!(ProtocolError, other)
+        err!(KmsErrorKind::ProtocolError, other).into()
     }
 }
 
-impl From<signatory::Error> for Error {
+impl From<signatory::Error> for KmsError {
     fn from(other: signatory::Error) -> Self {
         let kind = match other.kind() {
-            signatory::ErrorKind::Io => ErrorKind::IoError,
-            signatory::ErrorKind::KeyInvalid => ErrorKind::InvalidKey,
-            signatory::ErrorKind::ParseError => ErrorKind::ParseError,
-            signatory::ErrorKind::ProviderError => ErrorKind::SigningError,
-            signatory::ErrorKind::SignatureInvalid => ErrorKind::VerificationError,
+            signatory::ErrorKind::Io => KmsErrorKind::IoError,
+            signatory::ErrorKind::KeyInvalid => KmsErrorKind::InvalidKey,
+            signatory::ErrorKind::ParseError => KmsErrorKind::ParseError,
+            signatory::ErrorKind::ProviderError => KmsErrorKind::SigningError,
+            signatory::ErrorKind::SignatureInvalid => KmsErrorKind::VerificationError,
         };
 
-        Error::with_description(kind, other.description().to_owned())
+        Error::new(kind, Some(other.description().to_owned())).into()
     }
 }
 
-impl From<tm_secret_connection::Error> for Error {
+impl From<tm_secret_connection::Error> for KmsError {
     fn from(other: tm_secret_connection::Error) -> Self {
-        match other {
-            tm_secret_connection::Error::CryptoError => ErrorKind::CryptoError,
-            tm_secret_connection::Error::InvalidKey => ErrorKind::InvalidKey,
-            tm_secret_connection::Error::IoError => ErrorKind::IoError,
-            tm_secret_connection::Error::ProtocolError => ErrorKind::ProtocolError,
-            tm_secret_connection::Error::SigningError => ErrorKind::SigningError,
-            tm_secret_connection::Error::VerificationError => ErrorKind::VerificationError,
-        }.into()
+        let kind = match other {
+            tm_secret_connection::Error::CryptoError => KmsErrorKind::CryptoError,
+            tm_secret_connection::Error::InvalidKey => KmsErrorKind::InvalidKey,
+            tm_secret_connection::Error::IoError => KmsErrorKind::IoError,
+            tm_secret_connection::Error::ProtocolError => KmsErrorKind::ProtocolError,
+            tm_secret_connection::Error::SigningError => KmsErrorKind::SigningError,
+            tm_secret_connection::Error::VerificationError => KmsErrorKind::VerificationError,
+        };
+
+        Error::new(kind, None).into()
     }
 }
 
 #[cfg(feature = "yubihsm")]
-impl From<yubihsm::connector::ConnectionError> for Error {
+impl From<yubihsm::connector::ConnectionError> for KmsError {
     fn from(other: yubihsm::connector::ConnectionError) -> Self {
         use yubihsm::connector::ConnectionErrorKind;
 
         let kind = match other.kind() {
-            ConnectionErrorKind::AddrInvalid => ErrorKind::ConfigError,
-            ConnectionErrorKind::AccessDenied => ErrorKind::AccessError,
+            ConnectionErrorKind::AddrInvalid => KmsErrorKind::ConfigError,
+            ConnectionErrorKind::AccessDenied => KmsErrorKind::AccessError,
             ConnectionErrorKind::IoError
             | ConnectionErrorKind::ConnectionFailed
             | ConnectionErrorKind::DeviceBusyError
             | ConnectionErrorKind::RequestError
             | ConnectionErrorKind::ResponseError
-            | ConnectionErrorKind::UsbError => ErrorKind::IoError,
+            | ConnectionErrorKind::UsbError => KmsErrorKind::IoError,
         };
 
-        Error::with_description(kind, other.description().to_owned())
+        Error::new(kind, Some(other.description().to_owned())).into()
     }
 }

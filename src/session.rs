@@ -7,7 +7,7 @@ use std::net::TcpStream;
 use types::{PingRequest, PingResponse, PubKeyMsg};
 
 use ed25519::keyring::KeyRing;
-use error::Error;
+use error::KmsError;
 use prost::Message;
 use rpc::{Request, Response, TendermintResponse};
 use tm_secret_connection::SecretConnection;
@@ -20,7 +20,11 @@ pub struct Session {
 
 impl Session {
     /// Create a new session with the validator at the given address/port
-    pub fn new(addr: &str, port: u16, secret_connection_key: &Ed25519Seed) -> Result<Self, Error> {
+    pub fn new(
+        addr: &str,
+        port: u16,
+        secret_connection_key: &Ed25519Seed,
+    ) -> Result<Self, KmsError> {
         debug!("Connecting to {}:{}...", addr, port);
         let socket = TcpStream::connect(format!("{}:{}", addr, port))?;
         let signer = Ed25519Signer::from(secret_connection_key);
@@ -30,7 +34,7 @@ impl Session {
     }
 
     /// Handle an incoming request from the validator
-    pub fn handle_request(&mut self) -> Result<bool, Error> {
+    pub fn handle_request(&mut self) -> Result<bool, KmsError> {
         let response = match Request::read(&mut self.connection)? {
             Request::SignProposal(req) => self.sign(req)?,
             Request::SignHeartbeat(req) => self.sign(req)?,
@@ -54,7 +58,7 @@ impl Session {
     }
 
     /// Perform a digital signature operation
-    fn sign(&mut self, mut request: impl TendermintResponse) -> Result<Response, Error> {
+    fn sign(&mut self, mut request: impl TendermintResponse) -> Result<Response, KmsError> {
         let mut to_sign = vec![];
         // TODO(ismail): this should either be a config param, or, included in the request!
         let chain_id = "test_chain_id";
@@ -70,7 +74,7 @@ impl Session {
         Response::Ping(PingResponse {})
     }
 
-    fn get_public_key(&mut self, _request: &PubKeyMsg) -> Result<Response, Error> {
+    fn get_public_key(&mut self, _request: &PubKeyMsg) -> Result<Response, KmsError> {
         let pubkey = KeyRing::get_only_signing_pubkey()?;
         let pubkey_bytes = pubkey.as_bytes();
 

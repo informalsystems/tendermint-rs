@@ -13,7 +13,7 @@ use std::{
 };
 
 use config::ValidatorConfig;
-use error::Error;
+use error::KmsError;
 use session::Session;
 
 /// How long to wait after a crash before respawning (in seconds)
@@ -62,7 +62,11 @@ fn client_loop(config: &ValidatorConfig, secret_connection_key: &Ed25519Seed) {
 }
 
 /// Establish a session with the validator and handle incoming requests
-fn client_session(addr: &str, port: u16, secret_connection_key: &Ed25519Seed) -> Result<(), Error> {
+fn client_session(
+    addr: &str,
+    port: u16,
+    secret_connection_key: &Ed25519Seed,
+) -> Result<(), KmsError> {
     panic::catch_unwind(move || {
         let mut session = Session::new(addr, port, &secret_connection_key)?;
         info!(
@@ -71,5 +75,5 @@ fn client_session(addr: &str, port: u16, secret_connection_key: &Ed25519Seed) ->
         );
         while session.handle_request()? {}
         Ok(())
-    }).unwrap_or_else(|e| Err(Error::from_panic(&e)))
+    }).unwrap_or_else(|e| Err(KmsError::from_panic(&e)))
 }
