@@ -1,5 +1,6 @@
-use super::TendermintSign;
-use subtle_encoding::hex::encode;
+use super::{Ed25519Signature, RemoteError, Signature, TendermintSignable};
+use bytes::BufMut;
+use prost::{EncodeError, Message};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Heartbeat {
@@ -17,35 +18,72 @@ pub struct Heartbeat {
     pub signature: Option<Vec<u8>>,
 }
 
-pub const AMINO_NAME: &str = "tendermint/socketpv/SignHeartbeatMsg";
+pub const AMINO_NAME: &str = "tendermint/remotesigner/SignHeartbeatRequest";
+
+// TODO(ismail): the Request / Reply types should live in a separate module!
+// (same for proposal and vote)
 
 #[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/socketpv/SignHeartbeatMsg"]
-pub struct SignHeartbeatMsg {
+#[amino_name = "tendermint/remotesigner/SignHeartbeatRequest"]
+pub struct SignHeartbeatRequest {
     #[prost(message, tag = "1")]
     pub heartbeat: Option<Heartbeat>,
 }
 
-impl TendermintSign for SignHeartbeatMsg {
-    fn cannonicalize(self, chain_id: &str) -> String {
-        match self.heartbeat {
-            Some(hb) => {
-                let value = json!({
-            "@chain_id":chain_id,
-            "@type":"heartbeat",
-            "height":hb.height,
-            "round":hb.round,
-            "sequence":hb.sequence,
-            "validator_address": encode(&hb.validator_address),
-            "validator_index": hb.validator_index,
-            });
-                value.to_string()
-            }
-            None => "".to_owned(),
+#[derive(Clone, PartialEq, Message)]
+#[amino_name = "tendermint/remotesigner/SignedHeartbeatResponse"]
+pub struct SignedHeartbeatResponse {
+    #[prost(message, tag = "1")]
+    pub heartbeat: Option<Heartbeat>,
+    #[prost(message, tag = "2")]
+    pub err: Option<RemoteError>,
+}
+
+#[derive(Clone, PartialEq, Message)]
+struct ConicalHeartbeat {
+    #[prost(string, tag = "1")]
+    pub chain_id: String,
+    #[prost(string)]
+    pub type_str: String,
+    #[prost(sint64)]
+    pub height: i64,
+    #[prost(sint64)]
+    pub round: i64,
+    #[prost(sint64)]
+    pub sequence: i64,
+    #[prost(bytes)]
+    pub validator_address: Vec<u8>,
+    #[prost(sint64)]
+    pub validator_index: i64,
+}
+
+impl TendermintSignable for SignHeartbeatRequest {
+    // Get the amino encoded bytes; excluding the signature (even if it was set):
+    fn sign_bytes<B>(&self, chain_id: &str, sign_bytes: &mut B) -> Result<bool, EncodeError>
+    where
+        B: BufMut,
+    {
+        let mut hbm = self.clone();
+        if let Some(ref mut hbm) = hbm.heartbeat {
+            hbm.signature = None
         }
+        let hb = hbm.heartbeat.unwrap();
+        let chb = ConicalHeartbeat {
+            chain_id: chain_id.to_string(),
+            type_str: "heartbeat".to_string(),
+            height: hb.height,
+            round: hb.round,
+            sequence: hb.sequence,
+            validator_address: hb.validator_address,
+            validator_index: hb.validator_index,
+        };
+        chb.encode(sign_bytes)?;
+        Ok(true)
     }
-    fn sign(&mut self) {
-        unimplemented!();
+    fn set_signature(&mut self, sig: &Ed25519Signature) {
+        if let Some(ref mut hb) = self.heartbeat {
+            hb.signature = Some(sig.clone().into_vec());
+        }
     }
 }
 
@@ -70,11 +108,14 @@ mod tests {
             signature: None,
         };
         let mut got = vec![];
-        let _have = SignHeartbeatMsg {
+        let _have = SignHeartbeatRequest {
             heartbeat: Some(heartbeat),
         }.encode(&mut got);
         let want = vec![
-            0x24, 0xbf, 0x58, 0xca, 0xef, 0xa, 0x1e, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86,
+            0x24, // len
+            187, 19, 63, 7, // prefix
+            0xa, 0x1e, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71,
+            0x86, // remaining proto3 encoding of data
             0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
             0x10, 0x2, 0x18, 0x1e, 0x20, 0x14, 0x28, 0x3c,
         ];
@@ -84,7 +125,7 @@ mod tests {
 
     #[test]
     fn test_serializationuns_withoutaddr() {
-        // identical to above but without validator_adress:
+        // identical to above but without validator_address:
         let heartbeat = Heartbeat {
             validator_address: vec![],
             validator_index: 1,
@@ -93,14 +134,16 @@ mod tests {
             sequence: 30,
             signature: None,
         };
-        let msg = SignHeartbeatMsg {
+        let msg = SignHeartbeatRequest {
             heartbeat: Some(heartbeat),
         };
 
         let mut got = vec![];
         let _have = msg.encode(&mut got);
         let want = vec![
-            0xe, 0xbf, 0x58, 0xca, 0xef, 0xa, 0x8, 0x10, 0x2, 0x18, 0x1e, 0x20, 0x14, 0x28, 0x3c,
+            0xe, // len
+            187, 19, 63, 7, // amino prefix
+            0xa, 0x8, 0x10, 0x2, 0x18, 0x1e, 0x20, 0x14, 0x28, 0x3c,
         ];
 
         assert_eq!(got, want)
@@ -120,7 +163,7 @@ mod tests {
             sequence: 30,
             signature: None,
         };
-        let want = SignHeartbeatMsg {
+        let want = SignHeartbeatRequest {
             heartbeat: Some(hb),
         };
 
@@ -130,10 +173,9 @@ mod tests {
             0x10, 0x2, 0x18, 0x1e, 0x20, 0x14, 0x28, 0x3c,
         ];
 
-        match SignHeartbeatMsg::decode(&data) {
+        match SignHeartbeatRequest::decode(&data) {
             Err(err) => assert!(false, err.description().to_string()),
             Ok(have) => assert_eq!(have, want),
         }
     }
-    //ToDo Serialization with Signature
 }

@@ -8,14 +8,14 @@ use subtle_encoding::IDENTITY;
 
 use config::provider::softsign::SoftSignConfig;
 use ed25519::{KeyRing, PublicKey, Signer};
-use error::Error;
+use error::{KmsError, KmsErrorKind::*};
 
 /// Label for ed25519-dalek provider
 // TODO: use a non-string type for these, e.g. an enum
 pub const DALEK_PROVIDER_LABEL: &str = "dalek";
 
 /// Create software-backed Ed25519 signer objects from the given configuration
-pub fn init(keyring: &mut KeyRing, configs: &[SoftSignConfig]) -> Result<(), Error> {
+pub fn init(keyring: &mut KeyRing, configs: &[SoftSignConfig]) -> Result<(), KmsError> {
     for config in configs {
         let seed = Ed25519Seed::decode_from_file(config.path.as_path(), IDENTITY).map_err(|e| {
             err!(

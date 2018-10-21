@@ -2,34 +2,67 @@ extern crate prost_amino;
 
 pub mod ed25519msg;
 pub mod heartbeat;
+pub mod ping;
 pub mod poisonpill;
 pub mod proposal;
 pub mod vote;
 
+use bytes::BufMut;
+use prost::encoding::{decode_varint, encoded_len_varint};
+use prost::DecodeError;
+use signatory::{Ed25519Signature, Signature};
+use std::io::Cursor;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct PartsSetHeader {
     #[prost(sint64, tag = "1")]
-    total: i64,
+    pub total: i64,
     #[prost(bytes, tag = "2")]
+    pub hash: Vec<u8>,
+}
+
+#[derive(Clone, PartialEq, Message)]
+pub struct CanonicalPartSetHeader {
+    #[prost(bytes, tag = "1")]
     hash: Vec<u8>,
+    #[prost(sint64, tag = "2")]
+    total: i64,
 }
 
 #[derive(Clone, PartialEq, Message)]
 pub struct BlockID {
     #[prost(bytes, tag = "1")]
-    hash: Vec<u8>,
+    pub hash: Vec<u8>,
     #[prost(message, tag = "2")]
-    parts_header: Option<PartsSetHeader>,
+    pub parts_header: Option<PartsSetHeader>,
+}
+
+#[derive(Clone, PartialEq, Message)]
+pub struct CanonicalBlockID {
+    #[prost(bytes, tag = "1")]
+    pub hash: Vec<u8>,
+    #[prost(message, tag = "2")]
+    pub parts_header: Option<CanonicalPartSetHeader>,
 }
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Time {
+    // TODO(ismail): switch to protobuf's well known type as soon as
+    // https://github.com/tendermint/go-amino/pull/224 was merged
+    // and tendermint caught up on the latest amino release.
     #[prost(sfixed64, tag = "1")]
     pub seconds: i64,
     #[prost(sfixed32, tag = "2")]
     pub nanos: i32,
+}
+
+#[derive(Clone, PartialEq, Message)]
+pub struct RemoteError {
+    #[prost(sint32, tag = "1")]
+    pub code: i32,
+    #[prost(string, tag = "2")]
+    pub description: String,
 }
 
 /// Converts `Time` to a `SystemTime`.
@@ -43,23 +76,92 @@ impl From<Time> for SystemTime {
     }
 }
 
-pub trait TendermintSign {
-    fn cannonicalize(self, chain_id: &str) -> String;
-    // TODO(ismail): can't the signing op time out or error in another way
-    // (e.g.hsm module not found)
-    // also, if we want to keep this method, we need the signer / priv key to be known here
-    // probably the cannonicalize method is sufficient and the actual signing happens
-    // outside of the type:
-    fn sign(&mut self);
+pub trait TendermintSignable {
+    fn sign_bytes<B>(
+        &self,
+        chain_id: &str,
+        sign_bytes: &mut B,
+    ) -> Result<bool, prost_amino::EncodeError>
+    where
+        B: BufMut;
+    fn set_signature(&mut self, sig: &Ed25519Signature);
 }
 
-pub use self::ed25519msg::PubKeyMsg;
-pub use self::ed25519msg::AMINO_NAME as PUBKEY_AMINO_NAME;
-pub use self::heartbeat::SignHeartbeatMsg;
-pub use self::heartbeat::AMINO_NAME as HEARTBEAT_AMINO_NAME;
-pub use self::poisonpill::PoisonPillMsg;
-pub use self::poisonpill::AMINO_NAME as POISON_PILL_AMINO_NAME;
-pub use self::proposal::SignProposalMsg;
-pub use self::proposal::AMINO_NAME as PROPOSAL_AMINO_NAME;
-pub use self::vote::SignVoteMsg;
-pub use self::vote::AMINO_NAME as VOTE_AMINO_NAME;
+// This follows:
+// https://github.com/tendermint/tendermint/blob/455d34134cc53c334ebd3195ac22ea444c4b59bb/types/signed_msg_type.go#L3-L16
+#[derive(Debug, Copy)]
+enum SignedMsgType {
+    // TODO: Votes
+    #[allow(dead_code)]
+    PreVote,
+    #[allow(dead_code)]
+    PreCommit,
+
+    // Proposals
+    Proposal,
+
+    // TODO: Heartbeat
+    #[allow(dead_code)]
+    Heartbeat,
+}
+
+#[allow(dead_code)]
+pub fn extract_actual_len(buf: &[u8]) -> Result<u64, DecodeError> {
+    let mut buff = Cursor::new(buf);
+    let actual_len = decode_varint(&mut buff)?;
+    if actual_len == 0 {
+        return Ok(1);
+    }
+    Ok(actual_len + (encoded_len_varint(actual_len) as u64))
+}
+
+impl SignedMsgType {
+    fn to_u32(self) -> u32 {
+        match self {
+            // Votes
+            SignedMsgType::PreVote => 0x01,
+            SignedMsgType::PreCommit => 0x02,
+            // Proposals
+            SignedMsgType::Proposal => 0x20,
+            // Heartbeat
+            SignedMsgType::Heartbeat => 0x30,
+        }
+    }
+
+    #[allow(dead_code)]
+    fn from(data: u32) -> Result<SignedMsgType, DecodeError> {
+        match data {
+            0x01 => Ok(SignedMsgType::PreVote),
+            0x02 => Ok(SignedMsgType::PreCommit),
+            0x20 => Ok(SignedMsgType::Proposal),
+            0x30 => Ok(SignedMsgType::Heartbeat),
+            _ => Err(DecodeError::new("Invalid vote type")),
+        }
+    }
+
+    #[allow(dead_code)]
+    fn is_valid_vote_type(msg_type: SignedMsgType) -> bool {
+        match msg_type {
+            SignedMsgType::PreVote => true,
+            SignedMsgType::PreCommit => true,
+            _ => false,
+        }
+    }
+}
+
+impl Clone for SignedMsgType {
+    fn clone(&self) -> SignedMsgType {
+        *self
+    }
+}
+
+pub use self::ed25519msg::{PubKeyMsg, AMINO_NAME as PUBKEY_AMINO_NAME};
+pub use self::heartbeat::{
+    SignHeartbeatRequest, SignedHeartbeatResponse, AMINO_NAME as HEARTBEAT_AMINO_NAME,
+};
+pub use self::ping::{PingRequest, PingResponse, AMINO_NAME as PING_AMINO_NAME};
+pub use self::poisonpill::{PoisonPillMsg, AMINO_NAME as POISON_PILL_AMINO_NAME};
+pub use self::proposal::{
+    SignProposalRequest, SignedProposalResponse, AMINO_NAME as PROPOSAL_AMINO_NAME,
+};
+pub use self::vote::{SignVoteRequest, SignedVoteResponse, AMINO_NAME as VOTE_AMINO_NAME};

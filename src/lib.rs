@@ -1,5 +1,15 @@
 //! Tendermint Key Management System
 
+#![crate_name = "tmkms"]
+#![crate_type = "rlib"]
+#![deny(
+    warnings,
+    missing_docs,
+    unsafe_code,
+    unused_import_braces,
+    unused_qualifications
+)]
+
 extern crate prost_amino as prost;
 #[macro_use]
 extern crate abscissa;
@@ -11,16 +21,13 @@ extern crate chrono;
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
-extern crate hkdf;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate prost_amino_derive as prost_derive;
 extern crate rand;
-extern crate ring;
 #[macro_use]
 extern crate serde_derive;
-#[macro_use]
 extern crate serde_json;
 extern crate iq_bech32;
 extern crate sha2;
@@ -29,7 +36,7 @@ extern crate signatory_dalek;
 #[cfg(feature = "yubihsm")]
 extern crate signatory_yubihsm;
 extern crate subtle_encoding;
-extern crate x25519_dalek;
+extern crate tm_secret_connection;
 
 #[macro_use]
 mod error;
@@ -40,15 +47,9 @@ mod commands;
 mod config;
 mod ed25519;
 mod rpc;
-mod secret_connection;
 mod session;
 mod types;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
 
-use application::KmsApplication;
-
-/// Main entry point
-fn main() {
-    abscissa::boot(KmsApplication);
-}
+pub use application::KmsApplication;

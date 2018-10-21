@@ -1,100 +1,120 @@
-use super::{BlockID, PartsSetHeader, TendermintSign, Time};
-use chrono::{DateTime, Utc};
-use std::time::{SystemTime, UNIX_EPOCH};
-use subtle_encoding::hex::encode_upper;
+use super::{
+    BlockID, CanonicalBlockID, CanonicalPartSetHeader, Ed25519Signature, PartsSetHeader,
+    RemoteError, Signature, SignedMsgType, TendermintSignable, Time,
+};
+use bytes::BufMut;
+use prost::{EncodeError, Message};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
     #[prost(sint64, tag = "1")]
-    height: i64,
+    pub height: i64,
+    #[prost(sint64)]
+    pub round: i64,
+    #[prost(message)]
+    pub timestamp: Option<Time>,
+    #[prost(message)]
+    pub block_parts_header: Option<PartsSetHeader>,
+    #[prost(sint64)]
+    pub pol_round: i64,
+    #[prost(message)]
+    pub pol_block_id: Option<BlockID>,
+    #[prost(message)]
+    pub signature: Option<Vec<u8>>,
+}
+
+pub const AMINO_NAME: &str = "tendermint/remotesigner/SignProposalRequest";
+
+#[derive(Clone, PartialEq, Message)]
+#[amino_name = "tendermint/remotesigner/SignProposalRequest"]
+pub struct SignProposalRequest {
+    #[prost(message, tag = "1")]
+    pub proposal: Option<Proposal>,
+}
+
+#[derive(Clone, PartialEq, Message)]
+#[amino_name = "tendermint/remotesigner/SignedProposalResponse"]
+pub struct SignedProposalResponse {
+    #[prost(message, tag = "1")]
+    pub proposal: Option<Proposal>,
+    #[prost(message, tag = "2")]
+    pub err: Option<RemoteError>,
+}
+
+#[derive(Clone, PartialEq, Message)]
+struct CanonicalProposal {
+    #[prost(sint64, tag = "1")]
+    pub height: i64,
     #[prost(sint64)]
     round: i64,
+    #[prost(uint32)]
+    pub msg_type: u32, // this is a byte in golang, which is a varint encoded UInt8 (using amino's EncodeUvarint)
+
     #[prost(message)]
     timestamp: Option<Time>,
     #[prost(message)]
-    block_parts_header: Option<PartsSetHeader>,
+    block_parts_header: Option<CanonicalPartSetHeader>,
     #[prost(sint64)]
     pol_round: i64,
     #[prost(message)]
-    pol_block_id: Option<BlockID>,
-    #[prost(message)]
-    signature: Option<Vec<u8>>,
+    pol_block_id: Option<CanonicalBlockID>,
+    #[prost(string)]
+    pub chain_id: String,
 }
 
-pub const AMINO_NAME: &str = "tendermint/socketpv/SignProposalMsg";
-
-#[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/socketpv/SignProposalMsg"]
-pub struct SignProposalMsg {
-    #[prost(message, tag = "1")]
-    proposal: Option<Proposal>,
-}
-
-impl TendermintSign for SignProposalMsg {
-    fn cannonicalize(self, chain_id: &str) -> String {
-        match self.proposal {
-            Some(prop) => {
-                let block_parts_header = {
-                    match prop.block_parts_header {
-                        Some(block_parts_header) => block_parts_header,
-                        None => PartsSetHeader {
-                            total: 0,
-                            hash: vec![],
-                        },
-                    }
-                };
-                let pol_block_id = {
-                    match prop.pol_block_id {
-                        Some(pol_block_id) => pol_block_id,
-                        None => BlockID {
-                            hash: vec![],
-                            parts_header: Some(PartsSetHeader {
-                                total: 0,
-                                hash: vec![],
-                            }),
-                        },
-                    }
-                };
-                // this can not be None (see above)
-                let pol_block_id_parts_header = pol_block_id.parts_header.unwrap();
-                let ts: DateTime<Utc> = match prop.timestamp {
-                    Some(timestamp) => DateTime::from(SystemTime::from(timestamp)),
-                    None => DateTime::from(UNIX_EPOCH),
-                };
-
-                let value = json!({
-            "@chain_id":chain_id,
-            "@type":"proposal",
-            "round":prop.round,
-            "block_parts_header":{
-                "hash":encode_upper(block_parts_header.hash),
-                "total":block_parts_header.total
-            },
-            "height":prop.height,
-            "pol_block_id":{
-                "hash":encode_upper(pol_block_id.hash),
-                "parts":{
-                    "hash":encode_upper(pol_block_id_parts_header.hash),
-                    "total":pol_block_id_parts_header.total,
-                }
-            },
-            "pol_round":prop.pol_round,
-            "round":prop.round,
-            "timestamp": ts.to_rfc3339(),
-            });
-                value.to_string()
-            }
-            None => "".to_owned(),
+impl TendermintSignable for SignProposalRequest {
+    fn sign_bytes<B>(&self, chain_id: &str, sign_bytes: &mut B) -> Result<bool, EncodeError>
+    where
+        B: BufMut,
+    {
+        let mut spr = self.clone();
+        if let Some(ref mut pr) = spr.proposal {
+            pr.signature = None
         }
+        let proposal = spr.proposal.unwrap();
+        let cp = CanonicalProposal {
+            chain_id: chain_id.to_string(),
+            msg_type: SignedMsgType::Proposal.to_u32(),
+            block_parts_header: match proposal.block_parts_header {
+                Some(ph) => Some(CanonicalPartSetHeader {
+                    hash: ph.hash,
+                    total: ph.total,
+                }),
+                None => None,
+            },
+            height: proposal.height,
+            pol_block_id: match proposal.pol_block_id {
+                Some(bid) => Some(CanonicalBlockID {
+                    hash: bid.hash,
+                    parts_header: match bid.parts_header {
+                        Some(psh) => Some(CanonicalPartSetHeader {
+                            hash: psh.hash,
+                            total: psh.total,
+                        }),
+                        None => None,
+                    },
+                }),
+                None => None,
+            },
+            pol_round: proposal.pol_round,
+            round: proposal.round,
+            timestamp: proposal.timestamp,
+        };
+
+        cp.encode(sign_bytes)?;
+        Ok(true)
     }
-    fn sign(&mut self) {
-        unimplemented!()
+    fn set_signature(&mut self, sig: &Ed25519Signature) {
+        if let Some(ref mut prop) = self.proposal {
+            prop.signature = Some(sig.clone().into_vec());
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::{DateTime, Utc};
     use std::error::Error;
     use types::prost_amino::Message;
 
@@ -119,14 +139,15 @@ mod tests {
         };
         let mut got = vec![];
 
-        let _have = SignProposalMsg {
+        let _have = SignProposalRequest {
             proposal: Some(proposal),
         }.encode(&mut got);
         let want = vec![
-            0x31, 0x5d, 0x48, 0x70, 0x4, 0xa, 0x2b, 0x8, 0xf2, 0xc0, 0x1, 0x10, 0xc0, 0xee, 0x2,
-            0x1a, 0xe, 0x9, 0x22, 0xec, 0x7f, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x40, 0xf9, 0x98,
-            0x2d, 0x22, 0xf, 0x8, 0xde, 0x1, 0x12, 0xa, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70, 0x61,
-            0x72, 0x74, 0x73, 0x28, 0x1,
+            0x31, // len
+            189, 228, 152, 226, // prefix
+            0xa, 0x2b, 0x8, 0xf2, 0xc0, 0x1, 0x10, 0xc0, 0xee, 0x2, 0x1a, 0xe, 0x9, 0x22, 0xec,
+            0x7f, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x40, 0xf9, 0x98, 0x2d, 0x22, 0xf, 0x8, 0xde,
+            0x1, 0x12, 0xa, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70, 0x61, 0x72, 0x74, 0x73, 0x28, 0x1,
         ];
 
         assert_eq!(got, want)
@@ -151,22 +172,20 @@ mod tests {
             pol_block_id: None,
             signature: None,
         };
-        let want = SignProposalMsg {
+        let want = SignProposalRequest {
             proposal: Some(proposal),
         };
 
         let data = vec![
-            0x31, 0x5d, 0x48, 0x70, 0x4, 0xa, 0x2b, 0x8, 0xf2, 0xc0, 0x1, 0x10, 0xc0, 0xee, 0x2,
-            0x1a, 0xe, 0x9, 0x22, 0xec, 0x7f, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x40, 0xf9, 0x98,
-            0x2d, 0x22, 0xf, 0x8, 0xde, 0x1, 0x12, 0xa, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70, 0x61,
-            0x72, 0x74, 0x73, 0x28, 0x1,
+            0x31, 189, 228, 152, 226, 0xa, 0x2b, 0x8, 0xf2, 0xc0, 0x1, 0x10, 0xc0, 0xee, 0x2, 0x1a,
+            0xe, 0x9, 0x22, 0xec, 0x7f, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x40, 0xf9, 0x98, 0x2d,
+            0x22, 0xf, 0x8, 0xde, 0x1, 0x12, 0xa, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70, 0x61, 0x72,
+            0x74, 0x73, 0x28, 0x1,
         ];
 
-        match SignProposalMsg::decode(&data) {
+        match SignProposalRequest::decode(&data) {
             Ok(have) => assert_eq!(have, want),
             Err(err) => assert!(false, err.description().to_string()),
         }
     }
-    // TODO Serialization with Signature should be fairly easy as the signature is just
-    // an Option<bytes> now
 }

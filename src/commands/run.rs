@@ -6,7 +6,7 @@ use std::process;
 use client::Client;
 use config::{KmsConfig, SecretConnectionConfig, ValidatorConfig};
 use ed25519::{KeyRing, PublicKey, SecretConnectionKey, SECRET_KEY_ENCODING};
-use error::Error;
+use error::{KmsError, KmsErrorKind::*};
 
 /// The `run` command
 #[derive(Debug, Options)]
@@ -65,7 +65,7 @@ impl Callable for RunCommand {
 }
 
 /// Initialize KMS secret connection private key
-fn load_secret_connection_key(config: &SecretConnectionConfig) -> Result<Ed25519Seed, Error> {
+fn load_secret_connection_key(config: &SecretConnectionConfig) -> Result<Ed25519Seed, KmsError> {
     let key_path = &config.secret_key_path;
 
     if key_path.exists() {

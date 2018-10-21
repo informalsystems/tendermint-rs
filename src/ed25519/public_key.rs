@@ -7,7 +7,7 @@ use subtle_encoding::hex;
 #[cfg(feature = "yubihsm")]
 use yubihsm;
 
-use error::Error;
+use error::{KmsError, KmsErrorKind::*};
 
 /// Ed25519 public keys
 #[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Ord)]
@@ -15,7 +15,7 @@ pub struct PublicKey(ed25519::PublicKey);
 
 impl PublicKey {
     /// Convert a bytestring to a public key
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, KmsError> {
         Ok(PublicKey(
             ed25519::PublicKey::from_bytes(bytes).map_err(|e| err!(InvalidKey, "{}", e))?,
         ))

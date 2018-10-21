@@ -1,6 +1,6 @@
 use subtle_encoding;
 
-mod keyring;
+pub mod keyring;
 mod public_key;
 mod signer;
 

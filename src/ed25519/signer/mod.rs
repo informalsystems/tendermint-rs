@@ -5,7 +5,7 @@ pub mod softsign;
 #[cfg(feature = "yubihsm")]
 pub mod yubihsm;
 
-use error::Error;
+use error::{KmsError, KmsErrorKind::*};
 
 /// Wrapper for an Ed25519 signing provider (i.e. trait object)
 pub struct Signer {
@@ -35,7 +35,7 @@ impl Signer {
 
     /// Sign the given message using this signer
     #[inline]
-    pub fn sign(&self, msg: &[u8]) -> Result<Ed25519Signature, Error> {
+    pub fn sign(&self, msg: &[u8]) -> Result<Ed25519Signature, KmsError> {
         Ok(
             signatory::sign(self.provider.as_ref(), msg)
                 .map_err(|e| err!(SigningError, "{}", e))?,
