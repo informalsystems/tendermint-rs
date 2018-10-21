@@ -1,6 +1,9 @@
+use iq_bech32::Bech32;
+use sha2::{Digest, Sha256};
 use signatory::ed25519;
 pub use signatory::ed25519::PUBLIC_KEY_SIZE;
 use std::fmt::{self, Display};
+use subtle_encoding::hex;
 #[cfg(feature = "yubihsm")]
 use yubihsm;
 
@@ -25,20 +28,40 @@ impl PublicKey {
     }
 }
 
-// TODO: public key serialization formats (cosmos-bech32)
 impl Display for PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ed25519(")?;
+        let bech: Bech32 = Default::default();
 
-        for (i, byte) in self.as_bytes().iter().enumerate() {
-            write!(f, "{:02x}", byte)?;
-            write!(f, "{}", if i == PUBLIC_KEY_SIZE - 1 { ")" } else { ":" })?;
-        }
+        let bech_str = bech.encode("rawed25519", self.as_bytes());
 
+        write!(f, "{}", bech_str)?;
         Ok(())
     }
 }
 
+pub struct SecretConnectionKey(pub PublicKey);
+pub struct ConsensusKey(pub PublicKey);
+
+impl Display for ConsensusKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let bech: Bech32 = Default::default();
+
+        let bech_str = bech.encode("cosmosvalconspub", self.0.as_bytes());
+
+        write!(f, "{}", bech_str)?;
+        Ok(())
+    }
+}
+
+impl Display for SecretConnectionKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut sh = Sha256::default();
+        sh.input(self.0.as_bytes());
+        let hex_str = hex::encode(&sh.result().as_slice()[0..20]);
+        write!(f, "{}", String::from_utf8(hex_str).unwrap())?;
+        Ok(())
+    }
+}
 impl From<ed25519::PublicKey> for PublicKey {
     fn from(key: ed25519::PublicKey) -> PublicKey {
         PublicKey(key)

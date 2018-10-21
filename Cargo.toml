@@ -36,6 +36,8 @@ signatory-dalek = "0.10"
 signatory-yubihsm = { version = "0.10", optional = true }
 subtle-encoding = "0.2"
 tm-secret-connection = { version = "0", path = "tm-secret-connection" }
+iq-bech32 = "0.1"
+
 
 [features]
 default = ["softsign", "yubihsm"]

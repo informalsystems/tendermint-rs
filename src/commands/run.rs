@@ -5,7 +5,7 @@ use std::process;
 
 use client::Client;
 use config::{KmsConfig, SecretConnectionConfig, ValidatorConfig};
-use ed25519::{KeyRing, PublicKey, SECRET_KEY_ENCODING};
+use ed25519::{KeyRing, PublicKey, SecretConnectionKey, SECRET_KEY_ENCODING};
 use error::{KmsError, KmsErrorKind::*};
 
 /// The `run` command
@@ -80,7 +80,9 @@ fn load_secret_connection_key(config: &SecretConnectionConfig) -> Result<Ed25519
 
 /// Log the KMS node ID
 fn log_kms_node_id(seed: &Ed25519Seed) {
-    let public_key = PublicKey::from(signatory::public_key(&Ed25519Signer::from(seed)).unwrap());
+    let public_key = SecretConnectionKey(PublicKey::from(
+        signatory::public_key(&Ed25519Signer::from(seed)).unwrap(),
+    ));
     info!("{} node ID: {}", env!("CARGO_PKG_NAME"), &public_key);
 }
 

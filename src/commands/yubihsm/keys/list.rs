@@ -1,7 +1,7 @@
 use abscissa::Callable;
 use std::process;
 
-use ed25519::PublicKey;
+use ed25519::{ConsensusKey, PublicKey};
 use yubihsm;
 
 /// The `yubihsm keys list` subcommand
@@ -62,7 +62,7 @@ impl Callable for ListCommand {
 
             // TODO: support for non-Ed25519 keys
             if public_key.algorithm == yubihsm::AsymmetricAlg::Ed25519 {
-                status_attr_ok!(key_id, PublicKey::from(public_key));
+                status_attr_ok!(key_id, ConsensusKey(PublicKey::from(public_key)));
             } else {
                 status_attr_err!(key_id, "unsupported algorithm: {:?}", public_key.algorithm);
             }
