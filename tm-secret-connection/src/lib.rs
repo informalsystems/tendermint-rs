@@ -1,6 +1,38 @@
+//! SecretConnection: Transport layer encryption for Tendermint P2P connections.
+
+#![crate_name = "tm_secret_connection"]
+#![crate_type = "rlib"]
+#![allow(unknown_lints, suspicious_arithmetic_impl)]
+#![deny(
+    warnings,
+    missing_docs,
+    unused_import_braces,
+    unused_qualifications
+)]
+#![doc(html_root_url = "https://docs.rs/tm-secret-connection/0.0.0")]
+
+extern crate byteorder;
+extern crate bytes;
+extern crate failure;
+#[macro_use]
+extern crate failure_derive;
+extern crate hkdf;
+extern crate prost_amino as prost;
+#[macro_use]
+extern crate prost_amino_derive as prost_derive;
+extern crate rand;
+extern crate ring;
+extern crate sha2;
+extern crate signatory;
+extern crate signatory_dalek;
+extern crate x25519_dalek;
+
+#[macro_use]
+mod error;
+pub use error::Error;
+
 use byteorder::{ByteOrder, LE};
 use bytes::BufMut;
-use error::Error;
 use hkdf::Hkdf;
 use prost::encoding::bytes::merge;
 use prost::encoding::encode_varint;
@@ -16,16 +48,19 @@ use std::io::{self, Cursor, Read, Write};
 use std::marker::{Send, Sync};
 use x25519_dalek::{diffie_hellman, generate_public, generate_secret};
 
-// 4 + 1024 == 1028 total frame size
+/// 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: usize = 4;
 const DATA_MAX_SIZE: usize = 1024;
 const TOTAL_FRAME_SIZE: usize = DATA_MAX_SIZE + DATA_LEN_SIZE;
-// 16 is the size of the mac tag
-const TAG_SIZE: usize = 16;
-const AEAD_NONCE_SIZE: usize = 12;
 
-// Implements net.Conn
-pub struct SecretConnection<IoHandler: io::Read + io::Write + Send + Sync> {
+/// Size of the MAC tag
+pub const TAG_SIZE: usize = 16;
+
+/// Size of a ChaCha20 nonce
+pub const AEAD_NONCE_SIZE: usize = 12;
+
+/// Encrypted connection between peers in a Tendermint network
+pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
     io_handler: IoHandler,
     recv_nonce: Nonce,
     send_nonce: Nonce,
@@ -35,12 +70,13 @@ pub struct SecretConnection<IoHandler: io::Read + io::Write + Send + Sync> {
     recv_buffer: Vec<u8>,
 }
 
-impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> {
-    // Returns authenticated remote pubkey
-    fn remote_pubkey(&self) -> [u8; 32] {
+impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
+    /// Returns authenticated remote pubkey
+    pub fn remote_pubkey(&self) -> [u8; 32] {
         self.remote_pubkey
     }
-    // Performs handshake and returns a new authenticated SecretConnection.
+
+    /// Performs handshake and returns a new authenticated SecretConnection.
     pub fn new(
         mut handler: IoHandler,
         local_pubkey: &Ed25519PublicKey,
@@ -97,6 +133,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
         Ok(sc)
     }
 
+    /// Unseal (i.e. decrypt) AEAD authenticated data
     fn open(&self, authtext: &[u8], ciphertext: &[u8], out: &mut [u8]) -> Result<usize, Error> {
         // optimize if the provided buffer is sufficiently large
         if out.len() >= ciphertext.len() {
@@ -108,7 +145,7 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
                 authtext,
                 0,
                 in_out,
-            ).map_err(|_| err!(CryptoError, "open_in_place failed"))?
+            ).map_err(|_| Error::CryptoError)?
             .len();
             Ok(len)
         } else {
@@ -119,12 +156,13 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
                 authtext,
                 0,
                 &mut in_out,
-            ).map_err(|_| err!(CryptoError, "open_in_place: failed"))?;
+            ).map_err(|_| Error::CryptoError)?;
             out[..out0.len()].copy_from_slice(out0);
             Ok(out0.len())
         }
     }
 
+    /// Seal (i.e. encrypt) AEAD authenticated data
     fn seal(
         &self,
         chunk: &[u8],
@@ -142,15 +180,15 @@ impl<IoHandler: io::Read + io::Write + Send + Sync> SecretConnection<IoHandler> 
             &[0u8; 0],
             sealed_frame,
             TAG_SIZE,
-        ).map_err(|_| err!(CryptoError, "seal_in_place failed"))?;
+        ).map_err(|_| Error::CryptoError)?;
 
         Ok(())
     }
 }
 
-impl<IoHandler> io::Read for SecretConnection<IoHandler>
+impl<IoHandler> Read for SecretConnection<IoHandler>
 where
-    IoHandler: io::Read + io::Write + Send + Sync,
+    IoHandler: Read + Write + Send + Sync,
 {
     // CONTRACT: data smaller than dataMaxSize is read atomically.
     fn read(&mut self, data: &mut [u8]) -> Result<usize, io::Error> {
@@ -205,9 +243,9 @@ where
     }
 }
 
-impl<IoHandler> io::Write for SecretConnection<IoHandler>
+impl<IoHandler> Write for SecretConnection<IoHandler>
 where
-    IoHandler: io::Read + io::Write + Send + Sync,
+    IoHandler: Read + Write + Send + Sync,
 {
     // Writes encrypted frames of `sealedFrameSize`
     // CONTRACT: data smaller than dataMaxSize is read atomically.
@@ -255,7 +293,7 @@ fn gen_eph_keys() -> ([u8; 32], [u8; 32]) {
 }
 
 // Returns remote_eph_pubkey
-fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
+fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     handler: &mut IoHandler,
     local_eph_pubkey: &[u8; 32],
 ) -> Result<[u8; 32], Error> {
@@ -291,8 +329,8 @@ fn share_eph_pubkey<IoHandler: io::Read + io::Write + Send + Sync>(
     Ok(remote_eph_pubkey_fixed)
 }
 
-// Returns recv secret, send secret, challenge as 32 byte arrays
-fn derive_secrets_and_challenge(
+/// Returns recv secret, send secret, challenge as 32 byte arrays
+pub fn derive_secrets_and_challenge(
     shared_secret: &[u8; 32],
     loc_is_lo: bool,
 ) -> ([u8; 32], [u8; 32], [u8; 32]) {
@@ -329,7 +367,7 @@ fn sign_challenge(
     challenge: [u8; 32],
     local_privkey: &Signer<Ed25519Signature>,
 ) -> Result<Ed25519Signature, Error> {
-    ed25519::sign(local_privkey, &challenge).map_err(|e| err!(SigningError, "{}", e))
+    ed25519::sign(local_privkey, &challenge).map_err(|_| Error::SigningError)
 }
 
 #[derive(Clone, PartialEq, Message)]
@@ -342,7 +380,7 @@ struct AuthSigMessage {
 
 // TODO(ismail): change from DecodeError to something more generic
 // this can also fail while writing / sending
-fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
+fn share_auth_signature<IoHandler: Read + Write + Send + Sync>(
     sc: &mut SecretConnection<IoHandler>,
     pubkey: &[u8; 32],
     signature: Ed25519Signature,
@@ -363,7 +401,8 @@ fn share_auth_signature<IoHandler: io::Read + io::Write + Send + Sync>(
     Ok(AuthSigMessage::decode(&rbuf)?)
 }
 
-struct Nonce(pub [u8; 12]);
+/// SecretConnection nonces (i.e. ChaCha20 nonces)
+pub struct Nonce(pub [u8; 12]);
 
 impl Default for Nonce {
     fn default() -> Nonce {
@@ -383,12 +422,10 @@ impl Nonce {
     }
 }
 
-#[cfg(test)]
+#[cfg(tests)]
 mod tests {
-    use secret_connection;
-    use secret_connection::{Nonce, AEAD_NONCE_SIZE};
+    use super::*;
     use std::collections::HashMap;
-    use x25519_dalek::diffie_hellman;
 
     #[test]
     fn test_incr_nonce() {
@@ -436,7 +473,7 @@ mod tests {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 1,
         ];
-        let (ref t3, ref t4) = secret_connection::sort32(t1, t2);
+        let (ref t3, ref t4) = sort32(t1, t2);
         assert_eq!(t1, *t3);
         assert_eq!(t2, *t4);
     }
@@ -460,42 +497,5 @@ mod tests {
         let got_dh = diffie_hellman(local_priv, remote_pub);
 
         assert_eq!(expected_dh, &got_dh);
-    }
-
-    #[test]
-    fn test_derive_secrets_and_challenge_golden_test_vectors() {
-        use std::fs::File;
-        use std::io::BufRead;
-        use std::io::BufReader;
-        use std::str::FromStr;
-        use subtle_encoding::hex;
-
-        let f = File::open("src/TestDeriveSecretsAndChallenge.golden").unwrap();
-        let file = BufReader::new(&f);
-        for line in file.lines() {
-            let l = line.unwrap();
-            let params: Vec<&str> = l.split(',').collect();
-
-            let rand_secret_vector: Vec<u8> = hex::decode(params.get(0).unwrap()).unwrap();
-            let mut rand_secret: [u8; 32] = [0x0; 32];
-            rand_secret.copy_from_slice(&rand_secret_vector);
-
-            let loc_is_least = bool::from_str(params.get(1).unwrap()).unwrap();
-            let expected_recv_secret = hex::decode(params.get(2).unwrap()).unwrap();
-            let expected_send_secret = hex::decode(params.get(3).unwrap()).unwrap();
-            let expected_challenge = hex::decode(params.get(4).unwrap()).unwrap();
-            let (recv_secret, send_secret, challenge) =
-                secret_connection::derive_secrets_and_challenge(&rand_secret, loc_is_least);
-
-            assert_eq!(
-                expected_recv_secret, recv_secret,
-                "Recv Secrets aren't equal"
-            );
-            assert_eq!(
-                expected_send_secret, send_secret,
-                "Send Secrets aren't equal"
-            );
-            assert_eq!(expected_challenge, challenge, "challenges aren't equal");
-        }
     }
 }

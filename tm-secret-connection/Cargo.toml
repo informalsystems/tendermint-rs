@@ -1,0 +1,32 @@
+[package]
+name        = "tm-secret-connection"
+description = "Transport layer encryption for Tendermint P2P connections"
+version     = "0.0.0"
+authors     = ["Ismail Khoffi <Ismail.Khoffi@gmail.com>"]
+license     = "Apache-2.0"
+homepage    = "https://github.com/tendermint/kms/"
+repository  = "https://github.com/tendermint/kms/tree/master/tm-secretconnection"
+readme      = "README.md"
+categories  = ["cryptography"]
+keywords    = ["cosmos", "encryption", "sts", "tendermint"]
+
+[dependencies]
+byteorder = "1.2"
+bytes = "0.4"
+failure = "0.1"
+failure_derive = "0.1"
+hkdf = "0.5"
+prost-amino = "0.4.0"
+prost-amino-derive = "0.4.0"
+rand = "0.5"
+ring = "0.13"
+sha2 = "0.7"
+signatory = { version = "0.10", features = ["ed25519"] }
+signatory-dalek = "0.10"
+x25519-dalek = { version = "0.3", default-features = false, features = ["std", "u64_backend"] }
+
+[dev-dependencies]
+subtle-encoding = "0.2"
+
+[badges]
+circle-ci = { repository = "tendermint/kms" }

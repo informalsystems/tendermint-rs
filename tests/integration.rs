@@ -22,13 +22,10 @@ extern crate byteorder;
 extern crate bytes;
 extern crate chrono;
 extern crate failure;
-extern crate hkdf;
-extern crate ring;
 extern crate sha2;
-extern crate x25519_dalek;
+extern crate tm_secret_connection;
 
 use prost::Message;
-use secret_connection::SecretConnection;
 use signatory::{ed25519, Decode, Ed25519PublicKey, Ed25519Seed, Ed25519Signature};
 use signatory_dalek::Ed25519Signer;
 #[cfg(feature = "yubihsm")]
@@ -41,6 +38,7 @@ use std::{
     process::{Child, Command},
 };
 use subtle_encoding::Encoding;
+use tm_secret_connection::SecretConnection;
 use types::TendermintSignable;
 
 /// Integration tests for the KMS command-line interface
@@ -65,10 +63,6 @@ mod types {
 #[macro_use]
 mod error {
     include!("../src/error.rs");
-}
-
-mod secret_connection {
-    include!("../src/secret_connection.rs");
 }
 
 /// Receives incoming KMS connection then sends commands
@@ -120,7 +114,6 @@ fn test_handle_and_sign_requests() {
     use types::heartbeat::{Heartbeat, SignHeartbeatRequest};
     use types::*;
 
-    use secret_connection::SecretConnection;
     // this spawns a process which wants to share ephemeral keys and blocks until it reads a reply:
     let mut kms = KmsConnection::default();
 

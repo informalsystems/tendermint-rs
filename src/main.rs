@@ -11,16 +11,13 @@ extern crate chrono;
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
-extern crate hkdf;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate prost_amino_derive as prost_derive;
 extern crate rand;
-extern crate ring;
 #[macro_use]
 extern crate serde_derive;
-#[macro_use]
 extern crate serde_json;
 extern crate sha2;
 extern crate signatory;
@@ -28,7 +25,7 @@ extern crate signatory_dalek;
 #[cfg(feature = "yubihsm")]
 extern crate signatory_yubihsm;
 extern crate subtle_encoding;
-extern crate x25519_dalek;
+extern crate tm_secret_connection;
 
 #[macro_use]
 mod error;
@@ -39,7 +36,6 @@ mod commands;
 mod config;
 mod ed25519;
 mod rpc;
-mod secret_connection;
 mod session;
 mod types;
 #[cfg(feature = "yubihsm")]
