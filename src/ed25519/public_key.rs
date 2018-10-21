@@ -1,4 +1,5 @@
 use iq_bech32::Bech32;
+use sha2::{Digest, Sha256};
 use signatory::ed25519;
 pub use signatory::ed25519::PUBLIC_KEY_SIZE;
 use std::fmt::{self, Display};
@@ -30,9 +31,34 @@ impl Display for PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let bech: Bech32 = Default::default();
 
-        let bech_str = bech.encode("cosmosvalconspub", self.as_bytes());
+        let bech_str = bech.encode("rawed25519", self.as_bytes());
 
         write!(f, "{}", bech_str)?;
+        Ok(())
+    }
+}
+
+pub struct SecretConnectionKey(pub PublicKey);
+pub struct ConsensusKey(pub PublicKey);
+
+impl Display for ConsensusKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let bech: Bech32 = Default::default();
+
+        let bech_str = bech.encode("cosmosvalconspub", self.0.as_bytes());
+
+        write!(f, "{}", bech_str)?;
+        Ok(())
+    }
+}
+
+impl Display for SecretConnectionKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut sh = Sha256::default();
+        sh.input(self.0.as_bytes());
+        for val in sh.result().iter().take(20) {
+            write!(f, "{:x}", val);
+        }
         Ok(())
     }
 }
