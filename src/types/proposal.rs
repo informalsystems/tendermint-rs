@@ -33,22 +33,13 @@ pub struct SignProposalRequest {
 }
 
 #[derive(Clone, PartialEq, Message)]
-#[amino_name = "tendermint/remotesigner/SignedProposalResponse"]
-pub struct SignedProposalResponse {
-    #[prost(message, tag = "1")]
-    pub proposal: Option<Proposal>,
-    #[prost(message, tag = "2")]
-    pub err: Option<RemoteError>,
-}
-
-#[derive(Clone, PartialEq, Message)]
 struct CanonicalProposal {
-    #[prost(sint64, tag = "1")]
-    pub height: i64,
+    #[prost(uint32, tag = "1")]
+    msg_type: u32, // this is a byte in golang, which is a varint encoded UInt8 (using amino's EncodeUvarint)
+    #[prost(sint64)]
+    height: i64,
     #[prost(sint64)]
     round: i64,
-    #[prost(uint32)]
-    pub msg_type: u32, // this is a byte in golang, which is a varint encoded UInt8 (using amino's EncodeUvarint)
 
     #[prost(message)]
     timestamp: Option<Time>,
@@ -60,6 +51,15 @@ struct CanonicalProposal {
     pol_block_id: Option<CanonicalBlockID>,
     #[prost(string)]
     pub chain_id: String,
+}
+
+#[derive(Clone, PartialEq, Message)]
+#[amino_name = "tendermint/remotesigner/SignedProposalResponse"]
+pub struct SignedProposalResponse {
+    #[prost(message, tag = "1")]
+    pub proposal: Option<Proposal>,
+    #[prost(message, tag = "2")]
+    pub err: Option<RemoteError>,
 }
 
 impl TendermintSignable for SignProposalRequest {

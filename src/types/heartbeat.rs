@@ -1,4 +1,4 @@
-use super::{Ed25519Signature, RemoteError, Signature, TendermintSignable};
+use super::{Ed25519Signature, RemoteError, Signature, SignedMsgType, TendermintSignable};
 use bytes::BufMut;
 use prost::{EncodeError, Message};
 
@@ -41,10 +41,8 @@ pub struct SignedHeartbeatResponse {
 
 #[derive(Clone, PartialEq, Message)]
 struct ConicalHeartbeat {
-    #[prost(string, tag = "1")]
-    pub chain_id: String,
-    #[prost(string)]
-    pub type_str: String,
+    #[prost(uint32, tag = "1")]
+    pub msg_type: u32,
     #[prost(sint64)]
     pub height: i64,
     #[prost(sint64)]
@@ -55,6 +53,8 @@ struct ConicalHeartbeat {
     pub validator_address: Vec<u8>,
     #[prost(sint64)]
     pub validator_index: i64,
+    #[prost(string)]
+    pub chain_id: String,
 }
 
 impl TendermintSignable for SignHeartbeatRequest {
@@ -69,13 +69,13 @@ impl TendermintSignable for SignHeartbeatRequest {
         }
         let hb = hbm.heartbeat.unwrap();
         let chb = ConicalHeartbeat {
-            chain_id: chain_id.to_string(),
-            type_str: "heartbeat".to_string(),
+            msg_type: SignedMsgType::Heartbeat.to_u32(),
             height: hb.height,
             round: hb.round,
             sequence: hb.sequence,
             validator_address: hb.validator_address,
             validator_index: hb.validator_index,
+            chain_id: chain_id.to_string(),
         };
         chb.encode(sign_bytes)?;
         Ok(true)
