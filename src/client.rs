@@ -5,18 +5,20 @@
 //! To dance around the fact the KMS isn't actually a service, we refer to it
 //! as a "Key Management System".
 
-use signatory::{self, Decode, Ed25519Seed, Encode};
+use signatory::{self, Decode, Encode};
 use signatory_dalek::Ed25519Signer;
 use std::{
     panic,
+    path::Path,
     thread::{self, JoinHandle},
     time::Duration,
 };
 
-use config::{ConnectionConfig, SecretConnectionConfig, ValidatorConfig};
-use ed25519::{PublicKey, SECRET_KEY_ENCODING};
+use config::{ConnectionConfig, ValidatorConfig};
+use ed25519::{self, SECRET_KEY_ENCODING};
 use error::{KmsError, KmsErrorKind};
 use session::Session;
+use tendermint::chain;
 
 /// How long to wait after a crash before respawning (in seconds)
 pub const RESPAWN_DELAY: u64 = 5;
@@ -49,82 +51,67 @@ impl Client {
 /// Main loop for all clients. Handles reconnecting in the event of an error
 fn client_loop(config: ValidatorConfig) {
     let ValidatorConfig {
-        seccon,
-        unix,
+        chain_id,
+        connection,
         reconnect,
     } = config;
 
-    // Error out if the same validator has both seccon and unix configured
-    if seccon.is_some() && unix.is_some() {
-        error!(
-            "a validator has {} and {} specified, can only chose one",
-            seccon.unwrap().uri(),
-            unix.unwrap().uri()
-        );
-        return;
-    }
+    while let Err(e) = client_session(chain_id, &connection) {
+        error!("[{}] {}", connection.uri(), e);
 
-    // Error out if a validator doesn't specify any connection configuration
-    if seccon.is_none() && unix.is_none() {
-        error!("a validator has no connection configuration");
-        return;
-    }
-
-    // Prepare connection config
-    let conn_config = if seccon.is_some() {
-        ConnectionConfig::SecretConnection(seccon.unwrap())
-    } else {
-        ConnectionConfig::UNIXConnection(unix.unwrap())
-    };
-
-    // Engage main I/O loop
-    while let Err(e) = client_session(&conn_config) {
-        error!("[{}] {}", conn_config.uri(), e);
-
-        // Break out of the loop if auto-reconnect is explicitly disabled
         if reconnect {
             // TODO: configurable respawn delay
             thread::sleep(Duration::from_secs(RESPAWN_DELAY));
         } else {
+            // Break out of the loop if auto-reconnect is explicitly disabled
             return;
         }
     }
 
-    info!("[{}] session closed gracefully", conn_config.uri());
+    info!(
+        "[{}@{}] session closed gracefully",
+        chain_id,
+        connection.uri()
+    );
 }
 
 /// Establish a session with the validator and handle incoming requests
-fn client_session(config: &ConnectionConfig) -> Result<(), KmsError> {
+fn client_session(chain_id: chain::Id, config: &ConnectionConfig) -> Result<(), KmsError> {
     panic::catch_unwind(move || {
         match config {
-            // This validator will use a secret connection
-            ConnectionConfig::SecretConnection(ref conf) => {
-                // Load secret connection key
-                match load_secret_connection_key(conf) {
-                    Ok(key) => {
-                        // Output secret connection node ID
-                        log_kms_node_id(&key);
+            ConnectionConfig::Tcp {
+                addr,
+                port,
+                secret_key_path,
+            } => {
+                let secret_key = load_secret_connection_key(secret_key_path)?;
+                let node_public_key = ed25519::PublicKey::from(
+                    signatory::public_key(&Ed25519Signer::from(&secret_key)).unwrap(),
+                );
 
-                        // Construct a secret connection session
-                        let mut session = Session::new_seccon(&conf.addr, conf.port, &key)?;
+                info!("KMS node ID: {}", &node_public_key);
 
-                        info!("[{}] connected to validator successfully", conf.uri());
+                let mut session = Session::connect_tcp(chain_id, addr, *port, &secret_key)?;
 
-                        while session.handle_request()? {}
-                    }
+                info!(
+                    "[{}@{}] connected to validator successfully",
+                    chain_id,
+                    config.uri()
+                );
 
-                    Err(e) => error!("couldn't load secret connection key: {}", e),
-                }
+                session.request_loop()?;
             }
-
-            // This validator will use a UNIX connection
-            ConnectionConfig::UNIXConnection(ref conf) => {
+            ConnectionConfig::Unix { socket_path } => {
                 // Construct a UNIX connection session
-                let mut session = Session::new_unix(&conf.socket_path)?;
+                let mut session = Session::accept_unix(chain_id, socket_path)?;
 
-                info!("[{}] waiting for a validator connection", conf.uri());
+                info!(
+                    "[{}@{}] waiting for a validator connection",
+                    chain_id,
+                    config.uri()
+                );
 
-                while session.handle_request()? {}
+                session.request_loop()?;
             }
         };
 
@@ -133,29 +120,21 @@ fn client_session(config: &ConnectionConfig) -> Result<(), KmsError> {
 }
 
 /// Initialize KMS secret connection private key
-fn load_secret_connection_key(config: &SecretConnectionConfig) -> Result<Ed25519Seed, KmsError> {
-    let key_path = &config.secret_key_path;
-
-    if key_path.exists() {
+fn load_secret_connection_key(path: &Path) -> Result<ed25519::Seed, KmsError> {
+    if path.exists() {
         Ok(
-            Ed25519Seed::decode_from_file(key_path, SECRET_KEY_ENCODING).map_err(|e| {
+            ed25519::Seed::decode_from_file(path, SECRET_KEY_ENCODING).map_err(|e| {
                 err!(
                     KmsErrorKind::ConfigError,
-                    "error loading {}: {}",
-                    key_path.display(),
+                    "error loading SecretConnection key from {}: {}",
+                    path.display(),
                     e
                 )
             })?,
         )
     } else {
-        let seed = Ed25519Seed::generate();
-        seed.encode_to_file(key_path, SECRET_KEY_ENCODING)?;
+        let seed = ed25519::Seed::generate();
+        seed.encode_to_file(path, SECRET_KEY_ENCODING)?;
         Ok(seed)
     }
-}
-
-/// Log the KMS node ID
-fn log_kms_node_id(seed: &Ed25519Seed) {
-    let public_key = PublicKey::from(signatory::public_key(&Ed25519Signer::from(seed)).unwrap());
-    info!("KMS node ID: {}", &public_key);
 }

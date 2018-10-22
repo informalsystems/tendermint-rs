@@ -1,24 +1,10 @@
 //! KMS integration test
 
-// TODO: get rid of hacks for using RPC types in tests
-#![allow(unused_imports, unused_variables, dead_code)]
-
-#[macro_use]
-extern crate abscissa;
-#[macro_use]
-extern crate abscissa_derive;
-#[macro_use]
-extern crate failure_derive;
 extern crate prost_amino as prost;
-#[macro_use]
-extern crate prost_amino_derive as prost_derive;
 extern crate rand;
 extern crate signatory;
 
 extern crate signatory_dalek;
-#[cfg(feature = "yubihsm")]
-extern crate signatory_yubihsm;
-extern crate subtle_encoding;
 extern crate tempfile;
 
 extern crate byteorder;
@@ -26,51 +12,38 @@ extern crate bytes;
 extern crate chrono;
 extern crate failure;
 extern crate sha2;
-extern crate tm_secret_connection;
+extern crate tendermint;
+extern crate tmkms;
 
 use chrono::{DateTime, Utc};
 use prost::Message;
 use rand::Rng;
-use signatory::{ed25519, Decode, Ed25519PublicKey, Ed25519Seed, Ed25519Signature, Signature};
+use signatory::{ed25519, encoding::Identity, Decode, Signature};
 use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
-#[cfg(feature = "yubihsm")]
-use signatory_yubihsm::yubihsm;
 use std::io;
-use std::marker::{Send, Sync};
 use std::os::unix::net::UnixStream;
 use std::thread;
 use std::time;
 use std::{
-    ffi::OsStr,
-    io::{Read, Write},
+    io::{Cursor, Read, Write},
     net::{TcpListener, TcpStream},
-    path::Path,
     process::{Child, Command},
 };
-use subtle_encoding::Encoding;
 use tempfile::NamedTempFile;
-use tm_secret_connection::SecretConnection;
-use types::*;
-use unix_connection::UNIXConnection;
+use tendermint::{
+    amino_types::{self, *},
+    SecretConnection,
+};
+use tmkms::UnixConnection;
 
 /// Integration tests for the KMS command-line interface
 mod cli;
 
 /// Path to the KMS executable
-pub const KMS_EXE_PATH: &str = "./target/debug/tmkms";
+const KMS_EXE_PATH: &str = "target/debug/tmkms";
 
-mod types {
-    include!("../src/types/mod.rs");
-}
-
-#[macro_use]
-mod error {
-    include!("../src/error.rs");
-}
-
-mod unix_connection {
-    include!("../src/unix_connection.rs");
-}
+/// Path to the example validator signing key
+const SIGNING_KEY_PATH: &str = "tests/support/signing.key";
 
 enum KmsSocket {
     /// TCP socket type
@@ -85,7 +58,7 @@ enum KmsConnection {
     SecretConnection(SecretConnection<TcpStream>),
 
     /// UNIX connection type
-    UNIXConnection(UNIXConnection<UnixStream>),
+    UNIXConnection(UnixConnection<UnixStream>),
 }
 
 impl io::Write for KmsConnection {
@@ -173,19 +146,21 @@ impl KmsDevice {
         writeln!(
             config_file,
             r#"
-            [[providers.softsign]]
-            id = "example-key-1"
-            path = "tests/signing.key"
-
             [[validator]]
+            chain_id = "test_chain_id"
             reconnect = false
 
-                [validator.seccon]
+                [validator.connection]
+                type = "tcp"
                 addr = "127.0.0.1"
                 port = {}
-                secret-key-path = "tests/seccon.key"
+                secret_key_path = "tests/support/secret_connection.key"
+
+            [[providers.softsign]]
+            id = "example-key-1"
+            path = "{}"
         "#,
-            port
+            port, SIGNING_KEY_PATH
         );
 
         config_file
@@ -197,16 +172,18 @@ impl KmsDevice {
         writeln!(
             config_file,
             r#"
+            [[validator]]
+            chain_id = "test_chain_id"
+
+                [validator.connection]
+                type = "unix"
+                socket_path = "{}"
+
             [[providers.softsign]]
             id = "example-key-1"
-            path = "tests/signing.key"
-
-            [[validator]]
-
-                [validator.unix]
-                    socket-path = "{}"
+            path = "{}"
         "#,
-            socket_path
+            socket_path, SIGNING_KEY_PATH
         );
 
         config_file
@@ -231,7 +208,7 @@ impl KmsDevice {
             KmsSocket::UNIX(ref sock) => {
                 let socket_cp = sock.try_clone().unwrap();
 
-                KmsConnection::UNIXConnection(UNIXConnection::new(socket_cp).unwrap())
+                KmsConnection::UNIXConnection(UnixConnection::new(socket_cp).unwrap())
             }
         }
     }
@@ -292,7 +269,7 @@ impl io::Read for ProtocolTester {
     fn read(&mut self, data: &mut [u8]) -> Result<usize, io::Error> {
         let mut unix_buf = vec![0u8; data.len()];
 
-        let tcp_sz = self.tcp_connection.read(data)?;
+        self.tcp_connection.read(data)?;
         let unix_sz = self.unix_connection.read(&mut unix_buf)?;
 
         // Assert handler sanity
@@ -306,16 +283,15 @@ impl io::Read for ProtocolTester {
 }
 
 /// Get the public key associated with the testing private key
-fn test_key() -> (Ed25519PublicKey, Ed25519Signer) {
-    let seed =
-        ed25519::Seed::decode_from_file("tests/signing.key", subtle_encoding::IDENTITY).unwrap();
+fn test_key() -> (ed25519::PublicKey, Ed25519Signer) {
+    let seed = ed25519::Seed::decode_from_file(SIGNING_KEY_PATH, &Identity::default()).unwrap();
     let signer = Ed25519Signer::from(&seed);
     (signatory::public_key(&signer).unwrap(), signer)
 }
 
 /// Construct and send a poison pill message to stop KMS devices
 fn send_poison_pill(pt: &mut ProtocolTester) {
-    let pill = types::PoisonPillMsg {};
+    let pill = PoisonPillMsg {};
     let mut buf = vec![];
 
     // Use connection to send a message
@@ -323,6 +299,16 @@ fn send_poison_pill(pt: &mut ProtocolTester) {
     pt.write_all(&buf).unwrap();
 
     println!("sent poison pill");
+}
+
+/// Extract the actual length of an amino message
+pub fn extract_actual_len(buf: &[u8]) -> Result<u64, prost::DecodeError> {
+    let mut buff = Cursor::new(buf);
+    let actual_len = prost::encoding::decode_varint(&mut buff)?;
+    if actual_len == 0 {
+        return Ok(1);
+    }
+    Ok(actual_len + (prost::encoding::encoded_len_varint(actual_len) as u64))
 }
 
 #[test]
@@ -367,14 +353,14 @@ fn test_handle_and_sign_heartbeat() {
             heartbeat::SignHeartbeatRequest::decode(&resp).expect("decoding heartbeat failed");
         let mut sign_bytes: Vec<u8> = vec![];
 
-        hb_req.sign_bytes(chain_id, &mut sign_bytes).unwrap();
+        hb_req.sign_bytes(chain_id.into(), &mut sign_bytes).unwrap();
 
         let hb: heartbeat::Heartbeat = hb_req
             .heartbeat
             .expect("heartbeat should be embedded but none was found");
         let sig: Vec<u8> = hb.signature.expect("expected signature was not found");
         let verifier = Ed25519Verifier::from(&pub_key);
-        let signature = Ed25519Signature::from_bytes(sig).unwrap();
+        let signature = ed25519::Signature::from_bytes(sig).unwrap();
         let msg: &[u8] = sign_bytes.as_slice();
 
         ed25519::verify(&verifier, msg, &signature).unwrap();
@@ -389,13 +375,13 @@ fn test_handle_and_sign_proposal() {
     let (pub_key, _) = test_key();
 
     let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
-    let t = Time {
+    let t = TimeMsg {
         seconds: dt.timestamp(),
         nanos: dt.timestamp_subsec_nanos() as i32,
     };
 
     ProtocolTester::apply(|mut pt| {
-        let proposal = types::proposal::Proposal {
+        let proposal = amino_types::proposal::Proposal {
             height: 12345,
             round: 23456,
             timestamp: Some(t),
@@ -408,7 +394,7 @@ fn test_handle_and_sign_proposal() {
             signature: None,
         };
 
-        let spr = types::proposal::SignProposalRequest {
+        let spr = amino_types::proposal::SignProposalRequest {
             proposal: Some(proposal),
         };
 
@@ -427,14 +413,14 @@ fn test_handle_and_sign_proposal() {
         let p_req =
             proposal::SignedProposalResponse::decode(&resp).expect("decoding proposal failed");
         let mut sign_bytes: Vec<u8> = vec![];
-        spr.sign_bytes(chain_id, &mut sign_bytes).unwrap();
+        spr.sign_bytes(chain_id.into(), &mut sign_bytes).unwrap();
 
-        let prop: types::proposal::Proposal = p_req
+        let prop: amino_types::proposal::Proposal = p_req
             .proposal
             .expect("proposal should be embedded but none was found");
         let sig: Vec<u8> = prop.signature.expect("expected signature was not found");
         let verifier = Ed25519Verifier::from(&pub_key);
-        let signature = Ed25519Signature::from_bytes(sig).unwrap();
+        let signature = ed25519::Signature::from_bytes(sig).unwrap();
         let msg: &[u8] = sign_bytes.as_slice();
 
         ed25519::verify(&verifier, msg, &signature).unwrap();
@@ -449,13 +435,13 @@ fn test_handle_and_sign_vote() {
     let (pub_key, _) = test_key();
 
     let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
-    let t = Time {
+    let t = TimeMsg {
         seconds: dt.timestamp(),
         nanos: dt.timestamp_subsec_nanos() as i32,
     };
 
     ProtocolTester::apply(|mut pt| {
-        let vote_msg = types::vote::Vote {
+        let vote_msg = amino_types::vote::Vote {
             validator_address: vec![
                 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
                 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
@@ -465,7 +451,7 @@ fn test_handle_and_sign_vote() {
             round: 2,
             timestamp: Some(t),
             vote_type: 0x01,
-            block_id: Some(BlockID {
+            block_id: Some(BlockId {
                 hash: "hash".as_bytes().to_vec(),
                 parts_header: Some(PartsSetHeader {
                     total: 1000000,
@@ -475,7 +461,7 @@ fn test_handle_and_sign_vote() {
             signature: vec![],
         };
 
-        let svr = types::vote::SignVoteRequest {
+        let svr = amino_types::vote::SignVoteRequest {
             vote: Some(vote_msg),
         };
         let mut buf = vec![];
@@ -492,15 +478,17 @@ fn test_handle_and_sign_vote() {
 
         let v_resp = vote::SignedVoteResponse::decode(&resp).expect("decoding vote failed");
         let mut sign_bytes: Vec<u8> = vec![];
-        svr.sign_bytes(chain_id, &mut sign_bytes).unwrap();
+        svr.sign_bytes(chain_id.into(), &mut sign_bytes).unwrap();
 
-        let vote_msg: types::vote::Vote = v_resp
+        let vote_msg: amino_types::vote::Vote = v_resp
             .vote
             .expect("vote should be embedded int the response but none was found");
+
         let sig: Vec<u8> = vote_msg.signature;
-        assert_ne!(sig, vec![]);
+        assert_ne!(sig.len(), 0);
+
         let verifier = Ed25519Verifier::from(&pub_key);
-        let signature = Ed25519Signature::from_bytes(sig).unwrap();
+        let signature = ed25519::Signature::from_bytes(sig).unwrap();
         let msg: &[u8] = sign_bytes.as_slice();
 
         ed25519::verify(&verifier, msg, &signature).unwrap();
@@ -530,7 +518,7 @@ fn test_handle_and_sign_get_publickey() {
         resp.copy_from_slice(&resp_buf[..actual_len as usize]);
 
         let pk_resp = PubKeyMsg::decode(&resp).expect("decoding public key failed");
-        assert_ne!(pk_resp.pub_key_ed25519, vec![]);
+        assert_ne!(pk_resp.pub_key_ed25519.len(), 0);
         println!("got public key: {:?}", pk_resp.pub_key_ed25519);
 
         send_poison_pill(&mut pt);
@@ -551,7 +539,7 @@ fn test_handle_and_sign_ping_pong() {
         let actual_len = extract_actual_len(&resp_buf).unwrap();
         let mut resp = vec![0u8; actual_len as usize];
         resp.copy_from_slice(&resp_buf[..actual_len as usize]);
-        let pong = PingResponse::decode(&resp).expect("decoding ping response failed");
+        PingResponse::decode(&resp).expect("decoding ping response failed");
 
         send_poison_pill(&mut pt);
     });

@@ -21,7 +21,6 @@ pub struct YubihsmConfig {
     pub keys: Vec<SigningKeyConfig>,
 
     /// Serial number of the YubiHSM to connect to
-    #[serde(rename = "serial-number")]
     pub serial_number: Option<SerialNumber>,
 }
 

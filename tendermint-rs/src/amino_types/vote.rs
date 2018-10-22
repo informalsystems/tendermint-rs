@@ -1,10 +1,16 @@
-use super::{
-    BlockID, CanonicalBlockID, CanonicalPartSetHeader, Ed25519Signature, RemoteError, Signature,
-    TendermintSignable, Time,
-};
 use bytes::BufMut;
-use prost::Message;
-use types::prost_amino::error::EncodeError;
+use prost::{error::EncodeError, Message};
+use signatory::{ed25519, Signature};
+
+use super::{
+    block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
+    remote_error::RemoteError,
+    signature::SignableMsg,
+    time::TimeMsg,
+};
+use block;
+use chain;
+use error::Error;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Vote {
@@ -17,13 +23,19 @@ pub struct Vote {
     #[prost(sint64)]
     pub round: i64,
     #[prost(message)]
-    pub timestamp: Option<Time>,
+    pub timestamp: Option<TimeMsg>,
     #[prost(uint32)]
     pub vote_type: u32,
     #[prost(message)]
-    pub block_id: Option<BlockID>,
+    pub block_id: Option<BlockId>,
     #[prost(bytes)]
     pub signature: Vec<u8>,
+}
+
+impl block::ParseHeight for Vote {
+    fn parse_block_height(&self) -> Result<block::Height, Error> {
+        block::Height::parse(self.height)
+    }
 }
 
 pub const AMINO_NAME: &str = "tendermint/remotesigner/SignVoteRequest";
@@ -53,11 +65,23 @@ pub struct CanonicalVote {
     #[prost(sfixed64)]
     pub round: i64,
     #[prost(message)]
-    pub timestamp: Option<Time>,
+    pub timestamp: Option<TimeMsg>,
     #[prost(message)]
-    pub block_id: Option<CanonicalBlockID>,
+    pub block_id: Option<CanonicalBlockId>,
     #[prost(string)]
     pub chain_id: String,
+}
+
+impl chain::ParseId for CanonicalVote {
+    fn parse_chain_id(&self) -> Result<chain::Id, Error> {
+        chain::Id::new(&self.chain_id)
+    }
+}
+
+impl block::ParseHeight for CanonicalVote {
+    fn parse_block_height(&self) -> Result<block::Height, Error> {
+        block::Height::parse(self.height)
+    }
 }
 
 impl CanonicalVote {
@@ -66,7 +90,7 @@ impl CanonicalVote {
             vote_type: vote.vote_type,
             chain_id: chain_id.to_string(),
             block_id: match vote.block_id {
-                Some(bid) => Some(CanonicalBlockID {
+                Some(bid) => Some(CanonicalBlockId {
                     hash: bid.hash,
                     parts_header: match bid.parts_header {
                         Some(psh) => Some(CanonicalPartSetHeader {
@@ -81,7 +105,7 @@ impl CanonicalVote {
             height: vote.height,
             round: vote.round,
             timestamp: match vote.timestamp {
-                None => Some(Time {
+                None => Some(TimeMsg {
                     seconds: -62_135_596_800,
                     nanos: 0,
                 }),
@@ -91,8 +115,8 @@ impl CanonicalVote {
     }
 }
 
-impl TendermintSignable for SignVoteRequest {
-    fn sign_bytes<B>(&self, chain_id: &str, sign_bytes: &mut B) -> Result<bool, EncodeError>
+impl SignableMsg for SignVoteRequest {
+    fn sign_bytes<B>(&self, chain_id: chain::Id, sign_bytes: &mut B) -> Result<bool, EncodeError>
     where
         B: BufMut,
     {
@@ -101,12 +125,12 @@ impl TendermintSignable for SignVoteRequest {
             vo.signature = vec![];
         }
         let vote = svr.vote.unwrap();
-        let cv = CanonicalVote::new(vote, chain_id);
+        let cv = CanonicalVote::new(vote, chain_id.as_str());
 
         cv.encode(sign_bytes)?;
         Ok(true)
     }
-    fn set_signature(&mut self, sig: &Ed25519Signature) {
+    fn set_signature(&mut self, sig: &ed25519::Signature) {
         if let Some(ref mut vt) = self.vote {
             vt.signature = sig.clone().into_vec();
         }
@@ -117,14 +141,14 @@ impl TendermintSignable for SignVoteRequest {
 mod tests {
     use super::super::PartsSetHeader;
     use super::*;
+    use amino_types::SignedMsgType;
     use chrono::{DateTime, Utc};
-    use types::prost_amino::Message;
-    use types::SignedMsgType;
+    use prost::Message;
 
     #[test]
     fn test_vote_serialization() {
         let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
-        let t = Time {
+        let t = TimeMsg {
             seconds: dt.timestamp(),
             nanos: dt.timestamp_subsec_nanos() as i32,
         };
@@ -138,7 +162,7 @@ mod tests {
             round: 2,
             timestamp: Some(t),
             vote_type: SignedMsgType::PreVote.to_u32(),
-            block_id: Some(BlockID {
+            block_id: Some(BlockId {
                 hash: "hash".as_bytes().to_vec(),
                 parts_header: Some(PartsSetHeader {
                     total: 1000000,
@@ -174,7 +198,7 @@ mod tests {
         //		Round:            2,
         //		Timestamp:        stamp,
         //		Type:             byte(0x01), // pre-vote
-        //		BlockID: types.BlockID{
+        //		BlockId: types.BlockId{
         //			Hash: []byte("hash"),
         //			PartsHeader: types.PartSetHeader{
         //				Total: 1000000,
@@ -305,7 +329,7 @@ mod tests {
     #[test]
     fn test_vote_rountrip_with_sig() {
         let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
-        let t = Time {
+        let t = TimeMsg {
             seconds: dt.timestamp(),
             nanos: dt.timestamp_subsec_nanos() as i32,
         };
@@ -319,7 +343,7 @@ mod tests {
             round: 2,
             timestamp: Some(t),
             vote_type: 0x01,
-            block_id: Some(BlockID {
+            block_id: Some(BlockId {
                 hash: "hash".as_bytes().to_vec(),
                 parts_header: Some(PartsSetHeader {
                     total: 1000000,
@@ -361,7 +385,7 @@ mod tests {
             0x61, 0x72, 0x74, 0x73, 0x5f, 0x68, 0x61, 0x73, 0x68,
         ];
         let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
-        let t = Time {
+        let t = TimeMsg {
             seconds: dt.timestamp(),
             nanos: dt.timestamp_subsec_nanos() as i32,
         };
@@ -375,7 +399,7 @@ mod tests {
             round: 2,
             timestamp: Some(t),
             vote_type: 0x01,
-            block_id: Some(BlockID {
+            block_id: Some(BlockId {
                 hash: "hash".as_bytes().to_vec(),
                 parts_header: Some(PartsSetHeader {
                     total: 1000000,

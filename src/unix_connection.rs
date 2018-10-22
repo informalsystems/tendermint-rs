@@ -4,17 +4,21 @@ use std::marker::{Send, Sync};
 use error::KmsError;
 
 /// Protocol implementation of the UNIX socket domain connection
-pub struct UNIXConnection<IoHandler> {
+pub struct UnixConnection<IoHandler> {
     socket: IoHandler,
 }
 
-impl<IoHandler: io::Read + io::Write + Send + Sync> UNIXConnection<IoHandler> {
+impl<IoHandler> UnixConnection<IoHandler>
+where
+    IoHandler: io::Read + io::Write + Send + Sync,
+{
+    /// Create a new `UnixConnection` for the given socket
     pub fn new(socket: IoHandler) -> Result<Self, KmsError> {
         Ok(Self { socket })
     }
 }
 
-impl<IoHandler> io::Read for UNIXConnection<IoHandler>
+impl<IoHandler> io::Read for UnixConnection<IoHandler>
 where
     IoHandler: io::Read + io::Write + Send + Sync,
 {
@@ -23,7 +27,7 @@ where
     }
 }
 
-impl<IoHandler> io::Write for UNIXConnection<IoHandler>
+impl<IoHandler> io::Write for UnixConnection<IoHandler>
 where
     IoHandler: io::Read + io::Write + Send + Sync,
 {

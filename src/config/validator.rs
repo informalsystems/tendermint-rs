@@ -1,13 +1,14 @@
-use config::connection::{SecretConnectionConfig, UNIXConnectionConfig};
+use config::connection::ConnectionConfig;
+use tendermint::chain;
 
 /// Validator configuration
 #[derive(Clone, Deserialize, Debug)]
 pub struct ValidatorConfig {
-    /// Secret Connection config
-    pub seccon: Option<SecretConnectionConfig>,
+    /// Chain ID for this validator
+    pub chain_id: chain::Id,
 
-    /// UNIX socket config
-    pub unix: Option<UNIXConnectionConfig>,
+    /// Connection configuration
+    pub connection: ConnectionConfig,
 
     /// Automatically reconnect on error? (default: true)
     #[serde(default = "reconnect_default")]

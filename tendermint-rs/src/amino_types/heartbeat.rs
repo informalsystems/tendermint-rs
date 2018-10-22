@@ -1,6 +1,12 @@
-use super::{Ed25519Signature, RemoteError, Signature, SignedMsgType, TendermintSignable};
 use bytes::BufMut;
 use prost::{EncodeError, Message};
+use signatory::{ed25519, Signature};
+
+use super::{
+    remote_error::RemoteError,
+    signature::{SignableMsg, SignedMsgType},
+};
+use {block, chain, error::Error};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Heartbeat {
@@ -16,6 +22,13 @@ pub struct Heartbeat {
     pub sequence: i64,
     #[prost(message)]
     pub signature: Option<Vec<u8>>,
+}
+
+// TODO(tony): custom derive proc macro for this e.g. `derive(ParseBlockHeight)`
+impl block::ParseHeight for Heartbeat {
+    fn parse_block_height(&self) -> Result<block::Height, Error> {
+        block::Height::parse(self.height)
+    }
 }
 
 pub const AMINO_NAME: &str = "tendermint/remotesigner/SignHeartbeatRequest";
@@ -40,7 +53,7 @@ pub struct SignedHeartbeatResponse {
 }
 
 #[derive(Clone, PartialEq, Message)]
-struct ConicalHeartbeat {
+struct CanonicalHeartbeat {
     #[prost(uint32, tag = "1")]
     pub msg_type: u32,
     #[prost(sint64)]
@@ -57,9 +70,23 @@ struct ConicalHeartbeat {
     pub chain_id: String,
 }
 
-impl TendermintSignable for SignHeartbeatRequest {
+// TODO(tony): custom derive proc macro for this e.g. `derive(ParseChainId)`
+impl chain::ParseId for CanonicalHeartbeat {
+    fn parse_chain_id(&self) -> Result<chain::Id, Error> {
+        chain::Id::new(&self.chain_id)
+    }
+}
+
+// TODO(tony): custom derive proc macro for this e.g. `derive(ParseBlockHeight)`
+impl block::ParseHeight for CanonicalHeartbeat {
+    fn parse_block_height(&self) -> Result<block::Height, Error> {
+        block::Height::parse(self.height)
+    }
+}
+
+impl SignableMsg for SignHeartbeatRequest {
     // Get the amino encoded bytes; excluding the signature (even if it was set):
-    fn sign_bytes<B>(&self, chain_id: &str, sign_bytes: &mut B) -> Result<bool, EncodeError>
+    fn sign_bytes<B>(&self, chain_id: chain::Id, sign_bytes: &mut B) -> Result<bool, EncodeError>
     where
         B: BufMut,
     {
@@ -68,7 +95,7 @@ impl TendermintSignable for SignHeartbeatRequest {
             hbm.signature = None
         }
         let hb = hbm.heartbeat.unwrap();
-        let chb = ConicalHeartbeat {
+        let chb = CanonicalHeartbeat {
             msg_type: SignedMsgType::Heartbeat.to_u32(),
             height: hb.height,
             round: hb.round,
@@ -80,7 +107,7 @@ impl TendermintSignable for SignHeartbeatRequest {
         chb.encode(sign_bytes)?;
         Ok(true)
     }
-    fn set_signature(&mut self, sig: &Ed25519Signature) {
+    fn set_signature(&mut self, sig: &ed25519::Signature) {
         if let Some(ref mut hb) = self.heartbeat {
             hb.signature = Some(sig.clone().into_vec());
         }
@@ -90,8 +117,8 @@ impl TendermintSignable for SignHeartbeatRequest {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use prost::Message;
     use std::error::Error;
-    use types::prost_amino::Message;
 
     #[test]
     fn test_serializationuns_unsigned() {

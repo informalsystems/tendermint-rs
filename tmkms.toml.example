@@ -3,18 +3,27 @@
 # Copy this to 'kms.toml' and edit for your own purposes
 
 [[validator]]
-seccon = { addr = "example1.example.com", port = 26657, secret-key-path = "path/to-kms-node.key" }
-reconnect = false # true is the default
+chain_id = "gaia-9000"
+reconnect = true # true is the default
 
-[[validator]]
-unix = { socket-path = "/tmp/tmkms_example.sock" }
+    # Connect to validator over TCP
+    [validator.connection]
+    type = "tcp"
+    addr = "example1.example.com"
+    port = 26657
+    secret_key_path = "path/to/secret_connection.key"
+
+    # UNIX domain socket connection to validator
+    #[validator.connection]
+    #type = "unix"
+    #socket-path = "path/to/tmkms_example.sock"
 
 [[providers.softsign]]
 id = "gaia-8000"
-path = "path/to/validator.key"
+path = "path/to/signing.key"
 
 [[providers.yubihsm]]
 adapter = { type = "usb" }
 auth = { key = 1, password = "password" } # Default YubiHSM admin password. Change ASAP!
-keys = [{ id = "gaia-9000", key = 42 }, { id = "gaia-9001", key = 43 }]
-#serial-number = "0123456789"
+keys = [{ id = "gaia-9000", key = 1 }]
+#serial_number = "0123456789" # identify serial number of a specific YubiHSM to connect to

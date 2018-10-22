@@ -3,6 +3,7 @@
 mod generate;
 mod list;
 
+pub use super::KMS_CONFIG_PATH;
 use cli;
 
 #[test]

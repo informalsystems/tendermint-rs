@@ -1,4 +1,4 @@
-use signatory::{self, Ed25519Signature, Signer as SignerTrait};
+use signatory::{self, ed25519::Signature, Signer as SignerTrait};
 
 #[cfg(feature = "softsign")]
 pub mod softsign;
@@ -16,7 +16,7 @@ pub struct Signer {
     pub key_id: String,
 
     /// Signer trait object
-    provider: Box<SignerTrait<Ed25519Signature>>,
+    provider: Box<SignerTrait<Signature>>,
 }
 
 impl Signer {
@@ -24,7 +24,7 @@ impl Signer {
     pub fn new(
         provider_name: &'static str,
         key_id: String,
-        provider: Box<SignerTrait<Ed25519Signature>>,
+        provider: Box<SignerTrait<Signature>>,
     ) -> Self {
         Self {
             provider_name,
@@ -35,7 +35,7 @@ impl Signer {
 
     /// Sign the given message using this signer
     #[inline]
-    pub fn sign(&self, msg: &[u8]) -> Result<Ed25519Signature, KmsError> {
+    pub fn sign(&self, msg: &[u8]) -> Result<Signature, KmsError> {
         Ok(
             signatory::sign(self.provider.as_ref(), msg)
                 .map_err(|e| err!(SigningError, "{}", e))?,
