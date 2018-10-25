@@ -3,11 +3,17 @@
 # This file is passed to the KMS executable during integration tests
 
 [[validator]]
-seccon = { addr = "127.0.0.1", port = 23456, secret-key-path = "tests/seccon.key" }
+chain_id = "test_chain_id"
 reconnect = false
+
+    [validator.connection]
+    type = "tcp"
+    addr = "127.0.0.1"
+    port = 23456
+    secret_key_path = "tests/seccon.key"
 
 [[providers.yubihsm]]
 adapter = { type = "usb" }
 auth = { key = 1, password = "password" }
-serial-number = "0123456789"
-keys = [{ id = "gaia-9000", key = 1 }]
+keys = [{ id = "test_key", key = 1 }]
+serial_number = "0123456789"

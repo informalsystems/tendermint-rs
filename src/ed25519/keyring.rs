@@ -1,4 +1,4 @@
-use signatory::Ed25519Signature;
+use signatory::ed25519::Signature;
 use std::{collections::BTreeMap, sync::RwLock};
 
 use super::{ConsensusKey, PublicKey, Signer};
@@ -74,7 +74,7 @@ impl KeyRing {
 
     /// Sign a message using the secret key associated with the given public key
     /// (if it is in our keyring)
-    pub fn sign(public_key: Option<&PublicKey>, msg: &[u8]) -> Result<Ed25519Signature, KmsError> {
+    pub fn sign(public_key: Option<&PublicKey>, msg: &[u8]) -> Result<Signature, KmsError> {
         let keyring = GLOBAL_KEYRING.read().unwrap();
         let signer: &Signer = match public_key {
             Some(public_key) => keyring

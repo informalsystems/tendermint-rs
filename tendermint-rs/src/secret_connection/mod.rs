@@ -1,52 +1,35 @@
-//! SecretConnection: Transport layer encryption for Tendermint P2P connections.
+//! `SecretConnection`: Transport layer encryption for Tendermint P2P connections.
 
-#![crate_name = "tm_secret_connection"]
-#![crate_type = "rlib"]
-#![allow(unknown_lints, suspicious_arithmetic_impl)]
-#![deny(
-    warnings,
-    missing_docs,
-    unused_import_braces,
-    unused_qualifications
-)]
-#![doc(html_root_url = "https://docs.rs/tm-secret-connection/0.0.0")]
-
-extern crate byteorder;
-extern crate bytes;
-extern crate failure;
-#[macro_use]
-extern crate failure_derive;
 extern crate hkdf;
-extern crate prost_amino as prost;
-#[macro_use]
-extern crate prost_amino_derive as prost_derive;
 extern crate rand;
 extern crate ring;
-extern crate sha2;
-extern crate signatory;
-extern crate signatory_dalek;
 extern crate x25519_dalek;
 
-#[macro_use]
-mod error;
-pub use error::Error;
+mod kdf;
+mod nonce;
 
+use self::{
+    rand::OsRng,
+    ring::aead,
+    x25519_dalek::{diffie_hellman, generate_public, generate_secret},
+};
 use byteorder::{ByteOrder, LE};
 use bytes::BufMut;
-use hkdf::Hkdf;
-use prost::encoding::bytes::merge;
-use prost::encoding::encode_varint;
-use prost::encoding::WireType;
-use prost::Message;
-use rand::OsRng;
-use ring::aead;
-use sha2::Sha256;
-use signatory::{ed25519, Ed25519PublicKey, Ed25519Signature, Signature, Signer};
+use prost::{
+    encoding::{bytes::merge, encode_varint, WireType},
+    Message,
+};
+use signatory::{ed25519, Signature, Signer};
 use signatory_dalek::Ed25519Verifier;
-use std::cmp;
-use std::io::{self, Cursor, Read, Write};
-use std::marker::{Send, Sync};
-use x25519_dalek::{diffie_hellman, generate_public, generate_secret};
+use std::{
+    cmp,
+    io::{self, Cursor, Read, Write},
+    marker::{Send, Sync},
+};
+
+pub use self::{kdf::Kdf, nonce::Nonce};
+use amino_types::AuthSigMessage;
+use error::Error;
 
 /// 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: usize = 4;
@@ -55,9 +38,6 @@ const TOTAL_FRAME_SIZE: usize = DATA_MAX_SIZE + DATA_LEN_SIZE;
 
 /// Size of the MAC tag
 pub const TAG_SIZE: usize = 16;
-
-/// Size of a ChaCha20 nonce
-pub const AEAD_NONCE_SIZE: usize = 12;
 
 /// Encrypted connection between peers in a Tendermint network
 pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
@@ -79,8 +59,8 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     /// Performs handshake and returns a new authenticated SecretConnection.
     pub fn new(
         mut handler: IoHandler,
-        local_pubkey: &Ed25519PublicKey,
-        local_privkey: &Signer<Ed25519Signature>,
+        local_pubkey: &ed25519::PublicKey,
+        local_privkey: &Signer<ed25519::Signature>,
     ) -> Result<SecretConnection<IoHandler>, Error> {
         // Generate ephemeral keys for perfect forward secrecy.
         let (local_eph_pubkey, local_eph_privkey) = gen_eph_keys();
@@ -100,8 +80,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         // was the least, lexicographically sorted.
         let loc_is_least = local_eph_pubkey == low_eph_pubkey;
 
-        let (recv_secret, send_secret, challenge) =
-            derive_secrets_and_challenge(&shared_secret, loc_is_least);
+        let kdf = Kdf::derive_secrets_and_challenge(&shared_secret, loc_is_least);
 
         // Construct SecretConnection.
         let mut sc = SecretConnection {
@@ -109,23 +88,25 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
             recv_buffer: vec![],
             recv_nonce: Nonce::default(),
             send_nonce: Nonce::default(),
-            recv_secret: aead::OpeningKey::new(&aead::CHACHA20_POLY1305, &recv_secret)?,
-            send_secret: aead::SealingKey::new(&aead::CHACHA20_POLY1305, &send_secret)?,
+            recv_secret: aead::OpeningKey::new(&aead::CHACHA20_POLY1305, &kdf.recv_secret)
+                .map_err(|_| Error::Crypto)?,
+            send_secret: aead::SealingKey::new(&aead::CHACHA20_POLY1305, &kdf.send_secret)
+                .map_err(|_| Error::Crypto)?,
             remote_pubkey: remote_eph_pubkey,
         };
 
         // Sign the challenge bytes for authentication.
-        let local_signature = sign_challenge(challenge, local_privkey)?;
+        let local_signature = sign_challenge(kdf.challenge, local_privkey)?;
 
         // Share (in secret) each other's pubkey & challenge signature
         let auth_sig_msg = share_auth_signature(&mut sc, local_pubkey.as_bytes(), local_signature)?;
 
-        let remote_pubkey = Ed25519PublicKey::from_bytes(&auth_sig_msg.key)?;
+        let remote_pubkey = ed25519::PublicKey::from_bytes(&auth_sig_msg.key)?;
         let remote_signature: &[u8] = &auth_sig_msg.sig;
-        let remote_sig = Ed25519Signature::from_bytes(remote_signature)?;
+        let remote_sig = ed25519::Signature::from_bytes(remote_signature)?;
 
         let remote_verifier = Ed25519Verifier::from(&remote_pubkey);
-        ed25519::verify(&remote_verifier, &challenge, &remote_sig)?;
+        ed25519::verify(&remote_verifier, &kdf.challenge, &remote_sig)?;
 
         // We've authorized.
         sc.remote_pubkey.copy_from_slice(&auth_sig_msg.key);
@@ -145,7 +126,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 authtext,
                 0,
                 in_out,
-            ).map_err(|_| Error::CryptoError)?
+            ).map_err(|_| Error::Crypto)?
             .len();
             Ok(len)
         } else {
@@ -156,7 +137,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 authtext,
                 0,
                 &mut in_out,
-            ).map_err(|_| Error::CryptoError)?;
+            ).map_err(|_| Error::Crypto)?;
             out[..out0.len()].copy_from_slice(out0);
             Ok(out0.len())
         }
@@ -180,7 +161,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
             &[0u8; 0],
             sealed_frame,
             TAG_SIZE,
-        ).map_err(|_| Error::CryptoError)?;
+        ).map_err(|_| Error::Crypto)?;
 
         Ok(())
     }
@@ -329,30 +310,6 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     Ok(remote_eph_pubkey_fixed)
 }
 
-/// Returns recv secret, send secret, challenge as 32 byte arrays
-pub fn derive_secrets_and_challenge(
-    shared_secret: &[u8; 32],
-    loc_is_lo: bool,
-) -> ([u8; 32], [u8; 32], [u8; 32]) {
-    let info = b"TENDERMINT_SECRET_CONNECTION_KEY_AND_CHALLENGE_GEN";
-    let hk = Hkdf::<Sha256>::extract(None, shared_secret);
-    let hkdf_vector = hk.expand(&*info, 96);
-
-    let challenge_vector = &hkdf_vector[64..96];
-    let mut challenge: [u8; 32] = [0; 32];
-    challenge.copy_from_slice(challenge_vector);
-    let mut recv_secret = [0u8; 32];
-    let mut send_secret = [0u8; 32];
-    if loc_is_lo {
-        recv_secret.copy_from_slice(&hkdf_vector[0..32]);
-        send_secret.copy_from_slice(&hkdf_vector[32..64]);
-    } else {
-        send_secret.copy_from_slice(&hkdf_vector[0..32]);
-        recv_secret.copy_from_slice(&hkdf_vector[32..64]);
-    }
-    (recv_secret, send_secret, challenge)
-}
-
 // Return is of the form lo, hi
 fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
     if second > first {
@@ -365,17 +322,9 @@ fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
 // Sign the challenge with the local private key
 fn sign_challenge(
     challenge: [u8; 32],
-    local_privkey: &Signer<Ed25519Signature>,
-) -> Result<Ed25519Signature, Error> {
-    ed25519::sign(local_privkey, &challenge).map_err(|_| Error::SigningError)
-}
-
-#[derive(Clone, PartialEq, Message)]
-struct AuthSigMessage {
-    #[prost(bytes, tag = "1")]
-    key: Vec<u8>,
-    #[prost(bytes, tag = "2")]
-    sig: Vec<u8>,
+    local_privkey: &Signer<ed25519::Signature>,
+) -> Result<ed25519::Signature, Error> {
+    ed25519::sign(local_privkey, &challenge).map_err(|_| Error::Crypto)
 }
 
 // TODO(ismail): change from DecodeError to something more generic
@@ -383,7 +332,7 @@ struct AuthSigMessage {
 fn share_auth_signature<IoHandler: Read + Write + Send + Sync>(
     sc: &mut SecretConnection<IoHandler>,
     pubkey: &[u8; 32],
-    signature: Ed25519Signature,
+    signature: ed25519::Signature,
 ) -> Result<AuthSigMessage, Error> {
     let amsg = AuthSigMessage {
         key: pubkey.to_vec(),
@@ -401,66 +350,9 @@ fn share_auth_signature<IoHandler: Read + Write + Send + Sync>(
     Ok(AuthSigMessage::decode(&rbuf)?)
 }
 
-/// SecretConnection nonces (i.e. ChaCha20 nonces)
-pub struct Nonce(pub [u8; 12]);
-
-impl Default for Nonce {
-    fn default() -> Nonce {
-        Nonce([0u8; AEAD_NONCE_SIZE])
-    }
-}
-
-impl Nonce {
-    fn increment(&mut self) {
-        let counter: u64 = LE::read_u64(&self.0[4..]);
-        LE::write_u64(&mut self.0[4..], counter.checked_add(1).unwrap());
-    }
-
-    #[inline]
-    fn to_bytes(&self) -> &[u8] {
-        &self.0[..]
-    }
-}
-
 #[cfg(tests)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
-
-    #[test]
-    fn test_incr_nonce() {
-        // make sure we match the golang implementation
-        let mut check_points: HashMap<i32, &[u8]> = HashMap::new();
-        check_points.insert(0, &[0u8, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
-        check_points.insert(1, &[0u8, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0]);
-        check_points.insert(510, &[0u8, 0, 0, 0, 255, 1, 0, 0, 0, 0, 0, 0]);
-        check_points.insert(511, &[0u8, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0]);
-        check_points.insert(512, &[0u8, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0]);
-        check_points.insert(1023, &[0u8, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0]);
-
-        let mut nonce = Nonce::default();
-        assert_eq!(nonce.to_bytes().len(), AEAD_NONCE_SIZE);
-
-        for i in 0..1024 {
-            nonce.increment();
-            match check_points.get(&i) {
-                Some(want) => {
-                    let got = &nonce.to_bytes();
-                    assert_eq!(got, want);
-                }
-                None => (),
-            }
-        }
-    }
-    #[test]
-    #[should_panic]
-    fn test_incr_nonce_overflow() {
-        // other than in the golang implementation we panic if we incremented more than 64
-        // bits allow.
-        // In golang this would reset to an all zeroes nonce.
-        let mut nonce = Nonce([0u8, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255]);
-        nonce.increment();
-    }
 
     #[test]
     fn test_sort() {

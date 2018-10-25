@@ -1,9 +1,16 @@
-use super::{
-    BlockID, CanonicalBlockID, CanonicalPartSetHeader, Ed25519Signature, PartsSetHeader,
-    RemoteError, Signature, SignedMsgType, TendermintSignable, Time,
-};
 use bytes::BufMut;
 use prost::{EncodeError, Message};
+use signatory::{ed25519, Signature};
+
+use super::{
+    block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader, PartsSetHeader},
+    remote_error::RemoteError,
+    signature::{SignableMsg, SignedMsgType},
+    time::TimeMsg,
+};
+use block;
+use chain;
+use error::Error;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
@@ -12,15 +19,22 @@ pub struct Proposal {
     #[prost(sint64)]
     pub round: i64,
     #[prost(message)]
-    pub timestamp: Option<Time>,
+    pub timestamp: Option<TimeMsg>,
     #[prost(message)]
     pub block_parts_header: Option<PartsSetHeader>,
     #[prost(sint64)]
     pub pol_round: i64,
     #[prost(message)]
-    pub pol_block_id: Option<BlockID>,
+    pub pol_block_id: Option<BlockId>,
     #[prost(message)]
     pub signature: Option<Vec<u8>>,
+}
+
+// TODO(tony): custom derive proc macro for this e.g. `derive(ParseBlockHeight)`
+impl block::ParseHeight for Proposal {
+    fn parse_block_height(&self) -> Result<block::Height, Error> {
+        block::Height::parse(self.height)
+    }
 }
 
 pub const AMINO_NAME: &str = "tendermint/remotesigner/SignProposalRequest";
@@ -42,15 +56,27 @@ struct CanonicalProposal {
     round: i64,
 
     #[prost(message)]
-    timestamp: Option<Time>,
+    timestamp: Option<TimeMsg>,
     #[prost(message)]
     block_parts_header: Option<CanonicalPartSetHeader>,
     #[prost(sint64)]
     pol_round: i64,
     #[prost(message)]
-    pol_block_id: Option<CanonicalBlockID>,
+    pol_block_id: Option<CanonicalBlockId>,
     #[prost(string)]
     pub chain_id: String,
+}
+
+impl chain::ParseId for CanonicalProposal {
+    fn parse_chain_id(&self) -> Result<chain::Id, Error> {
+        chain::Id::new(&self.chain_id)
+    }
+}
+
+impl block::ParseHeight for CanonicalProposal {
+    fn parse_block_height(&self) -> Result<block::Height, Error> {
+        block::Height::parse(self.height)
+    }
 }
 
 #[derive(Clone, PartialEq, Message)]
@@ -62,8 +88,8 @@ pub struct SignedProposalResponse {
     pub err: Option<RemoteError>,
 }
 
-impl TendermintSignable for SignProposalRequest {
-    fn sign_bytes<B>(&self, chain_id: &str, sign_bytes: &mut B) -> Result<bool, EncodeError>
+impl SignableMsg for SignProposalRequest {
+    fn sign_bytes<B>(&self, chain_id: chain::Id, sign_bytes: &mut B) -> Result<bool, EncodeError>
     where
         B: BufMut,
     {
@@ -84,7 +110,7 @@ impl TendermintSignable for SignProposalRequest {
             },
             height: proposal.height,
             pol_block_id: match proposal.pol_block_id {
-                Some(bid) => Some(CanonicalBlockID {
+                Some(bid) => Some(CanonicalBlockId {
                     hash: bid.hash,
                     parts_header: match bid.parts_header {
                         Some(psh) => Some(CanonicalPartSetHeader {
@@ -104,7 +130,7 @@ impl TendermintSignable for SignProposalRequest {
         cp.encode(sign_bytes)?;
         Ok(true)
     }
-    fn set_signature(&mut self, sig: &Ed25519Signature) {
+    fn set_signature(&mut self, sig: &ed25519::Signature) {
         if let Some(ref mut prop) = self.proposal {
             prop.signature = Some(sig.clone().into_vec());
         }
@@ -115,13 +141,13 @@ impl TendermintSignable for SignProposalRequest {
 mod tests {
     use super::*;
     use chrono::{DateTime, Utc};
+    use prost::Message;
     use std::error::Error;
-    use types::prost_amino::Message;
 
     #[test]
     fn test_serialization() {
         let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
-        let t = Time {
+        let t = TimeMsg {
             seconds: dt.timestamp(),
             nanos: dt.timestamp_subsec_nanos() as i32,
         };
@@ -156,7 +182,7 @@ mod tests {
     #[test]
     fn test_deserialization() {
         let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
-        let t = Time {
+        let t = TimeMsg {
             seconds: dt.timestamp(),
             nanos: dt.timestamp_subsec_nanos() as i32,
         };

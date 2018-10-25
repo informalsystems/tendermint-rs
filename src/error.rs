@@ -9,7 +9,7 @@ use std::{
     fmt::{self, Display},
     io,
 };
-use tm_secret_connection;
+use tendermint;
 #[cfg(feature = "yubihsm")]
 use yubihsm;
 
@@ -119,15 +119,17 @@ impl From<signatory::Error> for KmsError {
     }
 }
 
-impl From<tm_secret_connection::Error> for KmsError {
-    fn from(other: tm_secret_connection::Error) -> Self {
+impl From<tendermint::Error> for KmsError {
+    fn from(other: tendermint::Error) -> Self {
         let kind = match other {
-            tm_secret_connection::Error::CryptoError => KmsErrorKind::CryptoError,
-            tm_secret_connection::Error::InvalidKey => KmsErrorKind::InvalidKey,
-            tm_secret_connection::Error::IoError => KmsErrorKind::IoError,
-            tm_secret_connection::Error::ProtocolError => KmsErrorKind::ProtocolError,
-            tm_secret_connection::Error::SigningError => KmsErrorKind::SigningError,
-            tm_secret_connection::Error::VerificationError => KmsErrorKind::VerificationError,
+            tendermint::Error::Crypto => KmsErrorKind::CryptoError,
+            tendermint::Error::InvalidKey => KmsErrorKind::InvalidKey,
+            tendermint::Error::Io => KmsErrorKind::IoError,
+            tendermint::Error::Protocol => KmsErrorKind::ProtocolError,
+            tendermint::Error::Length
+            | tendermint::Error::Parse
+            | tendermint::Error::OutOfRange => KmsErrorKind::ParseError,
+            tendermint::Error::SignatureInvalid => KmsErrorKind::VerificationError,
         };
 
         Error::new(kind, None).into()

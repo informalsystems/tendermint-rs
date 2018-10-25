@@ -23,8 +23,6 @@ extern crate failure;
 extern crate failure_derive;
 #[macro_use]
 extern crate lazy_static;
-#[macro_use]
-extern crate prost_amino_derive as prost_derive;
 extern crate rand;
 #[macro_use]
 extern crate serde_derive;
@@ -36,7 +34,7 @@ extern crate signatory_dalek;
 #[cfg(feature = "yubihsm")]
 extern crate signatory_yubihsm;
 extern crate subtle_encoding;
-extern crate tm_secret_connection;
+extern crate tendermint;
 
 #[macro_use]
 mod error;
@@ -48,9 +46,9 @@ mod config;
 mod ed25519;
 mod rpc;
 mod session;
-mod types;
 mod unix_connection;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
 
 pub use application::KmsApplication;
+pub use unix_connection::UnixConnection;

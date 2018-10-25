@@ -1,3 +1,5 @@
+//! Remote Procedure Calls
+
 use bytes::IntoBuf;
 use prost::encoding::decode_varint;
 use prost::Message;
@@ -5,7 +7,7 @@ use sha2::{Digest, Sha256};
 use std::io::Cursor;
 use std::io::{self, Read};
 use std::io::{Error, ErrorKind};
-use types::*;
+use tendermint::amino_types::*;
 
 pub const MAX_MSG_LEN: usize = 1024;
 
@@ -34,7 +36,7 @@ pub enum Response {
     PublicKey(PubKeyMsg),
 }
 
-pub trait TendermintResponse: TendermintSignable {
+pub trait TendermintResponse: SignableMsg {
     // TODO(ismail): this should take an error as an argument:
     fn build_response(self) -> Response;
 }

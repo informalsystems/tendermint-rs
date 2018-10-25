@@ -2,71 +2,35 @@
 
 use std::path::PathBuf;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(tag = "type")]
 pub enum ConnectionConfig {
-    /// A secret connection config kind
-    SecretConnection(SecretConnectionConfig),
+    /// TCP connections (with SecretConnection transport encryption)
+    #[serde(rename = "tcp")]
+    Tcp {
+        /// Validator hostname or IP address
+        addr: String,
 
-    /// A UNIX connection config kind
-    UNIXConnection(UNIXConnectionConfig),
-}
+        /// Validator port
+        port: u16,
 
-#[derive(Clone, Deserialize, Debug)]
-pub struct SecretConnectionConfig {
-    /// Path to our identity key
-    #[serde(rename = "secret-key-path")]
-    pub secret_key_path: PathBuf,
+        /// Path to our Ed25519 identity key
+        secret_key_path: PathBuf,
+    },
 
-    /// Validator hostname or IP address
-    pub addr: String,
-
-    /// Validator port
-    pub port: u16,
-}
-
-#[derive(Clone, Deserialize, Debug)]
-pub struct UNIXConnectionConfig {
-    /// A UNIX socket path
-    #[serde(rename = "socket-path")]
-    pub socket_path: PathBuf,
-}
-
-impl SecretConnectionConfig {
-    pub fn uri(&self) -> String {
-        format!("gaia-rpc://{}:{}", self.addr, self.port)
-    }
-}
-
-impl UNIXConnectionConfig {
-    pub fn uri(&self) -> String {
-        format!("gaia-ipc://{}", self.socket_path.to_str().unwrap())
-    }
+    /// UNIX domain sockets
+    #[serde(rename = "unix")]
+    Unix { socket_path: PathBuf },
 }
 
 impl ConnectionConfig {
-    /// Get the URI which represents this configuration
+    /// Get the URI representation of this configuration
     pub fn uri(&self) -> String {
-        match *self {
-            ConnectionConfig::SecretConnection(ref conf) => conf.uri(),
-            ConnectionConfig::UNIXConnection(ref conf) => conf.uri(),
-        }
-    }
-}
-
-impl Default for SecretConnectionConfig {
-    fn default() -> Self {
-        Self {
-            secret_key_path: PathBuf::from(r"/path/to/secret-key"),
-            addr: "127.0.0.1".to_owned(),
-            port: 26657,
-        }
-    }
-}
-
-impl Default for UNIXConnectionConfig {
-    fn default() -> Self {
-        Self {
-            socket_path: PathBuf::from(r"/tmp/cosmos-kms.sock"),
+        match self {
+            ConnectionConfig::Tcp { addr, port, .. } => format!("gaia-rpc://{}:{}", addr, port),
+            ConnectionConfig::Unix { socket_path } => {
+                format!("gaia-ipc://{}", socket_path.display())
+            }
         }
     }
 }

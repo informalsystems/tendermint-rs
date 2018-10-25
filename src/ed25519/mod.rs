@@ -1,4 +1,5 @@
-use subtle_encoding;
+pub use signatory::ed25519::Seed;
+use subtle_encoding::{Identity, IDENTITY};
 
 pub mod keyring;
 mod public_key;
@@ -9,4 +10,4 @@ pub use self::public_key::{ConsensusKey, PublicKey, PUBLIC_KEY_SIZE};
 pub use self::signer::Signer;
 
 /// Encoding for secret keys
-pub const SECRET_KEY_ENCODING: &subtle_encoding::Identity = subtle_encoding::IDENTITY;
+pub const SECRET_KEY_ENCODING: &Identity = IDENTITY;
