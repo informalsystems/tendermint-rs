@@ -35,7 +35,7 @@ pub enum SignedMsgType {
 }
 
 impl SignedMsgType {
-    pub(super) fn to_u32(self) -> u32 {
+    pub fn to_u32(self) -> u32 {
         match self {
             // Votes
             SignedMsgType::PreVote => 0x01,

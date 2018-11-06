@@ -162,6 +162,25 @@ mod tests {
         let _have = SignProposalRequest {
             proposal: Some(proposal),
         }.encode(&mut got);
+        // test-vector generated via:
+        // cdc := amino.NewCodec()
+        // privval.RegisterRemoteSignerMsg(cdc)
+        // stamp, _ := time.Parse(time.RFC3339Nano, "2018-02-11T07:09:22.765Z")
+        // data, _ := cdc.MarshalBinaryLengthPrefixed(privval.SignProposalRequest{Proposal: &types.Proposal{
+        //     Type:     types.ProposalType, // 0x20
+        //     Height:   12345,
+        //     Round:    23456,
+        //     POLRound: -1,
+        //     BlockID: types.BlockID{
+        //         Hash: []byte("hash"),
+        //         PartsHeader: types.PartSetHeader{
+        //             Hash:  []byte("parts_hash"),
+        //             Total: 1000000,
+        //         },
+        //     },
+        //     Timestamp: stamp,
+        // }})
+        // fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v", data), " "), ", "))
         let want = vec![
             66, // len
             189, 228, 152, 226, // prefix
