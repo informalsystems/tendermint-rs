@@ -382,16 +382,13 @@ fn test_handle_and_sign_proposal() {
 
     ProtocolTester::apply(|mut pt| {
         let proposal = amino_types::proposal::Proposal {
+            msg_type: amino_types::SignedMsgType::Proposal.to_u32(),
             height: 12345,
             round: 23456,
             timestamp: Some(t),
-            block_parts_header: Some(PartsSetHeader {
-                total: 111,
-                hash: "blockparts".as_bytes().to_vec(),
-            }),
             pol_round: -1,
-            pol_block_id: None,
-            signature: None,
+            block_id: None,
+            signature: vec![],
         };
 
         let spr = amino_types::proposal::SignProposalRequest {
@@ -418,9 +415,8 @@ fn test_handle_and_sign_proposal() {
         let prop: amino_types::proposal::Proposal = p_req
             .proposal
             .expect("proposal should be embedded but none was found");
-        let sig: Vec<u8> = prop.signature.expect("expected signature was not found");
         let verifier = Ed25519Verifier::from(&pub_key);
-        let signature = ed25519::Signature::from_bytes(sig).unwrap();
+        let signature = ed25519::Signature::from_bytes(prop.signature).unwrap();
         let msg: &[u8] = sign_bytes.as_slice();
 
         ed25519::verify(&verifier, msg, &signature).unwrap();
