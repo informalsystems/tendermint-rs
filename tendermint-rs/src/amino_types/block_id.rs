@@ -35,7 +35,7 @@ impl block::ParseId for CanonicalBlockId {
 
 #[derive(Clone, PartialEq, Message)]
 pub struct PartsSetHeader {
-    #[prost(sint64, tag = "1")]
+    #[prost(int64, tag = "1")]
     pub total: i64,
     #[prost(bytes, tag = "2")]
     pub hash: Vec<u8>,
@@ -45,6 +45,6 @@ pub struct PartsSetHeader {
 pub struct CanonicalPartSetHeader {
     #[prost(bytes, tag = "1")]
     pub hash: Vec<u8>,
-    #[prost(sint64, tag = "2")]
+    #[prost(int64, tag = "2")]
     pub total: i64,
 }

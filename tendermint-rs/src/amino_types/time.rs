@@ -11,9 +11,9 @@ pub struct TimeMsg {
     // TODO(ismail): switch to protobuf's well known type as soon as
     // https://github.com/tendermint/go-amino/pull/224 was merged
     // and tendermint caught up on the latest amino release.
-    #[prost(sfixed64, tag = "1")]
+    #[prost(int64, tag = "1")]
     pub seconds: i64,
-    #[prost(sfixed32, tag = "2")]
+    #[prost(int32, tag = "2")]
     pub nanos: i32,
 }
 

@@ -3,7 +3,7 @@ use prost::{EncodeError, Message};
 use signatory::{ed25519, Signature};
 
 use super::{
-    block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader, PartsSetHeader},
+    block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
     remote_error::RemoteError,
     signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
@@ -14,20 +14,20 @@ use error::Error;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
-    #[prost(sint64, tag = "1")]
+    #[prost(uint32, tag = "1")]
+    pub msg_type: u32,
+    #[prost(int64)]
     pub height: i64,
-    #[prost(sint64)]
+    #[prost(int64)]
     pub round: i64,
-    #[prost(message)]
-    pub timestamp: Option<TimeMsg>,
-    #[prost(message)]
-    pub block_parts_header: Option<PartsSetHeader>,
-    #[prost(sint64)]
+    #[prost(int64)]
     pub pol_round: i64,
     #[prost(message)]
-    pub pol_block_id: Option<BlockId>,
+    pub block_id: Option<BlockId>,
     #[prost(message)]
-    pub signature: Option<Vec<u8>>,
+    pub timestamp: Option<TimeMsg>,
+    #[prost(bytes)]
+    pub signature: Vec<u8>,
 }
 
 // TODO(tony): custom derive proc macro for this e.g. `derive(ParseBlockHeight)`
@@ -54,15 +54,12 @@ struct CanonicalProposal {
     height: i64,
     #[prost(sint64)]
     round: i64,
-
-    #[prost(message)]
-    timestamp: Option<TimeMsg>,
-    #[prost(message)]
-    block_parts_header: Option<CanonicalPartSetHeader>,
     #[prost(sint64)]
     pol_round: i64,
     #[prost(message)]
-    pol_block_id: Option<CanonicalBlockId>,
+    timestamp: Option<TimeMsg>,
+    #[prost(message)]
+    block_id: Option<CanonicalBlockId>,
     #[prost(string)]
     pub chain_id: String,
 }
@@ -95,21 +92,14 @@ impl SignableMsg for SignProposalRequest {
     {
         let mut spr = self.clone();
         if let Some(ref mut pr) = spr.proposal {
-            pr.signature = None
+            pr.signature = vec![];
         }
         let proposal = spr.proposal.unwrap();
         let cp = CanonicalProposal {
             chain_id: chain_id.to_string(),
             msg_type: SignedMsgType::Proposal.to_u32(),
-            block_parts_header: match proposal.block_parts_header {
-                Some(ph) => Some(CanonicalPartSetHeader {
-                    hash: ph.hash,
-                    total: ph.total,
-                }),
-                None => None,
-            },
             height: proposal.height,
-            pol_block_id: match proposal.pol_block_id {
+            block_id: match proposal.block_id {
                 Some(bid) => Some(CanonicalBlockId {
                     hash: bid.hash,
                     parts_header: match bid.parts_header {
@@ -132,7 +122,7 @@ impl SignableMsg for SignProposalRequest {
     }
     fn set_signature(&mut self, sig: &ed25519::Signature) {
         if let Some(ref mut prop) = self.proposal {
-            prop.signature = Some(sig.clone().into_vec());
+            prop.signature = sig.clone().into_vec();
         }
     }
 }
@@ -140,6 +130,7 @@ impl SignableMsg for SignProposalRequest {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use amino_types::block_id::PartsSetHeader;
     use chrono::{DateTime, Utc};
     use prost::Message;
     use std::error::Error;
@@ -152,28 +143,51 @@ mod tests {
             nanos: dt.timestamp_subsec_nanos() as i32,
         };
         let proposal = Proposal {
+            msg_type: SignedMsgType::Proposal.to_u32(),
             height: 12345,
             round: 23456,
-            timestamp: Some(t),
-            block_parts_header: Some(PartsSetHeader {
-                total: 111,
-                hash: "blockparts".as_bytes().to_vec(),
-            }),
             pol_round: -1,
-            pol_block_id: None,
-            signature: None,
+            block_id: Some(BlockId {
+                hash: "hash".as_bytes().to_vec(),
+                parts_header: Some(PartsSetHeader {
+                    total: 1000000,
+                    hash: "parts_hash".as_bytes().to_vec(),
+                }),
+            }),
+            timestamp: Some(t),
+            signature: vec![],
         };
         let mut got = vec![];
 
         let _have = SignProposalRequest {
             proposal: Some(proposal),
         }.encode(&mut got);
+        // test-vector generated via:
+        // cdc := amino.NewCodec()
+        // privval.RegisterRemoteSignerMsg(cdc)
+        // stamp, _ := time.Parse(time.RFC3339Nano, "2018-02-11T07:09:22.765Z")
+        // data, _ := cdc.MarshalBinaryLengthPrefixed(privval.SignProposalRequest{Proposal: &types.Proposal{
+        //     Type:     types.ProposalType, // 0x20
+        //     Height:   12345,
+        //     Round:    23456,
+        //     POLRound: -1,
+        //     BlockID: types.BlockID{
+        //         Hash: []byte("hash"),
+        //         PartsHeader: types.PartSetHeader{
+        //             Hash:  []byte("parts_hash"),
+        //             Total: 1000000,
+        //         },
+        //     },
+        //     Timestamp: stamp,
+        // }})
+        // fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v", data), " "), ", "))
         let want = vec![
-            0x31, // len
+            66, // len
             189, 228, 152, 226, // prefix
-            0xa, 0x2b, 0x8, 0xf2, 0xc0, 0x1, 0x10, 0xc0, 0xee, 0x2, 0x1a, 0xe, 0x9, 0x22, 0xec,
-            0x7f, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x40, 0xf9, 0x98, 0x2d, 0x22, 0xf, 0x8, 0xde,
-            0x1, 0x12, 0xa, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70, 0x61, 0x72, 0x74, 0x73, 0x28, 0x1,
+            10, 60, 8, 32, 16, 185, 96, 24, 160, 183, 1, 32, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 1, 42, 24, 10, 4, 104, 97, 115, 104, 18, 16, 8, 192, 132, 61, 18, 10, 112,
+            97, 114, 116, 115, 95, 104, 97, 115, 104, 50, 12, 8, 162, 216, 255, 211, 5, 16, 192,
+            242, 227, 236, 2,
         ];
 
         assert_eq!(got, want)
@@ -187,26 +201,32 @@ mod tests {
             nanos: dt.timestamp_subsec_nanos() as i32,
         };
         let proposal = Proposal {
+            msg_type: SignedMsgType::Proposal.to_u32(),
             height: 12345,
             round: 23456,
             timestamp: Some(t),
-            block_parts_header: Some(PartsSetHeader {
-                total: 111,
-                hash: "blockparts".as_bytes().to_vec(),
-            }),
+
             pol_round: -1,
-            pol_block_id: None,
-            signature: None,
+            block_id: Some(BlockId {
+                hash: "hash".as_bytes().to_vec(),
+                parts_header: Some(PartsSetHeader {
+                    total: 1000000,
+                    hash: "parts_hash".as_bytes().to_vec(),
+                }),
+            }),
+            signature: vec![],
         };
         let want = SignProposalRequest {
             proposal: Some(proposal),
         };
 
         let data = vec![
-            0x31, 189, 228, 152, 226, 0xa, 0x2b, 0x8, 0xf2, 0xc0, 0x1, 0x10, 0xc0, 0xee, 0x2, 0x1a,
-            0xe, 0x9, 0x22, 0xec, 0x7f, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x40, 0xf9, 0x98, 0x2d,
-            0x22, 0xf, 0x8, 0xde, 0x1, 0x12, 0xa, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70, 0x61, 0x72,
-            0x74, 0x73, 0x28, 0x1,
+            66, // len
+            189, 228, 152, 226, // prefix
+            10, 60, 8, 32, 16, 185, 96, 24, 160, 183, 1, 32, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 1, 42, 24, 10, 4, 104, 97, 115, 104, 18, 16, 8, 192, 132, 61, 18, 10, 112,
+            97, 114, 116, 115, 95, 104, 97, 115, 104, 50, 12, 8, 162, 216, 255, 211, 5, 16, 192,
+            242, 227, 236, 2,
         ];
 
         match SignProposalRequest::decode(&data) {

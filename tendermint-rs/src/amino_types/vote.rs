@@ -14,20 +14,20 @@ use error::Error;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Vote {
-    #[prost(bytes, tag = "1")]
-    pub validator_address: Vec<u8>,
-    #[prost(sint64)]
-    pub validator_index: i64,
-    #[prost(sint64)]
+    #[prost(uint32, tag = "1")]
+    pub vote_type: u32,
+    #[prost(int64)]
     pub height: i64,
-    #[prost(sint64)]
+    #[prost(int64)]
     pub round: i64,
     #[prost(message)]
     pub timestamp: Option<TimeMsg>,
-    #[prost(uint32)]
-    pub vote_type: u32,
     #[prost(message)]
     pub block_id: Option<BlockId>,
+    #[prost(bytes)]
+    pub validator_address: Vec<u8>,
+    #[prost(int64)]
+    pub validator_index: i64,
     #[prost(bytes)]
     pub signature: Vec<u8>,
 }
@@ -153,15 +153,10 @@ mod tests {
             nanos: dt.timestamp_subsec_nanos() as i32,
         };
         let vote = Vote {
-            validator_address: vec![
-                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
-                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
-            ],
-            validator_index: 56789,
+            vote_type: SignedMsgType::PreVote.to_u32(),
             height: 12345,
             round: 2,
             timestamp: Some(t),
-            vote_type: SignedMsgType::PreVote.to_u32(),
             block_id: Some(BlockId {
                 hash: "hash".as_bytes().to_vec(),
                 parts_header: Some(PartsSetHeader {
@@ -169,6 +164,11 @@ mod tests {
                     hash: "parts_hash".as_bytes().to_vec(),
                 }),
             }),
+            validator_address: vec![
+                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+            ],
+            validator_index: 56789,
             signature: vec![],
             //signature: vec![130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233, 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6, 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118, 192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10],
         };
@@ -177,42 +177,32 @@ mod tests {
         let _have = sign_vote_msg.encode(&mut got);
 
         // the following vector is generated via:
-        //  cdc := amino.NewCodec()
-        //	cdc.RegisterInterface((*privval.SocketPVMsg)(nil), nil)
-        //	cdc.RegisterInterface((*crypto.Signature)(nil), nil)
-        //	cdc.RegisterConcrete(crypto.SignatureEd25519{},
-        //		"tendermint/SignatureEd25519", nil)
         //
-        //	cdc.RegisterConcrete(&privval.PubKeyMsg{}, "tendermint/remotesigner/PubKeyMsg", nil)
-        //	cdc.RegisterConcrete(&privval.SignVoteMsg{}, "tendermint/remotesigner/SignVoteMsg", nil)
-        //	cdc.RegisterConcrete(&privval.SignProposalMsg{}, "tendermint/remotesigner/SignProposalMsg", nil)
-        //	cdc.RegisterConcrete(&privval.SignHeartbeatMsg{}, "tendermint/remotesigner/SignHeartbeatMsg", nil)
-        //	data, _ := cdc.MarshalBinary(privval.SignVoteMsg{Vote: vote})
-        //
-        // where vote is equal to
-        //
-        //  types.Vote{
-        //		ValidatorAddress: []byte{0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35},
-        //		ValidatorIndex:   56789,
-        //		Height:           12345,
-        //		Round:            2,
-        //		Timestamp:        stamp,
-        //		Type:             byte(0x01), // pre-vote
-        //		BlockId: types.BlockId{
-        //			Hash: []byte("hash"),
-        //			PartsHeader: types.PartSetHeader{
-        //				Total: 1000000,
-        //				Hash:  []byte("parts_hash"),
-        //			},
-        //		},
-        //	}
+        // cdc := amino.NewCodec()
+        // privval.RegisterRemoteSignerMsg(cdc)
+        // stamp, _ := time.Parse(time.RFC3339Nano, "2017-12-25T03:00:01.234Z")
+        // data, _ := cdc.MarshalBinaryLengthPrefixed(privval.SignVoteRequest{Vote: &types.Vote{
+        //     Type:             types.PrevoteType, // pre-vote
+        //     Height:           12345,
+        //     Round:            2,
+        //     Timestamp:        stamp,
+        //     BlockID: types.BlockID{
+        //         Hash: []byte("hash"),
+        //         PartsHeader: types.PartSetHeader{
+        //             Total: 1000000,
+        //             Hash:  []byte("parts_hash"),
+        //         },
+        //     },
+        //     ValidatorAddress: []byte{0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35},
+        //     ValidatorIndex:   56789,
+        // }})
+        // fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v",data), " "), ", "))
+
         let want = vec![
-            0x52, 243, 244, 18, 4, 0xa, 0x4c, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1,
-            0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35, 0x10,
-            0xaa, 0xf7, 0x6, 0x18, 0xf2, 0xc0, 0x1, 0x20, 0x4, 0x2a, 0xe, 0x9, 0xb1, 0x69, 0x40,
-            0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x80, 0x8e, 0xf2, 0xd, 0x30, 0x1, 0x3a, 0x18, 0xa, 0x4,
-            0x68, 0x61, 0x73, 0x68, 0x12, 0x10, 0x8, 0x80, 0x89, 0x7a, 0x12, 0xa, 0x70, 0x61, 0x72,
-            0x74, 0x73, 0x5f, 0x68, 0x61, 0x73, 0x68,
+            78, 243, 244, 18, 4, 10, 72, 8, 1, 16, 185, 96, 24, 2, 34, 11, 8, 177, 211, 129, 210,
+            5, 16, 128, 157, 202, 111, 42, 24, 10, 4, 104, 97, 115, 104, 18, 16, 8, 192, 132, 61,
+            18, 10, 112, 97, 114, 116, 115, 95, 104, 97, 115, 104, 50, 20, 163, 178, 204, 221, 113,
+            134, 241, 104, 95, 33, 242, 72, 42, 244, 251, 52, 70, 168, 75, 53, 56, 213, 187, 3,
         ];
         let svr = SignVoteRequest::decode(got.clone()).unwrap();
         println!("got back: {:?}", svr);
@@ -226,7 +216,7 @@ mod tests {
         // SignBytes are encoded using MarshalBinary and not MarshalBinaryBare
         cv.encode_length_delimited(&mut got).unwrap();
         let want = vec![
-            0xb, 0x22, 0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
+            0xd, 0x22, 0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
         ];
         assert_eq!(got, want);
 
@@ -239,9 +229,8 @@ mod tests {
             println!("{:?}", vt_precommit);
             let cv_precommit = CanonicalVote::new(vt_precommit, "");
             got = vec![];
-            cv_precommit.encode_length_delimited(&mut got).unwrap();
+            cv_precommit.encode(&mut got).unwrap();
             let want = vec![
-                0x1f, // total length
                 0x8,  // (field_number << 3) | wire_type
                 0x2,  // PrecommitType
                 0x11, // (field_number << 3) | wire_type
@@ -250,7 +239,7 @@ mod tests {
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
                 0x22, // (field_number << 3) | wire_type
                 // remaining fields (timestamp):
-                0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
+                0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
             ];
             assert_eq!(got, want);
         }
@@ -264,10 +253,9 @@ mod tests {
             got = vec![];
             let cv_prevote = CanonicalVote::new(vt_prevote, "");
 
-            cv_prevote.encode_length_delimited(&mut got).unwrap();
+            cv_prevote.encode(&mut got).unwrap();
 
             let want = vec![
-                0x1f, // total length
                 0x8,  // (field_number << 3) | wire_type
                 0x1,  // PrevoteType
                 0x11, // (field_number << 3) | wire_type
@@ -276,7 +264,7 @@ mod tests {
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
                 0x22, // (field_number << 3) | wire_type
                 // remaining fields (timestamp):
-                0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
+                0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
             ];
             assert_eq!(got, want);
         }
@@ -288,16 +276,15 @@ mod tests {
 
             got = vec![];
             let cv = CanonicalVote::new(vt_no_type, "");
-            cv.encode_length_delimited(&mut got).unwrap();
+            cv.encode(&mut got).unwrap();
 
             let want = vec![
-                0x1d, // total length
                 0x11, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
                 0x19, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
                 // remaining fields (timestamp):
-                0x22, 0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff,
+                0x22, 0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
             ];
             assert_eq!(got, want);
         }
@@ -309,18 +296,19 @@ mod tests {
 
             let with_chain_id = CanonicalVote::new(no_vote_type2, "test_chain_id");
             got = vec![];
-            with_chain_id.encode_length_delimited(&mut got).unwrap();
+            with_chain_id.encode(&mut got).unwrap();
             let want = vec![
-                0x2c, // total length
                 0x11, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
                 0x19, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
                 // remaining fields:
                 0x22, // (field_number << 3) | wire_type
-                0x9, 0x9, 0x0, 0x9, 0x6e, 0x88, 0xf1, 0xff, 0xff, 0xff, // timestamp
+                0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff,
+                0x1,  // timestamp
                 0x32, // (field_number << 3) | wire_type
-                0xd, 0x74, 0x65, 0x73, 0x74, 0x5f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64,
+                0xd, 0x74, 0x65, 0x73, 0x74, 0x5f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69,
+                0x64, // chainID
             ];
             assert_eq!(got, want);
         }
@@ -377,12 +365,10 @@ mod tests {
     #[test]
     fn test_deserialization() {
         let encoded = vec![
-            0x52, 0x2f, 0x62, 0x2d, 0xa6, 0xa, 0x4c, 0xa, 0x14, 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86,
-            0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
-            0x10, 0xaa, 0xf7, 0x6, 0x18, 0xf2, 0xc0, 0x1, 0x20, 0x4, 0x2a, 0xe, 0x9, 0xb1, 0x69,
-            0x40, 0x5a, 0x0, 0x0, 0x0, 0x0, 0x15, 0x80, 0x8e, 0xf2, 0xd, 0x30, 0x1, 0x3a, 0x18,
-            0xa, 0x4, 0x68, 0x61, 0x73, 0x68, 0x12, 0x10, 0x8, 0x80, 0x89, 0x7a, 0x12, 0xa, 0x70,
-            0x61, 0x72, 0x74, 0x73, 0x5f, 0x68, 0x61, 0x73, 0x68,
+            78, 243, 244, 18, 4, 10, 72, 8, 1, 16, 185, 96, 24, 2, 34, 11, 8, 177, 211, 129, 210,
+            5, 16, 128, 157, 202, 111, 42, 24, 10, 4, 104, 97, 115, 104, 18, 16, 8, 192, 132, 61,
+            18, 10, 112, 97, 114, 116, 115, 95, 104, 97, 115, 104, 50, 20, 163, 178, 204, 221, 113,
+            134, 241, 104, 95, 33, 242, 72, 42, 244, 251, 52, 70, 168, 75, 53, 56, 213, 187, 3,
         ];
         let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
         let t = TimeMsg {
