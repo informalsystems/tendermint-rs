@@ -127,7 +127,8 @@ impl SignableMsg for SignVoteRequest {
         let vote = svr.vote.unwrap();
         let cv = CanonicalVote::new(vote, chain_id.as_str());
 
-        cv.encode(sign_bytes)?;
+        cv.encode_length_delimited(sign_bytes)?;
+
         Ok(true)
     }
     fn set_signature(&mut self, sig: &ed25519::Signature) {

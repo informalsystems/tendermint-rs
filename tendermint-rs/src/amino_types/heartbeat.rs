@@ -104,7 +104,7 @@ impl SignableMsg for SignHeartbeatRequest {
             validator_index: hb.validator_index,
             chain_id: chain_id.to_string(),
         };
-        chb.encode(sign_bytes)?;
+        chb.encode_length_delimited(sign_bytes)?;
         Ok(true)
     }
     fn set_signature(&mut self, sig: &ed25519::Signature) {
