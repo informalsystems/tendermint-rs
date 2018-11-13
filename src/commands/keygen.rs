@@ -1,5 +1,5 @@
 use abscissa::Callable;
-use ed25519::SECRET_KEY_ENCODING;
+use keyring::SECRET_KEY_ENCODING;
 use signatory::{ed25519, Encode};
 use std::{env, process};
 

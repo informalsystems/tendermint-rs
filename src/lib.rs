@@ -43,7 +43,7 @@ mod application;
 mod client;
 mod commands;
 mod config;
-mod ed25519;
+mod keyring;
 mod rpc;
 mod session;
 mod unix_connection;

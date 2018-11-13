@@ -36,30 +36,3 @@ impl Display for PublicKey {
         Ok(())
     }
 }
-
-pub struct ConsensusKey(pub PublicKey);
-
-impl Display for ConsensusKey {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let bech: Bech32 = Default::default();
-
-        let bech_str = bech.encode("cosmosvalconspub", self.0.as_bytes());
-
-        write!(f, "{}", bech_str)?;
-        Ok(())
-    }
-}
-
-impl From<ed25519::PublicKey> for PublicKey {
-    fn from(key: ed25519::PublicKey) -> PublicKey {
-        PublicKey(key)
-    }
-}
-
-#[cfg(feature = "yubihsm")]
-impl From<yubihsm::client::PublicKey> for PublicKey {
-    fn from(key: yubihsm::client::PublicKey) -> PublicKey {
-        assert_eq!(key.algorithm, yubihsm::AsymmetricAlg::Ed25519);
-        Self::from_bytes(key.as_slice()).unwrap()
-    }
-}

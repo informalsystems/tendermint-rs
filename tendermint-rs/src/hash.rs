@@ -36,7 +36,7 @@ impl Hash {
         match alg {
             HashAlgorithm::Sha256 => {
                 let mut h = [0u8; SHA256_HASH_SIZE];
-                Hex::upper().decode_to_slice(s.as_bytes(), &mut h)?;
+                Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h)?;
                 Ok(Hash::Sha256(h))
             }
         }
@@ -59,7 +59,7 @@ impl AsRef<[u8]> for Hash {
 impl Display for Hash {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let hex = match self {
-            Hash::Sha256(ref h) => Hex::upper().encode_to_string(h).unwrap(),
+            Hash::Sha256(ref h) => Hex::upper_case().encode_to_string(h).unwrap(),
         };
 
         write!(f, "{}", hex)

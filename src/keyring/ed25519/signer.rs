@@ -1,11 +1,5 @@
-use signatory::{self, ed25519::Signature, Signer as SignerTrait};
-
-#[cfg(feature = "softsign")]
-pub mod softsign;
-#[cfg(feature = "yubihsm")]
-pub mod yubihsm;
-
 use error::{KmsError, KmsErrorKind::*};
+use signatory::{self, ed25519::Signature, Signer as SignerTrait};
 
 /// Wrapper for an Ed25519 signing provider (i.e. trait object)
 pub struct Signer {

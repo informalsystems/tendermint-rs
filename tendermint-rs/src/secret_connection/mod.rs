@@ -27,6 +27,7 @@ use std::{
 pub use self::{kdf::Kdf, nonce::Nonce};
 use amino_types::AuthSigMessage;
 use error::Error;
+use public_keys::SecretConnectionKey;
 
 /// 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: usize = 4;
@@ -43,20 +44,20 @@ pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
     send_nonce: Nonce,
     recv_secret: aead::OpeningKey,
     send_secret: aead::SealingKey,
-    remote_pubkey: [u8; 32],
+    remote_pubkey: SecretConnectionKey,
     recv_buffer: Vec<u8>,
 }
 
 impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     /// Returns authenticated remote pubkey
-    pub fn remote_pubkey(&self) -> [u8; 32] {
+    pub fn remote_pubkey(&self) -> SecretConnectionKey {
         self.remote_pubkey
     }
 
     /// Performs handshake and returns a new authenticated SecretConnection.
     pub fn new(
         mut handler: IoHandler,
-        local_pubkey: &ed25519::PublicKey,
+        local_pubkey: &SecretConnectionKey,
         local_privkey: &Signer<ed25519::Signature>,
     ) -> Result<SecretConnection<IoHandler>, Error> {
         // Generate ephemeral keys for perfect forward secrecy.
@@ -89,14 +90,20 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 .map_err(|_| Error::Crypto)?,
             send_secret: aead::SealingKey::new(&aead::CHACHA20_POLY1305, &kdf.send_secret)
                 .map_err(|_| Error::Crypto)?,
-            remote_pubkey: remote_eph_pubkey,
+            remote_pubkey: SecretConnectionKey::from(ed25519::PublicKey::from_bytes(
+                &remote_eph_pubkey,
+            )?),
         };
 
         // Sign the challenge bytes for authentication.
         let local_signature = sign_challenge(kdf.challenge, local_privkey)?;
 
         // Share (in secret) each other's pubkey & challenge signature
-        let auth_sig_msg = share_auth_signature(&mut sc, local_pubkey.as_bytes(), local_signature)?;
+        let auth_sig_msg = match local_pubkey {
+            SecretConnectionKey::Ed25519(ref pk) => {
+                share_auth_signature(&mut sc, pk.as_bytes(), local_signature)?
+            }
+        };
 
         let remote_pubkey = ed25519::PublicKey::from_bytes(&auth_sig_msg.key)?;
         let remote_signature: &[u8] = &auth_sig_msg.sig;
@@ -106,7 +113,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         ed25519::verify(&remote_verifier, &kdf.challenge, &remote_sig)?;
 
         // We've authorized.
-        sc.remote_pubkey.copy_from_slice(&auth_sig_msg.key);
+        sc.remote_pubkey = SecretConnectionKey::from(remote_pubkey);
 
         Ok(sc)
     }

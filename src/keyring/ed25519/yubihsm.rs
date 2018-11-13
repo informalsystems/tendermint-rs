@@ -4,8 +4,8 @@ use signatory::PublicKeyed;
 use signatory_yubihsm::{self, KeyId};
 
 use config::provider::yubihsm::YubihsmConfig;
-use ed25519::{KeyRing, PublicKey, Signer};
 use error::{KmsError, KmsErrorKind::*};
+use keyring::{ed25519::Signer, KeyRing};
 
 /// Label for ed25519-dalek provider
 // TODO: use a non-string type for these, e.g. an enum
@@ -30,12 +30,11 @@ pub fn init(keyring: &mut KeyRing, yubihsm_configs: &[YubihsmConfig]) -> Result<
     let session = signatory_yubihsm::Session::create(connector, yubihsm_config.auth.credentials())?;
 
     for key_config in &yubihsm_config.keys {
-        let signer = Box::new(session.ed25519_signer(KeyId(key_config.key))?);
-        let public_key = PublicKey::from(signer.public_key()?);
+        let provider = Box::new(session.ed25519_signer(KeyId(key_config.key))?);
 
         keyring.add(
-            public_key,
-            Signer::new(YUBIHSM_PROVIDER_LABEL, key_config.id.clone(), signer),
+            provider.public_key()?,
+            Signer::new(YUBIHSM_PROVIDER_LABEL, key_config.id.clone(), provider),
         )?;
     }
 
