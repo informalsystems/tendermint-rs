@@ -13,10 +13,11 @@ use std::{
 use tendermint::{
     amino_types::{PingRequest, PingResponse, PubKeyMsg},
     chain,
+    public_keys::SecretConnectionKey,
 };
 
-use ed25519::keyring::KeyRing;
 use error::KmsError;
+use keyring::KeyRing;
 use prost::Message;
 use rpc::{Request, Response, TendermintResponse};
 use tendermint::SecretConnection;
@@ -43,7 +44,7 @@ impl Session<SecretConnection<TcpStream>> {
 
         let socket = TcpStream::connect(format!("{}:{}", addr, port))?;
         let signer = Ed25519Signer::from(secret_connection_key);
-        let public_key = ed25519::public_key(&signer)?;
+        let public_key = SecretConnectionKey::from(ed25519::public_key(&signer)?);
         let connection = SecretConnection::new(socket, &public_key, &signer)?;
 
         Ok(Self {
@@ -143,7 +144,7 @@ where
 
     /// Get the public key for (the only) public key in the keyring
     fn get_public_key(&mut self, _request: &PubKeyMsg) -> Result<Response, KmsError> {
-        let pubkey = KeyRing::get_only_signing_pubkey()?;
+        let pubkey = KeyRing::default_pubkey()?;
         let pubkey_bytes = pubkey.as_bytes();
 
         Ok(Response::PublicKey(PubKeyMsg {

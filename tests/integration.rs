@@ -32,7 +32,7 @@ use std::{
 use tempfile::NamedTempFile;
 use tendermint::{
     amino_types::{self, *},
-    SecretConnection,
+    SecretConnection, SecretConnectionKey,
 };
 use tmkms::UnixConnection;
 
@@ -198,7 +198,7 @@ impl KmsDevice {
 
                 // Here we reply to the kms with a "remote" ephermal key, auth signature etc:
                 let socket_cp = sock.try_clone().unwrap();
-                let public_key = signatory::public_key(&signer).unwrap();
+                let public_key = SecretConnectionKey::from(signatory::public_key(&signer).unwrap());
 
                 KmsConnection::SecretConnection(
                     SecretConnection::new(socket_cp, &public_key, &signer).unwrap(),

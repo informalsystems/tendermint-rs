@@ -1,7 +1,8 @@
 use abscissa::Callable;
 use std::process;
 
-use ed25519::{ConsensusKey, PublicKey};
+use signatory::ed25519;
+use tendermint::public_keys::ConsensusKey;
 use yubihsm;
 
 /// Default key type to generate
@@ -69,12 +70,18 @@ impl Callable for GenerateCommand {
                 process::exit(1);
             }
 
-            let public_key = PublicKey::from(hsm.get_pubkey(*key_id).unwrap_or_else(|e| {
-                status_err!("couldn't get public key for key #{}: {}", key_id, e);
-                process::exit(1);
-            }));
+            let public_key =
+                ed25519::PublicKey::from_bytes(hsm.get_pubkey(*key_id).unwrap_or_else(|e| {
+                    status_err!("couldn't get public key for key #{}: {}", key_id, e);
+                    process::exit(1);
+                })).unwrap();
 
-            status_ok!("Generated", "key #{}: {}", key_id, ConsensusKey(public_key));
+            status_ok!(
+                "Generated",
+                "key #{}: {}",
+                key_id,
+                ConsensusKey::from(public_key)
+            );
         }
     }
 }

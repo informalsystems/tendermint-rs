@@ -5,7 +5,7 @@
 //! To dance around the fact the KMS isn't actually a service, we refer to it
 //! as a "Key Management System".
 
-use signatory::{self, Decode, Encode};
+use signatory::{ed25519, Decode, Encode};
 use signatory_dalek::Ed25519Signer;
 use std::{
     panic,
@@ -13,12 +13,12 @@ use std::{
     thread::{self, JoinHandle},
     time::Duration,
 };
+use tendermint::{chain, public_keys::SecretConnectionKey};
 
 use config::{ConnectionConfig, ValidatorConfig};
-use ed25519::{self, SECRET_KEY_ENCODING};
 use error::{KmsError, KmsErrorKind};
+use keyring::SECRET_KEY_ENCODING;
 use session::Session;
-use tendermint::chain;
 
 /// How long to wait after a crash before respawning (in seconds)
 pub const RESPAWN_DELAY: u64 = 5;
@@ -85,8 +85,8 @@ fn client_session(chain_id: chain::Id, config: &ConnectionConfig) -> Result<(), 
                 secret_key_path,
             } => {
                 let secret_key = load_secret_connection_key(secret_key_path)?;
-                let node_public_key = ed25519::PublicKey::from(
-                    signatory::public_key(&Ed25519Signer::from(&secret_key)).unwrap(),
+                let node_public_key = SecretConnectionKey::from(
+                    ed25519::public_key(&Ed25519Signer::from(&secret_key)).unwrap(),
                 );
 
                 info!("KMS node ID: {}", &node_public_key);

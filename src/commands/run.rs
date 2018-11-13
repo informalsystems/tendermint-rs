@@ -3,7 +3,7 @@ use std::process;
 
 use client::Client;
 use config::{KmsConfig, ValidatorConfig};
-use ed25519::KeyRing;
+use keyring::KeyRing;
 
 /// The `run` command
 #[derive(Debug, Options)]

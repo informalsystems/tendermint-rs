@@ -57,6 +57,7 @@ pub mod block;
 pub mod chain;
 pub mod error;
 pub mod hash;
+pub mod public_keys;
 #[cfg(feature = "secret-connection")]
 pub mod secret_connection;
 pub mod timestamp;
@@ -66,6 +67,7 @@ pub use block::{ParseHeight as ParseBlockHeight, ParseId as ParseBlockId};
 pub use chain::ParseId as ParseChainId;
 pub use error::*;
 pub use hash::*;
+pub use public_keys::*;
 #[cfg(feature = "secret-connection")]
 pub use secret_connection::SecretConnection;
 pub use timestamp::*;

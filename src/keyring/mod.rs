@@ -1,13 +1,21 @@
-use signatory::ed25519::Signature;
-use std::{collections::BTreeMap, sync::RwLock};
+//! Signing keyring. Presently specialized for Ed25519.
 
-use super::{ConsensusKey, PublicKey, Signer};
+mod ed25519;
+
+use signatory::ed25519::{PublicKey, Signature};
+use std::{collections::BTreeMap, sync::RwLock};
+use subtle_encoding::{Identity, IDENTITY};
+use tendermint::public_keys::ConsensusKey;
+
 use config::provider::ProviderConfig;
 use error::{KmsError, KmsErrorKind::*};
 
-use super::signer::softsign;
 #[cfg(feature = "yubihsm")]
-use super::signer::yubihsm;
+use self::ed25519::yubihsm;
+use self::ed25519::{softsign, Signer};
+
+/// File encoding for software-backed secret keys
+pub const SECRET_KEY_ENCODING: &Identity = IDENTITY;
 
 lazy_static! {
     static ref GLOBAL_KEYRING: RwLock<KeyRing> = RwLock::new(KeyRing(BTreeMap::default()));
@@ -46,14 +54,14 @@ impl KeyRing {
             "[keyring:{}:{}] added validator key {}",
             signer.provider_name,
             signer.key_id,
-            ConsensusKey(public_key)
+            ConsensusKey::from(public_key)
         );
 
         if let Some(other) = self.0.insert(public_key, signer) {
             fail!(
                 InvalidKey,
-                "duplicate signer for {}: {}:{}",
-                ConsensusKey(public_key),
+                "duplicate key {}: already registered as {}:{}",
+                ConsensusKey::from(public_key),
                 other.provider_name,
                 other.key_id
             )
@@ -62,14 +70,15 @@ impl KeyRing {
         }
     }
 
-    pub fn get_only_signing_pubkey() -> Result<PublicKey, KmsError> {
+    pub fn default_pubkey() -> Result<PublicKey, KmsError> {
         let keyring = GLOBAL_KEYRING.read().unwrap();
-
         let mut keys = keyring.0.keys();
-        if keys.len() > 1 {
+
+        if keys.len() == 1 {
+            Ok(*keys.next().unwrap())
+        } else {
             fail!(InvalidKey, "expected only one key in keyring");
         }
-        Ok(*keys.next().unwrap())
     }
 
     /// Sign a message using the secret key associated with the given public key
@@ -77,10 +86,13 @@ impl KeyRing {
     pub fn sign(public_key: Option<&PublicKey>, msg: &[u8]) -> Result<Signature, KmsError> {
         let keyring = GLOBAL_KEYRING.read().unwrap();
         let signer: &Signer = match public_key {
-            Some(public_key) => keyring
-                .0
-                .get(public_key)
-                .ok_or_else(|| err!(InvalidKey, "not in keyring: {}", ConsensusKey(*public_key)))?,
+            Some(public_key) => keyring.0.get(public_key).ok_or_else(|| {
+                err!(
+                    InvalidKey,
+                    "not in keyring: {}",
+                    ConsensusKey::from(*public_key)
+                )
+            })?,
             None => {
                 let mut vals = keyring.0.values();
 
