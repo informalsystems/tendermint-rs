@@ -1,8 +1,11 @@
 # Tendermint KMS 🔐
 
+[![Crate][crate-image]][crate-link]
 [![Build Status][build-image]][build-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
 
+[crate-image]: https://img.shields.io/crates/v/tmkms.svg
+[crate-link]: https://crates.io/crates/tmkms
 [build-image]: https://circleci.com/gh/tendermint/kms.svg?style=shield
 [build-link]: https://circleci.com/gh/tendermint/kms
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
