@@ -64,7 +64,6 @@ pub trait ParseId {
 mod tests {
     use super::*;
 
-    /// An example RIPEMD-160 computed block ID (actual gaia-8001 block ID)
     const EXAMPLE_SHA256_ID: &str =
         "26C0A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
 
