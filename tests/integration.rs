@@ -106,7 +106,7 @@ impl KmsDevice {
         // Listen on a random port
         let listener = TcpListener::bind(format!("{}:{}", "127.0.0.1", port)).unwrap();
 
-        let args = &["run", "-c", config.path().to_str().unwrap()];
+        let args = &["start", "-c", config.path().to_str().unwrap()];
         let process = Command::new(KMS_EXE_PATH).args(args).spawn().unwrap();
 
         let (socket, _) = listener.accept().unwrap();
@@ -126,7 +126,7 @@ impl KmsDevice {
         let config = KmsDevice::create_unix_config(&socket_path);
 
         // Launch KMS process first to avoid a race condition on the socket path
-        let args = &["run", "-c", config.path().to_str().unwrap()];
+        let args = &["start", "-c", config.path().to_str().unwrap()];
         let process = Command::new(KMS_EXE_PATH).args(args).spawn().unwrap();
 
         // TODO(amr): find a better way to wait

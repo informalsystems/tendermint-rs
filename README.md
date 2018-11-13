@@ -24,16 +24,11 @@ the following:
 
 ## Status
 
-Early adopters interested in using YubiHSM2 devices for Cosmos Validator key
-storage can install the (forthcoming) `tmkms` v0.0.1 "Preview Release" using
-the instructions below.
+Tendermint KMS is currently **alpha quality**. It supports YubiHSM2-backed
+signing when used in conjunction with `cosmos-sdk` 0.26.
 
-NOTE: This release does not yet support validator signing. See the following
-issues for the remaining blockers:
-
-- [ ] [Cosmos address (Bech32) support](https://github.com/tendermint/kms/issues/65)
-- [ ] [Update to new signing message format & integration test](https://github.com/tendermint/kms/pull/55)
-- [ ] [Full integration tests: Tendermint <-> KMS](https://github.com/tendermint/kms/issues/44)
+It does NOT yet implement double signing prevention or high availability
+features. These are planned features which will be implemented soon.
 
 ## Supported Platforms
 
@@ -47,30 +42,15 @@ prerequisites for support.
 
 ### Operating Systems
 
-- Linux
-- Windows
-- macOS
+- Linux (recommended)
 - FreeBSD
 - NetBSD
 - OpenBSD
+- macOS
 
 ### CPU Architectures
 
-Rust supports the following CPU architectures:
-
-**Tier 1:**
-
-a.k.a. "guaranteed to work"
-
-- `i686` (32-bit Intel)
-- `x86_64` ("AMD64", "x64") - recommended
-
-**Tier 2:**
-
-a.k.a. "may work". Note that hardware accelerated AES (used for communication
-with YubiHSM2) is not supported on these platforms and they have not been
-rigorously tested for side-channel attack resistance.
-
+- `x86_64` (recommended)
 - `arm` (32-bit ARM)
 - `aarch64` (64-bit ARM)
 - `mips` (32-bit MIPS)
@@ -105,6 +85,24 @@ $ cargo install tmkms
 https://github.com/tendermint/kms/blob/master/tmkms.toml.example
 
 Edit it to match your desired configuration.
+
+## Usage
+
+Start `tmkms` with the following:
+
+
+```
+$ tmkms start
+```
+
+This will read the configuration from the `tmkms.toml` file in the current
+working directory.
+
+To explicitly specify the path to the configuration, use the `-c` flag:
+
+```
+$ tmkms start -c /path/to/tmkms.toml
+```
 
 ## YubiHSM2 Setup
 
