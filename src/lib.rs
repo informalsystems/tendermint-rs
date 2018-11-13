@@ -18,7 +18,7 @@
 #![forbid(unsafe_code)]
 #![doc(
     html_logo_url = "https://pbs.twimg.com/profile_images/909728874560233472/cb9rWojF_400x400.jpg",
-    html_root_url = "https://docs.rs/tendermint/0.0.0"
+    html_root_url = "https://docs.rs/tendermint/0.1.0"
 )]
 
 #[cfg(feature = "secret-connection")]
