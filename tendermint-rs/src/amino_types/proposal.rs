@@ -50,16 +50,16 @@ pub struct SignProposalRequest {
 struct CanonicalProposal {
     #[prost(uint32, tag = "1")]
     msg_type: u32, // this is a byte in golang, which is a varint encoded UInt8 (using amino's EncodeUvarint)
-    #[prost(sint64)]
+    #[prost(sfixed64)]
     height: i64,
-    #[prost(sint64)]
+    #[prost(sfixed64)]
     round: i64,
-    #[prost(sint64)]
+    #[prost(sfixed64)]
     pol_round: i64,
     #[prost(message)]
-    timestamp: Option<TimeMsg>,
-    #[prost(message)]
     block_id: Option<CanonicalBlockId>,
+    #[prost(message)]
+    timestamp: Option<TimeMsg>,
     #[prost(string)]
     pub chain_id: String,
 }
@@ -117,7 +117,7 @@ impl SignableMsg for SignProposalRequest {
             timestamp: proposal.timestamp,
         };
 
-        cp.encode(sign_bytes)?;
+        cp.encode_length_delimited(sign_bytes)?;
         Ok(true)
     }
     fn set_signature(&mut self, sig: &ed25519::Signature) {

@@ -29,7 +29,7 @@ impl Id {
 
         for byte in name.as_bytes() {
             match byte {
-                b'a'...b'z' | b'0'...b'9' | b'-' | b'_' => (),
+                b'a'...b'z' | b'A'...b'Z' | b'0'...b'9' | b'-' | b'_' => (),
                 _ => return Err(Error::Parse),
             }
         }
