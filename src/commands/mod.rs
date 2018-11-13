@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 mod help;
 mod keygen;
-mod run;
+mod start;
 mod version;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
@@ -15,7 +15,7 @@ mod yubihsm;
 #[cfg(feature = "yubihsm")]
 pub use self::yubihsm::YubihsmCommand;
 pub use self::{
-    help::HelpCommand, keygen::KeygenCommand, run::RunCommand, version::VersionCommand,
+    help::HelpCommand, keygen::KeygenCommand, start::StartCommand, version::VersionCommand,
 };
 use config::{KmsConfig, CONFIG_FILE_NAME};
 
@@ -28,8 +28,8 @@ pub enum KmsCommand {
     #[options(help = "generate a new software signing key")]
     Keygen(KeygenCommand),
 
-    #[options(help = "run the KMS application")]
-    Run(RunCommand),
+    #[options(help = "start the KMS application")]
+    Start(StartCommand),
 
     #[options(help = "display version information")]
     Version(VersionCommand),
@@ -46,7 +46,7 @@ impl KmsCommand {
     /// Are we configured for verbose logging?
     pub fn verbose(&self) -> bool {
         match self {
-            KmsCommand::Run(run) => run.verbose,
+            KmsCommand::Start(run) => run.verbose,
             #[cfg(feature = "yubihsm")]
             KmsCommand::Yubihsm(yubihsm) => yubihsm.verbose(),
             _ => false,
@@ -59,7 +59,7 @@ impl LoadConfig<KmsConfig> for KmsCommand {
     /// or the default
     fn config_path(&self) -> Option<PathBuf> {
         let config = match self {
-            KmsCommand::Run(run) => run.config.as_ref().map(|s| s.as_ref()),
+            KmsCommand::Start(run) => run.config.as_ref().map(|s| s.as_ref()),
             #[cfg(feature = "yubihsm")]
             KmsCommand::Yubihsm(yubihsm) => yubihsm.config_path(),
             _ => return None,
@@ -76,7 +76,7 @@ impl Callable for KmsCommand {
         match self {
             KmsCommand::Help(help) => help.call(),
             KmsCommand::Keygen(keygen) => keygen.call(),
-            KmsCommand::Run(run) => run.call(),
+            KmsCommand::Start(run) => run.call(),
             KmsCommand::Version(version) => version.call(),
             #[cfg(feature = "yubihsm")]
             KmsCommand::Yubihsm(yubihsm) => yubihsm.call(),

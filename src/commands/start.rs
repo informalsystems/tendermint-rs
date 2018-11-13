@@ -5,9 +5,9 @@ use client::Client;
 use config::{KmsConfig, ValidatorConfig};
 use keyring::KeyRing;
 
-/// The `run` command
+/// The `start` command
 #[derive(Debug, Options)]
-pub struct RunCommand {
+pub struct StartCommand {
     /// Path to configuration file
     #[options(short = "c", long = "config")]
     pub config: Option<String>,
@@ -17,7 +17,7 @@ pub struct RunCommand {
     pub verbose: bool,
 }
 
-impl Default for RunCommand {
+impl Default for StartCommand {
     fn default() -> Self {
         Self {
             config: None,
@@ -26,7 +26,7 @@ impl Default for RunCommand {
     }
 }
 
-impl Callable for RunCommand {
+impl Callable for StartCommand {
     /// Run the KMS
     fn call(&self) {
         info!(
