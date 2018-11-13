@@ -41,7 +41,7 @@ serde_derive = { version =  "1", optional = true }
 signatory = { version = "0.10", optional = true, features = ["ed25519"] }
 signatory-dalek = { version = "0.10", optional = true }
 sha2 = { version = "0.8", optional = true, default-features = false }
-subtle-encoding = "0.2"
+subtle-encoding = { version = "0.3.0-alpha1", features = ["bech32-preview"] }
 tai64 = { version = "1", optional = true, features = ["chrono"] }
 x25519-dalek = { version = "0.3", optional = true, default-features = false, features = ["u64_backend"] }
 zeroize = { version = "0.4", optional = true }
