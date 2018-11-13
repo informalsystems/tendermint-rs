@@ -15,15 +15,12 @@ use self::{
 };
 use byteorder::{ByteOrder, LE};
 use bytes::BufMut;
-use prost::{
-    encoding::{bytes::merge, encode_varint, WireType},
-    Message,
-};
+use prost::{encoding::encode_varint, Message};
 use signatory::{ed25519, Signature, Signer};
 use signatory_dalek::Ed25519Verifier;
 use std::{
     cmp,
-    io::{self, Cursor, Read, Write},
+    io::{self, Read, Write},
     marker::{Send, Sync},
 };
 
@@ -285,27 +282,29 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
 
     let mut buf = vec![0; 0];
     let local_eph_pubkey_vec = &local_eph_pubkey.to_vec();
-    // Note: this is not regular protobuf encoding but raw length prefixed amino encoding:
-    encode_varint(local_eph_pubkey_vec.len() as u64, &mut buf);
-    buf.put_slice(local_eph_pubkey_vec);
+    // Note: this is not regular protobuf encoding but raw length prefixed amino encoding;
+    // amino prefixes with the total length, and the raw bytes array's length, too:
+    encode_varint((local_eph_pubkey_vec.len() + 1) as u64, &mut buf); // 33
+    encode_varint(local_eph_pubkey_vec.len() as u64, &mut buf); // 32
+    buf.put_slice(local_eph_pubkey_vec); // raw bytes
+
+    // TODO(ismail): we probably do *not* need the double length delimiting here or in tendermint)
     // this is the sending part of:
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
     handler.write_all(&buf)?;
 
-    let mut buf = vec![0; 33];
+    let mut buf = vec![0; 34];
     handler.read_exact(&mut buf)?;
 
-    let mut amino_buf = Cursor::new(buf);
     // this is the receiving part of:
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
-    let mut remote_eph_pubkey = vec![];
-    merge(
-        WireType::LengthDelimited,
-        &mut remote_eph_pubkey,
-        &mut amino_buf,
-    ).unwrap();
     let mut remote_eph_pubkey_fixed: [u8; 32] = Default::default();
-    remote_eph_pubkey_fixed.copy_from_slice(&remote_eph_pubkey[..32]);
+    if buf[0] != 33 || buf[1] != 32 {
+        return Err(Error::Protocol);
+    }
+    // after total length (33) and byte length (32), we expect the raw bytes
+    // of the pub key:
+    remote_eph_pubkey_fixed.copy_from_slice(&buf[2..34]);
 
     Ok(remote_eph_pubkey_fixed)
 }
@@ -339,15 +338,14 @@ fn share_auth_signature<IoHandler: Read + Write + Send + Sync>(
         sig: signature.into_bytes().to_vec(),
     };
     let mut buf: Vec<u8> = vec![];
-    amsg.encode(&mut buf)?;
-
+    amsg.encode_length_delimited(&mut buf)?;
     sc.write_all(&buf)?;
 
-    let mut rbuf = vec![0; 100]; // 100 = 32 + 64 + (amino overhead)
+    let mut rbuf = vec![0; 106]; // 100 = 32 + 64 + (amino overhead = 2 fields + 2 lengths + 4 prefix bytes + total length)
     sc.read_exact(&mut rbuf)?;
 
     // TODO: proper error handling:
-    Ok(AuthSigMessage::decode(&rbuf)?)
+    Ok(AuthSigMessage::decode_length_delimited(&rbuf)?)
 }
 
 #[cfg(tests)]
