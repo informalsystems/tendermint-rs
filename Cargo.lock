@@ -800,7 +800,7 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "byteorder 1.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -868,7 +868,7 @@ dependencies = [
  "signatory-yubihsm 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle-encoding 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "tendermint 0.0.0",
+ "tendermint 0.1.0",
 ]
 
 [[package]]
