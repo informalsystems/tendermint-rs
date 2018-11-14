@@ -36,7 +36,6 @@ signatory-dalek = "0.10"
 signatory-yubihsm = { version = "0.10", optional = true }
 subtle-encoding = "0.2"
 tendermint = { version = "0.1", path = "tendermint-rs" }
-iq-bech32 = "0.1"
 
 [dev-dependencies]
 tempfile = "3"

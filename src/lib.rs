@@ -26,7 +26,6 @@ extern crate lazy_static;
 extern crate rand;
 #[macro_use]
 extern crate serde_derive;
-extern crate iq_bech32;
 extern crate serde_json;
 extern crate sha2;
 extern crate signatory;
