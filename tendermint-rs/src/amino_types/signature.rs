@@ -1,11 +1,12 @@
 use bytes::BufMut;
 use prost::{DecodeError, EncodeError};
 use signatory::ed25519;
+use std::fmt::Debug;
 
 use chain;
 
 /// Amino messages which are signable within a Tendermint network
-pub trait SignableMsg {
+pub trait SignableMsg: Debug {
     /// Sign this message as bytes
     fn sign_bytes<B: BufMut>(
         &self,
