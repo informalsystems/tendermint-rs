@@ -36,7 +36,7 @@ pub enum Response {
     PublicKey(PubKeyMsg),
 }
 
-pub trait TendermintResponse: SignableMsg {
+pub trait TendermintRequest: SignableMsg {
     // TODO(ismail): this should take an error as an argument:
     fn build_response(self) -> Response;
 }
@@ -114,7 +114,7 @@ impl Request {
     }
 }
 
-impl TendermintResponse for SignHeartbeatRequest {
+impl TendermintRequest for SignHeartbeatRequest {
     fn build_response(self) -> Response {
         Response::SignedHeartBeat(SignedHeartbeatResponse {
             heartbeat: self.heartbeat,
@@ -123,7 +123,7 @@ impl TendermintResponse for SignHeartbeatRequest {
     }
 }
 
-impl TendermintResponse for SignVoteRequest {
+impl TendermintRequest for SignVoteRequest {
     fn build_response(self) -> Response {
         Response::SignedVote(SignedVoteResponse {
             vote: self.vote,
@@ -132,7 +132,7 @@ impl TendermintResponse for SignVoteRequest {
     }
 }
 
-impl TendermintResponse for SignProposalRequest {
+impl TendermintRequest for SignProposalRequest {
     fn build_response(self) -> Response {
         Response::SignedProposal(SignedProposalResponse {
             proposal: self.proposal,

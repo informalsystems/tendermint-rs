@@ -19,7 +19,7 @@ use tendermint::{
 use error::KmsError;
 use keyring::KeyRing;
 use prost::Message;
-use rpc::{Request, Response, TendermintResponse};
+use rpc::{Request, Response, TendermintRequest};
 use tendermint::SecretConnection;
 use unix_connection::UnixConnection;
 
@@ -94,12 +94,14 @@ where
 {
     /// Main request loop
     pub fn request_loop(&mut self) -> Result<(), KmsError> {
+        debug!("starting handle request loop ... ");
         while self.handle_request()? {}
         Ok(())
     }
 
     /// Handle an incoming request from the validator
     fn handle_request(&mut self) -> Result<bool, KmsError> {
+        debug!("started handling request ... ");
         let response = match Request::read(&mut self.connection)? {
             Request::SignProposal(req) => self.sign(req)?,
             Request::SignHeartbeat(req) => self.sign(req)?,
@@ -121,11 +123,12 @@ where
         }
 
         self.connection.write_all(&buf)?;
+        debug!("... success handling request");
         Ok(true)
     }
 
     /// Perform a digital signature operation
-    fn sign(&mut self, mut request: impl TendermintResponse) -> Result<Response, KmsError> {
+    fn sign(&mut self, mut request: impl TendermintRequest) -> Result<Response, KmsError> {
         let mut to_sign = vec![];
         request.sign_bytes(self.chain_id, &mut to_sign)?;
 
@@ -134,11 +137,13 @@ where
         let sig = KeyRing::sign(None, &to_sign)?;
 
         request.set_signature(&sig);
+        debug!("successfully signed request:\n {:?}", request);
         Ok(request.build_response())
     }
 
     /// Reply to a ping request
     fn reply_ping(&mut self, _request: &PingRequest) -> Response {
+        debug!("replying with PingResponse");
         Response::Ping(PingResponse {})
     }
 

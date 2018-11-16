@@ -16,7 +16,7 @@ reconnect = true # true is the default
     # UNIX domain socket connection to validator
     #[validator.connection]
     #type = "unix"
-    #socket-path = "path/to/tmkms_example.sock"
+    #socket_path = "path/to/tmkms_example.sock"
 
 [[providers.softsign]]
 id = "gaia-8000"
