@@ -121,6 +121,38 @@ testing features:
   - `tmkms yubihsm keys list` - list all Ed25519 signing keys in the YubiHSM2
   - `tmkms yubihsm keys test <id>` - perform a signing test using the given key
 
+See also [this walkthrough for setting up a YubiHSM2 with tmkms](https://forum.cosmos.network/t/ann-tendermint-kms-v0-0-1-preview-release-with-initial-yubihsm2-support/1218).
+
+### udev configuration
+
+On Linux, you will need to grant `tmkms` access to the YubiHSM2 using
+rules for the udev subsystem. Otherwise, you'll get an error like this:
+
+```
+$ tmkms yubihsm detect
+error: couldn't detect USB devices: USB error: USB(bus=1,addr=4):
+       error opening device: Access denied (insufficient permissions)
+```
+
+You'll need to create a POSIX group, e.g. `yubihsm` which is allowed to
+access the YubiHSM2, and then add the following rules file under the
+`/etc/udev/rules.d` directory, e.g. `/etc/udev/rules.d/10-yubihsm.rules`:
+
+```
+SUBSYSTEMS=="usb", ATTRS{product}=="YubiHSM", GROUP=="yubihsm"
+```
+
+Note that creating this file does not have an immediate effect: you'll
+need to reload the udev subsystem, either by rebooting or running the
+following command:
+
+```
+$ udevadm control --reload-rules && udevadm trigger
+```
+
+For the rules above to apply, make sure you run `tmkms` as a user which is a
+member of the `yubihsm` group!
+
 ## Development
 
 The following are instructions for setting up a development environment.
