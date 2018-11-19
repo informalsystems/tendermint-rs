@@ -30,9 +30,6 @@ pub enum SignedMsgType {
 
     /// Proposals
     Proposal,
-
-    /// Heartbeats
-    Heartbeat,
 }
 
 impl SignedMsgType {
@@ -43,8 +40,6 @@ impl SignedMsgType {
             SignedMsgType::PreCommit => 0x02,
             // Proposals
             SignedMsgType::Proposal => 0x20,
-            // Heartbeat
-            SignedMsgType::Heartbeat => 0x30,
         }
     }
 
@@ -54,7 +49,6 @@ impl SignedMsgType {
             0x01 => Ok(SignedMsgType::PreVote),
             0x02 => Ok(SignedMsgType::PreCommit),
             0x20 => Ok(SignedMsgType::Proposal),
-            0x30 => Ok(SignedMsgType::Heartbeat),
             _ => Err(DecodeError::new("Invalid vote type")),
         }
     }
