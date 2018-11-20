@@ -43,7 +43,7 @@ impl Callable for ImportCommand {
             process::exit(1);
         }
 
-        if let None = &self.key_id {
+        if self.key_id.is_none() {
             status_err!("must provide a unique key_id");
             process::exit(1);
         }
