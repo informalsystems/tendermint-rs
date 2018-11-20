@@ -3,14 +3,10 @@
 # This file is passed to the KMS executable during integration tests
 
 [[validator]]
+addr = "tcp://127.0.0.1:23456"
 chain_id = "test_chain_id"
 reconnect = false
-
-    [validator.connection]
-    type = "tcp"
-    addr = "127.0.0.1"
-    port = 23456
-    secret_key_path = "tests/seccon.key"
+secret_key = "tests/seccon.key"
 
 [[providers.yubihsm]]
 adapter = { type = "usb" }

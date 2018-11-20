@@ -8,7 +8,7 @@ use std::{
     marker::{Send, Sync},
     net::TcpStream,
     os::unix::net::{UnixListener, UnixStream},
-    path::PathBuf,
+    path::Path,
 };
 use tendermint::{
     amino_types::{PingRequest, PingResponse, PubKeyMsg},
@@ -36,13 +36,13 @@ impl Session<SecretConnection<TcpStream>> {
     /// Create a new session with the validator at the given address/port
     pub fn connect_tcp(
         chain_id: chain::Id,
-        addr: &str,
+        host: &str,
         port: u16,
         secret_connection_key: &ed25519::Seed,
     ) -> Result<Self, KmsError> {
-        debug!("{}: Connecting to {}:{}...", chain_id, addr, port);
+        debug!("{}: Connecting to {}:{}...", chain_id, host, port);
 
-        let socket = TcpStream::connect(format!("{}:{}", addr, port))?;
+        let socket = TcpStream::connect(format!("{}:{}", host, port))?;
         let signer = Ed25519Signer::from(secret_connection_key);
         let public_key = SecretConnectionKey::from(ed25519::public_key(&signer)?);
         let connection = SecretConnection::new(socket, &public_key, &signer)?;
@@ -55,7 +55,7 @@ impl Session<SecretConnection<TcpStream>> {
 }
 
 impl Session<UnixConnection<UnixStream>> {
-    pub fn accept_unix(chain_id: chain::Id, socket_path: &PathBuf) -> Result<Self, KmsError> {
+    pub fn accept_unix(chain_id: chain::Id, socket_path: &Path) -> Result<Self, KmsError> {
         // Try to unlink the socket path, shouldn't fail if it doesn't exist
         if let Err(e) = fs::remove_file(socket_path) {
             if e.kind() != io::ErrorKind::NotFound {
