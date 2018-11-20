@@ -23,7 +23,7 @@ pub struct ImportCommand {
     #[options(short = "p", long = "path")]
     pub path: Option<String>,
 
-    /// Type of key to generate (default 'ed25519')
+    /// Type of key to import (default 'ed25519')
     #[options(short = "t")]
     pub key_type: Option<String>,
 
@@ -97,7 +97,7 @@ impl Callable for ImportCommand {
                 yubihsm::AsymmetricAlg::Ed25519,
                 key,
             ) {
-                status_err!("couldn't generate key #{}: {}", self.key_id.unwrap(), e);
+                status_err!("couldn't import key #{}: {}", self.key_id.unwrap(), e);
                 process::exit(1);
             }
 
