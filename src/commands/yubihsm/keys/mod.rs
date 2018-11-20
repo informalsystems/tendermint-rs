@@ -1,10 +1,23 @@
 mod generate;
 mod help;
+mod import;
 mod list;
 
 use abscissa::Callable;
+use yubihsm;
 
-use self::{generate::GenerateCommand, help::HelpCommand, list::ListCommand};
+use self::{
+    generate::GenerateCommand, help::HelpCommand, import::ImportCommand, list::ListCommand,
+};
+
+/// Default key type to generate
+pub const DEFAULT_KEY_TYPE: &str = "ed25519";
+
+/// Default YubiHSM2 domain (internal partitioning)
+pub const DEFAULT_DOMAINS: yubihsm::Domain = yubihsm::Domain::DOM1;
+
+/// Default YubiHSM2 permissions for generated keys
+pub const DEFAULT_CAPABILITIES: yubihsm::Capability = yubihsm::Capability::ASYMMETRIC_SIGN_EDDSA;
 
 /// The `yubihsm keys` subcommand
 #[derive(Debug, Options)]
@@ -14,6 +27,9 @@ pub enum KeysCommand {
 
     #[options(help = "show help for the 'yubihsm keys' subcommand")]
     Help(HelpCommand),
+
+    #[options(help = "import validator signing key for the 'yubihsm keys' subcommand")]
+    Import(ImportCommand),
 
     #[options(help = "list all suitable Ed25519 keys in the HSM")]
     List(ListCommand),
@@ -37,6 +53,7 @@ impl Callable for KeysCommand {
         match self {
             KeysCommand::Generate(generate) => generate.call(),
             KeysCommand::Help(help) => help.call(),
+            KeysCommand::Import(import) => import.call(),
             KeysCommand::List(list) => list.call(),
         }
     }
