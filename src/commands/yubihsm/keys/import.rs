@@ -1,4 +1,3 @@
-extern crate base64;
 extern crate serde_json;
 
 use super::*;
@@ -11,6 +10,7 @@ use std::str;
 use abscissa::Callable;
 use signatory::ed25519;
 use signatory::ed25519::Seed;
+use subtle_encoding::base64;
 use tendermint::public_keys::ConsensusKey;
 use yubihsm;
 
