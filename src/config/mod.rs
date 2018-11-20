@@ -1,10 +1,8 @@
 //! Configuration file structures (with serde-derived parser)
 
-mod connection;
 pub mod provider;
-mod validator;
+pub mod validator;
 
-pub use self::connection::*;
 use self::provider::ProviderConfig;
 pub use self::validator::*;
 

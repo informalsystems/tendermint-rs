@@ -15,7 +15,7 @@ use std::{
 };
 use tendermint::{chain, public_keys::SecretConnectionKey};
 
-use config::{ConnectionConfig, ValidatorConfig};
+use config::{ValidatorAddr, ValidatorConfig};
 use error::{KmsError, KmsErrorKind};
 use keyring::SECRET_KEY_ENCODING;
 use session::Session;
@@ -51,72 +51,83 @@ impl Client {
 /// Main loop for all clients. Handles reconnecting in the event of an error
 fn client_loop(config: ValidatorConfig) {
     let ValidatorConfig {
+        addr,
         chain_id,
-        connection,
         reconnect,
+        secret_key,
     } = config;
 
-    while let Err(e) = client_session(chain_id, &connection) {
-        error!("[{}] {}", connection.uri(), e);
+    loop {
+        let session_result = match &addr {
+            ValidatorAddr::Tcp { host, port } => match &secret_key {
+                Some(path) => tcp_session(chain_id, host, *port, path),
+                None => {
+                    error!(
+                        "config error: missing field `secret_key` for validator {}",
+                        host
+                    );
+                    return;
+                }
+            },
+            ValidatorAddr::Unix { socket_path } => unix_session(chain_id, socket_path),
+        };
 
-        if reconnect {
-            // TODO: configurable respawn delay
-            thread::sleep(Duration::from_secs(RESPAWN_DELAY));
+        if let Err(e) = session_result {
+            error!("[{}@{}] {}", chain_id, addr, e);
+
+            if reconnect {
+                // TODO: configurable respawn delay
+                thread::sleep(Duration::from_secs(RESPAWN_DELAY));
+            } else {
+                return;
+            }
         } else {
-            // Break out of the loop if auto-reconnect is explicitly disabled
+            info!("[{}@{}] session closed gracefully", chain_id, &addr);
+
             return;
         }
     }
-
-    info!(
-        "[{}@{}] session closed gracefully",
-        chain_id,
-        connection.uri()
-    );
 }
 
-/// Establish a session with the validator and handle incoming requests
-fn client_session(chain_id: chain::Id, config: &ConnectionConfig) -> Result<(), KmsError> {
+/// Create a TCP connection to a validator (encrypted with SecretConnection)
+fn tcp_session(
+    chain_id: chain::Id,
+    host: &str,
+    port: u16,
+    secret_key_path: &Path,
+) -> Result<(), KmsError> {
+    let secret_key = load_secret_connection_key(secret_key_path)?;
+
+    let node_public_key =
+        SecretConnectionKey::from(ed25519::public_key(&Ed25519Signer::from(&secret_key)).unwrap());
+
+    info!("KMS node ID: {}", &node_public_key);
+
     panic::catch_unwind(move || {
-        match config {
-            ConnectionConfig::Tcp {
-                addr,
-                port,
-                secret_key_path,
-            } => {
-                let secret_key = load_secret_connection_key(secret_key_path)?;
-                let node_public_key = SecretConnectionKey::from(
-                    ed25519::public_key(&Ed25519Signer::from(&secret_key)).unwrap(),
-                );
+        let mut session = Session::connect_tcp(chain_id, host, port, &secret_key)?;
 
-                info!("KMS node ID: {}", &node_public_key);
+        info!(
+            "[{}@tcp://{}:{}] connected to validator successfully",
+            chain_id, host, port
+        );
 
-                let mut session = Session::connect_tcp(chain_id, addr, *port, &secret_key)?;
+        session.request_loop()
+    }).unwrap_or_else(|ref e| Err(KmsError::from_panic(e)))
+}
 
-                info!(
-                    "[{}@{}] connected to validator successfully",
-                    chain_id,
-                    config.uri()
-                );
+/// Create a validator session over a Unix domain socket
+fn unix_session(chain_id: chain::Id, socket_path: &Path) -> Result<(), KmsError> {
+    panic::catch_unwind(move || {
+        let mut session = Session::accept_unix(chain_id, socket_path)?;
 
-                session.request_loop()?;
-            }
-            ConnectionConfig::Unix { socket_path } => {
-                // Construct a UNIX connection session
-                let mut session = Session::accept_unix(chain_id, socket_path)?;
+        info!(
+            "[{}@unix://{}] waiting for a validator connection",
+            chain_id,
+            socket_path.display()
+        );
 
-                info!(
-                    "[{}@{}] waiting for a validator connection",
-                    chain_id,
-                    config.uri()
-                );
-
-                session.request_loop()?;
-            }
-        };
-
-        Ok(())
-    }).unwrap_or_else(|e| Err(KmsError::from_panic(&e)))
+        session.request_loop()
+    }).unwrap_or_else(|ref e| Err(KmsError::from_panic(e)))
 }
 
 /// Initialize KMS secret connection private key

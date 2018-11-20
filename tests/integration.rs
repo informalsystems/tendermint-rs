@@ -147,14 +147,10 @@ impl KmsDevice {
             config_file,
             r#"
             [[validator]]
+            addr = "tcp://127.0.0.1:{}"
             chain_id = "test_chain_id"
             reconnect = false
-
-                [validator.connection]
-                type = "tcp"
-                addr = "127.0.0.1"
-                port = {}
-                secret_key_path = "tests/support/secret_connection.key"
+            secret_key = "tests/support/secret_connection.key"
 
             [[providers.softsign]]
             id = "example-key-1"
@@ -173,11 +169,8 @@ impl KmsDevice {
             config_file,
             r#"
             [[validator]]
+            addr = "unix://{}"
             chain_id = "test_chain_id"
-
-                [validator.connection]
-                type = "unix"
-                socket_path = "{}"
 
             [[providers.softsign]]
             id = "example-key-1"
