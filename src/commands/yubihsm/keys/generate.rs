@@ -1,18 +1,10 @@
 use abscissa::Callable;
 use std::process;
 
+use super::*;
 use signatory::ed25519;
 use tendermint::public_keys::ConsensusKey;
 use yubihsm;
-
-/// Default key type to generate
-pub const DEFAULT_KEY_TYPE: &str = "ed25519";
-
-/// Default YubiHSM2 domain (internal partitioning)
-pub const DEFAULT_DOMAINS: yubihsm::Domain = yubihsm::Domain::DOM1;
-
-/// Default YubiHSM2 permissions for generated keys
-pub const DEFAULT_CAPABILITIES: yubihsm::Capability = yubihsm::Capability::ASYMMETRIC_SIGN_EDDSA;
 
 /// The `yubihsm keys generate` subcommand
 #[derive(Debug, Default, Options)]
