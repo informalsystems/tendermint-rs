@@ -14,7 +14,6 @@ pub const MAX_MSG_LEN: usize = 1024;
 /// Requests to the KMS
 pub enum Request {
     /// Sign the given message
-    SignHeartbeat(SignHeartbeatRequest),
     SignProposal(SignProposalRequest),
     SignVote(SignVoteRequest),
     ShowPublicKey(PubKeyMsg),
@@ -29,7 +28,6 @@ pub enum Request {
 /// Responses from the KMS
 pub enum Response {
     /// Signature response
-    SignedHeartBeat(SignedHeartbeatResponse),
     SignedVote(SignedVoteResponse),
     SignedProposal(SignedProposalResponse),
     Ping(PingResponse),
@@ -62,7 +60,6 @@ fn compute_prefix(name: &str) -> (Vec<u8>) {
 // provide instead)
 lazy_static! {
     static ref PP_PREFIX: Vec<u8> = compute_prefix(POISON_PILL_AMINO_NAME);
-    static ref HEART_BEAT_PREFIX: Vec<u8> = compute_prefix(HEARTBEAT_AMINO_NAME);
     static ref VOTE_PREFIX: Vec<u8> = compute_prefix(VOTE_AMINO_NAME);
     static ref PROPOSAL_PREFIX: Vec<u8> = compute_prefix(PROPOSAL_AMINO_NAME);
     static ref PUBKEY_PREFIX: Vec<u8> = compute_prefix(PUBKEY_AMINO_NAME);
@@ -95,9 +92,6 @@ impl Request {
             buff.clone().into_inner()[..(len.checked_add(1).unwrap() as usize)].to_vec();
         match amino_pre {
             ref pp if *pp == *PP_PREFIX => Ok(Request::PoisonPill(PoisonPillMsg {})),
-            ref hb if *hb == *HEART_BEAT_PREFIX => {
-                Ok(Request::SignHeartbeat(SignHeartbeatRequest::decode(&rem)?))
-            }
             ref vt if *vt == *VOTE_PREFIX => Ok(Request::SignVote(SignVoteRequest::decode(&rem)?)),
             ref pr if *pr == *PROPOSAL_PREFIX => {
                 Ok(Request::SignProposal(SignProposalRequest::decode(&rem)?))
@@ -111,15 +105,6 @@ impl Request {
                 "Received unknown RPC message.",
             )),
         }
-    }
-}
-
-impl TendermintRequest for SignHeartbeatRequest {
-    fn build_response(self) -> Response {
-        Response::SignedHeartBeat(SignedHeartbeatResponse {
-            heartbeat: self.heartbeat,
-            err: None,
-        })
     }
 }
 

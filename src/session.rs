@@ -104,7 +104,6 @@ where
         debug!("started handling request ... ");
         let response = match Request::read(&mut self.connection)? {
             Request::SignProposal(req) => self.sign(req)?,
-            Request::SignHeartbeat(req) => self.sign(req)?,
             Request::SignVote(req) => self.sign(req)?,
             // non-signable requests:
             Request::ReplyPing(ref req) => self.reply_ping(req),
@@ -115,7 +114,6 @@ where
         let mut buf = vec![];
 
         match response {
-            Response::SignedHeartBeat(shb) => shb.encode(&mut buf)?,
             Response::SignedProposal(sp) => sp.encode(&mut buf)?,
             Response::SignedVote(sv) => sv.encode(&mut buf)?,
             Response::Ping(ping) => ping.encode(&mut buf)?,

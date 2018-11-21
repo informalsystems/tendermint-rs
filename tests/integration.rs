@@ -305,64 +305,6 @@ pub fn extract_actual_len(buf: &[u8]) -> Result<u64, prost::DecodeError> {
 }
 
 #[test]
-fn test_handle_and_sign_heartbeat() {
-    let chain_id = "test_chain_id";
-    let (pub_key, _) = test_key();
-
-    ProtocolTester::apply(|mut pt| {
-        // prep a request:
-        let addr = vec![
-            0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
-            0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
-        ];
-
-        let hb = heartbeat::Heartbeat {
-            validator_address: addr,
-            validator_index: 1,
-            height: 15,
-            round: 10,
-            sequence: 30,
-            signature: None,
-        };
-
-        let hb_msg = heartbeat::SignHeartbeatRequest {
-            heartbeat: Some(hb),
-        };
-
-        // send request:
-        let mut buf = vec![];
-        hb_msg.encode(&mut buf).unwrap();
-        pt.write_all(&buf).unwrap();
-
-        // receive response:
-        let mut resp_buf = vec![0u8; 512];
-        pt.read(&mut resp_buf).unwrap();
-
-        let actual_len = extract_actual_len(&resp_buf).unwrap();
-        let mut resp = vec![0u8; actual_len as usize];
-        resp.copy_from_slice(&resp_buf[..actual_len as usize]);
-
-        let hb_req: heartbeat::SignHeartbeatRequest =
-            heartbeat::SignHeartbeatRequest::decode(&resp).expect("decoding heartbeat failed");
-        let mut sign_bytes: Vec<u8> = vec![];
-
-        hb_req.sign_bytes(chain_id.into(), &mut sign_bytes).unwrap();
-
-        let hb: heartbeat::Heartbeat = hb_req
-            .heartbeat
-            .expect("heartbeat should be embedded but none was found");
-        let sig: Vec<u8> = hb.signature.expect("expected signature was not found");
-        let verifier = Ed25519Verifier::from(&pub_key);
-        let signature = ed25519::Signature::from_bytes(sig).unwrap();
-        let msg: &[u8] = sign_bytes.as_slice();
-
-        ed25519::verify(&verifier, msg, &signature).unwrap();
-
-        send_poison_pill(&mut pt);
-    });
-}
-
-#[test]
 fn test_handle_and_sign_proposal() {
     let chain_id = "test_chain_id";
     let (pub_key, _) = test_key();

@@ -5,7 +5,6 @@
 
 pub mod block_id;
 pub mod ed25519;
-pub mod heartbeat;
 pub mod ping;
 pub mod poisonpill;
 pub mod proposal;
@@ -18,9 +17,6 @@ pub mod vote;
 pub use self::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader, PartsSetHeader},
     ed25519::{PubKeyMsg, AMINO_NAME as PUBKEY_AMINO_NAME},
-    heartbeat::{
-        SignHeartbeatRequest, SignedHeartbeatResponse, AMINO_NAME as HEARTBEAT_AMINO_NAME,
-    },
     ping::{PingRequest, PingResponse, AMINO_NAME as PING_AMINO_NAME},
     poisonpill::{PoisonPillMsg, AMINO_NAME as POISON_PILL_AMINO_NAME},
     proposal::{SignProposalRequest, SignedProposalResponse, AMINO_NAME as PROPOSAL_AMINO_NAME},
