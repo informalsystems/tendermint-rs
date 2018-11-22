@@ -27,7 +27,12 @@ pub enum ValidationErrorKind {
     NegativeValidatorIndex,
     #[fail(display = "expected ValidatorAddress size to be 20 bytes")]
     InvalidValidatorAddressSize,
-    // TODO validate block ID
+    #[fail(display = "Wrong hash: expected Hash size to be 32 bytes")]
+    InvalidHashSize,
+    #[fail(display = "negative total")]
+    NegativeTotal,
+    #[fail(display = "missing blockId")]
+    MissingBlockId,
 }
 
 impl ToString for ValidationError {
