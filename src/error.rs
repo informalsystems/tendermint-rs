@@ -10,6 +10,7 @@ use std::{
     io,
 };
 use tendermint;
+use tendermint::amino_types::validate::ValidationError as TmValidationError;
 #[cfg(feature = "yubihsm")]
 use yubihsm;
 
@@ -53,6 +54,10 @@ pub enum KmsErrorKind {
     /// Malformatted or otherwise invalid cryptographic key
     #[fail(display = "invalid key")]
     InvalidKey,
+
+    /// Validation of consensus message failed
+    #[fail(display = "invalid consensus message")]
+    InvalidMessageError,
 
     /// Input/output error
     #[fail(display = "I/O error")]
@@ -133,6 +138,12 @@ impl From<tendermint::Error> for KmsError {
         };
 
         Error::new(kind, None).into()
+    }
+}
+
+impl From<TmValidationError> for KmsError {
+    fn from(other: TmValidationError) -> Self {
+        err!(KmsErrorKind::InvalidMessageError, other).into()
     }
 }
 

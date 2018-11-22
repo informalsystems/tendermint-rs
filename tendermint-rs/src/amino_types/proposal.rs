@@ -7,6 +7,7 @@ use super::{
     remote_error::RemoteError,
     signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
+    validate::{ConsensusMessage, ValidationError, ValidationErrorKind},
 };
 use block;
 use chain;
@@ -124,6 +125,30 @@ impl SignableMsg for SignProposalRequest {
         if let Some(ref mut prop) = self.proposal {
             prop.signature = sig.clone().into_vec();
         }
+    }
+}
+
+impl ConsensusMessage for Proposal {
+    fn validate_basic(&self) -> Result<(), ValidationError> {
+        if self.msg_type != SignedMsgType::Proposal.to_u32() {
+            return Err(ValidationError::new(
+                ValidationErrorKind::InvalidMessageType,
+            ));
+        }
+        if self.height < 0 {
+            return Err(ValidationError::new(ValidationErrorKind::NegativeHeight));
+        }
+        if self.round < 0 {
+            return Err(ValidationError::new(ValidationErrorKind::NegativeRound));
+        }
+        if self.pol_round < -1 {
+            return Err(ValidationError::new(ValidationErrorKind::NegativePOLRound));
+        }
+        // TODO validate proposal's block_id
+
+        // signature will be missing as the KMS provides it
+
+        Ok(())
     }
 }
 
