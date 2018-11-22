@@ -15,12 +15,18 @@ impl ValidationError {
 pub enum ValidationErrorKind {
     #[fail(display = "invalid Type")]
     InvalidMessageType,
+    #[fail(display = "consensus message is missing")]
+    MissingConsensusMessage,
     #[fail(display = "negative height")]
     NegativeHeight,
     #[fail(display = "negative round")]
     NegativeRound,
     #[fail(display = "negative POLRound (exception: -1)")]
     NegativePOLRound,
+    #[fail(display = "negative ValidatorIndex")]
+    NegativeValidatorIndex,
+    #[fail(display = "expected ValidatorAddress size to be 20 bytes")]
+    InvalidValidatorAddressSize,
     // TODO validate block ID
 }
 

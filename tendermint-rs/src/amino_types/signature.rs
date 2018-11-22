@@ -1,12 +1,13 @@
 use bytes::BufMut;
 use prost::{DecodeError, EncodeError};
 use signatory::ed25519;
-use std::fmt::Debug;
+
+use amino_types::validate::ValidationError;
 
 use chain;
 
 /// Amino messages which are signable within a Tendermint network
-pub trait SignableMsg: Debug {
+pub trait SignableMsg {
     /// Sign this message as bytes
     fn sign_bytes<B: BufMut>(
         &self,
@@ -16,6 +17,8 @@ pub trait SignableMsg: Debug {
 
     /// Set the Ed25519 signature on the underlying message
     fn set_signature(&mut self, sig: &ed25519::Signature);
+
+    fn validate(&self) -> Result<(), ValidationError>;
 }
 
 /// Signed message types. This follows:
@@ -50,15 +53,6 @@ impl SignedMsgType {
             0x02 => Ok(SignedMsgType::PreCommit),
             0x20 => Ok(SignedMsgType::Proposal),
             _ => Err(DecodeError::new("Invalid vote type")),
-        }
-    }
-
-    #[allow(dead_code)]
-    fn is_valid_vote_type(msg_type: SignedMsgType) -> bool {
-        match msg_type {
-            SignedMsgType::PreVote => true,
-            SignedMsgType::PreCommit => true,
-            _ => false,
         }
     }
 }

@@ -3,6 +3,7 @@
 use signatory::ed25519;
 use signatory_dalek::Ed25519Signer;
 use std::{
+    fmt::Debug,
     fs,
     io::{self, Read, Write},
     marker::{Send, Sync},
@@ -126,7 +127,9 @@ where
     }
 
     /// Perform a digital signature operation
-    fn sign(&mut self, mut request: impl TendermintRequest) -> Result<Response, KmsError> {
+    fn sign<T: TendermintRequest + Debug>(&mut self, mut request: T) -> Result<Response, KmsError> {
+        request.validate()?;
+
         let mut to_sign = vec![];
         request.sign_bytes(self.chain_id, &mut to_sign)?;
 

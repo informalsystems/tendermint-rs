@@ -126,6 +126,14 @@ impl SignableMsg for SignProposalRequest {
             prop.signature = sig.clone().into_vec();
         }
     }
+    fn validate(&self) -> Result<(), ValidationError> {
+        match self.proposal {
+            Some(ref p) => p.validate_basic(),
+            None => Err(ValidationError::new(
+                ValidationErrorKind::MissingConsensusMessage,
+            )),
+        }
+    }
 }
 
 impl ConsensusMessage for Proposal {
