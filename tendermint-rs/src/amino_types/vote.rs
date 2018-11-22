@@ -180,12 +180,11 @@ impl ConsensusMessage for Vote {
                 ValidationErrorKind::InvalidValidatorAddressSize,
             ));
         }
-
-        // TODO validate votes's block_id
-
+        match self.block_id {
+            Some(ref bid) => bid.validate_basic(),
+            None => Err(ValidationError::new(ValidationErrorKind::MissingBlockId)),
+        }
         // signature will be missing as the KMS provides it
-
-        Ok(())
     }
 }
 

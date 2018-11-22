@@ -1,7 +1,8 @@
+use super::validate::{ConsensusMessage, ValidationError, ValidationErrorKind};
 use algorithm::HashAlgorithm;
 use block;
 use error::Error;
-use hash::Hash;
+use hash::{Hash, SHA256_HASH_SIZE};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct BlockId {
@@ -15,6 +16,18 @@ impl block::ParseId for BlockId {
     fn parse_block_id(&self) -> Result<block::Id, Error> {
         let hash = Hash::new(HashAlgorithm::Sha256, &self.hash)?;
         Ok(block::Id::new(hash))
+    }
+}
+
+impl ConsensusMessage for BlockId {
+    fn validate_basic(&self) -> Result<(), ValidationError> {
+        if self.hash.len() != SHA256_HASH_SIZE {
+            return Err(ValidationError::new(ValidationErrorKind::InvalidHashSize));
+        }
+        match self.parts_header {
+            Some(ref psh) => psh.validate_basic(),
+            None => Ok(()), // TODO: is an empty PartsSetHeader eally OK here?
+        }
     }
 }
 
@@ -39,6 +52,18 @@ pub struct PartsSetHeader {
     pub total: i64,
     #[prost(bytes, tag = "2")]
     pub hash: Vec<u8>,
+}
+
+impl ConsensusMessage for PartsSetHeader {
+    fn validate_basic(&self) -> Result<(), ValidationError> {
+        if self.total < 0 {
+            return Err(ValidationError::new(ValidationErrorKind::NegativeTotal));
+        }
+        if self.hash.len() != SHA256_HASH_SIZE {
+            return Err(ValidationError::new(ValidationErrorKind::InvalidHashSize));
+        }
+        Ok(())
+    }
 }
 
 #[derive(Clone, PartialEq, Message)]
