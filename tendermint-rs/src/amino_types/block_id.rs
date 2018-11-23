@@ -21,7 +21,8 @@ impl block::ParseId for BlockId {
 
 impl ConsensusMessage for BlockId {
     fn validate_basic(&self) -> Result<(), ValidationError> {
-        if self.hash.len() != SHA256_HASH_SIZE {
+        // Hash can be empty in case of POLBlockID in Proposal.
+        if !self.hash.is_empty() && self.hash.len() != SHA256_HASH_SIZE {
             return Err(ValidationError::new(ValidationErrorKind::InvalidHashSize));
         }
         match self.parts_header {
@@ -59,7 +60,8 @@ impl ConsensusMessage for PartsSetHeader {
         if self.total < 0 {
             return Err(ValidationError::new(ValidationErrorKind::NegativeTotal));
         }
-        if self.hash.len() != SHA256_HASH_SIZE {
+        // Hash can be empty in case of POLBlockID.PartsHeader in Proposal.
+        if !self.hash.is_empty() && self.hash.len() != SHA256_HASH_SIZE {
             return Err(ValidationError::new(ValidationErrorKind::InvalidHashSize));
         }
         Ok(())
