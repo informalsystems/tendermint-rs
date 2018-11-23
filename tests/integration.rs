@@ -373,15 +373,10 @@ fn test_handle_and_sign_vote() {
 
     ProtocolTester::apply(|mut pt| {
         let vote_msg = amino_types::vote::Vote {
-            validator_address: vec![
-                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
-                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
-            ],
-            validator_index: 56789,
+            vote_type: 0x01,
             height: 12345,
             round: 2,
             timestamp: Some(t),
-            vote_type: 0x01,
             block_id: Some(BlockId {
                 hash: b"some hash00000000000000000000000".to_vec(),
                 parts_header: Some(PartsSetHeader {
@@ -389,6 +384,11 @@ fn test_handle_and_sign_vote() {
                     hash: b"parts_hash0000000000000000000000".to_vec(),
                 }),
             }),
+            validator_address: vec![
+                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+            ],
+            validator_index: 56789,
             signature: vec![],
         };
 
