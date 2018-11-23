@@ -383,10 +383,10 @@ fn test_handle_and_sign_vote() {
             timestamp: Some(t),
             vote_type: 0x01,
             block_id: Some(BlockId {
-                hash: "hash".as_bytes().to_vec(),
+                hash: b"some hash00000000000000000000000".to_vec(),
                 parts_header: Some(PartsSetHeader {
                     total: 1000000,
-                    hash: "parts_hash".as_bytes().to_vec(),
+                    hash: b"parts_hash0000000000000000000000".to_vec(),
                 }),
             }),
             signature: vec![],

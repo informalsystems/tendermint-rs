@@ -188,7 +188,7 @@ where
         }
 
         let mut sealed_frame = [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
-        self.io_handler.read_exact(&mut sealed_frame).unwrap();
+        self.io_handler.read_exact(&mut sealed_frame)?;
 
         // decrypt the frame
         let mut frame = [0u8; TOTAL_FRAME_SIZE];

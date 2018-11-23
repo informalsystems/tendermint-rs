@@ -26,7 +26,7 @@ impl ConsensusMessage for BlockId {
         }
         match self.parts_header {
             Some(ref psh) => psh.validate_basic(),
-            None => Ok(()), // TODO: is an empty PartsSetHeader eally OK here?
+            None => Ok(()), // TODO: is an empty PartsSetHeader really OK here?
         }
     }
 }
