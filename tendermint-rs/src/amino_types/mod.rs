@@ -12,6 +12,7 @@ pub mod remote_error;
 pub mod secret_connection;
 pub mod signature;
 pub mod time;
+pub mod validate;
 pub mod vote;
 
 pub use self::{
@@ -24,5 +25,6 @@ pub use self::{
     secret_connection::AuthSigMessage,
     signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
+    validate::ConsensusMessage,
     vote::{SignVoteRequest, SignedVoteResponse, AMINO_NAME as VOTE_AMINO_NAME},
 };

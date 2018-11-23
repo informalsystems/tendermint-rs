@@ -1,7 +1,7 @@
 //! Remote Procedure Calls
 
 use bytes::IntoBuf;
-use prost::encoding::decode_varint;
+use prost::encoding::{decode_varint, encoded_len_varint};
 use prost::Message;
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
@@ -87,9 +87,8 @@ impl Request {
         let mut amino_pre = vec![0; 4];
         buff.read_exact(&mut amino_pre)?;
         buff.set_position(0);
-        // TODO: find a way to get back the buffer without cloning the cursor here:
-        let rem: Vec<u8> =
-            buff.clone().into_inner()[..(len.checked_add(1).unwrap() as usize)].to_vec();
+        let total_len = encoded_len_varint(len).checked_add(len as usize).unwrap();
+        let rem = buff.get_ref()[..total_len].to_vec();
         match amino_pre {
             ref pp if *pp == *PP_PREFIX => Ok(Request::PoisonPill(PoisonPillMsg {})),
             ref vt if *vt == *VOTE_PREFIX => Ok(Request::SignVote(SignVoteRequest::decode(&rem)?)),

@@ -7,10 +7,14 @@ use super::{
     remote_error::RemoteError,
     signature::SignableMsg,
     time::TimeMsg,
+    validate::{ConsensusMessage, ValidationError, ValidationErrorKind},
+    SignedMsgType,
 };
 use block;
 use chain;
 use error::Error;
+
+const VALIDATOR_ADDR_SIZE: usize = 20;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Vote {
@@ -30,6 +34,13 @@ pub struct Vote {
     pub validator_index: i64,
     #[prost(bytes)]
     pub signature: Vec<u8>,
+}
+
+impl Vote {
+    fn is_valid_vote_type(&self) -> bool {
+        self.vote_type == SignedMsgType::PreVote.to_u32()
+            || self.vote_type == SignedMsgType::PreCommit.to_u32()
+    }
 }
 
 impl block::ParseHeight for Vote {
@@ -135,6 +146,37 @@ impl SignableMsg for SignVoteRequest {
         if let Some(ref mut vt) = self.vote {
             vt.signature = sig.clone().into_vec();
         }
+    }
+    fn validate(&self) -> Result<(), ValidationError> {
+        match self.vote {
+            Some(ref v) => v.validate_basic(),
+            None => Err(ValidationErrorKind::MissingConsensusMessage.into()),
+        }
+    }
+}
+
+impl ConsensusMessage for Vote {
+    fn validate_basic(&self) -> Result<(), ValidationError> {
+        if !self.is_valid_vote_type() {
+            return Err(ValidationErrorKind::InvalidMessageType.into());
+        }
+        if self.height < 0 {
+            return Err(ValidationErrorKind::NegativeHeight.into());
+        }
+        if self.round < 0 {
+            return Err(ValidationErrorKind::NegativeRound.into());
+        }
+        if self.validator_index < 0 {
+            return Err(ValidationErrorKind::NegativeValidatorIndex.into());
+        }
+        if self.validator_address.len() != VALIDATOR_ADDR_SIZE {
+            return Err(ValidationErrorKind::InvalidValidatorAddressSize.into());
+        }
+        match self.block_id {
+            Some(ref bid) => bid.validate_basic(),
+            None => Err(ValidationErrorKind::MissingBlockId.into()),
+        }
+        // signature will be missing as the KMS provides it
     }
 }
 
