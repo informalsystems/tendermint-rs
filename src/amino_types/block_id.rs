@@ -23,12 +23,12 @@ impl ConsensusMessage for BlockId {
     fn validate_basic(&self) -> Result<(), ValidationError> {
         // Hash can be empty in case of POLBlockID in Proposal.
         if !self.hash.is_empty() && self.hash.len() != SHA256_HASH_SIZE {
-            return Err(ValidationError::new(ValidationErrorKind::InvalidHashSize));
+            return Err(ValidationErrorKind::InvalidHashSize.into());
         }
-        match self.parts_header {
-            Some(ref psh) => psh.validate_basic(),
-            None => Ok(()), // TODO: is an empty PartsSetHeader really OK here?
-        }
+        // TODO: is an empty PartsSetHeader really OK here?
+        self.parts_header
+            .as_ref()
+            .map_or(Ok(()), |psh| psh.validate_basic())
     }
 }
 
@@ -58,11 +58,11 @@ pub struct PartsSetHeader {
 impl ConsensusMessage for PartsSetHeader {
     fn validate_basic(&self) -> Result<(), ValidationError> {
         if self.total < 0 {
-            return Err(ValidationError::new(ValidationErrorKind::NegativeTotal));
+            return Err(ValidationErrorKind::NegativeTotal.into());
         }
         // Hash can be empty in case of POLBlockID.PartsHeader in Proposal.
         if !self.hash.is_empty() && self.hash.len() != SHA256_HASH_SIZE {
-            return Err(ValidationError::new(ValidationErrorKind::InvalidHashSize));
+            return Err(ValidationErrorKind::InvalidHashSize.into());
         }
         Ok(())
     }

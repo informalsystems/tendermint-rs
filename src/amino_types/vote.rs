@@ -150,9 +150,7 @@ impl SignableMsg for SignVoteRequest {
     fn validate(&self) -> Result<(), ValidationError> {
         match self.vote {
             Some(ref v) => v.validate_basic(),
-            None => Err(ValidationError::new(
-                ValidationErrorKind::MissingConsensusMessage,
-            )),
+            None => Err(ValidationErrorKind::MissingConsensusMessage.into()),
         }
     }
 }
@@ -160,29 +158,23 @@ impl SignableMsg for SignVoteRequest {
 impl ConsensusMessage for Vote {
     fn validate_basic(&self) -> Result<(), ValidationError> {
         if !self.is_valid_vote_type() {
-            return Err(ValidationError::new(
-                ValidationErrorKind::InvalidMessageType,
-            ));
+            return Err(ValidationErrorKind::InvalidMessageType.into());
         }
         if self.height < 0 {
-            return Err(ValidationError::new(ValidationErrorKind::NegativeHeight));
+            return Err(ValidationErrorKind::NegativeHeight.into());
         }
         if self.round < 0 {
-            return Err(ValidationError::new(ValidationErrorKind::NegativeRound));
+            return Err(ValidationErrorKind::NegativeRound.into());
         }
         if self.validator_index < 0 {
-            return Err(ValidationError::new(
-                ValidationErrorKind::NegativeValidatorIndex,
-            ));
+            return Err(ValidationErrorKind::NegativeValidatorIndex.into());
         }
         if self.validator_address.len() != VALIDATOR_ADDR_SIZE {
-            return Err(ValidationError::new(
-                ValidationErrorKind::InvalidValidatorAddressSize,
-            ));
+            return Err(ValidationErrorKind::InvalidValidatorAddressSize.into());
         }
         match self.block_id {
             Some(ref bid) => bid.validate_basic(),
-            None => Err(ValidationError::new(ValidationErrorKind::MissingBlockId)),
+            None => Err(ValidationErrorKind::MissingBlockId.into()),
         }
         // signature will be missing as the KMS provides it
     }
