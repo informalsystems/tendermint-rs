@@ -76,14 +76,15 @@ impl Callable for ImportCommand {
                 process::exit(1);
             });
 
-            let key = base64::decode(s).unwrap_or_else(|e| {
+            let key_pair = base64::decode(s).unwrap_or_else(|e| {
                 status_err!("couldn't decode validator private key from config: {}", e);
                 process::exit(1);
             });
-            Seed::from_keypair(&key).unwrap_or_else(|e| {
+            let seed = Seed::from_keypair(&key_pair).unwrap_or_else(|e| {
                 status_err!("invalid key in validator config: {}", e);
                 process::exit(1);
             });
+            let key = seed.as_secret_slice();
             let label =
                 yubihsm::ObjectLabel::from(self.label.as_ref().map(|l| l.as_ref()).unwrap_or(""));
 
