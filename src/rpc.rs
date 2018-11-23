@@ -88,8 +88,7 @@ impl Request {
         buff.read_exact(&mut amino_pre)?;
         buff.set_position(0);
         let total_len = encoded_len_varint(len).checked_add(len as usize).unwrap();
-        // TODO: find a way to get back the buffer without cloning the cursor here:
-        let rem: Vec<u8> = buff.clone().into_inner()[..total_len].to_vec();
+        let rem = buff.get_ref()[..total_len].to_vec();
         match amino_pre {
             ref pp if *pp == *PP_PREFIX => Ok(Request::PoisonPill(PoisonPillMsg {})),
             ref vt if *vt == *VOTE_PREFIX => Ok(Request::SignVote(SignVoteRequest::decode(&rem)?)),

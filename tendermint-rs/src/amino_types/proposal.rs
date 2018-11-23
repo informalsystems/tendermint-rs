@@ -129,9 +129,7 @@ impl SignableMsg for SignProposalRequest {
     fn validate(&self) -> Result<(), ValidationError> {
         match self.proposal {
             Some(ref p) => p.validate_basic(),
-            None => Err(ValidationError::new(
-                ValidationErrorKind::MissingConsensusMessage,
-            )),
+            None => Err(ValidationErrorKind::MissingConsensusMessage.into()),
         }
     }
 }
@@ -139,18 +137,16 @@ impl SignableMsg for SignProposalRequest {
 impl ConsensusMessage for Proposal {
     fn validate_basic(&self) -> Result<(), ValidationError> {
         if self.msg_type != SignedMsgType::Proposal.to_u32() {
-            return Err(ValidationError::new(
-                ValidationErrorKind::InvalidMessageType,
-            ));
+            return Err(ValidationErrorKind::InvalidMessageType.into());
         }
         if self.height < 0 {
-            return Err(ValidationError::new(ValidationErrorKind::NegativeHeight));
+            return Err(ValidationErrorKind::NegativeHeight.into());
         }
         if self.round < 0 {
-            return Err(ValidationError::new(ValidationErrorKind::NegativeRound));
+            return Err(ValidationErrorKind::NegativeRound.into());
         }
         if self.pol_round < -1 {
-            return Err(ValidationError::new(ValidationErrorKind::NegativePOLRound));
+            return Err(ValidationErrorKind::NegativePOLRound.into());
         }
         // TODO validate proposal's block_id
 

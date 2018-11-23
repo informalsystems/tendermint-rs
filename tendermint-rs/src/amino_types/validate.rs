@@ -4,12 +4,6 @@ pub trait ConsensusMessage {
 
 pub struct ValidationError(ValidationErrorKind);
 
-impl ValidationError {
-    pub fn new(kind: ValidationErrorKind) -> ValidationError {
-        ValidationError(kind)
-    }
-}
-
 /// Kinds of validation errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ValidationErrorKind {
@@ -38,5 +32,11 @@ pub enum ValidationErrorKind {
 impl ToString for ValidationError {
     fn to_string(&self) -> String {
         self.0.to_string()
+    }
+}
+
+impl From<ValidationErrorKind> for ValidationError {
+    fn from(kind: ValidationErrorKind) -> Self {
+        ValidationError(kind)
     }
 }
