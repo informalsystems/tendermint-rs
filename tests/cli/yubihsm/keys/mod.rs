@@ -1,9 +1,10 @@
 //! Integration tests for the `yubihsm keys` subcommand
 
 mod generate;
+mod import;
 mod list;
 
-pub use super::KMS_CONFIG_PATH;
+pub use super::{KMS_CONFIG_PATH, PRIV_VALIDATOR_CONFIG_PATH};
 use cli;
 
 #[test]

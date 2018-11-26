@@ -19,6 +19,10 @@ use serde_json::Value;
 /// The `yubihsm keys import` subcommand
 #[derive(Debug, Default, Options)]
 pub struct ImportCommand {
+    /// Path to configuration file
+    #[options(short = "c", long = "config")]
+    pub config: Option<String>,
+
     /// Path to the validator configuration file
     #[options(short = "p", long = "path")]
     pub path: Option<String>,

@@ -41,6 +41,7 @@ impl KeysCommand {
         match self {
             KeysCommand::Generate(generate) => generate.config.as_ref().map(|s| s.as_ref()),
             KeysCommand::List(list) => list.config.as_ref().map(|s| s.as_ref()),
+            KeysCommand::Import(import) => import.config.as_ref().map(|s| s.as_ref()),
             _ => None,
         }
     }
