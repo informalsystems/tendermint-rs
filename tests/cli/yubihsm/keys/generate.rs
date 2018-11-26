@@ -18,7 +18,7 @@ fn keys_generate_command_test() {
         true,
         String::from_utf8(out.stdout)
             .unwrap()
-            .trim_start()
+            .trim()
             .starts_with("Generated key #1:")
     );
 }

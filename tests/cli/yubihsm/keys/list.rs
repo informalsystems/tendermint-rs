@@ -18,7 +18,7 @@ fn keys_command_test() {
         true,
         String::from_utf8(out.stderr)
             .unwrap()
-            .trim_start()
+            .trim()
             .starts_with("error: no keys in this YubiHSM")
     );
 }

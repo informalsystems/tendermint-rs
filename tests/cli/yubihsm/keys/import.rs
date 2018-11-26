@@ -21,7 +21,7 @@ fn keys_import_command_test() {
         true,
         String::from_utf8(out.stdout)
             .unwrap()
-            .trim_start()
+            .trim()
             .starts_with("Imported key #1:")
     );
 }
