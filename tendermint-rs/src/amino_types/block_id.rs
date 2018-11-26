@@ -1,4 +1,4 @@
-use super::validate::{ConsensusMessage, ValidationError, ValidationErrorKind};
+use super::validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*};
 use algorithm::HashAlgorithm;
 use block;
 use error::Error;
@@ -23,7 +23,7 @@ impl ConsensusMessage for BlockId {
     fn validate_basic(&self) -> Result<(), ValidationError> {
         // Hash can be empty in case of POLBlockID in Proposal.
         if !self.hash.is_empty() && self.hash.len() != SHA256_HASH_SIZE {
-            return Err(ValidationErrorKind::InvalidHashSize.into());
+            return Err(InvalidHashSize.into());
         }
         // TODO: is an empty PartsSetHeader really OK here?
         self.parts_header
@@ -58,11 +58,11 @@ pub struct PartsSetHeader {
 impl ConsensusMessage for PartsSetHeader {
     fn validate_basic(&self) -> Result<(), ValidationError> {
         if self.total < 0 {
-            return Err(ValidationErrorKind::NegativeTotal.into());
+            return Err(NegativeTotal.into());
         }
         // Hash can be empty in case of POLBlockID.PartsHeader in Proposal.
         if !self.hash.is_empty() && self.hash.len() != SHA256_HASH_SIZE {
-            return Err(ValidationErrorKind::InvalidHashSize.into());
+            return Err(InvalidHashSize.into());
         }
         Ok(())
     }

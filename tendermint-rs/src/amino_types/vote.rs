@@ -7,7 +7,7 @@ use super::{
     remote_error::RemoteError,
     signature::SignableMsg,
     time::TimeMsg,
-    validate::{ConsensusMessage, ValidationError, ValidationErrorKind},
+    validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
     SignedMsgType,
 };
 use block;
@@ -150,7 +150,7 @@ impl SignableMsg for SignVoteRequest {
     fn validate(&self) -> Result<(), ValidationError> {
         match self.vote {
             Some(ref v) => v.validate_basic(),
-            None => Err(ValidationErrorKind::MissingConsensusMessage.into()),
+            None => Err(MissingConsensusMessage.into()),
         }
     }
 }
@@ -158,23 +158,23 @@ impl SignableMsg for SignVoteRequest {
 impl ConsensusMessage for Vote {
     fn validate_basic(&self) -> Result<(), ValidationError> {
         if !self.is_valid_vote_type() {
-            return Err(ValidationErrorKind::InvalidMessageType.into());
+            return Err(InvalidMessageType.into());
         }
         if self.height < 0 {
-            return Err(ValidationErrorKind::NegativeHeight.into());
+            return Err(NegativeHeight.into());
         }
         if self.round < 0 {
-            return Err(ValidationErrorKind::NegativeRound.into());
+            return Err(NegativeRound.into());
         }
         if self.validator_index < 0 {
-            return Err(ValidationErrorKind::NegativeValidatorIndex.into());
+            return Err(NegativeValidatorIndex.into());
         }
         if self.validator_address.len() != VALIDATOR_ADDR_SIZE {
-            return Err(ValidationErrorKind::InvalidValidatorAddressSize.into());
+            return Err(InvalidValidatorAddressSize.into());
         }
         match self.block_id {
             Some(ref bid) => bid.validate_basic(),
-            None => Err(ValidationErrorKind::MissingBlockId.into()),
+            None => Err(MissingBlockId.into()),
         }
         // signature will be missing as the KMS provides it
     }
