@@ -1,0 +1,15 @@
+{
+  "comment": "TEST KEY ONLY: DO **NOT** USE!!",
+  "address": "275184F7F3BB2D1EB56FB91F0DC9E0FE6FB64097",
+  "pub_key": {
+    "type": "tendermint/PubKeyEd25519",
+    "value": "Dicjr17rwt2WMy+Wo/hLGc2qPpx03kvyUJCJGqh1MXM="
+  },
+  "last_height": "0",
+  "last_round": "0",
+  "last_step": 0,
+  "priv_key": {
+    "type": "tendermint/PrivKeyEd25519",
+    "value": "qIoGOuRm6GHobrRGq9t2I388pnWO7ZB9FE0R+M8TM6oOJyOvXuvC3ZYzL5aj+EsZzao+nHTeS/JQkIkaqHUxcw=="
+  }
+}
