@@ -1,13 +1,28 @@
 # Tendermint KMS Dockerfile
 
-FROM centos:7.5.1804
+FROM centos:7
 
 # Install/update RPMs
 RUN yum update -y && \
     yum groupinstall -y "Development Tools" && \
-    yum install -y libusbx-devel openssl-devel sudo && \
+    yum install -y \
+        centos-release-scl \
+        cmake \
+        epel-release \
+        libudev-devel \
+        libusbx-devel \
+        openssl-devel \
+        sudo && \
+    yum install -y --enablerepo=epel libsodium-devel && \
+    yum install -y --enablerepo=centos-sclo-rh llvm-toolset-7 && \
     yum clean all && \
     rm -rf /var/cache/yum
+
+# Set environment variables to enable SCL packages (llvm-toolset-7)
+ENV LD_LIBRARY_PATH=/opt/rh/llvm-toolset-7/root/usr/lib64
+ENV PATH "/opt/rh/llvm-toolset-7/root/usr/bin:/opt/rh/llvm-toolset-7/root/usr/sbin:$PATH"
+ENV PKG_CONFIG_PATH=/opt/rh/llvm-toolset-7/root/usr/lib64/pkgconfig
+ENV X_SCLS llvm-toolset-7
 
 # Create "developer" user
 RUN useradd developer && \
