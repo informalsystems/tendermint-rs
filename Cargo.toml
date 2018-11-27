@@ -34,7 +34,7 @@ sha2 = "0.8"
 signatory = { version = "0.10", features = ["ed25519"] }
 signatory-dalek = "0.10"
 signatory-yubihsm = { version = "0.10", optional = true }
-subtle-encoding = "0.2"
+subtle-encoding = "0.3"
 tendermint = { version = "0.1", path = "tendermint-rs" }
 
 [dev-dependencies]
