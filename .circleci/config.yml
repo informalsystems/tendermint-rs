@@ -3,11 +3,11 @@ version: 2
 jobs:
   build:
     docker:
-    - image: iqlusion/cosmos-kms:20180913.0 # bump cache keys when modifying this
+    - image: iqlusion/tmkms:2018-11-26-v0 # bump cache keys when modifying this
     steps:
     - checkout
     - restore_cache:
-        key: cache-20180913.0 # bump save_cache key below too
+        key: cache-2018-11-26-v0 # bump save_cache key below too
     - run:
         name: rustfmt
         command: |
@@ -48,7 +48,7 @@ jobs:
           cargo audit --version
           cargo audit
     - save_cache:
-        key: cache-20180913.0 # bump restore_cache key above too
+        key: cache-2018-11-26-v0 # bump restore_cache key above too
         paths:
         - "~/.cargo"
         - "./target"
