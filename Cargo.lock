@@ -16,7 +16,7 @@ dependencies = [
  "simplelog 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "term 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "zeroize 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "zeroize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -739,7 +739,7 @@ dependencies = [
  "rand 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle-encoding 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "zeroize 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "zeroize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -790,7 +790,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "failure 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure_derive 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "zeroize 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "zeroize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -869,7 +869,7 @@ dependencies = [
  "subtle-encoding 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tai64 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "x25519-dalek 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "zeroize 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "zeroize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -893,7 +893,7 @@ dependencies = [
 
 [[package]]
 name = "tmkms"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "abscissa 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "abscissa_derive 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1008,15 +1008,16 @@ dependencies = [
  "subtle 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "untrusted 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "uuid 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "zeroize 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "zeroize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "zeroize"
-version = "0.4.0"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cc 1.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
+ "semver 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [metadata]
@@ -1132,4 +1133,4 @@ dependencies = [
 "checksum winapi-x86_64-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 "checksum x25519-dalek 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "538296831e9794ec5b3ec9d4a1a8c3e3c86271e9635a0e776e3214fec9c727de"
 "checksum yubihsm 0.19.2 (registry+https://github.com/rust-lang/crates.io-index)" = "8f058a21d99bfcd9b70807137acf5815741563af952d9d227e22b33de3affd2e"
-"checksum zeroize 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4d9ca03392699478c8ae9240a5b2a9500babb9e1eccc195e347ab06a082d9f20"
+"checksum zeroize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "d7ddffec9ddef28ba2d6359bcbf0dc6772e62b112bc103dfb1e6fab46cd47c39"
