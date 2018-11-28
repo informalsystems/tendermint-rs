@@ -1,19 +1,40 @@
+## [0.2.1] (2018-11-27)
+
+- Encode node (and softwign) private keys as Base64 ([#127])
+- Add integration tests for yubihsm subcommands ([#121])
+- Fix `tmkms yubihsm keys import` command ([#113])
+
 ## [0.2.0] (2018-11-20)
 
-- Add `tmkms yubihsm keys import` command (#107)
-- Simplify `tmkms.toml` syntax (#106)
-- Minor clarifications/fixes (#103)
+- Add `tmkms yubihsm keys import` command ([#107])
+- Simplify `tmkms.toml` syntax ([#106])
+- Minor clarifications/fixes ([#103])
 
 ## [0.1.0] (2018-11-13)
 
-- Initial validator signing support (#95, #91, #86, #80, #55)
-- Support for Bech32-formatted Cosmos keys/addresses (#71)
-- Extract `tendermint` crate as a reusable Rust library (#82)
-- Validator signing via Unix domain socket IPC (#63)
+- Initial validator signing support ([#95], [#91], [#86], [#80], [#55])
+- Extract `tendermint` crate as a reusable Rust library ([#82])
+- Support for Bech32-formatted Cosmos keys/addresses ([#71])
+- Validator signing via Unix domain socket IPC ([#63])
 
 ## 0.0.1 (2018-10-16)
 
 - Initial "preview" release
 
+[0.2.1]: https://github.com/tendermint/kms/pull/126
+[#127]: https://github.com/tendermint/kms/pull/127
+[#121]: https://github.com/tendermint/kms/pull/121
+[#113]: https://github.com/tendermint/kms/pull/113
 [0.2.0]: https://github.com/tendermint/kms/pull/108
+[#107]: https://github.com/tendermint/kms/pull/107
+[#106]: https://github.com/tendermint/kms/pull/106
+[#103]: https://github.com/tendermint/kms/pull/103
 [0.1.0]: https://github.com/tendermint/kms/pull/100
+[#95]: https://github.com/tendermint/kms/pull/95
+[#91]: https://github.com/tendermint/kms/pull/91
+[#86]: https://github.com/tendermint/kms/pull/86
+[#82]: https://github.com/tendermint/kms/pull/82
+[#80]: https://github.com/tendermint/kms/pull/80
+[#71]: https://github.com/tendermint/kms/pull/71
+[#63]: https://github.com/tendermint/kms/pull/63
+[#55]: https://github.com/tendermint/kms/pull/55
