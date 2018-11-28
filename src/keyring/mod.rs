@@ -4,7 +4,7 @@ mod ed25519;
 
 use signatory::ed25519::{PublicKey, Signature};
 use std::{collections::BTreeMap, sync::RwLock};
-use subtle_encoding::{Identity, IDENTITY};
+use subtle_encoding;
 use tendermint::public_keys::ConsensusKey;
 
 use config::provider::ProviderConfig;
@@ -15,7 +15,7 @@ use self::ed25519::yubihsm;
 use self::ed25519::{softsign, Signer};
 
 /// File encoding for software-backed secret keys
-pub const SECRET_KEY_ENCODING: &Identity = IDENTITY;
+pub type SecretKeyEncoding = subtle_encoding::Base64;
 
 lazy_static! {
     static ref GLOBAL_KEYRING: RwLock<KeyRing> = RwLock::new(KeyRing(BTreeMap::default()));

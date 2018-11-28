@@ -17,7 +17,7 @@ use tendermint::{chain, public_keys::SecretConnectionKey};
 
 use config::{ValidatorAddr, ValidatorConfig};
 use error::{KmsError, KmsErrorKind};
-use keyring::SECRET_KEY_ENCODING;
+use keyring::SecretKeyEncoding;
 use session::Session;
 
 /// How long to wait after a crash before respawning (in seconds)
@@ -134,7 +134,7 @@ fn unix_session(chain_id: chain::Id, socket_path: &Path) -> Result<(), KmsError>
 fn load_secret_connection_key(path: &Path) -> Result<ed25519::Seed, KmsError> {
     if path.exists() {
         Ok(
-            ed25519::Seed::decode_from_file(path, SECRET_KEY_ENCODING).map_err(|e| {
+            ed25519::Seed::decode_from_file(path, &SecretKeyEncoding::default()).map_err(|e| {
                 err!(
                     KmsErrorKind::ConfigError,
                     "error loading SecretConnection key from {}: {}",
@@ -145,7 +145,7 @@ fn load_secret_connection_key(path: &Path) -> Result<ed25519::Seed, KmsError> {
         )
     } else {
         let seed = ed25519::Seed::generate();
-        seed.encode_to_file(path, SECRET_KEY_ENCODING)?;
+        seed.encode_to_file(path, &SecretKeyEncoding::default())?;
         Ok(seed)
     }
 }

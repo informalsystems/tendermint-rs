@@ -1,5 +1,5 @@
 use abscissa::Callable;
-use keyring::SECRET_KEY_ENCODING;
+use keyring::SecretKeyEncoding;
 use signatory::{ed25519, Encode};
 use std::{env, process};
 
@@ -21,7 +21,7 @@ impl Callable for KeygenCommand {
         let output_path = &self.output_paths[0];
 
         let seed = ed25519::Seed::generate();
-        seed.encode_to_file(output_path, SECRET_KEY_ENCODING)
+        seed.encode_to_file(output_path, &SecretKeyEncoding::default())
             .unwrap_or_else(|e| {
                 status_err!("couldn't write to {}: {}", output_path, e);
                 process::exit(1);
