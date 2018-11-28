@@ -1,3 +1,9 @@
+## 0.1.2 (2018-11-27)
+
+- Update to subtle-encoding v0.3 (#124)
+- Introduce same validation logic as Tendermint (#110)
+- Remove heartbeat (#105)
+
 ## 0.1.1 (2018-11-20)
 
 - Minor clarifications/fixes (#103)
