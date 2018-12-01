@@ -33,9 +33,12 @@ impl ConsensusKey {
 
 impl Display for ConsensusKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        //Amino prefix for Pubkey
+        let mut key_bytes: Vec<u8> = vec![0x16, 0x24, 0xDE, 0x64, 0x20];
         match self {
             ConsensusKey::Ed25519(ref pk) => {
-                bech32::encode("cosmosvalconspub", pk.as_bytes()).fmt(f)
+                key_bytes.extend(pk.as_bytes());
+                bech32::encode("cosmosvalconspub", &key_bytes).fmt(f)
             }
         }
     }
@@ -91,20 +94,36 @@ impl From<ed25519::PublicKey> for SecretConnectionKey {
 
 #[cfg(test)]
 mod tests {
-    use super::SecretConnectionKey;
+    use super::{ConsensusKey, SecretConnectionKey};
     use subtle_encoding::hex;
 
-    const EXAMPLE_KEY: &str = "F7FEB0B5BA0760B2C58893E329475D1EA81781DD636E37144B6D599AD38AA825";
+    const EXAMPLE_SECRET_CONN_KEY: &str =
+        "F7FEB0B5BA0760B2C58893E329475D1EA81781DD636E37144B6D599AD38AA825";
 
     #[test]
     fn test_address_serialization() {
-        let example_key =
-            SecretConnectionKey::from_raw_ed25519(&hex::decode_upper(EXAMPLE_KEY).unwrap())
-                .unwrap();
+        let example_key = SecretConnectionKey::from_raw_ed25519(
+            &hex::decode_upper(EXAMPLE_SECRET_CONN_KEY).unwrap(),
+        ).unwrap();
 
         assert_eq!(
             example_key.to_string(),
             "117C95C4FD7E636C38D303493302D2C271A39669"
+        );
+    }
+
+    const EXAMPLE_CONSENSUS_KEY: &str =
+        "4A25C6640A1F72B9C975338294EF51B6D1C33158BB6ECBA69FBC3FB5A33C9DCE";
+
+    #[test]
+    fn test_consensus_serialization() {
+        let example_key =
+            ConsensusKey::from_raw_ed25519(&hex::decode_upper(EXAMPLE_CONSENSUS_KEY).unwrap())
+                .unwrap();
+
+        assert_eq!(
+            example_key.to_string(),
+            "cosmosvalconspub1zcjduepqfgjuveq2raetnjt4xwpffm63kmguxv2chdhvhf5lhslmtgeunh8qmf7exk"
         );
     }
 }
