@@ -1,3 +1,7 @@
+## 0.1.3 (2018-12-01)
+
+- Prefix bech32 encoding of consensus keys with amino prefix (#128)
+
 ## 0.1.2 (2018-11-27)
 
 - Update to subtle-encoding v0.3 (#124)
