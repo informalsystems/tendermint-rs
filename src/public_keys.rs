@@ -33,8 +33,8 @@ impl ConsensusKey {
 
 impl Display for ConsensusKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut key_bytes: Vec<u8> = vec![0x16, 0x24, 0xDE, 0x64,0x20];
-
+        //Amino prefix for Pubkey
+        let mut key_bytes: Vec<u8> = vec![0x16, 0x24, 0xDE, 0x64, 0x20];
         match self {
             ConsensusKey::Ed25519(ref pk) => {
                 key_bytes.extend(pk.as_bytes());
