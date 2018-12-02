@@ -25,7 +25,6 @@ impl ConsensusMessage for BlockId {
         if !self.hash.is_empty() && self.hash.len() != SHA256_HASH_SIZE {
             return Err(InvalidHashSize.into());
         }
-        // TODO: is an empty PartsSetHeader really OK here?
         self.parts_header
             .as_ref()
             .map_or(Ok(()), |psh| psh.validate_basic())

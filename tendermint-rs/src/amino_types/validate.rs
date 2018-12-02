@@ -25,8 +25,6 @@ pub enum ValidationErrorKind {
     InvalidHashSize,
     #[fail(display = "negative total")]
     NegativeTotal,
-    #[fail(display = "missing blockId")]
-    MissingBlockId,
 }
 
 impl ToString for ValidationError {
