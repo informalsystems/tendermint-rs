@@ -1,3 +1,7 @@
+## 0.1.4 (2018-12-02)
+
+- Allow empty BlockIds in validation method (#131)
+
 ## 0.1.3 (2018-12-01)
 
 - Prefix bech32 encoding of consensus keys with amino prefix (#128)
