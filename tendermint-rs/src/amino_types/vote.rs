@@ -172,10 +172,10 @@ impl ConsensusMessage for Vote {
         if self.validator_address.len() != VALIDATOR_ADDR_SIZE {
             return Err(InvalidValidatorAddressSize.into());
         }
-        match self.block_id {
-            Some(ref bid) => bid.validate_basic(),
-            None => Err(MissingBlockId.into()),
+        if let Some(ref bid) = self.block_id {
+            return bid.validate_basic();
         }
+        Ok(())
         // signature will be missing as the KMS provides it
     }
 }
