@@ -1,6 +1,6 @@
 # Example KMS configuration file
 #
-# Copy this to 'kms.toml' and edit for your own purposes
+# Copy this to 'tmkms.toml' and edit for your own purposes
 
 [[validator]]
 addr = "tcp://example1.example.com:26658" # or "unix:///path/to/socket"
