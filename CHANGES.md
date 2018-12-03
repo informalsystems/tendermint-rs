@@ -1,3 +1,7 @@
+## [0.2.2] (2018-12-03)
+
+- Allow empty BlockIds in validation method ([#131], [#132])
+
 ## [0.2.1] (2018-11-27)
 
 - Encode node (and softwign) private keys as Base64 ([#127])
@@ -21,6 +25,9 @@
 
 - Initial "preview" release
 
+[0.2.2]: https://github.com/tendermint/kms/pull/134
+[#132]: https://github.com/tendermint/kms/pull/132
+[#131]: https://github.com/tendermint/kms/pull/131
 [0.2.1]: https://github.com/tendermint/kms/pull/126
 [#127]: https://github.com/tendermint/kms/pull/127
 [#121]: https://github.com/tendermint/kms/pull/121
