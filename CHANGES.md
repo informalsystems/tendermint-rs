@@ -1,3 +1,7 @@
+## [0.2.3] (2018-12-08)
+
+- Lower reconnect delay to 1s ([#136])
+
 ## [0.2.2] (2018-12-03)
 
 - Allow empty BlockIds in validation method ([#131], [#132])
@@ -25,6 +29,8 @@
 
 - Initial "preview" release
 
+[0.2.3]: https://github.com/tendermint/kms/pull/137
+[#136]: https://github.com/tendermint/kms/pull/136
 [0.2.2]: https://github.com/tendermint/kms/pull/134
 [#132]: https://github.com/tendermint/kms/pull/132
 [#131]: https://github.com/tendermint/kms/pull/131
