@@ -21,7 +21,7 @@ use keyring::SecretKeyEncoding;
 use session::Session;
 
 /// How long to wait after a crash before respawning (in seconds)
-pub const RESPAWN_DELAY: u64 = 5;
+pub const RESPAWN_DELAY: u64 = 1;
 
 /// Client connections: wraps a thread which makes a connection to a particular
 /// validator node and then receives RPCs.
