@@ -1,4 +1,4 @@
-use error::{KmsError, KmsErrorKind::*};
+use crate::error::{KmsError, KmsErrorKind::*};
 use signatory::{self, ed25519::Signature, Signer as SignerTrait};
 
 /// Wrapper for an Ed25519 signing provider (i.e. trait object)

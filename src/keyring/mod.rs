@@ -7,8 +7,8 @@ use std::{collections::BTreeMap, sync::RwLock};
 use subtle_encoding;
 use tendermint::public_keys::ConsensusKey;
 
-use config::provider::ProviderConfig;
-use error::{KmsError, KmsErrorKind::*};
+use crate::config::provider::ProviderConfig;
+use crate::error::{KmsError, KmsErrorKind::*};
 
 #[cfg(feature = "yubihsm")]
 use self::ed25519::yubihsm;

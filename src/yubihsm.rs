@@ -5,7 +5,7 @@ use std::{
     sync::{Mutex, MutexGuard},
 };
 
-use config::{provider::yubihsm::YubihsmConfig, KmsConfig};
+use crate::config::{provider::yubihsm::YubihsmConfig, KmsConfig};
 
 lazy_static! {
     static ref HSM_CLIENT: Mutex<Client> = Mutex::new(create_hsm_client());

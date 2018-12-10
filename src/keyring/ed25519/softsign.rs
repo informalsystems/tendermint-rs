@@ -6,9 +6,9 @@ use signatory_dalek::Ed25519Signer;
 use subtle_encoding::IDENTITY;
 
 use super::Signer;
-use config::provider::softsign::SoftSignConfig;
-use error::{KmsError, KmsErrorKind::*};
-use keyring::KeyRing;
+use crate::config::provider::softsign::SoftSignConfig;
+use crate::error::{KmsError, KmsErrorKind::*};
+use crate::keyring::KeyRing;
 
 /// Label for ed25519-dalek provider
 // TODO: use a non-string type for these, e.g. an enum

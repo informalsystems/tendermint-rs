@@ -7,7 +7,7 @@ use std::{
     str::{self, FromStr},
 };
 
-use error::{KmsError, KmsErrorKind::*};
+use crate::error::{KmsError, KmsErrorKind::*};
 
 #[derive(Clone, Debug)]
 pub enum ValidatorAddr {

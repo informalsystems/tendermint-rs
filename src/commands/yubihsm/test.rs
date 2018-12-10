@@ -1,9 +1,9 @@
+use crate::yubihsm;
 use abscissa::Callable;
 use std::{
     thread,
     time::{Duration, Instant},
 };
-use yubihsm;
 
 // TODO: figure out rough size of the proposal amino message for testing
 const TEST_MESSAGE: &[u8; 128] = &[0u8; 128];

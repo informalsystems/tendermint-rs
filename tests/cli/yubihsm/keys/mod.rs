@@ -5,7 +5,7 @@ mod import;
 mod list;
 
 pub use super::{KMS_CONFIG_PATH, PRIV_VALIDATOR_CONFIG_PATH};
-use cli;
+use crate::cli;
 
 #[test]
 fn test_usage() {

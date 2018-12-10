@@ -15,10 +15,10 @@ use std::{
 };
 use tendermint::{chain, public_keys::SecretConnectionKey};
 
-use config::{ValidatorAddr, ValidatorConfig};
-use error::{KmsError, KmsErrorKind};
-use keyring::SecretKeyEncoding;
-use session::Session;
+use crate::config::{ValidatorAddr, ValidatorConfig};
+use crate::error::{KmsError, KmsErrorKind};
+use crate::keyring::SecretKeyEncoding;
+use crate::session::Session;
 
 /// How long to wait after a crash before respawning (in seconds)
 pub const RESPAWN_DELAY: u64 = 1;
@@ -112,7 +112,8 @@ fn tcp_session(
         );
 
         session.request_loop()
-    }).unwrap_or_else(|ref e| Err(KmsError::from_panic(e)))
+    })
+    .unwrap_or_else(|ref e| Err(KmsError::from_panic(e)))
 }
 
 /// Create a validator session over a Unix domain socket
@@ -127,7 +128,8 @@ fn unix_session(chain_id: chain::Id, socket_path: &Path) -> Result<(), KmsError>
         );
 
         session.request_loop()
-    }).unwrap_or_else(|ref e| Err(KmsError::from_panic(e)))
+    })
+    .unwrap_or_else(|ref e| Err(KmsError::from_panic(e)))
 }
 
 /// Initialize KMS secret connection private key

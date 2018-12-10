@@ -50,5 +50,5 @@ mod unix_connection;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
 
-pub use application::KmsApplication;
-pub use unix_connection::UnixConnection;
+pub use crate::application::KmsApplication;
+pub use crate::unix_connection::UnixConnection;

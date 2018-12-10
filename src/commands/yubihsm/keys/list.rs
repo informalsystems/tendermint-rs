@@ -1,9 +1,9 @@
 use abscissa::Callable;
 use std::process;
 
+use crate::yubihsm;
 use signatory::ed25519;
 use tendermint::public_keys::ConsensusKey;
-use yubihsm;
 
 /// The `yubihsm keys list` subcommand
 #[derive(Debug, Default, Options)]

@@ -104,7 +104,8 @@ mod tests {
     fn test_address_serialization() {
         let example_key = SecretConnectionKey::from_raw_ed25519(
             &hex::decode_upper(EXAMPLE_SECRET_CONN_KEY).unwrap(),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(
             example_key.to_string(),

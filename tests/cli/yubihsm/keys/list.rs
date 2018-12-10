@@ -1,6 +1,6 @@
 //! Integration tests for the `yubihsm keys list` subcommand
 
-use cli;
+use crate::cli;
 
 #[test]
 fn keys_command_test() {

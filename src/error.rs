@@ -1,7 +1,9 @@
 // Error types
 
+use crate::prost;
+#[cfg(feature = "yubihsm")]
+use crate::yubihsm;
 use abscissa::Error;
-use prost;
 use signatory;
 use std::{
     any::Any,
@@ -11,8 +13,6 @@ use std::{
 };
 use tendermint;
 use tendermint::amino_types::validate::ValidationError as TmValidationError;
-#[cfg(feature = "yubihsm")]
-use yubihsm;
 
 /// Error type
 #[derive(Debug)]
@@ -27,7 +27,8 @@ impl KmsError {
             err!(KmsErrorKind::PanicError, e)
         } else {
             err!(KmsErrorKind::PanicError, "unknown cause")
-        }.into()
+        }
+        .into()
     }
 }
 
@@ -150,7 +151,7 @@ impl From<TmValidationError> for KmsError {
 #[cfg(feature = "yubihsm")]
 impl From<yubihsm::connector::ConnectionError> for KmsError {
     fn from(other: yubihsm::connector::ConnectionError) -> Self {
-        use yubihsm::connector::ConnectionErrorKind;
+        use crate::yubihsm::connector::ConnectionErrorKind;
 
         let kind = match other.kind() {
             ConnectionErrorKind::AddrInvalid => KmsErrorKind::ConfigError,

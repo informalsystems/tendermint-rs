@@ -130,7 +130,8 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 authtext,
                 0,
                 in_out,
-            ).map_err(|_| Error::Crypto)?
+            )
+            .map_err(|_| Error::Crypto)?
             .len();
             Ok(len)
         } else {
@@ -141,7 +142,8 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 authtext,
                 0,
                 &mut in_out,
-            ).map_err(|_| Error::Crypto)?;
+            )
+            .map_err(|_| Error::Crypto)?;
             out[..out0.len()].copy_from_slice(out0);
             Ok(out0.len())
         }
@@ -165,7 +167,8 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
             &[0u8; 0],
             sealed_frame,
             TAG_SIZE,
-        ).map_err(|_| Error::Crypto)?;
+        )
+        .map_err(|_| Error::Crypto)?;
 
         Ok(())
     }

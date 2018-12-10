@@ -7,12 +7,12 @@ use std::io::prelude::*;
 use std::process;
 use std::str;
 
+use crate::yubihsm;
 use abscissa::Callable;
 use signatory::ed25519;
 use signatory::ed25519::Seed;
 use subtle_encoding::base64;
 use tendermint::public_keys::ConsensusKey;
-use yubihsm;
 
 use serde_json::Value;
 
@@ -53,13 +53,15 @@ impl Callable for ImportCommand {
         }
 
         match &self.key_type {
-            Some(ref key_type) => if key_type != DEFAULT_KEY_TYPE {
-                status_err!(
-                    "only supported key type is: ed25519 (given: \"{}\")",
-                    key_type
-                );
-                process::exit(1);
-            },
+            Some(ref key_type) => {
+                if key_type != DEFAULT_KEY_TYPE {
+                    status_err!(
+                        "only supported key type is: ed25519 (given: \"{}\")",
+                        key_type
+                    );
+                    process::exit(1);
+                }
+            }
             None => (),
         }
 
@@ -115,7 +117,8 @@ impl Callable for ImportCommand {
                     );
                     process::exit(1);
                 }),
-            ).unwrap();
+            )
+            .unwrap();
 
             status_ok!(
                 "Imported",

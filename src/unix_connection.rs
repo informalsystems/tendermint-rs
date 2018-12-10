@@ -1,7 +1,7 @@
 use std::io;
 use std::marker::{Send, Sync};
 
-use error::KmsError;
+use crate::error::KmsError;
 
 /// Protocol implementation of the UNIX socket domain connection
 pub struct UnixConnection<IoHandler> {

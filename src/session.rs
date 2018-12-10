@@ -17,12 +17,12 @@ use tendermint::{
     public_keys::SecretConnectionKey,
 };
 
-use error::KmsError;
-use keyring::KeyRing;
-use prost::Message;
-use rpc::{Request, Response, TendermintRequest};
+use crate::error::KmsError;
+use crate::keyring::KeyRing;
+use crate::prost::Message;
+use crate::rpc::{Request, Response, TendermintRequest};
+use crate::unix_connection::UnixConnection;
 use tendermint::SecretConnection;
-use unix_connection::UnixConnection;
 
 /// Encrypted session with a validator node
 pub struct Session<Connection> {
