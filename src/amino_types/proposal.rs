@@ -190,7 +190,8 @@ mod tests {
 
         let _have = SignProposalRequest {
             proposal: Some(proposal),
-        }.encode(&mut got);
+        }
+        .encode(&mut got);
         // test-vector generated via:
         // cdc := amino.NewCodec()
         // privval.RegisterRemoteSignerMsg(cdc)
