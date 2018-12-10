@@ -157,7 +157,8 @@ impl KmsDevice {
             path = "{}"
         "#,
             port, SIGNING_KEY_PATH
-        );
+        )
+        .unwrap();
 
         config_file
     }
@@ -177,7 +178,8 @@ impl KmsDevice {
             path = "{}"
         "#,
             socket_path, SIGNING_KEY_PATH
-        );
+        )
+        .unwrap();
 
         config_file
     }
