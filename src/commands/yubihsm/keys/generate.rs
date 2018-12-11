@@ -34,17 +34,14 @@ impl Callable for GenerateCommand {
             process::exit(1);
         }
 
-        match &self.key_type {
-            Some(ref key_type) => {
-                if key_type != DEFAULT_KEY_TYPE {
-                    status_err!(
-                        "only supported key type is: ed25519 (given: \"{}\")",
-                        key_type
-                    );
-                    process::exit(1);
-                }
+        if let Some(key_type) = self.key_type.as_ref() {
+            if key_type != DEFAULT_KEY_TYPE {
+                status_err!(
+                    "only supported key type is: ed25519 (given: \"{}\")",
+                    key_type
+                );
+                process::exit(1);
             }
-            None => (),
         }
 
         let mut hsm = yubihsm::get_hsm_client();
