@@ -55,7 +55,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     pub fn remote_pubkey(&self) -> SecretConnectionKey {
         self.remote_pubkey
     }
-
+    #[allow(clippy::new_ret_no_self)]
     /// Performs handshake and returns a new authenticated SecretConnection.
     pub fn new(
         mut handler: IoHandler,

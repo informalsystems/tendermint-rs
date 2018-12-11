@@ -12,6 +12,7 @@ impl<IoHandler> UnixConnection<IoHandler>
 where
     IoHandler: io::Read + io::Write + Send + Sync,
 {
+    #[allow(clippy::new_ret_no_self)]
     /// Create a new `UnixConnection` for the given socket
     pub fn new(socket: IoHandler) -> Result<Self, KmsError> {
         Ok(Self { socket })

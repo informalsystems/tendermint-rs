@@ -18,6 +18,7 @@ pub enum Hash {
 }
 
 impl Hash {
+    #[allow(clippy::new_ret_no_self)]
     /// Create a new `Hash` with the given algorithm type
     pub fn new(alg: HashAlgorithm, bytes: &[u8]) -> Result<Hash, Error> {
         match alg {

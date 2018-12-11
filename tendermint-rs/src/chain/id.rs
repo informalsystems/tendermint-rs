@@ -21,6 +21,7 @@ pub const MAX_LENGTH: usize = 50;
 pub struct Id([u8; MAX_LENGTH]);
 
 impl Id {
+    #[allow(clippy::new_ret_no_self)]
     /// Create a new chain ID
     pub fn new(name: &str) -> Result<Self, Error> {
         if name.is_empty() || name.len() > MAX_LENGTH {
