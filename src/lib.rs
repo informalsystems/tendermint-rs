@@ -15,15 +15,12 @@ extern crate prost_amino as prost;
 extern crate abscissa;
 #[macro_use]
 extern crate abscissa_derive;
-extern crate byteorder;
 extern crate bytes;
-extern crate chrono;
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
 #[macro_use]
 extern crate lazy_static;
-extern crate rand;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -50,5 +47,5 @@ mod unix_connection;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
 
-pub use application::KmsApplication;
-pub use unix_connection::UnixConnection;
+pub use crate::application::KmsApplication;
+pub use crate::unix_connection::UnixConnection;

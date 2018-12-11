@@ -1,5 +1,5 @@
+use crate::keyring::SecretKeyEncoding;
 use abscissa::Callable;
-use keyring::SecretKeyEncoding;
 use signatory::{ed25519, Encode};
 use std::{env, process};
 

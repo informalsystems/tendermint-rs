@@ -1,4 +1,4 @@
-use {block, chain, timestamp::Timestamp};
+use crate::{block, chain, timestamp::Timestamp};
 
 /// Information about a particular Tendermint blockchain
 #[derive(Clone, Debug)]

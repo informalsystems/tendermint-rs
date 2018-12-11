@@ -1,6 +1,6 @@
 //! Integration tests for the `yubihsm detect` subcommand
 
-use cli;
+use crate::cli;
 
 #[test]
 fn detect_command_test() {

@@ -15,8 +15,8 @@ extern crate sha2;
 extern crate tendermint;
 extern crate tmkms;
 
+use crate::prost::Message;
 use chrono::{DateTime, Utc};
-use prost::Message;
 use rand::Rng;
 use signatory::{ed25519, encoding::Identity, Decode, Signature};
 use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
@@ -157,7 +157,8 @@ impl KmsDevice {
             path = "{}"
         "#,
             port, SIGNING_KEY_PATH
-        );
+        )
+        .unwrap();
 
         config_file
     }
@@ -177,7 +178,8 @@ impl KmsDevice {
             path = "{}"
         "#,
             socket_path, SIGNING_KEY_PATH
-        );
+        )
+        .unwrap();
 
         config_file
     }
@@ -201,7 +203,7 @@ impl KmsDevice {
             KmsSocket::UNIX(ref sock) => {
                 let socket_cp = sock.try_clone().unwrap();
 
-                KmsConnection::UNIXConnection(UnixConnection::new(socket_cp).unwrap())
+                KmsConnection::UNIXConnection(UnixConnection::new(socket_cp))
             }
         }
     }
@@ -435,7 +437,8 @@ fn test_handle_and_sign_get_publickey() {
 
         PubKeyMsg {
             pub_key_ed25519: vec![],
-        }.encode(&mut buf)
+        }
+        .encode(&mut buf)
         .unwrap();
 
         pt.write_all(&buf).unwrap();

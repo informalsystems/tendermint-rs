@@ -1,7 +1,9 @@
 // Error types
 
+use crate::prost;
+#[cfg(feature = "yubihsm")]
+use crate::yubihsm;
 use abscissa::Error;
-use prost;
 use signatory;
 use std::{
     any::Any,
@@ -11,8 +13,6 @@ use std::{
 };
 use tendermint;
 use tendermint::amino_types::validate::ValidationError as TmValidationError;
-#[cfg(feature = "yubihsm")]
-use yubihsm;
 
 /// Error type
 #[derive(Debug)]
@@ -20,14 +20,15 @@ pub struct KmsError(Error<KmsErrorKind>);
 
 impl KmsError {
     /// Create an error from a panic
-    pub fn from_panic(msg: &Any) -> Self {
+    pub fn from_panic(msg: &dyn Any) -> Self {
         if let Some(e) = msg.downcast_ref::<String>() {
             err!(KmsErrorKind::PanicError, e)
         } else if let Some(e) = msg.downcast_ref::<&str>() {
             err!(KmsErrorKind::PanicError, e)
         } else {
             err!(KmsErrorKind::PanicError, "unknown cause")
-        }.into()
+        }
+        .into()
     }
 }
 
@@ -81,7 +82,7 @@ pub enum KmsErrorKind {
 }
 
 impl Display for KmsError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
     }
 }
@@ -150,7 +151,7 @@ impl From<TmValidationError> for KmsError {
 #[cfg(feature = "yubihsm")]
 impl From<yubihsm::connector::ConnectionError> for KmsError {
     fn from(other: yubihsm::connector::ConnectionError) -> Self {
-        use yubihsm::connector::ConnectionErrorKind;
+        use crate::yubihsm::connector::ConnectionErrorKind;
 
         let kind = match other.kind() {
             ConnectionErrorKind::AddrInvalid => KmsErrorKind::ConfigError,
