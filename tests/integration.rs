@@ -203,7 +203,7 @@ impl KmsDevice {
             KmsSocket::UNIX(ref sock) => {
                 let socket_cp = sock.try_clone().unwrap();
 
-                KmsConnection::UNIXConnection(UnixConnection::new(socket_cp).unwrap())
+                KmsConnection::UNIXConnection(UnixConnection::new(socket_cp))
             }
         }
     }

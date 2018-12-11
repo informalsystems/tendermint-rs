@@ -1,8 +1,6 @@
 use std::io;
 use std::marker::{Send, Sync};
 
-use crate::error::KmsError;
-
 /// Protocol implementation of the UNIX socket domain connection
 pub struct UnixConnection<IoHandler> {
     socket: IoHandler,
@@ -12,10 +10,9 @@ impl<IoHandler> UnixConnection<IoHandler>
 where
     IoHandler: io::Read + io::Write + Send + Sync,
 {
-    #[allow(clippy::new_ret_no_self)]
     /// Create a new `UnixConnection` for the given socket
-    pub fn new(socket: IoHandler) -> Result<Self, KmsError> {
-        Ok(Self { socket })
+    pub fn new(socket: IoHandler) -> Self {
+        Self { socket }
     }
 }
 

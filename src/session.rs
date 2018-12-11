@@ -82,7 +82,7 @@ impl Session<UnixConnection<UnixStream>> {
             socket_path.to_str().unwrap()
         );
 
-        let connection = UnixConnection::new(socket)?;
+        let connection = UnixConnection::new(socket);
 
         Ok(Self {
             chain_id,
