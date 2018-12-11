@@ -9,7 +9,7 @@ use std::{
     str::{self, FromStr},
 };
 
-use error::Error;
+use crate::error::Error;
 
 /// Maximum length of a `chain::Id` name. Matches `MaxChainIDLen` from:
 /// <https://github.com/tendermint/tendermint/blob/develop/types/genesis.go>
@@ -29,7 +29,7 @@ impl Id {
 
         for byte in name.as_bytes() {
             match byte {
-                b'a'...b'z' | b'A'...b'Z' | b'0'...b'9' | b'-' | b'_' => (),
+                b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' => (),
                 _ => return Err(Error::Parse),
             }
         }
@@ -59,13 +59,13 @@ impl AsRef<str> for Id {
 }
 
 impl Debug for Id {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "chain::Id({})", self.as_str())
     }
 }
 
 impl Display for Id {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
     }
 }

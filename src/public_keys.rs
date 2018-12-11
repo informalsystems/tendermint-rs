@@ -1,12 +1,13 @@
 //! Public keys used in Tendermint networks
 // TODO:: account keys
 
-use sha2::{Digest, Sha256};
-use signatory::ed25519;
-use std::fmt::{self, Display};
-use subtle_encoding::bech32;
-
-use error::Error;
+use crate::{
+    error::Error,
+    sha2::{Digest, Sha256},
+    signatory::ed25519,
+    std::fmt::{self, Display},
+    subtle_encoding::bech32,
+};
 
 /// Validator signing keys used for authenticating consensus protocol messages
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
@@ -32,7 +33,7 @@ impl ConsensusKey {
 }
 
 impl Display for ConsensusKey {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         //Amino prefix for Pubkey
         let mut key_bytes: Vec<u8> = vec![0x16, 0x24, 0xDE, 0x64, 0x20];
         match self {
@@ -74,7 +75,7 @@ impl SecretConnectionKey {
 }
 
 impl Display for SecretConnectionKey {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SecretConnectionKey::Ed25519(ref pk) => {
                 for byte in &Sha256::digest(pk.as_bytes())[..20] {

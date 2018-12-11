@@ -5,9 +5,7 @@ use std::{
     str::{self, FromStr},
 };
 
-use algorithm::HashAlgorithm;
-use error::Error;
-use hash::Hash;
+use crate::{algorithm::HashAlgorithm, error::Error, hash::Hash};
 
 /// Block identifiers
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -25,7 +23,7 @@ impl Id {
 
 // TODO: match gaia serialization? e.g `D2F5991B98D708FD2C25AA2BEBED9358F24177DE:1:C37A55FB95E9`
 impl Display for Id {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", &self.hash)
     }
 }

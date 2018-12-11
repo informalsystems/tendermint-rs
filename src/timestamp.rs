@@ -1,11 +1,12 @@
 //! Timestamps used by Tendermint blockchains
 
-use chrono::{DateTime, Utc};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 #[cfg(feature = "tai64")]
-use tai64::TAI64N;
-
-use error::Error;
+use crate::tai64::TAI64N;
+use crate::{
+    chrono::{DateTime, Utc},
+    error::Error,
+    std::time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 /// Chain timestamps (e.g. consensus time)
 #[cfg_attr(feature = "serializers", derive(Serialize, Deserialize))]

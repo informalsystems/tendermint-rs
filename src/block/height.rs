@@ -1,6 +1,7 @@
-use std::fmt::{self, Debug, Display};
-
-use error::Error;
+use crate::{
+    error::Error,
+    std::fmt::{self, Debug, Display},
+};
 
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)
@@ -30,13 +31,13 @@ impl Height {
 }
 
 impl Debug for Height {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "block::Height({})", self.0)
     }
 }
 
 impl Display for Height {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
 }
