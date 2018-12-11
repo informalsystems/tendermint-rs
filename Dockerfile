@@ -38,8 +38,8 @@ ENV PATH "$PATH:/home/developer/.cargo/bin"
 # Install rustup
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
     rustup update && \
-    rustup component add rustfmt-preview && \
-    rustup component add clippy-preview && \
+    rustup component add rustfmt && \
+    rustup component add clippy && \
     cargo install cargo-audit
 
 # Configure Rust environment variables
