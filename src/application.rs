@@ -2,8 +2,7 @@
 
 use abscissa::{self, Application, LoggingConfig};
 
-use crate::commands::KmsCommand;
-use crate::config::KmsConfig;
+use crate::{commands::KmsCommand, config::KmsConfig};
 
 /// The `tmkms` application
 #[derive(Debug)]

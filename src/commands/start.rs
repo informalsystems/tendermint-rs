@@ -1,9 +1,11 @@
 use abscissa::{Callable, GlobalConfig};
 use std::process;
 
-use crate::client::Client;
-use crate::config::{KmsConfig, ValidatorConfig};
-use crate::keyring::KeyRing;
+use crate::{
+    client::Client,
+    config::{KmsConfig, ValidatorConfig},
+    keyring::KeyRing,
+};
 
 /// The `start` command
 #[derive(Debug, Options)]
