@@ -39,7 +39,7 @@ impl<'de> Deserialize<'de> for ValidatorAddr {
 }
 
 impl Display for ValidatorAddr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ValidatorAddr::Tcp { host, port, .. } => write!(f, "tcp://{}:{}", host, port),
             ValidatorAddr::Unix { socket_path } => write!(f, "unix://{}", socket_path.display()),

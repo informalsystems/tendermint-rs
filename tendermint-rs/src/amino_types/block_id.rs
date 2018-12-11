@@ -1,8 +1,10 @@
 use super::validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*};
-use algorithm::HashAlgorithm;
-use block;
-use error::Error;
-use hash::{Hash, SHA256_HASH_SIZE};
+use crate::{
+    algorithm::HashAlgorithm,
+    block,
+    error::Error,
+    hash::{Hash, SHA256_HASH_SIZE},
+};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct BlockId {

@@ -1,6 +1,11 @@
-use bytes::BufMut;
-use prost::{EncodeError, Message};
-use signatory::{ed25519, Signature};
+use crate::{
+    block,
+    bytes::BufMut,
+    chain,
+    error::Error,
+    prost::{EncodeError, Message},
+    signatory::{ed25519, Signature},
+};
 
 use super::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
@@ -9,9 +14,6 @@ use super::{
     time::TimeMsg,
     validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
 };
-use block;
-use chain;
-use error::Error;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
@@ -159,10 +161,12 @@ impl ConsensusMessage for Proposal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use amino_types::block_id::PartsSetHeader;
-    use chrono::{DateTime, Utc};
-    use prost::Message;
-    use std::error::Error;
+    use crate::{
+        amino_types::block_id::PartsSetHeader,
+        chrono::{DateTime, Utc},
+        prost::Message,
+        std::error::Error,
+    };
 
     #[test]
     fn test_serialization() {

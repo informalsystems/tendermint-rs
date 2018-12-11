@@ -1,9 +1,11 @@
 //! Hash functions and their outputs
 
-use algorithm::HashAlgorithm;
-use error::Error;
-use std::fmt::{self, Display};
-use subtle_encoding::{Encoding, Hex};
+use crate::{
+    algorithm::HashAlgorithm,
+    error::Error,
+    std::fmt::{self, Display},
+    subtle_encoding::{Encoding, Hex},
+};
 
 /// Output size for the SHA-256 hash function
 pub const SHA256_HASH_SIZE: usize = 32;
@@ -57,7 +59,7 @@ impl AsRef<[u8]> for Hash {
 }
 
 impl Display for Hash {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let hex = match self {
             Hash::Sha256(ref h) => Hex::upper_case().encode_to_string(h).unwrap(),
         };

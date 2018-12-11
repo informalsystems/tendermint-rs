@@ -37,8 +37,7 @@ impl Into<PubKeyMsg> for PublicKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use prost::Message;
-    use std::error::Error;
+    use crate::{prost::Message, std::error::Error};
 
     #[test]
     fn test_empty_pubkey_msg() {

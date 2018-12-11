@@ -20,7 +20,7 @@ pub struct KmsError(Error<KmsErrorKind>);
 
 impl KmsError {
     /// Create an error from a panic
-    pub fn from_panic(msg: &Any) -> Self {
+    pub fn from_panic(msg: &dyn Any) -> Self {
         if let Some(e) = msg.downcast_ref::<String>() {
             err!(KmsErrorKind::PanicError, e)
         } else if let Some(e) = msg.downcast_ref::<&str>() {
@@ -82,7 +82,7 @@ pub enum KmsErrorKind {
 }
 
 impl Display for KmsError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
     }
 }

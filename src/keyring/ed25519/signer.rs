@@ -10,7 +10,7 @@ pub struct Signer {
     pub key_id: String,
 
     /// Signer trait object
-    provider: Box<SignerTrait<Signature>>,
+    provider: Box<dyn SignerTrait<Signature>>,
 }
 
 impl Signer {
@@ -18,7 +18,7 @@ impl Signer {
     pub fn new(
         provider_name: &'static str,
         key_id: String,
-        provider: Box<SignerTrait<Signature>>,
+        provider: Box<dyn SignerTrait<Signature>>,
     ) -> Self {
         Self {
             provider_name,
