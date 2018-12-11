@@ -15,14 +15,16 @@ use tendermint::{
     amino_types::{PingRequest, PingResponse, PubKeyMsg},
     chain,
     public_keys::SecretConnectionKey,
+    SecretConnection,
 };
 
-use crate::error::KmsError;
-use crate::keyring::KeyRing;
-use crate::prost::Message;
-use crate::rpc::{Request, Response, TendermintRequest};
-use crate::unix_connection::UnixConnection;
-use tendermint::SecretConnection;
+use crate::{
+    error::KmsError,
+    keyring::KeyRing,
+    prost::Message,
+    rpc::{Request, Response, TendermintRequest},
+    unix_connection::UnixConnection,
+};
 
 /// Encrypted session with a validator node
 pub struct Session<Connection> {

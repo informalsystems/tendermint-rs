@@ -1,7 +1,10 @@
 //! Remote Procedure Calls
 
-use crate::prost::encoding::{decode_varint, encoded_len_varint};
-use crate::prost::Message;
+use crate::{
+    prost::encoding::{decode_varint, encoded_len_varint},
+    prost::Message,
+};
+
 use bytes::IntoBuf;
 use sha2::{Digest, Sha256};
 use std::io::Cursor;

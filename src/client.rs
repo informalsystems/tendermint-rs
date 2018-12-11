@@ -15,10 +15,12 @@ use std::{
 };
 use tendermint::{chain, public_keys::SecretConnectionKey};
 
-use crate::config::{ValidatorAddr, ValidatorConfig};
-use crate::error::{KmsError, KmsErrorKind};
-use crate::keyring::SecretKeyEncoding;
-use crate::session::Session;
+use crate::{
+    config::{ValidatorAddr, ValidatorConfig},
+    error::{KmsError, KmsErrorKind},
+    keyring::SecretKeyEncoding,
+    session::Session,
+};
 
 /// How long to wait after a crash before respawning (in seconds)
 pub const RESPAWN_DELAY: u64 = 1;

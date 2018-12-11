@@ -3,9 +3,11 @@
 use signatory::PublicKeyed;
 use signatory_yubihsm::{self, KeyId};
 
-use crate::config::provider::yubihsm::YubihsmConfig;
-use crate::error::{KmsError, KmsErrorKind::*};
-use crate::keyring::{ed25519::Signer, KeyRing};
+use crate::{
+    config::provider::yubihsm::YubihsmConfig,
+    error::{KmsError, KmsErrorKind::*},
+    keyring::{ed25519::Signer, KeyRing},
+};
 
 /// Label for ed25519-dalek provider
 // TODO: use a non-string type for these, e.g. an enum
