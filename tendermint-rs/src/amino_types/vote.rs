@@ -87,7 +87,7 @@ pub struct CanonicalVote {
 
 impl chain::ParseId for CanonicalVote {
     fn parse_chain_id(&self) -> Result<chain::Id, Error> {
-        chain::Id::new(&self.chain_id)
+        self.chain_id.parse()
     }
 }
 
