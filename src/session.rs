@@ -12,7 +12,7 @@ use std::{
     path::Path,
 };
 use tendermint::{
-    amino_types::{PingRequest, PingResponse, PubKeyMsg},
+    amino_types::{PingRequest, PingResponse, PubKeyRequest, PubKeyResponse},
     chain,
     public_keys::SecretConnectionKey,
 };
@@ -149,11 +149,11 @@ where
     }
 
     /// Get the public key for (the only) public key in the keyring
-    fn get_public_key(&mut self, _request: &PubKeyMsg) -> Result<Response, KmsError> {
+    fn get_public_key(&mut self, _request: &PubKeyRequest) -> Result<Response, KmsError> {
         let pubkey = KeyRing::default_pubkey()?;
         let pubkey_bytes = pubkey.as_bytes();
 
-        Ok(Response::PublicKey(PubKeyMsg {
+        Ok(Response::PublicKey(PubKeyResponse {
             pub_key_ed25519: pubkey_bytes.to_vec(),
         }))
     }

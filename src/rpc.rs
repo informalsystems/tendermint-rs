@@ -16,7 +16,7 @@ pub enum Request {
     /// Sign the given message
     SignProposal(SignProposalRequest),
     SignVote(SignVoteRequest),
-    ShowPublicKey(PubKeyMsg),
+    ShowPublicKey(PubKeyRequest),
 
     // PingRequest is a PrivValidatorSocket message to keep the connection alive.
     ReplyPing(PingRequest),
@@ -31,7 +31,7 @@ pub enum Response {
     SignedVote(SignedVoteResponse),
     SignedProposal(SignedProposalResponse),
     Ping(PingResponse),
-    PublicKey(PubKeyMsg),
+    PublicKey(PubKeyResponse),
 }
 
 pub trait TendermintRequest: SignableMsg {
@@ -96,7 +96,7 @@ impl Request {
                 Ok(Request::SignProposal(SignProposalRequest::decode(&rem)?))
             }
             ref pubk if *pubk == *PUBKEY_PREFIX => {
-                Ok(Request::ShowPublicKey(PubKeyMsg::decode(&rem)?))
+                Ok(Request::ShowPublicKey(PubKeyRequest::decode(&rem)?))
             }
             ref ping if *ping == *PING_PREFIX => Ok(Request::ReplyPing(PingRequest::decode(&rem)?)),
             _ => Err(Error::new(

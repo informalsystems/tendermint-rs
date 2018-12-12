@@ -13,8 +13,8 @@ where
     IoHandler: io::Read + io::Write + Send + Sync,
 {
     /// Create a new `UnixConnection` for the given socket
-    pub fn new(socket: IoHandler) -> Result<Self, KmsError> {
-        Ok(Self { socket })
+    pub fn new(socket: IoHandler) -> Self {
+        Self { socket }
     }
 }
 
