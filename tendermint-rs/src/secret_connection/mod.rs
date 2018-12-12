@@ -13,11 +13,16 @@ use self::{
     ring::aead,
     x25519_dalek::{diffie_hellman, generate_public, generate_secret},
 };
-use byteorder::{ByteOrder, LE};
-use bytes::BufMut;
-use prost::{encoding::encode_varint, Message};
-use signatory::{ed25519, Signature, Signer};
-use signatory_dalek::Ed25519Verifier;
+use crate::{
+    amino_types::AuthSigMessage,
+    byteorder::{ByteOrder, LE},
+    bytes::BufMut,
+    error::Error,
+    prost::{encoding::encode_varint, Message},
+    public_keys::SecretConnectionKey,
+    signatory::{ed25519, Signature, Signer},
+    signatory_dalek::Ed25519Verifier,
+};
 use std::{
     cmp,
     io::{self, Read, Write},
@@ -25,9 +30,6 @@ use std::{
 };
 
 pub use self::{kdf::Kdf, nonce::Nonce};
-use amino_types::AuthSigMessage;
-use error::Error;
-use public_keys::SecretConnectionKey;
 
 /// 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: usize = 4;
@@ -53,12 +55,12 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     pub fn remote_pubkey(&self) -> SecretConnectionKey {
         self.remote_pubkey
     }
-
+    #[allow(clippy::new_ret_no_self)]
     /// Performs handshake and returns a new authenticated SecretConnection.
     pub fn new(
         mut handler: IoHandler,
         local_pubkey: &SecretConnectionKey,
-        local_privkey: &Signer<ed25519::Signature>,
+        local_privkey: &dyn Signer<ed25519::Signature>,
     ) -> Result<SecretConnection<IoHandler>, Error> {
         // Generate ephemeral keys for perfect forward secrecy.
         let (local_eph_pubkey, local_eph_privkey) = gen_eph_keys();
@@ -130,7 +132,8 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 authtext,
                 0,
                 in_out,
-            ).map_err(|_| Error::Crypto)?
+            )
+            .map_err(|_| Error::Crypto)?
             .len();
             Ok(len)
         } else {
@@ -141,7 +144,8 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 authtext,
                 0,
                 &mut in_out,
-            ).map_err(|_| Error::Crypto)?;
+            )
+            .map_err(|_| Error::Crypto)?;
             out[..out0.len()].copy_from_slice(out0);
             Ok(out0.len())
         }
@@ -165,7 +169,8 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
             &[0u8; 0],
             sealed_frame,
             TAG_SIZE,
-        ).map_err(|_| Error::Crypto)?;
+        )
+        .map_err(|_| Error::Crypto)?;
 
         Ok(())
     }
@@ -328,7 +333,7 @@ fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
 // Sign the challenge with the local private key
 fn sign_challenge(
     challenge: [u8; 32],
-    local_privkey: &Signer<ed25519::Signature>,
+    local_privkey: &dyn Signer<ed25519::Signature>,
 ) -> Result<ed25519::Signature, Error> {
     ed25519::sign(local_privkey, &challenge).map_err(|_| Error::Crypto)
 }

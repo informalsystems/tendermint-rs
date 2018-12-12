@@ -15,14 +15,16 @@ use tendermint::{
     amino_types::{PingRequest, PingResponse, PubKeyRequest, PubKeyResponse},
     chain,
     public_keys::SecretConnectionKey,
+    SecretConnection,
 };
 
-use error::KmsError;
-use keyring::KeyRing;
-use prost::Message;
-use rpc::{Request, Response, TendermintRequest};
-use tendermint::SecretConnection;
-use unix_connection::UnixConnection;
+use crate::{
+    error::KmsError,
+    keyring::KeyRing,
+    prost::Message,
+    rpc::{Request, Response, TendermintRequest},
+    unix_connection::UnixConnection,
+};
 
 /// Encrypted session with a validator node
 pub struct Session<Connection> {
@@ -80,7 +82,7 @@ impl Session<UnixConnection<UnixStream>> {
             socket_path.to_str().unwrap()
         );
 
-        let connection = UnixConnection::new(socket)?;
+        let connection = UnixConnection::new(socket);
 
         Ok(Self {
             chain_id,

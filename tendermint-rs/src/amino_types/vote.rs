@@ -1,6 +1,11 @@
-use bytes::BufMut;
-use prost::{error::EncodeError, Message};
-use signatory::{ed25519, Signature};
+use crate::{
+    block,
+    bytes::BufMut,
+    chain,
+    error::Error,
+    prost::{error::EncodeError, Message},
+    signatory::{ed25519, Signature},
+};
 
 use super::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
@@ -10,9 +15,6 @@ use super::{
     validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
     SignedMsgType,
 };
-use block;
-use chain;
-use error::Error;
 
 const VALIDATOR_ADDR_SIZE: usize = 20;
 
@@ -85,7 +87,7 @@ pub struct CanonicalVote {
 
 impl chain::ParseId for CanonicalVote {
     fn parse_chain_id(&self) -> Result<chain::Id, Error> {
-        chain::Id::new(&self.chain_id)
+        self.chain_id.parse()
     }
 }
 
@@ -185,9 +187,11 @@ impl ConsensusMessage for Vote {
 mod tests {
     use super::super::PartsSetHeader;
     use super::*;
-    use amino_types::SignedMsgType;
-    use chrono::{DateTime, Utc};
-    use prost::Message;
+    use crate::{
+        amino_types::SignedMsgType,
+        chrono::{DateTime, Utc},
+        prost::Message,
+    };
 
     #[test]
     fn test_vote_serialization() {

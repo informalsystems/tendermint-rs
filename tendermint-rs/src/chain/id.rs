@@ -9,7 +9,7 @@ use std::{
     str::{self, FromStr},
 };
 
-use error::Error;
+use crate::error::Error;
 
 /// Maximum length of a `chain::Id` name. Matches `MaxChainIDLen` from:
 /// <https://github.com/tendermint/tendermint/blob/develop/types/genesis.go>
@@ -21,24 +21,6 @@ pub const MAX_LENGTH: usize = 50;
 pub struct Id([u8; MAX_LENGTH]);
 
 impl Id {
-    /// Create a new chain ID
-    pub fn new(name: &str) -> Result<Self, Error> {
-        if name.is_empty() || name.len() > MAX_LENGTH {
-            return Err(Error::Length);
-        }
-
-        for byte in name.as_bytes() {
-            match byte {
-                b'a'...b'z' | b'A'...b'Z' | b'0'...b'9' | b'-' | b'_' => (),
-                _ => return Err(Error::Parse),
-            }
-        }
-
-        let mut bytes = [0u8; MAX_LENGTH];
-        bytes[..name.as_bytes().len()].copy_from_slice(name.as_bytes());
-        Ok(Id(bytes))
-    }
-
     /// Get the chain ID as a `str`
     pub fn as_str(&self) -> &str {
         let byte_slice = match self.0.as_ref().iter().position(|b| *b == b'\0') {
@@ -59,13 +41,13 @@ impl AsRef<str> for Id {
 }
 
 impl Debug for Id {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "chain::Id({})", self.as_str())
     }
 }
 
 impl Display for Id {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
     }
 }
@@ -78,9 +60,22 @@ impl<'a> From<&'a str> for Id {
 
 impl FromStr for Id {
     type Err = Error;
+    /// Parses string to create a new chain ID
+    fn from_str(name: &str) -> Result<Self, Error> {
+        if name.is_empty() || name.len() > MAX_LENGTH {
+            return Err(Error::Length);
+        }
 
-    fn from_str(s: &str) -> Result<Self, Error> {
-        Self::new(s)
+        for byte in name.as_bytes() {
+            match byte {
+                b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' => (),
+                _ => return Err(Error::Parse),
+            }
+        }
+
+        let mut bytes = [0u8; MAX_LENGTH];
+        bytes[..name.as_bytes().len()].copy_from_slice(name.as_bytes());
+        Ok(Id(bytes))
     }
 }
 
@@ -140,22 +135,22 @@ mod tests {
     #[test]
     fn parses_valid_chain_ids() {
         assert_eq!(
-            Id::new(EXAMPLE_CHAIN_ID).unwrap().as_str(),
+            EXAMPLE_CHAIN_ID.parse::<Id>().unwrap().as_str(),
             EXAMPLE_CHAIN_ID
         );
 
         let long_id = String::from_utf8(vec![b'x'; MAX_LENGTH]).unwrap();
-        assert_eq!(Id::new(&long_id).unwrap().as_str(), &long_id);
+        assert_eq!(&long_id.parse::<Id>().unwrap().as_str(), &long_id);
     }
 
     #[test]
     fn rejects_empty_chain_ids() {
-        assert_eq!(Id::new(""), Err(Error::Length))
+        assert_eq!("".parse::<Id>(), Err(Error::Length))
     }
 
     #[test]
     fn rejects_overlength_chain_ids() {
         let overlong_id = String::from_utf8(vec![b'x'; MAX_LENGTH + 1]).unwrap();
-        assert_eq!(Id::new(&overlong_id), Err(Error::Length))
+        assert_eq!(overlong_id.parse::<Id>(), Err(Error::Length))
     }
 }

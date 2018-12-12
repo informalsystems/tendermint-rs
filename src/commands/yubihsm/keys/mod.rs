@@ -3,8 +3,8 @@ mod help;
 mod import;
 mod list;
 
+use crate::yubihsm;
 use abscissa::Callable;
-use yubihsm;
 
 use self::{
     generate::GenerateCommand, help::HelpCommand, import::ImportCommand, list::ListCommand,

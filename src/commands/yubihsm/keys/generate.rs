@@ -2,9 +2,9 @@ use abscissa::Callable;
 use std::process;
 
 use super::*;
+use crate::yubihsm;
 use signatory::ed25519;
 use tendermint::public_keys::ConsensusKey;
-use yubihsm;
 
 /// The `yubihsm keys generate` subcommand
 #[derive(Debug, Default, Options)]
@@ -34,15 +34,14 @@ impl Callable for GenerateCommand {
             process::exit(1);
         }
 
-        match &self.key_type {
-            Some(ref key_type) => if key_type != DEFAULT_KEY_TYPE {
+        if let Some(key_type) = self.key_type.as_ref() {
+            if key_type != DEFAULT_KEY_TYPE {
                 status_err!(
                     "only supported key type is: ed25519 (given: \"{}\")",
                     key_type
                 );
                 process::exit(1);
-            },
-            None => (),
+            }
         }
 
         let mut hsm = yubihsm::get_hsm_client();
@@ -66,7 +65,8 @@ impl Callable for GenerateCommand {
                 ed25519::PublicKey::from_bytes(hsm.get_pubkey(*key_id).unwrap_or_else(|e| {
                     status_err!("couldn't get public key for key #{}: {}", key_id, e);
                     process::exit(1);
-                })).unwrap();
+                }))
+                .unwrap();
 
             status_ok!(
                 "Generated",

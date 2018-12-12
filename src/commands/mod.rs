@@ -17,7 +17,7 @@ pub use self::yubihsm::YubihsmCommand;
 pub use self::{
     help::HelpCommand, keygen::KeygenCommand, start::StartCommand, version::VersionCommand,
 };
-use config::{KmsConfig, CONFIG_FILE_NAME};
+use crate::config::{KmsConfig, CONFIG_FILE_NAME};
 
 /// Subcommands of the KMS command-line application
 #[derive(Debug, Options)]

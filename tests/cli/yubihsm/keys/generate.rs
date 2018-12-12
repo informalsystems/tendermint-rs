@@ -1,6 +1,6 @@
 //! Integration tests for the `yubihsm keys generate` subcommand
 
-use cli;
+use crate::cli;
 
 #[test]
 fn keys_generate_command_test() {

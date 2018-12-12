@@ -1,12 +1,11 @@
 //! Error types
 
-use chrono;
 #[cfg(feature = "secret-connection")]
-use prost;
-#[cfg(feature = "secret-connection")]
-use signatory;
-use std::{self, io};
-use subtle_encoding;
+use crate::{
+    chrono, prost, signatory,
+    std::{self, io},
+    subtle_encoding,
+};
 
 /// Kinds of errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
