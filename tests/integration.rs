@@ -21,7 +21,7 @@ use rand::Rng;
 use signatory::{ed25519, encoding::Identity, Decode, Signature};
 use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
 use std::io;
-use std::os::unix::net::{UnixStream, UnixListener};
+use std::os::unix::net::{UnixListener, UnixStream};
 use std::{
     io::{Cursor, Read, Write},
     net::{TcpListener, TcpStream},
