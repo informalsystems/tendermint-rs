@@ -432,11 +432,7 @@ fn test_handle_and_sign_get_publickey() {
     ProtocolTester::apply(|mut pt| {
         let mut buf = vec![];
 
-        PubKeyMsg {
-            pub_key_ed25519: vec![],
-        }
-        .encode(&mut buf)
-        .unwrap();
+        PubKeyRequest {}.encode(&mut buf).unwrap();
 
         pt.write_all(&buf).unwrap();
 
@@ -448,7 +444,7 @@ fn test_handle_and_sign_get_publickey() {
         let mut resp = vec![0u8; actual_len as usize];
         resp.copy_from_slice(&resp_buf[..actual_len as usize]);
 
-        let pk_resp = PubKeyMsg::decode(&resp).expect("decoding public key failed");
+        let pk_resp = PubKeyResponse::decode(&resp).expect("decoding public key failed");
         assert_ne!(pk_resp.pub_key_ed25519.len(), 0);
         println!("got public key: {:?}", pk_resp.pub_key_ed25519);
 
