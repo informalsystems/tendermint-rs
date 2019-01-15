@@ -64,7 +64,7 @@ impl Session<UnixConnection<UnixStream>> {
             socket_path.to_str().unwrap()
         );
 
-        let socket = UnixStream::connect(socket_path).unwrap();
+        let socket = UnixStream::connect(socket_path)?;
         let connection = UnixConnection::new(socket);
 
         Ok(Self {
