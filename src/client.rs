@@ -121,10 +121,10 @@ fn tcp_session(
 /// Create a validator session over a Unix domain socket
 fn unix_session(chain_id: chain::Id, socket_path: &Path) -> Result<(), KmsError> {
     panic::catch_unwind(move || {
-        let mut session = Session::accept_unix(chain_id, socket_path)?;
+        let mut session = Session::connect_unix(chain_id, socket_path)?;
 
         info!(
-            "[{}@unix://{}] waiting for a validator connection",
+            "[{}@unix://{}] connected to validator successfully",
             chain_id,
             socket_path.display()
         );

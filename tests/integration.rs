@@ -21,9 +21,7 @@ use rand::Rng;
 use signatory::{ed25519, encoding::Identity, Decode, Signature};
 use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
 use std::io;
-use std::os::unix::net::UnixStream;
-use std::thread;
-use std::time;
+use std::os::unix::net::{UnixStream, UnixListener};
 use std::{
     io::{Cursor, Read, Write},
     net::{TcpListener, TcpStream},
@@ -125,15 +123,14 @@ impl KmsDevice {
         let socket_path = format!("/tmp/tmkms-{}{:06}.sock", letter, number);
         let config = KmsDevice::create_unix_config(&socket_path);
 
-        // Launch KMS process first to avoid a race condition on the socket path
+        // Start listening for connections via the Unix socket
+        let listener = UnixListener::bind(socket_path).unwrap();
+
+        // Fire up the KMS process and allow it to connect to our Unix socket
         let args = &["start", "-c", config.path().to_str().unwrap()];
         let process = Command::new(KMS_EXE_PATH).args(args).spawn().unwrap();
 
-        // TODO(amr): find a better way to wait
-        // Sleep for 1s to give the process a chance to create a UnixListener
-        thread::sleep(time::Duration::from_millis(100));
-
-        let socket = UnixStream::connect(socket_path).unwrap();
+        let (socket, _) = listener.accept().unwrap();
         Self {
             process: process,
             socket: KmsSocket::UNIX(socket),
