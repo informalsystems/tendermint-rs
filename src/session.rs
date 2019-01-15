@@ -4,11 +4,10 @@ use signatory::ed25519;
 use signatory_dalek::Ed25519Signer;
 use std::{
     fmt::Debug,
-    fs,
-    io::{self, Read, Write},
+    io::{Read, Write},
     marker::{Send, Sync},
     net::TcpStream,
-    os::unix::net::{UnixListener, UnixStream},
+    os::unix::net::UnixStream,
     path::Path,
 };
 use tendermint::{
@@ -58,30 +57,14 @@ impl Session<SecretConnection<TcpStream>> {
 }
 
 impl Session<UnixConnection<UnixStream>> {
-    pub fn accept_unix(chain_id: chain::Id, socket_path: &Path) -> Result<Self, KmsError> {
-        // Try to unlink the socket path, shouldn't fail if it doesn't exist
-        if let Err(e) = fs::remove_file(socket_path) {
-            if e.kind() != io::ErrorKind::NotFound {
-                return Err(KmsError::from(e));
-            }
-        }
-
+    pub fn connect_unix(chain_id: chain::Id, socket_path: &Path) -> Result<Self, KmsError> {
         debug!(
-            "{}: Waiting for a connection at {}...",
+            "{}: Connecting to socket at {}...",
             chain_id,
             socket_path.to_str().unwrap()
         );
 
-        let listener = UnixListener::bind(&socket_path)?;
-        let (socket, addr) = listener.accept()?;
-
-        debug!("{}: Accepted connection from {:?}", chain_id, addr);
-        debug!(
-            "{}: Stopped listening on {}",
-            chain_id,
-            socket_path.to_str().unwrap()
-        );
-
+        let socket = UnixStream::connect(socket_path).unwrap();
         let connection = UnixConnection::new(socket);
 
         Ok(Self {
