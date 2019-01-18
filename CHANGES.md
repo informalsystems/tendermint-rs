@@ -1,3 +1,8 @@
+## [0.2.4] (2019-01-18)
+
+- Refactor client/tests to always dial out to tendermint/gaiad ([#149], [#150])
+- Migrate to rust 2018 edition ([#138])
+
 ## [0.2.3] (2018-12-08)
 
 - Lower reconnect delay to 1s ([#136])
@@ -29,6 +34,10 @@
 
 - Initial "preview" release
 
+[0.2.4]: https://github.com/tendermint/kms/pull/156
+[#149]: https://github.com/tendermint/kms/pull/149
+[#150]: https://github.com/tendermint/kms/pull/150
+[#138]: https://github.com/tendermint/kms/pull/138
 [0.2.3]: https://github.com/tendermint/kms/pull/137
 [#136]: https://github.com/tendermint/kms/pull/136
 [0.2.2]: https://github.com/tendermint/kms/pull/134
