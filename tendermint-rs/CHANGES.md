@@ -1,3 +1,12 @@
+## 0.1.5 (2019-01-18)
+
+This release is compatible with tendermint [v0.28]
+
+- Split `PubKeyMsg` into `PubKeyRequest` and `PubKeyResponse` (#141)
+- Migrate to Rust 2018 edition (#138)
+
+[v0.28]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0280
+ 
 ## 0.1.4 (2018-12-02)
 
 - Allow empty BlockIds in validation method (#131)
