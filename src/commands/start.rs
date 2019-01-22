@@ -1,5 +1,7 @@
 use abscissa::{Callable, GlobalConfig};
 use std::process;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use crate::{
     client::Client,
@@ -46,6 +48,7 @@ impl Callable for StartCommand {
 
         // Spawn the validator client threads
         let validator_clients = spawn_validator_clients(&config.validator);
+        let term = Arc::new(AtomicBool::new(false));
 
         // Wait for the validator client threads to exit
         // TODO: Find something more useful for this thread to do
