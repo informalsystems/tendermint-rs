@@ -62,17 +62,15 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
     } = config;
 
     loop {
-        let term = Arc::clone(should_term);
-
         // If we've already received a shutdown signal from outside
-        if term.load(Ordering::Relaxed) {
+        if should_term.load(Ordering::Relaxed) {
             info!("[{}@{}] shutdown request received", chain_id, &addr);
             return;
         }
 
         let session_result = match &addr {
             ValidatorAddr::Tcp { host, port } => match &secret_key {
-                Some(path) => tcp_session(chain_id, host, *port, path, &term),
+                Some(path) => tcp_session(chain_id, host, *port, path, should_term),
                 None => {
                     error!(
                         "config error: missing field `secret_key` for validator {}",
@@ -81,7 +79,7 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
                     return;
                 }
             },
-            ValidatorAddr::Unix { socket_path } => unix_session(chain_id, socket_path, &term),
+            ValidatorAddr::Unix { socket_path } => unix_session(chain_id, socket_path, should_term),
         };
 
         if let Err(e) = session_result {
@@ -96,7 +94,7 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
         } else {
             info!("[{}@{}] session closed gracefully", chain_id, &addr);
             // Indicate to the outer thread it's time to terminate
-            Arc::clone(should_term).swap(true, Ordering::Relaxed);
+            should_term.swap(true, Ordering::Relaxed);
 
             return;
         }
