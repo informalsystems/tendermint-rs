@@ -9,7 +9,7 @@ mod kdf;
 mod nonce;
 
 use self::{
-    rand::OsRng,
+    rand::rngs::OsRng,
     ring::aead,
     x25519_dalek::{EphemeralPublic, EphemeralSecret},
 };
