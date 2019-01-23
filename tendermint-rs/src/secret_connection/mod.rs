@@ -71,7 +71,6 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         let remote_eph_pubkey = share_eph_pubkey(&mut handler, &local_eph_pubkey)?;
 
         // Compute common shared secret.
-        //let shared_secret = diffie_hellman(&local_eph_privkey, &remote_eph_pubkey);
         let shared_secret = EphemeralSecret::diffie_hellman(local_eph_privkey, &remote_eph_pubkey);
 
         // Sort by lexical order.
