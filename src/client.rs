@@ -42,7 +42,7 @@ impl Client {
     /// Spawn a new client, returning a handle so it can be joined
     pub fn spawn(config: ValidatorConfig, should_term: Arc<AtomicBool>) -> Self {
         Self {
-            handle: thread::spawn(move || client_loop(config, should_term)),
+            handle: thread::spawn(move || client_loop(config, &should_term)),
         }
     }
 
@@ -53,7 +53,7 @@ impl Client {
 }
 
 /// Main loop for all clients. Handles reconnecting in the event of an error
-fn client_loop(config: ValidatorConfig, should_term: Arc<AtomicBool>) {
+fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
     let ValidatorConfig {
         addr,
         chain_id,
@@ -62,7 +62,7 @@ fn client_loop(config: ValidatorConfig, should_term: Arc<AtomicBool>) {
     } = config;
 
     loop {
-        let term = Arc::clone(&should_term);
+        let term = Arc::clone(should_term);
 
         // If we've already received a shutdown signal from outside
         if term.load(Ordering::Relaxed) {
@@ -96,7 +96,7 @@ fn client_loop(config: ValidatorConfig, should_term: Arc<AtomicBool>) {
         } else {
             info!("[{}@{}] session closed gracefully", chain_id, &addr);
             // Indicate to the outer thread it's time to terminate
-            Arc::clone(&should_term).swap(true, Ordering::Relaxed);
+            Arc::clone(should_term).swap(true, Ordering::Relaxed);
 
             return;
         }
