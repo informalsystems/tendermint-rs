@@ -23,9 +23,6 @@ pub enum Request {
 
     // PingRequest is a PrivValidatorSocket message to keep the connection alive.
     ReplyPing(PingRequest),
-
-    /// Instruct the KMS to terminate
-    PoisonPill(PoisonPillMsg),
 }
 
 /// Responses from the KMS
@@ -62,7 +59,6 @@ fn compute_prefix(name: &str) -> (Vec<u8>) {
 // pre-compute registered types prefix (this is probably sth. our amino library should
 // provide instead)
 lazy_static! {
-    static ref PP_PREFIX: Vec<u8> = compute_prefix(POISON_PILL_AMINO_NAME);
     static ref VOTE_PREFIX: Vec<u8> = compute_prefix(VOTE_AMINO_NAME);
     static ref PROPOSAL_PREFIX: Vec<u8> = compute_prefix(PROPOSAL_AMINO_NAME);
     static ref PUBKEY_PREFIX: Vec<u8> = compute_prefix(PUBKEY_AMINO_NAME);
@@ -93,7 +89,6 @@ impl Request {
         let total_len = encoded_len_varint(len).checked_add(len as usize).unwrap();
         let rem = buff.get_ref()[..total_len].to_vec();
         match amino_pre {
-            ref pp if *pp == *PP_PREFIX => Ok(Request::PoisonPill(PoisonPillMsg {})),
             ref vt if *vt == *VOTE_PREFIX => Ok(Request::SignVote(SignVoteRequest::decode(&rem)?)),
             ref pr if *pr == *PROPOSAL_PREFIX => {
                 Ok(Request::SignProposal(SignProposalRequest::decode(&rem)?))

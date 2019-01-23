@@ -84,9 +84,6 @@ where
     pub fn request_loop(&mut self, should_term: &Arc<AtomicBool>) -> Result<(), KmsError> {
         debug!("starting handle request loop ... ");
         while self.handle_request(should_term)? {}
-        // Only happens when we received a PoisonPillMsg, so tell the outer
-        // thread to terminate.
-        should_term.swap(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -103,7 +100,6 @@ where
             // non-signable requests:
             Request::ReplyPing(ref req) => self.reply_ping(req),
             Request::ShowPublicKey(ref req) => self.get_public_key(req)?,
-            Request::PoisonPill(_req) => return Ok(false),
         };
 
         let mut buf = vec![];

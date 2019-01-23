@@ -235,8 +235,8 @@ impl ProtocolTester {
 
 impl Drop for ProtocolTester {
     fn drop(&mut self) {
-        self.tcp_device.process.wait().unwrap();
-        self.unix_device.process.wait().unwrap();
+        self.tcp_device.process.kill().unwrap();
+        self.unix_device.process.kill().unwrap();
     }
 }
 
@@ -279,18 +279,6 @@ fn test_key() -> (ed25519::PublicKey, Ed25519Signer) {
     let seed = ed25519::Seed::decode_from_file(SIGNING_KEY_PATH, &Identity::default()).unwrap();
     let signer = Ed25519Signer::from(&seed);
     (signatory::public_key(&signer).unwrap(), signer)
-}
-
-/// Construct and send a poison pill message to stop KMS devices
-fn send_poison_pill(pt: &mut ProtocolTester) {
-    let pill = PoisonPillMsg {};
-    let mut buf = vec![];
-
-    // Use connection to send a message
-    pill.encode(&mut buf).unwrap();
-    pt.write_all(&buf).unwrap();
-
-    println!("sent poison pill");
 }
 
 /// Extract the actual length of an amino message
@@ -354,8 +342,6 @@ fn test_handle_and_sign_proposal() {
         let msg: &[u8] = sign_bytes.as_slice();
 
         ed25519::verify(&verifier, msg, &signature).unwrap();
-
-        send_poison_pill(&mut pt);
     });
 }
 
@@ -422,8 +408,6 @@ fn test_handle_and_sign_vote() {
         let msg: &[u8] = sign_bytes.as_slice();
 
         ed25519::verify(&verifier, msg, &signature).unwrap();
-
-        send_poison_pill(&mut pt);
     });
 }
 
@@ -447,8 +431,6 @@ fn test_handle_and_sign_get_publickey() {
         let pk_resp = PubKeyResponse::decode(&resp).expect("decoding public key failed");
         assert_ne!(pk_resp.pub_key_ed25519.len(), 0);
         println!("got public key: {:?}", pk_resp.pub_key_ed25519);
-
-        send_poison_pill(&mut pt);
     });
 }
 
@@ -467,7 +449,5 @@ fn test_handle_and_sign_ping_pong() {
         let mut resp = vec![0u8; actual_len as usize];
         resp.copy_from_slice(&resp_buf[..actual_len as usize]);
         PingResponse::decode(&resp).expect("decoding ping response failed");
-
-        send_poison_pill(&mut pt);
     });
 }
