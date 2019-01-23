@@ -75,13 +75,14 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         let shared_secret = EphemeralSecret::diffie_hellman(local_eph_privkey, &remote_eph_pubkey);
 
         // Sort by lexical order.
-        let (low_eph_pubkey, _) = sort32(local_eph_pubkey, remote_eph_pubkey);
+        let local_eph_pubkey_bytes = *local_eph_pubkey.as_bytes();
+        let (low_eph_pubkey_bytes, _) = sort32(local_eph_pubkey_bytes, *remote_eph_pubkey.as_bytes());
 
         // Check if the local ephemeral public key
         // was the least, lexicographically sorted.
-        let loc_is_least = local_eph_pubkey == low_eph_pubkey;
+        let loc_is_least = local_eph_pubkey_bytes == low_eph_pubkey_bytes;
 
-        let kdf = Kdf::derive_secrets_and_challenge(&shared_secret, loc_is_least);
+        let kdf = Kdf::derive_secrets_and_challenge(shared_secret.as_bytes(), loc_is_least);
 
         // Construct SecretConnection.
         let mut sc = SecretConnection {
@@ -94,7 +95,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
             send_secret: aead::SealingKey::new(&aead::CHACHA20_POLY1305, &kdf.send_secret)
                 .map_err(|_| Error::Crypto)?,
             remote_pubkey: SecretConnectionKey::from(ed25519::PublicKey::from_bytes(
-                &remote_eph_pubkey,
+                remote_eph_pubkey.as_bytes(),
             )?),
         };
 
@@ -294,7 +295,7 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     // Should still work though.
 
     let mut buf = vec![0; 0];
-    let local_eph_pubkey_vec = &local_eph_pubkey.0.to_bytes();
+    let local_eph_pubkey_vec = local_eph_pubkey.as_bytes();
     // Note: this is not regular protobuf encoding but raw length prefixed amino encoding;
     // amino prefixes with the total length, and the raw bytes array's length, too:
     encode_varint((local_eph_pubkey_vec.len() + 1) as u64, &mut buf); // 33
@@ -319,7 +320,7 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     // of the pub key:
     remote_eph_pubkey_fixed.copy_from_slice(&buf[2..34]);
 
-    Ok(remote_eph_pubkey_fixed)
+    Ok(EphemeralPublic::from(remote_eph_pubkey_fixed))
 }
 
 // Return is of the form lo, hi
