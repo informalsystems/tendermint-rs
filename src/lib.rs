@@ -26,6 +26,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate sha2;
+extern crate signal_hook;
 extern crate signatory;
 extern crate signatory_dalek;
 #[cfg(feature = "yubihsm")]
