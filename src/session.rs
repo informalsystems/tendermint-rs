@@ -9,6 +9,8 @@ use std::{
     net::TcpStream,
     os::unix::net::UnixStream,
     path::Path,
+    sync::atomic::{AtomicBool, Ordering},
+    sync::Arc,
 };
 use tendermint::{
     amino_types::{PingRequest, PingResponse, PubKeyRequest, PubKeyResponse},
@@ -79,9 +81,12 @@ where
     Connection: Read + Write + Sync + Send,
 {
     /// Main request loop
-    pub fn request_loop(&mut self) -> Result<(), KmsError> {
+    pub fn request_loop(&mut self, should_term: Arc<AtomicBool>) -> Result<(), KmsError> {
         debug!("starting handle request loop ... ");
         while self.handle_request()? {}
+        // Only happens when we received a PoisonPillMsg, so tell the outer
+        // thread to terminate.
+        should_term.swap(true, Ordering::Relaxed);
         Ok(())
     }
 

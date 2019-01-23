@@ -7,6 +7,8 @@
 
 use signatory::{ed25519, Decode, Encode};
 use signatory_dalek::Ed25519Signer;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::{
     panic,
     path::Path,
@@ -38,9 +40,9 @@ pub struct Client {
 
 impl Client {
     /// Spawn a new client, returning a handle so it can be joined
-    pub fn spawn(config: ValidatorConfig) -> Self {
+    pub fn spawn(config: ValidatorConfig, should_term: Arc<AtomicBool>) -> Self {
         Self {
-            handle: thread::spawn(move || client_loop(config)),
+            handle: thread::spawn(move || client_loop(config, should_term)),
         }
     }
 
@@ -51,7 +53,7 @@ impl Client {
 }
 
 /// Main loop for all clients. Handles reconnecting in the event of an error
-fn client_loop(config: ValidatorConfig) {
+fn client_loop(config: ValidatorConfig, should_term: Arc<AtomicBool>) {
     let ValidatorConfig {
         addr,
         chain_id,
@@ -60,9 +62,17 @@ fn client_loop(config: ValidatorConfig) {
     } = config;
 
     loop {
+        let term = Arc::clone(&should_term);
+
+        // If we've already received a shutdown signal from outside
+        if term.load(Ordering::Relaxed) {
+            info!("[{}@{}] shutdown request received", chain_id, &addr);
+            return;
+        }
+
         let session_result = match &addr {
             ValidatorAddr::Tcp { host, port } => match &secret_key {
-                Some(path) => tcp_session(chain_id, host, *port, path),
+                Some(path) => tcp_session(chain_id, host, *port, path, term),
                 None => {
                     error!(
                         "config error: missing field `secret_key` for validator {}",
@@ -71,7 +81,7 @@ fn client_loop(config: ValidatorConfig) {
                     return;
                 }
             },
-            ValidatorAddr::Unix { socket_path } => unix_session(chain_id, socket_path),
+            ValidatorAddr::Unix { socket_path } => unix_session(chain_id, socket_path, term),
         };
 
         if let Err(e) = session_result {
@@ -85,6 +95,8 @@ fn client_loop(config: ValidatorConfig) {
             }
         } else {
             info!("[{}@{}] session closed gracefully", chain_id, &addr);
+            // Indicate to the outer thread it's time to terminate
+            Arc::clone(&should_term).swap(true, Ordering::Relaxed);
 
             return;
         }
@@ -97,6 +109,7 @@ fn tcp_session(
     host: &str,
     port: u16,
     secret_key_path: &Path,
+    should_term: Arc<AtomicBool>,
 ) -> Result<(), KmsError> {
     let secret_key = load_secret_connection_key(secret_key_path)?;
 
@@ -113,13 +126,17 @@ fn tcp_session(
             chain_id, host, port
         );
 
-        session.request_loop()
+        session.request_loop(should_term)
     })
     .unwrap_or_else(|ref e| Err(KmsError::from_panic(e)))
 }
 
 /// Create a validator session over a Unix domain socket
-fn unix_session(chain_id: chain::Id, socket_path: &Path) -> Result<(), KmsError> {
+fn unix_session(
+    chain_id: chain::Id,
+    socket_path: &Path,
+    should_term: Arc<AtomicBool>,
+) -> Result<(), KmsError> {
     panic::catch_unwind(move || {
         let mut session = Session::connect_unix(chain_id, socket_path)?;
 
@@ -129,7 +146,7 @@ fn unix_session(chain_id: chain::Id, socket_path: &Path) -> Result<(), KmsError>
             socket_path.display()
         );
 
-        session.request_loop()
+        session.request_loop(should_term)
     })
     .unwrap_or_else(|ref e| Err(KmsError::from_panic(e)))
 }
