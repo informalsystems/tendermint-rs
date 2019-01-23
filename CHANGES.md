@@ -1,4 +1,4 @@
-## 0.1.6 (2019-01-23)
+## 0.2.0 (2019-01-23)
 
 This release is compatible with tendermint [v0.29]
 
