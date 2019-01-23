@@ -94,7 +94,7 @@ where
     fn handle_request(&mut self, should_term: Arc<AtomicBool>) -> Result<bool, KmsError> {
         if should_term.load(Ordering::Relaxed) {
             info!("terminate signal received");
-            return Ok(false)
+            return Ok(false);
         }
         debug!("started handling request ... ");
         let response = match Request::read(&mut self.connection)? {
