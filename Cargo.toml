@@ -36,7 +36,7 @@ signatory = { version = "0.10", features = ["ed25519"] }
 signatory-dalek = "0.10"
 signatory-yubihsm = { version = "0.10", optional = true }
 subtle-encoding = "0.3"
-tendermint = { version = "0.1.5", path = "tendermint-rs" }
+tendermint = { version = "0.2,0", path = "tendermint-rs" }
 
 [dev-dependencies]
 tempfile = "3"

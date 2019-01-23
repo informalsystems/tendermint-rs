@@ -1,3 +1,13 @@
+## 0.2.0 (2019-01-23)
+
+This release is compatible with tendermint [v0.29]
+
+- Update to x25519-dalek v0.4.4 (#158)
+- Consistent ordering of `BlockID` and `Timestamps` in vote and proposal messages (#159)
+- Remove `PoisonPillMsg` previously used to shut-down the kms (#162)
+
+[v0.29]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0290
+
 ## 0.1.5 (2019-01-18)
 
 This release is compatible with tendermint [v0.28]
