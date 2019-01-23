@@ -81,9 +81,9 @@ where
     Connection: Read + Write + Sync + Send,
 {
     /// Main request loop
-    pub fn request_loop(&mut self, should_term: Arc<AtomicBool>) -> Result<(), KmsError> {
+    pub fn request_loop(&mut self, should_term: &Arc<AtomicBool>) -> Result<(), KmsError> {
         debug!("starting handle request loop ... ");
-        while self.handle_request(Arc::clone(&should_term))? {}
+        while self.handle_request(should_term)? {}
         // Only happens when we received a PoisonPillMsg, so tell the outer
         // thread to terminate.
         should_term.swap(true, Ordering::Relaxed);
@@ -91,7 +91,7 @@ where
     }
 
     /// Handle an incoming request from the validator
-    fn handle_request(&mut self, should_term: Arc<AtomicBool>) -> Result<bool, KmsError> {
+    fn handle_request(&mut self, should_term: &Arc<AtomicBool>) -> Result<bool, KmsError> {
         if should_term.load(Ordering::Relaxed) {
             info!("terminate signal received");
             return Ok(false);

@@ -72,7 +72,7 @@ fn client_loop(config: ValidatorConfig, should_term: Arc<AtomicBool>) {
 
         let session_result = match &addr {
             ValidatorAddr::Tcp { host, port } => match &secret_key {
-                Some(path) => tcp_session(chain_id, host, *port, path, term),
+                Some(path) => tcp_session(chain_id, host, *port, path, &term),
                 None => {
                     error!(
                         "config error: missing field `secret_key` for validator {}",
@@ -81,7 +81,7 @@ fn client_loop(config: ValidatorConfig, should_term: Arc<AtomicBool>) {
                     return;
                 }
             },
-            ValidatorAddr::Unix { socket_path } => unix_session(chain_id, socket_path, term),
+            ValidatorAddr::Unix { socket_path } => unix_session(chain_id, socket_path, &term),
         };
 
         if let Err(e) = session_result {
@@ -109,7 +109,7 @@ fn tcp_session(
     host: &str,
     port: u16,
     secret_key_path: &Path,
-    should_term: Arc<AtomicBool>,
+    should_term: &Arc<AtomicBool>,
 ) -> Result<(), KmsError> {
     let secret_key = load_secret_connection_key(secret_key_path)?;
 
@@ -135,7 +135,7 @@ fn tcp_session(
 fn unix_session(
     chain_id: chain::Id,
     socket_path: &Path,
-    should_term: Arc<AtomicBool>,
+    should_term: &Arc<AtomicBool>,
 ) -> Result<(), KmsError> {
     panic::catch_unwind(move || {
         let mut session = Session::connect_unix(chain_id, socket_path)?;
