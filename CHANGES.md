@@ -1,3 +1,8 @@
+## [0.2.5] (2019-01-23)
+
+- Add ability to terminate on SIGTERM or SIGINT ([#161])
+- Remove `PoisonPillMsg` ([#162]) 
+
 ## [0.2.4] (2019-01-18)
 
 - Refactor client/tests to always dial out to tendermint/gaiad ([#149], [#150])
@@ -33,7 +38,9 @@
 ## 0.0.1 (2018-10-16)
 
 - Initial "preview" release
-
+[0.2.5]: https://github.com/tendermint/kms/pull/165
+[#161]: https://github.com/tendermint/kms/pull/161
+[#162]: https://github.com/tendermint/kms/pull/162
 [0.2.4]: https://github.com/tendermint/kms/pull/156
 [#149]: https://github.com/tendermint/kms/pull/149
 [#150]: https://github.com/tendermint/kms/pull/150
