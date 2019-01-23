@@ -867,7 +867,7 @@ dependencies = [
  "signatory-dalek 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle-encoding 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tai64 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "x25519-dalek 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "x25519-dalek 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "zeroize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -974,7 +974,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "x25519-dalek"
-version = "0.4.3"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "clear_on_drop 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1131,6 +1131,6 @@ dependencies = [
 "checksum winapi 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "92c1eb33641e276cfa214a0522acad57be5c56b10cb348b3c5117db75f3ac4b0"
 "checksum winapi-i686-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
 "checksum winapi-x86_64-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
-"checksum x25519-dalek 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "0e9b53c779831864391b38b517d79c80f9e0d3502e40a730ae9faa20970eff6d"
+"checksum x25519-dalek 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "5fe7d2488063901f8d9d5553d83d6d0c19601351a8fb0d9fd88e8ae8b134f7b9"
 "checksum yubihsm 0.19.2 (registry+https://github.com/rust-lang/crates.io-index)" = "8f058a21d99bfcd9b70807137acf5815741563af952d9d227e22b33de3affd2e"
 "checksum zeroize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "d7ddffec9ddef28ba2d6359bcbf0dc6772e62b112bc103dfb1e6fab46cd47c39"
