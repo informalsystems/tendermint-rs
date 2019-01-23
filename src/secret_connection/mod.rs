@@ -76,7 +76,8 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
 
         // Sort by lexical order.
         let local_eph_pubkey_bytes = *local_eph_pubkey.as_bytes();
-        let (low_eph_pubkey_bytes, _) = sort32(local_eph_pubkey_bytes, *remote_eph_pubkey.as_bytes());
+        let (low_eph_pubkey_bytes, _) =
+            sort32(local_eph_pubkey_bytes, *remote_eph_pubkey.as_bytes());
 
         // Check if the local ephemeral public key
         // was the least, lexicographically sorted.
