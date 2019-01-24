@@ -6,7 +6,6 @@
 pub mod block_id;
 pub mod ed25519;
 pub mod ping;
-pub mod poisonpill;
 pub mod proposal;
 pub mod remote_error;
 pub mod secret_connection;
@@ -19,7 +18,6 @@ pub use self::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader, PartsSetHeader},
     ed25519::{PubKeyRequest, PubKeyResponse, AMINO_NAME as PUBKEY_AMINO_NAME},
     ping::{PingRequest, PingResponse, AMINO_NAME as PING_AMINO_NAME},
-    poisonpill::{PoisonPillMsg, AMINO_NAME as POISON_PILL_AMINO_NAME},
     proposal::{SignProposalRequest, SignedProposalResponse, AMINO_NAME as PROPOSAL_AMINO_NAME},
     remote_error::RemoteError,
     secret_connection::AuthSigMessage,

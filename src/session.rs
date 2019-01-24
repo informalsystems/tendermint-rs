@@ -9,6 +9,8 @@ use std::{
     net::TcpStream,
     os::unix::net::UnixStream,
     path::Path,
+    sync::atomic::{AtomicBool, Ordering},
+    sync::Arc,
 };
 use tendermint::{
     amino_types::{PingRequest, PingResponse, PubKeyRequest, PubKeyResponse},
@@ -79,14 +81,18 @@ where
     Connection: Read + Write + Sync + Send,
 {
     /// Main request loop
-    pub fn request_loop(&mut self) -> Result<(), KmsError> {
+    pub fn request_loop(&mut self, should_term: &Arc<AtomicBool>) -> Result<(), KmsError> {
         debug!("starting handle request loop ... ");
-        while self.handle_request()? {}
+        while self.handle_request(should_term)? {}
         Ok(())
     }
 
     /// Handle an incoming request from the validator
-    fn handle_request(&mut self) -> Result<bool, KmsError> {
+    fn handle_request(&mut self, should_term: &Arc<AtomicBool>) -> Result<bool, KmsError> {
+        if should_term.load(Ordering::Relaxed) {
+            info!("terminate signal received");
+            return Ok(false);
+        }
         debug!("started handling request ... ");
         let response = match Request::read(&mut self.connection)? {
             Request::SignProposal(req) => self.sign(req)?,
@@ -94,7 +100,6 @@ where
             // non-signable requests:
             Request::ReplyPing(ref req) => self.reply_ping(req),
             Request::ShowPublicKey(ref req) => self.get_public_key(req)?,
-            Request::PoisonPill(_req) => return Ok(false),
         };
 
         let mut buf = vec![];

@@ -27,9 +27,9 @@ pub struct Vote {
     #[prost(int64)]
     pub round: i64,
     #[prost(message)]
-    pub timestamp: Option<TimeMsg>,
-    #[prost(message)]
     pub block_id: Option<BlockId>,
+    #[prost(message)]
+    pub timestamp: Option<TimeMsg>,
     #[prost(bytes)]
     pub validator_address: Vec<u8>,
     #[prost(int64)]
@@ -78,9 +78,9 @@ pub struct CanonicalVote {
     #[prost(sfixed64)]
     pub round: i64,
     #[prost(message)]
-    pub timestamp: Option<TimeMsg>,
-    #[prost(message)]
     pub block_id: Option<CanonicalBlockId>,
+    #[prost(message)]
+    pub timestamp: Option<TimeMsg>,
     #[prost(string)]
     pub chain_id: String,
 }
@@ -247,10 +247,11 @@ mod tests {
         // fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v",data), " "), ", "))
 
         let want = vec![
-            78, 243, 244, 18, 4, 10, 72, 8, 1, 16, 185, 96, 24, 2, 34, 11, 8, 177, 211, 129, 210,
-            5, 16, 128, 157, 202, 111, 42, 24, 10, 4, 104, 97, 115, 104, 18, 16, 8, 192, 132, 61,
-            18, 10, 112, 97, 114, 116, 115, 95, 104, 97, 115, 104, 50, 20, 163, 178, 204, 221, 113,
-            134, 241, 104, 95, 33, 242, 72, 42, 244, 251, 52, 70, 168, 75, 53, 56, 213, 187, 3,
+            78, 243, 244, 18, 4, 10, 72, 8, 1, 16, 185, 96, 24, 2, 34, 24, 10, 4, 104, 97, 115,
+            104, 18, 16, 8, 192, 132, 61, 18, 10, 112, 97, 114, 116, 115, 95, 104, 97, 115, 104,
+            42, 11, 8, 177, 211, 129, 210, 5, 16, 128, 157, 202, 111, 50, 20, 163, 178, 204, 221,
+            113, 134, 241, 104, 95, 33, 242, 72, 42, 244, 251, 52, 70, 168, 75, 53, 56, 213, 187,
+            3,
         ];
         let svr = SignVoteRequest::decode(got.clone()).unwrap();
         println!("got back: {:?}", svr);
@@ -264,7 +265,7 @@ mod tests {
         // SignBytes are encoded using MarshalBinary and not MarshalBinaryBare
         cv.encode_length_delimited(&mut got).unwrap();
         let want = vec![
-            0xd, 0x22, 0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
+            0xd, 0x2a, 0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
         ];
         assert_eq!(got, want);
 
@@ -285,7 +286,7 @@ mod tests {
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
                 0x19, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
-                0x22, // (field_number << 3) | wire_type
+                0x2a, // (field_number << 3) | wire_type
                 // remaining fields (timestamp):
                 0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
             ];
@@ -310,7 +311,7 @@ mod tests {
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
                 0x19, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
-                0x22, // (field_number << 3) | wire_type
+                0x2a, // (field_number << 3) | wire_type
                 // remaining fields (timestamp):
                 0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
             ];
@@ -332,7 +333,7 @@ mod tests {
                 0x19, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
                 // remaining fields (timestamp):
-                0x22, 0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
+                0x2a, 0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
             ];
             assert_eq!(got, want);
         }
@@ -351,7 +352,7 @@ mod tests {
                 0x19, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
                 // remaining fields:
-                0x22, // (field_number << 3) | wire_type
+                0x2a, // (field_number << 3) | wire_type
                 0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff,
                 0x1,  // timestamp
                 0x32, // (field_number << 3) | wire_type
@@ -413,10 +414,11 @@ mod tests {
     #[test]
     fn test_deserialization() {
         let encoded = vec![
-            78, 243, 244, 18, 4, 10, 72, 8, 1, 16, 185, 96, 24, 2, 34, 11, 8, 177, 211, 129, 210,
-            5, 16, 128, 157, 202, 111, 42, 24, 10, 4, 104, 97, 115, 104, 18, 16, 8, 192, 132, 61,
-            18, 10, 112, 97, 114, 116, 115, 95, 104, 97, 115, 104, 50, 20, 163, 178, 204, 221, 113,
-            134, 241, 104, 95, 33, 242, 72, 42, 244, 251, 52, 70, 168, 75, 53, 56, 213, 187, 3,
+            78, 243, 244, 18, 4, 10, 72, 8, 1, 16, 185, 96, 24, 2, 34, 24, 10, 4, 104, 97, 115,
+            104, 18, 16, 8, 192, 132, 61, 18, 10, 112, 97, 114, 116, 115, 95, 104, 97, 115, 104,
+            42, 11, 8, 177, 211, 129, 210, 5, 16, 128, 157, 202, 111, 50, 20, 163, 178, 204, 221,
+            113, 134, 241, 104, 95, 33, 242, 72, 42, 244, 251, 52, 70, 168, 75, 53, 56, 213, 187,
+            3,
         ];
         let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
         let t = TimeMsg {
