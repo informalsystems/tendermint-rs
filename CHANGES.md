@@ -38,6 +38,7 @@
 ## 0.0.1 (2018-10-16)
 
 - Initial "preview" release
+
 [0.3.0]: https://github.com/tendermint/kms/pull/165
 [#161]: https://github.com/tendermint/kms/pull/161
 [#162]: https://github.com/tendermint/kms/pull/162
