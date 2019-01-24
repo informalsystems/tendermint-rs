@@ -3,11 +3,11 @@ version: 2
 jobs:
   build:
     docker:
-    - image: tendermint/kms:build-2019-01-21-v0 # bump cache keys when modifying this
+    - image: tendermint/kms:build-2019-01-24-v0 # bump cache keys when modifying this
     steps:
     - checkout
     - restore_cache:
-        key: cache-2019-01-21-v0 # bump save_cache key below too
+        key: cache-2019-01-24-v0 # bump save_cache key below too
     - run:
         name: rustfmt
         command: |
@@ -52,7 +52,7 @@ jobs:
         command: |
           TMKMS_BIN=./target/debug/tmkms sh tests/support/run-harness-tests.sh
     - save_cache:
-        key: cache-2019-01-21-v0 # bump restore_cache key above too
+        key: cache-2019-01-24-v0 # bump restore_cache key above too
         paths:
         - "~/.cargo"
         - "./target"
