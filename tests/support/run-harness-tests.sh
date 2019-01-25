@@ -10,10 +10,8 @@ TMKMS_PID=$!
 
 # Run the test harness in the foreground
 ${REMOTE_VAL_HARNESS_BIN} run \
-    --addr tcp://127.0.0.1:61278 \
-    --genesis-file ${TMHOME}/config/genesis.json \
-    --key-file ${TMHOME}/config/priv_validator_key.json \
-    --state-file ${TMHOME}/data/priv_validator_state.json
+    -addr tcp://127.0.0.1:61278 \
+    -tmhome ${TMHOME}
 HARNESS_EXIT_CODE=$?
 
 # Kill the KMS, if it's still running
