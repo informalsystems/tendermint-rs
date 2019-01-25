@@ -10,10 +10,8 @@ TMKMS_PID=$!
 
 # Run the test harness in the foreground
 ${REMOTE_VAL_HARNESS_BIN} run \
-    --addr tcp://127.0.0.1:61278 \
-    --genesis-file ${TMHOME}/config/genesis.json \
-    --key-file ${TMHOME}/config/priv_validator_key.json \
-    --state-file ${TMHOME}/data/priv_validator_state.json
+    -addr tcp://127.0.0.1:61278 \
+    -tmhome ${TMHOME}
 HARNESS_EXIT_CODE=$?
 
 # Kill the KMS, if it's still running
@@ -21,6 +19,16 @@ if ps -p ${TMKMS_PID} > /dev/null
 then
     echo "Killing KMS (pid ${TMKMS_PID})"
     kill ${TMKMS_PID}
+    # Wait a few seconds for KMS to die properly.
+    # NOTE: This also acts as a test of the KMS listening for and properly
+    # responding to the SIGTERM signal from `kill`.
+    sleep 3
+    # Make sure KMS has actually stopped properly now.
+    if ps -p ${TMKMS_PID} > /dev/null
+    then
+        echo "Failed to stop KMS!"
+        exit 100
+    fi
 else
     echo "KMS (pid ${TMKMS_PID}) already stopped, not killing"
 fi
