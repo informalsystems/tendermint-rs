@@ -19,6 +19,16 @@ if ps -p ${TMKMS_PID} > /dev/null
 then
     echo "Killing KMS (pid ${TMKMS_PID})"
     kill ${TMKMS_PID}
+    # Wait a few seconds for KMS to die properly.
+    # NOTE: This also acts as a test of the KMS listening for and properly
+    # responding to the SIGTERM signal from `kill`.
+    sleep 3
+    # Make sure KMS has actually stopped properly now.
+    if ps -p ${TMKMS_PID} > /dev/null
+    then
+        echo "Failed to stop KMS!"
+        exit 100
+    fi
 else
     echo "KMS (pid ${TMKMS_PID}) already stopped, not killing"
 fi
