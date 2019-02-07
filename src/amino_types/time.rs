@@ -1,11 +1,11 @@
 //! Timestamps
 
 use crate::{
-    chrono::{TimeZone, Utc},
     error::Error,
-    std::time::{Duration, SystemTime, UNIX_EPOCH},
     timestamp::{ParseTimestamp, Timestamp},
 };
+use chrono::{TimeZone, Utc};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
 pub struct TimeMsg {

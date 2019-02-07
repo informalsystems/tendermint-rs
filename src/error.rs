@@ -1,7 +1,7 @@
 //! Error types
 
 #[cfg(feature = "secret-connection")]
-use crate::{
+use {
     chrono, prost, signatory,
     std::{self, io},
     subtle_encoding,

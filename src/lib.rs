@@ -5,8 +5,6 @@
 //! This crate provides types for representing information about Tendermint
 //! blockchain networks, including chain IDs, block IDs, and block heights.
 
-#![crate_name = "tendermint"]
-#![crate_type = "rlib"]
 #![deny(
     warnings,
     missing_docs,
@@ -21,12 +19,6 @@
     html_root_url = "https://docs.rs/tendermint/0.2.0"
 )]
 
-#[cfg(feature = "secret-connection")]
-extern crate byteorder;
-extern crate bytes;
-extern crate chrono;
-pub extern crate digest;
-extern crate failure;
 #[macro_use]
 extern crate failure_derive;
 #[cfg(feature = "secret-connection")]
@@ -35,21 +27,8 @@ extern crate prost_amino as prost;
 #[macro_use]
 extern crate prost_amino_derive as prost_derive;
 #[cfg(feature = "serializers")]
-extern crate serde;
-#[cfg(feature = "serializers")]
 #[macro_use]
 extern crate serde_derive;
-#[cfg(feature = "secret-connection")]
-pub extern crate sha2;
-#[cfg(feature = "secret-connection")]
-pub extern crate signatory;
-#[cfg(feature = "secret-connection")]
-extern crate signatory_dalek;
-extern crate subtle_encoding;
-#[cfg(feature = "tai64")]
-extern crate tai64;
-#[cfg(feature = "secret-connection")]
-extern crate zeroize;
 
 pub mod algorithm;
 pub mod amino_types;
