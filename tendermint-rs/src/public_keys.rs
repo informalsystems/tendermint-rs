@@ -1,13 +1,11 @@
 //! Public keys used in Tendermint networks
 // TODO:: account keys
 
-use crate::{
-    error::Error,
-    sha2::{Digest, Sha256},
-    signatory::ed25519,
-    std::fmt::{self, Display},
-    subtle_encoding::bech32,
-};
+use crate::error::Error;
+use sha2::{Digest, Sha256};
+use signatory::ed25519;
+use std::fmt::{self, Display};
+use subtle_encoding::bech32;
 
 /// Validator signing keys used for authenticating consensus protocol messages
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]

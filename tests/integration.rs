@@ -1,30 +1,16 @@
 //! KMS integration test
 
 extern crate prost_amino as prost;
-extern crate rand;
-extern crate signatory;
-
-extern crate signatory_dalek;
-extern crate tempfile;
-
-extern crate byteorder;
-extern crate bytes;
-extern crate chrono;
-extern crate failure;
-extern crate sha2;
-extern crate tendermint;
-extern crate tmkms;
 
 use crate::prost::Message;
 use chrono::{DateTime, Utc};
 use rand::Rng;
 use signatory::{ed25519, encoding::Identity, Decode, Signature};
 use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
-use std::io;
-use std::os::unix::net::{UnixListener, UnixStream};
 use std::{
-    io::{Cursor, Read, Write},
+    io::{self, Cursor, Read, Write},
     net::{TcpListener, TcpStream},
+    os::unix::net::{UnixListener, UnixStream},
     process::{Child, Command},
 };
 use tempfile::NamedTempFile;
@@ -85,7 +71,7 @@ impl io::Read for KmsConnection {
 }
 
 /// Receives incoming KMS connection then sends commands
-struct KmsDevice {
+struct KmsProcess {
     /// KMS child process
     process: Child,
 
@@ -93,13 +79,12 @@ struct KmsDevice {
     socket: KmsSocket,
 }
 
-impl KmsDevice {
+impl KmsProcess {
     /// Spawn the KMS process and wait for an incoming TCP connection
     pub fn create_tcp() -> Self {
         // Generate a random port and a config file
-        let mut rng = rand::thread_rng();
-        let port: u16 = rng.gen_range(60000, 65535);
-        let config = KmsDevice::create_tcp_config(port);
+        let port: u16 = rand::thread_rng().gen_range(60000, 65535);
+        let config = KmsProcess::create_tcp_config(port);
 
         // Listen on a random port
         let listener = TcpListener::bind(format!("{}:{}", "127.0.0.1", port)).unwrap();
@@ -121,7 +106,7 @@ impl KmsDevice {
         let letter: char = rng.gen_range(b'a', b'z') as char;
         let number: u32 = rng.gen_range(0, 999999);
         let socket_path = format!("/tmp/tmkms-{}{:06}.sock", letter, number);
-        let config = KmsDevice::create_unix_config(&socket_path);
+        let config = KmsProcess::create_unix_config(&socket_path);
 
         // Start listening for connections via the Unix socket
         let listener = UnixListener::bind(socket_path).unwrap();
@@ -208,9 +193,9 @@ impl KmsDevice {
 
 /// A struct to hold protocol integration tests contexts
 struct ProtocolTester {
-    tcp_device: KmsDevice,
+    tcp_device: KmsProcess,
     tcp_connection: KmsConnection,
-    unix_device: KmsDevice,
+    unix_device: KmsProcess,
     unix_connection: KmsConnection,
 }
 
@@ -219,9 +204,9 @@ impl ProtocolTester {
     where
         F: FnOnce(ProtocolTester),
     {
-        let tcp_device = KmsDevice::create_tcp();
+        let tcp_device = KmsProcess::create_tcp();
         let tcp_connection = tcp_device.create_connection();
-        let unix_device = KmsDevice::create_unix();
+        let unix_device = KmsProcess::create_unix();
         let unix_connection = unix_device.create_connection();
 
         functor(Self {

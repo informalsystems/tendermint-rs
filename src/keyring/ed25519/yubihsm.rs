@@ -28,7 +28,7 @@ pub fn init(keyring: &mut KeyRing, yubihsm_configs: &[YubihsmConfig]) -> Result<
     }
 
     let yubihsm_config = &yubihsm_configs[0];
-    let connector = signatory_yubihsm::yubihsm::UsbConnector::new(&yubihsm_config.usb_config())?;
+    let connector = signatory_yubihsm::yubihsm::UsbConnector::create(&yubihsm_config.usb_config())?;
     let session = signatory_yubihsm::Session::create(connector, yubihsm_config.auth.credentials())?;
 
     for key_config in &yubihsm_config.keys {

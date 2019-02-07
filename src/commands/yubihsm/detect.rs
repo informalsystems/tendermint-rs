@@ -18,7 +18,7 @@ pub struct DetectCommand {
 impl Callable for DetectCommand {
     /// Detect all YubiHSM2 devices connected via USB
     fn call(&self) {
-        let devices = Devices::new(Default::default()).unwrap_or_else(|e| {
+        let devices = Devices::detect(Default::default()).unwrap_or_else(|e| {
             status_err!("couldn't detect USB devices: {}", e);
 
             // TODO: handle exits via abscissa

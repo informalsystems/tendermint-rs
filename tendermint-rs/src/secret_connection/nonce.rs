@@ -1,4 +1,5 @@
 use byteorder::{ByteOrder, LE};
+use ring::aead;
 
 /// Size of a ChaCha20 nonce
 pub const SIZE: usize = 12;
@@ -23,6 +24,12 @@ impl Nonce {
     #[inline]
     pub fn to_bytes(&self) -> &[u8] {
         &self.0[..]
+    }
+}
+
+impl From<&Nonce> for aead::Nonce {
+    fn from(nonce: &Nonce) -> aead::Nonce {
+        aead::Nonce::assume_unique_for_key(nonce.0)
     }
 }
 

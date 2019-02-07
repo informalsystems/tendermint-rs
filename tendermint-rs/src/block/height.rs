@@ -1,7 +1,5 @@
-use crate::{
-    error::Error,
-    std::fmt::{self, Debug, Display},
-};
+use crate::error::Error;
+use std::fmt::{self, Debug, Display};
 
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)

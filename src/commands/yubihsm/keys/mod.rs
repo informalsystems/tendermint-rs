@@ -17,7 +17,7 @@ pub const DEFAULT_KEY_TYPE: &str = "ed25519";
 pub const DEFAULT_DOMAINS: yubihsm::Domain = yubihsm::Domain::DOM1;
 
 /// Default YubiHSM2 permissions for generated keys
-pub const DEFAULT_CAPABILITIES: yubihsm::Capability = yubihsm::Capability::ASYMMETRIC_SIGN_EDDSA;
+pub const DEFAULT_CAPABILITIES: yubihsm::Capability = yubihsm::Capability::SIGN_EDDSA;
 
 /// The `yubihsm keys` subcommand
 #[derive(Debug, Options)]

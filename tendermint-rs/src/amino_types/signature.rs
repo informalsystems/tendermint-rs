@@ -1,10 +1,8 @@
-use crate::{
-    amino_types::validate::ValidationError,
-    bytes::BufMut,
-    chain,
-    prost::{DecodeError, EncodeError},
-    signatory::ed25519,
-};
+use super::validate::ValidationError;
+use crate::chain;
+use bytes::BufMut;
+use prost::{DecodeError, EncodeError};
+use signatory::ed25519;
 
 /// Amino messages which are signable within a Tendermint network
 pub trait SignableMsg {

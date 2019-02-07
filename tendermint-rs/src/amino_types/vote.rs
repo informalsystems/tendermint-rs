@@ -1,12 +1,3 @@
-use crate::{
-    block,
-    bytes::BufMut,
-    chain,
-    error::Error,
-    prost::{error::EncodeError, Message},
-    signatory::{ed25519, Signature},
-};
-
 use super::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
     remote_error::RemoteError,
@@ -15,6 +6,10 @@ use super::{
     validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
     SignedMsgType,
 };
+use crate::{block, chain, error::Error};
+use bytes::BufMut;
+use prost::{error::EncodeError, Message};
+use signatory::{ed25519, Signature};
 
 const VALIDATOR_ADDR_SIZE: usize = 20;
 
@@ -187,11 +182,9 @@ impl ConsensusMessage for Vote {
 mod tests {
     use super::super::PartsSetHeader;
     use super::*;
-    use crate::{
-        amino_types::SignedMsgType,
-        chrono::{DateTime, Utc},
-        prost::Message,
-    };
+    use crate::amino_types::SignedMsgType;
+    use chrono::{DateTime, Utc};
+    use prost::Message;
 
     #[test]
     fn test_vote_serialization() {
