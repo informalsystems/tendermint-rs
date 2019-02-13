@@ -1,5 +1,6 @@
 //! Tendermint blockchain identifiers
 
+use crate::error::Error;
 #[cfg(feature = "serializers")]
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
@@ -8,8 +9,6 @@ use std::{
     hash::{Hash, Hasher},
     str::{self, FromStr},
 };
-
-use crate::error::Error;
 
 /// Maximum length of a `chain::Id` name. Matches `MaxChainIDLen` from:
 /// <https://github.com/tendermint/tendermint/blob/develop/types/genesis.go>

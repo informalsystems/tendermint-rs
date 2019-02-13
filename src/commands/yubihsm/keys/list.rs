@@ -50,7 +50,7 @@ impl Callable for ListCommand {
         println!("Listing keys in YubiHSM #{}:", serial_number);
 
         for key in &keys {
-            let public_key = hsm.get_pubkey(key.object_id).unwrap_or_else(|e| {
+            let public_key = hsm.get_public_key(key.object_id).unwrap_or_else(|e| {
                 status_err!(
                     "couldn't get public key for asymmetric key #{}: {}",
                     key.object_id,

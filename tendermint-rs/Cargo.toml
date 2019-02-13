@@ -7,6 +7,7 @@ repository = "https://github.com/tendermint/kms/tree/master/crates/tendermint"
 readme     = "README.md"
 categories = ["cryptography", "database"]
 keywords   = ["blockchain", "bft", "consensus", "cosmos", "tendermint"]
+edition    = "2018"
 
 description = """
     Tendermint is a high-performance blockchain consensus engine that powers
@@ -35,12 +36,12 @@ failure_derive = "0.1"
 hkdf = { version = "0.7", optional = true }
 prost-amino = { version = "0.4.0", optional = true }
 prost-amino-derive = { version = "0.4.0", optional = true }
-rand = { version = "0.6", optional = true }
-ring = { version = "0.13", optional = true }
+rand_os = { version = "0.1", optional = true }
+ring = { version = "0.14", optional = true }
 serde = { version = "1", optional = true }
 serde_derive = { version =  "1", optional = true }
-signatory = { version = "0.10", optional = true, features = ["ed25519"] }
-signatory-dalek = { version = "0.10", optional = true }
+signatory = { version = "0.11", optional = true, features = ["ed25519"] }
+signatory-dalek = { version = "0.11", optional = true }
 sha2 = { version = "0.8", optional = true, default-features = false }
 subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
 tai64 = { version = "1", optional = true, features = ["chrono"] }
@@ -54,7 +55,7 @@ secret-connection = [
     "hkdf",
     "prost-amino",
     "prost-amino-derive",
-    "rand",
+    "rand_os",
     "ring",
     "signatory",
     "signatory-dalek",

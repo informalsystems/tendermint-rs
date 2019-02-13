@@ -1,43 +1,31 @@
 //! `SecretConnection`: Transport layer encryption for Tendermint P2P connections.
 
-extern crate hkdf;
-extern crate rand;
-extern crate ring;
-extern crate x25519_dalek;
-
 mod kdf;
 mod nonce;
 
-use self::{
-    rand::rngs::OsRng,
-    ring::aead,
-    x25519_dalek::{EphemeralPublic, EphemeralSecret},
-};
-use crate::{
-    amino_types::AuthSigMessage,
-    byteorder::{ByteOrder, LE},
-    bytes::BufMut,
-    error::Error,
-    prost::{encoding::encode_varint, Message},
-    public_keys::SecretConnectionKey,
-    signatory::{ed25519, Signature, Signer},
-    signatory_dalek::Ed25519Verifier,
-};
+pub use self::{kdf::Kdf, nonce::Nonce};
+use crate::{amino_types::AuthSigMessage, error::Error, public_keys::SecretConnectionKey};
+use byteorder::{ByteOrder, LE};
+use bytes::BufMut;
+use prost::{encoding::encode_varint, Message};
+use rand_os::OsRng;
+use ring::aead;
+use signatory::{ed25519, Signature, Signer};
+use signatory_dalek::Ed25519Verifier;
 use std::{
     cmp,
     io::{self, Read, Write},
     marker::{Send, Sync},
 };
+use x25519_dalek::{EphemeralPublic, EphemeralSecret};
 
-pub use self::{kdf::Kdf, nonce::Nonce};
+/// Size of the MAC tag
+pub const TAG_SIZE: usize = 16;
 
 /// 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: usize = 4;
 const DATA_MAX_SIZE: usize = 1024;
 const TOTAL_FRAME_SIZE: usize = DATA_MAX_SIZE + DATA_LEN_SIZE;
-
-/// Size of the MAC tag
-pub const TAG_SIZE: usize = 16;
 
 /// Encrypted connection between peers in a Tendermint network
 pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
@@ -123,34 +111,28 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     }
 
     /// Unseal (i.e. decrypt) AEAD authenticated data
-    fn open(&self, authtext: &[u8], ciphertext: &[u8], out: &mut [u8]) -> Result<usize, Error> {
+    fn open(&self, ciphertext: &[u8], out: &mut [u8]) -> Result<usize, Error> {
+        let nonce = aead::Nonce::from(&self.recv_nonce);
+        let associated_data = aead::Aad::empty();
+
         // optimize if the provided buffer is sufficiently large
-        if out.len() >= ciphertext.len() {
+        let len = if out.len() >= ciphertext.len() {
             let in_out = &mut out[..ciphertext.len()];
             in_out.copy_from_slice(ciphertext);
-            let len = aead::open_in_place(
-                &self.recv_secret,
-                &self.recv_nonce.to_bytes(),
-                authtext,
-                0,
-                in_out,
-            )
-            .map_err(|_| Error::Crypto)?
-            .len();
-            Ok(len)
+
+            aead::open_in_place(&self.recv_secret, nonce, associated_data, 0, in_out)
+                .map_err(|_| Error::Crypto)?
+                .len()
         } else {
             let mut in_out = ciphertext.to_vec();
-            let out0 = aead::open_in_place(
-                &self.recv_secret,
-                &self.recv_nonce.to_bytes(),
-                authtext,
-                0,
-                &mut in_out,
-            )
-            .map_err(|_| Error::Crypto)?;
+            let out0 =
+                aead::open_in_place(&self.recv_secret, nonce, aead::Aad::empty(), 0, &mut in_out)
+                    .map_err(|_| Error::Crypto)?;
             out[..out0.len()].copy_from_slice(out0);
-            Ok(out0.len())
-        }
+            out0.len()
+        };
+
+        Ok(len)
     }
 
     /// Seal (i.e. encrypt) AEAD authenticated data
@@ -167,8 +149,8 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
 
         aead::seal_in_place(
             &self.send_secret,
-            &self.send_nonce.to_bytes(),
-            &[0u8; 0],
+            aead::Nonce::from(&self.send_nonce),
+            aead::Aad::empty(),
             sealed_frame,
             TAG_SIZE,
         )
@@ -199,15 +181,15 @@ where
 
         // decrypt the frame
         let mut frame = [0u8; TOTAL_FRAME_SIZE];
-        let res = self.open(&[0u8; 0], &sealed_frame, &mut frame);
-        let mut frame_copy = [0u8; TOTAL_FRAME_SIZE];
-        frame_copy.clone_from_slice(&frame);
+        let res = self.open(&sealed_frame, &mut frame);
+
         if res.is_err() {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
                 res.err().unwrap().to_string(),
             ));
         }
+
         self.recv_nonce.increment();
         // end decryption
 
@@ -215,23 +197,24 @@ where
         chunk_length_specifier.clone_from_slice(&frame[..4]);
 
         let chunk_length = LE::read_u32(&chunk_length_specifier);
-        if chunk_length > DATA_MAX_SIZE as u32 {
-            Err(io::Error::new(
+
+        if chunk_length as usize > DATA_MAX_SIZE {
+            return Err(io::Error::new(
                 io::ErrorKind::Other,
                 "chunk_length is greater than dataMaxSize",
-            ))
-        } else {
-            let mut chunk = vec![0; chunk_length as usize];
-            chunk.clone_from_slice(
-                &frame_copy
-                    [DATA_LEN_SIZE..(DATA_LEN_SIZE.checked_add(chunk_length as usize).unwrap())],
-            );
-            let n = cmp::min(data.len(), chunk.len());
-            data[..n].copy_from_slice(&chunk[..n]);
-            self.recv_buffer.copy_from_slice(&chunk[n..]);
-
-            Ok(n)
+            ));
         }
+
+        let mut chunk = vec![0; chunk_length as usize];
+        chunk.clone_from_slice(
+            &frame[DATA_LEN_SIZE..(DATA_LEN_SIZE.checked_add(chunk_length as usize).unwrap())],
+        );
+
+        let n = cmp::min(data.len(), chunk.len());
+        data[..n].copy_from_slice(&chunk[..n]);
+        self.recv_buffer.copy_from_slice(&chunk[n..]);
+
+        Ok(n)
     }
 }
 

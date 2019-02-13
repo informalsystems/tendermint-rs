@@ -66,7 +66,7 @@ prerequisites for support.
 
 You will need the following prerequisites:
 
-- **Rust** (stable; 1.27+): https://rustup.rs/
+- **Rust** (stable; 1.31+): https://rustup.rs/
 - **C compiler**: e.g. gcc, clang
 - **pkg-config**
 - **libusb** (1.0+). Install instructions for common platforms:

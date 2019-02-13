@@ -1,11 +1,8 @@
 //! Hash functions and their outputs
 
-use crate::{
-    algorithm::HashAlgorithm,
-    error::Error,
-    std::fmt::{self, Display},
-    subtle_encoding::{Encoding, Hex},
-};
+use crate::{algorithm::HashAlgorithm, error::Error};
+use std::fmt::{self, Display};
+use subtle_encoding::{Encoding, Hex};
 
 /// Output size for the SHA-256 hash function
 pub const SHA256_HASH_SIZE: usize = 32;

@@ -62,7 +62,7 @@ impl Callable for GenerateCommand {
             }
 
             let public_key =
-                ed25519::PublicKey::from_bytes(hsm.get_pubkey(*key_id).unwrap_or_else(|e| {
+                ed25519::PublicKey::from_bytes(hsm.get_public_key(*key_id).unwrap_or_else(|e| {
                     status_err!("couldn't get public key for key #{}: {}", key_id, e);
                     process::exit(1);
                 }))

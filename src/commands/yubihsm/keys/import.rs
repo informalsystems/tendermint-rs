@@ -109,14 +109,15 @@ impl Callable for ImportCommand {
             }
 
             let public_key = ed25519::PublicKey::from_bytes(
-                hsm.get_pubkey(self.key_id.unwrap()).unwrap_or_else(|e| {
-                    status_err!(
-                        "couldn't get public key for key #{}: {}",
-                        self.key_id.unwrap(),
-                        e
-                    );
-                    process::exit(1);
-                }),
+                hsm.get_public_key(self.key_id.unwrap())
+                    .unwrap_or_else(|e| {
+                        status_err!(
+                            "couldn't get public key for key #{}: {}",
+                            self.key_id.unwrap(),
+                            e
+                        );
+                        process::exit(1);
+                    }),
             )
             .unwrap();
 
