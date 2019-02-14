@@ -98,16 +98,16 @@ where
             Request::SignProposal(req) => {
                 debug!("got sign proposal request");
                 self.sign(req)?
-            },
+            }
             Request::SignVote(req) => {
                 debug!("got sign vote request");
                 self.sign(req)?
-            },
+            }
             // non-signable requests:
             Request::ReplyPing(ref req) => {
                 debug!("got ping request");
                 self.reply_ping(req)
-            },
+            }
             Request::ShowPublicKey(ref req) => {
                 debug!("got pubkey request");
                 self.get_public_key(req)?

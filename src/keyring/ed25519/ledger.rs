@@ -22,7 +22,11 @@ pub fn init(keyring: &mut KeyRing, _ledger_configs: &[LedgerConfig]) -> Result<(
     let provider = Ed25519CosmosAppSigner::connect().unwrap();
     keyring.add(
         provider.public_key().unwrap(),
-        Signer::new(LEDGER_PROVIDER_LABEL, LEDGER_ID.to_owned(), Box::new(provider)),
+        Signer::new(
+            LEDGER_PROVIDER_LABEL,
+            LEDGER_ID.to_owned(),
+            Box::new(provider),
+        ),
     )?;
     Ok(())
 }

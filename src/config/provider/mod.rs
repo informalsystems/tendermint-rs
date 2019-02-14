@@ -1,16 +1,16 @@
+#[cfg(feature = "ledger")]
+pub mod ledger;
 #[cfg(feature = "softsign")]
 pub mod softsign;
 #[cfg(feature = "yubihsm")]
 pub mod yubihsm;
-#[cfg(feature = "ledger")]
-pub mod ledger;
 
+#[cfg(feature = "ledger")]
+use self::ledger::LedgerConfig;
 #[cfg(feature = "softsign")]
 use self::softsign::SoftSignConfig;
 #[cfg(feature = "yubihsm")]
 use self::yubihsm::YubihsmConfig;
-#[cfg(feature = "ledger")]
-use self::ledger::LedgerConfig;
 
 /// Provider configuration
 #[derive(Clone, Deserialize, Debug)]

@@ -29,12 +29,12 @@ extern crate sha2;
 extern crate signal_hook;
 extern crate signatory;
 extern crate signatory_dalek;
+#[cfg(feature = "ledger")]
+extern crate signatory_ledger_cosval;
 #[cfg(feature = "yubihsm")]
 extern crate signatory_yubihsm;
 extern crate subtle_encoding;
 extern crate tendermint;
-#[cfg(feature = "ledger")]
-extern crate signatory_ledger_cosval;
 
 #[macro_use]
 mod error;
@@ -44,13 +44,13 @@ mod client;
 mod commands;
 mod config;
 mod keyring;
+#[cfg(feature = "ledger")]
+mod ledger;
 mod rpc;
 mod session;
 mod unix_connection;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
-#[cfg(feature = "ledger")]
-mod ledger;
 
 pub use crate::application::KmsApplication;
 pub use crate::unix_connection::UnixConnection;

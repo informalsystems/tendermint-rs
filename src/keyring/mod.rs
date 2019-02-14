@@ -12,10 +12,10 @@ use crate::{
     error::{KmsError, KmsErrorKind::*},
 };
 
-#[cfg(feature = "yubihsm")]
-use self::ed25519::yubihsm;
 #[cfg(feature = "ledger")]
 use self::ed25519::ledger;
+#[cfg(feature = "yubihsm")]
+use self::ed25519::yubihsm;
 use self::ed25519::{softsign, Signer};
 
 /// File encoding for software-backed secret keys

@@ -90,8 +90,12 @@ impl Request {
         let rem = buff.get_ref()[..total_len].to_vec();
         match amino_pre {
             ref vt if *vt == *VOTE_PREFIX => Ok(Request::SignVote(SignVoteRequest::decode(&rem)?)),
-            ref pr if *pr == *PROPOSAL_PREFIX => Ok(Request::SignProposal(SignProposalRequest::decode(&rem)?)),
-            ref pubk if *pubk == *PUBKEY_PREFIX => Ok(Request::ShowPublicKey(PubKeyRequest::decode(&rem)?)),
+            ref pr if *pr == *PROPOSAL_PREFIX => {
+                Ok(Request::SignProposal(SignProposalRequest::decode(&rem)?))
+            }
+            ref pubk if *pubk == *PUBKEY_PREFIX => {
+                Ok(Request::ShowPublicKey(PubKeyRequest::decode(&rem)?))
+            }
             ref ping if *ping == *PING_PREFIX => Ok(Request::ReplyPing(PingRequest::decode(&rem)?)),
             _ => Err(Error::new(
                 ErrorKind::InvalidData,
