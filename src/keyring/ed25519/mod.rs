@@ -5,5 +5,7 @@ mod signer;
 pub mod softsign;
 #[cfg(feature = "yubihsm")]
 pub mod yubihsm;
+#[cfg(feature = "ledger")]
+pub mod ledger;
 
 pub use self::signer::Signer;

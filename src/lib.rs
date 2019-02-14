@@ -33,6 +33,8 @@ extern crate signatory_dalek;
 extern crate signatory_yubihsm;
 extern crate subtle_encoding;
 extern crate tendermint;
+#[cfg(feature = "ledger")]
+extern crate signatory_ledger_cosval;
 
 #[macro_use]
 mod error;
@@ -47,6 +49,8 @@ mod session;
 mod unix_connection;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
+#[cfg(feature = "ledger")]
+mod ledger;
 
 pub use crate::application::KmsApplication;
 pub use crate::unix_connection::UnixConnection;

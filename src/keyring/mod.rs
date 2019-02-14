@@ -14,6 +14,8 @@ use crate::{
 
 #[cfg(feature = "yubihsm")]
 use self::ed25519::yubihsm;
+#[cfg(feature = "ledger")]
+use self::ed25519::ledger;
 use self::ed25519::{softsign, Signer};
 
 /// File encoding for software-backed secret keys
@@ -41,6 +43,9 @@ impl KeyRing {
 
         #[cfg(feature = "yubihsm")]
         yubihsm::init(&mut keyring, &config.yubihsm)?;
+
+        #[cfg(feature = "ledger")]
+        ledger::init(&mut keyring, &config.ledger)?;
 
         if keyring.0.is_empty() {
             fail!(ConfigError, "no signing keys configured!")
@@ -106,6 +111,7 @@ impl KeyRing {
                 }
             }
         };
+        debug!("Successfully got signer and now trying to sign message");
 
         signer.sign(msg)
     }

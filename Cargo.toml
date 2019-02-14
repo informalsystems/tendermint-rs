@@ -35,15 +35,23 @@ signal-hook = "0.1.7"
 signatory = { version = "0.11", features = ["ed25519"] }
 signatory-dalek = "0.11"
 signatory-yubihsm = { version = "0.11", optional = true }
+signatory-ledger-cosval = { version = "0.11", optional = true }
 subtle-encoding = "0.3"
 tendermint = { version = "0.2", path = "tendermint-rs" }
+
+[patch.crates-io]
+signatory = { git = "https://github.com/cryptiumlabs/signatory" }
+signatory-dalek = { git = "https://github.com/cryptiumlabs/signatory" }
+signatory-yubihsm = { git = "https://github.com/cryptiumlabs/signatory" }
+signatory-ledger-cosval = { git = "https://github.com/cryptiumlabs/signatory" }
 
 [dev-dependencies]
 tempfile = "3"
 rand = "0.6"
 
 [features]
-default = ["softsign", "yubihsm"]
+default = ["softsign"]
+ledger = ["signatory-ledger-cosval"]
 softsign = []
 yubihsm = ["signatory-yubihsm/usb"] # USB only for now
 yubihsm-mock = ["yubihsm", "signatory-yubihsm/mockhsm"]
