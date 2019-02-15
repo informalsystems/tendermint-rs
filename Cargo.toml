@@ -39,12 +39,6 @@ signatory-ledger-tm = { version = "0.11", optional = true }
 subtle-encoding = "0.3"
 tendermint = { version = "0.2", path = "tendermint-rs" }
 
-[patch.crates-io]
-signatory = { git = "https://github.com/tendermint/signatory.git" }
-signatory-dalek = { git = "https://github.com/tendermint/signatory.git" }
-signatory-yubihsm = { git = "https://github.com/tendermint/signatory.git" }
-signatory-ledger-tm = { git = "https://github.com/tendermint/signatory.git" }
-
 [dev-dependencies]
 tempfile = "3"
 rand = "0.6"

@@ -27,14 +27,14 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate sha2;
 extern crate signal_hook;
-extern crate subtle_encoding;
-extern crate tendermint;
 extern crate signatory;
 extern crate signatory_dalek;
-#[cfg(feature = "yubihsm")]
-extern crate signatory_yubihsm;
 #[cfg(feature = "ledgertm")]
 extern crate signatory_ledger_tm;
+#[cfg(feature = "yubihsm")]
+extern crate signatory_yubihsm;
+extern crate subtle_encoding;
+extern crate tendermint;
 
 #[macro_use]
 mod error;
@@ -44,13 +44,13 @@ mod client;
 mod commands;
 mod config;
 mod keyring;
+#[cfg(feature = "ledgertm")]
+mod ledgertm;
 mod rpc;
 mod session;
 mod unix_connection;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
-#[cfg(feature = "ledgertm")]
-mod ledgertm;
 
 pub use crate::application::KmsApplication;
 pub use crate::unix_connection::UnixConnection;

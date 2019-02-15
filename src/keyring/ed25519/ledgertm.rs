@@ -4,8 +4,8 @@ use signatory::PublicKeyed;
 use signatory_ledger_tm::{self, Ed25519LedgerTmAppSigner};
 
 use crate::{
-    error::KmsError,
     config::provider::ledgertm::LedgerTendermintConfig,
+    error::KmsError,
     keyring::{ed25519::Signer, KeyRing},
 };
 
