@@ -1,16 +1,16 @@
-#[cfg(feature = "ledger")]
-pub mod ledger;
 #[cfg(feature = "softsign")]
 pub mod softsign;
 #[cfg(feature = "yubihsm")]
 pub mod yubihsm;
+#[cfg(feature = "ledgertm")]
+pub mod ledgertm;
 
-#[cfg(feature = "ledger")]
-use self::ledger::LedgerConfig;
 #[cfg(feature = "softsign")]
 use self::softsign::SoftSignConfig;
 #[cfg(feature = "yubihsm")]
 use self::yubihsm::YubihsmConfig;
+#[cfg(feature = "ledgertm")]
+use self::ledgertm::LedgerTendermintConfig;
 
 /// Provider configuration
 #[derive(Clone, Deserialize, Debug)]
@@ -25,7 +25,8 @@ pub struct ProviderConfig {
     #[serde(default)]
     pub yubihsm: Vec<YubihsmConfig>,
 
-    #[cfg(feature = "ledger")]
+    /// Map of ledger-tm labels to their configurations
+    #[cfg(feature = "ledgertm")]
     #[serde(default)]
-    pub ledger: Vec<LedgerConfig>,
+    pub ledgertm: Vec<LedgerTendermintConfig>,
 }
