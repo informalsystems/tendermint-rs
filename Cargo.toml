@@ -51,10 +51,10 @@ rand = "0.6"
 
 [features]
 default = ["softsign"]
-ledger = ["signatory-ledger-tm"]
 softsign = []
 yubihsm = ["signatory-yubihsm/usb"] # USB only for now
 yubihsm-mock = ["yubihsm", "signatory-yubihsm/mockhsm"]
+ledgertm = ["signatory-ledger-tm"]
 
 # Enable integer overflow checks in release builds for security reasons
 [profile.release]

@@ -12,11 +12,11 @@ use crate::{
     error::{KmsError, KmsErrorKind::*},
 };
 
-#[cfg(feature = "ledger")]
-use self::ed25519::ledger;
+use self::ed25519::{softsign, Signer};
 #[cfg(feature = "yubihsm")]
 use self::ed25519::yubihsm;
-use self::ed25519::{softsign, Signer};
+#[cfg(feature = "ledgertm")]
+use self::ed25519::ledgertm;
 
 /// File encoding for software-backed secret keys
 pub type SecretKeyEncoding = subtle_encoding::Base64;
@@ -44,8 +44,8 @@ impl KeyRing {
         #[cfg(feature = "yubihsm")]
         yubihsm::init(&mut keyring, &config.yubihsm)?;
 
-        #[cfg(feature = "ledger")]
-        ledger::init(&mut keyring, &config.ledger)?;
+        #[cfg(feature = "ledgertm")]
+        ledgertm::init(&mut keyring, &config.ledgertm)?;
 
         if keyring.0.is_empty() {
             fail!(ConfigError, "no signing keys configured!")
@@ -111,7 +111,6 @@ impl KeyRing {
                 }
             }
         };
-        debug!("Successfully got signer and now trying to sign message");
 
         signer.sign(msg)
     }

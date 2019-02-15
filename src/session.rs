@@ -95,23 +95,11 @@ where
         }
         debug!("started handling request ... ");
         let response = match Request::read(&mut self.connection)? {
-            Request::SignProposal(req) => {
-                debug!("got sign proposal request");
-                self.sign(req)?
-            }
-            Request::SignVote(req) => {
-                debug!("got sign vote request");
-                self.sign(req)?
-            }
+            Request::SignProposal(req) => self.sign(req)?,
+            Request::SignVote(req) => self.sign(req)?,
             // non-signable requests:
-            Request::ReplyPing(ref req) => {
-                debug!("got ping request");
-                self.reply_ping(req)
-            }
-            Request::ShowPublicKey(ref req) => {
-                debug!("got pubkey request");
-                self.get_public_key(req)?
-            }
+            Request::ReplyPing(ref req) => self.reply_ping(req),
+            Request::ShowPublicKey(ref req) => self.get_public_key(req)?,
         };
 
         let mut buf = vec![];
@@ -130,12 +118,10 @@ where
 
     /// Perform a digital signature operation
     fn sign<T: TendermintRequest + Debug>(&mut self, mut request: T) -> Result<Response, KmsError> {
-        debug!("got sign request");
         request.validate()?;
 
         let mut to_sign = vec![];
         request.sign_bytes(self.chain_id, &mut to_sign)?;
-        debug!("sign_bytes for request: {:?}", to_sign);
 
         // TODO(ismail): figure out which key to use here instead of taking the only key
         // from keyring here:
@@ -154,7 +140,6 @@ where
 
     /// Get the public key for (the only) public key in the keyring
     fn get_public_key(&mut self, _request: &PubKeyRequest) -> Result<Response, KmsError> {
-        debug!("get_public_key request");
         let pubkey = KeyRing::default_pubkey()?;
         let pubkey_bytes = pubkey.as_bytes();
 
