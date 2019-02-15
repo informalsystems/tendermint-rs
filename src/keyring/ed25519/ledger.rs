@@ -1,7 +1,7 @@
 //! Ledger-based signer
 
 use signatory::PublicKeyed;
-use signatory_ledger_cosval::Ed25519CosmosAppSigner;
+use signatory_ledger_tm::Ed25519LedgerTmAppSigner;
 
 use crate::{
     config::provider::ledger::LedgerConfig,
@@ -19,7 +19,7 @@ pub const LEDGER_ID: &str = "1";
 /// Create hardware-backed Ledger signer object from the given configuration
 pub fn init(keyring: &mut KeyRing, _ledger_configs: &[LedgerConfig]) -> Result<(), KmsError> {
     // TODO: Maybe use the active field from the config.
-    let provider = Ed25519CosmosAppSigner::connect().unwrap();
+    let provider = Ed25519LedgerTmAppSigner::connect().unwrap();
     keyring.add(
         provider.public_key().unwrap(),
         Signer::new(
