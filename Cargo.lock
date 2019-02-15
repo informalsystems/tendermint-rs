@@ -821,7 +821,7 @@ dependencies = [
 [[package]]
 name = "signatory"
 version = "0.11.0"
-source = "git+https://github.com/tendermint/signatory.git#6784bbfa691d0122fa650db09d0827d5ff53c03a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "digest 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "generic-array 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -834,31 +834,31 @@ dependencies = [
 [[package]]
 name = "signatory-dalek"
 version = "0.11.0"
-source = "git+https://github.com/tendermint/signatory.git#6784bbfa691d0122fa650db09d0827d5ff53c03a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "digest 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ed25519-dalek 1.0.0-pre.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.11.0 (git+https://github.com/tendermint/signatory.git)",
+ "signatory 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "signatory-ledger-tm"
 version = "0.11.0"
-source = "git+https://github.com/tendermint/signatory.git#6784bbfa691d0122fa650db09d0827d5ff53c03a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ledger-tendermint 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.48 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.11.0 (git+https://github.com/tendermint/signatory.git)",
+ "signatory 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "signatory-yubihsm"
 version = "0.11.0"
-source = "git+https://github.com/tendermint/signatory.git#6784bbfa691d0122fa650db09d0827d5ff53c03a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "signatory 0.11.0 (git+https://github.com/tendermint/signatory.git)",
+ "signatory 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "yubihsm 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -968,12 +968,12 @@ dependencies = [
  "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.11.0 (git+https://github.com/tendermint/signatory.git)",
- "signatory-dalek 0.11.0 (git+https://github.com/tendermint/signatory.git)",
+ "signatory 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory-dalek 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle-encoding 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "tai64 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "x25519-dalek 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "zeroize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "zeroize 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1015,10 +1015,10 @@ dependencies = [
  "serde_json 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "signal-hook 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.11.0 (git+https://github.com/tendermint/signatory.git)",
- "signatory-dalek 0.11.0 (git+https://github.com/tendermint/signatory.git)",
- "signatory-ledger-tm 0.11.0 (git+https://github.com/tendermint/signatory.git)",
- "signatory-yubihsm 0.11.0 (git+https://github.com/tendermint/signatory.git)",
+ "signatory 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory-dalek 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory-ledger-tm 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory-yubihsm 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle-encoding 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "tendermint 0.2.0",
@@ -1235,10 +1235,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum sha2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "9eb6be24e4c23a84d7184280d2722f7f2731fcdd4a9d886efbfe4413e4847ea0"
 "checksum sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7b4d8bfd0e469f417657573d8451fb33d16cfe0989359b93baf3a1ffc639543d"
 "checksum signal-hook 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)" = "1f272d1b7586bec132ed427f532dd418d8beca1ca7f2caf7df35569b1415a4b4"
-"checksum signatory 0.11.0 (git+https://github.com/tendermint/signatory.git)" = "<none>"
-"checksum signatory-dalek 0.11.0 (git+https://github.com/tendermint/signatory.git)" = "<none>"
-"checksum signatory-ledger-tm 0.11.0 (git+https://github.com/tendermint/signatory.git)" = "<none>"
-"checksum signatory-yubihsm 0.11.0 (git+https://github.com/tendermint/signatory.git)" = "<none>"
+"checksum signatory 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b2edc08ebe757a7b45352fa63c75c107fb569cc281779b0db0f8d6a384eaddd8"
+"checksum signatory-dalek 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d9b5ed7678eaeb98cb23e1efdb5e961021b02d3bd9f8bab4d4e30c53ebb3dd50"
+"checksum signatory-ledger-tm 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e2633f1e0a241347d31f2031b6053506dd72d9c5dedf06fe231526f049e4d1ed"
+"checksum signatory-yubihsm 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b494a76142da87e8952f9135ed9a0acf55b93a1b1f504c7a1ab227f84c395ccc"
 "checksum simplelog 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2e95345f185d5adeb8ec93459d2dc99654e294cc6ccf5b75414d8ea262de9a13"
 "checksum spin 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "44363f6f51401c34e7be73db0db371c04705d35efbe9f7d6082e03a921a32c55"
 "checksum subtle 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2d67a5a62ba6e01cb2192ff309324cb4875d0c451d55fe2319433abe7a05a8ee"

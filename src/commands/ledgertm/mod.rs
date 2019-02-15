@@ -5,10 +5,7 @@ use abscissa::Callable;
 mod detect;
 mod help;
 
-pub use self::{
-    detect::DetectCommand,
-    help::HelpCommand
-};
+pub use self::{detect::DetectCommand, help::HelpCommand};
 
 /// The `ledgertm` subcommand
 #[derive(Debug, Options)]

@@ -1,16 +1,16 @@
+#[cfg(feature = "ledgertm")]
+pub mod ledgertm;
 #[cfg(feature = "softsign")]
 pub mod softsign;
 #[cfg(feature = "yubihsm")]
 pub mod yubihsm;
-#[cfg(feature = "ledgertm")]
-pub mod ledgertm;
 
+#[cfg(feature = "ledgertm")]
+use self::ledgertm::LedgerTendermintConfig;
 #[cfg(feature = "softsign")]
 use self::softsign::SoftSignConfig;
 #[cfg(feature = "yubihsm")]
 use self::yubihsm::YubihsmConfig;
-#[cfg(feature = "ledgertm")]
-use self::ledgertm::LedgerTendermintConfig;
 
 /// Provider configuration
 #[derive(Clone, Deserialize, Debug)]
