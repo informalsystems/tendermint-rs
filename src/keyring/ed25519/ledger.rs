@@ -16,7 +16,7 @@ pub const LEDGER_PROVIDER_LABEL: &str = "ledger";
 // TODO: Maybe make this depend on the app. This may not matter since the Ledger doesn't hold multiple keys. Could work with HD deriv path.
 pub const LEDGER_ID: &str = "1";
 
-/// Create hardware-backed YubiHSM signer objects from the given configuration
+/// Create hardware-backed Ledger signer object from the given configuration
 pub fn init(keyring: &mut KeyRing, _ledger_configs: &[LedgerConfig]) -> Result<(), KmsError> {
     // TODO: Maybe use the active field from the config.
     let provider = Ed25519CosmosAppSigner::connect().unwrap();
