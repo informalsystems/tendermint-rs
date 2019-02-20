@@ -14,11 +14,6 @@ mod yubihsm;
 #[cfg(feature = "yubihsm")]
 pub use self::yubihsm::YubihsmCommand;
 
-#[cfg(feature = "ledgertm")]
-mod ledgertm;
-#[cfg(feature = "ledgertm")]
-pub use self::ledgertm::LedgertmCommand;
-
 pub use self::{
     help::HelpCommand, keygen::KeygenCommand, start::StartCommand, version::VersionCommand,
 };
@@ -42,10 +37,6 @@ pub enum KmsCommand {
     #[cfg(feature = "yubihsm")]
     #[options(help = "subcommands for YubiHSM2")]
     Yubihsm(YubihsmCommand),
-
-    #[cfg(feature = "ledgertm")]
-    #[options(help = "subcommands for Ledger Tendermint app")]
-    Ledgertm(LedgertmCommand),
 }
 
 // TODO: refactor abscissa internally so this is all part of the proc macro
@@ -89,8 +80,6 @@ impl Callable for KmsCommand {
             KmsCommand::Version(version) => version.call(),
             #[cfg(feature = "yubihsm")]
             KmsCommand::Yubihsm(yubihsm) => yubihsm.call(),
-            #[cfg(feature = "ledgertm")]
-            KmsCommand::Ledgertm(ledgertm) => ledgertm.call(),
         }
     }
 }

@@ -44,8 +44,6 @@ mod client;
 mod commands;
 mod config;
 mod keyring;
-#[cfg(feature = "ledgertm")]
-mod ledgertm;
 mod rpc;
 mod session;
 mod unix_connection;
