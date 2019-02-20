@@ -12,6 +12,8 @@ use crate::{
     error::{KmsError, KmsErrorKind::*},
 };
 
+#[cfg(feature = "ledgertm")]
+use self::ed25519::ledgertm;
 #[cfg(feature = "yubihsm")]
 use self::ed25519::yubihsm;
 use self::ed25519::{softsign, Signer};
@@ -41,6 +43,9 @@ impl KeyRing {
 
         #[cfg(feature = "yubihsm")]
         yubihsm::init(&mut keyring, &config.yubihsm)?;
+
+        #[cfg(feature = "ledgertm")]
+        ledgertm::init(&mut keyring, &config.ledgertm)?;
 
         if keyring.0.is_empty() {
             fail!(ConfigError, "no signing keys configured!")

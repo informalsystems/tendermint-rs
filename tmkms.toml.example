@@ -17,3 +17,9 @@ adapter = { type = "usb" }
 auth = { key = 1, password = "password" } # Default YubiHSM admin credentials. Change ASAP!
 keys = [{ id = "gaia-9000", key = 1 }]
 #serial_number = "0123456789" # identify serial number of a specific YubiHSM to connect to
+
+[[providers.ledgertm]]
+# note:
+#  - this will enable a ledger signer
+#  - currently no other options are supported and
+#  - the key_id used by signatory internally will be "ledgertm" by default

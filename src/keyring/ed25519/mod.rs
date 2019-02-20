@@ -1,5 +1,7 @@
 pub use signatory::ed25519::{PublicKey, Seed, PUBLIC_KEY_SIZE};
 
+#[cfg(feature = "ledgertm")]
+pub mod ledgertm;
 mod signer;
 #[cfg(feature = "softsign")]
 pub mod softsign;

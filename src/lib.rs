@@ -29,6 +29,8 @@ extern crate sha2;
 extern crate signal_hook;
 extern crate signatory;
 extern crate signatory_dalek;
+#[cfg(feature = "ledgertm")]
+extern crate signatory_ledger_tm;
 #[cfg(feature = "yubihsm")]
 extern crate signatory_yubihsm;
 extern crate subtle_encoding;

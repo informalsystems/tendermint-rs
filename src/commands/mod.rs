@@ -11,9 +11,9 @@ mod start;
 mod version;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
-
 #[cfg(feature = "yubihsm")]
 pub use self::yubihsm::YubihsmCommand;
+
 pub use self::{
     help::HelpCommand, keygen::KeygenCommand, start::StartCommand, version::VersionCommand,
 };
