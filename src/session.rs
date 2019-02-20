@@ -27,6 +27,8 @@ use crate::{
     unix_connection::UnixConnection,
 };
 
+use std::time::Instant;
+
 /// Encrypted session with a validator node
 pub struct Session<Connection> {
     /// Chain ID for this session
@@ -89,30 +91,88 @@ where
 
     /// Handle an incoming request from the validator
     fn handle_request(&mut self, should_term: &Arc<AtomicBool>) -> Result<bool, KmsError> {
+        let start = Instant::now();
         if should_term.load(Ordering::Relaxed) {
             info!("terminate signal received");
             return Ok(false);
         }
         debug!("started handling request ... ");
         let response = match Request::read(&mut self.connection)? {
-            Request::SignProposal(req) => self.sign(req)?,
-            Request::SignVote(req) => self.sign(req)?,
+            Request::SignProposal(req) => {
+                debug!("SignProposal Request");
+                let start = Instant::now();
+                let res = self.sign(req)?;
+                let end = start.elapsed().as_millis();
+                debug!("SignProposal Request Time: {}", end);
+                res
+            },
+            Request::SignVote(req) => {
+                debug!("SignVote Request");
+                let start = Instant::now();
+                let res = self.sign(req)?;
+                let end = start.elapsed().as_millis();
+                debug!("SignVote Request Time: {}", end);
+                res
+            },
             // non-signable requests:
-            Request::ReplyPing(ref req) => self.reply_ping(req),
-            Request::ShowPublicKey(ref req) => self.get_public_key(req)?,
+            Request::ReplyPing(ref req) => {
+                debug!("ReplyPing Request");
+                let start = Instant::now();
+                let res = self.reply_ping(req);
+                let end = start.elapsed().as_millis();
+                debug!("ReplyPing Request Time: {}", end);
+                res
+            },
+            Request::ShowPublicKey(ref req) => {
+                debug!("ShowPublicKey Request");
+                let start = Instant::now();
+                let res = self.get_public_key(req)?;
+                let end = start.elapsed().as_millis();
+                debug!("ShowPublicKey Request Time: {}", end);
+                res
+            },
         };
 
         let mut buf = vec![];
 
         match response {
-            Response::SignedProposal(sp) => sp.encode(&mut buf)?,
-            Response::SignedVote(sv) => sv.encode(&mut buf)?,
-            Response::Ping(ping) => ping.encode(&mut buf)?,
-            Response::PublicKey(pk) => pk.encode(&mut buf)?,
+            Response::SignedProposal(sp) => {
+                debug!("Encode SignedProposal");
+                let start = Instant::now();
+                let res = sp.encode(&mut buf)?;
+                let end = start.elapsed().as_millis();
+                debug!("Encode SignedProposal Time: {}", end);
+                res
+            },
+            Response::SignedVote(sv) => {
+                debug!("Encode SignedVote");
+                let start = Instant::now();
+                let res = sv.encode(&mut buf)?;
+                let end = start.elapsed().as_millis();
+                debug!("Encode SignedVote Time: {}", end);
+                res
+            },
+            Response::Ping(ping) => {
+                debug!("Encode Ping");
+                let start = Instant::now();
+                let res = ping.encode(&mut buf)?;
+                let end = start.elapsed().as_millis();
+                debug!("Encode Ping Time: {}", end);
+                res
+            },
+            Response::PublicKey(pk) => {
+                debug!("Encode PublicKey");
+                let start = Instant::now();
+                let res = pk.encode(&mut buf)?;
+                let end = start.elapsed().as_millis();
+                debug!("Encode PublicKey Time: {}", end);
+                res
+            },
         }
 
         self.connection.write_all(&buf)?;
-        debug!("... success handling request");
+        let end = start.elapsed().as_millis();
+        debug!("... success handling request in: {}", end);
         Ok(true)
     }
 
@@ -125,7 +185,10 @@ where
 
         // TODO(ismail): figure out which key to use here instead of taking the only key
         // from keyring here:
+        let start_sign = Instant::now();
         let sig = KeyRing::sign(None, &to_sign)?;
+        let stop_sign = start_sign.elapsed().as_millis();
+        debug!("Time to raw sign: {}", stop_sign);
 
         request.set_signature(&sig);
         debug!("successfully signed request:\n {:?}", request);
