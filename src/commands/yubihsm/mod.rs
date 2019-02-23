@@ -5,9 +5,13 @@ use abscissa::Callable;
 mod detect;
 mod help;
 mod keys;
+mod setup;
 mod test;
 
-pub use self::{detect::DetectCommand, help::HelpCommand, keys::KeysCommand, test::TestCommand};
+pub use self::{
+    detect::DetectCommand, help::HelpCommand, keys::KeysCommand, setup::SetupCommand,
+    test::TestCommand,
+};
 
 /// The `yubihsm` subcommand
 #[derive(Debug, Options)]
@@ -20,6 +24,9 @@ pub enum YubihsmCommand {
 
     #[options(help = "key management subcommands")]
     Keys(KeysCommand),
+
+    #[options(help = "initial device setup and configuration")]
+    Setup(SetupCommand),
 
     #[options(help = "perform a signing test")]
     Test(TestCommand),
@@ -36,6 +43,7 @@ impl Callable for YubihsmCommand {
             YubihsmCommand::Detect(detect) => detect.call(),
             YubihsmCommand::Help(help) => help.call(),
             YubihsmCommand::Keys(keys) => keys.call(),
+            YubihsmCommand::Setup(setup) => setup.call(),
             YubihsmCommand::Test(test) => test.call(),
         }
     }
@@ -44,8 +52,9 @@ impl Callable for YubihsmCommand {
 impl YubihsmCommand {
     pub(super) fn config_path(&self) -> Option<&str> {
         match self {
-            YubihsmCommand::Detect(detect) => detect.config.as_ref().map(|s| s.as_ref()),
             YubihsmCommand::Keys(keys) => keys.config_path(),
+            YubihsmCommand::Setup(setup) => setup.config.as_ref().map(|s| s.as_ref()),
+            YubihsmCommand::Test(test) => test.config.as_ref().map(|s| s.as_ref()),
             _ => None,
         }
     }
@@ -53,6 +62,7 @@ impl YubihsmCommand {
     pub(super) fn verbose(&self) -> bool {
         match self {
             YubihsmCommand::Detect(detect) => detect.verbose,
+            YubihsmCommand::Setup(setup) => setup.verbose,
             YubihsmCommand::Test(test) => test.verbose,
             _ => false,
         }
