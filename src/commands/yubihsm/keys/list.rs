@@ -1,8 +1,7 @@
+use crate::yubihsm::{create_hsm_connector, get_hsm_config};
 use abscissa::Callable;
-use std::process;
-
-use crate::yubihsm;
 use signatory::ed25519;
+use std::process;
 use tendermint::public_keys::ConsensusKey;
 
 /// The `yubihsm keys list` subcommand
@@ -16,14 +15,14 @@ pub struct ListCommand {
 impl Callable for ListCommand {
     /// List all suitable Ed25519 keys in the HSM
     fn call(&self) {
-        let hsm_connector = yubihsm::create_hsm_connector();
+        let hsm_connector = create_hsm_connector();
 
         let serial_number = hsm_connector.serial_number().unwrap_or_else(|e| {
             status_err!("couldn't get YubiHSM serial number: {}", e);
             process::exit(1);
         });
 
-        let credentials = yubihsm::get_config().auth.credentials();
+        let credentials = get_hsm_config().auth.credentials();
 
         let mut hsm = yubihsm::Client::open(hsm_connector, credentials, true).unwrap_or_else(|e| {
             status_err!("error connecting to YubiHSM2: {}", e);
@@ -37,7 +36,7 @@ impl Callable for ListCommand {
 
         let mut keys = objects
             .iter()
-            .filter(|o| o.object_type == yubihsm::ObjectType::AsymmetricKey)
+            .filter(|o| o.object_type == yubihsm::object::Type::AsymmetricKey)
             .collect::<Vec<_>>();
 
         keys.sort_by(|k1, k2| k1.object_id.cmp(&k2.object_id));

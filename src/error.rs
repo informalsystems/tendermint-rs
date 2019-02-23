@@ -1,8 +1,6 @@
 // Error types
 
 use crate::prost;
-#[cfg(feature = "yubihsm")]
-use crate::yubihsm;
 use abscissa::Error;
 use signatory;
 use std::{
@@ -151,7 +149,7 @@ impl From<TmValidationError> for KmsError {
 #[cfg(feature = "yubihsm")]
 impl From<yubihsm::connector::ConnectionError> for KmsError {
     fn from(other: yubihsm::connector::ConnectionError) -> Self {
-        use crate::yubihsm::connector::ConnectionErrorKind;
+        use yubihsm::connector::ConnectionErrorKind;
 
         let kind = match other.kind() {
             ConnectionErrorKind::AddrInvalid => KmsErrorKind::ConfigError,

@@ -1,20 +1,11 @@
-extern crate serde_json;
-
 use super::*;
-
-use std::fs::File;
-use std::io::prelude::*;
-use std::process;
-use std::str;
-
-use crate::yubihsm;
+use crate::yubihsm::get_hsm_client;
 use abscissa::Callable;
+use serde_json::Value;
 use signatory::ed25519;
-use signatory::ed25519::Seed;
+use std::{fs::File, io::prelude::*, process, str};
 use subtle_encoding::base64;
 use tendermint::public_keys::ConsensusKey;
-
-use serde_json::Value;
 
 /// The `yubihsm keys import` subcommand
 #[derive(Debug, Default, Options)]
@@ -86,15 +77,15 @@ impl Callable for ImportCommand {
                 status_err!("couldn't decode validator private key from config: {}", e);
                 process::exit(1);
             });
-            let seed = Seed::from_keypair(&key_pair).unwrap_or_else(|e| {
+            let seed = ed25519::Seed::from_keypair(&key_pair).unwrap_or_else(|e| {
                 status_err!("invalid key in validator config: {}", e);
                 process::exit(1);
             });
             let key = seed.as_secret_slice();
             let label =
-                yubihsm::ObjectLabel::from(self.label.as_ref().map(|l| l.as_ref()).unwrap_or(""));
+                yubihsm::object::Label::from(self.label.as_ref().map(|l| l.as_ref()).unwrap_or(""));
 
-            let mut hsm = yubihsm::get_hsm_client();
+            let mut hsm = get_hsm_client();
 
             if let Err(e) = hsm.put_asymmetric_key(
                 self.key_id.unwrap(),

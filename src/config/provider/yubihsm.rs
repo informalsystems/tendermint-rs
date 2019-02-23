@@ -1,11 +1,11 @@
 //! Configuration for the `YubiHSM` backend
 
-use crate::yubihsm::{Credentials, HttpConfig, SerialNumber, UsbConfig};
 use abscissa::{
     secrets::{BorrowSecret, DebugSecret, Secret},
     util::Zeroize,
 };
 use std::process;
+use yubihsm::{Credentials, HttpConfig, SerialNumber, UsbConfig};
 
 /// The (optional) `[providers.yubihsm]` config section
 #[derive(Clone, Deserialize, Debug)]

@@ -3,12 +3,10 @@ mod help;
 mod import;
 mod list;
 
-use crate::yubihsm;
-use abscissa::Callable;
-
 use self::{
     generate::GenerateCommand, help::HelpCommand, import::ImportCommand, list::ListCommand,
 };
+use abscissa::Callable;
 
 /// Default key type to generate
 pub const DEFAULT_KEY_TYPE: &str = "ed25519";

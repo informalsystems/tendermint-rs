@@ -1,10 +1,14 @@
 use crate::config::{provider::yubihsm::YubihsmConfig, KmsConfig};
 use abscissa::GlobalConfig;
-pub use signatory_yubihsm::yubihsm::*;
 use std::{
     process,
     sync::{Mutex, MutexGuard},
 };
+#[cfg(feature = "yubihsm-mock")]
+use yubihsm::MockHsm;
+#[cfg(not(feature = "yubihsm-mock"))]
+use yubihsm::UsbConnector;
+use yubihsm::{Client, Connector};
 
 lazy_static! {
     static ref HSM_CLIENT: Mutex<Client> = Mutex::new(create_hsm_client());
@@ -18,7 +22,7 @@ pub fn get_hsm_client() -> MutexGuard<'static, Client> {
 /// Get a `yubihsm::Client` configured from the global configuration
 fn create_hsm_client() -> Client {
     let connector = create_hsm_connector();
-    let credentials = get_config().auth.credentials();
+    let credentials = get_hsm_config().auth.credentials();
 
     Client::open(connector, credentials, true).unwrap_or_else(|e| {
         status_err!("error connecting to YubiHSM2: {}", e);
@@ -27,7 +31,7 @@ fn create_hsm_client() -> Client {
 }
 
 /// Get the YubiHSM-related configuration
-pub fn get_config() -> YubihsmConfig {
+pub fn get_hsm_config() -> YubihsmConfig {
     let kms_config = KmsConfig::get_global();
     let yubihsm_configs = &kms_config.providers.yubihsm;
 
@@ -46,7 +50,7 @@ pub fn get_config() -> YubihsmConfig {
 #[cfg(not(feature = "yubihsm-mock"))]
 pub fn create_hsm_connector() -> Box<dyn Connector> {
     // TODO: `HttpConnector` support
-    let connector = UsbConnector::create(&get_config().usb_config()).unwrap_or_else(|e| {
+    let connector = UsbConnector::create(&get_hsm_config().usb_config()).unwrap_or_else(|e| {
         status_err!("error opening USB connection to YubiHSM2: {}", e);
         process::exit(1);
     });

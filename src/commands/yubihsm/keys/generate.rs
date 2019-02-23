@@ -1,9 +1,8 @@
-use abscissa::Callable;
-use std::process;
-
 use super::*;
-use crate::yubihsm;
+use crate::yubihsm::get_hsm_client;
+use abscissa::Callable;
 use signatory::ed25519;
+use std::process;
 use tendermint::public_keys::ConsensusKey;
 
 /// The `yubihsm keys generate` subcommand
@@ -44,11 +43,11 @@ impl Callable for GenerateCommand {
             }
         }
 
-        let mut hsm = yubihsm::get_hsm_client();
+        let mut hsm = get_hsm_client();
 
         for key_id in &self.key_ids {
             let label =
-                yubihsm::ObjectLabel::from(self.label.as_ref().map(|l| l.as_ref()).unwrap_or(""));
+                yubihsm::object::Label::from(self.label.as_ref().map(|l| l.as_ref()).unwrap_or(""));
 
             if let Err(e) = hsm.generate_asymmetric_key(
                 *key_id,

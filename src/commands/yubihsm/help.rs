@@ -1,6 +1,5 @@
-use abscissa::{Callable, Command};
-
 use super::YubihsmCommand;
+use abscissa::{Callable, Command};
 
 /// The `yubihsm help` subcommand
 #[derive(Debug, Default, Options)]

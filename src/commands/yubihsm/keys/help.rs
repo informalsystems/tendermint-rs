@@ -1,6 +1,5 @@
-use abscissa::{Callable, Command};
-
 use super::KeysCommand;
+use abscissa::{Callable, Command};
 
 /// The `yubihsm keys help` subcommand
 #[derive(Debug, Default, Options)]
