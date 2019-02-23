@@ -15,26 +15,12 @@ extern crate prost_amino as prost;
 extern crate abscissa;
 #[macro_use]
 extern crate abscissa_derive;
-extern crate bytes;
-extern crate failure;
 #[macro_use]
 extern crate failure_derive;
 #[macro_use]
 extern crate lazy_static;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
-extern crate sha2;
-extern crate signal_hook;
-extern crate signatory;
-extern crate signatory_dalek;
-#[cfg(feature = "ledgertm")]
-extern crate signatory_ledger_tm;
-#[cfg(feature = "yubihsm")]
-extern crate signatory_yubihsm;
-extern crate subtle_encoding;
-extern crate tendermint;
 
 #[macro_use]
 mod error;
@@ -50,5 +36,4 @@ mod unix_connection;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
 
-pub use crate::application::KmsApplication;
-pub use crate::unix_connection::UnixConnection;
+pub use crate::{application::KmsApplication, unix_connection::UnixConnection};

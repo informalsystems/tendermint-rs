@@ -34,10 +34,10 @@ sha2 = "0.8"
 signal-hook = "0.1.7"
 signatory = { version = "0.11", features = ["ed25519"] }
 signatory-dalek = "0.11"
-signatory-yubihsm = { version = "0.11", optional = true }
 signatory-ledger-tm = { version = "0.11", optional = true }
 subtle-encoding = "0.3"
 tendermint = { version = "0.2", path = "tendermint-rs" }
+yubihsm = { version = "0.21.0-alpha1", features = ["usb"], optional = true }
 
 [dev-dependencies]
 tempfile = "3"
@@ -46,9 +46,8 @@ rand = "0.6"
 [features]
 default = ["softsign"]
 softsign = []
-yubihsm = ["signatory-yubihsm/usb"] # USB only for now
-yubihsm-mock = ["yubihsm", "signatory-yubihsm/mockhsm"]
 ledgertm = ["signatory-ledger-tm"]
+yubihsm-mock = ["yubihsm/mockhsm"]
 
 # Enable integer overflow checks in release builds for security reasons
 [profile.release]

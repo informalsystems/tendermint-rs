@@ -1,10 +1,5 @@
 //! Subcommands of the `tmkms` command-line application
 
-#![allow(unknown_lints, renamed_and_removed_lints, never_loop)]
-
-use abscissa::{Callable, LoadConfig};
-use std::path::PathBuf;
-
 mod help;
 mod keygen;
 mod start;
@@ -18,6 +13,8 @@ pub use self::{
     help::HelpCommand, keygen::KeygenCommand, start::StartCommand, version::VersionCommand,
 };
 use crate::config::{KmsConfig, CONFIG_FILE_NAME};
+use abscissa::{Callable, LoadConfig};
+use std::path::PathBuf;
 
 /// Subcommands of the KMS command-line application
 #[derive(Debug, Options)]

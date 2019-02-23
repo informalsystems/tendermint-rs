@@ -1,7 +1,6 @@
 use abscissa::Callable;
 use std::process;
-
-use crate::yubihsm::connector::usb::Devices;
+use yubihsm::connector::usb::Devices;
 
 /// The `yubihsm detect` subcommand
 #[derive(Debug, Default, Options)]

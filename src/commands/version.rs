@@ -1,8 +1,9 @@
 //! The `version` subcommand
 
-use abscissa::{Callable, Command as CommandTrait};
+#![allow(clippy::never_loop)]
 
 use super::KmsCommand;
+use abscissa::{Callable, Command as CommandTrait};
 
 /// The `version` subcommand
 #[derive(Debug, Default, Options)]
