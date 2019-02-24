@@ -93,7 +93,7 @@ name = "backtrace-sys"
 version = "0.1.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "cc 1.0.29 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.49 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -200,7 +200,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "cc"
-version = "1.0.29"
+version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -224,7 +224,7 @@ name = "clear_on_drop"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "cc 1.0.29 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -372,7 +372,7 @@ name = "hidapi"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "cc 1.0.29 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure_derive 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.49 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -505,7 +505,7 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bitflags 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "cc 1.0.29 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.49 (registry+https://github.com/rust-lang/crates.io-index)",
  "void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -726,7 +726,7 @@ name = "ring"
 version = "0.14.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "cc 1.0.29 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.49 (registry+https://github.com/rust-lang/crates.io-index)",
  "spin 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -748,6 +748,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "safemem"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "secp256k1"
+version = "0.12.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "cc 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "semver"
@@ -820,7 +828,7 @@ dependencies = [
 
 [[package]]
 name = "signatory"
-version = "0.11.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "digest 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -839,7 +847,7 @@ dependencies = [
  "digest 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ed25519-dalek 1.0.0-pre.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -850,7 +858,16 @@ dependencies = [
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ledger-tendermint 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.49 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "signatory-secp256k1"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "secp256k1 0.12.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -959,7 +976,7 @@ dependencies = [
  "serde 1.0.88 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.88 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "signatory-dalek 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle-encoding 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "tai64 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1006,9 +1023,10 @@ dependencies = [
  "serde_json 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "signal-hook 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "signatory-dalek 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "signatory-ledger-tm 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory-secp256k1 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle-encoding 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "tendermint 0.2.0",
@@ -1110,7 +1128,7 @@ dependencies = [
  "serde_derive 1.0.88 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "untrusted 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "uuid 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1122,7 +1140,7 @@ name = "zeroize"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "cc 1.0.29 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "semver 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1156,7 +1174,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum byteorder 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "a019b10a2a7cdeb292db131fc8113e57ea2a908f6e7894b0c3c671893b65dbeb"
 "checksum bytes 0.4.11 (registry+https://github.com/rust-lang/crates.io-index)" = "40ade3d27603c2cb345eb0912aec461a6dec7e06a4ae48589904e808335c7afa"
 "checksum canonical-path 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "9aa83b9f518bd3943b6757de8489c7756566df78026771955b90ecb87295a5dc"
-"checksum cc 1.0.29 (registry+https://github.com/rust-lang/crates.io-index)" = "4390a3b5f4f6bce9c1d0c00128379df433e53777fdd30e92f16a529332baec4e"
+"checksum cc 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)" = "389803e36973d242e7fecb092b2de44a3d35ac62524b3b9339e51d577d668e02"
 "checksum cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "082bb9b28e00d3c9d39cc03e64ce4cea0f1bb9b3fde493f0cbc008472d22bdf4"
 "checksum chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)" = "45912881121cb26fad7c38c17ba7daa18764771836b34fab7d3fbd93ed633878"
 "checksum clear_on_drop 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "97276801e127ffb46b66ce23f35cc96bd454fa311294bced4bbace7baa8b1d17"
@@ -1221,6 +1239,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum rustc-demangle 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)" = "adacaae16d02b6ec37fdc7acfcddf365978de76d1983d3ee22afc260e1ca9619"
 "checksum ryu 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)" = "eb9e9b8cde282a9fe6a42dd4681319bfb63f121b8a8ee9439c6f4107e58a46f7"
 "checksum safemem 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8dca453248a96cb0749e36ccdfe2b0b4e54a61bfef89fb97ec621eb8e0a93dd9"
+"checksum secp256k1 0.12.2 (registry+https://github.com/rust-lang/crates.io-index)" = "bfaccd3a23619349e0878d9a241f34b1982343cdf67367058cd7d078d326b63e"
 "checksum semver 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
 "checksum semver-parser 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 "checksum serde 1.0.88 (registry+https://github.com/rust-lang/crates.io-index)" = "9f301d728f2b94c9a7691c90f07b0b4e8a4517181d9461be94c04bddeb4bd850"
@@ -1229,9 +1248,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum sha2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "9eb6be24e4c23a84d7184280d2722f7f2731fcdd4a9d886efbfe4413e4847ea0"
 "checksum sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7b4d8bfd0e469f417657573d8451fb33d16cfe0989359b93baf3a1ffc639543d"
 "checksum signal-hook 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)" = "1f272d1b7586bec132ed427f532dd418d8beca1ca7f2caf7df35569b1415a4b4"
-"checksum signatory 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b2edc08ebe757a7b45352fa63c75c107fb569cc281779b0db0f8d6a384eaddd8"
+"checksum signatory 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ac100d1d4652d2a31be39a392aef8dd8b17284df088bcfcfd795be3bacbedfed"
 "checksum signatory-dalek 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d9b5ed7678eaeb98cb23e1efdb5e961021b02d3bd9f8bab4d4e30c53ebb3dd50"
 "checksum signatory-ledger-tm 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e2633f1e0a241347d31f2031b6053506dd72d9c5dedf06fe231526f049e4d1ed"
+"checksum signatory-secp256k1 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "57765ca2c5615453b345477546ddc697921f3c8fc71fd1ffc4edc2ffa0453f1d"
 "checksum simplelog 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2e95345f185d5adeb8ec93459d2dc99654e294cc6ccf5b75414d8ea262de9a13"
 "checksum spin 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "44363f6f51401c34e7be73db0db371c04705d35efbe9f7d6082e03a921a32c55"
 "checksum subtle 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2d67a5a62ba6e01cb2192ff309324cb4875d0c451d55fe2319433abe7a05a8ee"
