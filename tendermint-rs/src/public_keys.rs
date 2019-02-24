@@ -22,14 +22,14 @@ pub struct ConsensusKey(TendermintKey);
 pub struct AccountKey(TendermintKey);
 
 impl TendermintKey {
-    /// From raw secp256k1 public key bytes 
-    pub fn from_raw_secp256k1(bytes: &[u8]) -> Result<TendermintKey, Error>{
+    /// From raw secp256k1 public key bytes
+    pub fn from_raw_secp256k1(bytes: &[u8]) -> Result<TendermintKey, Error> {
         Ok(TendermintKey::Secp256k1(secp256k1::PublicKey::from_bytes(
             bytes,
         )?))
     }
 
-    /// From raw Ed25519 public key bytes 
+    /// From raw Ed25519 public key bytes
     pub fn from_raw_ed25519(bytes: &[u8]) -> Result<TendermintKey, Error> {
         Ok(TendermintKey::Ed25519(ed25519::PublicKey::from_bytes(
             bytes,
@@ -163,7 +163,7 @@ impl From<ed25519::PublicKey> for SecretConnectionKey {
 
 #[cfg(test)]
 mod tests {
-    use super::{SecretConnectionKey, TendermintKey, ConsensusKey, AccountKey};
+    use super::{AccountKey, ConsensusKey, SecretConnectionKey, TendermintKey};
     use subtle_encoding::hex;
 
     const EXAMPLE_SECRET_CONN_KEY: &str =
@@ -187,9 +187,10 @@ mod tests {
 
     #[test]
     fn test_consensus_serialization() {
-        let example_key =
-            ConsensusKey(TendermintKey::from_raw_ed25519(&hex::decode_upper(EXAMPLE_CONSENSUS_KEY).unwrap())
-                .unwrap());
+        let example_key = ConsensusKey(
+            TendermintKey::from_raw_ed25519(&hex::decode_upper(EXAMPLE_CONSENSUS_KEY).unwrap())
+                .unwrap(),
+        );
 
         assert_eq!(
             example_key.to_string(),
@@ -199,11 +200,12 @@ mod tests {
 
     const EXAMPLE_ACCOUNT_KEY: &str =
         "02A1633CAFCC01EBFB6D78E39F687A1F0995C62FC95F51EAD10A02EE0BE551B5DC";
-        #[test]
-        fn test_account_serialization() {
-        let example_key =
-            AccountKey(TendermintKey::from_raw_secp256k1(&hex::decode_upper(EXAMPLE_ACCOUNT_KEY).unwrap())
-                .unwrap());
+    #[test]
+    fn test_account_serialization() {
+        let example_key = AccountKey(
+            TendermintKey::from_raw_secp256k1(&hex::decode_upper(EXAMPLE_ACCOUNT_KEY).unwrap())
+                .unwrap(),
+        );
 
         assert_eq!(
             example_key.to_string(),
