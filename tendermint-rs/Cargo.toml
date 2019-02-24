@@ -40,7 +40,7 @@ rand_os = { version = "0.1", optional = true }
 ring = { version = "0.14", optional = true }
 serde = { version = "1", optional = true }
 serde_derive = { version =  "1", optional = true }
-signatory = { version = "0.11", optional = true, features = ["ed25519"] }
+signatory = { version = "0.11.1", optional = true, features = ["ed25519","ecdsa"] }
 signatory-dalek = { version = "0.11", optional = true }
 sha2 = { version = "0.8", optional = true, default-features = false }
 subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
