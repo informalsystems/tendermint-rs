@@ -50,9 +50,9 @@ pub struct SetupCommand {
     #[options(short = "v", long = "verbose")]
     pub verbose: bool,
 
-    /// Only display derived keys - do not reinitialize HSM
-    #[options(short = "d", long = "derive-only")]
-    pub derive_only: bool,
+    /// Only print derived keys - do not reinitialize HSM
+    #[options(short = "p", long = "print-only")]
+    pub print_only: bool,
 
     /// Restore an HSM from an existing 24-word remonic
     #[options(short = "r", long = "restore")]
@@ -76,14 +76,7 @@ impl Callable for SetupCommand {
             println!("Restoring and reprovisioning YubiHSM from existing 24-word mnemonic phrase.");
             println!();
 
-            let mnemonic_phrase = rustyline::Editor::<()>::new()
-                .readline("Enter mnemonic (separate words with spaces): ")
-                .expect("error reading mnemonic from STDIN!");
-
-            Mnemonic::from_phrase(mnemonic_phrase, BIP39_LANGUAGE).unwrap_or_else(|e| {
-                eprintln!("*** ERROR: Couldn't decode mnemonic: {}", e);
-                process::exit(1);
-            })
+            read_mnemonic_from_stdin("*** Enter mnemonic (separate words with spaces): ")
         } else {
             generate_mnemonic_from_hsm_and_os_csprngs(&hsm_connector)
         };
@@ -101,10 +94,25 @@ impl Callable for SetupCommand {
         let auditor_password = RolePassword::derive_from_mnemonic(&mnemonic, AUDITOR_ROLE_NAME);
         let validator_password = RolePassword::derive_from_mnemonic(&mnemonic, VALIDATOR_ROLE_NAME);
 
-        if self.derive_only {
-            println!(
-                "Below is a randomly generated 24-word admin mnemonic and derived keys/passwords:"
-            );
+        // Re-derive wrap key for display
+        // TODO(tarcieri): allow access to the underlying wrap key secret in `yubihsm` crate to avoid this
+        let mut wrapkey_hex = {
+            let mut bytes =
+                derive_secret_from_mnemonic(&mnemonic, &[b"wrap", serialize_key_id(1).as_bytes()]);
+
+            let hex_str = String::from_utf8(hex::encode(bytes)).unwrap();
+            bytes.zeroize();
+            hex_str
+        };
+
+        if self.print_only {
+            if self.restore {
+                println!("Below are all keys/passwords derived from your 24-word admin mnemonic:");
+            } else {
+                println!(
+                    "Below is a randomly generated 24-word admin mnemonic and derived keys/passwords:"
+                );
+            }
         } else {
             println!("This process will *ERASE* the configured YubiHSM2 and reinitialize it:");
             println!();
@@ -131,16 +139,10 @@ impl Callable for SetupCommand {
             validator_password.as_str()
         );
 
-        // Display backup wrap key
-        let mut wrapkey_bytes =
-            derive_secret_from_mnemonic(&mnemonic, &[b"wrap", serialize_key_id(1).as_bytes()]);
-        let mut wrapkey_hex = String::from_utf8(hex::encode(wrapkey_bytes)).unwrap();
-        wrapkey_bytes.zeroize();
-
         println!("- wrapkey 0x0001 [primary]:   {}", &wrapkey_hex);
         wrapkey_hex.zeroize();
 
-        if self.derive_only {
+        if self.print_only {
             process::exit(0);
         }
 
@@ -177,6 +179,30 @@ impl Callable for SetupCommand {
                 })
         }
     }
+}
+
+/// Read the mnemonic phrase from STDIN
+fn read_mnemonic_from_stdin(prompt: &str) -> Mnemonic {
+    print!("{}", prompt);
+    io::stdout().flush().unwrap();
+
+    let mut input_string = String::new();
+    io::stdin()
+        .read_line(&mut input_string)
+        .expect("error reading mnemonic from STDIN!");
+
+    let input_words: Vec<_> = input_string.split_whitespace().collect();
+    let input_phrase = input_words.join(" ");
+    input_string.zeroize();
+
+    let result = Mnemonic::from_phrase(input_phrase, BIP39_LANGUAGE).unwrap_or_else(|e| {
+        eprintln!("*** ERROR: Couldn't decode mnemonic: {}", e);
+        process::exit(1);
+    });
+
+    println!("\nMnemonic phrase decoded/checksummed successfully!\n");
+
+    result
 }
 
 /// Display the mnemonic as two groups of 12 words
@@ -400,6 +426,14 @@ fn serialize_key_id(key_id: object::Id) -> String {
 /// Derive secrets from the given BIP39 `Mnemonic` ala a BIP32 (hardened)
 /// derivation hierarchy.
 fn derive_secret_from_mnemonic(mnemonic: &Mnemonic, path: &[&[u8]]) -> [u8; KEY_SIZE] {
+    debug!(
+        "deriving secret for path: /{}",
+        path.iter()
+            .map(|component| String::from_utf8_lossy(component))
+            .collect::<Vec<_>>()
+            .join("/")
+    );
+
     // Domain separate the toplevel of the derivation hierarchy ala BIP43
     let mut seed_hmac = Hmac::<Sha512>::new_varkey(mnemonic.entropy()).unwrap();
     seed_hmac.input(DERIVATION_VERSION);
