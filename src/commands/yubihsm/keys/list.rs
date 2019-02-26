@@ -1,4 +1,3 @@
-use crate::yubihsm::{create_hsm_connector, get_hsm_config};
 use abscissa::Callable;
 use signatory::ed25519;
 use std::process;
@@ -15,19 +14,15 @@ pub struct ListCommand {
 impl Callable for ListCommand {
     /// List all suitable Ed25519 keys in the HSM
     fn call(&self) {
-        let hsm_connector = create_hsm_connector();
+        let mut hsm = crate::yubihsm::client();
 
-        let serial_number = hsm_connector.serial_number().unwrap_or_else(|e| {
-            status_err!("couldn't get YubiHSM serial number: {}", e);
-            process::exit(1);
-        });
-
-        let credentials = get_hsm_config().auth.credentials();
-
-        let mut hsm = yubihsm::Client::open(hsm_connector, credentials, true).unwrap_or_else(|e| {
-            status_err!("error connecting to YubiHSM2: {}", e);
-            process::exit(1);
-        });
+        let serial_number = hsm
+            .device_info()
+            .unwrap_or_else(|e| {
+                status_err!("couldn't get YubiHSM serial number: {}", e);
+                process::exit(1);
+            })
+            .serial_number;
 
         let objects = hsm.list_objects(&[]).unwrap_or_else(|e| {
             status_err!("couldn't list YubiHSM objects: {}", e);
@@ -61,7 +56,7 @@ impl Callable for ListCommand {
             let key_id = format!("- #{}", key.object_id);
 
             // TODO: support for non-Ed25519 keys
-            if public_key.algorithm == yubihsm::AsymmetricAlg::Ed25519 {
+            if public_key.algorithm == yubihsm::asymmetric::Algorithm::Ed25519 {
                 status_attr_ok!(
                     key_id,
                     ConsensusKey::from(

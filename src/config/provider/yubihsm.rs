@@ -4,8 +4,8 @@ use abscissa::{
     secrets::{BorrowSecret, DebugSecret, Secret},
     util::Zeroize,
 };
-use std::process;
-use yubihsm::{Credentials, HttpConfig, SerialNumber, UsbConfig};
+use std::{process, str::FromStr};
+use yubihsm::{device::SerialNumber, Credentials, HttpConfig, UsbConfig};
 
 /// The (optional) `[providers.yubihsm]` config section
 #[derive(Clone, Deserialize, Debug)]
@@ -21,7 +21,7 @@ pub struct YubihsmConfig {
     pub keys: Vec<SigningKeyConfig>,
 
     /// Serial number of the YubiHSM to connect to
-    pub serial_number: Option<SerialNumber>,
+    pub serial_number: Option<String>,
 }
 
 impl YubihsmConfig {
@@ -45,7 +45,10 @@ impl YubihsmConfig {
                 process::exit(1);
             }
             AdapterConfig::Usb { timeout_ms } => UsbConfig {
-                serial: self.serial_number,
+                serial: self
+                    .serial_number
+                    .as_ref()
+                    .map(|serial| SerialNumber::from_str(serial).unwrap()),
                 timeout_ms,
             },
         }

@@ -1,5 +1,4 @@
 use super::*;
-use crate::yubihsm::get_hsm_client;
 use abscissa::Callable;
 use serde_json::Value;
 use signatory::ed25519;
@@ -67,6 +66,7 @@ impl Callable for ImportCommand {
                 status_err!("couldn't read validator config file {}: {}", path, e);
                 process::exit(1);
             });
+
             let v: Value = serde_json::from_slice(&contents).unwrap();
             let s = v["priv_key"]["value"].as_str().unwrap_or_else(|| {
                 status_err!("couldn't read validator private key from config: {}", path);
@@ -77,22 +77,25 @@ impl Callable for ImportCommand {
                 status_err!("couldn't decode validator private key from config: {}", e);
                 process::exit(1);
             });
+
             let seed = ed25519::Seed::from_keypair(&key_pair).unwrap_or_else(|e| {
                 status_err!("invalid key in validator config: {}", e);
                 process::exit(1);
             });
+
             let key = seed.as_secret_slice();
+
             let label =
                 yubihsm::object::Label::from(self.label.as_ref().map(|l| l.as_ref()).unwrap_or(""));
 
-            let mut hsm = get_hsm_client();
+            let mut hsm = crate::yubihsm::client();
 
             if let Err(e) = hsm.put_asymmetric_key(
                 self.key_id.unwrap(),
                 label,
                 DEFAULT_DOMAINS,
                 DEFAULT_CAPABILITIES,
-                yubihsm::AsymmetricAlg::Ed25519,
+                yubihsm::asymmetric::Algorithm::Ed25519,
                 key,
             ) {
                 status_err!("couldn't import key #{}: {}", self.key_id.unwrap(), e);

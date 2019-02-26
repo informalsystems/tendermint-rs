@@ -34,7 +34,7 @@ impl Callable for DetectCommand {
         for device in devices.iter() {
             println!(
                 "- Serial #{} (bus {})",
-                device.serial_number.as_str(),
+                device.serial_number,
                 device.bus_number(),
             );
         }
