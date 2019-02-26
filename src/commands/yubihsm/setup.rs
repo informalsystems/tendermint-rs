@@ -1,12 +1,17 @@
 use abscissa::Callable;
-use bip39::{Language, Mnemonic};
-use chrono::Utc;
+use bip39::Mnemonic;
+use chrono::{SecondsFormat, Utc};
 use hkdf::Hkdf;
 use hmac::{Hmac, Mac};
 use rand_os::{rand_core::RngCore, OsRng};
 use sha2::Sha512;
-use std::process;
-use subtle_encoding::bech32::Bech32;
+use std::{
+    fs::File,
+    io::{self, Write},
+    path::PathBuf,
+    process,
+};
+use subtle_encoding::{bech32::Bech32, hex};
 use yubihsm::{
     authentication, object,
     setup::{Profile, Role},
@@ -16,6 +21,9 @@ use zeroize::Zeroize;
 
 /// Domain separation string used as "info" for HKDF
 const HKDF_MNEMONIC_INFO: &[u8] = b"yubihsm setup BIP39 derivation";
+
+/// Language used when generating the Mnemonic phrase
+const BIP39_LANGUAGE: bip39::Language = bip39::Language::English;
 
 /// Domain separation for derivation hierarchy versions (ala BIP43's "purpose" field)
 const DERIVATION_VERSION: &[u8] = b"1";
@@ -41,14 +49,45 @@ pub struct SetupCommand {
     /// Print debugging information
     #[options(short = "v", long = "verbose")]
     pub verbose: bool,
+
+    /// Only display derived keys - do not reinitialize HSM
+    #[options(short = "d", long = "derive-only")]
+    pub derive_only: bool,
+
+    /// Restore an HSM from an existing 24-word remonic
+    #[options(short = "r", long = "restore")]
+    pub restore: bool,
+
+    /// Write a provisioning report as JSON to the given filename
+    #[options(short = "w", long = "write-report")]
+    pub write_report: Option<PathBuf>,
 }
 
 impl Callable for SetupCommand {
     /// Perform initial YubiHSM dervice provisioning
     fn call(&self) {
         let hsm_connector = crate::yubihsm::connector();
+        let hsm_serial_number = get_hsm_client(&hsm_connector)
+            .device_info()
+            .expect("error getting device info")
+            .serial_number;
 
-        let mnemonic = generate_mnemonic_from_hsm_and_os_csprngs(hsm_connector.clone());
+        let mnemonic = if self.restore {
+            println!("Restoring and reprovisioning YubiHSM from existing 24-word mnemonic phrase.");
+            println!();
+
+            let mnemonic_phrase = rustyline::Editor::<()>::new()
+                .readline("Enter mnemonic (separate words with spaces): ")
+                .expect("error reading mnemonic from STDIN!");
+
+            Mnemonic::from_phrase(mnemonic_phrase, BIP39_LANGUAGE).unwrap_or_else(|e| {
+                eprintln!("*** ERROR: Couldn't decode mnemonic: {}", e);
+                process::exit(1);
+            })
+        } else {
+            generate_mnemonic_from_hsm_and_os_csprngs(&hsm_connector)
+        };
+
         let roles = derive_roles_from_mnemonic(&mnemonic);
         let wrap_key = derive_wrap_key_from_mnemonic(&mnemonic, 1);
 
@@ -62,16 +101,50 @@ impl Callable for SetupCommand {
         let auditor_password = RolePassword::derive_from_mnemonic(&mnemonic, AUDITOR_ROLE_NAME);
         let validator_password = RolePassword::derive_from_mnemonic(&mnemonic, VALIDATOR_ROLE_NAME);
 
-        println!("This process will *ERASE* the configured YubiHSM2 and reinitialize it.");
-        println!("The following authentication keys will be created:");
-        println!();
-        println!("admin     (key 1): {}", &mnemonic);
-        println!("operator  (key 2): {}", operator_password.as_str());
-        println!("auditor   (key 3): {}", auditor_password.as_str());
-        println!("validator (key 4): {}", validator_password.as_str());
+        if self.derive_only {
+            println!(
+                "Below is a randomly generated 24-word admin mnemonic and derived keys/passwords:"
+            );
+        } else {
+            println!("This process will *ERASE* the configured YubiHSM2 and reinitialize it:");
+            println!();
+            println!("- YubiHSM serial: {}", hsm_serial_number);
+            println!();
+            println!("Authentication keys with the following IDs and passwords will be created:");
+        }
 
-        println!("\nAre you SURE you want erase your HSM and reinitialize it? (y/N)");
-        // TODO(tarcieri): prompt that they actually want to continue!!!
+        println!();
+        println!("- key 0x0001: admin:");
+        println!();
+        print_mnemonic(&mnemonic);
+        println!();
+        println!(
+            "- authkey 0x0002 [operator]:  {}",
+            operator_password.as_str()
+        );
+        println!(
+            "- authkey 0x0003 [auditor]:   {}",
+            auditor_password.as_str()
+        );
+        println!(
+            "- authkey 0x0004 [validator]: {}",
+            validator_password.as_str()
+        );
+
+        // Display backup wrap key
+        let mut wrapkey_bytes =
+            derive_secret_from_mnemonic(&mnemonic, &[b"wrap", serialize_key_id(1).as_bytes()]);
+        let mut wrapkey_hex = String::from_utf8(hex::encode(wrapkey_bytes)).unwrap();
+        wrapkey_bytes.zeroize();
+
+        println!("- wrapkey 0x0001 [primary]:   {}", &wrapkey_hex);
+        wrapkey_hex.zeroize();
+
+        if self.derive_only {
+            process::exit(0);
+        }
+
+        prompt_for_user_approval("Are you SURE you want erase and reinitialize this HSM?");
 
         let report = yubihsm::setup::erase_device_and_init_with_profile(
             hsm_connector.clone(),
@@ -80,8 +153,56 @@ impl Callable for SetupCommand {
         )
         .unwrap_or_else(|e| hsm_error(e.as_fail()));
 
-        println!("provisioning report: {:?}", report);
+        status_ok!(
+            "Success",
+            "reinitialized YubiHSM (serial: {})",
+            hsm_serial_number
+        );
+
+        if let Some(ref report_path) = self.write_report {
+            status_ok!(
+                "Writing",
+                "provisioning report to: {}",
+                report_path.display()
+            );
+
+            let mut report_file = File::create(report_path).unwrap_or_else(|e| {
+                panic!("couldn't create report file: {}", e);
+            });
+
+            report_file
+                .write_all(report.to_json().as_bytes())
+                .unwrap_or_else(|e| {
+                    panic!("error writing report: {}", e);
+                })
+        }
     }
+}
+
+/// Display the mnemonic as two groups of 12 words
+fn print_mnemonic(mnemonic: &Mnemonic) {
+    let words: Vec<&str> = mnemonic.phrase().split(' ').collect();
+    let words_len = words.len();
+
+    for word_group in &[&words[..(words_len / 2)], &words[(words_len / 2)..]] {
+        let mut word_group_joined = word_group.join(" ");
+        println!("    {}", word_group_joined);
+        word_group_joined.zeroize();
+    }
+}
+
+/// Get an HSM client from the provided connector
+///
+/// We need to create our own client here since the global one maintains
+/// a persistent connection, and we need to close this one before we can
+/// reprovision the HSM
+fn get_hsm_client(hsm_connector: &Connector) -> yubihsm::Client {
+    yubihsm::Client::open(
+        hsm_connector.clone(),
+        crate::yubihsm::config().auth.credentials(),
+        false,
+    )
+    .unwrap_or_else(|e| hsm_error(&e))
 }
 
 /// Generate entropy by combining entropy both from the host OS and from the
@@ -91,16 +212,8 @@ impl Callable for SetupCommand {
 /// function (HKDF) in order to derive the recovery passphrase, which ideally
 /// ensures that the passphrase will be securely random so long as at least
 /// one of the two inputs is secure.
-fn generate_mnemonic_from_hsm_and_os_csprngs(hsm_connector: Connector) -> Mnemonic {
-    // We need to create our own client here since the global one maintains
-    // a persistent connection, and we need to close this one before we can
-    // reprovision the HSM
-    let mut hsm_client = yubihsm::Client::open(
-        hsm_connector,
-        crate::yubihsm::config().auth.credentials(),
-        false,
-    )
-    .unwrap_or_else(|e| hsm_error(&e));
+fn generate_mnemonic_from_hsm_and_os_csprngs(hsm_connector: &Connector) -> Mnemonic {
+    let mut hsm_client = get_hsm_client(hsm_connector);
 
     // Obtain half of the IKM from the YubiHSM
     let mut ikm = hsm_client
@@ -118,7 +231,7 @@ fn generate_mnemonic_from_hsm_and_os_csprngs(hsm_connector: Connector) -> Mnemon
     kdf.expand(HKDF_MNEMONIC_INFO, &mut okm).unwrap();
     ikm.zeroize();
 
-    let result = Mnemonic::from_entropy(&okm, Language::English).unwrap();
+    let result = Mnemonic::from_entropy(&okm, BIP39_LANGUAGE).unwrap();
     okm.zeroize();
 
     result
@@ -270,13 +383,18 @@ fn derive_wrap_key_from_mnemonic(mnemonic: &Mnemonic, key_id: object::Id) -> wra
     // has been compromised.
     wrap::Key::from_bytes(
         key_id,
-        &derive_secret_from_mnemonic(mnemonic, &[b"wrap", format!("{}", key_id).as_bytes()]),
+        &derive_secret_from_mnemonic(mnemonic, &[b"wrap", serialize_key_id(key_id).as_bytes()]),
     )
     .unwrap()
     .label(wrap_key_label)
     .capabilities(wrap_key_capabilities)
     .delegated_capabilities(wrap_key_delegated_capabilities)
     .domains(wrap_key_domains)
+}
+
+/// Serialize a key ID as bytes for use in a derivation path
+fn serialize_key_id(key_id: object::Id) -> String {
+    format!("0x{:04x}", key_id)
 }
 
 /// Derive secrets from the given BIP39 `Mnemonic` ala a BIP32 (hardened)
@@ -317,12 +435,27 @@ fn derive_secret_from_mnemonic(mnemonic: &Mnemonic, path: &[&[u8]]) -> [u8; KEY_
 /// Create a label for a newly generated object which tags it with the date
 /// it was created
 fn create_object_label(label_prefix: &str) -> object::Label {
-    object::Label::from(
-        Utc::now()
-            .format(&format!("{}:%Y-%m-%d", label_prefix))
-            .to_string()
-            .as_ref(),
-    )
+    // e.g. 2019-02-26T18:03:53Z
+    let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
+    object::Label::from([label_prefix, &timestamp].join(":").as_ref())
+}
+
+/// Prompt the user to ensure they want to proceed
+fn prompt_for_user_approval(prompt: &str) {
+    print!("\n*** {} (y/N): ", prompt);
+    io::stdout().flush().unwrap();
+
+    let mut choice_in = String::new();
+    io::stdin()
+        .read_line(&mut choice_in)
+        .expect("Failed to read user input");
+
+    let choice = choice_in.trim();
+
+    if choice != "y" && choice != "Y" {
+        println!("Aborting");
+        process::exit(1);
+    }
 }
 
 /// Handler for HSM errors
