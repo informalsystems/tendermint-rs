@@ -24,9 +24,12 @@ bytes = "0.4"
 chrono = "0.4"
 failure = "0.1"
 failure_derive = "0.1"
+hkdf = "0.7"
+hmac = "0.7"
 lazy_static = "1"
 prost-amino = "0.4.0"
 prost-amino-derive = "0.4.0"
+rand_os = "0.1"
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
@@ -36,13 +39,15 @@ signatory = { version = "0.11.1", features = ["ed25519", "ecdsa"] }
 signatory-dalek = "0.11"
 signatory-secp256k1 = "0.11"
 signatory-ledger-tm = { version = "0.11", optional = true }
-subtle-encoding = "0.3"
+subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
 tendermint = { version = "0.2", path = "tendermint-rs" }
-yubihsm = { version = "0.21.0-alpha2", features = ["usb"], optional = true }
+tiny-bip39 = "0.6"
+yubihsm = { version = "0.21.0-alpha2", features = ["setup", "usb"], optional = true }
+zeroize = "0.5"
 
 [dev-dependencies]
 tempfile = "3"
-rand = "0.6"
+rand = "0.6" # TODO: switch to the getrandom crate
 
 [features]
 default = ["softsign"]
