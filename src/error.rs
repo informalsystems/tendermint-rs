@@ -145,23 +145,3 @@ impl From<TmValidationError> for KmsError {
         err!(KmsErrorKind::InvalidMessageError, other).into()
     }
 }
-
-#[cfg(feature = "yubihsm")]
-impl From<yubihsm::connector::ConnectionError> for KmsError {
-    fn from(other: yubihsm::connector::ConnectionError) -> Self {
-        use yubihsm::connector::ConnectionErrorKind;
-
-        let kind = match other.kind() {
-            ConnectionErrorKind::AddrInvalid => KmsErrorKind::ConfigError,
-            ConnectionErrorKind::AccessDenied => KmsErrorKind::AccessError,
-            ConnectionErrorKind::IoError
-            | ConnectionErrorKind::ConnectionFailed
-            | ConnectionErrorKind::DeviceBusyError
-            | ConnectionErrorKind::RequestError
-            | ConnectionErrorKind::ResponseError
-            | ConnectionErrorKind::UsbError => KmsErrorKind::IoError,
-        };
-
-        Error::new(kind, Some(other.description().to_owned())).into()
-    }
-}

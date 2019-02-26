@@ -1,5 +1,4 @@
 use super::*;
-use crate::yubihsm::get_hsm_client;
 use abscissa::Callable;
 use signatory::ed25519;
 use std::process;
@@ -43,7 +42,7 @@ impl Callable for GenerateCommand {
             }
         }
 
-        let mut hsm = get_hsm_client();
+        let mut hsm = crate::yubihsm::client();
 
         for key_id in &self.key_ids {
             let label =
@@ -54,7 +53,7 @@ impl Callable for GenerateCommand {
                 label,
                 DEFAULT_DOMAINS,
                 DEFAULT_CAPABILITIES,
-                yubihsm::AsymmetricAlg::Ed25519,
+                yubihsm::asymmetric::Algorithm::Ed25519,
             ) {
                 status_err!("couldn't generate key #{}: {}", key_id, e);
                 process::exit(1);
