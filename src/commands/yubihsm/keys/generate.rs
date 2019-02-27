@@ -8,6 +8,7 @@ use std::{
     path::{Path, PathBuf},
     process,
 };
+use subtle_encoding::base64;
 use tendermint::public_keys::ConsensusKey;
 
 /// The `yubihsm keys generate` subcommand
@@ -152,7 +153,7 @@ fn create_encrypted_backup(
         });
 
     backup_file
-        .write_all(&wrapped_bytes.into_vec())
+        .write_all(&base64::encode(&wrapped_bytes.into_vec()))
         .unwrap_or_else(|e| {
             status_err!("error writing backup: {}", e);
             process::exit(1);
