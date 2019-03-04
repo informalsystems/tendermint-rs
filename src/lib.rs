@@ -33,6 +33,7 @@ mod keyring;
 mod rpc;
 mod session;
 mod unix_connection;
+mod last_sign_state;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
 
