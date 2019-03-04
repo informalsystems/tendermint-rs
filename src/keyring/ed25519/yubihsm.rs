@@ -6,7 +6,6 @@ use crate::{
     keyring::{ed25519::Signer, KeyRing},
 };
 use signatory::PublicKeyed;
-use yubihsm::signatory::Ed25519Signer;
 
 /// Label for YubiHSM provider
 // TODO: use a non-string type for these, e.g. an enum
@@ -32,8 +31,9 @@ pub fn init(keyring: &mut KeyRing, yubihsm_configs: &[YubihsmConfig]) -> Result<
     let credentials = config.auth.credentials();
 
     for key_config in &config.keys {
+        // TODO(tarcieri): clone `yubihsm::Client` rather than making new ones for each signer
         let hsm = yubihsm::Client::create(connector.clone(), credentials.clone())?;
-        let signer = Ed25519Signer::create(hsm, key_config.key)?;
+        let signer = yubihsm::asymmetric::ed25519::Signer::create(hsm, key_config.key)?;
 
         keyring.add(
             signer.public_key()?,
