@@ -61,7 +61,7 @@ impl Callable for GenerateCommand {
             }
         }
 
-        let mut hsm = crate::yubihsm::client();
+        let hsm = crate::yubihsm::client();
         let mut capabilities = DEFAULT_CAPABILITIES;
 
         // If the key isn't explicitly marked as non-exportable, allow it to be exported
@@ -105,7 +105,7 @@ impl Callable for GenerateCommand {
                     "can only create backups if generating one key at a time"
                 );
                 create_encrypted_backup(
-                    &mut hsm,
+                    &hsm,
                     *key_id,
                     &backup_file,
                     self.backup_wrap_key.unwrap_or(DEFAULT_WRAP_KEY),
@@ -120,7 +120,7 @@ impl_command!(GenerateCommand);
 
 /// Create an encrypted backup of this key under the given wrap key ID
 fn create_encrypted_backup(
-    hsm: &mut yubihsm::Client,
+    hsm: &yubihsm::Client,
     key_id: yubihsm::object::Id,
     backup_file_path: &Path,
     wrap_key_id: yubihsm::object::Id,

@@ -88,7 +88,7 @@ impl Callable for ImportCommand {
             let label =
                 yubihsm::object::Label::from(self.label.as_ref().map(|l| l.as_ref()).unwrap_or(""));
 
-            let mut hsm = crate::yubihsm::client();
+            let hsm = crate::yubihsm::client();
 
             if let Err(e) = hsm.put_asymmetric_key(
                 self.key_id.unwrap(),

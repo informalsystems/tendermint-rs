@@ -17,6 +17,7 @@ pub fn init(keyring: &mut KeyRing, yubihsm_configs: &[YubihsmConfig]) -> Result<
         return Ok(());
     }
 
+    // TODO(tarcieri): support for multiple YubiHSMs per host?
     if yubihsm_configs.len() != 1 {
         fail!(
             ConfigError,
@@ -25,23 +26,13 @@ pub fn init(keyring: &mut KeyRing, yubihsm_configs: &[YubihsmConfig]) -> Result<
         );
     }
 
-    let config = &yubihsm_configs[0];
-
-    let connector = crate::yubihsm::connector();
-    let credentials = config.auth.credentials();
-
-    for key_config in &config.keys {
-        // TODO(tarcieri): clone `yubihsm::Client` rather than making new ones for each signer
-        let hsm = yubihsm::Client::create(connector.clone(), credentials.clone())?;
-        let signer = yubihsm::asymmetric::ed25519::Signer::create(hsm, key_config.key)?;
+    for config in &yubihsm_configs[0].keys {
+        let signer =
+            yubihsm::ed25519::Signer::create(crate::yubihsm::client().clone(), config.key)?;
 
         keyring.add(
             signer.public_key()?,
-            Signer::new(
-                YUBIHSM_PROVIDER_LABEL,
-                key_config.id.clone(),
-                Box::new(signer),
-            ),
+            Signer::new(YUBIHSM_PROVIDER_LABEL, config.id.clone(), Box::new(signer)),
         )?;
     }
 

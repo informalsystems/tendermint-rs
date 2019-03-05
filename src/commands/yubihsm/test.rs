@@ -26,7 +26,7 @@ pub struct TestCommand {
 impl Callable for TestCommand {
     /// Perform a signing test using the current HSM configuration
     fn call(&self) {
-        let mut hsm = crate::yubihsm::client();
+        let hsm = crate::yubihsm::client();
 
         loop {
             let started_at = Instant::now();
