@@ -119,6 +119,7 @@ impl Callable for GenerateCommand {
 impl_command!(GenerateCommand);
 
 /// Create an encrypted backup of this key under the given wrap key ID
+// TODO(tarcieri): unify this with the similar code in export?
 fn create_encrypted_backup(
     hsm: &yubihsm::Client,
     key_id: yubihsm::object::Id,
