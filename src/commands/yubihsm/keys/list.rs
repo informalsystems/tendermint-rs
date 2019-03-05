@@ -14,7 +14,7 @@ pub struct ListCommand {
 impl Callable for ListCommand {
     /// List all suitable Ed25519 keys in the HSM
     fn call(&self) {
-        let mut hsm = crate::yubihsm::client();
+        let hsm = crate::yubihsm::client();
 
         let serial_number = hsm
             .device_info()

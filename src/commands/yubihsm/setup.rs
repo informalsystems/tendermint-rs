@@ -239,7 +239,7 @@ fn get_hsm_client(hsm_connector: &Connector) -> yubihsm::Client {
 /// ensures that the passphrase will be securely random so long as at least
 /// one of the two inputs is secure.
 fn generate_mnemonic_from_hsm_and_os_csprngs(hsm_connector: &Connector) -> Mnemonic {
-    let mut hsm_client = get_hsm_client(hsm_connector);
+    let hsm_client = get_hsm_client(hsm_connector);
 
     // Obtain half of the IKM from the YubiHSM
     let mut ikm = hsm_client
