@@ -1,7 +1,5 @@
 //! Tendermint Key Management System
 
-#![crate_name = "tmkms"]
-#![crate_type = "rlib"]
 #![deny(
     warnings,
     missing_docs,
