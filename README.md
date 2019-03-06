@@ -76,7 +76,7 @@ You will need the following prerequisites:
 
 To install `tmkms`, do the following:
 
-1. (x86_64 only) Configure `RUSTFLAGS` environment variable: `export RUSTFLAGS=-Ctarget-feature=+aes`
+1. (x86_64 only) Configure `RUSTFLAGS` environment variable: `export RUSTFLAGS=-Ctarget-feature=+aes,+ssse3`
 2. Run the following to install Tendermint KMS using Rust's `cargo` tool:
 
 ```

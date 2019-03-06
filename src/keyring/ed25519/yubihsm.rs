@@ -7,7 +7,7 @@ use crate::{
 };
 use signatory::PublicKeyed;
 
-/// Label for ed25519-dalek provider
+/// Label for YubiHSM provider
 // TODO: use a non-string type for these, e.g. an enum
 pub const YUBIHSM_PROVIDER_LABEL: &str = "yubihsm";
 
@@ -17,6 +17,7 @@ pub fn init(keyring: &mut KeyRing, yubihsm_configs: &[YubihsmConfig]) -> Result<
         return Ok(());
     }
 
+    // TODO(tarcieri): support for multiple YubiHSMs per host?
     if yubihsm_configs.len() != 1 {
         fail!(
             ConfigError,
@@ -25,17 +26,13 @@ pub fn init(keyring: &mut KeyRing, yubihsm_configs: &[YubihsmConfig]) -> Result<
         );
     }
 
-    let yubihsm_config = &yubihsm_configs[0];
-    let connector = yubihsm::UsbConnector::create(&yubihsm_config.usb_config())?;
-    let session =
-        yubihsm::signatory::Session::create(connector, yubihsm_config.auth.credentials())?;
-
-    for key_config in &yubihsm_config.keys {
-        let provider = Box::new(session.ed25519_signer(key_config.key)?);
+    for config in &yubihsm_configs[0].keys {
+        let signer =
+            yubihsm::ed25519::Signer::create(crate::yubihsm::client().clone(), config.key)?;
 
         keyring.add(
-            provider.public_key()?,
-            Signer::new(YUBIHSM_PROVIDER_LABEL, key_config.id.clone(), provider),
+            signer.public_key()?,
+            Signer::new(YUBIHSM_PROVIDER_LABEL, config.id.clone(), Box::new(signer)),
         )?;
     }
 

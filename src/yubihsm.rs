@@ -1,37 +1,53 @@
-use crate::config::{provider::yubihsm::YubihsmConfig, KmsConfig};
-use abscissa::GlobalConfig;
+use crate::{
+    config::{provider::yubihsm::YubihsmConfig, KmsConfig},
+    error::{KmsError, KmsErrorKind},
+};
+use abscissa::{Error, GlobalConfig};
 use std::{
     process,
     sync::{Mutex, MutexGuard},
 };
-#[cfg(feature = "yubihsm-mock")]
-use yubihsm::MockHsm;
-#[cfg(not(feature = "yubihsm-mock"))]
-use yubihsm::UsbConnector;
 use yubihsm::{Client, Connector};
 
 lazy_static! {
-    static ref HSM_CLIENT: Mutex<Client> = Mutex::new(create_hsm_client());
+    static ref HSM_CONNECTOR: Connector = init_connector();
+    static ref HSM_CLIENT: Mutex<Client> = Mutex::new(init_client());
 }
 
-/// Get a `Box<yubihsm::Connector>` instantiated via the configuration file
-pub fn get_hsm_client() -> MutexGuard<'static, Client> {
+/// Get the global HSM connector configured from global settings
+pub fn connector() -> &'static Connector {
+    &HSM_CONNECTOR
+}
+
+/// Get an HSM client configured from global settings
+pub fn client() -> MutexGuard<'static, Client> {
     HSM_CLIENT.lock().unwrap()
 }
 
-/// Get a `yubihsm::Client` configured from the global configuration
-fn create_hsm_client() -> Client {
-    let connector = create_hsm_connector();
-    let credentials = get_hsm_config().auth.credentials();
+/// Open a session with the YubiHSM2 using settings from the global config
+#[cfg(not(feature = "yubihsm-mock"))]
+fn init_connector() -> Connector {
+    // TODO: `HttpConnector` support
+    Connector::usb(&config().usb_config())
+}
 
-    Client::open(connector, credentials, true).unwrap_or_else(|e| {
+#[cfg(feature = "yubihsm-mock")]
+fn init_connector() -> Connector {
+    Connector::mockhsm()
+}
+
+/// Get a `yubihsm::Client` configured from the global configuration
+fn init_client() -> Client {
+    let credentials = config().auth.credentials();
+
+    Client::open(connector().clone(), credentials, true).unwrap_or_else(|e| {
         status_err!("error connecting to YubiHSM2: {}", e);
         process::exit(1);
     })
 }
 
 /// Get the YubiHSM-related configuration
-pub fn get_hsm_config() -> YubihsmConfig {
+pub fn config() -> YubihsmConfig {
     let kms_config = KmsConfig::get_global();
     let yubihsm_configs = &kms_config.providers.yubihsm;
 
@@ -46,24 +62,67 @@ pub fn get_hsm_config() -> YubihsmConfig {
     yubihsm_configs[0].clone()
 }
 
-/// Open a session with the YubiHSM2 using settings from the global config
-#[cfg(not(feature = "yubihsm-mock"))]
-pub fn create_hsm_connector() -> Box<dyn Connector> {
-    // TODO: `HttpConnector` support
-    let connector = UsbConnector::create(&get_hsm_config().usb_config()).unwrap_or_else(|e| {
-        status_err!("error opening USB connection to YubiHSM2: {}", e);
-        process::exit(1);
-    });
-
-    connector.into()
+impl From<yubihsm::ClientError> for KmsError {
+    fn from(other: yubihsm::ClientError) -> KmsError {
+        Error::new(KmsErrorKind::from(other.kind()), Some(other.to_string())).into()
+    }
 }
 
-#[cfg(feature = "yubihsm-mock")]
-pub fn create_hsm_connector() -> Box<dyn Connector> {
-    MOCK_HSM.clone().into()
+impl From<yubihsm::connector::ConnectionErrorKind> for KmsErrorKind {
+    fn from(other: yubihsm::connector::ConnectionErrorKind) -> KmsErrorKind {
+        use yubihsm::connector::ConnectionErrorKind;
+
+        match other {
+            ConnectionErrorKind::AddrInvalid => KmsErrorKind::ConfigError,
+            ConnectionErrorKind::AccessDenied => KmsErrorKind::AccessError,
+            ConnectionErrorKind::IoError
+            | ConnectionErrorKind::ConnectionFailed
+            | ConnectionErrorKind::DeviceBusyError
+            | ConnectionErrorKind::RequestError
+            | ConnectionErrorKind::ResponseError
+            | ConnectionErrorKind::UsbError => KmsErrorKind::IoError,
+        }
+    }
 }
 
-#[cfg(feature = "yubihsm-mock")]
-lazy_static! {
-    static ref MOCK_HSM: MockHsm = MockHsm::default();
+impl From<yubihsm::client::ClientErrorKind> for KmsErrorKind {
+    fn from(other: yubihsm::client::ClientErrorKind) -> KmsErrorKind {
+        use yubihsm::client::ClientErrorKind;
+
+        match other {
+            ClientErrorKind::AuthenticationError => KmsErrorKind::AccessError,
+            ClientErrorKind::ConnectionError { kind } => kind.into(),
+            ClientErrorKind::DeviceError { kind } => kind.into(),
+            ClientErrorKind::CreateFailed
+            | ClientErrorKind::ProtocolError
+            | ClientErrorKind::ClosedSessionError
+            | ClientErrorKind::ResponseError => KmsErrorKind::IoError,
+        }
+    }
+}
+
+impl From<yubihsm::DeviceErrorKind> for KmsErrorKind {
+    fn from(other: yubihsm::device::DeviceErrorKind) -> KmsErrorKind {
+        use yubihsm::device::DeviceErrorKind;
+
+        // TODO(tarcieri): better map these to approriate KMS errors
+        match other {
+            DeviceErrorKind::AuthenticationFailed => KmsErrorKind::AccessError,
+            DeviceErrorKind::InvalidCommand
+            | DeviceErrorKind::InvalidData
+            | DeviceErrorKind::InvalidSession
+            | DeviceErrorKind::SessionsFull
+            | DeviceErrorKind::SessionFailed
+            | DeviceErrorKind::StorageFailed
+            | DeviceErrorKind::WrongLength
+            | DeviceErrorKind::InsufficientPermissions
+            | DeviceErrorKind::LogFull
+            | DeviceErrorKind::ObjectNotFound
+            | DeviceErrorKind::InvalidId
+            | DeviceErrorKind::InvalidOtp
+            | DeviceErrorKind::GenericError
+            | DeviceErrorKind::ObjectExists => KmsErrorKind::SigningError,
+            _ => KmsErrorKind::SigningError,
+        }
+    }
 }
