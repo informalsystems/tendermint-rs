@@ -1,3 +1,10 @@
+## [0.4.0] (2019-03-05)
+
+- [`tendermint` crate v0.3.0](https://crates.io/crates/tendermint/0.3.0) ([#200])
+- yubihsm: Support for exporting/importing wrapped (encrypted) keys ([#197])
+- yubihsm setup ([#180], [#186])
+- Ledger integration ([#176])
+
 ## [0.3.0] (2019-01-23)
 
 - Add ability to terminate on SIGTERM or SIGINT ([#161])
@@ -39,6 +46,12 @@
 
 - Initial "preview" release
 
+[0.4.0]: https://github.com/tendermint/kms/pull/201
+[#200]: https://github.com/tendermint/kms/pull/200
+[#197]: https://github.com/tendermint/kms/pull/197
+[#186]: https://github.com/tendermint/kms/pull/186
+[#180]: https://github.com/tendermint/kms/pull/180
+[#176]: https://github.com/tendermint/kms/pull/176
 [0.3.0]: https://github.com/tendermint/kms/pull/165
 [#161]: https://github.com/tendermint/kms/pull/161
 [#162]: https://github.com/tendermint/kms/pull/162
