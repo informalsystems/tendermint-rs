@@ -1160,7 +1160,7 @@ dependencies = [
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "tendermint 0.3.0-beta1",
  "tiny-bip39 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "yubihsm 0.22.0-alpha2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "yubihsm 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "zeroize 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1236,7 +1236,7 @@ dependencies = [
 
 [[package]]
 name = "yubihsm"
-version = "0.22.0-alpha2"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "aes 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1421,6 +1421,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum winapi-i686-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
 "checksum winapi-x86_64-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 "checksum x25519-dalek 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)" = "58e75de7a035f694df91838afa87faa8278bc484fa8d7dc34b5a24535cc2bb41"
-"checksum yubihsm 0.22.0-alpha2 (registry+https://github.com/rust-lang/crates.io-index)" = "9163ad90f2ff993df23530b1e4c1bcd98e4e32903656c935040f6349d8126413"
+"checksum yubihsm 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b61bfeae6f2ff19327d5ce0c9263afd7f80bda2c3fc5ffd9afd98146d0e72457"
 "checksum zeroize 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "d7ddffec9ddef28ba2d6359bcbf0dc6772e62b112bc103dfb1e6fab46cd47c39"
 "checksum zeroize 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "8ddfeb6eee2fb3b262ef6e0898a52b7563bb8e0d5955a313b3cf2f808246ea14"
