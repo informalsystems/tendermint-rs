@@ -1,5 +1,6 @@
 // Error types
 
+use crate::last_sign_state;
 use crate::prost;
 use abscissa::Error;
 use signatory;
@@ -77,6 +78,10 @@ pub enum KmsErrorKind {
     /// Verification operation failed
     #[fail(display = "verification failed")]
     VerificationError,
+
+    /// Signature invalid
+    #[fail(display = "attempted double sign")]
+    DoubleSign,
 }
 
 impl Display for KmsError {
@@ -143,5 +148,11 @@ impl From<tendermint::Error> for KmsError {
 impl From<TmValidationError> for KmsError {
     fn from(other: TmValidationError) -> Self {
         err!(KmsErrorKind::InvalidMessageError, other).into()
+    }
+}
+
+impl From<last_sign_state::LastSignError> for KmsError {
+    fn from(other: last_sign_state::LastSignError) -> Self {
+        err!(KmsErrorKind::DoubleSign, other).into()
     }
 }

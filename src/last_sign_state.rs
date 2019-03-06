@@ -1,6 +1,11 @@
 use abscissa::Error;
 use serde_json;
-use std::{fs::File, io::prelude::*, path::Path};
+use std::{
+    fmt::{self, Display},
+    fs::File,
+    io::prelude::*,
+    path::Path,
+};
 use tendermint::{block, chain};
 
 #[derive(Serialize, Deserialize)]
@@ -21,7 +26,7 @@ const EMPTY_DATA: LastSignData = LastSignData {
 pub struct LastSignState {
     data: LastSignData,
     file: File,
-    chain_id: chain::Id,
+    _chain_id: chain::Id,
 }
 
 /// Error type
@@ -46,13 +51,19 @@ impl From<Error<LastSignErrorKind>> for LastSignError {
     }
 }
 
+impl Display for LastSignError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 impl LastSignState {
     pub fn load_state(path: &Path, chain_id: chain::Id) -> std::io::Result<LastSignState> {
         if !path.exists() {
             let mut lst = LastSignState {
                 data: EMPTY_DATA,
                 file: File::create(path)?,
-                chain_id: chain_id,
+                _chain_id: chain_id,
             };
             lst.sync_to_disk()?;
             return Ok(lst);
@@ -60,16 +71,13 @@ impl LastSignState {
         let mut lst = LastSignState {
             data: EMPTY_DATA,
             file: File::open(path)?,
-            chain_id: chain_id,
+            _chain_id: chain_id,
         };
 
         let mut contents = String::new();
         lst.file.read_to_string(&mut contents)?;
         lst.data = serde_json::from_str(&contents).unwrap();
         return Ok(lst);
-    }
-    pub fn filename(&self) -> String {
-        self.chain_id.as_str().to_owned() + "_validator_state.json"
     }
 
     pub fn sync_to_disk(&mut self) -> std::io::Result<()> {
@@ -159,7 +167,7 @@ mod tests {
                 block_id: None,
             },
             file: File::create("/tmp/tmp_state.json").unwrap(),
-            chain_id: "example-chain".parse::<chain::Id>().unwrap(),
+            _chain_id: "example-chain".parse::<chain::Id>().unwrap(),
         };
         assert_eq!(
             last_sign_state.check_and_update_hrs(2, 0, 0, None).unwrap(),
@@ -177,7 +185,7 @@ mod tests {
                 block_id: Some(block::Id::from_str(EXAMPLE_BLOCK_ID).unwrap()),
             },
             file: File::create("/tmp/tmp_state.json").unwrap(),
-            chain_id: "example-chain".parse::<chain::Id>().unwrap(),
+            _chain_id: "example-chain".parse::<chain::Id>().unwrap(),
         };
         let double_sign_block = block::Id::from_str(EXAMPLE_DOUBLE_SIGN_BLOCK_ID).unwrap();
         let err = last_sign_state.check_and_update_hrs(1, 1, 1, Some(double_sign_block));
