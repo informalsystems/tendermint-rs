@@ -23,11 +23,28 @@ Tendermint KMS is currently **beta quality**.
 
 It supports [YubiHSM 2] and [Ledger] as hardware-backed key storage methods.
 
-It does NOT yet implement double signing prevention or high availability
-features. Please see the following issues to track progress:
+### Security Issues
 
-- [#193: State tracking for double sign protection](https://github.com/tendermint/kms/pull/193)
+The following high severity security issues are still unresolved:
+
+- [#111: AuthZ for signing key usage](https://github.com/tendermint/kms/issues/111)
+- [#142: MITM in secret connection](https://github.com/tendermint/kms/issues/142)
+
+Work is underway to address them both.
+
+For now we recommend the connection between the KMS and validators occur over
+an isolated network and not depend solely on the Secret Connection protocol for
+authentication and confidentiality (which is also a good idea in general for
+defense-in-depth purposes).
+
+### Double Signing / High Availability
+
+Tendermint KMS does NOT yet implement double signing prevention or high
+availability features. Please see the following issues to track progress:
+
+- [#60: Double-signing prevention (MVP for launch)](https://github.com/tendermint/kms/issues/60)
 - [#115: Dobule signing prevention (post-launch)](https://github.com/tendermint/kms/issues/115)
+- [#193: State tracking for double sign protection](https://github.com/tendermint/kms/pull/193)
 
 ## Supported Platforms
 
