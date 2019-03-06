@@ -54,7 +54,10 @@ impl Session<SecretConnection<TcpStream>> {
         let signer = Ed25519Signer::from(secret_connection_key);
         let public_key = SecretConnectionKey::from(ed25519::public_key(&signer)?);
         let connection = SecretConnection::new(socket, &public_key, &signer)?;
-        let last_sign_state = LastSignState::load_state(Path::new(chain_id.as_ref()), chain_id)?;
+        let last_sign_state = LastSignState::load_state(
+            Path::new(&(chain_id.as_ref().to_owned() + "_priv_validator_state.json")),
+            chain_id,
+        )?;
 
         Ok(Self {
             chain_id,
@@ -74,7 +77,10 @@ impl Session<UnixConnection<UnixStream>> {
 
         let socket = UnixStream::connect(socket_path)?;
         let connection = UnixConnection::new(socket);
-        let last_sign_state = LastSignState::load_state(Path::new(chain_id.as_ref()), chain_id)?;
+        let last_sign_state = LastSignState::load_state(
+            Path::new(&(chain_id.as_ref().to_owned() + "_priv_validator_state.json")),
+            chain_id,
+        )?;
 
         Ok(Self {
             chain_id,
@@ -143,6 +149,7 @@ where
             },
             None => (),
         }
+        self.last_sign_state.sync_to_disk()?;
         let mut to_sign = vec![];
         request.sign_bytes(self.chain_id, &mut to_sign)?;
 
