@@ -311,7 +311,7 @@ The following command lists keys in the HSM:
 
 ```
 $ tmkms yubihsm keys list
-Listing keys in YubiHSM #0007550072:
+Listing keys in YubiHSM #9876543211:
 - #1:	 cosmosvalconspub1zcjduepqtvzxa733n7dhrjf247n0jtdwsvvsd4jgqvzexj5tkwerpzy5sugsvmfja3
 ```
 
