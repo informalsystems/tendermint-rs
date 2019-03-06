@@ -85,6 +85,36 @@ SUBCOMMANDS:
 If `detect`, `help`, `keys`, `setup` etc are listed under `SUBCOMMANDS` then
 the build was successfully configured with YubiHSM 2 support.
 
+## udev configuration
+
+On Linux, you will need to grant `tmkms` access to the YubiHSM 2 using
+rules for the udev subsystem. Otherwise, you'll get an error like this:
+
+```
+$ tmkms yubihsm detect
+error: couldn't detect USB devices: USB error: USB(bus=1,addr=4):
+       error opening device: Access denied (insufficient permissions)
+```
+
+You'll need to create a POSIX group, e.g. `yubihsm` which is allowed to
+access the YubiHSM2, and then add the following rules file under the
+`/etc/udev/rules.d` directory, e.g. `/etc/udev/rules.d/10-yubihsm.rules`:
+
+```
+SUBSYSTEMS=="usb", ATTRS{product}=="YubiHSM", GROUP=="yubihsm"
+```
+
+Note that creating this file does not have an immediate effect: you'll
+need to reload the udev subsystem, either by rebooting or running the
+following command:
+
+```
+$ udevadm control --reload-rules && udevadm trigger
+```
+
+For the rules above to apply, make sure you run `tmkms` as a user which is a
+member of the `yubihsm` group!
+
 ## Production YubiHSM 2 setup
 
 `tmkms` contains built-in support for fully automated production YubiHSM 2

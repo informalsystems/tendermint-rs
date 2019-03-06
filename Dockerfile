@@ -69,7 +69,7 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
     cargo install cargo-audit
 
 # Configure Rust environment variables
-ENV RUSTFLAGS "-Ctarget-feature=+aes"
+ENV RUSTFLAGS "-Ctarget-feature=+aes,+ssse3"
 ENV RUST_BACKTRACE full
 
 ###################################################
