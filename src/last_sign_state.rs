@@ -1,16 +1,22 @@
-
 use abscissa::Error;
 use serde_json;
 use std::{fs::File, io::prelude::*, path::Path};
-use tendermint::{chain, block};
+use tendermint::{block, chain};
 
 #[derive(Serialize, Deserialize)]
 struct LastSignData {
     pub height: i64,
     pub round: i64,
     pub step: i8,
-    pub block_id:  Option<block::Id>,
+    pub block_id: Option<block::Id>,
 }
+
+const EMPTY_DATA: LastSignData = LastSignData {
+    height: 0,
+    round: 0,
+    step: 0,
+    block_id: None,
+};
 
 pub struct LastSignState {
     data: LastSignData,
@@ -41,33 +47,44 @@ impl From<Error<LastSignErrorKind>> for LastSignError {
 }
 
 impl LastSignState {
-    pub fn init_state(&mut self, path: &Path) -> std::io::Result<()> {
-        if path.exists() {
-            return Ok(());
+    pub fn load_state(path: &Path, chain_id: chain::Id) -> std::io::Result<LastSignState> {
+        if !path.exists() {
+            let mut lst = LastSignState {
+                data: EMPTY_DATA,
+                file: File::create(path)?,
+                chain_id: chain_id,
+            };
+            lst.sync_to_disk()?;
+            return Ok(lst);
         }
-        self.file = File::create(self.filename())?;
+        let mut lst = LastSignState {
+            data: EMPTY_DATA,
+            file: File::open(path)?,
+            chain_id: chain_id,
+        };
+
+        let mut contents = String::new();
+        lst.file.read_to_string(&mut contents)?;
+        lst.data = serde_json::from_str(&contents).unwrap();
+        return Ok(lst);
+    }
+    pub fn filename(&self) -> String {
+        self.chain_id.as_str().to_owned() + "_validator_state.json"
+    }
+
+    pub fn sync_to_disk(&mut self) -> std::io::Result<()> {
         self.file
             .write_all(serde_json::to_string(&self.data).unwrap().as_ref())?;
         self.file.sync_all()?;
         return Ok(());
     }
-    pub fn load_state(&mut self, path: &Path) -> std::io::Result<()> {
-        self.file = File::open(path)?;
-        let mut contents = String::new();
-        self.file.read_to_string(&mut contents)?;
-        self.data = serde_json::from_str(&contents).unwrap();
-        return Ok(());
-    }
-    pub fn filename(&self) -> String {
-        self.chain_id.as_str().to_owned() + "_validator_state.json"
-    }
-    
+
     pub fn check_and_update_hrs(
         &mut self,
         height: i64,
         round: i64,
         step: i8,
-        block_id:Option<block::Id>, 
+        block_id: Option<block::Id>,
     ) -> Result<(), LastSignError> {
         if height < self.data.height {
             fail!(
@@ -88,7 +105,6 @@ impl LastSignState {
                 )
             }
             if round == self.data.round {
-  
                 if step < self.data.step {
                     fail!(
                         LastSignErrorKind::StepRegression,
@@ -100,7 +116,8 @@ impl LastSignState {
                     )
                 }
 
-                if block_id != None && self.data.block_id != None && self.data.block_id != block_id {
+                if block_id != None && self.data.block_id != None && self.data.block_id != block_id
+                {
                     fail!(
                     LastSignErrorKind::DoubleSign,
                     "Attempting to sign a second proposal at height:{} round:{} step:{} old block id:{} new block {}",
@@ -122,47 +139,54 @@ impl LastSignState {
 }
 #[cfg(test)]
 mod tests {
-    use tendermint::{chain, block};
-    use std::str::FromStr;
     use super::*;
+    use std::str::FromStr;
+    use tendermint::{block, chain};
 
-    const EXAMPLE_BLOCK_ID:&str ="26C0A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
+    const EXAMPLE_BLOCK_ID: &str =
+        "26C0A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
 
-    const EXAMPLE_DOUBLE_SIGN_BLOCK_ID:&str = "2470A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
+    const EXAMPLE_DOUBLE_SIGN_BLOCK_ID: &str =
+        "2470A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
 
+    #[test]
+    fn hrs_test() {
+        let mut last_sign_state = LastSignState {
+            data: LastSignData {
+                height: 1,
+                round: 1,
+                step: 0,
+                block_id: None,
+            },
+            file: File::create("/tmp/tmp_state.json").unwrap(),
+            chain_id: "example-chain".parse::<chain::Id>().unwrap(),
+        };
+        assert_eq!(
+            last_sign_state.check_and_update_hrs(2, 0, 0, None).unwrap(),
+            ()
+        )
+    }
 
-#[test]
-fn hrs_test(){
-    let mut last_sign_state = LastSignState{
-        data:LastSignData{
-            height: 1,
-            round: 1,
-            step: 0,
-            block_id:None,
-        },
-        file: File::create("/tmp/tmp_state.json").unwrap(),
-        chain_id:"example-chain".parse::<chain::Id>().unwrap()
-    };
-    assert_eq!(last_sign_state.check_and_update_hrs(2,0,0,None).unwrap(),())
-}
+    #[test]
+    fn hrs_test_double_sign() {
+        let mut last_sign_state = LastSignState {
+            data: LastSignData {
+                height: 1,
+                round: 1,
+                step: 0,
+                block_id: Some(block::Id::from_str(EXAMPLE_BLOCK_ID).unwrap()),
+            },
+            file: File::create("/tmp/tmp_state.json").unwrap(),
+            chain_id: "example-chain".parse::<chain::Id>().unwrap(),
+        };
+        let double_sign_block = block::Id::from_str(EXAMPLE_DOUBLE_SIGN_BLOCK_ID).unwrap();
+        let err = last_sign_state.check_and_update_hrs(1, 1, 1, Some(double_sign_block));
 
-#[test]
-fn hrs_test_double_sign(){
-    let mut last_sign_state = LastSignState{
-        data:LastSignData{
-            height: 1,
-            round: 1,
-            step: 0,
-            block_id:Some(block::Id::from_str(EXAMPLE_BLOCK_ID).unwrap()),
-        },
-        file: File::create("/tmp/tmp_state.json").unwrap(),
-        chain_id:"example-chain".parse::<chain::Id>().unwrap()
-    };
-    let double_sign_block= block::Id::from_str(EXAMPLE_DOUBLE_SIGN_BLOCK_ID).unwrap();
-    let err = last_sign_state.check_and_update_hrs(1,1,1,Some(double_sign_block));
+        let double_sign_error = LastSignErrorKind::DoubleSign;
 
-    let double_sign_error = LastSignErrorKind::DoubleSign;
-
-    assert_eq!(err.expect_err("Expect Double Sign error").0.kind(),&double_sign_error)
-}
+        assert_eq!(
+            err.expect_err("Expect Double Sign error").0.kind(),
+            &double_sign_error
+        )
+    }
 }
