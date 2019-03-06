@@ -23,25 +23,22 @@ jobs:
         command: |
           rustc --version
           cargo --version
-          cargo build
+          cargo build --features=yubihsm
+          cargo build --features=ledgertm
+          cargo build --features=yubihsm,ledgertm,softsign
     - run:
         name: build --release
         command: |
           rustc --version
           cargo --version
-          cargo build --release
-    - run:
-        name: build --all-features (debug)
-        command: |
-          rustc --version
-          cargo --version
-          cargo build --all-features
+          cargo build --release --features=yubihsm
+          cargo build --release --features=ledgertm
     - run:
         name: test --all-features
         command: |
           rustc --version
           cargo --version
-          cargo test --all --features "default softsign yubihsm yubihsm-mock"
+          cargo test --all --all-features
     - run:
         name: audit
         command: |
@@ -50,6 +47,7 @@ jobs:
     - run:
         name: validate against test harness
         command: |
+          cargo build --features=softsign
           TMKMS_BIN=./target/debug/tmkms sh tests/support/run-harness-tests.sh
     - save_cache:
         key: cache-2019-01-25-v0 # bump restore_cache key above too

@@ -50,7 +50,7 @@ tempfile = "3"
 rand = "0.6" # TODO: switch to the getrandom crate
 
 [features]
-default = ["softsign"]
+default = []
 softsign = []
 ledgertm = ["signatory-ledger-tm"]
 yubihsm-mock = ["yubihsm/mockhsm"]
