@@ -55,7 +55,7 @@ impl Session<SecretConnection<TcpStream>> {
         let public_key = SecretConnectionKey::from(ed25519::public_key(&signer)?);
         let connection = SecretConnection::new(socket, &public_key, &signer)?;
         let last_sign_state = LastSignState::load_state(
-            Path::new(&(chain_id.as_ref().to_owned() + "_priv_validator_state.json")),
+            Path::new(&(chain_id.to_string() + "_priv_validator_state.json")),
             chain_id,
         )?;
 

@@ -2,7 +2,7 @@ use abscissa::Error;
 use serde_json;
 use std::{
     fmt::{self, Display},
-    fs::File,
+    fs::{File, OpenOptions},
     io::prelude::*,
     path::Path,
 };
@@ -70,7 +70,7 @@ impl LastSignState {
         }
         let mut lst = LastSignState {
             data: EMPTY_DATA,
-            file: File::open(path)?,
+            file: OpenOptions::new().read(true).write(true).open(path)?,
             _chain_id: chain_id,
         };
 
@@ -82,7 +82,7 @@ impl LastSignState {
 
     pub fn sync_to_disk(&mut self) -> std::io::Result<()> {
         self.file
-            .write_all(serde_json::to_string(&self.data).unwrap().as_ref())?;
+            .write_all(serde_json::to_string(&self.data)?.as_ref())?;
         self.file.sync_all()?;
         Ok(())
     }
