@@ -77,14 +77,14 @@ impl LastSignState {
         let mut contents = String::new();
         lst.file.read_to_string(&mut contents)?;
         lst.data = serde_json::from_str(&contents).unwrap();
-        return Ok(lst);
+        Ok(lst)
     }
 
     pub fn sync_to_disk(&mut self) -> std::io::Result<()> {
         self.file
             .write_all(serde_json::to_string(&self.data).unwrap().as_ref())?;
         self.file.sync_all()?;
-        return Ok(());
+        Ok(())
     }
 
     pub fn check_and_update_hrs(

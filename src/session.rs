@@ -134,8 +134,8 @@ where
     fn sign<T: TendermintRequest + Debug>(&mut self, mut request: T) -> Result<Response, KmsError> {
         request.validate()?;
 
-        match request.consensus_state() {
-            Some(cs) => match self.last_sign_state.check_and_update_hrs(
+        if let Some(cs) = request.consensus_state() {
+            match self.last_sign_state.check_and_update_hrs(
                 cs.height,
                 cs.round,
                 cs.step,
@@ -146,8 +146,7 @@ where
                     debug! {"Double sign event: {}",e}
                     return Err(KmsError::from(e));
                 }
-            },
-            None => (),
+            }
         }
         self.last_sign_state.sync_to_disk()?;
         let mut to_sign = vec![];
