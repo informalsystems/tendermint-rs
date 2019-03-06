@@ -35,8 +35,8 @@ pub struct GenerateCommand {
     pub backup_file: Option<PathBuf>,
 
     /// Key ID of the wrap key to use when creating a backup
-    #[options(no_short, long = "backup-key")]
-    pub backup_wrap_key: Option<yubihsm::object::Id>,
+    #[options(short = "w", long = "wrapkey")]
+    pub wrap_key_id: Option<yubihsm::object::Id>,
 
     /// Key IDs to generate
     #[options(free)]
@@ -108,7 +108,7 @@ impl Callable for GenerateCommand {
                     &hsm,
                     *key_id,
                     &backup_file,
-                    self.backup_wrap_key.unwrap_or(DEFAULT_WRAP_KEY),
+                    self.wrap_key_id.unwrap_or(DEFAULT_WRAP_KEY),
                 );
             }
         }

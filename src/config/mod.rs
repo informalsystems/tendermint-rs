@@ -14,6 +14,7 @@ pub const CONFIG_FILE_NAME: &str = "tmkms.toml";
 #[serde(deny_unknown_fields)]
 pub struct KmsConfig {
     /// Addresses of validator nodes
+    #[serde(default)]
     pub validator: Vec<ValidatorConfig>,
 
     /// Cryptographic signature provider configuration
