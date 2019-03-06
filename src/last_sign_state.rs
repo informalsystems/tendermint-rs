@@ -76,7 +76,7 @@ impl LastSignState {
 
         let mut contents = String::new();
         lst.file.read_to_string(&mut contents)?;
-        lst.data = serde_json::from_str(&contents).unwrap();
+        lst.data = serde_json::from_str(&contents)?;
         Ok(lst)
     }
 
