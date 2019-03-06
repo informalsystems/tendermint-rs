@@ -156,7 +156,7 @@ impl SignableMsg for SignVoteRequest {
             Some(ref v) => Some(ConsensusState {
                 height: v.height,
                 round: v.round,
-                step: 5, //To Do check if correct.
+                step: 6, 
                 block_id: {
                     match v.block_id {
                         Some(ref b) => match b.parse_block_id() {
