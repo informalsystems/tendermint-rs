@@ -135,7 +135,7 @@ impl SignableMsg for SignProposalRequest {
             Some(ref p) => Some(ConsensusState {
                 height: p.height,
                 round: p.round,
-                step: 3, 
+                step: 3,
                 block_id: {
                     match p.block_id {
                         Some(ref b) => match b.parse_block_id() {
