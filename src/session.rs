@@ -22,6 +22,7 @@ use tendermint::{
 use crate::{
     error::KmsError,
     keyring::KeyRing,
+    last_sign_state::LastSignState,
     prost::Message,
     rpc::{Request, Response, TendermintRequest},
     unix_connection::UnixConnection,
@@ -34,6 +35,9 @@ pub struct Session<Connection> {
 
     /// TCP connection to a validator node
     connection: Connection,
+
+    /// Stateful double sign defense that is synced to disk
+    last_sign_state: LastSignState,
 }
 
 impl Session<SecretConnection<TcpStream>> {
@@ -50,10 +54,12 @@ impl Session<SecretConnection<TcpStream>> {
         let signer = Ed25519Signer::from(secret_connection_key);
         let public_key = SecretConnectionKey::from(ed25519::public_key(&signer)?);
         let connection = SecretConnection::new(socket, &public_key, &signer)?;
+        let last_sign_state = LastSignState::load_state(Path::new(chain_id.as_ref()), chain_id)?;
 
         Ok(Self {
             chain_id,
             connection,
+            last_sign_state,
         })
     }
 }
@@ -68,10 +74,12 @@ impl Session<UnixConnection<UnixStream>> {
 
         let socket = UnixStream::connect(socket_path)?;
         let connection = UnixConnection::new(socket);
+        let last_sign_state = LastSignState::load_state(Path::new(chain_id.as_ref()), chain_id)?;
 
         Ok(Self {
             chain_id,
             connection,
+            last_sign_state,
         })
     }
 }
