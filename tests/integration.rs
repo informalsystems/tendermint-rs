@@ -291,7 +291,7 @@ fn test_handle_and_sign_proposal() {
         let proposal = amino_types::proposal::Proposal {
             msg_type: amino_types::SignedMsgType::Proposal.to_u32(),
             height: 12345,
-            round: 23456,
+            round: 1,
             timestamp: Some(t),
             pol_round: -1,
             block_id: None,
