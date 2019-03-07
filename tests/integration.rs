@@ -8,6 +8,7 @@ use rand::Rng;
 use signatory::{ed25519, encoding::Identity, Decode, Signature};
 use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
 use std::{
+    fs,
     io::{self, Cursor, Read, Write},
     net::{TcpListener, TcpStream},
     os::unix::net::{UnixListener, UnixStream},
@@ -204,6 +205,11 @@ impl ProtocolTester {
     where
         F: FnOnce(ProtocolTester),
     {
+
+        //delete a state file if present
+        fs::remove_file("test_chain_id_priv_validator_state.json").unwrap();
+
+
         let tcp_device = KmsProcess::create_tcp();
         let tcp_connection = tcp_device.create_connection();
         let unix_device = KmsProcess::create_unix();
