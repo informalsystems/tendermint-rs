@@ -2,21 +2,22 @@
 
 mod ed25519;
 
+use self::ed25519::Signer;
+use crate::{
+    config::provider::ProviderConfig,
+    error::{KmsError, KmsErrorKind::*},
+};
 use signatory::ed25519::{PublicKey, Signature};
 use std::{collections::BTreeMap, sync::RwLock};
 use subtle_encoding;
 use tendermint::public_keys::ConsensusKey;
 
-use crate::{
-    config::provider::ProviderConfig,
-    error::{KmsError, KmsErrorKind::*},
-};
-
 #[cfg(feature = "ledgertm")]
 use self::ed25519::ledgertm;
+#[cfg(feature = "softsign")]
+use self::ed25519::softsign;
 #[cfg(feature = "yubihsm")]
 use self::ed25519::yubihsm;
-use self::ed25519::{softsign, Signer};
 
 /// File encoding for software-backed secret keys
 pub type SecretKeyEncoding = subtle_encoding::Base64;

@@ -1,7 +1,5 @@
 //! Tendermint Key Management System
 
-#![crate_name = "tmkms"]
-#![crate_type = "rlib"]
 #![deny(
     warnings,
     missing_docs,
@@ -9,6 +7,12 @@
     unused_import_braces,
     unused_qualifications
 )]
+
+#[cfg(not(any(feature = "softsign", feature = "yubihsm", feature = "ledgertm")))]
+compile_error!(
+    "please enable one of the following backends with cargo's --features argument: \
+     yubihsm, ledgertm, softsign (e.g. --features=yubihsm)"
+);
 
 extern crate prost_amino as prost;
 #[macro_use]

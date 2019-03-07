@@ -1,3 +1,7 @@
+## 0.3.0 (2019-03-05)
+
+- Support for secp256k1 keys ([#181])
+
 ## 0.2.0 (2019-01-23)
 
 This release is compatible with tendermint [v0.29]
@@ -38,3 +42,5 @@ This release is compatible with tendermint [v0.28]
 ## 0.1.0 (2018-11-13)
 
 - Initial release
+
+[#181]: https://github.com/tendermint/kms/pull/181

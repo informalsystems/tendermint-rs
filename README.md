@@ -4,22 +4,14 @@
 [![Build Status][build-image]][build-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
 
-[crate-image]: https://img.shields.io/crates/v/tmkms.svg
-[crate-link]: https://crates.io/crates/tmkms
-[build-image]: https://circleci.com/gh/tendermint/kms.svg?style=shield
-[build-link]: https://circleci.com/gh/tendermint/kms
-[license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
-[license-link]: https://github.com/tendermint/kms/blob/master/LICENSE
-
-Key Management System for Cosmos Validators.
-
-https://cosmos.network/
+Key Management System for [Tendermint] applications, initially targeting
+[Cosmos Validators].
 
 ## About
 
-This repository contains `tmkms`, a lightweight service intended to be deployed
-alongside the `gaiad` service (ideally on separate physical hosts) which provides
-the following:
+This repository contains `tmkms`, a key management service intended to be deployed
+in conjunction with [Tendermint] applications (ideally on separate physical hosts)
+which provides the following:
 
 - **High-availability** access to validator signing keys
 - **Double-signing** prevention even in the event the validator process is compromised
@@ -27,11 +19,32 @@ the following:
 
 ## Status
 
-Tendermint KMS is currently **alpha quality**. It supports YubiHSM2-backed
-signing when used in conjunction with `cosmos-sdk` 0.26.
+Tendermint KMS is currently **beta quality**.
 
-It does NOT yet implement double signing prevention or high availability
-features. These are planned features which will be implemented soon.
+It supports [YubiHSM 2] and [Ledger] as hardware-backed key storage methods.
+
+### Security Issues
+
+The following high severity security issues are still unresolved:
+
+- [#111: AuthZ for signing key usage](https://github.com/tendermint/kms/issues/111)
+- [#142: MITM in secret connection](https://github.com/tendermint/kms/issues/142)
+
+Work is underway to address them both.
+
+For now we recommend the connection between the KMS and validators occur over
+an isolated network and not depend solely on the Secret Connection protocol for
+authentication and confidentiality (which is also a good idea in general for
+defense-in-depth purposes).
+
+### Double Signing / High Availability
+
+Tendermint KMS does NOT yet implement double signing prevention or high
+availability features. Please see the following issues to track progress:
+
+- [#60: Double-signing prevention (MVP for launch)](https://github.com/tendermint/kms/issues/60)
+- [#115: Dobule signing prevention (post-launch)](https://github.com/tendermint/kms/issues/115)
+- [#193: State tracking for double sign protection](https://github.com/tendermint/kms/pull/193)
 
 ## Supported Platforms
 
@@ -74,24 +87,53 @@ You will need the following prerequisites:
   - RedHat/CentOS: `yum install libusb1-devel`
   - macOS (Homebrew): `brew install libusb`
 
-To install `tmkms`, do the following:
+NOTE (x86_64 only): Configure `RUSTFLAGS` environment variable:
+`export RUSTFLAGS=-Ctarget-feature=+aes,+ssse3`
 
-1. (x86_64 only) Configure `RUSTFLAGS` environment variable: `export RUSTFLAGS=-Ctarget-feature=+aes,+ssse3`
-2. Run the following to install Tendermint KMS using Rust's `cargo` tool:
+There are two ways to install `tmkms`: either compiling the source code after
+cloning it from git, or using Rust's `cargo install` command.
+
+### Compiling from source code (via git)
+
+`tmkms` can be compiled directly from the git repository source code using the
+following method.
+
+The following example adds `--features=yubihsm` to enable YubiHSM 2 support.
 
 ```
-$ cargo install tmkms
+$ git clone https://github.com/tendermint/kms.git && cd kms
+[...]
+$ cargo build --release --features=yubihsm
 ```
 
-3. Copy the example `tmkms.toml` file to a local directory (e.g. `~/.tmkms`):
+Alternatively, substitute `--features=ledgertm` to enable Ledger support.
 
-https://github.com/tendermint/kms/blob/master/tmkms.toml.example
+If successful, this will produce a `tmkms` executable located at
+`./target/release/tmkms`
 
-Edit it to match your desired configuration.
+### Installing with the `cargo install` command
+
+With Rust (1.31+) installed, you can install tmkms with the following:
+
+```
+cargo install tmkms --features=yubihsm
+```
+
+Or to install a specific version (recommended):
+
+```
+cargo install tmkms --features=yubihsm --version=0.4.0
+```
+
+Alternatively, substitute `--features=ledgertm` to enable Ledger support.
+
+## YubiHSM 2 Setup Instructions
+
+[Please see README.yubihsm.md](https://github.com/tendermint/kms/blob/master/README.yubihsm.md)
 
 ## Usage
 
-Start `tmkms` with the following:
+After compiling, start `tmkms` with the following:
 
 
 ```
@@ -107,60 +149,14 @@ To explicitly specify the path to the configuration, use the `-c` flag:
 $ tmkms start -c /path/to/tmkms.toml
 ```
 
-## YubiHSM2 Setup
-
-YubiHSM2 devices from Yubico are the main HSM solution supported by
-Tendermint KMS at this time (Ledger support forthcoming!)
-
-The `tmkms yubihsm` subcommand provides YubiHSM2 setup, information, and
-testing features:
-
-- `tmkms yubihsm detect` - list all YubiHSM2 devices detected via USB
-- `tmkms yubihsm keys` - manage keys on the device
-  - `tmkms yubihsm keys generate <id>` - generate an Ed25519 signing key with the given ID number (e.g. 1)
-  - `tmkms yubihsm keys list` - list all Ed25519 signing keys in the YubiHSM2
-  - `tmkms yubihsm keys test <id>` - perform a signing test using the given key
-
-See also [this walkthrough for setting up a YubiHSM2 with tmkms](https://forum.cosmos.network/t/ann-tendermint-kms-v0-0-1-preview-release-with-initial-yubihsm2-support/1218).
-
-### udev configuration
-
-On Linux, you will need to grant `tmkms` access to the YubiHSM2 using
-rules for the udev subsystem. Otherwise, you'll get an error like this:
-
-```
-$ tmkms yubihsm detect
-error: couldn't detect USB devices: USB error: USB(bus=1,addr=4):
-       error opening device: Access denied (insufficient permissions)
-```
-
-You'll need to create a POSIX group, e.g. `yubihsm` which is allowed to
-access the YubiHSM2, and then add the following rules file under the
-`/etc/udev/rules.d` directory, e.g. `/etc/udev/rules.d/10-yubihsm.rules`:
-
-```
-SUBSYSTEMS=="usb", ATTRS{product}=="YubiHSM", GROUP=="yubihsm"
-```
-
-Note that creating this file does not have an immediate effect: you'll
-need to reload the udev subsystem, either by rebooting or running the
-following command:
-
-```
-$ udevadm control --reload-rules && udevadm trigger
-```
-
-For the rules above to apply, make sure you run `tmkms` as a user which is a
-member of the `yubihsm` group!
-
 ## Development
 
 The following are instructions for setting up a development environment.
 They assume you've already followed steps 1 & 2 from the Installation
-section above (i.e. installed rustup and the noted nightly Rust released).
+section above.
 
-- Install **rustfmt**: `rustup component add rustfmt-preview`
-- Install **clippy**: `rustup component add clippy-preview`
+- Install **rustfmt**: `rustup component add rustfmt`
+- Install **clippy**: `rustup component add clippy`
 
 Alternatively, you can build a Docker image from the [Dockerfile] in the top
 level of the repository, which is what is used to run tests in CI.
@@ -193,7 +189,7 @@ cargo clippy
 
 ## License
 
-Copyright © 2018 Tendermint
+Copyright © 2018-2019 Tendermint
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -207,6 +203,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+[crate-image]: https://img.shields.io/crates/v/tmkms.svg
+[crate-link]: https://crates.io/crates/tmkms
+[build-image]: https://circleci.com/gh/tendermint/kms.svg?style=shield
+[build-link]: https://circleci.com/gh/tendermint/kms
+[license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
+[license-link]: https://github.com/tendermint/kms/blob/master/LICENSE
+[Tendermint]: https://tendermint.com/
+[Cosmos Validators]: https://cosmos.network/docs/gaia/validators/validator-faq.html
+[YubiHSM 2]: https://github.com/tendermint/kms/blob/master/README.yubihsm.md
+[Ledger]: https://www.ledger.com/
 [supported Rust platform]: https://forge.rust-lang.org/platform-support.html
 [libusb]: https://libusb.info/
 [Dockerfile]: https://github.com/tendermint/kms/blob/master/Dockerfile
