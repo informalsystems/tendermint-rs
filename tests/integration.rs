@@ -205,7 +205,6 @@ impl ProtocolTester {
     where
         F: FnOnce(ProtocolTester),
     {
-
         let tcp_device = KmsProcess::create_tcp();
         let tcp_connection = tcp_device.create_connection();
         let unix_device = KmsProcess::create_unix();
@@ -225,7 +224,6 @@ impl Drop for ProtocolTester {
         self.tcp_device.process.kill().unwrap();
         self.unix_device.process.kill().unwrap();
         fs::remove_file("test_chain_id_priv_validator_state.json").unwrap();
-
     }
 }
 
