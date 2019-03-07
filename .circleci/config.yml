@@ -41,7 +41,7 @@ jobs:
         command: |
           rustc --version
           cargo --version
-          cargo test --all --features "default softsign yubihsm yubihsm-mock"
+          cargo test --all --features "default softsign yubihsm yubihsm-mock" -- --test-threads 1
     - run:
         name: audit
         command: |
