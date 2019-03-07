@@ -205,10 +205,8 @@ impl ProtocolTester {
     where
         F: FnOnce(ProtocolTester),
     {
-
         //delete a state file if present
         fs::remove_file("test_chain_id_priv_validator_state.json").unwrap();
-
 
         let tcp_device = KmsProcess::create_tcp();
         let tcp_connection = tcp_device.create_connection();
