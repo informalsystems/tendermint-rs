@@ -1,5 +1,5 @@
 use super::validate::ValidationError;
-use crate::chain;
+use crate::{block, chain};
 use bytes::BufMut;
 use prost::{DecodeError, EncodeError};
 use signatory::ed25519;
@@ -15,8 +15,15 @@ pub trait SignableMsg {
 
     /// Set the Ed25519 signature on the underlying message
     fn set_signature(&mut self, sig: &ed25519::Signature);
-
     fn validate(&self) -> Result<(), ValidationError>;
+    fn consensus_state(&self) -> Option<ConsensusState>;
+}
+
+pub struct ConsensusState {
+    pub height: i64,
+    pub round: i64,
+    pub step: i8,
+    pub block_id: Option<block::Id>,
 }
 
 /// Signed message types. This follows:

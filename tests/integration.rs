@@ -8,6 +8,7 @@ use rand::Rng;
 use signatory::{ed25519, encoding::Identity, Decode, Signature};
 use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
 use std::{
+    fs,
     io::{self, Cursor, Read, Write},
     net::{TcpListener, TcpStream},
     os::unix::net::{UnixListener, UnixStream},
@@ -222,6 +223,7 @@ impl Drop for ProtocolTester {
     fn drop(&mut self) {
         self.tcp_device.process.kill().unwrap();
         self.unix_device.process.kill().unwrap();
+        fs::remove_file("test_chain_id_priv_validator_state.json").unwrap();
     }
 }
 
@@ -291,7 +293,7 @@ fn test_handle_and_sign_proposal() {
         let proposal = amino_types::proposal::Proposal {
             msg_type: amino_types::SignedMsgType::Proposal.to_u32(),
             height: 12345,
-            round: 23456,
+            round: 1,
             timestamp: Some(t),
             pol_round: -1,
             block_id: None,

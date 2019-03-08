@@ -38,7 +38,7 @@ jobs:
         command: |
           rustc --version
           cargo --version
-          cargo test --all --all-features
+          cargo test --all --all-features -- --test-threads 1
     - run:
         name: audit
         command: |
