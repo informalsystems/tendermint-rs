@@ -19,7 +19,7 @@ which provides the following:
 
 ## Status
 
-Tendermint KMS is currently **beta quality**.
+Tendermint KMS is currently **ALPHA SOFTWARE AND UNAUDITED -- USE AT YOUR OWN RISK**.
 
 It supports [YubiHSM 2] and [Ledger] as hardware-backed key storage methods.
 
