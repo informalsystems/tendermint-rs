@@ -19,6 +19,7 @@ circle-ci = { repository = "tendermint/kms" }
 [dependencies]
 abscissa = "0.0.6"
 abscissa_derive = "0.0.2"
+atomicwrites = "0.2"
 byteorder = "1.2"
 bytes = "0.4"
 chrono = "0.4"

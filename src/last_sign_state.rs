@@ -1,14 +1,15 @@
 use abscissa::Error;
+use atomicwrites::{AtomicFile, OverwriteBehavior};
 use serde_json;
 use std::{
     fmt::{self, Display},
-    fs::{File, OpenOptions},
-    io::prelude::*,
-    path::Path,
+    fs,
+    io::{self, prelude::*},
+    path::{Path, PathBuf},
 };
 use tendermint::{block, chain};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 struct LastSignData {
     pub height: i64,
     pub round: i64,
@@ -16,16 +17,9 @@ struct LastSignData {
     pub block_id: Option<block::Id>,
 }
 
-const EMPTY_DATA: LastSignData = LastSignData {
-    height: 0,
-    round: 0,
-    step: 0,
-    block_id: None,
-};
-
 pub struct LastSignState {
     data: LastSignData,
-    file: File,
+    path: PathBuf,
     _chain_id: chain::Id,
 }
 
@@ -59,31 +53,34 @@ impl Display for LastSignError {
 
 impl LastSignState {
     pub fn load_state(path: &Path, chain_id: chain::Id) -> std::io::Result<LastSignState> {
-        if !path.exists() {
-            let mut lst = LastSignState {
-                data: EMPTY_DATA,
-                file: File::create(path)?,
-                _chain_id: chain_id,
-            };
-            lst.sync_to_disk()?;
-            return Ok(lst);
-        }
         let mut lst = LastSignState {
-            data: EMPTY_DATA,
-            file: OpenOptions::new().read(true).write(true).open(path)?,
+            data: LastSignData::default(),
+            path: path.to_owned(),
             _chain_id: chain_id,
         };
 
-        let mut contents = String::new();
-        lst.file.read_to_string(&mut contents)?;
-        lst.data = serde_json::from_str(&contents)?;
-        Ok(lst)
+        match fs::read_to_string(path) {
+            Ok(contents) => {
+                lst.data = serde_json::from_str(&contents)?;
+                Ok(lst)
+            }
+            Err(e) => {
+                if e.kind() == io::ErrorKind::NotFound {
+                    lst.sync_to_disk()?;
+                    Ok(lst)
+                } else {
+                    Err(e)
+                }
+            }
+        }
     }
 
     pub fn sync_to_disk(&mut self) -> std::io::Result<()> {
-        self.file
-            .write_all(serde_json::to_string(&self.data)?.as_ref())?;
-        self.file.sync_all()?;
+        let json = serde_json::to_string(&self.data)?;
+
+        AtomicFile::new(&self.path, OverwriteBehavior::AllowOverwrite)
+            .write(|f| f.write_all(json.as_bytes()))?;
+
         Ok(())
     }
 
@@ -145,6 +142,7 @@ impl LastSignState {
         Ok(())
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -157,6 +155,8 @@ mod tests {
     const EXAMPLE_DOUBLE_SIGN_BLOCK_ID: &str =
         "2470A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
 
+    const EXAMPLE_PATH: &str = "/tmp/tmp_state.json";
+
     #[test]
     fn hrs_test() {
         let mut last_sign_state = LastSignState {
@@ -166,7 +166,7 @@ mod tests {
                 step: 0,
                 block_id: None,
             },
-            file: File::create("/tmp/tmp_state.json").unwrap(),
+            path: EXAMPLE_PATH.into(),
             _chain_id: "example-chain".parse::<chain::Id>().unwrap(),
         };
         assert_eq!(
@@ -184,7 +184,7 @@ mod tests {
                 step: 0,
                 block_id: Some(block::Id::from_str(EXAMPLE_BLOCK_ID).unwrap()),
             },
-            file: File::create("/tmp/tmp_state.json").unwrap(),
+            path: EXAMPLE_PATH.into(),
             _chain_id: "example-chain".parse::<chain::Id>().unwrap(),
         };
         let double_sign_block = block::Id::from_str(EXAMPLE_DOUBLE_SIGN_BLOCK_ID).unwrap();

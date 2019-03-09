@@ -223,7 +223,13 @@ impl Drop for ProtocolTester {
     fn drop(&mut self) {
         self.tcp_device.process.kill().unwrap();
         self.unix_device.process.kill().unwrap();
-        fs::remove_file("test_chain_id_priv_validator_state.json").unwrap();
+
+        match fs::remove_file("test_chain_id_priv_validator_state.json") {
+            Err(ref e) if e.kind() != io::ErrorKind::NotFound => {
+                panic!("{}", e);
+            }
+            _ => (),
+        }
     }
 }
 
