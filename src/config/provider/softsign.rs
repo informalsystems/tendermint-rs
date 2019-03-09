@@ -1,12 +1,13 @@
 //! Configuration for software-backed signer (using ed25519-dalek)
 
+use crate::chain;
 use std::path::{Path, PathBuf};
 
 /// Software signer configuration
 #[derive(Clone, Deserialize, Debug)]
 pub struct SoftSignConfig {
-    /// Identifier for this key
-    pub id: String,
+    /// Chains this signing key is authorized to be used from
+    pub chain_ids: Vec<chain::Id>,
 
     /// Path to a file containing a cryptographic key
     // TODO: use `abscissa::Secret` to wrap this `PathBuf`

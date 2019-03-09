@@ -1,16 +1,13 @@
 //! Ledger Tendermint signer
 
-use signatory::PublicKeyed;
-use signatory_ledger_tm::{self, Ed25519LedgerTmAppSigner};
-
 use crate::{
     config::provider::ledgertm::LedgerTendermintConfig,
     error::{KmsError, KmsErrorKind::*},
-    keyring::{ed25519::Signer, KeyRing},
+    keyring::{ed25519::Signer, KeyRing, SigningProvider},
 };
-
-pub const LEDGER_TM_PROVIDER_LABEL: &str = "ledgertm";
-pub const LEDGER_TM_ID: &str = "ledgertm";
+use signatory::PublicKeyed;
+use signatory_ledger_tm::{self, Ed25519LedgerTmAppSigner};
+use tendermint::TendermintKey;
 
 /// Create Ledger Tendermint signer object from the given configuration
 pub fn init(
@@ -28,10 +25,19 @@ pub fn init(
             ledgertm_configs.len()
         );
     }
+
     let provider = Box::new(Ed25519LedgerTmAppSigner::connect()?);
-    let pk = provider.public_key()?;
-    // TODO: key_id shouldn't be a constant here (see LEDGER_TM_ID):
-    let signer = Signer::new(LEDGER_TM_PROVIDER_LABEL, LEDGER_TM_ID.to_string(), provider);
-    keyring.add(pk, signer)?;
+
+    // TODO(tarcieri): support for adding account keys into keyrings
+    let public_key = TendermintKey::ConsensusKey(provider.public_key()?.into());
+
+    let signer = Signer::new(
+        SigningProvider::LedgerTm,
+        &ledgertm_configs[0].chain_ids,
+        provider,
+    );
+
+    keyring.add(public_key, signer)?;
+
     Ok(())
 }

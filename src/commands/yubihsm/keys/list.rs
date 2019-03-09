@@ -1,7 +1,6 @@
 use abscissa::Callable;
-use signatory::ed25519;
 use std::process;
-use tendermint::public_keys::ConsensusKey;
+use tendermint::PublicKey;
 
 /// The `yubihsm keys list` subcommand
 #[derive(Debug, Default, Options)]
@@ -53,15 +52,15 @@ impl Callable for ListCommand {
                 process::exit(1);
             });
 
-            let key_id = format!("- #{}", key.object_id);
+            let key_id = format!("- 0x#{:04x}", key.object_id);
 
             // TODO: support for non-Ed25519 keys
             if public_key.algorithm == yubihsm::asymmetric::Algorithm::Ed25519 {
                 status_attr_ok!(
                     key_id,
-                    ConsensusKey::from(
-                        ed25519::PublicKey::from_bytes(&public_key.as_ref()).unwrap()
-                    )
+                    PublicKey::from_raw_ed25519(&public_key.as_ref())
+                        .unwrap()
+                        .to_hex()
                 );
             } else {
                 status_attr_err!(key_id, "unsupported algorithm: {:?}", public_key.algorithm);

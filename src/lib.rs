@@ -30,6 +30,7 @@ extern crate serde_derive;
 mod error;
 
 mod application;
+mod chain;
 mod client;
 mod commands;
 mod config;

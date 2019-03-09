@@ -1,4 +1,4 @@
-pub use signatory::ed25519::{PublicKey, Seed, PUBLIC_KEY_SIZE};
+pub use signatory::ed25519::{PublicKey, Seed, Signature, PUBLIC_KEY_SIZE};
 
 #[cfg(feature = "ledgertm")]
 pub mod ledgertm;

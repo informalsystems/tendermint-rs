@@ -13,7 +13,7 @@ use std::{
     sync::Arc,
 };
 use tendermint::{
-    amino_types::{PingRequest, PingResponse, PubKeyRequest, PubKeyResponse},
+    amino_types::{PingRequest, PingResponse, PubKeyRequest},
     chain,
     public_keys::SecretConnectionKey,
     SecretConnection,
@@ -154,7 +154,7 @@ where
 
         // TODO(ismail): figure out which key to use here instead of taking the only key
         // from keyring here:
-        let sig = KeyRing::sign(None, &to_sign)?;
+        let sig = KeyRing::sign_ed25519(None, &to_sign)?;
 
         request.set_signature(&sig);
         debug!("successfully signed request:\n {:?}", request);
@@ -169,11 +169,8 @@ where
 
     /// Get the public key for (the only) public key in the keyring
     fn get_public_key(&mut self, _request: &PubKeyRequest) -> Result<Response, KmsError> {
-        let pubkey = KeyRing::default_pubkey()?;
-        let pubkey_bytes = pubkey.as_bytes();
-
-        Ok(Response::PublicKey(PubKeyResponse {
-            pub_key_ed25519: pubkey_bytes.to_vec(),
-        }))
+        Ok(Response::PublicKey(
+            KeyRing::default_pubkey()?.to_response(),
+        ))
     }
 }

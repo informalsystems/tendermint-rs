@@ -2,6 +2,11 @@
 #
 # This file is passed to the KMS executable during integration tests
 
+# Information about Tenderment blockchain networks this KMS services
+[[chain]]
+id = "cosmoshub"
+key_format = { type = "bech32", account_key_prefix = "cosmospub", consensus_key_prefix = "cosmosvalconspub" }
+
 [[validator]]
 addr = "tcp://127.0.0.1:23456"
 chain_id = "test_chain_id"
@@ -11,5 +16,5 @@ secret_key = "tests/seccon.key"
 [[providers.yubihsm]]
 adapter = { type = "usb" }
 auth = { key = 1, password = "password" }
-keys = [{ id = "test_key", key = 1 }]
+keys = [{ chain_ids = ["cosmoshub"], key = 1 }]
 serial_number = "0123456789"

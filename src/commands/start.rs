@@ -1,13 +1,17 @@
-use abscissa::{Callable, GlobalConfig};
-use std::process;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::{thread, time};
-
 use crate::{
+    chain,
     client::Client,
     config::{KmsConfig, ValidatorConfig},
     keyring::KeyRing,
+};
+use abscissa::{Callable, GlobalConfig};
+use std::{
+    process,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    thread, time,
 };
 
 /// The `start` command
@@ -41,6 +45,10 @@ impl Callable for StartCommand {
         );
 
         let config = KmsConfig::get_global();
+
+        for chain_config in &config.chain {
+            chain::REGISTRY.register(chain_config.into()).unwrap();
+        }
 
         KeyRing::load_from_config(&config.providers).unwrap_or_else(|e| {
             status_err!("couldn't load keyring: {}", e);

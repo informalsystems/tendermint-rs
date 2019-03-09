@@ -2,24 +2,28 @@
 #
 # Copy this to 'tmkms.toml' and edit for your own purposes
 
+# Information about Tenderment blockchain networks this KMS services
+[[chain]]
+id = "cosmoshub"
+key_format = { type = "bech32", account_key_prefix = "cosmospub", consensus_key_prefix = "cosmosvalconspub" }
+
+# Validator configuration
 [[validator]]
 addr = "tcp://example1.example.com:26658" # or "unix:///path/to/socket"
-chain_id = "gaia-9000"
+chain_id = "cosmoshub"
 reconnect = true # true is the default
 secret_key = "path/to/secret_connection.key"
 
+# Provider configuration
 [[providers.softsign]]
-id = "gaia-8000"
+chain_ids = ["cosmoshub"]
 path = "path/to/signing.key"
 
 [[providers.yubihsm]]
 adapter = { type = "usb" }
 auth = { key = 1, password = "password" } # Default YubiHSM admin credentials. Change ASAP!
-keys = [{ id = "gaia-9000", key = 1 }]
+keys = [{ chain_ids = ["cosmoshub"], key = 1 }]
 #serial_number = "0123456789" # identify serial number of a specific YubiHSM to connect to
 
 [[providers.ledgertm]]
-# note:
-#  - this will enable a ledger signer
-#  - currently no other options are supported and
-#  - the key_id used by signatory internally will be "ledgertm" by default
+chain_ids = ["cosmoshub"]

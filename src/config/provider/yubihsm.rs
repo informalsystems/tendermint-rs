@@ -1,5 +1,6 @@
 //! Configuration for the `YubiHSM` backend
 
+use crate::chain;
 use abscissa::{
     secrets::{BorrowSecret, DebugSecret, Secret},
     util::Zeroize,
@@ -111,8 +112,8 @@ impl Zeroize for Password {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct SigningKeyConfig {
-    /// Identifier for this key
-    pub id: String,
+    /// Chains this signing key is authorized to be used from
+    pub chain_ids: Vec<chain::Id>,
 
     /// Signing key ID
     pub key: u16,
