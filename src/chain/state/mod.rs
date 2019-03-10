@@ -1,104 +1,50 @@
+//! Synchronized state tracking for Tendermint blockchain networks the KMS
+//! interacts with.
+//!
+//! Double-signing protection is the primary purpose of this code (for now).
+
+pub mod last_sign;
+
+pub use self::last_sign::{LastSignError, LastSignErrorKind};
 use crate::{chain, error::KmsError};
-use abscissa::Error;
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use serde_json;
 use std::{
-    fmt::{self, Display},
     fs,
     io::{self, prelude::*},
     path::{Path, PathBuf},
 };
 use tendermint::block;
 
-/// Check and update the chain position for the given `chain::Id`
-pub fn check_and_update_hrs(
-    chain_id: chain::Id,
-    height: i64,
-    round: i64,
-    step: i8,
-    block_id: Option<block::Id>,
-) -> Result<(), KmsError> {
+/// Get mutex guarded access to the current state of a particular chain
+pub fn synchronize<F, T>(chain_id: chain::Id, func: F) -> Result<T, KmsError>
+where
+    F: Fn(&mut State) -> Result<T, KmsError>,
+{
     let registry = chain::REGISTRY.get();
     let chain = registry
         .chain(chain_id)
         .unwrap_or_else(|| panic!("can't update state for unregistered chain: {}", chain_id));
 
-    // TODO(tarcieri): better handle `PoisonErrore`?
-    let mut last_sign_state = chain.state.lock().unwrap();
-
-    last_sign_state
-        .check_and_update_hrs(height, round, step, block_id)
-        .map_err(|e| {
-            warn!("double sign event: {}", e);
-            e
-        })?;
-
-    Ok(())
-}
-
-/// Position of the chain the last time we attempted to sign
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-struct LastSignData {
-    pub height: i64,
-    pub round: i64,
-    pub step: i8,
-    pub block_id: Option<block::Id>,
+    // TODO(tarcieri): better handle `PoisonError`?
+    let mut state_guard = chain.state.lock().unwrap();
+    func(&mut state_guard)
 }
 
 /// State tracking for double signing prevention
-pub struct LastSignState {
-    data: LastSignData,
+pub struct State {
+    data: last_sign::Data,
     path: PathBuf,
 }
 
-/// Error type
-#[derive(Debug)]
-pub struct LastSignError(Error<LastSignErrorKind>);
-
-/// Kinds of errors
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum LastSignErrorKind {
-    /// Height regressed
-    #[fail(display = "height regression")]
-    HeightRegression,
-
-    /// Step regressed
-    #[fail(display = "step regression")]
-    StepRegression,
-
-    /// Round regressed
-    #[fail(display = "round regression")]
-    RoundRegression,
-
-    /// Double sign detected
-    #[fail(display = "double sign detected")]
-    DoubleSign,
-
-    /// Error syncing state to disk
-    #[fail(display = "error syncing state to disk")]
-    SyncError,
-}
-
-impl From<Error<LastSignErrorKind>> for LastSignError {
-    fn from(other: Error<LastSignErrorKind>) -> Self {
-        LastSignError(other)
-    }
-}
-
-impl Display for LastSignError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl LastSignState {
+impl State {
     /// Load the state from the given path
-    pub fn load_state<P>(path: P) -> std::io::Result<LastSignState>
+    pub fn load_state<P>(path: P) -> std::io::Result<State>
     where
         P: AsRef<Path>,
     {
-        let mut lst = LastSignState {
-            data: LastSignData::default(),
+        let mut lst = State {
+            data: last_sign::Data::default(),
             path: path.as_ref().to_owned(),
         };
 
@@ -164,7 +110,7 @@ impl LastSignState {
                         height,
                         round,
                         step,
-                        self.data.block_id.clone().unwrap(),
+                        self.data.block_id.unwrap(),
                         block_id.unwrap()
                     )
                 }
@@ -214,8 +160,8 @@ mod tests {
 
     #[test]
     fn hrs_test() {
-        let mut last_sign_state = LastSignState {
-            data: LastSignData {
+        let mut last_sign_state = State {
+            data: last_sign::Data {
                 height: 1,
                 round: 1,
                 step: 0,
@@ -231,8 +177,8 @@ mod tests {
 
     #[test]
     fn hrs_test_double_sign() {
-        let mut last_sign_state = LastSignState {
-            data: LastSignData {
+        let mut last_sign_state = State {
+            data: last_sign::Data {
                 height: 1,
                 round: 1,
                 step: 0,

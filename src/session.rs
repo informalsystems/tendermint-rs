@@ -9,8 +9,10 @@ use std::{
     net::TcpStream,
     os::unix::net::UnixStream,
     path::Path,
-    sync::atomic::{AtomicBool, Ordering},
-    sync::Arc,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 use tendermint::{
     amino_types::{PingRequest, PingResponse, PubKeyRequest},
@@ -121,13 +123,10 @@ where
         request.validate()?;
 
         if let Some(cs) = request.consensus_state() {
-            chain::state::check_and_update_hrs(
-                self.chain_id,
-                cs.height,
-                cs.round,
-                cs.step,
-                cs.block_id,
-            )?;
+            chain::state::synchronize(self.chain_id, |chain_state| {
+                chain_state.check_and_update_hrs(cs.height, cs.round, cs.step, cs.block_id)?;
+                Ok(())
+            })?;
         }
 
         let mut to_sign = vec![];

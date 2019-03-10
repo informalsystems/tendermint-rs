@@ -5,7 +5,7 @@ pub mod key;
 mod registry;
 pub mod state;
 
-pub use self::{guard::Guard, registry::REGISTRY, state::LastSignState};
+pub use self::{guard::Guard, registry::REGISTRY, state::State};
 use crate::{config::chain::ChainConfig, error::KmsError};
 use std::{path::PathBuf, sync::Mutex};
 pub use tendermint::chain::Id;
@@ -19,7 +19,7 @@ pub struct Chain {
     pub key_format: key::Format,
 
     /// State from the last block signed for this chain
-    pub state: Mutex<LastSignState>,
+    pub state: Mutex<State>,
 }
 
 impl Chain {
@@ -30,7 +30,7 @@ impl Chain {
             None => PathBuf::from(&format!("{}_priv_validator_state.json", config.id)),
         };
 
-        let last_sign_state = LastSignState::load_state(state_file)?;
+        let last_sign_state = State::load_state(state_file)?;
 
         Ok(Self {
             id: config.id,
