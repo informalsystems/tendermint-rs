@@ -1,3 +1,4 @@
+use crate::{chain, error::KmsError};
 use abscissa::Error;
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use serde_json;
@@ -7,8 +8,35 @@ use std::{
     io::{self, prelude::*},
     path::{Path, PathBuf},
 };
-use tendermint::{block, chain};
+use tendermint::block;
 
+/// Check and update the chain position for the given `chain::Id`
+pub fn check_and_update_hrs(
+    chain_id: chain::Id,
+    height: i64,
+    round: i64,
+    step: i8,
+    block_id: Option<block::Id>,
+) -> Result<(), KmsError> {
+    let registry = chain::REGISTRY.get();
+    let chain = registry
+        .chain(chain_id)
+        .unwrap_or_else(|| panic!("can't update state for unregistered chain: {}", chain_id));
+
+    // TODO(tarcieri): better handle `PoisonErrore`?
+    let mut last_sign_state = chain.state.lock().unwrap();
+
+    last_sign_state
+        .check_and_update_hrs(height, round, step, block_id)
+        .map_err(|e| {
+            warn!("double sign event: {}", e);
+            e
+        })?;
+
+    Ok(())
+}
+
+/// Position of the chain the last time we attempted to sign
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 struct LastSignData {
     pub height: i64,
@@ -17,26 +45,38 @@ struct LastSignData {
     pub block_id: Option<block::Id>,
 }
 
+/// State tracking for double signing prevention
 pub struct LastSignState {
     data: LastSignData,
     path: PathBuf,
-    _chain_id: chain::Id,
 }
 
 /// Error type
 #[derive(Debug)]
 pub struct LastSignError(Error<LastSignErrorKind>);
 
+/// Kinds of errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum LastSignErrorKind {
+    /// Height regressed
     #[fail(display = "height regression")]
     HeightRegression,
+
+    /// Step regressed
     #[fail(display = "step regression")]
     StepRegression,
+
+    /// Round regressed
     #[fail(display = "round regression")]
     RoundRegression,
-    #[fail(display = "invalid block id")]
+
+    /// Double sign detected
+    #[fail(display = "double sign detected")]
     DoubleSign,
+
+    /// Error syncing state to disk
+    #[fail(display = "error syncing state to disk")]
+    SyncError,
 }
 
 impl From<Error<LastSignErrorKind>> for LastSignError {
@@ -52,11 +92,14 @@ impl Display for LastSignError {
 }
 
 impl LastSignState {
-    pub fn load_state(path: &Path, chain_id: chain::Id) -> std::io::Result<LastSignState> {
+    /// Load the state from the given path
+    pub fn load_state<P>(path: P) -> std::io::Result<LastSignState>
+    where
+        P: AsRef<Path>,
+    {
         let mut lst = LastSignState {
             data: LastSignData::default(),
-            path: path.to_owned(),
-            _chain_id: chain_id,
+            path: path.as_ref().to_owned(),
         };
 
         match fs::read_to_string(path) {
@@ -75,15 +118,7 @@ impl LastSignState {
         }
     }
 
-    pub fn sync_to_disk(&mut self) -> std::io::Result<()> {
-        let json = serde_json::to_string(&self.data)?;
-
-        AtomicFile::new(&self.path, OverwriteBehavior::AllowOverwrite)
-            .write(|f| f.write_all(json.as_bytes()))?;
-
-        Ok(())
-    }
-
+    /// Check and update the chain's height, round, and step
     pub fn check_and_update_hrs(
         &mut self,
         height: i64,
@@ -98,8 +133,7 @@ impl LastSignState {
                 self.data.height,
                 height
             );
-        }
-        if height == self.data.height {
+        } else if height == self.data.height {
             if round < self.data.round {
                 fail!(
                     LastSignErrorKind::RoundRegression,
@@ -108,8 +142,7 @@ impl LastSignState {
                     self.data.round,
                     round
                 )
-            }
-            if round == self.data.round {
+            } else if round == self.data.round {
                 if step < self.data.step {
                     fail!(
                         LastSignErrorKind::StepRegression,
@@ -121,24 +154,46 @@ impl LastSignState {
                     )
                 }
 
-                if block_id != None && self.data.block_id != None && self.data.block_id != block_id
+                if block_id.is_some()
+                    && self.data.block_id.is_some()
+                    && self.data.block_id != block_id
                 {
                     fail!(
-                    LastSignErrorKind::DoubleSign,
-                    "Attempting to sign a second proposal at height:{} round:{} step:{} old block id:{} new block {}",
-                    height,
-                    round,
-                    step,
-                    self.data.block_id.clone().unwrap(),
-                    block_id.unwrap()
+                        LastSignErrorKind::DoubleSign,
+                        "Attempting to sign a second proposal at height:{} round:{} step:{} old block id:{} new block {}",
+                        height,
+                        round,
+                        step,
+                        self.data.block_id.clone().unwrap(),
+                        block_id.unwrap()
                     )
                 }
             }
         }
+
         self.data.height = height;
         self.data.round = round;
         self.data.step = step;
         self.data.block_id = block_id;
+
+        self.sync_to_disk().map_err(|e| {
+            err!(
+                LastSignErrorKind::SyncError,
+                "error writing state to {}: {}",
+                self.path.display(),
+                e
+            )
+        })?;
+        Ok(())
+    }
+
+    /// Sync the current state to disk
+    fn sync_to_disk(&mut self) -> std::io::Result<()> {
+        let json = serde_json::to_string(&self.data)?;
+
+        AtomicFile::new(&self.path, OverwriteBehavior::AllowOverwrite)
+            .write(|f| f.write_all(json.as_bytes()))?;
+
         Ok(())
     }
 }
@@ -147,7 +202,7 @@ impl LastSignState {
 mod tests {
     use super::*;
     use std::str::FromStr;
-    use tendermint::{block, chain};
+    use tendermint::block;
 
     const EXAMPLE_BLOCK_ID: &str =
         "26C0A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
@@ -167,7 +222,6 @@ mod tests {
                 block_id: None,
             },
             path: EXAMPLE_PATH.into(),
-            _chain_id: "example-chain".parse::<chain::Id>().unwrap(),
         };
         assert_eq!(
             last_sign_state.check_and_update_hrs(2, 0, 0, None).unwrap(),
@@ -185,7 +239,6 @@ mod tests {
                 block_id: Some(block::Id::from_str(EXAMPLE_BLOCK_ID).unwrap()),
             },
             path: EXAMPLE_PATH.into(),
-            _chain_id: "example-chain".parse::<chain::Id>().unwrap(),
         };
         let double_sign_block = block::Id::from_str(EXAMPLE_DOUBLE_SIGN_BLOCK_ID).unwrap();
         let err = last_sign_state.check_and_update_hrs(1, 1, 1, Some(double_sign_block));

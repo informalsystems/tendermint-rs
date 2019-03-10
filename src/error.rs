@@ -1,7 +1,6 @@
 // Error types
 
-use crate::last_sign_state;
-use crate::prost;
+use crate::{chain, prost};
 use abscissa::Error;
 use signatory;
 use std::{
@@ -151,8 +150,8 @@ impl From<TmValidationError> for KmsError {
     }
 }
 
-impl From<last_sign_state::LastSignError> for KmsError {
-    fn from(other: last_sign_state::LastSignError) -> Self {
+impl From<chain::state::LastSignError> for KmsError {
+    fn from(other: chain::state::LastSignError) -> Self {
         err!(KmsErrorKind::DoubleSign, other).into()
     }
 }

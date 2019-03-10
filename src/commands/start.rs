@@ -1,5 +1,5 @@
 use crate::{
-    chain,
+    chain::{self, Chain},
     client::Client,
     config::{KmsConfig, ValidatorConfig},
     keyring::KeyRing,
@@ -47,7 +47,12 @@ impl Callable for StartCommand {
         let config = KmsConfig::get_global();
 
         for chain_config in &config.chain {
-            chain::REGISTRY.register(chain_config.into()).unwrap();
+            chain::REGISTRY
+                .register(Chain::from_config(&chain_config).unwrap_or_else(|e| {
+                    status_err!("error initializing chain '{}': {}", chain_config.id, e);
+                    process::exit(1);
+                }))
+                .unwrap();
         }
 
         KeyRing::load_from_config(&config.providers).unwrap_or_else(|e| {

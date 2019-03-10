@@ -1,6 +1,7 @@
 //! Chain configuration
 
 use crate::chain;
+use std::path::PathBuf;
 
 /// Chain configuration
 #[derive(Clone, Deserialize, Debug)]
@@ -10,4 +11,7 @@ pub struct ChainConfig {
 
     /// Key format configuration
     pub key_format: chain::key::Format,
+
+    /// Path to chain-specific `priv_validator_state.json` file
+    pub state_file: Option<PathBuf>,
 }

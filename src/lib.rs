@@ -35,7 +35,6 @@ mod client;
 mod commands;
 mod config;
 mod keyring;
-mod last_sign_state;
 mod rpc;
 mod session;
 mod unix_connection;
