@@ -8,7 +8,7 @@ use subtle_encoding::{Encoding, Hex};
 pub const SHA256_HASH_SIZE: usize = 32;
 
 /// Hashes used for computing BlockIDs
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum Hash {
     /// SHA-256 hashes
     Sha256([u8; SHA256_HASH_SIZE]),
