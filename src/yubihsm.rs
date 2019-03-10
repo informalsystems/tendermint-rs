@@ -8,6 +8,11 @@ use std::{
     sync::{Mutex, MutexGuard},
 };
 use yubihsm::{Client, Connector};
+#[cfg(not(feature = "yubihsm-mock"))]
+use {
+    crate::config::provider::yubihsm::AdapterConfig,
+    yubihsm::{device::SerialNumber, UsbConfig},
+};
 
 lazy_static! {
     static ref HSM_CONNECTOR: Connector = init_connector();
@@ -27,8 +32,22 @@ pub fn client() -> MutexGuard<'static, Client> {
 /// Open a session with the YubiHSM2 using settings from the global config
 #[cfg(not(feature = "yubihsm-mock"))]
 fn init_connector() -> Connector {
-    // TODO: `HttpConnector` support
-    Connector::usb(&config().usb_config())
+    let cfg = config();
+
+    match cfg.adapter {
+        AdapterConfig::Http { ref connector } => Connector::http(connector),
+        AdapterConfig::Usb { timeout_ms } => {
+            let usb_config = UsbConfig {
+                serial: cfg
+                    .serial_number
+                    .as_ref()
+                    .map(|serial| serial.parse::<SerialNumber>().unwrap()),
+                timeout_ms,
+            };
+
+            Connector::usb(&usb_config)
+        }
+    }
 }
 
 #[cfg(feature = "yubihsm-mock")]

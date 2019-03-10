@@ -5,8 +5,7 @@ use abscissa::{
     secrets::{BorrowSecret, DebugSecret, Secret},
     util::Zeroize,
 };
-use std::{process, str::FromStr};
-use yubihsm::{device::SerialNumber, Credentials, HttpConfig, UsbConfig};
+use yubihsm::{Credentials, HttpConfig};
 
 /// The (optional) `[providers.yubihsm]` config section
 #[derive(Clone, Deserialize, Debug)]
@@ -23,37 +22,6 @@ pub struct YubihsmConfig {
 
     /// Serial number of the YubiHSM to connect to
     pub serial_number: Option<String>,
-}
-
-impl YubihsmConfig {
-    /// Get the `yubihsm::HttpConfig` or exit if unconfigured
-    #[allow(dead_code)]
-    pub fn http_config(&self) -> HttpConfig {
-        match self.adapter {
-            AdapterConfig::Http { ref connector } => connector.clone(),
-            AdapterConfig::Usb { .. } => {
-                status_err!("YubiHSM2 HTTP adapter support required, sorry");
-                process::exit(1);
-            }
-        }
-    }
-
-    /// Get the `yubihsm::UsbConfig` or exit if unconfigured
-    pub fn usb_config(&self) -> UsbConfig {
-        match self.adapter {
-            AdapterConfig::Http { .. } => {
-                status_err!("YubiHSM2 USB adapter support required, sorry");
-                process::exit(1);
-            }
-            AdapterConfig::Usb { timeout_ms } => UsbConfig {
-                serial: self
-                    .serial_number
-                    .as_ref()
-                    .map(|serial| SerialNumber::from_str(serial).unwrap()),
-                timeout_ms,
-            },
-        }
-    }
 }
 
 /// Configuration for an individual YubiHSM
