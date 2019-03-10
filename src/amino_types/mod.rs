@@ -21,7 +21,7 @@ pub use self::{
     proposal::{SignProposalRequest, SignedProposalResponse, AMINO_NAME as PROPOSAL_AMINO_NAME},
     remote_error::RemoteError,
     secret_connection::AuthSigMessage,
-    signature::{ConsensusState, SignableMsg, SignedMsgType},
+    signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
     validate::ConsensusMessage,
     vote::{SignVoteRequest, SignedVoteResponse, AMINO_NAME as VOTE_AMINO_NAME},
