@@ -1,7 +1,6 @@
 // Error types
 
-use crate::last_sign_state;
-use crate::prost;
+use crate::{chain, prost};
 use abscissa::Error;
 use signatory;
 use std::{
@@ -51,6 +50,10 @@ pub enum KmsErrorKind {
     #[fail(display = "cryptographic error")]
     CryptoError,
 
+    /// Error running a subcommand to update chain state
+    #[fail(display = "subcommand hook failed")]
+    HookError,
+
     /// Malformatted or otherwise invalid cryptographic key
     #[fail(display = "invalid key")]
     InvalidKey,
@@ -70,6 +73,10 @@ pub enum KmsErrorKind {
     /// Network protocol-related errors
     #[fail(display = "protocol error")]
     ProtocolError,
+
+    /// Serialization error
+    #[fail(display = "serialization error")]
+    SerializationError,
 
     /// Signing operation failed
     #[fail(display = "signing operation failed")]
@@ -114,6 +121,12 @@ impl From<prost::EncodeError> for KmsError {
     }
 }
 
+impl From<serde_json::error::Error> for KmsError {
+    fn from(other: serde_json::error::Error) -> Self {
+        err!(KmsErrorKind::SerializationError, other).into()
+    }
+}
+
 impl From<signatory::Error> for KmsError {
     fn from(other: signatory::Error) -> Self {
         let kind = match other.kind() {
@@ -151,8 +164,8 @@ impl From<TmValidationError> for KmsError {
     }
 }
 
-impl From<last_sign_state::LastSignError> for KmsError {
-    fn from(other: last_sign_state::LastSignError) -> Self {
+impl From<chain::state::StateError> for KmsError {
+    fn from(other: chain::state::StateError) -> Self {
         err!(KmsErrorKind::DoubleSign, other).into()
     }
 }

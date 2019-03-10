@@ -1,6 +1,6 @@
 use super::*;
 use abscissa::Callable;
-use signatory::ed25519;
+use chrono::{SecondsFormat, Utc};
 use std::{
     fs::OpenOptions,
     io::Write,
@@ -9,7 +9,7 @@ use std::{
     process,
 };
 use subtle_encoding::base64;
-use tendermint::public_keys::ConsensusKey;
+use tendermint::PublicKey;
 
 /// The `yubihsm keys generate` subcommand
 #[derive(Debug, Default, Options)]
@@ -21,6 +21,10 @@ pub struct GenerateCommand {
     /// Label for generated key(s)
     #[options(short = "l", long = "label")]
     pub label: Option<String>,
+
+    /// Bech32 prefix to use when displaying key
+    #[options(short = "p", long = "prefix")]
+    pub bech32_prefix: Option<String>,
 
     /// Type of key to generate (default 'ed25519')
     #[options(short = "t")]
@@ -38,7 +42,7 @@ pub struct GenerateCommand {
     #[options(short = "w", long = "wrapkey")]
     pub wrap_key_id: Option<yubihsm::object::Id>,
 
-    /// Key IDs to generate
+    /// Key ID to generate
     #[options(free)]
     key_ids: Vec<u16>,
 }
@@ -46,10 +50,15 @@ pub struct GenerateCommand {
 impl Callable for GenerateCommand {
     /// Generate an Ed25519 signing key inside a YubiHSM2 device
     fn call(&self) {
-        if self.key_ids.is_empty() {
-            status_err!("must provide at least one key ID to generate");
+        if self.key_ids.len() != 1 {
+            status_err!(
+                "expected exactly 1 key ID to generate, got {}",
+                self.key_ids.len()
+            );
             process::exit(1);
         }
+
+        let key_id = self.key_ids[0];
 
         if let Some(key_type) = self.key_type.as_ref() {
             if key_type != DEFAULT_KEY_TYPE {
@@ -69,48 +78,53 @@ impl Callable for GenerateCommand {
             capabilities |= yubihsm::Capability::EXPORTABLE_UNDER_WRAP;
         }
 
-        for key_id in &self.key_ids {
-            let label =
-                yubihsm::object::Label::from(self.label.as_ref().map(|l| l.as_ref()).unwrap_or(""));
-
-            if let Err(e) = hsm.generate_asymmetric_key(
-                *key_id,
-                label,
-                DEFAULT_DOMAINS, // TODO(tarcieri): customize domains
-                capabilities,
-                yubihsm::asymmetric::Algorithm::Ed25519,
-            ) {
-                status_err!("couldn't generate key #{}: {}", key_id, e);
-                process::exit(1);
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
+        let label = yubihsm::object::Label::from(
+            match self.label {
+                Some(ref l) => l.to_owned(),
+                None => match self.bech32_prefix {
+                    Some(ref prefix) => format!("{}:{}", prefix, timestamp),
+                    None => format!("ed25519:{}", timestamp),
+                },
             }
+            .as_ref(),
+        );
 
-            let public_key =
-                ed25519::PublicKey::from_bytes(hsm.get_public_key(*key_id).unwrap_or_else(|e| {
+        if let Err(e) = hsm.generate_asymmetric_key(
+            key_id,
+            label,
+            DEFAULT_DOMAINS, // TODO(tarcieri): customize domains
+            capabilities,
+            yubihsm::asymmetric::Algorithm::Ed25519,
+        ) {
+            status_err!("couldn't generate key #{}: {}", key_id, e);
+            process::exit(1);
+        }
+
+        let public_key = PublicKey::from_raw_ed25519(
+            hsm.get_public_key(key_id)
+                .unwrap_or_else(|e| {
                     status_err!("couldn't get public key for key #{}: {}", key_id, e);
                     process::exit(1);
-                }))
-                .unwrap();
+                })
+                .as_ref(),
+        )
+        .unwrap();
 
-            status_ok!(
-                "Generated",
-                "key #{}: {}",
+        let public_key_string = match self.bech32_prefix {
+            Some(ref prefix) => public_key.to_bech32(prefix),
+            None => public_key.to_hex(),
+        };
+
+        status_ok!("Generated", "key #{}: {}", key_id, public_key_string);
+
+        if let Some(ref backup_file) = self.backup_file {
+            create_encrypted_backup(
+                &hsm,
                 key_id,
-                ConsensusKey::from(public_key)
+                &backup_file,
+                self.wrap_key_id.unwrap_or(DEFAULT_WRAP_KEY),
             );
-
-            if let Some(ref backup_file) = self.backup_file {
-                assert_eq!(
-                    self.key_ids.len(),
-                    1,
-                    "can only create backups if generating one key at a time"
-                );
-                create_encrypted_backup(
-                    &hsm,
-                    *key_id,
-                    &backup_file,
-                    self.wrap_key_id.unwrap_or(DEFAULT_WRAP_KEY),
-                );
-            }
         }
     }
 }

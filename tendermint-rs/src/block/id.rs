@@ -8,7 +8,7 @@ use std::{
 use crate::{algorithm::HashAlgorithm, error::Error, hash::Hash};
 
 /// Block identifiers
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Id {
     /// Hash which identifies this block
     pub hash: Hash, // TODO: parts set header?

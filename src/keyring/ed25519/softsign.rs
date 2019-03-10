@@ -9,12 +9,9 @@ use super::Signer;
 use crate::{
     config::provider::softsign::SoftSignConfig,
     error::{KmsError, KmsErrorKind::*},
-    keyring::KeyRing,
+    keyring::{KeyRing, SigningProvider},
 };
-
-/// Label for ed25519-dalek provider
-// TODO: use a non-string type for these, e.g. an enum
-pub const DALEK_PROVIDER_LABEL: &str = "dalek";
+use tendermint::TendermintKey;
 
 /// Create software-backed Ed25519 signer objects from the given configuration
 pub fn init(keyring: &mut KeyRing, configs: &[SoftSignConfig]) -> Result<(), KmsError> {
@@ -31,9 +28,12 @@ pub fn init(keyring: &mut KeyRing, configs: &[SoftSignConfig]) -> Result<(), Kms
 
         let provider = Box::new(Ed25519Signer::from(&seed));
 
+        // TODO(tarcieri): support for adding account keys into keyrings
+        let public_key = TendermintKey::ConsensusKey(provider.public_key()?.into());
+
         keyring.add(
-            provider.public_key()?,
-            Signer::new(DALEK_PROVIDER_LABEL, config.id.clone(), provider),
+            public_key,
+            Signer::new(SigningProvider::SoftSign, &config.chain_ids, provider),
         )?;
     }
 

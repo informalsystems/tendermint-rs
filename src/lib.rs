@@ -30,11 +30,11 @@ extern crate serde_derive;
 mod error;
 
 mod application;
+mod chain;
 mod client;
 mod commands;
 mod config;
 mod keyring;
-mod last_sign_state;
 mod rpc;
 mod session;
 mod unix_connection;

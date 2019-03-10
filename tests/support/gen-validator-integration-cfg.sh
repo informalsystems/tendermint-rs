@@ -9,6 +9,11 @@ SECRET_KEY=${SECRET_KEY:-${OUTPUT_PATH}/secret_connection.key}
 OUTPUT_FILE=${OUTPUT_FILE:-${OUTPUT_PATH}/tmkms.toml}
 VALIDATOR_ADDR=${VALIDATOR_ADDR:-"tcp://127.0.0.1:61278"}
 CFG_TEMPLATE=$(cat <<-EOF
+# Information about Tenderment blockchain networks this KMS services
+[[chain]]
+id = "CHAIN_ID"
+key_format = { type = "bech32", account_key_prefix = "cosmospub", consensus_key_prefix = "cosmosvalconspub" }
+
 [[validator]]
 addr = "VALIDATOR_ADDR"
 chain_id = "CHAIN_ID"
@@ -16,7 +21,7 @@ reconnect = true # true is the default
 secret_key = "SECRET_KEY"
 
 [[providers.softsign]]
-id = "CHAIN_ID"
+chain_ids = ["CHAIN_ID"]
 path = "SIGNING_KEY"
 EOF
 )

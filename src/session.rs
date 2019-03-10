@@ -9,20 +9,21 @@ use std::{
     net::TcpStream,
     os::unix::net::UnixStream,
     path::Path,
-    sync::atomic::{AtomicBool, Ordering},
-    sync::Arc,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 use tendermint::{
-    amino_types::{PingRequest, PingResponse, PubKeyRequest, PubKeyResponse},
-    chain,
+    amino_types::{PingRequest, PingResponse, PubKeyRequest},
     public_keys::SecretConnectionKey,
     SecretConnection,
 };
 
 use crate::{
+    chain,
     error::KmsError,
     keyring::KeyRing,
-    last_sign_state::LastSignState,
     prost::Message,
     rpc::{Request, Response, TendermintRequest},
     unix_connection::UnixConnection,
@@ -35,9 +36,6 @@ pub struct Session<Connection> {
 
     /// TCP connection to a validator node
     connection: Connection,
-
-    /// Stateful double sign defense that is synced to disk
-    last_sign_state: LastSignState,
 }
 
 impl Session<SecretConnection<TcpStream>> {
@@ -54,15 +52,10 @@ impl Session<SecretConnection<TcpStream>> {
         let signer = Ed25519Signer::from(secret_connection_key);
         let public_key = SecretConnectionKey::from(ed25519::public_key(&signer)?);
         let connection = SecretConnection::new(socket, &public_key, &signer)?;
-        let last_sign_state = LastSignState::load_state(
-            Path::new(&(chain_id.to_string() + "_priv_validator_state.json")),
-            chain_id,
-        )?;
 
         Ok(Self {
             chain_id,
             connection,
-            last_sign_state,
         })
     }
 }
@@ -77,15 +70,10 @@ impl Session<UnixConnection<UnixStream>> {
 
         let socket = UnixStream::connect(socket_path)?;
         let connection = UnixConnection::new(socket);
-        let last_sign_state = LastSignState::load_state(
-            Path::new(&(chain_id.as_ref().to_owned() + "_priv_validator_state.json")),
-            chain_id,
-        )?;
 
         Ok(Self {
             chain_id,
             connection,
-            last_sign_state,
         })
     }
 }
@@ -134,27 +122,19 @@ where
     fn sign<T: TendermintRequest + Debug>(&mut self, mut request: T) -> Result<Response, KmsError> {
         request.validate()?;
 
-        if let Some(cs) = request.consensus_state() {
-            match self.last_sign_state.check_and_update_hrs(
-                cs.height,
-                cs.round,
-                cs.step,
-                cs.block_id,
-            ) {
-                Ok(()) => (),
-                Err(e) => {
-                    debug! {"Double sign event: {}",e}
-                    return Err(KmsError::from(e));
-                }
-            }
+        if let Some(request_state) = request.consensus_state() {
+            chain::state::synchronize(self.chain_id, |chain_state| {
+                chain_state.update_consensus_state(request_state.clone())?;
+                Ok(())
+            })?;
         }
-        self.last_sign_state.sync_to_disk()?;
+
         let mut to_sign = vec![];
         request.sign_bytes(self.chain_id, &mut to_sign)?;
 
         // TODO(ismail): figure out which key to use here instead of taking the only key
         // from keyring here:
-        let sig = KeyRing::sign(None, &to_sign)?;
+        let sig = KeyRing::sign_ed25519(None, &to_sign)?;
 
         request.set_signature(&sig);
         debug!("successfully signed request:\n {:?}", request);
@@ -169,11 +149,8 @@ where
 
     /// Get the public key for (the only) public key in the keyring
     fn get_public_key(&mut self, _request: &PubKeyRequest) -> Result<Response, KmsError> {
-        let pubkey = KeyRing::default_pubkey()?;
-        let pubkey_bytes = pubkey.as_bytes();
-
-        Ok(Response::PublicKey(PubKeyResponse {
-            pub_key_ed25519: pubkey_bytes.to_vec(),
-        }))
+        Ok(Response::PublicKey(
+            KeyRing::default_pubkey()?.to_response(),
+        ))
     }
 }

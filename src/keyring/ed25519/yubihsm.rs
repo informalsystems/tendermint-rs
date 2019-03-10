@@ -3,13 +3,10 @@
 use crate::{
     config::provider::yubihsm::YubihsmConfig,
     error::{KmsError, KmsErrorKind::*},
-    keyring::{ed25519::Signer, KeyRing},
+    keyring::{ed25519::Signer, KeyRing, SigningProvider},
 };
 use signatory::PublicKeyed;
-
-/// Label for YubiHSM provider
-// TODO: use a non-string type for these, e.g. an enum
-pub const YUBIHSM_PROVIDER_LABEL: &str = "yubihsm";
+use tendermint::TendermintKey;
 
 /// Create hardware-backed YubiHSM signer objects from the given configuration
 pub fn init(keyring: &mut KeyRing, yubihsm_configs: &[YubihsmConfig]) -> Result<(), KmsError> {
@@ -30,9 +27,16 @@ pub fn init(keyring: &mut KeyRing, yubihsm_configs: &[YubihsmConfig]) -> Result<
         let signer =
             yubihsm::ed25519::Signer::create(crate::yubihsm::client().clone(), config.key)?;
 
+        // TODO(tarcieri): support for adding account keys into keyrings
+        let public_key = TendermintKey::ConsensusKey(signer.public_key()?.into());
+
         keyring.add(
-            signer.public_key()?,
-            Signer::new(YUBIHSM_PROVIDER_LABEL, config.id.clone(), Box::new(signer)),
+            public_key,
+            Signer::new(
+                SigningProvider::Yubihsm,
+                &config.chain_ids,
+                Box::new(signer),
+            ),
         )?;
     }
 

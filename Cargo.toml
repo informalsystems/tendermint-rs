@@ -43,6 +43,7 @@ signatory-ledger-tm = { version = "0.11", optional = true }
 subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
 tendermint = { version = "0.3", path = "tendermint-rs" }
 tiny-bip39 = "0.6"
+wait-timeout = "0.2"
 yubihsm = { version = "0.22", features = ["setup", "usb"], optional = true }
 zeroize = "0.5"
 

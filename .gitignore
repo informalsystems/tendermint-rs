@@ -1,6 +1,7 @@
 /target
-**/*.rs.bk
 tmkms.toml
+**/*.rs.bk
+**/*priv_validator_state.json
 
 # Ignore VIM swap files
 *.swp

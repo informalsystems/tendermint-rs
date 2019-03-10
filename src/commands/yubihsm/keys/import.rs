@@ -3,7 +3,7 @@ use abscissa::Callable;
 use signatory::ed25519;
 use std::{fs, path::PathBuf, process};
 use subtle_encoding::base64;
-use tendermint::public_keys::ConsensusKey;
+use tendermint::PublicKey;
 use yubihsm::object;
 
 /// The `yubihsm keys import` subcommand
@@ -130,11 +130,12 @@ impl ImportCommand {
             process::exit(1);
         });
 
-        // TODO: support for non-Cosmos keys, non-Ed25519 keys, non-validator (i.e. account) keys
+        // TODO: display non hex format when listing/displaying keys
         let key_info = match public_key.algorithm {
             yubihsm::asymmetric::Algorithm::Ed25519 => {
-                ConsensusKey::from(ed25519::PublicKey::from_bytes(&public_key.as_ref()).unwrap())
-                    .to_string()
+                PublicKey::from_raw_ed25519(&public_key.as_ref())
+                    .unwrap()
+                    .to_hex()
             }
             alg => format!("{:?}: {:?}", alg, public_key.as_ref()),
         };

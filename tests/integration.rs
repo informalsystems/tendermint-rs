@@ -129,6 +129,10 @@ impl KmsProcess {
         writeln!(
             config_file,
             r#"
+            [[chain]]
+            id = "test_chain_id"
+            key_format = {{ type = "bech32", account_key_prefix = "cosmospub", consensus_key_prefix = "cosmosvalconspub" }}
+
             [[validator]]
             addr = "tcp://127.0.0.1:{}"
             chain_id = "test_chain_id"
@@ -136,7 +140,7 @@ impl KmsProcess {
             secret_key = "tests/support/secret_connection.key"
 
             [[providers.softsign]]
-            id = "example-key-1"
+            chain_ids = ["test_chain_id"]
             path = "{}"
         "#,
             port, SIGNING_KEY_PATH
@@ -152,12 +156,16 @@ impl KmsProcess {
         writeln!(
             config_file,
             r#"
+            [[chain]]
+            id = "test_chain_id"
+            key_format = {{ type = "bech32", account_key_prefix = "cosmospub", consensus_key_prefix = "cosmosvalconspub" }}
+
             [[validator]]
             addr = "unix://{}"
             chain_id = "test_chain_id"
 
             [[providers.softsign]]
-            id = "example-key-1"
+            chain_ids = ["test_chain_id"]
             path = "{}"
         "#,
             socket_path, SIGNING_KEY_PATH

@@ -1,38 +1,48 @@
-use crate::error::{KmsError, KmsErrorKind::*};
+use crate::{
+    chain,
+    error::{KmsError, KmsErrorKind::*},
+    keyring::SigningProvider,
+};
 use signatory::{self, ed25519::Signature, Signer as SignerTrait};
 
 /// Wrapper for an Ed25519 signing provider (i.e. trait object)
 pub struct Signer {
-    /// Name of the signature provider for this key
-    pub provider_name: &'static str,
+    /// Provider for this signer
+    provider: SigningProvider,
 
-    /// ID which identifies this key (should be unique-per-provider)
-    pub key_id: String,
+    /// Chains this key is authorized to be used from
+    chain_ids: Vec<chain::Id>,
 
     /// Signer trait object
-    provider: Box<dyn SignerTrait<Signature>>,
+    signer: Box<dyn SignerTrait<Signature>>,
 }
 
 impl Signer {
     /// Create a new signer
     pub fn new(
-        provider_name: &'static str,
-        key_id: String,
-        provider: Box<dyn SignerTrait<Signature>>,
+        provider: SigningProvider,
+        chain_ids: &[chain::Id],
+        signer: Box<dyn SignerTrait<Signature>>,
     ) -> Self {
         Self {
-            provider_name,
-            key_id,
             provider,
+            chain_ids: chain_ids.to_vec(),
+            signer,
         }
     }
 
+    /// Get the provider for this signer
+    pub fn provider(&self) -> SigningProvider {
+        self.provider
+    }
+
+    /// Get the chains this signer is authorized to be used on
+    pub fn chain_ids(&self) -> &[chain::Id] {
+        &self.chain_ids
+    }
+
     /// Sign the given message using this signer
-    #[inline]
     pub fn sign(&self, msg: &[u8]) -> Result<Signature, KmsError> {
-        Ok(
-            signatory::sign(self.provider.as_ref(), msg)
-                .map_err(|e| err!(SigningError, "{}", e))?,
-        )
+        Ok(signatory::sign(self.signer.as_ref(), msg).map_err(|e| err!(SigningError, "{}", e))?)
     }
 }

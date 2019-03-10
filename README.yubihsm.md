@@ -312,7 +312,7 @@ Below is an example of the command to generate and export an encrypted backup
 of an Ed25519 signing key:
 
 ```
-$ tmkms yubihsm keys generate 1 -l "steakz4u-validator:2019-03-06T01:25:39Z" -b steakz4u-validator-key.enc
+$ tmkms yubihsm keys generate 1 -p cosmosvalconspub -b steakz4u-validator-key.enc
  Generated key #1: cosmosvalconspub1zcjduepqtvzxa733n7dhrjf247n0jtdwsvvsd4jgqvzexj5tkwerpzy5sugsvmfja3
      Wrote backup of key 1 (encrypted under wrap key 1) to steakz4u-validator-key.enc
 ```
@@ -327,6 +327,7 @@ the following sets of credentials:
 
 - `tmkms yubihsm keys generate 1` - generates asymmetric key 0x0001, which is by
   default an Ed25519 signing key.
+- `-p` (or `--prefix`): Bech32 prefix to serialize key with (automatically sets label)
 - `-l` (or `--label`): an up-to-40-character label describing the key
 - `-b` (or `--backup`): path to a file where an *encrypted* backup of the
   generated key should be written
@@ -342,7 +343,7 @@ The following command lists keys in the HSM:
 ```
 $ tmkms yubihsm keys list
 Listing keys in YubiHSM #9876543211:
-- #1:	 cosmosvalconspub1zcjduepqtvzxa733n7dhrjf247n0jtdwsvvsd4jgqvzexj5tkwerpzy5sugsvmfja3
+- 0x#0001: 1624DE64200FB6DB3175225219D290497E3B78190A3EEDA89AEBBC2E2294547CA98E76F9D5
 ```
 
 ## Exporting and Importing Keys

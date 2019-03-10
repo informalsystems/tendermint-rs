@@ -1,10 +1,11 @@
 //! Configuration file structures (with serde-derived parser)
 
+pub mod chain;
 pub mod provider;
 pub mod validator;
 
-use self::provider::ProviderConfig;
 pub use self::validator::*;
+use self::{chain::ChainConfig, provider::ProviderConfig};
 
 /// Name of the KMS configuration file
 pub const CONFIG_FILE_NAME: &str = "tmkms.toml";
@@ -13,6 +14,10 @@ pub const CONFIG_FILE_NAME: &str = "tmkms.toml";
 #[derive(Clone, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct KmsConfig {
+    /// Chains the KMS is providing key management service for
+    #[serde(default)]
+    pub chain: Vec<ChainConfig>,
+
     /// Addresses of validator nodes
     #[serde(default)]
     pub validator: Vec<ValidatorConfig>,

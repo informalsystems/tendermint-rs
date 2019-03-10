@@ -1,12 +1,15 @@
 use super::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
     remote_error::RemoteError,
-    signature::{ConsensusState, SignableMsg, SignedMsgType},
+    signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
     validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
 };
-use crate::block::ParseId;
-use crate::{block, chain, error::Error};
+use crate::{
+    block::{self, ParseId},
+    chain::{self, ConsensusState},
+    error::Error,
+};
 use bytes::BufMut;
 use prost::{EncodeError, Message};
 use signatory::{ed25519, Signature};
@@ -133,7 +136,10 @@ impl SignableMsg for SignProposalRequest {
     fn consensus_state(&self) -> Option<ConsensusState> {
         match self.proposal {
             Some(ref p) => Some(ConsensusState {
-                height: p.height,
+                height: match block::Height::parse(p.height) {
+                    Ok(h) => h,
+                    Err(_err) => return None, // TODO(tarcieri): return an error?
+                },
                 round: p.round,
                 step: 3,
                 block_id: {
