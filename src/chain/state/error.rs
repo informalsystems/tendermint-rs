@@ -3,11 +3,11 @@ use std::fmt::{self, Display};
 
 /// Error type
 #[derive(Debug)]
-pub struct LastSignError(pub(crate) Error<LastSignErrorKind>);
+pub struct StateError(pub(crate) Error<StateErrorKind>);
 
 /// Kinds of errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum LastSignErrorKind {
+pub enum StateErrorKind {
     /// Height regressed
     #[fail(display = "height regression")]
     HeightRegression,
@@ -29,13 +29,13 @@ pub enum LastSignErrorKind {
     SyncError,
 }
 
-impl From<Error<LastSignErrorKind>> for LastSignError {
-    fn from(other: Error<LastSignErrorKind>) -> Self {
-        LastSignError(other)
+impl From<Error<StateErrorKind>> for StateError {
+    fn from(other: Error<StateErrorKind>) -> Self {
+        StateError(other)
     }
 }
 
-impl Display for LastSignError {
+impl Display for StateError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
     }

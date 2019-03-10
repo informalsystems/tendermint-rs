@@ -2,7 +2,7 @@
 
 mod guard;
 pub mod key;
-mod registry;
+pub mod registry;
 pub mod state;
 
 pub use self::{guard::Guard, registry::REGISTRY, state::State};
@@ -30,12 +30,26 @@ impl Chain {
             None => PathBuf::from(&format!("{}_priv_validator_state.json", config.id)),
         };
 
-        let last_sign_state = State::load_state(state_file)?;
+        let mut state = State::load_state(state_file)?;
+
+        if let Some(ref hook) = config.state_hook {
+            match state::hook::run(hook) {
+                Ok(hook_output) => state.update_from_hook_output(hook_output)?,
+                Err(e) => {
+                    if hook.fail_closed {
+                        return Err(e);
+                    } else {
+                        // fail open: note the error to the log and proceed anyway
+                        error!("error invoking state hook for chain {}: {}", config.id, e);
+                    }
+                }
+            }
+        }
 
         Ok(Self {
             id: config.id,
             key_format: config.key_format.clone(),
-            state: Mutex::new(last_sign_state),
+            state: Mutex::new(state),
         })
     }
 }

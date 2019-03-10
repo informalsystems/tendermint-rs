@@ -122,9 +122,9 @@ where
     fn sign<T: TendermintRequest + Debug>(&mut self, mut request: T) -> Result<Response, KmsError> {
         request.validate()?;
 
-        if let Some(cs) = request.consensus_state() {
+        if let Some(request_state) = request.consensus_state() {
             chain::state::synchronize(self.chain_id, |chain_state| {
-                chain_state.check_and_update_hrs(cs.height, cs.round, cs.step, cs.block_id)?;
+                chain_state.update_consensus_state(request_state.clone())?;
                 Ok(())
             })?;
         }

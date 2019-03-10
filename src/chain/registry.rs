@@ -1,11 +1,23 @@
 //! Registry of information about known Tendermint blockchain networks
 
 use super::{Chain, Guard, Id};
-use crate::error::{KmsError, KmsErrorKind::ConfigError};
+use crate::{
+    config::chain::ChainConfig,
+    error::{KmsError, KmsErrorKind::ConfigError},
+};
 use std::{collections::BTreeMap, sync::RwLock};
 
 lazy_static! {
     pub static ref REGISTRY: Registry = Registry::default();
+}
+
+/// Initialize the chain registry from the configuration file
+pub fn load_from_config(chain_configs: &[ChainConfig]) -> Result<(), KmsError> {
+    for config in chain_configs {
+        REGISTRY.register(Chain::from_config(config)?)?;
+    }
+
+    Ok(())
 }
 
 /// Registry of blockchain networks known to the KMS

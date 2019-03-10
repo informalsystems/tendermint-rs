@@ -1,8 +1,8 @@
 use crate::{
-    chain::{self, Chain},
+    chain,
     client::Client,
     config::{KmsConfig, ValidatorConfig},
-    keyring::KeyRing,
+    keyring,
 };
 use abscissa::{Callable, GlobalConfig};
 use std::{
@@ -46,16 +46,12 @@ impl Callable for StartCommand {
 
         let config = KmsConfig::get_global();
 
-        for chain_config in &config.chain {
-            chain::REGISTRY
-                .register(Chain::from_config(&chain_config).unwrap_or_else(|e| {
-                    status_err!("error initializing chain '{}': {}", chain_config.id, e);
-                    process::exit(1);
-                }))
-                .unwrap();
-        }
+        chain::registry::load_from_config(&config.chain).unwrap_or_else(|e| {
+            status_err!("error initializing chain registry: {}", e);
+            process::exit(1);
+        });
 
-        KeyRing::load_from_config(&config.providers).unwrap_or_else(|e| {
+        keyring::load_from_config(&config.providers).unwrap_or_else(|e| {
             status_err!("couldn't load keyring: {}", e);
             process::exit(1);
         });

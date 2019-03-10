@@ -3,9 +3,18 @@
 # Copy this to 'tmkms.toml' and edit for your own purposes
 
 # Information about Tenderment blockchain networks this KMS services
+#
+# - id: The chain ID for this chain
+# - key_format: How this chain handles serialization. Type may be "bech32" or "hex"
+# - state_file (optional): path to where the state of the last signing operation is persisted
+# - state_hook (optional): user-specified command to run on startup to obtain the current height
+#   of this chain. The command should output JSON which looks like the following:
+#   {"latest_block_height": "347290"}
 [[chain]]
 id = "cosmoshub"
 key_format = { type = "bech32", account_key_prefix = "cosmospub", consensus_key_prefix = "cosmosvalconspub" }
+# state_file = "/path/to/cosmoshub_priv_validator_state.json"
+# state_hook = { cmd = ["/path/to/block/height_script", "--example-arg", "cosmoshub"] }
 
 # Validator configuration
 [[validator]]

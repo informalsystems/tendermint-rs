@@ -28,35 +28,35 @@ lazy_static! {
     static ref GLOBAL_KEYRING: RwLock<KeyRing> = RwLock::new(KeyRing(BTreeMap::default()));
 }
 
+/// Create a keyring from the given provider configuration
+pub fn load_from_config(config: &ProviderConfig) -> Result<(), KmsError> {
+    let mut keyring = GLOBAL_KEYRING.write().unwrap();
+
+    // Clear the current global keyring
+    if !keyring.0.is_empty() {
+        info!("[keyring:*] Clearing keyring");
+        keyring.0.clear();
+    }
+
+    #[cfg(feature = "softsign")]
+    softsign::init(&mut keyring, &config.softsign)?;
+
+    #[cfg(feature = "yubihsm")]
+    yubihsm::init(&mut keyring, &config.yubihsm)?;
+
+    #[cfg(feature = "ledgertm")]
+    ledgertm::init(&mut keyring, &config.ledgertm)?;
+
+    if keyring.0.is_empty() {
+        fail!(ConfigError, "no signing keys configured!")
+    } else {
+        Ok(())
+    }
+}
+
 pub struct KeyRing(BTreeMap<TendermintKey, Signer>);
 
 impl KeyRing {
-    /// Create a keyring from the given provider configuration
-    pub fn load_from_config(config: &ProviderConfig) -> Result<(), KmsError> {
-        let mut keyring = GLOBAL_KEYRING.write().unwrap();
-
-        // Clear the current global keyring
-        if !keyring.0.is_empty() {
-            info!("[keyring:*] Clearing keyring");
-            keyring.0.clear();
-        }
-
-        #[cfg(feature = "softsign")]
-        softsign::init(&mut keyring, &config.softsign)?;
-
-        #[cfg(feature = "yubihsm")]
-        yubihsm::init(&mut keyring, &config.yubihsm)?;
-
-        #[cfg(feature = "ledgertm")]
-        ledgertm::init(&mut keyring, &config.ledgertm)?;
-
-        if keyring.0.is_empty() {
-            fail!(ConfigError, "no signing keys configured!")
-        } else {
-            Ok(())
-        }
-    }
-
     /// Add a key to the keyring, returning an error if we already have a
     /// signer registered for the given public key
     pub(super) fn add(

@@ -3,9 +3,10 @@
 //!
 //! Double-signing protection is the primary purpose of this code (for now).
 
-pub mod last_sign;
+mod error;
+pub mod hook;
 
-pub use self::last_sign::{LastSignError, LastSignErrorKind};
+pub use self::error::{StateError, StateErrorKind};
 use crate::{chain, error::KmsError};
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use serde_json;
@@ -14,7 +15,7 @@ use std::{
     io::{self, prelude::*},
     path::{Path, PathBuf},
 };
-use tendermint::block;
+use tendermint::chain::ConsensusState;
 
 /// Get mutex guarded access to the current state of a particular chain
 pub fn synchronize<F, T>(chain_id: chain::Id, func: F) -> Result<T, KmsError>
@@ -33,8 +34,8 @@ where
 
 /// State tracking for double signing prevention
 pub struct State {
-    data: last_sign::Data,
-    path: PathBuf,
+    consensus_state: ConsensusState,
+    state_file_path: PathBuf,
 }
 
 impl State {
@@ -44,13 +45,13 @@ impl State {
         P: AsRef<Path>,
     {
         let mut lst = State {
-            data: last_sign::Data::default(),
-            path: path.as_ref().to_owned(),
+            consensus_state: ConsensusState::default(),
+            state_file_path: path.as_ref().to_owned(),
         };
 
         match fs::read_to_string(path) {
             Ok(contents) => {
-                lst.data = serde_json::from_str(&contents)?;
+                lst.consensus_state = serde_json::from_str(&contents)?;
                 Ok(lst)
             }
             Err(e) => {
@@ -65,79 +66,103 @@ impl State {
     }
 
     /// Check and update the chain's height, round, and step
-    pub fn check_and_update_hrs(
-        &mut self,
-        height: i64,
-        round: i64,
-        step: i8,
-        block_id: Option<block::Id>,
-    ) -> Result<(), LastSignError> {
-        if height < self.data.height {
+    pub fn update_consensus_state(&mut self, new_state: ConsensusState) -> Result<(), StateError> {
+        // TODO(tarcieri): impl `PartialOrd` on `ConsensusState` to simplify this logic?
+        if new_state.height < self.consensus_state.height {
             fail!(
-                LastSignErrorKind::HeightRegression,
+                StateErrorKind::HeightRegression,
                 "last height:{} new height:{}",
-                self.data.height,
-                height
+                self.consensus_state.height,
+                new_state.height
             );
-        } else if height == self.data.height {
-            if round < self.data.round {
+        } else if new_state.height == self.consensus_state.height {
+            if new_state.round < self.consensus_state.round {
                 fail!(
-                    LastSignErrorKind::RoundRegression,
+                    StateErrorKind::RoundRegression,
                     "round regression at height:{} last round:{} new round:{}",
-                    height,
-                    self.data.round,
-                    round
+                    new_state.height,
+                    self.consensus_state.round,
+                    new_state.round
                 )
-            } else if round == self.data.round {
-                if step < self.data.step {
+            } else if new_state.round == self.consensus_state.round {
+                if new_state.step < self.consensus_state.step {
                     fail!(
-                        LastSignErrorKind::StepRegression,
+                        StateErrorKind::StepRegression,
                         "round regression at height:{} round:{} last step:{} new step:{}",
-                        height,
-                        round,
-                        self.data.step,
-                        step
+                        new_state.height,
+                        new_state.round,
+                        self.consensus_state.step,
+                        new_state.step
                     )
                 }
 
-                if block_id.is_some()
-                    && self.data.block_id.is_some()
-                    && self.data.block_id != block_id
+                if new_state.block_id.is_some()
+                    && self.consensus_state.block_id.is_some()
+                    && self.consensus_state.block_id != new_state.block_id
                 {
                     fail!(
-                        LastSignErrorKind::DoubleSign,
+                        StateErrorKind::DoubleSign,
                         "Attempting to sign a second proposal at height:{} round:{} step:{} old block id:{} new block {}",
-                        height,
-                        round,
-                        step,
-                        self.data.block_id.unwrap(),
-                        block_id.unwrap()
+                        new_state.height,
+                        new_state.round,
+                        new_state.step,
+                        self.consensus_state.block_id.unwrap(),
+                        new_state.block_id.unwrap()
                     )
                 }
             }
         }
 
-        self.data.height = height;
-        self.data.round = round;
-        self.data.step = step;
-        self.data.block_id = block_id;
+        self.consensus_state = new_state;
 
         self.sync_to_disk().map_err(|e| {
             err!(
-                LastSignErrorKind::SyncError,
+                StateErrorKind::SyncError,
                 "error writing state to {}: {}",
-                self.path.display(),
+                self.state_file_path.display(),
                 e
             )
         })?;
         Ok(())
     }
 
+    /// Update the internal state from the output from a hook command
+    pub fn update_from_hook_output(&mut self, output: hook::Output) -> Result<(), StateError> {
+        let hook_height = output.latest_block_height.value();
+        let last_height = self.consensus_state.height.value();
+
+        if hook_height > last_height {
+            let delta = hook_height - last_height;
+
+            if delta < hook::BLOCK_HEIGHT_SANITY_LIMIT {
+                let mut new_state = ConsensusState::default();
+                new_state.height = output.latest_block_height;
+                self.consensus_state = new_state;
+
+                info!("updated block height from hook: {}", hook_height);
+            } else {
+                warn!(
+                    "hook block height more than sanity limit: {} (delta: {}, max: {})",
+                    output.latest_block_height,
+                    delta,
+                    hook::BLOCK_HEIGHT_SANITY_LIMIT
+                );
+            }
+        } else {
+            warn!(
+                "hook block height less than current? current: {}, hook: {}",
+                last_height, hook_height
+            );
+        }
+
+        Ok(())
+    }
+
     /// Sync the current state to disk
     fn sync_to_disk(&mut self) -> std::io::Result<()> {
-        let json = serde_json::to_string(&self.data)?;
+        let json = serde_json::to_string(&self.consensus_state)?;
 
-        AtomicFile::new(&self.path, OverwriteBehavior::AllowOverwrite)
+        AtomicFile::new(&self.state_file_path, OverwriteBehavior::AllowOverwrite)
             .write(|f| f.write_all(json.as_bytes()))?;
 
         Ok(())
@@ -161,16 +186,24 @@ mod tests {
     #[test]
     fn hrs_test() {
         let mut last_sign_state = State {
-            data: last_sign::Data {
-                height: 1,
+            consensus_state: ConsensusState {
+                height: 1i64.into(),
                 round: 1,
                 step: 0,
                 block_id: None,
             },
-            path: EXAMPLE_PATH.into(),
+            state_file_path: EXAMPLE_PATH.into(),
         };
+
         assert_eq!(
-            last_sign_state.check_and_update_hrs(2, 0, 0, None).unwrap(),
+            last_sign_state
+                .update_consensus_state(ConsensusState {
+                    height: 2i64.into(),
+                    round: 0,
+                    step: 0,
+                    block_id: None
+                })
+                .unwrap(),
             ()
         )
     }
@@ -178,18 +211,23 @@ mod tests {
     #[test]
     fn hrs_test_double_sign() {
         let mut last_sign_state = State {
-            data: last_sign::Data {
-                height: 1,
+            consensus_state: ConsensusState {
+                height: 1i64.into(),
                 round: 1,
                 step: 0,
                 block_id: Some(block::Id::from_str(EXAMPLE_BLOCK_ID).unwrap()),
             },
-            path: EXAMPLE_PATH.into(),
+            state_file_path: EXAMPLE_PATH.into(),
         };
         let double_sign_block = block::Id::from_str(EXAMPLE_DOUBLE_SIGN_BLOCK_ID).unwrap();
-        let err = last_sign_state.check_and_update_hrs(1, 1, 1, Some(double_sign_block));
+        let err = last_sign_state.update_consensus_state(ConsensusState {
+            height: 1i64.into(),
+            round: 1,
+            step: 1,
+            block_id: Some(double_sign_block),
+        });
 
-        let double_sign_error = LastSignErrorKind::DoubleSign;
+        let double_sign_error = StateErrorKind::DoubleSign;
 
         assert_eq!(
             err.expect_err("Expect Double Sign error").0.kind(),

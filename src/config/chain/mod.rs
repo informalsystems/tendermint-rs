@@ -1,5 +1,8 @@
 //! Chain configuration
 
+mod hook;
+
+pub use self::hook::HookConfig;
 use crate::chain;
 use std::path::PathBuf;
 
@@ -14,4 +17,9 @@ pub struct ChainConfig {
 
     /// Path to chain-specific `priv_validator_state.json` file
     pub state_file: Option<PathBuf>,
+
+    /// User-specified command to run to obtain the current block height for
+    /// this chain. This will be executed at launch time to populate the
+    /// initial block height if configured
+    pub state_hook: Option<HookConfig>,
 }
