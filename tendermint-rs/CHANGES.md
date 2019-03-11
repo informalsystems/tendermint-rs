@@ -1,3 +1,9 @@
+## 0.5.0 (TBD)
+
+## 0.4.0 (N/A)
+
+- Skipped to synchronize versions with `tmkms`
+
 ## 0.3.0 (2019-03-05)
 
 - Support for secp256k1 keys ([#181])
