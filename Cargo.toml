@@ -41,7 +41,7 @@ signatory-dalek = "0.11"
 signatory-secp256k1 = "0.11"
 signatory-ledger-tm = { version = "0.11", optional = true }
 subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
-tendermint = { version = "0.3", path = "tendermint-rs" }
+tendermint = { version = "0.5.0-alpha1", path = "tendermint-rs" }
 tiny-bip39 = "0.6"
 wait-timeout = "0.2"
 yubihsm = { version = "0.22", features = ["setup", "usb"], optional = true }
