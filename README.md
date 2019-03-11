@@ -39,12 +39,18 @@ defense-in-depth purposes).
 
 ### Double Signing / High Availability
 
-Tendermint KMS does NOT yet implement double signing prevention or high
-availability features. Please see the following issues to track progress:
+Tendermint KMS implements **alpha quality** double signing detection.
+Please see [#60: Double-signing prevention (MVP for launch)](https://github.com/tendermint/kms/issues/60)
+for more information, however note this implementation is limited.
 
-- [#60: Double-signing prevention (MVP for launch)](https://github.com/tendermint/kms/issues/60)
-- [#115: Dobule signing prevention (post-launch)](https://github.com/tendermint/kms/issues/115)
-- [#193: State tracking for double sign protection](https://github.com/tendermint/kms/pull/193)
+In particular, KMS does **NOT** prevent double signing if two instances
+are running as identical copies, an attacker compromises both (as a signing
+oracle), and uses both instances to double sign.
+
+The longer-term story around double-signing is more complex, as it includes
+such scenarios as signing while unbonded. For more information on future-plans
+to provide double-signing defense and high availability in such scenarions,
+see [#115: Dobule signing prevention (post-launch)](https://github.com/tendermint/kms/issues/115).
 
 ## Supported Platforms
 
