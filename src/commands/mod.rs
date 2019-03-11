@@ -12,9 +12,9 @@ pub use self::yubihsm::YubihsmCommand;
 pub use self::{
     help::HelpCommand, keygen::KeygenCommand, start::StartCommand, version::VersionCommand,
 };
-use crate::config::{KmsConfig, CONFIG_FILE_NAME};
+use crate::config::{KmsConfig, CONFIG_ENV_VAR, CONFIG_FILE_NAME};
 use abscissa::{Callable, LoadConfig};
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 /// Subcommands of the KMS command-line application
 #[derive(Debug, Options)]
@@ -56,13 +56,20 @@ impl LoadConfig<KmsConfig> for KmsCommand {
     /// or the default
     fn config_path(&self) -> Option<PathBuf> {
         let config = match self {
-            KmsCommand::Start(run) => run.config.as_ref().map(|s| s.as_ref()),
+            KmsCommand::Start(run) => run.config.as_ref(),
             #[cfg(feature = "yubihsm")]
             KmsCommand::Yubihsm(yubihsm) => yubihsm.config_path(),
             _ => return None,
         };
 
-        Some(PathBuf::from(config.unwrap_or(CONFIG_FILE_NAME)))
+        let path = PathBuf::from(
+            config
+                .cloned()
+                .or_else(|| env::var(CONFIG_ENV_VAR).ok())
+                .unwrap_or_else(|| CONFIG_FILE_NAME.to_owned()),
+        );
+
+        Some(path)
     }
 }
 

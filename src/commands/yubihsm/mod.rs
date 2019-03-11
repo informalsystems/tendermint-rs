@@ -50,11 +50,11 @@ impl Callable for YubihsmCommand {
 }
 
 impl YubihsmCommand {
-    pub(super) fn config_path(&self) -> Option<&str> {
+    pub(super) fn config_path(&self) -> Option<&String> {
         match self {
             YubihsmCommand::Keys(keys) => keys.config_path(),
-            YubihsmCommand::Setup(setup) => setup.config.as_ref().map(|s| s.as_ref()),
-            YubihsmCommand::Test(test) => test.config.as_ref().map(|s| s.as_ref()),
+            YubihsmCommand::Setup(setup) => setup.config.as_ref(),
+            YubihsmCommand::Test(test) => test.config.as_ref(),
             _ => None,
         }
     }

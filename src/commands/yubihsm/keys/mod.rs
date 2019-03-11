@@ -43,12 +43,12 @@ pub enum KeysCommand {
 
 impl KeysCommand {
     /// Optional path to the configuration file
-    pub(super) fn config_path(&self) -> Option<&str> {
+    pub(super) fn config_path(&self) -> Option<&String> {
         match self {
-            KeysCommand::Export(export) => export.config.as_ref().map(|s| s.as_ref()),
-            KeysCommand::Generate(generate) => generate.config.as_ref().map(|s| s.as_ref()),
-            KeysCommand::List(list) => list.config.as_ref().map(|s| s.as_ref()),
-            KeysCommand::Import(import) => import.config.as_ref().map(|s| s.as_ref()),
+            KeysCommand::Export(export) => export.config.as_ref(),
+            KeysCommand::Generate(generate) => generate.config.as_ref(),
+            KeysCommand::List(list) => list.config.as_ref(),
+            KeysCommand::Import(import) => import.config.as_ref(),
             _ => None,
         }
     }
