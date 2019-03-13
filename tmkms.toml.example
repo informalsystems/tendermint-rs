@@ -18,7 +18,8 @@ key_format = { type = "bech32", account_key_prefix = "cosmospub", consensus_key_
 
 # Validator configuration
 [[validator]]
-addr = "tcp://example1.example.com:26658" # or "unix:///path/to/socket"
+addr = "tcp://f88883b673fc69d7869cab098de3bafc2ff76eb8@example1.example.com:26658"
+# or addr = "unix:///path/to/socket"
 chain_id = "cosmoshub"
 reconnect = true # true is the default
 secret_key = "path/to/secret_connection.key"

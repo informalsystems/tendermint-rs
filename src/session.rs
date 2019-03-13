@@ -1,6 +1,14 @@
 //! A session with a validator node
 
-use signatory::ed25519;
+use crate::{
+    chain,
+    error::{KmsError, KmsErrorKind::VerificationError},
+    keyring::KeyRing,
+    prost::Message,
+    rpc::{Request, Response, TendermintRequest},
+    unix_connection::UnixConnection,
+};
+use signatory::{ed25519, PublicKeyed};
 use signatory_dalek::Ed25519Signer;
 use std::{
     fmt::Debug,
@@ -14,19 +22,10 @@ use std::{
         Arc,
     },
 };
+use subtle::ConstantTimeEq;
 use tendermint::{
     amino_types::{PingRequest, PingResponse, PubKeyRequest},
-    public_keys::SecretConnectionKey,
-    SecretConnection,
-};
-
-use crate::{
-    chain,
-    error::KmsError,
-    keyring::KeyRing,
-    prost::Message,
-    rpc::{Request, Response, TendermintRequest},
-    unix_connection::UnixConnection,
+    secret_connection::{self, SecretConnection},
 };
 
 /// Encrypted session with a validator node
@@ -42,6 +41,7 @@ impl Session<SecretConnection<TcpStream>> {
     /// Create a new session with the validator at the given address/port
     pub fn connect_tcp(
         chain_id: chain::Id,
+        validator_peer_id: Option<secret_connection::PeerId>,
         host: &str,
         port: u16,
         secret_connection_key: &ed25519::Seed,
@@ -50,8 +50,29 @@ impl Session<SecretConnection<TcpStream>> {
 
         let socket = TcpStream::connect(format!("{}:{}", host, port))?;
         let signer = Ed25519Signer::from(secret_connection_key);
-        let public_key = SecretConnectionKey::from(ed25519::public_key(&signer)?);
+        let public_key = secret_connection::PublicKey::from(signer.public_key()?);
         let connection = SecretConnection::new(socket, &public_key, &signer)?;
+        let actual_peer_id = connection.remote_pubkey().peer_id();
+
+        // TODO(tarcieri): move this logic into `SecretConnection::new`?
+        if let Some(expected_peer_id) = validator_peer_id {
+            if expected_peer_id.ct_eq(&actual_peer_id).unwrap_u8() == 0 {
+                fail!(
+                    VerificationError,
+                    "{}:{}: validator peer ID mismatch! (expected {}, got {})",
+                    host,
+                    port,
+                    expected_peer_id,
+                    actual_peer_id
+                );
+            }
+        } else {
+            // TODO(tarcieri): make peer verification mandatory
+            warn!(
+                "[{}] {}:{}: unverified validator peer ID! ({})",
+                chain_id, host, port, actual_peer_id
+            );
+        }
 
         Ok(Self {
             chain_id,

@@ -17,7 +17,7 @@ use std::{
 use tempfile::NamedTempFile;
 use tendermint::{
     amino_types::{self, *},
-    SecretConnection, SecretConnectionKey,
+    secret_connection::{self, SecretConnection},
 };
 use tmkms::UnixConnection;
 
@@ -126,6 +126,8 @@ impl KmsProcess {
     /// Create a config file for a TCP KMS and return its path
     fn create_tcp_config(port: u16) -> NamedTempFile {
         let mut config_file = NamedTempFile::new().unwrap();
+        let peer_id = "f88883b673fc69d7869cab098de3bafc2ff76eb8";
+
         writeln!(
             config_file,
             r#"
@@ -134,7 +136,7 @@ impl KmsProcess {
             key_format = {{ type = "bech32", account_key_prefix = "cosmospub", consensus_key_prefix = "cosmosvalconspub" }}
 
             [[validator]]
-            addr = "tcp://127.0.0.1:{}"
+            addr = "tcp://{}@127.0.0.1:{}"
             chain_id = "test_chain_id"
             reconnect = false
             secret_key = "tests/support/secret_connection.key"
@@ -143,7 +145,7 @@ impl KmsProcess {
             chain_ids = ["test_chain_id"]
             path = "{}"
         "#,
-            port, SIGNING_KEY_PATH
+            peer_id, port, SIGNING_KEY_PATH
         )
         .unwrap();
 
@@ -184,7 +186,8 @@ impl KmsProcess {
 
                 // Here we reply to the kms with a "remote" ephermal key, auth signature etc:
                 let socket_cp = sock.try_clone().unwrap();
-                let public_key = SecretConnectionKey::from(signatory::public_key(&signer).unwrap());
+                let public_key =
+                    secret_connection::PublicKey::from(signatory::public_key(&signer).unwrap());
 
                 KmsConnection::SecretConnection(
                     SecretConnection::new(socket_cp, &public_key, &signer).unwrap(),

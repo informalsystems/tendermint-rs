@@ -1,18 +1,22 @@
 //! Validator addresses (`tcp://` or `unix://`)
 
+use crate::error::{KmsError, KmsErrorKind::*};
 use serde::{de::Error as DeError, Deserialize, Deserializer};
 use std::{
     fmt::{self, Display},
     path::PathBuf,
     str::{self, FromStr},
 };
-
-use crate::error::{KmsError, KmsErrorKind::*};
+use tendermint::secret_connection;
 
 #[derive(Clone, Debug)]
 pub enum ValidatorAddr {
     /// TCP connections (with SecretConnection transport encryption)
     Tcp {
+        /// Remote peer ID of the validator
+        // TODO(tarcieri): make this mandatory
+        peer_id: Option<secret_connection::PeerId>,
+
         /// Validator hostname or IP address
         host: String,
 
@@ -53,7 +57,14 @@ impl FromStr for ValidatorAddr {
     // TODO: less janky URL parser? (e.g. use `url` crate)
     fn from_str(addr: &str) -> Result<Self, KmsError> {
         if addr.starts_with("tcp://") {
-            let host_and_port: Vec<&str> = addr[6..].split(':').collect();
+            let authority_parts = addr[6..].split('@').collect::<Vec<_>>();
+            let (peer_id, authority) = match authority_parts.len() {
+                1 => (None, authority_parts[0]),
+                2 => (Some(authority_parts[0].parse()?), authority_parts[1]),
+                _ => fail!(ConfigError, "invalid tcp:// address: {}", addr),
+            };
+
+            let host_and_port: Vec<&str> = authority.split(':').collect();
 
             if host_and_port.len() != 2 {
                 fail!(ConfigError, "invalid tcp:// address: {}", addr);
@@ -64,7 +75,11 @@ impl FromStr for ValidatorAddr {
                 .parse()
                 .map_err(|_| err!(ConfigError, "invalid tcp:// address (bad port): {}", addr))?;
 
-            Ok(ValidatorAddr::Tcp { host, port })
+            Ok(ValidatorAddr::Tcp {
+                peer_id,
+                host,
+                port,
+            })
         } else if addr.starts_with("unix://") {
             let socket_path = PathBuf::from(&addr[7..]);
             Ok(ValidatorAddr::Unix { socket_path })
