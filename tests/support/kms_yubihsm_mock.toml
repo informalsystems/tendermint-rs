@@ -8,7 +8,7 @@ id = "cosmoshub"
 key_format = { type = "bech32", account_key_prefix = "cosmospub", consensus_key_prefix = "cosmosvalconspub" }
 
 [[validator]]
-addr = "tcp://127.0.0.1:23456"
+addr = "tcp://f88883b673fc69d7869cab098de3bafc2ff76eb8@127.0.0.1:23456"
 chain_id = "test_chain_id"
 reconnect = false
 secret_key = "tests/seccon.key"

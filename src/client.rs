@@ -5,7 +5,13 @@
 //! To dance around the fact the KMS isn't actually a service, we refer to it
 //! as a "Key Management System".
 
-use signatory::{ed25519, Decode, Encode};
+use crate::{
+    config::{ValidatorAddr, ValidatorConfig},
+    error::{KmsError, KmsErrorKind},
+    keyring::SecretKeyEncoding,
+    session::Session,
+};
+use signatory::{ed25519, Decode, Encode, PublicKeyed};
 use signatory_dalek::Ed25519Signer;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -15,14 +21,7 @@ use std::{
     thread::{self, JoinHandle},
     time::Duration,
 };
-use tendermint::{chain, public_keys::SecretConnectionKey};
-
-use crate::{
-    config::{ValidatorAddr, ValidatorConfig},
-    error::{KmsError, KmsErrorKind},
-    keyring::SecretKeyEncoding,
-    session::Session,
-};
+use tendermint::{chain, secret_connection};
 
 /// How long to wait after a crash before respawning (in seconds)
 pub const RESPAWN_DELAY: u64 = 1;
@@ -69,8 +68,12 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
         }
 
         let session_result = match &addr {
-            ValidatorAddr::Tcp { host, port } => match &secret_key {
-                Some(path) => tcp_session(chain_id, host, *port, path, should_term),
+            ValidatorAddr::Tcp {
+                peer_id,
+                host,
+                port,
+            } => match &secret_key {
+                Some(path) => tcp_session(chain_id, *peer_id, host, *port, path, should_term),
                 None => {
                     error!(
                         "config error: missing field `secret_key` for validator {}",
@@ -104,6 +107,7 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
 /// Create a TCP connection to a validator (encrypted with SecretConnection)
 fn tcp_session(
     chain_id: chain::Id,
+    validator_peer_id: Option<secret_connection::PeerId>,
     host: &str,
     port: u16,
     secret_key_path: &Path,
@@ -112,12 +116,13 @@ fn tcp_session(
     let secret_key = load_secret_connection_key(secret_key_path)?;
 
     let node_public_key =
-        SecretConnectionKey::from(ed25519::public_key(&Ed25519Signer::from(&secret_key)).unwrap());
+        secret_connection::PublicKey::from(Ed25519Signer::from(&secret_key).public_key().unwrap());
 
     info!("KMS node ID: {}", &node_public_key);
 
     panic::catch_unwind(move || {
-        let mut session = Session::connect_tcp(chain_id, host, port, &secret_key)?;
+        let mut session =
+            Session::connect_tcp(chain_id, validator_peer_id, host, port, &secret_key)?;
 
         info!(
             "[{}@tcp://{}:{}] connected to validator successfully",
