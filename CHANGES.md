@@ -1,3 +1,14 @@
+## [0.5.0] (2019-03-13)
+
+- [`tendermint` crate v0.5.0](https://crates.io/crates/tendermint/0.5.0) ([#220])
+- Optional peer ID verification ([#219])
+- Bump subtle-encoding dependency to v0.3.3 ([#217])
+- Allow setting config path via `TMKMS_CONFIG_FILE` env var ([#215])
+- yubihsm: Add back HTTP connector support ([#208])
+- Initial Tendermint `[chain]` registry in tmkms.toml ([#205])
+- Disable 'softsign' backend by default ([#203])
+- State tracking for double sign protection ([#193], thanks [@zmanian]!)
+
 ## [0.4.0] (2019-03-05)
 
 - [`tendermint` crate v0.3.0](https://crates.io/crates/tendermint/0.3.0) ([#200])
@@ -46,6 +57,16 @@
 
 - Initial "preview" release
 
+[0.5.0]: https://github.com/tendermint/kms/pull/222
+[#220]: https://github.com/tendermint/kms/pull/220
+[#219]: https://github.com/tendermint/kms/pull/219
+[#217]: https://github.com/tendermint/kms/pull/217
+[#215]: https://github.com/tendermint/kms/pull/215
+[#208]: https://github.com/tendermint/kms/pull/208
+[#205]: https://github.com/tendermint/kms/pull/205
+[#203]: https://github.com/tendermint/kms/pull/223
+[#193]: https://github.com/tendermint/kms/pull/193
+[@zmanian]: https://github.com/zmanian
 [0.4.0]: https://github.com/tendermint/kms/pull/201
 [#200]: https://github.com/tendermint/kms/pull/200
 [#197]: https://github.com/tendermint/kms/pull/197
