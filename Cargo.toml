@@ -43,6 +43,7 @@ serde_derive = { version =  "1", optional = true }
 signatory = { version = "0.11.2", optional = true, features = ["ed25519", "ecdsa"] }
 signatory-dalek = { version = "0.11", optional = true }
 sha2 = { version = "0.8", optional = true, default-features = false }
+subtle = { version = "2", optional = true }
 subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
 tai64 = { version = "1", optional = true, features = ["chrono"] }
 x25519-dalek = { version = "0.4.4", optional = true, default-features = false, features = ["u64_backend"] }
@@ -60,6 +61,7 @@ secret-connection = [
     "signatory",
     "signatory-dalek",
     "sha2",
+    "subtle",
     "x25519-dalek",
     "zeroize"
 ]

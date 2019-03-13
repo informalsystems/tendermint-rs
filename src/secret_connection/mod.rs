@@ -2,9 +2,11 @@
 
 mod kdf;
 mod nonce;
+mod peer_id;
+mod public_key;
 
-pub use self::{kdf::Kdf, nonce::Nonce};
-use crate::{amino_types::AuthSigMessage, error::Error, public_keys::SecretConnectionKey};
+pub use self::{kdf::Kdf, nonce::Nonce, peer_id::PeerId, public_key::PublicKey};
+use crate::{amino_types::AuthSigMessage, error::Error};
 use byteorder::{ByteOrder, LE};
 use bytes::BufMut;
 use prost::{encoding::encode_varint, Message};
@@ -34,20 +36,20 @@ pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
     send_nonce: Nonce,
     recv_secret: aead::OpeningKey,
     send_secret: aead::SealingKey,
-    remote_pubkey: SecretConnectionKey,
+    remote_pubkey: PublicKey,
     recv_buffer: Vec<u8>,
 }
 
 impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     /// Returns authenticated remote pubkey
-    pub fn remote_pubkey(&self) -> SecretConnectionKey {
+    pub fn remote_pubkey(&self) -> PublicKey {
         self.remote_pubkey
     }
     #[allow(clippy::new_ret_no_self)]
     /// Performs handshake and returns a new authenticated SecretConnection.
     pub fn new(
         mut handler: IoHandler,
-        local_pubkey: &SecretConnectionKey,
+        local_pubkey: &PublicKey,
         local_privkey: &dyn Signer<ed25519::Signature>,
     ) -> Result<SecretConnection<IoHandler>, Error> {
         // Generate ephemeral keys for perfect forward secrecy.
@@ -82,7 +84,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 .map_err(|_| Error::Crypto)?,
             send_secret: aead::SealingKey::new(&aead::CHACHA20_POLY1305, &kdf.send_secret)
                 .map_err(|_| Error::Crypto)?,
-            remote_pubkey: SecretConnectionKey::from(ed25519::PublicKey::from_bytes(
+            remote_pubkey: PublicKey::from(ed25519::PublicKey::from_bytes(
                 remote_eph_pubkey.as_bytes(),
             )?),
         };
@@ -92,7 +94,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
 
         // Share (in secret) each other's pubkey & challenge signature
         let auth_sig_msg = match local_pubkey {
-            SecretConnectionKey::Ed25519(ref pk) => {
+            PublicKey::Ed25519(ref pk) => {
                 share_auth_signature(&mut sc, pk.as_bytes(), local_signature)?
             }
         };
@@ -105,7 +107,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         ed25519::verify(&remote_verifier, &kdf.challenge, &remote_sig)?;
 
         // We've authorized.
-        sc.remote_pubkey = SecretConnectionKey::from(remote_pubkey);
+        sc.remote_pubkey = PublicKey::from(remote_pubkey);
 
         Ok(sc)
     }
