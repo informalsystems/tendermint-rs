@@ -2,7 +2,7 @@
 #
 # Copy this to 'tmkms.toml' and edit for your own purposes
 
-# Information about Tenderment blockchain networks this KMS services
+# Information about Tendermint blockchain networks this KMS services
 #
 # - id: The chain ID for this chain
 # - key_format: How this chain handles serialization. Type may be "bech32" or "hex"
