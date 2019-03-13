@@ -11,7 +11,7 @@
 #   of this chain. The command should output JSON which looks like the following:
 #   {"latest_block_height": "347290"}
 [[chain]]
-id = "cosmoshub"
+id = "cosmoshub-1"
 key_format = { type = "bech32", account_key_prefix = "cosmospub", consensus_key_prefix = "cosmosvalconspub" }
 # state_file = "/path/to/cosmoshub_priv_validator_state.json"
 # state_hook = { cmd = ["/path/to/block/height_script", "--example-arg", "cosmoshub"] }
@@ -20,20 +20,20 @@ key_format = { type = "bech32", account_key_prefix = "cosmospub", consensus_key_
 [[validator]]
 addr = "tcp://f88883b673fc69d7869cab098de3bafc2ff76eb8@example1.example.com:26658"
 # or addr = "unix:///path/to/socket"
-chain_id = "cosmoshub"
+chain_id = "cosmoshub-1"
 reconnect = true # true is the default
 secret_key = "path/to/secret_connection.key"
 
 # Provider configuration
 [[providers.softsign]]
-chain_ids = ["cosmoshub"]
+chain_ids = ["cosmoshub-1"]
 path = "path/to/signing.key"
 
 [[providers.yubihsm]]
 adapter = { type = "usb" }
 auth = { key = 1, password = "password" } # Default YubiHSM admin credentials. Change ASAP!
-keys = [{ chain_ids = ["cosmoshub"], key = 1 }]
+keys = [{ chain_ids = ["cosmoshub-1"], key = 1 }]
 #serial_number = "0123456789" # identify serial number of a specific YubiHSM to connect to
 
 [[providers.ledgertm]]
-chain_ids = ["cosmoshub"]
+chain_ids = ["cosmoshub-1"]
