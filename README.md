@@ -27,7 +27,7 @@ It supports [YubiHSM 2] and [Ledger] as hardware-backed key storage methods.
 
 The following high severity security issues are still unresolved:
 
-- [#111: AuthZ for signing key usage](https://github.com/tendermint/kms/issues/111)
+- [#111: Access control](https://github.com/tendermint/kms/issues/111)
 - [#142: MITM in secret connection](https://github.com/tendermint/kms/issues/142)
 
 Work is underway to address them both.
