@@ -1,4 +1,8 @@
-## 0.5.0 (TBD)
+## [0.5.0] (2019-03-13)
+
+- Rename `SecretConnectionKey` to `secret_connection::PublicKey`, add
+  `secret_connection::PeerId` ([#219])
+- Move `ConsensusState` under `chain::state` ([#205])
 
 ## 0.4.0 (N/A)
 
@@ -49,4 +53,7 @@ This release is compatible with tendermint [v0.28]
 
 - Initial release
 
+[0.5.0]: https://github.com/tendermint/kms/pull/220
+[#219]: https://github.com/tendermint/kms/pull/219
+[#205]: https://github.com/tendermint/kms/pull/219
 [#181]: https://github.com/tendermint/kms/pull/181
