@@ -6,8 +6,8 @@ use crate::{
     keyring::{ed25519::Signer, KeyRing, SigningProvider},
 };
 use signatory::PublicKeyed;
-use signatory_ledger_tm::{self, Ed25519LedgerTmAppSigner};
 use tendermint::TendermintKey;
+use ledger_tendermint::signer::Ed25519LedgerTmAppSigner;
 
 /// Create Ledger Tendermint signer object from the given configuration
 pub fn init(

@@ -502,13 +502,13 @@ dependencies = [
 [[package]]
 name = "ledger-tendermint"
 version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "byteorder 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ledger 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "matches 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "quick-error 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "signatory 0.11.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -992,17 +992,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "signatory-ledger-tm"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "lazy_static 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ledger-tendermint 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.50 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory 0.11.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "signatory-secp256k1"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1188,6 +1177,7 @@ dependencies = [
  "hkdf 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hmac 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ledger-tendermint 0.3.2",
  "prost-amino 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "prost-amino-derive 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1199,7 +1189,6 @@ dependencies = [
  "signal-hook 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "signatory 0.11.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "signatory-dalek 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "signatory-ledger-tm 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "signatory-secp256k1 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle-encoding 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1395,7 +1384,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum itoa 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "1306f3464951f30e30d12373d31c79fbd52d236e5e896fd92f96ec7babbbe60b"
 "checksum lazy_static 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "bc5729f27f159ddd61f4df6228e827e86643d4d3e7c32183cb30a1c08f604a14"
 "checksum ledger 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)" = "6c9a2f47929b010a64a4bf9cdfe03b0d02175d44db0b91e16283f5a4a731d52c"
-"checksum ledger-tendermint 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "9a5d19a16cfc269d902ccc0a594033cf6a5d8aafecf1513c18b8991dfa1903fb"
 "checksum libc 0.2.50 (registry+https://github.com/rust-lang/crates.io-index)" = "aab692d7759f5cd8c859e169db98ae5b52c924add2af5fbbca11d12fefb567c1"
 "checksum libusb 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5f990ddd929cbe53de4ecd6cf26e1f4e0c5b9796e4c629d9046570b03738aa53"
 "checksum libusb-sys 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "4c53b6582563d64ad3e692f54ef95239c3ea8069e82c9eb70ca948869a7ad767"
@@ -1452,7 +1440,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum signal-hook 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "97a47ae722318beceb0294e6f3d601205a1e6abaa4437d9d33e3a212233e3021"
 "checksum signatory 0.11.3 (registry+https://github.com/rust-lang/crates.io-index)" = "e282f6c031ca56210bb82a9aec3e5c1638345367cbab0208440e6a5a9493552f"
 "checksum signatory-dalek 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d9b5ed7678eaeb98cb23e1efdb5e961021b02d3bd9f8bab4d4e30c53ebb3dd50"
-"checksum signatory-ledger-tm 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e2633f1e0a241347d31f2031b6053506dd72d9c5dedf06fe231526f049e4d1ed"
 "checksum signatory-secp256k1 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "57765ca2c5615453b345477546ddc697921f3c8fc71fd1ffc4edc2ffa0453f1d"
 "checksum simplelog 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2e95345f185d5adeb8ec93459d2dc99654e294cc6ccf5b75414d8ea262de9a13"
 "checksum smallvec 0.6.9 (registry+https://github.com/rust-lang/crates.io-index)" = "c4488ae950c49d403731982257768f48fada354a5203fe81f9bb6f43ca9002be"
