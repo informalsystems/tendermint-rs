@@ -5,8 +5,8 @@ use crate::{
     error::{KmsError, KmsErrorKind::*},
     keyring::{ed25519::Signer, KeyRing, SigningProvider},
 };
+use ledger_tendermint::signer::Ed25519LedgerTmAppSigner;
 use signatory::PublicKeyed;
-use signatory_ledger_tm::{self, Ed25519LedgerTmAppSigner};
 use tendermint::TendermintKey;
 
 /// Create Ledger Tendermint signer object from the given configuration
