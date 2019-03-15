@@ -61,6 +61,3 @@ yubihsm-mock = ["yubihsm/mockhsm"]
 # Enable integer overflow checks in release builds for security reasons
 [profile.release]
 overflow-checks = true
-
-#[patch.crates-io]
-#ledger-tendermint = { path = "../ledger-tendermint-rs" }
