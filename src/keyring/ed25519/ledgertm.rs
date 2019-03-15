@@ -12,8 +12,7 @@ use ledger_tendermint::signer::Ed25519LedgerTmAppSigner;
 /// Create Ledger Tendermint signer object from the given configuration
 pub fn init(
     keyring: &mut KeyRing,
-    ledgertm_configs: &[LedgerTendermintConfig],
-) -> Result<(), KmsError> {
+    ledgertm_configs: &[LedgerTendermintConfig]) -> Result<(), KmsError> {
     if ledgertm_configs.is_empty() {
         return Ok(());
     }
