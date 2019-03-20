@@ -5,23 +5,23 @@
 # integration tests
 ARG TENDERMINT_VERSION=latest
 
-FROM tendermint/remote_val_harness:${TENDERMINT_VERSION} AS harness
+FROM tendermint/tm-signer-harness:${TENDERMINT_VERSION} AS harness
 
 USER root
 
-RUN mkdir -p /remote_val_harness
+RUN mkdir -p /harness
 
 # We need this script to generate configuration for the KMS
-COPY tests/support/gen-validator-integration-cfg.sh /remote_val_harness/
+COPY tests/support/gen-validator-integration-cfg.sh /harness/
 
 # Generate the base configuration data for the Tendermint validator for use
 # during integration testing. This will generate the data, by default, in the
 # /tendermint directory.
-RUN tendermint init --home=/remote_val_harness && \
-    remote_val_harness extract_key --tmhome=/remote_val_harness --output=/remote_val_harness/signing.key && \
-    cd /remote_val_harness && \
+RUN tendermint init --home=/harness && \
+    tm-signer-harness extract_key --tmhome=/harness --output=/harness/signing.key && \
+    cd /harness && \
     chmod +x gen-validator-integration-cfg.sh && \
-    TMHOME=/remote_val_harness sh ./gen-validator-integration-cfg.sh
+    TMHOME=/harness sh ./gen-validator-integration-cfg.sh
 
 ###################################################
 # Tendermint KMS Dockerfile
@@ -76,15 +76,16 @@ ENV RUST_BACKTRACE full
 # Remote validator integration testing
 
 # We need the generated harness and Tendermint configuration
-COPY --from=harness /remote_val_harness /remote_val_harness
+COPY --from=harness /harness /harness
 
 # We need the test harness binary
-COPY --from=harness /usr/bin/remote_val_harness /usr/bin/remote_val_harness
+COPY --from=harness /usr/bin/tm-signer-harness /usr/bin/tm-signer-harness
 
 # We need a secret connection key
-COPY tests/support/secret_connection.key /remote_val_harness/
+COPY tests/support/secret_connection.key /harness/
 
 USER root
-# Ensure the /remote_val_harness folder has the right owner
-RUN chown -R developer /remote_val_harness
+# Ensure the /harness folder has the right owner
+RUN chown -R developer /harness
 USER developer
+
