@@ -1,15 +1,15 @@
 #!/bin/bash
 TMKMS_BIN=${TMKMS_BIN:-"./target/debug/tmkms"}
-TMKMS_CONFIG=${TMKMS_CONFIG:-"/remote_val_harness/tmkms.toml"}
-REMOTE_VAL_HARNESS_BIN=${REMOTE_VAL_HARNESS_BIN:-"remote_val_harness"}
-TMHOME=${TMHOME:-"/remote_val_harness"}
+TMKMS_CONFIG=${TMKMS_CONFIG:-"/harness/tmkms.toml"}
+HARNESS_BIN=${HARNESS_BIN:-"tm-signer-harness"}
+TMHOME=${TMHOME:-"/harness"}
 
 # Run KMS in the background
 ${TMKMS_BIN} start -c ${TMKMS_CONFIG} &
 TMKMS_PID=$!
 
 # Run the test harness in the foreground
-${REMOTE_VAL_HARNESS_BIN} run \
+${HARNESS_BIN} run \
     -addr tcp://127.0.0.1:61278 \
     -tmhome ${TMHOME}
 HARNESS_EXIT_CODE=$?
