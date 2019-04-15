@@ -2,10 +2,9 @@
 
 mod kdf;
 mod nonce;
-mod peer_id;
 mod public_key;
 
-pub use self::{kdf::Kdf, nonce::Nonce, peer_id::PeerId, public_key::PublicKey};
+pub use self::{kdf::Kdf, nonce::Nonce, public_key::PublicKey};
 use crate::{amino_types::AuthSigMessage, error::Error};
 use byteorder::{ByteOrder, LE};
 use bytes::BufMut;
