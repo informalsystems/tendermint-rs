@@ -1,10 +1,10 @@
-//! Nodes in Tendermint blockchain networks
+//! Tendermint accounts
 
 use crate::error::Error;
 #[cfg(feature = "serde")]
 use serde::de::{self, Deserialize, Deserializer};
 use sha2::{Digest, Sha256};
-use signatory::ed25519;
+use signatory::ecdsa::curve::secp256k1;
 use std::{
     fmt::{self, Display},
     str::FromStr,
@@ -12,20 +12,20 @@ use std::{
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 
-/// Size of a Node ID in bytes
+/// Size of an  account ID in bytes
 pub const ID_LENGTH: usize = 20;
 
-/// Node IDs
+/// Account IDs
 #[derive(Copy, Clone, Debug, Hash)]
 pub struct Id([u8; ID_LENGTH]);
 
 impl Id {
-    /// Create a new Node ID from raw bytes
+    /// Create a new account ID from raw bytes
     pub fn new(bytes: [u8; ID_LENGTH]) -> Id {
         Id(bytes)
     }
 
-    /// Borrow the node ID as a byte slice
+    /// Borrow the account ID as a byte slice
     pub fn as_bytes(&self) -> &[u8] {
         &self.0[..]
     }
@@ -53,8 +53,8 @@ impl Display for Id {
     }
 }
 
-impl From<ed25519::PublicKey> for Id {
-    fn from(pk: ed25519::PublicKey) -> Id {
+impl From<secp256k1::PublicKey> for Id {
+    fn from(pk: secp256k1::PublicKey) -> Id {
         let digest = Sha256::digest(pk.as_bytes());
         let mut bytes = [0u8; ID_LENGTH];
         bytes.copy_from_slice(&digest[..ID_LENGTH]);
@@ -62,7 +62,7 @@ impl From<ed25519::PublicKey> for Id {
     }
 }
 
-/// Decode Node ID from hex
+/// Decode account ID from hex
 impl FromStr for Id {
     type Err = Error;
 
