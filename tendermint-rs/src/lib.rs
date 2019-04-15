@@ -19,18 +19,14 @@
     html_root_url = "https://docs.rs/tendermint/0.5.0"
 )]
 
-#[macro_use]
-extern crate failure_derive;
-#[cfg(feature = "secret-connection")]
+#[cfg(feature = "amino-types")]
 extern crate prost_amino as prost;
-#[cfg(feature = "secret-connection")]
+#[cfg(feature = "amino-types")]
 #[macro_use]
 extern crate prost_amino_derive as prost_derive;
-#[cfg(feature = "serializers")]
-#[macro_use]
-extern crate serde_derive;
 
 pub mod algorithm;
+#[cfg(feature = "amino-types")]
 pub mod amino_types;
 pub mod block;
 pub mod chain;
@@ -47,7 +43,7 @@ pub use crate::{
     algorithm::*,
     block::{ParseHeight as ParseBlockHeight, ParseId as ParseBlockId},
     chain::ParseId as ParseChainId,
-    error::*,
+    error::Error,
     hash::*,
     public_keys::*,
     timestamp::*,

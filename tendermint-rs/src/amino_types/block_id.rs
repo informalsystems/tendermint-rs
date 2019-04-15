@@ -29,7 +29,7 @@ impl ConsensusMessage for BlockId {
         }
         self.parts_header
             .as_ref()
-            .map_or(Ok(()), |psh| psh.validate_basic())
+            .map_or(Ok(()), ConsensusMessage::validate_basic)
     }
 }
 

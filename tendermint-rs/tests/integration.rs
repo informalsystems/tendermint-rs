@@ -1,15 +1,17 @@
 //! `SecretConnection` integration tests
 
-extern crate subtle_encoding;
-extern crate tendermint;
-
+#[cfg(features = "secret-connection")]
 use self::subtle_encoding::hex;
-use std::fs::File;
-use std::io::BufRead;
-use std::io::BufReader;
-use std::str::FromStr;
+#[cfg(features = "secret-connection")]
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+    str::FromStr,
+};
+#[cfg(features = "secret-connection")]
 use tendermint::secret_connection::Kdf;
 
+#[cfg(features = "secret-connection")]
 #[test]
 fn test_derive_secrets_and_challenge_golden_test_vectors() {
     let f = File::open("tests/support/TestDeriveSecretsAndChallenge.golden").unwrap();

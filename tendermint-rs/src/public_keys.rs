@@ -1,6 +1,6 @@
 //! Public keys used in Tendermint networks
 
-use crate::{amino_types::PubKeyResponse, error::Error};
+use crate::error::Error;
 use signatory::{ecdsa::curve::secp256k1, ed25519};
 use std::ops::Deref;
 use subtle_encoding::{bech32, hex};
@@ -61,16 +61,6 @@ impl PublicKey {
     /// Serialize this key as hexadecimal
     pub fn to_hex(self) -> String {
         String::from_utf8(hex::encode_upper(self.to_amino_bytes())).unwrap()
-    }
-
-    /// Create a response which represents this public key
-    pub fn to_response(self) -> PubKeyResponse {
-        match self {
-            PublicKey::Ed25519(ref pk) => PubKeyResponse {
-                pub_key_ed25519: pk.as_bytes().to_vec(),
-            },
-            PublicKey::Secp256k1(_) => panic!("secp256k1 PubKeyResponse unimplemented"),
-        }
     }
 }
 

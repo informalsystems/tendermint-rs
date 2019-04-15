@@ -1,9 +1,11 @@
 use crate::error::Error;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug, Display};
 
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)
-#[cfg_attr(feature = "serializers", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Default, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Height(pub u64);
 

@@ -24,7 +24,7 @@ use std::{
 };
 use subtle::ConstantTimeEq;
 use tendermint::{
-    amino_types::{PingRequest, PingResponse, PubKeyRequest},
+    amino_types::{PingRequest, PingResponse, PubKeyRequest, PubKeyResponse},
     secret_connection::{self, SecretConnection},
 };
 
@@ -170,8 +170,8 @@ where
 
     /// Get the public key for (the only) public key in the keyring
     fn get_public_key(&mut self, _request: &PubKeyRequest) -> Result<Response, KmsError> {
-        Ok(Response::PublicKey(
-            KeyRing::default_pubkey()?.to_response(),
-        ))
+        Ok(Response::PublicKey(PubKeyResponse::from(
+            *KeyRing::default_pubkey()?,
+        )))
     }
 }

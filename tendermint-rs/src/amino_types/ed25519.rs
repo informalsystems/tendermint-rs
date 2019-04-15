@@ -1,4 +1,5 @@
-use signatory::ed25519::{PublicKey, PUBLIC_KEY_SIZE};
+use crate::public_keys::PublicKey;
+use signatory::ed25519::PUBLIC_KEY_SIZE;
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
 // github.com/tendermint/tendermint/crypto.PubKey
@@ -19,21 +20,23 @@ pub struct PubKeyResponse {
 #[amino_name = "tendermint/remotesigner/PubKeyRequest"]
 pub struct PubKeyRequest {}
 
-impl Into<PublicKey> for PubKeyResponse {
+impl From<PubKeyResponse> for PublicKey {
     // This does not check if the underlying pub_key_ed25519 has the right size.
     // The caller needs to make sure that this is actually the case.
-    fn into(self) -> PublicKey {
+    fn from(response: PubKeyResponse) -> PublicKey {
         let mut public_key = [0u8; PUBLIC_KEY_SIZE];
-        public_key.copy_from_slice(self.pub_key_ed25519.as_ref());
-        PublicKey(public_key)
+        public_key.copy_from_slice(response.pub_key_ed25519.as_ref());
+        PublicKey::Ed25519(signatory::ed25519::PublicKey::new(public_key))
     }
 }
 
-impl Into<PubKeyResponse> for PublicKey {
-    fn into(self) -> PubKeyResponse {
-        let pk = self.0.to_vec();
-        PubKeyResponse {
-            pub_key_ed25519: pk,
+impl From<PublicKey> for PubKeyResponse {
+    fn from(public_key: PublicKey) -> PubKeyResponse {
+        match public_key {
+            PublicKey::Ed25519(ref pk) => PubKeyResponse {
+                pub_key_ed25519: pk.as_bytes().to_vec(),
+            },
+            PublicKey::Secp256k1(_) => panic!("secp256k1 PubKeyResponse unimplemented"),
         }
     }
 }
@@ -137,7 +140,7 @@ mod tests {
             0xe7, 0xc1, 0xd4, 0x69, 0xc3, 0x44, 0x26, 0xec, 0xef, 0xc0, 0x72, 0xa, 0x52, 0x4d,
             0x37, 0x32, 0xef, 0xed,
         ];
-        let want = PublicKey(raw_pk);
+        let want = PublicKey::Ed25519(signatory::ed25519::PublicKey::new(raw_pk));
         let pk = PubKeyResponse {
             pub_key_ed25519: vec![
                 0x79, 0xce, 0xd, 0xe0, 0x43, 0x33, 0x4a, 0xec, 0xe0, 0x8b, 0x7b, 0xb5, 0x61, 0xbc,
