@@ -2,7 +2,7 @@
 
 use crate::error::Error;
 #[cfg(feature = "serde")]
-use serde::de::{self, Deserialize, Deserializer};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
 use signatory::ed25519;
 use std::{
@@ -96,5 +96,12 @@ impl<'de> Deserialize<'de> for Id {
                 s
             ))
         })
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for Id {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.to_string().serialize(serializer)
     }
 }
