@@ -1,4 +1,4 @@
-#[cfg(feature = "serializers")]
+#[cfg(feature = "serde")]
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display},
@@ -37,14 +37,14 @@ impl FromStr for Id {
     }
 }
 
-#[cfg(feature = "serializers")]
+#[cfg(feature = "serde")]
 impl Serialize for Id {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.to_string().serialize(serializer)
     }
 }
 
-#[cfg(feature = "serializers")]
+#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Id {
     fn deserialize<De: Deserializer<'de>>(deserializer: De) -> Result<Self, De::Error> {
         Self::from_str(&String::deserialize(deserializer)?)

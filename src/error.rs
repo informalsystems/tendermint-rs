@@ -1,11 +1,9 @@
 //! Error types
 
+use failure::*;
+use std::io;
 #[cfg(feature = "secret-connection")]
-use {
-    chrono, prost, signatory,
-    std::{self, io},
-    subtle_encoding,
-};
+use {chrono, prost, subtle_encoding};
 
 /// Kinds of errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
@@ -72,14 +70,12 @@ impl From<prost::EncodeError> for Error {
     }
 }
 
-#[cfg(feature = "secret-connection")]
 impl From<subtle_encoding::Error> for Error {
     fn from(_: subtle_encoding::Error) -> Error {
         Error::Parse
     }
 }
 
-#[cfg(feature = "secret-connection")]
 impl From<signatory::Error> for Error {
     fn from(other: signatory::Error) -> Self {
         match other.kind() {

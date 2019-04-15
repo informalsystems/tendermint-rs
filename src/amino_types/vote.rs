@@ -198,7 +198,7 @@ impl ConsensusMessage for Vote {
 
         self.block_id
             .as_ref()
-            .map_or(Ok(()), |bid| bid.validate_basic())
+            .map_or(Ok(()), ConsensusMessage::validate_basic)
 
         // signature will be missing as the KMS provides it
     }
