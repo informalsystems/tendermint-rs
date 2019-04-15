@@ -40,15 +40,15 @@ ring = { version = "0.14", optional = true }
 serde = { version = "1", optional = true, features = ["derive"] }
 signatory = { version = "0.11.2", features = ["ed25519", "ecdsa"] }
 signatory-dalek = { version = "0.11", optional = true }
-sha2 = { version = "0.8", optional = true, default-features = false }
-subtle = { version = "2", optional = true }
+sha2 = { version = "0.8", default-features = false }
+subtle = "2"
 subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
 tai64 = { version = "1", optional = true, features = ["chrono"] }
 x25519-dalek = { version = "0.5", optional = true, default-features = false, features = ["u64_backend"] }
 zeroize = { version = "0.6", optional = true }
 
 [features]
-default = ["secret-connection", "serde", "tai64"]
+default = ["serde", "tai64"]
 amino-types = ["prost-amino", "prost-amino-derive"]
 secret-connection = [
     "amino-types",
@@ -56,9 +56,6 @@ secret-connection = [
     "hkdf",
     "rand_os",
     "ring",
-    "signatory-dalek",
-    "sha2",
-    "subtle",
-    "x25519-dalek",
+    "signatory-dalek",    "x25519-dalek",
     "zeroize"
 ]

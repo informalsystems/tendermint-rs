@@ -1,4 +1,7 @@
+//! Nodes in Tendermint blockchain networks
+
 use crate::error::Error;
+#[cfg(feature = "serde")]
 use serde::de::{self, Deserialize, Deserializer};
 use sha2::{Digest, Sha256};
 use signatory::ed25519;
@@ -9,39 +12,39 @@ use std::{
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 
-/// Size of a PeerId in bytes
-pub const SIZE: usize = 20;
+/// Size of a Node ID in bytes
+pub const ID_LENGTH: usize = 20;
 
-/// SecretConnection Peer IDs
+/// Node IDs
 #[derive(Copy, Clone, Debug, Hash)]
-pub struct PeerId([u8; SIZE]);
+pub struct Id([u8; ID_LENGTH]);
 
-impl PeerId {
-    /// Create a new PeerId from raw bytes
-    pub fn new(bytes: [u8; SIZE]) -> PeerId {
-        PeerId(bytes)
+impl Id {
+    /// Create a new Node ID from raw bytes
+    pub fn new(bytes: [u8; ID_LENGTH]) -> Id {
+        Id(bytes)
     }
 
-    /// Borrow the Peer ID as a byte slice
+    /// Borrow the node ID as a byte slice
     pub fn as_bytes(&self) -> &[u8] {
-        self.0.as_ref()
+        &self.0[..]
     }
 }
 
-impl AsRef<[u8]> for PeerId {
+impl AsRef<[u8]> for Id {
     fn as_ref(&self) -> &[u8] {
         self.as_bytes()
     }
 }
 
-impl ConstantTimeEq for PeerId {
+impl ConstantTimeEq for Id {
     #[inline]
-    fn ct_eq(&self, other: &PeerId) -> subtle::Choice {
+    fn ct_eq(&self, other: &Id) -> subtle::Choice {
         self.as_bytes().ct_eq(other.as_bytes())
     }
 }
 
-impl Display for PeerId {
+impl Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for byte in &self.0 {
             write!(f, "{:02X}", byte)?;
@@ -50,17 +53,17 @@ impl Display for PeerId {
     }
 }
 
-impl From<ed25519::PublicKey> for PeerId {
-    fn from(pk: ed25519::PublicKey) -> PeerId {
+impl From<ed25519::PublicKey> for Id {
+    fn from(pk: ed25519::PublicKey) -> Id {
         let digest = Sha256::digest(pk.as_bytes());
-        let mut peer_id_bytes = [0u8; SIZE];
-        peer_id_bytes.copy_from_slice(&digest[..SIZE]);
-        PeerId(peer_id_bytes)
+        let mut bytes = [0u8; ID_LENGTH];
+        bytes.copy_from_slice(&digest[..ID_LENGTH]);
+        Id(bytes)
     }
 }
 
-/// Decode PeerId from hex
-impl FromStr for PeerId {
+/// Decode Node ID from hex
+impl FromStr for Id {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -69,17 +72,18 @@ impl FromStr for PeerId {
             .or_else(|_| hex::decode(s))
             .map_err(|_| Error::Parse)?;
 
-        if bytes.len() != SIZE {
+        if bytes.len() != ID_LENGTH {
             return Err(Error::Parse);
         }
 
-        let mut peer_id_bytes = [0u8; SIZE];
+        let mut peer_id_bytes = [0u8; ID_LENGTH];
         peer_id_bytes.copy_from_slice(&bytes);
-        Ok(PeerId(peer_id_bytes))
+        Ok(Id(peer_id_bytes))
     }
 }
 
-impl<'de> Deserialize<'de> for PeerId {
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Id {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -88,7 +92,7 @@ impl<'de> Deserialize<'de> for PeerId {
         Self::from_str(&s).map_err(|_| {
             de::Error::custom(format!(
                 "expected {}-character hex string, got {:?}",
-                SIZE * 2,
+                ID_LENGTH * 2,
                 s
             ))
         })
