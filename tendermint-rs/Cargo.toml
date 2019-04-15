@@ -59,6 +59,10 @@ secret-connection = [
     "hkdf",
     "rand_os",
     "ring",
-    "signatory-dalek",    "x25519-dalek",
+    "signatory-dalek",
+    "x25519-dalek",
     "zeroize"
 ]
+
+[package.metadata.docs.rs]
+all-features = true
