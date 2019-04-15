@@ -33,6 +33,7 @@ pub mod block;
 pub mod chain;
 pub mod error;
 pub mod hash;
+pub mod moniker;
 pub mod node;
 pub mod public_keys;
 #[cfg(feature = "secret-connection")]
@@ -48,6 +49,7 @@ pub use crate::{
     chain::ParseId as ParseChainId,
     error::Error,
     hash::*,
+    moniker::Moniker,
     public_keys::*,
     timestamp::*,
 };
