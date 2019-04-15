@@ -25,6 +25,7 @@ extern crate prost_amino as prost;
 #[macro_use]
 extern crate prost_amino_derive as prost_derive;
 
+pub mod account;
 pub mod address;
 pub mod algorithm;
 #[cfg(feature = "amino-types")]
