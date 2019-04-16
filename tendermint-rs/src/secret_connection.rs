@@ -2,10 +2,9 @@
 
 mod kdf;
 mod nonce;
-mod peer_id;
 mod public_key;
 
-pub use self::{kdf::Kdf, nonce::Nonce, peer_id::PeerId, public_key::PublicKey};
+pub use self::{kdf::Kdf, nonce::Nonce, public_key::PublicKey};
 use crate::{amino_types::AuthSigMessage, error::Error};
 use byteorder::{ByteOrder, LE};
 use bytes::BufMut;
@@ -19,7 +18,7 @@ use std::{
     io::{self, Read, Write},
     marker::{Send, Sync},
 };
-use x25519_dalek::{EphemeralPublic, EphemeralSecret};
+use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
 
 /// Size of the MAC tag
 pub const TAG_SIZE: usize = 16;

@@ -1,17 +1,39 @@
 //! Public keys used in Tendermint networks
 
-use crate::{amino_types::PubKeyResponse, error::Error};
+use crate::error::Error;
+#[cfg(feature = "serde")]
+use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
 use signatory::{ecdsa::curve::secp256k1, ed25519};
 use std::ops::Deref;
+#[cfg(feature = "serde")]
+use subtle_encoding::base64;
 use subtle_encoding::{bech32, hex};
 
 /// Public keys allowed in Tendermint protocols
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))]
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub enum PublicKey {
     /// Ed25519 keys
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            rename = "tendermint/PubKeyEd25519",
+            serialize_with = "serialize_ed25519_base64",
+            deserialize_with = "deserialize_ed25519_base64"
+        )
+    )]
     Ed25519(ed25519::PublicKey),
 
     /// Secp256k1 keys
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            rename = "tendermint/PubKeySecp256k1",
+            serialize_with = "serialize_secp256k1_base64",
+            deserialize_with = "deserialize_secp256k1_base64"
+        )
+    )]
     Secp256k1(secp256k1::PublicKey),
 }
 
@@ -62,16 +84,62 @@ impl PublicKey {
     pub fn to_hex(self) -> String {
         String::from_utf8(hex::encode_upper(self.to_amino_bytes())).unwrap()
     }
+}
 
-    /// Create a response which represents this public key
-    pub fn to_response(self) -> PubKeyResponse {
-        match self {
-            PublicKey::Ed25519(ref pk) => PubKeyResponse {
-                pub_key_ed25519: pk.as_bytes().to_vec(),
-            },
-            PublicKey::Secp256k1(_) => panic!("secp256k1 PubKeyResponse unimplemented"),
-        }
-    }
+/// Serialize the bytes of an Ed25519 public key as Base64. Used for serializing JSON
+#[cfg(feature = "serde")]
+fn serialize_ed25519_base64<S>(
+    pk: &signatory::ed25519::PublicKey,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    String::from_utf8(base64::encode(pk.as_bytes()))
+        .unwrap()
+        .serialize(serializer)
+}
+
+/// Serialize the bytes of a secp256k1 ECDSA public key as Base64. Used for serializing JSON
+#[cfg(feature = "serde")]
+fn serialize_secp256k1_base64<S>(
+    pk: &signatory::ecdsa::curve::secp256k1::PublicKey,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    String::from_utf8(base64::encode(pk.as_bytes()))
+        .unwrap()
+        .serialize(serializer)
+}
+
+#[cfg(feature = "serde")]
+fn deserialize_ed25519_base64<'de, D>(
+    deserializer: D,
+) -> Result<signatory::ed25519::PublicKey, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
+        .map_err(|e| D::Error::custom(format!("{}", e)))?;
+
+    signatory::ed25519::PublicKey::from_bytes(&bytes)
+        .map_err(|e| D::Error::custom(format!("{}", e)))
+}
+
+#[cfg(feature = "serde")]
+fn deserialize_secp256k1_base64<'de, D>(
+    deserializer: D,
+) -> Result<signatory::ecdsa::curve::secp256k1::PublicKey, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
+        .map_err(|e| D::Error::custom(format!("{}", e)))?;
+
+    signatory::ecdsa::curve::secp256k1::PublicKey::from_bytes(&bytes)
+        .map_err(|e| D::Error::custom(format!("{}", e)))
 }
 
 impl From<ed25519::PublicKey> for PublicKey {
@@ -142,5 +210,23 @@ mod tests {
             example_key.to_bech32("cosmospub"),
             "cosmospub1addwnpepq2skx090esq7h7md0r3e76r6ruyet330e904r6k3pgpwuzl92x6actrt4uq"
         );
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn json_parsing() {
+        let json_string = "{\"type\":\"tendermint/PubKeyEd25519\",\"value\":\"RblzMO4is5L1hZz6wo4kPbptzOyue6LTk4+lPhD1FRk=\"}";
+        let pubkey: PublicKey = serde_json::from_str(json_string).unwrap();
+
+        assert_eq!(
+            pubkey.ed25519().unwrap().as_ref(),
+            [
+                69, 185, 115, 48, 238, 34, 179, 146, 245, 133, 156, 250, 194, 142, 36, 61, 186,
+                109, 204, 236, 174, 123, 162, 211, 147, 143, 165, 62, 16, 245, 21, 25
+            ]
+        );
+
+        let reserialized_json = serde_json::to_string(&pubkey).unwrap();
+        assert_eq!(reserialized_json.as_str(), json_string);
     }
 }

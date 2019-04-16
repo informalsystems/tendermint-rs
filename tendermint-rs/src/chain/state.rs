@@ -1,9 +1,12 @@
 //! State of a particular Tendermint network (a.k.a. chain)
 
 use crate::block;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// Tendermint consensus state
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ConsensusState {
     /// Current block height
     pub height: block::Height,

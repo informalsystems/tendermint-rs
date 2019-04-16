@@ -1,7 +1,12 @@
 //! Hash functions and their outputs
 
 use crate::{algorithm::HashAlgorithm, error::Error};
-use std::fmt::{self, Display};
+#[cfg(feature = "serde")]
+use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
+use std::{
+    fmt::{self, Display},
+    str::FromStr,
+};
 use subtle_encoding::{Encoding, Hex};
 
 /// Output size for the SHA-256 hash function
@@ -63,5 +68,28 @@ impl Display for Hash {
         };
 
         write!(f, "{}", hex)
+    }
+}
+
+impl FromStr for Hash {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Error> {
+        Self::from_hex_upper(HashAlgorithm::Sha256, s)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Hash {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Ok(Self::from_str(&String::deserialize(deserializer)?)
+            .map_err(|e| D::Error::custom(format!("{}", e)))?)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for Hash {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.to_string().serialize(serializer)
     }
 }

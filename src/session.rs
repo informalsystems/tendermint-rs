@@ -24,7 +24,8 @@ use std::{
 };
 use subtle::ConstantTimeEq;
 use tendermint::{
-    amino_types::{PingRequest, PingResponse, PubKeyRequest},
+    amino_types::{PingRequest, PingResponse, PubKeyRequest, PubKeyResponse},
+    node,
     secret_connection::{self, SecretConnection},
 };
 
@@ -41,7 +42,7 @@ impl Session<SecretConnection<TcpStream>> {
     /// Create a new session with the validator at the given address/port
     pub fn connect_tcp(
         chain_id: chain::Id,
-        validator_peer_id: Option<secret_connection::PeerId>,
+        validator_peer_id: Option<node::Id>,
         host: &str,
         port: u16,
         secret_connection_key: &ed25519::Seed,
@@ -170,8 +171,8 @@ where
 
     /// Get the public key for (the only) public key in the keyring
     fn get_public_key(&mut self, _request: &PubKeyRequest) -> Result<Response, KmsError> {
-        Ok(Response::PublicKey(
-            KeyRing::default_pubkey()?.to_response(),
-        ))
+        Ok(Response::PublicKey(PubKeyResponse::from(
+            *KeyRing::default_pubkey()?,
+        )))
     }
 }

@@ -9,8 +9,7 @@ use std::{
     fmt::{self, Display},
     io,
 };
-use tendermint;
-use tendermint::amino_types::validate::ValidationError as TmValidationError;
+use tendermint::amino_types::validate::ValidationError;
 
 /// Error type
 #[derive(Debug)]
@@ -142,7 +141,7 @@ impl From<signatory::Error> for KmsError {
 }
 
 impl From<tendermint::Error> for KmsError {
-    fn from(other: tendermint::Error) -> Self {
+    fn from(other: tendermint::error::Error) -> Self {
         let kind = match other {
             tendermint::Error::Crypto => KmsErrorKind::CryptoError,
             tendermint::Error::InvalidKey => KmsErrorKind::InvalidKey,
@@ -158,8 +157,8 @@ impl From<tendermint::Error> for KmsError {
     }
 }
 
-impl From<TmValidationError> for KmsError {
-    fn from(other: TmValidationError) -> Self {
+impl From<ValidationError> for KmsError {
+    fn from(other: ValidationError) -> Self {
         err!(KmsErrorKind::InvalidMessageError, other).into()
     }
 }

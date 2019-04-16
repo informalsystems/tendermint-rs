@@ -2,12 +2,14 @@
 
 use crate::error::Error;
 use chrono::{DateTime, Utc};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 #[cfg(feature = "tai64")]
 use tai64::TAI64N;
 
 /// Chain timestamps (e.g. consensus time)
-#[cfg_attr(feature = "serializers", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Timestamp(DateTime<Utc>);
 

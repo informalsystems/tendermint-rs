@@ -1,9 +1,13 @@
 use crate::error::Error;
-use std::fmt::{self, Debug, Display};
+#[cfg(feature = "serde")]
+use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
+use std::{
+    fmt::{self, Debug, Display},
+    str::FromStr,
+};
 
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)
-#[cfg_attr(feature = "serializers", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Default, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Height(pub u64);
 
@@ -61,6 +65,29 @@ impl From<Height> for u64 {
 impl From<Height> for i64 {
     fn from(height: Height) -> i64 {
         height.0 as i64
+    }
+}
+
+impl FromStr for Height {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Error> {
+        Ok(Self::from(s.parse::<u64>().map_err(|_| Error::Parse)?))
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Height {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Ok(Self::from_str(&String::deserialize(deserializer)?)
+            .map_err(|e| D::Error::custom(format!("{}", e)))?)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for Height {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.value().to_string().serialize(serializer)
     }
 }
 

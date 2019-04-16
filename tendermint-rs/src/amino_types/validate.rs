@@ -1,3 +1,5 @@
+use failure::*;
+
 pub trait ConsensusMessage {
     fn validate_basic(&self) -> Result<(), ValidationError>;
 }

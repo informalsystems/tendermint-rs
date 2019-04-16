@@ -6,7 +6,7 @@
 //! as a "Key Management System".
 
 use crate::{
-    config::{ValidatorAddr, ValidatorConfig},
+    config::ValidatorConfig,
     error::{KmsError, KmsErrorKind},
     keyring::SecretKeyEncoding,
     session::Session,
@@ -21,7 +21,7 @@ use std::{
     thread::{self, JoinHandle},
     time::Duration,
 };
-use tendermint::{chain, secret_connection};
+use tendermint::{chain, node, secret_connection, Address};
 
 /// How long to wait after a crash before respawning (in seconds)
 pub const RESPAWN_DELAY: u64 = 1;
@@ -68,7 +68,7 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
         }
 
         let session_result = match &addr {
-            ValidatorAddr::Tcp {
+            Address::Tcp {
                 peer_id,
                 host,
                 port,
@@ -82,7 +82,7 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
                     return;
                 }
             },
-            ValidatorAddr::Unix { socket_path } => unix_session(chain_id, socket_path, should_term),
+            Address::Unix { path } => unix_session(chain_id, path, should_term),
         };
 
         if let Err(e) = session_result {
@@ -107,7 +107,7 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
 /// Create a TCP connection to a validator (encrypted with SecretConnection)
 fn tcp_session(
     chain_id: chain::Id,
-    validator_peer_id: Option<secret_connection::PeerId>,
+    validator_peer_id: Option<node::Id>,
     host: &str,
     port: u16,
     secret_key_path: &Path,

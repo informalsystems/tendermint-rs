@@ -26,6 +26,7 @@ jobs:
           cargo build --features=yubihsm
           cargo build --features=ledgertm
           cargo build --features=yubihsm,ledgertm,softsign
+          cd tendermint-rs && cargo build --no-default-features
     - run:
         name: build --release
         command: |

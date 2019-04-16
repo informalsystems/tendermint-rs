@@ -1,7 +1,6 @@
 //! Secret Connection peer public keys
 
-use super::peer_id::PeerId;
-use crate::error::Error;
+use crate::{error::Error, node};
 use signatory::ed25519;
 use std::fmt::{self, Display};
 
@@ -26,9 +25,9 @@ impl PublicKey {
     }
 
     /// Get the remote Peer ID
-    pub fn peer_id(self) -> PeerId {
+    pub fn peer_id(self) -> node::Id {
         match self {
-            PublicKey::Ed25519(pk) => PeerId::from(pk),
+            PublicKey::Ed25519(pk) => node::Id::from(pk),
         }
     }
 }
