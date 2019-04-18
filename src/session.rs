@@ -3,7 +3,6 @@
 use crate::{
     chain,
     error::{KmsError, KmsErrorKind::VerificationError},
-    keyring::KeyRing,
     prost::Message,
     rpc::{Request, Response, TendermintRequest},
     unix_connection::UnixConnection,
@@ -144,11 +143,13 @@ where
     fn sign<T: TendermintRequest + Debug>(&mut self, mut request: T) -> Result<Response, KmsError> {
         request.validate()?;
 
+        let registry = chain::REGISTRY.get();
+        let chain = registry.get_chain(&self.chain_id).unwrap();
+
         if let Some(request_state) = request.consensus_state() {
-            chain::state::synchronize(self.chain_id, |chain_state| {
-                chain_state.update_consensus_state(request_state.clone())?;
-                Ok(())
-            })?;
+            // TODO(tarcieri): better handle `PoisonError`?
+            let mut chain_state = chain.state.lock().unwrap();
+            chain_state.update_consensus_state(request_state.clone())?;
         }
 
         let mut to_sign = vec![];
@@ -156,7 +157,7 @@ where
 
         // TODO(ismail): figure out which key to use here instead of taking the only key
         // from keyring here:
-        let sig = KeyRing::sign_ed25519(None, &to_sign)?;
+        let sig = chain.keyring.sign_ed25519(None, &to_sign)?;
 
         request.set_signature(&sig);
         debug!("successfully signed request:\n {:?}", request);
@@ -171,8 +172,11 @@ where
 
     /// Get the public key for (the only) public key in the keyring
     fn get_public_key(&mut self, _request: &PubKeyRequest) -> Result<Response, KmsError> {
+        let registry = chain::REGISTRY.get();
+        let chain = registry.get_chain(&self.chain_id).unwrap();
+
         Ok(Response::PublicKey(PubKeyResponse::from(
-            *KeyRing::default_pubkey()?,
+            *chain.keyring.default_pubkey()?,
         )))
     }
 }

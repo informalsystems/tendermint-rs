@@ -1,6 +1,5 @@
 //! Chain-specific key configuration
 
-use super::{Id, REGISTRY};
 use tendermint::TendermintKey;
 
 /// Options for how keys for this chain are represented
@@ -36,12 +35,4 @@ impl Format {
             Format::Hex => public_key.to_hex(),
         }
     }
-}
-
-/// Serialize a key according to chain-specific serialization rules
-pub fn serialize(chain_id: Id, public_key: TendermintKey) -> Option<String> {
-    let registry = REGISTRY.get();
-    registry
-        .chain(chain_id)
-        .map(|chain| chain.key_format.serialize(public_key))
 }
