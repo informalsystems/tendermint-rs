@@ -35,7 +35,7 @@ pub struct Proposal {
 // TODO(tony): custom derive proc macro for this e.g. `derive(ParseBlockHeight)`
 impl block::ParseHeight for Proposal {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
-        block::Height::parse(self.height)
+        block::Height::try_from_i64(self.height)
     }
 }
 
@@ -74,7 +74,7 @@ impl chain::ParseId for CanonicalProposal {
 
 impl block::ParseHeight for CanonicalProposal {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
-        block::Height::parse(self.height)
+        block::Height::try_from_i64(self.height)
     }
 }
 
@@ -136,7 +136,7 @@ impl SignableMsg for SignProposalRequest {
     fn consensus_state(&self) -> Option<ConsensusState> {
         match self.proposal {
             Some(ref p) => Some(ConsensusState {
-                height: match block::Height::parse(p.height) {
+                height: match block::Height::try_from_i64(p.height) {
                     Ok(h) => h,
                     Err(_err) => return None, // TODO(tarcieri): return an error?
                 },

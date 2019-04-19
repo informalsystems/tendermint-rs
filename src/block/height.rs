@@ -8,13 +8,14 @@ use std::{
 
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)
-#[derive(Copy, Clone, Default, Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Height(pub u64);
 
 impl Height {
     /// Parse height from the integer type used in Amino messages
-    pub fn parse(n: i64) -> Result<Self, Error> {
-        if n >= 0 {
+    pub fn try_from_i64(n: i64) -> Result<Self, Error> {
+        // Minimum height is 1
+        if n > 0 {
             Ok(Height(n as u64))
         } else {
             Err(Error::OutOfRange)
@@ -38,6 +39,12 @@ impl Debug for Height {
     }
 }
 
+impl Default for Height {
+    fn default() -> Self {
+        Height(1)
+    }
+}
+
 impl Display for Height {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
@@ -46,7 +53,7 @@ impl Display for Height {
 
 impl From<i64> for Height {
     fn from(n: i64) -> Height {
-        Self::parse(n).unwrap()
+        Self::try_from_i64(n).unwrap()
     }
 }
 
@@ -72,7 +79,7 @@ impl FromStr for Height {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Self::from(s.parse::<u64>().map_err(|_| Error::Parse)?))
+        Self::try_from_i64(s.parse::<i64>().map_err(|_| Error::Parse)?)
     }
 }
 
@@ -103,6 +110,6 @@ mod tests {
 
     #[test]
     fn increment_by_one() {
-        assert_eq!(Height::default().increment().value(), 1);
+        assert_eq!(Height::default().increment().value(), 2);
     }
 }
