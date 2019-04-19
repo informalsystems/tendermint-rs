@@ -2,7 +2,6 @@ use crate::{
     chain,
     client::Client,
     config::{KmsConfig, ValidatorConfig},
-    keyring,
 };
 use abscissa::{Callable, GlobalConfig};
 use std::{
@@ -46,18 +45,14 @@ impl Callable for StartCommand {
 
         let config = KmsConfig::get_global();
 
-        chain::registry::load_from_config(&config.chain).unwrap_or_else(|e| {
-            status_err!("error initializing chain registry: {}", e);
-            process::exit(1);
-        });
-
-        keyring::load_from_config(&config.providers).unwrap_or_else(|e| {
-            status_err!("couldn't load keyring: {}", e);
+        chain::load_config(&config).unwrap_or_else(|e| {
+            status_err!("error loading configuration: {}", e);
             process::exit(1);
         });
 
         // Should we terminate yet?
         let should_term = Arc::new(AtomicBool::new(false));
+
         // Spawn the validator client threads
         let validator_clients = spawn_validator_clients(&config.validator, &should_term);
         let catch_signals = [signal_hook::SIGTERM, signal_hook::SIGINT];

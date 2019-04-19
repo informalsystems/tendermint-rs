@@ -7,7 +7,7 @@ mod error;
 pub mod hook;
 
 pub use self::error::{StateError, StateErrorKind};
-use crate::{chain, error::KmsError};
+use crate::error::{KmsError, KmsErrorKind::*};
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use serde_json;
 use std::{
@@ -17,21 +17,6 @@ use std::{
 };
 use tendermint::chain::ConsensusState;
 
-/// Get mutex guarded access to the current state of a particular chain
-pub fn synchronize<F, T>(chain_id: chain::Id, func: F) -> Result<T, KmsError>
-where
-    F: Fn(&mut State) -> Result<T, KmsError>,
-{
-    let registry = chain::REGISTRY.get();
-    let chain = registry
-        .chain(chain_id)
-        .unwrap_or_else(|| panic!("can't update state for unregistered chain: {}", chain_id));
-
-    // TODO(tarcieri): better handle `PoisonError`?
-    let mut state_guard = chain.state.lock().unwrap();
-    func(&mut state_guard)
-}
-
 /// State tracking for double signing prevention
 pub struct State {
     consensus_state: ConsensusState,
@@ -40,7 +25,7 @@ pub struct State {
 
 impl State {
     /// Load the state from the given path
-    pub fn load_state<P>(path: P) -> std::io::Result<State>
+    pub fn load_state<P>(path: P) -> Result<State, KmsError>
     where
         P: AsRef<Path>,
     {
@@ -49,9 +34,16 @@ impl State {
             state_file_path: path.as_ref().to_owned(),
         };
 
-        match fs::read_to_string(path) {
+        match fs::read_to_string(path.as_ref()) {
             Ok(contents) => {
-                lst.consensus_state = serde_json::from_str(&contents)?;
+                lst.consensus_state = serde_json::from_str(&contents).map_err(|e| {
+                    err!(
+                        ParseError,
+                        "error parsing {}: {}",
+                        path.as_ref().display(),
+                        e
+                    )
+                })?;
                 Ok(lst)
             }
             Err(e) => {
@@ -59,7 +51,7 @@ impl State {
                     lst.sync_to_disk()?;
                     Ok(lst)
                 } else {
-                    Err(e)
+                    Err(e.into())
                 }
             }
         }

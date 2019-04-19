@@ -1,15 +1,19 @@
-//! YubiHSM2-based signer
+//! YubiHSM2 signing provider
 
 use crate::{
+    chain,
     config::provider::yubihsm::YubihsmConfig,
     error::{KmsError, KmsErrorKind::*},
-    keyring::{ed25519::Signer, KeyRing, SigningProvider},
+    keyring::{ed25519::Signer, SigningProvider},
 };
 use signatory::PublicKeyed;
 use tendermint::TendermintKey;
 
 /// Create hardware-backed YubiHSM signer objects from the given configuration
-pub fn init(keyring: &mut KeyRing, yubihsm_configs: &[YubihsmConfig]) -> Result<(), KmsError> {
+pub fn init(
+    chain_registry: &mut chain::Registry,
+    yubihsm_configs: &[YubihsmConfig],
+) -> Result<(), KmsError> {
     if yubihsm_configs.is_empty() {
         return Ok(());
     }
@@ -29,15 +33,11 @@ pub fn init(keyring: &mut KeyRing, yubihsm_configs: &[YubihsmConfig]) -> Result<
 
         // TODO(tarcieri): support for adding account keys into keyrings
         let public_key = TendermintKey::ConsensusKey(signer.public_key()?.into());
+        let signer = Signer::new(SigningProvider::Yubihsm, public_key, Box::new(signer));
 
-        keyring.add(
-            public_key,
-            Signer::new(
-                SigningProvider::Yubihsm,
-                &config.chain_ids,
-                Box::new(signer),
-            ),
-        )?;
+        for chain_id in &config.chain_ids {
+            chain_registry.add_to_keyring(chain_id, signer.clone())?;
+        }
     }
 
     Ok(())

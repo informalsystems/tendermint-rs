@@ -1,12 +1,19 @@
 //! Information about particular Tendermint blockchain networks
 
 mod guard;
-pub mod key;
-pub mod registry;
+mod registry;
 pub mod state;
 
-pub use self::{guard::Guard, registry::REGISTRY, state::State};
-use crate::{config::chain::ChainConfig, error::KmsError};
+pub use self::{
+    guard::Guard,
+    registry::{GlobalRegistry, Registry, REGISTRY},
+    state::State,
+};
+use crate::{
+    config::{chain::ChainConfig, KmsConfig},
+    error::KmsError,
+    keyring::{self, KeyRing},
+};
 use std::{path::PathBuf, sync::Mutex};
 pub use tendermint::chain::Id;
 
@@ -15,8 +22,8 @@ pub struct Chain {
     /// ID of a particular chain
     pub id: Id,
 
-    /// Key format configuration
-    pub key_format: key::Format,
+    /// Signing keyring for this chain
+    pub keyring: KeyRing,
 
     /// State from the last block signed for this chain
     pub state: Mutex<State>,
@@ -48,8 +55,18 @@ impl Chain {
 
         Ok(Self {
             id: config.id,
-            key_format: config.key_format.clone(),
+            keyring: KeyRing::new(config.key_format.clone()),
             state: Mutex::new(state),
         })
     }
+}
+
+/// Initialize the chain registry from the configuration file
+pub fn load_config(config: &KmsConfig) -> Result<(), KmsError> {
+    for config in &config.chain {
+        REGISTRY.register(Chain::from_config(config)?)?;
+    }
+
+    let mut registry = REGISTRY.0.write().unwrap();
+    keyring::load_config(&mut registry, &config.providers)
 }

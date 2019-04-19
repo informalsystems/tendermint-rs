@@ -1,104 +1,63 @@
 //! Signing keyring. Presently specialized for Ed25519.
 
-mod ed25519;
+pub mod ed25519;
+mod format;
 mod providers;
 
 use self::ed25519::Signer;
-pub use self::providers::SigningProvider;
+pub use self::{format::Format, providers::SigningProvider};
 use crate::{
     chain,
     config::provider::ProviderConfig,
     error::{KmsError, KmsErrorKind::*},
 };
-use std::{collections::BTreeMap, sync::RwLock};
+use std::collections::BTreeMap;
 use subtle_encoding;
 use tendermint::TendermintKey;
-
-#[cfg(feature = "ledgertm")]
-use self::ed25519::ledgertm;
-#[cfg(feature = "softsign")]
-use self::ed25519::softsign;
-#[cfg(feature = "yubihsm")]
-use self::ed25519::yubihsm;
 
 /// File encoding for software-backed secret keys
 pub type SecretKeyEncoding = subtle_encoding::Base64;
 
-lazy_static! {
-    static ref GLOBAL_KEYRING: RwLock<KeyRing> = RwLock::new(KeyRing(BTreeMap::default()));
+pub struct KeyRing {
+    /// Keys in the keyring
+    keys: BTreeMap<TendermintKey, Signer>,
+
+    /// Formatting configuration when displaying keys (e.g. bech32)
+    format: Format,
 }
-
-/// Create a keyring from the given provider configuration
-pub fn load_from_config(config: &ProviderConfig) -> Result<(), KmsError> {
-    let mut keyring = GLOBAL_KEYRING.write().unwrap();
-
-    // Clear the current global keyring
-    if !keyring.0.is_empty() {
-        info!("[keyring:*] Clearing keyring");
-        keyring.0.clear();
-    }
-
-    #[cfg(feature = "softsign")]
-    softsign::init(&mut keyring, &config.softsign)?;
-
-    #[cfg(feature = "yubihsm")]
-    yubihsm::init(&mut keyring, &config.yubihsm)?;
-
-    #[cfg(feature = "ledgertm")]
-    ledgertm::init(&mut keyring, &config.ledgertm)?;
-
-    if keyring.0.is_empty() {
-        fail!(ConfigError, "no signing keys configured!")
-    } else {
-        Ok(())
-    }
-}
-
-pub struct KeyRing(BTreeMap<TendermintKey, Signer>);
 
 impl KeyRing {
+    /// Create a new keyring
+    pub fn new(format: Format) -> Self {
+        Self {
+            keys: BTreeMap::new(),
+            format,
+        }
+    }
+
     /// Add a key to the keyring, returning an error if we already have a
     /// signer registered for the given public key
-    pub(super) fn add(
-        &mut self,
-        public_key: TendermintKey,
-        signer: Signer,
-    ) -> Result<(), KmsError> {
+    pub fn add(&mut self, signer: Signer) -> Result<(), KmsError> {
         let provider = signer.provider();
-
-        // Generate string for displaying the HRP
-        let chains = signer
-            .chain_ids()
-            .iter()
-            .map(|id| id.to_string())
-            .collect::<Vec<_>>()
-            .join(",");
-
-        // Use the correct HRP for the configured chain if available
-        let public_key_serialized = if signer.chain_ids().len() == 1 {
-            let chain_id = signer.chain_ids()[0];
-            match chain::key::serialize(chain_id, public_key) {
-                Some(bech32) => bech32,
-                None => fail!(InvalidKey, "unknown chain ID: {}", chain_id),
-            }
-        } else {
-            public_key.to_bech32("")
+        let public_key = signer.public_key();
+        let public_key_serialized = self.format.serialize(public_key);
+        let key_type = match public_key {
+            TendermintKey::AccountKey(_) => "account",
+            TendermintKey::ConsensusKey(_) => "consensus",
         };
 
         info!(
-            "[keyring:{}:{}] added validator key {}",
-            provider, chains, public_key_serialized
+            "[keyring:{}] added {} key {}",
+            provider, key_type, public_key_serialized
         );
 
-        if let Some(other) = self.0.insert(public_key, signer) {
+        if let Some(other) = self.keys.insert(public_key, signer) {
             fail!(
                 InvalidKey,
-                "[keyring:{}:{}] duplicate key {} already registered as {}:{:?}",
+                "[keyring:{}] duplicate key {} already registered as {}",
                 provider,
-                chains,
                 public_key_serialized,
                 other.provider(),
-                other.chain_ids()
             )
         } else {
             Ok(())
@@ -106,9 +65,8 @@ impl KeyRing {
     }
 
     /// Get the default public key for this keyring
-    pub fn default_pubkey() -> Result<TendermintKey, KmsError> {
-        let keyring = GLOBAL_KEYRING.read().unwrap();
-        let mut keys = keyring.0.keys();
+    pub fn default_pubkey(&self) -> Result<TendermintKey, KmsError> {
+        let mut keys = self.keys.keys();
 
         if keys.len() == 1 {
             Ok(*keys.next().unwrap())
@@ -120,17 +78,17 @@ impl KeyRing {
     /// Sign a message using the secret key associated with the given public key
     /// (if it is in our keyring)
     pub fn sign_ed25519(
+        &self,
         public_key: Option<&TendermintKey>,
         msg: &[u8],
     ) -> Result<ed25519::Signature, KmsError> {
-        let keyring = GLOBAL_KEYRING.read().unwrap();
-        let signer: &Signer = match public_key {
-            Some(public_key) => keyring
-                .0
+        let signer = match public_key {
+            Some(public_key) => self
+                .keys
                 .get(public_key)
                 .ok_or_else(|| err!(InvalidKey, "not in keyring: {}", public_key.to_bech32("")))?,
             None => {
-                let mut vals = keyring.0.values();
+                let mut vals = self.keys.values();
 
                 if vals.len() > 1 {
                     fail!(SigningError, "expected only one key in keyring");
@@ -143,4 +101,21 @@ impl KeyRing {
 
         signer.sign(msg)
     }
+}
+
+/// Initialize the keyring from the configuration file
+pub fn load_config(
+    registry: &mut chain::Registry,
+    config: &ProviderConfig,
+) -> Result<(), KmsError> {
+    #[cfg(feature = "softsign")]
+    ed25519::softsign::init(registry, &config.softsign)?;
+
+    #[cfg(feature = "yubihsm")]
+    ed25519::yubihsm::init(registry, &config.yubihsm)?;
+
+    #[cfg(feature = "ledgertm")]
+    ed25519::ledgertm::init(registry, &config.ledgertm)?;
+
+    Ok(())
 }
