@@ -1,4 +1,4 @@
-use crate::public_keys::PublicKey;
+use crate::public_key::PublicKey;
 use signatory::ed25519::PUBLIC_KEY_SIZE;
 
 // Note:On the golang side this is generic in the sense that it could everything that implements

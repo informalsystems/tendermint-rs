@@ -33,13 +33,16 @@ pub mod chain;
 #[cfg(feature = "rpc")]
 pub mod channel;
 pub mod commit;
+pub mod consensus;
 pub mod error;
 pub mod evidence;
+#[cfg(feature = "rpc")]
+pub mod genesis;
 pub mod hash;
 mod moniker;
 pub mod net;
 pub mod node;
-pub mod public_keys;
+pub mod public_key;
 #[cfg(feature = "rpc")]
 pub mod rpc;
 #[cfg(feature = "secret-connection")]
@@ -51,6 +54,8 @@ pub mod timestamp;
 pub mod transaction;
 mod version;
 
+#[cfg(feature = "rpc")]
+pub use crate::genesis::Genesis;
 #[cfg(feature = "secret-connection")]
 pub use crate::secret_connection::SecretConnection;
 pub use crate::{
@@ -58,7 +63,7 @@ pub use crate::{
     error::Error,
     hash::Hash,
     moniker::Moniker,
-    public_keys::{PublicKey, TendermintKey},
+    public_key::{PublicKey, TendermintKey},
     signature::Signature,
     timestamp::Timestamp,
     version::Version,
