@@ -40,6 +40,7 @@ jobs:
           rustc --version
           cargo --version
           cargo test --all --all-features -- --test-threads 1
+          cd tendermint-rs && cargo test --release --features=rpc
     - run:
         name: audit
         command: |

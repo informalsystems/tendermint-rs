@@ -1,11 +1,11 @@
 use std::path::PathBuf;
-use tendermint::{chain, Address};
+use tendermint::{chain, net};
 
 /// Validator configuration
 #[derive(Clone, Deserialize, Debug)]
 pub struct ValidatorConfig {
     /// Address of the validator (`tcp://` or `unix://`)
-    pub addr: Address,
+    pub addr: net::Address,
 
     /// Chain ID of the Tendermint network this validator is part of
     pub chain_id: chain::Id,

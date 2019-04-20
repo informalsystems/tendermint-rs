@@ -13,15 +13,17 @@ use crate::{
 };
 use signatory::{ed25519, Decode, Encode, PublicKeyed};
 use signatory_dalek::Ed25519Signer;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use std::{
     panic,
     path::Path,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
     thread::{self, JoinHandle},
     time::Duration,
 };
-use tendermint::{chain, node, secret_connection, Address};
+use tendermint::{chain, net, node, secret_connection};
 
 /// How long to wait after a crash before respawning (in seconds)
 pub const RESPAWN_DELAY: u64 = 1;
@@ -68,10 +70,10 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
             return;
         }
 
-        let session_result = match &addr {
-            Address::Tcp {
+        let session_result = match addr {
+            net::Address::Tcp {
                 peer_id,
-                host,
+                ref host,
                 port,
             } => match &secret_key {
                 Some(path) => tcp_session(
@@ -91,7 +93,9 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
                     return;
                 }
             },
-            Address::Unix { path } => unix_session(chain_id, max_height, path, should_term),
+            net::Address::Unix { ref path } => {
+                unix_session(chain_id, max_height, path, should_term)
+            }
         };
 
         if let Err(e) = session_result {
