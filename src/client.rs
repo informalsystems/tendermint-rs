@@ -58,6 +58,7 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
         chain_id,
         reconnect,
         secret_key,
+        max_height,
     } = config;
 
     loop {
@@ -73,7 +74,7 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
                 host,
                 port,
             } => match &secret_key {
-                Some(path) => tcp_session(chain_id, *peer_id, host, *port, path, should_term),
+                Some(path) => tcp_session(chain_id, max_height, *peer_id, host, *port, path, should_term),
                 None => {
                     error!(
                         "config error: missing field `secret_key` for validator {}",
@@ -82,7 +83,7 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
                     return;
                 }
             },
-            Address::Unix { path } => unix_session(chain_id, path, should_term),
+            Address::Unix { path } => unix_session(chain_id, max_height, path, should_term),
         };
 
         if let Err(e) = session_result {
@@ -107,6 +108,7 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
 /// Create a TCP connection to a validator (encrypted with SecretConnection)
 fn tcp_session(
     chain_id: chain::Id,
+    max_height:Option<i64>,
     validator_peer_id: Option<node::Id>,
     host: &str,
     port: u16,
@@ -122,7 +124,7 @@ fn tcp_session(
 
     panic::catch_unwind(move || {
         let mut session =
-            Session::connect_tcp(chain_id, validator_peer_id, host, port, &secret_key)?;
+            Session::connect_tcp(chain_id,max_height, validator_peer_id, host, port, &secret_key)?;
 
         info!(
             "[{}@tcp://{}:{}] connected to validator successfully",
@@ -137,11 +139,12 @@ fn tcp_session(
 /// Create a validator session over a Unix domain socket
 fn unix_session(
     chain_id: chain::Id,
+    max_height: Option<i64>,
     socket_path: &Path,
     should_term: &Arc<AtomicBool>,
 ) -> Result<(), KmsError> {
     panic::catch_unwind(move || {
-        let mut session = Session::connect_unix(chain_id, socket_path)?;
+        let mut session = Session::connect_unix(chain_id, max_height, socket_path)?;
 
         info!(
             "[{}@unix://{}] connected to validator successfully",

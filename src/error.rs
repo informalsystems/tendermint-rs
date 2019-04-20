@@ -88,6 +88,10 @@ pub enum KmsErrorKind {
     /// Signature invalid
     #[fail(display = "attempted double sign")]
     DoubleSign,
+
+    ///Request a Signature above max height
+    #[fail(display = "requested signature above stop height")]
+    ExceedMaxHeight,
 }
 
 impl Display for KmsError {
