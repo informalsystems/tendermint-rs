@@ -4,7 +4,7 @@ use crate::{account, block, node, rpc, Hash, PublicKey, Timestamp};
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Node status request
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct StatusRequest;
 
 impl rpc::Request for StatusRequest {
