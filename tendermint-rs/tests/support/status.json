@@ -1,0 +1,38 @@
+{
+  "jsonrpc": "2.0",
+  "id": "",
+  "result": {
+    "node_info": {
+      "protocol_version": {
+        "p2p": "7",
+        "block": "10",
+        "app": "0"
+      },
+      "id": "6b90d376f9bfdd83c6d9351bf7b2f458b74deacc",
+      "listen_addr": "tcp://0.0.0.0:26656",
+      "network": "cosmoshub-1",
+      "version": "0.30.1",
+      "channels": "4020212223303800",
+      "moniker": "technodrome",
+      "other": {
+        "tx_index": "on",
+        "rpc_address": "tcp://0.0.0.0:26657"
+      }
+    },
+    "sync_info": {
+      "latest_block_hash": "D4B11143B0C9CB1330BAED825C9FEF13979C91E137DF93C3974A17C9BED663ED",
+      "latest_app_hash": "38FE3F06E3EB936C2EE14DA6BEA15F97FEF8814824F022EE06635D7B2C39A0BA",
+      "latest_block_height": "410744",
+      "latest_block_time": "2019-04-15T13:16:17.316509229Z",
+      "catching_up": false
+    },
+    "validator_info": {
+      "address": "C73833E9BD86D34EDAD4AFD571FB5D0926294CD5",
+      "pub_key": {
+        "type": "tendermint/PubKeyEd25519",
+        "value": "RblzMO4is5L1hZz6wo4kPbptzOyue6LTk4+lPhD1FRk="
+      },
+      "voting_power": "0"
+    }
+  }
+}
