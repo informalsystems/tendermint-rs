@@ -46,7 +46,7 @@ impl Vote {
 
 impl block::ParseHeight for Vote {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
-        block::Height::parse(self.height)
+        block::Height::try_from_i64(self.height)
     }
 }
 
@@ -92,7 +92,7 @@ impl chain::ParseId for CanonicalVote {
 
 impl block::ParseHeight for CanonicalVote {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
-        block::Height::parse(self.height)
+        block::Height::try_from_i64(self.height)
     }
 }
 
@@ -157,7 +157,7 @@ impl SignableMsg for SignVoteRequest {
     fn consensus_state(&self) -> Option<ConsensusState> {
         match self.vote {
             Some(ref v) => Some(ConsensusState {
-                height: match block::Height::parse(v.height) {
+                height: match block::Height::try_from_i64(v.height) {
                     Ok(h) => h,
                     Err(_err) => return None, // TODO(tarcieri): return an error?
                 },
