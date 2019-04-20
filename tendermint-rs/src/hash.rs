@@ -13,7 +13,7 @@ use subtle_encoding::{Encoding, Hex};
 pub const SHA256_HASH_SIZE: usize = 32;
 
 /// Hash algorithms
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Algorithm {
     /// SHA-256
     Sha256,

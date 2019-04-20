@@ -5,10 +5,15 @@ mod height;
 mod id;
 mod meta;
 pub mod parts;
+mod size;
 
-pub use self::height::*;
-pub use self::id::{Id, ParseId};
-pub use self::{header::Header, meta::Meta};
+pub use self::{
+    header::Header,
+    height::*,
+    id::{Id, ParseId},
+    meta::Meta,
+    size::Size,
+};
 use crate::{commit::LastCommit, evidence, transaction};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

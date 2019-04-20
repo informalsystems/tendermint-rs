@@ -15,11 +15,11 @@ use std::{
     io::{self, prelude::*},
     path::{Path, PathBuf},
 };
-use tendermint::chain::ConsensusState;
+use tendermint::consensus;
 
 /// State tracking for double signing prevention
 pub struct State {
-    consensus_state: ConsensusState,
+    consensus_state: consensus::State,
     state_file_path: PathBuf,
 }
 
@@ -30,7 +30,7 @@ impl State {
         P: AsRef<Path>,
     {
         let mut lst = State {
-            consensus_state: ConsensusState::default(),
+            consensus_state: consensus::State::default(),
             state_file_path: path.as_ref().to_owned(),
         };
 
@@ -58,8 +58,11 @@ impl State {
     }
 
     /// Check and update the chain's height, round, and step
-    pub fn update_consensus_state(&mut self, new_state: ConsensusState) -> Result<(), StateError> {
-        // TODO(tarcieri): impl `PartialOrd` on `ConsensusState` to simplify this logic?
+    pub fn update_consensus_state(
+        &mut self,
+        new_state: consensus::State,
+    ) -> Result<(), StateError> {
+        // TODO(tarcieri): rewrite this using `Ord` impl on `consensus::State`
         if new_state.height < self.consensus_state.height {
             fail!(
                 StateErrorKind::HeightRegression,
@@ -127,7 +130,7 @@ impl State {
             let delta = hook_height - last_height;
 
             if delta < hook::BLOCK_HEIGHT_SANITY_LIMIT {
-                let mut new_state = ConsensusState::default();
+                let mut new_state = consensus::State::default();
                 new_state.height = output.latest_block_height;
                 self.consensus_state = new_state;
 
@@ -178,7 +181,7 @@ mod tests {
     #[test]
     fn hrs_test() {
         let mut last_sign_state = State {
-            consensus_state: ConsensusState {
+            consensus_state: consensus::State {
                 height: 1i64.into(),
                 round: 1,
                 step: 0,
@@ -189,7 +192,7 @@ mod tests {
 
         assert_eq!(
             last_sign_state
-                .update_consensus_state(ConsensusState {
+                .update_consensus_state(consensus::State {
                     height: 2i64.into(),
                     round: 0,
                     step: 0,
@@ -203,7 +206,7 @@ mod tests {
     #[test]
     fn hrs_test_double_sign() {
         let mut last_sign_state = State {
-            consensus_state: ConsensusState {
+            consensus_state: consensus::State {
                 height: 1i64.into(),
                 round: 1,
                 step: 0,
@@ -212,7 +215,7 @@ mod tests {
             state_file_path: EXAMPLE_PATH.into(),
         };
         let double_sign_block = block::Id::from_str(EXAMPLE_DOUBLE_SIGN_BLOCK_ID).unwrap();
-        let err = last_sign_state.update_consensus_state(ConsensusState {
+        let err = last_sign_state.update_consensus_state(consensus::State {
             height: 1i64.into(),
             round: 1,
             step: 1,

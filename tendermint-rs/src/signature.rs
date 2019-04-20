@@ -7,16 +7,6 @@ use signatory::Signature as SignatureTrait;
 #[cfg(feature = "serde")]
 use subtle_encoding::base64;
 
-/// Digital signature algorithms
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Algorithm {
-    /// ECDSA over secp256k1
-    EcdsaSecp256k1,
-
-    /// EdDSA over Curve25519
-    Ed25519,
-}
-
 /// Signatures
 #[derive(Clone, Debug)]
 pub enum Signature {
@@ -57,4 +47,14 @@ impl Serialize for Signature {
             .unwrap()
             .serialize(serializer)
     }
+}
+
+/// Digital signature algorithms
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Algorithm {
+    /// ECDSA over secp256k1
+    EcdsaSecp256k1,
+
+    /// EdDSA over Curve25519
+    Ed25519,
 }

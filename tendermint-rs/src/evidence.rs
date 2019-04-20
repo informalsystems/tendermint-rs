@@ -3,6 +3,7 @@
 use std::slice;
 #[cfg(feature = "serde")]
 use {
+    crate::serializers,
     serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer},
     subtle_encoding::base64,
 };
@@ -83,4 +84,19 @@ impl AsRef<[Evidence]> for Collection {
             .map(|evidence| evidence.as_slice())
             .unwrap_or_else(|| &[])
     }
+}
+
+/// Evidence collection parameters
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Params {
+    /// Maximum allowed age for evidence to be collected
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            serialize_with = "serializers::serialize_u64",
+            deserialize_with = "serializers::parse_u64"
+        )
+    )]
+    pub max_age: u64,
 }

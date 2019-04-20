@@ -4,7 +4,11 @@ use crate::error::Error;
 #[cfg(feature = "serde")]
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
 use signatory::{ecdsa::curve::secp256k1, ed25519};
-use std::ops::Deref;
+use std::{
+    fmt::{self, Display},
+    ops::Deref,
+    str::FromStr,
+};
 #[cfg(feature = "serde")]
 use subtle_encoding::base64;
 use subtle_encoding::{bech32, hex};
@@ -172,6 +176,59 @@ impl Deref for TendermintKey {
             TendermintKey::AccountKey(key) => key,
             TendermintKey::ConsensusKey(key) => key,
         }
+    }
+}
+
+/// Public key algorithms
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Algorithm {
+    /// ed25519
+    Ed25519,
+
+    /// secp256k1
+    Secp256k1,
+}
+
+impl Algorithm {
+    /// Get the string label for this algorithm
+    pub fn as_str(&self) -> &str {
+        match self {
+            Algorithm::Ed25519 => "ed25519",
+            Algorithm::Secp256k1 => "secp256k1",
+        }
+    }
+}
+
+impl FromStr for Algorithm {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Error> {
+        match s {
+            "ed25519" => Ok(Algorithm::Ed25519),
+            "secp256k1" => Ok(Algorithm::Secp256k1),
+            _ => Err(Error::Parse),
+        }
+    }
+}
+
+impl Display for Algorithm {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for Algorithm {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.as_str().serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Algorithm {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Self::from_str(&String::deserialize(deserializer)?)
+            .map_err(|e| D::Error::custom(format!("{}", e)))
     }
 }
 

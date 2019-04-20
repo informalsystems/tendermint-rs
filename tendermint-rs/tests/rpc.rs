@@ -3,10 +3,7 @@
 #[cfg(feature = "rpc")]
 mod endpoints {
     use std::{fs, path::PathBuf};
-    use tendermint::rpc::{
-        endpoint::{block, net_info, status},
-        Response,
-    };
+    use tendermint::rpc::{endpoint, Response};
 
     fn read_json_fixture(name: &str) -> String {
         fs::read_to_string(PathBuf::from("./tests/support/").join(name.to_owned() + ".json"))
@@ -16,7 +13,7 @@ mod endpoints {
     #[test]
     fn block() {
         let block_json = read_json_fixture("block");
-        let block_response = block::Response::from_json(&block_json).unwrap();
+        let block_response = endpoint::block::Response::from_json(&block_json).unwrap();
 
         let tendermint::Block {
             header,
@@ -36,9 +33,24 @@ mod endpoints {
     }
 
     #[test]
+    fn genesis() {
+        let genesis_json = read_json_fixture("genesis");
+        let genesis_response = endpoint::genesis::Response::from_json(&genesis_json).unwrap();
+
+        let tendermint::Genesis {
+            chain_id,
+            consensus_params,
+            ..
+        } = genesis_response.genesis;
+
+        assert_eq!(chain_id.as_str(), "cosmoshub-1");
+        assert_eq!(consensus_params.block_size.max_bytes, 150000);
+    }
+
+    #[test]
     fn net_info() {
         let net_info_json = read_json_fixture("net_info");
-        let net_info_response = net_info::Response::from_json(&net_info_json).unwrap();
+        let net_info_response = endpoint::net_info::Response::from_json(&net_info_json).unwrap();
 
         assert_eq!(net_info_response.n_peers, 2);
         assert_eq!(
@@ -50,7 +62,7 @@ mod endpoints {
     #[test]
     fn status() {
         let status_json = read_json_fixture("status");
-        let status_response = status::Response::from_json(&status_json).unwrap();
+        let status_response = endpoint::status::Response::from_json(&status_json).unwrap();
 
         assert_eq!(status_response.node_info.network.as_str(), "cosmoshub-1");
         assert_eq!(
