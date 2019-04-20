@@ -31,9 +31,11 @@ pub mod algorithm;
 pub mod amino_types;
 pub mod block;
 pub mod chain;
+#[cfg(feature = "rpc")]
+pub mod channel;
 pub mod error;
 pub mod hash;
-pub mod moniker;
+mod moniker;
 pub mod net;
 pub mod node;
 pub mod public_keys;
@@ -42,6 +44,7 @@ pub mod rpc;
 #[cfg(feature = "secret-connection")]
 pub mod secret_connection;
 pub mod timestamp;
+mod version;
 
 #[cfg(feature = "secret-connection")]
 pub use crate::secret_connection::SecretConnection;
@@ -52,4 +55,5 @@ pub use crate::{
     moniker::Moniker,
     public_keys::{PublicKey, TendermintKey},
     timestamp::Timestamp,
+    version::Version,
 };
