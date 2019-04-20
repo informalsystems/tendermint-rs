@@ -1,8 +1,5 @@
 //! JSONRPC response types
 
-// TODO(tarcieri): remove this when functions below are all used
-#![allow(dead_code)]
-
 use failure::{format_err, Error};
 use serde::{
     de::{DeserializeOwned, Error as DeError},
@@ -78,7 +75,7 @@ where
 }
 
 /// Parse `Duration` from a JSON string containing a nanosecond count
-fn parse_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+pub(crate) fn parse_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -91,7 +88,7 @@ where
 }
 
 /// Serialize `Duration` as a JSON string containing a nanosecond count
-fn serialize_duration<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+pub(crate) fn serialize_duration<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
