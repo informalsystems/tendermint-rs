@@ -3,7 +3,7 @@
 mod id;
 
 pub use self::id::Id;
-use crate::rpc;
+use crate::serializers;
 pub use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
 
@@ -17,32 +17,32 @@ pub struct Channel {
     /// Capacity of the send queue
     #[serde(
         rename = "SendQueueCapacity",
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub send_queue_capacity: u64,
 
     /// Size of the send queue
     #[serde(
         rename = "SendQueueSize",
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub send_queue_size: u64,
 
     /// Priority value
     #[serde(
         rename = "Priority",
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub priority: u64,
 
     /// Amount of data recently sent
     #[serde(
         rename = "RecentlySent",
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub recently_sent: u64,
 }

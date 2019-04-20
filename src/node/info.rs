@@ -1,6 +1,6 @@
 //! Node information (used in RPC responses)
 
-use crate::{chain, channel::Channels, net, node, rpc, Moniker, Version};
+use crate::{chain, channel::Channels, net, node, serializers, Moniker, Version};
 use serde::{Deserialize, Serialize};
 
 /// Node information
@@ -36,22 +36,22 @@ pub struct Info {
 pub struct ProtocolVersionInfo {
     /// P2P protocol version
     #[serde(
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub p2p: u64,
 
     /// Block version
     #[serde(
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub block: u64,
 
     /// App version
     #[serde(
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub app: u64,
 }

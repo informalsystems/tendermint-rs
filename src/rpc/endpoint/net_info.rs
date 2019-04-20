@@ -1,6 +1,6 @@
-//! RPC wrapper for `/net_info` endpoint
+//! `/net_info` endpoint JSONRPC wrapper
 
-use crate::{channel::Channel, node, rpc, Timestamp};
+use crate::{channel::Channel, node, rpc, serializers, Timestamp};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},
@@ -10,10 +10,10 @@ use std::{
 
 /// Request the status of the node
 #[derive(Debug, Default)]
-pub struct NetInfoRequest;
+pub struct Request;
 
-impl rpc::Request for NetInfoRequest {
-    type Response = NetInfoResponse;
+impl rpc::Request for Request {
+    type Response = Response;
 
     fn path(&self) -> rpc::request::Path {
         "/net_info".parse().unwrap()
@@ -22,7 +22,7 @@ impl rpc::Request for NetInfoRequest {
 
 /// Status responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct NetInfoResponse {
+pub struct Response {
     /// Are we presently listening?
     pub listening: bool,
 
@@ -31,8 +31,8 @@ pub struct NetInfoResponse {
 
     /// Number of connected peers
     #[serde(
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub n_peers: u64,
 
@@ -40,7 +40,7 @@ pub struct NetInfoResponse {
     pub peers: Vec<PeerInfo>,
 }
 
-impl rpc::Response for NetInfoResponse {}
+impl rpc::Response for Response {}
 
 /// Listener information
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -74,8 +74,8 @@ pub struct ConnectionStatus {
     /// Duration of this connection
     #[serde(
         rename = "Duration",
-        serialize_with = "rpc::response::serialize_duration",
-        deserialize_with = "rpc::response::parse_duration"
+        serialize_with = "serializers::serialize_duration",
+        deserialize_with = "serializers::parse_duration"
     )]
     pub duration: Duration,
 
@@ -106,80 +106,80 @@ pub struct Monitor {
     /// Duration of this monitor
     #[serde(
         rename = "Duration",
-        serialize_with = "rpc::response::serialize_duration",
-        deserialize_with = "rpc::response::parse_duration"
+        serialize_with = "serializers::serialize_duration",
+        deserialize_with = "serializers::parse_duration"
     )]
     pub duration: Duration,
 
     /// Idle duration for this monitor
     #[serde(
         rename = "Idle",
-        serialize_with = "rpc::response::serialize_duration",
-        deserialize_with = "rpc::response::parse_duration"
+        serialize_with = "serializers::serialize_duration",
+        deserialize_with = "serializers::parse_duration"
     )]
     pub idle: Duration,
 
     /// Bytes
     #[serde(
         rename = "Bytes",
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     bytes: u64,
 
     /// Samples
     #[serde(
         rename = "Samples",
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     samples: u64,
 
     /// Instant rate
     #[serde(
         rename = "InstRate",
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     inst_rate: u64,
 
     /// Current rate
     #[serde(
         rename = "CurRate",
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     cur_rate: u64,
 
     /// Average rate
     #[serde(
         rename = "AvgRate",
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     avg_rate: u64,
 
     /// Peak rate
     #[serde(
         rename = "PeakRate",
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     peak_rate: u64,
 
     /// Bytes remaining
     #[serde(
         rename = "BytesRem",
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     bytes_rem: u64,
 
     /// Time remaining
     #[serde(
         rename = "TimeRem",
-        serialize_with = "rpc::response::serialize_u64",
-        deserialize_with = "rpc::response::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     time_rem: u64,
 
