@@ -98,7 +98,7 @@ impl State {
                         new_state.height,
                         new_state.round,
                         new_state.step,
-                        self.consensus_state.block_id.unwrap(),
+                        self.consensus_state.block_id.as_ref().unwrap(),
                         new_state.block_id.unwrap()
                     )
                 }

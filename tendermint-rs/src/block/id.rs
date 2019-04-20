@@ -1,23 +1,30 @@
+use super::parts;
+use crate::{
+    error::Error,
+    hash::{Algorithm, Hash},
+};
 #[cfg(feature = "serde")]
-use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},
     str::{self, FromStr},
 };
 
-use crate::{algorithm::HashAlgorithm, error::Error, hash::Hash};
-
 /// Block identifiers
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Id {
     /// Hash which identifies this block
-    pub hash: Hash, // TODO: parts set header?
+    pub hash: Hash,
+
+    /// Parts header (if available)
+    pub parts: Option<parts::Header>,
 }
 
 impl Id {
     /// Create a new `Id` from a hash byte slice
-    pub fn new(hash: Hash) -> Self {
-        Self { hash }
+    pub fn new(hash: Hash, parts: Option<parts::Header>) -> Self {
+        Self { hash, parts }
     }
 }
 
@@ -33,22 +40,7 @@ impl FromStr for Id {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Self::new(Hash::from_hex_upper(HashAlgorithm::Sha256, s)?))
-    }
-}
-
-#[cfg(feature = "serde")]
-impl Serialize for Id {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.to_string().serialize(serializer)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de> Deserialize<'de> for Id {
-    fn deserialize<De: Deserializer<'de>>(deserializer: De) -> Result<Self, De::Error> {
-        Self::from_str(&String::deserialize(deserializer)?)
-            .map_err(|e| De::Error::custom(format!("{}", e)))
+        Ok(Self::new(Hash::from_hex_upper(Algorithm::Sha256, s)?, None))
     }
 }
 
@@ -69,7 +61,7 @@ mod tests {
     fn parses_hex_strings() {
         let id = Id::from_str(EXAMPLE_SHA256_ID).unwrap();
         assert_eq!(
-            id.hash.as_slice(),
+            id.hash.as_slice().unwrap(),
             b"\x26\xC0\xA4\x1F\x32\x43\xC6\xBC\xD7\xAD\x2D\xFF\x8A\x8D\x83\xA7\
               \x1D\x29\xD3\x07\xB5\x32\x6C\x22\x7F\x73\x4A\x1A\x51\x2F\xE4\x7D"
                 .as_ref()

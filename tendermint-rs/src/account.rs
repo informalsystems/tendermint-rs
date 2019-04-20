@@ -6,7 +6,7 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
 use signatory::ecdsa::curve::secp256k1;
 use std::{
-    fmt::{self, Display},
+    fmt::{self, Debug, Display},
     str::FromStr,
 };
 use subtle::{self, ConstantTimeEq};
@@ -16,7 +16,7 @@ use subtle_encoding::hex;
 pub const ID_LENGTH: usize = 20;
 
 /// Account IDs
-#[derive(Copy, Clone, Debug, Hash)]
+#[derive(Copy, Clone, Hash)]
 pub struct Id([u8; ID_LENGTH]);
 
 impl Id {
@@ -50,6 +50,12 @@ impl Display for Id {
             write!(f, "{:02X}", byte)?;
         }
         Ok(())
+    }
+}
+
+impl Debug for Id {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "account::Id({})", self)
     }
 }
 

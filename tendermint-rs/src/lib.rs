@@ -26,14 +26,15 @@ extern crate prost_amino as prost;
 extern crate prost_amino_derive as prost_derive;
 
 pub mod account;
-pub mod algorithm;
 #[cfg(feature = "amino-types")]
 pub mod amino_types;
 pub mod block;
 pub mod chain;
 #[cfg(feature = "rpc")]
 pub mod channel;
+pub mod commit;
 pub mod error;
+pub mod evidence;
 pub mod hash;
 mod moniker;
 pub mod net;
@@ -43,17 +44,22 @@ pub mod public_keys;
 pub mod rpc;
 #[cfg(feature = "secret-connection")]
 pub mod secret_connection;
+#[cfg(feature = "serde")]
+mod serializers;
+pub mod signature;
 pub mod timestamp;
+pub mod transaction;
 mod version;
 
 #[cfg(feature = "secret-connection")]
 pub use crate::secret_connection::SecretConnection;
 pub use crate::{
-    algorithm::{HashAlgorithm, SignatureAlgorithm},
+    block::Block,
     error::Error,
     hash::Hash,
     moniker::Moniker,
     public_keys::{PublicKey, TendermintKey},
+    signature::Signature,
     timestamp::Timestamp,
     version::Version,
 };

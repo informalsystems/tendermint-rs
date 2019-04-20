@@ -4,7 +4,7 @@
 mod endpoints {
     use std::{fs, path::PathBuf};
     use tendermint::rpc::{
-        endpoint::{NetInfoResponse, StatusResponse},
+        endpoint::{block, net_info, status},
         Response,
     };
 
@@ -14,11 +14,31 @@ mod endpoints {
     }
 
     #[test]
+    fn block() {
+        let block_json = read_json_fixture("block");
+        let block_response = block::Response::from_json(&block_json).unwrap();
+
+        let tendermint::Block {
+            header,
+            data,
+            evidence,
+            last_commit,
+        } = block_response.block;
+
+        assert_eq!(header.version.block, 10);
+        assert_eq!(header.chain_id.as_str(), "cosmoshub-1");
+        assert_eq!(header.height.value(), 15);
+        assert_eq!(header.num_txs, 2);
+
+        assert_eq!(data.iter().len(), 2);
+        assert_eq!(evidence.iter().len(), 0);
+        assert_eq!(last_commit.precommits.len(), 65);
+    }
+
+    #[test]
     fn net_info() {
         let net_info_json = read_json_fixture("net_info");
-        let net_info_response = NetInfoResponse::from_json(&net_info_json).unwrap();
-
-        println!("net_info_response: {:?}", net_info_response);
+        let net_info_response = net_info::Response::from_json(&net_info_json).unwrap();
 
         assert_eq!(net_info_response.n_peers, 2);
         assert_eq!(
@@ -30,7 +50,7 @@ mod endpoints {
     #[test]
     fn status() {
         let status_json = read_json_fixture("status");
-        let status_response = StatusResponse::from_json(&status_json).unwrap();
+        let status_response = status::Response::from_json(&status_json).unwrap();
 
         assert_eq!(status_response.node_info.network.as_str(), "cosmoshub-1");
         assert_eq!(

@@ -5,10 +5,10 @@ use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializ
 
 /// Node status request
 #[derive(Debug, Default)]
-pub struct StatusRequest;
+pub struct Request;
 
-impl rpc::Request for StatusRequest {
-    type Response = StatusResponse;
+impl rpc::Request for Request {
+    type Response = Response;
 
     fn path(&self) -> rpc::request::Path {
         "/status".parse().unwrap()
@@ -17,7 +17,7 @@ impl rpc::Request for StatusRequest {
 
 /// Status responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct StatusResponse {
+pub struct Response {
     /// Node information
     pub node_info: node::Info,
 
@@ -28,7 +28,7 @@ pub struct StatusResponse {
     pub validator_info: ValidatorInfo,
 }
 
-impl rpc::Response for StatusResponse {}
+impl rpc::Response for Response {}
 
 /// Sync information
 #[derive(Clone, Debug, Deserialize, Serialize)]
