@@ -76,15 +76,9 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
                 ref host,
                 port,
             } => match &secret_key {
-                Some(path) => tcp_session(
-                    chain_id,
-                    max_height,
-                    *peer_id,
-                    host,
-                    *port,
-                    path,
-                    should_term,
-                ),
+                Some(path) => {
+                    tcp_session(chain_id, max_height, peer_id, host, port, path, should_term)
+                }
                 None => {
                     error!(
                         "config error: missing field `secret_key` for validator {}",

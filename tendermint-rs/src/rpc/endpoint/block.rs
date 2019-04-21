@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 /// Get information about a specific block
 pub struct Request {
+    /// Height of the block to request
     height: block::Height,
 }
 
