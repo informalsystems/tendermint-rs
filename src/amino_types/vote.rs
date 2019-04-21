@@ -176,12 +176,11 @@ impl SignableMsg for SignVoteRequest {
             None => None,
         }
     }
-    fn height(&self) -> Option<i64>{
-        if let Some(vote) =&self.vote{
-            return Some(vote.height)
+    fn height(&self) -> Option<i64> {
+        if let Some(vote) = &self.vote {
+            return Some(vote.height);
         }
         None
-
     }
 }
 
