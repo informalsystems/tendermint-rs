@@ -66,7 +66,7 @@ impl Hash {
     }
 
     /// Borrow the `Hash` as a byte slice
-    pub fn as_slice(&self) -> Option<&[u8]> {
+    pub fn as_bytes(&self) -> Option<&[u8]> {
         match self {
             Hash::Sha256(ref h) => Some(h.as_ref()),
             Hash::Null => None,

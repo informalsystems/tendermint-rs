@@ -1,5 +1,6 @@
 //! Tendermint JSONRPC endpoints
 
+pub mod abci_info;
 pub mod block;
 pub mod commit;
 pub mod genesis;
