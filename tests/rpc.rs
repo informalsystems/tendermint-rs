@@ -6,7 +6,7 @@ mod endpoints {
     use tendermint::rpc::{endpoint, Response};
 
     fn read_json_fixture(name: &str) -> String {
-        fs::read_to_string(PathBuf::from("./tests/support/").join(name.to_owned() + ".json"))
+        fs::read_to_string(PathBuf::from("./tests/support/rpc/").join(name.to_owned() + ".json"))
             .unwrap()
     }
 
@@ -70,5 +70,14 @@ mod endpoints {
             410744
         );
         assert_eq!(status_response.validator_info.voting_power.value(), 0);
+    }
+
+    #[test]
+    fn validators() {
+        let validators_json = read_json_fixture("validators");
+        let validators_response =
+            endpoint::validators::Response::from_json(&validators_json).unwrap();
+
+        println!("validators: {:?}", validators_response);
     }
 }

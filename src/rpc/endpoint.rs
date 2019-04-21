@@ -4,3 +4,4 @@ pub mod block;
 pub mod genesis;
 pub mod net_info;
 pub mod status;
+pub mod validators;
