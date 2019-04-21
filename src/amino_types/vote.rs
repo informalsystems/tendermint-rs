@@ -176,6 +176,9 @@ impl SignableMsg for SignVoteRequest {
             None => None,
         }
     }
+    fn height(&self) -> Option<i64> {
+        self.vote.as_ref().map(|vote| vote.height)
+    }
 }
 
 impl ConsensusMessage for Vote {
