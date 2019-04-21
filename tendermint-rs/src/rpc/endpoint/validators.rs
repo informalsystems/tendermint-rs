@@ -1,18 +1,15 @@
-//! `/block` endpoint JSONRPC wrapper
+//! `/validators` endpoint JSONRPC wrapper
 
-use crate::{
-    block::{self, Block},
-    rpc,
-};
+use crate::{block, rpc, validator};
 use serde::{Deserialize, Serialize};
 
-/// Get information about a specific block
+/// List validators for a specific block
 pub struct Request {
     height: block::Height,
 }
 
 impl Request {
-    /// Create a new request for information about a particular block
+    /// List validators for a specific block
     pub fn new(height: block::Height) -> Self {
         Self { height }
     }
@@ -23,18 +20,20 @@ impl rpc::Request for Request {
 
     fn path(&self) -> rpc::request::Path {
         // TODO(tarcieri): use a `uri` crate to construct this?
-        format!("/block?height={}", self.height).parse().unwrap()
+        format!("/validators?height={}", self.height)
+            .parse()
+            .unwrap()
     }
 }
 
-/// Block responses
+/// Validator responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
-    /// Block metadata
-    pub block_meta: block::Meta,
+    /// Block height
+    pub block_height: block::Height,
 
-    /// Block data
-    pub block: Block,
+    /// Validator list
+    pub validators: Vec<validator::Info>,
 }
 
 impl rpc::Response for Response {}

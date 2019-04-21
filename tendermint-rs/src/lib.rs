@@ -52,7 +52,9 @@ mod serializers;
 pub mod signature;
 pub mod timestamp;
 pub mod transaction;
+pub mod validator;
 mod version;
+pub mod vote;
 
 #[cfg(feature = "rpc")]
 pub use crate::genesis::Genesis;
