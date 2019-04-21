@@ -74,7 +74,15 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
                 host,
                 port,
             } => match &secret_key {
-                Some(path) => tcp_session(chain_id, max_height, *peer_id, host, *port, path, should_term),
+                Some(path) => tcp_session(
+                    chain_id,
+                    max_height,
+                    *peer_id,
+                    host,
+                    *port,
+                    path,
+                    should_term,
+                ),
                 None => {
                     error!(
                         "config error: missing field `secret_key` for validator {}",
@@ -108,7 +116,7 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
 /// Create a TCP connection to a validator (encrypted with SecretConnection)
 fn tcp_session(
     chain_id: chain::Id,
-    max_height:Option<i64>,
+    max_height: Option<i64>,
     validator_peer_id: Option<node::Id>,
     host: &str,
     port: u16,
@@ -123,8 +131,14 @@ fn tcp_session(
     info!("KMS node ID: {}", &node_public_key);
 
     panic::catch_unwind(move || {
-        let mut session =
-            Session::connect_tcp(chain_id,max_height, validator_peer_id, host, port, &secret_key)?;
+        let mut session = Session::connect_tcp(
+            chain_id,
+            max_height,
+            validator_peer_id,
+            host,
+            port,
+            &secret_key,
+        )?;
 
         info!(
             "[{}@tcp://{}:{}] connected to validator successfully",

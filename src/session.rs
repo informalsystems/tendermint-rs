@@ -2,7 +2,10 @@
 
 use crate::{
     chain,
-    error::{KmsError, KmsErrorKind::{VerificationError, ExceedMaxHeight}},
+    error::{
+        KmsError,
+        KmsErrorKind::{ExceedMaxHeight, VerificationError},
+    },
     prost::Message,
     rpc::{Request, Response, TendermintRequest},
     unix_connection::UnixConnection,
@@ -87,7 +90,11 @@ impl Session<SecretConnection<TcpStream>> {
 }
 
 impl Session<UnixConnection<UnixStream>> {
-    pub fn connect_unix(chain_id: chain::Id, max_height:Option<i64>, socket_path: &Path) -> Result<Self, KmsError> {
+    pub fn connect_unix(
+        chain_id: chain::Id,
+        max_height: Option<i64>,
+        socket_path: &Path,
+    ) -> Result<Self, KmsError> {
         debug!(
             "{}: Connecting to socket at {}...",
             chain_id,
@@ -158,18 +165,18 @@ where
             chain_state.update_consensus_state(request_state.clone())?;
         }
 
-        if let Some(max_height) = self.max_height{
+        if let Some(max_height) = self.max_height {
             if let Some(height) = request.height() {
-                    if height > max_height{
-                        fail!(
+                if height > max_height {
+                    fail!(
                         ExceedMaxHeight,
                         "attempted to sign at height {} which is greater than {}",
                         height,
                         max_height,
                     );
                 }
-            }            
-        } 
+            }
+        }
 
         let mut to_sign = vec![];
         request.sign_bytes(self.chain_id, &mut to_sign)?;

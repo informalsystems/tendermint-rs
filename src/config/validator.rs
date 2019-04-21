@@ -16,9 +16,9 @@ pub struct ValidatorConfig {
 
     /// Path to our Ed25519 identity key (if applicable)
     pub secret_key: Option<PathBuf>,
-    
+
     /// Height at which to stop signing
-    pub max_height:Option<i64>,
+    pub max_height: Option<i64>,
 }
 
 /// Default value for the `ValidatorConfig` reconnect field

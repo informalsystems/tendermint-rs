@@ -22,5 +22,4 @@ pub struct ChainConfig {
     /// this chain. This will be executed at launch time to populate the
     /// initial block height if configured
     pub state_hook: Option<HookConfig>,
-
 }

@@ -138,6 +138,7 @@ impl KmsProcess {
             [[validator]]
             addr = "tcp://{}@127.0.0.1:{}"
             chain_id = "test_chain_id"
+            max_height = 500000
             reconnect = false
             secret_key = "tests/support/secret_connection.key"
 
@@ -165,6 +166,8 @@ impl KmsProcess {
             [[validator]]
             addr = "unix://{}"
             chain_id = "test_chain_id"
+            max_height = 500000
+
 
             [[providers.softsign]]
             chain_ids = ["test_chain_id"]
@@ -364,6 +367,73 @@ fn test_handle_and_sign_vote() {
         let vote_msg = amino_types::vote::Vote {
             vote_type: 0x01,
             height: 12345,
+            round: 2,
+            timestamp: Some(t),
+            block_id: Some(BlockId {
+                hash: b"some hash00000000000000000000000".to_vec(),
+                parts_header: Some(PartsSetHeader {
+                    total: 1000000,
+                    hash: b"parts_hash0000000000000000000000".to_vec(),
+                }),
+            }),
+            validator_address: vec![
+                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+            ],
+            validator_index: 56789,
+            signature: vec![],
+        };
+
+        let svr = amino_types::vote::SignVoteRequest {
+            vote: Some(vote_msg),
+        };
+        let mut buf = vec![];
+        svr.encode(&mut buf).unwrap();
+        pt.write_all(&buf).unwrap();
+
+        // receive response:
+        let mut resp_buf = vec![0u8; 1024];
+        pt.read(&mut resp_buf).unwrap();
+
+        let actual_len = extract_actual_len(&resp_buf).unwrap();
+        let mut resp = vec![0u8; actual_len as usize];
+        resp.copy_from_slice(&resp_buf[..actual_len as usize]);
+
+        let v_resp = vote::SignedVoteResponse::decode(&resp).expect("decoding vote failed");
+        let mut sign_bytes: Vec<u8> = vec![];
+        svr.sign_bytes(chain_id.into(), &mut sign_bytes).unwrap();
+
+        let vote_msg: amino_types::vote::Vote = v_resp
+            .vote
+            .expect("vote should be embedded int the response but none was found");
+
+        let sig: Vec<u8> = vote_msg.signature;
+        assert_ne!(sig.len(), 0);
+
+        let verifier = Ed25519Verifier::from(&pub_key);
+        let signature = ed25519::Signature::from_bytes(sig).unwrap();
+        let msg: &[u8] = sign_bytes.as_slice();
+
+        ed25519::verify(&verifier, msg, &signature).unwrap();
+    });
+}
+
+#[test]
+#[should_panic]
+fn test_exceed_max_height() {
+    let chain_id = "test_chain_id";
+    let (pub_key, _) = test_key();
+
+    let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
+    let t = TimeMsg {
+        seconds: dt.timestamp(),
+        nanos: dt.timestamp_subsec_nanos() as i32,
+    };
+
+    ProtocolTester::apply(|mut pt| {
+        let vote_msg = amino_types::vote::Vote {
+            vote_type: 0x01,
+            height: 500001,
             round: 2,
             timestamp: Some(t),
             block_id: Some(BlockId {
