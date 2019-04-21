@@ -33,6 +33,14 @@ mod endpoints {
     }
 
     #[test]
+    fn commit() {
+        let commit_json = read_json_fixture("commit");
+        let commit_response = endpoint::commit::Response::from_json(&commit_json).unwrap();
+
+        println!("commit_response: {:?}", commit_response);
+    }
+
+    #[test]
     fn genesis() {
         let genesis_json = read_json_fixture("genesis");
         let genesis_response = endpoint::genesis::Response::from_json(&genesis_json).unwrap();

@@ -1,6 +1,6 @@
 //! `/net_info` endpoint JSONRPC wrapper
 
-use crate::{channel::Channel, node, rpc, serializers, Timestamp};
+use crate::{channel::Channel, node, rpc, serializers, Time};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},
@@ -101,7 +101,7 @@ pub struct Monitor {
 
     /// When the monitor started
     #[serde(rename = "Start")]
-    pub start: Timestamp,
+    pub start: Time,
 
     /// Duration of this monitor
     #[serde(

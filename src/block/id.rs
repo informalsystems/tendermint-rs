@@ -10,14 +10,29 @@ use std::{
     str::{self, FromStr},
 };
 
-/// Block identifiers
+/// Block identifiers which contain two distinct Merkle roots of the block,
+/// as well as the number of parts in the block.
+///
+/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#blockid>
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Id {
-    /// Hash which identifies this block
+    /// The block's main hash is the Merkle root of all the fields in the
+    /// block header.
     pub hash: Hash,
 
-    /// Parts header (if available)
+    /// Parts header (if available) is used for secure gossipping of the block
+    /// during consensus. It is the Merkle root of the complete serialized block
+    /// cut into parts.
+    ///
+    /// PartSet is used to split a byteslice of data into parts (pieces) for
+    /// transmission. By splitting data into smaller parts and computing a
+    /// Merkle root hash on the list, you can verify that a part is
+    /// legitimately part of the complete data, and the part can be forwarded
+    /// to other peers before all the parts are known. In short, it's a fast
+    /// way to propagate a large file over a gossip network.
+    ///
+    /// <https://github.com/tendermint/tendermint/wiki/Block-Structure#partset>
     pub parts: Option<parts::Header>,
 }
 

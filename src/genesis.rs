@@ -1,13 +1,13 @@
 //! Genesis data
 
-use crate::{chain, consensus, Hash, Timestamp};
+use crate::{chain, consensus, Hash, Time};
 use serde::{Deserialize, Serialize};
 
 /// Genesis data
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Genesis<AppState = serde_json::Value> {
     /// Time of genesis
-    pub genesis_time: Timestamp,
+    pub genesis_time: Time,
 
     /// Chain ID
     pub chain_id: chain::Id,
