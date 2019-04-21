@@ -1,0 +1,9 @@
+{
+  "jsonrpc": "2.0",
+  "id": "",
+  "error": {
+    "code": -32603,
+    "message": "Internal error",
+    "data": "min height 321 can't be greater than max height 123"
+  }
+}

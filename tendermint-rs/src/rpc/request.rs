@@ -1,6 +1,6 @@
 //! JSONRPC requests
 
-use failure::Error;
+use crate::Error;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},
