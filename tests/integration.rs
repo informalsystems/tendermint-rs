@@ -138,7 +138,7 @@ impl KmsProcess {
             [[validator]]
             addr = "tcp://{}@127.0.0.1:{}"
             chain_id = "test_chain_id"
-            max_height = 500000
+            max_height = "500000"
             reconnect = false
             secret_key = "tests/support/secret_connection.key"
 
@@ -166,7 +166,7 @@ impl KmsProcess {
             [[validator]]
             addr = "unix://{}"
             chain_id = "test_chain_id"
-            max_height = 500000
+            max_height = "500000"
 
 
             [[providers.softsign]]

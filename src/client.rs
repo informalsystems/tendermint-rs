@@ -116,7 +116,7 @@ fn client_loop(config: ValidatorConfig, should_term: &Arc<AtomicBool>) {
 /// Create a TCP connection to a validator (encrypted with SecretConnection)
 fn tcp_session(
     chain_id: chain::Id,
-    max_height: Option<i64>,
+    max_height: Option<tendermint::block::Height>,
     validator_peer_id: Option<node::Id>,
     host: &str,
     port: u16,
@@ -153,7 +153,7 @@ fn tcp_session(
 /// Create a validator session over a Unix domain socket
 fn unix_session(
     chain_id: chain::Id,
-    max_height: Option<i64>,
+    max_height: Option<tendermint::block::Height>,
     socket_path: &Path,
     should_term: &Arc<AtomicBool>,
 ) -> Result<(), KmsError> {

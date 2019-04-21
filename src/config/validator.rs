@@ -18,7 +18,7 @@ pub struct ValidatorConfig {
     pub secret_key: Option<PathBuf>,
 
     /// Height at which to stop signing
-    pub max_height: Option<i64>,
+    pub max_height: Option<tendermint::block::Height>,
 }
 
 /// Default value for the `ValidatorConfig` reconnect field

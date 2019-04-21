@@ -37,7 +37,7 @@ pub struct Session<Connection> {
     chain_id: chain::Id,
 
     // Do not sign blocks greates than this height
-    max_height: Option<i64>,
+    max_height: Option<tendermint::block::Height>,
 
     /// TCP connection to a validator node
     connection: Connection,
@@ -47,7 +47,7 @@ impl Session<SecretConnection<TcpStream>> {
     /// Create a new session with the validator at the given address/port
     pub fn connect_tcp(
         chain_id: chain::Id,
-        max_height: Option<i64>,
+        max_height: Option<tendermint::block::Height>,
         validator_peer_id: Option<node::Id>,
         host: &str,
         port: u16,
@@ -92,7 +92,7 @@ impl Session<SecretConnection<TcpStream>> {
 impl Session<UnixConnection<UnixStream>> {
     pub fn connect_unix(
         chain_id: chain::Id,
-        max_height: Option<i64>,
+        max_height: Option<tendermint::block::Height>,
         socket_path: &Path,
     ) -> Result<Self, KmsError> {
         debug!(
@@ -167,7 +167,7 @@ where
 
         if let Some(max_height) = self.max_height {
             if let Some(height) = request.height() {
-                if height > max_height {
+                if height > max_height.value() as i64 {
                     fail!(
                         ExceedMaxHeight,
                         "attempted to sign at height {} which is greater than {}",

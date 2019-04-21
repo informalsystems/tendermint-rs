@@ -23,7 +23,7 @@ addr = "tcp://f88883b673fc69d7869cab098de3bafc2ff76eb8@example1.example.com:2665
 chain_id = "cosmoshub-1"
 reconnect = true # true is the default
 secret_key = "path/to/secret_connection.key"
-# max_height = 500000
+# max_height = "500000"
 
 # Provider configuration
 [[providers.softsign]]

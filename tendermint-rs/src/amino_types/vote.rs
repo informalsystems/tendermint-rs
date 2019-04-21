@@ -177,10 +177,7 @@ impl SignableMsg for SignVoteRequest {
         }
     }
     fn height(&self) -> Option<i64> {
-        if let Some(vote) = &self.vote {
-            return Some(vote.height);
-        }
-        None
+        self.vote.as_ref().map(|vote| vote.height)
     }
 }
 
