@@ -5,6 +5,9 @@ mod endpoints {
     use std::{fs, path::PathBuf};
     use tendermint::rpc::{endpoint, Response};
 
+    const EXAMPLE_APP: &str = "GaiaApp";
+    const EXAMPLE_CHAIN: &str = "cosmoshub-1";
+
     fn read_json_fixture(name: &str) -> String {
         fs::read_to_string(PathBuf::from("./tests/support/rpc/").join(name.to_owned() + ".json"))
             .unwrap()
@@ -16,23 +19,23 @@ mod endpoints {
             .unwrap()
             .response;
 
-        assert_eq!(response.data.as_str(), "GaiaApp");
+        assert_eq!(response.data.as_str(), EXAMPLE_APP);
         assert_eq!(response.last_block_height.value(), 488120);
     }
 
     #[test]
     fn block() {
-        let block = endpoint::block::Response::from_json(&read_json_fixture("block")).unwrap();
+        let response = endpoint::block::Response::from_json(&read_json_fixture("block")).unwrap();
 
         let tendermint::Block {
             header,
             data,
             evidence,
             last_commit,
-        } = block.block;
+        } = response.block;
 
         assert_eq!(header.version.block, 10);
-        assert_eq!(header.chain_id.as_str(), "cosmoshub-1");
+        assert_eq!(header.chain_id.as_str(), EXAMPLE_CHAIN);
         assert_eq!(header.height.value(), 15);
         assert_eq!(header.num_txs, 2);
 
@@ -42,11 +45,23 @@ mod endpoints {
     }
 
     #[test]
+    fn blockchain() {
+        let response =
+            endpoint::blockchain::Response::from_json(&read_json_fixture("blockchain")).unwrap();
+
+        assert_eq!(response.last_height.value(), 488556);
+        assert_eq!(response.block_metas.len(), 10);
+
+        let block_meta = &response.block_metas[0];
+        assert_eq!(block_meta.header.chain_id.as_str(), EXAMPLE_CHAIN)
+    }
+
+    #[test]
     fn commit() {
         let response = endpoint::commit::Response::from_json(&read_json_fixture("commit")).unwrap();
         let header = response.signed_header.header;
 
-        assert_eq!(header.chain_id.as_ref(), "cosmoshub-1");
+        assert_eq!(header.chain_id.as_ref(), EXAMPLE_CHAIN);
     }
 
     #[test]
@@ -60,7 +75,7 @@ mod endpoints {
             ..
         } = response.genesis;
 
-        assert_eq!(chain_id.as_str(), "cosmoshub-1");
+        assert_eq!(chain_id.as_str(), EXAMPLE_CHAIN);
         assert_eq!(consensus_params.block_size.max_bytes, 150000);
     }
 
@@ -70,14 +85,14 @@ mod endpoints {
             endpoint::net_info::Response::from_json(&read_json_fixture("net_info")).unwrap();
 
         assert_eq!(response.n_peers, 2);
-        assert_eq!(response.peers[0].node_info.network.as_str(), "cosmoshub-1");
+        assert_eq!(response.peers[0].node_info.network.as_str(), EXAMPLE_CHAIN);
     }
 
     #[test]
     fn status() {
         let response = endpoint::status::Response::from_json(&read_json_fixture("status")).unwrap();
 
-        assert_eq!(response.node_info.network.as_str(), "cosmoshub-1");
+        assert_eq!(response.node_info.network.as_str(), EXAMPLE_CHAIN);
         assert_eq!(response.sync_info.latest_block_height.value(), 410744);
         assert_eq!(response.validator_info.voting_power.value(), 0);
     }
