@@ -157,10 +157,7 @@ impl SignableMsg for SignProposalRequest {
     }
 
     fn height(&self) -> Option<i64> {
-        if let Some(proposal) = &self.proposal {
-            return Some(proposal.height);
-        }
-        None
+        self.proposal.as_ref().map(|proposal| proposal.height)
     }
 }
 
