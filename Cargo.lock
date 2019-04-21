@@ -1108,7 +1108,7 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.6.0"
+version = "0.7.0-alpha1"
 dependencies = [
  "byteorder 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1196,7 +1196,7 @@ dependencies = [
  "subtle 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle-encoding 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "tendermint 0.6.0",
+ "tendermint 0.7.0-alpha1",
  "tiny-bip39 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "wait-timeout 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "yubihsm 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)",
