@@ -8,7 +8,7 @@ use std::{
     time::Duration,
 };
 
-/// Request the status of the node
+/// Request network information from a node
 #[derive(Debug, Default)]
 pub struct Request;
 
@@ -20,7 +20,7 @@ impl rpc::Request for Request {
     }
 }
 
-/// Status responses
+/// Net info responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
     /// Are we presently listening?

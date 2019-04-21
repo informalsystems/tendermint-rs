@@ -27,14 +27,14 @@ impl Transaction {
     }
 
     /// Borrow the contents of this transaction as a byte slice
-    pub fn as_slice(&self) -> &[u8] {
+    pub fn as_bytes(&self) -> &[u8] {
         self.0.as_slice()
     }
 }
 
 impl AsRef<[u8]> for Transaction {
     fn as_ref(&self) -> &[u8] {
-        self.as_slice()
+        self.as_bytes()
     }
 }
 
@@ -51,7 +51,7 @@ impl<'de> Deserialize<'de> for Transaction {
 #[cfg(feature = "serde")]
 impl Serialize for Transaction {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        String::from_utf8(base64::encode(self.as_slice()))
+        String::from_utf8(base64::encode(self.as_bytes()))
             .unwrap()
             .serialize(serializer)
     }

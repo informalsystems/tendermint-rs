@@ -4,7 +4,7 @@ use crate::{block, Vote};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Last commit to a particular blockchain.
+/// Last commit to a particular blockchain: +2/3 precommit signatures.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#lastcommit>
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
