@@ -3,7 +3,7 @@
 #[cfg(feature = "rpc")]
 mod endpoints {
     use std::{fs, path::PathBuf};
-    use tendermint::rpc::{endpoint, Response};
+    use tendermint::rpc::{self, endpoint, Response};
 
     const EXAMPLE_APP: &str = "GaiaApp";
     const EXAMPLE_CHAIN: &str = "cosmoshub-1";
@@ -106,5 +106,21 @@ mod endpoints {
         let validators = response.validators;
 
         assert_eq!(validators.len(), 65);
+    }
+
+    #[test]
+    fn jsonrpc_error() {
+        let result = endpoint::blockchain::Response::from_json(&read_json_fixture("error"));
+
+        if let Err(err) = result {
+            assert_eq!(err.code(), rpc::error::Code::InternalError);
+            assert_eq!(err.message(), "Internal error");
+            assert_eq!(
+                err.data().unwrap(),
+                "min height 321 can't be greater than max height 123"
+            );
+        } else {
+            panic!("expected error, got {:?}", result)
+        }
     }
 }

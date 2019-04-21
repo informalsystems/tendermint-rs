@@ -1,50 +1,58 @@
 //! JSONRPC response types
 
-use failure::{format_err, Error};
+use super::{Error, Id, Version};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::fmt::{self, Display};
 
 /// JSONRPC responses
 pub trait Response: Serialize + DeserializeOwned + Sized {
     /// Parse a JSONRPC response from a JSON string
     fn from_json(response: &str) -> Result<Self, Error> {
-        let wrapper: ResponseWrapper<Self> =
-            serde_json::from_str(response).map_err(|e| format_err!("error parsing JSON: {}", e))?;
-
-        // TODO(tarcieri): check JSONRPC version/ID?
-        Ok(wrapper.result)
+        let wrapper: Wrapper<Self> = serde_json::from_str(response).map_err(Error::parse_error)?;
+        wrapper.into_result()
     }
 }
 
 /// JSONRPC response wrapper (i.e. message envelope)
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ResponseWrapper<R> {
-    /// JSONRPC version
-    pub jsonrpc: Version,
+#[serde(untagged)]
+enum Wrapper<R> {
+    /// RPC completed successfully
+    Success { jsonrpc: Version, id: Id, result: R },
 
-    /// ID
-    pub id: Id,
-
-    /// Result
-    pub result: R,
+    /// RPC error
+    Error {
+        jsonrpc: Version,
+        id: Id,
+        error: Error,
+    },
 }
 
-/// JSONRPC version
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct Version(String);
-
-impl Display for Version {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+impl<R> Wrapper<R> {
+    /// Get JSONRPC version
+    pub fn version(&self) -> &Version {
+        match self {
+            Wrapper::Success { jsonrpc, .. } => jsonrpc,
+            Wrapper::Error { jsonrpc, .. } => jsonrpc,
+        }
     }
-}
 
-/// JSONRPC ID
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct Id(String);
+    /// Get JSONRPC ID
+    #[allow(dead_code)]
+    pub fn id(&self) -> &Id {
+        match self {
+            Wrapper::Success { id, .. } => id,
+            Wrapper::Error { id, .. } => id,
+        }
+    }
 
-impl AsRef<str> for Id {
-    fn as_ref(&self) -> &str {
-        self.0.as_ref()
+    /// Convert this wrapper into a result type
+    pub fn into_result(self) -> Result<R, Error> {
+        // Ensure we're using a supported RPC version
+        self.version().ensure_supported()?;
+
+        match self {
+            Wrapper::Success { result, .. } => Ok(result),
+            Wrapper::Error { error, .. } => Err(error),
+        }
     }
 }
