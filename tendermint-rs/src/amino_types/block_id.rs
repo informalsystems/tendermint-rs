@@ -1,8 +1,8 @@
 use super::validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*};
 use crate::{
-    algorithm::HashAlgorithm,
     block,
     error::Error,
+    hash,
     hash::{Hash, SHA256_HASH_SIZE},
 };
 
@@ -16,8 +16,12 @@ pub struct BlockId {
 
 impl block::ParseId for BlockId {
     fn parse_block_id(&self) -> Result<block::Id, Error> {
-        let hash = Hash::new(HashAlgorithm::Sha256, &self.hash)?;
-        Ok(block::Id::new(hash))
+        let hash = Hash::new(hash::Algorithm::Sha256, &self.hash)?;
+        let parts_header = self
+            .parts_header
+            .as_ref()
+            .and_then(PartsSetHeader::parse_parts_header);
+        Ok(block::Id::new(hash, parts_header))
     }
 }
 
@@ -43,8 +47,12 @@ pub struct CanonicalBlockId {
 
 impl block::ParseId for CanonicalBlockId {
     fn parse_block_id(&self) -> Result<block::Id, Error> {
-        let hash = Hash::new(HashAlgorithm::Sha256, &self.hash)?;
-        Ok(block::Id::new(hash))
+        let hash = Hash::new(hash::Algorithm::Sha256, &self.hash)?;
+        let parts_header = self
+            .parts_header
+            .as_ref()
+            .and_then(CanonicalPartSetHeader::parse_parts_header);
+        Ok(block::Id::new(hash, parts_header))
     }
 }
 
@@ -54,6 +62,14 @@ pub struct PartsSetHeader {
     pub total: i64,
     #[prost(bytes, tag = "2")]
     pub hash: Vec<u8>,
+}
+
+impl PartsSetHeader {
+    fn parse_parts_header(&self) -> Option<block::parts::Header> {
+        Hash::new(hash::Algorithm::Sha256, &self.hash)
+            .map(|hash| block::parts::Header::new(self.total as u64, hash))
+            .ok()
+    }
 }
 
 impl ConsensusMessage for PartsSetHeader {
@@ -75,4 +91,12 @@ pub struct CanonicalPartSetHeader {
     pub hash: Vec<u8>,
     #[prost(int64, tag = "2")]
     pub total: i64,
+}
+
+impl CanonicalPartSetHeader {
+    fn parse_parts_header(&self) -> Option<block::parts::Header> {
+        Hash::new(hash::Algorithm::Sha256, &self.hash)
+            .map(|hash| block::parts::Header::new(self.total as u64, hash))
+            .ok()
+    }
 }

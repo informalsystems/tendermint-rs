@@ -4,7 +4,11 @@ use crate::error::Error;
 #[cfg(feature = "serde")]
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
 use signatory::{ecdsa::curve::secp256k1, ed25519};
-use std::ops::Deref;
+use std::{
+    fmt::{self, Display},
+    ops::Deref,
+    str::FromStr,
+};
 #[cfg(feature = "serde")]
 use subtle_encoding::base64;
 use subtle_encoding::{bech32, hex};
@@ -86,6 +90,92 @@ impl PublicKey {
     }
 }
 
+impl From<ed25519::PublicKey> for PublicKey {
+    fn from(pk: ed25519::PublicKey) -> PublicKey {
+        PublicKey::Ed25519(pk)
+    }
+}
+
+impl From<secp256k1::PublicKey> for PublicKey {
+    fn from(pk: secp256k1::PublicKey) -> PublicKey {
+        PublicKey::Secp256k1(pk)
+    }
+}
+
+/// Public key roles used in Tendermint networks
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
+pub enum TendermintKey {
+    /// User signing keys used for interacting with accounts in the state machine
+    AccountKey(PublicKey),
+
+    /// Validator signing keys used for authenticating consensus protocol messages
+    ConsensusKey(PublicKey),
+}
+
+impl Deref for TendermintKey {
+    type Target = PublicKey;
+
+    fn deref(&self) -> &PublicKey {
+        match self {
+            TendermintKey::AccountKey(key) => key,
+            TendermintKey::ConsensusKey(key) => key,
+        }
+    }
+}
+
+/// Public key algorithms
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Algorithm {
+    /// ed25519
+    Ed25519,
+
+    /// secp256k1
+    Secp256k1,
+}
+
+impl Algorithm {
+    /// Get the string label for this algorithm
+    pub fn as_str(&self) -> &str {
+        match self {
+            Algorithm::Ed25519 => "ed25519",
+            Algorithm::Secp256k1 => "secp256k1",
+        }
+    }
+}
+
+impl FromStr for Algorithm {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Error> {
+        match s {
+            "ed25519" => Ok(Algorithm::Ed25519),
+            "secp256k1" => Ok(Algorithm::Secp256k1),
+            _ => Err(Error::Parse),
+        }
+    }
+}
+
+impl Display for Algorithm {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for Algorithm {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.as_str().serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Algorithm {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Self::from_str(&String::deserialize(deserializer)?)
+            .map_err(|e| D::Error::custom(format!("{}", e)))
+    }
+}
+
 /// Serialize the bytes of an Ed25519 public key as Base64. Used for serializing JSON
 #[cfg(feature = "serde")]
 fn serialize_ed25519_base64<S>(
@@ -140,39 +230,6 @@ where
 
     signatory::ecdsa::curve::secp256k1::PublicKey::from_bytes(&bytes)
         .map_err(|e| D::Error::custom(format!("{}", e)))
-}
-
-impl From<ed25519::PublicKey> for PublicKey {
-    fn from(pk: ed25519::PublicKey) -> PublicKey {
-        PublicKey::Ed25519(pk)
-    }
-}
-
-impl From<secp256k1::PublicKey> for PublicKey {
-    fn from(pk: secp256k1::PublicKey) -> PublicKey {
-        PublicKey::Secp256k1(pk)
-    }
-}
-
-/// Public key roles used in Tendermint networks
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub enum TendermintKey {
-    /// User signing keys used for interacting with accounts in the state machine
-    AccountKey(PublicKey),
-
-    /// Validator signing keys used for authenticating consensus protocol messages
-    ConsensusKey(PublicKey),
-}
-
-impl Deref for TendermintKey {
-    type Target = PublicKey;
-
-    fn deref(&self) -> &PublicKey {
-        match self {
-            TendermintKey::AccountKey(key) => key,
-            TendermintKey::ConsensusKey(key) => key,
-        }
-    }
 }
 
 #[cfg(test)]

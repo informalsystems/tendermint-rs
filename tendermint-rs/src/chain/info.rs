@@ -1,4 +1,4 @@
-use crate::{block, chain, timestamp::Timestamp};
+use crate::{block, chain, time::Time};
 
 /// Information about a particular Tendermint blockchain
 #[derive(Clone, Debug)]
@@ -13,7 +13,7 @@ pub struct Info {
     pub last_block_id: Option<block::Id>,
 
     /// Current consensus time (if available)
-    pub time: Option<Timestamp>,
+    pub time: Option<Time>,
 }
 
 impl Info {

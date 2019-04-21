@@ -26,31 +26,47 @@ extern crate prost_amino as prost;
 extern crate prost_amino_derive as prost_derive;
 
 pub mod account;
-pub mod address;
-pub mod algorithm;
 #[cfg(feature = "amino-types")]
 pub mod amino_types;
 pub mod block;
 pub mod chain;
+#[cfg(feature = "rpc")]
+pub mod channel;
+pub mod consensus;
 pub mod error;
+pub mod evidence;
+#[cfg(feature = "rpc")]
+pub mod genesis;
 pub mod hash;
-pub mod moniker;
+mod moniker;
+pub mod net;
 pub mod node;
-pub mod public_keys;
+pub mod public_key;
+#[cfg(feature = "rpc")]
+pub mod rpc;
 #[cfg(feature = "secret-connection")]
 pub mod secret_connection;
-pub mod timestamp;
+#[cfg(feature = "serde")]
+mod serializers;
+pub mod signature;
+pub mod time;
+pub mod transaction;
+pub mod validator;
+mod version;
+pub mod vote;
 
+#[cfg(feature = "rpc")]
+pub use crate::genesis::Genesis;
 #[cfg(feature = "secret-connection")]
 pub use crate::secret_connection::SecretConnection;
 pub use crate::{
-    address::*,
-    algorithm::*,
-    block::{ParseHeight as ParseBlockHeight, ParseId as ParseBlockId},
-    chain::ParseId as ParseChainId,
+    block::Block,
     error::Error,
-    hash::*,
+    hash::Hash,
     moniker::Moniker,
-    public_keys::*,
-    timestamp::*,
+    public_key::{PublicKey, TendermintKey},
+    signature::Signature,
+    time::Time,
+    version::Version,
+    vote::Vote,
 };

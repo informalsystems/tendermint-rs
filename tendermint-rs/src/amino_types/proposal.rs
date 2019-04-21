@@ -7,7 +7,7 @@ use super::{
 };
 use crate::{
     block::{self, ParseId},
-    chain::{self, ConsensusState},
+    chain, consensus,
     error::Error,
 };
 use bytes::BufMut;
@@ -133,9 +133,9 @@ impl SignableMsg for SignProposalRequest {
             None => Err(MissingConsensusMessage.into()),
         }
     }
-    fn consensus_state(&self) -> Option<ConsensusState> {
+    fn consensus_state(&self) -> Option<consensus::State> {
         match self.proposal {
-            Some(ref p) => Some(ConsensusState {
+            Some(ref p) => Some(consensus::State {
                 height: match block::Height::try_from_i64(p.height) {
                     Ok(h) => h,
                     Err(_err) => return None, // TODO(tarcieri): return an error?
