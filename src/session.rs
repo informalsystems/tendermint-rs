@@ -2,7 +2,10 @@
 
 use crate::{
     chain,
-    error::{KmsError, KmsErrorKind::VerificationError},
+    error::{
+        KmsError,
+        KmsErrorKind::{ExceedMaxHeight, VerificationError},
+    },
     prost::Message,
     rpc::{Request, Response, TendermintRequest},
     unix_connection::UnixConnection,
@@ -33,6 +36,9 @@ pub struct Session<Connection> {
     /// Chain ID for this session
     chain_id: chain::Id,
 
+    // Do not sign blocks greates than this height
+    max_height: Option<tendermint::block::Height>,
+
     /// TCP connection to a validator node
     connection: Connection,
 }
@@ -41,6 +47,7 @@ impl Session<SecretConnection<TcpStream>> {
     /// Create a new session with the validator at the given address/port
     pub fn connect_tcp(
         chain_id: chain::Id,
+        max_height: Option<tendermint::block::Height>,
         validator_peer_id: Option<node::Id>,
         host: &str,
         port: u16,
@@ -76,13 +83,18 @@ impl Session<SecretConnection<TcpStream>> {
 
         Ok(Self {
             chain_id,
+            max_height,
             connection,
         })
     }
 }
 
 impl Session<UnixConnection<UnixStream>> {
-    pub fn connect_unix(chain_id: chain::Id, socket_path: &Path) -> Result<Self, KmsError> {
+    pub fn connect_unix(
+        chain_id: chain::Id,
+        max_height: Option<tendermint::block::Height>,
+        socket_path: &Path,
+    ) -> Result<Self, KmsError> {
         debug!(
             "{}: Connecting to socket at {}...",
             chain_id,
@@ -94,6 +106,7 @@ impl Session<UnixConnection<UnixStream>> {
 
         Ok(Self {
             chain_id,
+            max_height,
             connection,
         })
     }
@@ -150,6 +163,19 @@ where
             // TODO(tarcieri): better handle `PoisonError`?
             let mut chain_state = chain.state.lock().unwrap();
             chain_state.update_consensus_state(request_state.clone())?;
+        }
+
+        if let Some(max_height) = self.max_height {
+            if let Some(height) = request.height() {
+                if height > max_height.value() as i64 {
+                    fail!(
+                        ExceedMaxHeight,
+                        "attempted to sign at height {} which is greater than {}",
+                        height,
+                        max_height,
+                    );
+                }
+            }
         }
 
         let mut to_sign = vec![];

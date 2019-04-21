@@ -155,6 +155,10 @@ impl SignableMsg for SignProposalRequest {
             None => None,
         }
     }
+
+    fn height(&self) -> Option<i64> {
+        self.proposal.as_ref().map(|proposal| proposal.height)
+    }
 }
 
 impl ConsensusMessage for Proposal {
