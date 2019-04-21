@@ -2,7 +2,7 @@
 
 use crate::{
     error::Error,
-    timestamp::{ParseTimestamp, Timestamp},
+    time::{ParseTimestamp, Time},
 };
 use chrono::{TimeZone, Utc};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -19,15 +19,15 @@ pub struct TimeMsg {
 }
 
 impl ParseTimestamp for TimeMsg {
-    fn parse_timestamp(&self) -> Result<Timestamp, Error> {
+    fn parse_timestamp(&self) -> Result<Time, Error> {
         Ok(Utc.timestamp(self.seconds, self.nanos as u32).into())
     }
 }
 
-impl From<Timestamp> for TimeMsg {
-    fn from(ts: Timestamp) -> TimeMsg {
+impl From<Time> for TimeMsg {
+    fn from(ts: Time) -> TimeMsg {
         // TODO: non-panicking method for getting this?
-        let duration = ts.duration_since(Timestamp::unix_epoch()).unwrap();
+        let duration = ts.duration_since(Time::unix_epoch()).unwrap();
         let seconds = duration.as_secs() as i64;
         let nanos = duration.subsec_nanos() as i32;
 

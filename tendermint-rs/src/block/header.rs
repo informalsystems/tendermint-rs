@@ -1,13 +1,17 @@
 //! Block headers
 
-use crate::{account, block, chain, Hash, Timestamp};
+use crate::{account, block, chain, Hash, Time};
 #[cfg(feature = "serde")]
 use {
     crate::serializers,
     serde::{Deserialize, Serialize},
 };
 
-/// Block header
+/// Block `Header` values contain metadata about the block and about the
+/// consensus, as well as commitments to the data in the current block, the
+/// previous block, and the results returned by the application.
+///
+/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#header>
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
 pub struct Header {
@@ -21,7 +25,7 @@ pub struct Header {
     pub height: block::Height,
 
     /// Current timestamp
-    pub time: Timestamp,
+    pub time: Time,
 
     /// Number of transactions in block
     #[cfg_attr(
@@ -43,38 +47,41 @@ pub struct Header {
     )]
     pub total_txs: u64,
 
-    /// Last block ID
+    /// Previous block info
     pub last_block_id: block::Id,
 
-    /// Last commit hash
+    /// Commit from validators from the last block
     pub last_commit_hash: Hash,
 
-    /// Data hash
+    /// Merkle root of transaction hashes
     pub data_hash: Hash,
 
-    /// Validators hash
+    /// Validators for the current block
     pub validators_hash: Hash,
 
-    /// Next validators hash
+    /// Validators for the next block
     pub next_validators_hash: Hash,
 
-    /// Consensus hash
+    /// Consensus params for the current block
     pub consensus_hash: Hash,
 
-    /// App hash
+    /// State after txs from the previous block
     pub app_hash: Hash,
 
-    /// Last results hash
+    /// Root hash of all results from the txs from the previous block
     pub last_results_hash: Hash,
 
-    /// Evidence hash
+    /// Hash of evidence included in the block
     pub evidence_hash: Hash,
 
-    /// Proposer address
+    /// Original proposer of the block
     pub proposer_address: account::Id,
 }
 
-/// Block header versions
+/// `Version` contains the protocol version for the blockchain and the
+/// application.
+///
+/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#version>
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
 pub struct Version {

@@ -1,6 +1,6 @@
 //! `/status` endpoint JSONRPC wrapper
 
-use crate::{block, node, rpc, validator, Hash, Timestamp};
+use crate::{block, node, rpc, validator, Hash, Time};
 use serde::{Deserialize, Serialize};
 
 /// Node status request
@@ -43,7 +43,7 @@ pub struct SyncInfo {
     pub latest_block_height: block::Height,
 
     /// Latest block time
-    pub latest_block_time: Timestamp,
+    pub latest_block_time: Time,
 
     /// Are we catching up?
     pub catching_up: bool,

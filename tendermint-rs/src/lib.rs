@@ -32,7 +32,6 @@ pub mod block;
 pub mod chain;
 #[cfg(feature = "rpc")]
 pub mod channel;
-pub mod commit;
 pub mod consensus;
 pub mod error;
 pub mod evidence;
@@ -50,7 +49,7 @@ pub mod secret_connection;
 #[cfg(feature = "serde")]
 mod serializers;
 pub mod signature;
-pub mod timestamp;
+pub mod time;
 pub mod transaction;
 pub mod validator;
 mod version;
@@ -67,6 +66,7 @@ pub use crate::{
     moniker::Moniker,
     public_key::{PublicKey, TendermintKey},
     signature::Signature,
-    timestamp::Timestamp,
+    time::Time,
     version::Version,
+    vote::Vote,
 };

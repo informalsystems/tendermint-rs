@@ -1,4 +1,4 @@
-//! Evidence of Byzantine behavior
+//! Evidence of malfeasance by validators (i.e. signing conflicting votes).
 
 use std::slice;
 #[cfg(feature = "serde")]
@@ -8,8 +8,11 @@ use {
     subtle_encoding::base64,
 };
 
-/// Evidence data
-// TODO(tarcieri): parse evidence (amino?)
+/// Evidence of malfeasance by validators (i.e. signing conflicting votes).
+/// encoded using an Amino prefix. There is currently only a single type of
+/// evidence: `DuplicateVoteEvidence`.
+///
+/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#evidence>
 #[derive(Clone, Debug)]
 pub struct Evidence(Vec<u8>);
 
@@ -19,12 +22,12 @@ impl Evidence {
     where
         V: Into<Vec<u8>>,
     {
-        // TODO(tarcieri): parse/validate evidence contents
+        // TODO(tarcieri): parse/validate evidence contents from amino messages
         Evidence(into_vec.into())
     }
 
-    /// Serialize this evidence as a bytestring
-    pub fn to_bytes(&self) -> Vec<u8> {
+    /// Serialize this evidence as an Amino message bytestring
+    pub fn to_amino_bytes(&self) -> Vec<u8> {
         self.0.clone()
     }
 }
@@ -42,46 +45,48 @@ impl<'de> Deserialize<'de> for Evidence {
 #[cfg(feature = "serde")]
 impl Serialize for Evidence {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        String::from_utf8(base64::encode(self.to_bytes()))
+        String::from_utf8(base64::encode(self.to_amino_bytes()))
             .unwrap()
             .serialize(serializer)
     }
 }
 
-/// Evidence collection
+/// Evidence data is a wrapper for a list of `Evidence`.
+///
+/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#evidencedata>
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[derive(Clone, Debug)]
-pub struct Collection {
+pub struct Data {
     evidence: Option<Vec<Evidence>>,
 }
 
-impl Collection {
-    /// Create a new evidence collection
-    pub fn new<I>(into_evidence: I) -> Collection
+impl Data {
+    /// Create a new evidence data collection
+    pub fn new<I>(into_evidence: I) -> Data
     where
         I: Into<Vec<Evidence>>,
     {
-        Collection {
+        Data {
             evidence: Some(into_evidence.into()),
         }
     }
 
-    /// Convert this collection into a vector
+    /// Convert this evidence data into a vector
     pub fn into_vec(self) -> Vec<Evidence> {
         self.evidence.unwrap_or_else(|| vec![])
     }
 
-    /// Iterate over the evidence in the collection
+    /// Iterate over the evidence data
     pub fn iter(&self) -> slice::Iter<Evidence> {
         self.as_ref().iter()
     }
 }
 
-impl AsRef<[Evidence]> for Collection {
+impl AsRef<[Evidence]> for Data {
     fn as_ref(&self) -> &[Evidence] {
         self.evidence
             .as_ref()
-            .map(|evidence| evidence.as_slice())
+            .map(Vec::as_slice)
             .unwrap_or_else(|| &[])
     }
 }

@@ -7,8 +7,8 @@ use {
     subtle_encoding::base64,
 };
 
-/// Transactions
-// TODO(tarcieri): parse transactions (amino?)
+/// Transactions are arbitrary byte arrays whose contents are validated by the
+/// underlying Tendermint application.
 #[derive(Clone, Debug)]
 pub struct Transaction(Vec<u8>);
 
@@ -18,13 +18,23 @@ impl Transaction {
     where
         V: Into<Vec<u8>>,
     {
-        // TODO(tarcieri): parse/validate transaction contents
         Transaction(into_vec.into())
     }
 
-    /// Serialize this transaction as a bytestring
-    pub fn to_bytes(&self) -> Vec<u8> {
+    /// Convert this transaction into a byte vector
+    pub fn into_vec(self) -> Vec<u8> {
         self.0.clone()
+    }
+
+    /// Borrow the contents of this transaction as a byte slice
+    pub fn as_slice(&self) -> &[u8] {
+        self.0.as_slice()
+    }
+}
+
+impl AsRef<[u8]> for Transaction {
+    fn as_ref(&self) -> &[u8] {
+        self.as_slice()
     }
 }
 
@@ -41,26 +51,29 @@ impl<'de> Deserialize<'de> for Transaction {
 #[cfg(feature = "serde")]
 impl Serialize for Transaction {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        String::from_utf8(base64::encode(self.to_bytes()))
+        String::from_utf8(base64::encode(self.as_slice()))
             .unwrap()
             .serialize(serializer)
     }
 }
 
-/// Transaction collections
+/// Transaction data is a wrapper for a list of transactions, where
+/// transactions are arbitrary byte arrays.
+///
+/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#data>
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[derive(Clone, Debug)]
-pub struct Collection {
+pub struct Data {
     txs: Option<Vec<Transaction>>,
 }
 
-impl Collection {
+impl Data {
     /// Create a new evidence collection
-    pub fn new<I>(into_evidence: I) -> Collection
+    pub fn new<I>(into_evidence: I) -> Data
     where
         I: Into<Vec<Transaction>>,
     {
-        Collection {
+        Data {
             txs: Some(into_evidence.into()),
         }
     }
@@ -76,11 +89,8 @@ impl Collection {
     }
 }
 
-impl AsRef<[Transaction]> for Collection {
+impl AsRef<[Transaction]> for Data {
     fn as_ref(&self) -> &[Transaction] {
-        self.txs
-            .as_ref()
-            .map(|txs| txs.as_slice())
-            .unwrap_or_else(|| &[])
+        self.txs.as_ref().map(Vec::as_slice).unwrap_or_else(|| &[])
     }
 }
