@@ -8,6 +8,10 @@ mod version;
 mod yubihsm;
 #[cfg(feature = "yubihsm")]
 pub use self::yubihsm::YubihsmCommand;
+#[cfg(feature = "ledgertm")]
+mod ledger;
+#[cfg(feature = "ledgertm")]
+pub use self::ledger::LedgerCommand;
 
 pub use self::{
     help::HelpCommand, keygen::KeygenCommand, start::StartCommand, version::VersionCommand,
@@ -34,6 +38,10 @@ pub enum KmsCommand {
     #[cfg(feature = "yubihsm")]
     #[options(help = "subcommands for YubiHSM2")]
     Yubihsm(YubihsmCommand),
+
+    #[cfg(feature = "ledgertm")]
+    #[options(help = "subcommands for Ledger")]
+    Ledger(LedgerCommand),
 }
 
 // TODO: refactor abscissa internally so this is all part of the proc macro
@@ -59,6 +67,8 @@ impl LoadConfig<KmsConfig> for KmsCommand {
             KmsCommand::Start(run) => run.config.as_ref(),
             #[cfg(feature = "yubihsm")]
             KmsCommand::Yubihsm(yubihsm) => yubihsm.config_path(),
+            #[cfg(feature = "ledgertm")]
+            KmsCommand::Ledger(ledger) => ledger.config_path(),
             _ => return None,
         };
 
@@ -84,6 +94,8 @@ impl Callable for KmsCommand {
             KmsCommand::Version(version) => version.call(),
             #[cfg(feature = "yubihsm")]
             KmsCommand::Yubihsm(yubihsm) => yubihsm.call(),
+            #[cfg(feature = "ledgertm")]
+            KmsCommand::Ledger(ledger) => ledger.call(),
         }
     }
 }
