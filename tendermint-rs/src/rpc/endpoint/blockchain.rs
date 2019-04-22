@@ -31,7 +31,7 @@ impl rpc::Request for Request {
 
     fn path(&self) -> rpc::request::Path {
         // TODO(tarcieri): use a `uri` crate to construct this?
-        format!("/block?minHeight={}&maxHeight={}", self.min, self.max)
+        format!("/blockchain?minHeight={}&maxHeight={}", self.min, self.max)
             .parse()
             .unwrap()
     }
@@ -44,6 +44,7 @@ pub struct Response {
     pub last_height: block::Height,
 
     /// Block metadata
+    #[serde(default)]
     pub block_metas: Vec<block::Meta>,
 }
 

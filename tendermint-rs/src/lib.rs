@@ -1,5 +1,3 @@
-//! Tendermint blockchain network information types.
-//!
 //! Tendermint is a high-performance blockchain consensus engine that powers
 //! Byzantine fault tolerant applications written in any programming language.
 //! This crate provides types for representing information about Tendermint

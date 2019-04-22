@@ -20,14 +20,14 @@ impl rpc::Request for Request {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
     /// ABCI info
-    pub response: AbciInfoResponse,
+    pub response: AbciInfo,
 }
 
 impl rpc::Response for Response {}
 
 /// ABCI information
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AbciInfoResponse {
+pub struct AbciInfo {
     /// Name of the application
     pub data: String,
 

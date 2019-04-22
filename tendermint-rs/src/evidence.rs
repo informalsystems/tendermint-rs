@@ -73,7 +73,7 @@ impl Data {
 
     /// Convert this evidence data into a vector
     pub fn into_vec(self) -> Vec<Evidence> {
-        self.evidence.unwrap_or_else(|| vec![])
+        self.iter().cloned().collect()
     }
 
     /// Iterate over the evidence data

@@ -26,7 +26,7 @@ jobs:
           cargo build --features=yubihsm
           cargo build --features=ledgertm
           cargo build --features=yubihsm,ledgertm,softsign
-          cd tendermint-rs && cargo build --no-default-features
+          cd tendermint-rs && cargo build --no-default-features && cargo build --features=integration --tests
     - run:
         name: build --release
         command: |
@@ -39,8 +39,8 @@ jobs:
         command: |
           rustc --version
           cargo --version
-          cargo test --all --all-features -- --test-threads 1
-          cd tendermint-rs && cargo test --release --all-features
+          cargo test --all-features -- --test-threads 1
+          cd tendermint-rs && cargo test --release --features=amino-types,rpc,secret-connection
     - run:
         name: audit
         command: |
