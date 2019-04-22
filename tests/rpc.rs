@@ -80,6 +80,11 @@ mod endpoints {
     }
 
     #[test]
+    fn health() {
+        endpoint::health::Response::from_json(&read_json_fixture("health")).unwrap();
+    }
+
+    #[test]
     fn net_info() {
         let response =
             endpoint::net_info::Response::from_json(&read_json_fixture("net_info")).unwrap();
