@@ -1,11 +1,11 @@
 //! Subcommands of the `tmkms` command-line application
 
+use crate::chain;
+use crate::config::KmsConfig;
 use abscissa::{Callable, GlobalConfig};
 use std::process;
-use crate::config::KmsConfig;
-use crate::chain;
-use tendermint::amino_types::vote::{Vote, SignVoteRequest};
-use tendermint::amino_types::{SignedMsgType, SignableMsg};
+use tendermint::amino_types::vote::{SignVoteRequest, Vote};
+use tendermint::amino_types::{SignableMsg, SignedMsgType};
 
 #[derive(Debug, Options)]
 pub enum LedgerCommand {
@@ -63,10 +63,16 @@ impl Callable for InitCommand {
         println!("{:?}", vote);
         let sign_vote_req = SignVoteRequest { vote: Some(vote) };
         let mut to_sign = vec![];
-        sign_vote_req.sign_bytes(config.validator[0].chain_id, &mut to_sign).unwrap();
-        
+        sign_vote_req
+            .sign_bytes(config.validator[0].chain_id, &mut to_sign)
+            .unwrap();
+
         let _sig = chain.keyring.sign_ed25519(None, &to_sign).unwrap();
-        
-        println!("Successfully called the init command with height {}, and round {}", self.height.unwrap(), self.round.unwrap());
+
+        println!(
+            "Successfully called the init command with height {}, and round {}",
+            self.height.unwrap(),
+            self.round.unwrap()
+        );
     }
 }
