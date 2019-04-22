@@ -33,6 +33,11 @@ impl Error {
         Error::new(Code::InvalidParams, Some(data.to_string()))
     }
 
+    /// Create a new method-not-found error
+    pub fn method_not_found(name: &str) -> Error {
+        Error::new(Code::MethodNotFound, Some(name.to_string()))
+    }
+
     /// Create a new parse error
     pub fn parse_error<E>(error: E) -> Error
     where

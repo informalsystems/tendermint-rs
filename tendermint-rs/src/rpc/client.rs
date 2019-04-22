@@ -1,7 +1,5 @@
 //! Tendermint RPC client
 
-#![allow(unused_imports)]
-
 use crate::{
     block::Height,
     net,
@@ -35,12 +33,16 @@ impl Client {
     }
 
     /// `/block`: get block at a given height.
-    // TODO(tarcieri): support for getting latest block
     pub fn block<H>(&self, height: H) -> Result<block::Response, Error>
     where
         H: Into<Height>,
     {
         self.perform(block::Request::new(height.into()))
+    }
+
+    /// `/block`: get the latest block
+    pub fn latest_block(&self) -> Result<block::Response, Error> {
+        self.perform(block::Request::default())
     }
 
     /// `/blockchain`: get block headers for `min` <= `height` <= `max`.
@@ -57,12 +59,16 @@ impl Client {
     }
 
     /// `/commit`: get block commit at a given height.
-    // TODO(tarcieri): support for getting latest block
     pub fn commit<H>(&self, height: H) -> Result<commit::Response, Error>
     where
         H: Into<Height>,
     {
         self.perform(commit::Request::new(height.into()))
+    }
+
+    /// `/commit`: get the latest block commit
+    pub fn latest_commit(&self) -> Result<commit::Response, Error> {
+        self.perform(commit::Request::default())
     }
 
     /// `/health`: get node health.
@@ -94,6 +100,8 @@ impl Client {
     where
         R: rpc::Request,
     {
+        let request_body = request.into_json();
+
         let (host, port) = match &self.address {
             net::Address::Tcp { host, port, .. } => (host, port),
             other => Err(Error::invalid_params(&format!(
@@ -112,8 +120,9 @@ impl Client {
         let http_client = hyper::Client::new();
 
         let mut res = http_client
-            .get(&format!("http://{}:{}{}", host, port, request.path()))
+            .request(hyper::Post, &format!("http://{}:{}/", host, port))
             .headers(headers)
+            .body(&request_body[..])
             .send()
             .map_err(Error::server_error)?;
 

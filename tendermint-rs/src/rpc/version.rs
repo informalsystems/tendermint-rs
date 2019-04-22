@@ -2,16 +2,25 @@
 
 use super::error::Error;
 use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    str::FromStr,
+};
 
 /// Supported JSONRPC version
-pub const SUPPORTED_VERSION: &str = "2.0";
+const SUPPORTED_VERSION: &str = "2.0";
 
 /// JSONRPC version
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+// TODO(tarcieri): add restrictions/validations on these formats? Use an `enum`?
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, PartialOrd, Ord, Serialize)]
 pub struct Version(String);
 
 impl Version {
+    /// Get the currently supported JSONRPC version
+    pub fn current() -> Self {
+        Version(SUPPORTED_VERSION.to_owned())
+    }
+
     /// Is this JSONRPC version supported?
     pub fn is_supported(&self) -> bool {
         self.0.eq(SUPPORTED_VERSION)
@@ -33,5 +42,13 @@ impl Version {
 impl Display for Version {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for Version {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Error> {
+        Ok(Version(s.to_owned()))
     }
 }
