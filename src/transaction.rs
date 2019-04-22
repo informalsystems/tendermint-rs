@@ -68,19 +68,19 @@ pub struct Data {
 }
 
 impl Data {
-    /// Create a new evidence collection
-    pub fn new<I>(into_evidence: I) -> Data
+    /// Create a new transaction data collection
+    pub fn new<I>(into_transactions: I) -> Data
     where
         I: Into<Vec<Transaction>>,
     {
         Data {
-            txs: Some(into_evidence.into()),
+            txs: Some(into_transactions.into()),
         }
     }
 
     /// Convert this collection into a vector
     pub fn into_vec(self) -> Vec<Transaction> {
-        self.txs.unwrap_or_else(|| vec![])
+        self.iter().cloned().collect()
     }
 
     /// Iterate over the transactions in the collection

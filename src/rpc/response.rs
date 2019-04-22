@@ -6,43 +6,43 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 /// JSONRPC responses
 pub trait Response: Serialize + DeserializeOwned + Sized {
     /// Parse a JSONRPC response from a JSON string
-    fn from_json(response: &str) -> Result<Self, Error> {
-        let wrapper: Wrapper<Self> = serde_json::from_str(response).map_err(Error::parse_error)?;
+    fn from_json<T>(response: T) -> Result<Self, Error>
+    where
+        T: AsRef<[u8]>,
+    {
+        let wrapper: Wrapper<Self> =
+            serde_json::from_slice(response.as_ref()).map_err(Error::parse_error)?;
+
         wrapper.into_result()
     }
 }
 
 /// JSONRPC response wrapper (i.e. message envelope)
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(untagged)]
-enum Wrapper<R> {
-    /// RPC completed successfully
-    Success { jsonrpc: Version, id: Id, result: R },
+struct Wrapper<R> {
+    /// JSONRPC version
+    jsonrpc: Version,
 
-    /// RPC error
-    Error {
-        jsonrpc: Version,
-        id: Id,
-        error: Error,
-    },
+    /// Identifier included in request
+    id: Id,
+
+    /// Results of request (if successful)
+    result: Option<R>,
+
+    /// Error message if unsuccessful
+    error: Option<Error>,
 }
 
 impl<R> Wrapper<R> {
     /// Get JSONRPC version
     pub fn version(&self) -> &Version {
-        match self {
-            Wrapper::Success { jsonrpc, .. } => jsonrpc,
-            Wrapper::Error { jsonrpc, .. } => jsonrpc,
-        }
+        &self.jsonrpc
     }
 
     /// Get JSONRPC ID
     #[allow(dead_code)]
     pub fn id(&self) -> &Id {
-        match self {
-            Wrapper::Success { id, .. } => id,
-            Wrapper::Error { id, .. } => id,
-        }
+        &self.id
     }
 
     /// Convert this wrapper into a result type
@@ -50,9 +50,14 @@ impl<R> Wrapper<R> {
         // Ensure we're using a supported RPC version
         self.version().ensure_supported()?;
 
-        match self {
-            Wrapper::Success { result, .. } => Ok(result),
-            Wrapper::Error { error, .. } => Err(error),
+        if let Some(error) = self.error {
+            Err(error)
+        } else if let Some(result) = self.result {
+            Ok(result)
+        } else {
+            Err(Error::server_error(
+                "server returned malformatted JSON (no 'result' or 'error')",
+            ))
         }
     }
 }

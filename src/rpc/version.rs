@@ -22,7 +22,10 @@ impl Version {
         if self.is_supported() {
             Ok(())
         } else {
-            Err(Error::unsupported_version(self))
+            Err(Error::server_error(&format!(
+                "server RPC version unsupported: '{}' (only '{}' supported)",
+                self.0, SUPPORTED_VERSION
+            )))
         }
     }
 }

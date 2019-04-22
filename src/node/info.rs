@@ -2,6 +2,7 @@
 
 use crate::{chain, channel::Channels, net, node, serializers, Moniker, Version};
 use serde::{Deserialize, Serialize};
+use std::fmt::{self, Display};
 
 /// Node information
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -13,7 +14,7 @@ pub struct Info {
     pub id: node::Id,
 
     /// Listen address
-    pub listen_addr: net::Address,
+    pub listen_addr: ListenAddress,
 
     /// Tendermint network / chain ID,
     pub network: chain::Id,
@@ -54,6 +55,28 @@ pub struct ProtocolVersionInfo {
         deserialize_with = "serializers::parse_u64"
     )]
     pub app: u64,
+}
+
+/// Listen address information
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ListenAddress(String);
+
+impl ListenAddress {
+    /// Convert `ListenAddress` to a `net::Address`
+    pub fn to_net_address(&self) -> Option<net::Address> {
+        // TODO(tarcieri): validate these and handle them better at parse time
+        if self.0.starts_with("tcp://") {
+            self.0.parse().ok()
+        } else {
+            format!("tcp://{}", self.0).parse().ok()
+        }
+    }
+}
+
+impl Display for ListenAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }
 
 /// Other information

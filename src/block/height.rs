@@ -12,14 +12,21 @@ use std::{
 pub struct Height(pub u64);
 
 impl Height {
-    /// Parse height from the integer type used in Amino messages
-    pub fn try_from_i64(n: i64) -> Result<Self, Error> {
+    /// Convert `u64` to block height.
+    ///
+    /// Note that 0 is not a valid block height.
+    pub fn try_from_u64(n: u64) -> Result<Self, Error> {
         // Minimum height is 1
         if n > 0 {
-            Ok(Height(n as u64))
+            Ok(Height(n))
         } else {
             Err(Error::OutOfRange)
         }
+    }
+
+    /// Convert `i64` (used in e.g. Amino messages) to block height.
+    pub fn try_from_i64(n: i64) -> Result<Self, Error> {
+        Self::try_from_u64(n as u64)
     }
 
     /// Get inner integer value. Alternative to `.0` or `.into()`
@@ -59,7 +66,7 @@ impl From<i64> for Height {
 
 impl From<u64> for Height {
     fn from(n: u64) -> Height {
-        Height(n)
+        Self::try_from_u64(n).unwrap()
     }
 }
 
@@ -79,7 +86,7 @@ impl FromStr for Height {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Self::try_from_i64(s.parse::<i64>().map_err(|_| Error::Parse)?)
+        Self::try_from_u64(s.parse::<u64>().map_err(|_| Error::Parse)?)
     }
 }
 
