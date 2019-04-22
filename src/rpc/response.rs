@@ -33,7 +33,10 @@ struct Wrapper<R> {
     error: Option<Error>,
 }
 
-impl<R> Wrapper<R> {
+impl<R> Wrapper<R>
+where
+    R: Response,
+{
     /// Get JSONRPC version
     pub fn version(&self) -> &Version {
         &self.jsonrpc

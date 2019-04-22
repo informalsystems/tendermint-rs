@@ -1,36 +1,50 @@
 //! JSONRPC requests
 
-use crate::Error;
-use serde::{Deserialize, Serialize};
-use std::{
-    fmt::{self, Display},
-    str::FromStr,
-};
+use super::{Id, Method, Version};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::fmt::Debug;
 
 /// JSONRPC requests
-pub trait Request {
+pub trait Request: Debug + DeserializeOwned + Serialize + Sized {
     /// Response type for this command
     type Response: super::response::Response;
 
-    /// Path for this request
-    fn path(&self) -> Path;
-}
+    /// Request method
+    fn method(&self) -> Method;
 
-/// JSONRPC request paths
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct Path(String);
-
-impl Display for Path {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+    /// Serialize this request as JSON
+    fn into_json(self) -> String {
+        serde_json::to_string_pretty(&Wrapper::new(self)).unwrap()
     }
 }
 
-impl FromStr for Path {
-    type Err = Error;
+/// JSONRPC request wrapper (i.e. message envelope)
+#[derive(Debug, Deserialize, Serialize)]
+struct Wrapper<R> {
+    /// JSONRPC version
+    jsonrpc: Version,
 
-    /// Parse a request path from a string
-    fn from_str(path: &str) -> Result<Self, Error> {
-        Ok(Path(path.to_owned()))
+    /// Identifier included in request
+    id: Id,
+
+    /// Request method
+    method: Method,
+
+    /// Request parameters (i.e. request object)
+    params: R,
+}
+
+impl<R> Wrapper<R>
+where
+    R: Request,
+{
+    /// Create a new request wrapper from the given request
+    pub fn new(request: R) -> Self {
+        Self {
+            jsonrpc: Version::current(),
+            id: Id::uuid_v4(),
+            method: request.method(),
+            params: request,
+        }
     }
 }

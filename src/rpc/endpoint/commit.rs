@@ -5,23 +5,25 @@ use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
 /// Get commit information about a specific block
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
-    height: block::Height,
+    height: Option<block::Height>,
 }
 
 impl Request {
     /// Create a new request for commit info about a particular block
     pub fn new(height: block::Height) -> Self {
-        Self { height }
+        Self {
+            height: Some(height),
+        }
     }
 }
 
 impl rpc::Request for Request {
     type Response = Response;
 
-    fn path(&self) -> rpc::request::Path {
-        // TODO(tarcieri): use a `uri` crate to construct this?
-        format!("/commit?height={}", self.height).parse().unwrap()
+    fn method(&self) -> rpc::Method {
+        rpc::Method::Commit
     }
 }
 

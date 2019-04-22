@@ -7,24 +7,26 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 /// Get information about a specific block
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
     /// Height of the block to request
-    height: block::Height,
+    height: Option<block::Height>,
 }
 
 impl Request {
     /// Create a new request for information about a particular block
     pub fn new(height: block::Height) -> Self {
-        Self { height }
+        Self {
+            height: Some(height),
+        }
     }
 }
 
 impl rpc::Request for Request {
     type Response = Response;
 
-    fn path(&self) -> rpc::request::Path {
-        // TODO(tarcieri): use a `uri` crate to construct this?
-        format!("/block?height={}", self.height).parse().unwrap()
+    fn method(&self) -> rpc::Method {
+        rpc::Method::Block
     }
 }
 

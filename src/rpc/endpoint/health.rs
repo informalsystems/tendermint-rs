@@ -4,14 +4,14 @@ use crate::rpc;
 use serde::{Deserialize, Serialize};
 
 /// Perform a basic healthceck of the backend
-#[derive(Default)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
 impl rpc::Request for Request {
     type Response = Response;
 
-    fn path(&self) -> rpc::request::Path {
-        "/health".parse().unwrap()
+    fn method(&self) -> rpc::Method {
+        rpc::Method::Health
     }
 }
 

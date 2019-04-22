@@ -5,18 +5,24 @@ use serde::{Deserialize, Serialize};
 use std::ops::Range;
 
 /// Get information about a specific block
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
     /// First block in the sequence to request info about
-    min: block::Height,
+    #[serde(rename = "minHeight")]
+    min_height: block::Height,
 
     /// Last block in the sequence to request info about
-    max: block::Height,
+    #[serde(rename = "maxHeight")]
+    max_height: block::Height,
 }
 
 impl Request {
     /// Request information about a sequence of blocks
-    pub fn new(min: block::Height, max: block::Height) -> Self {
-        Self { min, max }
+    pub fn new(min_height: block::Height, max_height: block::Height) -> Self {
+        Self {
+            min_height,
+            max_height,
+        }
     }
 }
 
@@ -29,11 +35,8 @@ impl From<Range<block::Height>> for Request {
 impl rpc::Request for Request {
     type Response = Response;
 
-    fn path(&self) -> rpc::request::Path {
-        // TODO(tarcieri): use a `uri` crate to construct this?
-        format!("/blockchain?minHeight={}&maxHeight={}", self.min, self.max)
-            .parse()
-            .unwrap()
+    fn method(&self) -> rpc::Method {
+        rpc::Method::Blockchain
     }
 }
 

@@ -4,14 +4,14 @@ use crate::{rpc, Genesis};
 use serde::{Deserialize, Serialize};
 
 /// Get the genesis state for the current chain
-#[derive(Default)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
 impl rpc::Request for Request {
     type Response = Response;
 
-    fn path(&self) -> rpc::request::Path {
-        "/genesis".parse().unwrap()
+    fn method(&self) -> rpc::Method {
+        rpc::Method::Genesis
     }
 }
 
