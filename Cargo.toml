@@ -61,3 +61,6 @@ yubihsm-mock = ["yubihsm/mockhsm"]
 # Enable integer overflow checks in release builds for security reasons
 [profile.release]
 overflow-checks = true
+
+[package.metadata.docs.rs]
+all-features = true
