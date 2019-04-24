@@ -1,3 +1,11 @@
+## [0.7.0] (2019-04-24)
+
+This release is compatible with [tendermint v0.31]
+
+- Initial JSONRPC over HTTP client + `/broadcast_tx_*` endpoints ([#243])
+- Initial RPC support ([#235])
+- Disallow a block height of 0 ([#234])
+
 ## [0.6.0] (2019-04-16)
 
 This release is compatible with [tendermint v0.31]
@@ -58,6 +66,10 @@ This release is compatible with [tendermint v0.28]
 
 - Initial release
 
+[0.7.0]: https://github.com/tendermint/kms/pull/247
+[#243]: https://github.com/tendermint/kms/pull/243
+[#235]: https://github.com/tendermint/kms/pull/235
+[#234]: https://github.com/tendermint/kms/pull/234
 [0.6.0]: https://github.com/tendermint/kms/pull/229
 [tendermint v0.31]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0310
 [#228]: https://github.com/tendermint/kms/pull/228
