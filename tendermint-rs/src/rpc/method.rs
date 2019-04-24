@@ -21,6 +21,15 @@ pub enum Method {
     /// Get blockchain info
     Blockchain,
 
+    /// Broadcast transaction asynchronously
+    BroadcastTxAsync,
+
+    /// Broadcast transaction synchronously
+    BroadcastTxSync,
+
+    /// Broadcast transaction commit
+    BroadcastTxCommit,
+
     /// Get commit info for a block
     Commit,
 
@@ -47,6 +56,9 @@ impl Method {
             Method::AbciInfo => "abci_info",
             Method::Block => "block",
             Method::Blockchain => "blockchain",
+            Method::BroadcastTxAsync => "broadcast_tx_async",
+            Method::BroadcastTxSync => "broadcast_tx_sync",
+            Method::BroadcastTxCommit => "broadcast_tx_commit",
             Method::Commit => "commit",
             Method::Genesis => "genesis",
             Method::Health => "health",
@@ -65,6 +77,9 @@ impl FromStr for Method {
             "abci_info" => Method::AbciInfo,
             "block" => Method::Block,
             "blockchain" => Method::Blockchain,
+            "broadcast_tx_async" => Method::BroadcastTxAsync,
+            "broadcast_tx_sync" => Method::BroadcastTxSync,
+            "broadcast_tx_commit" => Method::BroadcastTxCommit,
             "commit" => Method::Commit,
             "genesis" => Method::Genesis,
             "health" => Method::Health,

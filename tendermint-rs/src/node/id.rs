@@ -12,16 +12,16 @@ use std::{
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 
-/// Size of a Node ID in bytes
-pub const ID_LENGTH: usize = 20;
+/// Length of a Node ID in bytes
+pub const LENGTH: usize = 20;
 
 /// Node IDs
 #[derive(Copy, Clone, Hash)]
-pub struct Id([u8; ID_LENGTH]);
+pub struct Id([u8; LENGTH]);
 
 impl Id {
     /// Create a new Node ID from raw bytes
-    pub fn new(bytes: [u8; ID_LENGTH]) -> Id {
+    pub fn new(bytes: [u8; LENGTH]) -> Id {
         Id(bytes)
     }
 
@@ -62,8 +62,8 @@ impl Debug for Id {
 impl From<ed25519::PublicKey> for Id {
     fn from(pk: ed25519::PublicKey) -> Id {
         let digest = Sha256::digest(pk.as_bytes());
-        let mut bytes = [0u8; ID_LENGTH];
-        bytes.copy_from_slice(&digest[..ID_LENGTH]);
+        let mut bytes = [0u8; LENGTH];
+        bytes.copy_from_slice(&digest[..LENGTH]);
         Id(bytes)
     }
 }
@@ -78,11 +78,11 @@ impl FromStr for Id {
             .or_else(|_| hex::decode(s))
             .map_err(|_| Error::Parse)?;
 
-        if bytes.len() != ID_LENGTH {
+        if bytes.len() != LENGTH {
             return Err(Error::Parse);
         }
 
-        let mut result_bytes = [0u8; ID_LENGTH];
+        let mut result_bytes = [0u8; LENGTH];
         result_bytes.copy_from_slice(&bytes);
         Ok(Id(result_bytes))
     }
@@ -98,7 +98,7 @@ impl<'de> Deserialize<'de> for Id {
         Self::from_str(&s).map_err(|_| {
             de::Error::custom(format!(
                 "expected {}-character hex string, got {:?}",
-                ID_LENGTH * 2,
+                LENGTH * 2,
                 s
             ))
         })

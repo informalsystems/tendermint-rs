@@ -1,10 +1,8 @@
-//! Tendermint accounts
+//! Transaction hashes
 
 use crate::error::Error;
 #[cfg(feature = "serde")]
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use sha2::{Digest, Sha256};
-use signatory::ecdsa::curve::secp256k1;
 use std::{
     fmt::{self, Debug, Display},
     str::FromStr,
@@ -12,39 +10,39 @@ use std::{
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 
-/// Size of an  account ID in bytes
-const LENGTH: usize = 20;
+/// Size of a transaction hash in bytes
+pub const LENGTH: usize = 20;
 
-/// Account IDs
+/// Trannsaction hashes
 #[derive(Copy, Clone, Hash)]
-pub struct Id([u8; LENGTH]);
+pub struct Hash([u8; LENGTH]);
 
-impl Id {
-    /// Create a new account ID from raw bytes
-    pub fn new(bytes: [u8; LENGTH]) -> Id {
-        Id(bytes)
+impl Hash {
+    /// Create a new transaction hash from raw bytes
+    pub fn new(bytes: [u8; LENGTH]) -> Hash {
+        Hash(bytes)
     }
 
-    /// Borrow the account ID as a byte slice
+    /// Borrow the transaction hash as a byte slice
     pub fn as_bytes(&self) -> &[u8] {
         &self.0[..]
     }
 }
 
-impl AsRef<[u8]> for Id {
+impl AsRef<[u8]> for Hash {
     fn as_ref(&self) -> &[u8] {
         self.as_bytes()
     }
 }
 
-impl ConstantTimeEq for Id {
+impl ConstantTimeEq for Hash {
     #[inline]
-    fn ct_eq(&self, other: &Id) -> subtle::Choice {
+    fn ct_eq(&self, other: &Hash) -> subtle::Choice {
         self.as_bytes().ct_eq(other.as_bytes())
     }
 }
 
-impl Display for Id {
+impl Display for Hash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for byte in &self.0 {
             write!(f, "{:02X}", byte)?;
@@ -53,23 +51,14 @@ impl Display for Id {
     }
 }
 
-impl Debug for Id {
+impl Debug for Hash {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "account::Id({})", self)
+        write!(f, "transactionn::Hash({})", self)
     }
 }
 
-impl From<secp256k1::PublicKey> for Id {
-    fn from(pk: secp256k1::PublicKey) -> Id {
-        let digest = Sha256::digest(pk.as_bytes());
-        let mut bytes = [0u8; LENGTH];
-        bytes.copy_from_slice(&digest[..LENGTH]);
-        Id(bytes)
-    }
-}
-
-/// Decode account ID from hex
-impl FromStr for Id {
+/// Decode transaction hash from hex
+impl FromStr for Hash {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -84,12 +73,12 @@ impl FromStr for Id {
 
         let mut result_bytes = [0u8; LENGTH];
         result_bytes.copy_from_slice(&bytes);
-        Ok(Id(result_bytes))
+        Ok(Hash(result_bytes))
     }
 }
 
 #[cfg(feature = "serde")]
-impl<'de> Deserialize<'de> for Id {
+impl<'de> Deserialize<'de> for Hash {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -106,7 +95,7 @@ impl<'de> Deserialize<'de> for Id {
 }
 
 #[cfg(feature = "serde")]
-impl Serialize for Id {
+impl Serialize for Hash {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.to_string().serialize(serializer)
     }

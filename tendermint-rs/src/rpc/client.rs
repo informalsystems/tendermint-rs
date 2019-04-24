@@ -4,7 +4,7 @@ use crate::{
     block::Height,
     net,
     rpc::{self, endpoint::*, Error, Response},
-    Genesis,
+    Genesis, Transaction,
 };
 use hyper::header;
 use std::io::Read;
@@ -56,6 +56,32 @@ impl Client {
     {
         // TODO(tarcieri): return errors for invalid params before making request?
         self.perform(blockchain::Request::new(min.into(), max.into()))
+    }
+
+    /// `/broadcast_tx_async`: broadcast a transaction, returning immediately.
+    pub fn broadcast_tx_async(
+        &self,
+        tx: Transaction,
+    ) -> Result<broadcast::tx_async::Response, Error> {
+        self.perform(broadcast::tx_async::Request::new(tx))
+    }
+
+    /// `/broadcast_tx_sync`: broadcast a transaction, returning the response
+    /// from `CheckTx`.
+    pub fn broadcast_tx_sync(
+        &self,
+        tx: Transaction,
+    ) -> Result<broadcast::tx_sync::Response, Error> {
+        self.perform(broadcast::tx_sync::Request::new(tx))
+    }
+
+    /// `/broadcast_tx_sync`: broadcast a transaction, returning the response
+    /// from `CheckTx`.
+    pub fn broadcast_tx_commit(
+        &self,
+        tx: Transaction,
+    ) -> Result<broadcast::tx_commit::Response, Error> {
+        self.perform(broadcast::tx_commit::Request::new(tx))
     }
 
     /// `/commit`: get block commit at a given height.

@@ -1,0 +1,18 @@
+{
+    "jsonrpc": "2.0",
+    "id": "",
+    "result": {
+        "height": "26682",
+        "hash": "75CA0F856A4DA078FC4911580360E70CEFB2EBEE",
+        "deliver_tx": {
+            "log": "",
+            "data": "",
+            "code": "0"
+        },
+        "check_tx": {
+            "log": "",
+            "data": "",
+            "code": "0"
+        }
+    }
+}
