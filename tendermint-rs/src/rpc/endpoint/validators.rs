@@ -4,6 +4,7 @@ use crate::{block, rpc, validator};
 use serde::{Deserialize, Serialize};
 
 /// List validators for a specific block
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
     height: block::Height,
 }
@@ -18,11 +19,8 @@ impl Request {
 impl rpc::Request for Request {
     type Response = Response;
 
-    fn path(&self) -> rpc::request::Path {
-        // TODO(tarcieri): use a `uri` crate to construct this?
-        format!("/validators?height={}", self.height)
-            .parse()
-            .unwrap()
+    fn method(&self) -> rpc::Method {
+        rpc::Method::Validators
     }
 }
 

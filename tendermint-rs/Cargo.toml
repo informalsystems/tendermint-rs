@@ -34,6 +34,7 @@ chrono = { version = "0.4", features = ["serde"] }
 digest = "0.8"
 failure = "0.1"
 hkdf = { version = "0.7", optional = true }
+hyper = { version = "0.10", optional = true }
 prost-amino = { version = "0.4.0", optional = true }
 prost-amino-derive = { version = "0.4.0", optional = true }
 rand_os = { version = "0.1", optional = true }
@@ -46,6 +47,7 @@ sha2 = { version = "0.8", default-features = false }
 subtle = "2"
 subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
 tai64 = { version = "1", optional = true, features = ["chrono"] }
+uuid = { version = "0.7", optional = true, default-features = false }
 x25519-dalek = { version = "0.5", optional = true, default-features = false, features = ["u64_backend"] }
 zeroize = { version = "0.6", optional = true }
 
@@ -55,12 +57,13 @@ serde_json = "1"
 [features]
 default = ["serde", "tai64"]
 amino-types = ["prost-amino", "prost-amino-derive"]
-rpc = ["serde", "serde_json"]
+integration = []
+rpc = ["hyper", "rand_os", "serde", "serde_json", "uuid"]
 secret-connection = [
     "amino-types",
     "byteorder",
-    "hkdf",
     "rand_os",
+    "hkdf",
     "ring",
     "signatory-dalek",
     "x25519-dalek",

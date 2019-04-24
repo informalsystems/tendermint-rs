@@ -1,5 +1,8 @@
 //! Transactions
 
+mod hash;
+
+pub use self::hash::Hash;
 use std::slice;
 #[cfg(feature = "serde")]
 use {
@@ -9,7 +12,7 @@ use {
 
 /// Transactions are arbitrary byte arrays whose contents are validated by the
 /// underlying Tendermint application.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Transaction(Vec<u8>);
 
 impl Transaction {
@@ -44,7 +47,7 @@ impl<'de> Deserialize<'de> for Transaction {
         let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
             .map_err(|e| D::Error::custom(format!("{}", e)))?;
 
-        Ok(Transaction::new(bytes))
+        Ok(Self::new(bytes))
     }
 }
 
@@ -68,19 +71,19 @@ pub struct Data {
 }
 
 impl Data {
-    /// Create a new evidence collection
-    pub fn new<I>(into_evidence: I) -> Data
+    /// Create a new transaction data collection
+    pub fn new<I>(into_transactions: I) -> Data
     where
         I: Into<Vec<Transaction>>,
     {
         Data {
-            txs: Some(into_evidence.into()),
+            txs: Some(into_transactions.into()),
         }
     }
 
     /// Convert this collection into a vector
     pub fn into_vec(self) -> Vec<Transaction> {
-        self.txs.unwrap_or_else(|| vec![])
+        self.iter().cloned().collect()
     }
 
     /// Iterate over the transactions in the collection

@@ -5,14 +5,14 @@ use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializ
 use subtle_encoding::base64;
 
 /// Request ABCI information from a node
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
 impl rpc::Request for Request {
     type Response = Response;
 
-    fn path(&self) -> rpc::request::Path {
-        "/abci_info".parse().unwrap()
+    fn method(&self) -> rpc::Method {
+        rpc::Method::AbciInfo
     }
 }
 
@@ -20,14 +20,14 @@ impl rpc::Request for Request {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
     /// ABCI info
-    pub response: AbciInfoResponse,
+    pub response: AbciInfo,
 }
 
 impl rpc::Response for Response {}
 
 /// ABCI information
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AbciInfoResponse {
+pub struct AbciInfo {
     /// Name of the application
     pub data: String,
 

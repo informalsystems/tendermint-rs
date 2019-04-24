@@ -4,14 +4,14 @@ use crate::{block, node, rpc, validator, Hash, Time};
 use serde::{Deserialize, Serialize};
 
 /// Node status request
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
 impl rpc::Request for Request {
     type Response = Response;
 
-    fn path(&self) -> rpc::request::Path {
-        "/status".parse().unwrap()
+    fn method(&self) -> rpc::Method {
+        rpc::Method::Status
     }
 }
 

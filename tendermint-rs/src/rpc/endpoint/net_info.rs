@@ -9,14 +9,14 @@ use std::{
 };
 
 /// Request network information from a node
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
 impl rpc::Request for Request {
     type Response = Response;
 
-    fn path(&self) -> rpc::request::Path {
-        "/net_info".parse().unwrap()
+    fn method(&self) -> rpc::Method {
+        rpc::Method::NetInfo
     }
 }
 

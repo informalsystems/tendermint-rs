@@ -143,6 +143,12 @@ impl Algorithm {
     }
 }
 
+impl Display for Algorithm {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
 impl FromStr for Algorithm {
     type Err = Error;
 
@@ -152,12 +158,6 @@ impl FromStr for Algorithm {
             "secp256k1" => Ok(Algorithm::Secp256k1),
             _ => Err(Error::Parse),
         }
-    }
-}
-
-impl Display for Algorithm {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.as_str())
     }
 }
 

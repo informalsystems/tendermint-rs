@@ -1,9 +1,9 @@
-//! `/genesis` endpoint JSONRPC wrapper
+//! `/health` endpoint JSONRPC wrapper
 
-use crate::{rpc, Genesis};
+use crate::rpc;
 use serde::{Deserialize, Serialize};
 
-/// Get the genesis state for the current chain
+/// Perform a basic healthceck of the backend
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
@@ -11,15 +11,12 @@ impl rpc::Request for Request {
     type Response = Response;
 
     fn method(&self) -> rpc::Method {
-        rpc::Method::Genesis
+        rpc::Method::Health
     }
 }
 
-/// Block responses
+/// Healthcheck responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Response {
-    /// Genesis data
-    pub genesis: Genesis,
-}
+pub struct Response {}
 
 impl rpc::Response for Response {}

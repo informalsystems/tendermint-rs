@@ -1,6 +1,5 @@
 //! JSONRPC error types
 
-use super::Version;
 use failure::Fail;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Display};
@@ -29,6 +28,16 @@ impl Error {
         }
     }
 
+    /// Create a new invalid parameter error
+    pub fn invalid_params(data: &str) -> Error {
+        Error::new(Code::InvalidParams, Some(data.to_string()))
+    }
+
+    /// Create a new method-not-found error
+    pub fn method_not_found(name: &str) -> Error {
+        Error::new(Code::MethodNotFound, Some(name.to_string()))
+    }
+
     /// Create a new parse error
     pub fn parse_error<E>(error: E) -> Error
     where
@@ -37,12 +46,12 @@ impl Error {
         Error::new(Code::ParseError, Some(error.to_string()))
     }
 
-    /// Create an unsupported RPC version error
-    pub fn unsupported_version(version: &Version) -> Error {
-        Error::new(
-            Code::ServerError,
-            Some(format!("server RPC version unsupported: {})", version,)),
-        )
+    /// Create a new server error
+    pub fn server_error<D>(data: D) -> Error
+    where
+        D: Display,
+    {
+        Error::new(Code::ServerError, Some(data.to_string()))
     }
 
     /// Obtain the `rpc::error::Code` for this error
@@ -79,6 +88,12 @@ impl Display for Error {
 impl Fail for Error {
     fn name(&self) -> Option<&str> {
         self.code.name()
+    }
+}
+
+impl From<hyper::Error> for Error {
+    fn from(hyper_error: hyper::Error) -> Error {
+        panic!("what am I supposed to do with this? {:?}", hyper_error);
     }
 }
 

@@ -57,10 +57,48 @@ mod endpoints {
     }
 
     #[test]
+    fn broadcast_tx_async() {
+        let response = endpoint::broadcast::tx_async::Response::from_json(&read_json_fixture(
+            "broadcast_tx_async",
+        ))
+        .unwrap();
+
+        assert_eq!(
+            &response.hash.to_string(),
+            "E39AAB7A537ABAA237831742DCE1117F187C3C52"
+        );
+    }
+
+    #[test]
+    fn broadcast_tx_sync() {
+        let response = endpoint::broadcast::tx_sync::Response::from_json(&read_json_fixture(
+            "broadcast_tx_sync",
+        ))
+        .unwrap();
+
+        assert_eq!(
+            &response.hash.to_string(),
+            "0D33F2F03A5234F38706E43004489E061AC40A2E"
+        );
+    }
+
+    #[test]
+    fn broadcast_tx_commit() {
+        let response = endpoint::broadcast::tx_commit::Response::from_json(&read_json_fixture(
+            "broadcast_tx_commit",
+        ))
+        .unwrap();
+
+        assert_eq!(
+            &response.hash.to_string(),
+            "75CA0F856A4DA078FC4911580360E70CEFB2EBEE"
+        );
+    }
+
+    #[test]
     fn commit() {
         let response = endpoint::commit::Response::from_json(&read_json_fixture("commit")).unwrap();
         let header = response.signed_header.header;
-
         assert_eq!(header.chain_id.as_ref(), EXAMPLE_CHAIN);
     }
 
@@ -77,6 +115,11 @@ mod endpoints {
 
         assert_eq!(chain_id.as_str(), EXAMPLE_CHAIN);
         assert_eq!(consensus_params.block_size.max_bytes, 150000);
+    }
+
+    #[test]
+    fn health() {
+        endpoint::health::Response::from_json(&read_json_fixture("health")).unwrap();
     }
 
     #[test]
@@ -103,8 +146,8 @@ mod endpoints {
             endpoint::validators::Response::from_json(&read_json_fixture("validators")).unwrap();
 
         assert_eq!(response.block_height.value(), 42);
-        let validators = response.validators;
 
+        let validators = response.validators;
         assert_eq!(validators.len(), 65);
     }
 
