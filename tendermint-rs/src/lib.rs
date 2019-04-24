@@ -1,7 +1,8 @@
 //! Tendermint is a high-performance blockchain consensus engine that powers
 //! Byzantine fault tolerant applications written in any programming language.
-//! This crate provides types for representing information about Tendermint
-//! blockchain networks, including chain IDs, block IDs, and block heights.
+//! This crate provides core types for representing information about Tendermint
+//! blockchain networks, including chain information types, secret connections,
+//! and remote procedure calls (JSONRPC).
 
 #![deny(
     warnings,
@@ -14,7 +15,7 @@
 #![forbid(unsafe_code)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
-    html_root_url = "https://docs.rs/tendermint/0.6.0"
+    html_root_url = "https://docs.rs/tendermint/0.7.0"
 )]
 
 #[cfg(feature = "amino-types")]
