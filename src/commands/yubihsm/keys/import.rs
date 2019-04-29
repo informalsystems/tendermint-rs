@@ -190,7 +190,7 @@ impl ImportCommand {
             key_id,
             label,
             DEFAULT_DOMAINS,
-            DEFAULT_CAPABILITIES,
+            DEFAULT_CAPABILITIES | yubihsm::Capability::EXPORTABLE_UNDER_WRAP,
             yubihsm::asymmetric::Algorithm::Ed25519,
             key,
         ) {
