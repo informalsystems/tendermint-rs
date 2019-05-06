@@ -16,6 +16,11 @@ key_format = { type = "bech32", account_key_prefix = "cosmospub", consensus_key_
 # state_file = "/path/to/cosmoshub_priv_validator_state.json"
 # state_hook = { cmd = ["/path/to/block/height_script", "--example-arg", "cosmoshub"] }
 
+[[chain]]
+id = "irishub"
+key_format = { type = "bech32", account_key_prefix = "iap", consensus_key_prefix = "icp" }
+# state_file = "/path/to/irishub_priv_validator_state.json"
+
 # Validator configuration
 [[validator]]
 addr = "tcp://f88883b673fc69d7869cab098de3bafc2ff76eb8@example1.example.com:26658"
