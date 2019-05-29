@@ -11,7 +11,7 @@ pub use self::{
 };
 use crate::{
     config::{chain::ChainConfig, KmsConfig},
-    error::KmsError,
+    error::Error,
     keyring::{self, KeyRing},
 };
 use std::{path::PathBuf, sync::Mutex};
@@ -31,7 +31,7 @@ pub struct Chain {
 
 impl Chain {
     /// Attempt to create a `Chain` state from the given configuration
-    pub fn from_config(config: &ChainConfig) -> Result<Chain, KmsError> {
+    pub fn from_config(config: &ChainConfig) -> Result<Chain, Error> {
         let state_file = match config.state_file {
             Some(ref path) => path.to_owned(),
             None => PathBuf::from(&format!("{}_priv_validator_state.json", config.id)),
@@ -62,7 +62,7 @@ impl Chain {
 }
 
 /// Initialize the chain registry from the configuration file
-pub fn load_config(config: &KmsConfig) -> Result<(), KmsError> {
+pub fn load_config(config: &KmsConfig) -> Result<(), Error> {
     for config in &config.chain {
         REGISTRY.register(Chain::from_config(config)?)?;
     }

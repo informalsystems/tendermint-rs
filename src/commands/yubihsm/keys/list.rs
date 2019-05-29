@@ -1,18 +1,20 @@
-use abscissa::Callable;
+//! List keys
+
+use abscissa::{Command, Runnable};
 use std::process;
 use tendermint::PublicKey;
 
 /// The `yubihsm keys list` subcommand
-#[derive(Debug, Default, Options)]
+#[derive(Command, Debug, Default, Options)]
 pub struct ListCommand {
     /// Path to configuration file
     #[options(short = "c", long = "config")]
     pub config: Option<String>,
 }
 
-impl Callable for ListCommand {
+impl Runnable for ListCommand {
     /// List all suitable Ed25519 keys in the HSM
-    fn call(&self) {
+    fn run(&self) {
         let hsm = crate::yubihsm::client();
 
         let serial_number = hsm
@@ -68,6 +70,3 @@ impl Callable for ListCommand {
         }
     }
 }
-
-// TODO: custom derive in abscissa
-impl_command!(ListCommand);

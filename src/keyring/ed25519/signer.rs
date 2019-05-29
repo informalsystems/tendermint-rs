@@ -1,8 +1,8 @@
 use crate::{
-    error::{KmsError, KmsErrorKind::*},
+    error::{Error, ErrorKind::*},
     keyring::SigningProvider,
 };
-use signatory::{self, ed25519::Signature, Signer as SignerTrait};
+use signatory::ed25519::Signature;
 use std::sync::Arc;
 use tendermint::TendermintKey;
 
@@ -16,7 +16,7 @@ pub struct Signer {
     public_key: TendermintKey,
 
     /// Signer trait object
-    signer: Arc<Box<dyn SignerTrait<Signature>>>,
+    signer: Arc<Box<dyn signatory::Signer<Signature> + Send + Sync>>,
 }
 
 impl Signer {
@@ -24,7 +24,7 @@ impl Signer {
     pub fn new(
         provider: SigningProvider,
         public_key: TendermintKey,
-        signer: Box<dyn SignerTrait<Signature>>,
+        signer: Box<dyn signatory::Signer<Signature> + Send + Sync>,
     ) -> Self {
         Self {
             provider,
@@ -44,10 +44,10 @@ impl Signer {
     }
 
     /// Sign the given message using this signer
-    pub fn sign(&self, msg: &[u8]) -> Result<Signature, KmsError> {
+    pub fn sign(&self, msg: &[u8]) -> Result<Signature, Error> {
         Ok(self
             .signer
-            .sign(msg)
+            .try_sign(msg)
             .map_err(|e| err!(SigningError, "{}", e))?)
     }
 }

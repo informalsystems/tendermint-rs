@@ -2,10 +2,7 @@
 
 use crate::{
     chain,
-    error::{
-        KmsError,
-        KmsErrorKind::{ExceedMaxHeight, VerificationError},
-    },
+    error::{Error, ErrorKind::*},
     prost::Message,
     rpc::{Request, Response, TendermintRequest},
     unix_connection::UnixConnection,
@@ -44,7 +41,7 @@ pub struct Session<Connection> {
 }
 
 impl Session<SecretConnection<TcpStream>> {
-    /// Create a new session with the validator at the given address/port
+    /// Create a new validator connection at the given TCP/IP address/port
     pub fn connect_tcp(
         chain_id: chain::Id,
         max_height: Option<tendermint::block::Height>,
@@ -52,12 +49,14 @@ impl Session<SecretConnection<TcpStream>> {
         host: &str,
         port: u16,
         secret_connection_key: &ed25519::Seed,
-    ) -> Result<Self, KmsError> {
+    ) -> Result<Self, Error> {
         debug!("{}: Connecting to {}:{}...", chain_id, host, port);
 
         let socket = TcpStream::connect(format!("{}:{}", host, port))?;
         let signer = Ed25519Signer::from(secret_connection_key);
-        let public_key = secret_connection::PublicKey::from(signer.public_key()?);
+        let public_key = secret_connection::PublicKey::from(
+            signer.public_key().map_err(|_| Error::from(InvalidKey))?,
+        );
         let connection = SecretConnection::new(socket, &public_key, &signer)?;
         let actual_peer_id = connection.remote_pubkey().peer_id();
 
@@ -90,11 +89,12 @@ impl Session<SecretConnection<TcpStream>> {
 }
 
 impl Session<UnixConnection<UnixStream>> {
+    /// Create a new Unix domain socket connection to a validator
     pub fn connect_unix(
         chain_id: chain::Id,
         max_height: Option<tendermint::block::Height>,
         socket_path: &Path,
-    ) -> Result<Self, KmsError> {
+    ) -> Result<Self, Error> {
         debug!(
             "{}: Connecting to socket at {}...",
             chain_id,
@@ -117,14 +117,14 @@ where
     Connection: Read + Write + Sync + Send,
 {
     /// Main request loop
-    pub fn request_loop(&mut self, should_term: &Arc<AtomicBool>) -> Result<(), KmsError> {
+    pub fn request_loop(&mut self, should_term: &Arc<AtomicBool>) -> Result<(), Error> {
         debug!("starting handle request loop ... ");
         while self.handle_request(should_term)? {}
         Ok(())
     }
 
     /// Handle an incoming request from the validator
-    fn handle_request(&mut self, should_term: &Arc<AtomicBool>) -> Result<bool, KmsError> {
+    fn handle_request(&mut self, should_term: &Arc<AtomicBool>) -> Result<bool, Error> {
         if should_term.load(Ordering::Relaxed) {
             info!("terminate signal received");
             return Ok(false);
@@ -153,7 +153,7 @@ where
     }
 
     /// Perform a digital signature operation
-    fn sign<T: TendermintRequest + Debug>(&mut self, mut request: T) -> Result<Response, KmsError> {
+    fn sign<T: TendermintRequest + Debug>(&mut self, mut request: T) -> Result<Response, Error> {
         request.validate()?;
 
         let registry = chain::REGISTRY.get();
@@ -197,7 +197,7 @@ where
     }
 
     /// Get the public key for (the only) public key in the keyring
-    fn get_public_key(&mut self, _request: &PubKeyRequest) -> Result<Response, KmsError> {
+    fn get_public_key(&mut self, _request: &PubKeyRequest) -> Result<Response, Error> {
         let registry = chain::REGISTRY.get();
         let chain = registry.get_chain(&self.chain_id).unwrap();
 

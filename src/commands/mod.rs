@@ -17,35 +17,38 @@ pub use self::{
     help::HelpCommand, keygen::KeygenCommand, start::StartCommand, version::VersionCommand,
 };
 use crate::config::{KmsConfig, CONFIG_ENV_VAR, CONFIG_FILE_NAME};
-use abscissa::{Callable, LoadConfig};
+use abscissa::{Command, Configurable, Runnable};
 use std::{env, path::PathBuf};
 
 /// Subcommands of the KMS command-line application
-#[derive(Debug, Options)]
+#[derive(Command, Debug, Options, Runnable)]
 pub enum KmsCommand {
+    /// `help` subcommand
     #[options(help = "show help for a command")]
     Help(HelpCommand),
 
+    /// `keygen` subcommand
     #[options(help = "generate a new software signing key")]
     Keygen(KeygenCommand),
 
+    /// `start` subcommand
     #[options(help = "start the KMS application")]
     Start(StartCommand),
 
+    /// `version` subcommand
     #[options(help = "display version information")]
     Version(VersionCommand),
 
+    /// `yubihsm` subcommand
     #[cfg(feature = "yubihsm")]
     #[options(help = "subcommands for YubiHSM2")]
     Yubihsm(YubihsmCommand),
 
+    /// `ledgertm` subcommand
     #[cfg(feature = "ledgertm")]
     #[options(help = "subcommands for Ledger")]
     Ledger(LedgerCommand),
 }
-
-// TODO: refactor abscissa internally so this is all part of the proc macro
-impl_command!(KmsCommand);
 
 impl KmsCommand {
     /// Are we configured for verbose logging?
@@ -59,7 +62,7 @@ impl KmsCommand {
     }
 }
 
-impl LoadConfig<KmsConfig> for KmsCommand {
+impl Configurable<KmsConfig> for KmsCommand {
     /// Get the path to the configuration file, either from selected subcommand
     /// or the default
     fn config_path(&self) -> Option<PathBuf> {
@@ -80,22 +83,5 @@ impl LoadConfig<KmsConfig> for KmsCommand {
         );
 
         Some(path)
-    }
-}
-
-// TODO: refactor abscissa internally so this is all part of the proc macro
-impl Callable for KmsCommand {
-    /// Call the given command chosen via the CLI
-    fn call(&self) {
-        match self {
-            KmsCommand::Help(help) => help.call(),
-            KmsCommand::Keygen(keygen) => keygen.call(),
-            KmsCommand::Start(run) => run.call(),
-            KmsCommand::Version(version) => version.call(),
-            #[cfg(feature = "yubihsm")]
-            KmsCommand::Yubihsm(yubihsm) => yubihsm.call(),
-            #[cfg(feature = "ledgertm")]
-            KmsCommand::Ledger(ledger) => ledger.call(),
-        }
     }
 }

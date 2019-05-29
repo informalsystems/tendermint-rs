@@ -1,3 +1,5 @@
+//! Unix domain socket connection
+
 use std::io;
 use std::marker::{Send, Sync};
 

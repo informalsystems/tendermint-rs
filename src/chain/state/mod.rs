@@ -7,7 +7,7 @@ mod error;
 pub mod hook;
 
 pub use self::error::{StateError, StateErrorKind};
-use crate::error::{KmsError, KmsErrorKind::*};
+use crate::error::{Error, ErrorKind::*};
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use serde_json;
 use std::{
@@ -25,7 +25,7 @@ pub struct State {
 
 impl State {
     /// Load the state from the given path
-    pub fn load_state<P>(path: P) -> Result<State, KmsError>
+    pub fn load_state<P>(path: P) -> Result<State, Error>
     where
         P: AsRef<Path>,
     {

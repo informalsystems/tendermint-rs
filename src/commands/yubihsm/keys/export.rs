@@ -1,10 +1,10 @@
 use super::*;
-use abscissa::Callable;
+use abscissa::{Command, Runnable};
 use std::{fs::OpenOptions, io::Write, os::unix::fs::OpenOptionsExt, path::PathBuf, process};
 use subtle_encoding::base64;
 
 /// The `yubihsm keys export` subcommand: create encrypted backups of keys
-#[derive(Debug, Default, Options)]
+#[derive(Command, Debug, Default, Options)]
 pub struct ExportCommand {
     /// Path to configuration file
     #[options(short = "c", long = "config")]
@@ -23,8 +23,8 @@ pub struct ExportCommand {
     pub path: PathBuf,
 }
 
-impl Callable for ExportCommand {
-    fn call(&self) {
+impl Runnable for ExportCommand {
+    fn run(&self) {
         let wrap_key_id = self.wrap_key_id.unwrap_or(DEFAULT_WRAP_KEY);
 
         let wrapped_bytes = crate::yubihsm::client()
@@ -70,5 +70,3 @@ impl Callable for ExportCommand {
         );
     }
 }
-
-impl_command!(ExportCommand);

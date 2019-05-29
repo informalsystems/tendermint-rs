@@ -1,5 +1,5 @@
 use super::KeysCommand;
-use abscissa::{Callable, Command};
+use abscissa::{Command, Runnable};
 
 /// The `yubihsm keys help` subcommand
 #[derive(Debug, Default, Options)]
@@ -8,9 +8,16 @@ pub struct HelpCommand {
     pub args: Vec<String>,
 }
 
-impl Callable for HelpCommand {
+impl Runnable for HelpCommand {
     /// Print help for the `yubihsm` subcommand
-    fn call(&self) {
-        KeysCommand::print_usage(self.args.as_slice());
+    fn run(&self) {
+        KeysCommand::print_usage(
+            &self
+                .args
+                .as_slice()
+                .iter()
+                .map(|arg| arg.as_ref())
+                .collect::<Vec<_>>(),
+        );
     }
 }

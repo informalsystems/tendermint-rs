@@ -1,6 +1,7 @@
 //! Integration tests for the `yubihsm keys list` subcommand
 
 use crate::cli;
+use std::str;
 
 #[test]
 fn keys_command_test() {
@@ -14,11 +15,7 @@ fn keys_command_test() {
 
     assert_eq!(true, out.status.success());
     assert_eq!(true, out.stdout.is_empty());
-    assert_eq!(
-        true,
-        String::from_utf8(out.stderr)
-            .unwrap()
-            .trim()
-            .starts_with("error: no keys in this YubiHSM")
-    );
+
+    let stderr = str::from_utf8(&out.stderr).unwrap().trim().to_owned();
+    assert!(stderr.contains("no keys in this YubiHSM"));
 }

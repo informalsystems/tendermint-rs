@@ -1,7 +1,8 @@
+use serde::Deserialize;
 use std::ffi::OsString;
 
 /// Configuration for a particular hook to invoke
-#[derive(Clone, Default, Deserialize, Debug)]
+#[derive(Default, Deserialize, Debug)]
 pub struct HookConfig {
     /// Command (with arguments) to invoke
     pub cmd: Vec<OsString>,

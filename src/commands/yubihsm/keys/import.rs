@@ -1,5 +1,7 @@
+//! Import keys
+
 use super::*;
-use abscissa::Callable;
+use abscissa::{Command, Runnable};
 use signatory::ed25519;
 use std::{fs, path::PathBuf, process};
 use subtle_encoding::base64;
@@ -7,7 +9,7 @@ use tendermint::PublicKey;
 use yubihsm::object;
 
 /// The `yubihsm keys import` subcommand
-#[derive(Debug, Default, Options)]
+#[derive(Command, Debug, Default, Options)]
 pub struct ImportCommand {
     /// Path to configuration file
     #[options(short = "c", long = "config")]
@@ -34,8 +36,8 @@ pub struct ImportCommand {
     pub path: PathBuf,
 }
 
-impl Callable for ImportCommand {
-    fn call(&self) {
+impl Runnable for ImportCommand {
+    fn run(&self) {
         let contents = fs::read_to_string(&self.path).unwrap_or_else(|e| {
             status_err!("couldn't import file {}: {}", self.path.display(), e);
             process::exit(1);
@@ -176,8 +178,8 @@ impl ImportCommand {
             process::exit(1);
         });
 
-        let seed = ed25519::Seed::from_keypair(&key_pair).unwrap_or_else(|e| {
-            status_err!("invalid key in validator config: {}", e);
+        let seed = ed25519::Seed::from_keypair(&key_pair).unwrap_or_else(|| {
+            status_err!("error parsing ed25519 seed");
             process::exit(1);
         });
 
@@ -201,5 +203,3 @@ impl ImportCommand {
         status_ok!("Imported", "key 0x{:04x}", key_id);
     }
 }
-
-impl_command!(ImportCommand);

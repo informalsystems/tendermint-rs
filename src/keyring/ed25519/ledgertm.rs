@@ -3,18 +3,18 @@
 use crate::{
     chain,
     config::provider::ledgertm::LedgerTendermintConfig,
-    error::{KmsError, KmsErrorKind::*},
+    error::{Error, ErrorKind::*},
     keyring::{ed25519::Signer, SigningProvider},
 };
-use ledger_tendermint::signer::Ed25519LedgerTmAppSigner;
 use signatory::PublicKeyed;
+use signatory_ledger_tm::Ed25519LedgerTmAppSigner;
 use tendermint::TendermintKey;
 
 /// Create Ledger Tendermint signer object from the given configuration
 pub fn init(
     chain_registry: &mut chain::Registry,
     ledgertm_configs: &[LedgerTendermintConfig],
-) -> Result<(), KmsError> {
+) -> Result<(), Error> {
     if ledgertm_configs.is_empty() {
         return Ok(());
     }
@@ -27,9 +27,16 @@ pub fn init(
         );
     }
 
-    let provider = Ed25519LedgerTmAppSigner::connect()?;
+    let provider = Ed25519LedgerTmAppSigner::connect().map_err(|_| Error::from(SigningError))?;
+
     // TODO(tarcieri): support for adding account keys into keyrings
-    let public_key = TendermintKey::ConsensusKey(provider.public_key()?.into());
+    let public_key = TendermintKey::ConsensusKey(
+        provider
+            .public_key()
+            .map_err(|_| Error::from(InvalidKey))?
+            .into(),
+    );
+
     let signer = Signer::new(SigningProvider::LedgerTm, public_key, Box::new(provider));
 
     for chain_id in &ledgertm_configs[0].chain_ids {

@@ -1,5 +1,5 @@
 use super::*;
-use abscissa::Callable;
+use abscissa::{Command, Runnable};
 use chrono::{SecondsFormat, Utc};
 use std::{
     fs::OpenOptions,
@@ -12,7 +12,7 @@ use subtle_encoding::base64;
 use tendermint::PublicKey;
 
 /// The `yubihsm keys generate` subcommand
-#[derive(Debug, Default, Options)]
+#[derive(Command, Debug, Default, Options)]
 pub struct GenerateCommand {
     /// Path to configuration file
     #[options(short = "c", long = "config")]
@@ -47,9 +47,9 @@ pub struct GenerateCommand {
     key_ids: Vec<u16>,
 }
 
-impl Callable for GenerateCommand {
+impl Runnable for GenerateCommand {
     /// Generate an Ed25519 signing key inside a YubiHSM2 device
-    fn call(&self) {
+    fn run(&self) {
         if self.key_ids.len() != 1 {
             status_err!(
                 "expected exactly 1 key ID to generate, got {}",
@@ -116,7 +116,7 @@ impl Callable for GenerateCommand {
             None => public_key.to_hex(),
         };
 
-        status_ok!("Generated", "key #{}: {}", key_id, public_key_string);
+        status_ok!("Generated", "key 0x{:04x}: {}", key_id, public_key_string);
 
         if let Some(ref backup_file) = self.backup_file {
             create_encrypted_backup(
@@ -128,9 +128,6 @@ impl Callable for GenerateCommand {
         }
     }
 }
-
-// TODO: custom derive in abscissa
-impl_command!(GenerateCommand);
 
 /// Create an encrypted backup of this key under the given wrap key ID
 // TODO(tarcieri): unify this with the similar code in export?

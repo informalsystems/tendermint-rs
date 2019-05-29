@@ -1,7 +1,5 @@
 //! The KMS `yubihsm` subcommand
 
-use abscissa::Callable;
-
 mod detect;
 mod help;
 mod keys;
@@ -12,41 +10,30 @@ pub use self::{
     detect::DetectCommand, help::HelpCommand, keys::KeysCommand, setup::SetupCommand,
     test::TestCommand,
 };
+use abscissa::{Command, Runnable};
 
 /// The `yubihsm` subcommand
-#[derive(Debug, Options)]
+#[derive(Command, Debug, Options, Runnable)]
 pub enum YubihsmCommand {
+    /// Detected connected YubiHSM2 devices
     #[options(help = "detect all YubiHSM2 devices connected via USB")]
     Detect(DetectCommand),
 
+    /// Show help for the `yubihsm` subcommand
     #[options(help = "show help for the 'yubihsm' subcommand")]
     Help(HelpCommand),
 
+    /// Key management subcommands
     #[options(help = "key management subcommands")]
     Keys(KeysCommand),
 
+    /// Perform initial YubiHSM2 device setup
     #[options(help = "initial device setup and configuration")]
     Setup(SetupCommand),
 
+    /// Perform a signing test
     #[options(help = "perform a signing test")]
     Test(TestCommand),
-}
-
-// TODO: custom derive in abscissa
-impl_command!(YubihsmCommand);
-
-// TODO: refactor abscissa internally so this is all part of the proc macro
-impl Callable for YubihsmCommand {
-    /// Call the given command chosen via the CLI
-    fn call(&self) {
-        match self {
-            YubihsmCommand::Detect(detect) => detect.call(),
-            YubihsmCommand::Help(help) => help.call(),
-            YubihsmCommand::Keys(keys) => keys.call(),
-            YubihsmCommand::Setup(setup) => setup.call(),
-            YubihsmCommand::Test(test) => test.call(),
-        }
-    }
 }
 
 impl YubihsmCommand {

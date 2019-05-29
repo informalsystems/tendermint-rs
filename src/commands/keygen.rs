@@ -1,5 +1,5 @@
 use crate::keyring::SecretKeyEncoding;
-use abscissa::Callable;
+use abscissa::Runnable;
 use signatory::{ed25519, Encode};
 use std::{env, process};
 
@@ -10,9 +10,9 @@ pub struct KeygenCommand {
     output_paths: Vec<String>,
 }
 
-impl Callable for KeygenCommand {
+impl Runnable for KeygenCommand {
     /// Generate an Ed25519 secret key for use with a software provider (i.e. ed25519-dalek)
-    fn call(&self) {
+    fn run(&self) {
         if self.output_paths.len() != 1 {
             eprintln!("Usage: {} keygen [PATH]", env::args().next().unwrap());
             process::exit(2);

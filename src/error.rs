@@ -1,11 +1,8 @@
-// Error types
+//! Error types
 
 use crate::{chain, prost};
-use abscissa::Error;
-use signatory;
 use std::{
     any::Any,
-    error::Error as StdError,
     fmt::{self, Display},
     io,
 };
@@ -13,17 +10,17 @@ use tendermint::amino_types::validate::ValidationError;
 
 /// Error type
 #[derive(Debug)]
-pub struct KmsError(Error<KmsErrorKind>);
+pub struct Error(abscissa::Error<ErrorKind>);
 
-impl KmsError {
+impl Error {
     /// Create an error from a panic
     pub fn from_panic(msg: &dyn Any) -> Self {
         if let Some(e) = msg.downcast_ref::<String>() {
-            err!(KmsErrorKind::PanicError, e)
+            err!(ErrorKind::PanicError, e)
         } else if let Some(e) = msg.downcast_ref::<&str>() {
-            err!(KmsErrorKind::PanicError, e)
+            err!(ErrorKind::PanicError, e)
         } else {
-            err!(KmsErrorKind::PanicError, "unknown cause")
+            err!(ErrorKind::PanicError, "unknown cause")
         }
         .into()
     }
@@ -31,7 +28,7 @@ impl KmsError {
 
 /// Kinds of errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum KmsErrorKind {
+pub enum ErrorKind {
     /// Access denied
     #[fail(display = "access denied")]
     #[cfg(feature = "yubihsm")]
@@ -94,81 +91,73 @@ pub enum KmsErrorKind {
     ExceedMaxHeight,
 }
 
-impl Display for KmsError {
+impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
     }
 }
 
-impl From<Error<KmsErrorKind>> for KmsError {
-    fn from(other: Error<KmsErrorKind>) -> Self {
-        KmsError(other)
+impl From<ErrorKind> for Error {
+    fn from(kind: ErrorKind) -> Error {
+        Error(abscissa::Error::new(kind, None))
     }
 }
 
-impl From<io::Error> for KmsError {
+impl From<abscissa::Error<ErrorKind>> for Error {
+    fn from(other: abscissa::Error<ErrorKind>) -> Self {
+        Error(other)
+    }
+}
+
+impl From<io::Error> for Error {
     fn from(other: io::Error) -> Self {
-        err!(KmsErrorKind::IoError, other).into()
+        err!(ErrorKind::IoError, other).into()
     }
 }
 
-impl From<prost::DecodeError> for KmsError {
+impl From<prost::DecodeError> for Error {
     fn from(other: prost::DecodeError) -> Self {
-        err!(KmsErrorKind::ProtocolError, other).into()
+        err!(ErrorKind::ProtocolError, other).into()
     }
 }
 
-impl From<prost::EncodeError> for KmsError {
+impl From<prost::EncodeError> for Error {
     fn from(other: prost::EncodeError) -> Self {
-        err!(KmsErrorKind::ProtocolError, other).into()
+        err!(ErrorKind::ProtocolError, other).into()
     }
 }
 
-impl From<serde_json::error::Error> for KmsError {
+impl From<serde_json::error::Error> for Error {
     fn from(other: serde_json::error::Error) -> Self {
-        err!(KmsErrorKind::SerializationError, other).into()
+        err!(ErrorKind::SerializationError, other).into()
     }
 }
 
-impl From<signatory::Error> for KmsError {
-    fn from(other: signatory::Error) -> Self {
-        let kind = match other.kind() {
-            signatory::ErrorKind::Io => KmsErrorKind::IoError,
-            signatory::ErrorKind::KeyInvalid => KmsErrorKind::InvalidKey,
-            signatory::ErrorKind::ParseError => KmsErrorKind::ParseError,
-            signatory::ErrorKind::ProviderError => KmsErrorKind::SigningError,
-            signatory::ErrorKind::SignatureInvalid => KmsErrorKind::VerificationError,
-        };
-
-        Error::new(kind, Some(other.description().to_owned())).into()
-    }
-}
-
-impl From<tendermint::Error> for KmsError {
+impl From<tendermint::Error> for Error {
     fn from(other: tendermint::error::Error) -> Self {
         let kind = match other {
-            tendermint::Error::Crypto => KmsErrorKind::CryptoError,
-            tendermint::Error::InvalidKey => KmsErrorKind::InvalidKey,
-            tendermint::Error::Io => KmsErrorKind::IoError,
-            tendermint::Error::Protocol => KmsErrorKind::ProtocolError,
+            tendermint::Error::Crypto => ErrorKind::CryptoError,
+            tendermint::Error::InvalidKey => ErrorKind::InvalidKey,
+            tendermint::Error::Io => ErrorKind::IoError,
+            tendermint::Error::Protocol => ErrorKind::ProtocolError,
             tendermint::Error::Length
             | tendermint::Error::Parse
-            | tendermint::Error::OutOfRange => KmsErrorKind::ParseError,
-            tendermint::Error::SignatureInvalid => KmsErrorKind::VerificationError,
+            | tendermint::Error::OutOfRange => ErrorKind::ParseError,
+            tendermint::Error::SignatureInvalid => ErrorKind::VerificationError,
         };
 
-        Error::new(kind, None).into()
+        abscissa::Error::new(kind, None).into()
     }
 }
 
-impl From<ValidationError> for KmsError {
+impl From<ValidationError> for Error {
     fn from(other: ValidationError) -> Self {
-        err!(KmsErrorKind::InvalidMessageError, other).into()
+        err!(ErrorKind::InvalidMessageError, other).into()
     }
 }
 
-impl From<chain::state::StateError> for KmsError {
+impl From<chain::state::StateError> for Error {
     fn from(other: chain::state::StateError) -> Self {
-        err!(KmsErrorKind::DoubleSign, other).into()
+        err!(ErrorKind::DoubleSign, other).into()
     }
 }

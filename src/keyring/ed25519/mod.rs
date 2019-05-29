@@ -1,3 +1,5 @@
+//! Ed25519 signing keys
+
 pub use signatory::ed25519::{PublicKey, Seed, Signature, PUBLIC_KEY_SIZE};
 
 #[cfg(feature = "ledgertm")]
