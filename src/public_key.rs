@@ -43,15 +43,15 @@ pub enum PublicKey {
 
 impl PublicKey {
     /// From raw secp256k1 public key bytes
-    pub fn from_raw_secp256k1(bytes: &[u8]) -> Result<PublicKey, Error> {
-        Ok(PublicKey::Secp256k1(secp256k1::PublicKey::from_bytes(
+    pub fn from_raw_secp256k1(bytes: &[u8]) -> Option<PublicKey> {
+        Some(PublicKey::Secp256k1(secp256k1::PublicKey::from_bytes(
             bytes,
         )?))
     }
 
     /// From raw Ed25519 public key bytes
-    pub fn from_raw_ed25519(bytes: &[u8]) -> Result<PublicKey, Error> {
-        Ok(PublicKey::Ed25519(ed25519::PublicKey::from_bytes(bytes)?))
+    pub fn from_raw_ed25519(bytes: &[u8]) -> Option<PublicKey> {
+        Some(PublicKey::Ed25519(ed25519::PublicKey::from_bytes(bytes)?))
     }
 
     /// Get Ed25519 public key
@@ -178,10 +178,7 @@ impl<'de> Deserialize<'de> for Algorithm {
 
 /// Serialize the bytes of an Ed25519 public key as Base64. Used for serializing JSON
 #[cfg(feature = "serde")]
-fn serialize_ed25519_base64<S>(
-    pk: &signatory::ed25519::PublicKey,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
+fn serialize_ed25519_base64<S>(pk: &ed25519::PublicKey, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -193,7 +190,7 @@ where
 /// Serialize the bytes of a secp256k1 ECDSA public key as Base64. Used for serializing JSON
 #[cfg(feature = "serde")]
 fn serialize_secp256k1_base64<S>(
-    pk: &signatory::ecdsa::curve::secp256k1::PublicKey,
+    pk: &secp256k1::PublicKey,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where
@@ -205,17 +202,14 @@ where
 }
 
 #[cfg(feature = "serde")]
-fn deserialize_ed25519_base64<'de, D>(
-    deserializer: D,
-) -> Result<signatory::ed25519::PublicKey, D::Error>
+fn deserialize_ed25519_base64<'de, D>(deserializer: D) -> Result<ed25519::PublicKey, D::Error>
 where
     D: Deserializer<'de>,
 {
     let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
         .map_err(|e| D::Error::custom(format!("{}", e)))?;
 
-    signatory::ed25519::PublicKey::from_bytes(&bytes)
-        .map_err(|e| D::Error::custom(format!("{}", e)))
+    ed25519::PublicKey::from_bytes(&bytes).ok_or_else(|| D::Error::custom("invalid ed25519 key"))
 }
 
 #[cfg(feature = "serde")]
@@ -228,8 +222,8 @@ where
     let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
         .map_err(|e| D::Error::custom(format!("{}", e)))?;
 
-    signatory::ecdsa::curve::secp256k1::PublicKey::from_bytes(&bytes)
-        .map_err(|e| D::Error::custom(format!("{}", e)))
+    secp256k1::PublicKey::from_bytes(&bytes)
+        .ok_or_else(|| D::Error::custom("invalid secp256k1 key"))
 }
 
 #[cfg(test)]

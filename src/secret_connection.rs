@@ -11,7 +11,7 @@ use bytes::BufMut;
 use prost::{encoding::encode_varint, Message};
 use rand_os::OsRng;
 use ring::aead;
-use signatory::{ed25519, Signature, Signer};
+use signatory::{ed25519, Signature, Signer, Verifier};
 use signatory_dalek::Ed25519Verifier;
 use std::{
     cmp,
@@ -83,13 +83,14 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 .map_err(|_| Error::Crypto)?,
             send_secret: aead::SealingKey::new(&aead::CHACHA20_POLY1305, &kdf.send_secret)
                 .map_err(|_| Error::Crypto)?,
-            remote_pubkey: PublicKey::from(ed25519::PublicKey::from_bytes(
-                remote_eph_pubkey.as_bytes(),
-            )?),
+            remote_pubkey: PublicKey::from(
+                ed25519::PublicKey::from_bytes(remote_eph_pubkey.as_bytes())
+                    .ok_or_else(|| Error::Crypto)?,
+            ),
         };
 
         // Sign the challenge bytes for authentication.
-        let local_signature = sign_challenge(kdf.challenge, local_privkey)?;
+        let local_signature = sign_challenge(&kdf.challenge, local_privkey)?;
 
         // Share (in secret) each other's pubkey & challenge signature
         let auth_sig_msg = match local_pubkey {
@@ -98,12 +99,13 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
             }
         };
 
-        let remote_pubkey = ed25519::PublicKey::from_bytes(&auth_sig_msg.key)?;
+        let remote_pubkey =
+            ed25519::PublicKey::from_bytes(&auth_sig_msg.key).ok_or_else(|| Error::Crypto)?;
         let remote_signature: &[u8] = &auth_sig_msg.sig;
         let remote_sig = ed25519::Signature::from_bytes(remote_signature)?;
 
         let remote_verifier = Ed25519Verifier::from(&remote_pubkey);
-        ed25519::verify(&remote_verifier, &kdf.challenge, &remote_sig)?;
+        remote_verifier.verify(&kdf.challenge, &remote_sig)?;
 
         // We've authorized.
         sc.remote_pubkey = PublicKey::from(remote_pubkey);
@@ -318,10 +320,10 @@ fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
 
 // Sign the challenge with the local private key
 fn sign_challenge(
-    challenge: [u8; 32],
+    challenge: &[u8; 32],
     local_privkey: &dyn Signer<ed25519::Signature>,
 ) -> Result<ed25519::Signature, Error> {
-    ed25519::sign(local_privkey, &challenge).map_err(|_| Error::Crypto)
+    local_privkey.try_sign(challenge).map_err(|_| Error::Crypto)
 }
 
 // TODO(ismail): change from DecodeError to something more generic

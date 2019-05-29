@@ -77,13 +77,7 @@ impl From<subtle_encoding::Error> for Error {
 }
 
 impl From<signatory::Error> for Error {
-    fn from(other: signatory::Error) -> Self {
-        match other.kind() {
-            signatory::ErrorKind::Io => Error::Io,
-            signatory::ErrorKind::KeyInvalid => Error::InvalidKey,
-            signatory::ErrorKind::ParseError => Error::Parse,
-            signatory::ErrorKind::ProviderError => Error::Crypto,
-            signatory::ErrorKind::SignatureInvalid => Error::SignatureInvalid,
-        }
+    fn from(_other: signatory::Error) -> Self {
+        Error::Crypto
     }
 }
