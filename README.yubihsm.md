@@ -365,7 +365,7 @@ command without creating a backup, the `keys export` subcommand can also
 export a backup:
 
 ```
-$ yubihsm keys export --id 1 steakz4u2-validator-key.enc
+$ tmkms yubihsm keys export --id 1 steakz4u2-validator-key.enc
   Exported key 0x0001 (encrypted under wrap key 0x0001) to steakz4u2-validator-key.enc
 ```
 
