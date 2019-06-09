@@ -1,4 +1,4 @@
-use abscissa::Callable;
+use abscissa::Runnable;
 use bip39::Mnemonic;
 use chrono::{SecondsFormat, Utc};
 use hkdf::Hkdf;
@@ -63,9 +63,9 @@ pub struct SetupCommand {
     pub write_report: Option<PathBuf>,
 }
 
-impl Callable for SetupCommand {
+impl Runnable for SetupCommand {
     /// Perform initial YubiHSM dervice provisioning
-    fn call(&self) {
+    fn run(&self) {
         let hsm_connector = crate::yubihsm::connector();
         let hsm_serial_number = get_hsm_client(&hsm_connector)
             .device_info()

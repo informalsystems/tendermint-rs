@@ -18,27 +18,20 @@ extern crate prost_amino as prost;
 #[macro_use]
 extern crate abscissa;
 #[macro_use]
-extern crate abscissa_derive;
-#[macro_use]
-extern crate failure_derive;
-#[macro_use]
-extern crate lazy_static;
-#[macro_use]
-extern crate serde_derive;
+extern crate log;
 
-#[macro_use]
-mod error;
-
-mod application;
-mod chain;
-mod client;
-mod commands;
-mod config;
-mod keyring;
-mod rpc;
-mod session;
-mod unix_connection;
+pub mod application;
+pub mod chain;
+pub mod client;
+pub mod commands;
+pub mod config;
+pub mod error;
+pub mod keyring;
+pub mod prelude;
+pub mod rpc;
+pub mod session;
+pub mod unix_connection;
 #[cfg(feature = "yubihsm")]
-mod yubihsm;
+pub mod yubihsm;
 
 pub use crate::{application::KmsApplication, unix_connection::UnixConnection};

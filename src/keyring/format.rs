@@ -1,5 +1,6 @@
 //! Chain-specific key configuration
 
+use serde::Deserialize;
 use tendermint::TendermintKey;
 
 /// Options for how keys for this chain are represented

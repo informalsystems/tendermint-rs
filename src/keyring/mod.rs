@@ -9,7 +9,7 @@ pub use self::{format::Format, providers::SigningProvider};
 use crate::{
     chain,
     config::provider::ProviderConfig,
-    error::{KmsError, KmsErrorKind::*},
+    error::{Error, ErrorKind::*},
 };
 use std::collections::BTreeMap;
 use subtle_encoding;
@@ -18,6 +18,7 @@ use tendermint::TendermintKey;
 /// File encoding for software-backed secret keys
 pub type SecretKeyEncoding = subtle_encoding::Base64;
 
+/// Signing keyring
 pub struct KeyRing {
     /// Keys in the keyring
     keys: BTreeMap<TendermintKey, Signer>,
@@ -37,7 +38,7 @@ impl KeyRing {
 
     /// Add a key to the keyring, returning an error if we already have a
     /// signer registered for the given public key
-    pub fn add(&mut self, signer: Signer) -> Result<(), KmsError> {
+    pub fn add(&mut self, signer: Signer) -> Result<(), Error> {
         let provider = signer.provider();
         let public_key = signer.public_key();
         let public_key_serialized = self.format.serialize(public_key);
@@ -65,7 +66,7 @@ impl KeyRing {
     }
 
     /// Get the default public key for this keyring
-    pub fn default_pubkey(&self) -> Result<TendermintKey, KmsError> {
+    pub fn default_pubkey(&self) -> Result<TendermintKey, Error> {
         let mut keys = self.keys.keys();
 
         if keys.len() == 1 {
@@ -81,7 +82,7 @@ impl KeyRing {
         &self,
         public_key: Option<&TendermintKey>,
         msg: &[u8],
-    ) -> Result<ed25519::Signature, KmsError> {
+    ) -> Result<ed25519::Signature, Error> {
         let signer = match public_key {
             Some(public_key) => self
                 .keys
@@ -104,10 +105,7 @@ impl KeyRing {
 }
 
 /// Initialize the keyring from the configuration file
-pub fn load_config(
-    registry: &mut chain::Registry,
-    config: &ProviderConfig,
-) -> Result<(), KmsError> {
+pub fn load_config(registry: &mut chain::Registry, config: &ProviderConfig) -> Result<(), Error> {
     #[cfg(feature = "softsign")]
     ed25519::softsign::init(registry, &config.softsign)?;
 

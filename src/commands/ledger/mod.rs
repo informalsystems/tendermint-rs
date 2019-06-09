@@ -1,26 +1,19 @@
 //! Subcommands of the `tmkms` command-line application
 
-use crate::chain;
-use crate::config::KmsConfig;
-use abscissa::{Callable, GlobalConfig};
+use crate::{chain, prelude::*};
+use abscissa::{Command, Runnable};
 use std::process;
-use tendermint::amino_types::vote::{SignVoteRequest, Vote};
-use tendermint::amino_types::{SignableMsg, SignedMsgType};
+use tendermint::amino_types::{
+    vote::{SignVoteRequest, Vote},
+    SignableMsg, SignedMsgType,
+};
 
-#[derive(Debug, Options)]
+/// `ledger` subcommand
+#[derive(Command, Debug, Options, Runnable)]
 pub enum LedgerCommand {
+    /// Initialize HRS values
     #[options(help = "initialise the height/round/step")]
     Initialise(InitCommand),
-}
-
-impl_command!(LedgerCommand);
-
-impl Callable for LedgerCommand {
-    fn call(&self) {
-        match self {
-            LedgerCommand::Initialise(init) => init.call(),
-        }
-    }
 }
 
 impl LedgerCommand {
@@ -31,21 +24,25 @@ impl LedgerCommand {
     }
 }
 
+/// `ledger init` subcommand
 #[derive(Debug, Options)]
 pub struct InitCommand {
+    /// config file path
     #[options(short = "c", long = "config")]
     pub config: Option<String>,
 
+    /// block height
     #[options(short = "h", long = "height")]
     pub height: Option<i64>,
 
+    /// block round
     #[options(short = "r", long = "round")]
     pub round: Option<i64>,
 }
 
-impl Callable for InitCommand {
-    fn call(&self) {
-        let config = KmsConfig::get_global();
+impl Runnable for InitCommand {
+    fn run(&self) {
+        let config = app_config();
 
         chain::load_config(&config).unwrap_or_else(|e| {
             status_err!("error loading configuration: {}", e);

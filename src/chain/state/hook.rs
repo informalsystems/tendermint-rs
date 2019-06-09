@@ -2,8 +2,9 @@
 
 use crate::{
     config::chain::HookConfig,
-    error::{KmsError, KmsErrorKind::HookError},
+    error::{Error, ErrorKind::HookError},
 };
+use serde::Deserialize;
 use std::{process::Command, time::Duration};
 use tendermint::block;
 use wait_timeout::ChildExt;
@@ -16,7 +17,7 @@ const DEFAULT_TIMEOUT_SECS: u64 = 1;
 pub const BLOCK_HEIGHT_SANITY_LIMIT: u64 = 9000;
 
 /// Run the given hook command to obtain the last signing state
-pub fn run(config: &HookConfig) -> Result<Output, KmsError> {
+pub fn run(config: &HookConfig) -> Result<Output, Error> {
     let mut child = Command::new(&config.cmd[0])
         .args(&config.cmd[1..])
         .spawn()?;

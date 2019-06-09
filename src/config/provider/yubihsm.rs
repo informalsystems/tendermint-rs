@@ -1,11 +1,10 @@
 //! Configuration for the `YubiHSM` backend
 
 use crate::chain;
-use abscissa::{
-    secrets::{BorrowSecret, DebugSecret, Secret},
-    util::Zeroize,
-};
+use abscissa::secret::{CloneableSecret, DebugSecret, ExposeSecret, Secret};
+use serde::Deserialize;
 use yubihsm::{Credentials, HttpConfig};
+use zeroize::Zeroize;
 
 /// The (optional) `[providers.yubihsm]` config section
 #[derive(Clone, Deserialize, Debug)]
@@ -58,26 +57,24 @@ pub struct AuthConfig {
 impl AuthConfig {
     /// Get the `yubihsm::Credentials` for this `AuthConfig`
     pub fn credentials(&self) -> Credentials {
-        Credentials::from_password(self.key, self.password.borrow_secret().0.as_bytes())
+        Credentials::from_password(self.key, self.password.expose_secret().0.as_bytes())
     }
 }
 
 /// Password to the YubiHSM
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Zeroize)]
+#[zeroize(drop)]
 pub struct Password(String);
 
+impl CloneableSecret for Password {}
+
 impl DebugSecret for Password {
-    fn debug_secret(&self) -> &'static str {
+    fn debug_secret() -> &'static str {
         "REDACTED PASSWORD"
     }
 }
 
-impl Zeroize for Password {
-    fn zeroize(&mut self) {
-        self.0.zeroize();
-    }
-}
-
+/// Signing key configuration
 #[derive(Clone, Debug, Deserialize)]
 pub struct SigningKeyConfig {
     /// Chains this signing key is authorized to be used from

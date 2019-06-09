@@ -5,7 +5,7 @@ extern crate prost_amino as prost;
 use crate::prost::Message;
 use chrono::{DateTime, Utc};
 use rand::Rng;
-use signatory::{ed25519, encoding::Identity, Decode, Signature};
+use signatory::{ed25519, encoding::Identity, Decode, PublicKeyed, Signature, Verifier};
 use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
 use std::{
     fs,
@@ -189,8 +189,7 @@ impl KmsProcess {
 
                 // Here we reply to the kms with a "remote" ephermal key, auth signature etc:
                 let socket_cp = sock.try_clone().unwrap();
-                let public_key =
-                    secret_connection::PublicKey::from(signatory::public_key(&signer).unwrap());
+                let public_key = secret_connection::PublicKey::from(signer.public_key().unwrap());
 
                 KmsConnection::SecretConnection(
                     SecretConnection::new(socket_cp, &public_key, &signer).unwrap(),
@@ -285,7 +284,7 @@ impl io::Read for ProtocolTester {
 fn test_key() -> (ed25519::PublicKey, Ed25519Signer) {
     let seed = ed25519::Seed::decode_from_file(SIGNING_KEY_PATH, &Identity::default()).unwrap();
     let signer = Ed25519Signer::from(&seed);
-    (signatory::public_key(&signer).unwrap(), signer)
+    (signer.public_key().unwrap(), signer)
 }
 
 /// Extract the actual length of an amino message
@@ -348,7 +347,7 @@ fn test_handle_and_sign_proposal() {
         let signature = ed25519::Signature::from_bytes(prop.signature).unwrap();
         let msg: &[u8] = sign_bytes.as_slice();
 
-        ed25519::verify(&verifier, msg, &signature).unwrap();
+        verifier.verify(msg, &signature).unwrap();
     });
 }
 
@@ -414,7 +413,7 @@ fn test_handle_and_sign_vote() {
         let signature = ed25519::Signature::from_bytes(sig).unwrap();
         let msg: &[u8] = sign_bytes.as_slice();
 
-        ed25519::verify(&verifier, msg, &signature).unwrap();
+        verifier.verify(msg, &signature).unwrap();
     });
 }
 
@@ -481,7 +480,7 @@ fn test_exceed_max_height() {
         let signature = ed25519::Signature::from_bytes(sig).unwrap();
         let msg: &[u8] = sign_bytes.as_slice();
 
-        ed25519::verify(&verifier, msg, &signature).unwrap();
+        verifier.verify(msg, &signature).unwrap();
     });
 }
 
@@ -504,7 +503,6 @@ fn test_handle_and_sign_get_publickey() {
 
         let pk_resp = PubKeyResponse::decode(&resp).expect("decoding public key failed");
         assert_ne!(pk_resp.pub_key_ed25519.len(), 0);
-        println!("got public key: {:?}", pk_resp.pub_key_ed25519);
     });
 }
 

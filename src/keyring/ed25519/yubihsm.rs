@@ -3,7 +3,7 @@
 use crate::{
     chain,
     config::provider::yubihsm::YubihsmConfig,
-    error::{KmsError, KmsErrorKind::*},
+    error::{Error, ErrorKind::*},
     keyring::{ed25519::Signer, SigningProvider},
 };
 use signatory::PublicKeyed;
@@ -13,7 +13,7 @@ use tendermint::TendermintKey;
 pub fn init(
     chain_registry: &mut chain::Registry,
     yubihsm_configs: &[YubihsmConfig],
-) -> Result<(), KmsError> {
+) -> Result<(), Error> {
     if yubihsm_configs.is_empty() {
         return Ok(());
     }
@@ -28,11 +28,17 @@ pub fn init(
     }
 
     for config in &yubihsm_configs[0].keys {
-        let signer =
-            yubihsm::ed25519::Signer::create(crate::yubihsm::client().clone(), config.key)?;
+        let signer = yubihsm::ed25519::Signer::create(crate::yubihsm::client().clone(), config.key)
+            .map_err(|_| Error::from(InvalidKey))?;
 
         // TODO(tarcieri): support for adding account keys into keyrings
-        let public_key = TendermintKey::ConsensusKey(signer.public_key()?.into());
+        let public_key = TendermintKey::ConsensusKey(
+            signer
+                .public_key()
+                .map_err(|_| Error::from(InvalidKey))?
+                .into(),
+        );
+
         let signer = Signer::new(SigningProvider::Yubihsm, public_key, Box::new(signer));
 
         for chain_id in &config.chain_ids {

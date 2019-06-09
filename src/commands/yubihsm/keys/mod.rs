@@ -8,7 +8,7 @@ use self::{
     export::ExportCommand, generate::GenerateCommand, help::HelpCommand, import::ImportCommand,
     list::ListCommand,
 };
-use abscissa::Callable;
+use abscissa::{Command, Runnable};
 
 /// Default key type to generate
 pub const DEFAULT_KEY_TYPE: &str = "ed25519";
@@ -23,7 +23,7 @@ pub const DEFAULT_CAPABILITIES: yubihsm::Capability = yubihsm::Capability::SIGN_
 pub const DEFAULT_WRAP_KEY: yubihsm::object::Id = 1;
 
 /// The `yubihsm keys` subcommand
-#[derive(Debug, Options)]
+#[derive(Command, Debug, Options, Runnable)]
 pub enum KeysCommand {
     #[options(help = "export an encrypted backup of a signing key inside the HSM device")]
     Export(ExportCommand),
@@ -53,20 +53,3 @@ impl KeysCommand {
         }
     }
 }
-
-// TODO: refactor abscissa internally so this is all part of the proc macro
-impl Callable for KeysCommand {
-    /// Call the given command chosen via the CLI
-    fn call(&self) {
-        match self {
-            KeysCommand::Export(export) => export.call(),
-            KeysCommand::Generate(generate) => generate.call(),
-            KeysCommand::Help(help) => help.call(),
-            KeysCommand::Import(import) => import.call(),
-            KeysCommand::List(list) => list.call(),
-        }
-    }
-}
-
-// TODO: custom derive in abscissa
-impl_command!(KeysCommand);

@@ -1,9 +1,4 @@
-use crate::{
-    chain,
-    client::Client,
-    config::{KmsConfig, ValidatorConfig},
-};
-use abscissa::{Callable, GlobalConfig};
+use crate::{chain, client::Client, config::ValidatorConfig, prelude::*};
 use std::{
     process,
     sync::{
@@ -34,16 +29,16 @@ impl Default for StartCommand {
     }
 }
 
-impl Callable for StartCommand {
+impl Runnable for StartCommand {
     /// Run the KMS
-    fn call(&self) {
+    fn run(&self) {
         info!(
             "{} {} starting up...",
             env!("CARGO_PKG_NAME"),
             env!("CARGO_PKG_VERSION")
         );
 
-        let config = KmsConfig::get_global();
+        let config = app_config();
 
         chain::load_config(&config).unwrap_or_else(|e| {
             status_err!("error loading configuration: {}", e);

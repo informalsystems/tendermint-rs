@@ -1,4 +1,4 @@
-use abscissa::Callable;
+use abscissa::Runnable;
 use std::{
     thread,
     time::{Duration, Instant},
@@ -23,9 +23,9 @@ pub struct TestCommand {
     key_id: u16,
 }
 
-impl Callable for TestCommand {
+impl Runnable for TestCommand {
     /// Perform a signing test using the current HSM configuration
-    fn call(&self) {
+    fn run(&self) {
         let hsm = crate::yubihsm::client();
 
         loop {

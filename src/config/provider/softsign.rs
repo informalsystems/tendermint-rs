@@ -1,10 +1,11 @@
 //! Configuration for software-backed signer (using ed25519-dalek)
 
 use crate::chain;
+use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
 /// Software signer configuration
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct SoftSignConfig {
     /// Chains this signing key is authorized to be used from
     pub chain_ids: Vec<chain::Id>,
@@ -15,7 +16,7 @@ pub struct SoftSignConfig {
 }
 
 /// Software-backed private key (stored in a file)
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct SoftPrivateKey(PathBuf);
 
 impl SoftPrivateKey {

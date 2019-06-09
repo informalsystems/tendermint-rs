@@ -1,8 +1,11 @@
+//! Application-local YubiHSM configuration and initialization
+
 use crate::{
-    config::{provider::yubihsm::YubihsmConfig, KmsConfig},
-    error::{KmsError, KmsErrorKind},
+    config::provider::yubihsm::YubihsmConfig,
+    error::{Error, ErrorKind},
+    prelude::*,
 };
-use abscissa::{Error, GlobalConfig};
+use lazy_static::lazy_static;
 use std::{
     process,
     sync::{Mutex, MutexGuard},
@@ -15,7 +18,10 @@ use {
 };
 
 lazy_static! {
+    /// Connection to the YubiHSM device
     static ref HSM_CONNECTOR: Connector = init_connector();
+
+    /// Authenticated client connection to the YubiHSM device
     static ref HSM_CLIENT: Mutex<Client> = Mutex::new(init_client());
 }
 
@@ -67,7 +73,7 @@ fn init_client() -> Client {
 
 /// Get the YubiHSM-related configuration
 pub fn config() -> YubihsmConfig {
-    let kms_config = KmsConfig::get_global();
+    let kms_config = app_config();
     let yubihsm_configs = &kms_config.providers.yubihsm;
 
     if yubihsm_configs.len() != 1 {
@@ -81,67 +87,61 @@ pub fn config() -> YubihsmConfig {
     yubihsm_configs[0].clone()
 }
 
-impl From<yubihsm::ClientError> for KmsError {
-    fn from(other: yubihsm::ClientError) -> KmsError {
-        Error::new(KmsErrorKind::from(other.kind()), Some(other.to_string())).into()
+impl From<yubihsm::client::Error> for Error {
+    fn from(other: yubihsm::client::Error) -> Error {
+        abscissa::Error::new(ErrorKind::from(other.kind()), Some(other.to_string())).into()
     }
 }
 
-impl From<yubihsm::connector::ConnectionErrorKind> for KmsErrorKind {
-    fn from(other: yubihsm::connector::ConnectionErrorKind) -> KmsErrorKind {
-        use yubihsm::connector::ConnectionErrorKind;
-
+impl From<yubihsm::connector::ErrorKind> for ErrorKind {
+    fn from(other: yubihsm::connector::ErrorKind) -> ErrorKind {
         match other {
-            ConnectionErrorKind::AddrInvalid => KmsErrorKind::ConfigError,
-            ConnectionErrorKind::AccessDenied => KmsErrorKind::AccessError,
-            ConnectionErrorKind::IoError
-            | ConnectionErrorKind::ConnectionFailed
-            | ConnectionErrorKind::DeviceBusyError
-            | ConnectionErrorKind::RequestError
-            | ConnectionErrorKind::ResponseError
-            | ConnectionErrorKind::UsbError => KmsErrorKind::IoError,
+            yubihsm::connector::ErrorKind::AddrInvalid => ErrorKind::ConfigError,
+            yubihsm::connector::ErrorKind::AccessDenied => ErrorKind::AccessError,
+            yubihsm::connector::ErrorKind::IoError
+            | yubihsm::connector::ErrorKind::ConnectionFailed
+            | yubihsm::connector::ErrorKind::DeviceBusyError
+            | yubihsm::connector::ErrorKind::RequestError
+            | yubihsm::connector::ErrorKind::ResponseError
+            | yubihsm::connector::ErrorKind::UsbError => ErrorKind::IoError,
         }
     }
 }
 
-impl From<yubihsm::client::ClientErrorKind> for KmsErrorKind {
-    fn from(other: yubihsm::client::ClientErrorKind) -> KmsErrorKind {
-        use yubihsm::client::ClientErrorKind;
-
+impl From<yubihsm::client::ErrorKind> for ErrorKind {
+    fn from(other: yubihsm::client::ErrorKind) -> ErrorKind {
         match other {
-            ClientErrorKind::AuthenticationError => KmsErrorKind::AccessError,
-            ClientErrorKind::ConnectionError { kind } => kind.into(),
-            ClientErrorKind::DeviceError { kind } => kind.into(),
-            ClientErrorKind::CreateFailed
-            | ClientErrorKind::ProtocolError
-            | ClientErrorKind::ClosedSessionError
-            | ClientErrorKind::ResponseError => KmsErrorKind::IoError,
+            yubihsm::client::ErrorKind::AuthenticationError => ErrorKind::AccessError,
+            yubihsm::client::ErrorKind::ConnectorError { kind } => kind.into(),
+            yubihsm::client::ErrorKind::DeviceError { kind } => kind.into(),
+            yubihsm::client::ErrorKind::CreateFailed
+            | yubihsm::client::ErrorKind::ProtocolError
+            | yubihsm::client::ErrorKind::ClosedSessionError
+            | yubihsm::client::ErrorKind::ResponseError => ErrorKind::IoError,
         }
     }
 }
 
-impl From<yubihsm::DeviceErrorKind> for KmsErrorKind {
-    fn from(other: yubihsm::device::DeviceErrorKind) -> KmsErrorKind {
-        use yubihsm::device::DeviceErrorKind;
-
+impl From<yubihsm::device::ErrorKind> for ErrorKind {
+    fn from(other: yubihsm::device::ErrorKind) -> ErrorKind {
         // TODO(tarcieri): better map these to approriate KMS errors
         match other {
-            DeviceErrorKind::AuthenticationFailed => KmsErrorKind::AccessError,
-            DeviceErrorKind::InvalidCommand
-            | DeviceErrorKind::InvalidData
-            | DeviceErrorKind::InvalidSession
-            | DeviceErrorKind::SessionsFull
-            | DeviceErrorKind::SessionFailed
-            | DeviceErrorKind::StorageFailed
-            | DeviceErrorKind::WrongLength
-            | DeviceErrorKind::InsufficientPermissions
-            | DeviceErrorKind::LogFull
-            | DeviceErrorKind::ObjectNotFound
-            | DeviceErrorKind::InvalidId
-            | DeviceErrorKind::InvalidOtp
-            | DeviceErrorKind::GenericError
-            | DeviceErrorKind::ObjectExists => KmsErrorKind::SigningError,
-            _ => KmsErrorKind::SigningError,
+            yubihsm::device::ErrorKind::AuthenticationFailed => ErrorKind::AccessError,
+            yubihsm::device::ErrorKind::InvalidCommand
+            | yubihsm::device::ErrorKind::InvalidData
+            | yubihsm::device::ErrorKind::InvalidSession
+            | yubihsm::device::ErrorKind::SessionsFull
+            | yubihsm::device::ErrorKind::SessionFailed
+            | yubihsm::device::ErrorKind::StorageFailed
+            | yubihsm::device::ErrorKind::WrongLength
+            | yubihsm::device::ErrorKind::InsufficientPermissions
+            | yubihsm::device::ErrorKind::LogFull
+            | yubihsm::device::ErrorKind::ObjectNotFound
+            | yubihsm::device::ErrorKind::InvalidId
+            | yubihsm::device::ErrorKind::InvalidOtp
+            | yubihsm::device::ErrorKind::GenericError
+            | yubihsm::device::ErrorKind::ObjectExists => ErrorKind::SigningError,
+            _ => ErrorKind::SigningError,
         }
     }
 }

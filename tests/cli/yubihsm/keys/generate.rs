@@ -1,6 +1,7 @@
 //! Integration tests for the `yubihsm keys generate` subcommand
 
 use crate::cli;
+use std::str;
 
 #[test]
 fn keys_generate_command_test() {
@@ -10,15 +11,11 @@ fn keys_generate_command_test() {
     #[cfg(feature = "yubihsm-mock")]
     args.extend_from_slice(&["-c", super::KMS_CONFIG_PATH]);
 
-    let out = cli::run_successfully(args.as_slice());
+    let cmd_out = cli::run_successfully(args.as_slice());
+    assert_eq!(true, cmd_out.status.success());
+    assert_eq!(true, cmd_out.stderr.is_empty());
 
-    assert_eq!(true, out.status.success());
-    assert_eq!(true, out.stderr.is_empty());
-    assert_eq!(
-        true,
-        String::from_utf8(out.stdout)
-            .unwrap()
-            .trim()
-            .starts_with("Generated key #1:")
-    );
+    let stdout = str::from_utf8(&cmd_out.stdout).unwrap().trim().to_owned();
+    assert!(stdout.contains("Generated"));
+    assert!(stdout.contains("key 0x0001"));
 }

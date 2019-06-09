@@ -7,7 +7,7 @@
 
 use crate::{
     config::ValidatorConfig,
-    error::{KmsError, KmsErrorKind},
+    error::{Error, ErrorKind},
     keyring::SecretKeyEncoding,
     session::Session,
 };
@@ -120,7 +120,7 @@ fn tcp_session(
     port: u16,
     secret_key_path: &Path,
     should_term: &Arc<AtomicBool>,
-) -> Result<(), KmsError> {
+) -> Result<(), Error> {
     let secret_key = load_secret_connection_key(secret_key_path)?;
 
     let node_public_key =
@@ -145,7 +145,7 @@ fn tcp_session(
 
         session.request_loop(should_term)
     })
-    .unwrap_or_else(|ref e| Err(KmsError::from_panic(e)))
+    .unwrap_or_else(|ref e| Err(Error::from_panic(e)))
 }
 
 /// Create a validator session over a Unix domain socket
@@ -154,7 +154,7 @@ fn unix_session(
     max_height: Option<tendermint::block::Height>,
     socket_path: &Path,
     should_term: &Arc<AtomicBool>,
-) -> Result<(), KmsError> {
+) -> Result<(), Error> {
     panic::catch_unwind(move || {
         let mut session = Session::connect_unix(chain_id, max_height, socket_path)?;
 
@@ -166,16 +166,16 @@ fn unix_session(
 
         session.request_loop(should_term)
     })
-    .unwrap_or_else(|ref e| Err(KmsError::from_panic(e)))
+    .unwrap_or_else(|ref e| Err(Error::from_panic(e)))
 }
 
 /// Initialize KMS secret connection private key
-fn load_secret_connection_key(path: &Path) -> Result<ed25519::Seed, KmsError> {
+fn load_secret_connection_key(path: &Path) -> Result<ed25519::Seed, Error> {
     if path.exists() {
         Ok(
             ed25519::Seed::decode_from_file(path, &SecretKeyEncoding::default()).map_err(|e| {
                 err!(
-                    KmsErrorKind::ConfigError,
+                    ErrorKind::ConfigError,
                     "error loading SecretConnection key from {}: {}",
                     path.display(),
                     e
@@ -184,7 +184,8 @@ fn load_secret_connection_key(path: &Path) -> Result<ed25519::Seed, KmsError> {
         )
     } else {
         let seed = ed25519::Seed::generate();
-        seed.encode_to_file(path, &SecretKeyEncoding::default())?;
+        seed.encode_to_file(path, &SecretKeyEncoding::default())
+            .map_err(|_| Error::from(ErrorKind::IoError))?;
         Ok(seed)
     }
 }

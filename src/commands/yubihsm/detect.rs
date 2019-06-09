@@ -1,4 +1,4 @@
-use abscissa::Callable;
+use abscissa::Runnable;
 use std::process;
 use yubihsm::connector::usb::Devices;
 
@@ -14,9 +14,9 @@ pub struct DetectCommand {
     pub verbose: bool,
 }
 
-impl Callable for DetectCommand {
+impl Runnable for DetectCommand {
     /// Detect all YubiHSM2 devices connected via USB
-    fn call(&self) {
+    fn run(&self) {
         let devices = Devices::detect(Default::default()).unwrap_or_else(|e| {
             status_err!("couldn't detect USB devices: {}", e);
 

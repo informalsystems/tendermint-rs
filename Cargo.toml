@@ -16,37 +16,40 @@ members = [".", "tendermint-rs"]
 [badges]
 circle-ci = { repository = "tendermint/kms" }
 
+[dependencies.abscissa]
+version = "0.1.0-pre.1"
+default-features = false
+features = ["application", "signals", "secrets", "time"]
+
 [dependencies]
-abscissa = "0.0.6"
-abscissa_derive = "0.0.2"
 atomicwrites = "0.2"
 byteorder = "1.2"
 bytes = "0.4"
 chrono = "0.4"
 failure = "0.1"
-failure_derive = "0.1"
+gumdrop = "0.5"
 hkdf = "0.7"
 hmac = "0.7"
 lazy_static = "1"
-ledger-tendermint = { version = "0.4.0", optional = true }
+log = "0.4"
 prost-amino = "0.4.0"
 prost-amino-derive = "0.4.0"
 rand_os = "0.1"
-serde = "1"
-serde_derive = "1"
+serde = { version = "1", features = ["serde_derive"] }
 serde_json = "1"
 sha2 = "0.8"
 signal-hook = "0.1.7"
-signatory = { version = "0.11.1", features = ["ed25519", "ecdsa"] }
-signatory-dalek = "0.11"
-signatory-secp256k1 = "0.11"
+signatory = { version = "0.12", features = ["ed25519", "ecdsa"] }
+signatory-dalek = "0.12"
+signatory-secp256k1 = "0.12"
+signatory-ledger-tm = { version = "0.12", optional = true }
 subtle = "2"
 subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
 tendermint = { version = "0.7", path = "tendermint-rs", features = ["amino-types", "secret-connection"] }
 tiny-bip39 = "0.6"
 wait-timeout = "0.2"
-yubihsm = { version = "0.22", features = ["setup", "usb"], optional = true }
-zeroize = "0.5"
+yubihsm = { version = "0.25", features = ["setup", "usb"], optional = true }
+zeroize = "0.9"
 
 [dev-dependencies]
 tempfile = "3"
@@ -55,7 +58,7 @@ rand = "0.6" # TODO: switch to the getrandom crate
 [features]
 default = []
 softsign = []
-ledgertm = ["ledger-tendermint"]
+ledgertm = ["signatory-ledger-tm"]
 yubihsm-mock = ["yubihsm/mockhsm"]
 
 # Enable integer overflow checks in release builds for security reasons

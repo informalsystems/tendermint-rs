@@ -2,12 +2,14 @@
 
 use super::{Chain, Guard, Id};
 use crate::{
-    error::{KmsError, KmsErrorKind::*},
+    error::{Error, ErrorKind::*},
     keyring,
 };
+use lazy_static::lazy_static;
 use std::{collections::BTreeMap, sync::RwLock};
 
 lazy_static! {
+    /// State of Tendermint blockchain networks
     pub static ref REGISTRY: GlobalRegistry = GlobalRegistry::default();
 }
 
@@ -21,7 +23,7 @@ impl Registry {
         &mut self,
         chain_id: &Id,
         signer: keyring::ed25519::Signer,
-    ) -> Result<(), KmsError> {
+    ) -> Result<(), Error> {
         // TODO(tarcieri):
         let chain = self.0.get_mut(chain_id).ok_or_else(|| {
             err!(
@@ -36,7 +38,7 @@ impl Registry {
     }
 
     /// Register a `Chain` with the registry
-    pub fn register_chain(&mut self, chain: Chain) -> Result<(), KmsError> {
+    pub fn register_chain(&mut self, chain: Chain) -> Result<(), Error> {
         let chain_id = chain.id;
 
         if self.0.insert(chain_id, chain).is_none() {
@@ -72,7 +74,7 @@ impl GlobalRegistry {
     }
 
     /// Register a chain with the registry
-    pub fn register(&self, chain: Chain) -> Result<(), KmsError> {
+    pub fn register(&self, chain: Chain) -> Result<(), Error> {
         // TODO(tarcieri): better handle `PoisonError` here?
         let mut registry = self.0.write().unwrap();
         registry.register_chain(chain)

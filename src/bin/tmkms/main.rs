@@ -1,9 +1,8 @@
 //! Main entry point for the `tmkms` executable
 
-extern crate tmkms;
-use tmkms::KmsApplication;
+use tmkms::application::APPLICATION;
 
 /// Boot the `tmkms` application
 fn main() {
-    KmsApplication::boot();
+    abscissa::boot(&APPLICATION);
 }

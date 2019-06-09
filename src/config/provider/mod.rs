@@ -1,3 +1,5 @@
+//! Cryptographic service providers: signing backends
+
 #[cfg(feature = "ledgertm")]
 pub mod ledgertm;
 #[cfg(feature = "softsign")]
@@ -11,9 +13,10 @@ use self::ledgertm::LedgerTendermintConfig;
 use self::softsign::SoftSignConfig;
 #[cfg(feature = "yubihsm")]
 use self::yubihsm::YubihsmConfig;
+use serde::Deserialize;
 
 /// Provider configuration
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct ProviderConfig {
     /// Software-backed signer
     #[cfg(feature = "softsign")]

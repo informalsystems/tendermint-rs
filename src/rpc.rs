@@ -1,17 +1,22 @@
 //! Remote Procedure Calls
 
+// TODO: docs for everything
+#![allow(missing_docs)]
+
 use crate::{
     prost::encoding::{decode_varint, encoded_len_varint},
     prost::Message,
 };
 
 use bytes::IntoBuf;
+use lazy_static::lazy_static;
 use sha2::{Digest, Sha256};
 use std::io::Cursor;
 use std::io::{self, Read};
 use std::io::{Error, ErrorKind};
 use tendermint::amino_types::*;
 
+/// Maximum size of an RPC message
 pub const MAX_MSG_LEN: usize = 1024;
 
 /// Requests to the KMS

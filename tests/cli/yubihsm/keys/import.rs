@@ -20,5 +20,5 @@ fn keys_import_priv_validator_test() {
     assert_eq!(true, out.stderr.is_empty());
 
     let message = str::from_utf8(&out.stdout).unwrap().trim().to_owned();
-    assert_eq!(true, message.starts_with("Imported key 0x0001"));
+    assert_eq!(true, message.contains("key 0x0001"));
 }

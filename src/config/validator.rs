@@ -1,3 +1,6 @@
+//! Validator configuration
+
+use serde::Deserialize;
 use std::path::PathBuf;
 use tendermint::{chain, net};
 
