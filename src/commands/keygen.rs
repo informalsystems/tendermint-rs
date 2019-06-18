@@ -1,12 +1,12 @@
 use crate::keyring::SecretKeyEncoding;
-use abscissa::Runnable;
+use abscissa::{Command, Runnable};
 use signatory::{ed25519, Encode};
 use std::{env, process};
 
 /// Options for the `keygen` command
-#[derive(Debug, Default, Options)]
+#[derive(Command, Debug, Default, Options)]
 pub struct KeygenCommand {
-    #[options(free)]
+    #[options(free, help = "path where generated key should be created")]
     output_paths: Vec<String>,
 }
 

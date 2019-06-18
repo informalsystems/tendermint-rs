@@ -1,14 +1,14 @@
+//! YubiHSM2 key management commands
+
 mod export;
 mod generate;
-mod help;
 mod import;
 mod list;
 
 use self::{
-    export::ExportCommand, generate::GenerateCommand, help::HelpCommand, import::ImportCommand,
-    list::ListCommand,
+    export::ExportCommand, generate::GenerateCommand, import::ImportCommand, list::ListCommand,
 };
-use abscissa::{Command, Runnable};
+use abscissa::{Command, Help, Runnable};
 
 /// Default key type to generate
 pub const DEFAULT_KEY_TYPE: &str = "ed25519";
@@ -32,7 +32,7 @@ pub enum KeysCommand {
     Generate(GenerateCommand),
 
     #[options(help = "show help for the 'yubihsm keys' subcommand")]
-    Help(HelpCommand),
+    Help(Help<Self>),
 
     #[options(help = "import validator signing key for the 'yubihsm keys' subcommand")]
     Import(ImportCommand),

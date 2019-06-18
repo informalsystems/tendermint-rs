@@ -1,16 +1,18 @@
-use abscissa::Runnable;
+//! Detect YubiHSM2s connected via USB
+
+use abscissa::{Command, Runnable};
 use std::process;
 use yubihsm::connector::usb::Devices;
 
 /// The `yubihsm detect` subcommand
-#[derive(Debug, Default, Options)]
+#[derive(Command, Debug, Default, Options)]
 pub struct DetectCommand {
     /// Path to configuration file
-    #[options(short = "c", long = "config")]
+    #[options(short = "c", long = "config", help = "path to tmkms.toml")]
     pub config: Option<String>,
 
     /// Print debugging information
-    #[options(short = "v", long = "verbose")]
+    #[options(short = "v", long = "verbose", help = "enable verbose debug logging")]
     pub verbose: bool,
 }
 

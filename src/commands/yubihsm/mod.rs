@@ -1,16 +1,12 @@
 //! The KMS `yubihsm` subcommand
 
 mod detect;
-mod help;
 mod keys;
 mod setup;
 mod test;
 
-pub use self::{
-    detect::DetectCommand, help::HelpCommand, keys::KeysCommand, setup::SetupCommand,
-    test::TestCommand,
-};
-use abscissa::{Command, Runnable};
+pub use self::{detect::DetectCommand, keys::KeysCommand, setup::SetupCommand, test::TestCommand};
+use abscissa::{Command, Help, Runnable};
 
 /// The `yubihsm` subcommand
 #[derive(Command, Debug, Options, Runnable)]
@@ -21,7 +17,7 @@ pub enum YubihsmCommand {
 
     /// Show help for the `yubihsm` subcommand
     #[options(help = "show help for the 'yubihsm' subcommand")]
-    Help(HelpCommand),
+    Help(Help<Self>),
 
     /// Key management subcommands
     #[options(help = "key management subcommands")]

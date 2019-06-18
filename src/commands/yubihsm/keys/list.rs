@@ -1,4 +1,4 @@
-//! List keys
+//! List keys inside the YubiHSM2
 
 use abscissa::{Command, Runnable};
 use std::process;
@@ -8,7 +8,7 @@ use tendermint::PublicKey;
 #[derive(Command, Debug, Default, Options)]
 pub struct ListCommand {
     /// Path to configuration file
-    #[options(short = "c", long = "config")]
+    #[options(short = "c", long = "config", help = "path to tmkms.toml")]
     pub config: Option<String>,
 }
 

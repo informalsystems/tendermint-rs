@@ -1,3 +1,5 @@
+//! Generate a new key within the YubiHSM2
+
 use super::*;
 use abscissa::{Command, Runnable};
 use chrono::{SecondsFormat, Utc};
@@ -15,35 +17,47 @@ use tendermint::PublicKey;
 #[derive(Command, Debug, Default, Options)]
 pub struct GenerateCommand {
     /// Path to configuration file
-    #[options(short = "c", long = "config")]
+    #[options(short = "c", long = "config", help = "path to tmkms.toml")]
     pub config: Option<String>,
 
     /// Label for generated key(s)
-    #[options(short = "l", long = "label")]
+    #[options(short = "l", long = "label", help = "label for generated key")]
     pub label: Option<String>,
 
     /// Bech32 prefix to use when displaying key
-    #[options(short = "p", long = "prefix")]
+    #[options(
+        short = "p",
+        long = "prefix",
+        help = "bech32 prefix to display generated key with"
+    )]
     pub bech32_prefix: Option<String>,
 
     /// Type of key to generate (default 'ed25519')
-    #[options(short = "t")]
+    #[options(short = "t", help = "type of key to generate (default: ed25519)")]
     pub key_type: Option<String>,
 
     /// Mark this key as non-exportable
-    #[options(no_short, long = "non-exportable")]
+    #[options(no_short, long = "non-exportable", help = "mark key as non-exportable")]
     pub non_exportable: bool,
 
     /// Create an encrypted backup of this key in the given file
-    #[options(short = "b", long = "backup")]
+    #[options(
+        short = "b",
+        long = "backup",
+        help = "path where encrypted backup should be written"
+    )]
     pub backup_file: Option<PathBuf>,
 
     /// Key ID of the wrap key to use when creating a backup
-    #[options(short = "w", long = "wrapkey")]
+    #[options(
+        short = "w",
+        long = "wrapkey",
+        help = "ID of wrap key to encrypt exported key"
+    )]
     pub wrap_key_id: Option<yubihsm::object::Id>,
 
     /// Key ID to generate
-    #[options(free)]
+    #[options(free, help = "key ID to generate")]
     key_ids: Vec<u16>,
 }
 

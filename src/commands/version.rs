@@ -3,15 +3,15 @@
 #![allow(clippy::never_loop)]
 
 use super::KmsCommand;
-use abscissa::{Command as CommandTrait, Runnable};
+use abscissa::{Command, Runnable};
 
 /// The `version` subcommand
-#[derive(Debug, Default, Options)]
+#[derive(Command, Debug, Default, Options)]
 pub struct VersionCommand {}
 
 impl Runnable for VersionCommand {
     /// Print version message
     fn run(&self) {
-        KmsCommand::print_package_info();
+        println!("{} {}", KmsCommand::name(), KmsCommand::version());
     }
 }

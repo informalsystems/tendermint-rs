@@ -25,7 +25,7 @@ impl LedgerCommand {
 }
 
 /// `ledger init` subcommand
-#[derive(Debug, Options)]
+#[derive(Command, Debug, Options)]
 pub struct InitCommand {
     /// config file path
     #[options(short = "c", long = "config")]
