@@ -1,3 +1,5 @@
+//! Create encrypted backups of YubiHSM2 keys
+
 use super::*;
 use abscissa::{Command, Runnable};
 use std::{fs::OpenOptions, io::Write, os::unix::fs::OpenOptionsExt, path::PathBuf, process};
@@ -7,19 +9,23 @@ use subtle_encoding::base64;
 #[derive(Command, Debug, Default, Options)]
 pub struct ExportCommand {
     /// Path to configuration file
-    #[options(short = "c", long = "config")]
+    #[options(short = "c", long = "config", help = "path to tmkms.toml")]
     pub config: Option<String>,
 
     /// ID of the key to export
-    #[options(short = "i", long = "id")]
+    #[options(short = "i", long = "id", help = "key to export in encrypted form")]
     pub key_id: u16,
 
     /// ID of the wrap key to encrypt the exported key under
-    #[options(short = "w", long = "wrapkey")]
+    #[options(
+        short = "w",
+        long = "wrapkey",
+        help = "wrap key to encrypt exported key"
+    )]
     pub wrap_key_id: Option<u16>,
 
     /// Path to write the resulting file to
-    #[options(free)]
+    #[options(free, help = "path where ciphertext of exported key will be written")]
     pub path: PathBuf,
 }
 

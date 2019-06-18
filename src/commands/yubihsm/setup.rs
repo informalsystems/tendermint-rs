@@ -1,4 +1,6 @@
-use abscissa::Runnable;
+//! Set up a new YubiHSM2 or restore from backup
+
+use abscissa::{Command, Runnable};
 use bip39::Mnemonic;
 use chrono::{SecondsFormat, Utc};
 use hkdf::Hkdf;
@@ -40,26 +42,30 @@ const VALIDATOR_ROLE_NAME: &str = "validator";
 
 /// The `yubihsm setup` subcommand: performs initial device provisioning
 /// including creation of initial authentication and wrap keys.
-#[derive(Debug, Default, Options)]
+#[derive(Command, Debug, Default, Options)]
 pub struct SetupCommand {
     /// Path to configuration file
-    #[options(short = "c", long = "config")]
+    #[options(short = "c", long = "config", help = "path to tmkms.toml")]
     pub config: Option<String>,
 
     /// Print debugging information
-    #[options(short = "v", long = "verbose")]
+    #[options(short = "v", long = "verbose", help = "enable verbose debug logging")]
     pub verbose: bool,
 
     /// Only print derived keys - do not reinitialize HSM
-    #[options(short = "p", long = "print-only")]
+    #[options(short = "p", long = "print-only", help = "print derived keys ONLY")]
     pub print_only: bool,
 
     /// Restore an HSM from an existing 24-word remonic
-    #[options(short = "r", long = "restore")]
+    #[options(short = "r", long = "restore", help = "restore from existing 24-words")]
     pub restore: bool,
 
     /// Write a provisioning report as JSON to the given filename
-    #[options(short = "w", long = "write-report")]
+    #[options(
+        short = "w",
+        long = "write-report",
+        help = "write report file at given path"
+    )]
     pub write_report: Option<PathBuf>,
 }
 

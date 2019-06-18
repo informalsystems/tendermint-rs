@@ -1,6 +1,8 @@
-use abscissa::Runnable;
+//! Test the YubiHSM2 is working by performing signatures successively
+
+use abscissa::{Command, Runnable};
 use std::{
-    thread,
+    process, thread,
     time::{Duration, Instant},
 };
 
@@ -8,24 +10,29 @@ use std::{
 const TEST_MESSAGE: &[u8; 128] = &[0u8; 128];
 
 /// The `yubihsm test` subcommand
-#[derive(Debug, Default, Options)]
+#[derive(Command, Debug, Default, Options)]
 pub struct TestCommand {
     /// Path to configuration file
-    #[options(short = "c", long = "config")]
+    #[options(short = "c", long = "config", help = "path to tmkms.toml")]
     pub config: Option<String>,
 
     /// Print debugging information
-    #[options(short = "v", long = "verbose")]
+    #[options(short = "v", long = "verbose", help = "enable verbose debug logging")]
     pub verbose: bool,
 
     /// Key ID to use for test
-    #[options(free)]
+    #[options(free, help = "Ed25519 signing key ID in YubiHSM")]
     key_id: u16,
 }
 
 impl Runnable for TestCommand {
     /// Perform a signing test using the current HSM configuration
     fn run(&self) {
+        if self.key_id == 0 {
+            status_err!("no key ID given");
+            process::exit(1);
+        }
+
         let hsm = crate::yubihsm::client();
 
         loop {

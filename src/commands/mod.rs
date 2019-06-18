@@ -1,6 +1,5 @@
 //! Subcommands of the `tmkms` command-line application
 
-mod help;
 mod keygen;
 mod start;
 mod version;
@@ -13,11 +12,9 @@ mod ledger;
 #[cfg(feature = "ledgertm")]
 pub use self::ledger::LedgerCommand;
 
-pub use self::{
-    help::HelpCommand, keygen::KeygenCommand, start::StartCommand, version::VersionCommand,
-};
+pub use self::{keygen::KeygenCommand, start::StartCommand, version::VersionCommand};
 use crate::config::{KmsConfig, CONFIG_ENV_VAR, CONFIG_FILE_NAME};
-use abscissa::{Command, Configurable, Runnable};
+use abscissa::{Command, Configurable, Help, Runnable};
 use std::{env, path::PathBuf};
 
 /// Subcommands of the KMS command-line application
@@ -25,7 +22,7 @@ use std::{env, path::PathBuf};
 pub enum KmsCommand {
     /// `help` subcommand
     #[options(help = "show help for a command")]
-    Help(HelpCommand),
+    Help(Help<Self>),
 
     /// `keygen` subcommand
     #[options(help = "generate a new software signing key")]

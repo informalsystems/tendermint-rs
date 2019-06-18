@@ -1,4 +1,4 @@
-//! Import keys
+//! Import keys either from encrypted backups or existing plaintext keys
 
 use super::*;
 use abscissa::{Command, Runnable};
@@ -12,27 +12,27 @@ use yubihsm::object;
 #[derive(Command, Debug, Default, Options)]
 pub struct ImportCommand {
     /// Path to configuration file
-    #[options(short = "c", long = "config")]
+    #[options(short = "c", long = "config", help = "path to tmkms.toml")]
     pub config: Option<String>,
 
     /// ID of the key to import (if applicable)
-    #[options(short = "i", long = "id")]
+    #[options(short = "i", long = "id", help = "key ID to import")]
     pub key_id: Option<u16>,
 
     /// ID of the wrap key the original key was encrypted with
-    #[options(short = "w", long = "wrapkey")]
+    #[options(short = "w", long = "wrapkey", help = "wrap key to decrypt with")]
     pub wrap_key_id: Option<u16>,
 
     /// Type of key to import (either `wrap` or `priv_validator`, default `wrap`)
-    #[options(short = "t")]
+    #[options(short = "t", help = "type of key to import (wrap or priv_validator)")]
     pub key_type: Option<String>,
 
     /// Label for imported key (only applicable to `priv_validator` keys)
-    #[options(short = "l", long = "label")]
+    #[options(short = "l", long = "label", help = "label for priv_validator keys")]
     pub label: Option<String>,
 
     /// Path to the key to import
-    #[options(free)]
+    #[options(free, help = "path to key to import")]
     pub path: PathBuf,
 }
 
