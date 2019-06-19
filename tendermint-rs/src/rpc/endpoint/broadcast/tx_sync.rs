@@ -1,7 +1,9 @@
 //! `/broadcast_tx_sync`: returns with the response from `CheckTx`.
 
-use super::{Code, Data, Log};
-use crate::{rpc, transaction, Transaction};
+use crate::{
+    abci::{transaction, Code, Data, Log, Transaction},
+    rpc,
+};
 use serde::{Deserialize, Serialize};
 
 /// `/broadcast_tx_sync`: returns with the response from `CheckTx`.

@@ -6,7 +6,7 @@ pub use self::hash::Hash;
 use std::slice;
 #[cfg(feature = "serde")]
 use {
-    serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer},
+    serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
     subtle_encoding::base64,
 };
 

@@ -3,6 +3,7 @@
 [![Crate][crate-image]][crate-link]
 [![Build Status][build-image]][build-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
+![Rust 1.35+][rustc-image]
 
 Key Management System for [Tendermint] applications, initially targeting
 [Cosmos Validators].
@@ -215,6 +216,7 @@ limitations under the License.
 [build-link]: https://circleci.com/gh/tendermint/kms
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
 [license-link]: https://github.com/tendermint/kms/blob/master/LICENSE
+[rustc-image]: https://img.shields.io/badge/rustc-1.35+-blue.svg
 [Tendermint]: https://tendermint.com/
 [Cosmos Validators]: https://cosmos.network/docs/gaia/validators/validator-faq.html
 [YubiHSM 2]: https://github.com/tendermint/kms/blob/master/README.yubihsm.md

@@ -16,7 +16,7 @@ pub use self::{
     meta::Meta,
     size::Size,
 };
-use crate::{evidence, transaction};
+use crate::{abci::transaction, evidence};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

@@ -1,10 +1,11 @@
 //! Tendermint RPC client
 
 use crate::{
+    abci::Transaction,
     block::Height,
     net,
     rpc::{self, endpoint::*, Error, Response},
-    Genesis, Transaction,
+    Genesis,
 };
 use hyper::header;
 use std::io::Read;
@@ -40,9 +41,22 @@ impl Client {
         self.perform(block::Request::new(height.into()))
     }
 
-    /// `/block`: get the latest block
+    /// `/block`: get the latest block.
     pub fn latest_block(&self) -> Result<block::Response, Error> {
         self.perform(block::Request::default())
+    }
+
+    /// `/block_results`: get ABCI results for a block at a particular height.
+    pub fn block_results<H>(&self, height: H) -> Result<block_results::Response, Error>
+    where
+        H: Into<Height>,
+    {
+        self.perform(block_results::Request::new(height.into()))
+    }
+
+    /// `/block_results`: get ABCI results for the latest block.
+    pub fn latest_block_results(&self) -> Result<block_results::Response, Error> {
+        self.perform(block_results::Request::default())
     }
 
     /// `/blockchain`: get block headers for `min` <= `height` <= `max`.

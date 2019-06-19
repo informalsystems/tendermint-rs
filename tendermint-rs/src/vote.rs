@@ -7,7 +7,7 @@ use crate::{account, block, Signature, Time};
 #[cfg(feature = "serde")]
 use {
     crate::serializers,
-    serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer},
+    serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
 };
 
 /// Votes are signed messages from validators for a particular block which

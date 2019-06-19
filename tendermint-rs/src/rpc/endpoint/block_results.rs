@@ -1,12 +1,9 @@
-//! `/block` endpoint JSONRPC wrapper
+//! `/block_results` endpoint JSONRPC wrapper
 
-use crate::{
-    block::{self, Block},
-    rpc,
-};
+use crate::{abci, block, rpc};
 use serde::{Deserialize, Serialize};
 
-/// Get information about a specific block
+/// Get ABCI results at a given height.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
     /// Height of the block to request.
@@ -28,18 +25,18 @@ impl rpc::Request for Request {
     type Response = Response;
 
     fn method(&self) -> rpc::Method {
-        rpc::Method::Block
+        rpc::Method::BlockResults
     }
 }
 
-/// Block responses
+/// ABCI result response.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
-    /// Block metadata
-    pub block_meta: block::Meta,
+    /// Block height
+    pub height: block::Height,
 
-    /// Block data
-    pub block: Block,
+    /// Block results
+    pub results: abci::Responses,
 }
 
 impl rpc::Response for Response {}

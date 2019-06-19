@@ -2,7 +2,7 @@
 
 use crate::error::Error;
 #[cfg(feature = "serde")]
-use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use signatory::{ecdsa::curve::secp256k1, ed25519};
 use std::{
     fmt::{self, Display},

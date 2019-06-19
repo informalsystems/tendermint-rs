@@ -4,7 +4,7 @@ use std::slice;
 #[cfg(feature = "serde")]
 use {
     crate::serializers,
-    serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer},
+    serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
     subtle_encoding::base64,
 };
 
