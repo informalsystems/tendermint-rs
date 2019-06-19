@@ -24,6 +24,7 @@ extern crate prost_amino as prost;
 #[macro_use]
 extern crate prost_amino_derive as prost_derive;
 
+pub mod abci;
 pub mod account;
 #[cfg(feature = "amino-types")]
 pub mod amino_types;
@@ -49,7 +50,6 @@ pub mod secret_connection;
 mod serializers;
 pub mod signature;
 pub mod time;
-pub mod transaction;
 pub mod validator;
 mod version;
 pub mod vote;
@@ -66,7 +66,6 @@ pub use crate::{
     public_key::{PublicKey, TendermintKey},
     signature::Signature,
     time::Time,
-    transaction::Transaction,
     version::Version,
     vote::Vote,
 };

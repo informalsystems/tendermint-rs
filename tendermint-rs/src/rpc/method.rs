@@ -1,7 +1,7 @@
 //! JSONRPC request methods
 
 use super::Error;
-use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display},
     str::FromStr,
@@ -17,6 +17,9 @@ pub enum Method {
 
     /// Get block info
     Block,
+
+    /// Get ABCI results for a particular block
+    BlockResults,
 
     /// Get blockchain info
     Blockchain,
@@ -55,6 +58,7 @@ impl Method {
         match self {
             Method::AbciInfo => "abci_info",
             Method::Block => "block",
+            Method::BlockResults => "block_results",
             Method::Blockchain => "blockchain",
             Method::BroadcastTxAsync => "broadcast_tx_async",
             Method::BroadcastTxSync => "broadcast_tx_sync",
@@ -76,6 +80,7 @@ impl FromStr for Method {
         Ok(match s {
             "abci_info" => Method::AbciInfo,
             "block" => Method::Block,
+            "block_results" => Method::BlockResults,
             "blockchain" => Method::Blockchain,
             "broadcast_tx_async" => Method::BroadcastTxAsync,
             "broadcast_tx_sync" => Method::BroadcastTxSync,

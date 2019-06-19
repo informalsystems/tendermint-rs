@@ -1,7 +1,7 @@
 //! Cryptographic (a.k.a. digital) signatures
 
 #[cfg(feature = "serde")]
-use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 #[cfg(feature = "serde")]
 use signatory::Signature as SignatureTrait;
 #[cfg(feature = "serde")]

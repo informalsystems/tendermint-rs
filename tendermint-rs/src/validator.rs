@@ -2,7 +2,7 @@
 
 use crate::{account, vote, PublicKey};
 #[cfg(feature = "serde")]
-use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Validator information
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -54,4 +54,15 @@ impl Serialize for ProposerPriority {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.0.to_string().serialize(serializer)
     }
+}
+
+/// Updates to the validator set
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug)]
+pub struct Update {
+    /// Validator public key
+    pub pub_key: PublicKey,
+
+    /// New voting power
+    pub power: vote::Power,
 }

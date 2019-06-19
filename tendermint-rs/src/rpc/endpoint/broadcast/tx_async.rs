@@ -1,7 +1,9 @@
 //! `/broadcast_tx_async`: broadcast a transaction and return immediately.
 
-use super::{Code, Data, Log};
-use crate::{rpc, transaction, Transaction};
+use crate::{
+    abci::{transaction, Code, Data, Log, Transaction},
+    rpc,
+};
 use serde::{Deserialize, Serialize};
 
 /// `/broadcast_tx_async`: broadcast a transaction and return immediately.

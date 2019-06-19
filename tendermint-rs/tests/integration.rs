@@ -30,6 +30,14 @@ mod rpc {
         assert_eq!(block_info.block_meta.header.height.value(), height);
     }
 
+    /// `/block_results` endpoint
+    #[test]
+    fn block_results() {
+        let height = 1u64;
+        let block_results = localhost_rpc_client().block_results(height).unwrap();
+        assert_eq!(block_results.height.value(), height);
+    }
+
     /// `/blockchain` endpoint
     #[test]
     fn blockchain() {
