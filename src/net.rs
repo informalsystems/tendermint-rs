@@ -3,7 +3,7 @@
 use crate::node;
 use failure::{bail, Error};
 #[cfg(feature = "serde")]
-use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display},
     path::PathBuf,

@@ -1,7 +1,7 @@
 //! `/abci_info` endpoint JSONRPC wrapper
 
 use crate::{block, hash, rpc, Hash};
-use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use subtle_encoding::base64;
 
 /// Request ABCI information from a node

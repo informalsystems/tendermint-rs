@@ -2,6 +2,7 @@
 
 pub mod abci_info;
 pub mod block;
+pub mod block_results;
 pub mod blockchain;
 pub mod broadcast;
 pub mod commit;

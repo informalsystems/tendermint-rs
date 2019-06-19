@@ -1,6 +1,6 @@
 //! Serde serializers
 
-use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 #[cfg(feature = "rpc")]
 use std::time::Duration;
 
