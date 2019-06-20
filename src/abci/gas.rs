@@ -16,6 +16,13 @@ use std::{
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Gas(u64);
 
+impl Gas {
+    /// Get the inner integer value
+    pub fn value(self) -> u64 {
+        self.0
+    }
+}
+
 impl From<u64> for Gas {
     fn from(amount: u64) -> Gas {
         Gas(amount)
