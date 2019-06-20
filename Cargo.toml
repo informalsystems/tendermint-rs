@@ -45,11 +45,15 @@ signatory-secp256k1 = "0.12"
 signatory-ledger-tm = { version = "0.12", optional = true }
 subtle = "2"
 subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
-tendermint = { version = "0.7", path = "tendermint-rs", features = ["amino-types", "secret-connection"] }
 tiny-bip39 = "0.6"
 wait-timeout = "0.2"
 yubihsm = { version = "0.25", features = ["setup", "usb"], optional = true }
 zeroize = "0.9"
+
+[dependencies.tendermint]
+version = "0.8"
+path = "tendermint-rs"
+features = ["amino-types", "secret-connection"]
 
 [dev-dependencies]
 tempfile = "3"
