@@ -1,3 +1,10 @@
+## [0.8.0] (2019-06-20)
+
+This release is compatible with [tendermint v0.31]
+
+- `/block_results` RPC endpoint and related types ([#267], [#268])
+- Upgrade to Signatory v0.12 ([#259])
+
 ## [0.7.0] (2019-04-24)
 
 This release is compatible with [tendermint v0.31]
@@ -66,6 +73,10 @@ This release is compatible with [tendermint v0.28]
 
 - Initial release
 
+[0.8.0]: https://github.com/tendermint/kms/pull/269
+[#268]: https://github.com/tendermint/kms/pull/268
+[#267]: https://github.com/tendermint/kms/pull/267
+[#259]: https://github.com/tendermint/kms/pull/259
 [0.7.0]: https://github.com/tendermint/kms/pull/247
 [#243]: https://github.com/tendermint/kms/pull/243
 [#235]: https://github.com/tendermint/kms/pull/235
