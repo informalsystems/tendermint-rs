@@ -74,8 +74,7 @@ pub struct Update {
 /// implemented in `tendermint::PublicKey`.
 ///
 /// This is an internal thunk type to parse the `validator_updates` format and
-/// then convert to `tendermint::PublicKey`.
-/// Public keys allowed in Tendermint protocols
+/// then convert to `tendermint::PublicKey` in `deserialize_public_key` below.
 #[cfg(feature = "rpc")]
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
