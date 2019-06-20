@@ -2,7 +2,7 @@
 
 use super::{code::Code, data::Data, gas::Gas, info::Info, log::Log};
 use crate::{consensus, validator};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt::{self, Display};
 
 /// Responses for ABCI calls which occur during block processing.
@@ -11,22 +11,31 @@ use std::fmt::{self, Display};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Responses {
     /// Deliver TX response.
-    // TODO(tarcieri): remove the `rename` attribute when this lands upstream:
+    // TODO(tarcieri): remove the `alias` attribute when this lands upstream:
     // <https://github.com/tendermint/tendermint/pull/3708/files>
-    #[serde(rename = "DeliverTx")]
-    pub deliver_tx: Option<DeliverTx>,
+    #[serde(alias = "DeliverTx")]
+    #[serde(default, deserialize_with = "deserialize_deliver_tx")]
+    pub deliver_tx: Vec<DeliverTx>,
 
     /// Begin block response.
-    // TODO(tarcieri): remove the `rename` attribute when this lands upstream:
+    // TODO(tarcieri): remove the `alias` attribute when this lands upstream:
     // <https://github.com/tendermint/tendermint/pull/3708/files>
-    #[serde(rename = "BeginBlock")]
+    #[serde(alias = "BeginBlock")]
     pub begin_block: Option<BeginBlock>,
 
     /// End block response.
-    // TODO(tarcieri): remove the `rename` attribute when this lands upstream:
+    // TODO(tarcieri): remove the `alias` attribute when this lands upstream:
     // <https://github.com/tendermint/tendermint/pull/3708/files>
-    #[serde(rename = "EndBlock")]
+    #[serde(alias = "EndBlock")]
     pub end_block: Option<EndBlock>,
+}
+
+/// Return an empty vec in the event `deliver_tx` is `null`
+fn deserialize_deliver_tx<'de, D>(deserializer: D) -> Result<Vec<DeliverTx>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Ok(Option::deserialize(deserializer)?.unwrap_or_default())
 }
 
 /// Deliver TX response.
@@ -87,7 +96,8 @@ pub struct BeginBlock {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EndBlock {
     /// Validator updates
-    pub validator_updates: Option<Vec<validator::Update>>,
+    #[serde(deserialize_with = "deserialize_validator_updates")]
+    pub validator_updates: Vec<validator::Update>,
 
     /// New consensus params
     pub consensus_param_updates: Option<consensus::Params>,
@@ -95,6 +105,16 @@ pub struct EndBlock {
     /// Tags
     #[serde(default)]
     pub tags: Vec<Tag>,
+}
+
+/// Return an empty vec in the event `validator_updates` is `null`
+fn deserialize_validator_updates<'de, D>(
+    deserializer: D,
+) -> Result<Vec<validator::Update>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Ok(Option::deserialize(deserializer)?.unwrap_or_default())
 }
 
 /// Tags

@@ -45,6 +45,43 @@ mod endpoints {
     }
 
     #[test]
+    fn block_results() {
+        let response =
+            endpoint::block_results::Response::from_json(&read_json_fixture("block_results"))
+                .unwrap();
+        assert_eq!(response.height.value(), 1814);
+
+        let tendermint::abci::Responses {
+            deliver_tx,
+            begin_block: _,
+            end_block,
+        } = response.results;
+
+        let log_json = &deliver_tx[0].log.as_ref().unwrap().parse_json().unwrap();
+        let log_json_value = &log_json.as_array().as_ref().unwrap()[0];
+
+        assert_eq!(log_json_value["msg_index"].as_str().unwrap(), "0");
+        assert_eq!(log_json_value["success"].as_bool().unwrap(), true);
+
+        assert_eq!(deliver_tx[0].gas_wanted.value(), 200000);
+        assert_eq!(deliver_tx[0].gas_used.value(), 105662);
+
+        let tag = deliver_tx[0]
+            .tags
+            .iter()
+            .find(|t| t.key.eq("ZGVzdGluYXRpb24tdmFsaWRhdG9y"))
+            .unwrap();
+
+        assert_eq!(
+            &tag.value,
+            "Y29zbW9zdmFsb3BlcjFlaDVtd3UwNDRnZDVudGtrYzJ4Z2ZnODI0N21nYzU2Zno0c2RnMw=="
+        );
+
+        let validator_update = &end_block.as_ref().unwrap().validator_updates[0];
+        assert_eq!(validator_update.power.value(), 1233243);
+    }
+
+    #[test]
     fn blockchain() {
         let response =
             endpoint::blockchain::Response::from_json(&read_json_fixture("blockchain")).unwrap();
