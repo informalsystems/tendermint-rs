@@ -3,6 +3,8 @@
 use crate::{account, vote, PublicKey};
 #[cfg(feature = "serde")]
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+#[cfg(feature = "rpc")]
+use subtle_encoding::base64;
 
 /// Validator information
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -57,12 +59,44 @@ impl Serialize for ProposerPriority {
 }
 
 /// Updates to the validator set
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug)]
+#[cfg(feature = "rpc")]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Update {
     /// Validator public key
+    #[serde(deserialize_with = "deserialize_public_key")]
     pub pub_key: PublicKey,
 
     /// New voting power
     pub power: vote::Power,
+}
+
+/// Validator updates use a slightly different public key format than the one
+/// implemented in `tendermint::PublicKey`.
+///
+/// This is an internal thunk type to parse the `validator_updates` format and
+/// then convert to `tendermint::PublicKey`.
+/// Public keys allowed in Tendermint protocols
+#[cfg(feature = "rpc")]
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "type", content = "data")]
+enum PK {
+    /// Ed25519 keys
+    #[serde(rename = "ed25519")]
+    Ed25519(String),
+}
+
+#[cfg(feature = "rpc")]
+fn deserialize_public_key<'de, D>(deserializer: D) -> Result<PublicKey, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    match &PK::deserialize(deserializer)? {
+        PK::Ed25519(base64_value) => {
+            let bytes =
+                base64::decode(base64_value).map_err(|e| D::Error::custom(format!("{}", e)))?;
+
+            PublicKey::from_raw_ed25519(&bytes)
+                .ok_or_else(|| D::Error::custom("error parsing Ed25519 key"))
+        }
+    }
 }
