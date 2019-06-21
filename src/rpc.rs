@@ -42,8 +42,7 @@ pub enum Response {
 }
 
 pub trait TendermintRequest: SignableMsg {
-    // TODO(ismail): this should take an error as an argument:
-    fn build_response(self) -> Response;
+    fn build_response(self, error: Option<RemoteError>) -> Response;
 }
 
 fn compute_prefix(name: &str) -> (Vec<u8>) {
@@ -113,19 +112,37 @@ impl Request {
 }
 
 impl TendermintRequest for SignVoteRequest {
-    fn build_response(self) -> Response {
-        Response::SignedVote(SignedVoteResponse {
-            vote: self.vote,
-            err: None,
-        })
+    fn build_response(self, error: Option<RemoteError>) -> Response {
+        let response = if let Some(e) = error {
+            SignedVoteResponse {
+                vote: None,
+                err: Some(e),
+            }
+        } else {
+            SignedVoteResponse {
+                vote: self.vote,
+                err: None,
+            }
+        };
+
+        Response::SignedVote(response)
     }
 }
 
 impl TendermintRequest for SignProposalRequest {
-    fn build_response(self) -> Response {
-        Response::SignedProposal(SignedProposalResponse {
-            proposal: self.proposal,
-            err: None,
-        })
+    fn build_response(self, error: Option<RemoteError>) -> Response {
+        let response = if let Some(e) = error {
+            SignedProposalResponse {
+                proposal: None,
+                err: Some(e),
+            }
+        } else {
+            SignedProposalResponse {
+                proposal: self.proposal,
+                err: None,
+            }
+        };
+
+        Response::SignedProposal(response)
     }
 }

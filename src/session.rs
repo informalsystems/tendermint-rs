@@ -1,7 +1,7 @@
 //! A session with a validator node
 
 use crate::{
-    chain,
+    chain::{self, state::StateErrorKind},
     error::{Error, ErrorKind::*},
     prost::Message,
     rpc::{Request, Response, TendermintRequest},
@@ -23,13 +23,16 @@ use std::{
 };
 use subtle::ConstantTimeEq;
 use tendermint::{
-    amino_types::{PingRequest, PingResponse, PubKeyRequest, PubKeyResponse},
+    amino_types::{PingRequest, PingResponse, PubKeyRequest, PubKeyResponse, RemoteError},
     node,
     secret_connection::{self, SecretConnection},
 };
 
 /// Encrypted session with a validator node
 pub struct Session<Connection> {
+    /// Remote peer location
+    peer_addr: String,
+
     /// Chain ID for this session
     chain_id: chain::Id,
 
@@ -50,7 +53,8 @@ impl Session<SecretConnection<TcpStream>> {
         port: u16,
         secret_connection_key: &ed25519::Seed,
     ) -> Result<Self, Error> {
-        debug!("{}: Connecting to {}:{}...", chain_id, host, port);
+        let peer_addr = format!("{}:{}", host, port);
+        debug!("{}: Connecting to {}...", chain_id, &peer_addr);
 
         let socket = TcpStream::connect(format!("{}:{}", host, port))?;
         let signer = Ed25519Signer::from(secret_connection_key);
@@ -81,6 +85,7 @@ impl Session<SecretConnection<TcpStream>> {
         }
 
         Ok(Self {
+            peer_addr,
             chain_id,
             max_height,
             connection,
@@ -95,16 +100,15 @@ impl Session<UnixConnection<UnixStream>> {
         max_height: Option<tendermint::block::Height>,
         socket_path: &Path,
     ) -> Result<Self, Error> {
-        debug!(
-            "{}: Connecting to socket at {}...",
-            chain_id,
-            socket_path.to_str().unwrap()
-        );
+        let peer_addr = socket_path.to_str().unwrap().to_owned();
+
+        debug!("{}: Connecting to socket at {}...", chain_id, &peer_addr);
 
         let socket = UnixStream::connect(socket_path)?;
         let connection = UnixConnection::new(socket);
 
         Ok(Self {
+            peer_addr,
             chain_id,
             max_height,
             connection,
@@ -131,7 +135,10 @@ where
         }
 
         let request = Request::read(&mut self.connection)?;
-        debug!("received request: {:?}", &request);
+        debug!(
+            "[{}:{}] received request: {:?}",
+            &self.chain_id, &self.peer_addr, &request
+        );
 
         let response = match request {
             Request::SignProposal(req) => self.sign(req)?,
@@ -141,7 +148,10 @@ where
             Request::ShowPublicKey(ref req) => self.get_public_key(req)?,
         };
 
-        debug!("sending response: {:?}", &response);
+        debug!(
+            "[{}:{}] sending response: {:?}",
+            &self.chain_id, &self.peer_addr, &response
+        );
 
         let mut buf = vec![];
 
@@ -167,7 +177,23 @@ where
         if let Some(request_state) = request.consensus_state() {
             // TODO(tarcieri): better handle `PoisonError`?
             let mut chain_state = chain.state.lock().unwrap();
-            chain_state.update_consensus_state(request_state.clone())?;
+
+            if let Err(e) = chain_state.update_consensus_state(request_state.clone()) {
+                // Report double signing error back to the validator
+                if e.kind() == StateErrorKind::DoubleSign {
+                    let height = request.height().unwrap();
+
+                    warn!(
+                        "[{}:{}] attempt to double sign at height: {}",
+                        &self.chain_id, &self.peer_addr, height
+                    );
+
+                    let remote_err = RemoteError::double_sign(height);
+                    return Ok(request.build_response(Some(remote_err)));
+                } else {
+                    return Err(e.into());
+                }
+            }
         }
 
         if let Some(max_height) = self.max_height {
@@ -193,7 +219,7 @@ where
         self.log_signing_request(&request);
         request.set_signature(&sig);
 
-        Ok(request.build_response())
+        Ok(request.build_response(None))
     }
 
     /// Reply to a ping request
@@ -225,8 +251,8 @@ where
             .unwrap_or_else(|| "Unknown".to_owned());
 
         info!(
-            "[{}] signed {:?} at height: {}",
-            self.chain_id, msg_type, height
+            "[{}@{}] signed {:?} at height: {}",
+            &self.chain_id, &self.peer_addr, msg_type, height
         );
     }
 }
