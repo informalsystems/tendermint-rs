@@ -33,7 +33,7 @@ pub struct Session<Connection> {
     /// Chain ID for this session
     chain_id: chain::Id,
 
-    // Do not sign blocks greates than this height
+    /// Do not sign blocks greater than this height
     max_height: Option<tendermint::block::Height>,
 
     /// TCP connection to a validator node
@@ -129,14 +129,19 @@ where
             info!("terminate signal received");
             return Ok(false);
         }
-        debug!("started handling request ... ");
-        let response = match Request::read(&mut self.connection)? {
+
+        let request = Request::read(&mut self.connection)?;
+        debug!("received request: {:?}", &request);
+
+        let response = match request {
             Request::SignProposal(req) => self.sign(req)?,
             Request::SignVote(req) => self.sign(req)?,
             // non-signable requests:
             Request::ReplyPing(ref req) => self.reply_ping(req),
             Request::ShowPublicKey(ref req) => self.get_public_key(req)?,
         };
+
+        debug!("sending response: {:?}", &response);
 
         let mut buf = vec![];
 
@@ -148,7 +153,7 @@ where
         }
 
         self.connection.write_all(&buf)?;
-        debug!("... success handling request");
+
         Ok(true)
     }
 
@@ -185,8 +190,9 @@ where
         // from keyring here:
         let sig = chain.keyring.sign_ed25519(None, &to_sign)?;
 
+        self.log_signing_request(&request);
         request.set_signature(&sig);
-        debug!("successfully signed request:\n {:?}", request);
+
         Ok(request.build_response())
     }
 
@@ -204,5 +210,23 @@ where
         Ok(Response::PublicKey(PubKeyResponse::from(
             *chain.keyring.default_pubkey()?,
         )))
+    }
+
+    /// Write an INFO logline about a signing request
+    fn log_signing_request<T: TendermintRequest + Debug>(&self, request: &T) {
+        let height = request
+            .height()
+            .map(|h| h.to_string())
+            .unwrap_or_else(|| "none".to_owned());
+
+        let msg_type = request
+            .msg_type()
+            .map(|t| format!("{:?}", t))
+            .unwrap_or_else(|| "Unknown".to_owned());
+
+        info!(
+            "[{}] signed {:?} at height: {}",
+            self.chain_id, msg_type, height
+        );
     }
 }
