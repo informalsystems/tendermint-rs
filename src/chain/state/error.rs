@@ -29,6 +29,13 @@ pub enum StateErrorKind {
     SyncError,
 }
 
+impl StateError {
+    /// Get the kind of error
+    pub fn kind(&self) -> StateErrorKind {
+        *self.0.kind()
+    }
+}
+
 impl From<Error<StateErrorKind>> for StateError {
     fn from(other: Error<StateErrorKind>) -> Self {
         StateError(other)
