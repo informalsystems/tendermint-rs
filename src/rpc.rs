@@ -20,6 +20,7 @@ use tendermint::amino_types::*;
 pub const MAX_MSG_LEN: usize = 1024;
 
 /// Requests to the KMS
+#[derive(Debug)]
 pub enum Request {
     /// Sign the given message
     SignProposal(SignProposalRequest),
@@ -31,6 +32,7 @@ pub enum Request {
 }
 
 /// Responses from the KMS
+#[derive(Debug)]
 pub enum Response {
     /// Signature response
     SignedVote(SignedVoteResponse),
