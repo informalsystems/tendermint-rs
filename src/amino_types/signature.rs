@@ -18,6 +18,7 @@ pub trait SignableMsg {
     fn validate(&self) -> Result<(), ValidationError>;
     fn consensus_state(&self) -> Option<consensus::State>;
     fn height(&self) -> Option<i64>;
+    fn msg_type(&self) -> Option<SignedMsgType>;
 }
 
 /// Signed message types. This follows:

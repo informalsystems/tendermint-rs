@@ -38,9 +38,14 @@ pub struct Vote {
 }
 
 impl Vote {
-    fn is_valid_vote_type(&self) -> bool {
-        self.vote_type == SignedMsgType::PreVote.to_u32()
-            || self.vote_type == SignedMsgType::PreCommit.to_u32()
+    fn msg_type(&self) -> Option<SignedMsgType> {
+        if self.vote_type == SignedMsgType::PreVote.to_u32() {
+            Some(SignedMsgType::PreVote)
+        } else if self.vote_type == SignedMsgType::PreCommit.to_u32() {
+            Some(SignedMsgType::PreCommit)
+        } else {
+            None
+        }
     }
 }
 
@@ -179,11 +184,14 @@ impl SignableMsg for SignVoteRequest {
     fn height(&self) -> Option<i64> {
         self.vote.as_ref().map(|vote| vote.height)
     }
+    fn msg_type(&self) -> Option<SignedMsgType> {
+        self.vote.as_ref().and_then(|vote| vote.msg_type())
+    }
 }
 
 impl ConsensusMessage for Vote {
     fn validate_basic(&self) -> Result<(), ValidationError> {
-        if !self.is_valid_vote_type() {
+        if self.msg_type().is_none() {
             return Err(InvalidMessageType.into());
         }
         if self.height < 0 {

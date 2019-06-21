@@ -159,6 +159,10 @@ impl SignableMsg for SignProposalRequest {
     fn height(&self) -> Option<i64> {
         self.proposal.as_ref().map(|proposal| proposal.height)
     }
+
+    fn msg_type(&self) -> Option<SignedMsgType> {
+        Some(SignedMsgType::Proposal)
+    }
 }
 
 impl ConsensusMessage for Proposal {
