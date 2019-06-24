@@ -1,3 +1,5 @@
+//! Wrapper for Ed25519 signers
+
 use crate::{
     error::{Error, ErrorKind::*},
     keyring::SigningProvider,
@@ -6,7 +8,7 @@ use signatory::ed25519::Signature;
 use std::sync::Arc;
 use tendermint::TendermintKey;
 
-/// Wrapper for an Ed25519 signing provider (i.e. trait object)
+/// Trait object wrapper for an Ed25519 signers
 #[derive(Clone)]
 pub struct Signer {
     /// Provider for this signer

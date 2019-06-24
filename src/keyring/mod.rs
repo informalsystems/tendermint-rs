@@ -1,8 +1,8 @@
 //! Signing keyring. Presently specialized for Ed25519.
 
 pub mod ed25519;
-mod format;
-mod providers;
+pub mod format;
+pub mod providers;
 
 use self::ed25519::Signer;
 pub use self::{format::Format, providers::SigningProvider};
