@@ -24,9 +24,9 @@ pub struct YubihsmConfig {
     /// Serial number of the YubiHSM to connect to
     pub serial_number: Option<String>,
 
-    /// Listen address for `yubihsm-connector` compatible HTTP server.
+    /// Configuration for `yubihsm-connector` compatible HTTP server.
     #[cfg(feature = "yubihsm-server")]
-    pub connector_laddr: Option<net::Address>,
+    pub connector_server: Option<ConnectorServerConfig>,
 }
 
 /// Configuration for an individual YubiHSM
@@ -96,4 +96,26 @@ pub struct SigningKeyConfig {
 /// Default value for `AdapterConfig::Usb { timeout_ms }`
 fn usb_timeout_ms_default() -> u64 {
     1000
+}
+
+/// Configuration for `yubihsm-connector` compatible service
+#[cfg(feature = "yubihsm-server")]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConnectorServerConfig {
+    /// Listen address to run the connector service at
+    pub laddr: net::Address,
+
+    /// Connect to the listen address when using `tmkms yubihsm` CLI
+    pub cli: Option<CliConfig>,
+}
+
+/// Overrides for when using the `tmkms yubihsm` command-line interface
+#[cfg(feature = "yubihsm-server")]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CliConfig {
+    /// Override the auth key to use when using the CLI. This will additionally
+    /// prompt for a password from the terminal.
+    pub auth_key: Option<u16>,
 }

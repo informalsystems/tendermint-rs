@@ -34,6 +34,9 @@ pub enum YubihsmCommand {
 
 impl YubihsmCommand {
     pub(super) fn config_path(&self) -> Option<&String> {
+        // Mark that we're invoking a `tmkms yubihsm` command
+        crate::yubihsm::mark_cli_command();
+
         match self {
             YubihsmCommand::Keys(keys) => keys.config_path(),
             YubihsmCommand::Setup(setup) => setup.config.as_ref(),
