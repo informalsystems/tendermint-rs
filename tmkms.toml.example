@@ -40,6 +40,7 @@ adapter = { type = "usb" }
 auth = { key = 1, password = "password" } # Default YubiHSM admin credentials. Change ASAP!
 keys = [{ chain_ids = ["cosmoshub-1"], key = 1 }]
 #serial_number = "0123456789" # identify serial number of a specific YubiHSM to connect to
+#connector_laddr = "tcp://127.0.0.1:12345" # run yubihsm-connector compatible server
 
 [[providers.ledgertm]]
 chain_ids = ["cosmoshub-1"]

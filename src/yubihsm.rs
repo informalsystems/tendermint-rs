@@ -6,6 +6,8 @@ use crate::{
     prelude::*,
 };
 use lazy_static::lazy_static;
+#[cfg(all(feature = "yubihsm-server", not(feature = "yubihsm-mock")))]
+use std::thread;
 use std::{
     process,
     sync::{Mutex, MutexGuard},
@@ -14,7 +16,8 @@ use yubihsm::{Client, Connector};
 #[cfg(not(feature = "yubihsm-mock"))]
 use {
     crate::config::provider::yubihsm::AdapterConfig,
-    yubihsm::{device::SerialNumber, UsbConfig},
+    tendermint::net,
+    yubihsm::{device::SerialNumber, HttpConfig, UsbConfig},
 };
 
 lazy_static! {
@@ -40,8 +43,8 @@ pub fn client() -> MutexGuard<'static, Client> {
 fn init_connector() -> Connector {
     let cfg = config();
 
-    match cfg.adapter {
-        AdapterConfig::Http { ref connector } => Connector::http(connector),
+    let connector = match cfg.adapter {
+        AdapterConfig::Http { ref addr } => connect_http(addr),
         AdapterConfig::Usb { timeout_ms } => {
             let usb_config = UsbConfig {
                 serial: cfg
@@ -53,7 +56,40 @@ fn init_connector() -> Connector {
 
             Connector::usb(&usb_config)
         }
+    };
+
+    #[cfg(feature = "yubihsm-server")]
+    {
+        if let Some(ref addr) = cfg.connector_laddr {
+            run_connnector_server(http_config_for_address(addr), connector.clone())
+        }
     }
+
+    connector
+}
+
+/// Convert a `net::Address` to an `HttpConfig`
+#[cfg(not(feature = "yubihsm-mock"))]
+fn http_config_for_address(addr: &net::Address) -> HttpConfig {
+    match addr {
+        net::Address::Tcp {
+            peer_id: _,
+            ref host,
+            port,
+        } => {
+            let mut config = HttpConfig::default();
+            config.addr = host.clone();
+            config.port = *port;
+            config
+        }
+        net::Address::Unix { .. } => panic!("yubihsm does not support Unix sockets"),
+    }
+}
+
+/// Connect to the given address via HTTP
+#[cfg(not(feature = "yubihsm-mock"))]
+fn connect_http(addr: &net::Address) -> Connector {
+    Connector::http(&http_config_for_address(addr))
 }
 
 #[cfg(feature = "yubihsm-mock")]
@@ -85,6 +121,19 @@ pub fn config() -> YubihsmConfig {
     }
 
     yubihsm_configs[0].clone()
+}
+
+/// Run a `yubihsm-connector` service in a background thread
+#[cfg(all(feature = "yubihsm-server", not(feature = "yubihsm-mock")))]
+fn run_connnector_server(config: HttpConfig, connector: Connector) {
+    thread::spawn(move || loop {
+        let server = yubihsm::connector::http::Server::new(&config, connector.clone())
+            .expect("couldn't start yubihsm connector HTTP server");
+
+        if let Err(e) = server.run() {
+            error!("yubihsm HTTP service crashed! {}", e);
+        }
+    });
 }
 
 impl From<yubihsm::client::Error> for Error {

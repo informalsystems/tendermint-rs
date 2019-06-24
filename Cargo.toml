@@ -47,7 +47,7 @@ subtle = "2"
 subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
 tiny-bip39 = "0.6"
 wait-timeout = "0.2"
-yubihsm = { version = "0.25", features = ["setup", "usb"], optional = true }
+yubihsm = { version = "0.26", features = ["setup", "usb"], optional = true }
 zeroize = "0.9"
 
 [dependencies.tendermint]
@@ -64,6 +64,7 @@ default = []
 softsign = []
 ledgertm = ["signatory-ledger-tm"]
 yubihsm-mock = ["yubihsm/mockhsm"]
+yubihsm-server = ["yubihsm/http-server"]
 
 # Enable integer overflow checks in release builds for security reasons
 [profile.release]

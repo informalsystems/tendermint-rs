@@ -95,7 +95,7 @@ impl KeyRing {
                     fail!(SigningError, "expected only one key in keyring");
                 } else {
                     vals.next()
-                        .ok_or_else(|| err!(InvalidKey, "could not get only signer"))?
+                        .ok_or_else(|| err!(InvalidKey, "keyring is empty"))?
                 }
             }
         };
