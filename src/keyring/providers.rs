@@ -1,3 +1,5 @@
+//! Signature providers (i.e. backends/plugins)
+
 use std::fmt::{self, Display};
 
 /// Enumeration of signing key providers
