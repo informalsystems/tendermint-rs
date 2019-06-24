@@ -3,11 +3,13 @@
 use crate::chain;
 use abscissa::secret::{CloneableSecret, DebugSecret, ExposeSecret, Secret};
 use serde::Deserialize;
-use yubihsm::{Credentials, HttpConfig};
+use tendermint::net;
+use yubihsm::Credentials;
 use zeroize::Zeroize;
 
 /// The (optional) `[providers.yubihsm]` config section
 #[derive(Clone, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct YubihsmConfig {
     /// Adapter configuration
     pub adapter: AdapterConfig,
@@ -21,11 +23,15 @@ pub struct YubihsmConfig {
 
     /// Serial number of the YubiHSM to connect to
     pub serial_number: Option<String>,
+
+    /// Listen address for `yubihsm-connector` compatible HTTP server.
+    #[cfg(feature = "yubihsm-server")]
+    pub connector_laddr: Option<net::Address>,
 }
 
 /// Configuration for an individual YubiHSM
 #[derive(Clone, Deserialize, Debug)]
-#[serde(tag = "type")]
+#[serde(deny_unknown_fields, tag = "type")]
 pub enum AdapterConfig {
     /// Connect to the YubiHSM2 directly via USB
     #[serde(rename = "usb")]
@@ -39,12 +45,13 @@ pub enum AdapterConfig {
     #[serde(rename = "http")]
     Http {
         /// `yubihsm-connector` configuration
-        connector: HttpConfig,
+        addr: net::Address,
     },
 }
 
 /// Configuration options for this connector
 #[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AuthConfig {
     /// Authentication key ID to use to authenticate to the YubiHSM
     pub key: u16,
@@ -63,6 +70,7 @@ impl AuthConfig {
 
 /// Password to the YubiHSM
 #[derive(Clone, Deserialize, Zeroize)]
+#[serde(deny_unknown_fields)]
 #[zeroize(drop)]
 pub struct Password(String);
 
@@ -76,6 +84,7 @@ impl DebugSecret for Password {
 
 /// Signing key configuration
 #[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SigningKeyConfig {
     /// Chains this signing key is authorized to be used from
     pub chain_ids: Vec<chain::Id>,
