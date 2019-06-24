@@ -10,9 +10,14 @@ use lazy_static::lazy_static;
 use std::thread;
 use std::{
     process,
-    sync::{Mutex, MutexGuard},
+    sync::{
+        atomic::{self, AtomicBool},
+        Mutex, MutexGuard,
+    },
 };
 use yubihsm::{Client, Connector};
+#[cfg(feature = "yubihsm-server")]
+use zeroize::Zeroizing;
 #[cfg(not(feature = "yubihsm-mock"))]
 use {
     crate::config::provider::yubihsm::AdapterConfig,
@@ -26,6 +31,20 @@ lazy_static! {
 
     /// Authenticated client connection to the YubiHSM device
     static ref HSM_CLIENT: Mutex<Client> = Mutex::new(init_client());
+}
+
+/// Flag indicating we're inside of a `tmkms yubihsm` command
+static CLI_COMMAND: AtomicBool = AtomicBool::new(false);
+
+/// Mark that we're in a `tmkms yubihsm` command when initializing the YubiHSM
+pub(crate) fn mark_cli_command() {
+    CLI_COMMAND.store(true, atomic::Ordering::SeqCst);
+}
+
+/// Are we running a `tmkms yubihsm` subcommand?
+#[cfg(feature = "yubihsm-server")]
+fn is_cli_command() -> bool {
+    CLI_COMMAND.load(atomic::Ordering::SeqCst)
 }
 
 /// Get the global HSM connector configured from global settings
@@ -42,30 +61,52 @@ pub fn client() -> MutexGuard<'static, Client> {
 #[cfg(not(feature = "yubihsm-mock"))]
 fn init_connector() -> Connector {
     let cfg = config();
+    let serial_number = cfg
+        .serial_number
+        .as_ref()
+        .map(|serial| serial.parse::<SerialNumber>().unwrap());
 
-    let connector = match cfg.adapter {
-        AdapterConfig::Http { ref addr } => connect_http(addr),
-        AdapterConfig::Usb { timeout_ms } => {
-            let usb_config = UsbConfig {
-                serial: cfg
-                    .serial_number
-                    .as_ref()
-                    .map(|serial| serial.parse::<SerialNumber>().unwrap()),
-                timeout_ms,
-            };
-
-            Connector::usb(&usb_config)
-        }
-    };
-
+    // Use CLI overrides if enabled and we're in a CLI context
     #[cfg(feature = "yubihsm-server")]
     {
-        if let Some(ref addr) = cfg.connector_laddr {
-            run_connnector_server(http_config_for_address(addr), connector.clone())
+        if let Some(ref connector_server) = cfg.connector_server {
+            if connector_server.cli.is_some() && is_cli_command() {
+                let adapter = AdapterConfig::Http {
+                    addr: connector_server.laddr.clone(),
+                };
+
+                return init_connector_adapter(&adapter, serial_number);
+            }
+        }
+    }
+
+    let connector = init_connector_adapter(&cfg.adapter, serial_number);
+
+    // Start connector server if configured
+    #[cfg(feature = "yubihsm-server")]
+    {
+        if let Some(ref connector_server) = cfg.connector_server {
+            run_connnector_server(
+                http_config_for_address(&connector_server.laddr),
+                connector.clone(),
+            )
         }
     }
 
     connector
+}
+
+/// Initialize a connector from the given adapter
+#[cfg(not(feature = "yubihsm-mock"))]
+fn init_connector_adapter(adapter: &AdapterConfig, serial: Option<SerialNumber>) -> Connector {
+    match *adapter {
+        AdapterConfig::Http { ref addr } => connect_http(addr),
+        AdapterConfig::Usb { timeout_ms } => {
+            let usb_config = UsbConfig { serial, timeout_ms };
+
+            Connector::usb(&usb_config)
+        }
+    }
 }
 
 /// Convert a `net::Address` to an `HttpConfig`
@@ -99,12 +140,55 @@ fn init_connector() -> Connector {
 
 /// Get a `yubihsm::Client` configured from the global configuration
 fn init_client() -> Client {
-    let credentials = config().auth.credentials();
+    let (credentials, reconnect) = client_config();
 
-    Client::open(connector().clone(), credentials, true).unwrap_or_else(|e| {
+    Client::open(connector().clone(), credentials, reconnect).unwrap_or_else(|e| {
         status_err!("error connecting to YubiHSM2: {}", e);
         process::exit(1);
     })
+}
+
+/// Get client configuration settings
+#[cfg(not(feature = "yubihsm-server"))]
+fn client_config() -> (yubihsm::Credentials, bool) {
+    (config().auth.credentials(), true)
+}
+
+/// Get client configuration settings, accounting for `yubihsm-server` server
+/// overrides (i.e. local loopback for `tmkms yubihsm` commands)
+#[cfg(feature = "yubihsm-server")]
+fn client_config() -> (yubihsm::Credentials, bool) {
+    let cfg = config();
+
+    cfg.connector_server
+        .as_ref()
+        .and_then(|connector_server| {
+            connector_server.cli.as_ref().and_then(|cli| {
+                cli.auth_key.and_then(|auth_key_id| {
+                    if is_cli_command() {
+                        Some((prompt_for_auth_key_password(auth_key_id), false))
+                    } else {
+                        None
+                    }
+                })
+            })
+        })
+        .unwrap_or_else(|| (cfg.auth.credentials(), true))
+}
+
+/// Prompt for the password for the given auth key and generate `yubihsm::Credentials`
+#[cfg(feature = "yubihsm-server")]
+fn prompt_for_auth_key_password(auth_key_id: u16) -> yubihsm::Credentials {
+    let prompt = format!(
+        "Enter password for YubiHSM2 auth key 0x{:04x}: ",
+        auth_key_id
+    );
+
+    let password = Zeroizing::new(
+        rpassword::read_password_from_tty(Some(&prompt)).expect("error reading password"),
+    );
+
+    yubihsm::Credentials::from_password(auth_key_id, password.as_bytes())
 }
 
 /// Get the YubiHSM-related configuration

@@ -35,6 +35,7 @@ log = "0.4"
 prost-amino = "0.4.0"
 prost-amino-derive = "0.4.0"
 rand_os = "0.1"
+rpassword = { version = "3", optional = true }
 serde = { version = "1", features = ["serde_derive"] }
 serde_json = "1"
 sha2 = "0.8"
@@ -57,14 +58,14 @@ features = ["amino-types", "secret-connection"]
 
 [dev-dependencies]
 tempfile = "3"
-rand = "0.6" # TODO: switch to the getrandom crate
+rand = "0.6"
 
 [features]
 default = []
 softsign = []
 ledgertm = ["signatory-ledger-tm"]
 yubihsm-mock = ["yubihsm/mockhsm"]
-yubihsm-server = ["yubihsm/http-server"]
+yubihsm-server = ["yubihsm/http-server", "rpassword"]
 
 # Enable integer overflow checks in release builds for security reasons
 [profile.release]
