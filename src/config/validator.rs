@@ -6,6 +6,7 @@ use tendermint::{chain, net};
 
 /// Validator configuration
 #[derive(Clone, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct ValidatorConfig {
     /// Address of the validator (`tcp://` or `unix://`)
     pub addr: net::Address,
