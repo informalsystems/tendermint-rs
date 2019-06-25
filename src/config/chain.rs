@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 /// Chain configuration
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct ChainConfig {
     /// Chain ID of this Tendermint network/chain
     pub id: chain::Id,

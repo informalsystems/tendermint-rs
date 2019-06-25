@@ -17,6 +17,7 @@ use serde::Deserialize;
 
 /// Provider configuration
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct ProviderConfig {
     /// Software-backed signer
     #[cfg(feature = "softsign")]
