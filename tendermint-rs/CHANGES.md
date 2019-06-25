@@ -1,3 +1,11 @@
+## [0.9.0] (2019-06-24)
+
+This release is compatible with [tendermint v0.31]
+
+- Reject low order points in Secret Connection handshake ([#279])
+- Add `RemoteErrorCode` enum ([#272])
+- Add `msg_type()` accessor for signature types ([#271])
+
 ## [0.8.0] (2019-06-20)
 
 This release is compatible with [tendermint v0.31]
@@ -73,6 +81,10 @@ This release is compatible with [tendermint v0.28]
 
 - Initial release
 
+[0.9.0]: https://github.com/tendermint/kms/pull/280
+[#279]: https://github.com/tendermint/kms/pull/279
+[#272]: https://github.com/tendermint/kms/pull/272
+[#271]: https://github.com/tendermint/kms/pull/271
 [0.8.0]: https://github.com/tendermint/kms/pull/269
 [#268]: https://github.com/tendermint/kms/pull/268
 [#267]: https://github.com/tendermint/kms/pull/267
