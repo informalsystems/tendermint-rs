@@ -20,6 +20,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
+    time::Instant,
 };
 use subtle::ConstantTimeEq;
 use tendermint::{
@@ -213,11 +214,11 @@ where
         request.sign_bytes(self.chain_id, &mut to_sign)?;
 
         // TODO(ismail): figure out which key to use here instead of taking the only key
-        // from keyring here:
-        let sig = chain.keyring.sign_ed25519(None, &to_sign)?;
+        let started_at = Instant::now();
+        let signature = chain.keyring.sign_ed25519(None, &to_sign)?;
 
-        self.log_signing_request(&request);
-        request.set_signature(&sig);
+        self.log_signing_request(&request, started_at);
+        request.set_signature(&signature);
 
         Ok(request.build_response(None))
     }
@@ -239,7 +240,7 @@ where
     }
 
     /// Write an INFO logline about a signing request
-    fn log_signing_request<T: TendermintRequest + Debug>(&self, request: &T) {
+    fn log_signing_request<T: TendermintRequest + Debug>(&self, request: &T, started_at: Instant) {
         let height = request
             .height()
             .map(|h| h.to_string())
@@ -251,8 +252,12 @@ where
             .unwrap_or_else(|| "Unknown".to_owned());
 
         info!(
-            "[{}@{}] signed {:?} at height: {}",
-            &self.chain_id, &self.peer_addr, msg_type, height
+            "[{}@{}] signed {:?} at height: {} ({} ms)",
+            &self.chain_id,
+            &self.peer_addr,
+            msg_type,
+            height,
+            started_at.elapsed().as_millis()
         );
     }
 }
