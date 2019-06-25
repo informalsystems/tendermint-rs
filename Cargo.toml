@@ -1,7 +1,7 @@
 [package]
 name        = "tmkms"
 description = "Tendermint Key Management System"
-version     = "0.6.0-alpha2"
+version     = "0.6.0-alpha3"
 authors     = ["Tony Arcieri <tony@iqlusion.io>", "Ismail Khoffi <Ismail.Khoffi@gmail.com>"]
 license     = "Apache-2.0"
 homepage    = "https://github.com/tendermint/kms/"
