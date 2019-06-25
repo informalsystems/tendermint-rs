@@ -42,12 +42,11 @@ impl Runnable for TestCommand {
                 status_err!("signature operation failed: {}", e);
                 thread::sleep(Duration::from_millis(250));
             } else {
-                let duration = Instant::now().duration_since(started_at);
                 status_ok!(
                     "Success",
                     "signed message using key ID #{} in {} ms",
                     self.key_id,
-                    duration.as_secs() * 1000 + u64::from(duration.subsec_millis())
+                    started_at.elapsed().as_millis()
                 );
             }
         }

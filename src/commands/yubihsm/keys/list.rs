@@ -56,7 +56,7 @@ impl Runnable for ListCommand {
                 process::exit(1);
             });
 
-            let key_id = format!("- 0x#{:04x}", key.object_id);
+            let key_id = format!("- 0x{:04x}", key.object_id);
 
             // TODO: support for non-Ed25519 keys
             if public_key.algorithm != yubihsm::asymmetric::Algorithm::Ed25519 {
