@@ -16,18 +16,13 @@ members = [".", "tendermint-rs"]
 [badges]
 circle-ci = { repository = "tendermint/kms" }
 
-[dependencies.abscissa]
-version = "0.1.0-pre.2"
-default-features = false
-features = ["application", "signals", "secrets", "time"]
-
 [dependencies]
 atomicwrites = "0.2"
 byteorder = "1.2"
 bytes = "0.4"
 chrono = "0.4"
 failure = "0.1"
-gumdrop = "0.5"
+gumdrop = "0.6"
 hkdf = "0.7"
 hmac = "0.7"
 lazy_static = "1"
@@ -50,6 +45,11 @@ tiny-bip39 = "0.6"
 wait-timeout = "0.2"
 yubihsm = { version = "0.26", features = ["setup", "usb"], optional = true }
 zeroize = "0.9"
+
+[dependencies.abscissa]
+version = "0.1.0-rc.0"
+default-features = false
+features = ["application", "signals", "secrets", "time"]
 
 [dependencies.tendermint]
 version = "0.9"

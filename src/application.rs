@@ -1,7 +1,7 @@
 //! Abscissa `Application` for the KMS
 
 use crate::{commands::KmsCommand, config::KmsConfig};
-use abscissa::{application, Application, FrameworkError, LoggingConfig, StandardPaths};
+use abscissa::{application, logging, Application, FrameworkError, StandardPaths};
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -98,11 +98,11 @@ impl Application for KmsApplication {
     }
 
     /// Get logging configuration from command-line options
-    fn logging_config(&self, command: &KmsCommand) -> LoggingConfig {
+    fn logging_config(&self, command: &KmsCommand) -> logging::Config {
         if command.verbose() {
-            LoggingConfig::verbose()
+            logging::Config::verbose()
         } else {
-            LoggingConfig::default()
+            logging::Config::default()
         }
     }
 }

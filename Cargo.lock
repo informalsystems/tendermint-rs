@@ -2,15 +2,15 @@
 # It is not intended for manual editing.
 [[package]]
 name = "abscissa"
-version = "0.1.0-pre.2"
+version = "0.1.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "abscissa_derive 0.1.0-pre.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "abscissa_derive 0.1.0-rc.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "canonical-path 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "gumdrop 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "gumdrop_derive 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gumdrop 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gumdrop_derive 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -24,7 +24,7 @@ dependencies = [
 
 [[package]]
 name = "abscissa_derive"
-version = "0.1.0-pre.2"
+version = "0.1.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "heck 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -397,20 +397,20 @@ dependencies = [
 
 [[package]]
 name = "gumdrop"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "gumdrop_derive 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gumdrop_derive 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "gumdrop_derive"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.14.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 0.15.38 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1297,13 +1297,13 @@ dependencies = [
 name = "tmkms"
 version = "0.6.0-alpha3"
 dependencies = [
- "abscissa 0.1.0-pre.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "abscissa 0.1.0-rc.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "atomicwrites 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "gumdrop 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gumdrop 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hkdf 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hmac 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1538,8 +1538,8 @@ dependencies = [
 ]
 
 [metadata]
-"checksum abscissa 0.1.0-pre.2 (registry+https://github.com/rust-lang/crates.io-index)" = "99a954d7949c4bc7ffd31e7d8ac61d84edb5fc09fa610c8d5bc9051f0649aa95"
-"checksum abscissa_derive 0.1.0-pre.2 (registry+https://github.com/rust-lang/crates.io-index)" = "4da9df7ecd4f120543f533f40e62fcea09008fe87f3f4bb698e40e6acbb21b2a"
+"checksum abscissa 0.1.0-rc.0 (registry+https://github.com/rust-lang/crates.io-index)" = "edd0a3bfda7ed033133ae9892c412e6d5759c109b94a723527cb0e818394c4bd"
+"checksum abscissa_derive 0.1.0-rc.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5cf6e290652b08d73eac9dbb3977d6556b155461024e1980506d151d02398192"
 "checksum aes 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "54eb1d8fe354e5fc611daf4f2ea97dd45a765f4f1e4512306ec183ae2e8f20c9"
 "checksum aes-soft 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "cfd7e7ae3f9a1fb5c03b389fc6bb9a51400d0c13053f0dca698c832bfd893a0d"
 "checksum aesni 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2f70a6b5f971e473091ab7cfb5ffac6cde81666c4556751d8d5620ead8abf100"
@@ -1586,8 +1586,8 @@ dependencies = [
 "checksum generic-array 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3c0f28c2f5bfb5960175af447a2da7c18900693738343dc896ffbcabd9839592"
 "checksum generic-array 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ef25c5683767570c2bbd7deba372926a55eaae9982d7726ee2a1050239d45b9d"
 "checksum getrandom 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "8d1dffef07351aafe6ef177e4dd2b8dcf503e6bc765dea3b0de9ed149a3db1ec"
-"checksum gumdrop 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "395c7c79599167d04e7349ee60cc6cb14a28dfebaf922b4dc41603a7b18c3b28"
-"checksum gumdrop_derive 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "04c43663fd6604d9065f5cd26ae7a0301491fd941ad29b0a01665a6be3a1ddbd"
+"checksum gumdrop 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7a57b4113bb9af093a1cd0b505a44a93103e32e258296d01fa2def3f37c2c7cc"
+"checksum gumdrop_derive 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "dae5488e2c090f7586e2027e4ea6fcf8c9d83e2ef64d623993a33a0fb811f1f7"
 "checksum hashbrown 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "3bae29b6653b3412c2e71e9d486db9f9df5d701941d86683005efb9f2d28e3da"
 "checksum heck 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "20564e78d53d2bb135c343b3f47714a56af2061f1c928fdb541dc7b9fdd94205"
 "checksum hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"

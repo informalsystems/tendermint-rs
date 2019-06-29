@@ -43,5 +43,5 @@ where
 #[test]
 fn test_usage() {
     let status_code = run(&[] as &[&OsStr]).status.code().unwrap();
-    assert_eq!(status_code, 1);
+    assert_eq!(status_code, 0);
 }
