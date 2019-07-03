@@ -47,7 +47,7 @@ yubihsm = { version = "0.26", features = ["setup", "usb"], optional = true }
 zeroize = "0.9"
 
 [dependencies.abscissa]
-version = "0.1.0-rc.0"
+version = "0.1"
 default-features = false
 features = ["application", "signals", "secrets", "time"]
 
