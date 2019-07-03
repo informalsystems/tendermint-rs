@@ -1,12 +1,8 @@
 //! Tendermint Key Management System
 
-#![deny(
-    warnings,
-    missing_docs,
-    unsafe_code,
-    unused_import_braces,
-    unused_qualifications
-)]
+#![forbid(unsafe_code)]
+#![deny(warnings, missing_docs, unused_qualifications)]
+#![doc(html_root_url = "https://docs.rs/tmkms/0.6.0-rc0")]
 
 #[cfg(not(any(feature = "softsign", feature = "yubihsm", feature = "ledgertm")))]
 compile_error!(
