@@ -10,7 +10,7 @@ with Tendermint KMS.
 ## Compiling `tmkms` with YubiHSM support
 
 Please see the [toplevel README.md] for prerequisites for compiling `tmkms`
-from source code. You will need: Rust (stable, 1.31+), a C compiler,
+from source code. You will need: Rust (stable, 1.35+), a C compiler,
 `pkg-config`, and `libusb` (1.0+) installed.
 
 There are two ways to install `tmkms` with YubiHSM 2 support, and in either
@@ -114,6 +114,76 @@ $ udevadm control --reload-rules && udevadm trigger
 
 For the rules above to apply, make sure you run `tmkms` as a user which is a
 member of the `yubihsm` group!
+
+## `yubihsm-server` feature
+
+The YubiHSM backend includes additional option support for running a local HTTP
+server which is compatible with Yubico's `yubihsm-connector` service. This
+allows administration of YubiHSMs via `yubihsm-shell` or via `tmkms yubihsm`
+while the KMS is running (i.e. communicating with the YubiHSM2 via USB).
+
+To enable support for this feature, enable it when you compile Tendermint KMS,
+either via:
+
+```
+$ cargo build --release --features=yubihsm-server
+```
+
+or if you're using `cargo install`:
+
+```
+$ cargo install tmkms --features=yubihsm-server
+```
+
+To enable the HTTP service, you'll need to add `connector_server` configuration
+to the `[[providers.yubihsm]]` section of `tmkms.toml`:
+
+```toml
+[[providers.yubihsm]]
+adapter = { type = "usb" }
+connector_server = { laddr = "tcp://127.0.0.1:12345" }
+```
+
+This will start an HTTP server on `tcp://127.0.0.1:12345` which is compatible
+with Yubico's `yubihsm-server`. You can now use this with `yubihsm-shell`, e.g.:
+
+```
+$ yubihsm-shell
+Using default connector URL: http://127.0.0.1:12345
+yubihsm> connect
+Session keepalive set up to run every 15 seconds
+yubihsm> session open 2
+Enter password:
+```
+
+### Using `yubihsm-server` with `tmkms yubihsm` CLI commands
+
+You can also configure `tmkms yubihsm` subcommands to connect via this HTTP
+server rather than USB, which allows for using them while the KMS is running.
+To do that, add a `cli` subsection to `connector_server` line to the following:
+
+```toml
+connector_server = { laddr = "tcp://127.0.0.1:12345", cli = { auth_key = 2 } }
+```
+
+The `cli = { ... }` subsection indicates that the `connector_server` should be
+used by all `tmkms yubihsm` subcommands. It can contain the following
+additional fields:
+
+#### `auth_key`
+
+An alternative authentication key to use (e.g. `2` for the operator role key
+provisioned by the "Production YubiHSM 2 setup" process documented below).
+
+When used, this will prompt for a password to use as opposed to using the one
+in the configuration file:
+
+```
+$ tmkms yubihsm keys list
+Enter password for YubiHSM2 auth key 0x0002:
+Listing keys in YubiHSM #0123456789:
+- 0x0001: ...
+```
 
 ## Production YubiHSM 2 setup
 
