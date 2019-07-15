@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct Id(pub u64);
 
 impl Id {
-    /// Get the current voting power as an integer
+    /// Get the current channel id as an integer
     pub fn value(self) -> u64 {
         self.0
     }
