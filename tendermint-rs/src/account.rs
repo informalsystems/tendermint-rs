@@ -59,6 +59,7 @@ impl Debug for Id {
     }
 }
 
+// TODO: should be RIPEMD160(SHA256(pk))
 impl From<secp256k1::PublicKey> for Id {
     fn from(pk: secp256k1::PublicKey) -> Id {
         let digest = Sha256::digest(pk.as_bytes());
@@ -68,6 +69,7 @@ impl From<secp256k1::PublicKey> for Id {
     }
 }
 
+// SHA256(pk)[:20]
 impl From<ed25519::PublicKey> for Id {
     fn from(pk: ed25519::PublicKey) -> Id {
         let digest = Sha256::digest(pk.as_bytes());
