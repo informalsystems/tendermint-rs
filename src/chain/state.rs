@@ -7,7 +7,10 @@ mod error;
 pub mod hook;
 
 pub use self::error::{StateError, StateErrorKind};
-use crate::error::{Error, ErrorKind::*};
+use crate::{
+    error::{Error, ErrorKind::*},
+    prelude::*,
+};
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use serde_json;
 use std::{

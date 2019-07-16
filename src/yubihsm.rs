@@ -222,7 +222,7 @@ fn run_connnector_server(config: HttpConfig, connector: Connector) {
 
 impl From<yubihsm::client::Error> for Error {
     fn from(other: yubihsm::client::Error) -> Error {
-        abscissa::Error::new(ErrorKind::from(other.kind()), Some(other.to_string())).into()
+        abscissa_core::Error::new(ErrorKind::from(other.kind()), Some(other.to_string())).into()
     }
 }
 

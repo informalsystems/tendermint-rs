@@ -1,6 +1,7 @@
 //! Set up a new YubiHSM2 or restore from backup
 
-use abscissa::{Command, Runnable};
+use crate::prelude::*;
+use abscissa_core::{Command, Runnable};
 use bip39::Mnemonic;
 use chrono::{SecondsFormat, Utc};
 use hkdf::Hkdf;
@@ -46,7 +47,7 @@ const VALIDATOR_ROLE_NAME: &str = "validator";
 pub struct SetupCommand {
     /// Path to configuration file
     #[options(short = "c", long = "config", help = "path to tmkms.toml")]
-    pub config: Option<String>,
+    pub config: Option<PathBuf>,
 
     /// Print debugging information
     #[options(short = "v", long = "verbose", help = "enable verbose debug logging")]

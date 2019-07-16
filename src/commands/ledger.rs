@@ -1,8 +1,8 @@
 //! Subcommands of the `tmkms` command-line application
 
 use crate::{chain, prelude::*};
-use abscissa::{Command, Runnable};
-use std::process;
+use abscissa_core::{Command, Runnable};
+use std::{path::PathBuf, process};
 use tendermint::amino_types::{
     vote::{SignVoteRequest, Vote},
     SignableMsg, SignedMsgType,
@@ -17,7 +17,7 @@ pub enum LedgerCommand {
 }
 
 impl LedgerCommand {
-    pub(super) fn config_path(&self) -> Option<&String> {
+    pub(super) fn config_path(&self) -> Option<&PathBuf> {
         match self {
             LedgerCommand::Initialise(init) => init.config.as_ref(),
         }
@@ -29,7 +29,7 @@ impl LedgerCommand {
 pub struct InitCommand {
     /// config file path
     #[options(short = "c", long = "config")]
-    pub config: Option<String>,
+    pub config: Option<PathBuf>,
 
     /// block height
     #[options(short = "h", long = "height")]

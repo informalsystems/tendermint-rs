@@ -10,6 +10,7 @@ use crate::{
     chain,
     config::provider::ProviderConfig,
     error::{Error, ErrorKind::*},
+    prelude::*,
 };
 use std::collections::BTreeMap;
 use subtle_encoding;

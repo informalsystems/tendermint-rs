@@ -6,7 +6,8 @@ mod setup;
 mod test;
 
 pub use self::{detect::DetectCommand, keys::KeysCommand, setup::SetupCommand, test::TestCommand};
-use abscissa::{Command, Help, Runnable};
+use abscissa_core::{Command, Help, Runnable};
+use std::path::PathBuf;
 
 /// The `yubihsm` subcommand
 #[derive(Command, Debug, Options, Runnable)]
@@ -33,7 +34,7 @@ pub enum YubihsmCommand {
 }
 
 impl YubihsmCommand {
-    pub(super) fn config_path(&self) -> Option<&String> {
+    pub(super) fn config_path(&self) -> Option<&PathBuf> {
         // Mark that we're invoking a `tmkms yubihsm` command
         crate::yubihsm::mark_cli_command();
 

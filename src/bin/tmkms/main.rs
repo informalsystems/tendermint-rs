@@ -4,5 +4,5 @@ use tmkms::application::APPLICATION;
 
 /// Boot the `tmkms` application
 fn main() {
-    abscissa::boot(&APPLICATION);
+    abscissa_core::boot(&APPLICATION);
 }

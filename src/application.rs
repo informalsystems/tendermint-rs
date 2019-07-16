@@ -1,7 +1,7 @@
 //! Abscissa `Application` for the KMS
 
 use crate::{commands::KmsCommand, config::KmsConfig};
-use abscissa::{application, logging, Application, FrameworkError, StandardPaths};
+use abscissa_core::{application, logging, Application, FrameworkError, StandardPaths};
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -24,8 +24,8 @@ pub fn app_writer() -> application::lock::Writer<KmsApplication> {
 /// Obtain a read-only (multi-reader) lock on the application configuration.
 ///
 /// Panics if the application configuration has not been loaded.
-pub fn app_config() -> abscissa::config::Reader<KmsApplication> {
-    abscissa::config::Reader::new(&APPLICATION)
+pub fn app_config() -> abscissa_core::config::Reader<KmsApplication> {
+    abscissa_core::config::Reader::new(&APPLICATION)
 }
 
 /// The `tmkms` application
@@ -58,8 +58,8 @@ impl Application for KmsApplication {
     type Paths = StandardPaths;
 
     /// Accessor for application configuration.
-    fn config(&self) -> Option<&KmsConfig> {
-        self.config.as_ref()
+    fn config(&self) -> &KmsConfig {
+        self.config.as_ref().expect("not configured yet")
     }
 
     /// Borrow the application state immutably.
@@ -87,13 +87,9 @@ impl Application for KmsApplication {
     /// Called regardless of whether config is loaded to indicate this is the
     /// time in app lifecycle when configuration would be loaded if
     /// possible.
-    fn after_config(&mut self, config: Option<Self::Cfg>) -> Result<(), FrameworkError> {
-        // Provide configuration to all component `after_config()` handlers
-        for component in self.state.components.iter_mut() {
-            component.after_config(config.as_ref())?;
-        }
-
-        self.config = config;
+    fn after_config(&mut self, config: Self::Cfg) -> Result<(), FrameworkError> {
+        self.state.components.after_config(&config)?;
+        self.config = Some(config);
         Ok(())
     }
 

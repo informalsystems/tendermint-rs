@@ -1,4 +1,4 @@
-use abscissa::Error;
+use abscissa_core::Error;
 use std::fmt::{self, Display};
 
 /// Error type

@@ -6,7 +6,7 @@ pub mod validator;
 
 pub use self::validator::*;
 use self::{chain::ChainConfig, provider::ProviderConfig};
-use abscissa::Config;
+use abscissa_core::Config;
 use serde::Deserialize;
 
 /// Environment variable containing path to config file
@@ -16,7 +16,7 @@ pub const CONFIG_ENV_VAR: &str = "TMKMS_CONFIG_FILE";
 pub const CONFIG_FILE_NAME: &str = "tmkms.toml";
 
 /// KMS configuration (i.e. TOML file parsed with serde)
-#[derive(Config, Deserialize, Debug)]
+#[derive(Config, Default, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct KmsConfig {
     /// Chains the KMS is providing key management service for

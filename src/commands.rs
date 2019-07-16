@@ -14,7 +14,7 @@ pub use self::ledger::LedgerCommand;
 
 pub use self::{keygen::KeygenCommand, start::StartCommand, version::VersionCommand};
 use crate::config::{KmsConfig, CONFIG_ENV_VAR, CONFIG_FILE_NAME};
-use abscissa::{Command, Configurable, Help, Runnable};
+use abscissa_core::{Command, Configurable, Help, Runnable};
 use std::{env, path::PathBuf};
 
 /// Subcommands of the KMS command-line application
@@ -64,7 +64,7 @@ impl Configurable<KmsConfig> for KmsCommand {
     /// or the default
     fn config_path(&self) -> Option<PathBuf> {
         let config = match self {
-            KmsCommand::Start(run) => run.config.as_ref(),
+            KmsCommand::Start(start) => start.config.as_ref(),
             #[cfg(feature = "yubihsm")]
             KmsCommand::Yubihsm(yubihsm) => yubihsm.config_path(),
             #[cfg(feature = "ledgertm")]
@@ -72,12 +72,10 @@ impl Configurable<KmsConfig> for KmsCommand {
             _ => return None,
         };
 
-        let path = PathBuf::from(
-            config
-                .cloned()
-                .or_else(|| env::var(CONFIG_ENV_VAR).ok())
-                .unwrap_or_else(|| CONFIG_FILE_NAME.to_owned()),
-        );
+        let path = config
+            .cloned()
+            .or_else(|| env::var(CONFIG_ENV_VAR).ok().map(PathBuf::from))
+            .unwrap_or_else(|| PathBuf::from(CONFIG_FILE_NAME));
 
         Some(path)
     }

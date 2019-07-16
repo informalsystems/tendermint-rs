@@ -10,11 +10,9 @@ compile_error!(
      yubihsm, ledgertm, softsign (e.g. --features=yubihsm)"
 );
 
+#[macro_use]
+extern crate abscissa_core;
 extern crate prost_amino as prost;
-#[macro_use]
-extern crate abscissa;
-#[macro_use]
-extern crate log;
 
 pub mod application;
 pub mod chain;

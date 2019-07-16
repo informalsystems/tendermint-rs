@@ -3,6 +3,7 @@
 use crate::{
     chain::{self, state::StateErrorKind},
     error::{Error, ErrorKind::*},
+    prelude::*,
     prost::Message,
     rpc::{Request, Response, TendermintRequest},
     unix_connection::UnixConnection,

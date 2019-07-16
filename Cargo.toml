@@ -46,10 +46,8 @@ wait-timeout = "0.2"
 yubihsm = { version = "0.26", features = ["setup", "usb"], optional = true }
 zeroize = "0.9"
 
-[dependencies.abscissa]
-version = "0.1"
-default-features = false
-features = ["application", "signals", "secrets", "time"]
+[dependencies.abscissa_core]
+version = "0.2.0-rc.1"
 
 [dependencies.tendermint]
 version = "0.9"
@@ -59,6 +57,10 @@ features = ["amino-types", "secret-connection"]
 [dev-dependencies]
 tempfile = "3"
 rand = "0.6"
+
+[dev-dependencies.abscissa_core]
+version = "0.2.0-rc.1"
+features = ["testing"]
 
 [features]
 default = []

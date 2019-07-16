@@ -1,13 +1,15 @@
-use crate::keyring::SecretKeyEncoding;
-use abscissa::{Command, Runnable};
+//! Soft Sign keygen routines
+
+use crate::{keyring::SecretKeyEncoding, prelude::*};
+use abscissa_core::{Command, Runnable};
 use signatory::{ed25519, Encode};
-use std::{env, process};
+use std::{env, path::PathBuf, process};
 
 /// Options for the `keygen` command
 #[derive(Command, Debug, Default, Options)]
 pub struct KeygenCommand {
     #[options(free, help = "path where generated key should be created")]
-    output_paths: Vec<String>,
+    output_paths: Vec<PathBuf>,
 }
 
 impl Runnable for KeygenCommand {
@@ -23,10 +25,13 @@ impl Runnable for KeygenCommand {
         let seed = ed25519::Seed::generate();
         seed.encode_to_file(output_path, &SecretKeyEncoding::default())
             .unwrap_or_else(|e| {
-                status_err!("couldn't write to {}: {}", output_path, e);
+                status_err!("couldn't write to {}: {}", output_path.display(), e);
                 process::exit(1);
             });
 
-        info!("Wrote random Ed25519 private key to {}", output_path);
+        info!(
+            "Wrote random Ed25519 private key to {}",
+            output_path.display()
+        );
     }
 }
