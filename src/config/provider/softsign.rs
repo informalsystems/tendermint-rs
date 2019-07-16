@@ -12,7 +12,7 @@ pub struct SoftSignConfig {
     pub chain_ids: Vec<chain::Id>,
 
     /// Path to a file containing a cryptographic key
-    // TODO: use `abscissa::Secret` to wrap this `PathBuf`
+    // TODO: use `abscissa_core::Secret` to wrap this `PathBuf`
     pub path: SoftPrivateKey,
 }
 

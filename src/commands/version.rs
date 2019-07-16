@@ -3,7 +3,7 @@
 #![allow(clippy::never_loop)]
 
 use super::KmsCommand;
-use abscissa::{Command, Runnable};
+use abscissa_core::{Command, Runnable};
 
 /// The `version` subcommand
 #[derive(Command, Debug, Default, Options)]

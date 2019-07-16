@@ -1,7 +1,7 @@
 //! Generate a new key within the YubiHSM2
 
 use super::*;
-use abscissa::{Command, Runnable};
+use abscissa_core::{Command, Runnable};
 use chrono::{SecondsFormat, Utc};
 use std::{
     fs::OpenOptions,
@@ -18,7 +18,7 @@ use tendermint::PublicKey;
 pub struct GenerateCommand {
     /// Path to configuration file
     #[options(short = "c", long = "config", help = "path to tmkms.toml")]
-    pub config: Option<String>,
+    pub config: Option<PathBuf>,
 
     /// Label for generated key(s)
     #[options(short = "l", long = "label", help = "label for generated key")]

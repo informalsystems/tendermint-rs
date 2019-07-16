@@ -10,7 +10,7 @@ use tendermint::amino_types::validate::ValidationError;
 
 /// Error type
 #[derive(Debug)]
-pub struct Error(abscissa::Error<ErrorKind>);
+pub struct Error(abscissa_core::Error<ErrorKind>);
 
 impl Error {
     /// Create an error from a panic
@@ -99,12 +99,12 @@ impl Display for Error {
 
 impl From<ErrorKind> for Error {
     fn from(kind: ErrorKind) -> Error {
-        Error(abscissa::Error::new(kind, None))
+        Error(abscissa_core::Error::new(kind, None))
     }
 }
 
-impl From<abscissa::Error<ErrorKind>> for Error {
-    fn from(other: abscissa::Error<ErrorKind>) -> Self {
+impl From<abscissa_core::Error<ErrorKind>> for Error {
+    fn from(other: abscissa_core::Error<ErrorKind>) -> Self {
         Error(other)
     }
 }
@@ -146,7 +146,7 @@ impl From<tendermint::Error> for Error {
             tendermint::Error::SignatureInvalid => ErrorKind::VerificationError,
         };
 
-        abscissa::Error::new(kind, None).into()
+        abscissa_core::Error::new(kind, None).into()
     }
 }
 

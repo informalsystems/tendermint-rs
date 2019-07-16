@@ -1,7 +1,7 @@
 //! Configuration for the `YubiHSM` backend
 
 use crate::chain;
-use abscissa::secret::{CloneableSecret, DebugSecret, ExposeSecret, Secret};
+use abscissa_core::secret::{CloneableSecret, DebugSecret, ExposeSecret, Secret};
 use serde::Deserialize;
 use tendermint::net;
 use yubihsm::Credentials;

@@ -9,6 +9,7 @@ use crate::{
     config::ValidatorConfig,
     error::{Error, ErrorKind},
     keyring::SecretKeyEncoding,
+    prelude::*,
     session::Session,
 };
 use signatory::{ed25519, Decode, Encode, PublicKeyed};

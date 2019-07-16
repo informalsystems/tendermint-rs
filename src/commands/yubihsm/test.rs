@@ -1,7 +1,8 @@
 //! Test the YubiHSM2 is working by performing signatures successively
 
-use abscissa::{Command, Runnable};
+use abscissa_core::{Command, Runnable};
 use std::{
+    path::PathBuf,
     process, thread,
     time::{Duration, Instant},
 };
@@ -14,7 +15,7 @@ const TEST_MESSAGE: &[u8; 128] = &[0u8; 128];
 pub struct TestCommand {
     /// Path to configuration file
     #[options(short = "c", long = "config", help = "path to tmkms.toml")]
-    pub config: Option<String>,
+    pub config: Option<PathBuf>,
 
     /// Print debugging information
     #[options(short = "v", long = "verbose", help = "enable verbose debug logging")]

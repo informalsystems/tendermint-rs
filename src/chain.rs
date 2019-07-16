@@ -13,6 +13,7 @@ use crate::{
     config::{chain::ChainConfig, KmsConfig},
     error::Error,
     keyring::{self, KeyRing},
+    prelude::*,
 };
 use std::{path::PathBuf, sync::Mutex};
 pub use tendermint::chain::Id;

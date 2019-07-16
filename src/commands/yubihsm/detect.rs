@@ -1,6 +1,6 @@
 //! Detect YubiHSM2s connected via USB
 
-use abscissa::{Command, Runnable};
+use abscissa_core::{Command, Runnable};
 use std::process;
 use yubihsm::connector::usb::Devices;
 

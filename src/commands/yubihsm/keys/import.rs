@@ -1,7 +1,7 @@
 //! Import keys either from encrypted backups or existing plaintext keys
 
 use super::*;
-use abscissa::{Command, Runnable};
+use abscissa_core::{Command, Runnable};
 use signatory::ed25519;
 use std::{fs, path::PathBuf, process};
 use subtle_encoding::base64;
@@ -13,7 +13,7 @@ use yubihsm::object;
 pub struct ImportCommand {
     /// Path to configuration file
     #[options(short = "c", long = "config", help = "path to tmkms.toml")]
-    pub config: Option<String>,
+    pub config: Option<PathBuf>,
 
     /// ID of the key to import (if applicable)
     #[options(short = "i", long = "id", help = "key ID to import")]

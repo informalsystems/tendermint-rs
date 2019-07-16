@@ -1,19 +1,19 @@
 //! Start the KMS
 
 use crate::{chain, client::Client, config::ValidatorConfig, prelude::*};
-use abscissa::Command;
+use abscissa_core::Command;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use std::{process, thread, time};
+use std::{path::PathBuf, process, thread, time};
 
 /// The `start` command
 #[derive(Command, Debug, Options)]
 pub struct StartCommand {
     /// Path to configuration file
     #[options(short = "c", long = "config", help = "path to tmkms.toml")]
-    pub config: Option<String>,
+    pub config: Option<PathBuf>,
 
     /// Print debugging information
     #[options(short = "v", long = "verbose", help = "enable verbose debug logging")]

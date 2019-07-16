@@ -8,7 +8,8 @@ mod list;
 use self::{
     export::ExportCommand, generate::GenerateCommand, import::ImportCommand, list::ListCommand,
 };
-use abscissa::{Command, Help, Runnable};
+use abscissa_core::{Command, Help, Runnable};
+use std::path::PathBuf;
 
 /// Default key type to generate
 pub const DEFAULT_KEY_TYPE: &str = "ed25519";
@@ -43,7 +44,7 @@ pub enum KeysCommand {
 
 impl KeysCommand {
     /// Optional path to the configuration file
-    pub(super) fn config_path(&self) -> Option<&String> {
+    pub(super) fn config_path(&self) -> Option<&PathBuf> {
         match self {
             KeysCommand::Export(export) => export.config.as_ref(),
             KeysCommand::Generate(generate) => generate.config.as_ref(),

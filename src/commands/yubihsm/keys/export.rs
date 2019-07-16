@@ -1,7 +1,7 @@
 //! Create encrypted backups of YubiHSM2 keys
 
 use super::*;
-use abscissa::{Command, Runnable};
+use abscissa_core::{Command, Runnable};
 use std::{fs::OpenOptions, io::Write, os::unix::fs::OpenOptionsExt, path::PathBuf, process};
 use subtle_encoding::base64;
 
@@ -10,7 +10,7 @@ use subtle_encoding::base64;
 pub struct ExportCommand {
     /// Path to configuration file
     #[options(short = "c", long = "config", help = "path to tmkms.toml")]
-    pub config: Option<String>,
+    pub config: Option<PathBuf>,
 
     /// ID of the key to export
     #[options(short = "i", long = "id", help = "key to export in encrypted form")]

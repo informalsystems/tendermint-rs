@@ -1,8 +1,8 @@
 //! List keys inside the YubiHSM2
 
 use crate::{application::app_config, chain, keyring};
-use abscissa::{Command, Runnable};
-use std::{collections::BTreeMap as Map, process};
+use abscissa_core::{Command, Runnable};
+use std::{collections::BTreeMap as Map, path::PathBuf, process};
 use tendermint::{PublicKey, TendermintKey};
 
 /// The `yubihsm keys list` subcommand
@@ -10,7 +10,7 @@ use tendermint::{PublicKey, TendermintKey};
 pub struct ListCommand {
     /// Path to configuration file
     #[options(short = "c", long = "config", help = "path to tmkms.toml")]
-    pub config: Option<String>,
+    pub config: Option<PathBuf>,
 }
 
 impl Runnable for ListCommand {
