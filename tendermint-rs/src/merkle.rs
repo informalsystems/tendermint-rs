@@ -84,7 +84,8 @@ mod tests {
 
     #[test]
     fn test_RFC6962_empty_leaf() {
-        let empty_leaf_root_hex = "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d";
+        let empty_leaf_root_hex =
+            "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d";
         let empty_leaf_root = &hex::decode(empty_leaf_root_hex).unwrap();
         let empty_tree: &[&[u8]] = &[&[]];
         let root = simple_hash_from_byte_slices(empty_tree);
@@ -97,7 +98,7 @@ mod tests {
         let leaf_string = "L123456";
 
         let leaf_root = &hex::decode(leaf_root_hex).unwrap();
-        let leaf_tree: &[&[u8]] = &[ leaf_string.as_bytes() ];
+        let leaf_tree: &[&[u8]] = &[leaf_string.as_bytes()];
         let root = simple_hash_from_byte_slices(leaf_tree);
         assert_eq!(leaf_root, &root);
     }
