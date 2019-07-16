@@ -83,7 +83,7 @@ mod tests {
     }
 
     #[test]
-    fn test_RFC6962_empty_leaf() {
+    fn test_rfc6962_empty_leaf() {
         let empty_leaf_root_hex =
             "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d";
         let empty_leaf_root = &hex::decode(empty_leaf_root_hex).unwrap();
@@ -93,7 +93,7 @@ mod tests {
     }
 
     #[test]
-    fn test_RFC6962_leaf() {
+    fn test_rfc6962_leaf() {
         let leaf_root_hex = "395aa064aa4c29f7010acfe3f25db9485bbd4b91897b6ad7ad547639252b4d56";
         let leaf_string = "L123456";
 
@@ -104,7 +104,7 @@ mod tests {
     }
 
     #[test]
-    fn test_RFC6962_node() {
+    fn test_rfc6962_node() {
         let node_hash_hex = "aa217fe888e47007fa15edab33c2b492a722cb106c64667fc2b044444de66bbb";
         let left_string = "N123";
         let right_string = "N456";
