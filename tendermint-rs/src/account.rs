@@ -4,7 +4,7 @@ use crate::error::Error;
 #[cfg(feature = "serde")]
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
-use signatory::ecdsa::curve::secp256k1;
+use signatory::{ecdsa::curve::secp256k1, ed25519};
 use std::{
     fmt::{self, Debug, Display},
     str::FromStr,
@@ -59,8 +59,19 @@ impl Debug for Id {
     }
 }
 
+// TODO: should be RIPEMD160(SHA256(pk))
 impl From<secp256k1::PublicKey> for Id {
     fn from(pk: secp256k1::PublicKey) -> Id {
+        let digest = Sha256::digest(pk.as_bytes());
+        let mut bytes = [0u8; LENGTH];
+        bytes.copy_from_slice(&digest[..LENGTH]);
+        Id(bytes)
+    }
+}
+
+// SHA256(pk)[:20]
+impl From<ed25519::PublicKey> for Id {
+    fn from(pk: ed25519::PublicKey) -> Id {
         let digest = Sha256::digest(pk.as_bytes());
         let mut bytes = [0u8; LENGTH];
         bytes.copy_from_slice(&digest[..LENGTH]);
@@ -109,5 +120,27 @@ impl<'de> Deserialize<'de> for Id {
 impl Serialize for Id {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.to_string().serialize(serializer)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ed25519_id() {
+        // test vector for pubkey and id (address)
+        let pubkey_hex = "14253D61EF42D166D02E68D540D07FDF8D65A9AF0ACAA46302688E788A8521E2";
+        let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
+
+        // decode pubkey and address
+        let pubkey_bytes = &hex::decode_upper(pubkey_hex).unwrap();
+        let id_bytes = Id::from_str(id_hex).expect("expected id_hex to decode properly");
+
+        // get id for pubkey
+        let pubkey = ed25519::PublicKey::from_bytes(pubkey_bytes).unwrap();
+        let id = Id::from(pubkey);
+
+        assert_eq!(id_bytes.ct_eq(&id).unwrap_u8(), 1);
     }
 }
