@@ -38,6 +38,7 @@ pub mod evidence;
 #[cfg(feature = "rpc")]
 pub mod genesis;
 pub mod hash;
+pub mod merkle;
 mod moniker;
 pub mod net;
 pub mod node;
