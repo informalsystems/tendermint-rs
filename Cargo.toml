@@ -47,7 +47,7 @@ yubihsm = { version = "0.26", features = ["setup", "usb"], optional = true }
 zeroize = "0.9"
 
 [dependencies.abscissa_core]
-version = "0.2.0-rc.1"
+version = "0.2.0"
 
 [dependencies.tendermint]
 version = "0.9"
@@ -59,7 +59,7 @@ tempfile = "3"
 rand = "0.6"
 
 [dev-dependencies.abscissa_core]
-version = "0.2.0-rc.1"
+version = "0.2.0"
 features = ["testing"]
 
 [features]
