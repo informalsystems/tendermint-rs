@@ -1,7 +1,7 @@
 //! Tendermint RPC client
 
 use crate::{
-    abci::Transaction,
+    abci::{self, Transaction},
     block::Height,
     net,
     rpc::{self, endpoint::*, Error, Response},
@@ -31,6 +31,22 @@ impl Client {
     /// `/abci_info`: get information about the ABCI application.
     pub fn abci_info(&self) -> Result<abci_info::AbciInfo, Error> {
         Ok(self.perform(abci_info::Request)?.response)
+    }
+
+    /// `/abci_query`: query the ABCI application
+    pub fn abci_query<D>(
+        &self,
+        path: Option<abci::Path>,
+        data: D,
+        height: Option<Height>,
+        prove: bool,
+    ) -> Result<abci_query::AbciQuery, Error>
+    where
+        D: Into<Vec<u8>>,
+    {
+        Ok(self
+            .perform(abci_query::Request::new(path, data, height, prove))?
+            .response)
     }
 
     /// `/block`: get block at a given height.

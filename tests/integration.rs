@@ -22,6 +22,12 @@ mod rpc {
         assert_eq!(&abci_info.data, "GaiaApp");
     }
 
+    /// `/abci_query` endpoint
+    #[test]
+    fn abci_query() {
+        // TODO(tarcieri): write integration test for this endpoint
+    }
+
     /// `/block` endpoint
     #[test]
     fn block() {
