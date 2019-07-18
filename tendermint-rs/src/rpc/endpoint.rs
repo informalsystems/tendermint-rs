@@ -1,6 +1,7 @@
 //! Tendermint JSONRPC endpoints
 
 pub mod abci_info;
+pub mod abci_query;
 pub mod block;
 pub mod block_results;
 pub mod blockchain;

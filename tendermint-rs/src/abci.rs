@@ -18,11 +18,15 @@ mod info;
 #[cfg(feature = "rpc")]
 mod log;
 #[cfg(feature = "rpc")]
+mod path;
+#[cfg(feature = "rpc")]
+mod proof;
+#[cfg(feature = "rpc")]
 mod responses;
 pub mod transaction;
 
 #[cfg(feature = "rpc")]
 pub use self::{
-    code::Code, data::Data, gas::Gas, info::Info, log::Log, responses::Responses,
-    transaction::Transaction,
+    code::Code, data::Data, gas::Gas, info::Info, log::Log, path::Path, proof::Proof,
+    responses::Responses, transaction::Transaction,
 };
