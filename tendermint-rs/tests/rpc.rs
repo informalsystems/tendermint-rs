@@ -24,6 +24,15 @@ mod endpoints {
     }
 
     #[test]
+    fn abci_query() {
+        let response = endpoint::abci_query::Response::from_json(&read_json_fixture("abci_query"))
+            .unwrap()
+            .response;
+
+        assert_eq!(response.height.value(), 1);
+    }
+
+    #[test]
     fn block() {
         let response = endpoint::block::Response::from_json(&read_json_fixture("block")).unwrap();
 

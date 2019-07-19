@@ -9,7 +9,7 @@ use std::{
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct Height(pub u64);
+pub struct Height(u64);
 
 impl Height {
     /// Convert `u64` to block height.
