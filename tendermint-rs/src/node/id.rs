@@ -16,7 +16,8 @@ use subtle_encoding::hex;
 pub const LENGTH: usize = 20;
 
 /// Node IDs
-#[derive(Copy, Clone, Hash)]
+#[allow(clippy::derive_hash_xor_eq)]
+#[derive(Copy, Clone, Eq, Hash)]
 pub struct Id([u8; LENGTH]);
 
 impl Id {
@@ -38,7 +39,6 @@ impl AsRef<[u8]> for Id {
 }
 
 impl ConstantTimeEq for Id {
-    #[inline]
     fn ct_eq(&self, other: &Id) -> subtle::Choice {
         self.as_bytes().ct_eq(other.as_bytes())
     }
@@ -85,6 +85,12 @@ impl FromStr for Id {
         let mut result_bytes = [0u8; LENGTH];
         result_bytes.copy_from_slice(&bytes);
         Ok(Id(result_bytes))
+    }
+}
+
+impl PartialEq for Id {
+    fn eq(&self, other: &Id) -> bool {
+        self.ct_eq(other).into()
     }
 }
 
