@@ -94,3 +94,34 @@ impl Serialize for Address {
         self.to_string().serialize(serializer)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::node;
+
+    /// Example TCP node address
+    const EXAMPLE_TCP_STR: &str =
+        "tcp://abd636b766dcefb5322d8ca40011ec2cb35efbc2@35.192.61.41:26656";
+
+    #[test]
+    fn parse_tcp_addr() {
+        match EXAMPLE_TCP_STR.parse::<Address>().unwrap() {
+            Address::Tcp {
+                peer_id,
+                host,
+                port,
+            } => {
+                assert_eq!(
+                    peer_id.unwrap(),
+                    "abd636b766dcefb5322d8ca40011ec2cb35efbc2"
+                        .parse::<node::Id>()
+                        .unwrap()
+                );
+                assert_eq!(host, "35.192.61.41");
+                assert_eq!(port, 26656);
+            }
+            other => panic!("unexpected address type: {:?}", other),
+        }
+    }
+}
