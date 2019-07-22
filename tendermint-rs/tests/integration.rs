@@ -1,35 +1,40 @@
 //! Integration tests
 
-/// RPC integration tests
+/// RPC integration tests.
 ///
-/// NOTE: health is tested implicitly when the initial client is created
-#[cfg(all(feature = "integration", feature = "rpc"))]
+/// These are all ignored by default, since they test against running `gaiad`.
+/// They can be run using:
+///
+/// ```
+/// cargo test -- --ignored
+/// ```
+#[cfg(all(feature = "rpc"))]
 mod rpc {
     use tendermint::rpc::Client;
 
     /// Get the address of the local node
-    #[cfg(all(feature = "integration", feature = "rpc"))]
     pub fn localhost_rpc_client() -> Client {
         Client::new(&"tcp://127.0.0.1:26657".parse().unwrap()).unwrap()
     }
 
     /// `/abci_info` endpoint
     #[test]
+    #[ignore]
     fn abci_info() {
         let abci_info = localhost_rpc_client().abci_info().unwrap();
-
-        // TODO(tarcieri): integration testing support for non-gaia apps
         assert_eq!(&abci_info.data, "GaiaApp");
     }
 
     /// `/abci_query` endpoint
     #[test]
+    #[ignore]
     fn abci_query() {
         // TODO(tarcieri): write integration test for this endpoint
     }
 
     /// `/block` endpoint
     #[test]
+    #[ignore]
     fn block() {
         let height = 1u64;
         let block_info = localhost_rpc_client().block(height).unwrap();
@@ -38,6 +43,7 @@ mod rpc {
 
     /// `/block_results` endpoint
     #[test]
+    #[ignore]
     fn block_results() {
         let height = 1u64;
         let block_results = localhost_rpc_client().block_results(height).unwrap();
@@ -46,6 +52,7 @@ mod rpc {
 
     /// `/blockchain` endpoint
     #[test]
+    #[ignore]
     fn blockchain() {
         let blockchain_info = localhost_rpc_client().blockchain(1u64, 10u64).unwrap();
         assert_eq!(blockchain_info.block_metas.len(), 10);
@@ -53,6 +60,7 @@ mod rpc {
 
     /// `/commit` endpoint
     #[test]
+    #[ignore]
     fn commit() {
         let height = 1u64;
         let commit_info = localhost_rpc_client().block(height).unwrap();
@@ -61,6 +69,7 @@ mod rpc {
 
     /// `/genesis` endpoint
     #[test]
+    #[ignore]
     fn genesis() {
         let genesis = localhost_rpc_client().genesis().unwrap();
         assert_eq!(
@@ -71,6 +80,7 @@ mod rpc {
 
     /// `/net_info` endpoint integration test
     #[test]
+    #[ignore]
     fn net_info() {
         let net_info = localhost_rpc_client().net_info().unwrap();
         assert!(net_info.listening);
@@ -78,6 +88,7 @@ mod rpc {
 
     /// `/status` endpoint integration test
     #[test]
+    #[ignore]
     fn status_integration() {
         let status = localhost_rpc_client().status().unwrap();
 

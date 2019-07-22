@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::{Error, ErrorKind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display},
@@ -42,7 +42,7 @@ impl FromStr for Data {
         // Accept either upper or lower case hex
         let bytes = hex::decode_upper(s)
             .or_else(|_| hex::decode(s))
-            .map_err(|_| Error::Parse)?;
+            .map_err(|_| ErrorKind::Parse)?;
 
         Ok(Data(bytes))
     }

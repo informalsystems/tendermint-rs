@@ -1,6 +1,6 @@
 //! ABCI response types used by the `/block_results` RPC endpoint.
 
-use super::{code::Code, data::Data, gas::Gas, info::Info, log::Log};
+use super::{code::Code, data::Data, gas::Gas, info::Info, log::Log, tag::Tag};
 use crate::{consensus, validator};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt::{self, Display};
@@ -115,16 +115,6 @@ where
     D: Deserializer<'de>,
 {
     Ok(Option::deserialize(deserializer)?.unwrap_or_default())
-}
-
-/// Tags
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Tag {
-    /// Key
-    pub key: String,
-
-    /// Value
-    pub value: String,
 }
 
 /// Codespace
