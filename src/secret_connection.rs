@@ -5,7 +5,10 @@ mod nonce;
 mod public_key;
 
 pub use self::{kdf::Kdf, nonce::Nonce, public_key::PublicKey};
-use crate::{amino_types::AuthSigMessage, error::Error};
+use crate::{
+    amino_types::AuthSigMessage,
+    error::{Error, ErrorKind},
+};
 use byteorder::{ByteOrder, LE};
 use bytes::BufMut;
 use prost::{encoding::encode_varint, Message};
@@ -71,7 +74,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         // - https://github.com/tendermint/kms/issues/142
         // - https://eprint.iacr.org/2019/526.pdf
         if shared_secret.as_bytes().ct_eq(&[0x00; 32]).unwrap_u8() == 1 {
-            return Err(Error::InvalidKey);
+            Err(ErrorKind::InvalidKey)?;
         }
 
         // Sort by lexical order.
@@ -92,12 +95,12 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
             recv_nonce: Nonce::default(),
             send_nonce: Nonce::default(),
             recv_secret: aead::OpeningKey::new(&aead::CHACHA20_POLY1305, &kdf.recv_secret)
-                .map_err(|_| Error::Crypto)?,
+                .map_err(|_| ErrorKind::Crypto)?,
             send_secret: aead::SealingKey::new(&aead::CHACHA20_POLY1305, &kdf.send_secret)
-                .map_err(|_| Error::Crypto)?,
+                .map_err(|_| ErrorKind::Crypto)?,
             remote_pubkey: PublicKey::from(
                 ed25519::PublicKey::from_bytes(remote_eph_pubkey.as_bytes())
-                    .ok_or_else(|| Error::Crypto)?,
+                    .ok_or_else(|| ErrorKind::Crypto)?,
             ),
         };
 
@@ -112,7 +115,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         };
 
         let remote_pubkey =
-            ed25519::PublicKey::from_bytes(&auth_sig_msg.key).ok_or_else(|| Error::Crypto)?;
+            ed25519::PublicKey::from_bytes(&auth_sig_msg.key).ok_or_else(|| ErrorKind::Crypto)?;
         let remote_signature: &[u8] = &auth_sig_msg.sig;
         let remote_sig = ed25519::Signature::from_bytes(remote_signature)?;
 
@@ -136,13 +139,13 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
             in_out.copy_from_slice(ciphertext);
 
             aead::open_in_place(&self.recv_secret, nonce, associated_data, 0, in_out)
-                .map_err(|_| Error::Crypto)?
+                .map_err(|_| ErrorKind::Crypto)?
                 .len()
         } else {
             let mut in_out = ciphertext.to_vec();
             let out0 =
                 aead::open_in_place(&self.recv_secret, nonce, aead::Aad::empty(), 0, &mut in_out)
-                    .map_err(|_| Error::Crypto)?;
+                    .map_err(|_| ErrorKind::Crypto)?;
             out[..out0.len()].copy_from_slice(out0);
             out0.len()
         };
@@ -169,7 +172,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
             sealed_frame,
             TAG_SIZE,
         )
-        .map_err(|_| Error::Crypto)?;
+        .map_err(|_| ErrorKind::Crypto)?;
 
         Ok(())
     }
@@ -312,14 +315,14 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
     let mut remote_eph_pubkey_fixed: [u8; 32] = Default::default();
     if buf[0] != 33 || buf[1] != 32 {
-        return Err(Error::Protocol);
+        Err(ErrorKind::Protocol)?;
     }
     // after total length (33) and byte length (32), we expect the raw bytes
     // of the pub key:
     remote_eph_pubkey_fixed.copy_from_slice(&buf[2..34]);
 
     if is_blacklisted_point(&remote_eph_pubkey_fixed) {
-        Err(Error::InvalidKey)
+        Err(ErrorKind::InvalidKey.into())
     } else {
         Ok(EphemeralPublic::from(remote_eph_pubkey_fixed))
     }
@@ -389,7 +392,9 @@ fn sign_challenge(
     challenge: &[u8; 32],
     local_privkey: &dyn Signer<ed25519::Signature>,
 ) -> Result<ed25519::Signature, Error> {
-    local_privkey.try_sign(challenge).map_err(|_| Error::Crypto)
+    local_privkey
+        .try_sign(challenge)
+        .map_err(|_| ErrorKind::Crypto.into())
 }
 
 // TODO(ismail): change from DecodeError to something more generic

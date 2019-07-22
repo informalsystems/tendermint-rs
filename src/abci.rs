@@ -23,6 +23,8 @@ mod path;
 mod proof;
 #[cfg(feature = "rpc")]
 mod responses;
+#[cfg(any(feature = "config", feature = "rpc"))]
+pub mod tag;
 pub mod transaction;
 
 #[cfg(feature = "rpc")]

@@ -1,6 +1,6 @@
 //! Public keys used in Tendermint networks
 
-use crate::error::Error;
+use crate::error::{Error, ErrorKind};
 #[cfg(feature = "serde")]
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use signatory::{ecdsa::curve::secp256k1, ed25519};
@@ -112,6 +112,28 @@ pub enum TendermintKey {
     ConsensusKey(PublicKey),
 }
 
+impl TendermintKey {
+    /// Create a new account key from a `PublicKey`
+    pub fn new_account_key(public_key: PublicKey) -> Result<TendermintKey, Error> {
+        match public_key {
+            PublicKey::Ed25519(_) | PublicKey::Secp256k1(_) => {
+                Ok(TendermintKey::AccountKey(public_key))
+            }
+        }
+    }
+
+    /// Create a new consensus key from a `PublicKey`
+    pub fn new_consensus_key(public_key: PublicKey) -> Result<TendermintKey, Error> {
+        match public_key {
+            PublicKey::Ed25519(_) => Ok(TendermintKey::AccountKey(public_key)),
+            _ => Err(err!(
+                ErrorKind::InvalidKey,
+                "only ed25519 consensus keys are supported"
+            )),
+        }
+    }
+}
+
 impl Deref for TendermintKey {
     type Target = PublicKey;
 
@@ -156,7 +178,7 @@ impl FromStr for Algorithm {
         match s {
             "ed25519" => Ok(Algorithm::Ed25519),
             "secp256k1" => Ok(Algorithm::Secp256k1),
-            _ => Err(Error::Parse),
+            _ => Err(ErrorKind::Parse.into()),
         }
     }
 }

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Params {
     /// Block size parameters
-    pub block_size: block::Size,
+    pub block: block::Size,
 
     /// Evidence parameters
     pub evidence: evidence::Params,

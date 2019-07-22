@@ -24,6 +24,9 @@ extern crate prost_amino as prost;
 #[macro_use]
 extern crate prost_amino_derive as prost_derive;
 
+#[macro_use]
+pub mod error;
+
 pub mod abci;
 pub mod account;
 #[cfg(feature = "amino-types")]
@@ -32,8 +35,9 @@ pub mod block;
 pub mod chain;
 #[cfg(feature = "rpc")]
 pub mod channel;
+#[cfg(feature = "config")]
+pub mod config;
 pub mod consensus;
-pub mod error;
 pub mod evidence;
 #[cfg(feature = "rpc")]
 pub mod genesis;
@@ -42,6 +46,8 @@ pub mod merkle;
 mod moniker;
 pub mod net;
 pub mod node;
+#[cfg(feature = "config")]
+pub mod private_key;
 pub mod public_key;
 #[cfg(feature = "rpc")]
 pub mod rpc;
@@ -51,6 +57,7 @@ pub mod secret_connection;
 mod serializers;
 pub mod signature;
 pub mod time;
+mod timeout;
 pub mod validator;
 mod version;
 pub mod vote;
@@ -61,12 +68,13 @@ pub use crate::genesis::Genesis;
 pub use crate::secret_connection::SecretConnection;
 pub use crate::{
     block::Block,
-    error::Error,
+    error::{Error, ErrorKind},
     hash::Hash,
     moniker::Moniker,
     public_key::{PublicKey, TendermintKey},
     signature::Signature,
     time::Time,
+    timeout::Timeout,
     version::Version,
     vote::Vote,
 };

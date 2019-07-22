@@ -1,6 +1,6 @@
 //! Tendermint node IDs
 
-use crate::error::Error;
+use crate::error::{Error, ErrorKind};
 #[cfg(feature = "serde")]
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
@@ -76,10 +76,10 @@ impl FromStr for Id {
         // Accept either upper or lower case hex
         let bytes = hex::decode_upper(s)
             .or_else(|_| hex::decode(s))
-            .map_err(|_| Error::Parse)?;
+            .map_err(|_| ErrorKind::Parse)?;
 
         if bytes.len() != LENGTH {
-            return Err(Error::Parse);
+            Err(ErrorKind::Parse)?;
         }
 
         let mut result_bytes = [0u8; LENGTH];
