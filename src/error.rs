@@ -135,18 +135,18 @@ impl From<serde_json::error::Error> for Error {
 
 impl From<tendermint::Error> for Error {
     fn from(other: tendermint::error::Error) -> Self {
-        let kind = match other {
-            tendermint::Error::Crypto => ErrorKind::CryptoError,
-            tendermint::Error::InvalidKey => ErrorKind::InvalidKey,
-            tendermint::Error::Io => ErrorKind::IoError,
-            tendermint::Error::Protocol => ErrorKind::ProtocolError,
-            tendermint::Error::Length
-            | tendermint::Error::Parse
-            | tendermint::Error::OutOfRange => ErrorKind::ParseError,
-            tendermint::Error::SignatureInvalid => ErrorKind::VerificationError,
+        let kind = match other.kind() {
+            tendermint::ErrorKind::Crypto => ErrorKind::CryptoError,
+            tendermint::ErrorKind::InvalidKey => ErrorKind::InvalidKey,
+            tendermint::ErrorKind::Io => ErrorKind::IoError,
+            tendermint::ErrorKind::Protocol => ErrorKind::ProtocolError,
+            tendermint::ErrorKind::Length
+            | tendermint::ErrorKind::Parse
+            | tendermint::ErrorKind::OutOfRange => ErrorKind::ParseError,
+            tendermint::ErrorKind::SignatureInvalid => ErrorKind::VerificationError,
         };
 
-        abscissa_core::Error::new(kind, None).into()
+        abscissa_core::Error::new(kind, other.msg().map(|s| s.to_owned())).into()
     }
 }
 

@@ -29,4 +29,14 @@ pub struct Size {
         )
     )]
     pub max_gas: u64,
+
+    /// Time iota in ms
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            serialize_with = "serializers::serialize_u64",
+            deserialize_with = "serializers::parse_u64"
+        )
+    )]
+    pub time_iota_ms: u64,
 }

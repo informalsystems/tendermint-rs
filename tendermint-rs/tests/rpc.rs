@@ -78,11 +78,11 @@ mod endpoints {
         let tag = deliver_tx[0]
             .tags
             .iter()
-            .find(|t| t.key.eq("ZGVzdGluYXRpb24tdmFsaWRhdG9y"))
+            .find(|t| t.key.as_ref().eq("ZGVzdGluYXRpb24tdmFsaWRhdG9y"))
             .unwrap();
 
         assert_eq!(
-            &tag.value,
+            tag.value.as_ref(),
             "Y29zbW9zdmFsb3BlcjFlaDVtd3UwNDRnZDVudGtrYzJ4Z2ZnODI0N21nYzU2Zno0c2RnMw=="
         );
 
@@ -160,7 +160,7 @@ mod endpoints {
         } = response.genesis;
 
         assert_eq!(chain_id.as_str(), EXAMPLE_CHAIN);
-        assert_eq!(consensus_params.block_size.max_bytes, 150000);
+        assert_eq!(consensus_params.block.max_bytes, 200000);
     }
 
     #[test]

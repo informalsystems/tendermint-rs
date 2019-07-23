@@ -62,10 +62,5 @@ pub(crate) fn serialize_duration<S>(duration: &Duration, serializer: S) -> Resul
 where
     S: Serializer,
 {
-    // TODO(tarcieri): use `as_nanos` when we're Rust 1.33+
-    format!(
-        "{}",
-        (duration.as_secs() * 1_000_000_000) + u64::from(duration.subsec_nanos())
-    )
-    .serialize(serializer)
+    format!("{}", duration.as_nanos()).serialize(serializer)
 }
