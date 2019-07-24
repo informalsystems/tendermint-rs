@@ -4,8 +4,8 @@ use crate::prelude::*;
 use abscissa_core::{Command, Runnable};
 use bip39::Mnemonic;
 use chrono::{SecondsFormat, Utc};
+use hkd32::KeyMaterial;
 use hkdf::Hkdf;
-use hmac::{Hmac, Mac};
 use rand_os::{rand_core::RngCore, OsRng};
 use sha2::Sha512;
 use std::{
@@ -20,7 +20,7 @@ use yubihsm::{
     setup::{Profile, Role},
     wrap, AuditOption, Capability, Connector, Credentials, Domain,
 };
-use zeroize::Zeroize;
+use zeroize::{Zeroize, Zeroizing};
 
 /// Domain separation string used as "info" for HKDF
 const HKDF_MNEMONIC_INFO: &[u8] = b"yubihsm setup BIP39 derivation";
@@ -103,14 +103,11 @@ impl Runnable for SetupCommand {
 
         // Re-derive wrap key for display
         // TODO(tarcieri): allow access to the underlying wrap key secret in `yubihsm` crate to avoid this
-        let mut wrapkey_hex = {
-            let mut bytes =
-                derive_secret_from_mnemonic(&mnemonic, &[b"wrap", serialize_key_id(1).as_bytes()]);
+        let wrapkey_material =
+            derive_secret_from_mnemonic(&mnemonic, &[b"wrap", serialize_key_id(1).as_bytes()]);
 
-            let hex_str = String::from_utf8(hex::encode(bytes)).unwrap();
-            bytes.zeroize();
-            hex_str
-        };
+        let wrapkey_hex =
+            Zeroizing::new(String::from_utf8(hex::encode(wrapkey_material.as_bytes())).unwrap());
 
         if self.print_only {
             if self.restore {
@@ -146,8 +143,7 @@ impl Runnable for SetupCommand {
             validator_password.as_str()
         );
 
-        println!("- wrapkey 0x0001 [primary]:   {}", &wrapkey_hex);
-        wrapkey_hex.zeroize();
+        println!("- wrapkey 0x0001 [primary]:   {}", wrapkey_hex.as_str());
 
         if self.print_only {
             process::exit(0);
@@ -363,7 +359,7 @@ impl RolePassword {
         // convenient.
         //
         // For that reason, truncate the derived secret to 16-bytes
-        let truncated_secret_key = &secret_key[..(KEY_SIZE / 2)];
+        let truncated_secret_key = &secret_key.as_bytes()[..(KEY_SIZE / 2)];
 
         let result = RolePassword(
             Bech32::default().encode(format!("kms-{}-password-", role_name), truncated_secret_key),
@@ -418,7 +414,8 @@ fn derive_wrap_key_from_mnemonic(mnemonic: &Mnemonic, key_id: object::Id) -> wra
     // has been compromised.
     wrap::Key::from_bytes(
         key_id,
-        &derive_secret_from_mnemonic(mnemonic, &[b"wrap", serialize_key_id(key_id).as_bytes()]),
+        derive_secret_from_mnemonic(mnemonic, &[b"wrap", serialize_key_id(key_id).as_bytes()])
+            .as_bytes(),
     )
     .unwrap()
     .label(wrap_key_label)
@@ -434,7 +431,10 @@ fn serialize_key_id(key_id: object::Id) -> String {
 
 /// Derive secrets from the given BIP39 `Mnemonic` ala a BIP32 (hardened)
 /// derivation hierarchy.
-fn derive_secret_from_mnemonic(mnemonic: &Mnemonic, path: &[&[u8]]) -> [u8; KEY_SIZE] {
+// TODO(tarcieri): refactor `path` to use `impl AsRef<hkd32::Path>`
+fn derive_secret_from_mnemonic(mnemonic: &Mnemonic, path: &[&[u8]]) -> KeyMaterial {
+    assert!(!path.is_empty(), "cannot derive keys for the root path");
+
     debug!(
         "deriving secret for path: /{}",
         path.iter()
@@ -443,36 +443,23 @@ fn derive_secret_from_mnemonic(mnemonic: &Mnemonic, path: &[&[u8]]) -> [u8; KEY_
             .join("/")
     );
 
-    // Domain separate the toplevel of the derivation hierarchy ala BIP43
-    let mut seed_hmac = Hmac::<Sha512>::new_varkey(mnemonic.entropy()).unwrap();
-    seed_hmac.input(DERIVATION_VERSION);
+    let ikm = KeyMaterial::from_bytes(mnemonic.entropy()).unwrap();
+    let path_bytes = construct_derivation_path(path);
+    ikm.derive_subkey(hkd32::Path::new(&path_bytes).unwrap())
+}
 
-    let mut seed = [0u8; KEY_SIZE];
-    seed.copy_from_slice(&seed_hmac.result().code()[KEY_SIZE..]);
+/// Construct the derivation path
+// TODO(tarcieri): switch to `hkd32::PathBuf` when `alloc` is available in CI
+fn construct_derivation_path(path: &[&[u8]]) -> Vec<u8> {
+    let mut result = vec![(DERIVATION_VERSION.len() - 1) as u8];
+    result.extend_from_slice(DERIVATION_VERSION);
 
-    // Simplified BIP32-like hierarchical derivation
-    path.iter()
-        .enumerate()
-        .fold(seed, |mut parent_key, (i, elem)| {
-            let mut hmac = Hmac::<Sha512>::new_varkey(&parent_key).unwrap();
-            hmac.input(elem);
+    for component in path {
+        result.push((component.len() - 1) as u8);
+        result.extend_from_slice(component);
+    }
 
-            let hmac_result = hmac.result().code();
-            parent_key.zeroize();
-
-            let (secret_key, chain_code) = hmac_result.split_at(KEY_SIZE);
-            let mut child_key = [0u8; KEY_SIZE];
-
-            if i < path.len() - 1 {
-                // Use chain code for all but the last element
-                child_key.copy_from_slice(chain_code);
-            } else {
-                // Use secret key for the last element
-                child_key.copy_from_slice(secret_key);
-            }
-
-            child_key
-        })
+    result
 }
 
 /// Create a label for a newly generated object which tags it with the date
@@ -555,13 +542,6 @@ mod tests {
     fn derive_test_vectors() {
         let test_vectors = &[
             DeriveVector::new(
-                &[],
-                [
-                    64, 221, 114, 137, 202, 149, 139, 31, 99, 190, 117, 111, 131, 176, 29, 0, 36,
-                    196, 164, 172, 183, 124, 208, 114, 154, 230, 82, 17, 105, 74, 6, 180,
-                ],
-            ),
-            DeriveVector::new(
                 &[b"1"],
                 [
                     3, 76, 227, 91, 100, 247, 29, 7, 204, 76, 23, 170, 23, 160, 6, 21, 187, 233,
@@ -586,7 +566,7 @@ mod tests {
 
         for vector in test_vectors {
             let derived_key = derive_secret_from_mnemonic(&test_mnemonic(), vector.path);
-            assert_eq!(&derived_key, &vector.output);
+            assert_eq!(derived_key.as_bytes(), &vector.output);
         }
     }
 }
