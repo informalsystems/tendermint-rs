@@ -1,4 +1,4 @@
-//! Subcommands of the `tmkms` command-line application
+//! `tmkms ledger` CLI (sub)commands
 
 use crate::{chain, prelude::*};
 use abscissa_core::{Command, Runnable};

@@ -1,4 +1,4 @@
-//! The KMS `yubihsm` subcommand
+//! `tmkms yubihsm` CLI (sub)commands
 
 mod detect;
 mod keys;
