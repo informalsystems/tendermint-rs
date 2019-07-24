@@ -248,14 +248,16 @@ fn get_hsm_client(hsm_connector: &Connector) -> yubihsm::Client {
 fn generate_mnemonic_from_hsm_and_os_csprngs(hsm_connector: &Connector) -> Mnemonic {
     let hsm_client = get_hsm_client(hsm_connector);
 
-    // Obtain half of the IKM from the YubiHSM
+    // Obtain half of the IKM from the YubiHSM (256-bits)
     let mut ikm = hsm_client
-        .get_pseudo_random(KEY_SIZE / 2)
+        .get_pseudo_random(KEY_SIZE)
         .unwrap_or_else(|e| hsm_error(&e));
 
-    // Obtain another half of the IKM from the host OS
-    ikm.extend_from_slice(&[0u8; KEY_SIZE / 2]);
-    OsRng::new().unwrap().fill_bytes(&mut ikm[(KEY_SIZE / 2)..]);
+    // Obtain another half of the IKM from the host OS (256-bits)
+    // for a total of 512-bits IKM. This ensures we still get 256-bits
+    // of good IKM even in the event one of the RNGs fails.
+    ikm.extend_from_slice(&[0u8; KEY_SIZE]);
+    OsRng::new().unwrap().fill_bytes(&mut ikm[KEY_SIZE..]);
 
     let kdf = Hkdf::<Sha512>::extract(None, &ikm);
 
