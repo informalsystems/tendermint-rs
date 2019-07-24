@@ -506,3 +506,85 @@ fn hsm_error(e: &failure::Fail) -> ! {
     // TODO: handle exits via abscissa
     process::exit(1);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// "HKD32" test vector derivation key
+    const TEST_KEY: &[u8] = &[
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31,
+    ];
+
+    /// BIP39 Mnemonic phrase corresponding to the `TEST_KEY`
+    const TEST_BIP39_PHRASE: &str =
+        "abandon amount liar amount expire adjust cage candy arch gather drum bullet \
+         absurd math era live bid rhythm alien crouch range attend journey unaware";
+
+    /// Test vector `Mnemonic`
+    fn test_mnemonic() -> Mnemonic {
+        Mnemonic::from_entropy(TEST_KEY, BIP39_LANGUAGE).unwrap()
+    }
+
+    #[test]
+    fn derive_test_key_from_test_mnemonic() {
+        assert_eq!(test_mnemonic().entropy(), TEST_KEY);
+    }
+
+    #[test]
+    fn derive_test_key_from_test_bip39_phrase() {
+        let mnemonic = Mnemonic::from_phrase(TEST_BIP39_PHRASE, BIP39_LANGUAGE).unwrap();
+        assert_eq!(mnemonic.entropy(), TEST_KEY);
+    }
+
+    struct DeriveVector<'a> {
+        pub path: &'a [&'a [u8]],
+        pub output: [u8; KEY_SIZE],
+    }
+
+    impl<'a> DeriveVector<'a> {
+        fn new(path: &'a [&'a [u8]], output: [u8; KEY_SIZE]) -> Self {
+            Self { path, output }
+        }
+    }
+
+    #[test]
+    fn derive_test_vectors() {
+        let test_vectors = &[
+            DeriveVector::new(
+                &[],
+                [
+                    64, 221, 114, 137, 202, 149, 139, 31, 99, 190, 117, 111, 131, 176, 29, 0, 36,
+                    196, 164, 172, 183, 124, 208, 114, 154, 230, 82, 17, 105, 74, 6, 180,
+                ],
+            ),
+            DeriveVector::new(
+                &[b"1"],
+                [
+                    3, 76, 227, 91, 100, 247, 29, 7, 204, 76, 23, 170, 23, 160, 6, 21, 187, 233,
+                    220, 6, 45, 131, 162, 9, 150, 246, 133, 244, 99, 107, 101, 78,
+                ],
+            ),
+            DeriveVector::new(
+                &[b"1", b"2"],
+                [
+                    236, 169, 7, 38, 98, 113, 230, 246, 200, 141, 136, 189, 189, 19, 199, 248, 21,
+                    127, 94, 75, 152, 134, 94, 128, 221, 172, 217, 165, 200, 87, 162, 205,
+                ],
+            ),
+            DeriveVector::new(
+                &[b"1", b"2", b"3"],
+                [
+                    60, 230, 72, 98, 156, 75, 72, 142, 18, 42, 73, 177, 148, 32, 167, 226, 201, 23,
+                    242, 56, 150, 23, 116, 175, 245, 118, 222, 36, 156, 143, 158, 11,
+                ],
+            ),
+        ];
+
+        for vector in test_vectors {
+            let derived_key = derive_secret_from_mnemonic(&test_mnemonic(), vector.path);
+            assert_eq!(&derived_key, &vector.output);
+        }
+    }
+}
