@@ -1,18 +1,22 @@
 //! Subcommands of the `tmkms` command-line application
 
-mod keygen;
+#[cfg(feature = "ledgertm")]
+mod ledger;
+#[cfg(feature = "softsign")]
+mod softsign;
 mod start;
 mod version;
 #[cfg(feature = "yubihsm")]
 mod yubihsm;
-#[cfg(feature = "yubihsm")]
-pub use self::yubihsm::YubihsmCommand;
-#[cfg(feature = "ledgertm")]
-mod ledger;
+
 #[cfg(feature = "ledgertm")]
 pub use self::ledger::LedgerCommand;
+#[cfg(feature = "softsign")]
+pub use self::softsign::SoftSignCommand;
+#[cfg(feature = "yubihsm")]
+pub use self::yubihsm::YubihsmCommand;
 
-pub use self::{keygen::KeygenCommand, start::StartCommand, version::VersionCommand};
+pub use self::{start::StartCommand, version::VersionCommand};
 use crate::config::{KmsConfig, CONFIG_ENV_VAR, CONFIG_FILE_NAME};
 use abscissa_core::{Command, Configurable, Help, Runnable};
 use std::{env, path::PathBuf};
@@ -23,10 +27,6 @@ pub enum KmsCommand {
     /// `help` subcommand
     #[options(help = "show help for a command")]
     Help(Help<Self>),
-
-    /// `keygen` subcommand
-    #[options(help = "generate a new software signing key")]
-    Keygen(KeygenCommand),
 
     /// `start` subcommand
     #[options(help = "start the KMS application")]
@@ -45,6 +45,11 @@ pub enum KmsCommand {
     #[cfg(feature = "ledgertm")]
     #[options(help = "subcommands for Ledger")]
     Ledger(LedgerCommand),
+
+    /// `softsign` subcommand
+    #[cfg(feature = "subcommand")]
+    #[options(help = "subcommands for software signer")]
+    SoftSign(SoftSignCommand),
 }
 
 impl KmsCommand {
