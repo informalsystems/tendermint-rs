@@ -23,6 +23,7 @@ bytes = "0.4"
 chrono = "0.4"
 failure = "0.1"
 gumdrop = "0.6"
+hkd32 = { version = "0.1.2", default-features = false }
 hkdf = "0.7"
 hmac = "0.7"
 lazy_static = "1"
