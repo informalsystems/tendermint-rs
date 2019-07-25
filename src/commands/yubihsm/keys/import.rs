@@ -1,11 +1,12 @@
 //! Import keys either from encrypted backups or existing plaintext keys
 
 use super::*;
+use crate::keyring::SecretKeyEncoding;
 use abscissa_core::{Command, Runnable};
-use signatory::ed25519;
+use signatory::{ed25519, encoding::Decode};
 use std::{fs, path::PathBuf, process};
 use subtle_encoding::base64;
-use tendermint::PublicKey;
+use tendermint::{config::PrivValidatorKey, PrivateKey, PublicKey};
 use yubihsm::object;
 
 /// The `yubihsm keys import` subcommand
@@ -23,7 +24,7 @@ pub struct ImportCommand {
     #[options(short = "w", long = "wrapkey", help = "wrap key to decrypt with")]
     pub wrap_key_id: Option<u16>,
 
-    /// Type of key to import (either `wrap` or `priv_validator`, default `wrap`)
+    /// Type of key to import (either `wrap`, `json`, or `base64`, default `wrap`)
     #[options(short = "t", help = "type of key to import (wrap or priv_validator)")]
     pub key_type: Option<String>,
 
@@ -45,7 +46,8 @@ impl Runnable for ImportCommand {
 
         match self.key_type.as_ref().map(|ty| ty.as_str()) {
             Some("wrap") => self.import_wrapped(&contents),
-            Some("priv_validator") => self.import_priv_validator_json(&contents),
+            Some("json") => self.import_priv_validator_json(&contents),
+            Some("base64") => self.import_base64(&contents),
             Some(other) => {
                 status_err!("invalid key type: {}", other);
                 process::exit(1);
@@ -146,8 +148,6 @@ impl ImportCommand {
     }
 
     /// Import an existing priv_validator file into the HSM
-    // TODO(tarcieri): ideally this can eventually be removed. Its value seems time-limited
-    // and it makes this module much more complex than functionality for importing wrapped backups
     fn import_priv_validator_json(&self, json_data: &str) {
         if let Some(id) = self.wrap_key_id {
             status_warn!(
@@ -163,27 +163,16 @@ impl ImportCommand {
             process::exit(1);
         });
 
-        let v: serde_json::Value = serde_json::from_str(json_data).unwrap();
+        let private_key = PrivValidatorKey::parse_json(json_data)
+            .unwrap_or_else(|e| {
+                status_err!("couldn't parse priv_validator key: {}", e);
+                process::exit(1);
+            })
+            .priv_key;
 
-        let s = v["priv_key"]["value"].as_str().unwrap_or_else(|| {
-            status_err!(
-                "couldn't read validator private key from config: {}",
-                self.path.display()
-            );
-            process::exit(1);
-        });
-
-        let key_pair = base64::decode(s).unwrap_or_else(|e| {
-            status_err!("couldn't decode validator private key from config: {}", e);
-            process::exit(1);
-        });
-
-        let seed = ed25519::Seed::from_keypair(&key_pair).unwrap_or_else(|| {
-            status_err!("error parsing ed25519 seed");
-            process::exit(1);
-        });
-
-        let key = seed.as_secret_slice();
+        let seed = match private_key {
+            PrivateKey::Ed25519(pk) => pk.to_seed(),
+        };
 
         let label =
             yubihsm::object::Label::from(self.label.as_ref().map(|l| l.as_ref()).unwrap_or(""));
@@ -194,7 +183,50 @@ impl ImportCommand {
             DEFAULT_DOMAINS,
             DEFAULT_CAPABILITIES | yubihsm::Capability::EXPORTABLE_UNDER_WRAP,
             yubihsm::asymmetric::Algorithm::Ed25519,
-            key,
+            seed.as_secret_slice(),
+        ) {
+            status_err!("couldn't import key #{}: {}", self.key_id.unwrap(), e);
+            process::exit(1);
+        }
+
+        status_ok!("Imported", "key 0x{:04x}", key_id);
+    }
+
+    /// Import a Base64-encoded private key into the HSM
+    fn import_base64(&self, base64_data: &str) {
+        if let Some(id) = self.wrap_key_id {
+            status_warn!(
+                "ignoring wrapkey ID: {} (not applicable to priv_validator.json files)",
+                id
+            );
+        }
+
+        let key_id = self.key_id.unwrap_or_else(|| {
+            status_err!(
+                "no key ID specified (use e.g. tmkms yubihsm keys import -i 1 priv_validator.json)"
+            );
+            process::exit(1);
+        });
+
+        // TODO(tarcieri): constant-time string trimming
+        let base64_trimmed = base64_data.trim_end();
+
+        let seed = ed25519::Seed::decode_from_str(base64_trimmed, &SecretKeyEncoding::default())
+            .unwrap_or_else(|e| {
+                status_err!("can't decode key: {}", e);
+                process::exit(1);
+            });
+
+        let label =
+            yubihsm::object::Label::from(self.label.as_ref().map(|l| l.as_ref()).unwrap_or(""));
+
+        if let Err(e) = crate::yubihsm::client().put_asymmetric_key(
+            key_id,
+            label,
+            DEFAULT_DOMAINS,
+            DEFAULT_CAPABILITIES | yubihsm::Capability::EXPORTABLE_UNDER_WRAP,
+            yubihsm::asymmetric::Algorithm::Ed25519,
+            seed.as_secret_slice(),
         ) {
             status_err!("couldn't import key #{}: {}", self.key_id.unwrap(), e);
             process::exit(1);

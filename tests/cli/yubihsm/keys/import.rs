@@ -10,7 +10,7 @@ fn keys_import_priv_validator_test() {
 
     #[cfg(feature = "yubihsm-mock")]
     args.extend_from_slice(&["-c", super::KMS_CONFIG_PATH]);
-    args.extend_from_slice(&["-t", "priv_validator"]);
+    args.extend_from_slice(&["-t", "json"]);
     args.extend_from_slice(&["-i", "1"]); // key ID
     args.extend_from_slice(&[super::PRIV_VALIDATOR_CONFIG_PATH]);
 
