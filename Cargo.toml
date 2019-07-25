@@ -51,7 +51,7 @@ zeroize = "0.9"
 version = "0.2"
 
 [dependencies.tendermint]
-version = "0.9"
+version = "0.10.0-rc0"
 path = "tendermint-rs"
 features = ["amino-types", "config", "secret-connection"]
 
