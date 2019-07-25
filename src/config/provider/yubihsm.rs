@@ -3,9 +3,10 @@
 use crate::chain;
 use abscissa_core::secret::{CloneableSecret, DebugSecret, ExposeSecret, Secret};
 use serde::Deserialize;
+use std::{fs, path::PathBuf, process};
 use tendermint::net;
 use yubihsm::Credentials;
-use zeroize::Zeroize;
+use zeroize::{Zeroize, Zeroizing};
 
 /// The (optional) `[providers.yubihsm]` config section
 #[derive(Clone, Deserialize, Debug)]
@@ -51,20 +52,45 @@ pub enum AdapterConfig {
 
 /// Configuration options for this connector
 #[derive(Clone, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AuthConfig {
-    /// Authentication key ID to use to authenticate to the YubiHSM
-    pub key: u16,
+#[serde(deny_unknown_fields, untagged)]
+pub enum AuthConfig {
+    /// Path to a separate password file
+    Path {
+        /// Authentication key ID to use to authenticate to the YubiHSM
+        key: u16,
 
-    /// Password to use to authenticate to the YubiHSM
-    // TODO: allow password to be read from an external password-file
-    pub password: Secret<Password>,
+        /// Password file path
+        password_file: PathBuf,
+    },
+    /// Read password directly from the config file
+    String {
+        /// Authentication key ID to use to authenticate to the YubiHSM
+        key: u16,
+
+        /// Password to use to authenticate to the YubiHSM
+        password: Secret<Password>,
+    },
 }
 
 impl AuthConfig {
     /// Get the `yubihsm::Credentials` for this `AuthConfig`
     pub fn credentials(&self) -> Credentials {
-        Credentials::from_password(self.key, self.password.expose_secret().0.as_bytes())
+        match self {
+            AuthConfig::Path { key, password_file } => {
+                let password =
+                    Zeroizing::new(fs::read_to_string(password_file).unwrap_or_else(|e| {
+                        status_err!("couldn't read key from {}: {}", password_file.display(), e);
+                        process::exit(1);
+                    }));
+
+                // TODO(tarcieri): constant-time string trimming
+                let password_trimmed = password.trim_end();
+                Credentials::from_password(*key, password_trimmed.as_bytes())
+            }
+            AuthConfig::String { key, password } => {
+                Credentials::from_password(*key, password.expose_secret().0.as_bytes())
+            }
+        }
     }
 }
 
