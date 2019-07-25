@@ -5,7 +5,7 @@ extern crate prost_amino as prost;
 use crate::prost::Message;
 use chrono::{DateTime, Utc};
 use rand::Rng;
-use signatory::{ed25519, encoding::Identity, Decode, PublicKeyed, Signature, Verifier};
+use signatory::{ed25519, Decode, PublicKeyed, Signature, Verifier};
 use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
 use std::{
     fs,
@@ -19,7 +19,7 @@ use tendermint::{
     amino_types::{self, *},
     secret_connection::{self, SecretConnection},
 };
-use tmkms::UnixConnection;
+use tmkms::{keyring::SecretKeyEncoding, UnixConnection};
 
 /// Integration tests for the KMS command-line interface
 mod cli;
@@ -126,7 +126,8 @@ impl KmsProcess {
     /// Create a config file for a TCP KMS and return its path
     fn create_tcp_config(port: u16) -> NamedTempFile {
         let mut config_file = NamedTempFile::new().unwrap();
-        let peer_id = "f88883b673fc69d7869cab098de3bafc2ff76eb8";
+        let (pub_key, _) = test_key();
+        let peer_id = secret_connection::PublicKey::from(pub_key).peer_id();
 
         writeln!(
             config_file,
@@ -144,9 +145,10 @@ impl KmsProcess {
 
             [[providers.softsign]]
             chain_ids = ["test_chain_id"]
+            key_format = "base64"
             path = "{}"
         "#,
-            peer_id, port, SIGNING_KEY_PATH
+            &peer_id.to_string(), port, SIGNING_KEY_PATH
         )
         .unwrap();
 
@@ -171,6 +173,7 @@ impl KmsProcess {
 
             [[providers.softsign]]
             chain_ids = ["test_chain_id"]
+            key_format = "base64"
             path = "{}"
         "#,
             socket_path, SIGNING_KEY_PATH
@@ -282,7 +285,8 @@ impl io::Read for ProtocolTester {
 
 /// Get the public key associated with the testing private key
 fn test_key() -> (ed25519::PublicKey, Ed25519Signer) {
-    let seed = ed25519::Seed::decode_from_file(SIGNING_KEY_PATH, &Identity::default()).unwrap();
+    let seed =
+        ed25519::Seed::decode_from_file(SIGNING_KEY_PATH, &SecretKeyEncoding::default()).unwrap();
     let signer = Ed25519Signer::from(&seed);
     (signer.public_key().unwrap(), signer)
 }
