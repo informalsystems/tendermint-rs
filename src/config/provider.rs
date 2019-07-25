@@ -10,7 +10,7 @@ pub mod yubihsm;
 #[cfg(feature = "ledgertm")]
 use self::ledgertm::LedgerTendermintConfig;
 #[cfg(feature = "softsign")]
-use self::softsign::SoftSignConfig;
+use self::softsign::SoftsignConfig;
 #[cfg(feature = "yubihsm")]
 use self::yubihsm::YubihsmConfig;
 use serde::Deserialize;
@@ -22,7 +22,7 @@ pub struct ProviderConfig {
     /// Software-backed signer
     #[cfg(feature = "softsign")]
     #[serde(default)]
-    pub softsign: Vec<SoftSignConfig>,
+    pub softsign: Vec<SoftsignConfig>,
 
     /// Map of yubihsm-connector labels to their configurations
     #[cfg(feature = "yubihsm")]

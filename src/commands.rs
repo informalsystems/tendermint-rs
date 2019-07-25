@@ -12,7 +12,7 @@ mod yubihsm;
 #[cfg(feature = "ledgertm")]
 pub use self::ledger::LedgerCommand;
 #[cfg(feature = "softsign")]
-pub use self::softsign::SoftSignCommand;
+pub use self::softsign::SoftsignCommand;
 #[cfg(feature = "yubihsm")]
 pub use self::yubihsm::YubihsmCommand;
 
@@ -47,9 +47,9 @@ pub enum KmsCommand {
     Ledger(LedgerCommand),
 
     /// `softsign` subcommand
-    #[cfg(feature = "subcommand")]
+    #[cfg(feature = "softsign")]
     #[options(help = "subcommands for software signer")]
-    SoftSign(SoftSignCommand),
+    Softsign(SoftsignCommand),
 }
 
 impl KmsCommand {

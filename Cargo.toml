@@ -53,7 +53,7 @@ version = "0.2"
 [dependencies.tendermint]
 version = "0.9"
 path = "tendermint-rs"
-features = ["amino-types", "secret-connection"]
+features = ["amino-types", "config", "secret-connection"]
 
 [dev-dependencies]
 tempfile = "3"

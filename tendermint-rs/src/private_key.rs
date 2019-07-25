@@ -3,6 +3,8 @@
 use crate::public_key::PublicKey;
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use signatory::{ed25519, PublicKeyed};
+#[cfg(feature = "signatory-dalek")]
+use signatory_dalek::Ed25519Signer;
 use subtle_encoding::{Base64, Encoding};
 use zeroize::{Zeroize, Zeroizing};
 
@@ -25,6 +27,13 @@ impl PrivateKey {
             PrivateKey::Ed25519(private_key) => private_key.public_key(),
         }
     }
+
+    /// If applicable, borrow the Ed25519 keypair
+    pub fn ed25519_keypair(&self) -> Option<&Ed25519Keypair> {
+        match self {
+            PrivateKey::Ed25519(keypair) => Some(keypair),
+        }
+    }
 }
 
 /// Ed25519 keypairs
@@ -41,6 +50,23 @@ impl Ed25519Keypair {
             .unwrap();
 
         PublicKey::from(pk)
+    }
+
+    /// Get the Signatory Ed25519 "seed" for this signer
+    pub fn to_seed(&self) -> ed25519::Seed {
+        ed25519::Seed::from(self)
+    }
+
+    /// Get a Signatory Ed25519 signer (ed25519-dalek based)
+    #[cfg(feature = "signatory-dalek")]
+    pub fn to_signer(&self) -> Ed25519Signer {
+        Ed25519Signer::from(&self.to_seed())
+    }
+}
+
+impl<'a> From<&'a Ed25519Keypair> for ed25519::Seed {
+    fn from(keypair: &'a Ed25519Keypair) -> ed25519::Seed {
+        ed25519::Seed::from_keypair(&keypair.0[..]).unwrap()
     }
 }
 

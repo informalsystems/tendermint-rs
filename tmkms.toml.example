@@ -21,7 +21,7 @@ id = "irishub"
 key_format = { type = "bech32", account_key_prefix = "iap", consensus_key_prefix = "icp" }
 # state_file = "/path/to/irishub_priv_validator_state.json"
 
-# Validator configuration
+## Validator configuration
 [[validator]]
 addr = "tcp://f88883b673fc69d7869cab098de3bafc2ff76eb8@example1.example.com:26658"
 # or addr = "unix:///path/to/socket"
@@ -30,11 +30,9 @@ reconnect = true # true is the default
 secret_key = "path/to/secret_connection.key"
 # max_height = "500000"
 
-# Provider configuration
-[[providers.softsign]]
-chain_ids = ["cosmoshub-1"]
-path = "path/to/signing.key"
+## Signing provider configuration
 
+# enable the `yubihsm` feature to use this backend
 [[providers.yubihsm]]
 adapter = { type = "usb" }
 auth = { key = 1, password = "password" } # Default YubiHSM admin credentials. Change ASAP!
@@ -42,5 +40,13 @@ keys = [{ chain_ids = ["cosmoshub-1"], key = 1 }]
 #serial_number = "0123456789" # identify serial number of a specific YubiHSM to connect to
 #connector_server = { laddr = "tcp://127.0.0.1:12345", cli = { auth_key = 2 } } # run yubihsm-connector compatible server
 
+# enable the `ledger` feature to use this backend
 [[providers.ledgertm]]
 chain_ids = ["cosmoshub-1"]
+
+# enable the `softsign` feature to use this backend
+# note: the `yubihsm` or `ledger` backends are recommended
+#[[providers.softsign]]
+#chain_ids = ["cosmoshub-1"]
+#key_format = "base64"
+#path = "path/to/signing.key"

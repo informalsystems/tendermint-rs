@@ -78,3 +78,5 @@ pub use crate::{
     version::Version,
     vote::Vote,
 };
+#[cfg(feature = "config")]
+pub use private_key::PrivateKey;
