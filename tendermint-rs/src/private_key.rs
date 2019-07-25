@@ -1,8 +1,11 @@
 //! Cryptographic private keys
 
+#[cfg(feature = "signatory-dalek")]
 use crate::public_key::PublicKey;
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
-use signatory::{ed25519, PublicKeyed};
+use signatory::ed25519;
+#[cfg(feature = "signatory-dalek")]
+use signatory::PublicKeyed;
 #[cfg(feature = "signatory-dalek")]
 use signatory_dalek::Ed25519Signer;
 use subtle_encoding::{Base64, Encoding};
@@ -22,6 +25,7 @@ pub enum PrivateKey {
 
 impl PrivateKey {
     /// Get the public key associated with this private key
+    #[cfg(feature = "signatory-dalek")]
     pub fn public_key(&self) -> PublicKey {
         match self {
             PrivateKey::Ed25519(private_key) => private_key.public_key(),
@@ -43,6 +47,7 @@ pub struct Ed25519Keypair([u8; ED25519_KEYPAIR_SIZE]);
 
 impl Ed25519Keypair {
     /// Get the public key associated with this keypair
+    #[cfg(feature = "signatory-dalek")]
     pub fn public_key(&self) -> PublicKey {
         let seed = ed25519::Seed::from_keypair(&self.0[..]).unwrap();
         let pk = signatory_dalek::Ed25519Signer::from(&seed)

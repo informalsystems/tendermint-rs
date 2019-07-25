@@ -2,10 +2,10 @@
 
 use crate::{
     error::{Error, ErrorKind},
-    node,
     private_key::PrivateKey,
-    public_key::PublicKey,
 };
+#[cfg(feature = "signatory-dalek")]
+use crate::{node, public_key::PublicKey};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
 
@@ -40,6 +40,7 @@ impl NodeKey {
     }
 
     /// Get the public key for this keypair
+    #[cfg(feature = "signatory-dalek")]
     pub fn public_key(&self) -> PublicKey {
         match &self.priv_key {
             PrivateKey::Ed25519(key) => key.public_key(),
@@ -47,6 +48,7 @@ impl NodeKey {
     }
 
     /// Get node ID for this keypair
+    #[cfg(feature = "signatory-dalek")]
     pub fn node_id(&self) -> node::Id {
         match &self.public_key() {
             PublicKey::Ed25519(key) => node::Id::from(*key),
