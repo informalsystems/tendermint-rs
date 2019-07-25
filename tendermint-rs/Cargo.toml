@@ -58,7 +58,7 @@ serde_json = "1"
 [features]
 default = ["serde", "tai64"]
 amino-types = ["prost-amino", "prost-amino-derive"]
-config = ["serde", "serde_json", "toml"]
+config = ["serde", "serde_json", "toml", "zeroize"]
 rpc = ["hyper", "rand_os", "serde", "serde_json", "uuid"]
 secret-connection = [
     "amino-types",
