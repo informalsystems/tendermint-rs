@@ -186,8 +186,8 @@ where
                     let height = request.height().unwrap();
 
                     warn!(
-                        "[{}:{}] attempt to double sign at height: {}",
-                        &self.chain_id, &self.peer_addr, height
+                        "[{}:{}] attempt to double sign at height/round/step: {}",
+                        &self.chain_id, &self.peer_addr, request_state
                     );
 
                     let remote_err = RemoteError::double_sign(height);
@@ -242,8 +242,8 @@ where
 
     /// Write an INFO logline about a signing request
     fn log_signing_request<T: TendermintRequest + Debug>(&self, request: &T, started_at: Instant) {
-        let height = request
-            .height()
+        let consensus_state = request
+            .consensus_state()
             .map(|h| h.to_string())
             .unwrap_or_else(|| "none".to_owned());
 
@@ -253,11 +253,11 @@ where
             .unwrap_or_else(|| "Unknown".to_owned());
 
         info!(
-            "[{}@{}] signed {:?} at height: {} ({} ms)",
+            "[{}@{}] signed {:?} at height/round/step: {} ({} ms)",
             &self.chain_id,
             &self.peer_addr,
             msg_type,
-            height,
+            consensus_state,
             started_at.elapsed().as_millis()
         );
     }
