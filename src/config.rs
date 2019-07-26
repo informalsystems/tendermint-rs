@@ -14,6 +14,7 @@ pub use self::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
 use crate::{
     abci::tag,
     error::{Error, ErrorKind},
+    genesis::Genesis,
     net, node, Moniker, Timeout,
 };
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
@@ -119,6 +120,18 @@ impl TendermintConfig {
         })?;
 
         Self::parse_toml(toml_string)
+    }
+
+    /// Load `genesis.json` file from the configured location
+    pub fn load_genesis_file<P>(&self, home: &P) -> Result<Genesis, Error>
+    where
+        P: AsRef<Path>,
+    {
+        let path = home.as_ref().join(&self.genesis_file);
+        let genesis_json = fs::read_to_string(&path)
+            .map_err(|e| err!(ErrorKind::Parse, "couldn't open {}: {}", path.display(), e))?;
+
+        Ok(serde_json::from_str(genesis_json.as_ref())?)
     }
 }
 
