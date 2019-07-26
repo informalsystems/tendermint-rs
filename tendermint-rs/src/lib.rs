@@ -39,7 +39,7 @@ pub mod channel;
 pub mod config;
 pub mod consensus;
 pub mod evidence;
-#[cfg(feature = "rpc")]
+#[cfg(any(feature = "config", feature = "rpc"))]
 pub mod genesis;
 pub mod hash;
 pub mod merkle;
