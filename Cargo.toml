@@ -59,6 +59,7 @@ serde_json = "1"
 default = ["serde", "tai64"]
 amino-types = ["prost-amino", "prost-amino-derive"]
 config = ["serde", "serde_json", "toml", "zeroize"]
+keys = ["signatory-dalek"]
 rpc = ["hyper", "rand_os", "serde", "serde_json", "uuid"]
 secret-connection = [
     "amino-types",
