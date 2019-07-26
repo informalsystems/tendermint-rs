@@ -123,15 +123,18 @@ impl TendermintConfig {
     }
 
     /// Load `genesis.json` file from the configured location
-    pub fn load_genesis_file<P>(&self, home: &P) -> Result<Genesis, Error>
-    where
-        P: AsRef<Path>,
-    {
+    pub fn load_genesis_file(&self, home: impl AsRef<Path>) -> Result<Genesis, Error> {
         let path = home.as_ref().join(&self.genesis_file);
         let genesis_json = fs::read_to_string(&path)
             .map_err(|e| err!(ErrorKind::Parse, "couldn't open {}: {}", path.display(), e))?;
 
         Ok(serde_json::from_str(genesis_json.as_ref())?)
+    }
+
+    /// Load `node_key.json` file from the configured location
+    pub fn load_node_key(&self, home: impl AsRef<Path>) -> Result<NodeKey, Error> {
+        let path = home.as_ref().join(&self.node_key_file);
+        NodeKey::load_json_file(&path)
     }
 }
 
@@ -386,7 +389,7 @@ pub struct P2PConfig {
     /// UPNP port forwarding
     pub upnp: bool,
 
-    /// Path to address boo
+    /// Path to address book
     pub addr_book_file: PathBuf,
 
     /// Set `true` for strict address routability rules
