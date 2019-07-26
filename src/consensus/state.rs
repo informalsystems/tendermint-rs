@@ -1,7 +1,7 @@
 //! Tendermint consensus state
 
 pub use crate::block;
-pub use std::cmp::Ordering;
+pub use std::{cmp::Ordering, fmt};
 #[cfg(feature = "serde")]
 use {
     crate::serializers,
@@ -30,6 +30,12 @@ pub struct State {
 
     /// Block ID being proposed (if available)
     pub block_id: Option<block::Id>,
+}
+
+impl fmt::Display for State {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}/{}/{}", self.height, self.round, self.step)
+    }
 }
 
 impl Ord for State {
