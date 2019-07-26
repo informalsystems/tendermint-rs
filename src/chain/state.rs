@@ -165,6 +165,15 @@ impl State {
 
         Ok(())
     }
+
+    /// Determine if a requested signing operation duplicates a previous one,
+    /// i.e. if the height/round/step and block ID are identical.
+    ///
+    /// This is used to signal to the user that a duplicate signing event
+    /// has occurred.
+    pub fn is_dup(&self, consensus_state: &consensus::State) -> bool {
+        &self.consensus_state == consensus_state
+    }
 }
 
 #[cfg(test)]
