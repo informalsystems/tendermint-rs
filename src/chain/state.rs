@@ -60,6 +60,11 @@ impl State {
         }
     }
 
+    /// Borrow the current consensus state
+    pub fn consensus_state(&self) -> &consensus::State {
+        &self.consensus_state
+    }
+
     /// Check and update the chain's height, round, and step
     pub fn update_consensus_state(
         &mut self,
@@ -164,15 +169,6 @@ impl State {
             .write(|f| f.write_all(json.as_bytes()))?;
 
         Ok(())
-    }
-
-    /// Determine if a requested signing operation duplicates a previous one,
-    /// i.e. if the height/round/step and block ID are identical.
-    ///
-    /// This is used to signal to the user that a duplicate signing event
-    /// has occurred.
-    pub fn is_dup(&self, consensus_state: &consensus::State) -> bool {
-        &self.consensus_state == consensus_state
     }
 }
 
