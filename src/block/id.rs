@@ -10,6 +10,9 @@ use std::{
     str::{self, FromStr},
 };
 
+/// Length of a block ID prefix displayed for debugging purposes
+pub const PREFIX_LENGTH: usize = 10;
+
 /// Block identifiers which contain two distinct Merkle roots of the block,
 /// as well as the number of parts in the block.
 ///
@@ -40,6 +43,13 @@ impl Id {
     /// Create a new `Id` from a hash byte slice
     pub fn new(hash: Hash, parts: Option<parts::Header>) -> Self {
         Self { hash, parts }
+    }
+
+    /// Get a shortened 12-character prefix of a block ID (ala git)
+    pub fn prefix(&self) -> String {
+        let mut result = self.to_string();
+        result.truncate(PREFIX_LENGTH);
+        result
     }
 }
 
