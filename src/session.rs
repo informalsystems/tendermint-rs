@@ -176,24 +176,8 @@ where
         let registry = chain::REGISTRY.get();
         let chain = registry.get_chain(&self.chain_id).unwrap();
 
-        // The current double-signing logic allows for resigning the exact
-        // same block as the one it signed immediately prior, i.e. if the
-        // requested block ID is identical, and the height/round/step are
-        // identical, (re)computing the signature is allowed.
-        //
-        // Since Ed25519 is a deterministic signature algorithm, this has no
-        // deleterious effects, and provides fault tolerance in the event
-        // the KMS hands a signed block off to a validator that drops it
-        // on the floor (e.g. hardware failure)
-        //
-        // When this happens, this flag is set to notify the user that it
-        // signed a duplicate block.
-        let mut is_dup = false;
-
         if let Some(request_state) = &request.consensus_state() {
-            // TODO(tarcieri): better handle `PoisonError`?
             let mut chain_state = chain.state.lock().unwrap();
-            is_dup = chain_state.is_dup(request_state);
 
             if let Err(e) = chain_state.update_consensus_state(request_state.clone()) {
                 // Report double signing error back to the validator
@@ -201,8 +185,12 @@ where
                     let height = request.height().unwrap();
 
                     warn!(
-                        "[{}:{}] attempt to double sign at height/round/step: {}",
-                        &self.chain_id, &self.peer_addr, request_state
+                        "[{}:{}] attempt to double sign at h/r/s: {} ({} != {})",
+                        &self.chain_id,
+                        &self.peer_addr,
+                        request_state,
+                        chain_state.consensus_state().block_id_prefix(),
+                        request_state.block_id_prefix()
                     );
 
                     let remote_err = RemoteError::double_sign(height);
@@ -233,7 +221,7 @@ where
         let started_at = Instant::now();
         let signature = chain.keyring.sign_ed25519(None, &to_sign)?;
 
-        self.log_signing_request(&request, started_at, is_dup);
+        self.log_signing_request(&request, started_at);
         request.set_signature(&signature);
 
         Ok(request.build_response(None))
@@ -256,44 +244,25 @@ where
     }
 
     /// Write an INFO logline about a signing request
-    fn log_signing_request<T: TendermintRequest + Debug>(
-        &self,
-        request: &T,
-        started_at: Instant,
-        is_dup: bool,
-    ) {
-        let (consensus_state, block_id) = match &request.consensus_state() {
-            Some(state) => {
-                let block_id_string = match &state.block_id {
-                    Some(id) => {
-                        let mut res = id.to_string();
-                        res.truncate(8);
-                        res
-                    }
-                    None => "none".to_owned(),
-                };
-
-                (state.to_string(), block_id_string)
-            }
-            None => ("none".to_owned(), "none".to_owned()),
-        };
+    fn log_signing_request<T: TendermintRequest + Debug>(&self, request: &T, started_at: Instant) {
+        let (consensus_state, block_id) = request
+            .consensus_state()
+            .map(|state| (state.to_string(), state.block_id_prefix()))
+            .unwrap_or_else(|| ("(none)".to_owned(), "(none)".to_owned()));
 
         let msg_type = request
             .msg_type()
             .map(|t| format!("{:?}", t))
             .unwrap_or_else(|| "Unknown".to_owned());
 
-        let dup_msg = if is_dup { " [dup]" } else { "" };
-
         info!(
-            "[{}@{}] signed {}:{} h/r/s:{} ({} ms){}",
+            "[{}@{}] signed {}:{} at h/r/s {} ({} ms)",
             &self.chain_id,
             &self.peer_addr,
             msg_type,
             block_id,
             consensus_state,
             started_at.elapsed().as_millis(),
-            dup_msg
         );
     }
 }

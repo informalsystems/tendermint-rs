@@ -17,6 +17,7 @@ members = [".", "tendermint-rs"]
 circle-ci = { repository = "tendermint/kms" }
 
 [dependencies]
+abscissa_core = "0.2"
 atomicwrites = "0.2"
 byteorder = "1.2"
 bytes = "0.4"
@@ -47,9 +48,6 @@ wait-timeout = "0.2"
 yubihsm = { version = "0.26", features = ["setup", "usb"], optional = true }
 zeroize = "0.9"
 
-[dependencies.abscissa_core]
-version = "0.2"
-
 [dependencies.tendermint]
 version = "0.10.0-rc0"
 path = "tendermint-rs"
@@ -57,7 +55,7 @@ features = ["amino-types", "config", "secret-connection"]
 
 [dev-dependencies]
 tempfile = "3"
-rand = "0.6"
+rand = "0.7"
 
 [dev-dependencies.abscissa_core]
 version = "0.2"

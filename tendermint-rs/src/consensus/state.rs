@@ -32,6 +32,16 @@ pub struct State {
     pub block_id: Option<block::Id>,
 }
 
+impl State {
+    /// Get short prefix of the block ID for debugging purposes (ala git)
+    pub fn block_id_prefix(&self) -> String {
+        self.block_id
+            .as_ref()
+            .map(block::Id::prefix)
+            .unwrap_or_else(|| "(none)".to_owned())
+    }
+}
+
 impl fmt::Display for State {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}/{}/{}", self.height, self.round, self.step)
