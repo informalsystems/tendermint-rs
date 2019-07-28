@@ -8,6 +8,10 @@ use {
     serde::{Deserialize, Serialize},
 };
 
+/// Placeholder string to show when block ID is absent. Syntax from:
+/// <https://tendermint.com/docs/spec/consensus/consensus.html>
+pub const NIL_PLACEHOLDER: &str = "<nil>";
+
 /// Tendermint consensus state
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -38,7 +42,7 @@ impl State {
         self.block_id
             .as_ref()
             .map(block::Id::prefix)
-            .unwrap_or_else(|| "(none)".to_owned())
+            .unwrap_or_else(|| NIL_PLACEHOLDER.to_owned())
     }
 }
 
