@@ -26,6 +26,7 @@ use std::{
 use subtle::ConstantTimeEq;
 use tendermint::{
     amino_types::{PingRequest, PingResponse, PubKeyRequest, PubKeyResponse, RemoteError},
+    consensus::state::NIL_PLACEHOLDER,
     node,
     secret_connection::{self, SecretConnection},
 };
@@ -55,7 +56,7 @@ impl Session<SecretConnection<TcpStream>> {
         port: u16,
         secret_connection_key: &ed25519::Seed,
     ) -> Result<Self, Error> {
-        let peer_addr = format!("{}:{}", host, port);
+        let peer_addr = format!("tcp://{}:{}", host, port);
         debug!("{}: Connecting to {}...", chain_id, &peer_addr);
 
         let socket = TcpStream::connect(format!("{}:{}", host, port))?;
@@ -184,8 +185,8 @@ where
                 if e.kind() == StateErrorKind::DoubleSign {
                     let height = request.height().unwrap();
 
-                    warn!(
-                        "[{}:{}] attempt to double sign at h/r/s: {} ({} != {})",
+                    error!(
+                        "[{}:{}] attempted double sign at h/r/s: {} ({} != {})",
                         &self.chain_id,
                         &self.peer_addr,
                         request_state,
@@ -248,7 +249,7 @@ where
         let (consensus_state, block_id) = request
             .consensus_state()
             .map(|state| (state.to_string(), state.block_id_prefix()))
-            .unwrap_or_else(|| ("(none)".to_owned(), "(none)".to_owned()));
+            .unwrap_or_else(|| (NIL_PLACEHOLDER.to_owned(), NIL_PLACEHOLDER.to_owned()));
 
         let msg_type = request
             .msg_type()
