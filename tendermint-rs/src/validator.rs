@@ -8,7 +8,7 @@ use subtle_encoding::base64;
 
 /// Validator information
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Info {
     /// Validator account address
     pub address: account::Id,
@@ -60,7 +60,7 @@ impl Serialize for ProposerPriority {
 
 /// Updates to the validator set
 #[cfg(feature = "rpc")]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Update {
     /// Validator public key
     #[serde(deserialize_with = "deserialize_public_key")]

@@ -20,7 +20,7 @@ pub enum Algorithm {
 }
 
 /// Hash digests
-#[derive(Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub enum Hash {
     /// SHA-256 hashes
     Sha256([u8; SHA256_HASH_SIZE]),

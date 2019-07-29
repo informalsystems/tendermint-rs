@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
 
 /// Node information
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Info {
     /// Protocol version information
     pub protocol_version: ProtocolVersionInfo,
@@ -33,7 +33,7 @@ pub struct Info {
 }
 
 /// Protocol version information
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct ProtocolVersionInfo {
     /// P2P protocol version
     #[serde(
@@ -58,7 +58,7 @@ pub struct ProtocolVersionInfo {
 }
 
 /// Listen address information
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct ListenAddress(String);
 
 impl ListenAddress {
@@ -80,7 +80,7 @@ impl Display for ListenAddress {
 }
 
 /// Other information
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct OtherInfo {
     /// TX index status
     pub tx_index: TxIndexStatus,
@@ -90,7 +90,7 @@ pub struct OtherInfo {
 }
 
 /// Transaction index status
-#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum TxIndexStatus {
     /// Index is on
     #[serde(rename = "on")]
