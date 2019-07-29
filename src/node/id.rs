@@ -17,7 +17,7 @@ pub const LENGTH: usize = 20;
 
 /// Node IDs
 #[allow(clippy::derive_hash_xor_eq)]
-#[derive(Copy, Clone, Eq, Hash)]
+#[derive(Copy, Clone, Eq, Hash, PartialOrd, Ord)]
 pub struct Id([u8; LENGTH]);
 
 impl Id {
