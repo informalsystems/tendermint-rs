@@ -1,3 +1,17 @@
+## [0.10.0] (2019-07-30)
+
+This release is tested against [tendermint v0.31] and known to be compatible
+with [tendermint v0.32] aside from one known issue impacting RPC ([#286]).
+
+- Fix inclusive range incompatibility affecting Rust nightly ([#326])
+- Derive Eq/Ord for (transitive) status types ([#324])
+- Add `TendermintConfig::load_node_key` ([#315])
+- Add `TendermintConfig::load_genesis_file` ([#312])
+- Add `TendermintConfig` and `Error(Kind)` types ([#298])
+- Support `/abci_query` RPC endpoint ([#296])
+- Implement the Tendermint (RFC6962) Merkle tree ([#292])
+- Support `account::Id` generation from ed25519 pubkeys ([#291])
+
 ## [0.9.0] (2019-06-24)
 
 This release is compatible with [tendermint v0.31]
@@ -81,6 +95,17 @@ This release is compatible with [tendermint v0.28]
 
 - Initial release
 
+[0.10.0]: https://github.com/tendermint/kms/pull/328
+[tendermint v0.32]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0320
+[#326]: https://github.com/tendermint/kms/pull/326
+[#324]: https://github.com/tendermint/kms/pull/324
+[#315]: https://github.com/tendermint/kms/pull/315
+[#312]: https://github.com/tendermint/kms/pull/312
+[#298]: https://github.com/tendermint/kms/pull/298
+[#296]: https://github.com/tendermint/kms/pull/296
+[#292]: https://github.com/tendermint/kms/pull/292
+[#291]: https://github.com/tendermint/kms/pull/291
+[#286]: https://github.com/tendermint/kms/pull/286
 [0.9.0]: https://github.com/tendermint/kms/pull/280
 [#279]: https://github.com/tendermint/kms/pull/279
 [#272]: https://github.com/tendermint/kms/pull/272
