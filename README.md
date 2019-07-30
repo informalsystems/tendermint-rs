@@ -20,44 +20,49 @@ which provides the following:
 
 ## Status
 
-Tendermint KMS is currently **ALPHA SOFTWARE AND UNAUDITED -- USE AT YOUR OWN RISK**.
-
-It supports [YubiHSM 2] and [Ledger] as hardware-backed key storage methods.
-
-### Security Issues
-
-The following high severity security issues are still unresolved:
-
-- [#111: Access control](https://github.com/tendermint/kms/issues/111)
-- [#142: MITM in secret connection](https://github.com/tendermint/kms/issues/142)
-
-Work is underway to address them both.
-
-For now we recommend the connection between the KMS and validators occur over
-an isolated network and not depend solely on the Secret Connection protocol for
-authentication and confidentiality (which is also a good idea in general for
-defense-in-depth purposes).
+Tendermint KMS is currently *beta quality*. It has undergone one security audit
+with only one low-severity finding.
 
 ### Double Signing / High Availability
 
-Tendermint KMS implements **alpha quality** double signing detection.
-Please see [#60: Double-signing prevention (MVP for launch)](https://github.com/tendermint/kms/issues/60)
-for more information, however note this implementation is limited.
+Tendermint KMS implements *beta quality* double signing detection.
+It has undergone some testing, however we do not (yet) recommend using the KMS
+in conjunction with multiple simultaneously active validators on the same
+network for prolonged periods of time.
 
-In particular, KMS does **NOT** prevent double signing if two instances
-are running as identical copies, an attacker compromises both (as a signing
-oracle), and uses both instances to double sign.
+In particular, there is presently **no double signing defense** in the case
+that multiple KMS instances are running simultaneously and connecting to
+multiple validators on the same network.
 
 The longer-term story around double-signing is more complex, as it includes
 such scenarios as signing while unbonded. For more information on future-plans
-to provide double-signing defense and high availability in such scenarions,
-see [#115: Dobule signing prevention (post-launch)](https://github.com/tendermint/kms/issues/115).
+to provide double-signing defense and high availability in such scenarios,
+see [#115: Improving double-signing prevention](https://github.com/tendermint/kms/issues/115).
+
+## Signing Providers
+
+You **MUST** select one or more signing provider(s) when compiling the KMS,
+passed as the argument to the `--features` flag (see below for more
+instructions on how to build Tendermint KMS).
+
+The following signing backend providers are presently supported:
+
+#### Hardware Security Modules (recommended)
+
+- [YubiHSM2] (gated under the `yubihsm` cargo feature. See [README.yubihsm.md][yubihsm2] for more info)
+- [Ledger] (gated under the `ledgertm` cargo feature)
+
+#### Software-Only (not recommended)
+
+- `softsign` backend which uses [ed25519-dalek]
 
 ## Supported Platforms
 
 `tmkms` should build on any [supported Rust platform] which is also supported
-by [libusb]. Below are some of the available tier 1, 2, and 3 Rust platforms
-which are also supported by **libusb**.
+by [libusb], however there are some platforms which meet those criteria which
+are unsuitable for cryptography purposes due to lack of constant-time CPU
+instructions. Below are some of the available tier 1, 2, and 3 Rust platforms
+which meet our minimum criteria for KMS use.
 
 NOTE: `tmkms` is presently tested on Linux/x86_64. We don't otherwise guarantee
 support for any of the platforms below, but they theoretically meet the necessary
@@ -76,11 +81,8 @@ prerequisites for support.
 - `x86_64` (recommended)
 - `arm` (32-bit ARM)
 - `aarch64` (64-bit ARM)
-- `mips` (32-bit MIPS)
-- `mips64` (64-bit MIPS)
-- `powerpc` (32-bit PowerPC)
-- `powerpc64` (64-bit PowerPC)
-- `sparc64` (64-bit SPARC)
+- `riscv32` (32-bit RISC-V)
+- `riscv64` (64-bit RISC-V)
 
 ## Installation
 
@@ -133,10 +135,6 @@ cargo install tmkms --features=yubihsm --version=0.4.0
 ```
 
 Alternatively, substitute `--features=ledgertm` to enable Ledger support.
-
-## YubiHSM 2 Setup Instructions
-
-[Please see README.yubihsm.md](https://github.com/tendermint/kms/blob/master/README.yubihsm.md)
 
 ## Usage
 
@@ -219,8 +217,9 @@ limitations under the License.
 [rustc-image]: https://img.shields.io/badge/rustc-1.35+-blue.svg
 [Tendermint]: https://tendermint.com/
 [Cosmos Validators]: https://cosmos.network/docs/gaia/validators/validator-faq.html
-[YubiHSM 2]: https://github.com/tendermint/kms/blob/master/README.yubihsm.md
+[YubiHSM2]: https://github.com/tendermint/kms/blob/master/README.yubihsm.md
 [Ledger]: https://www.ledger.com/
+[ed25519-dalek]: https://github.com/dalek-cryptography/ed25519-dalek
 [supported Rust platform]: https://forge.rust-lang.org/platform-support.html
 [libusb]: https://libusb.info/
 [Dockerfile]: https://github.com/tendermint/kms/blob/master/Dockerfile
