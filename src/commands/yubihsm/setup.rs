@@ -489,7 +489,7 @@ fn prompt_for_user_approval(prompt: &str) {
 }
 
 /// Handler for HSM errors
-fn hsm_error(e: &failure::Fail) -> ! {
+fn hsm_error(e: &dyn failure::Fail) -> ! {
     status_err!("HSM error: {}", e);
 
     // TODO: handle exits via abscissa
