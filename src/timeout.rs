@@ -38,7 +38,7 @@ impl FromStr for Timeout {
 
         let units = match s.chars().nth(s.len() - 2) {
             Some('m') => "ms",
-            Some('0'...'9') => "s",
+            Some('0'..='9') => "s",
             _ => Err(err!(ErrorKind::Parse, "invalid units"))?,
         };
 
