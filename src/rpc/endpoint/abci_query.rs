@@ -41,7 +41,7 @@ impl rpc::Request for Request {
     type Response = Response;
 
     fn method(&self) -> rpc::Method {
-        rpc::Method::AbciInfo
+        rpc::Method::AbciQuery
     }
 }
 

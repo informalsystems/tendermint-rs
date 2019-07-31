@@ -15,6 +15,9 @@ pub enum Method {
     /// Get ABCI info
     AbciInfo,
 
+    /// Get ABCI query
+    AbciQuery,
+
     /// Get block info
     Block,
 
@@ -57,6 +60,7 @@ impl Method {
     pub fn as_str(self) -> &'static str {
         match self {
             Method::AbciInfo => "abci_info",
+            Method::AbciQuery => "abci_query",
             Method::Block => "block",
             Method::BlockResults => "block_results",
             Method::Blockchain => "blockchain",
@@ -79,6 +83,7 @@ impl FromStr for Method {
     fn from_str(s: &str) -> Result<Self, Error> {
         Ok(match s {
             "abci_info" => Method::AbciInfo,
+            "abci_query" => Method::AbciQuery,
             "block" => Method::Block,
             "block_results" => Method::BlockResults,
             "blockchain" => Method::Blockchain,
