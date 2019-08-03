@@ -65,7 +65,6 @@ impl From<PublicKey> for account::Id {
     }
 }
 
-
 impl Info {
     /// Create a new validator.
     pub fn new(pk: PublicKey, vp: vote::Power) -> Info {
@@ -81,6 +80,8 @@ impl Info {
 /// InfoHashable is the form of the validator used for computing the Merkle tree.
 /// It does not include the address, as that is redundant with the pubkey,
 /// nor the proposer priority, as that changes with every block even if the validator set didn't.
+/// It contains only the pubkey and the voting power, and is amino encoded.
+/// TODO: currently only works for Ed25519 pubkeys
 #[derive(Clone, PartialEq, Message)]
 struct InfoHashable {
     #[prost(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
@@ -100,7 +101,8 @@ impl From<&Info> for InfoHashable {
 }
 
 // returns the bytes to be hashed into the Merkle tree -
-// the leaves of the tree.
+// the leaves of the tree. this is an amino encoding of the 
+// pubkey and voting power, so it includes the pubkey's amino prefix.
 impl Info {
     fn hash_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = Vec::new();
