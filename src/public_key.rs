@@ -62,6 +62,14 @@ impl PublicKey {
         }
     }
 
+    /// Serialize this key as raw bytes
+    pub fn as_bytes(self) -> Vec<u8> {
+        match self {
+            PublicKey::Ed25519(ref pk) => pk.as_bytes(),
+            PublicKey::Secp256k1(ref pk) => pk.as_bytes(),
+        }.to_vec()
+    }
+
     /// Serialize this key as amino bytes
     pub fn to_amino_bytes(self) -> Vec<u8> {
         match self {

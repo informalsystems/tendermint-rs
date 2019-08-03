@@ -1,6 +1,7 @@
 //! Tendermint validators
 
 use crate::{account, merkle, vote, PublicKey};
+use prost::Message;
 #[cfg(feature = "serde")]
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 #[cfg(feature = "rpc")]
@@ -40,7 +41,6 @@ impl Set {
 }
 
 /// Validator information
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
 pub struct Info {
     /// Validator account address
@@ -59,18 +59,20 @@ pub struct Info {
 /// InfoHashable is the form of the validator used for computing the Merkle tree.
 /// It does not include the address, as that is redundant with the pubkey,
 /// nor the proposer priority, as that changes with every block even if the validator set didn't.
-#[cfg_attr(feature = "serde", derive(Serialize))]
+#[derive(Clone, PartialEq, Message)]
 struct InfoHashable {
-    pub_key: PublicKey,
-    voting_power: vote::Power,
+    #[prost(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
+    pub pub_key: Vec<u8>,
+    #[prost(uint64, tag = "2")]
+    voting_power: u64,
 }
 
 /// Info -> InfoHashable
 impl From<&Info> for InfoHashable {
     fn from(info: &Info) -> InfoHashable {
         InfoHashable {
-            pub_key: info.pub_key,
-            voting_power: info.voting_power,
+            pub_key: info.pub_key.as_bytes(),
+            voting_power: info.voting_power.value(),
         }
     }
 }
@@ -78,10 +80,10 @@ impl From<&Info> for InfoHashable {
 // returns the bytes to be hashed into the Merkle tree -
 // the leaves of the tree.
 impl Info {
-    #[cfg(feature = "serde_json")]
     fn hash_bytes(&self) -> Vec<u8> {
-        // TODO: use proto3 not serde_json
-        serde_json::to_vec(&InfoHashable::from(self)).unwrap()
+        let mut bytes: Vec<u8> = Vec::new();
+        InfoHashable::from(self).encode(&mut bytes).unwrap();
+        bytes
     }
 }
 
