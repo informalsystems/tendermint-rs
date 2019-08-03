@@ -8,6 +8,11 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 pub struct Power(u64);
 
 impl Power {
+    /// Create a new Power
+    pub fn new(p: u64) -> Power {
+        Power(p)
+    }
+
     /// Get the current voting power
     pub fn value(self) -> u64 {
         self.0

@@ -1,14 +1,47 @@
 //! Tendermint validators
 
-use crate::{account, vote, PublicKey};
+use crate::{account, merkle, vote, PublicKey};
 #[cfg(feature = "serde")]
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 #[cfg(feature = "rpc")]
 use subtle_encoding::base64;
 
+/// Validator set contains a vector of validators
+#[derive(Debug)]
+pub struct Set {
+    validators: Vec<Info>,
+}
+
+impl Set {
+    /// Create a new validator set.
+    /// vals is mutable so it can be sorted by address.
+    pub fn new(mut vals: Vec<Info>) -> Set {
+        vals.sort_by(|v1, v2| v1.address.partial_cmp(&v2.address).unwrap());
+        Set { validators: vals }
+    }
+
+    /// Compute the Merkle root of the validator set
+    pub fn hash(self) -> merkle::Hash {
+        // We need to get from Vec<Info> to &[&[u8]] so we can call simple_hash_from_byte_slices.
+        // This looks like: Vec<Info> -> Vec<Vec<u8>> -> Vec<&[u8]> -> &[&[u8]]
+        // Can we simplify this?
+        // Perhaps simple_hash_from_byteslices should take Vec<Vec<u8>> directly ?
+        let validator_bytes: Vec<Vec<u8>> = self
+            .validators
+            .into_iter()
+            .map(|x| x.hash_bytes())
+            .collect();
+        let validator_byteslices: Vec<&[u8]> = (&validator_bytes)
+            .into_iter()
+            .map(|x| x.as_slice())
+            .collect();
+        merkle::simple_hash_from_byte_slices(validator_byteslices.as_slice())
+    }
+}
+
 /// Validator information
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Info {
     /// Validator account address
     pub address: account::Id,
@@ -21,6 +54,35 @@ pub struct Info {
 
     /// Validator proposer priority
     pub proposer_priority: Option<ProposerPriority>,
+}
+
+/// InfoHashable is the form of the validator used for computing the Merkle tree.
+/// It does not include the address, as that is redundant with the pubkey,
+/// nor the proposer priority, as that changes with every block even if the validator set didn't.
+#[cfg_attr(feature = "serde", derive(Serialize))]
+struct InfoHashable {
+    pub_key: PublicKey,
+    voting_power: vote::Power,
+}
+
+/// Info -> InfoHashable
+impl From<&Info> for InfoHashable {
+    fn from(info: &Info) -> InfoHashable {
+        InfoHashable {
+            pub_key: info.pub_key,
+            voting_power: info.voting_power,
+        }
+    }
+}
+
+// returns the bytes to be hashed into the Merkle tree -
+// the leaves of the tree.
+impl Info {
+    #[cfg(feature = "serde_json")]
+    fn hash_bytes(&self) -> Vec<u8> {
+        // TODO: use proto3 not serde_json
+        serde_json::to_vec(&InfoHashable::from(self)).unwrap()
+    }
 }
 
 /// Proposer priority
@@ -60,7 +122,7 @@ impl Serialize for ProposerPriority {
 
 /// Updates to the validator set
 #[cfg(feature = "rpc")]
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Update {
     /// Validator public key
     #[serde(deserialize_with = "deserialize_public_key")]
@@ -97,5 +159,41 @@ where
             PublicKey::from_raw_ed25519(&bytes)
                 .ok_or_else(|| D::Error::custom("error parsing Ed25519 key"))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::account::Id;
+    use signatory::{ed25519, PublicKeyed};
+    use signatory_dalek;
+
+    fn generate_validator(vp: u64) -> Info {
+        let seed = ed25519::Seed::generate();
+        let signer = signatory_dalek::Ed25519Signer::from(&seed);
+        let pk = signer.public_key().unwrap();
+        Info {
+            address: Id::from(pk),
+            pub_key: PublicKey::Ed25519(pk),
+            voting_power: vote::Power::new(vp),
+            proposer_priority: None,
+        }
+    }
+
+    #[test]
+    fn test_validator_set() {
+        // TODO: get a test vector from the Go code instead of generating validators
+        let v1 = generate_validator(1);
+        let v2 = generate_validator(2);
+        let v3 = generate_validator(3);
+        println!("{:?}", v1.address);
+        println!("{:?}", v2.address);
+        println!("{:?}", v3.address);
+
+        let val_set = Set::new(vec![v1, v2, v3]);
+        println!("{:?}", val_set);
+        let hash = val_set.hash();
+        println!("{:?}", hash);
     }
 }

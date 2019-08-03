@@ -58,6 +58,7 @@ mod serializers;
 pub mod signature;
 pub mod time;
 mod timeout;
+#[cfg(feature = "amino-types")]
 pub mod validator;
 mod version;
 pub mod vote;
