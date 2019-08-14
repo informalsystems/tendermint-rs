@@ -1,4 +1,6 @@
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{Deserialize, Deserializer, Visitor};
+use serde::{Serialize, Serializer};
+use std::fmt;
 
 /// ABCI application response codes.
 ///
@@ -54,18 +56,44 @@ impl From<Code> for u32 {
     }
 }
 
-impl<'de> Deserialize<'de> for Code {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Ok(Code::from(
-            String::deserialize(deserializer)?
-                .parse::<u32>()
-                .map_err(|e| D::Error::custom(format!("{}", e)))?,
-        ))
-    }
-}
-
 impl Serialize for Code {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.value().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Code {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct CodeVisitor;
+
+        impl<'de> Visitor<'de> for CodeVisitor {
+            type Value = Code;
+
+            fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+                fmt.write_str("integer or string")
+            }
+
+            fn visit_u64<E>(self, val: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(Code::from(val as u32))
+            }
+
+            fn visit_str<E>(self, val: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match val.parse::<u32>() {
+                    Ok(val) => self.visit_u32(val),
+                    Err(_) => Err(E::custom("failed to parse integer")),
+                }
+            }
+        }
+
+        deserializer.deserialize_any(CodeVisitor)
     }
 }

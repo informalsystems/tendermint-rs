@@ -3,6 +3,7 @@
 #[cfg(feature = "rpc")]
 mod endpoints {
     use std::{fs, path::PathBuf};
+    use tendermint::abci::Code;
     use tendermint::rpc::{self, endpoint, Response};
 
     const EXAMPLE_APP: &str = "GaiaApp";
@@ -121,6 +122,23 @@ mod endpoints {
             "broadcast_tx_sync",
         ))
         .unwrap();
+
+        assert_eq!(response.code, Code::Ok);
+
+        assert_eq!(
+            &response.hash.to_string(),
+            "0D33F2F03A5234F38706E43004489E061AC40A2E"
+        );
+    }
+
+    #[test]
+    fn broadcast_tx_sync_int() {
+        let response = endpoint::broadcast::tx_sync::Response::from_json(&read_json_fixture(
+            "broadcast_tx_sync_int",
+        ))
+        .unwrap();
+
+        assert_eq!(response.code, Code::Ok);
 
         assert_eq!(
             &response.hash.to_string(),
