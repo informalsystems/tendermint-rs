@@ -87,8 +87,8 @@ impl<'de> Deserialize<'de> for Code {
             where
                 E: serde::de::Error,
             {
-                match val.parse::<u32>() {
-                    Ok(val) => self.visit_u32(val),
+                match val.parse::<u64>() {
+                    Ok(val) => self.visit_u64(val),
                     Err(_) => Err(E::custom("failed to parse integer")),
                 }
             }

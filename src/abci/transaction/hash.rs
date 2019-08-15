@@ -11,7 +11,7 @@ use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 
 /// Size of a transaction hash in bytes
-pub const LENGTH: usize = 20;
+pub const LENGTH: usize = 32;
 
 /// Trannsaction hashes
 #[derive(Copy, Clone, Hash)]
