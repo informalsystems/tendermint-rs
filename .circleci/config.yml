@@ -1,0 +1,37 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+    - image: circleci/rust
+    steps:
+    - checkout
+    - run:
+        name: rustfmt
+        command: |
+          cargo fmt --version
+          cargo fmt -- --check
+    - run:
+        name: build 
+        command: |
+          rustc --version
+          cargo --version
+          cargo build 
+    - run:
+        name: build --benches
+        command: |
+          rustc --version
+          cargo --version
+          cargo build --benches
+    - run:
+        name: build --release
+        command: |
+          rustc --version
+          cargo --version
+          cargo build --release
+    - run:
+        name: test
+        command: |
+          rustc --version
+          cargo --version
+          cargo test 
