@@ -67,7 +67,8 @@ impl PublicKey {
         match self {
             PublicKey::Ed25519(ref pk) => pk.as_bytes(),
             PublicKey::Secp256k1(ref pk) => pk.as_bytes(),
-        }.to_vec()
+        }
+        .to_vec()
     }
 
     /// Serialize this key as amino bytes
