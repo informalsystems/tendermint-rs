@@ -2,7 +2,6 @@
 
 pub use crate::block;
 pub use std::{cmp::Ordering, fmt};
-#[cfg(feature = "serde")]
 use {
     crate::serializers,
     serde::{Deserialize, Serialize},
@@ -13,19 +12,15 @@ use {
 pub const NIL_PLACEHOLDER: &str = "<nil>";
 
 /// Tendermint consensus state
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
 pub struct State {
     /// Current block height
     pub height: block::Height,
 
     /// Current consensus round
-    #[cfg_attr(
-        feature = "serde",
-        serde(
-            serialize_with = "serializers::serialize_i64",
-            deserialize_with = "serializers::parse_i64"
-        )
+    #[serde(
+        serialize_with = "serializers::serialize_i64",
+        deserialize_with = "serializers::parse_i64"
     )]
     pub round: i64,
 

@@ -4,7 +4,6 @@ mod hash;
 
 pub use self::hash::Hash;
 use std::slice;
-#[cfg(feature = "serde")]
 use {
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
     subtle_encoding::base64,
@@ -41,7 +40,6 @@ impl AsRef<[u8]> for Transaction {
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Transaction {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
@@ -51,7 +49,6 @@ impl<'de> Deserialize<'de> for Transaction {
     }
 }
 
-#[cfg(feature = "serde")]
 impl Serialize for Transaction {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         String::from_utf8(base64::encode(self.as_bytes()))
@@ -64,8 +61,7 @@ impl Serialize for Transaction {
 /// transactions are arbitrary byte arrays.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#data>
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-#[derive(Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Data {
     txs: Option<Vec<Transaction>>,
 }

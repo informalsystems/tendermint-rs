@@ -67,12 +67,9 @@ pub struct AbciQuery {
     pub info: Option<String>,
 
     /// Index
-    #[cfg_attr(
-        feature = "serde",
-        serde(
-            serialize_with = "serializers::serialize_i64",
-            deserialize_with = "serializers::parse_i64"
-        )
+    #[serde(
+        serialize_with = "serializers::serialize_i64",
+        deserialize_with = "serializers::parse_i64"
     )]
     pub index: i64,
 

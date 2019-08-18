@@ -1,7 +1,6 @@
 //! Block headers
 
 use crate::{account, block, chain, Hash, Time};
-#[cfg(feature = "serde")]
 use {
     crate::serializers,
     serde::{Deserialize, Serialize},
@@ -12,8 +11,7 @@ use {
 /// previous block, and the results returned by the application.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#header>
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Header {
     /// Header version
     pub version: Version,
@@ -28,22 +26,16 @@ pub struct Header {
     pub time: Time,
 
     /// Number of transactions in block
-    #[cfg_attr(
-        feature = "serde",
-        serde(
-            serialize_with = "serializers::serialize_u64",
-            deserialize_with = "serializers::parse_u64"
-        )
+    #[serde(
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub num_txs: u64,
 
     /// Total number of transactions
-    #[cfg_attr(
-        feature = "serde",
-        serde(
-            serialize_with = "serializers::serialize_u64",
-            deserialize_with = "serializers::parse_u64"
-        )
+    #[serde(
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub total_txs: u64,
 
@@ -82,26 +74,19 @@ pub struct Header {
 /// application.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#version>
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Version {
     /// Block version
-    #[cfg_attr(
-        feature = "serde",
-        serde(
-            serialize_with = "serializers::serialize_u64",
-            deserialize_with = "serializers::parse_u64"
-        )
+    #[serde(
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub block: u64,
 
     /// App version
-    #[cfg_attr(
-        feature = "serde",
-        serde(
-            serialize_with = "serializers::serialize_u64",
-            deserialize_with = "serializers::parse_u64"
-        )
+    #[serde(
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub app: u64,
 }

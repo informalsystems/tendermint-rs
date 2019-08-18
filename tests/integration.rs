@@ -8,7 +8,6 @@
 /// ```
 /// cargo test -- --ignored
 /// ```
-#[cfg(all(feature = "rpc"))]
 mod rpc {
     use tendermint::rpc::Client;
 

@@ -107,14 +107,12 @@ impl Display for Method {
     }
 }
 
-#[cfg(feature = "serde")]
 impl Serialize for Method {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.as_str().serialize(serializer)
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Method {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Self::from_str(&String::deserialize(deserializer)?)

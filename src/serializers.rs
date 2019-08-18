@@ -1,7 +1,6 @@
 //! Serde serializers
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-#[cfg(feature = "rpc")]
 use std::time::Duration;
 
 /// Parse `i64` from a JSON string
@@ -43,7 +42,6 @@ where
 }
 
 /// Parse `Duration` from a JSON string containing a nanosecond count
-#[cfg(feature = "rpc")]
 pub(crate) fn parse_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where
     D: Deserializer<'de>,
@@ -57,7 +55,6 @@ where
 }
 
 /// Serialize `Duration` as a JSON string containing a nanosecond count
-#[cfg(feature = "rpc")]
 pub(crate) fn serialize_duration<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,

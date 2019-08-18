@@ -4,7 +4,6 @@ mod power;
 
 pub use self::power::Power;
 use crate::{account, block, Signature, Time};
-#[cfg(feature = "serde")]
 use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
@@ -14,23 +13,19 @@ use {
 /// include information about the validator signing it.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#vote>
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Vote {
     /// Type of vote (prevote or precommit)
-    #[cfg_attr(feature = "serde", serde(rename = "type"))]
+    #[serde(rename = "type")]
     pub vote_type: Type,
 
     /// Block height
     pub height: block::Height,
 
     /// Round
-    #[cfg_attr(
-        feature = "serde",
-        serde(
-            serialize_with = "serializers::serialize_u64",
-            deserialize_with = "serializers::parse_u64"
-        )
+    #[serde(
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub round: u64,
 
@@ -44,12 +39,9 @@ pub struct Vote {
     pub validator_address: account::Id,
 
     /// Validator index
-    #[cfg_attr(
-        feature = "serde",
-        serde(
-            serialize_with = "serializers::serialize_u64",
-            deserialize_with = "serializers::parse_u64"
-        )
+    #[serde(
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub validator_index: u64,
 
@@ -102,14 +94,12 @@ impl Type {
     }
 }
 
-#[cfg(feature = "serde")]
 impl Serialize for Type {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.to_u8().serialize(serializer)
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Type {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let byte = u8::deserialize(deserializer)?;

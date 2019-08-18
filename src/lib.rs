@@ -18,9 +18,7 @@
     html_root_url = "https://docs.rs/tendermint/0.10.0"
 )]
 
-#[cfg(feature = "amino-types")]
 extern crate prost_amino as prost;
-#[cfg(feature = "amino-types")]
 #[macro_use]
 extern crate prost_amino_derive as prost_derive;
 
@@ -29,43 +27,32 @@ pub mod error;
 
 pub mod abci;
 pub mod account;
-#[cfg(feature = "amino-types")]
 pub mod amino_types;
 pub mod block;
 pub mod chain;
-#[cfg(feature = "rpc")]
 pub mod channel;
-#[cfg(feature = "config")]
 pub mod config;
 pub mod consensus;
 pub mod evidence;
-#[cfg(any(feature = "config", feature = "rpc"))]
 pub mod genesis;
 pub mod hash;
 pub mod merkle;
 mod moniker;
 pub mod net;
 pub mod node;
-#[cfg(feature = "config")]
 pub mod private_key;
 pub mod public_key;
-#[cfg(feature = "rpc")]
 pub mod rpc;
-#[cfg(feature = "secret-connection")]
 pub mod secret_connection;
-#[cfg(feature = "serde")]
 mod serializers;
 pub mod signature;
 pub mod time;
 mod timeout;
-#[cfg(feature = "amino-types")]
 pub mod validator;
 mod version;
 pub mod vote;
 
-#[cfg(feature = "rpc")]
 pub use crate::genesis::Genesis;
-#[cfg(feature = "secret-connection")]
 pub use crate::secret_connection::SecretConnection;
 pub use crate::{
     block::Block,
@@ -79,5 +66,4 @@ pub use crate::{
     version::Version,
     vote::Vote,
 };
-#[cfg(feature = "config")]
 pub use private_key::PrivateKey;

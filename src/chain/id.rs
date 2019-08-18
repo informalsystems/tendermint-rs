@@ -1,7 +1,6 @@
 //! Tendermint blockchain identifiers
 
 use crate::error::{Error, ErrorKind};
-#[cfg(feature = "serde")]
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     cmp::Ordering,
@@ -104,14 +103,12 @@ impl PartialEq for Id {
 
 impl Eq for Id {}
 
-#[cfg(feature = "serde")]
 impl Serialize for Id {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.as_str().serialize(serializer)
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Id {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Self::from_str(&String::deserialize(deserializer)?)

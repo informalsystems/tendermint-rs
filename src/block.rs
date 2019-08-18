@@ -17,15 +17,13 @@ pub use self::{
     size::Size,
 };
 use crate::{abci::transaction, evidence};
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// Blocks consist of a header, transactions, votes (the commit), and a list of
 /// evidence of malfeasance (i.e. signing conflicting votes).
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#block>
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-#[derive(Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Block {
     /// Block header
     pub header: Header,

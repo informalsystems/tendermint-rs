@@ -2,7 +2,6 @@
 //!
 //! Test config files are located in the `tests/support/config` subdirectory.
 
-#[cfg(feature = "config")]
 mod files {
     use std::{fs, path::PathBuf, time::Duration};
     use tendermint::{config::*, net, node};

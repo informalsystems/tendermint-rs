@@ -5,7 +5,6 @@ use std::{
     fmt::{self, Display},
     io,
 };
-#[cfg(feature = "secret-connection")]
 use {chrono, prost, subtle_encoding};
 
 /// Create a new error (of a given kind) with a formatted message
@@ -90,21 +89,18 @@ impl From<io::Error> for Error {
     }
 }
 
-#[cfg(feature = "secret-connection")]
 impl From<prost::DecodeError> for Error {
     fn from(err: prost::DecodeError) -> Self {
         err!(ErrorKind::Parse, err)
     }
 }
 
-#[cfg(feature = "secret-connection")]
 impl From<prost::EncodeError> for Error {
     fn from(err: prost::EncodeError) -> Self {
         err!(ErrorKind::Parse, err)
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl From<serde_json::error::Error> for Error {
     fn from(err: serde_json::error::Error) -> Self {
         err!(ErrorKind::Parse, err)
@@ -124,7 +120,6 @@ impl From<subtle_encoding::Error> for Error {
     }
 }
 
-#[cfg(feature = "toml")]
 impl From<toml::de::Error> for Error {
     fn from(err: toml::de::Error) -> Self {
         err!(ErrorKind::Parse, err)

@@ -1,6 +1,5 @@
 //! Votes
 
-#[cfg(feature = "serde")]
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Voting power
@@ -30,7 +29,6 @@ impl From<Power> for u64 {
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Power {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Ok(Power(
@@ -41,7 +39,6 @@ impl<'de> Deserialize<'de> for Power {
     }
 }
 
-#[cfg(feature = "serde")]
 impl Serialize for Power {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.0.to_string().serialize(serializer)

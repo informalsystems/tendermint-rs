@@ -1,7 +1,6 @@
 //! Transaction hashes
 
 use crate::error::{Error, ErrorKind};
-#[cfg(feature = "serde")]
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Debug, Display},
@@ -77,7 +76,6 @@ impl FromStr for Hash {
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Hash {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -94,7 +92,6 @@ impl<'de> Deserialize<'de> for Hash {
     }
 }
 
-#[cfg(feature = "serde")]
 impl Serialize for Hash {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.to_string().serialize(serializer)

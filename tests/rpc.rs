@@ -1,6 +1,5 @@
 //! Tendermint RPC tests
 
-#[cfg(feature = "rpc")]
 mod endpoints {
     use std::{fs, path::PathBuf};
     use tendermint::abci::Code;
