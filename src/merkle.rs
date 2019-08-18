@@ -5,8 +5,11 @@ use sha2::{Digest, Sha256};
 /// Size of Merkle root hash
 pub const HASH_SIZE: usize = 32;
 
+/// Hash is the output of the cryptographic digest function
+pub type Hash = [u8; HASH_SIZE];
+
 /// Compute a simple Merkle root from the arbitrary sized byte slices
-pub fn simple_hash_from_byte_slices(byte_slices: &[&[u8]]) -> [u8; HASH_SIZE] {
+pub fn simple_hash_from_byte_slices(byte_slices: &[&[u8]]) -> Hash {
     let length = byte_slices.len();
     match length {
         0 => [0; HASH_SIZE],
@@ -31,7 +34,7 @@ fn get_split_point(length: usize) -> usize {
 }
 
 // tmhash(0x00 || leaf)
-fn leaf_hash(bytes: &[u8]) -> [u8; HASH_SIZE] {
+fn leaf_hash(bytes: &[u8]) -> Hash {
     // make a new array starting with 0 and copy in the bytes
     let mut leaf_bytes = Vec::with_capacity(bytes.len() + 1);
     leaf_bytes.push(0x00);
@@ -47,7 +50,7 @@ fn leaf_hash(bytes: &[u8]) -> [u8; HASH_SIZE] {
 }
 
 // tmhash(0x01 || left || right)
-fn inner_hash(left: &[u8], right: &[u8]) -> [u8; HASH_SIZE] {
+fn inner_hash(left: &[u8], right: &[u8]) -> Hash {
     // make a new array starting with 0x1 and copy in the bytes
     let mut inner_bytes = Vec::with_capacity(left.len() + right.len() + 1);
     inner_bytes.push(0x01);
