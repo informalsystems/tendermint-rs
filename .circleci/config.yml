@@ -35,8 +35,3 @@ jobs:
           rustc --version
           cargo --version
           cargo test 
-    - run:
-        name: audit
-        command: |
-          cargo audit --version
-          cargo audit
