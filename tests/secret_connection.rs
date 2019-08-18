@@ -1,11 +1,11 @@
 //! `SecretConnection` integration tests
 
-use self::subtle_encoding::hex;
 use std::{
     fs::File,
     io::{BufRead, BufReader},
     str::FromStr,
 };
+use subtle_encoding::hex;
 use tendermint::secret_connection::Kdf;
 
 #[test]
