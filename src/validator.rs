@@ -39,7 +39,7 @@ impl Set {
 }
 
 /// Validator information
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Info {
     /// Validator account address
     pub address: account::Id,
