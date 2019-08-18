@@ -1,5 +1,4 @@
 use crate::{Error, ErrorKind};
-#[cfg(feature = "serde")]
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{fmt, ops::Deref, str::FromStr, time::Duration};
 
@@ -64,7 +63,6 @@ impl fmt::Display for Timeout {
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Timeout {
     /// Parse `Timeout` from string ending in `s` or `ms`
     fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
@@ -75,7 +73,6 @@ impl<'de> Deserialize<'de> for Timeout {
     }
 }
 
-#[cfg(feature = "serde")]
 impl Serialize for Timeout {
     fn serialize<S: ser::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.to_string().serialize(serializer)

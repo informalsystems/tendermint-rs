@@ -46,7 +46,6 @@ pub struct AbciInfo {
 }
 
 /// Parse Base64-encoded app hash
-#[cfg(feature = "rpc")]
 pub(crate) fn parse_app_hash<'de, D>(deserializer: D) -> Result<Hash, D::Error>
 where
     D: Deserializer<'de>,
@@ -58,7 +57,6 @@ where
 }
 
 /// Serialize Base64-encoded app hash
-#[cfg(feature = "rpc")]
 pub(crate) fn serialize_app_hash<S>(hash: &Hash, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,

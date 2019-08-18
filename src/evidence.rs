@@ -1,7 +1,6 @@
 //! Evidence of malfeasance by validators (i.e. signing conflicting votes).
 
 use std::slice;
-#[cfg(feature = "serde")]
 use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
@@ -32,7 +31,6 @@ impl Evidence {
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Evidence {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
@@ -42,7 +40,6 @@ impl<'de> Deserialize<'de> for Evidence {
     }
 }
 
-#[cfg(feature = "serde")]
 impl Serialize for Evidence {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         String::from_utf8(base64::encode(self.to_amino_bytes()))
@@ -54,8 +51,7 @@ impl Serialize for Evidence {
 /// Evidence data is a wrapper for a list of `Evidence`.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#evidencedata>
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-#[derive(Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Data {
     evidence: Option<Vec<Evidence>>,
 }
@@ -92,16 +88,12 @@ impl AsRef<[Evidence]> for Data {
 }
 
 /// Evidence collection parameters
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct Params {
     /// Maximum allowed age for evidence to be collected
-    #[cfg_attr(
-        feature = "serde",
-        serde(
-            serialize_with = "serializers::serialize_u64",
-            deserialize_with = "serializers::parse_u64"
-        )
+    #[serde(
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub max_age: u64,
 }

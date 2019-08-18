@@ -1,4 +1,3 @@
-#[cfg(feature = "serde_json")]
 use crate::{Error, ErrorKind};
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
@@ -9,7 +8,6 @@ pub struct Log(String);
 
 impl Log {
     /// Parse the log data as JSON, returning a `serde_json::Value`
-    #[cfg(feature = "serde_json")]
     pub fn parse_json(&self) -> Result<serde_json::Value, Error> {
         serde_json::from_str(&self.0).map_err(|_| ErrorKind::Parse.into())
     }

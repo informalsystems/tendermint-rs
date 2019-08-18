@@ -1,7 +1,6 @@
 //! Public keys used in Tendermint networks
 
 use crate::error::{Error, ErrorKind};
-#[cfg(feature = "serde")]
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use signatory::{ecdsa::curve::secp256k1, ed25519};
 use std::{
@@ -9,34 +8,27 @@ use std::{
     ops::Deref,
     str::FromStr,
 };
-#[cfg(feature = "serde")]
 use subtle_encoding::base64;
 use subtle_encoding::{bech32, hex};
 
 /// Public keys allowed in Tendermint protocols
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))]
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "type", content = "value")]
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub enum PublicKey {
     /// Ed25519 keys
-    #[cfg_attr(
-        feature = "serde",
-        serde(
-            rename = "tendermint/PubKeyEd25519",
-            serialize_with = "serialize_ed25519_base64",
-            deserialize_with = "deserialize_ed25519_base64"
-        )
+    #[serde(
+        rename = "tendermint/PubKeyEd25519",
+        serialize_with = "serialize_ed25519_base64",
+        deserialize_with = "deserialize_ed25519_base64"
     )]
     Ed25519(ed25519::PublicKey),
 
     /// Secp256k1 keys
-    #[cfg_attr(
-        feature = "serde",
-        serde(
-            rename = "tendermint/PubKeySecp256k1",
-            serialize_with = "serialize_secp256k1_base64",
-            deserialize_with = "deserialize_secp256k1_base64"
-        )
+    #[serde(
+        rename = "tendermint/PubKeySecp256k1",
+        serialize_with = "serialize_secp256k1_base64",
+        deserialize_with = "deserialize_secp256k1_base64"
     )]
     Secp256k1(secp256k1::PublicKey),
 }
@@ -192,14 +184,12 @@ impl FromStr for Algorithm {
     }
 }
 
-#[cfg(feature = "serde")]
 impl Serialize for Algorithm {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.as_str().serialize(serializer)
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Algorithm {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Self::from_str(&String::deserialize(deserializer)?)
@@ -208,7 +198,6 @@ impl<'de> Deserialize<'de> for Algorithm {
 }
 
 /// Serialize the bytes of an Ed25519 public key as Base64. Used for serializing JSON
-#[cfg(feature = "serde")]
 fn serialize_ed25519_base64<S>(pk: &ed25519::PublicKey, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -219,7 +208,6 @@ where
 }
 
 /// Serialize the bytes of a secp256k1 ECDSA public key as Base64. Used for serializing JSON
-#[cfg(feature = "serde")]
 fn serialize_secp256k1_base64<S>(
     pk: &secp256k1::PublicKey,
     serializer: S,
@@ -232,7 +220,6 @@ where
         .serialize(serializer)
 }
 
-#[cfg(feature = "serde")]
 fn deserialize_ed25519_base64<'de, D>(deserializer: D) -> Result<ed25519::PublicKey, D::Error>
 where
     D: Deserializer<'de>,
@@ -243,7 +230,6 @@ where
     ed25519::PublicKey::from_bytes(&bytes).ok_or_else(|| D::Error::custom("invalid ed25519 key"))
 }
 
-#[cfg(feature = "serde")]
 fn deserialize_secp256k1_base64<'de, D>(
     deserializer: D,
 ) -> Result<signatory::ecdsa::curve::secp256k1::PublicKey, D::Error>
@@ -294,7 +280,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "serde")]
     #[test]
     fn json_parsing() {
         let json_string = "{\"type\":\"tendermint/PubKeyEd25519\",\"value\":\"RblzMO4is5L1hZz6wo4kPbptzOyue6LTk4+lPhD1FRk=\"}";

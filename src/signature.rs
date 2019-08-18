@@ -1,10 +1,7 @@
 //! Cryptographic (a.k.a. digital) signatures
 
-#[cfg(feature = "serde")]
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-#[cfg(feature = "serde")]
 use signatory::Signature as SignatureTrait;
-#[cfg(feature = "serde")]
 use subtle_encoding::base64;
 
 /// Signatures
@@ -23,7 +20,6 @@ impl Signature {
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Signature {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
@@ -36,7 +32,6 @@ impl<'de> Deserialize<'de> for Signature {
     }
 }
 
-#[cfg(feature = "serde")]
 impl Serialize for Signature {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let sig_bytes = match self {

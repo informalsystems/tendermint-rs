@@ -1,7 +1,6 @@
 //! Tendermint accounts
 
 use crate::error::{Error, ErrorKind};
-#[cfg(feature = "serde")]
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
 use signatory::{ecdsa::curve::secp256k1, ed25519};
@@ -99,7 +98,6 @@ impl FromStr for Id {
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Id {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -116,7 +114,6 @@ impl<'de> Deserialize<'de> for Id {
     }
 }
 
-#[cfg(feature = "serde")]
 impl Serialize for Id {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.to_string().serialize(serializer)

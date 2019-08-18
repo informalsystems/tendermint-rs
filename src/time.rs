@@ -2,16 +2,13 @@
 
 use crate::error::{Error, ErrorKind};
 use chrono::{DateTime, Utc};
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-#[cfg(feature = "tai64")]
 use tai64::TAI64N;
 
 /// Tendermint timestamps
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#time>
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Time(DateTime<Utc>);
 
 impl Time {
@@ -70,14 +67,12 @@ impl From<Time> for SystemTime {
     }
 }
 
-#[cfg(feature = "tai64")]
 impl From<TAI64N> for Time {
     fn from(t: TAI64N) -> Time {
         Time(t.to_datetime_utc())
     }
 }
 
-#[cfg(feature = "tai64")]
 impl From<Time> for TAI64N {
     fn from(t: Time) -> TAI64N {
         TAI64N::from_datetime_utc(&t.0)

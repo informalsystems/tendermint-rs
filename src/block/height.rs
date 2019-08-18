@@ -1,5 +1,4 @@
 use crate::error::{Error, ErrorKind};
-#[cfg(feature = "serde")]
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Debug, Display},
@@ -90,7 +89,6 @@ impl FromStr for Height {
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Height {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Ok(Self::from_str(&String::deserialize(deserializer)?)
@@ -98,7 +96,6 @@ impl<'de> Deserialize<'de> for Height {
     }
 }
 
-#[cfg(feature = "serde")]
 impl Serialize for Height {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.to_string().serialize(serializer)

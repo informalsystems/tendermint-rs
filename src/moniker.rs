@@ -1,7 +1,6 @@
 //! Monikers: names associated with validators
 
 use crate::error::Error;
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},
@@ -9,8 +8,7 @@ use std::{
 };
 
 /// Validator display names
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Moniker(String);
 
 impl FromStr for Moniker {

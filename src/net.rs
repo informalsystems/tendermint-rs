@@ -4,7 +4,6 @@ use crate::{
     error::{Error, ErrorKind},
     node,
 };
-#[cfg(feature = "serde")]
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display},
@@ -40,7 +39,6 @@ pub enum Address {
     },
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Address {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Self::from_str(&String::deserialize(deserializer)?)
@@ -127,7 +125,6 @@ impl Address {
     }
 }
 
-#[cfg(feature = "serde")]
 impl Serialize for Address {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.to_string().serialize(serializer)

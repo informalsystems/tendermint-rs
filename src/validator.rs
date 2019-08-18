@@ -2,9 +2,7 @@
 
 use crate::{account, merkle, vote, PublicKey};
 use prost::Message;
-#[cfg(feature = "serde")]
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-#[cfg(feature = "rpc")]
 use subtle_encoding::base64;
 
 /// Validator set contains a vector of validators
@@ -128,7 +126,6 @@ impl From<ProposerPriority> for i64 {
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for ProposerPriority {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Ok(ProposerPriority(
@@ -139,7 +136,6 @@ impl<'de> Deserialize<'de> for ProposerPriority {
     }
 }
 
-#[cfg(feature = "serde")]
 impl Serialize for ProposerPriority {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.0.to_string().serialize(serializer)
@@ -147,7 +143,6 @@ impl Serialize for ProposerPriority {
 }
 
 /// Updates to the validator set
-#[cfg(feature = "rpc")]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Update {
     /// Validator public key
@@ -163,7 +158,6 @@ pub struct Update {
 ///
 /// This is an internal thunk type to parse the `validator_updates` format and
 /// then convert to `tendermint::PublicKey` in `deserialize_public_key` below.
-#[cfg(feature = "rpc")]
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
 enum PK {
@@ -172,7 +166,6 @@ enum PK {
     Ed25519(String),
 }
 
-#[cfg(feature = "rpc")]
 fn deserialize_public_key<'de, D>(deserializer: D) -> Result<PublicKey, D::Error>
 where
     D: Deserializer<'de>,

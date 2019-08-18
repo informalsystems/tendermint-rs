@@ -3,7 +3,6 @@ use crate::{
     error::Error,
     hash::{Algorithm, Hash},
 };
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},
@@ -17,8 +16,7 @@ pub const PREFIX_LENGTH: usize = 10;
 /// as well as the number of parts in the block.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#blockid>
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Id {
     /// The block's main hash is the Merkle root of all the fields in the
     /// block header.

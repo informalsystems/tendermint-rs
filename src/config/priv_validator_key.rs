@@ -1,6 +1,5 @@
 //! Validator private keys
 
-#[cfg(feature = "signatory-dalek")]
 use crate::public_key::TendermintKey;
 use crate::{
     account,
@@ -30,7 +29,6 @@ impl PrivValidatorKey {
         let result = serde_json::from_str::<Self>(json_string.as_ref())?;
 
         // Validate that the parsed key type is usable as a consensus key
-        #[cfg(feature = "signatory-dalek")]
         TendermintKey::new_consensus_key(result.priv_key.public_key())?;
 
         Ok(result)
@@ -54,7 +52,6 @@ impl PrivValidatorKey {
     }
 
     /// Get the consensus public key for this validator private key
-    #[cfg(feature = "signatory-dalek")]
     pub fn consensus_pubkey(&self) -> TendermintKey {
         TendermintKey::new_consensus_key(self.priv_key.public_key()).unwrap()
     }
