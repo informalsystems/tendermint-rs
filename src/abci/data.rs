@@ -50,7 +50,7 @@ impl FromStr for Data {
 
 impl<'de> Deserialize<'de> for Data {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let bytes = hex::decode(String::deserialize(deserializer)?.as_bytes())
+        let bytes = hex::decode(String::deserialize(deserializer)?.to_lowercase().as_bytes())
             .map_err(|e| D::Error::custom(format!("{}", e)))?;
 
         Ok(Self(bytes))
