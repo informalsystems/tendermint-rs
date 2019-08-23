@@ -18,6 +18,13 @@ impl Signature {
             Signature::Ed25519(_) => Algorithm::Ed25519,
         }
     }
+
+    /// Get Ed25519 signature
+    pub fn ed25519(&self) -> Option<signatory::ed25519::Signature> {
+        match self {
+            Signature::Ed25519(sig) => Some(sig.clone()),
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for Signature {

@@ -31,6 +31,7 @@ pub mod amino_types;
 pub mod block;
 pub mod chain;
 pub mod channel;
+pub mod commit;
 pub mod config;
 pub mod consensus;
 pub mod evidence;

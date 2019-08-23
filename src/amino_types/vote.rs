@@ -102,7 +102,7 @@ impl block::ParseHeight for CanonicalVote {
 }
 
 impl CanonicalVote {
-    fn new(vote: Vote, chain_id: &str) -> CanonicalVote {
+    pub fn new(vote: Vote, chain_id: &str) -> CanonicalVote {
         CanonicalVote {
             vote_type: vote.vote_type,
             chain_id: chain_id.to_string(),

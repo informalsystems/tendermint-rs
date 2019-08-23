@@ -1,5 +1,6 @@
 //! Public keys used in Tendermint networks
 
+use crate::account::Id;
 use crate::error::{Error, ErrorKind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use signatory::{ecdsa::curve::secp256k1, ed25519};
@@ -51,6 +52,14 @@ impl PublicKey {
         match self {
             PublicKey::Ed25519(pk) => Some(pk),
             _ => None,
+        }
+    }
+
+    /// Get public key address
+    pub fn id(self) -> Id {
+        match self {
+            PublicKey::Ed25519(pk) => Id::from(pk),
+            PublicKey::Secp256k1(pk) => Id::from(pk),
         }
     }
 

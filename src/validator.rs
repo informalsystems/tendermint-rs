@@ -19,6 +19,11 @@ impl Set {
         Set { validators: vals }
     }
 
+    /// Return the underlying vector of validator Info
+    pub fn into_vec(self) -> Vec<Info> {
+        self.validators
+    }
+
     /// Compute the Merkle root of the validator set
     pub fn hash(self) -> merkle::Hash {
         // We need to get from Vec<Info> to &[&[u8]] so we can call simple_hash_from_byte_slices.

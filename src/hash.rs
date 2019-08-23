@@ -71,6 +71,14 @@ impl Hash {
             Hash::Null => None,
         }
     }
+
+    /// Convert the hash to a vector of bytes or else an empty vector
+    pub fn to_vec(&self) -> Vec<u8> {
+        match self {
+            Hash::Sha256(h) => h.to_vec(),
+            Hash::Null => Vec::new(),
+        }
+    }
 }
 
 impl Debug for Hash {

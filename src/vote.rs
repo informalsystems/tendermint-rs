@@ -3,7 +3,8 @@
 mod power;
 
 pub use self::power::Power;
-use crate::{account, block, Signature, Time};
+use crate::{account, amino_types, block, Signature, Time};
+use signatory::Signature as SignatureTrait;
 use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
@@ -47,6 +48,22 @@ pub struct Vote {
 
     /// Signature
     pub signature: Signature,
+}
+
+impl Vote {
+    /// Convert to amino_types vote
+    pub fn to_amino(&self) -> amino_types::vote::Vote {
+        amino_types::vote::Vote {
+            vote_type: self.vote_type.to_u8() as u32,
+            height: self.height.value() as i64, // XXX: careful integer overflow
+            round: self.round as i64,           // XXX: careful integer overflow
+            block_id: Some(self.block_id.to_amino()), // TODO: fill in this to_amino method
+            timestamp: Some(amino_types::TimeMsg::from(self.timestamp)),
+            validator_address: self.validator_address.as_bytes().to_vec(),
+            validator_index: self.validator_index as i64,
+            signature: self.signature.ed25519().unwrap().as_slice().to_vec(), // TODO: support more than ed25519
+        }
+    }
 }
 
 impl Vote {
