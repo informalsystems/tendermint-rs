@@ -13,19 +13,19 @@ pub fn verify_commit(chain_id: &str, last_commit: block::LastCommit, vals: valid
     let precommits_vec = last_commit.precommits.into_vec();
     let vals_vec = vals.into_vec();
     if precommits_vec.len() != vals_vec.len() {
-        return false
+        return false;
     }
 
-    if vals_vec.len() == 0{
-        return false
+    if vals_vec.len() == 0 {
+        return false;
     }
 
-    // populate these as we iterate through 
+    // populate these as we iterate through
     let mut signed_power = 0;
     let mut total_power = 0;
 
     // populate these from the first non-empty vote
-    let mut height = 0; 
+    let mut height = 0;
     let mut round = 0;
 
     for (val, opt_vote) in vals_vec.into_iter().zip(precommits_vec.into_iter()) {
@@ -41,13 +41,12 @@ pub fn verify_commit(chain_id: &str, last_commit: block::LastCommit, vals: valid
             if height != v.height.value() || round != v.round {
                 return false;
             }
-    
 
             if v.vote_type != vote::Type::Precommit {
                 return false;
             }
 
-            // just skip different block ids 
+            // just skip different block ids
             if v.block_id != last_commit.block_id {
                 continue;
             }

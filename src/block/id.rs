@@ -53,14 +53,14 @@ impl Id {
 
     /// Convert to amino form
     pub fn to_amino(&self) -> amino_types::block_id::BlockId {
-        amino_types::block_id::BlockId{
+        amino_types::block_id::BlockId {
             hash: self.hash.to_vec(),
             parts_header: Some(match &self.parts {
-                Some(p) => amino_types::block_id::PartsSetHeader{
+                Some(p) => amino_types::block_id::PartsSetHeader {
                     total: p.total as i64, //XXX: careful integer overflow
                     hash: p.hash.to_vec(),
                 },
-                None => amino_types::block_id::PartsSetHeader{
+                None => amino_types::block_id::PartsSetHeader {
                     total: 0,
                     hash: Vec::new(),
                 },
