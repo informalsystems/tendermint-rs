@@ -14,7 +14,6 @@ where
 type Height = u64;
 type Hash = u64; // TODO
 type Time = u64; // TODO
-type BlockID = u64; // TODO
 type Bytes = u64; // TODO
 
 /// Header contains meta data about the block -
@@ -63,20 +62,17 @@ trait Commit {
     /// Hash of the header this commit is for.
     fn header_hash(&self) -> Hash;
 
-    /// Actual block_id this commit is for.
-    /// NOTE: in tendermint, the header_hash is a field in the BlockID
-    fn block_id(&self) -> BlockID;
-
     /// Return the underlying votes for iteration.
-    fn into_vec(&self) -> Vec<Self::Vote>;
+    /// The Vote is either for the right block id,
+    /// or it's None.
+    fn into_vec(&self) -> Vec<Option<Self::Vote>>;
 }
 
-/// Vote is the vote for a validator on some block_id.
-/// Note it does not expose height/round information, but
-/// is expected to have implicit access to it so it can produce
-/// correct sign_bytes.
+/// Vote contains the data to verify a validator voted correctly in the commit.
+/// In an ideal world, votes contain only signatures, and all votes are for the same
+/// message. For now, Tendermint votes also sign over the validator's local timestamp,
+/// so each vote is for a slightly different message.
 trait Vote {
-    fn block_id(&self) -> BlockID;
     fn sign_bytes(&self) -> Bytes;
     fn signature(&self) -> Bytes;
 }
@@ -142,7 +138,7 @@ where
             return None;
         }
 
-        // check that +2/3 validators signed the block_id
+        // check that +2/3 validators signed correctly
         if self.verify_commit_full(commit) {
             return None;
         }
@@ -164,13 +160,14 @@ where
         let vals_iter = self.state.next_validators.into_vec().into_iter();
         let commit_iter = commit.into_vec().into_iter();
 
-        for (val, vote) in vals_iter.zip(commit_iter) {
+        for (val, vote_opt) in vals_iter.zip(commit_iter) {
             total_power += val.power();
 
-            // skip if vote is not for the right block id
-            if vote.block_id() != commit.block_id() {
+            // skip absent and nil votes
+            if let None = vote_opt {
                 continue;
             }
+            let vote = vote_opt.unwrap();
 
             // check vote is valid from validator
             if !val.verify(vote.sign_bytes(), vote.signature()) {
