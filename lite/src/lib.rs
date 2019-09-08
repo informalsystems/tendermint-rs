@@ -50,7 +50,6 @@ trait Validators {
 /// to its public key material (ie. the pre-image of the id)
 /// to verify signatures.
 trait Validator {
-    fn id(&self) -> Hash;
     fn power(&self) -> u64;
     fn verify(&self, sign_bytes: Bytes, signature: Bytes) -> bool;
 }
