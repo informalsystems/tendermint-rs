@@ -62,7 +62,7 @@ where
         }
 
         // check that +2/3 validators signed correctly
-        if self.verify_commit_full(commit) {
+        if self.verify_commit(commit) {
             return None;
         }
 
@@ -73,7 +73,7 @@ where
     }
 
     /// Check that +2/3 of the trusted validator set signed this commit.
-    fn verify_commit_full<C>(self, commit: C) -> bool
+    fn verify_commit<C>(self, commit: C) -> bool
     where
         C: Commit,
     {
