@@ -17,8 +17,10 @@ type Time = u64; // TODO
 type BlockID = u64; // TODO
 type Bytes = u64; // TODO
 
-/// Header contains key meta information about the block.
-/// Note it only contains hashes, not validator sets themselves.
+/// Header contains meta data about the block -
+/// the height, the time, and the hash of the validator set
+/// that should sign this header, and the hash of the validator
+/// set that should sign the next header.
 trait Header {
     fn height(&self) -> Height;
     fn bft_time(&self) -> Time;
@@ -29,36 +31,36 @@ trait Header {
     fn hash(&self) -> Hash;
 }
 
-/// Full validator set. This must contain pubkey information for
-/// each validator - though pubkeys are not exposed directly through
-/// this interface, they are implied via the `verify` method which must
-/// lookup the pubkey for a given validator and check the signature on the given
-/// sign_bytes.
+/// Validators is the full validator set.
+/// It has a hash and an underlying Validator type,
+/// which should know its ID, voting power,
+/// and be able to verify its signatures (ie. have access to the public key).
 trait Validators {
+    type Validator: Validator;
+
     /// Hash of the validator set.
     fn hash(&self) -> Hash;
 
     /// For iterating over the underlying validators.
-    fn vals(&self) -> Vec<Validator>;
-
-    /// Verify a validator correctly signed some bytes.
-    fn verify(&self, val_id: Hash, sign_bytes: Bytes, signature: Bytes) -> bool;
+    fn into_vec(&self) -> Vec<Self::Validator>;
 }
 
-/// Validator is just a simple struct.
-/// XXX: Couldn't figure out how to make it generic, but maybe it doesn't have to be.
-/// The secret was to put the `verify` method on `Validators`.
-struct Validator {
-    id: Hash,
-    power: u64,
+/// Validator has an id, a voting power, and can verify
+/// its own signatures. Note it must have implicit access
+/// to its public key material (ie. the pre-image of the id)
+/// to verify signatures.
+trait Validator {
+    fn id(&self) -> Hash;
+    fn power(&self) -> u64;
+    fn verify(&self, sign_bytes: Bytes, signature: Bytes) -> bool;
 }
 
-/// Commit is the proof a Header is valid.
-/// XXX: Amazed I managed to make this generic over vote.
-trait Commit<V>
-where
-    V: Vote,
-{
+/// Commit is proof a Header is valid.
+/// It has an underlying Vote type with the relevant vote data
+/// for verification.
+trait Commit {
+    type Vote: Vote;
+
     /// Hash of the header this commit is for.
     fn header_hash(&self) -> Hash;
 
@@ -67,7 +69,7 @@ where
     fn block_id(&self) -> BlockID;
 
     /// Return the underlying votes for iteration.
-    fn votes(&self) -> Vec<V>;
+    fn into_vec(&self) -> Vec<Self::Vote>;
 }
 
 /// Vote is the vote for a validator on some block_id.
@@ -106,7 +108,7 @@ where
     /// the header. Without knowing this next validator set, we can't really verify the next
     /// header, so we make verifying this header conditional on receiving that validator set.
     /// Returns the new TrustedState if verification passes.
-    fn verify<C, VOTE>(
+    fn verify<C>(
         self,
         now: Time,
         header: H,
@@ -114,8 +116,7 @@ where
         next_validators: V,
     ) -> Option<TrustedState<H, V>>
     where
-        C: Commit<VOTE>,
-        VOTE: Vote,
+        C: Commit,
     {
         // check if the state expired
         if self.expires() < now {
@@ -154,20 +155,18 @@ where
     }
 
     /// Check that +2/3 of the trusted validator set signed this commit.
-    fn verify_commit_full<C, VOTE>(self, commit: C) -> bool
+    fn verify_commit_full<C>(self, commit: C) -> bool
     where
-        C: Commit<VOTE>,
-        VOTE: Vote,
+        C: Commit,
     {
         let mut signed_power: u64 = 0;
         let mut total_power: u64 = 0;
 
-        let vals = self.state.next_validators;
-        let vals_iter = vals.vals().into_iter();
-        let commit_iter = commit.votes().into_iter();
+        let vals_iter = self.state.next_validators.into_vec().into_iter();
+        let commit_iter = commit.into_vec().into_iter();
 
         for (val, vote) in vals_iter.zip(commit_iter) {
-            total_power += val.power;
+            total_power += val.power();
 
             // skip if vote is not for the right block id
             if vote.block_id() != commit.block_id() {
@@ -175,12 +174,10 @@ where
             }
 
             // check vote is valid from validator
-            let sign_bytes = vote.sign_bytes();
-            let signature = vote.signature();
-            if !vals.verify(val.id, sign_bytes, signature) {
+            if !val.verify(vote.sign_bytes(), vote.signature()) {
                 return false;
             }
-            signed_power += val.power;
+            signed_power += val.power();
         }
         signed_power * 3 > total_power * 2
     }
