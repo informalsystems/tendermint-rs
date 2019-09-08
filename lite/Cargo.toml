@@ -1,0 +1,7 @@
+[package]
+name = "lite"
+version = "0.1.0"
+authors = ["Ethan Buchman <ethan@coinculture.info>"]
+edition = "2018"
+
+[dependencies]
