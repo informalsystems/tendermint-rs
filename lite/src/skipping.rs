@@ -1,48 +1,39 @@
 use crate::types::*;
 
-/// The sequentially verifying lite client
-/// verifies all headers in order, where +2/3 of the correct
-/// validator set must have signed the header.
-struct SequentialVerifier<H, V>
+/// The skipping verifier lite client
+/// tries to skip headers by verifying if
+/// +1/3 of the last validators it trusts has signed the new header.
+struct SkippingVerifier<H, V>
 where
     H: Header,
-    V: Validators,
+    V: ValidatorsLookup,
 {
     trusting_period: Time,
     state: TrustedState<H, V>,
 }
 
-impl<H, V> SequentialVerifier<H, V>
+impl<H, V> SkippingVerifier<H, V>
 where
     H: Header,
-    V: Validators,
+    V: ValidatorsLookup,
 {
     /// trusted state expires after the trusting period.
     fn expires(&self) -> Time {
         self.state.header.bft_time() + self.trusting_period
     }
 
-    /// Verify takes a header, a commit for the header, and the next validator set referenced by
-    /// the header. Without knowing this next validator set, we can't really verify the next
-    /// header, so we make verifying this header conditional on receiving that validator set.
+    /// Verify takes a header, a commit for the header,
+    /// and the validators for the next commit.
+    /// Note we do not know the correct validator set for this commit - we can only check if 
+    /// it was signed by enough of the validators we do know about.
     /// Returns an error if verification fails.
-    fn verify<C>(&self, now: Time, header: H, commit: C, next_validators: V) -> Result<(), Error>
+    fn verify<C>(self, now: Time, header: H, commit: C, next_validators: V) -> Result<(), Error>
     where
         C: Commit,
     {
         // check if the state expired
         if self.expires() < now {
             return Err(Error::Expired);
-        }
-
-        // sequeuntial height only
-        if header.height() != self.state.header.height() + 1 {
-            return Err(Error::NonSequentialHeight);
-        }
-
-        // validator set for this header is already trusted
-        if header.validators_hash() != self.state.next_validators.hash() {
-            return Err(Error::InvalidValidators);
         }
 
         // next validator set to trust is correctly supplied
@@ -55,25 +46,30 @@ where
             return Err(Error::InvalidCommitValue);
         }
 
-        // check that +2/3 validators signed correctly
+        // check that +1/3 of trusted validators signed correctly
         self.verify_commit(commit)
     }
 
-    /// Check that +2/3 of the correct and trusted validator set signed this commit.
-    fn verify_commit<C>(&self, commit: C) -> Result<(), Error>
+    /// Check that +1/3 of the last trusted validator set signed this commit.
+    fn verify_commit<C>(self, commit: C) -> Result<(), Error>
     where
         C: Commit,
     {
         let total_power = self.state.next_validators.total_power();
         let mut signed_power: u64 = 0;
 
-        // NOTE that the vals and commit have a 1-to-1 correspondance
-        let vals_iter = self.state.next_validators.into_vec().into_iter();
+        // NOTE we don't know the validators that committed this block!
         let commit_iter = commit.into_vec().into_iter();
-
-        for (val, vote_opt) in vals_iter.zip(commit_iter) {
+        for vote_opt in commit_iter {
             // skip absent and nil votes
-            let vote = match vote_opt {
+            if let None = vote_opt {
+                continue;
+            }
+            let vote = vote_opt.unwrap();
+
+            // check if this vote is from a known validator
+            let val_id = vote.validator_id();
+            let val = match self.state.next_validators.validator(val_id) {
                 Some(v) => v,
                 None => continue,
             };
@@ -84,8 +80,7 @@ where
             }
             signed_power += val.power();
         }
-
-        if signed_power * 3 <= total_power * 2 {
+        if signed_power * 3 <= total_power * 1 {
             return Err(Error::InsufficientVotingPower);
         }
 

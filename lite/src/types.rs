@@ -15,6 +15,7 @@ pub type Height = u64;
 pub type Hash = u64; // TODO
 pub type Time = u64; // TODO
 pub type Bytes = u64; // TODO
+pub type ValID = u64; // TODO
 
 /// Header contains meta data about the block -
 /// the height, the time, and the hash of the validator set
@@ -40,8 +41,15 @@ pub trait Validators {
     /// Hash of the validator set.
     fn hash(&self) -> Hash;
 
+    /// Total voting power of the set
+    fn total_power(&self) -> u64;
+
     /// For iterating over the underlying validators.
     fn into_vec(&self) -> Vec<Self::Validator>;
+}
+
+pub trait ValidatorsLookup: Validators {
+    fn validator(&self, val_id: ValID) -> Option<Self::Validator>;
 }
 
 /// Validator has an id, a voting power, and can verify
@@ -73,6 +81,7 @@ pub trait Commit {
 /// message. For now, Tendermint votes also sign over the validator's local timestamp,
 /// so each vote is for a slightly different message.
 pub trait Vote {
+    fn validator_id(&self) -> ValID;
     fn sign_bytes(&self) -> Bytes;
     fn signature(&self) -> Bytes;
 }
