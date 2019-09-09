@@ -46,7 +46,7 @@ signatory-dalek = { version = "0.12" }
 sha2 = { version = "0.8", default-features = false }
 subtle = "2"
 subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
-tai64 = { version = "2", features = ["chrono"] }
+tai64 = { version = "3", features = ["chrono"] }
 toml = { version = "0.5" }
 uuid = { version = "0.7", default-features = false }
 x25519-dalek = { version = "0.5", default-features = false, features = ["u64_backend"] }
