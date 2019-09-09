@@ -76,3 +76,15 @@ pub trait Vote {
     fn sign_bytes(&self) -> Bytes;
     fn signature(&self) -> Bytes;
 }
+
+pub enum Error {
+    Expired,
+    NonSequentialHeight,
+
+    InvalidValidators,
+    InvalidNextValidators,
+    InvalidCommitValue, // commit is not for the header we expected
+    InvalidSignature,
+
+    InsufficientVotingPower,
+}

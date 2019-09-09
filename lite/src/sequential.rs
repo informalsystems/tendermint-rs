@@ -27,53 +27,46 @@ where
     /// header, so we make verifying this header conditional on receiving that validator set.
     /// Returns the new TrustedState if verification passes.
     fn verify<C>(
-        self,
+        &self,
         now: Time,
         header: H,
         commit: C,
         next_validators: V,
-    ) -> Option<TrustedState<H, V>>
+    ) -> Result<(), Error> 
     where
         C: Commit,
     {
         // check if the state expired
         if self.expires() < now {
-            return None;
+            return Err(Error::Expired);
         }
 
         // sequeuntial height only
         if header.height() != self.state.header.height() + 1 {
-            return None;
+            return Err(Error::NonSequentialHeight);
         }
 
         // validator set for this header is already trusted
         if header.validators_hash() != self.state.next_validators.hash() {
-            return None;
+            return Err(Error::InvalidValidators);
         }
 
         // next validator set to trust is correctly supplied
         if header.next_validators_hash() != next_validators.hash() {
-            return None;
+            return Err(Error::InvalidNextValidators);
         }
 
         // commit is for a block with this header
         if header.hash() != commit.header_hash() {
-            return None;
+            return Err(Error::InvalidCommitValue);
         }
 
         // check that +2/3 validators signed correctly
-        if self.verify_commit(commit) {
-            return None;
-        }
-
-        Some(TrustedState {
-            header,
-            next_validators,
-        })
+        self.verify_commit(commit)
     }
 
     /// Check that +2/3 of the trusted validator set signed this commit.
-    fn verify_commit<C>(self, commit: C) -> bool
+    fn verify_commit<C>(&self, commit: C) -> Result<(), Error>
     where
         C: Commit,
     {
@@ -87,17 +80,22 @@ where
             total_power += val.power();
 
             // skip absent and nil votes
-            if let None = vote_opt {
-                continue;
-            }
-            let vote = vote_opt.unwrap();
+            let vote = match vote_opt {
+                Some(v) => v,
+                None => continue,
+            };
 
             // check vote is valid from validator
             if !val.verify(vote.sign_bytes(), vote.signature()) {
-                return false;
+                return Err(Error::InvalidSignature);
             }
             signed_power += val.power();
         }
-        signed_power * 3 > total_power * 2
+
+        if signed_power * 3 <= total_power * 2 {
+            return Err(Error::InsufficientVotingPower)
+        }
+
+        Ok(())
     }
 }
