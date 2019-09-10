@@ -24,7 +24,7 @@ where
 
     /// Verify takes a header, a commit for the header,
     /// and the next validator set referenced by the header.
-    /// Note we do not know the correct validator set for this commit - 
+    /// Note we do not know the correct validator set for this commit -
     /// we can only check if it was signed by enough of the validators we do know about.
     /// Returns an error if verification fails.
     fn verify<C>(self, now: Time, header: H, commit: C, next_validators: V) -> Result<(), Error>
