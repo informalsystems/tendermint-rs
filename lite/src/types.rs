@@ -18,7 +18,7 @@ pub type Bytes = u64; // TODO
 pub type ValID = u64; // TODO
 
 /// Header contains meta data about the block -
-/// the height, the time, and the hash of the validator set
+/// the height, the time, the hash of the validator set
 /// that should sign this header, and the hash of the validator
 /// set that should sign the next header.
 pub trait Header {
@@ -27,14 +27,14 @@ pub trait Header {
     fn validators_hash(&self) -> Hash;
     fn next_validators_hash(&self) -> Hash;
 
-    /// Hash of the header is the hash of the block!
+    /// Hash of the header (ie. the hash of the block).
     fn hash(&self) -> Hash;
 }
 
 /// Validators is the full validator set.
-/// It has a hash and an underlying Validator type,
-/// which should know its ID, voting power,
-/// and be able to verify its signatures (ie. have access to the public key).
+/// It exposes its hash, which should match whats in a header,
+/// and its total power. It also has an underlying
+/// Validator type which can be used for verifying signatures.
 pub trait Validators {
     type Validator: Validator;
 
@@ -48,14 +48,15 @@ pub trait Validators {
     fn into_vec(&self) -> Vec<Self::Validator>;
 }
 
+/// ValidatorsLookup allows validator to be fetched via their ID
+/// (ie. their address).
 pub trait ValidatorsLookup: Validators {
     fn validator(&self, val_id: ValID) -> Option<Self::Validator>;
 }
 
-/// Validator has an id, a voting power, and can verify
+/// Validator has a voting power and can verify
 /// its own signatures. Note it must have implicit access
-/// to its public key material (ie. the pre-image of the id)
-/// to verify signatures.
+/// to its public key material to verify signatures.
 pub trait Validator {
     fn power(&self) -> u64;
     fn verify(&self, sign_bytes: Bytes, signature: Bytes) -> bool;
@@ -71,8 +72,10 @@ pub trait Commit {
     fn header_hash(&self) -> Hash;
 
     /// Return the underlying votes for iteration.
-    /// The Vote is either for the right block id,
-    /// or it's None.
+    /// All votes here are for the correct block id -
+    /// we ignore absent votes and votes for nil here.
+    /// NOTE: we may want to check signatures for nil votes,
+    /// and thus use an ternary enum here instead of the binary Option.
     fn into_vec(&self) -> Vec<Option<Self::Vote>>;
 }
 
@@ -80,6 +83,7 @@ pub trait Commit {
 /// In an ideal world, votes contain only signatures, and all votes are for the same
 /// message. For now, Tendermint votes also sign over the validator's local timestamp,
 /// so each vote is for a slightly different message.
+/// Note the Vote must also know which validator it is from.
 pub trait Vote {
     fn validator_id(&self) -> ValID;
     fn sign_bytes(&self) -> Bytes;
