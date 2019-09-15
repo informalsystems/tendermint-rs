@@ -15,28 +15,29 @@ where
     Ok(())
 }
 
-// Validate the header against the current and next validators and 
-// the commit.
-fn validate_header<H, V, C>(
-    header: H,
-    commit: &C,
-    vals: &V,
-    next_vals: V,
-) -> Result<(), Error>
+fn validate_next_vals<H, V>(header: H, next_vals: &V) -> Result<(), Error>
+where
+    H: Header,
+    V: Validators,
+{
+    // ensure the next validators in the header matches what was supplied.
+    if header.next_validators_hash() != next_vals.hash() {
+        return Err(Error::InvalidNextValidators);
+    }
+
+    Ok(())
+}
+
+// Validate the validators and commit against the header.
+fn validate_vals_and_commit<H, V, C>(header: H, commit: &C, vals: &V) -> Result<(), Error>
 where
     H: Header,
     V: Validators,
     C: Commit,
 {
-
     // ensure the validators in the header matches what we expect from our state.
     if header.validators_hash() != vals.hash() {
         return Err(Error::InvalidValidators);
-    }
-
-    // ensure the next validators in the header matches what was supplied.
-    if header.next_validators_hash() != next_vals.hash() {
-        return Err(Error::InvalidNextValidators);
     }
 
     // ensure the commit matches the header.
@@ -48,25 +49,13 @@ where
 }
 
 /// Verify the commit is valid from the given validators for the header.
-/// Additionally check that the next_validators are correct according to the header.
-/// These will be used to verify the next header ... TODO: break this out into a separate thing.
-pub fn sequential<H, V, C>(
-    header: H,
-    commit: C,
-    validators: V,
-    next_validators: V,
-) -> Result<(), Error>
+pub fn verify<H, V, C>(header: H, commit: C, validators: V) -> Result<(), Error>
 where
     H: Header,
     V: Validators,
     C: Commit,
 {
-    if let Err(e) = validate_header(
-        header,
-        &commit,
-        &validators,
-        next_validators,
-    ) {
+    if let Err(e) = validate_vals_and_commit(header, &commit, &validators) {
         return Err(e);
     }
 
@@ -74,27 +63,20 @@ where
     verify_commit_full(&validators, commit)
 }
 
-/// Verify the commit is trusted according to the last validators and is valid 
+/// Verify the commit is trusted according to the last validators and is valid
 /// from the current validators for the header.
-pub fn skipping<H, V, C>(
+pub fn verify_trusting<H, V, C>(
     header: H,
     commit: C,
     last_validators: V,
     validators: V,
-    next_validators: V,
 ) -> Result<(), Error>
 where
     H: Header,
     V: ValidatorsLookup,
     C: Commit,
 {
-
-    if let Err(e) = validate_header(
-        header,
-        &commit,
-        &validators,
-        next_validators,
-    ) {
+    if let Err(e) = validate_vals_and_commit(header, &commit, &validators) {
         return Err(e);
     }
 
