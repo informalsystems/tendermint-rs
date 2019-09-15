@@ -19,7 +19,7 @@ where
     /// Returns the time after which the current state expires
     /// and the verifier must be reset subjectively.
     fn expires(&self) -> Time {
-        self.state.header.bft_time() + self.trusting_period
+        self.state.last_header.bft_time() + self.trusting_period
     }
 
     /// Verify takes a header, a commit for the header,
@@ -55,7 +55,7 @@ where
     where
         C: Commit,
     {
-        let total_power = self.state.next_validators.total_power();
+        let total_power = self.state.validators.total_power();
         let mut signed_power: u64 = 0;
 
         // NOTE we don't know the validators that committed this block,
@@ -72,13 +72,13 @@ where
 
             // check if this vote is from a known validator
             let val_id = vote.validator_id();
-            let val = match self.state.next_validators.validator(val_id) {
+            let val = match self.state.validators.validator(val_id) {
                 Some(v) => v,
                 None => continue,
             };
 
             // check vote is valid from validator
-            if !val.verify(vote.sign_bytes(), vote.signature()) {
+            if !val.verify_signature(vote.sign_bytes(), vote.signature()) {
                 return Err(Error::InvalidSignature);
             }
             signed_power += val.power();

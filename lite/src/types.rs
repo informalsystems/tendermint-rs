@@ -6,8 +6,8 @@ where
     H: Header,
     V: Validators,
 {
-    pub header: H,
-    pub next_validators: V,
+    pub last_header: H, // height H-1
+    pub validators: V,  // height H
 }
 
 /// Need to do something better here :)
@@ -59,7 +59,7 @@ pub trait ValidatorsLookup: Validators {
 /// to its public key material to verify signatures.
 pub trait Validator {
     fn power(&self) -> u64;
-    fn verify(&self, sign_bytes: Bytes, signature: Bytes) -> bool;
+    fn verify_signature(&self, sign_bytes: Bytes, signature: Bytes) -> bool;
 }
 
 /// Commit is proof a Header is valid.
