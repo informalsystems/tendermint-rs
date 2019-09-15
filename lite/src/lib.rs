@@ -1,3 +1,2 @@
-mod sequential;
-mod skipping;
 mod types;
+mod verifier;

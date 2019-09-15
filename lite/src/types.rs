@@ -93,10 +93,12 @@ pub trait Vote {
 pub enum Error {
     Expired,
     NonSequentialHeight,
+    NonIncreasingHeight,
 
     InvalidValidators,
     InvalidNextValidators,
     InvalidCommitValue, // commit is not for the header we expected
+    InvalidCommitLength,
     InvalidSignature,
 
     InsufficientVotingPower,
