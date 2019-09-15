@@ -4,7 +4,7 @@
 pub struct TrustedState<H, V>
 where
     H: Header,
-    V: Validators,
+    V: ValidatorSet,
 {
     pub last_header: H, // height H-1
     pub validators: V,  // height H
@@ -31,11 +31,11 @@ pub trait Header {
     fn hash(&self) -> Hash;
 }
 
-/// Validators is the full validator set.
+/// ValidatorSet is the full validator set.
 /// It exposes its hash, which should match whats in a header,
 /// and its total power. It also has an underlying
 /// Validator type which can be used for verifying signatures.
-pub trait Validators {
+pub trait ValidatorSet {
     type Validator: Validator;
 
     /// Hash of the validator set.
@@ -48,9 +48,9 @@ pub trait Validators {
     fn into_vec(&self) -> Vec<Self::Validator>;
 }
 
-/// ValidatorsLookup allows validator to be fetched via their ID
+/// ValidatorSetLookup allows validator to be fetched via their ID
 /// (ie. their address).
-pub trait ValidatorsLookup: Validators {
+pub trait ValidatorSetLookup: ValidatorSet {
     fn validator(&self, val_id: ValID) -> Option<Self::Validator>;
 }
 
@@ -95,8 +95,8 @@ pub enum Error {
     NonSequentialHeight,
     NonIncreasingHeight,
 
-    InvalidValidators,
-    InvalidNextValidators,
+    InvalidValidatorSet,
+    InvalidNextValidatorSet,
     InvalidCommitValue, // commit is not for the header we expected
     InvalidCommitLength,
     InvalidSignature,

@@ -18,11 +18,11 @@ where
 fn validate_next_vals<H, V>(header: H, next_vals: &V) -> Result<(), Error>
 where
     H: Header,
-    V: Validators,
+    V: ValidatorSet,
 {
     // ensure the next validators in the header matches what was supplied.
     if header.next_validators_hash() != next_vals.hash() {
-        return Err(Error::InvalidNextValidators);
+        return Err(Error::InvalidNextValidatorSet);
     }
 
     Ok(())
@@ -32,12 +32,12 @@ where
 fn validate_vals_and_commit<H, V, C>(header: H, commit: &C, vals: &V) -> Result<(), Error>
 where
     H: Header,
-    V: Validators,
+    V: ValidatorSet,
     C: Commit,
 {
     // ensure the validators in the header matches what we expect from our state.
     if header.validators_hash() != vals.hash() {
-        return Err(Error::InvalidValidators);
+        return Err(Error::InvalidValidatorSet);
     }
 
     // ensure the commit matches the header.
@@ -52,7 +52,7 @@ where
 pub fn verify<H, V, C>(header: H, commit: C, validators: V) -> Result<(), Error>
 where
     H: Header,
-    V: Validators,
+    V: ValidatorSet,
     C: Commit,
 {
     if let Err(e) = validate_vals_and_commit(header, &commit, &validators) {
@@ -73,7 +73,7 @@ pub fn verify_trusting<H, V, C>(
 ) -> Result<(), Error>
 where
     H: Header,
-    V: ValidatorsLookup,
+    V: ValidatorSetLookup,
     C: Commit,
 {
     if let Err(e) = validate_vals_and_commit(header, &commit, &validators) {
@@ -93,7 +93,7 @@ where
 /// NOTE: these validators are expected to be the correct validators for the commit.
 fn verify_commit_full<V, C>(vals: &V, commit: C) -> Result<(), Error>
 where
-    V: Validators,
+    V: ValidatorSet,
     C: Commit,
 {
     let total_power = vals.total_power();
@@ -140,7 +140,7 @@ where
 /// but there may be some intersection.
 fn verify_commit_trusting<V, C>(validators: &V, commit: &C) -> Result<(), Error>
 where
-    V: ValidatorsLookup,
+    V: ValidatorSetLookup,
     C: Commit,
 {
     let total_power = validators.total_power();
