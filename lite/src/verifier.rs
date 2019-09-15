@@ -81,7 +81,7 @@ where
     }
 
     // ensure that +1/3 of last trusted validators signed correctly
-    if let Err(e) = verify_commit_intersection(&validators, &commit) {
+    if let Err(e) = verify_commit_trusting(&validators, &commit) {
         return Err(e);
     }
 
@@ -138,7 +138,7 @@ where
 /// Verify that +1/3 of the given validator set signed this commit.
 /// NOTE the given validators do not necessarily correspond to the validator set for this commit,
 /// but there may be some intersection.
-fn verify_commit_intersection<V, C>(validators: &V, commit: &C) -> Result<(), Error>
+fn verify_commit_trusting<V, C>(validators: &V, commit: &C) -> Result<(), Error>
 where
     V: ValidatorsLookup,
     C: Commit,
