@@ -1,3 +1,4 @@
+use std::time::{Instant, Duration};
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header and the validator set to use to verify
 /// the next header.
@@ -10,12 +11,15 @@ where
     pub validators: V,  // height H
 }
 
-/// Need to do something better here :)
 pub type Height = u64;
-pub type Hash = u64; // TODO
-pub type Time = u64; // TODO
-pub type Bytes = u64; // TODO
-pub type ValID = u64; // TODO
+/// Size of the underlying Hash in bytes
+pub const HASH_LENGTH: usize = 32;
+#[derive(Eq, PartialEq)]
+pub struct Hash([u8; HASH_LENGTH]);
+/// Size of a validator ID in bytes
+pub const VAL_ID_LENGTH: usize = 20;
+pub struct ValID([u8; VAL_ID_LENGTH]);
+
 
 /// Header contains meta data about the block -
 /// the height, the time, the hash of the validator set
@@ -23,7 +27,7 @@ pub type ValID = u64; // TODO
 /// set that should sign the next header.
 pub trait Header {
     fn height(&self) -> Height;
-    fn bft_time(&self) -> Time;
+    fn bft_time(&self) -> Instant;
     fn validators_hash(&self) -> Hash;
     fn next_validators_hash(&self) -> Hash;
 
@@ -59,7 +63,7 @@ pub trait ValidatorSetLookup: ValidatorSet {
 /// to its public key material to verify signatures.
 pub trait Validator {
     fn power(&self) -> u64;
-    fn verify_signature(&self, sign_bytes: Bytes, signature: Bytes) -> bool;
+    fn verify_signature(&self, sign_bytes: &[u8], signature: &[u8]) -> bool;
 }
 
 /// Commit is proof a Header is valid.
@@ -76,6 +80,8 @@ pub trait Commit {
     /// we ignore absent votes and votes for nil here.
     /// NOTE: we may want to check signatures for nil votes,
     /// and thus use an ternary enum here instead of the binary Option.
+    // TODO figure out if we want/can do an iter() method here that returns a
+    // VoteIterator instead of returning a vec
     fn into_vec(&self) -> Vec<Option<Self::Vote>>;
 }
 
@@ -86,8 +92,8 @@ pub trait Commit {
 /// Note the Vote must also know which validator it is from.
 pub trait Vote {
     fn validator_id(&self) -> ValID;
-    fn sign_bytes(&self) -> Bytes;
-    fn signature(&self) -> Bytes;
+    fn sign_bytes(&self) -> &[u8];
+    fn signature(&self) -> &[u8];
 }
 
 pub enum Error {
