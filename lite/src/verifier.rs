@@ -1,5 +1,5 @@
 use crate::types::*;
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 /// Returns an error if the header has expired according to the given
 /// trusting_period and current time. If so, the verifier must be reset subjectively.

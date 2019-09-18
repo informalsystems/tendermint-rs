@@ -1,4 +1,4 @@
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header and the validator set to use to verify
 /// the next header.
@@ -19,7 +19,6 @@ pub struct Hash([u8; HASH_LENGTH]);
 /// Size of a validator ID in bytes
 pub const VAL_ID_LENGTH: usize = 20;
 pub struct ValID([u8; VAL_ID_LENGTH]);
-
 
 /// Header contains meta data about the block -
 /// the height, the time, the hash of the validator set
