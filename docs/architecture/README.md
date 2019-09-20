@@ -25,6 +25,6 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 
 ## Table of Contents
 
-| ADR \# | Description |
-| ------ | ----------- |
-| [001](./adr-001-repo.md) | Repository structure for `tendermint-rs` |
+| ADR \# | Description | Status |
+| ------ | ----------- | ------ |
+| [001](./adr-001-repo.md) | Repository structure for `tendermint-rs` | Proposed |
