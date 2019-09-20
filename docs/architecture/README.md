@@ -20,3 +20,9 @@ it is or should be.
 If recorded decisions turned out to be lacking, convene a discussion, record the new decisions here, and then modify the code to match.
 
 Note the context/background should be written in the present tense.
+
+## Table of Contents
+
+| ADR \# | Description |
+| ------ | ----------- |
+| [001](./adr-001-repo.md) | Repository structure for `tendermint-rs` |
