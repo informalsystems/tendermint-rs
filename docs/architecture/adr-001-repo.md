@@ -1,4 +1,4 @@
-# ADR 1: Repo
+# ADR 001: Repository Structure
 
 ## Context
 
