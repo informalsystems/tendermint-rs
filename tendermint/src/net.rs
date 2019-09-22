@@ -86,23 +86,23 @@ impl Address {
         let (peer_id, authority) = match authority_parts.len() {
             1 => (None, authority_parts[0]),
             2 => (Some(authority_parts[0].parse()?), authority_parts[1]),
-            _ => Err(err!(
+            _ => return Err(err!(
                 ErrorKind::Parse,
                 "invalid {} address (bad authority): {}",
                 TCP_PREFIX,
                 addr
-            ))?,
+            )),
         };
 
         let host_and_port: Vec<&str> = authority.split(':').collect();
 
         if host_and_port.len() != 2 {
-            Err(err!(
+            return Err(err!(
                 ErrorKind::Parse,
                 "invalid {} address (missing port): {}",
                 TCP_PREFIX,
                 addr
-            ))?;
+            ));
         }
 
         // TODO(tarcieri): default for missing hostname?

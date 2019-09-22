@@ -186,18 +186,18 @@ impl FromStr for LogLevel {
             let parts = level.split(':').collect::<Vec<_>>();
 
             if parts.len() != 2 {
-                Err(err!(ErrorKind::Parse, "error parsing log level: {}", level))?;
+                return Err(err!(ErrorKind::Parse, "error parsing log level: {}", level));
             }
 
             let key = parts[0].to_owned();
             let value = parts[1].to_owned();
 
             if levels.insert(key, value).is_some() {
-                Err(err!(
+                return Err(err!(
                     ErrorKind::Parse,
                     "duplicate log level setting for: {}",
                     level
-                ))?;
+                ));
             }
         }
 
