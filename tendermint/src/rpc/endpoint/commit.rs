@@ -46,5 +46,3 @@ pub struct SignedHeader {
     /// Commit containing signatures for the header
     pub commit: block::Commit,
 }
-
-
