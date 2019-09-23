@@ -81,7 +81,7 @@ where
     }
 
     // ensure that +1/3 of last trusted validators signed correctly
-    if let Err(e) = verify_commit_trusting(&validators, &commit) {
+    if let Err(e) = verify_commit_trusting(&last_validators, &commit) {
         return Err(e);
     }
 
