@@ -14,8 +14,12 @@ jobs:
     - run:
         name: clippy
         command: |
-          cargo clippy --version
-          cargo clippy --all-features
+          if rustup component add clippy; then
+            cargo clippy --version
+            cargo clippy --all --all-targets -- -Dwarnings -Drust-2018-idioms
+          else
+            echo Skipping clippy
+          fi
     - run:
         name: build 
         command: |
