@@ -32,13 +32,13 @@ impl FromStr for Timeout {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Timeouts are either 'ms' or 's', and should always end with 's'
         if s.len() < 2 || !s.ends_with('s') {
-            Err(err!(ErrorKind::Parse, "invalid units"))?;
+            return Err(err!(ErrorKind::Parse, "invalid units"));
         }
 
         let units = match s.chars().nth(s.len() - 2) {
             Some('m') => "ms",
             Some('0'..='9') => "s",
-            _ => Err(err!(ErrorKind::Parse, "invalid units"))?,
+            _ => return Err(err!(ErrorKind::Parse, "invalid units")),
         };
 
         let numeric_part = s.chars().take(s.len() - units.len()).collect::<String>();

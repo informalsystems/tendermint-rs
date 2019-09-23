@@ -236,10 +236,10 @@ mod tests {
             round: 2,
             timestamp: Some(t),
             block_id: Some(BlockId {
-                hash: "hash".as_bytes().to_vec(),
+                hash: b"hash".to_vec(),
                 parts_header: Some(PartsSetHeader {
-                    total: 1000000,
-                    hash: "parts_hash".as_bytes().to_vec(),
+                    total: 1_000_000,
+                    hash: b"parts_hash".to_vec(),
                 }),
             }),
             validator_address: vec![
@@ -411,10 +411,10 @@ mod tests {
             timestamp: Some(t),
             vote_type: 0x01,
             block_id: Some(BlockId {
-                hash: "hash".as_bytes().to_vec(),
+                hash: b"hash".to_vec(),
                 parts_header: Some(PartsSetHeader {
-                    total: 1000000,
-                    hash: "parts_hash".as_bytes().to_vec(),
+                    total: 1_000_000,
+                    hash: b"parts_hash".to_vec(),
                 }),
             }),
             // signature: None,
@@ -466,10 +466,10 @@ mod tests {
             timestamp: Some(t),
             vote_type: 0x01,
             block_id: Some(BlockId {
-                hash: "hash".as_bytes().to_vec(),
+                hash: b"hash".to_vec(),
                 parts_header: Some(PartsSetHeader {
-                    total: 1000000,
-                    hash: "parts_hash".as_bytes().to_vec(),
+                    total: 1_000_000,
+                    hash: b"parts_hash".to_vec(),
                 }),
             }),
             signature: vec![],

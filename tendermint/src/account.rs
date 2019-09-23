@@ -89,7 +89,7 @@ impl FromStr for Id {
             .map_err(|_| ErrorKind::Parse)?;
 
         if bytes.len() != LENGTH {
-            Err(ErrorKind::Parse)?;
+            return Err(ErrorKind::Parse.into());
         }
 
         let mut result_bytes = [0u8; LENGTH];

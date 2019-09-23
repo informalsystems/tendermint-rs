@@ -61,13 +61,13 @@ impl FromStr for Id {
     /// Parses string to create a new chain ID
     fn from_str(name: &str) -> Result<Self, Error> {
         if name.is_empty() || name.len() > MAX_LENGTH {
-            Err(ErrorKind::Length)?;
+            return Err(ErrorKind::Length.into());
         }
 
         for byte in name.as_bytes() {
             match byte {
                 b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' => (),
-                _ => Err(ErrorKind::Parse)?,
+                _ => return Err(ErrorKind::Parse.into()),
             }
         }
 
