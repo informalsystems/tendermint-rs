@@ -12,6 +12,11 @@ jobs:
           cargo fmt --version
           cargo fmt -- --check
     - run:
+        name: clippy
+        command: |
+          cargo clippy --version
+          cargo clippy --all-features
+    - run:
         name: build 
         command: |
           rustc --version
