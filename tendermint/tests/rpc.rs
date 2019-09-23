@@ -163,6 +163,8 @@ mod endpoints {
         let response = endpoint::commit::Response::from_json(&read_json_fixture("commit")).unwrap();
         let header = response.signed_header.header;
         assert_eq!(header.chain_id.as_ref(), EXAMPLE_CHAIN);
+        let commit = response.signed_header.commit;
+        // TODO some sanity check with commit fields
     }
 
     #[test]
