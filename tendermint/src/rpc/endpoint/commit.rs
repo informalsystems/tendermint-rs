@@ -2,7 +2,6 @@
 
 use crate::{block, rpc};
 use serde::{Deserialize, Serialize};
-use std::ops::Deref;
 
 /// Get commit information about a specific block
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -44,12 +43,8 @@ impl rpc::Response for Response {}
 pub struct SignedHeader {
     /// Block header
     pub header: block::Header,
+    /// Commit containing signatures for the header
+    pub commit: block::Commit,
 }
 
-impl Deref for SignedHeader {
-    type Target = block::Header;
 
-    fn deref(&self) -> &block::Header {
-        &self.header
-    }
-}
