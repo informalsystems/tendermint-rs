@@ -160,10 +160,12 @@ impl Client {
 
         let (host, port) = match &self.address {
             net::Address::Tcp { host, port, .. } => (host, port),
-            other => return Err(Error::invalid_params(&format!(
-                "invalid RPC address: {:?}",
-                other
-            ))),
+            other => {
+                return Err(Error::invalid_params(&format!(
+                    "invalid RPC address: {:?}",
+                    other
+                )))
+            }
         };
 
         let mut headers = hyper::header::Headers::new();

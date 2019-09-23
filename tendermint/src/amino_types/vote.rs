@@ -479,7 +479,7 @@ mod tests {
             Ok(have) => {
                 assert_eq!(have, want);
             }
-            Err(err) => assert!(false, err.to_string()),
+            Err(err) => panic!(err.to_string()),
         }
     }
 }

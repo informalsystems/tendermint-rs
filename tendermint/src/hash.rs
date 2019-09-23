@@ -74,7 +74,7 @@ impl Hash {
 }
 
 impl Debug for Hash {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Hash::Sha256(_) => write!(f, "Hash::Sha256({})", self),
             Hash::Null => write!(f, "Hash::Null"),

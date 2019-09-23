@@ -54,12 +54,9 @@ mod tests {
 
         for i in 0..1024 {
             nonce.increment();
-            match check_points.get(&i) {
-                Some(want) => {
-                    let got = &nonce.to_bytes();
-                    assert_eq!(got, want);
-                }
-                None => (),
+            if let Some(want) = check_points.get(&i) {
+                let got = &nonce.to_bytes();
+                assert_eq!(got, want);
             }
         }
     }

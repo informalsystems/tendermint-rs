@@ -168,7 +168,7 @@ impl LogLevel {
     }
 
     /// Iterate over the levels
-    pub fn iter(&self) -> LogLevelIter {
+    pub fn iter(&self) -> LogLevelIter<'_> {
         self.0.iter()
     }
 }
