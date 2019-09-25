@@ -33,7 +33,7 @@ impl Id {
 
     /// Get the chain ID as a raw bytes.
     pub fn as_bytes(&self) -> &[u8] {
-        &self.0
+        &self.as_str().as_bytes()
     }
 }
 
