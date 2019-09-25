@@ -1,4 +1,3 @@
-#[allow(clippy::all)]
 use crate::lite::{Commit, Error, Header, Validator, ValidatorSet, ValidatorSetLookup, Vote};
 use crate::Time;
 use std::time::Duration;

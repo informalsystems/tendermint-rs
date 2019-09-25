@@ -1,7 +1,6 @@
 use crate::account::Id;
 use crate::block::Height;
 use crate::Hash;
-#[allow(clippy::all)]
 use crate::Time;
 
 /// TrustedState stores the latest state trusted by a lite client,

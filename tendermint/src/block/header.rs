@@ -98,9 +98,34 @@ impl lite::Header for Header {
         amino_types::ConsensusVersion::from(&self.version)
             .encode(&mut version_enc)
             .unwrap();
+        let mut height_enc = vec![];
+        prost_amino::encoding::encode_varint(self.height.value(), &mut height_enc);
+        let mut time_enc = vec![];
+        amino_types::TimeMsg::from(self.time)
+            .encode(&mut time_enc)
+            .unwrap();
+        let chain_id_bytes = self.chain_id.as_bytes();
+        let mut chain_id_enc = vec![];
+        prost_amino::encode_length_delimiter(chain_id_bytes.len(), &mut chain_id_enc).unwrap();
+        chain_id_enc.append(&mut chain_id_bytes.to_vec());
+        let mut num_tx_enc = vec![];
+        prost_amino::encoding::encode_varint(self.num_txs, &mut num_tx_enc);
+        let mut total_tx_enc = vec![];
+        prost_amino::encoding::encode_varint(self.total_txs, &mut total_tx_enc);
+        let mut last_block_id_enc = vec![];
+        amino_types::BlockId::from(&self.last_block_id)
+            .encode(&mut last_block_id_enc)
+            .unwrap();
 
         let mut byteslices: Vec<&[u8]> = vec![];
-        byteslices.push(&mut version_enc);
+        byteslices.push(version_enc.as_slice());
+        byteslices.push(chain_id_enc.as_slice());
+        byteslices.push(height_enc.as_slice());
+        byteslices.push(time_enc.as_slice());
+        byteslices.push(num_tx_enc.as_slice());
+        byteslices.push(total_tx_enc.as_slice());
+        byteslices.push(last_block_id_enc.as_slice());
+
         //        cdcEncode(h.Version),
         //        cdcEncode(h.ChainID),
         //        cdcEncode(h.Height),
