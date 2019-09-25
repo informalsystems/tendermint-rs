@@ -1,5 +1,7 @@
 //! Block headers
-use crate::{account, block, chain, lite, Hash, Time};
+use crate::merkle::simple_hash_from_byte_slices;
+use crate::{account, amino_types, block, chain, lite, Hash, Time};
+use prost::Message;
 use {
     crate::serializers,
     serde::{Deserialize, Serialize},
@@ -83,11 +85,39 @@ impl lite::Header for Header {
     }
 
     fn next_validators_hash(&self) -> Hash {
-        unimplemented!()
+        self.next_validators_hash
     }
 
     fn hash(&self) -> Hash {
-        unimplemented!()
+        let mut version_enc = vec![];
+        // TODO: if there is an encoding problem this will
+        // panic (as the golang code would):
+        // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/block.go#L393
+        // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
+        // Instead, handle errors gracefully here.
+        amino_types::ConsensusVersion::from(&self.version)
+            .encode(&mut version_enc)
+            .unwrap();
+
+        let mut byteslices: Vec<&[u8]> = vec![];
+        byteslices.push(&mut version_enc);
+        //        cdcEncode(h.Version),
+        //        cdcEncode(h.ChainID),
+        //        cdcEncode(h.Height),
+        //        cdcEncode(h.Time),
+        //        cdcEncode(h.NumTxs),
+        //        cdcEncode(h.TotalTxs),
+        //        cdcEncode(h.LastBlockID),
+        //        cdcEncode(h.LastCommitHash),
+        //        cdcEncode(h.DataHash),
+        //        cdcEncode(h.ValidatorsHash),
+        //        cdcEncode(h.NextValidatorsHash),
+        //        cdcEncode(h.ConsensusHash),
+        //        cdcEncode(h.AppHash),
+        //        cdcEncode(h.LastResultsHash),
+        //        cdcEncode(h.EvidenceHash),
+        //        cdcEncode(h.ProposerAddress),
+        Hash::Sha256(simple_hash_from_byte_slices(byteslices.as_slice()))
     }
 }
 
@@ -95,13 +125,15 @@ impl lite::Header for Header {
 /// application.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#version>
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Message)]
 pub struct Version {
     /// Block version
     #[serde(
         serialize_with = "serializers::serialize_u64",
         deserialize_with = "serializers::parse_u64"
     )]
+    #[prost(uint64, tag = "1")]
+    // TODO: probably better to introduce an amino_types equiv. here (clear separation of concerns) instead of implicitly making this encodable using prost macros
     pub block: u64,
 
     /// App version
@@ -109,5 +141,6 @@ pub struct Version {
         serialize_with = "serializers::serialize_u64",
         deserialize_with = "serializers::parse_u64"
     )]
+    #[prost(uint64, tag = "2")]
     pub app: u64,
 }
