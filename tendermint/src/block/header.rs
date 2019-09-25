@@ -182,8 +182,6 @@ pub struct Version {
         serialize_with = "serializers::serialize_u64",
         deserialize_with = "serializers::parse_u64"
     )]
-    #[prost(uint64, tag = "1")]
-    // TODO: probably better to introduce an amino_types equiv. here (clear separation of concerns) instead of implicitly making this encodable using prost macros
     pub block: u64,
 
     /// App version
@@ -191,7 +189,6 @@ pub struct Version {
         serialize_with = "serializers::serialize_u64",
         deserialize_with = "serializers::parse_u64"
     )]
-    #[prost(uint64, tag = "2")]
     pub app: u64,
 }
 
