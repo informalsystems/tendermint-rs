@@ -1,18 +1,24 @@
-use crate::types::*;
-use std::time::{Duration, Instant};
+#[allow(clippy::all)]
+use crate::lite::{Commit, Error, Header, Validator, ValidatorSet, ValidatorSetLookup, Vote};
+use crate::Time;
+use std::time::Duration;
 
 /// Returns an error if the header has expired according to the given
 /// trusting_period and current time. If so, the verifier must be reset subjectively.
 /// NOTE: this doesn't belong here. It should be called by something that handles whether to trust
-/// a verifieds commit. Verified here is really just about the header/commit/validators. Time is an
+/// a verified commit. Verified here is really just about the header/commit/validators. Time is an
 /// external concern :)
-fn expired<H>(last_header: &H, trusting_period: Duration, now: Instant) -> Result<(), Error>
+fn expired<H>(_last_header: &H, _trusting_period: Duration, _now: Time) -> Result<(), Error>
 where
     H: Header,
 {
-    if last_header.bft_time() + trusting_period < now {
-        return Err(Error::Expired);
-    }
+    //    if let Ok(passed) = now.duration_since(last_header.bft_time()) {
+    //        if passed > trusting_period {
+    //            return Err(Error::Expired);
+    //        }
+    //    }
+    // TODO move this out of the verifier
+    //  - uncomment above logic but also deal with overflows etc (proper err handling)
     Ok(())
 }
 
@@ -82,7 +88,7 @@ where
     }
 
     // ensure that +1/3 of last trusted validators signed correctly
-    if let Err(e) = verify_commit_trusting(&validators, &commit) {
+    if let Err(e) = verify_commit_trusting(&last_validators, &commit) {
         return Err(e);
     }
 
@@ -107,7 +113,7 @@ where
         return Err(Error::InvalidCommitLength);
     }
 
-    // The vals and commit have a 1-to-1 correspondance.
+    // The vals and commit have a 1-to-1 correspondence.
     // This means we don't need the validator IDs or to do any lookup,
     // we can just zip the iterators.
     let vals_iter = vals_vec.into_iter();

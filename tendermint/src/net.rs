@@ -86,12 +86,14 @@ impl Address {
         let (peer_id, authority) = match authority_parts.len() {
             1 => (None, authority_parts[0]),
             2 => (Some(authority_parts[0].parse()?), authority_parts[1]),
-            _ => return Err(err!(
-                ErrorKind::Parse,
-                "invalid {} address (bad authority): {}",
-                TCP_PREFIX,
-                addr
-            )),
+            _ => {
+                return Err(err!(
+                    ErrorKind::Parse,
+                    "invalid {} address (bad authority): {}",
+                    TCP_PREFIX,
+                    addr
+                ))
+            }
         };
 
         let host_and_port: Vec<&str> = authority.split(':').collect();
