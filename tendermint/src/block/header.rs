@@ -175,7 +175,7 @@ impl lite::Header for Header {
 /// application.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#version>
-#[derive(Serialize, Deserialize, Clone, Message)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Version {
     /// Block version
     #[serde(
