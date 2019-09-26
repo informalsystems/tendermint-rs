@@ -3,7 +3,11 @@
 mod power;
 
 pub use self::power::Power;
-use crate::{account, block, Signature, Time};
+use crate::amino_types::vote::CanonicalVote;
+use crate::amino_types::vote::Vote as AminoVote;
+use crate::prost::Message;
+use crate::{account, block, lite, Signature, Time};
+use bytes::BufMut;
 use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
@@ -64,6 +68,32 @@ impl Vote {
             Type::Precommit => true,
             Type::Prevote => false,
         }
+    }
+}
+
+impl lite::Vote for Vote {
+    fn validator_id(&self) -> account::Id {
+        self.validator_address
+    }
+
+    fn sign_bytes<B>(&self, mut sign_bytes: &mut B)
+    where
+        B: BufMut,
+    {
+        // TODO: 1) everytime we encode sth. an error can occur. Change the trait to return a result
+        // instead to enable proper error handling.
+        // 2) Figure out where the chain_id should come from (if sign_bytes remains on Vote, the
+        // sign_bytes method will need a chain_id.
+        CanonicalVote::new(AminoVote::from(self), "TODO")
+            .encode(&mut sign_bytes)
+            .unwrap();
+    }
+
+    fn signature(&self) -> &[u8] {
+        let sig_bytes = match &self.signature {
+            Signature::Ed25519(sig) => sig.as_bytes(),
+        };
+        sig_bytes
     }
 }
 

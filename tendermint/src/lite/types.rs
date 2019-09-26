@@ -2,6 +2,7 @@ use crate::account::Id;
 use crate::block::Height;
 use crate::Hash;
 use crate::Time;
+use bytes::BufMut;
 
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header and the validator set to use to verify
@@ -86,7 +87,9 @@ pub trait Commit {
 /// Note the Vote must also know which validator it is from.
 pub trait Vote {
     fn validator_id(&self) -> Id;
-    fn sign_bytes(&self) -> &[u8];
+    fn sign_bytes<B>(&self, sign_bytes: &mut B)
+    where
+        B: BufMut;
     fn signature(&self) -> &[u8];
 }
 

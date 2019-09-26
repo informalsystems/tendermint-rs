@@ -59,8 +59,6 @@ impl lite::ValidatorSet for Set {
         self.validators.iter().fold(0u64, |total, val_info| {
             total + val_info.voting_power.value()
         })
-
-        // TODO cache this
     }
 
     fn into_vec(&self) -> Vec<Self::Validator> {

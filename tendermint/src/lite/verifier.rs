@@ -127,7 +127,9 @@ where
         };
 
         // check vote is valid from validator
-        if !val.verify_signature(vote.sign_bytes(), vote.signature()) {
+        let mut sign_bytes = vec![];
+        vote.sign_bytes(&mut sign_bytes);
+        if !val.verify_signature(&sign_bytes, vote.signature()) {
             return Err(Error::InvalidSignature);
         }
         signed_power += val.power();
@@ -172,7 +174,9 @@ where
         };
 
         // check vote is valid from validator
-        if !val.verify_signature(vote.sign_bytes(), vote.signature()) {
+        let mut sign_bytes = vec![];
+        vote.sign_bytes(&mut sign_bytes);
+        if !val.verify_signature(&sign_bytes, vote.signature()) {
             return Err(Error::InvalidSignature);
         }
         signed_power += val.power();
