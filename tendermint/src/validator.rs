@@ -1,6 +1,6 @@
 //! Tendermint validators
 
-use crate::{account, lite, merkle, vote, PublicKey};
+use crate::{account, lite, merkle, vote, Hash, PublicKey};
 use prost::Message;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use subtle_encoding::base64;
@@ -38,6 +38,33 @@ impl Set {
         let validator_byteslices: Vec<&[u8]> =
             (&validator_bytes).iter().map(|x| x.as_slice()).collect();
         merkle::simple_hash_from_byte_slices(validator_byteslices.as_slice())
+    }
+}
+
+impl lite::ValidatorSet for Set {
+    type Validator = Info;
+
+    fn hash(&self) -> Hash {
+        // TODO almost the same as above's pub fn hash(self) -> merkle::Hash
+        let validator_bytes: &Vec<Vec<u8>> =
+            &self.validators.iter().map(|x| x.hash_bytes()).collect();
+        let validator_byteslices: Vec<&[u8]> =
+            (&validator_bytes).iter().map(|x| x.as_slice()).collect();
+        Hash::Sha256(merkle::simple_hash_from_byte_slices(
+            validator_byteslices.as_slice(),
+        ))
+    }
+
+    fn total_power(&self) -> u64 {
+        self.validators.iter().fold(0u64, |total, val_info| {
+            total + val_info.voting_power.value()
+        })
+
+        // TODO cache this
+    }
+
+    fn into_vec(&self) -> Vec<Self::Validator> {
+        self.validators.to_vec()
     }
 }
 
