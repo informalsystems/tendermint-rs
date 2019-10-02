@@ -138,6 +138,9 @@ where
 /// Verify that +1/3 of the given validator set signed this commit.
 /// NOTE the given validators do not necessarily correspond to the validator set for this commit,
 /// but there may be some intersection.
+/// NOTE: this should take a "trust_level" param to allow clients to require more
+/// than +1/3. How should this be defined semantically? Probably shouldn't be a float, maybe
+/// and enum of three options, eg. 1/3, 1/2, 2/3 ?
 fn verify_commit_trusting<V, C>(validators: &V, commit: &C) -> Result<(), Error>
 where
     V: ValidatorSetLookup,
@@ -173,6 +176,8 @@ where
     }
 
     // check the signers account for +1/3 of the voting power
+    // TODO: incorporate "trust_level" in here to possibly increase
+    // beyond 1/3.
     if signed_power * 3 <= total_power * 1 {
         return Err(Error::InsufficientVotingPower);
     }
