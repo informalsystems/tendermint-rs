@@ -37,6 +37,7 @@ pub trait Header {
 /// Validator type which can be used for verifying signatures.
 pub trait ValidatorSet {
     type Validator: Validator;
+    type ValidatorIter: ExactSizeIterator<Item = Self::Validator>;
 
     /// Hash of the validator set.
     fn hash(&self) -> Hash;
@@ -45,8 +46,7 @@ pub trait ValidatorSet {
     fn total_power(&self) -> u64;
 
     /// For iterating over the underlying validators.
-    /// TODO: make this iter()
-    fn into_vec(&self) -> Vec<Self::Validator>;
+    fn iter(&self) -> Self::ValidatorIter;
 }
 
 /// ValidatorSetLookup allows validator to be fetched via their ID
@@ -68,6 +68,7 @@ pub trait Validator {
 /// for verification.
 pub trait Commit {
     type Vote: Vote;
+    type VoteIter: ExactSizeIterator<Item = Option<Self::Vote>>;
 
     /// Hash of the header this commit is for.
     fn header_hash(&self) -> Hash;
@@ -77,7 +78,7 @@ pub trait Commit {
     /// we ignore absent votes and votes for nil here.
     /// NOTE: we may want to check signatures for nil votes,
     /// and thus use an ternary enum here instead of the binary Option.
-    fn into_vec(&self) -> Vec<Option<Self::Vote>>;
+    fn iter(&self) -> Self::VoteIter;
 }
 
 /// Vote contains the data to verify a validator voted correctly in the commit.

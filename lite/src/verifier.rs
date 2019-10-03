@@ -99,18 +99,16 @@ where
     let total_power = vals.total_power();
     let mut signed_power: u64 = 0;
 
-    let vals_vec = vals.into_vec();
-    let commit_vec = commit.into_vec();
+    let vals_iter = vals.iter();
+    let commit_iter = commit.iter();
 
-    if vals_vec.len() != commit_vec.len() {
+    if vals_iter.len() != commit_iter.len() {
         return Err(Error::InvalidCommitLength);
     }
 
     // The vals and commit have a 1-to-1 correspondance.
     // This means we don't need the validator IDs or to do any lookup,
     // we can just zip the iterators.
-    let vals_iter = vals_vec.iter();
-    let commit_iter = commit_vec.iter();
     for (val, vote_opt) in vals_iter.zip(commit_iter) {
         // skip absent and nil votes
         // NOTE: do we want to check the validity of votes
@@ -151,8 +149,7 @@ where
 
     // NOTE we don't know the validators that committed this block,
     // so we have to check for each vote if its validator is already known.
-    let commit_vec = commit.into_vec();
-    let commit_iter = commit_vec.iter();
+    let commit_iter = commit.iter();
     for vote_opt in commit_iter {
         // skip absent and nil votes
         // NOTE: do we want to check the validity of votes
