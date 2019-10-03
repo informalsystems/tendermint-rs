@@ -109,8 +109,8 @@ where
     // The vals and commit have a 1-to-1 correspondance.
     // This means we don't need the validator IDs or to do any lookup,
     // we can just zip the iterators.
-    let vals_iter = vals_vec.into_iter();
-    let commit_iter = commit_vec.into_iter();
+    let vals_iter = vals_vec.iter();
+    let commit_iter = commit_vec.iter();
     for (val, vote_opt) in vals_iter.zip(commit_iter) {
         // skip absent and nil votes
         // NOTE: do we want to check the validity of votes
@@ -151,7 +151,8 @@ where
 
     // NOTE we don't know the validators that committed this block,
     // so we have to check for each vote if its validator is already known.
-    let commit_iter = commit.into_vec().into_iter();
+    let commit_vec = commit.into_vec();
+    let commit_iter = commit_vec.iter();
     for vote_opt in commit_iter {
         // skip absent and nil votes
         // NOTE: do we want to check the validity of votes
