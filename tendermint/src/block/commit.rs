@@ -35,7 +35,7 @@ impl Precommits {
     }
 
     /// Iterate over the precommits in the collection
-    pub fn iter(&self) -> slice::Iter<Option<Vote>> {
+    pub fn iter(&self) -> slice::Iter<'_, Option<Vote>> {
         self.as_ref().iter()
     }
 }

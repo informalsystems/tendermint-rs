@@ -83,7 +83,7 @@ impl Data {
     }
 
     /// Iterate over the transactions in the collection
-    pub fn iter(&self) -> slice::Iter<Transaction> {
+    pub fn iter(&self) -> slice::Iter<'_, Transaction> {
         self.as_ref().iter()
     }
 }
