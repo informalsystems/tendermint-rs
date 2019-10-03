@@ -163,6 +163,12 @@ mod endpoints {
         let response = endpoint::commit::Response::from_json(&read_json_fixture("commit")).unwrap();
         let header = response.signed_header.header;
         assert_eq!(header.chain_id.as_ref(), EXAMPLE_CHAIN);
+        // For now we just want to make sure the commit including precommits and a block_id exist
+        // in SignedHeader; later we should verify some properties: e.g. block_id.hash matches the
+        // header etc:
+        let commit = response.signed_header.commit;
+        let _block_id = commit.block_id;
+        let _precommits = commit.precommits;
     }
 
     #[test]
