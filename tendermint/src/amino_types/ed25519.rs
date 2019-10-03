@@ -88,7 +88,7 @@ mod tests {
 
         match PubKeyRequest::decode(&want) {
             Ok(have) => assert_eq!(have, msg),
-            Err(err) => assert!(false, err.description().to_string()),
+            Err(err) => panic!(err.description().to_string()),
         }
     }
 
@@ -129,7 +129,7 @@ mod tests {
 
         match PubKeyResponse::decode(&encoded) {
             Ok(have) => assert_eq!(have, msg),
-            Err(err) => assert!(false, err),
+            Err(err) => panic!(err),
         }
     }
 

@@ -208,10 +208,10 @@ mod tests {
             round: 23456,
             pol_round: -1,
             block_id: Some(BlockId {
-                hash: "hash".as_bytes().to_vec(),
+                hash: b"hash".to_vec(),
                 parts_header: Some(PartsSetHeader {
-                    total: 1000000,
-                    hash: "parts_hash".as_bytes().to_vec(),
+                    total: 1_000_000,
+                    hash: b"parts_hash".to_vec(),
                 }),
             }),
             timestamp: Some(t),
@@ -269,10 +269,10 @@ mod tests {
 
             pol_round: -1,
             block_id: Some(BlockId {
-                hash: "hash".as_bytes().to_vec(),
+                hash: b"hash".to_vec(),
                 parts_header: Some(PartsSetHeader {
-                    total: 1000000,
-                    hash: "parts_hash".as_bytes().to_vec(),
+                    total: 1_000_000,
+                    hash: b"parts_hash".to_vec(),
                 }),
             }),
             signature: vec![],
@@ -292,7 +292,7 @@ mod tests {
 
         match SignProposalRequest::decode(&data) {
             Ok(have) => assert_eq!(have, want),
-            Err(err) => assert!(false, err.description().to_string()),
+            Err(err) => panic!(err.description().to_string()),
         }
     }
 }

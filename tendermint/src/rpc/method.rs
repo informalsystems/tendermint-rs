@@ -96,7 +96,7 @@ impl FromStr for Method {
             "net_info" => Method::NetInfo,
             "status" => Method::Status,
             "validators" => Method::Validators,
-            other => Err(Error::method_not_found(other))?,
+            other => return Err(Error::method_not_found(other)),
         })
     }
 }

@@ -38,10 +38,10 @@ limitations under the License.
 [crate-link]: https://crates.io/crates/tendermint
 [docs-image]: https://docs.rs/tendermint/badge.svg
 [docs-link]: https://docs.rs/tendermint/
-[build-image]: https://circleci.com/gh/tendermint/kms.svg?style=shield
-[build-link]: https://circleci.com/gh/tendermint/kms
+[build-image]: https://circleci.com/gh/interchainio/tendermint-rs.svg?style=shield
+[build-link]: https://circleci.com/gh/interchainio/tendermint-rs
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
-[license-link]: https://github.com/tendermint/kms/blob/master/LICENSE
+[license-link]: https://github.com/interchainio/tendermint-rs/blob/master/LICENSE
 [rustc-image]: https://img.shields.io/badge/rustc-1.35+-blue.svg
 
 [//]: # (general links)

@@ -74,7 +74,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         // - https://github.com/tendermint/kms/issues/142
         // - https://eprint.iacr.org/2019/526.pdf
         if shared_secret.as_bytes().ct_eq(&[0x00; 32]).unwrap_u8() == 1 {
-            Err(ErrorKind::InvalidKey)?;
+            return Err(ErrorKind::InvalidKey.into());
         }
 
         // Sort by lexical order.
@@ -315,7 +315,7 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     // https://github.com/tendermint/tendermint/blob/013b9cef642f875634c614019ab13b17570778ad/p2p/conn/secret_connection.go#L208-L238
     let mut remote_eph_pubkey_fixed: [u8; 32] = Default::default();
     if buf[0] != 33 || buf[1] != 32 {
-        Err(ErrorKind::Protocol)?;
+        return Err(ErrorKind::Protocol.into());
     }
     // after total length (33) and byte length (32), we expect the raw bytes
     // of the pub key:
