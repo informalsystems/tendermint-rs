@@ -87,9 +87,10 @@ pub trait Commit {
 /// so each vote is for a slightly different message.
 /// Note the Vote must also know which validator it is from.
 /// Note that implementers are responsible for ensuring that the vote's sign_bytes
-/// are a function of the chain id, so that validators can sign on distinct chains
-/// without being slashed. This information is implicit here since it's not otherwise
-/// relevant for the correctness of the single chain lite client.
+/// are a function of the block id and the chain id. These don't appear directly in the trait
+/// since the particular values aren't relevant to correctness here - the Vote is already
+/// within an enum at the VoteSet level indicating which block it is for, and the chain id
+/// is only necessary to avoid slashing in the multi chain context.
 pub trait Vote {
     fn validator_id(&self) -> ValID;
     fn sign_bytes(&self) -> Bytes;
