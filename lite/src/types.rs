@@ -45,6 +45,7 @@ pub trait ValidatorSet {
     fn total_power(&self) -> u64;
 
     /// For iterating over the underlying validators.
+    /// TODO: make this iter()
     fn into_vec(&self) -> Vec<Self::Validator>;
 }
 
@@ -84,6 +85,10 @@ pub trait Commit {
 /// message. For now, Tendermint votes also sign over the validator's local timestamp,
 /// so each vote is for a slightly different message.
 /// Note the Vote must also know which validator it is from.
+/// Note that implementers are responsible for ensuring that the vote's sign_bytes
+/// are a function of the chain id, so that validators can sign on distinct chains
+/// without being slashed. This information is implicit here since it's not otherwise
+/// relevant for the correctness of the single chain lite client.
 pub trait Vote {
     fn validator_id(&self) -> ValID;
     fn sign_bytes(&self) -> Bytes;
