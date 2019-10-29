@@ -1,6 +1,5 @@
 //! Block headers
-
-use crate::{account, block, chain, Hash, Time};
+use crate::{account, block, chain, lite, Hash, Time};
 use {
     crate::serializers,
     serde::{Deserialize, Serialize},
@@ -68,6 +67,28 @@ pub struct Header {
 
     /// Original proposer of the block
     pub proposer_address: account::Id,
+}
+
+impl lite::Header for Header {
+    fn height(&self) -> block::Height {
+        self.height
+    }
+
+    fn bft_time(&self) -> Time {
+        self.time
+    }
+
+    fn validators_hash(&self) -> Hash {
+        self.validators_hash
+    }
+
+    fn next_validators_hash(&self) -> Hash {
+        unimplemented!()
+    }
+
+    fn hash(&self) -> Hash {
+        unimplemented!()
+    }
 }
 
 /// `Version` contains the protocol version for the blockchain and the

@@ -1,4 +1,9 @@
-use std::time::Instant;
+use crate::account::Id;
+use crate::block::Height;
+use crate::Hash;
+#[allow(clippy::all)]
+use crate::Time;
+
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header and the validator set to use to verify
 /// the next header.
@@ -11,22 +16,13 @@ where
     pub validators: V,  // height H
 }
 
-pub type Height = u64;
-/// Size of the underlying Hash in bytes
-pub const HASH_LENGTH: usize = 32;
-#[derive(Eq, PartialEq)]
-pub struct Hash([u8; HASH_LENGTH]);
-/// Size of a validator ID in bytes
-pub const VAL_ID_LENGTH: usize = 20;
-pub struct ValID([u8; VAL_ID_LENGTH]);
-
 /// Header contains meta data about the block -
 /// the height, the time, the hash of the validator set
 /// that should sign this header, and the hash of the validator
 /// set that should sign the next header.
 pub trait Header {
     fn height(&self) -> Height;
-    fn bft_time(&self) -> Instant;
+    fn bft_time(&self) -> Time;
     fn validators_hash(&self) -> Hash;
     fn next_validators_hash(&self) -> Hash;
 
@@ -55,7 +51,7 @@ pub trait ValidatorSet {
 /// ValidatorSetLookup allows validator to be fetched via their ID
 /// (ie. their address).
 pub trait ValidatorSetLookup: ValidatorSet {
-    fn validator(&self, val_id: ValID) -> Option<Self::Validator>;
+    fn validator(&self, val_id: Id) -> Option<Self::Validator>;
 }
 
 /// Validator has a voting power and can verify
@@ -95,7 +91,7 @@ pub trait Commit {
 /// within an enum at the VoteSet level indicating which block it is for, and the chain id
 /// is only necessary to avoid slashing in the multi chain context.
 pub trait Vote {
-    fn validator_id(&self) -> ValID;
+    fn validator_id(&self) -> Id;
     fn sign_bytes(&self) -> &[u8];
     fn signature(&self) -> &[u8];
 }
