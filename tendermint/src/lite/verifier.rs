@@ -8,17 +8,16 @@ use std::time::Duration;
 /// NOTE: this doesn't belong here. It should be called by something that handles whether to trust
 /// a verified commit. Verified here is really just about the header/commit/validators. Time is an
 /// external concern :)
-fn expired<H>(_last_header: &H, _trusting_period: Duration, _now: Time) -> Result<(), Error>
+fn expired<H>(last_header: &H, trusting_period: Duration, now: Time) -> Result<(), Error>
 where
     H: Header,
 {
-    //    if let Ok(passed) = now.duration_since(last_header.bft_time()) {
-    //        if passed > trusting_period {
-    //            return Err(Error::Expired);
-    //        }
-    //    }
-    // TODO move this out of the verifier
-    //  - uncomment above logic but also deal with overflows etc (proper err handling)
+    if let Ok(passed) = now.duration_since(last_header.bft_time()) {
+        if passed > trusting_period {
+            return Err(Error::Expired);
+        }
+    }
+    // TODO move this out of the verifier and deal with overflows etc (proper err handling)
     Ok(())
 }
 
