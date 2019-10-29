@@ -45,7 +45,9 @@ pub trait ValidatorSet {
     fn total_power(&self) -> u64;
 
     /// For iterating over the underlying validators.
-    /// TODO: make this iter()
+    /// NOTE: can try to make this iter() but requires
+    /// a `type ValidatorIter: ExactSizeIterator<Item = Self::Validator>`
+    /// which seems to greatly complicate implementation ...
     fn into_vec(&self) -> Vec<Self::Validator>;
 }
 
