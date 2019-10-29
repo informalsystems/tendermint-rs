@@ -1,11 +1,12 @@
 use crate::types::*;
+use std::time::{Duration, Instant};
 
 /// Returns an error if the header has expired according to the given
 /// trusting_period and current time. If so, the verifier must be reset subjectively.
 /// NOTE: this doesn't belong here. It should be called by something that handles whether to trust
 /// a verifieds commit. Verified here is really just about the header/commit/validators. Time is an
 /// external concern :)
-fn expired<H>(last_header: &H, trusting_period: Time, now: Time) -> Result<(), Error>
+fn expired<H>(last_header: &H, trusting_period: Duration, now: Instant) -> Result<(), Error>
 where
     H: Header,
 {
