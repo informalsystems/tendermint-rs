@@ -1,4 +1,4 @@
-use std::time::{Instant};
+use std::time::Instant;
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header and the validator set to use to verify
 /// the next header.
