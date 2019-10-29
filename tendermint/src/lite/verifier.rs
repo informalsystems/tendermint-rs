@@ -183,7 +183,7 @@ where
     // check the signers account for +1/3 of the voting power
     // TODO: incorporate "trust_level" in here to possibly increase
     // beyond 1/3.
-    if signed_power * 3 <= total_power * 1 {
+    if signed_power * 3 <= total_power {
         return Err(Error::InsufficientVotingPower);
     }
 
