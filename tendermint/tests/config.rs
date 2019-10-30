@@ -12,6 +12,7 @@ mod files {
     }
 
     /// Parse an example `config.toml` file to a `TendermintConfig` struct
+    #[allow(clippy::cognitive_complexity)]
     #[test]
     fn config_toml_parser() {
         let config_toml = read_fixture("config.toml");
