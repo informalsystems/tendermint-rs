@@ -12,6 +12,7 @@ mod files {
     }
 
     /// Parse an example `config.toml` file to a `TendermintConfig` struct
+    #[allow(clippy::cognitive_complexity)]
     #[test]
     fn config_toml_parser() {
         let config_toml = read_fixture("config.toml");
@@ -118,8 +119,8 @@ mod files {
         assert_eq!(p2p.max_num_outbound_peers, 10);
         assert_eq!(*p2p.flush_throttle_timeout, Duration::from_millis(100));
         assert_eq!(p2p.max_packet_msg_payload_size, 1024);
-        assert_eq!(p2p.send_rate.bytes_per_sec(), 5120000);
-        assert_eq!(p2p.recv_rate.bytes_per_sec(), 5120000);
+        assert_eq!(p2p.send_rate.bytes_per_sec(), 5_120_000);
+        assert_eq!(p2p.recv_rate.bytes_per_sec(), 5_120_000);
         assert!(p2p.pex);
         assert!(!p2p.seed_mode);
         assert_eq!(p2p.private_peer_ids.len(), 3);
@@ -152,7 +153,7 @@ mod files {
         assert!(mempool.broadcast);
         assert_eq!(mempool.wal_dir, None);
         assert_eq!(mempool.size, 5000);
-        assert_eq!(mempool.max_txs_bytes, 1073741824);
+        assert_eq!(mempool.max_txs_bytes, 1_073_741_824);
         assert_eq!(mempool.cache_size, 10000);
 
         // consensus configuration options
