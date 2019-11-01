@@ -4,8 +4,11 @@
 
 Here we describe the architecture for a Tendermint lite node in Rust,
 including a core lite client library. While the lite client library provides the
-essential verification logic according to the [english](TODO) and [TLA+](TODO)
-specs, the lite node uses the lite client library to sync its local state to the
+essential verification logic according to the
+[english](https://github.com/tendermint/tendermint/blob/master/docs/spec/consensus/light-client.md) 
+and
+[TLA+](https://github.com/interchainio/verification/blob/develop/spec/light-client/Lightclient.tla)
+specs (NOTE: both are still under development), the lite node uses the lite client library to sync its local state to the
 latest state of the blockchain using a list of full nodes. In addition to lite
 nodes running on client machines making rpc queries to full nodes, the core lite
 client library should also be usable by IBC handlers on blockchains receiving
@@ -52,7 +55,7 @@ The lite node state contains the following:
 
 - current height (H)
 - last header (H-1)
-- current validators (H)
+- current validators (H) - including all validator pubkeys and voting powers
 
 It also includes some configuration, which contains:
 
@@ -61,8 +64,15 @@ It also includes some configuration, which contains:
 - method (sequential or skipping)
 - trust level (if method==skipping)
 
-The node is initialied with a trusted header for some height H-1
+The node is initialized with a trusted header for some height H-1
 (call this header[H-1]), and a validator set for height H (call this vals[H]).
+
+The node may be initialized by the user with only a height and header hash, and
+proceed to request the full header and validator set from a full node. This
+reduces the initialization burden on the user, and simplifies passing this
+information into the process, but for the state to be properly initialized it
+will need to get the correct header and validator set before starting the lite
+client syncing protocol.
 
 The configuration contains an initial list of peers.
 For the sake of simplicity, one of the peers is selected as the "primary", while the
@@ -167,7 +177,8 @@ have the following traits.
 
 #### Header
 
-A Header has only a height, time, and validator sets, and can be identified by its hash:
+A Header must contain a height, time, and validator sets. It can be uniquely
+identified by its hash:
 
 ```rust
 pub trait Header {
@@ -276,6 +287,10 @@ block. Hence it is effectively ignored here. It would be great if Tendermint
 could disentangle commits to the proposal block parts for gossip (ie. the parts
 set hash) from commits to the header itself (ie. the header hash), but that's
 left for the future.
+
+In the future, the Commit structure may change further to adopt an aggregate
+signature scheme. While we could pre-empt this by abstracting further, it's
+probably premature to do so now.
 
 ### Implementing Traits
 
