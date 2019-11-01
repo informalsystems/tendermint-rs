@@ -82,17 +82,17 @@ where
     V: ValidatorSetLookup,
     C: Commit,
 {
-    if let Err(e) = validate_vals_and_commit(header, &commit, &validators) {
-        return Err(e);
-    }
+    // NOTE it might be more prudent to do the cheap validations first
+    // before we even call verify_commit_trusting, but not doing that
+    // makes the code cleaner and allows us to just call verify directly.
 
     // ensure that +1/3 of last trusted validators signed correctly
     if let Err(e) = verify_commit_trusting(&last_validators, &commit) {
         return Err(e);
     }
 
-    // ensure that +2/3 of current validators signed correctly
-    verify_commit_full(&validators, commit)
+    // perform same verification as in sequential case
+    verify(header, commit, validators)
 }
 
 /// Verify that +2/3 of the correct validator set signed this commit.
@@ -144,9 +144,9 @@ where
 /// Verify that +1/3 of the given validator set signed this commit.
 /// NOTE the given validators do not necessarily correspond to the validator set for this commit,
 /// but there may be some intersection.
-/// NOTE: this should take a "trust_level" param to allow clients to require more
+/// TODO: this should take a "trust_level" param to allow clients to require more
 /// than +1/3. How should this be defined semantically? Probably shouldn't be a float, maybe
-/// and enum of three options, eg. 1/3, 1/2, 2/3 ?
+/// and enum of options, eg. 1/3, 1/2, 2/3, 1 ?
 fn verify_commit_trusting<V, C>(validators: &V, commit: &C) -> Result<(), Error>
 where
     V: ValidatorSetLookup,
@@ -191,4 +191,3 @@ where
 
     Ok(())
 }
-
