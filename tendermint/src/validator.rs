@@ -1,14 +1,14 @@
 //! Tendermint validators
 
+use crate::validator::signatory::{Signature, Verifier};
 use crate::{account, lite, merkle, vote, Hash, PublicKey};
 use prost::Message;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use subtle_encoding::base64;
-extern crate signatory;
-extern crate signatory_dalek;
-use crate::validator::signatory::{Signature, Verifier};
+use signatory;
 use signatory::ed25519;
+use signatory_dalek;
 use signatory_dalek::Ed25519Verifier;
+use subtle_encoding::base64;
 
 /// Validator set contains a vector of validators
 #[derive(Debug)]
@@ -95,7 +95,7 @@ impl lite::Validator for Info {
             }
             return false;
         }
-        return false;
+        false
     }
 }
 

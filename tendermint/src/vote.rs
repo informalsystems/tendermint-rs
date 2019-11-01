@@ -90,10 +90,9 @@ impl lite::Vote for Vote {
     }
 
     fn signature(&self) -> &[u8] {
-        let sig_bytes = match &self.signature {
+        match &self.signature {
             Signature::Ed25519(sig) => sig.as_bytes(),
-        };
-        sig_bytes
+        }
     }
 }
 
@@ -121,6 +120,11 @@ impl Type {
     /// Serialize this type as a byte
     pub fn to_u8(self) -> u8 {
         self as u8
+    }
+
+    /// Serialize this type as a 32-bit unsigned integer
+    pub fn to_u32(self) -> u32 {
+        self as u32
     }
 }
 

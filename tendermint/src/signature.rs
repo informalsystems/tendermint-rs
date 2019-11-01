@@ -21,10 +21,9 @@ impl Signature {
 
     /// Return the raw bytes of this signature
     pub fn as_bytes(&self) -> &[u8] {
-        let sig_bytes = match self {
+        match self {
             Signature::Ed25519(sig) => sig.as_bytes(),
-        };
-        sig_bytes
+        }
     }
 }
 

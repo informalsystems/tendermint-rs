@@ -54,7 +54,7 @@ impl Vote {
 impl From<&vote::Vote> for Vote {
     fn from(vote: &vote::Vote) -> Self {
         Vote {
-            vote_type: vote.vote_type.to_u8() as u32,
+            vote_type: vote.vote_type.to_u32(),
             height: vote.height.value() as i64, // TODO potential overflow :-/
             block_id: Some(BlockId {
                 hash: match vote.block_id.hash {
