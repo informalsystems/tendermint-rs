@@ -1,3 +1,9 @@
+use crate::account::Id;
+use crate::block::Height;
+use crate::Hash;
+#[allow(clippy::all)]
+use crate::Time;
+
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header and the validator set to use to verify
 /// the next header.
@@ -9,13 +15,6 @@ where
     pub last_header: H, // height H-1
     pub validators: V,  // height H
 }
-
-/// Need to do something better here :)
-pub type Height = u64;
-pub type Hash = u64; // TODO
-pub type Time = u64; // TODO
-pub type Bytes = u64; // TODO
-pub type ValID = u64; // TODO
 
 /// Header contains meta data about the block -
 /// the height, the time, the hash of the validator set
@@ -54,7 +53,7 @@ pub trait ValidatorSet {
 /// ValidatorSetLookup allows validator to be fetched via their ID
 /// (ie. their address).
 pub trait ValidatorSetLookup: ValidatorSet {
-    fn validator(&self, val_id: ValID) -> Option<Self::Validator>;
+    fn validator(&self, val_id: Id) -> Option<Self::Validator>;
 }
 
 /// Validator has a voting power and can verify
@@ -62,7 +61,7 @@ pub trait ValidatorSetLookup: ValidatorSet {
 /// to its public key material to verify signatures.
 pub trait Validator {
     fn power(&self) -> u64;
-    fn verify_signature(&self, sign_bytes: Bytes, signature: Bytes) -> bool;
+    fn verify_signature(&self, sign_bytes: &[u8], signature: &[u8]) -> bool;
 }
 
 /// Commit is proof a Header is valid.
@@ -93,9 +92,9 @@ pub trait Commit {
 /// within an enum at the VoteSet level indicating which block it is for, and the chain id
 /// is only necessary to avoid slashing in the multi chain context.
 pub trait Vote {
-    fn validator_id(&self) -> ValID;
-    fn sign_bytes(&self) -> Bytes;
-    fn signature(&self) -> Bytes;
+    fn validator_id(&self) -> Id;
+    fn sign_bytes(&self) -> &[u8];
+    fn signature(&self) -> &[u8];
 }
 
 pub enum Error {
