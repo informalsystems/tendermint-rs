@@ -12,6 +12,15 @@ jobs:
           cargo fmt --version
           cargo fmt -- --check
     - run:
+        name: clippy
+        command: |
+          if rustup component add clippy; then
+            cargo clippy --version
+            cargo clippy --all --all-targets -- -Dwarnings -Drust-2018-idioms
+          else
+            echo Skipping clippy
+          fi
+    - run:
         name: build 
         command: |
           rustc --version

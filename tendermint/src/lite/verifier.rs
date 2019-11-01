@@ -1,3 +1,4 @@
+#[allow(clippy::all)]
 use crate::lite::{Commit, Error, Header, Validator, ValidatorSet, ValidatorSetLookup, Vote};
 use crate::Time;
 use std::time::Duration;
@@ -7,17 +8,16 @@ use std::time::Duration;
 /// NOTE: this doesn't belong here. It should be called by something that handles whether to trust
 /// a verified commit. Verified here is really just about the header/commit/validators. Time is an
 /// external concern :)
-fn expired<H>(_last_header: &H, _trusting_period: Duration, _now: Time) -> Result<(), Error>
+fn expired<H>(last_header: &H, trusting_period: Duration, now: Time) -> Result<(), Error>
 where
     H: Header,
 {
-    //    if let Ok(passed) = now.duration_since(last_header.bft_time()) {
-    //        if passed > trusting_period {
-    //            return Err(Error::Expired);
-    //        }
-    //    }
-    // TODO move this out of the verifier
-    //  - uncomment above logic but also deal with overflows etc (proper err handling)
+    if let Ok(passed) = now.duration_since(last_header.bft_time()) {
+        if passed > trusting_period {
+            return Err(Error::Expired);
+        }
+    }
+    // TODO move this out of the verifier and deal with overflows etc (proper err handling)
     Ok(())
 }
 
@@ -82,17 +82,17 @@ where
     V: ValidatorSetLookup,
     C: Commit,
 {
-    if let Err(e) = validate_vals_and_commit(header, &commit, &validators) {
-        return Err(e);
-    }
+    // NOTE it might be more prudent to do the cheap validations first
+    // before we even call verify_commit_trusting, but not doing that
+    // makes the code cleaner and allows us to just call verify directly.
 
     // ensure that +1/3 of last trusted validators signed correctly
     if let Err(e) = verify_commit_trusting(&last_validators, &commit) {
         return Err(e);
     }
 
-    // ensure that +2/3 of current validators signed correctly
-    verify_commit_full(&validators, commit)
+    // perform same verification as in sequential case
+    verify(header, commit, validators)
 }
 
 /// Verify that +2/3 of the correct validator set signed this commit.
@@ -115,8 +115,8 @@ where
     // The vals and commit have a 1-to-1 correspondence.
     // This means we don't need the validator IDs or to do any lookup,
     // we can just zip the iterators.
-    let vals_iter = vals_vec.into_iter();
-    let commit_iter = commit_vec.into_iter();
+    let vals_iter = vals_vec.iter();
+    let commit_iter = commit_vec.iter();
     for (val, vote_opt) in vals_iter.zip(commit_iter) {
         // skip absent and nil votes
         // NOTE: do we want to check the validity of votes
@@ -146,6 +146,9 @@ where
 /// Verify that +1/3 of the given validator set signed this commit.
 /// NOTE the given validators do not necessarily correspond to the validator set for this commit,
 /// but there may be some intersection.
+/// TODO: this should take a "trust_level" param to allow clients to require more
+/// than +1/3. How should this be defined semantically? Probably shouldn't be a float, maybe
+/// and enum of options, eg. 1/3, 1/2, 2/3, 1 ?
 fn verify_commit_trusting<V, C>(validators: &V, commit: &C) -> Result<(), Error>
 where
     V: ValidatorSetLookup,
@@ -156,7 +159,8 @@ where
 
     // NOTE we don't know the validators that committed this block,
     // so we have to check for each vote if its validator is already known.
-    let commit_iter = commit.into_vec().into_iter();
+    let commit_vec = commit.into_vec();
+    let commit_iter = commit_vec.iter();
     for vote_opt in commit_iter {
         // skip absent and nil votes
         // NOTE: do we want to check the validity of votes
@@ -183,7 +187,9 @@ where
     }
 
     // check the signers account for +1/3 of the voting power
-    if signed_power * 3 <= total_power * 1 {
+    // TODO: incorporate "trust_level" in here to possibly increase
+    // beyond 1/3.
+    if signed_power * 3 <= total_power {
         return Err(Error::InsufficientVotingPower);
     }
 

@@ -73,7 +73,7 @@ impl Data {
     }
 
     /// Iterate over the evidence data
-    pub fn iter(&self) -> slice::Iter<Evidence> {
+    pub fn iter(&self) -> slice::Iter<'_, Evidence> {
         self.as_ref().iter()
     }
 }

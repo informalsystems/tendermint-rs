@@ -51,8 +51,8 @@ impl Display for Hash {
 }
 
 impl Debug for Hash {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "transactionn::Hash({})", self)
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "transaction::Hash({})", self)
     }
 }
 

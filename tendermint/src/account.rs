@@ -53,7 +53,7 @@ impl Display for Id {
 }
 
 impl Debug for Id {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "account::Id({})", self)
     }
 }

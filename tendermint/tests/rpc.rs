@@ -20,7 +20,7 @@ mod endpoints {
             .response;
 
         assert_eq!(response.data.as_str(), EXAMPLE_APP);
-        assert_eq!(response.last_block_height.value(), 488120);
+        assert_eq!(response.last_block_height.value(), 488_120);
     }
 
     #[test]
@@ -62,8 +62,8 @@ mod endpoints {
 
         let tendermint::abci::Responses {
             deliver_tx,
-            begin_block: _,
             end_block,
+            ..
         } = response.results;
 
         let log_json = &deliver_tx[0].log.as_ref().unwrap().parse_json().unwrap();
@@ -72,8 +72,8 @@ mod endpoints {
         assert_eq!(log_json_value["msg_index"].as_str().unwrap(), "0");
         assert_eq!(log_json_value["success"].as_bool().unwrap(), true);
 
-        assert_eq!(deliver_tx[0].gas_wanted.value(), 200000);
-        assert_eq!(deliver_tx[0].gas_used.value(), 105662);
+        assert_eq!(deliver_tx[0].gas_wanted.value(), 200_000);
+        assert_eq!(deliver_tx[0].gas_used.value(), 105_662);
 
         let tag = deliver_tx[0]
             .tags
@@ -87,7 +87,7 @@ mod endpoints {
         );
 
         let validator_update = &end_block.as_ref().unwrap().validator_updates[0];
-        assert_eq!(validator_update.power.value(), 1233243);
+        assert_eq!(validator_update.power.value(), 1_233_243);
     }
 
     #[test]
@@ -95,7 +95,7 @@ mod endpoints {
         let response =
             endpoint::blockchain::Response::from_json(&read_json_fixture("blockchain")).unwrap();
 
-        assert_eq!(response.last_height.value(), 488556);
+        assert_eq!(response.last_height.value(), 488_556);
         assert_eq!(response.block_metas.len(), 10);
 
         let block_meta = &response.block_metas[0];
@@ -163,6 +163,12 @@ mod endpoints {
         let response = endpoint::commit::Response::from_json(&read_json_fixture("commit")).unwrap();
         let header = response.signed_header.header;
         assert_eq!(header.chain_id.as_ref(), EXAMPLE_CHAIN);
+        // For now we just want to make sure the commit including precommits and a block_id exist
+        // in SignedHeader; later we should verify some properties: e.g. block_id.hash matches the
+        // header etc:
+        let commit = response.signed_header.commit;
+        let _block_id = commit.block_id;
+        let _precommits = commit.precommits;
     }
 
     #[test]
@@ -177,7 +183,7 @@ mod endpoints {
         } = response.genesis;
 
         assert_eq!(chain_id.as_str(), EXAMPLE_CHAIN);
-        assert_eq!(consensus_params.block.max_bytes, 200000);
+        assert_eq!(consensus_params.block.max_bytes, 200_000);
     }
 
     #[test]
@@ -199,7 +205,7 @@ mod endpoints {
         let response = endpoint::status::Response::from_json(&read_json_fixture("status")).unwrap();
 
         assert_eq!(response.node_info.network.as_str(), EXAMPLE_CHAIN);
-        assert_eq!(response.sync_info.latest_block_height.value(), 410744);
+        assert_eq!(response.sync_info.latest_block_height.value(), 410_744);
         assert_eq!(response.validator_info.voting_power.value(), 0);
     }
 
