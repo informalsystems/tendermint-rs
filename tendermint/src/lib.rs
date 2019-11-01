@@ -18,7 +18,12 @@
     html_root_url = "https://docs.rs/tendermint/0.10.0"
 )]
 
+// NOTE(EB): can't figure out how to easily remove the extern crate per Rust2018 upgrade ...
+#[allow(unused_extern_crates)]
 extern crate prost_amino as prost;
+
+// NOTE(EB): can't figure out how to easily remove the extern crate per Rust2018 upgrade ...
+#[allow(unused_extern_crates)]
 #[macro_use]
 extern crate prost_amino_derive as prost_derive;
 
