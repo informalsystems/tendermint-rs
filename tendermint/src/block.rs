@@ -9,7 +9,7 @@ pub mod parts;
 mod size;
 
 pub use self::{
-    commit::LastCommit,
+    commit::Commit,
     header::Header,
     height::*,
     id::{Id, ParseId},
@@ -35,5 +35,5 @@ pub struct Block {
     pub evidence: evidence::Data,
 
     /// Last commit
-    pub last_commit: LastCommit,
+    pub last_commit: Commit,
 }
