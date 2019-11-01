@@ -1,4 +1,7 @@
+// can we abstract this away and use a generic identifier instead ?
+// Ie. something that just implements Eq ?
 use crate::account::Id;
+
 use crate::block::Height;
 use crate::Hash;
 #[allow(clippy::all)]
