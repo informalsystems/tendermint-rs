@@ -44,9 +44,28 @@ Below is a schematic of the components of a lite node:
 
 ![Lite Client Diagram](assets/adr-002-image.png)
 
-Essentially, the node is initialized with a trusted header for some height H-1
-(call this header[H-1]), a validator set for height H (call this vals[H]),
-and a list of peers. For the sake of simplicity, one of the peers is selected as the "primary", while the
+We take up the components of the diagram in term.
+
+### State
+
+The lite node state contains the following:
+
+- current height (H)
+- last header (H-1)
+- current validators (H)
+
+It also includes some configuration, which contains:
+
+- trusting period
+- initial list of full nodes
+- method (sequential or skipping)
+- trust level (if method==skipping)
+
+The node is initialied with a trusted header for some height H-1
+(call this header[H-1]), and a validator set for height H (call this vals[H]).
+
+The configuration contains an initial list of peers.
+For the sake of simplicity, one of the peers is selected as the "primary", while the
 rest are considered "backups". Most of the data is downloaded from the primary,
 and double checked against the backups.
 
@@ -55,7 +74,6 @@ the time from the trusted header is greater than a configurable "trusting
 period". If at any point the state is expired, the node should log an error and
 exit - it's needs to be manually reset.
 
-We take up the components of the diagram in term.
 
 ### Manager
 
@@ -65,6 +83,7 @@ highest level component. We consider two approaches to syncing the lite node: se
 #### Sequential Sync
 
 Inital state: 
+
     - time T
     - height H 
     - header[H-1]
@@ -74,6 +93,7 @@ Here we describe the happy path:
 
 1) Request header[H], commit[H], and vals[H+1] from the primary, and check that they are well formed and from the correct height
 2) Pass header[H], commit[H], vals[H], and vals[H+1] to the verification library, which
+
   will:
     - check that vals[H] and vals[H+1] are correctly reflected in the header
     - check that the commit is for the header
@@ -89,7 +109,7 @@ If (3) returns a conflicting header, verify the header by requesting the
 corresponding commit and running the verification of (2). If the verification
 passes, there is a fork, and evidence should be published so the validators get
 slashed. We leave the mechanics of evidence to a future document. For now, the
-lite client will just log and error and exit. If the verification fails, it
+lite client will just log an error and exit. If the verification fails, it
 means the backup that provided the conflict is bad and should be removed.
 
 #### Skipping Sync
@@ -113,7 +133,7 @@ to get the latest height of the full node (for skipping verification).
 
 ### Detect
 
-The detection module is really just about checking if any of the backup nodes
+The detection module is for checking if any of the backup nodes
 are reporting conflicting information. It requests headers from each backup node
 and compares them with a verified header from the primary. If there is a
 conflict, it attempts to verify the conflicting header via the verifier. If it
@@ -145,7 +165,7 @@ Tendermint data structures, we use a set of traits that include only the
 information absolutely necessary for the lite client. From this perspective, we
 have the following traits.
 
-### Core Traits
+#### Header
 
 A Header has only a height, time, and validator sets, and can be identified by its hash:
 
@@ -160,33 +180,40 @@ pub trait Header {
 }
 ```
 
+#### Validator
+
 A validator contributes a positive voting power if a message was correctly signed by it,
-otherwise it contributes 0. We could represent this with a single methods that
+otherwise it contributes 0. We could represent this with a single method that
 returns either 0 or the voting power, but it's probably clearer with two methods:
 
 ```rust
 pub trait Validator {
     fn power(&self) -> u64;
-    fn verify_signature(&self, sign_bytes: Bytes, signature: Bytes) -> bool;
+    fn verify_signature(&self, sign_bytes: &[u8], signature: &[u8]) -> bool;
 }
 ```
+
+#### Vote
 
 A vote corresponds to the message signed by a particular validator for a particular commit.
 Since it is expected to be for a particular commit, it does not need to include
 that information explicitly (eg. the height, the round, the block ID, etc.).
-Instead, from the verifie's perspective, all that information can be contained implicitly within the message
+Instead, from the verifier's perspective, all that information can be contained implicitly within the message
 bytes that are being signed. When those message bytes and the signature are passed to 
 `validator.verify_signature` for the corresponding validator, it should return true:
 
 ```rust
 pub trait Vote {
     fn validator_id(&self) -> ValID;
-    fn sign_bytes(&self) -> Bytes;
-    fn signature(&self) -> Bytes;
+    fn sign_bytes(&self) -> &[u8];
+    fn signature(&self) -> &[u8];
 }
 ```
 
-A validator set is a collection of validators that we will want to iterate over.
+#### Validator Set
+
+A validator set is a collection of validators that we will want to iterate over
+to check if each validator signed their vote correctly.
 We also need to know its hash, so we can check it against what's in a header. 
 We use an associated type for the validator:
 
@@ -201,15 +228,19 @@ pub trait ValidatorSet {
 
 It may seem more natural to use an `iter` method here than `into_vec`, since
 ultimately we only need to iterate over the underlying associated type.
-However, this turned out to be much more difficult than expected due to the lack
+However, this turns out to be much more difficult than expected due to the lack
 of size information in the `Iter` trait. It's possible to use another associated
 type, eg. `type ValidatorIter: ExactSizeIterator<Item = Self::Validator>;`, but it just
 complicates things significantly. If this becomes a performance issue (ie. we
 end up having to copy the vector of validators), we can address it then.
 
-Finally, a commit is a collection of votes that we will want to iterate over.
-We also need to check the hash of the header the commit is for. Since the
-commit is for a particular header, we can require all votes to be for that header, 
+#### Commit
+
+A commit is a collection of votes that we will want to iterate over so we can
+verify each vote.
+We also need to check what block this commit is for (ie. the hash of the
+header). 
+Since the commit is for a particular header, we can require all votes to be for that header, 
 and otherwise ignore them. Again, we use an associated type:
 
 ```rust
@@ -225,14 +256,16 @@ Note the `Option` here. When it is `None`, it indicates that either:
 
 - there was no vote from this validator
 - the validator voted nil
-- the validator noted for some other block
+- the validator voted for some other block
 
-We may want to be more strict here in distinguishing between these cases. On the
-one hand, upcoming changes to the commit structure will prevent votes from being included if they are from the
-wrong block (see https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-025-commit.md).
+We may want to be more strict here in distinguishing between these cases. 
+On the one hand, 
+[upcoming changes](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-025-commit.md)
+to the commit structure will prevent votes from being included if they are from the
+wrong block.
 On the other, we may want the validator to verify the votes for nil - even
 though they don't contribute anything to the voting power, they serve as an
-extra validity check. I propose for now that we use the simple Option time and
+extra validity check. I propose for now that we use the simple Option type and
 ignore the distinction between these cases, but that we revisit at a future
 date. 
 
@@ -256,9 +289,24 @@ depiction of what is required for lite client verification, and surfaces certain
 design issues in the underlying Tendermint blockchain (eg. the `BlockID` issue
 referenced above).
 
+This abstraction may also facilitate test generation, as we will not need to
+generate complete Tendermint data structures to test the lite client logic, only
+the elements it cares. While this provides a lot of flexibility in mocking out
+the types, we must be careful to ensure they match the semantics of the actual
+Tendermint types, and that we still test the verification logic sufficiently for
+the actual types.
+
 ## Verification
 
-Since we know the validators for a commit (ie. the number of validators should match the length of our votes vector), 
+Verification comes in two forms: full verification and "trusting" verification.
+The former checks whether the commit was correctly signed by its validator set.
+The latter checks whether +1/3 of a trusted validator set from the past signed a
+future commit.
+
+### Full Verification
+
+Since we know the validators for a commit 
+(ie. the number of validators should match the length of our votes vector), 
 we can iterate over them, check the signatures, and sum the voting power.
 
 An error should be returned if:
@@ -278,7 +326,8 @@ where
 
 ### "Trusting" Verification
 
-To skip (ie. the "trusting method"), we have to check if +1/3 of validators at some past height signed the commit, 
+To do skipping verification (ie. the "trusting method"), 
+we have to check if +1/3 of validators at some past height signed the commit, 
 before we can check if +2/3 of the validators for the current height signed.
 To do this, we have to know which validator a vote is from and be able to look them up in the validator
 set. Hence we need to extend our ValidatorSet trait to permit such lookups:
@@ -303,13 +352,71 @@ where
 
 ### Validation
 
-Most of the above is about checking the signatures and voting power in commits, but we also need to perform other validation checks, 
+Most of the above is about checking the signatures and voting power in commits, 
+but we also need to perform other validation checks, 
 like that the validator set hashes match what are in the header, and the lite
-client's trusted state actually hasn't expired.
+client's trusted state actually hasn't expired. Pure functions for all of these
+checks should be provided.
 
-TODO - more
+Some things are left explicitly unvalidated as they have minimal bearing on the correctness of the lite client.
+These include:
 
-    
+- LastCommitHash
+	- In the skipping case, it's not possible to verify the header refers to the correct previous block without reverting to the sequential case. So in the sequential case, we don't validate this either. If it's incorrect, in indicates the validators are misbehaving, though we can only detect it as a lite client if there's a fork.
+- BlockID
+	- As mentioned, this includes a merkle root of the entire block and is not verifiable without downloading the whole block, which would defeat the purpose of the lite client!
+- Time
+	- Verifying the time would require us to download the commit for the previous block, and to take the median of the timestamps from that commit. This would add significant overhead to the lite client (an extra commit to validate for every block!). If the time is incorrect, in indicates that the validators are explicitly violating the protocol rules in a detectable way which full nodes should detect in the first place and shouldn't forward to lite clients, so there would probably be bigger issues at foot.
+
+There are likely a few other instances of things the lite client is not validating that it in theory could but likely indicate some larger problem afoot that the client can't do anything about anyways. Hence we really only focus on the correctness of commits and validator sets and detecting forks!
+
+### API
+
+While the library should include pure functions for all the forms of
+verification, it may not be right to expose all this functionality, since it may
+then be possible to use it incorrectly (ie. a header verifies correctly but the state is actually expired).
+
+Thus, a stateful API should be provided for managing the trusted state of a lite
+node. The trusted state is:
+
+```rust
+pub struct TrustedState<H, V>
+where
+    H: Header,
+    V: ValidatorSet,
+{
+    pub last_header: H, // height H-1
+    pub validators: V,  // height H
+}
+```
+
+And the main method for verifying and updating the state should look like:
+
+```rust
+pub fn verify_sequential<H, V, C>(&mut self, 
+	now: Time, header: H, commit: C, validators: V, next_validators: V) -> Result<(), Error>
+where
+    H: Header,
+    V: ValidatorSet,
+    C: Commit,
+{
+```
+
+There is a corresponding `verify_skipping` method that is effectively the same but may also take a `trust_level`
+parameter to determine how much validator churn is acceptable (ie. can require some threshold greater than 1/3 
+of the trusted validators signing the new commit).
+
+Note this method takes a mutable reference to the TrustedState and may thus update it.
+It also contains all information necessary to validate and verify an update, including the current time,
+in order to check if the trusted state has expired.
+
+In the skipping case, if less than the trust level of trusted validators signed the commit, 
+an error should be returned that indicates to the caller that it should use bisection.
+For now, we leave the bisection functionality outside the core library, but in the future it may make 
+sense to bring it in with some generic way of "requesting" the bisecting headers (ie. it will need to work
+for both the lite node case, where the node can drive requests on demand, and the IBC case, where the blockchain
+must wait for the intermediate headers to be provided).
+
 ## Status
 
 Proposed
@@ -318,12 +425,15 @@ Proposed
 
 ### Positive
 
-TODO
+- Implements the lite node!
+- Simple peering strategy
+- Clear separation between verification logic and the actual data types
 
 ### Negative
 
-TODO
+- Abstract traits requires more coding, more opportunity for bugs in trait implementation
 
 ### Neutral
 
-TODO
+- Certain validity checks are ommitted since they have little bearing
+
