@@ -127,8 +127,7 @@ where
         };
 
         // check vote is valid from validator
-        let mut sign_bytes = vec![];
-        vote.sign_bytes(&mut sign_bytes);
+        let sign_bytes = vote.sign_bytes();
         if !val.verify_signature(&sign_bytes, vote.signature()) {
             return Err(Error::InvalidSignature);
         }
@@ -178,8 +177,8 @@ where
         };
 
         // check vote is valid from validator
-        let mut sign_bytes = vec![];
-        vote.sign_bytes(&mut sign_bytes);
+        let sign_bytes = vote.sign_bytes();
+
         if !val.verify_signature(&sign_bytes, vote.signature()) {
             return Err(Error::InvalidSignature);
         }

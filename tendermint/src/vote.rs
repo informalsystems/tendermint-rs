@@ -7,7 +7,6 @@ use crate::amino_types::vote::CanonicalVote;
 use crate::amino_types::vote::Vote as AminoVote;
 use crate::prost::Message;
 use crate::{account, block, lite, Signature, Time};
-use bytes::BufMut;
 use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
@@ -76,17 +75,16 @@ impl lite::Vote for Vote {
         self.validator_address
     }
 
-    fn sign_bytes<B>(&self, mut sign_bytes: &mut B)
-    where
-        B: BufMut,
-    {
+    fn sign_bytes(&self) -> Vec<u8> {
         // TODO: 1) everytime we encode sth. an error can occur. Change the trait to return a result
         // instead to enable proper error handling.
         // 2) Figure out where the chain_id should come from (if sign_bytes remains on Vote, the
         // sign_bytes method will need a chain_id.
+        let mut sign_bytes = vec![];
         CanonicalVote::new(AminoVote::from(self), "TODO")
             .encode(&mut sign_bytes)
             .unwrap();
+        sign_bytes
     }
 
     fn signature(&self) -> &[u8] {

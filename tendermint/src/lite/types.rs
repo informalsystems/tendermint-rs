@@ -6,7 +6,6 @@ use crate::block::Height;
 use crate::Hash;
 #[allow(clippy::all)]
 use crate::Time;
-use bytes::BufMut;
 
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header and the validator set to use to verify
@@ -99,9 +98,7 @@ pub trait Commit {
 /// is only necessary to avoid slashing in the multi chain context.
 pub trait Vote {
     fn validator_id(&self) -> Id;
-    fn sign_bytes<B>(&self, sign_bytes: &mut B)
-    where
-        B: BufMut;
+    fn sign_bytes(&self) -> Vec<u8>;
     fn signature(&self) -> &[u8];
 }
 
