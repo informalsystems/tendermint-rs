@@ -56,6 +56,7 @@ impl From<&vote::Vote> for Vote {
         Vote {
             vote_type: vote.vote_type.to_u32(),
             height: vote.height.value() as i64, // TODO potential overflow :-/
+            round: vote.round as i64,
             block_id: Some(BlockId {
                 hash: match vote.block_id.hash {
                     Hash::Sha256(h) => h.to_vec(),
@@ -66,7 +67,6 @@ impl From<&vote::Vote> for Vote {
                     None => None,
                 },
             }),
-            round: vote.round as i64,
             timestamp: Some(TimeMsg::from(vote.timestamp)),
             validator_address: vote.validator_address.as_bytes().to_vec(),
             validator_index: vote.validator_index as i64, // TODO potential overflow :-/
