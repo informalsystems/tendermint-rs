@@ -98,30 +98,27 @@ impl lite::Header for Header {
         amino_types::ConsensusVersion::from(&self.version)
             .encode(&mut version_enc)
             .unwrap();
-        let mut height_enc = vec![];
-        prost_amino::encoding::encode_varint(self.height.value(), &mut height_enc);
+        let height_enc = encode_varint(self.height.value());
         let mut time_enc = vec![];
         amino_types::TimeMsg::from(self.time)
             .encode(&mut time_enc)
             .unwrap();
         let chain_id_bytes = self.chain_id.as_bytes();
         let chain_id_enc = bytes_enc(&chain_id_bytes);
-        let mut num_tx_enc = vec![];
-        prost_amino::encoding::encode_varint(self.num_txs, &mut num_tx_enc);
-        let mut total_tx_enc = vec![];
-        prost_amino::encoding::encode_varint(self.total_txs, &mut total_tx_enc);
+        let num_tx_enc = encode_varint(self.num_txs);
+        let total_tx_enc = encode_varint(self.total_txs);
         let mut last_block_id_enc = vec![];
         amino_types::BlockId::from(&self.last_block_id)
             .encode(&mut last_block_id_enc)
             .unwrap();
         let last_commit_hash_enc = encode_hash(self.last_commit_hash);
-        let mut data_hash_enc = encode_hash(self.data_hash);
-        let mut validator_hash_enc = encode_hash(self.validators_hash);
-        let mut next_validator_hash_enc = encode_hash(self.next_validators_hash);
-        let mut consensus_hash_enc = encode_hash(self.consensus_hash);
-        let mut app_hash_enc = encode_hash(self.app_hash);
-        let mut last_result_hash_enc = encode_hash(self.last_results_hash);
-        let mut evidence_hash_enc = encode_hash(self.evidence_hash);
+        let data_hash_enc = encode_hash(self.data_hash);
+        let validator_hash_enc = encode_hash(self.validators_hash);
+        let next_validator_hash_enc = encode_hash(self.next_validators_hash);
+        let consensus_hash_enc = encode_hash(self.consensus_hash);
+        let app_hash_enc = encode_hash(self.app_hash);
+        let last_result_hash_enc = encode_hash(self.last_results_hash);
+        let evidence_hash_enc = encode_hash(self.evidence_hash);
         let proposer_address_bytes = self.proposer_address.as_bytes();
         let proposer_address_enc = bytes_enc(&proposer_address_bytes);
 
@@ -176,9 +173,15 @@ fn bytes_enc(bytes: &[u8]) -> Vec<u8> {
 }
 
 fn encode_hash(hash: Hash) -> Vec<u8> {
-    let mut last_commit_hash_enc = vec![];
+    let mut hash_enc = vec![];
     if let Some(last_commit_hash_bytes) = hash.as_bytes() {
-        last_commit_hash_enc = bytes_enc(last_commit_hash_bytes);
+        hash_enc = bytes_enc(last_commit_hash_bytes);
     }
-    last_commit_hash_enc
+    hash_enc
+}
+
+fn encode_varint(val: u64) -> Vec<u8> {
+    let mut val_enc = vec![];
+    prost_amino::encoding::encode_varint(val, &mut val_enc);
+    val_enc
 }
