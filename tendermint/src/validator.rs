@@ -93,7 +93,6 @@ impl lite::Validator for Info {
             if let Ok(sig) = ed25519::Signature::from_bytes(signature) {
                 return verifier.verify(sign_bytes, &sig).is_ok();
             }
-            return false;
         }
         false
     }
