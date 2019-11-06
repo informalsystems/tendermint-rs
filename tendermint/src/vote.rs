@@ -4,7 +4,6 @@ mod power;
 
 pub use self::power::Power;
 use crate::amino_types::vote::CanonicalVote;
-use crate::amino_types::vote::Vote as AminoVote;
 use crate::prost::Message;
 use crate::{account, block, lite, Signature, Time};
 use {
@@ -70,23 +69,40 @@ impl Vote {
     }
 }
 
-impl lite::Vote for Vote {
+/// SignedVote is the union of a canoncialized vote, the signature on
+/// the sign bytes of that vote and the id of the validator who signed it.
+pub struct SignedVote {
+    vote: CanonicalVote,
+    validator_address: account::Id,
+    signature: Signature,
+}
+
+impl SignedVote {
+    /// Create new SignedVote from provided canonicalized vote, validator id, and
+    /// the signature of that validator.
+    pub fn new(
+        vote: CanonicalVote,
+        validator_address: account::Id,
+        signature: Signature,
+    ) -> SignedVote {
+        SignedVote {
+            vote,
+            signature,
+            validator_address,
+        }
+    }
+}
+
+impl lite::Vote for SignedVote {
     fn validator_id(&self) -> account::Id {
         self.validator_address
     }
 
     fn sign_bytes(&self) -> Vec<u8> {
-        // TODO: 1) everytime we encode sth. an error can occur. Change the trait to return a result
-        // instead to enable proper error handling.
-        // 2) Figure out where the chain_id should come from (if sign_bytes remains on Vote, the
-        // sign_bytes method will need a chain_id.
         let mut sign_bytes = vec![];
-        CanonicalVote::new(AminoVote::from(self), "TODO")
-            .encode(&mut sign_bytes)
-            .unwrap();
+        self.vote.encode(&mut sign_bytes).unwrap();
         sign_bytes
     }
-
     fn signature(&self) -> &[u8] {
         match &self.signature {
             Signature::Ed25519(sig) => sig.as_bytes(),
