@@ -80,7 +80,7 @@ information into the process, but for the state to be properly initialized it
 will need to get the correct header and validator set before starting the light
 client syncing protocol.
 
-The configuration contains an initial list of peers.
+The configuration contains an initial list of full nodes (peers).
 For the sake of simplicity, one of the peers is selected as the "primary", while the
 rest are considered "backups". Most of the data is downloaded from the primary,
 and double checked against the backups.
@@ -179,7 +179,7 @@ mechanism may be utilized.
 
 Most of the light client logic resides in the verifier, where commits for a
 header are actually verified. In order to abstract over all the data in the
-Tendermint data structures, we use a set of traits that include only the
+Tendermint data structures, we use a set of traits that provide only the
 information absolutely necessary for the light client. From this perspective, we
 have the following traits.
 
