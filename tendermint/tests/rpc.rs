@@ -3,6 +3,7 @@
 mod endpoints {
     use std::{fs, path::PathBuf};
     use tendermint::abci::Code;
+    use tendermint::lite::Header;
     use tendermint::rpc::{self, endpoint, Response};
 
     const EXAMPLE_APP: &str = "GaiaApp";
@@ -167,8 +168,9 @@ mod endpoints {
         // in SignedHeader; later we should verify some properties: e.g. block_id.hash matches the
         // header etc:
         let commit = response.signed_header.commit;
-        let _block_id = commit.block_id;
+        let block_id = commit.block_id;
         let _precommits = commit.precommits;
+        assert_eq!(header.hash(), block_id.hash);
     }
 
     #[test]
