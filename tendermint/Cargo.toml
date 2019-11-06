@@ -42,7 +42,7 @@ ring = { version = "0.14" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 signatory = { version = "0.12", features = ["ed25519", "ecdsa"] }
-signatory-dalek = { version = "0.12" }
+signatory-dalek = { version = "0.16" }
 sha2 = { version = "0.8", default-features = false }
 subtle = "2"
 subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
