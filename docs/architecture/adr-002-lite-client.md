@@ -14,7 +14,13 @@ nodes running on client machines making rpc queries to full nodes, the core ligh
 client library should also be usable by IBC handlers on blockchains receiving
 data from relayers. While this document only covers the case of the light node,
 it's important to have clear separation of concerns so that the library can be
-reused in the IBC context.
+reused in the IBC context. For more information on IBC, see the 
+[spec repo](https://github.com/cosmos/ics),
+especially the specifications for
+[client
+semantics](https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics)
+and [handler
+interface](https://github.com/cosmos/ics/tree/master/spec/ics-025-handler-interface)
 
 Most of the necessary data types for the light client already exist (pubkey/signature, blockid,
 vote), with support for serialization/deserialization. The crux of the light
@@ -53,9 +59,9 @@ We take up the components of the diagram in term.
 
 The light node state contains the following:
 
-- current height (H)
-- last header (H-1)
-- current validators (H) - including all validator pubkeys and voting powers
+- current height (H) - height for the next header we want to verify
+- last header (H-1) - height for the last header we verified
+- current validators (H) - validators for the height we want to verify (including all validator pubkeys and voting powers)
 
 It also includes some configuration, which contains:
 
@@ -158,6 +164,8 @@ file, and exits. We leave it to a future document to describe how this
 information can actually be published to the blockchain so the validators can be
 punished. Tendermint may need to expose a new RPC endpoint to facilitate this.
 
+See related [Tendermint issue #3244](https://github.com/tendermint/tendermint/issues/3244).
+
 ### Address Book
 
 For now this is a simple list of HTTPS addresses corresponding to full nodes
@@ -221,6 +229,13 @@ pub trait Vote {
 }
 ```
 
+In the same way that the vote is expected to be for a particular
+commit/height/round etc., and we therefor ommit that information in the trait,
+we can assume it is also for a particular chain id known to the light client,
+and can be ommitted from the trait. Whatever implements the trait should know
+what chain ID it is for. These traits there fore only work on one chain at a
+time.
+
 #### Validator Set
 
 A validator set is a collection of validators that we will want to iterate over
@@ -268,6 +283,11 @@ Note the `Option` here. When it is `None`, it indicates that either:
 - there was no vote from this validator
 - the validator voted nil
 - the validator voted for some other block
+
+For more background on Tendermint votes, see:
+- [ADR-025](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-025-commit.md)
+- [Validator Signing Spec](https://github.com/tendermint/tendermint/blob/master/docs/spec/consensus/signing.md)
+- [Tendermint consensus specification](https://arxiv.org/abs/1807.04938)
 
 We may want to be more strict here in distinguishing between these cases. 
 On the one hand, 
@@ -408,7 +428,7 @@ where
 And the main method for verifying and updating the state should look like:
 
 ```rust
-pub fn verify_sequential<H, V, C>(&mut self, 
+pub fn update_sequential<H, V, C>(&mut self, 
 	now: Time, header: H, commit: C, validators: V, next_validators: V) -> Result<(), Error>
 where
     H: Header,
@@ -417,7 +437,7 @@ where
 {
 ```
 
-There is a corresponding `verify_skipping` method that is effectively the same but may also take a `trust_level`
+There is a corresponding `update_skipping` method that is effectively the same but may also take a `trust_level`
 parameter to determine how much validator churn is acceptable (ie. can require some threshold greater than 1/3 
 of the trusted validators signing the new commit).
 
