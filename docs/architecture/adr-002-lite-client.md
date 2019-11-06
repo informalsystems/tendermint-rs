@@ -1,41 +1,41 @@
-# ADR 002: Lite Client
+# ADR 002: Light Client
 
 ## Context
 
-Here we describe the architecture for a Tendermint lite node in Rust,
-including a core lite client library. While the lite client library provides the
+Here we describe the architecture for a Tendermint light node in Rust,
+including a core light client library. While the light client library provides the
 essential verification logic according to the
 [english](https://github.com/tendermint/tendermint/blob/master/docs/spec/consensus/light-client.md) 
 and
 [TLA+](https://github.com/interchainio/verification/blob/develop/spec/light-client/Lightclient.tla)
-specs (NOTE: both are still under development), the lite node uses the lite client library to sync its local state to the
-latest state of the blockchain using a list of full nodes. In addition to lite
-nodes running on client machines making rpc queries to full nodes, the core lite
+specs (NOTE: both are still under development), the light node uses the light client library to sync its local state to the
+latest state of the blockchain using a list of full nodes. In addition to light
+nodes running on client machines making rpc queries to full nodes, the core light
 client library should also be usable by IBC handlers on blockchains receiving
-data from relayers. While this document only covers the case of the lite node,
+data from relayers. While this document only covers the case of the light node,
 it's important to have clear separation of concerns so that the library can be
 reused in the IBC context.
 
-Most of the necessary data types for the lite client already exist (pubkey/signature, blockid,
-vote), with support for serialization/deserialization. The crux of the lite
+Most of the necessary data types for the light client already exist (pubkey/signature, blockid,
+vote), with support for serialization/deserialization. The crux of the light
 client is verifying validator sets by computing their merkle root, and verifying
 commits by checking validator signatures. The particular data structures used by
 Tendermint have considerably more features/functionality, much of which is not
-needed for the lite client protocol - hence it can be abstracted away from
+needed for the light client protocol - hence it can be abstracted away from
 the core verification logic.
 
-In addition to the core verification logic, the lite node needs a way to
+In addition to the core verification logic, the light node needs a way to
 receive data from full nodes, to detect conflicting information, and to report
 on conflicts. While there are many ways for a full node to provide bad
 information, what we're really looking for is misbehaviour by the validators,
 which is reflected in conflicting commits (ie. commits for different blocks at
 the same height). 
 
-In what follows we outline the following components of the lite client software:
+In what follows we outline the following components of the light client software:
 
-- core lite client verification library and traits
-- how Tendermint data-structures implement the core lite client traits
-- how a lite node requests information from full nodes and detects conflicts
+- core light client verification library and traits
+- how Tendermint data-structures implement the core light client traits
+- how a light node requests information from full nodes and detects conflicts
 
 Note that the architecture of IBC is out of scope, suffice it to say that the
 core libraries (ie. the verification library and the implementation of core
@@ -43,15 +43,15 @@ traits by the Tendermint types) will be re-usable by IBC.
 
 ## Decision
 
-Below is a schematic of the components of a lite node:
+Below is a schematic of the components of a light node:
 
-![Lite Client Diagram](assets/adr-002-image.png)
+![Light Client Diagram](assets/adr-002-image.png)
 
 We take up the components of the diagram in term.
 
 ### State
 
-The lite node state contains the following:
+The light node state contains the following:
 
 - current height (H)
 - last header (H-1)
@@ -71,7 +71,7 @@ The node may be initialized by the user with only a height and header hash, and
 proceed to request the full header and validator set from a full node. This
 reduces the initialization burden on the user, and simplifies passing this
 information into the process, but for the state to be properly initialized it
-will need to get the correct header and validator set before starting the lite
+will need to get the correct header and validator set before starting the light
 client syncing protocol.
 
 The configuration contains an initial list of peers.
@@ -85,10 +85,10 @@ period". If at any point the state is expired, the node should log an error and
 exit - it's needs to be manually reset.
 
 
-### Manager
+### Manager 
 
 For lack of a better name. The Manager co-ordiantes the syncing and is the
-highest level component. We consider two approaches to syncing the lite node: sequential and skipping.
+highest level component. We consider two approaches to syncing the light node: sequential and skipping.
 
 #### Sequential Sync
 
@@ -119,7 +119,7 @@ If (3) returns a conflicting header, verify the header by requesting the
 corresponding commit and running the verification of (2). If the verification
 passes, there is a fork, and evidence should be published so the validators get
 slashed. We leave the mechanics of evidence to a future document. For now, the
-lite client will just log an error and exit. If the verification fails, it
+light client will just log an error and exit. If the verification fails, it
 means the backup that provided the conflict is bad and should be removed.
 
 #### Skipping Sync
@@ -147,7 +147,7 @@ The detection module is for checking if any of the backup nodes
 are reporting conflicting information. It requests headers from each backup node
 and compares them with a verified header from the primary. If there is a
 conflict, it attempts to verify the conflicting header via the verifier. If it
-can be verified, it indicates an attack on the lite clients that should be
+can be verified, it indicates an attack on the light clients that should be
 punishable. The relevant information (ie. the two conflicting commits) are
 passed to the publisher.
 
@@ -162,17 +162,17 @@ punished. Tendermint may need to expose a new RPC endpoint to facilitate this.
 
 For now this is a simple list of HTTPS addresses corresponding to full nodes
 that the node connects to. One is randomly selected to be the primary, while
-others serve as backups. It's essential that the lite node connect to at least
+others serve as backups. It's essential that the light node connect to at least
 one correct full node in order to detect conflicts in a timely fashion. We keep
 this mechanism simple for now, but in the future a more advanced peer discovery
 mechanism may be utilized.
 
 ### Verifier
 
-Most of the lite client logic resides in the verifier, where commits for a
+Most of the light client logic resides in the verifier, where commits for a
 header are actually verified. In order to abstract over all the data in the
 Tendermint data structures, we use a set of traits that include only the
-information absolutely necessary for the lite client. From this perspective, we
+information absolutely necessary for the light client. From this perspective, we
 have the following traits.
 
 #### Header
@@ -295,17 +295,17 @@ probably premature to do so now.
 ### Implementing Traits
 
 The tendermint-rs library includes Header, Vote, Validator, ValidatorSet, and
-Commit data types. However, rather than use these types directly, the lite
+Commit data types. However, rather than use these types directly, the light 
 client library is written more abstractly to use traits that contain only the
 necessary information from these more concrete types. While this may turn out to
 be an unecessarily eager abstraction (as we do not forsee alternative
 implementations of these traits in the short term), it does provide a very clear
-depiction of what is required for lite client verification, and surfaces certain
+depiction of what is required for light client verification, and surfaces certain
 design issues in the underlying Tendermint blockchain (eg. the `BlockID` issue
 referenced above).
 
 This abstraction may also facilitate test generation, as we will not need to
-generate complete Tendermint data structures to test the lite client logic, only
+generate complete Tendermint data structures to test the light client logic, only
 the elements it cares. While this provides a lot of flexibility in mocking out
 the types, we must be careful to ensure they match the semantics of the actual
 Tendermint types, and that we still test the verification logic sufficiently for
@@ -369,21 +369,21 @@ where
 
 Most of the above is about checking the signatures and voting power in commits, 
 but we also need to perform other validation checks, 
-like that the validator set hashes match what are in the header, and the lite
+like that the validator set hashes match what are in the header, and the light
 client's trusted state actually hasn't expired. Pure functions for all of these
 checks should be provided.
 
-Some things are left explicitly unvalidated as they have minimal bearing on the correctness of the lite client.
+Some things are left explicitly unvalidated as they have minimal bearing on the correctness of the light client.
 These include:
 
 - LastCommitHash
-	- In the skipping case, it's not possible to verify the header refers to the correct previous block without reverting to the sequential case. So in the sequential case, we don't validate this either. If it's incorrect, in indicates the validators are misbehaving, though we can only detect it as a lite client if there's a fork.
+	- In the skipping case, it's not possible to verify the header refers to the correct previous block without reverting to the sequential case. So in the sequential case, we don't validate this either. If it's incorrect, in indicates the validators are misbehaving, though we can only detect it as a light client if there's a fork.
 - BlockID
-	- As mentioned, this includes a merkle root of the entire block and is not verifiable without downloading the whole block, which would defeat the purpose of the lite client!
+	- As mentioned, this includes a merkle root of the entire block and is not verifiable without downloading the whole block, which would defeat the purpose of the light client!
 - Time
-	- Verifying the time would require us to download the commit for the previous block, and to take the median of the timestamps from that commit. This would add significant overhead to the lite client (an extra commit to validate for every block!). If the time is incorrect, in indicates that the validators are explicitly violating the protocol rules in a detectable way which full nodes should detect in the first place and shouldn't forward to lite clients, so there would probably be bigger issues at foot.
+	- Verifying the time would require us to download the commit for the previous block, and to take the median of the timestamps from that commit. This would add significant overhead to the light client (an extra commit to validate for every block!). If the time is incorrect, in indicates that the validators are explicitly violating the protocol rules in a detectable way which full nodes should detect in the first place and shouldn't forward to light clients, so there would probably be bigger issues at foot.
 
-There are likely a few other instances of things the lite client is not validating that it in theory could but likely indicate some larger problem afoot that the client can't do anything about anyways. Hence we really only focus on the correctness of commits and validator sets and detecting forks!
+There are likely a few other instances of things the light client is not validating that it in theory could but likely indicate some larger problem afoot that the client can't do anything about anyways. Hence we really only focus on the correctness of commits and validator sets and detecting forks!
 
 ### API
 
@@ -391,7 +391,7 @@ While the library should include pure functions for all the forms of
 verification, it may not be right to expose all this functionality, since it may
 then be possible to use it incorrectly (ie. a header verifies correctly but the state is actually expired).
 
-Thus, a stateful API should be provided for managing the trusted state of a lite
+Thus, a stateful API should be provided for managing the trusted state of a light
 node. The trusted state is:
 
 ```rust
@@ -429,7 +429,7 @@ In the skipping case, if less than the trust level of trusted validators signed 
 an error should be returned that indicates to the caller that it should use bisection.
 For now, we leave the bisection functionality outside the core library, but in the future it may make 
 sense to bring it in with some generic way of "requesting" the bisecting headers (ie. it will need to work
-for both the lite node case, where the node can drive requests on demand, and the IBC case, where the blockchain
+for both the light node case, where the node can drive requests on demand, and the IBC case, where the blockchain
 must wait for the intermediate headers to be provided).
 
 ## Status
@@ -440,7 +440,7 @@ Proposed
 
 ### Positive
 
-- Implements the lite node!
+- Implements the light node!
 - Simple peering strategy
 - Clear separation between verification logic and the actual data types
 
