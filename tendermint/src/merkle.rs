@@ -8,16 +8,16 @@ pub const HASH_SIZE: usize = 32;
 /// Hash is the output of the cryptographic digest function
 pub type Hash = [u8; HASH_SIZE];
 
-/// Compute a simple Merkle root from the arbitrary sized byte slices
-pub fn simple_hash_from_byte_slices(byte_slices: &[&[u8]]) -> Hash {
+/// Compute a simple Merkle root from the arbitrary byte arrays
+pub fn simple_hash_from_byte_slices(byte_slices: &Vec<Vec<u8>>) -> Hash {
     let length = byte_slices.len();
     match length {
         0 => [0; HASH_SIZE],
-        1 => leaf_hash(byte_slices[0]),
+        1 => leaf_hash(&byte_slices[0]),
         _ => {
             let k = get_split_point(length);
-            let left = simple_hash_from_byte_slices(&byte_slices[..k]);
-            let right = simple_hash_from_byte_slices(&byte_slices[k..]);
+            let left = simple_hash_from_byte_slices(&byte_slices[0..k].to_vec());
+            let right = simple_hash_from_byte_slices(&byte_slices[k..].to_vec());
             inner_hash(&left, &right)
         }
     }
@@ -34,11 +34,11 @@ fn get_split_point(length: usize) -> usize {
 }
 
 // tmhash(0x00 || leaf)
-fn leaf_hash(bytes: &[u8]) -> Hash {
+fn leaf_hash(bytes: &Vec<u8>) -> Hash {
     // make a new array starting with 0 and copy in the bytes
     let mut leaf_bytes = Vec::with_capacity(bytes.len() + 1);
     leaf_bytes.push(0x00);
-    leaf_bytes.extend_from_slice(bytes);
+    leaf_bytes.extend_from_slice(&bytes);
 
     // hash it !
     let digest = Sha256::digest(&leaf_bytes);
@@ -91,7 +91,8 @@ mod tests {
             "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d";
         let empty_leaf_root = &hex::decode(empty_leaf_root_hex).unwrap();
         let empty_tree: &[&[u8]] = &[&[]];
-        let root = simple_hash_from_byte_slices(empty_tree);
+        let empty_tree_vec = &empty_tree.to_vec().into_iter().map(|x| x.to_vec().clone()).collect();
+        let root = simple_hash_from_byte_slices(empty_tree_vec);
         assert_eq!(empty_leaf_root, &root);
     }
 
@@ -102,7 +103,9 @@ mod tests {
 
         let leaf_root = &hex::decode(leaf_root_hex).unwrap();
         let leaf_tree: &[&[u8]] = &[leaf_string.as_bytes()];
-        let root = simple_hash_from_byte_slices(leaf_tree);
+        let leaf_t_vec = &leaf_tree.to_vec().into_iter().map(|x| x.to_vec()).collect();
+
+        let root = simple_hash_from_byte_slices(leaf_t_vec);
         assert_eq!(leaf_root, &root);
     }
 

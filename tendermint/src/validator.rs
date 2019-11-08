@@ -25,14 +25,12 @@ impl Set {
         // This looks like: Vec<Info> -> Vec<Vec<u8>> -> Vec<&[u8]> -> &[&[u8]]
         // Can we simplify this?
         // Perhaps simple_hash_from_byteslices should take Vec<Vec<u8>> directly ?
-        let validator_bytes: Vec<Vec<u8>> = self
+        let validator_bytes: &Vec<Vec<u8>> = &self
             .validators
             .into_iter()
             .map(|x| x.hash_bytes())
             .collect();
-        let validator_byteslices: Vec<&[u8]> =
-            (&validator_bytes).iter().map(|x| x.as_slice()).collect();
-        merkle::simple_hash_from_byte_slices(validator_byteslices.as_slice())
+        merkle::simple_hash_from_byte_slices(validator_bytes)
     }
 }
 
