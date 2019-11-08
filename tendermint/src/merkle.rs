@@ -91,7 +91,11 @@ mod tests {
             "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d";
         let empty_leaf_root = &hex::decode(empty_leaf_root_hex).unwrap();
         let empty_tree: &[&[u8]] = &[&[]];
-        let empty_tree_vec = &empty_tree.to_vec().into_iter().map(|x| x.to_vec().clone()).collect();
+        let empty_tree_vec = &empty_tree
+            .to_vec()
+            .into_iter()
+            .map(|x| x.to_vec().clone())
+            .collect();
         let root = simple_hash_from_byte_slices(empty_tree_vec);
         assert_eq!(empty_leaf_root, &root);
     }
