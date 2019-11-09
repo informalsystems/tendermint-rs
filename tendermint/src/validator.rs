@@ -35,9 +35,7 @@ impl Set {
             .into_iter()
             .map(|x| x.hash_bytes())
             .collect();
-        let validator_byteslices: Vec<&[u8]> =
-            (&validator_bytes).iter().map(|x| x.as_slice()).collect();
-        merkle::simple_hash_from_byte_slices(validator_byteslices.as_slice())
+        merkle::simple_hash_from_byte_slices(validator_bytes)
     }
 }
 
