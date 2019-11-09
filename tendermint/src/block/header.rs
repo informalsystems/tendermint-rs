@@ -98,49 +98,34 @@ impl lite::Header for Header {
         amino_types::ConsensusVersion::from(&self.version)
             .encode(&mut version_enc)
             .unwrap();
-        let height_enc = encode_varint(self.height.value());
         let mut time_enc = vec![];
         amino_types::TimeMsg::from(self.time)
             .encode(&mut time_enc)
             .unwrap();
-        let chain_id_bytes = self.chain_id.as_bytes();
-        let chain_id_enc = bytes_enc(&chain_id_bytes);
-        let num_tx_enc = encode_varint(self.num_txs);
-        let total_tx_enc = encode_varint(self.total_txs);
         let mut last_block_id_enc = vec![];
         amino_types::BlockId::from(&self.last_block_id)
             .encode(&mut last_block_id_enc)
             .unwrap();
-        let last_commit_hash_enc = encode_hash(self.last_commit_hash);
-        let data_hash_enc = encode_hash(self.data_hash);
-        let validator_hash_enc = encode_hash(self.validators_hash);
-        let next_validator_hash_enc = encode_hash(self.next_validators_hash);
-        let consensus_hash_enc = encode_hash(self.consensus_hash);
-        let app_hash_enc = encode_hash(self.app_hash);
-        let last_result_hash_enc = encode_hash(self.last_results_hash);
-        let evidence_hash_enc = encode_hash(self.evidence_hash);
-        let proposer_address_bytes = self.proposer_address.as_bytes();
-        let proposer_address_enc = bytes_enc(&proposer_address_bytes);
 
-        let mut byteslices: Vec<&[u8]> = vec![];
-        byteslices.push(version_enc.as_slice());
-        byteslices.push(chain_id_enc.as_slice());
-        byteslices.push(height_enc.as_slice());
-        byteslices.push(time_enc.as_slice());
-        byteslices.push(num_tx_enc.as_slice());
-        byteslices.push(total_tx_enc.as_slice());
-        byteslices.push(last_block_id_enc.as_slice());
-        byteslices.push(last_commit_hash_enc.as_slice());
-        byteslices.push(data_hash_enc.as_slice());
-        byteslices.push(validator_hash_enc.as_slice());
-        byteslices.push(next_validator_hash_enc.as_slice());
-        byteslices.push(consensus_hash_enc.as_slice());
-        byteslices.push(app_hash_enc.as_slice());
-        byteslices.push(last_result_hash_enc.as_slice());
-        byteslices.push(evidence_hash_enc.as_slice());
-        byteslices.push(proposer_address_enc.as_slice());
+        let mut byteslices: Vec<Vec<u8>> = vec![];
+        byteslices.push(version_enc);
+        byteslices.push(bytes_enc(self.chain_id.as_bytes()));
+        byteslices.push(encode_varint(self.height.value()));
+        byteslices.push(time_enc);
+        byteslices.push(encode_varint(self.num_txs));
+        byteslices.push(encode_varint(self.total_txs));
+        byteslices.push(last_block_id_enc);
+        byteslices.push(encode_hash(self.last_commit_hash));
+        byteslices.push(encode_hash(self.data_hash));
+        byteslices.push(encode_hash(self.validators_hash));
+        byteslices.push(encode_hash(self.next_validators_hash));
+        byteslices.push(encode_hash(self.consensus_hash));
+        byteslices.push(encode_hash(self.app_hash));
+        byteslices.push(encode_hash(self.last_results_hash));
+        byteslices.push(encode_hash(self.evidence_hash));
+        byteslices.push(bytes_enc(self.proposer_address.as_bytes()));
 
-        Hash::Sha256(simple_hash_from_byte_slices(byteslices.as_slice()))
+        Hash::Sha256(simple_hash_from_byte_slices(byteslices))
     }
 }
 

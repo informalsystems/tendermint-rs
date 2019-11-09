@@ -33,7 +33,7 @@ impl Set {
         let validator_bytes: Vec<Vec<u8>> = self
             .validators
             .into_iter()
-            .map(|x| x.hash_bytes())
+            .map(|validator| validator.hash_bytes())
             .collect();
         merkle::simple_hash_from_byte_slices(validator_bytes)
     }
@@ -44,12 +44,14 @@ impl lite::ValidatorSet for Set {
 
     fn hash(&self) -> Hash {
         // TODO almost the same as above's pub fn hash(self) -> merkle::Hash
-        let validator_bytes: &Vec<Vec<u8>> =
-            &self.validators.iter().map(|x| x.hash_bytes()).collect();
-        let validator_byteslices: Vec<&[u8]> =
-            (&validator_bytes).iter().map(|x| x.as_slice()).collect();
+        // deduplicate
+        let validator_bytes: &Vec<Vec<u8>> = &self
+            .validators
+            .iter()
+            .map(|validator| validator.hash_bytes())
+            .collect();
         Hash::Sha256(merkle::simple_hash_from_byte_slices(
-            validator_byteslices.as_slice(),
+            validator_bytes.to_vec(),
         ))
     }
 
