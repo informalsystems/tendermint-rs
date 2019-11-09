@@ -1,8 +1,8 @@
 //! Tendermint validators
 
+use crate::amino_types::message::AminoMessage;
 use crate::validator::signatory::{Signature, Verifier};
 use crate::{account, lite, merkle, vote, Hash, PublicKey};
-use prost::Message;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use signatory;
 use signatory::ed25519;
@@ -147,9 +147,7 @@ impl From<&Info> for InfoHashable {
 // pubkey and voting power, so it includes the pubkey's amino prefix.
 impl Info {
     fn hash_bytes(&self) -> Vec<u8> {
-        let mut bytes: Vec<u8> = Vec::new();
-        InfoHashable::from(self).encode(&mut bytes).unwrap();
-        bytes
+        AminoMessage::bytes_vec(InfoHashable::from(self))
     }
 }
 
