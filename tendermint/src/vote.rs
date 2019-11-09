@@ -3,8 +3,8 @@
 mod power;
 
 pub use self::power::Power;
+use crate::amino_types::message::AminoMessage;
 use crate::amino_types::vote::CanonicalVote;
-use crate::prost::Message;
 use crate::{account, block, lite, Signature, Time};
 use {
     crate::serializers,
@@ -99,9 +99,7 @@ impl lite::Vote for SignedVote {
     }
 
     fn sign_bytes(&self) -> Vec<u8> {
-        let mut sign_bytes = vec![];
-        self.vote.encode(&mut sign_bytes).unwrap();
-        sign_bytes
+        AminoMessage::bytes_vec(self.vote.to_owned())
     }
 
     fn signature(&self) -> &[u8] {

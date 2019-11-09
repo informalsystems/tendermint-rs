@@ -1,7 +1,6 @@
 //! Tendermint validators
 
 use crate::{account, lite, merkle, vote, Hash, PublicKey};
-use prost::Message;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use signatory::{
     ed25519,
@@ -29,7 +28,7 @@ impl Set {
         let validator_bytes: Vec<Vec<u8>> = self
             .validators
             .into_iter()
-            .map(|x| x.hash_bytes())
+            .map(|validator| validator.hash_bytes())
             .collect();
         merkle::simple_hash_from_byte_vectors(validator_bytes)
     }
@@ -138,9 +137,7 @@ impl From<&Info> for InfoHashable {
 // pubkey and voting power, so it includes the pubkey's amino prefix.
 impl Info {
     fn hash_bytes(&self) -> Vec<u8> {
-        let mut bytes: Vec<u8> = Vec::new();
-        InfoHashable::from(self).encode(&mut bytes).unwrap();
-        bytes
+        AminoMessage::bytes_vec(InfoHashable::from(self))
     }
 }
 

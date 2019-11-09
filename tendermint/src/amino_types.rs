@@ -5,6 +5,7 @@
 
 pub mod block_id;
 pub mod ed25519;
+pub mod message;
 pub mod ping;
 pub mod proposal;
 pub mod remote_error;
