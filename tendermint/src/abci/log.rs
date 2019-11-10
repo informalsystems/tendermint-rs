@@ -13,6 +13,12 @@ impl Log {
     }
 }
 
+impl From<&str> for Log {
+    fn from(s: &str) -> Self {
+        Log(s.to_owned())
+    }
+}
+
 impl AsRef<str> for Log {
     fn as_ref(&self) -> &str {
         self.0.as_ref()

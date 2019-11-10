@@ -3,6 +3,8 @@
 use crate::error::{Error, ErrorKind};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tai64::TAI64N;
 
@@ -36,6 +38,11 @@ impl Time {
         Ok(Time(DateTime::parse_from_rfc3339(s)?.with_timezone(&Utc)))
     }
 
+    /// Returns an RFC 3339 string, such as 1996-12-19T16:39:57-08:00.
+    pub fn to_rfc3339(&self) -> String {
+        self.0.to_rfc3339()
+    }
+
     /// Convert this timestamp to a `SystemTime`
     pub fn to_system_time(&self) -> Result<SystemTime, Error> {
         let duration_since_epoch = self.duration_since(Self::unix_epoch())?;
@@ -46,6 +53,20 @@ impl Time {
 impl Default for Time {
     fn default() -> Time {
         Time::unix_epoch()
+    }
+}
+
+impl fmt::Display for Time {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.to_rfc3339())
+    }
+}
+
+impl FromStr for Time {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Time::parse_from_rfc3339(s)
     }
 }
 
