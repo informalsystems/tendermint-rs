@@ -52,7 +52,7 @@ pub struct Response {
 impl rpc::Response for Response {}
 
 /// Results from either `CheckTx` or `DeliverTx`.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct TxResult {
     /// Code
     pub code: Code,
