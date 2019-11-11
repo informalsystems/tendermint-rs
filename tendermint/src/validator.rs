@@ -143,7 +143,7 @@ impl From<&Info> for InfoHashable {
 // pubkey and voting power, so it includes the pubkey's amino prefix.
 impl Info {
     fn hash_bytes(&self) -> Vec<u8> {
-        AminoMessage::bytes_vec(InfoHashable::from(self))
+        AminoMessage::bytes_vec(&InfoHashable::from(self))
     }
 }
 
