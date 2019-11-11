@@ -95,13 +95,9 @@ mod tests {
         let empty_leaf_root_hex =
             "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d";
         let empty_leaf_root = &hex::decode(empty_leaf_root_hex).unwrap();
-        let empty_tree: &[&[u8]] = &[&[]];
-        let empty_tree_vec = empty_tree
-            .to_vec()
-            .into_iter()
-            .map(|x| x.to_vec().clone())
-            .collect();
-        let root = simple_hash_from_byte_slices(empty_tree_vec);
+        let empty_tree: Vec<Vec<u8>> = vec![vec![]; 1];
+
+        let root = simple_hash_from_byte_slices(empty_tree);
         assert_eq!(empty_leaf_root, &root);
     }
 
@@ -111,10 +107,9 @@ mod tests {
         let leaf_string = "L123456";
 
         let leaf_root = &hex::decode(leaf_root_hex).unwrap();
-        let leaf_tree: &[&[u8]] = &[leaf_string.as_bytes()];
-        let leaf_t_vec = leaf_tree.to_vec().into_iter().map(|x| x.to_vec()).collect();
+        let leaf_tree: Vec<Vec<u8>> = vec![leaf_string.as_bytes().to_vec(); 1];
 
-        let root = simple_hash_from_byte_slices(leaf_t_vec);
+        let root = simple_hash_from_byte_slices(leaf_tree);
         assert_eq!(leaf_root, &root);
     }
 

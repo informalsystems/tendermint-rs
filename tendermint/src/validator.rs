@@ -26,10 +26,6 @@ impl Set {
 
     /// Compute the Merkle root of the validator set
     pub fn hash(self) -> merkle::Hash {
-        // We need to get from Vec<Info> to &[&[u8]] so we can call simple_hash_from_byte_slices.
-        // This looks like: Vec<Info> -> Vec<Vec<u8>> -> Vec<&[u8]> -> &[&[u8]]
-        // Can we simplify this?
-        // Perhaps simple_hash_from_byteslices should take Vec<Vec<u8>> directly ?
         let validator_bytes: Vec<Vec<u8>> = self
             .validators
             .into_iter()
