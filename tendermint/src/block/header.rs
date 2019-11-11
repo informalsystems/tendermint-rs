@@ -11,7 +11,7 @@ use {
 /// previous block, and the results returned by the application.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#header>
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Header {
     /// Header version
     pub version: Version,
@@ -74,7 +74,7 @@ pub struct Header {
 /// application.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#version>
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Version {
     /// Block version
     #[serde(

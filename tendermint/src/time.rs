@@ -43,6 +43,12 @@ impl Time {
     }
 }
 
+impl Default for Time {
+    fn default() -> Time {
+        Time::unix_epoch()
+    }
+}
+
 impl From<DateTime<Utc>> for Time {
     fn from(t: DateTime<Utc>) -> Time {
         Time(t)

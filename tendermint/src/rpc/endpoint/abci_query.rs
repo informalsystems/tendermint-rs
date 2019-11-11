@@ -55,7 +55,7 @@ pub struct Response {
 impl rpc::Response for Response {}
 
 /// ABCI query results
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct AbciQuery {
     /// Response code
     pub code: Code,

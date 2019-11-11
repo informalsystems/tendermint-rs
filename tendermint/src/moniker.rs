@@ -8,7 +8,7 @@ use std::{
 };
 
 /// Validator display names
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Default)]
 pub struct Moniker(String);
 
 impl FromStr for Moniker {

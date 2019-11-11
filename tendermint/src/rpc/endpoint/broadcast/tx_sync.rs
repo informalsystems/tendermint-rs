@@ -29,7 +29,7 @@ impl rpc::Request for Request {
 }
 
 /// Response from either an async or sync transaction broadcast request.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Response {
     /// Code
     pub code: Code,

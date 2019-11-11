@@ -18,6 +18,13 @@ pub const MAX_LENGTH: usize = 50;
 #[derive(Copy, Clone)]
 pub struct Id([u8; MAX_LENGTH]);
 
+impl Default for Id {
+    fn default() -> Id {
+        static DUMMY_BYTES: [u8; MAX_LENGTH] = [0; MAX_LENGTH];
+        Id(DUMMY_BYTES)
+    }
+}
+
 impl Id {
     /// Get the chain ID as a `str`
     pub fn as_str(&self) -> &str {

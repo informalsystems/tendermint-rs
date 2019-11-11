@@ -16,7 +16,7 @@ impl rpc::Request for Request {
 }
 
 /// Status responses
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Response {
     /// Node information
     pub node_info: node::Info,
@@ -31,7 +31,7 @@ pub struct Response {
 impl rpc::Response for Response {}
 
 /// Sync information
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct SyncInfo {
     /// Latest block hash
     pub latest_block_hash: Hash,

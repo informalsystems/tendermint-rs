@@ -91,6 +91,13 @@ impl PublicKey {
     }
 }
 
+impl Default for PublicKey {
+    fn default() -> PublicKey {
+        static DUMMY_BYTES: [u8; 32] = [0; 32];
+        PublicKey::Ed25519(ed25519::PublicKey::new(DUMMY_BYTES))
+    }
+}
+
 impl From<ed25519::PublicKey> for PublicKey {
     fn from(pk: ed25519::PublicKey) -> PublicKey {
         PublicKey::Ed25519(pk)

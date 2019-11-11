@@ -39,6 +39,16 @@ pub enum Address {
     },
 }
 
+impl Default for Address {
+    fn default() -> Address {
+        Address::Tcp {
+            peer_id: None,
+            host: "127.0.0.1".to_owned(),
+            port: 0,
+        }
+    }
+}
+
 impl<'de> Deserialize<'de> for Address {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         Self::from_str(&String::deserialize(deserializer)?)

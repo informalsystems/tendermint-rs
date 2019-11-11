@@ -8,7 +8,7 @@ use std::{ops::Deref, slice};
 ///
 /// <https://github.com/tendermint/tendermint/blob/51dc810d041eaac78320adc6d53ad8b160b06601/types/block.go#L486-L502>
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#lastcommit>
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Commit {
     /// Block ID of the last commit
     pub block_id: block::Id,
@@ -18,7 +18,7 @@ pub struct Commit {
 }
 
 /// Precommits which certify that a block is valid
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Precommits(Option<Vec<Option<Vote>>>);
 
 impl Precommits {

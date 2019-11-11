@@ -28,6 +28,12 @@ impl Hash {
     }
 }
 
+impl Default for Hash {
+    fn default() -> Hash {
+        Hash([0; LENGTH])
+    }
+}
+
 impl AsRef<[u8]> for Hash {
     fn as_ref(&self) -> &[u8] {
         self.as_bytes()
