@@ -95,15 +95,15 @@ impl lite::Header for Header {
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
 
         let mut byteslices: Vec<Vec<u8>> = Vec::with_capacity(16);
-        byteslices.push(AminoMessage::bytes_vec(ConsensusVersion::from(
+        byteslices.push(AminoMessage::bytes_vec(&ConsensusVersion::from(
             &self.version,
         )));
         byteslices.push(bytes_enc(self.chain_id.as_bytes()));
         byteslices.push(encode_varint(self.height.value()));
-        byteslices.push(AminoMessage::bytes_vec(TimeMsg::from(self.time)));
+        byteslices.push(AminoMessage::bytes_vec(&TimeMsg::from(self.time)));
         byteslices.push(encode_varint(self.num_txs));
         byteslices.push(encode_varint(self.total_txs));
-        byteslices.push(AminoMessage::bytes_vec(BlockId::from(&self.last_block_id)));
+        byteslices.push(AminoMessage::bytes_vec(&BlockId::from(&self.last_block_id)));
         byteslices.push(encode_hash(self.last_commit_hash));
         byteslices.push(encode_hash(self.data_hash));
         byteslices.push(encode_hash(self.validators_hash));

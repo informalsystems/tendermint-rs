@@ -99,7 +99,7 @@ impl lite::Vote for SignedVote {
     }
 
     fn sign_bytes(&self) -> Vec<u8> {
-        AminoMessage::bytes_vec(self.vote.to_owned())
+        AminoMessage::bytes_vec(&self.vote.to_owned())
     }
 
     fn signature(&self) -> &[u8] {
