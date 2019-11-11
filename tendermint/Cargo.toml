@@ -28,17 +28,13 @@ authors = [
 circle-ci = { repository = "tendermint/kms" }
 
 [dependencies]
-byteorder = { version = "1.2" }
 bytes = "0.4"
 chrono = { version = "0.4", features = ["serde"] }
-digest = "0.8"
 failure = "0.1"
-hkdf = { version = "0.7" }
 hyper = { version = "0.10" }
 prost-amino = { version = "0.4.0" }
 prost-amino-derive = { version = "0.4.0" }
 rand_os = { version = "0.1" }
-ring = { version = "0.14" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 signatory = { version = "0.12", features = ["ed25519", "ecdsa"] }
@@ -49,7 +45,6 @@ subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
 tai64 = { version = "3", features = ["chrono"] }
 toml = { version = "0.5" }
 uuid = { version = "0.7", default-features = false }
-x25519-dalek = { version = "0.5", default-features = false, features = ["u64_backend"] }
 zeroize = { version = "0.9" }
 
 [dev-dependencies]
