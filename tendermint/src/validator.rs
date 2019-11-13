@@ -22,26 +22,19 @@ impl Set {
         vals.sort_by(|v1, v2| v1.address.partial_cmp(&v2.address).unwrap());
         Set { validators: vals }
     }
-
-    /// Compute the Merkle root of the validator set
-    pub fn hash(self) -> merkle::Hash {
-        let validator_bytes: Vec<Vec<u8>> = self
-            .validators
-            .into_iter()
-            .map(|validator| validator.hash_bytes())
-            .collect();
-        merkle::simple_hash_from_byte_vectors(validator_bytes)
-    }
 }
 
 impl lite::ValidatorSet for Set {
     type Validator = Info;
 
+    /// Compute the Merkle root of the validator set
     fn hash(&self) -> Hash {
-        // TODO almost the same as above's pub fn hash(self) -> merkle::Hash
-        let validator_bytes: Vec<Vec<u8>> =
-            self.validators.iter().map(|x| x.hash_bytes()).collect();
-        Hash::Sha256(merkle::simple_hash_from_byte_vectors(validator_bytes))
+        let validator_bytes: Vec<Vec<u8>> = self
+            .validators
+            .iter()
+            .map(|validator| validator.hash_bytes())
+            .collect();
+        Hash::Sha256(merkle::simple_hash_from_byte_slices(validator_bytes))
     }
 
     fn total_power(&self) -> u64 {
@@ -65,7 +58,7 @@ impl lite::ValidatorSetLookup for Set {
 }
 
 /// Validator information
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Info {
     /// Validator account address
     pub address: account::Id,
@@ -225,6 +218,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::lite::{ValidatorSet, ValidatorSetLookup};
     use subtle_encoding::hex;
 
     // make a validator from a hex ed25519 pubkey and a voting power
@@ -253,6 +247,21 @@ mod tests {
 
         let val_set = Set::new(vec![v1, v2, v3]);
         let hash = val_set.hash();
-        assert_eq!(hash_expect, &hash);
+        assert_eq!(hash_expect, &hash.as_bytes().unwrap().to_vec());
+
+        let not_in_set = make_validator(
+            "EB6B732C5BD86B5FA3F3BC3DB688DA0ED182A7411F81C2D405506B298FC19E52",
+            1,
+        );
+        assert_eq!(val_set.validator(v1.address).unwrap(), v1);
+        assert_eq!(val_set.validator(v2.address).unwrap(), v2);
+        assert_eq!(val_set.validator(v3.address).unwrap(), v3);
+        assert_eq!(val_set.validator(not_in_set.address), None);
+        assert_eq!(
+            val_set.total_power(),
+            148_151_478_422_287_875 + 158_095_448_483_785_107 + 770_561_664_770_006_272
+        );
+
+        assert_eq!(val_set.into_vec(), vec![v1, v2, v3]);
     }
 }
