@@ -247,7 +247,7 @@ mod tests {
 
         let val_set = Set::new(vec![v1, v2, v3]);
         let hash = val_set.hash();
-        assert_eq!(hash_expect, &hash.as_bytes().unwrap().to_vec());
+        assert_eq!(hash_expect, &hash.as_bytes().to_vec());
 
         let not_in_set = make_validator(
             "EB6B732C5BD86B5FA3F3BC3DB688DA0ED182A7411F81C2D405506B298FC19E52",

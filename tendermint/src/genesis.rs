@@ -1,6 +1,6 @@
 //! Genesis data
 
-use crate::{chain, consensus, Hash, Time};
+use crate::{chain, consensus, serializers, Hash, Time};
 use serde::{Deserialize, Serialize};
 
 /// Genesis data
@@ -16,7 +16,8 @@ pub struct Genesis<AppState = serde_json::Value> {
     pub consensus_params: consensus::Params,
 
     /// App hash
-    pub app_hash: Hash,
+    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
+    pub app_hash: Option<Hash>,
 
     /// App state
     pub app_state: AppState,

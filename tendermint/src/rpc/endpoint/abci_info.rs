@@ -61,8 +61,7 @@ pub(crate) fn serialize_app_hash<S>(hash: &Hash, serializer: S) -> Result<S::Ok,
 where
     S: Serializer,
 {
-    hash.as_bytes()
-        .map(|bytes| String::from_utf8(base64::encode(bytes)).unwrap())
-        .unwrap_or_default()
+    String::from_utf8(base64::encode(hash.as_bytes()))
+        .unwrap()
         .serialize(serializer)
 }
