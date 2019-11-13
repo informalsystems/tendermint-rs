@@ -1,6 +1,7 @@
 //! `/commit` endpoint JSONRPC wrapper
 
-use crate::{amino_types::vote::CanonicalVote, block, lite, rpc, vote::SignedVote, Hash};
+use crate::vote::SignedVote;
+use crate::{block, lite, rpc, Hash};
 use serde::{Deserialize, Serialize};
 
 /// Get commit information about a specific block
@@ -60,7 +61,8 @@ impl lite::Commit for SignedHeader {
             .map(|opt| {
                 opt.map(|vote| {
                     SignedVote::new(
-                        CanonicalVote::new((&vote).into(), &chain_id),
+                        (&vote).into(),
+                        &chain_id,
                         vote.validator_address,
                         vote.signature,
                     )
