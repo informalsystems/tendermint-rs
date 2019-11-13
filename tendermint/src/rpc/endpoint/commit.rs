@@ -1,6 +1,6 @@
 //! `/commit` endpoint JSONRPC wrapper
 
-use crate::{block, rpc};
+use crate::{amino_types::vote::CanonicalVote, block, lite, rpc, vote::SignedVote, Hash};
 use serde::{Deserialize, Serialize};
 
 /// Get commit information about a specific block
@@ -45,4 +45,27 @@ pub struct SignedHeader {
     pub header: block::Header,
     /// Commit containing signatures for the header
     pub commit: block::Commit,
+}
+
+impl lite::Commit for SignedHeader {
+    type Vote = SignedVote;
+    fn header_hash(&self) -> Hash {
+        self.commit.block_id.hash
+    }
+    fn into_vec(&self) -> Vec<Option<Self::Vote>> {
+        let chain_id = self.header.chain_id.to_string();
+        let mut votes = self.commit.precommits.clone().into_vec();
+        votes
+            .drain(..)
+            .map(|opt| {
+                opt.map(|vote| {
+                    SignedVote::new(
+                        CanonicalVote::new((&vote).into(), &chain_id),
+                        vote.validator_address,
+                        vote.signature,
+                    )
+                })
+            })
+            .collect()
+    }
 }
