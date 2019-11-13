@@ -46,6 +46,7 @@ pub struct Info {
     pub pub_key: PublicKey,
 
     /// Validator voting power
+    #[serde(alias = "power")]
     pub voting_power: vote::Power,
 
     /// Validator proposer priority
