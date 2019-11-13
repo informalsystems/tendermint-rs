@@ -55,6 +55,15 @@ impl lite::ValidatorSet for Set {
     }
 }
 
+impl lite::ValidatorSetLookup for Set {
+    fn validator(&self, val_id: account::Id) -> Option<Self::Validator> {
+        self.validators
+            .iter()
+            .cloned()
+            .find(|val| val.address == val_id)
+    }
+}
+
 /// Validator information
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Info {
