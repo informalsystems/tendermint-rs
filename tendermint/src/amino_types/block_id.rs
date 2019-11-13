@@ -34,11 +34,11 @@ impl block::ParseId for BlockId {
 
 impl From<&block::Id> for BlockId {
     fn from(bid: &block::Id) -> Self {
-        let bid_hash = bid.hash.as_bytes().unwrap().to_vec();
-        match &bid.parts {
-            Some(parts) => BlockId::new(bid_hash, Some(PartsSetHeader::from(parts))),
-            None => BlockId::new(bid_hash, None),
-        }
+        let bid_hash = bid.hash.as_bytes();
+        BlockId::new(
+            bid_hash.to_vec(),
+            bid.parts.as_ref().map(PartsSetHeader::from),
+        )
     }
 }
 
@@ -89,7 +89,7 @@ impl PartsSetHeader {
 
 impl From<&parts::Header> for PartsSetHeader {
     fn from(parts: &parts::Header) -> Self {
-        PartsSetHeader::new(parts.total as i64, parts.hash.as_bytes().unwrap().to_vec())
+        PartsSetHeader::new(parts.total as i64, parts.hash.as_bytes().to_vec())
     }
 }
 

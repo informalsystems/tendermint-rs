@@ -11,7 +11,7 @@ use crate::{
     block::{self, ParseId},
     chain, consensus,
     error::Error,
-    vote, Hash,
+    vote,
 };
 use bytes::BufMut;
 use prost::{error::EncodeError, Message};
@@ -59,14 +59,8 @@ impl From<&vote::Vote> for Vote {
             height: vote.height.value() as i64, // TODO potential overflow :-/
             round: vote.round as i64,
             block_id: Some(BlockId {
-                hash: match vote.block_id.hash {
-                    Hash::Sha256(h) => h.to_vec(),
-                    _ => vec![],
-                },
-                parts_header: match &vote.block_id.parts {
-                    Some(parts) => Some(PartsSetHeader::from(parts)),
-                    None => None,
-                },
+                hash: vote.block_id.hash.as_bytes().to_vec(),
+                parts_header: vote.block_id.parts.as_ref().map(PartsSetHeader::from),
             }),
             timestamp: Some(TimeMsg::from(vote.timestamp)),
             validator_address: vote.validator_address.as_bytes().to_vec(),
