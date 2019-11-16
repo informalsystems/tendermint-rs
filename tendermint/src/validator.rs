@@ -26,7 +26,7 @@ impl Set {
             .into_iter()
             .map(|x| x.hash_bytes())
             .collect();
-        merkle::simple_hash_from_byte_slices(validator_bytes)
+        merkle::simple_hash_from_byte_vectors(validator_bytes)
     }
 }
 
