@@ -29,7 +29,7 @@ mod endpoints {
             .unwrap()
             .response;
 
-        assert_eq!(response.height.value(), 1);
+        assert_eq!(response.height.map_or(0, |height| height.value()), 1);
     }
 
     #[test]

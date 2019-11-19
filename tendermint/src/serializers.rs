@@ -1,5 +1,6 @@
 //! Serde serializers
 
+use crate::block;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::time::Duration;
 
@@ -60,4 +61,16 @@ where
     S: Serializer,
 {
     format!("{}", duration.as_nanos()).serialize(serializer)
+}
+
+/// Parse `Height` from json, `None` if value is invalid.
+pub(crate) fn parse_height_option<'de, D>(
+    deserializer: D,
+) -> Result<Option<block::Height>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Ok(String::deserialize(deserializer)?
+        .parse::<block::Height>()
+        .ok())
 }
