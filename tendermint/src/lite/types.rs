@@ -102,6 +102,7 @@ pub trait Vote {
     fn signature(&self) -> &[u8];
 }
 
+#[derive(Debug)]
 pub enum Error {
     Expired,
     NonSequentialHeight,
