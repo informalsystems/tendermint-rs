@@ -48,7 +48,6 @@ pub mod node;
 pub mod private_key;
 pub mod public_key;
 pub mod rpc;
-pub mod secret_connection;
 mod serializers;
 pub mod signature;
 pub mod time;
@@ -58,7 +57,6 @@ mod version;
 pub mod vote;
 
 pub use crate::genesis::Genesis;
-pub use crate::secret_connection::SecretConnection;
 pub use crate::{
     block::Block,
     error::{Error, ErrorKind},
