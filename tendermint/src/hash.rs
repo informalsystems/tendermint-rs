@@ -28,6 +28,12 @@ pub enum Hash {
     Null,
 }
 
+impl Default for Hash {
+    fn default() -> Hash {
+        Hash::Null
+    }
+}
+
 impl Hash {
     #[allow(clippy::new_ret_no_self)]
     /// Create a new `Hash` with the given algorithm type

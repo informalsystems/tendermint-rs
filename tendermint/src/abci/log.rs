@@ -3,13 +3,19 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
 
 /// ABCI log data
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
 pub struct Log(String);
 
 impl Log {
     /// Parse the log data as JSON, returning a `serde_json::Value`
     pub fn parse_json(&self) -> Result<serde_json::Value, Error> {
         serde_json::from_str(&self.0).map_err(|_| ErrorKind::Parse.into())
+    }
+}
+
+impl From<&str> for Log {
+    fn from(s: &str) -> Self {
+        Log(s.to_owned())
     }
 }
 

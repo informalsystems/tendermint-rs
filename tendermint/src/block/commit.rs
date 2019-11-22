@@ -18,7 +18,7 @@ pub struct Commit {
 }
 
 /// Precommits which certify that a block is valid
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Precommits(Option<Vec<Option<Vote>>>);
 
 impl Precommits {

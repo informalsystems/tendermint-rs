@@ -10,7 +10,7 @@ use subtle_encoding::hex;
 ///
 /// Transactions are opaque binary blobs which are validated according to
 /// application-specific rules.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Default)]
 pub struct Data(Vec<u8>);
 
 impl Data {
