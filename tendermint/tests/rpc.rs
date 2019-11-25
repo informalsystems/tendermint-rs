@@ -51,9 +51,30 @@ mod endpoints {
 
         assert_eq!(data.iter().len(), 2);
         assert_eq!(evidence.iter().len(), 0);
-        assert_eq!(last_commit.precommits.len(), 65);
+        assert_eq!(last_commit.unwrap().precommits.len(), 65);
     }
 
+    #[test]
+    fn first_block() {
+        let response =
+            endpoint::block::Response::from_json(&read_json_fixture("first_block")).unwrap();
+
+        let tendermint::Block {
+            header,
+            data,
+            evidence,
+            last_commit,
+        } = response.block;
+
+        assert_eq!(header.version.block, 10);
+        assert_eq!(header.chain_id.as_str(), EXAMPLE_CHAIN);
+        assert_eq!(header.height.value(), 1);
+        assert!(header.last_block_id.is_none());
+
+        assert_eq!(data.iter().len(), 0);
+        assert_eq!(evidence.iter().len(), 0);
+        assert!(last_commit.is_none());
+    }
     #[test]
     fn block_results() {
         let response =
