@@ -28,7 +28,7 @@ authors = [
 circle-ci = { repository = "tendermint/kms" }
 
 [dependencies]
-bytes = "0.4"
+bytes = "0.5"
 chrono = { version = "0.4", features = ["serde"] }
 failure = "0.1"
 hyper = { version = "0.10" }
