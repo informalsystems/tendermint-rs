@@ -107,11 +107,11 @@ impl From<serde_json::error::Error> for Error {
     }
 }
 
-impl From<signatory::Error> for Error {
-    fn from(_err: signatory::Error) -> Self {
-        // `signatory::Error` is opaque
-        err!(ErrorKind::Crypto, "signature error")
-    }
+impl From<signature::Error> for Error {
+   fn from(_err: signature::Error) -> Self {
+       // `signatory::Error` is opaque
+       err!(ErrorKind::Crypto, "signature error")
+   }
 }
 
 impl From<subtle_encoding::Error> for Error {

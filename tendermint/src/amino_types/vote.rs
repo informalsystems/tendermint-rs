@@ -13,7 +13,7 @@ use crate::{
 };
 use bytes::BufMut;
 use prost::{error::EncodeError, Message};
-use signatory::{ed25519, Signature};
+use signatory::ed25519;
 
 const VALIDATOR_ADDR_SIZE: usize = 20;
 
@@ -150,7 +150,7 @@ impl SignableMsg for SignVoteRequest {
     }
     fn set_signature(&mut self, sig: &ed25519::Signature) {
         if let Some(ref mut vt) = self.vote {
-            vt.signature = sig.clone().into_vec();
+            vt.signature = sig.clone().to_bytes().to_vec();
         }
     }
     fn validate(&self) -> Result<(), ValidationError> {

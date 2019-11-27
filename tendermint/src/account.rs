@@ -3,7 +3,8 @@
 use crate::error::{Error, ErrorKind};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
-use signatory::{ecdsa::curve::secp256k1, ed25519};
+use signatory::ed25519;
+use signatory_secp256k1 as secp256k1;
 use std::{
     fmt::{self, Debug, Display},
     str::FromStr,
