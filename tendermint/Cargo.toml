@@ -24,6 +24,9 @@ authors = [
     "Thane Thomson <thane@interchain.io>"
 ]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [badges]
 circle-ci = { repository = "interchainio/tendermint-rs" }
 
@@ -49,6 +52,3 @@ zeroize = { version = "1.0", features = ["zeroize_derive"] }
 
 [dev-dependencies]
 serde_json = "1"
-
-[package.metadata.docs.rs]
-all-features = true

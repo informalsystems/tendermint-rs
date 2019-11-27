@@ -61,3 +61,22 @@ where
 {
     format!("{}", duration.as_nanos()).serialize(serializer)
 }
+
+pub(crate) fn serialize_hex<S, T>(bytes: T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: AsRef<[u8]>
+{
+    let hex_bytes = hex::encode(bytes.as_ref());
+    serializer.serialize_str(&hex_bytes)
+}
+
+pub(crate) fn parse_hex<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where D: Deserializer<'de>
+{
+    use serde::de::Error;
+    let string = String::deserialize(deserializer)?;
+    hex::decode(&string)
+        .map_err(|err| Error::custom(err.to_string()))
+}
+
