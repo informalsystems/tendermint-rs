@@ -2,8 +2,8 @@
 
 /// RPC integration tests.
 ///
-/// These are all ignored by default, since they test against running `gaiad`.
-/// They can be run using:
+/// These are all ignored by default, since they test against running
+/// `tendermint node --proxy_app=kvstore`. They can be run using:
 ///
 /// ```
 /// cargo test -- --ignored
@@ -29,11 +29,11 @@ mod rpc {
     #[test]
     #[ignore]
     fn abci_query() {
-        let key = Path::from_str("foo").unwrap();
+        let key = Path::from_str("unpopulated_key").unwrap();
         let abci_query = localhost_rpc_client()
             .abci_query(Some(key), vec![], None, false)
             .unwrap();
-        assert_eq!(abci_query.key.as_ref().unwrap(), "foo");
+        assert_eq!(abci_query.key.as_ref().unwrap(), "");
         assert_eq!(abci_query.value.as_ref(), None);
     }
 
@@ -100,8 +100,7 @@ mod rpc {
         // For lack of better things to test
         assert_eq!(
             status.validator_info.voting_power.value(),
-            0,
-            "don't integration test against a validator"
+            10
         );
     }
 }
