@@ -7,25 +7,27 @@ use std::{
 
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)
+/// 
+/// A height of 0 represents a chain which has not yet produced a block.
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Height(u64);
 
 impl Height {
     /// Convert `u64` to block height.
-    ///
-    /// Note that 0 is not a valid block height.
+    /// 
+    /// Note that this method will never error and is just for backwards
+    /// compatibility.
     pub fn try_from_u64(n: u64) -> Result<Self, Error> {
-        // Minimum height is 1
-        if n > 0 {
-            Ok(Height(n))
-        } else {
-            Err(ErrorKind::OutOfRange.into())
-        }
+        Ok(Height(n))
     }
 
     /// Convert `i64` (used in e.g. Amino messages) to block height.
     pub fn try_from_i64(n: i64) -> Result<Self, Error> {
-        Self::try_from_u64(n as u64)
+        if n >= 0 {
+            Ok(Height(n as u64))
+        } else {
+            Err(ErrorKind::OutOfRange.into())
+        }
     }
 
     /// Get inner integer value. Alternative to `.0` or `.into()`
@@ -65,7 +67,7 @@ impl From<i64> for Height {
 
 impl From<u64> for Height {
     fn from(n: u64) -> Height {
-        Self::try_from_u64(n).unwrap()
+        Height(n)
     }
 }
 
