@@ -79,11 +79,11 @@ pub struct AbciQuery {
 
     /// Key
     // TODO(tarcieri): parse to Vec<u8>?
-    pub key: String,
+    pub key: Option<String>,
 
     /// Value
     // TODO(tarcieri): parse to Vec<u8>?
-    pub value: String,
+    pub value: Option<String>,
 
     /// Proof (if requested)
     pub proof: Option<Proof>,
