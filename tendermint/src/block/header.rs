@@ -1,11 +1,10 @@
 //! Block headers
-use crate::merkle::simple_hash_from_byte_slices;
-use crate::{account, amino_types, block, chain, lite, Hash, Time};
 use amino_types::{message::AminoMessage, BlockId, ConsensusVersion, TimeMsg};
-use {
-    crate::serializers,
-    serde::{Deserialize, Serialize},
-};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
+use std::str::FromStr;
+
+use crate::merkle::simple_hash_from_byte_slices;
+use crate::{account, amino_types, block, chain, lite, serializers, Hash, Time};
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -41,13 +40,16 @@ pub struct Header {
     pub total_txs: u64,
 
     /// Previous block info
-    pub last_block_id: block::Id,
+    #[serde(deserialize_with = "parse_non_empty_block_id")]
+    pub last_block_id: Option<block::Id>,
 
     /// Commit from validators from the last block
-    pub last_commit_hash: Hash,
+    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
+    pub last_commit_hash: Option<Hash>,
 
     /// Merkle root of transaction hashes
-    pub data_hash: Hash,
+    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
+    pub data_hash: Option<Hash>,
 
     /// Validators for the current block
     pub validators_hash: Hash,
@@ -59,13 +61,16 @@ pub struct Header {
     pub consensus_hash: Hash,
 
     /// State after txs from the previous block
-    pub app_hash: Hash,
+    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
+    pub app_hash: Option<Hash>,
 
     /// Root hash of all results from the txs from the previous block
-    pub last_results_hash: Hash,
+    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
+    pub last_results_hash: Option<Hash>,
 
     /// Hash of evidence included in the block
-    pub evidence_hash: Hash,
+    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
+    pub evidence_hash: Option<Hash>,
 
     /// Original proposer of the block
     pub proposer_address: account::Id,
@@ -103,18 +108,59 @@ impl lite::Header for Header {
         byteslices.push(AminoMessage::bytes_vec(&TimeMsg::from(self.time)));
         byteslices.push(encode_varint(self.num_txs));
         byteslices.push(encode_varint(self.total_txs));
-        byteslices.push(AminoMessage::bytes_vec(&BlockId::from(&self.last_block_id)));
-        byteslices.push(encode_hash(self.last_commit_hash));
-        byteslices.push(encode_hash(self.data_hash));
-        byteslices.push(encode_hash(self.validators_hash));
-        byteslices.push(encode_hash(self.next_validators_hash));
-        byteslices.push(encode_hash(self.consensus_hash));
-        byteslices.push(encode_hash(self.app_hash));
-        byteslices.push(encode_hash(self.last_results_hash));
-        byteslices.push(encode_hash(self.evidence_hash));
+        byteslices.push(
+            self.last_block_id
+                .as_ref()
+                .map_or(vec![], |id| AminoMessage::bytes_vec(&BlockId::from(id))),
+        );
+        byteslices.push(self.last_commit_hash.as_ref().map_or(vec![], encode_hash));
+        byteslices.push(self.data_hash.as_ref().map_or(vec![], encode_hash));
+        byteslices.push(encode_hash(&self.validators_hash));
+        byteslices.push(encode_hash(&self.next_validators_hash));
+        byteslices.push(encode_hash(&self.consensus_hash));
+        byteslices.push(self.app_hash.as_ref().map_or(vec![], encode_hash));
+        byteslices.push(self.last_results_hash.as_ref().map_or(vec![], encode_hash));
+        byteslices.push(self.evidence_hash.as_ref().map_or(vec![], encode_hash));
         byteslices.push(bytes_enc(self.proposer_address.as_bytes()));
 
         Hash::Sha256(simple_hash_from_byte_slices(byteslices))
+    }
+}
+
+pub(crate) fn parse_non_empty_block_id<'de, D>(
+    deserializer: D,
+) -> Result<Option<block::Id>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Serialize, Deserialize)]
+    struct Parts {
+        #[serde(deserialize_with = "serializers::parse_u64")]
+        total: u64,
+        hash: String,
+    }
+    #[derive(Serialize, Deserialize)]
+    struct BlockId {
+        hash: String,
+        parts: Parts,
+    }
+    let tmp_id = BlockId::deserialize(deserializer)?;
+    if tmp_id.hash.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(block::Id {
+            hash: Hash::from_str(&tmp_id.hash)
+                .map_err(|err| D::Error::custom(format!("{}", err)))?,
+            parts: if tmp_id.parts.hash.is_empty() {
+                None
+            } else {
+                Some(block::parts::Header {
+                    total: tmp_id.parts.total,
+                    hash: Hash::from_str(&tmp_id.parts.hash)
+                        .map_err(|err| D::Error::custom(format!("{}", err)))?,
+                })
+            },
+        }))
     }
 }
 
@@ -146,12 +192,8 @@ fn bytes_enc(bytes: &[u8]) -> Vec<u8> {
     chain_id_enc
 }
 
-fn encode_hash(hash: Hash) -> Vec<u8> {
-    let mut hash_enc = vec![];
-    if let Some(last_commit_hash_bytes) = hash.as_bytes() {
-        hash_enc = bytes_enc(last_commit_hash_bytes);
-    }
-    hash_enc
+fn encode_hash(hash: &Hash) -> Vec<u8> {
+    bytes_enc(hash.as_bytes())
 }
 
 fn encode_varint(val: u64) -> Vec<u8> {
