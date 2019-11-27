@@ -2,7 +2,8 @@
 
 use crate::error::{Error, ErrorKind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use signatory::{ecdsa::curve::secp256k1, ed25519};
+use signatory::ed25519;
+use signatory_secp256k1 as secp256k1;
 use std::{
     fmt::{self, Display},
     ops::Deref,
@@ -14,7 +15,7 @@ use subtle_encoding::{bech32, hex};
 /// Public keys allowed in Tendermint protocols
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", content = "value")]
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub enum PublicKey {
     /// Ed25519 keys
     #[serde(
@@ -104,7 +105,7 @@ impl From<secp256k1::PublicKey> for PublicKey {
 }
 
 /// Public key roles used in Tendermint networks
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub enum TendermintKey {
     /// User signing keys used for interacting with accounts in the state machine
     AccountKey(PublicKey),
@@ -230,9 +231,7 @@ where
     ed25519::PublicKey::from_bytes(&bytes).ok_or_else(|| D::Error::custom("invalid ed25519 key"))
 }
 
-fn deserialize_secp256k1_base64<'de, D>(
-    deserializer: D,
-) -> Result<signatory::ecdsa::curve::secp256k1::PublicKey, D::Error>
+fn deserialize_secp256k1_base64<'de, D>(deserializer: D) -> Result<secp256k1::PublicKey, D::Error>
 where
     D: Deserializer<'de>,
 {

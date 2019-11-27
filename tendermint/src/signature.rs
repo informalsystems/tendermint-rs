@@ -1,7 +1,7 @@
 //! Cryptographic (a.k.a. digital) signatures
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use signatory::Signature as SignatureTrait;
+use signature::Signature as SignatureTrait;
 use subtle_encoding::base64;
 
 /// Signatures
@@ -35,7 +35,7 @@ impl<'de> Deserialize<'de> for Signature {
 impl Serialize for Signature {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let sig_bytes = match self {
-            Signature::Ed25519(sig) => sig.as_bytes(),
+            Signature::Ed25519(sig) => sig.to_bytes(),
         };
 
         String::from_utf8(base64::encode(&sig_bytes[..]))
