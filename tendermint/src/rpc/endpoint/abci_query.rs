@@ -13,6 +13,10 @@ pub struct Request {
     path: Option<Path>,
 
     /// Data to query
+    #[serde(
+        serialize_with = "serializers::serialize_hex",
+        deserialize_with = "serializers::parse_hex"
+    )]
     data: Vec<u8>,
 
     /// Block height
