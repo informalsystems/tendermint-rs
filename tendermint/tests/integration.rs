@@ -9,7 +9,8 @@
 /// cargo test -- --ignored
 /// ```
 mod rpc {
-    use tendermint::rpc::Client;
+    use std::str::FromStr;
+    use tendermint::{abci::Path, rpc::Client};
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> Client {
@@ -28,7 +29,12 @@ mod rpc {
     #[test]
     #[ignore]
     fn abci_query() {
-        // TODO(tarcieri): write integration test for this endpoint
+        let key = Path::from_str("foo").unwrap();
+        let abci_query = localhost_rpc_client()
+            .abci_query(Some(key), vec![], None, false)
+            .unwrap();
+        assert_eq!(abci_query.key.as_ref().unwrap(), "foo");
+        assert_eq!(abci_query.value.as_ref(), None);
     }
 
     /// `/block` endpoint
