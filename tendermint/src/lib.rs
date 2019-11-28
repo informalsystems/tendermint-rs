@@ -41,6 +41,8 @@ pub mod consensus;
 pub mod evidence;
 pub mod genesis;
 pub mod hash;
+#[allow(dead_code, missing_docs)]
+pub mod lite;
 pub mod merkle;
 mod moniker;
 pub mod net;

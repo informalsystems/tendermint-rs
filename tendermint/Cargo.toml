@@ -25,7 +25,7 @@ authors = [
 ]
 
 [badges]
-circle-ci = { repository = "tendermint/kms" }
+circle-ci = { repository = "interchainio/tendermint-rs" }
 
 [dependencies]
 bytes = "0.4"
