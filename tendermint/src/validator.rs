@@ -11,7 +11,7 @@ use signatory_dalek::Ed25519Verifier;
 use subtle_encoding::base64;
 
 /// Validator set contains a vector of validators
-#[derive(Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Set {
     validators: Vec<Info>,
 }
