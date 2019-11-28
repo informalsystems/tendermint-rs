@@ -127,19 +127,18 @@ impl lite::Header for Header {
     }
 }
 
-pub(crate) fn parse_non_empty_block_id<'de, D>(
-    deserializer: D,
-) -> Result<Option<block::Id>, D::Error>
+/// Parse empty block id as None.
+pub fn parse_non_empty_block_id<'de, D>(deserializer: D) -> Result<Option<block::Id>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    #[derive(Serialize, Deserialize)]
+    #[derive(Deserialize)]
     struct Parts {
         #[serde(deserialize_with = "serializers::parse_u64")]
         total: u64,
         hash: String,
     }
-    #[derive(Serialize, Deserialize)]
+    #[derive(Deserialize)]
     struct BlockId {
         hash: String,
         parts: Parts,
