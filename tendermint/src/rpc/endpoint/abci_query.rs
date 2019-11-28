@@ -78,12 +78,20 @@ pub struct AbciQuery {
     pub index: i64,
 
     /// Key
-    // TODO(tarcieri): parse to Vec<u8>?
-    pub key: Option<String>,
+    #[serde(
+        default,
+        serialize_with = "serializers::serialize_option_base64",
+        deserialize_with = "serializers::parse_option_base64"
+    )]
+    pub key: Option<Vec<u8>>,
 
     /// Value
-    // TODO(tarcieri): parse to Vec<u8>?
-    pub value: Option<String>,
+    #[serde(
+        default,
+        serialize_with = "serializers::serialize_option_base64",
+        deserialize_with = "serializers::parse_option_base64"
+    )]
+    pub value: Option<Vec<u8>>,
 
     /// Proof (if requested)
     pub proof: Option<Proof>,

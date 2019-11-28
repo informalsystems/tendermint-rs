@@ -33,7 +33,7 @@ mod rpc {
         let abci_query = localhost_rpc_client()
             .abci_query(Some(key), vec![], None, false)
             .unwrap();
-        assert_eq!(abci_query.key.as_ref().unwrap(), "");
+        assert_eq!(abci_query.key.as_ref().unwrap(), &Vec::<u8>::new());
         assert_eq!(abci_query.value.as_ref(), None);
     }
 
