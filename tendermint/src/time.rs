@@ -51,7 +51,7 @@ impl Time {
 }
 
 impl fmt::Display for Time {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(f, "{}", self.to_rfc3339())
     }
 }
