@@ -2,6 +2,7 @@
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::time::Duration;
+use subtle_encoding::hex;
 
 /// Parse `i64` from a JSON string
 pub(crate) fn parse_i64<'de, D>(deserializer: D) -> Result<i64, D::Error>
@@ -67,7 +68,9 @@ pub(crate) fn serialize_hex<S, T>(bytes: T, serializer: S) -> Result<S::Ok, S::E
         S: Serializer,
         T: AsRef<[u8]>
 {
-    let hex_bytes = hex::encode(bytes.as_ref());
+    use serde::ser::Error;
+    let hex_bytes = String::from_utf8(hex::encode(bytes.as_ref()))
+        .map_err(Error::custom)?;
     serializer.serialize_str(&hex_bytes)
 }
 
@@ -77,6 +80,6 @@ pub(crate) fn parse_hex<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     use serde::de::Error;
     let string = String::deserialize(deserializer)?;
     hex::decode(&string)
-        .map_err(|err| Error::custom(err.to_string()))
+        .map_err(Error::custom)
 }
 
