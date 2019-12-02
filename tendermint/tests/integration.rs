@@ -9,8 +9,7 @@
 /// cargo test -- --ignored
 /// ```
 mod rpc {
-    use std::str::FromStr;
-    use tendermint::{abci::Path, rpc::Client};
+    use tendermint::rpc::Client;
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> Client {
@@ -29,7 +28,7 @@ mod rpc {
     #[test]
     #[ignore]
     fn abci_query() {
-        let key = Path::from_str("unpopulated_key").unwrap();
+        let key = "unpopulated_key".parse().unwrap();
         let abci_query = localhost_rpc_client()
             .abci_query(Some(key), vec![], None, false)
             .unwrap();
