@@ -1,6 +1,7 @@
 use crate::error::{Error, ErrorKind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
+    convert::TryFrom,
     fmt::{self, Debug, Display},
     str::FromStr,
 };
@@ -13,23 +14,6 @@ use std::{
 pub struct Height(u64);
 
 impl Height {
-    /// Convert `u64` to block height.
-    /// 
-    /// Note that this method will never error and is just for backwards
-    /// compatibility.
-    pub fn try_from_u64(n: u64) -> Result<Self, Error> {
-        Ok(Height(n))
-    }
-
-    /// Convert `i64` (used in e.g. Amino messages) to block height.
-    pub fn try_from_i64(n: i64) -> Result<Self, Error> {
-        if n >= 0 {
-            Ok(Height(n as u64))
-        } else {
-            Err(ErrorKind::OutOfRange.into())
-        }
-    }
-
     /// Get inner integer value. Alternative to `.0` or `.into()`
     pub fn value(self) -> u64 {
         self.0
@@ -59,9 +43,15 @@ impl Display for Height {
     }
 }
 
-impl From<i64> for Height {
-    fn from(n: i64) -> Height {
-        Self::try_from_i64(n).unwrap()
+impl TryFrom<i64> for Height {
+    type Error = Error;
+
+    fn try_from(n: i64) -> Result<Height, Error> {
+        if n >= 0 {
+            Ok(Height(n as u64))
+        } else {
+            Err(ErrorKind::OutOfRange.into())
+        }
     }
 }
 
@@ -87,7 +77,7 @@ impl FromStr for Height {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Self::try_from_u64(s.parse::<u64>().map_err(|_| ErrorKind::Parse)?)
+        Ok(s.parse::<u64>().map_err(|_| ErrorKind::Parse)?.into())
     }
 }
 
