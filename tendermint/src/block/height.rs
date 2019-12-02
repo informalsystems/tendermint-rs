@@ -11,7 +11,7 @@ use std::{
 /// 
 /// A height of 0 represents a chain which has not yet produced a block.
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct Height(u64);
+pub struct Height(pub u64);
 
 impl Height {
     /// Get inner integer value. Alternative to `.0` or `.into()`
