@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use super::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
     remote_error::RemoteError,
@@ -35,7 +36,7 @@ pub struct Proposal {
 // TODO(tony): custom derive proc macro for this e.g. `derive(ParseBlockHeight)`
 impl block::ParseHeight for Proposal {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
-        block::Height::try_from_i64(self.height)
+        block::Height::try_from(self.height)
     }
 }
 
@@ -74,7 +75,7 @@ impl chain::ParseId for CanonicalProposal {
 
 impl block::ParseHeight for CanonicalProposal {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
-        block::Height::try_from_i64(self.height)
+        block::Height::try_from(self.height)
     }
 }
 
@@ -136,7 +137,7 @@ impl SignableMsg for SignProposalRequest {
     fn consensus_state(&self) -> Option<consensus::State> {
         match self.proposal {
             Some(ref p) => Some(consensus::State {
-                height: match block::Height::try_from_i64(p.height) {
+                height: match block::Height::try_from(p.height) {
                     Ok(h) => h,
                     Err(_err) => return None, // TODO(tarcieri): return an error?
                 },

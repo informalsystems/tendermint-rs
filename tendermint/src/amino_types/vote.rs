@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use super::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
     remote_error::RemoteError,
@@ -51,7 +52,7 @@ impl Vote {
 
 impl block::ParseHeight for Vote {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
-        block::Height::try_from_i64(self.height)
+        block::Height::try_from(self.height)
     }
 }
 
@@ -97,7 +98,7 @@ impl chain::ParseId for CanonicalVote {
 
 impl block::ParseHeight for CanonicalVote {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
-        block::Height::try_from_i64(self.height)
+        block::Height::try_from(self.height)
     }
 }
 
@@ -162,7 +163,7 @@ impl SignableMsg for SignVoteRequest {
     fn consensus_state(&self) -> Option<consensus::State> {
         match self.vote {
             Some(ref v) => Some(consensus::State {
-                height: match block::Height::try_from_i64(v.height) {
+                height: match block::Height::try_from(v.height) {
                     Ok(h) => h,
                     Err(_err) => return None, // TODO(tarcieri): return an error?
                 },

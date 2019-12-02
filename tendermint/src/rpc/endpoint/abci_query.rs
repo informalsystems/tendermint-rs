@@ -13,6 +13,10 @@ pub struct Request {
     path: Option<Path>,
 
     /// Data to query
+    #[serde(
+        serialize_with = "serializers::serialize_hex",
+        deserialize_with = "serializers::parse_hex"
+    )]
     data: Vec<u8>,
 
     /// Block height
@@ -74,12 +78,20 @@ pub struct AbciQuery {
     pub index: i64,
 
     /// Key
-    // TODO(tarcieri): parse to Vec<u8>?
-    pub key: String,
+    #[serde(
+        default,
+        serialize_with = "serializers::serialize_option_base64",
+        deserialize_with = "serializers::parse_option_base64"
+    )]
+    pub key: Option<Vec<u8>>,
 
     /// Value
-    // TODO(tarcieri): parse to Vec<u8>?
-    pub value: String,
+    #[serde(
+        default,
+        serialize_with = "serializers::serialize_option_base64",
+        deserialize_with = "serializers::parse_option_base64"
+    )]
+    pub value: Option<Vec<u8>>,
 
     /// Proof (if requested)
     pub proof: Option<Proof>,

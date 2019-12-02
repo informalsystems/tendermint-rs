@@ -1,33 +1,19 @@
 use crate::error::{Error, ErrorKind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
+    convert::TryFrom,
     fmt::{self, Debug, Display},
     str::FromStr,
 };
 
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)
+/// 
+/// A height of 0 represents a chain which has not yet produced a block.
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct Height(u64);
+pub struct Height(pub u64);
 
 impl Height {
-    /// Convert `u64` to block height.
-    ///
-    /// Note that 0 is not a valid block height.
-    pub fn try_from_u64(n: u64) -> Result<Self, Error> {
-        // Minimum height is 1
-        if n > 0 {
-            Ok(Height(n))
-        } else {
-            Err(ErrorKind::OutOfRange.into())
-        }
-    }
-
-    /// Convert `i64` (used in e.g. Amino messages) to block height.
-    pub fn try_from_i64(n: i64) -> Result<Self, Error> {
-        Self::try_from_u64(n as u64)
-    }
-
     /// Get inner integer value. Alternative to `.0` or `.into()`
     pub fn value(self) -> u64 {
         self.0
@@ -57,15 +43,21 @@ impl Display for Height {
     }
 }
 
-impl From<i64> for Height {
-    fn from(n: i64) -> Height {
-        Self::try_from_i64(n).unwrap()
+impl TryFrom<i64> for Height {
+    type Error = Error;
+
+    fn try_from(n: i64) -> Result<Height, Error> {
+        if n >= 0 {
+            Ok(Height(n as u64))
+        } else {
+            Err(ErrorKind::OutOfRange.into())
+        }
     }
 }
 
 impl From<u64> for Height {
     fn from(n: u64) -> Height {
-        Self::try_from_u64(n).unwrap()
+        Height(n)
     }
 }
 
@@ -85,7 +77,7 @@ impl FromStr for Height {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Self::try_from_u64(s.parse::<u64>().map_err(|_| ErrorKind::Parse)?)
+        Ok(s.parse::<u64>().map_err(|_| ErrorKind::Parse)?.into())
     }
 }
 
