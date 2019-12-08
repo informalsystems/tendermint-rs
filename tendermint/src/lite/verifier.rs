@@ -188,10 +188,8 @@ where
         signed_power += val.power();
     }
 
-    // check the signers account for +1/3 of the voting power
-    // TODO: incorporate "trust_level" in here to possibly increase
-    // beyond 1/3.
-
+    // check the signers account for +1/3 of the voting power (or more if the
+    // trust_level requires so)
     if !trust_level.is_enough_power(signed_power, total_power) {
         return Err(Error::InsufficientVotingPower);
     }
