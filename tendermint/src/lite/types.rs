@@ -106,7 +106,7 @@ pub trait Vote {
 /// and trusted validator set is sufficient for a commit to be
 /// accepted going forward.
 /// The default implementation returns true, iff at least a third of the trusted
-/// voting power signed (in other words at least one "trusted" validator signed).
+/// voting power signed (in other words at least one honest validator signed).
 /// Some clients might require more than +1/3 and can implement their own
 /// TrustLevel which can be passed into all relevant methods.
 pub trait TrustLevel {

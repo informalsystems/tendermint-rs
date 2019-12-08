@@ -16,7 +16,7 @@ fn read_json_fixture(name: &str) -> String {
 }
 
 #[test]
-fn check_verifier_with_mock_data() {
+fn verify_trusting_with_one_validator_no_changes() {
     pub struct DefaultTrustLevel {}
     impl lite::TrustLevel for DefaultTrustLevel {}
 
