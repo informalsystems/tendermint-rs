@@ -1,5 +1,7 @@
 #[allow(clippy::all)]
-use crate::lite::{Commit, Error, Header, Validator, ValidatorSet, ValidatorSetLookup, Vote};
+use crate::lite::{
+    Commit, Error, Header, TrustLevel, Validator, ValidatorSet, ValidatorSetLookup, Vote,
+};
 use crate::Time;
 use std::time::Duration;
 
@@ -71,23 +73,25 @@ where
 
 /// Verify the commit is trusted according to the last validators and is valid
 /// from the current validators for the header.
-pub fn verify_trusting<H, V, C>(
+pub fn verify_trusting<H, V, C, L>(
     header: H,
     commit: C,
     last_validators: V,
     validators: V,
+    trust_level: L,
 ) -> Result<(), Error>
 where
     H: Header,
     V: ValidatorSetLookup,
     C: Commit,
+    L: TrustLevel,
 {
     // NOTE it might be more prudent to do the cheap validations first
     // before we even call verify_commit_trusting, but not doing that
     // makes the code cleaner and allows us to just call verify directly.
 
     // ensure that +1/3 of last trusted validators signed correctly
-    if let Err(e) = verify_commit_trusting(&last_validators, &commit) {
+    if let Err(e) = verify_commit_trusting(&last_validators, &commit, trust_level) {
         return Err(e);
     }
 
@@ -144,14 +148,13 @@ where
 
 /// Verify that +1/3 of the given validator set signed this commit.
 /// NOTE the given validators do not necessarily correspond to the validator set for this commit,
-/// but there may be some intersection.
-/// TODO: this should take a "trust_level" param to allow clients to require more
-/// than +1/3. How should this be defined semantically? Probably shouldn't be a float, maybe
-/// and enum of options, eg. 1/3, 1/2, 2/3, 1 ?
-fn verify_commit_trusting<V, C>(validators: &V, commit: &C) -> Result<(), Error>
+/// but there may be some intersection. The trust_level parameter allows clients to require more
+/// than +1/3 by implementing the TrustLevel trait accordingly.
+fn verify_commit_trusting<V, C, L>(validators: &V, commit: &C, trust_level: L) -> Result<(), Error>
 where
     V: ValidatorSetLookup,
     C: Commit,
+    L: TrustLevel,
 {
     let total_power = validators.total_power();
     let mut signed_power: u64 = 0;
@@ -188,7 +191,8 @@ where
     // check the signers account for +1/3 of the voting power
     // TODO: incorporate "trust_level" in here to possibly increase
     // beyond 1/3.
-    if signed_power * 3 <= total_power {
+
+    if !trust_level.is_enough_power(signed_power, total_power) {
         return Err(Error::InsufficientVotingPower);
     }
 

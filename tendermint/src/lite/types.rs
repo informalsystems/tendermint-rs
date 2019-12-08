@@ -102,6 +102,19 @@ pub trait Vote {
     fn signature(&self) -> &[u8];
 }
 
+/// TrustLevel defines what fraction of the total voting power of a known
+/// and trusted validator set is sufficient for a commit to be
+/// accepted going forward.
+/// The default implementation returns true, iff at least a third of the trusted
+/// voting power signed (in other words at least one "trusted" validator signed).
+/// Some clients might require more than +1/3 and can implement their own
+/// TrustLevel which can be passed into all relevant methods.
+pub trait TrustLevel {
+    fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool {
+        signed_voting_power * 3 > total_voting_power
+    }
+}
+
 #[derive(Debug)]
 pub enum Error {
     Expired,
