@@ -48,6 +48,18 @@ pub struct SignedHeader {
     pub commit: block::Commit,
 }
 
+impl lite::SignedHeader<block::Header, SignedHeader> for SignedHeader {
+    type Vote = SignedVote;
+
+    fn header(&self) -> block::Header {
+        self.clone().header
+    }
+
+    fn commit(&self) -> Self {
+        self.clone()
+    }
+}
+
 impl lite::Commit for SignedHeader {
     type Vote = SignedVote;
     fn header_hash(&self) -> Hash {

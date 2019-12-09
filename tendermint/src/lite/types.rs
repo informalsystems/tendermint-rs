@@ -6,6 +6,7 @@ use crate::block::Height;
 use crate::Hash;
 #[allow(clippy::all)]
 use crate::Time;
+use failure::_core::fmt::Debug;
 
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header and the validator set to use to verify
@@ -19,11 +20,22 @@ where
     pub validators: V,  // height H
 }
 
+/// SignedHeader bundles a Header and a Commit for convenience.
+pub trait SignedHeader<H, C>
+where
+    H: Header,
+    C: Commit,
+{
+    type Vote: Vote;
+    fn header(&self) -> H;
+    fn commit(&self) -> C;
+}
+
 /// Header contains meta data about the block -
 /// the height, the time, the hash of the validator set
 /// that should sign this header, and the hash of the validator
 /// set that should sign the next header.
-pub trait Header {
+pub trait Header: Debug {
     fn height(&self) -> Height;
     fn bft_time(&self) -> Time;
     fn validators_hash(&self) -> Hash;
@@ -70,7 +82,7 @@ pub trait Validator {
 /// Commit is proof a Header is valid.
 /// It has an underlying Vote type with the relevant vote data
 /// for verification.
-pub trait Commit {
+pub trait Commit: Debug {
     type Vote: Vote;
 
     /// Hash of the header this commit is for.

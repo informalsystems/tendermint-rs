@@ -1,6 +1,7 @@
 #[allow(clippy::all)]
 use crate::lite::{
-    Commit, Error, Header, TrustLevel, Validator, ValidatorSet, ValidatorSetLookup, Vote,
+    Commit, Error, Header, SignedHeader, TrustLevel, Validator, ValidatorSet, ValidatorSetLookup,
+    Vote,
 };
 use crate::Time;
 use std::time::Duration;
@@ -10,7 +11,7 @@ use std::time::Duration;
 /// NOTE: this doesn't belong here. It should be called by something that handles whether to trust
 /// a verified commit. Verified here is really just about the header/commit/validators. Time is an
 /// external concern :)
-fn expired<H>(last_header: &H, trusting_period: Duration, now: Time) -> Result<(), Error>
+pub fn expired<H>(last_header: &H, trusting_period: Duration, now: Time) -> Result<(), Error>
 where
     H: Header,
 {
@@ -36,6 +37,36 @@ where
     Ok(())
 }
 
+pub fn verify<S, H, C, V, L>(
+    sh1: S,
+    h1_next_vals: V,
+    sh2: S,
+    h2_vals: V,
+    trust_level: L,
+) -> Result<(), Error>
+where
+    S: SignedHeader<H, C>,
+    H: Header,
+    V: ValidatorSetLookup,
+    C: Commit,
+    L: TrustLevel,
+{
+    let h1 = sh1.header();
+    let h2 = sh2.header();
+    let commit = &sh2.commit();
+    if h2.height() == h1.height().increment() {
+        if h2.validators_hash() != h1_next_vals.hash() {
+            return Err(Error::InvalidNextValidatorSet);
+        }
+    } else {
+        // ensure that +1/3 of last trusted validators signed correctly
+        if let Err(e) = verify_commit_trusting(&h1_next_vals, commit, trust_level) {
+            return Err(e);
+        }
+    }
+    verify_commit_full(&h2_vals, commit)
+}
+
 // Validate the validators and commit against the header.
 fn validate_vals_and_commit<H, V, C>(header: H, commit: &C, vals: &V) -> Result<(), Error>
 where
@@ -57,7 +88,7 @@ where
 }
 
 /// Verify the commit is valid from the given validators for the header.
-pub fn verify<H, V, C>(header: H, commit: C, validators: V) -> Result<(), Error>
+fn verify_header_and_commit<H, V, C>(header: H, commit: C, validators: V) -> Result<(), Error>
 where
     H: Header,
     V: ValidatorSet,
@@ -68,7 +99,7 @@ where
     }
 
     // ensure that +2/3 validators signed correctly
-    verify_commit_full(&validators, commit)
+    verify_commit_full(&validators, &commit)
 }
 
 /// Verify the commit is trusted according to the last validators and is valid
@@ -96,12 +127,12 @@ where
     }
 
     // perform same verification as in sequential case
-    verify(header, commit, validators)
+    verify_header_and_commit(header, commit, validators)
 }
 
 /// Verify that +2/3 of the correct validator set signed this commit.
 /// NOTE: these validators are expected to be the correct validators for the commit.
-fn verify_commit_full<V, C>(vals: &V, commit: C) -> Result<(), Error>
+fn verify_commit_full<V, C>(vals: &V, commit: &C) -> Result<(), Error>
 where
     V: ValidatorSet,
     C: Commit,
@@ -150,7 +181,11 @@ where
 /// NOTE the given validators do not necessarily correspond to the validator set for this commit,
 /// but there may be some intersection. The trust_level parameter allows clients to require more
 /// than +1/3 by implementing the TrustLevel trait accordingly.
-fn verify_commit_trusting<V, C, L>(validators: &V, commit: &C, trust_level: L) -> Result<(), Error>
+pub fn verify_commit_trusting<V, C, L>(
+    validators: &V,
+    commit: &C,
+    trust_level: L,
+) -> Result<(), Error>
 where
     V: ValidatorSetLookup,
     C: Commit,
