@@ -69,7 +69,7 @@ fn header_tests_verify() {
     run_test_cases(cases);
 }
 
-fn run_test_cases(cases: TestCases) -> () {
+fn run_test_cases(cases: TestCases) {
     for (_, tc) in cases.test_cases.iter().enumerate() {
         let mut trusted_signed_header = &tc.initial.signed_header;
         let mut trusted_next_vals = tc.initial.clone().next_validator_set;
