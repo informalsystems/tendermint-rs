@@ -69,7 +69,7 @@ impl Vote {
     }
 }
 
-/// SignedVote is the union of a canoncialized vote, the signature on
+/// SignedVote is the union of a canonicalized vote, the signature on
 /// the sign bytes of that vote and the id of the validator who signed it.
 pub struct SignedVote {
     vote: amino_types::vote::CanonicalVote,

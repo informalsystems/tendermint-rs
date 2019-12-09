@@ -49,8 +49,6 @@ pub struct SignedHeader {
 }
 
 impl lite::SignedHeader<block::Header, SignedHeader> for SignedHeader {
-    type Vote = SignedVote;
-
     fn header(&self) -> block::Header {
         self.clone().header
     }
