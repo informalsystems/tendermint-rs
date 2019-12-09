@@ -37,6 +37,7 @@ where
     Ok(())
 }
 
+// TODO: documentation!
 pub fn verify<S, H, C, V, L>(
     sh1: S,
     h1_next_vals: V,
