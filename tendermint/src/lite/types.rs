@@ -26,7 +26,6 @@ where
     H: Header,
     C: Commit,
 {
-    type Vote: Vote;
     fn header(&self) -> H;
     fn commit(&self) -> C;
 }
