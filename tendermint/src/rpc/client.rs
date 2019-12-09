@@ -122,6 +122,14 @@ impl Client {
         self.perform(commit::Request::new(height.into()))
     }
 
+    /// `/validators`: get validators a given height.
+    pub fn validators<H>(&self, height: H) -> Result<validators::Response, Error>
+    where
+        H: Into<Height>,
+    {
+        self.perform(validators::Request::new(height.into()))
+    }
+
     /// `/commit`: get the latest block commit
     pub fn latest_commit(&self) -> Result<commit::Response, Error> {
         self.perform(commit::Request::default())
