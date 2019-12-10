@@ -97,9 +97,6 @@ mod rpc {
         let status = localhost_rpc_client().status().unwrap();
 
         // For lack of better things to test
-        assert_eq!(
-            status.validator_info.voting_power.value(),
-            10
-        );
+        assert_eq!(status.validator_info.voting_power.value(), 10);
     }
 }

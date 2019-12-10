@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use super::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
     remote_error::RemoteError,
@@ -14,6 +13,7 @@ use crate::{
 use bytes::BufMut;
 use prost::{EncodeError, Message};
 use signatory::{ed25519, Signature};
+use std::convert::TryFrom;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
