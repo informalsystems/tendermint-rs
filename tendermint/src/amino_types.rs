@@ -9,7 +9,6 @@ pub mod message;
 pub mod ping;
 pub mod proposal;
 pub mod remote_error;
-pub mod secret_connection;
 pub mod signature;
 pub mod time;
 pub mod validate;
@@ -22,7 +21,6 @@ pub use self::{
     ping::{PingRequest, PingResponse, AMINO_NAME as PING_AMINO_NAME},
     proposal::{SignProposalRequest, SignedProposalResponse, AMINO_NAME as PROPOSAL_AMINO_NAME},
     remote_error::RemoteError,
-    secret_connection::AuthSigMessage,
     signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
     validate::ConsensusMessage,

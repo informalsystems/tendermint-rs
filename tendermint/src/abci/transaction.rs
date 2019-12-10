@@ -61,7 +61,7 @@ impl Serialize for Transaction {
 /// transactions are arbitrary byte arrays.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#data>
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub struct Data {
     txs: Option<Vec<Transaction>>,
 }

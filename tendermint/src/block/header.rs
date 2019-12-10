@@ -5,6 +5,10 @@ use std::str::FromStr;
 
 use crate::merkle::simple_hash_from_byte_slices;
 use crate::{account, amino_types, block, chain, lite, serializers, Hash, Time};
+use {
+    crate::serializers,
+    serde::{Deserialize, Serialize},
+};
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -127,42 +131,6 @@ impl lite::Header for Header {
     }
 }
 
-/// Parse empty block id as None.
-pub fn parse_non_empty_block_id<'de, D>(deserializer: D) -> Result<Option<block::Id>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    struct Parts {
-        #[serde(deserialize_with = "serializers::parse_u64")]
-        total: u64,
-        hash: String,
-    }
-    #[derive(Deserialize)]
-    struct BlockId {
-        hash: String,
-        parts: Parts,
-    }
-    let tmp_id = BlockId::deserialize(deserializer)?;
-    if tmp_id.hash.is_empty() {
-        Ok(None)
-    } else {
-        Ok(Some(block::Id {
-            hash: Hash::from_str(&tmp_id.hash)
-                .map_err(|err| D::Error::custom(format!("{}", err)))?,
-            parts: if tmp_id.parts.hash.is_empty() {
-                None
-            } else {
-                Some(block::parts::Header {
-                    total: tmp_id.parts.total,
-                    hash: Hash::from_str(&tmp_id.parts.hash)
-                        .map_err(|err| D::Error::custom(format!("{}", err)))?,
-                })
-            },
-        }))
-    }
-}
-
 /// `Version` contains the protocol version for the blockchain and the
 /// application.
 ///
@@ -185,14 +153,18 @@ pub struct Version {
 }
 
 fn bytes_enc(bytes: &[u8]) -> Vec<u8> {
-    let mut chain_id_enc = vec![];
+    let mut res = vec![];
     prost_amino::encode_length_delimiter(bytes.len(), &mut chain_id_enc).unwrap();
-    chain_id_enc.append(&mut bytes.to_vec());
-    chain_id_enc
+    res.append(&mut bytes.to_vec());
+    res
 }
 
-fn encode_hash(hash: &Hash) -> Vec<u8> {
-    bytes_enc(hash.as_bytes())
+fn encode_hash(hash: Hash) -> Vec<u8> {
+    let mut hash_enc = vec![];
+    if let Some(last_commit_hash_bytes) = hash.as_bytes() {
+        hash_enc = bytes_enc(last_commit_hash_bytes);
+    }
+    hash_enc
 }
 
 fn encode_varint(val: u64) -> Vec<u8> {

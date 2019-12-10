@@ -3,7 +3,7 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Voting power
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Default)]
 pub struct Power(u64);
 
 impl Power {

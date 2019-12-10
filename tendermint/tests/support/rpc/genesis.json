@@ -20,6 +20,17 @@
           ]
         }
       },
+      "validators": [
+        {
+          "address": "B00A6323737F321EB0B8D59C6FD497A14B60938A",
+          "pub_key": {
+            "type": "tendermint/PubKeyEd25519",
+            "value": "cOQZvh/h9ZioSeUMZB/1Vy1Xo5x2sjrVjlE/qHnYifM="
+          },
+          "power": "9328525",
+          "name": "Certus One"
+        }
+      ],
       "app_hash": "",
       "app_state": {
         "accounts": [

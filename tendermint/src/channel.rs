@@ -48,7 +48,7 @@ pub struct Channel {
 }
 
 /// Channel collections
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
 pub struct Channels(String);
 
 impl Display for Channels {

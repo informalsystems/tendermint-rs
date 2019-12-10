@@ -1,8 +1,8 @@
 //! Tendermint validators
 
 use crate::amino_types::message::AminoMessage;
-use crate::validator::signatory::{Signature, Verifier};
-use crate::{account, lite, merkle, vote, Hash, PublicKey};
+use crate::{account, merkle, vote, PublicKey};
+use prost::Message;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use signatory;
 use signatory::ed25519;
@@ -78,6 +78,7 @@ pub struct Info {
     pub pub_key: PublicKey,
 
     /// Validator voting power
+    #[serde(alias = "power")]
     pub voting_power: vote::Power,
 
     /// Validator proposer priority
