@@ -35,7 +35,7 @@ impl lite::ValidatorSet for Set {
             .iter()
             .map(|validator| validator.hash_bytes())
             .collect();
-        Hash::Sha256(merkle::simple_hash_from_byte_slices(validator_bytes))
+        Hash::Sha256(merkle::simple_hash_from_byte_vectors(validator_bytes))
     }
 
     fn total_power(&self) -> u64 {
