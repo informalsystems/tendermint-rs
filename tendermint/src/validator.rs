@@ -1,8 +1,13 @@
 //! Tendermint validators
 
-use crate::{account, merkle, vote, PublicKey};
+use crate::validator::signatory::{Signature, Verifier};
+use crate::{account, lite, merkle, vote, Hash, PublicKey};
 use prost::Message;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use signatory;
+use signatory::ed25519;
+use signatory_dalek;
+use signatory_dalek::Ed25519Verifier;
 use subtle_encoding::base64;
 
 /// Validator set contains a vector of validators
@@ -30,6 +35,31 @@ impl Set {
     }
 }
 
+impl lite::ValidatorSet for Set {
+    type Validator = Info;
+
+    fn hash(&self) -> Hash {
+        // TODO almost the same as above's pub fn hash(self) -> merkle::Hash
+        let validator_bytes: &Vec<Vec<u8>> =
+            &self.validators.iter().map(|x| x.hash_bytes()).collect();
+        let validator_byteslices: Vec<&[u8]> =
+            (&validator_bytes).iter().map(|x| x.as_slice()).collect();
+        Hash::Sha256(merkle::simple_hash_from_byte_slices(
+            validator_byteslices.as_slice(),
+        ))
+    }
+
+    fn total_power(&self) -> u64 {
+        self.validators.iter().fold(0u64, |total, val_info| {
+            total + val_info.voting_power.value()
+        })
+    }
+
+    fn into_vec(&self) -> Vec<Self::Validator> {
+        self.validators.to_vec()
+    }
+}
+
 /// Validator information
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Info {
@@ -45,6 +75,22 @@ pub struct Info {
 
     /// Validator proposer priority
     pub proposer_priority: Option<ProposerPriority>,
+}
+
+impl lite::Validator for Info {
+    fn power(&self) -> u64 {
+        self.voting_power.value()
+    }
+
+    fn verify_signature(&self, sign_bytes: &[u8], signature: &[u8]) -> bool {
+        if let Some(pk) = &self.pub_key.ed25519() {
+            let verifier = Ed25519Verifier::from(pk);
+            if let Ok(sig) = ed25519::Signature::from_bytes(signature) {
+                return verifier.verify(sign_bytes, &sig).is_ok();
+            }
+        }
+        false
+    }
 }
 
 impl From<PublicKey> for account::Id {

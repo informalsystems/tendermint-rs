@@ -11,6 +11,7 @@ pub mod remote_error;
 pub mod signature;
 pub mod time;
 pub mod validate;
+pub mod version;
 pub mod vote;
 
 pub use self::{
@@ -22,5 +23,6 @@ pub use self::{
     signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
     validate::ConsensusMessage,
+    version::ConsensusVersion,
     vote::{SignVoteRequest, SignedVoteResponse, AMINO_NAME as VOTE_AMINO_NAME},
 };

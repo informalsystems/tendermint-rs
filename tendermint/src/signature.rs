@@ -18,6 +18,13 @@ impl Signature {
             Signature::Ed25519(_) => Algorithm::Ed25519,
         }
     }
+
+    /// Return the raw bytes of this signature
+    pub fn as_bytes(&self) -> &[u8] {
+        match self {
+            Signature::Ed25519(sig) => sig.as_bytes(),
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for Signature {

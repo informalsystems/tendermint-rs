@@ -3,7 +3,9 @@
 mod power;
 
 pub use self::power::Power;
-use crate::{account, block, Signature, Time};
+use crate::amino_types::vote::CanonicalVote;
+use crate::prost::Message;
+use crate::{account, block, lite, Signature, Time};
 use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
@@ -67,6 +69,47 @@ impl Vote {
     }
 }
 
+/// SignedVote is the union of a canoncialized vote, the signature on
+/// the sign bytes of that vote and the id of the validator who signed it.
+pub struct SignedVote {
+    vote: CanonicalVote,
+    validator_address: account::Id,
+    signature: Signature,
+}
+
+impl SignedVote {
+    /// Create new SignedVote from provided canonicalized vote, validator id, and
+    /// the signature of that validator.
+    pub fn new(
+        vote: CanonicalVote,
+        validator_address: account::Id,
+        signature: Signature,
+    ) -> SignedVote {
+        SignedVote {
+            vote,
+            signature,
+            validator_address,
+        }
+    }
+}
+
+impl lite::Vote for SignedVote {
+    fn validator_id(&self) -> account::Id {
+        self.validator_address
+    }
+
+    fn sign_bytes(&self) -> Vec<u8> {
+        let mut sign_bytes = vec![];
+        self.vote.encode(&mut sign_bytes).unwrap();
+        sign_bytes
+    }
+    fn signature(&self) -> &[u8] {
+        match &self.signature {
+            Signature::Ed25519(sig) => sig.as_bytes(),
+        }
+    }
+}
+
 /// Types of votes
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -91,6 +134,11 @@ impl Type {
     /// Serialize this type as a byte
     pub fn to_u8(self) -> u8 {
         self as u8
+    }
+
+    /// Serialize this type as a 32-bit unsigned integer
+    pub fn to_u32(self) -> u32 {
+        self as u32
     }
 }
 

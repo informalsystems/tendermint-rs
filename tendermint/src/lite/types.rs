@@ -81,6 +81,8 @@ pub trait Commit {
     /// we ignore absent votes and votes for nil here.
     /// NOTE: we may want to check signatures for nil votes,
     /// and thus use an ternary enum here instead of the binary Option.
+    // TODO figure out if we want/can do an iter() method here that returns a
+    // VoteIterator instead of returning a vec
     fn into_vec(&self) -> Vec<Option<Self::Vote>>;
 }
 
@@ -96,7 +98,7 @@ pub trait Commit {
 /// is only necessary to avoid slashing in the multi chain context.
 pub trait Vote {
     fn validator_id(&self) -> Id;
-    fn sign_bytes(&self) -> &[u8];
+    fn sign_bytes(&self) -> Vec<u8>;
     fn signature(&self) -> &[u8];
 }
 

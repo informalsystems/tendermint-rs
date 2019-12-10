@@ -30,6 +30,11 @@ impl Id {
         // so in theory this should never panic
         str::from_utf8(byte_slice).unwrap()
     }
+
+    /// Get the chain ID as a raw bytes.
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.as_str().as_bytes()
+    }
 }
 
 impl AsRef<str> for Id {

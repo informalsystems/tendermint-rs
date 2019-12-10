@@ -7,10 +7,12 @@ use super::{
     validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
     SignedMsgType,
 };
+use crate::amino_types::PartsSetHeader;
 use crate::{
     block::{self, ParseId},
     chain, consensus,
     error::Error,
+    vote, Hash,
 };
 use bytes::BufMut;
 use prost::{error::EncodeError, Message};
@@ -46,6 +48,30 @@ impl Vote {
             Some(SignedMsgType::PreCommit)
         } else {
             None
+        }
+    }
+}
+
+impl From<&vote::Vote> for Vote {
+    fn from(vote: &vote::Vote) -> Self {
+        Vote {
+            vote_type: vote.vote_type.to_u32(),
+            height: vote.height.value() as i64, // TODO potential overflow :-/
+            round: vote.round as i64,
+            block_id: Some(BlockId {
+                hash: match vote.block_id.hash {
+                    Hash::Sha256(h) => h.to_vec(),
+                    _ => vec![],
+                },
+                parts_header: match &vote.block_id.parts {
+                    Some(parts) => Some(PartsSetHeader::from(parts)),
+                    None => None,
+                },
+            }),
+            timestamp: Some(TimeMsg::from(vote.timestamp)),
+            validator_address: vote.validator_address.as_bytes().to_vec(),
+            validator_index: vote.validator_index as i64, // TODO potential overflow :-/
+            signature: vote.signature.as_bytes().to_vec(),
         }
     }
 }
@@ -103,7 +129,7 @@ impl block::ParseHeight for CanonicalVote {
 }
 
 impl CanonicalVote {
-    fn new(vote: Vote, chain_id: &str) -> CanonicalVote {
+    pub fn new(vote: Vote, chain_id: &str) -> CanonicalVote {
         CanonicalVote {
             vote_type: vote.vote_type,
             chain_id: chain_id.to_string(),
