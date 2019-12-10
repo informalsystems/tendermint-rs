@@ -1,5 +1,5 @@
 //! Block headers
-use crate::merkle::simple_hash_from_byte_slices;
+use crate::merkle::simple_hash_from_byte_vectors;
 use crate::{account, amino_types, block, chain, lite, Hash, Time};
 use prost::Message;
 use {
@@ -122,25 +122,25 @@ impl lite::Header for Header {
         let proposer_address_bytes = self.proposer_address.as_bytes();
         let proposer_address_enc = bytes_enc(&proposer_address_bytes);
 
-        let mut byteslices: Vec<&[u8]> = vec![];
-        byteslices.push(version_enc.as_slice());
-        byteslices.push(chain_id_enc.as_slice());
-        byteslices.push(height_enc.as_slice());
-        byteslices.push(time_enc.as_slice());
-        byteslices.push(num_tx_enc.as_slice());
-        byteslices.push(total_tx_enc.as_slice());
-        byteslices.push(last_block_id_enc.as_slice());
-        byteslices.push(last_commit_hash_enc.as_slice());
-        byteslices.push(data_hash_enc.as_slice());
-        byteslices.push(validator_hash_enc.as_slice());
-        byteslices.push(next_validator_hash_enc.as_slice());
-        byteslices.push(consensus_hash_enc.as_slice());
-        byteslices.push(app_hash_enc.as_slice());
-        byteslices.push(last_result_hash_enc.as_slice());
-        byteslices.push(evidence_hash_enc.as_slice());
-        byteslices.push(proposer_address_enc.as_slice());
+        let mut byteslices: Vec<Vec<u8>> = vec![];
+        byteslices.push(version_enc);
+        byteslices.push(chain_id_enc);
+        byteslices.push(height_enc);
+        byteslices.push(time_enc);
+        byteslices.push(num_tx_enc);
+        byteslices.push(total_tx_enc);
+        byteslices.push(last_block_id_enc);
+        byteslices.push(last_commit_hash_enc);
+        byteslices.push(data_hash_enc);
+        byteslices.push(validator_hash_enc);
+        byteslices.push(next_validator_hash_enc);
+        byteslices.push(consensus_hash_enc);
+        byteslices.push(app_hash_enc);
+        byteslices.push(last_result_hash_enc);
+        byteslices.push(evidence_hash_enc);
+        byteslices.push(proposer_address_enc);
 
-        Hash::Sha256(simple_hash_from_byte_slices(byteslices.as_slice()))
+        Hash::Sha256(simple_hash_from_byte_vectors(byteslices))
     }
 }
 

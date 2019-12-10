@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use super::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
     remote_error::RemoteError,
@@ -17,6 +16,7 @@ use crate::{
 use bytes::BufMut;
 use prost::{error::EncodeError, Message};
 use signatory::{ed25519, Signature};
+use std::convert::TryFrom;
 
 const VALIDATOR_ADDR_SIZE: usize = 20;
 
