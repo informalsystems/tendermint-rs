@@ -9,8 +9,18 @@
 /// cargo test -- --ignored
 /// ```
 mod rpc {
-    use futures::executor::block_on;
+    use core::future::Future;
     use tendermint::rpc::Client;
+    use tokio::runtime::Builder;
+
+    fn block_on<F: Future>(future: F) -> F::Output {
+        Builder::new()
+            .basic_scheduler()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(future)
+    }
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> Client {
