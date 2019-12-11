@@ -35,11 +35,11 @@ bytes = "0.4"
 bytes_0_5 = { version = "0.5", package = "bytes" }
 chrono = { version = "0.4", features = ["serde"] }
 failure = "0.1"
+getrandom = "0.1"
 http = "0.2"
 hyper = "0.13"
 prost-amino = { version = "0.4.0" }
 prost-amino-derive = { version = "0.4.0" }
-rand_os = { version = "0.1" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 signatory = { version = "0.17", features = ["ed25519", "ecdsa"] }
