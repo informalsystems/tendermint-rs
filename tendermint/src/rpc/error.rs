@@ -29,6 +29,15 @@ impl Error {
         }
     }
 
+    /// Create a low-level HTTP error
+    pub fn http_error(message: impl Into<String>) -> Error {
+        Error {
+            code: Code::HttpError,
+            message: message.into(),
+            data: None,
+        }
+    }
+
     /// Create a new invalid parameter error
     pub fn invalid_params(data: &str) -> Error {
         Error::new(Code::InvalidParams, Some(data.to_string()))
@@ -94,15 +103,13 @@ impl Fail for Error {
 
 impl From<http::Error> for Error {
     fn from(http_error: http::Error) -> Error {
-        // TODO(tarcieri): properly handle HTTP errors
-        panic!("what am I supposed to do with this? {:?}", http_error);
+        Error::http_error(http_error.to_string())
     }
 }
 
 impl From<hyper::Error> for Error {
     fn from(hyper_error: hyper::Error) -> Error {
-        // TODO(tarcieri): properly handle HTTP errors
-        panic!("what am I supposed to do with this? {:?}", hyper_error);
+        Error::http_error(hyper_error.to_string())
     }
 }
 
@@ -112,6 +119,10 @@ impl From<hyper::Error> for Error {
 /// <https://github.com/tendermint/tendermint/blob/master/rpc/lib/types/types.go>
 #[derive(Copy, Clone, Debug, Eq, Fail, Hash, PartialEq, PartialOrd, Ord)]
 pub enum Code {
+    /// Low-level HTTP error
+    #[fail(display = "HTTP error")]
+    HttpError,
+
     /// Parse error i.e. invalid JSON (-32700)
     #[fail(display = "Parse error. Invalid JSON")]
     ParseError,
@@ -151,6 +162,7 @@ impl Code {
 impl From<i32> for Code {
     fn from(value: i32) -> Code {
         match value {
+            0 => Code::HttpError,
             -32700 => Code::ParseError,
             -32600 => Code::InvalidRequest,
             -32601 => Code::MethodNotFound,
@@ -165,6 +177,7 @@ impl From<i32> for Code {
 impl From<Code> for i32 {
     fn from(code: Code) -> i32 {
         match code {
+            Code::HttpError => 0,
             Code::ParseError => -32700,
             Code::InvalidRequest => -32600,
             Code::MethodNotFound => -32601,
