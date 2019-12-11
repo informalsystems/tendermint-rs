@@ -56,7 +56,6 @@ Light Client:
 - `subtle-encoding` from `0.3` to `0.5` ([#47])
 - `uuid` from `0.7` to `0.8` ([#91])
 - replace `rand_os` with `getrandome` ([#90])
-- pin to `ed25519-dalek` `1.0.0-pre.3` ([#83])
 
 ## [0.10.0] (2019-07-30)
 
