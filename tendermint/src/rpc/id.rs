@@ -1,6 +1,6 @@
 //! JSONRPC IDs
 
-use rand_os::{rand_core::RngCore, OsRng};
+use getrandom::getrandom;
 use serde::{Deserialize, Serialize};
 
 /// JSONRPC ID: request-specific identifier
@@ -10,9 +10,8 @@ pub struct Id(String);
 impl Id {
     /// Create a JSONRPC ID containing a UUID v4 (i.e. random)
     pub fn uuid_v4() -> Self {
-        let mut rng = OsRng::new().unwrap();
         let mut bytes = [0; 16];
-        rng.fill_bytes(&mut bytes);
+        getrandom(&mut bytes).expect("RNG failure!");
 
         let uuid = uuid::Builder::from_bytes(bytes)
             .set_variant(uuid::Variant::RFC4122)
