@@ -34,7 +34,7 @@ circle-ci = { repository = "interchainio/tendermint-rs" }
 bytes = "0.4"
 chrono = { version = "0.4", features = ["serde"] }
 failure = "0.1"
-hyper = { version = "0.10" }
+hyper = { version = "0.13" }
 prost-amino = { version = "0.4.0" }
 prost-amino-derive = { version = "0.4.0" }
 rand_os = { version = "0.1" }
