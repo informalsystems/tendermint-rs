@@ -54,6 +54,7 @@ Light Client:
 - `hyper` from `0.10` to `0.13` ([#85])
 - `signatory` from `0.12` to `0.17` ([#89])
 - `subtle-encoding` from `0.3` to `0.5` ([#47])
+- `uuid` from `0.7` to `0.8` ([#91])
 - replace `rand_os` with `getrandome` ([#90])
 - pin to `ed25519-dalek` `1.0.0-pre.3` ([#83])
 
@@ -213,4 +214,5 @@ https://github.com/interchainio/tendermint-rs/commit/566dfb6a9ef9659a504b43fb8cc
 [#47]: https://github.com/interchainio/tendermint-rs/pull/47
 [#90]: https://github.com/interchainio/tendermint-rs/pull/90
 [#83]: https://github.com/interchainio/tendermint-rs/pull/83
+[#91]: https://github.com/interchainio/tendermint-rs/pull/91
 
