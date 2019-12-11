@@ -21,6 +21,7 @@ impl Error {
     /// Create a new RPC error
     pub fn new(code: Code, data: Option<String>) -> Error {
         let message = code.to_string();
+
         Error {
             code,
             message,
@@ -91,8 +92,16 @@ impl Fail for Error {
     }
 }
 
+impl From<http::Error> for Error {
+    fn from(http_error: http::Error) -> Error {
+        // TODO(tarcieri): properly handle HTTP errors
+        panic!("what am I supposed to do with this? {:?}", http_error);
+    }
+}
+
 impl From<hyper::Error> for Error {
     fn from(hyper_error: hyper::Error) -> Error {
+        // TODO(tarcieri): properly handle HTTP errors
         panic!("what am I supposed to do with this? {:?}", hyper_error);
     }
 }
