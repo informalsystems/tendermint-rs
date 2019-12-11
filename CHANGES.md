@@ -1,3 +1,62 @@
+
+## [0.11.0] (2019-12-11)
+
+This is the first release since this repository was split off 
+from the [KMS](https://github.com/tendermint/kms) repo a few months 
+ago and contains more than the usual number of changes. 
+As the new repository matures we will be working towards a more robust 
+release cycle.
+
+This release also contains a first draft of the Tendermint Light Client :).
+
+The changes are organized in sections for better readability.
+
+Organizatinoal Changes:
+
+- Reorganized the crate into a workspace with a `tendermint` crate ([#30])
+- Remove all optional compilation ([#16])
+- Started using CircleCI for continuous integration ([#15])
+- Fix clippy lints ([#40], [#55])
+
+RPC Changes:
+
+- Fix `/commit` endpoint to actually include the commit data ([#42])
+- Use async/await for the rpc client ([#85])
+
+Type Changes:
+
+- Add `Default` trait impls and some other utilities to data types ([#64])
+- Fix transaction hash length to be 32-bytes ([#14])
+- Rename `LastCommit` to `Commit` ([#42])
+- Fix genesis file to include `validators` field ([#65])
+- Change `max_gas` from `u64` to `i64` ([#61])
+- Allow `Height` to be `0` ([#77])
+
+ABCI Changes:
+
+- Include `AbciQuery` in the `Method` enum ([#AbciQueryMethodEnum])
+- Fix deserializing ABCI Code field ([#13])
+- Fix ABCI data field to allow lower case hex encodings ([#17])
+- Fix `/abci_query` endpoint to take input `data` as hex and return `key`
+  and `value` in the response as base64 ([#77])
+
+Light Client:
+
+- Introduce validator `Set` type and compute Merkle root ([#6])
+- First draft implementation of logic for the light client ([#31, #36])
+
+- Dependency Changes:
+
+- Remove `secret_connection` and `ring` as dependencies (moved to KMS repo)
+  ([#60])
+- `tai64` from `2` to `3` ([#22])
+- `zeroize` from `0.9` to `1.1` ([#74, #89])
+- `hyper` from `0.10` to `0.13` ([#85])
+- `signatory` from `0.12` to `0.17` ([#89])
+- `subtle-encoding` from `0.3` to `0.5` ([#47])
+- replace `rand_os` with `getrandome` ([#90])
+- pin to `ed25519-dalek` `1.0.0-pre.3` ([#83])
+
 ## [0.10.0] (2019-07-30)
 
 This release is tested against [tendermint v0.31] and known to be compatible
@@ -127,4 +186,31 @@ This release is compatible with [tendermint v0.28]
 [#205]: https://github.com/tendermint/kms/pull/219
 [#181]: https://github.com/tendermint/kms/pull/181
 [tendermint v0.29]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0290
-[tendermint v0.28]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0280
+[tendermint v0.28]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0280 
+[#30]: https://github.com/interchainio/tendermint-rs/pull/30
+[#16]: https://github.com/interchainio/tendermint-rs/pull/16
+[#15]: https://github.com/interchainio/tendermint-rs/pull/15
+[#40]: https://github.com/interchainio/tendermint-rs/pull/40
+[#55]: https://github.com/interchainio/tendermint-rs/pull/55
+[#85]: https://github.com/interchainio/tendermint-rs/pull/85
+[#64]: https://github.com/interchainio/tendermint-rs/pull/64
+[#14]: https://github.com/interchainio/tendermint-rs/pull/14
+[#42]: https://github.com/interchainio/tendermint-rs/pull/42
+[#65]: https://github.com/interchainio/tendermint-rs/pull/65
+[#61]: https://github.com/interchainio/tendermint-rs/pull/61
+[#AbciQueryMethodEnum]:
+https://github.com/interchainio/tendermint-rs/commit/566dfb6a9ef9659a504b43fb8ccb5c5e7969e3a0
+[#13]: https://github.com/interchainio/tendermint-rs/pull/13
+[#17]: https://github.com/interchainio/tendermint-rs/pull/17
+[#77]: https://github.com/interchainio/tendermint-rs/pull/77
+[#6]: https://github.com/interchainio/tendermint-rs/pull/6
+[#31]: https://github.com/interchainio/tendermint-rs/pull/31
+[#36]: https://github.com/interchainio/tendermint-rs/pull/36
+[#60]: https://github.com/interchainio/tendermint-rs/pull/60
+[#22]: https://github.com/interchainio/tendermint-rs/pull/22
+[#74]: https://github.com/interchainio/tendermint-rs/pull/74
+[#89]: https://github.com/interchainio/tendermint-rs/pull/89
+[#47]: https://github.com/interchainio/tendermint-rs/pull/47
+[#90]: https://github.com/interchainio/tendermint-rs/pull/90
+[#83]: https://github.com/interchainio/tendermint-rs/pull/83
+
