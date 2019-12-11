@@ -42,16 +42,16 @@ prost-amino-derive = { version = "0.4.0" }
 rand_os = { version = "0.1" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
-signatory = { version = "0.12", features = ["ed25519", "ecdsa"] }
-signatory-dalek = { version = "0.12" }
+signatory = { version = "0.17", features = ["ed25519", "ecdsa"] }
+signatory-dalek = "0.17"
+signatory-secp256k1 = "0.17"
 sha2 = { version = "0.8", default-features = false }
 subtle = "2"
 subtle-encoding = { version = "0.3", features = ["bech32-preview"] }
 tai64 = { version = "3", features = ["chrono"] }
 toml = { version = "0.5" }
 uuid = { version = "0.7", default-features = false }
-zeroize = { version = "1.0", features = ["zeroize_derive"] }
-ed25519-dalek = {version = "1.0.0-pre.3", features = ["rand"]}
+zeroize = { version = "1.1", features = ["zeroize_derive"] }
 
 [dev-dependencies]
 serde_json = "1"

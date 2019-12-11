@@ -14,7 +14,7 @@ use subtle_encoding::{bech32, hex};
 /// Public keys allowed in Tendermint protocols
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", content = "value")]
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub enum PublicKey {
     /// Ed25519 keys
     #[serde(
@@ -104,7 +104,7 @@ impl From<secp256k1::PublicKey> for PublicKey {
 }
 
 /// Public key roles used in Tendermint networks
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub enum TendermintKey {
     /// User signing keys used for interacting with accounts in the state machine
     AccountKey(PublicKey),
