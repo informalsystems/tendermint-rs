@@ -25,7 +25,7 @@ impl Transaction {
 
     /// Convert this transaction into a byte vector
     pub fn into_vec(self) -> Vec<u8> {
-        self.0.clone()
+        self.0
     }
 
     /// Borrow the contents of this transaction as a byte slice
@@ -79,7 +79,7 @@ impl Data {
 
     /// Convert this collection into a vector
     pub fn into_vec(self) -> Vec<Transaction> {
-        self.iter().cloned().collect()
+        self.txs.unwrap_or_default()
     }
 
     /// Iterate over the transactions in the collection

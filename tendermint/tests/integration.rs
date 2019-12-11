@@ -9,18 +9,29 @@
 /// cargo test -- --ignored
 /// ```
 mod rpc {
+    use core::future::Future;
     use tendermint::rpc::Client;
+    use tokio::runtime::Builder;
+
+    fn block_on<F: Future>(future: F) -> F::Output {
+        Builder::new()
+            .basic_scheduler()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(future)
+    }
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> Client {
-        Client::new(&"tcp://127.0.0.1:26657".parse().unwrap()).unwrap()
+        block_on(Client::new(&"tcp://127.0.0.1:26657".parse().unwrap())).unwrap()
     }
 
     /// `/abci_info` endpoint
     #[test]
     #[ignore]
     fn abci_info() {
-        let abci_info = localhost_rpc_client().abci_info().unwrap();
+        let abci_info = block_on(localhost_rpc_client().abci_info()).unwrap();
         assert_eq!(&abci_info.data, "GaiaApp");
     }
 
@@ -29,9 +40,8 @@ mod rpc {
     #[ignore]
     fn abci_query() {
         let key = "unpopulated_key".parse().unwrap();
-        let abci_query = localhost_rpc_client()
-            .abci_query(Some(key), vec![], None, false)
-            .unwrap();
+        let abci_query =
+            block_on(localhost_rpc_client().abci_query(Some(key), vec![], None, false)).unwrap();
         assert_eq!(abci_query.key.as_ref().unwrap(), &Vec::<u8>::new());
         assert_eq!(abci_query.value.as_ref(), None);
     }
@@ -41,7 +51,7 @@ mod rpc {
     #[ignore]
     fn block() {
         let height = 1u64;
-        let block_info = localhost_rpc_client().block(height).unwrap();
+        let block_info = block_on(localhost_rpc_client().block(height)).unwrap();
         assert_eq!(block_info.block_meta.header.height.value(), height);
     }
 
@@ -50,7 +60,7 @@ mod rpc {
     #[ignore]
     fn block_results() {
         let height = 1u64;
-        let block_results = localhost_rpc_client().block_results(height).unwrap();
+        let block_results = block_on(localhost_rpc_client().block_results(height)).unwrap();
         assert_eq!(block_results.height.value(), height);
     }
 
@@ -58,7 +68,7 @@ mod rpc {
     #[test]
     #[ignore]
     fn blockchain() {
-        let blockchain_info = localhost_rpc_client().blockchain(1u64, 10u64).unwrap();
+        let blockchain_info = block_on(localhost_rpc_client().blockchain(1u64, 10u64)).unwrap();
         assert_eq!(blockchain_info.block_metas.len(), 10);
     }
 
@@ -67,7 +77,7 @@ mod rpc {
     #[ignore]
     fn commit() {
         let height = 1u64;
-        let commit_info = localhost_rpc_client().block(height).unwrap();
+        let commit_info = block_on(localhost_rpc_client().block(height)).unwrap();
         assert_eq!(commit_info.block_meta.header.height.value(), height);
     }
 
@@ -75,7 +85,7 @@ mod rpc {
     #[test]
     #[ignore]
     fn genesis() {
-        let genesis = localhost_rpc_client().genesis().unwrap();
+        let genesis = block_on(localhost_rpc_client().genesis()).unwrap();
         assert_eq!(
             genesis.consensus_params.validator.pub_key_types[0].to_string(),
             "ed25519"
@@ -86,7 +96,7 @@ mod rpc {
     #[test]
     #[ignore]
     fn net_info() {
-        let net_info = localhost_rpc_client().net_info().unwrap();
+        let net_info = block_on(localhost_rpc_client().net_info()).unwrap();
         assert!(net_info.listening);
     }
 
@@ -94,12 +104,9 @@ mod rpc {
     #[test]
     #[ignore]
     fn status_integration() {
-        let status = localhost_rpc_client().status().unwrap();
+        let status = block_on(localhost_rpc_client().status()).unwrap();
 
         // For lack of better things to test
-        assert_eq!(
-            status.validator_info.voting_power.value(),
-            10
-        );
+        assert_eq!(status.validator_info.voting_power.value(), 10);
     }
 }

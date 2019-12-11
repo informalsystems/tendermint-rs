@@ -8,7 +8,7 @@ use std::{
 
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)
-/// 
+///
 /// A height of 0 represents a chain which has not yet produced a block.
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Height(pub u64);

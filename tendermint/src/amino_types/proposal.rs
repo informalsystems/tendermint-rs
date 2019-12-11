@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use super::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
     remote_error::RemoteError,
@@ -13,7 +12,8 @@ use crate::{
 };
 use bytes::BufMut;
 use prost::{EncodeError, Message};
-use signatory::{ed25519, Signature};
+use signatory::ed25519;
+use std::convert::TryFrom;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
@@ -125,7 +125,7 @@ impl SignableMsg for SignProposalRequest {
     }
     fn set_signature(&mut self, sig: &ed25519::Signature) {
         if let Some(ref mut prop) = self.proposal {
-            prop.signature = sig.clone().into_vec();
+            prop.signature = sig.as_ref().to_vec();
         }
     }
     fn validate(&self) -> Result<(), ValidationError> {
