@@ -15,7 +15,7 @@
 #![forbid(unsafe_code)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
-    html_root_url = "https://docs.rs/tendermint/0.10.0"
+    html_root_url = "https://docs.rs/tendermint/0.11.0"
 )]
 
 // NOTE(EB): can't figure out how to easily remove the extern crate per Rust2018 upgrade ...
