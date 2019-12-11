@@ -12,7 +12,7 @@ use crate::{
 };
 use bytes::BufMut;
 use prost::{EncodeError, Message};
-use signatory::{ed25519, Signature};
+use signatory::ed25519;
 use std::convert::TryFrom;
 
 #[derive(Clone, PartialEq, Message)]
@@ -125,7 +125,7 @@ impl SignableMsg for SignProposalRequest {
     }
     fn set_signature(&mut self, sig: &ed25519::Signature) {
         if let Some(ref mut prop) = self.proposal {
-            prop.signature = sig.clone().into_vec();
+            prop.signature = sig.as_ref().to_vec();
         }
     }
     fn validate(&self) -> Result<(), ValidationError> {

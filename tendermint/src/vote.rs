@@ -103,10 +103,9 @@ impl lite::Vote for SignedVote {
         self.vote.encode(&mut sign_bytes).unwrap();
         sign_bytes
     }
+
     fn signature(&self) -> &[u8] {
-        match &self.signature {
-            Signature::Ed25519(sig) => sig.as_bytes(),
-        }
+        self.signature.as_ref()
     }
 }
 
