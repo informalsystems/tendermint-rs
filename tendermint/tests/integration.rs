@@ -32,7 +32,10 @@ mod rpc {
     #[ignore]
     fn abci_info() {
         let abci_info = block_on(localhost_rpc_client().abci_info()).unwrap();
-        assert_eq!(&abci_info.data, "GaiaApp");
+        assert_eq!(&abci_info.version.unwrap(), "0.16.1");
+        assert_eq!(abci_info.app_version, 1u64);
+        // the kvstore app's reply will contain "{\"size\":0}" as data right from the start
+        assert_eq!(abci_info.data.is_empty(), false);
     }
 
     /// `/abci_query` endpoint
@@ -83,7 +86,6 @@ mod rpc {
 
     /// `/genesis` endpoint
     #[test]
-    #[ignore]
     fn genesis() {
         let genesis = block_on(localhost_rpc_client().genesis()).unwrap();
         assert_eq!(

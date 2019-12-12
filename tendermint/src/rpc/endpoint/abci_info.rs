@@ -1,7 +1,9 @@
 //! `/abci_info` endpoint JSONRPC wrapper
 
-use crate::{block, hash, rpc, Hash};
+use crate::{block, rpc, Hash};
+use crate::{hash, serializers};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+
 use subtle_encoding::base64;
 
 /// Request ABCI information from a node
@@ -26,7 +28,8 @@ pub struct Response {
 impl rpc::Response for Response {}
 
 /// ABCI information
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
+#[serde(default)]
 pub struct AbciInfo {
     /// Name of the application
     pub data: String,
@@ -34,8 +37,15 @@ pub struct AbciInfo {
     /// Version
     pub version: Option<String>,
 
+    /// App version
+    #[serde(
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
+    )]
+    pub app_version: u64,
+
     /// Last block height
-    pub last_block_height: block::Height,
+    pub last_block_height: Option<block::Height>,
 
     /// Last app hash for the block
     #[serde(
