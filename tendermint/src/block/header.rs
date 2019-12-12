@@ -99,31 +99,31 @@ impl lite::Header for Header {
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/block.go#L393
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
 
-        let mut byteslices: Vec<Vec<u8>> = Vec::with_capacity(16);
-        byteslices.push(AminoMessage::bytes_vec(&ConsensusVersion::from(
+        let mut fields_bytes: Vec<Vec<u8>> = Vec::with_capacity(16);
+        fields_bytes.push(AminoMessage::bytes_vec(&ConsensusVersion::from(
             &self.version,
         )));
-        byteslices.push(bytes_enc(self.chain_id.as_bytes()));
-        byteslices.push(encode_varint(self.height.value()));
-        byteslices.push(AminoMessage::bytes_vec(&TimeMsg::from(self.time)));
-        byteslices.push(encode_varint(self.num_txs));
-        byteslices.push(encode_varint(self.total_txs));
-        byteslices.push(
+        fields_bytes.push(bytes_enc(self.chain_id.as_bytes()));
+        fields_bytes.push(encode_varint(self.height.value()));
+        fields_bytes.push(AminoMessage::bytes_vec(&TimeMsg::from(self.time)));
+        fields_bytes.push(encode_varint(self.num_txs));
+        fields_bytes.push(encode_varint(self.total_txs));
+        fields_bytes.push(
             self.last_block_id
                 .as_ref()
                 .map_or(vec![], |id| AminoMessage::bytes_vec(&BlockId::from(id))),
         );
-        byteslices.push(self.last_commit_hash.as_ref().map_or(vec![], encode_hash));
-        byteslices.push(self.data_hash.as_ref().map_or(vec![], encode_hash));
-        byteslices.push(encode_hash(&self.validators_hash));
-        byteslices.push(encode_hash(&self.next_validators_hash));
-        byteslices.push(encode_hash(&self.consensus_hash));
-        byteslices.push(self.app_hash.as_ref().map_or(vec![], encode_hash));
-        byteslices.push(self.last_results_hash.as_ref().map_or(vec![], encode_hash));
-        byteslices.push(self.evidence_hash.as_ref().map_or(vec![], encode_hash));
-        byteslices.push(bytes_enc(self.proposer_address.as_bytes()));
+        fields_bytes.push(self.last_commit_hash.as_ref().map_or(vec![], encode_hash));
+        fields_bytes.push(self.data_hash.as_ref().map_or(vec![], encode_hash));
+        fields_bytes.push(encode_hash(&self.validators_hash));
+        fields_bytes.push(encode_hash(&self.next_validators_hash));
+        fields_bytes.push(encode_hash(&self.consensus_hash));
+        fields_bytes.push(self.app_hash.as_ref().map_or(vec![], encode_hash));
+        fields_bytes.push(self.last_results_hash.as_ref().map_or(vec![], encode_hash));
+        fields_bytes.push(self.evidence_hash.as_ref().map_or(vec![], encode_hash));
+        fields_bytes.push(bytes_enc(self.proposer_address.as_bytes()));
 
-        Hash::Sha256(simple_hash_from_byte_vectors(byteslices))
+        Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
     }
 }
 
