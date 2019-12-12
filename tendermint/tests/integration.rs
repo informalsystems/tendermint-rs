@@ -31,7 +31,11 @@ mod rpc {
     async fn abci_info() {
         let abci_info = localhost_rpc_client().abci_info().await.unwrap();
 
+        assert_eq!(&abci_info.version.unwrap(), "0.16.1");
+        assert_eq!(abci_info.app_version, 1u64);
+        // the kvstore app's reply will contain "{\"size\":0}" as data right from the start
         assert_eq!(&abci_info.data, "{\"size\":0}");
+        assert_eq!(abci_info.data.is_empty(), false);
     }
 
     /// `/abci_query` endpoint
