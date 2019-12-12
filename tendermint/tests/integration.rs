@@ -86,6 +86,7 @@ mod rpc {
 
     /// `/genesis` endpoint
     #[test]
+    #[ignore]
     fn genesis() {
         let genesis = block_on(localhost_rpc_client().genesis()).unwrap();
         assert_eq!(
