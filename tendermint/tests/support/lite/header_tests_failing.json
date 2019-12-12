@@ -1,0 +1,169 @@
+{
+  "test_cases": [
+    {
+      "test_name": "verify",
+      "description": "Case: one lite block, empty header, with error",
+      "initial": {
+        "signed_header": {
+          "header": {
+            "version": {
+              "block": "0",
+              "app": "0"
+            },
+            "chain_id": "test-chain-01",
+            "height": "1",
+            "time": "2019-11-02T15:04:00Z",
+            "num_txs": "0",
+            "total_txs": "0",
+            "last_block_id": {
+              "hash": "",
+              "parts": {
+                "total": "0",
+                "hash": ""
+              }
+            },
+            "last_commit_hash": "",
+            "data_hash": "",
+            "validators_hash": "75B9F27F25F3515EF7CA61DD42C272CCC280C537E6A9ED493710EB361CB90B0D",
+            "next_validators_hash": "75B9F27F25F3515EF7CA61DD42C272CCC280C537E6A9ED493710EB361CB90B0D",
+            "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+            "app_hash": "41CAFAE31CC70F5801FA1016A2DD54A9BCB8201B5B389919FE9976762532C516",
+            "last_results_hash": "",
+            "evidence_hash": "",
+            "proposer_address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33"
+          },
+          "commit": {
+            "block_id": {
+              "hash": "28B21F5C724BC1FF9EB32686F69CE150350F990A491E58DE8BF65A72C7DD491C",
+              "parts": {
+                "total": "1",
+                "hash": "57085A01842E9E8C7461F377B074CCA52D0D43BCDB2B82FFAE4EB5A0DFB779AE"
+              }
+            },
+            "precommits": [
+              {
+                "type": 2,
+                "height": "1",
+                "round": "1",
+                "block_id": {
+                  "hash": "28B21F5C724BC1FF9EB32686F69CE150350F990A491E58DE8BF65A72C7DD491C",
+                  "parts": {
+                    "total": "1",
+                    "hash": "57085A01842E9E8C7461F377B074CCA52D0D43BCDB2B82FFAE4EB5A0DFB779AE"
+                  }
+                },
+                "timestamp": "2019-11-02T15:04:10Z",
+                "validator_address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                "validator_index": "0",
+                "signature": "y6Yd/g9hBzatGEm8WCVXgOks5rmnOlg2fsin2comsb7Y2oVM0/2sCucSPapci7VXSrUNJHC3ruE7onIylrFUDA=="
+              }
+            ]
+          }
+        },
+        "next_validator_set": {
+          "validators": [
+            {
+              "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+              },
+              "voting_power": "50",
+              "proposer_priority": "0"
+            }
+          ],
+          "proposer": {
+            "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+            "pub_key": {
+              "type": "tendermint/PubKeyEd25519",
+              "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+            },
+            "voting_power": "50",
+            "proposer_priority": "0"
+          }
+        },
+        "trusting_period": "10800000000000",
+        "now": "2019-11-02T15:05:00Z"
+      },
+      "input": [
+        {
+          "signed_header": {
+            "header": null,
+            "commit": {
+              "block_id": {
+                "hash": "BF7D88429612E4C5B2F0F9AFBC12C70C46C9E52702300D1EA46E5D5A18E25354",
+                "parts": {
+                  "total": "1",
+                  "hash": "5DBD2102F69747A33A8ABFABA28EADD8386F6CE683765DCC8AF291C5E763660B"
+                }
+              },
+              "precommits": [
+                {
+                  "type": 2,
+                  "height": "2",
+                  "round": "1",
+                  "block_id": {
+                    "hash": "BF7D88429612E4C5B2F0F9AFBC12C70C46C9E52702300D1EA46E5D5A18E25354",
+                    "parts": {
+                      "total": "1",
+                      "hash": "5DBD2102F69747A33A8ABFABA28EADD8386F6CE683765DCC8AF291C5E763660B"
+                    }
+                  },
+                  "timestamp": "2019-11-02T15:04:15Z",
+                  "validator_address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                  "validator_index": "0",
+                  "signature": "R4Ua2g5j35fTkTQuymb1jFQUsXJdOsRY3a98WEpqmgpZVExAkCQLD1ggdr+10rBDXr9ATo1y/REP3960I9usBA=="
+                }
+              ]
+            }
+          },
+          "validator_set": {
+            "validators": [
+              {
+                "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                "pub_key": {
+                  "type": "tendermint/PubKeyEd25519",
+                  "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+                },
+                "voting_power": "50",
+                "proposer_priority": "0"
+              }
+            ],
+            "proposer": {
+              "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+              },
+              "voting_power": "50",
+              "proposer_priority": "0"
+            }
+          },
+          "next_validator_set": {
+            "validators": [
+              {
+                "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+                "pub_key": {
+                  "type": "tendermint/PubKeyEd25519",
+                  "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+                },
+                "voting_power": "50",
+                "proposer_priority": "0"
+              }
+            ],
+            "proposer": {
+              "address": "01F527D77D3FFCC4FCFF2DDC2952EEA5414F2A33",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "OAaNq3DX/15fGJP2MI6bujt1GRpvjwrqIevChirJsbc="
+              },
+              "voting_power": "50",
+              "proposer_priority": "0"
+            }
+          }
+        }
+      ],
+      "expected_output": "error"
+    }
+  ]
+}

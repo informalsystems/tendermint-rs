@@ -1,7 +1,7 @@
 #[allow(clippy::all)]
 use crate::lite::{
-    Commit, Error, Header, SignedHeader, TrustLevel, Validator, ValidatorSet, ValidatorSetLookup,
-    Vote,
+    Commit, Error, Header, SignedHeader, TrustThreshold, Validator, ValidatorSet,
+    ValidatorSetLookup, Vote,
 };
 use crate::Time;
 use std::time::Duration;
@@ -50,7 +50,7 @@ where
     H: Header,
     V: ValidatorSetLookup,
     C: Commit,
-    L: TrustLevel,
+    L: TrustThreshold,
 {
     let h1 = sh1.header();
     let h2 = sh2.header();
@@ -65,7 +65,8 @@ where
             return Err(e);
         }
     }
-    verify_commit_full(&h2_vals, commit)
+
+    verify_header_and_commit(h2, sh2.commit(), h2_vals)
 }
 
 // Validate the validators and commit against the header.
@@ -101,34 +102,6 @@ where
 
     // ensure that +2/3 validators signed correctly
     verify_commit_full(&validators, &commit)
-}
-
-/// Verify the commit is trusted according to the last validators and is valid
-/// from the current validators for the header.
-pub fn verify_trusting<H, V, C, L>(
-    header: H,
-    commit: C,
-    last_validators: V,
-    validators: V,
-    trust_level: L,
-) -> Result<(), Error>
-where
-    H: Header,
-    V: ValidatorSetLookup,
-    C: Commit,
-    L: TrustLevel,
-{
-    // NOTE it might be more prudent to do the cheap validations first
-    // before we even call verify_commit_trusting, but not doing that
-    // makes the code cleaner and allows us to just call verify directly.
-
-    // ensure that +1/3 of last trusted validators signed correctly
-    if let Err(e) = verify_commit_trusting(&last_validators, &commit, trust_level) {
-        return Err(e);
-    }
-
-    // perform same verification as in sequential case
-    verify_header_and_commit(header, commit, validators)
 }
 
 /// Verify that +2/3 of the correct validator set signed this commit.
@@ -190,7 +163,7 @@ pub fn verify_commit_trusting<V, C, L>(
 where
     V: ValidatorSetLookup,
     C: Commit,
-    L: TrustLevel,
+    L: TrustThreshold,
 {
     let total_power = validators.total_power();
     let mut signed_power: u64 = 0;
