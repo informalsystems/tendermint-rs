@@ -61,14 +61,10 @@ impl lite::SignedHeader<block::Header, SignedHeader> for SignedHeader {
     }
 }
 
-impl lite::Commit for SignedHeader {
-    type Vote = SignedVote;
-
-    fn header_hash(&self) -> Hash {
-        self.commit.block_id.hash
-    }
-
-    fn into_vec(&self) -> Vec<Option<Self::Vote>> {
+impl SignedHeader {
+    /// This is a private helper method to iterate over the underlying
+    /// votes to compute the voting power (see `voting_power_in` below).
+    fn iter(&self) -> Vec<Option<SignedVote>> {
         let chain_id = self.header.chain_id.to_string();
         let mut votes = self.commit.precommits.clone().into_vec();
         votes
@@ -85,6 +81,12 @@ impl lite::Commit for SignedHeader {
             })
             .collect()
     }
+}
+
+impl lite::Commit for SignedHeader {
+    fn header_hash(&self) -> Hash {
+        self.commit.block_id.hash
+    }
 
     fn voting_power_in<V>(&self, validators: &V) -> Result<u64, Error>
     where
@@ -93,10 +95,11 @@ impl lite::Commit for SignedHeader {
         // NOTE we don't know the validators that committed this block,
         // so we have to check for each vote if its validator is already known.
         let mut signed_power = 0u64;
-        for vote_opt in self.into_vec().iter() {
+        for vote_opt in &self.iter() {
             // skip absent and nil votes
             // NOTE: do we want to check the validity of votes
             // for nil ?
+            // TODO: clarify this!
             let vote = match vote_opt {
                 Some(v) => v,
                 None => continue,

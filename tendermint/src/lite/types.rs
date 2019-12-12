@@ -59,12 +59,6 @@ pub trait ValidatorSet {
     /// Total voting power of the set
     fn total_power(&self) -> u64;
 
-    /// For iterating over the underlying validators.
-    /// NOTE: can try to make this iter() but requires
-    /// a `type ValidatorIter: ExactSizeIterator<Item = Self::Validator>`
-    /// which seems to greatly complicate implementation ...
-    fn into_vec(&self) -> Vec<Self::Validator>;
-
     /// Fetch validator via their ID (ie. their address).
     fn validator(&self, val_id: Id) -> Option<Self::Validator>;
 
@@ -86,20 +80,9 @@ pub trait Validator {
 /// Commit is proof a Header is valid.
 /// It has an underlying Vote type with the relevant vote data
 /// for verification.
-pub trait Commit: Debug {
-    type Vote: Vote;
-
+pub trait Commit {
     /// Hash of the header this commit is for.
     fn header_hash(&self) -> Hash;
-
-    /// Return the underlying votes for iteration.
-    /// All votes here are for the correct block id -
-    /// we ignore absent votes and votes for nil here.
-    /// NOTE: we may want to check signatures for nil votes,
-    /// and thus use an ternary enum here instead of the binary Option.
-    // TODO figure out if we want/can do an iter() method here that returns a
-    // VoteIterator instead of returning a vec
-    fn into_vec(&self) -> Vec<Option<Self::Vote>>;
 
     /// Compute the voting power of the validators that correctly signed the commit,
     /// have according to their voting power in the passed in validator set.

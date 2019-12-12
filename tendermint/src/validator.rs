@@ -45,10 +45,6 @@ impl lite::ValidatorSet for Set {
         })
     }
 
-    fn into_vec(&self) -> Vec<Self::Validator> {
-        self.validators.to_vec()
-    }
-
     fn validator(&self, val_id: account::Id) -> Option<Self::Validator> {
         self.validators
             .iter()
@@ -278,7 +274,5 @@ mod tests {
             val_set.total_power(),
             148_151_478_422_287_875 + 158_095_448_483_785_107 + 770_561_664_770_006_272
         );
-
-        assert_eq!(val_set.into_vec(), vec![v1, v2, v3]);
     }
 }
