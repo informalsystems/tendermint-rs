@@ -26,8 +26,8 @@ where
     H: Header,
     C: Commit,
 {
-    fn header(&self) -> H;
-    fn commit(&self) -> C;
+    fn header(&self) -> &H;
+    fn commit(&self) -> &C;
 }
 
 /// Header contains meta data about the block -
@@ -48,6 +48,8 @@ pub trait Header: Debug {
 /// It exposes its hash, which should match whats in a header,
 /// and its total power. It also has an underlying
 /// Validator type which can be used for verifying signatures.
+/// It also provides a lookup method to fetch a validator by
+/// its identifier.
 pub trait ValidatorSet {
     type Validator: Validator;
 
@@ -62,12 +64,15 @@ pub trait ValidatorSet {
     /// a `type ValidatorIter: ExactSizeIterator<Item = Self::Validator>`
     /// which seems to greatly complicate implementation ...
     fn into_vec(&self) -> Vec<Self::Validator>;
-}
 
-/// ValidatorSetLookup allows validator to be fetched via their ID
-/// (ie. their address).
-pub trait ValidatorSetLookup: ValidatorSet {
+    /// Fetch validator via their ID (ie. their address).
     fn validator(&self, val_id: Id) -> Option<Self::Validator>;
+
+    /// Return the number of validators in this validator set.
+    fn len(&self) -> usize;
+
+    /// Returns true iff the validator set is empty.
+    fn is_empty(&self) -> bool;
 }
 
 /// Validator has a voting power and can verify
@@ -95,6 +100,20 @@ pub trait Commit: Debug {
     // TODO figure out if we want/can do an iter() method here that returns a
     // VoteIterator instead of returning a vec
     fn into_vec(&self) -> Vec<Option<Self::Vote>>;
+
+    /// Compute the voting power of the validators that correctly signed the commit,
+    /// have according to their voting power in the passed in validator set.
+    /// Will return an error in case an invalid signature was included.
+    ///
+    /// This method corresponds to the (pure) auxiliary function int the spec:
+    /// `votingpower_in(signers(h.Commit),h.Header.V)`.
+    fn voting_power_in<V>(&self, vals: &V) -> Result<u64, Error>
+    where
+        V: ValidatorSet;
+
+    /// Return the number of votes included in this commit
+    /// (including nil/empty votes).
+    fn votes_len(&self) -> usize;
 }
 
 /// Vote contains the data to verify a validator voted correctly in the commit.

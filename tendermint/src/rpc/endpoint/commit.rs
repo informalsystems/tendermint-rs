@@ -1,5 +1,8 @@
 //! `/commit` endpoint JSONRPC wrapper
 
+use crate::lite::types::Validator;
+use crate::lite::types::Vote;
+use crate::lite::{Error, ValidatorSet};
 use crate::vote::SignedVote;
 use crate::{block, lite, rpc, Hash};
 use serde::{Deserialize, Serialize};
@@ -49,20 +52,22 @@ pub struct SignedHeader {
 }
 
 impl lite::SignedHeader<block::Header, SignedHeader> for SignedHeader {
-    fn header(&self) -> block::Header {
-        self.clone().header
+    fn header(&self) -> &block::Header {
+        &self.header
     }
 
-    fn commit(&self) -> Self {
-        self.clone()
+    fn commit(&self) -> &Self {
+        &self
     }
 }
 
 impl lite::Commit for SignedHeader {
     type Vote = SignedVote;
+
     fn header_hash(&self) -> Hash {
         self.commit.block_id.hash
     }
+
     fn into_vec(&self) -> Vec<Option<Self::Vote>> {
         let chain_id = self.header.chain_id.to_string();
         let mut votes = self.commit.precommits.clone().into_vec();
@@ -79,5 +84,44 @@ impl lite::Commit for SignedHeader {
                 })
             })
             .collect()
+    }
+
+    fn voting_power_in<V>(&self, validators: &V) -> Result<u64, Error>
+    where
+        V: ValidatorSet,
+    {
+        // NOTE we don't know the validators that committed this block,
+        // so we have to check for each vote if its validator is already known.
+        let mut signed_power = 0u64;
+        for vote_opt in self.into_vec().iter() {
+            // skip absent and nil votes
+            // NOTE: do we want to check the validity of votes
+            // for nil ?
+            let vote = match vote_opt {
+                Some(v) => v,
+                None => continue,
+            };
+
+            // check if this vote is from a known validator
+            let val_id = vote.validator_id();
+            let val = match validators.validator(val_id) {
+                Some(v) => v,
+                None => continue,
+            };
+
+            // check vote is valid from validator
+            let sign_bytes = vote.sign_bytes();
+
+            if !val.verify_signature(&sign_bytes, vote.signature()) {
+                return Err(Error::InvalidSignature);
+            }
+            signed_power += val.power();
+        }
+
+        Ok(signed_power)
+    }
+
+    fn votes_len(&self) -> usize {
+        self.commit.precommits.len()
     }
 }

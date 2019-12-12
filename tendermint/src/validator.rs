@@ -48,14 +48,20 @@ impl lite::ValidatorSet for Set {
     fn into_vec(&self) -> Vec<Self::Validator> {
         self.validators.to_vec()
     }
-}
 
-impl lite::ValidatorSetLookup for Set {
     fn validator(&self, val_id: account::Id) -> Option<Self::Validator> {
         self.validators
             .iter()
             .cloned()
             .find(|val| val.address == val_id)
+    }
+
+    fn len(&self) -> usize {
+        self.validators.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.validators.is_empty()
     }
 }
 
@@ -229,7 +235,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lite::{ValidatorSet, ValidatorSetLookup};
+    use crate::lite::ValidatorSet;
     use subtle_encoding::hex;
 
     // make a validator from a hex ed25519 pubkey and a voting power

@@ -87,16 +87,16 @@ fn run_test_cases(cases: TestCases) {
                 assert_eq!(expexts_err, true);
             }
             let new_signed_header = &input.signed_header;
-            let new_vals = input.validator_set.clone();
-            let res = &lite::verify(
-                trusted_signed_header.clone(),
-                trusted_next_vals.clone(),
-                new_signed_header.clone(),
-                new_vals,
+            let new_vals = &input.validator_set;
+            let res = lite::verify(
+                trusted_signed_header,
+                &trusted_next_vals,
+                &new_signed_header,
+                &new_vals,
                 DefaultTrustLevel {},
             );
-            assert_eq!(res.is_err(), expexts_err);
-            if !res.is_err() {
+            assert_eq!(res.as_ref().is_err(), expexts_err);
+            if !&res.is_err() {
                 trusted_signed_header = new_signed_header;
                 trusted_next_vals = input.next_validator_set.clone();
             } else {

@@ -1,8 +1,5 @@
 #[allow(clippy::all)]
-use crate::lite::{
-    Commit, Error, Header, SignedHeader, TrustThreshold, Validator, ValidatorSet,
-    ValidatorSetLookup, Vote,
-};
+use crate::lite::{Commit, Error, Header, SignedHeader, TrustThreshold, ValidatorSet};
 use crate::Time;
 use std::time::Duration;
 
@@ -39,29 +36,29 @@ where
 
 // TODO: documentation!
 pub fn verify<S, H, C, V, L>(
-    sh1: S,
-    h1_next_vals: V,
-    sh2: S,
-    h2_vals: V,
+    sh1: &S,
+    h1_next_vals: &V,
+    sh2: &S,
+    h2_vals: &V,
     trust_level: L,
 ) -> Result<(), Error>
 where
     S: SignedHeader<H, C>,
     H: Header,
-    V: ValidatorSetLookup,
+    V: ValidatorSet,
     C: Commit,
     L: TrustThreshold,
 {
     let h1 = sh1.header();
     let h2 = sh2.header();
-    let commit = &sh2.commit();
+    let commit = sh2.commit();
     if h2.height() == h1.height().increment() {
         if h2.validators_hash() != h1_next_vals.hash() {
             return Err(Error::InvalidNextValidatorSet);
         }
     } else {
         // ensure that +1/3 of last trusted validators signed correctly
-        if let Err(e) = verify_commit_trusting(&h1_next_vals, commit, trust_level) {
+        if let Err(e) = verify_commit_trusting(h1_next_vals, commit, trust_level) {
             return Err(e);
         }
     }
@@ -70,7 +67,7 @@ where
 }
 
 // Validate the validators and commit against the header.
-fn validate_vals_and_commit<H, V, C>(header: H, commit: &C, vals: &V) -> Result<(), Error>
+fn validate_vals_and_commit<H, V, C>(header: &H, commit: &C, vals: &V) -> Result<(), Error>
 where
     H: Header,
     V: ValidatorSet,
@@ -90,18 +87,18 @@ where
 }
 
 /// Verify the commit is valid from the given validators for the header.
-fn verify_header_and_commit<H, V, C>(header: H, commit: C, validators: V) -> Result<(), Error>
+fn verify_header_and_commit<H, V, C>(header: &H, commit: &C, validators: &V) -> Result<(), Error>
 where
     H: Header,
     V: ValidatorSet,
     C: Commit,
 {
-    if let Err(e) = validate_vals_and_commit(header, &commit, &validators) {
+    if let Err(e) = validate_vals_and_commit(header, commit, validators) {
         return Err(e);
     }
 
     // ensure that +2/3 validators signed correctly
-    verify_commit_full(&validators, &commit)
+    verify_commit_full(validators, commit)
 }
 
 /// Verify that +2/3 of the correct validator set signed this commit.
@@ -112,36 +109,11 @@ where
     C: Commit,
 {
     let total_power = vals.total_power();
-    let mut signed_power: u64 = 0;
-
-    let vals_vec = vals.into_vec();
-    let commit_vec = commit.into_vec();
-
-    if vals_vec.len() != commit_vec.len() {
+    if vals.len() != commit.votes_len() {
         return Err(Error::InvalidCommitLength);
     }
 
-    // The vals and commit have a 1-to-1 correspondence.
-    // This means we don't need the validator IDs or to do any lookup,
-    // we can just zip the iterators.
-    let vals_iter = vals_vec.iter();
-    let commit_iter = commit_vec.iter();
-    for (val, vote_opt) in vals_iter.zip(commit_iter) {
-        // skip absent and nil votes
-        // NOTE: do we want to check the validity of votes
-        // for nil ?
-        let vote = match vote_opt {
-            Some(v) => v,
-            None => continue,
-        };
-
-        // check vote is valid from validator
-        let sign_bytes = vote.sign_bytes();
-        if !val.verify_signature(&sign_bytes, vote.signature()) {
-            return Err(Error::InvalidSignature);
-        }
-        signed_power += val.power();
-    }
+    let signed_power = commit.voting_power_in(vals)?;
 
     // check the signers account for +2/3 of the voting power
     if signed_power * 3 <= total_power * 2 {
@@ -161,41 +133,12 @@ pub fn verify_commit_trusting<V, C, L>(
     trust_level: L,
 ) -> Result<(), Error>
 where
-    V: ValidatorSetLookup,
+    V: ValidatorSet,
     C: Commit,
     L: TrustThreshold,
 {
     let total_power = validators.total_power();
-    let mut signed_power: u64 = 0;
-
-    // NOTE we don't know the validators that committed this block,
-    // so we have to check for each vote if its validator is already known.
-    let commit_vec = commit.into_vec();
-    let commit_iter = commit_vec.iter();
-    for vote_opt in commit_iter {
-        // skip absent and nil votes
-        // NOTE: do we want to check the validity of votes
-        // for nil ?
-        let vote = match vote_opt {
-            Some(v) => v,
-            None => continue,
-        };
-
-        // check if this vote is from a known validator
-        let val_id = vote.validator_id();
-        let val = match validators.validator(val_id) {
-            Some(v) => v,
-            None => continue,
-        };
-
-        // check vote is valid from validator
-        let sign_bytes = vote.sign_bytes();
-
-        if !val.verify_signature(&sign_bytes, vote.signature()) {
-            return Err(Error::InvalidSignature);
-        }
-        signed_power += val.power();
-    }
+    let signed_power = commit.voting_power_in(validators)?;
 
     // check the signers account for +1/3 of the voting power (or more if the
     // trust_level requires so)
