@@ -118,11 +118,11 @@ impl Client {
     }
 
     /// `/validators`: get validators a given height.
-    pub fn validators<H>(&self, height: H) -> Result<validators::Response, Error>
+    pub async fn validators<H>(&self, height: H) -> Result<validators::Response, Error>
     where
         H: Into<Height>,
     {
-        self.perform(validators::Request::new(height.into()))
+        self.perform(validators::Request::new(height.into())).await
     }
 
     /// `/commit`: get the latest block commit

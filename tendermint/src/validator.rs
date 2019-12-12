@@ -1,5 +1,6 @@
 //! Tendermint validators
 
+use crate::amino_types::message::AminoMessage;
 use crate::{account, lite, merkle, vote, Hash, PublicKey};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use signatory::{

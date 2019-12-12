@@ -58,7 +58,7 @@ mod endpoints {
     #[test]
     fn first_block() {
         let response =
-            endpoint::block::Response::from_json(&read_json_fixture("first_block")).unwrap();
+            endpoint::block::Response::from_string(&read_json_fixture("first_block")).unwrap();
 
         let tendermint::Block {
             header,
