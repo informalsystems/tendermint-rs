@@ -21,7 +21,7 @@ mod endpoints {
             .response;
 
         assert_eq!(response.data.as_str(), EXAMPLE_APP);
-        assert_eq!(response.last_block_height.unwrap().value(), 488_120);
+        assert_eq!(response.last_block_height.value(), 488_120);
     }
 
     #[test]

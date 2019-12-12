@@ -45,7 +45,7 @@ pub struct AbciInfo {
     pub app_version: u64,
 
     /// Last block height
-    pub last_block_height: Option<block::Height>,
+    pub last_block_height: block::Height,
 
     /// Last app hash for the block
     #[serde(
