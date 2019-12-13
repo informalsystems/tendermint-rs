@@ -77,6 +77,8 @@ pub struct Header {
 }
 
 impl lite::Header for Header {
+    type Time = Time;
+
     fn height(&self) -> block::Height {
         self.height
     }

@@ -82,7 +82,9 @@ fn run_test_cases(cases: TestCases) {
 
         for (_, input) in tc.input.iter().enumerate() {
             println!("{}", tc.description);
-            if let Err(e) = lite::expired(&trusted_signed_header.header, trusting_period, now) {
+            if let Err(e) =
+                lite::expired(&trusted_signed_header.header, trusting_period, now.into())
+            {
                 println!("Expired: {:?}", e);
                 assert_eq!(expexts_err, true);
             }

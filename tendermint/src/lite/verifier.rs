@@ -1,18 +1,16 @@
-#[allow(clippy::all)]
 use crate::lite::{Commit, Error, Header, SignedHeader, TrustThreshold, ValidatorSet};
-use crate::Time;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 /// Returns an error if the header has expired according to the given
 /// trusting_period and current time. If so, the verifier must be reset subjectively.
 /// NOTE: this doesn't belong here. It should be called by something that handles whether to trust
 /// a verified commit. Verified here is really just about the header/commit/validators. Time is an
 /// external concern :)
-pub fn expired<H>(last_header: &H, trusting_period: Duration, now: Time) -> Result<(), Error>
+pub fn expired<H>(last_header: &H, trusting_period: Duration, now: SystemTime) -> Result<(), Error>
 where
     H: Header,
 {
-    if let Ok(passed) = now.duration_since(last_header.bft_time()) {
+    if let Ok(passed) = now.duration_since(last_header.bft_time().into()) {
         if passed > trusting_period {
             return Err(Error::Expired);
         }
@@ -62,6 +60,32 @@ where
     }
 
     verify_header_and_commit(h2, sh2.commit(), h2_vals)
+}
+
+fn check_support<S, H, V, T, L>(
+    h1: &S,
+    h1_next_vals: &V,
+    h2: &S,
+    trust_threshold: L,
+    trusting_period: Duration,
+    now: SystemTime,
+) -> Result<(), Error>
+where
+    S: SignedHeader,
+    H: Header,
+    V: ValidatorSet,
+    L: TrustThreshold,
+{
+    if let Err(err) = expired(h1.header(), trusting_period, now) {
+        return Err(err);
+    }
+
+    if h2.header().height() == h1.header().height().increment()
+        && h2.header().validators_hash() != h1_next_vals.hash()
+    {
+        return Err(Error::InvalidNextValidatorSet);
+    }
+    verify_commit_trusting(h1_next_vals, h2.commit(), trust_threshold)
 }
 
 // Validate the validators and commit against the header.

@@ -4,9 +4,9 @@ use crate::account::Id;
 
 use crate::block::Height;
 use crate::Hash;
-#[allow(clippy::all)]
-use crate::Time;
+
 use failure::_core::fmt::Debug;
+use std::time::SystemTime;
 
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header and the validator set to use to verify
@@ -34,8 +34,12 @@ pub trait SignedHeader {
 /// that should sign this header, and the hash of the validator
 /// set that should sign the next header.
 pub trait Header: Debug {
+    /// The header's notion of (bft-)time.
+    /// Wee assume it can be converted to SystemTime.
+    type Time: Into<SystemTime>;
+
     fn height(&self) -> Height;
-    fn bft_time(&self) -> Time;
+    fn bft_time(&self) -> Self::Time;
     fn validators_hash(&self) -> Hash;
     fn next_validators_hash(&self) -> Hash;
 
@@ -130,6 +134,7 @@ pub trait TrustThreshold {
 #[derive(Debug)]
 pub enum Error {
     Expired,
+    DurationOutOfRange,
     NonSequentialHeight,
     NonIncreasingHeight,
 
