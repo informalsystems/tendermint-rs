@@ -35,7 +35,7 @@ where
 }
 
 // TODO: documentation!
-pub fn verify<S, H, C, V, L>(
+pub fn verify<S, V, L>(
     sh1: &S,
     h1_next_vals: &V,
     sh2: &S,
@@ -43,10 +43,8 @@ pub fn verify<S, H, C, V, L>(
     trust_level: L,
 ) -> Result<(), Error>
 where
-    S: SignedHeader<H, C>,
-    H: Header,
+    S: SignedHeader,
     V: ValidatorSet,
-    C: Commit,
     L: TrustThreshold,
 {
     let h1 = sh1.header();

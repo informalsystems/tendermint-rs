@@ -21,13 +21,12 @@ where
 }
 
 /// SignedHeader bundles a Header and a Commit for convenience.
-pub trait SignedHeader<H, C>
-where
-    H: Header,
-    C: Commit,
-{
-    fn header(&self) -> &H;
-    fn commit(&self) -> &C;
+pub trait SignedHeader {
+    type Header: Header;
+    type Commit: Commit;
+
+    fn header(&self) -> &Self::Header;
+    fn commit(&self) -> &Self::Commit;
 }
 
 /// Header contains meta data about the block -
