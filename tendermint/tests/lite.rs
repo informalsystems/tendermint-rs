@@ -38,6 +38,16 @@ struct Initial {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct LiteBlock {
+    // TODO: feedback for shivani:
+    // wouldn't a lite block structure be better of the form:
+    // - a height h
+    // - one reply of a /commit?height=h
+    // - one reply of a /validators?height=h
+    // ?
+    // Then for tests this structure could be used for the skipping case too:
+    // The light client get's two such LiteBlocks (one with height h and one with height h-x)
+    // This gives more flexibility on how to compose the tests and can be used
+    // to mock both rpc endpoints too?
     signed_header: SignedHeader,
     validator_set: Set,
     next_validator_set: Set,
@@ -82,28 +92,30 @@ fn run_test_cases(cases: TestCases) {
 
         for (_, input) in tc.input.iter().enumerate() {
             println!("{}", tc.description);
-            if let Err(e) =
-                lite::expired(&trusted_signed_header.header, trusting_period, now.into())
-            {
-                println!("Expired: {:?}", e);
-                assert_eq!(expexts_err, true);
-            }
             let new_signed_header = &input.signed_header;
             let new_vals = &input.validator_set;
-            let res = lite::verify(
-                trusted_signed_header,
-                &trusted_next_vals,
-                &new_signed_header,
-                &new_vals,
-                DefaultTrustLevel {},
-            );
-            assert_eq!(res.as_ref().is_err(), expexts_err);
-            if !&res.is_err() {
-                trusted_signed_header = new_signed_header;
-                trusted_next_vals = input.next_validator_set.clone();
-            } else {
-                println!("Got error: {:?}", res.as_ref().err());
+            // note that in the provided test files the other header is either assumed to
+            // be "trusted" (verification already happened), or, it's the signed header verifier in
+            // the previous iteration of this loop...
+            let h2_verif_res = lite::verify(new_signed_header, new_vals);
+            let mut check_support_res: Result<(), lite::Error> = Ok(());
+            if h2_verif_res.is_ok() {
+                check_support_res = lite::check_support(
+                    trusted_signed_header,
+                    &trusted_next_vals,
+                    &new_signed_header,
+                    DefaultTrustLevel {},
+                    trusting_period,
+                    now.into(),
+                );
+                assert_eq!(check_support_res.is_err(), expexts_err);
+                if check_support_res.is_ok() {
+                    trusted_signed_header = new_signed_header;
+                    trusted_next_vals = input.next_validator_set.clone();
+                }
             }
+            let got_err = check_support_res.is_err() || h2_verif_res.is_err();
+            assert_eq!(expexts_err, got_err);
         }
     }
 }

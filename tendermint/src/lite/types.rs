@@ -1,5 +1,12 @@
-// can we abstract this away and use a generic identifier instead ?
+//! All traits that are necessary and need to be implemented to use the main
+//! verification logic in `super::verifier` for a light client.
+
+// TODO can we abstract this away and use a generic identifier instead ?
 // Ie. something that just implements Eq ?
+// (Ismail): a really easy solution would be have a trait that expects an
+// as_bytes(&self) -> &[u8] method. It's unlikely that a hash won't be
+// representable as bytes, or an Id (that is basically also a hash)
+// but this feels a a bit like cheating
 use crate::account::Id;
 
 use crate::block::Height;

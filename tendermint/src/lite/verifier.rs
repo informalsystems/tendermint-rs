@@ -1,3 +1,13 @@
+//! Main verification functions that can be used to implement a light client.
+//!
+//!
+//! # Examples
+//!
+//! ```
+//! // TODO: add a proper example maybe showing how a `can_trust_bisection`
+//! // looks using the types and methods in this crate/module.
+//!```
+
 use crate::lite::{Commit, Error, Header, SignedHeader, TrustThreshold, ValidatorSet};
 use std::time::{Duration, SystemTime};
 
@@ -10,13 +20,15 @@ pub fn expired<H>(last_header: &H, trusting_period: Duration, now: SystemTime) -
 where
     H: Header,
 {
-    if let Ok(passed) = now.duration_since(last_header.bft_time().into()) {
-        if passed > trusting_period {
-            return Err(Error::Expired);
+    match now.duration_since(last_header.bft_time().into()) {
+        Ok(passed) => {
+            if passed > trusting_period {
+                return Err(Error::Expired);
+            }
+            Ok(())
         }
+        Err(_) => Err(Error::DurationOutOfRange),
     }
-    // TODO move this out of the verifier and deal with overflows etc (proper err handling)
-    Ok(())
 }
 
 fn validate_next_vals<H, V>(header: H, next_vals: &V) -> Result<(), Error>
@@ -32,37 +44,12 @@ where
     Ok(())
 }
 
-// TODO: documentation!
-pub fn verify<S, V, L>(
-    sh1: &S,
-    h1_next_vals: &V,
-    sh2: &S,
-    h2_vals: &V,
-    trust_level: L,
-) -> Result<(), Error>
-where
-    S: SignedHeader,
-    V: ValidatorSet,
-    L: TrustThreshold,
-{
-    let h1 = sh1.header();
-    let h2 = sh2.header();
-    let commit = sh2.commit();
-    if h2.height() == h1.height().increment() {
-        if h2.validators_hash() != h1_next_vals.hash() {
-            return Err(Error::InvalidNextValidatorSet);
-        }
-    } else {
-        // ensure that +1/3 of last trusted validators signed correctly
-        if let Err(e) = verify_commit_trusting(h1_next_vals, commit, trust_level) {
-            return Err(e);
-        }
-    }
-
-    verify_header_and_commit(h2, sh2.commit(), h2_vals)
-}
-
-fn check_support<S, H, V, T, L>(
+/// Captures the skipping condition, i.e., it defines when we can trust the header
+/// h2 based on header h1.
+/// Note that h1 and h2 have already passed basic validation by calling  `verify`.
+/// `Error::InsufficientVotingPower`is returned when there is not enough intersection
+/// between validator sets to have skipping condition true.
+pub fn check_support<S, V, L>(
     h1: &S,
     h1_next_vals: &V,
     h2: &S,
@@ -72,7 +59,6 @@ fn check_support<S, H, V, T, L>(
 ) -> Result<(), Error>
 where
     S: SignedHeader,
-    H: Header,
     V: ValidatorSet,
     L: TrustThreshold,
 {
@@ -88,7 +74,7 @@ where
     verify_commit_trusting(h1_next_vals, h2.commit(), trust_threshold)
 }
 
-// Validate the validators and commit against the header.
+/// Validate the validators and commit against the header.
 fn validate_vals_and_commit<H, V, C>(header: &H, commit: &C, vals: &V) -> Result<(), Error>
 where
     H: Header,
@@ -109,12 +95,13 @@ where
 }
 
 /// Verify the commit is valid from the given validators for the header.
-fn verify_header_and_commit<H, V, C>(header: &H, commit: &C, validators: &V) -> Result<(), Error>
+pub fn verify<SH, V>(signed_header: &SH, validators: &V) -> Result<(), Error>
 where
-    H: Header,
+    SH: SignedHeader,
     V: ValidatorSet,
-    C: Commit,
 {
+    let header = signed_header.header();
+    let commit = signed_header.commit();
     if let Err(e) = validate_vals_and_commit(header, commit, validators) {
         return Err(e);
     }
