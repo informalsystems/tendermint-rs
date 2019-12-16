@@ -23,15 +23,6 @@ pub enum Algorithm {
 pub enum Hash {
     /// SHA-256 hashes
     Sha256([u8; SHA256_HASH_SIZE]),
-
-    /// NULL (i.e. all-zero) hashes
-    Null,
-}
-
-impl Default for Hash {
-    fn default() -> Hash {
-        Hash::Null
-    }
 }
 
 impl Hash {
@@ -63,18 +54,16 @@ impl Hash {
     }
 
     /// Return the digest algorithm used to produce this hash
-    pub fn algorithm(self) -> Option<Algorithm> {
+    pub fn algorithm(self) -> Algorithm {
         match self {
-            Hash::Sha256(_) => Some(Algorithm::Sha256),
-            Hash::Null => None,
+            Hash::Sha256(_) => Algorithm::Sha256,
         }
     }
 
     /// Borrow the `Hash` as a byte slice
-    pub fn as_bytes(&self) -> Option<&[u8]> {
+    pub fn as_bytes(&self) -> &[u8] {
         match self {
-            Hash::Sha256(ref h) => Some(h.as_ref()),
-            Hash::Null => None,
+            Hash::Sha256(ref h) => h.as_ref(),
         }
     }
 }
@@ -83,7 +72,6 @@ impl Debug for Hash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Hash::Sha256(_) => write!(f, "Hash::Sha256({})", self),
-            Hash::Null => write!(f, "Hash::Null"),
         }
     }
 }
@@ -92,7 +80,6 @@ impl Display for Hash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let hex = match self {
             Hash::Sha256(ref h) => Hex::upper_case().encode_to_string(h).unwrap(),
-            Hash::Null => "".to_owned(),
         };
 
         write!(f, "{}", hex)
@@ -112,7 +99,7 @@ impl<'de> Deserialize<'de> for Hash {
         let hex = String::deserialize(deserializer)?;
 
         if hex.is_empty() {
-            Ok(Hash::Null)
+            Err(D::Error::custom("empty hash"))
         } else {
             Ok(Self::from_str(&hex).map_err(|e| D::Error::custom(format!("{}", e)))?)
         }

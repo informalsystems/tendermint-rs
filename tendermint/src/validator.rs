@@ -1,7 +1,7 @@
 //! Tendermint validators
 
+use crate::amino_types::message::AminoMessage;
 use crate::{account, lite, merkle, vote, Hash, PublicKey};
-use prost::Message;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use signatory::{
     ed25519,
@@ -11,8 +11,9 @@ use signatory_dalek::Ed25519Verifier;
 use subtle_encoding::base64;
 
 /// Validator set contains a vector of validators
-#[derive(Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Set {
+    #[serde(deserialize_with = "parse_vals")]
     validators: Vec<Info>,
 }
 
@@ -23,25 +24,18 @@ impl Set {
         vals.sort_by(|v1, v2| v1.address.partial_cmp(&v2.address).unwrap());
         Set { validators: vals }
     }
-
-    /// Compute the Merkle root of the validator set
-    pub fn hash(self) -> merkle::Hash {
-        let validator_bytes: Vec<Vec<u8>> = self
-            .validators
-            .into_iter()
-            .map(|x| x.hash_bytes())
-            .collect();
-        merkle::simple_hash_from_byte_vectors(validator_bytes)
-    }
 }
 
 impl lite::ValidatorSet for Set {
     type Validator = Info;
 
+    /// Compute the Merkle root of the validator set
     fn hash(&self) -> Hash {
-        // TODO almost the same as above's pub fn hash(self) -> merkle::Hash
-        let validator_bytes: Vec<Vec<u8>> =
-            self.validators.iter().map(|x| x.hash_bytes()).collect();
+        let validator_bytes: Vec<Vec<u8>> = self
+            .validators
+            .iter()
+            .map(|validator| validator.hash_bytes())
+            .collect();
         Hash::Sha256(merkle::simple_hash_from_byte_vectors(validator_bytes))
     }
 
@@ -51,13 +45,33 @@ impl lite::ValidatorSet for Set {
         })
     }
 
-    fn into_vec(&self) -> Vec<Self::Validator> {
-        self.validators.to_vec()
+    fn validator(&self, val_id: account::Id) -> Option<Self::Validator> {
+        self.validators
+            .iter()
+            .find(|val| val.address == val_id)
+            .cloned()
+    }
+
+    fn len(&self) -> usize {
+        self.validators.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.validators.is_empty()
     }
 }
 
+// TODO: maybe add a type (with an Option<Vec<Info>> field) instead
+// for light client integration tests only
+fn parse_vals<'de, D>(d: D) -> Result<Vec<Info>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or_default())
+}
+
 /// Validator information
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Info {
     /// Validator account address
     pub address: account::Id,
@@ -138,9 +152,7 @@ impl From<&Info> for InfoHashable {
 // pubkey and voting power, so it includes the pubkey's amino prefix.
 impl Info {
     fn hash_bytes(&self) -> Vec<u8> {
-        let mut bytes: Vec<u8> = Vec::new();
-        InfoHashable::from(self).encode(&mut bytes).unwrap();
-        bytes
+        AminoMessage::bytes_vec(&InfoHashable::from(self))
     }
 }
 
@@ -219,6 +231,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::lite::ValidatorSet;
     use subtle_encoding::hex;
 
     // make a validator from a hex ed25519 pubkey and a voting power
@@ -247,6 +260,19 @@ mod tests {
 
         let val_set = Set::new(vec![v1, v2, v3]);
         let hash = val_set.hash();
-        assert_eq!(hash_expect, &hash);
+        assert_eq!(hash_expect, &hash.as_bytes().to_vec());
+
+        let not_in_set = make_validator(
+            "EB6B732C5BD86B5FA3F3BC3DB688DA0ED182A7411F81C2D405506B298FC19E52",
+            1,
+        );
+        assert_eq!(val_set.validator(v1.address).unwrap(), v1);
+        assert_eq!(val_set.validator(v2.address).unwrap(), v2);
+        assert_eq!(val_set.validator(v3.address).unwrap(), v3);
+        assert_eq!(val_set.validator(not_in_set.address), None);
+        assert_eq!(
+            val_set.total_power(),
+            148_151_478_422_287_875 + 158_095_448_483_785_107 + 770_561_664_770_006_272
+        );
     }
 }

@@ -11,7 +11,7 @@ use crate::{
     block::{self, ParseId},
     chain, consensus,
     error::Error,
-    vote, Hash,
+    vote,
 };
 use bytes::BufMut;
 use prost::{error::EncodeError, Message};
@@ -59,14 +59,8 @@ impl From<&vote::Vote> for Vote {
             height: vote.height.value() as i64, // TODO potential overflow :-/
             round: vote.round as i64,
             block_id: Some(BlockId {
-                hash: match vote.block_id.hash {
-                    Hash::Sha256(h) => h.to_vec(),
-                    _ => vec![],
-                },
-                parts_header: match &vote.block_id.parts {
-                    Some(parts) => Some(PartsSetHeader::from(parts)),
-                    None => None,
-                },
+                hash: vote.block_id.hash.as_bytes().to_vec(),
+                parts_header: vote.block_id.parts.as_ref().map(PartsSetHeader::from),
             }),
             timestamp: Some(TimeMsg::from(vote.timestamp)),
             validator_address: vote.validator_address.as_bytes().to_vec(),
@@ -246,9 +240,9 @@ impl ConsensusMessage for Vote {
 mod tests {
     use super::super::PartsSetHeader;
     use super::*;
+    use crate::amino_types::message::AminoMessage;
     use crate::amino_types::SignedMsgType;
     use chrono::{DateTime, Utc};
-    use prost::Message;
 
     #[test]
     fn test_vote_serialization() {
@@ -334,8 +328,7 @@ mod tests {
             vt_precommit.vote_type = SignedMsgType::PreCommit.to_u32(); // precommit
             println!("{:?}", vt_precommit);
             let cv_precommit = CanonicalVote::new(vt_precommit, "");
-            got = vec![];
-            cv_precommit.encode(&mut got).unwrap();
+            let got = AminoMessage::bytes_vec(&cv_precommit);
             let want = vec![
                 0x8,  // (field_number << 3) | wire_type
                 0x2,  // PrecommitType
@@ -356,10 +349,9 @@ mod tests {
             vt_prevote.round = 1;
             vt_prevote.vote_type = SignedMsgType::PreVote.to_u32();
 
-            got = vec![];
             let cv_prevote = CanonicalVote::new(vt_prevote, "");
 
-            cv_prevote.encode(&mut got).unwrap();
+            let got = AminoMessage::bytes_vec(&cv_prevote);
 
             let want = vec![
                 0x8,  // (field_number << 3) | wire_type
@@ -380,9 +372,8 @@ mod tests {
             vt_no_type.height = 1;
             vt_no_type.round = 1;
 
-            got = vec![];
             let cv = CanonicalVote::new(vt_no_type, "");
-            cv.encode(&mut got).unwrap();
+            let got = AminoMessage::bytes_vec(&cv);
 
             let want = vec![
                 0x11, // (field_number << 3) | wire_type
@@ -401,8 +392,7 @@ mod tests {
             no_vote_type2.round = 1;
 
             let with_chain_id = CanonicalVote::new(no_vote_type2, "test_chain_id");
-            got = vec![];
-            with_chain_id.encode(&mut got).unwrap();
+            got = AminoMessage::bytes_vec(&with_chain_id);
             let want = vec![
                 0x11, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height

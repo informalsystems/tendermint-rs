@@ -19,7 +19,7 @@ pub struct Commit {
 
 /// Precommits which certify that a block is valid
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct Precommits(Option<Vec<Option<Vote>>>);
+pub struct Precommits(Vec<Option<Vote>>);
 
 impl Precommits {
     /// Create a new precommit collection
@@ -27,23 +27,23 @@ impl Precommits {
     where
         I: Into<Vec<Option<Vote>>>,
     {
-        Self(Some(into_precommits.into()))
+        Self(into_precommits.into())
     }
 
     /// Convert this collection of precommits into a vector
     pub fn into_vec(self) -> Vec<Option<Vote>> {
-        self.iter().cloned().collect()
+        self.0.clone()
     }
 
     /// Iterate over the precommits in the collection
     pub fn iter(&self) -> slice::Iter<'_, Option<Vote>> {
-        self.as_ref().iter()
+        self.0.iter()
     }
 }
 
 impl AsRef<[Option<Vote>]> for Precommits {
     fn as_ref(&self) -> &[Option<Vote>] {
-        self.0.as_ref().map(Vec::as_slice).unwrap_or_else(|| &[])
+        self.0.as_slice()
     }
 }
 

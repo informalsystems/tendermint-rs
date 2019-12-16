@@ -1,6 +1,6 @@
 //! `/status` endpoint JSONRPC wrapper
 
-use crate::{block, node, rpc, validator, Hash, Time};
+use crate::{block, node, rpc, serializers, validator, Hash, Time};
 use serde::{Deserialize, Serialize};
 
 /// Node status request
@@ -34,10 +34,12 @@ impl rpc::Response for Response {}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncInfo {
     /// Latest block hash
-    pub latest_block_hash: Hash,
+    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
+    pub latest_block_hash: Option<Hash>,
 
     /// Latest app hash
-    pub latest_app_hash: Hash,
+    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
+    pub latest_app_hash: Option<Hash>,
 
     /// Latest block height
     pub latest_block_height: block::Height,

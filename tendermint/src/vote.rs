@@ -3,9 +3,9 @@
 mod power;
 
 pub use self::power::Power;
-use crate::amino_types::vote::CanonicalVote;
-use crate::prost::Message;
-use crate::{account, block, lite, Signature, Time};
+use crate::amino_types;
+use crate::amino_types::message::AminoMessage;
+use crate::{account, block, Signature, Time};
 use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
@@ -69,10 +69,10 @@ impl Vote {
     }
 }
 
-/// SignedVote is the union of a canoncialized vote, the signature on
+/// SignedVote is the union of a canonicalized vote, the signature on
 /// the sign bytes of that vote and the id of the validator who signed it.
 pub struct SignedVote {
-    vote: CanonicalVote,
+    vote: amino_types::vote::CanonicalVote,
     validator_address: account::Id,
     signature: Signature,
 }
@@ -81,30 +81,31 @@ impl SignedVote {
     /// Create new SignedVote from provided canonicalized vote, validator id, and
     /// the signature of that validator.
     pub fn new(
-        vote: CanonicalVote,
+        vote: amino_types::vote::Vote,
+        chain_id: &str,
         validator_address: account::Id,
         signature: Signature,
     ) -> SignedVote {
+        let canonical_vote = amino_types::vote::CanonicalVote::new(vote, chain_id);
         SignedVote {
-            vote,
+            vote: canonical_vote,
             signature,
             validator_address,
         }
     }
-}
 
-impl lite::Vote for SignedVote {
-    fn validator_id(&self) -> account::Id {
+    /// Return the id of the validator that signed this vote.
+    pub fn validator_id(&self) -> account::Id {
         self.validator_address
     }
 
-    fn sign_bytes(&self) -> Vec<u8> {
-        let mut sign_bytes = vec![];
-        self.vote.encode(&mut sign_bytes).unwrap();
-        sign_bytes
+    /// Return the bytes (of the canonicalized vote) that were signed.
+    pub fn sign_bytes(&self) -> Vec<u8> {
+        self.vote.bytes_vec_length_delimited()
     }
 
-    fn signature(&self) -> &[u8] {
+    /// Return the actual signature on the canonicalized vote.
+    pub fn signature(&self) -> &[u8] {
         self.signature.as_ref()
     }
 }

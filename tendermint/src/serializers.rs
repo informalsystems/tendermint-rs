@@ -1,6 +1,8 @@
 //! Serde serializers
 
+use crate::Hash;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use std::str::FromStr;
 use std::time::Duration;
 use subtle_encoding::{base64, hex};
 
@@ -61,6 +63,19 @@ where
     S: Serializer,
 {
     format!("{}", duration.as_nanos()).serialize(serializer)
+}
+
+pub(crate) fn parse_non_empty_hash<'de, D>(deserializer: D) -> Result<Option<Hash>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let o: Option<String> = Option::deserialize(deserializer)?;
+    match o.filter(|s| !s.is_empty()) {
+        None => Ok(None),
+        Some(s) => Ok(Some(
+            Hash::from_str(&s).map_err(|err| D::Error::custom(format!("{}", err)))?,
+        )),
+    }
 }
 
 pub(crate) fn serialize_hex<S, T>(bytes: T, serializer: S) -> Result<S::Ok, S::Error>

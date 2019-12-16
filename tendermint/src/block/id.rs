@@ -16,7 +16,7 @@ pub const PREFIX_LENGTH: usize = 10;
 /// as well as the number of parts in the block.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#blockid>
-#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Id {
     /// The block's main hash is the Merkle root of all the fields in the
     /// block header.
@@ -84,7 +84,7 @@ mod tests {
     fn parses_hex_strings() {
         let id = Id::from_str(EXAMPLE_SHA256_ID).unwrap();
         assert_eq!(
-            id.hash.as_bytes().unwrap(),
+            id.hash.as_bytes(),
             b"\x26\xC0\xA4\x1F\x32\x43\xC6\xBC\xD7\xAD\x2D\xFF\x8A\x8D\x83\xA7\
               \x1D\x29\xD3\x07\xB5\x32\x6C\x22\x7F\x73\x4A\x1A\x51\x2F\xE4\x7D"
                 .as_ref()
