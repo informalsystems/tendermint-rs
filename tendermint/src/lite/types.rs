@@ -109,22 +109,6 @@ pub trait Commit {
     fn votes_len(&self) -> usize;
 }
 
-/// Vote contains the data to verify a validator voted correctly in the commit.
-/// In an ideal world, votes contain only signatures, and all votes are for the same
-/// message. For now, Tendermint votes also sign over the validator's local timestamp,
-/// so each vote is for a slightly different message.
-/// Note the Vote must also know which validator it is from.
-/// Note that implementers are responsible for ensuring that the vote's sign_bytes
-/// are a function of the block id and the chain id. These don't appear directly in the trait
-/// since the particular values aren't relevant to correctness here - the Vote is already
-/// within an enum at the VoteSet level indicating which block it is for, and the chain id
-/// is only necessary to avoid slashing in the multi chain context.
-pub trait Vote {
-    fn validator_id(&self) -> Id;
-    fn sign_bytes(&self) -> Vec<u8>;
-    fn signature(&self) -> &[u8];
-}
-
 /// TrustThreshold defines what fraction of the total voting power of a known
 /// and trusted validator set is sufficient for a commit to be
 /// accepted going forward.

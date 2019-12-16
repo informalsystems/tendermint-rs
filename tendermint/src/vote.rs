@@ -5,7 +5,7 @@ mod power;
 pub use self::power::Power;
 use crate::amino_types;
 use crate::amino_types::message::AminoMessage;
-use crate::{account, block, lite, Signature, Time};
+use crate::{account, block, Signature, Time};
 use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
@@ -93,18 +93,19 @@ impl SignedVote {
             validator_address,
         }
     }
-}
 
-impl lite::Vote for SignedVote {
-    fn validator_id(&self) -> account::Id {
+    /// Return the id of the validator that signed this vote.
+    pub fn validator_id(&self) -> account::Id {
         self.validator_address
     }
 
-    fn sign_bytes(&self) -> Vec<u8> {
+    /// Return the bytes (of the canonicalized vote) that were signed.
+    pub fn sign_bytes(&self) -> Vec<u8> {
         self.vote.bytes_vec_length_delimited()
     }
 
-    fn signature(&self) -> &[u8] {
+    /// Return the actual signature on the canonicalized vote.
+    pub fn signature(&self) -> &[u8] {
         self.signature.as_ref()
     }
 }

@@ -1,7 +1,6 @@
 //! `/commit` endpoint JSONRPC wrapper
 
 use crate::lite::types::Validator;
-use crate::lite::types::Vote;
 use crate::lite::{Error, ValidatorSet};
 use crate::vote::SignedVote;
 use crate::{block, lite, rpc, Hash};
