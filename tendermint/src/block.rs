@@ -6,6 +6,7 @@ mod height;
 mod id;
 mod meta;
 pub mod parts;
+pub mod signed_header;
 mod size;
 
 pub use self::{

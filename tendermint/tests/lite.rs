@@ -1,8 +1,7 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
 use std::{fs, path::PathBuf};
-use tendermint::validator::Set;
-use tendermint::{lite, rpc::endpoint::commit::SignedHeader, validator, Time};
+use tendermint::{block::signed_header::SignedHeader, lite, validator, validator::Set, Time};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct TestSuite {
