@@ -38,16 +38,6 @@ struct Initial {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct LiteBlock {
-    // TODO: feedback for shivani:
-    // wouldn't a lite block structure be better of the form:
-    // - a height h
-    // - one reply of a /commit?height=h
-    // - one reply of a /validators?height=h
-    // ?
-    // Then for tests this structure could be used for the skipping case too:
-    // The light client get's two such LiteBlocks (one with height h and one with height h-x)
-    // This gives more flexibility on how to compose the tests and can be used
-    // to mock both rpc endpoints too?
     signed_header: SignedHeader,
     validator_set: Set,
     next_validator_set: Set,
@@ -56,9 +46,9 @@ struct LiteBlock {
 pub struct DefaultTrustLevel {}
 impl lite::TrustThreshold for DefaultTrustLevel {}
 
+const TEST_FILES_PATH: &str = "./tests/support/lite/";
 fn read_json_fixture(name: &str) -> String {
-    fs::read_to_string(PathBuf::from("./tests/support/lite/").join(name.to_owned() + ".json"))
-        .unwrap()
+    fs::read_to_string(PathBuf::from(TEST_FILES_PATH).join(name.to_owned() + ".json")).unwrap()
 }
 
 #[test]
@@ -94,9 +84,10 @@ fn run_test_cases(cases: TestCases) {
             println!("{}", tc.description);
             let new_signed_header = &input.signed_header;
             let new_vals = &input.validator_set;
-            // note that in the provided test files the other header is either assumed to
-            // be "trusted" (verification already happened), or, it's the signed header verifier in
-            // the previous iteration of this loop...
+            // Note that in the provided test files the other header is either assumed to
+            // be "trusted" (verification already happened), or, it's the signed header verified in
+            // the previous iteration of this loop. In both cases it is assumed that h1 was already
+            // verified.
             let h2_verif_res = lite::verify(new_signed_header, new_vals);
             let mut check_support_res: Result<(), lite::Error> = Ok(());
             if h2_verif_res.is_ok() {
