@@ -48,8 +48,8 @@ impl lite::ValidatorSet for Set {
     fn validator(&self, val_id: account::Id) -> Option<Self::Validator> {
         self.validators
             .iter()
-            .cloned()
             .find(|val| val.address == val_id)
+            .cloned()
     }
 
     fn len(&self) -> usize {
