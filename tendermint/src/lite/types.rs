@@ -42,7 +42,7 @@ pub trait SignedHeader {
 /// set that should sign the next header.
 pub trait Header: Debug {
     /// The header's notion of (bft-)time.
-    /// Wee assume it can be converted to SystemTime.
+    /// We assume it can be converted to SystemTime.
     type Time: Into<SystemTime>;
 
     fn height(&self) -> Height;
