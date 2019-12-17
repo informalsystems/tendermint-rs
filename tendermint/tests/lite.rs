@@ -214,7 +214,8 @@ fn run_test_cases(cases: TestCases) {
 }
 
 fn check_symmetric_encoding<T: Serialize + for<'a> Deserialize<'a>>(value: &T) {
-    serde_json::from_str::<T>(&serde_json::to_string(value).unwrap()).expect("encoded can be decode again");
+    serde_json::from_str::<T>(&serde_json::to_string(value).unwrap())
+        .expect("encoded can be decode again");
 }
 
 // Link to the commit where the happy_path.json was created:

@@ -169,23 +169,26 @@ where
         hash: String,
         parts: Parts,
     }
-    let tmp_id = BlockId::deserialize(deserializer)?;
-    if tmp_id.hash.is_empty() {
-        Ok(None)
+    if let Some(tmp_id) = <Option<BlockId>>::deserialize(deserializer)? {
+        if tmp_id.hash.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(block::Id {
+                hash: Hash::from_str(&tmp_id.hash)
+                    .map_err(|err| D::Error::custom(format!("{}", err)))?,
+                parts: if tmp_id.parts.hash.is_empty() {
+                    None
+                } else {
+                    Some(block::parts::Header {
+                        total: tmp_id.parts.total,
+                        hash: Hash::from_str(&tmp_id.parts.hash)
+                            .map_err(|err| D::Error::custom(format!("{}", err)))?,
+                    })
+                },
+            }))
+        }
     } else {
-        Ok(Some(block::Id {
-            hash: Hash::from_str(&tmp_id.hash)
-                .map_err(|err| D::Error::custom(format!("{}", err)))?,
-            parts: if tmp_id.parts.hash.is_empty() {
-                None
-            } else {
-                Some(block::parts::Header {
-                    total: tmp_id.parts.total,
-                    hash: Hash::from_str(&tmp_id.parts.hash)
-                        .map_err(|err| D::Error::custom(format!("{}", err)))?,
-                })
-            },
-        }))
+        Ok(None)
     }
 }
 
@@ -193,21 +196,25 @@ pub(crate) fn parse_non_empty_id<'de, D>(deserializer: D) -> Result<Option<Id>, 
 where
     D: Deserializer<'de>,
 {
-    let s = String::deserialize(deserializer)?;
-    if s.is_empty() {
-        Ok(None)
-    } else {
-        // TODO: how can we avoid rewriting code here?
-        match Id::from_str(&s).map_err(|_| {
-            D::Error::custom(format!(
-                "expected {}-character hex string, got {:?}",
-                LENGTH * 2,
-                s
-            ))
-        }) {
-            Ok(id) => Ok(Option::from(id)),
-            Err(_) => Ok(None),
+    let s = <Option<String>>::deserialize(deserializer)?;
+    if let Some(s) = s {
+        if s.is_empty() {
+            Ok(None)
+        } else {
+            // TODO: how can we avoid rewriting code here?
+            match Id::from_str(&s).map_err(|_| {
+                D::Error::custom(format!(
+                    "expected {}-character hex string, got {:?}",
+                    LENGTH * 2,
+                    s
+                ))
+            }) {
+                Ok(id) => Ok(Option::from(id)),
+                Err(_) => Ok(None),
+            }
         }
+    } else {
+        Ok(None)
     }
 }
 
