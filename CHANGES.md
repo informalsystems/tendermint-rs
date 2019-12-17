@@ -11,7 +11,7 @@ This release also contains a first draft of the Tendermint Light Client :).
 
 The changes are organized in sections for better readability.
 
-Organizatinoal Changes:
+Organizational Changes:
 
 - Reorganized the crate into a workspace with a `tendermint` crate ([#30])
 - Remove all optional compilation ([#16])
