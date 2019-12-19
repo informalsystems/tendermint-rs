@@ -8,18 +8,24 @@
 //! // looks using the types and methods in this crate/module.
 //!```
 
-use crate::lite::{Commit, Error, Header, SignedHeader, TrustThreshold, ValidatorSet};
+use crate::lite::{
+    Commit, Error, Header, Requester, SignedHeader, Store, TrustThreshold, ValidatorSet,
+};
 use std::time::{Duration, SystemTime};
 
 /// Returns an error if the header has expired according to the given
 /// trusting_period and current time. If so, the verifier must be reset subjectively.
-pub fn expired<H>(last_header: &H, trusting_period: Duration, now: SystemTime) -> Result<(), Error>
+pub fn expired<H>(
+    last_header: &H,
+    trusting_period: &Duration,
+    now: &SystemTime,
+) -> Result<(), Error>
 where
     H: Header,
 {
     match now.duration_since(last_header.bft_time().into()) {
         Ok(passed) => {
-            if passed > trusting_period {
+            if passed > *trusting_period {
                 return Err(Error::Expired);
             }
             Ok(())
@@ -46,16 +52,16 @@ where
 /// Note that h1 and h2 have already passed basic validation by calling  `verify`.
 /// `Error::InsufficientVotingPower`is returned when there is not enough intersection
 /// between validator sets to have skipping condition true.
-pub fn check_support<S, V, L>(
-    h1: &S,
+pub fn check_support<SH, V, L>(
+    h1: &SH,
     h1_next_vals: &V,
-    h2: &S,
-    trust_threshold: L,
-    trusting_period: Duration,
-    now: SystemTime,
+    h2: &SH,
+    trust_threshold: &L,
+    trusting_period: &Duration,
+    now: &SystemTime,
 ) -> Result<(), Error>
 where
-    S: SignedHeader,
+    SH: SignedHeader,
     V: ValidatorSet,
     L: TrustThreshold,
 {
@@ -136,7 +142,7 @@ where
 pub fn verify_commit_trusting<V, C, L>(
     validators: &V,
     commit: &C,
-    trust_level: L,
+    trust_level: &L,
 ) -> Result<(), Error>
 where
     V: ValidatorSet,
@@ -151,6 +157,72 @@ where
     if !trust_level.is_enough_power(signed_power, total_power) {
         return Err(Error::InsufficientVotingPower);
     }
+
+    Ok(())
+}
+
+/// Returns Ok if we can trust the header h2 based on h1 otherwise returns an Error.
+#[allow(clippy::too_many_arguments)] // TODO: fix this  ...
+fn can_trust<SH, VS, L, S, R>(
+    h1: &SH,
+    h1_next_vals: &VS, // TODO: group these 2 (h1, h1_nex_vals) into one type!
+    h2: &SH,
+    trust_threshold: &L,
+    trusting_period: &Duration,
+    now: &SystemTime,
+    req: &R,
+    store: &mut S,
+) -> Result<(), Error>
+where
+    SH: SignedHeader,
+    VS: ValidatorSet,
+    L: TrustThreshold,
+    S: Store<SignedHeader = SH>,
+    R: Requester<SignedHeader = SH>,
+{
+    match check_support(h1, h1_next_vals, h2, trust_threshold, trusting_period, now) {
+        Ok(_) => {
+            store.add(h2)?;
+            return Ok(());
+        }
+        Err(e) => {
+            if e != Error::InsufficientVotingPower {
+                return Err(e);
+            }
+        }
+    }
+
+    let h1_height: u64 = h1.header().height().value();
+    let h2_height: u64 = h2.header().height().value();
+
+    let pivot: u64 = (h1_height + h2_height) / 2;
+    let hp = req.signed_header(pivot)?;
+    let pivot_next_vals = req.validator_set(pivot + 1)?;
+
+    verify(&hp, &pivot_next_vals)?;
+
+    can_trust(
+        h1,
+        h1_next_vals,
+        &hp,
+        trust_threshold,
+        trusting_period,
+        now,
+        req,
+        store,
+    )?;
+    store.add(&hp)?;
+    can_trust(
+        &hp,
+        &pivot_next_vals,
+        h2,
+        trust_threshold,
+        trusting_period,
+        now,
+        req,
+        store,
+    )?;
+    store.add(h2)?;
 
     Ok(())
 }

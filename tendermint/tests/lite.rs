@@ -94,9 +94,9 @@ fn run_test_cases(cases: TestCases) {
                     trusted_signed_header,
                     &trusted_next_vals,
                     &new_signed_header,
-                    DefaultTrustLevel {},
-                    trusting_period,
-                    now.into(),
+                    &DefaultTrustLevel {},
+                    &trusting_period,
+                    &now.into(),
                 );
                 assert_eq!(check_support_res.is_err(), expexts_err);
                 if check_support_res.is_ok() {
