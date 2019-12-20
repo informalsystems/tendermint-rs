@@ -166,8 +166,8 @@ where
     Ok(())
 }
 
-/// Returns Ok if we can trust the passed in (untrusted) header h2
-/// based on the given trusted state otherwise returns an Error.
+/// Returns Ok if we can trust the passed in (untrusted) header
+/// based on the given trusted state, otherwise returns an Error.
 fn can_trust<TS, SH, VS, L, S, R>(
     trusted_state: &TS,    // h1 in spec
     untrusted_header: &SH, // h2 in spec
