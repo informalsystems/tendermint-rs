@@ -265,7 +265,7 @@ where
     verify(&sh2, &sh2_next_vals)?;
     is_within_trust_period(sh2.header(), trusting_period, now)?;
 
-    // get the highest trusted header with height lower than sh2's
+    // Get the highest trusted header with height lower than sh2's.
     let sh1 = store.get_smaller_or_equal(height)?;
     // TODO(Liamsi): it's odd that we need re-request the validator set here; shouldn't this
     // be stored instead?!

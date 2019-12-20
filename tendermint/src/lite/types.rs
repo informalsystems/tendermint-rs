@@ -129,7 +129,7 @@ pub trait TrustThreshold {
 /// Requester can be used to request `SignedHeaders` and `ValidatorSet`s for a
 /// given height, e.g., by talking to a tendermint fullnode through RPC.
 pub trait Requester {
-    // TODO: consider putting this trait and the Store into a separate module / file...
+    // TODO(Liamsi): consider putting this trait and the Store into a separate module / file...
     type SignedHeader: SignedHeader;
     type ValidatorSet: ValidatorSet;
 
