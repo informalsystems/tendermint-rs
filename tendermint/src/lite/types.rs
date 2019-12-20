@@ -18,13 +18,17 @@ use std::time::SystemTime;
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header and the validator set to use to verify
 /// the next header.
-pub struct TrustedState<H, V>
-where
-    H: Header,
-    V: ValidatorSet,
-{
-    pub last_header: H, // height H-1
-    pub validators: V,  // height H
+pub trait TrustedState {
+    type SignedHeader: SignedHeader;
+    type ValidatorSet: ValidatorSet;
+
+    /// Initialize the TrustedState with the given signed header and validator set.
+    /// Note that if the height of the passed in header is h-1, the passed in validator set
+    /// should have been requested for height h.
+    fn new(last_header: Self::SignedHeader, vals: Self::ValidatorSet) -> Self;
+
+    fn last_header(&self) -> Self::SignedHeader; // height H-1
+    fn validators(&self) -> Self::ValidatorSet; // height H
 }
 
 /// SignedHeader bundles a Header and a Commit for convenience.
