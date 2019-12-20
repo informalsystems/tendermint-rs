@@ -1,6 +1,7 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
 use std::{fs, path::PathBuf};
+use tendermint::lite::TrustedState;
 use tendermint::{block::signed_header::SignedHeader, lite, validator, validator::Set, Time};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -68,13 +69,38 @@ fn header_tests_verify() {
     run_test_cases(cases);
 }
 
+struct Trusted {
+    last_signed_header: SignedHeader,
+    validators: Set,
+}
+
+impl lite::TrustedState for Trusted {
+    type SignedHeader = SignedHeader;
+    type ValidatorSet = Set;
+
+    fn new(last_header: Self::SignedHeader, vals: Self::ValidatorSet) -> Self {
+        Self {
+            last_signed_header: last_header,
+            validators: vals,
+        }
+    }
+
+    fn last_signed_header(&self) -> &Self::SignedHeader {
+        &self.last_signed_header
+    }
+
+    fn validators(&self) -> &Self::ValidatorSet {
+        &self.validators
+    }
+}
+
 fn run_test_cases(cases: TestCases) {
     for (_, tc) in cases.test_cases.iter().enumerate() {
-        let mut trusted_signed_header = &tc.initial.signed_header;
-        let mut trusted_next_vals = tc.initial.clone().next_validator_set;
+        let trusted_next_vals = tc.initial.clone().next_validator_set;
+        let mut trusted_state = Trusted::new(tc.initial.signed_header.clone(), trusted_next_vals);
         let trusting_period: std::time::Duration = tc.initial.clone().trusting_period.into();
         let now = tc.initial.now;
-        let expexts_err = match &tc.expected_output {
+        let expects_err = match &tc.expected_output {
             Some(eo) => eo.eq("error"),
             None => false,
         };
@@ -91,21 +117,20 @@ fn run_test_cases(cases: TestCases) {
             let mut check_support_res: Result<(), lite::Error> = Ok(());
             if h2_verif_res.is_ok() {
                 check_support_res = lite::check_support(
-                    trusted_signed_header,
-                    &trusted_next_vals,
+                    &trusted_state,
                     &new_signed_header,
                     &DefaultTrustLevel {},
                     &trusting_period,
                     &now.into(),
                 );
-                assert_eq!(check_support_res.is_err(), expexts_err);
+                assert_eq!(check_support_res.is_err(), expects_err);
                 if check_support_res.is_ok() {
-                    trusted_signed_header = new_signed_header;
-                    trusted_next_vals = input.next_validator_set.clone();
+                    trusted_state =
+                        Trusted::new(new_signed_header.clone(), input.next_validator_set.clone());
                 }
             }
             let got_err = check_support_res.is_err() || h2_verif_res.is_err();
-            assert_eq!(expexts_err, got_err);
+            assert_eq!(expects_err, got_err);
         }
     }
 }

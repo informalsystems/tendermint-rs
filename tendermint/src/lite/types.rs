@@ -27,8 +27,8 @@ pub trait TrustedState {
     /// should have been requested for height h.
     fn new(last_header: Self::SignedHeader, vals: Self::ValidatorSet) -> Self;
 
-    fn last_header(&self) -> Self::SignedHeader; // height H-1
-    fn validators(&self) -> Self::ValidatorSet; // height H
+    fn last_signed_header(&self) -> &Self::SignedHeader; // height H-1
+    fn validators(&self) -> &Self::ValidatorSet; // height H
 }
 
 /// SignedHeader bundles a Header and a Commit for convenience.
@@ -152,7 +152,7 @@ pub trait Store {
 
     /// Retrieve the trusted signed header at height h if it exists.
     /// If it does not exist return an error.
-    fn get(&self, h: Height) -> Result<Self::SignedHeader, Error>;
+    fn get(&self, h: Height) -> Result<&Self::SignedHeader, Error>;
 
     /// Retrieve the trusted signed header with the largest height h' with h' <= h, if it exists.
     /// If it does not exist return an error.

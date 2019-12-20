@@ -8,6 +8,7 @@
 //! // looks using the types and methods in this crate/module.
 //!```
 
+use crate::block::Height;
 use crate::lite::{
     Commit, Error, Header, Requester, SignedHeader, Store, TrustThreshold, TrustedState,
     ValidatorSet,
@@ -16,7 +17,7 @@ use std::time::{Duration, SystemTime};
 
 /// Returns an error if the header has expired according to the given
 /// trusting_period and current time. If so, the verifier must be reset subjectively.
-pub fn expired<H>(
+pub fn is_within_trust_period<H>(
     last_header: &H,
     trusting_period: &Duration,
     now: &SystemTime,
@@ -53,20 +54,23 @@ where
 /// Note that h1 and h2 have already passed basic validation by calling  `verify`.
 /// `Error::InsufficientVotingPower`is returned when there is not enough intersection
 /// between validator sets to have skipping condition true.
-pub fn check_support<SH, V, L>(
-    h1: &SH,
-    h1_next_vals: &V,
+pub fn check_support<TS, SH, VS, L>(
+    trusted_state: &TS,
     h2: &SH,
     trust_threshold: &L,
     trusting_period: &Duration,
     now: &SystemTime,
 ) -> Result<(), Error>
 where
+    TS: TrustedState<SignedHeader = SH, ValidatorSet = VS>,
     SH: SignedHeader,
-    V: ValidatorSet,
+    VS: ValidatorSet,
     L: TrustThreshold,
 {
-    if let Err(err) = expired(h1.header(), trusting_period, now) {
+    let h1 = trusted_state.last_signed_header();
+    let h1_next_vals = trusted_state.validators();
+
+    if let Err(err) = is_within_trust_period(h1.header(), trusting_period, now) {
         return Err(err);
     }
 
@@ -180,16 +184,7 @@ where
     S: Store<SignedHeader = SH>,
     R: Requester<SignedHeader = SH, ValidatorSet = VS>,
 {
-    let h1 = trusted_state.last_header();
-    let h1_next_vals = trusted_state.validators();
-    match check_support(
-        &h1,
-        &h1_next_vals,
-        h2,
-        trust_threshold,
-        trusting_period,
-        now,
-    ) {
+    match check_support(trusted_state, h2, trust_threshold, trusting_period, now) {
         Ok(_) => {
             store.add(h2)?;
             return Ok(());
@@ -201,6 +196,7 @@ where
         }
     }
 
+    let h1 = trusted_state.last_signed_header();
     let h1_height: u64 = h1.header().height().value();
     let h2_height: u64 = h2.header().height().value();
 
@@ -231,6 +227,57 @@ where
         store,
     )?;
     store.add(h2)?;
+
+    Ok(())
+}
+
+/// This function captures the high level logic of the light client verification, i.e.,
+/// an application call to the light client module to (optionally download) and
+/// verify a header for some height.
+pub fn verify_header<TS, SH, VS, L, S, R>(
+    height: Height,
+    trust_threshold: &L,
+    trusting_period: &Duration,
+    now: &SystemTime,
+    req: &R,
+    store: &mut S,
+) -> Result<(), Error>
+where
+    TS: TrustedState<SignedHeader = SH, ValidatorSet = VS>,
+    L: TrustThreshold,
+    S: Store<SignedHeader = SH>,
+    R: Requester<SignedHeader = SH, ValidatorSet = VS>,
+    VS: ValidatorSet,
+    SH: SignedHeader,
+{
+    if let Ok(sh2) = store.get(height) {
+        is_within_trust_period(sh2.header(), trusting_period, now)?
+    }
+
+    let sh2 = req.signed_header(height)?;
+    let sh2_next_vals = req.validator_set(height.increment())?;
+    verify(&sh2, &sh2_next_vals)?;
+    is_within_trust_period(sh2.header(), trusting_period, now)?;
+
+    // get the highest trusted headers lower than sh2
+    let sh1 = store.get_smaller_or_equal(height)?;
+    // TODO: it's odd that we need re-request the validator set here; shouldn't this
+    // be stored instead?!
+    let sh1_next_vals = req.validator_set(sh1.header().height().value() + 1)?;
+    let sh1_trusted = TS::new(sh1, sh1_next_vals);
+
+    can_trust(
+        &sh1_trusted,
+        &sh2,
+        trust_threshold,
+        trusting_period,
+        now,
+        req,
+        store,
+    )?;
+
+    is_within_trust_period(sh2.header(), trusting_period, now)?;
+    store.add(&sh2)?;
 
     Ok(())
 }
