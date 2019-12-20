@@ -50,7 +50,7 @@ where
 }
 
 /// Captures the skipping condition, i.e., it defines when we can trust the header
-/// h2 based on header h1.
+/// h2 based on a known trusted state.
 /// Note that h1 and h2 have already passed basic validation by calling  `verify`.
 /// `Error::InsufficientVotingPower`is returned when there is not enough intersection
 /// between validator sets to have skipping condition true.
@@ -166,11 +166,11 @@ where
     Ok(())
 }
 
-/// Returns Ok if we can trust the header h2 based on the given trusted state
-/// otherwise returns an Error.
+/// Returns Ok if we can trust the passed in (untrusted) header h2
+/// based on the given trusted state otherwise returns an Error.
 fn can_trust<TS, SH, VS, L, S, R>(
-    trusted_state: &TS, // h1 & h1_nextvals
-    h2: &SH,
+    trusted_state: &TS,    // h1 in spec
+    untrusted_header: &SH, // h2 in spec
     trust_threshold: &L,
     trusting_period: &Duration,
     now: &SystemTime,
@@ -185,10 +185,16 @@ where
     S: Store<SignedHeader = SH>,
     R: Requester<SignedHeader = SH, ValidatorSet = VS>,
 {
-    // can we trust h2 based on the given trusted state?
-    match check_support(trusted_state, h2, trust_threshold, trusting_period, now) {
+    // can we trust the still untrusted header based on the given trusted state?
+    match check_support(
+        trusted_state,
+        untrusted_header,
+        trust_threshold,
+        trusting_period,
+        now,
+    ) {
         Ok(_) => {
-            store.add(h2)?;
+            store.add(untrusted_header)?;
             return Ok(());
         }
         Err(e) => {
@@ -198,19 +204,20 @@ where
         }
     }
 
-    // Here we can't trust h2 based on the known trusted state.
-    let h1 = trusted_state.last_header();
-    let h1_height: u64 = h1.header().height().value();
-    let h2_height: u64 = h2.header().height().value();
+    // Here we can't trust the passed in untrusted header based on the known trusted state.
     // Run bisection: try again with a pivot header whose height is in the
     // middle of the trusted height and the desired height (h2.height).
 
-    let pivot: u64 = (h1_height + h2_height) / 2;
+    let trusted_header = trusted_state.last_header();
+    let trusted_height: u64 = trusted_header.header().height().value();
+    let untrusted_height: u64 = untrusted_header.header().height().value();
+    let pivot: u64 = (trusted_height + untrusted_height) / 2;
     let pivot_header = req.signed_header(pivot)?;
     let pivot_next_vals = req.validator_set(pivot + 1)?;
 
     verify(&pivot_header, &pivot_next_vals)?;
-    // can we trust pivot header based on trusted_state?
+
+    // Can we trust pivot header based on trusted_state?
     can_trust(
         trusted_state,
         &pivot_header,
@@ -220,19 +227,22 @@ where
         req,
         store,
     )?;
+    // Trust the header in between the trusted and (still) untrusted height:
     store.add(&pivot_header)?;
     let pivot_trusted = TS::new(pivot_header, pivot_next_vals);
-    // can we trust h2 based on the (now trusted) "pivot header"?
+
+    // Can we trust h2 based on the (now trusted) "pivot header"?
     can_trust(
         &pivot_trusted,
-        h2,
+        untrusted_header,
         trust_threshold,
         trusting_period,
         now,
         req,
         store,
     )?;
-    store.add(h2)?;
+    // Add to trusted headers:
+    store.add(untrusted_header)?;
 
     Ok(())
 }
@@ -256,10 +266,12 @@ where
     VS: ValidatorSet,
     SH: SignedHeader,
 {
+    // Check if we already trusted a header at the given height and it didn't expire:
     if let Ok(sh2) = store.get(height) {
         is_within_trust_period(sh2.header(), trusting_period, now)?
     }
 
+    // We haven't trusted a header at height yet. Request it:
     let sh2 = req.signed_header(height)?;
     let sh2_next_vals = req.validator_set(height.increment())?;
     verify(&sh2, &sh2_next_vals)?;
