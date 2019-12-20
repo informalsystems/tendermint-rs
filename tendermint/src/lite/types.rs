@@ -19,15 +19,15 @@ use std::time::SystemTime;
 /// including the last header and the validator set to use to verify
 /// the next header.
 pub trait TrustedState {
-    type SignedHeader: SignedHeader;
+    type LastHeader: SignedHeader;
     type ValidatorSet: ValidatorSet;
 
     /// Initialize the TrustedState with the given signed header and validator set.
     /// Note that if the height of the passed in header is h-1, the passed in validator set
     /// should have been requested for height h.
-    fn new(last_header: Self::SignedHeader, vals: Self::ValidatorSet) -> Self;
+    fn new(last_header: Self::LastHeader, vals: Self::ValidatorSet) -> Self;
 
-    fn last_signed_header(&self) -> &Self::SignedHeader; // height H-1
+    fn last_header(&self) -> &Self::LastHeader; // height H-1
     fn validators(&self) -> &Self::ValidatorSet; // height H
 }
 
@@ -144,10 +144,12 @@ pub trait Requester {
         H: Into<Height>;
 }
 
-/// This store can be used to store all the headers that has passed basic verification
-/// and that are within lite client's trust period.
+/// This store can be used to store all the headers that have passed basic verification
+/// and that are within the light client's trust period.
 pub trait Store {
     type SignedHeader: SignedHeader;
+
+    /// Add this header as trusted to the store.
     fn add(&mut self, header: &Self::SignedHeader) -> Result<(), Error>;
 
     /// Retrieve the trusted signed header at height h if it exists.
@@ -172,6 +174,6 @@ pub enum Error {
     InvalidCommitLength,
     InvalidSignature,
 
-    InsufficientVotingPower, // TODO: change to same name as spec if this changes (curently ErrTooMuchChange)
+    InsufficientVotingPower, // TODO(Liamsi): change to same name as spec if this changes (curently ErrTooMuchChange)
     RequestFailed,
 }

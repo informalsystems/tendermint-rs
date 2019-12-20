@@ -62,12 +62,12 @@ pub fn check_support<TS, SH, VS, L>(
     now: &SystemTime,
 ) -> Result<(), Error>
 where
-    TS: TrustedState<SignedHeader = SH, ValidatorSet = VS>,
+    TS: TrustedState<LastHeader = SH, ValidatorSet = VS>,
     SH: SignedHeader,
     VS: ValidatorSet,
     L: TrustThreshold,
 {
-    let h1 = trusted_state.last_signed_header();
+    let h1 = trusted_state.last_header();
     let h1_next_vals = trusted_state.validators();
 
     if let Err(err) = is_within_trust_period(h1.header(), trusting_period, now) {
@@ -166,7 +166,8 @@ where
     Ok(())
 }
 
-/// Returns Ok if we can trust the header h2 based on h1 otherwise returns an Error.
+/// Returns Ok if we can trust the header h2 based on the given trusted state
+/// otherwise returns an Error.
 fn can_trust<TS, SH, VS, L, S, R>(
     trusted_state: &TS, // h1 & h1_nextvals
     h2: &SH,
@@ -177,13 +178,14 @@ fn can_trust<TS, SH, VS, L, S, R>(
     store: &mut S,
 ) -> Result<(), Error>
 where
-    TS: TrustedState<SignedHeader = SH, ValidatorSet = VS>,
+    TS: TrustedState<LastHeader = SH, ValidatorSet = VS>,
     SH: SignedHeader,
     VS: ValidatorSet,
     L: TrustThreshold,
     S: Store<SignedHeader = SH>,
     R: Requester<SignedHeader = SH, ValidatorSet = VS>,
 {
+    // can we trust h2 based on the given trusted state?
     match check_support(trusted_state, h2, trust_threshold, trusting_period, now) {
         Ok(_) => {
             store.add(h2)?;
@@ -196,16 +198,19 @@ where
         }
     }
 
-    let h1 = trusted_state.last_signed_header();
+    // Here we can't trust h2 based on the known trusted state.
+    let h1 = trusted_state.last_header();
     let h1_height: u64 = h1.header().height().value();
     let h2_height: u64 = h2.header().height().value();
+    // Run bisection: try again with a pivot header whose height is in the
+    // middle of the trusted height and the desired height (h2.height).
 
     let pivot: u64 = (h1_height + h2_height) / 2;
     let pivot_header = req.signed_header(pivot)?;
     let pivot_next_vals = req.validator_set(pivot + 1)?;
 
     verify(&pivot_header, &pivot_next_vals)?;
-
+    // can we trust pivot header based on trusted_state?
     can_trust(
         trusted_state,
         &pivot_header,
@@ -217,6 +222,7 @@ where
     )?;
     store.add(&pivot_header)?;
     let pivot_trusted = TS::new(pivot_header, pivot_next_vals);
+    // can we trust h2 based on the (now trusted) "pivot header"?
     can_trust(
         &pivot_trusted,
         h2,
@@ -243,7 +249,7 @@ pub fn verify_header<TS, SH, VS, L, S, R>(
     store: &mut S,
 ) -> Result<(), Error>
 where
-    TS: TrustedState<SignedHeader = SH, ValidatorSet = VS>,
+    TS: TrustedState<LastHeader = SH, ValidatorSet = VS>,
     L: TrustThreshold,
     S: Store<SignedHeader = SH>,
     R: Requester<SignedHeader = SH, ValidatorSet = VS>,
@@ -259,9 +265,9 @@ where
     verify(&sh2, &sh2_next_vals)?;
     is_within_trust_period(sh2.header(), trusting_period, now)?;
 
-    // get the highest trusted headers lower than sh2
+    // get the highest trusted header with height lower than sh2's
     let sh1 = store.get_smaller_or_equal(height)?;
-    // TODO: it's odd that we need re-request the validator set here; shouldn't this
+    // TODO(Liamsi): it's odd that we need re-request the validator set here; shouldn't this
     // be stored instead?!
     let sh1_next_vals = req.validator_set(sh1.header().height().value() + 1)?;
     let sh1_trusted = TS::new(sh1, sh1_next_vals);

@@ -75,17 +75,17 @@ struct Trusted {
 }
 
 impl lite::TrustedState for Trusted {
-    type SignedHeader = SignedHeader;
+    type LastHeader = SignedHeader;
     type ValidatorSet = Set;
 
-    fn new(last_header: Self::SignedHeader, vals: Self::ValidatorSet) -> Self {
+    fn new(last_header: Self::LastHeader, vals: Self::ValidatorSet) -> Self {
         Self {
             last_signed_header: last_header,
             validators: vals,
         }
     }
 
-    fn last_signed_header(&self) -> &Self::SignedHeader {
+    fn last_header(&self) -> &Self::LastHeader {
         &self.last_signed_header
     }
 
