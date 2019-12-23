@@ -4,7 +4,7 @@
 use crate::{
     block, hash, lite,
     lite::types::Validator,
-    lite::{Error, ValidatorSet},
+    lite::{ValidatorSet, VerifyError},
     vote::SignedVote,
 };
 use serde::{Deserialize, Serialize};
@@ -58,7 +58,7 @@ impl lite::Commit for SignedHeader {
         self.commit.block_id.hash
     }
 
-    fn voting_power_in<V>(&self, validators: &V) -> Result<u64, Error>
+    fn voting_power_in<V>(&self, validators: &V) -> Result<u64, VerifyError>
     where
         V: ValidatorSet,
     {
@@ -86,7 +86,7 @@ impl lite::Commit for SignedHeader {
             let sign_bytes = vote.sign_bytes();
 
             if !val.verify_signature(&sign_bytes, vote.signature()) {
-                return Err(Error::InvalidSignature);
+                return Err(VerifyError::InvalidSignature);
             }
             signed_power += val.power();
         }

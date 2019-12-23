@@ -13,18 +13,18 @@ use crate::block::Height;
 use crate::Hash;
 
 use failure::_core::fmt::Debug;
+use std::fmt;
 use std::time::SystemTime;
 
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header and the validator set to use to verify
 /// the next header.
-pub struct TrustedState<H, V>
-where
-    H: Header,
-    V: ValidatorSet,
-{
-    pub last_header: H, // height H-1
-    pub validators: V,  // height H
+pub trait TrustedState {
+    type Header: Header;
+    type ValidatorSet: ValidatorSet;
+    fn last_header(&self) -> Option<&Self::Header>; // height H-1
+    fn validators(&self) -> &Self::ValidatorSet; // height H
+    fn new(last_header: Option<Self::Header>, validators: Self::ValidatorSet) -> Self; // construct
 }
 
 /// SignedHeader bundles a Header and a Commit for convenience.
@@ -100,7 +100,7 @@ pub trait Commit {
     ///
     /// This method corresponds to the (pure) auxiliary function int the spec:
     /// `votingpower_in(signers(h.Commit),h.Header.V)`.
-    fn voting_power_in<V>(&self, vals: &V) -> Result<u64, Error>
+    fn voting_power_in<V>(&self, vals: &V) -> Result<u64, VerifyError>
     where
         V: ValidatorSet;
 
@@ -123,7 +123,7 @@ pub trait TrustThreshold {
 }
 
 #[derive(Debug)]
-pub enum Error {
+pub enum VerifyError {
     Expired,
     DurationOutOfRange,
     NonSequentialHeight,
@@ -137,3 +137,26 @@ pub enum Error {
 
     InsufficientVotingPower,
 }
+
+impl fmt::Display for VerifyError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            VerifyError::Expired => write!(f, "trusting period is expired"),
+            VerifyError::DurationOutOfRange => write!(f, "time duration out of range"),
+            VerifyError::NonSequentialHeight => write!(f, "height is not sequential"),
+            VerifyError::NonIncreasingHeight => write!(f, "height is not increasing"),
+
+            VerifyError::InvalidValidatorSet => write!(f, "validator set hash don't match"),
+            VerifyError::InvalidNextValidatorSet => {
+                write!(f, "next validator set hash don't match")
+            }
+            VerifyError::InvalidCommitValue => write!(f, "invalid commit value"),
+            VerifyError::InvalidCommitLength => write!(f, "invalid commit length"),
+            VerifyError::InvalidSignature => write!(f, "invalid commit signature"),
+
+            VerifyError::InsufficientVotingPower => write!(f, "insufficient voting power"),
+        }
+    }
+}
+
+impl std::error::Error for VerifyError {}

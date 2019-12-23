@@ -88,12 +88,12 @@ fn run_test_cases(cases: TestCases) {
             // the previous iteration of this loop. In both cases it is assumed that h1 was already
             // verified.
             let h2_verif_res = lite::verify(new_signed_header, new_vals);
-            let mut check_support_res: Result<(), lite::Error> = Ok(());
+            let mut check_support_res: Result<(), lite::VerifyError> = Ok(());
             if h2_verif_res.is_ok() {
                 check_support_res = lite::check_support(
-                    trusted_signed_header,
+                    &trusted_signed_header.header,
                     &trusted_next_vals,
-                    &new_signed_header,
+                    new_signed_header,
                     DefaultTrustLevel {},
                     trusting_period,
                     now.into(),
