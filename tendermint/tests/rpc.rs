@@ -56,6 +56,22 @@ mod endpoints {
     }
 
     #[test]
+    fn block_empty_block_id() {
+        let response =
+            endpoint::block::Response::from_string(&read_json_fixture("block_empty_block_id"))
+                .unwrap();
+
+        let tendermint::Block { last_commit, .. } = response.block;
+
+        assert_eq!(last_commit.as_ref().unwrap().precommits.len(), 2);
+        assert!(last_commit.unwrap().precommits[0]
+            .as_ref()
+            .unwrap()
+            .block_id
+            .is_none());
+    }
+
+    #[test]
     fn first_block() {
         let response =
             endpoint::block::Response::from_string(&read_json_fixture("first_block")).unwrap();

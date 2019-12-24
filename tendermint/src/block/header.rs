@@ -3,8 +3,7 @@ use crate::merkle::simple_hash_from_byte_vectors;
 use crate::serializers;
 use crate::{account, amino_types, block, chain, lite, Hash, Time};
 use amino_types::{message::AminoMessage, BlockId, ConsensusVersion, TimeMsg};
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
-use std::str::FromStr;
+use serde::{Deserialize, Serialize};
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -40,7 +39,7 @@ pub struct Header {
     pub total_txs: u64,
 
     /// Previous block info
-    #[serde(deserialize_with = "parse_non_empty_block_id")]
+    #[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
     pub last_block_id: Option<block::Id>,
 
     /// Commit from validators from the last block
@@ -126,42 +125,6 @@ impl lite::Header for Header {
         fields_bytes.push(bytes_enc(self.proposer_address.as_bytes()));
 
         Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
-    }
-}
-
-/// Parse empty block id as None.
-pub fn parse_non_empty_block_id<'de, D>(deserializer: D) -> Result<Option<block::Id>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    struct Parts {
-        #[serde(deserialize_with = "serializers::parse_u64")]
-        total: u64,
-        hash: String,
-    }
-    #[derive(Deserialize)]
-    struct BlockId {
-        hash: String,
-        parts: Parts,
-    }
-    let tmp_id = BlockId::deserialize(deserializer)?;
-    if tmp_id.hash.is_empty() {
-        Ok(None)
-    } else {
-        Ok(Some(block::Id {
-            hash: Hash::from_str(&tmp_id.hash)
-                .map_err(|err| D::Error::custom(format!("{}", err)))?,
-            parts: if tmp_id.parts.hash.is_empty() {
-                None
-            } else {
-                Some(block::parts::Header {
-                    total: tmp_id.parts.total,
-                    hash: Hash::from_str(&tmp_id.parts.hash)
-                        .map_err(|err| D::Error::custom(format!("{}", err)))?,
-                })
-            },
-        }))
     }
 }
 
