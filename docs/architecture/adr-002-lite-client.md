@@ -111,6 +111,7 @@ Here we describe the happy path:
 2) Pass header[H], commit[H], vals[H], and vals[H+1] to the verification library, which
 
   will:
+
     - check that vals[H] and vals[H+1] are correctly reflected in the header
     - check that the commit is for the header
     - check that +2/3 of the validators correctly signed the header hash
@@ -294,7 +295,7 @@ On the one hand,
 [upcoming changes](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-025-commit.md)
 to the commit structure will prevent votes from being included if they are from the
 wrong block.
-On the other, we may want the validator to verify the votes for nil - even
+On the other hand, we may want the validator to verify the votes for nil - even
 though they don't contribute anything to the voting power, they serve as an
 extra validity check. I propose for now that we use the simple Option type and
 ignore the distinction between these cases, but that we revisit at a future
@@ -471,4 +472,3 @@ Proposed
 ### Neutral
 
 - Certain validity checks are ommitted since they have little bearing
-
