@@ -507,6 +507,12 @@ given height from a peer, and attempts to verify the header using the skipping
 method, and running a bisection algorithm to recursively request headers of
 lower height as needed. Every time it verifies a header, it updates the store.
 
+As new headers are added to the store, we need to alert the detection module, so
+it can start searching for conflicts. The coupling between the verification and
+detection modules should be minimized. For now, we may assume the detection
+module continuously polls the store for new headers, but in the future we may
+use more explicit communication eg. via a channel.
+
 Note this function is specific to the light node (rather than IBC) as it
 implements the bisection algorithm directly and assumes the client has the
 ability to make requests (where in the IBC case, we do not).
