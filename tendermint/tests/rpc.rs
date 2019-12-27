@@ -3,6 +3,7 @@
 mod endpoints {
     use std::{fs, path::PathBuf};
     use tendermint::abci::Code;
+    use tendermint::lite::Header;
     use tendermint::rpc::{self, endpoint, Response};
 
     const EXAMPLE_APP: &str = "GaiaApp";
@@ -15,7 +16,7 @@ mod endpoints {
 
     #[test]
     fn abci_info() {
-        let response = endpoint::abci_info::Response::from_json(&read_json_fixture("abci_info"))
+        let response = endpoint::abci_info::Response::from_string(&read_json_fixture("abci_info"))
             .unwrap()
             .response;
 
@@ -25,16 +26,17 @@ mod endpoints {
 
     #[test]
     fn abci_query() {
-        let response = endpoint::abci_query::Response::from_json(&read_json_fixture("abci_query"))
-            .unwrap()
-            .response;
+        let response =
+            endpoint::abci_query::Response::from_string(&read_json_fixture("abci_query"))
+                .unwrap()
+                .response;
 
         assert_eq!(response.height.value(), 1);
     }
 
     #[test]
     fn block() {
-        let response = endpoint::block::Response::from_json(&read_json_fixture("block")).unwrap();
+        let response = endpoint::block::Response::from_string(&read_json_fixture("block")).unwrap();
 
         let tendermint::Block {
             header,
@@ -50,13 +52,34 @@ mod endpoints {
 
         assert_eq!(data.iter().len(), 2);
         assert_eq!(evidence.iter().len(), 0);
-        assert_eq!(last_commit.precommits.len(), 65);
+        assert_eq!(last_commit.unwrap().precommits.len(), 65);
     }
 
     #[test]
+    fn first_block() {
+        let response =
+            endpoint::block::Response::from_string(&read_json_fixture("first_block")).unwrap();
+
+        let tendermint::Block {
+            header,
+            data,
+            evidence,
+            last_commit,
+        } = response.block;
+
+        assert_eq!(header.version.block, 10);
+        assert_eq!(header.chain_id.as_str(), EXAMPLE_CHAIN);
+        assert_eq!(header.height.value(), 1);
+        assert!(header.last_block_id.is_none());
+
+        assert_eq!(data.iter().len(), 0);
+        assert_eq!(evidence.iter().len(), 0);
+        assert!(last_commit.is_none());
+    }
+    #[test]
     fn block_results() {
         let response =
-            endpoint::block_results::Response::from_json(&read_json_fixture("block_results"))
+            endpoint::block_results::Response::from_string(&read_json_fixture("block_results"))
                 .unwrap();
         assert_eq!(response.height.value(), 1814);
 
@@ -93,7 +116,7 @@ mod endpoints {
     #[test]
     fn blockchain() {
         let response =
-            endpoint::blockchain::Response::from_json(&read_json_fixture("blockchain")).unwrap();
+            endpoint::blockchain::Response::from_string(&read_json_fixture("blockchain")).unwrap();
 
         assert_eq!(response.last_height.value(), 488_556);
         assert_eq!(response.block_metas.len(), 10);
@@ -104,7 +127,7 @@ mod endpoints {
 
     #[test]
     fn broadcast_tx_async() {
-        let response = endpoint::broadcast::tx_async::Response::from_json(&read_json_fixture(
+        let response = endpoint::broadcast::tx_async::Response::from_string(&read_json_fixture(
             "broadcast_tx_async",
         ))
         .unwrap();
@@ -117,7 +140,7 @@ mod endpoints {
 
     #[test]
     fn broadcast_tx_sync() {
-        let response = endpoint::broadcast::tx_sync::Response::from_json(&read_json_fixture(
+        let response = endpoint::broadcast::tx_sync::Response::from_string(&read_json_fixture(
             "broadcast_tx_sync",
         ))
         .unwrap();
@@ -132,7 +155,7 @@ mod endpoints {
 
     #[test]
     fn broadcast_tx_sync_int() {
-        let response = endpoint::broadcast::tx_sync::Response::from_json(&read_json_fixture(
+        let response = endpoint::broadcast::tx_sync::Response::from_string(&read_json_fixture(
             "broadcast_tx_sync_int",
         ))
         .unwrap();
@@ -147,7 +170,7 @@ mod endpoints {
 
     #[test]
     fn broadcast_tx_commit() {
-        let response = endpoint::broadcast::tx_commit::Response::from_json(&read_json_fixture(
+        let response = endpoint::broadcast::tx_commit::Response::from_string(&read_json_fixture(
             "broadcast_tx_commit",
         ))
         .unwrap();
@@ -160,21 +183,23 @@ mod endpoints {
 
     #[test]
     fn commit() {
-        let response = endpoint::commit::Response::from_json(&read_json_fixture("commit")).unwrap();
+        let response =
+            endpoint::commit::Response::from_string(&read_json_fixture("commit")).unwrap();
         let header = response.signed_header.header;
         assert_eq!(header.chain_id.as_ref(), EXAMPLE_CHAIN);
         // For now we just want to make sure the commit including precommits and a block_id exist
         // in SignedHeader; later we should verify some properties: e.g. block_id.hash matches the
         // header etc:
         let commit = response.signed_header.commit;
-        let _block_id = commit.block_id;
+        let block_id = commit.block_id;
         let _precommits = commit.precommits;
+        assert_eq!(header.hash(), block_id.hash);
     }
 
     #[test]
     fn genesis() {
         let response =
-            endpoint::genesis::Response::from_json(&read_json_fixture("genesis")).unwrap();
+            endpoint::genesis::Response::from_string(&read_json_fixture("genesis")).unwrap();
 
         let tendermint::Genesis {
             chain_id,
@@ -188,13 +213,13 @@ mod endpoints {
 
     #[test]
     fn health() {
-        endpoint::health::Response::from_json(&read_json_fixture("health")).unwrap();
+        endpoint::health::Response::from_string(&read_json_fixture("health")).unwrap();
     }
 
     #[test]
     fn net_info() {
         let response =
-            endpoint::net_info::Response::from_json(&read_json_fixture("net_info")).unwrap();
+            endpoint::net_info::Response::from_string(&read_json_fixture("net_info")).unwrap();
 
         assert_eq!(response.n_peers, 2);
         assert_eq!(response.peers[0].node_info.network.as_str(), EXAMPLE_CHAIN);
@@ -202,7 +227,8 @@ mod endpoints {
 
     #[test]
     fn status() {
-        let response = endpoint::status::Response::from_json(&read_json_fixture("status")).unwrap();
+        let response =
+            endpoint::status::Response::from_string(&read_json_fixture("status")).unwrap();
 
         assert_eq!(response.node_info.network.as_str(), EXAMPLE_CHAIN);
         assert_eq!(response.sync_info.latest_block_height.value(), 410_744);
@@ -212,7 +238,7 @@ mod endpoints {
     #[test]
     fn validators() {
         let response =
-            endpoint::validators::Response::from_json(&read_json_fixture("validators")).unwrap();
+            endpoint::validators::Response::from_string(&read_json_fixture("validators")).unwrap();
 
         assert_eq!(response.block_height.value(), 42);
 
@@ -222,7 +248,7 @@ mod endpoints {
 
     #[test]
     fn jsonrpc_error() {
-        let result = endpoint::blockchain::Response::from_json(&read_json_fixture("error"));
+        let result = endpoint::blockchain::Response::from_string(&read_json_fixture("error"));
 
         if let Err(err) = result {
             assert_eq!(err.code(), rpc::error::Code::InternalError);

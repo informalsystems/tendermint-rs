@@ -1,7 +1,7 @@
 //! Cryptographic (a.k.a. digital) signatures
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use signatory::Signature as SignatureTrait;
+use signatory::signature::Signature as _;
 use subtle_encoding::base64;
 
 /// Signatures
@@ -16,6 +16,19 @@ impl Signature {
     pub fn algorithm(self) -> Algorithm {
         match self {
             Signature::Ed25519(_) => Algorithm::Ed25519,
+        }
+    }
+
+    /// Return the raw bytes of this signature
+    pub fn as_bytes(&self) -> &[u8] {
+        self.as_ref()
+    }
+}
+
+impl AsRef<[u8]> for Signature {
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            Signature::Ed25519(sig) => sig.as_ref(),
         }
     }
 }
@@ -34,11 +47,7 @@ impl<'de> Deserialize<'de> for Signature {
 
 impl Serialize for Signature {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let sig_bytes = match self {
-            Signature::Ed25519(sig) => sig.as_bytes(),
-        };
-
-        String::from_utf8(base64::encode(&sig_bytes[..]))
+        String::from_utf8(base64::encode(self.as_ref()))
             .unwrap()
             .serialize(serializer)
     }

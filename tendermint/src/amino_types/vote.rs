@@ -6,14 +6,17 @@ use super::{
     validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
     SignedMsgType,
 };
+use crate::amino_types::PartsSetHeader;
 use crate::{
     block::{self, ParseId},
     chain, consensus,
     error::Error,
+    vote,
 };
 use bytes::BufMut;
 use prost::{error::EncodeError, Message};
-use signatory::{ed25519, Signature};
+use signatory::ed25519;
+use std::convert::TryFrom;
 
 const VALIDATOR_ADDR_SIZE: usize = 20;
 
@@ -49,9 +52,27 @@ impl Vote {
     }
 }
 
+impl From<&vote::Vote> for Vote {
+    fn from(vote: &vote::Vote) -> Self {
+        Vote {
+            vote_type: vote.vote_type.to_u32(),
+            height: vote.height.value() as i64, // TODO potential overflow :-/
+            round: vote.round as i64,
+            block_id: Some(BlockId {
+                hash: vote.block_id.hash.as_bytes().to_vec(),
+                parts_header: vote.block_id.parts.as_ref().map(PartsSetHeader::from),
+            }),
+            timestamp: Some(TimeMsg::from(vote.timestamp)),
+            validator_address: vote.validator_address.as_bytes().to_vec(),
+            validator_index: vote.validator_index as i64, // TODO potential overflow :-/
+            signature: vote.signature.as_bytes().to_vec(),
+        }
+    }
+}
+
 impl block::ParseHeight for Vote {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
-        block::Height::try_from_i64(self.height)
+        block::Height::try_from(self.height)
     }
 }
 
@@ -97,12 +118,12 @@ impl chain::ParseId for CanonicalVote {
 
 impl block::ParseHeight for CanonicalVote {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
-        block::Height::try_from_i64(self.height)
+        block::Height::try_from(self.height)
     }
 }
 
 impl CanonicalVote {
-    fn new(vote: Vote, chain_id: &str) -> CanonicalVote {
+    pub fn new(vote: Vote, chain_id: &str) -> CanonicalVote {
         CanonicalVote {
             vote_type: vote.vote_type,
             chain_id: chain_id.to_string(),
@@ -150,7 +171,7 @@ impl SignableMsg for SignVoteRequest {
     }
     fn set_signature(&mut self, sig: &ed25519::Signature) {
         if let Some(ref mut vt) = self.vote {
-            vt.signature = sig.clone().into_vec();
+            vt.signature = sig.as_ref().to_vec();
         }
     }
     fn validate(&self) -> Result<(), ValidationError> {
@@ -162,7 +183,7 @@ impl SignableMsg for SignVoteRequest {
     fn consensus_state(&self) -> Option<consensus::State> {
         match self.vote {
             Some(ref v) => Some(consensus::State {
-                height: match block::Height::try_from_i64(v.height) {
+                height: match block::Height::try_from(v.height) {
                     Ok(h) => h,
                     Err(_err) => return None, // TODO(tarcieri): return an error?
                 },
@@ -219,9 +240,9 @@ impl ConsensusMessage for Vote {
 mod tests {
     use super::super::PartsSetHeader;
     use super::*;
+    use crate::amino_types::message::AminoMessage;
     use crate::amino_types::SignedMsgType;
     use chrono::{DateTime, Utc};
-    use prost::Message;
 
     #[test]
     fn test_vote_serialization() {
@@ -307,8 +328,7 @@ mod tests {
             vt_precommit.vote_type = SignedMsgType::PreCommit.to_u32(); // precommit
             println!("{:?}", vt_precommit);
             let cv_precommit = CanonicalVote::new(vt_precommit, "");
-            got = vec![];
-            cv_precommit.encode(&mut got).unwrap();
+            let got = AminoMessage::bytes_vec(&cv_precommit);
             let want = vec![
                 0x8,  // (field_number << 3) | wire_type
                 0x2,  // PrecommitType
@@ -329,10 +349,9 @@ mod tests {
             vt_prevote.round = 1;
             vt_prevote.vote_type = SignedMsgType::PreVote.to_u32();
 
-            got = vec![];
             let cv_prevote = CanonicalVote::new(vt_prevote, "");
 
-            cv_prevote.encode(&mut got).unwrap();
+            let got = AminoMessage::bytes_vec(&cv_prevote);
 
             let want = vec![
                 0x8,  // (field_number << 3) | wire_type
@@ -353,9 +372,8 @@ mod tests {
             vt_no_type.height = 1;
             vt_no_type.round = 1;
 
-            got = vec![];
             let cv = CanonicalVote::new(vt_no_type, "");
-            cv.encode(&mut got).unwrap();
+            let got = AminoMessage::bytes_vec(&cv);
 
             let want = vec![
                 0x11, // (field_number << 3) | wire_type
@@ -374,8 +392,7 @@ mod tests {
             no_vote_type2.round = 1;
 
             let with_chain_id = CanonicalVote::new(no_vote_type2, "test_chain_id");
-            got = vec![];
-            with_chain_id.encode(&mut got).unwrap();
+            got = AminoMessage::bytes_vec(&with_chain_id);
             let want = vec![
                 0x11, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height

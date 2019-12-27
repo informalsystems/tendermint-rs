@@ -17,10 +17,10 @@ pub struct Size {
 
     /// Maximum amount of gas which can be spent on a block
     #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
+        serialize_with = "serializers::serialize_i64",
+        deserialize_with = "serializers::parse_i64"
     )]
-    pub max_gas: u64,
+    pub max_gas: i64,
 
     /// Time iota in ms
     #[serde(

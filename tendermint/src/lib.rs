@@ -15,7 +15,7 @@
 #![forbid(unsafe_code)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
-    html_root_url = "https://docs.rs/tendermint/0.10.0"
+    html_root_url = "https://docs.rs/tendermint/0.11.0"
 )]
 
 // NOTE(EB): can't figure out how to easily remove the extern crate per Rust2018 upgrade ...
@@ -41,6 +41,8 @@ pub mod consensus;
 pub mod evidence;
 pub mod genesis;
 pub mod hash;
+#[allow(dead_code, missing_docs)]
+pub mod lite;
 pub mod merkle;
 mod moniker;
 pub mod net;
@@ -48,7 +50,6 @@ pub mod node;
 pub mod private_key;
 pub mod public_key;
 pub mod rpc;
-pub mod secret_connection;
 mod serializers;
 pub mod signature;
 pub mod time;
@@ -58,7 +59,6 @@ mod version;
 pub mod vote;
 
 pub use crate::genesis::Genesis;
-pub use crate::secret_connection::SecretConnection;
 pub use crate::{
     block::Block,
     error::{Error, ErrorKind},

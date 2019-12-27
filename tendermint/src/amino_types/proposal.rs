@@ -12,7 +12,8 @@ use crate::{
 };
 use bytes::BufMut;
 use prost::{EncodeError, Message};
-use signatory::{ed25519, Signature};
+use signatory::ed25519;
+use std::convert::TryFrom;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
@@ -35,7 +36,7 @@ pub struct Proposal {
 // TODO(tony): custom derive proc macro for this e.g. `derive(ParseBlockHeight)`
 impl block::ParseHeight for Proposal {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
-        block::Height::try_from_i64(self.height)
+        block::Height::try_from(self.height)
     }
 }
 
@@ -74,7 +75,7 @@ impl chain::ParseId for CanonicalProposal {
 
 impl block::ParseHeight for CanonicalProposal {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
-        block::Height::try_from_i64(self.height)
+        block::Height::try_from(self.height)
     }
 }
 
@@ -124,7 +125,7 @@ impl SignableMsg for SignProposalRequest {
     }
     fn set_signature(&mut self, sig: &ed25519::Signature) {
         if let Some(ref mut prop) = self.proposal {
-            prop.signature = sig.clone().into_vec();
+            prop.signature = sig.as_ref().to_vec();
         }
     }
     fn validate(&self) -> Result<(), ValidationError> {
@@ -136,7 +137,7 @@ impl SignableMsg for SignProposalRequest {
     fn consensus_state(&self) -> Option<consensus::State> {
         match self.proposal {
             Some(ref p) => Some(consensus::State {
-                height: match block::Height::try_from_i64(p.height) {
+                height: match block::Height::try_from(p.height) {
                     Ok(h) => h,
                     Err(_err) => return None, // TODO(tarcieri): return an error?
                 },

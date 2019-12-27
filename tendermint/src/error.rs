@@ -107,10 +107,15 @@ impl From<serde_json::error::Error> for Error {
     }
 }
 
-impl From<signatory::Error> for Error {
-    fn from(_err: signatory::Error) -> Self {
-        // `signatory::Error` is opaque
-        err!(ErrorKind::Crypto, "signature error")
+impl From<signatory::signature::Error> for Error {
+    fn from(err: signatory::signature::Error) -> Self {
+        use std::error::Error as _;
+
+        if let Some(source) = err.source() {
+            err!(ErrorKind::Crypto, "signature error: {}", source)
+        } else {
+            err!(ErrorKind::Crypto, "signature error")
+        }
     }
 }
 

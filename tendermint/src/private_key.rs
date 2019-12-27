@@ -3,7 +3,7 @@
 use crate::public_key::PublicKey;
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use signatory::ed25519;
-use signatory::PublicKeyed;
+use signatory::public_key::PublicKeyed;
 use signatory_dalek::Ed25519Signer;
 use subtle_encoding::{Base64, Encoding};
 use zeroize::{Zeroize, Zeroizing};

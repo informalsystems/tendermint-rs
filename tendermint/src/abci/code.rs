@@ -18,6 +18,12 @@ pub enum Code {
     Err(u32),
 }
 
+impl Default for Code {
+    fn default() -> Code {
+        Code::Ok
+    }
+}
+
 impl Code {
     /// Was the response OK?
     pub fn is_ok(self) -> bool {

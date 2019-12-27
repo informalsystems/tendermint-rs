@@ -2,17 +2,20 @@
 
 use super::{Error, Id, Version};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::io::Read;
 
 /// JSONRPC responses
 pub trait Response: Serialize + DeserializeOwned + Sized {
     /// Parse a JSONRPC response from a JSON string
-    fn from_json<T>(response: T) -> Result<Self, Error>
-    where
-        T: AsRef<[u8]>,
-    {
+    fn from_string(response: impl AsRef<[u8]>) -> Result<Self, Error> {
         let wrapper: Wrapper<Self> =
             serde_json::from_slice(response.as_ref()).map_err(Error::parse_error)?;
+        wrapper.into_result()
+    }
 
+    /// Parse a JSONRPC response from an `io::Reader`
+    fn from_reader(reader: impl Read) -> Result<Self, Error> {
+        let wrapper: Wrapper<Self> = serde_json::from_reader(reader).map_err(Error::parse_error)?;
         wrapper.into_result()
     }
 }
