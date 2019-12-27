@@ -299,3 +299,78 @@ where
 
     Ok(())
 }
+
+mod tests {
+    use super::*;
+    use crate::{Hash, hash::Algorithm}; 
+    use serde::Serialize;
+    use sha2::{Digest, Sha256};
+
+    #[derive(Debug, Serialize)]
+    struct MockHeader {
+        height: u64,
+        time: SystemTime,
+        vals: Hash,
+        next_vals: Hash,
+    }
+
+    impl MockHeader {
+        fn new(height: u64, time: SystemTime, vals: Hash, next_vals:Hash) -> MockHeader {
+            MockHeader{
+                height,
+                time,
+                vals,
+                next_vals
+            }
+        }
+    }
+
+    impl Header for MockHeader {
+        type Time = SystemTime;
+
+        fn height(&self) -> Height {
+            Height::from(self.height)
+        }
+        fn bft_time(&self) -> Self::Time {
+            self.time
+        }
+        fn validators_hash(&self) -> Hash {
+            self.vals
+        }
+        fn next_validators_hash(&self) -> Hash {
+            self.next_vals
+        }
+        fn hash(&self) -> Hash {
+           let encoded = serde_json::to_vec(self).unwrap();
+           let hashed = Sha256::digest(&encoded);
+           Hash::new(Algorithm::Sha256, &hashed).unwrap()
+        }
+    }
+
+    fn fixed_hash() -> Hash {
+        Hash::new(Algorithm::Sha256, &Sha256::digest(&[5])).unwrap()
+    }
+
+
+    #[test]
+    fn test_is_within_trust_period() {
+
+        let header_time = SystemTime::UNIX_EPOCH;
+        let period = Duration::new(100, 0);
+        let now = header_time + Duration::new(10, 0);
+
+        // less than the period, OK
+        let header = MockHeader::new(4, header_time, fixed_hash(), fixed_hash());
+        assert!(is_within_trust_period(&header, &period, &now).is_ok());
+
+        // equal to the period, OK
+        let now = header_time + period;
+        assert!(is_within_trust_period(&header, &period, &now).is_ok());
+
+        // greater than the period, not OK
+        let now = header_time + period + Duration::new(1, 0);
+        assert!(is_within_trust_period(&header, &period, &now).is_err());
+    }
+
+
+}
