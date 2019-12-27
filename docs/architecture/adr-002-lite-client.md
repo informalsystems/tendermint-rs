@@ -102,11 +102,10 @@ the time from the trusted header is greater than a configurable "trusting
 period". If at any point the state is expired, the node should log an error and
 exit - it's needs to be manually reset.
 
+### Syncer
 
-### Manager 
-
-For lack of a better name. The Manager co-ordiantes the syncing and is the
-highest level component. We consider two approaches to syncing the light node: sequential and skipping.
+The Syncing co-ordinates the syncing and is the highest level component. 
+We consider two approaches to syncing the light node: sequential and skipping.
 
 #### Sequential Sync
 
