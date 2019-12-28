@@ -55,7 +55,7 @@ where
 /// passed basic validation by calling  `verify`.
 /// `Error::InsufficientVotingPower`is returned when there is not enough intersection
 /// between validator sets to have skipping condition true.
-pub fn check_support<TS, SH, VS, L>(
+pub fn check_support<TS, SH, C, L>(
     trusted_state: &TS,
     h2: &SH,
     trust_threshold: &L,
@@ -63,10 +63,10 @@ pub fn check_support<TS, SH, VS, L>(
     now: &SystemTime,
 ) -> Result<(), Error>
 where
-    TS: TrustedState<LastHeader = SH, ValidatorSet = VS>,
-    SH: SignedHeader,
-    VS: ValidatorSet,
+    TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
+    SH: SignedHeader<Commit = C>,
     L: TrustThreshold,
+    C: Commit,
 {
     let h1 = trusted_state.last_header();
     let h1_next_vals = trusted_state.validators();
@@ -104,10 +104,10 @@ where
 }
 
 /// Verify the commit is valid from the given validators for the header.
-pub fn verify<SH, V>(signed_header: &SH, validators: &V) -> Result<(), Error>
+pub fn verify<SH, C>(signed_header: &SH, validators: &C::ValidatorSet) -> Result<(), Error>
 where
-    SH: SignedHeader,
-    V: ValidatorSet,
+    SH: SignedHeader<Commit = C>,
+    C: Commit,
 {
     let header = signed_header.header();
     let commit = signed_header.commit();
@@ -121,9 +121,8 @@ where
 
 /// Verify that +2/3 of the correct validator set signed this commit.
 /// NOTE: these validators are expected to be the correct validators for the commit.
-fn verify_commit_full<V, C>(vals: &V, commit: &C) -> Result<(), Error>
+fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), Error>
 where
-    V: ValidatorSet,
     C: Commit,
 {
     let total_power = vals.total_power();
@@ -145,13 +144,12 @@ where
 /// NOTE the given validators do not necessarily correspond to the validator set for this commit,
 /// but there may be some intersection. The trust_level parameter allows clients to require more
 /// than +1/3 by implementing the TrustLevel trait accordingly.
-pub fn verify_commit_trusting<V, C, L>(
-    validators: &V,
+pub fn verify_commit_trusting<C, L>(
+    validators: &C::ValidatorSet,
     commit: &C,
     trust_level: &L,
 ) -> Result<(), Error>
 where
-    V: ValidatorSet,
     C: Commit,
     L: TrustThreshold,
 {
@@ -169,7 +167,7 @@ where
 
 /// Returns Ok if we can trust the passed in (untrusted) header
 /// based on the given trusted state, otherwise returns an Error.
-fn can_trust<TS, SH, VS, L, S, R>(
+fn can_trust<TS, SH, C, L, S, R>(
     trusted_state: &TS,    // h1 in spec
     untrusted_header: &SH, // h2 in spec
     trust_threshold: &L,
@@ -179,12 +177,12 @@ fn can_trust<TS, SH, VS, L, S, R>(
     store: &mut S,
 ) -> Result<(), Error>
 where
-    TS: TrustedState<LastHeader = SH, ValidatorSet = VS>,
-    SH: SignedHeader,
-    VS: ValidatorSet,
+    TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
+    SH: SignedHeader<Commit = C>,
+    C: Commit,
     L: TrustThreshold,
     S: Store<TrustedState = TS>,
-    R: Requester<SignedHeader = SH, ValidatorSet = VS>,
+    R: Requester<SignedHeader = SH, ValidatorSet = C::ValidatorSet>,
 {
     // can we trust the still untrusted header based on the given trusted state?
     match check_support(
@@ -257,7 +255,7 @@ where
 /// This function captures the high level logic of the light client verification, i.e.,
 /// an application call to the light client module to (optionally download) and
 /// verify a header for some height.
-pub fn verify_header<TS, SH, VS, L, S, R>(
+pub fn verify_header<TS, SH, C, L, S, R>(
     height: Height,
     trust_threshold: &L,
     trusting_period: &Duration,
@@ -266,12 +264,12 @@ pub fn verify_header<TS, SH, VS, L, S, R>(
     store: &mut S,
 ) -> Result<(), Error>
 where
-    TS: TrustedState<LastHeader = SH, ValidatorSet = VS>,
+    TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
     L: TrustThreshold,
     S: Store<TrustedState = TS>,
-    R: Requester<SignedHeader = SH, ValidatorSet = VS>,
-    VS: ValidatorSet,
-    SH: SignedHeader,
+    R: Requester<SignedHeader = SH, ValidatorSet = C::ValidatorSet>,
+    C: Commit,
+    SH: SignedHeader<Commit = C>,
 {
     // Check if we already trusted a header at the given height and it didn't expire:
     if let Ok(ts2) = store.get(height) {
@@ -302,4 +300,75 @@ where
     store.add(&new_trusted)?;
 
     Ok(())
+}
+
+mod tests {
+    use super::*;
+    use crate::{hash::Algorithm, Hash};
+    use serde::Serialize;
+    use sha2::{Digest, Sha256};
+
+    #[derive(Debug, Serialize)]
+    struct MockHeader {
+        height: u64,
+        time: SystemTime,
+        vals: Hash,
+        next_vals: Hash,
+    }
+
+    impl MockHeader {
+        fn new(height: u64, time: SystemTime, vals: Hash, next_vals: Hash) -> MockHeader {
+            MockHeader {
+                height,
+                time,
+                vals,
+                next_vals,
+            }
+        }
+    }
+
+    impl Header for MockHeader {
+        type Time = SystemTime;
+
+        fn height(&self) -> Height {
+            Height::from(self.height)
+        }
+        fn bft_time(&self) -> Self::Time {
+            self.time
+        }
+        fn validators_hash(&self) -> Hash {
+            self.vals
+        }
+        fn next_validators_hash(&self) -> Hash {
+            self.next_vals
+        }
+        fn hash(&self) -> Hash {
+            let encoded = serde_json::to_vec(self).unwrap();
+            let hashed = Sha256::digest(&encoded);
+            Hash::new(Algorithm::Sha256, &hashed).unwrap()
+        }
+    }
+
+    fn fixed_hash() -> Hash {
+        Hash::new(Algorithm::Sha256, &Sha256::digest(&[5])).unwrap()
+    }
+
+    #[test]
+    fn test_is_within_trust_period() {
+        let header_time = SystemTime::UNIX_EPOCH;
+        let period = Duration::new(100, 0);
+        let now = header_time + Duration::new(10, 0);
+
+        // less than the period, OK
+        let header = MockHeader::new(4, header_time, fixed_hash(), fixed_hash());
+        assert!(is_within_trust_period(&header, &period, &now).is_ok());
+
+        // equal to the period, OK
+        let now = header_time + period;
+        assert!(is_within_trust_period(&header, &period, &now).is_ok());
+
+        // greater than the period, not OK
+        let now = header_time + period + Duration::new(1, 0);
+        assert!(is_within_trust_period(&header, &period, &now).is_err());
+    }
 }
