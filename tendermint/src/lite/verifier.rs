@@ -73,16 +73,24 @@ where
 
     // TODO(EB): can we move all these checks? it seems the
     // is_within doesn't need to happen here and the sequential check
-    // should be part of validate_vals_and_commit. then this function
+    // for vals hash should be part of validate_vals_and_commit. then this function
     // is basically just verify_commit_trusting. Would need to update spec as well.
+    // In sequential case, would still need to return early or not call check_support at all.
     let _ = is_within_trust_period(h1.header(), trusting_period, now)?;
 
-    if h2.header().height() == h1.header().height().increment()
-        && h2.header().validators_hash() != h1_next_vals.hash()
-    {
-        return Err(Error::InvalidNextValidatorSet);
+    // check the sequential case
+    if h2.header().height() == h1.header().height().increment() {
+        if h2.header().validators_hash() == h1_next_vals.hash() {
+            // It's sequential, so verify_commit_trusting would be
+            // redundant with verify since the validators are the same
+            // when we're not skipping.
+            return Ok(());
+        } else {
+            return Err(Error::InvalidNextValidatorSet);
+        }
     }
 
+    // check if enough trusted validators signed to skip to the new height.
     verify_commit_trusting(h1_next_vals, h2.commit(), trust_threshold)
 }
 
