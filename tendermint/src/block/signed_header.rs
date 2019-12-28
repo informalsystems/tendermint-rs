@@ -1,12 +1,7 @@
 //! SignedHeader contains commit and and block header.
 //! It is what the rpc endpoint /commit returns and hence can be used by a
 //! light client.
-use crate::{
-    block, hash, lite,
-    lite::types::Validator,
-    lite::{Error, ValidatorSet},
-    vote::SignedVote,
-};
+use crate::{block, hash, lite, lite::Error, validator::Set, vote::SignedVote};
 use serde::{Deserialize, Serialize};
 
 /// Signed block headers
@@ -54,14 +49,16 @@ impl SignedHeader {
 }
 
 impl lite::Commit for SignedHeader {
+    type ValidatorSet = Set;
+
     fn header_hash(&self) -> hash::Hash {
         self.commit.block_id.hash
     }
+    fn votes_len(&self) -> usize {
+        self.commit.precommits.len()
+    }
 
-    fn voting_power_in<V>(&self, validators: &V) -> Result<u64, Error>
-    where
-        V: ValidatorSet,
-    {
+    fn voting_power_in(&self, validators: &Set) -> Result<u64, Error> {
         // NOTE we don't know the validators that committed this block,
         // so we have to check for each vote if its validator is already known.
         let mut signed_power = 0u64;
@@ -92,9 +89,5 @@ impl lite::Commit for SignedHeader {
         }
 
         Ok(signed_power)
-    }
-
-    fn votes_len(&self) -> usize {
-        self.commit.precommits.len()
     }
 }
