@@ -71,9 +71,7 @@ where
     let h1 = trusted_state.last_header();
     let h1_next_vals = trusted_state.validators();
 
-    if let Err(err) = is_within_trust_period(h1.header(), trusting_period, now) {
-        return Err(err);
-    }
+    let _ = is_within_trust_period(h1.header(), trusting_period, now)?;
 
     if h2.header().height() == h1.header().height().increment()
         && h2.header().validators_hash() != h1_next_vals.hash()
