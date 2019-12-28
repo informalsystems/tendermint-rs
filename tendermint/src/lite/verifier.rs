@@ -71,6 +71,10 @@ where
     let h1 = trusted_state.last_header();
     let h1_next_vals = trusted_state.validators();
 
+    // TODO(EB): can we move all these checks? it seems the
+    // is_within doesn't need to happen here and the sequential check
+    // should be part of validate_vals_and_commit. then this function
+    // is basically just verify_commit_trusting. Would need to update spec as well.
     let _ = is_within_trust_period(h1.header(), trusting_period, now)?;
 
     if h2.header().height() == h1.header().height().increment()
@@ -78,24 +82,37 @@ where
     {
         return Err(Error::InvalidNextValidatorSet);
     }
+
     verify_commit_trusting(h1_next_vals, h2.commit(), trust_threshold)
 }
 
 /// Validate the validators and commit against the header.
+// TODO(EB): consider making this a method on Commit so the details are hidden,
+// and so we can remove the votes_len() method (that check would be part of the
+// methods implementation). These checks aren't reflected
+// explicitly in the spec yet, only in the sentence "Additional checks should
+// be done in the implementation to ensure header is well formed".
 fn validate_vals_and_commit<H, V, C>(header: &H, commit: &C, vals: &V) -> Result<(), Error>
 where
     H: Header,
     V: ValidatorSet,
     C: Commit,
 {
-    // ensure the validators in the header matches what we expect from our state.
+    // ensure the header validators match these validators
     if header.validators_hash() != vals.hash() {
         return Err(Error::InvalidValidatorSet);
     }
 
-    // ensure the commit matches the header.
+    // ensure the header matches the commit
     if header.hash() != commit.header_hash() {
         return Err(Error::InvalidCommitValue);
+    }
+
+    // ensure the validator size matches the commit size
+    // NOTE: this is commit structure specifc and should be
+    // hidden from the light client ...
+    if vals.len() != commit.votes_len() {
+        return Err(Error::InvalidCommitLength);
     }
 
     Ok(())
@@ -109,9 +126,9 @@ where
 {
     let header = signed_header.header();
     let commit = signed_header.commit();
-    if let Err(e) = validate_vals_and_commit(header, commit, validators) {
-        return Err(e);
-    }
+
+    // basic validatity checks that header, commit, and vals match up
+    let _ = validate_vals_and_commit(header, commit, validators)?;
 
     // ensure that +2/3 validators signed correctly
     verify_commit_full(validators, commit)
@@ -124,10 +141,6 @@ where
     C: Commit,
 {
     let total_power = vals.total_power();
-    if vals.len() != commit.votes_len() {
-        return Err(Error::InvalidCommitLength);
-    }
-
     let signed_power = commit.voting_power_in(vals)?;
 
     // check the signers account for +2/3 of the voting power
