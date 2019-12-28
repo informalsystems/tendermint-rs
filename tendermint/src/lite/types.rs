@@ -8,16 +8,16 @@ use failure::_core::fmt::Debug;
 use std::time::SystemTime;
 
 /// TrustedState stores the latest state trusted by a lite client,
-/// including the last header and the validator set to use to verify
-/// the next header.
+/// including the last header (at height h-1) and the validator set
+/// (at height h) to use to verify the next header.
 pub trait TrustedState {
     type LastHeader: SignedHeader;
     type ValidatorSet: ValidatorSet;
 
     /// Initialize the TrustedState with the given signed header and validator set.
     /// Note that if the height of the passed in header is h-1, the passed in validator set
-    /// should have been requested for height h.
-    fn new(last_header: Self::LastHeader, vals: Self::ValidatorSet) -> Self;
+    /// must have been requested for height h.
+    fn new(last_header: &Self::LastHeader, vals: &Self::ValidatorSet) -> Self;
 
     fn last_header(&self) -> &Self::LastHeader; // height H-1
     fn validators(&self) -> &Self::ValidatorSet; // height H
@@ -126,18 +126,18 @@ pub trait Requester {
 /// This store can be used to store all the headers that have passed basic verification
 /// and that are within the light client's trust period.
 pub trait Store {
-    type SignedHeader: SignedHeader;
+    type TrustedState: TrustedState;
 
-    /// Add this header as trusted to the store.
-    fn add(&mut self, header: &Self::SignedHeader) -> Result<(), Error>;
+    /// Add this state (header at height h, validators at height h+1) as trusted to the store.
+    fn add(&mut self, trusted: &Self::TrustedState) -> Result<(), Error>;
 
-    /// Retrieve the trusted signed header at height h if it exists.
+    /// Retrieve the trusted state at height h if it exists.
     /// If it does not exist return an error.
-    fn get(&self, h: Height) -> Result<&Self::SignedHeader, Error>;
+    fn get(&self, h: Height) -> Result<&Self::TrustedState, Error>;
 
     /// Retrieve the trusted signed header with the largest height h' with h' <= h, if it exists.
     /// If it does not exist return an error.
-    fn get_smaller_or_equal(&self, h: Height) -> Result<Self::SignedHeader, Error>;
+    fn get_smaller_or_equal(&self, h: Height) -> Result<Self::TrustedState, Error>;
 }
 
 #[derive(Debug, PartialEq)]

@@ -51,7 +51,8 @@ where
 
 /// Captures the skipping condition, i.e., it defines when we can trust the header
 /// h2 based on a known trusted state.
-/// Note that h1 and h2 have already passed basic validation by calling  `verify`.
+/// Note that the trusted header included in the trusted state and h2 have already
+/// passed basic validation by calling  `verify`.
 /// `Error::InsufficientVotingPower`is returned when there is not enough intersection
 /// between validator sets to have skipping condition true.
 pub fn check_support<TS, SH, C, L>(
@@ -180,7 +181,7 @@ where
     SH: SignedHeader<Commit = C>,
     C: Commit,
     L: TrustThreshold,
-    S: Store<SignedHeader = SH>,
+    S: Store<TrustedState = TS>,
     R: Requester<SignedHeader = SH, ValidatorSet = C::ValidatorSet>,
 {
     // can we trust the still untrusted header based on the given trusted state?
@@ -192,7 +193,10 @@ where
         now,
     ) {
         Ok(_) => {
-            store.add(untrusted_header)?;
+            let untrusted_next_vals =
+                req.validator_set(untrusted_header.header().height().increment())?;
+            let untrusted_state = TS::new(untrusted_header, &untrusted_next_vals);
+            store.add(&untrusted_state)?;
             return Ok(());
         }
         Err(e) => {
@@ -211,9 +215,9 @@ where
     let untrusted_height: u64 = untrusted_header.header().height().value();
     let pivot: u64 = (trusted_height + untrusted_height) / 2;
     let pivot_header = req.signed_header(pivot)?;
-    let pivot_next_vals = req.validator_set(pivot + 1)?;
+    let pivot_vals = req.validator_set(pivot)?;
 
-    verify(&pivot_header, &pivot_next_vals)?;
+    verify(&pivot_header, &pivot_vals)?;
 
     // Can we trust pivot header based on trusted_state?
     can_trust(
@@ -226,10 +230,11 @@ where
         store,
     )?;
     // Trust the header in between the trusted and (still) untrusted height:
-    store.add(&pivot_header)?;
-    let pivot_trusted = TS::new(pivot_header, pivot_next_vals);
+    let pivot_next_vals = req.validator_set(pivot + 1)?;
+    let pivot_trusted = TS::new(&pivot_header, &pivot_next_vals);
+    store.add(&pivot_trusted)?;
 
-    // Can we trust h2 based on the (now trusted) "pivot header"?
+    // Can we trust the (still) untrusted header based on the (now trusted) "pivot header"?
     can_trust(
         &pivot_trusted,
         untrusted_header,
@@ -239,8 +244,10 @@ where
         req,
         store,
     )?;
-    // Add to trusted headers:
-    store.add(untrusted_header)?;
+    // Add header (and corresponding next validators) to trusted state store:
+    let untrusted_next_vals = req.validator_set(untrusted_header.header().height().increment())?;
+    let untrusted_state = TS::new(untrusted_header, &untrusted_next_vals);
+    store.add(&untrusted_state)?;
 
     Ok(())
 }
@@ -259,29 +266,24 @@ pub fn verify_header<TS, SH, C, L, S, R>(
 where
     TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
     L: TrustThreshold,
-    S: Store<SignedHeader = SH>,
+    S: Store<TrustedState = TS>,
     R: Requester<SignedHeader = SH, ValidatorSet = C::ValidatorSet>,
     C: Commit,
     SH: SignedHeader<Commit = C>,
 {
     // Check if we already trusted a header at the given height and it didn't expire:
-    if let Ok(sh2) = store.get(height) {
-        is_within_trust_period(sh2.header(), trusting_period, now)?
+    if let Ok(ts2) = store.get(height) {
+        is_within_trust_period(ts2.last_header().header(), trusting_period, now)?
     }
 
-    // We haven't trusted a header at height yet. Request it:
+    // We haven't trusted a header at given height yet. Request it:
     let sh2 = req.signed_header(height)?;
-    let sh2_next_vals = req.validator_set(height.increment())?;
-    verify(&sh2, &sh2_next_vals)?;
+    let sh2_vals = req.validator_set(height)?;
+    verify(&sh2, &sh2_vals)?;
     is_within_trust_period(sh2.header(), trusting_period, now)?;
 
     // Get the highest trusted header with height lower than sh2's.
-    let sh1 = store.get_smaller_or_equal(height)?;
-    // TODO(Liamsi): it's odd that we need re-request the validator set here; shouldn't this
-    // be stored instead?!
-    let sh1_next_vals = req.validator_set(sh1.header().height().value() + 1)?;
-    let sh1_trusted = TS::new(sh1, sh1_next_vals);
-
+    let sh1_trusted = store.get_smaller_or_equal(height)?;
     can_trust(
         &sh1_trusted,
         &sh2,
@@ -293,7 +295,9 @@ where
     )?;
 
     is_within_trust_period(sh2.header(), trusting_period, now)?;
-    store.add(&sh2)?;
+    let sh2_next_vals = req.validator_set(height.increment())?;
+    let new_trusted = TS::new(&sh2, &sh2_next_vals);
+    store.add(&new_trusted)?;
 
     Ok(())
 }

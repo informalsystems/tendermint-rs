@@ -78,10 +78,10 @@ impl lite::TrustedState for Trusted {
     type LastHeader = SignedHeader;
     type ValidatorSet = Set;
 
-    fn new(last_header: Self::LastHeader, vals: Self::ValidatorSet) -> Self {
+    fn new(last_header: &Self::LastHeader, vals: &Self::ValidatorSet) -> Self {
         Self {
-            last_signed_header: last_header,
-            validators: vals,
+            last_signed_header: last_header.clone(),
+            validators: vals.clone(),
         }
     }
 
@@ -97,7 +97,7 @@ impl lite::TrustedState for Trusted {
 fn run_test_cases(cases: TestCases) {
     for (_, tc) in cases.test_cases.iter().enumerate() {
         let trusted_next_vals = tc.initial.clone().next_validator_set;
-        let mut trusted_state = Trusted::new(tc.initial.signed_header.clone(), trusted_next_vals);
+        let mut trusted_state = Trusted::new(&tc.initial.signed_header.clone(), &trusted_next_vals);
         let trusting_period: std::time::Duration = tc.initial.clone().trusting_period.into();
         let now = tc.initial.now;
         let expects_err = match &tc.expected_output {
@@ -125,8 +125,7 @@ fn run_test_cases(cases: TestCases) {
                 );
                 assert_eq!(check_support_res.is_err(), expects_err);
                 if check_support_res.is_ok() {
-                    trusted_state =
-                        Trusted::new(new_signed_header.clone(), input.next_validator_set.clone());
+                    trusted_state = Trusted::new(&new_signed_header, &input.next_validator_set);
                 }
             }
             let got_err = check_support_res.is_err() || h2_verif_res.is_err();
