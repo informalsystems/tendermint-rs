@@ -7,7 +7,6 @@
 // as_bytes(&self) -> &[u8] method. It's unlikely that a hash won't be
 // representable as bytes, or an Id (that is basically also a hash)
 // but this feels a a bit like cheating
-use crate::account::Id;
 
 use crate::block::Height;
 use crate::Hash;
@@ -65,16 +64,11 @@ pub trait Header: Debug {
 /// It also provides a lookup method to fetch a validator by
 /// its identifier.
 pub trait ValidatorSet {
-    type Validator: Validator;
-
     /// Hash of the validator set.
     fn hash(&self) -> Hash;
 
     /// Total voting power of the set
     fn total_power(&self) -> u64;
-
-    /// Fetch validator via their ID (ie. their address).
-    fn validator(&self, val_id: Id) -> Option<Self::Validator>;
 
     /// Return the number of validators in this validator set.
     fn len(&self) -> usize;
@@ -83,18 +77,12 @@ pub trait ValidatorSet {
     fn is_empty(&self) -> bool;
 }
 
-/// Validator has a voting power and can verify
-/// its own signatures. Note it must have implicit access
-/// to its public key material to verify signatures.
-pub trait Validator {
-    fn power(&self) -> u64;
-    fn verify_signature(&self, sign_bytes: &[u8], signature: &[u8]) -> bool;
-}
-
 /// Commit is proof a Header is valid.
 /// It has an underlying Vote type with the relevant vote data
 /// for verification.
 pub trait Commit {
+    type ValidatorSet: ValidatorSet;
+
     /// Hash of the header this commit is for.
     fn header_hash(&self) -> Hash;
 
@@ -104,9 +92,7 @@ pub trait Commit {
     ///
     /// This method corresponds to the (pure) auxiliary function int the spec:
     /// `votingpower_in(signers(h.Commit),h.Header.V)`.
-    fn voting_power_in<V>(&self, vals: &V) -> Result<u64, Error>
-    where
-        V: ValidatorSet;
+    fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error>;
 
     /// Return the number of votes included in this commit
     /// (including nil/empty votes).
