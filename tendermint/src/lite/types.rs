@@ -144,15 +144,15 @@ pub trait Store {
 pub enum Error {
     Expired,
     DurationOutOfRange,
-    NonSequentialHeight,
-    NonIncreasingHeight,
+
+    InvalidSignature, // TODO: deduplicate with ErrorKind::SignatureInvalid
 
     InvalidValidatorSet,
     InvalidNextValidatorSet,
     InvalidCommitValue, // commit is not for the header we expected
     InvalidCommitLength,
-    InvalidSignature,
 
     InsufficientVotingPower, // TODO(Liamsi): change to same name as spec if this changes (curently ErrTooMuchChange)
+
     RequestFailed,
 }
