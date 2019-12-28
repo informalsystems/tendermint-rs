@@ -195,7 +195,8 @@ where
         now,
     ) {
         Ok(_) => {
-            let untrusted_next_vals = req.validator_set(untrusted_header.header().height())?;
+            let untrusted_next_vals =
+                req.validator_set(untrusted_header.header().height().increment())?;
             let untrusted_state = TS::new(untrusted_header, &untrusted_next_vals);
             store.add(&untrusted_state)?;
             return Ok(());
@@ -246,7 +247,7 @@ where
         store,
     )?;
     // Add header (and corresponding next validators) to trusted state store:
-    let untrusted_next_vals = req.validator_set(untrusted_header.header().height())?;
+    let untrusted_next_vals = req.validator_set(untrusted_header.header().height().increment())?;
     let untrusted_state = TS::new(untrusted_header, &untrusted_next_vals);
     store.add(&untrusted_state)?;
 
@@ -273,8 +274,8 @@ where
     SH: SignedHeader,
 {
     // Check if we already trusted a header at the given height and it didn't expire:
-    if let Ok(sh2) = store.get(height) {
-        is_within_trust_period(sh2.last_header().header(), trusting_period, now)?
+    if let Ok(ts2) = store.get(height) {
+        is_within_trust_period(ts2.last_header().header(), trusting_period, now)?
     }
 
     // We haven't trusted a header at given height yet. Request it:
