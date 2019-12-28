@@ -167,7 +167,7 @@ where
 
 /// Returns Ok if we can trust the passed in (untrusted) header
 /// based on the given trusted state, otherwise returns an Error.
-fn can_trust<TS, SH, C, L, S, R>(
+fn can_trust_bisection<TS, SH, C, L, S, R>(
     trusted_state: &TS,    // h1 in spec
     untrusted_header: &SH, // h2 in spec
     trust_threshold: &L,
@@ -220,7 +220,7 @@ where
     verify(&pivot_header, &pivot_vals)?;
 
     // Can we trust pivot header based on trusted_state?
-    can_trust(
+    can_trust_bisection(
         trusted_state,
         &pivot_header,
         trust_threshold,
@@ -235,7 +235,7 @@ where
     store.add(&pivot_trusted)?;
 
     // Can we trust the (still) untrusted header based on the (now trusted) "pivot header"?
-    can_trust(
+    can_trust_bisection(
         &pivot_trusted,
         untrusted_header,
         trust_threshold,
@@ -284,7 +284,7 @@ where
 
     // Get the highest trusted header with height lower than sh2's.
     let sh1_trusted = store.get_smaller_or_equal(height)?;
-    can_trust(
+    can_trust_bisection(
         &sh1_trusted,
         &sh2,
         trust_threshold,
@@ -294,10 +294,11 @@ where
         store,
     )?;
 
-    is_within_trust_period(sh2.header(), trusting_period, now)?;
-    let sh2_next_vals = req.validator_set(height.increment())?;
-    let new_trusted = TS::new(&sh2, &sh2_next_vals);
-    store.add(&new_trusted)?;
+    // TODO(Liamsi): The spec re-checks if we are still in trust period here
+    // and stores the now trusted header again.
+    // Figure out if we want to store it here or in can_trust_bisection!
+    // My understanding is: with the current impl, we either bubbled up an
+    // error, or, successfully added sh2 (and its nex vals) to the trusted store here.
 
     Ok(())
 }
