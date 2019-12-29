@@ -168,3 +168,200 @@ where
         store,
     )
 }
+
+mod tests {
+    use super::*;
+    use crate::{hash::Algorithm, Hash};
+    use serde::Serialize;
+    use sha2::{Digest, Sha256};
+
+    #[derive(Clone, Debug, Serialize)]
+    struct MockHeader {
+        height: u64,
+        time: SystemTime,
+        vals: Hash,
+        next_vals: Hash,
+    }
+
+    impl MockHeader {
+        fn new(height: u64, time: SystemTime, vals: Hash, next_vals: Hash) -> MockHeader {
+            MockHeader {
+                height,
+                time,
+                vals,
+                next_vals,
+            }
+        }
+    }
+
+    impl Header for MockHeader {
+        type Time = SystemTime;
+
+        fn height(&self) -> Height {
+            Height::from(self.height)
+        }
+        fn bft_time(&self) -> Self::Time {
+            self.time
+        }
+        fn validators_hash(&self) -> Hash {
+            self.vals
+        }
+        fn next_validators_hash(&self) -> Hash {
+            self.next_vals
+        }
+        fn hash(&self) -> Hash {
+            json_hash(self)
+        }
+    }
+
+    fn json_hash<T: ?Sized + Serialize>(value: &T) -> Hash {
+        let encoded = serde_json::to_vec(value).unwrap();
+        let hashed = Sha256::digest(&encoded);
+        Hash::new(Algorithm::Sha256, &hashed).unwrap()
+    }
+
+    fn fixed_hash() -> Hash {
+        Hash::new(Algorithm::Sha256, &Sha256::digest(&[5])).unwrap()
+    }
+
+    // vals are just ints, each has power 1
+    #[derive(Clone, Debug, Serialize)]
+    struct MockValSet {
+        // NOTE: use HashSet instead?
+        vals: Vec<usize>,
+    }
+
+    impl MockValSet {
+        fn new(vals: Vec<usize>) -> MockValSet {
+            MockValSet { vals }
+        }
+    }
+
+    impl ValidatorSet for MockValSet {
+        fn hash(&self) -> Hash {
+            json_hash(&self)
+        }
+        fn total_power(&self) -> u64 {
+            self.vals.len() as u64
+        }
+        fn len(&self) -> usize {
+            self.vals.len()
+        }
+        fn is_empty(&self) -> bool {
+            self.len() == 0
+        }
+    }
+
+    // just a list of vals that signed
+    #[derive(Clone, Debug, Serialize)]
+    struct MockCommit {
+        hash: Hash,
+        vals: Vec<usize>,
+    }
+
+    impl MockCommit {
+        fn new(hash: Hash, vals: Vec<usize>) -> MockCommit {
+            MockCommit { hash, vals }
+        }
+    }
+
+    impl Commit for MockCommit {
+        type ValidatorSet = MockValSet;
+
+        fn header_hash(&self) -> Hash {
+            self.hash
+        }
+
+        // just the intersection
+        fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error> {
+            let mut power = 0;
+            for signer in self.vals.iter() {
+                for val in vals.vals.iter() {
+                    if signer == val {
+                        power += 1
+                    }
+                }
+            }
+            Ok(power)
+        }
+
+        fn votes_len(&self) -> usize {
+            self.vals.len()
+        }
+    }
+
+    #[derive(Clone)]
+    struct MockSignedHeader {
+        header: MockHeader,
+        commit: MockCommit,
+    }
+
+    impl MockSignedHeader {
+        fn new(header: MockHeader, commit: MockCommit) -> Self {
+            MockSignedHeader { header, commit }
+        }
+    }
+
+    impl SignedHeader for MockSignedHeader {
+        type Header = MockHeader;
+        type Commit = MockCommit;
+        fn header(&self) -> &Self::Header {
+            &self.header
+        }
+        fn commit(&self) -> &Self::Commit {
+            &self.commit
+        }
+    }
+
+    // uses refs because the trait defines `new` to take refs ...
+    struct MockState {
+        header: MockSignedHeader,
+        vals: MockValSet,
+    }
+
+    impl TrustedState for MockState{
+        type LastHeader = MockSignedHeader;
+        type ValidatorSet = MockValSet;
+
+        // XXX: how to do this without cloning?!
+        fn new(header: &Self::LastHeader, vals: &Self::ValidatorSet) -> MockState{
+            MockState {
+                header: header.clone(),
+                vals: vals.clone(),
+            }
+        }
+        fn last_header(&self) -> &Self::LastHeader {
+            &self.header
+        }
+        fn validators(&self) -> &Self::ValidatorSet {
+            &self.vals
+        }
+    }
+    
+    // XXX: Can we do without this mock since we have a default impl?
+    struct MockThreshold {}
+    impl TrustThreshold for MockThreshold{}
+
+    #[test]
+    fn test_verify_single() {
+        let ts_time = SystemTime::UNIX_EPOCH;
+        let ts_height = 1;
+        let ts_vals = &MockValSet::new(vec!(0));
+        let ts_header = MockHeader::new(ts_height, ts_time, ts_vals.hash(), ts_vals.hash());
+        let ts_commit = MockCommit::new(ts_header.hash(), vec![0]);
+        let ts_sh = &MockSignedHeader::new(ts_header, ts_commit);
+        let ts = &MockState::new(ts_sh, ts_vals);
+
+        let un_time = ts_time + Duration::new(10, 0);
+        let un_height = 10;
+        let un_vals = ts_vals;
+        let un_next_vals = un_vals;
+        let un_header = MockHeader::new(un_height, un_time, un_vals.hash(), un_vals.hash());
+        let un_commit = MockCommit::new(un_header.hash(), vec![0]);
+        let un_sh = &MockSignedHeader::new(un_header, un_commit);
+
+        let threshold = &MockThreshold{};
+
+        assert!(verify_single(ts, un_sh, un_vals, un_next_vals, threshold).is_ok());
+    }
+}
