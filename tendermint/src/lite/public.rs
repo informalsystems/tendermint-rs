@@ -391,7 +391,7 @@ mod tests {
 
     static THRESHOLD: &MockThreshold = &MockThreshold {};
 
-    // convenience for validators that signed commit 
+    // convenience for validators that signed commit
     static S0: Option<usize> = Some(0);
     static S1: Option<usize> = Some(1);
     static S2: Option<usize> = Some(2);
@@ -416,7 +416,7 @@ mod tests {
     #[test]
     fn test_verify_single_skip_1_val_skip() {
         let ts = &init_state(vec![0]);
-        let err =  Error::InsufficientVotingPower;
+        let err = Error::InsufficientVotingPower;
 
         //*****
         // Ok
@@ -434,7 +434,7 @@ mod tests {
         assert_err(ts, vec![1], vec![S1], err);
 
         // 0% overlap - val set contains original signer, but they didn't sign
-        assert_err(ts,vec![0, 1, 2, 3],vec![None, S1, S2, S3],err);
+        assert_err(ts, vec![0, 1, 2, 3], vec![None, S1, S2, S3], err);
     }
 
     // test whether we can jump to a new header with valid data and commit,
@@ -462,7 +462,7 @@ mod tests {
         assert_err(ts, vec![2], vec![S2], err);
 
         // 0% overlap (original signer is still in val set but not in commit)
-        assert_err(ts,vec![0, 2, 3, 4],vec![None, S2, S3, S4],err);
+        assert_err(ts, vec![0, 2, 3, 4], vec![None, S2, S3, S4], err);
     }
 
     // test whether we can jump to a new header with valid data and commit,
@@ -485,7 +485,7 @@ mod tests {
 
         //*************
         // Err
-        
+
         // 33% overlap (one original signer still present)
         assert_err(ts, vec![0], vec![S0], err);
         assert_err(ts, vec![0, 3], vec![S0, S3], err);
