@@ -88,7 +88,7 @@ where
 /// to request data for intermediate heights as necessary.
 /// Ensures our last trusted header hasn't expired yet, and that
 /// data from the untrusted height can be verified, possibly using
-/// data from intermediate heights. 
+/// data from intermediate heights.
 /// This function is primarily for use by a light node.
 pub fn verify_and_update_bisection<TS, SH, C, L, R, S>(
     untrusted_height: Height,
@@ -146,8 +146,8 @@ where
     // Get the pivot height for bisection.
     let pivot_height: u64 = (trusted_sh.header().height().value() + untrusted_height.value()) / 2;
 
-    // Recursive call to update to the pivot height. 
-    // When this completes, we will either return an error or 
+    // Recursive call to update to the pivot height.
+    // When this completes, we will either return an error or
     // have updated the store to the pivot height.
     verify_and_update_bisection(
         Height::from(pivot_height),
