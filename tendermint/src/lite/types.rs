@@ -80,11 +80,14 @@ pub trait Commit {
     fn header_hash(&self) -> Hash;
 
     /// Compute the voting power of the validators that correctly signed the commit,
-    /// have according to their voting power in the passed in validator set.
+    /// according to their voting power in the passed in validator set.
     /// Will return an error in case an invalid signature was included.
     ///
-    /// This method corresponds to the (pure) auxiliary function int the spec:
+    /// This method corresponds to the (pure) auxiliary function in the spec:
     /// `votingpower_in(signers(h.Commit),h.Header.V)`.
+    /// Note this expects the Commit to be able to compute `signers(h.Commit)`,
+    /// ie. the identity of the validators that signed it, so they
+    /// can be cross-referenced with the given `vals`.
     fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error>;
 
     /// Return the number of votes included in this commit
@@ -144,15 +147,15 @@ pub trait Store {
 pub enum Error {
     Expired,
     DurationOutOfRange,
-    NonSequentialHeight,
-    NonIncreasingHeight,
+
+    InvalidSignature, // TODO: deduplicate with ErrorKind::SignatureInvalid
 
     InvalidValidatorSet,
     InvalidNextValidatorSet,
     InvalidCommitValue, // commit is not for the header we expected
     InvalidCommitLength,
-    InvalidSignature,
 
     InsufficientVotingPower, // TODO(Liamsi): change to same name as spec if this changes (curently ErrTooMuchChange)
+
     RequestFailed,
 }
