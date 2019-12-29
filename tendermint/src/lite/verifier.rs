@@ -36,7 +36,7 @@ where
     }
 }
 
-fn validate_next_vals<H, V>(header: H, next_vals: &V) -> Result<(), Error>
+fn validate_next_vals<H, V>(header: &H, next_vals: &V) -> Result<(), Error>
 where
     H: Header,
     V: ValidatorSet,
@@ -268,6 +268,58 @@ where
     let untrusted_state = TS::new(untrusted_header, &untrusted_next_vals);
     store.add(&untrusted_state)?;
 
+    Ok(())
+}
+
+pub fn verify_and_update_single<TS, SH, C, L, S>(
+    untrusted_sh: &SH,
+    untrusted_vals: &C::ValidatorSet,
+    untrusted_next_vals:  &C::ValidatorSet,
+    trust_threshold: &L,
+    trusting_period: &Duration,
+    now: &SystemTime,
+    store: &mut S,
+) -> Result<(), Error>
+where
+    TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
+    SH: SignedHeader<Commit = C>,
+    C: Commit,
+    L: TrustThreshold,
+    S: Store<TrustedState = TS>,
+{
+
+    // fetch the latest state and ensure it hasn't expired
+    let trusted_state = store.get(Height::from(0))?;
+    let trusted_sh = trusted_state.last_header();
+    is_within_trust_period(trusted_sh.header(), trusting_period, now)?;
+
+    // ensure the new height is higher
+    let untrusted_height = untrusted_sh.header().height();
+    let trusted_height = trusted_sh.header().height();
+    if untrusted_height <= trusted_height {
+        // TODO: return err
+    };
+
+    // validate the untrusted header against its commit, vals, and next_vals
+    let untrusted_header = untrusted_sh.header();
+    let untrusted_commit = untrusted_sh.commit();
+    validate_vals_and_commit(untrusted_header, untrusted_commit, untrusted_vals)?;
+    validate_next_vals(untrusted_header, untrusted_next_vals)?;
+
+    // if the new height is not sequential, check if we can skip
+    if untrusted_height > trusted_height.increment() {
+        let trusted_vals = trusted_state.validators();
+        verify_commit_trusting(trusted_vals, untrusted_commit, trust_threshold)?;
+    }
+
+    // verify the untrusted commit
+    verify(untrusted_sh, untrusted_vals)?;
+
+    // the untrusted header is now trusted. update the store
+    let new_trusted_state = TS::new(untrusted_sh, untrusted_next_vals);
+    store.add(&new_trusted_state)?;
+
+    // Ok!
     Ok(())
 }
 
