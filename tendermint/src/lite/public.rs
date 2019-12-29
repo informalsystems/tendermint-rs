@@ -220,10 +220,6 @@ mod tests {
         Hash::new(Algorithm::Sha256, &hashed).unwrap()
     }
 
-    fn fixed_hash() -> Hash {
-        Hash::new(Algorithm::Sha256, &Sha256::digest(&[5])).unwrap()
-    }
-
     // vals are just ints, each has power 1
     #[derive(Clone, Debug, Serialize)]
     struct MockValSet {
@@ -252,7 +248,8 @@ mod tests {
         }
     }
 
-    // just a list of vals that signed
+    // commit is a list of vals that signed.
+    // use None if the val didn't sign.
     #[derive(Clone, Debug, Serialize)]
     struct MockCommit {
         hash: Hash,
@@ -344,14 +341,17 @@ mod tests {
         }
     }
 
-    // XXX: Can we do without this mock since we have a default impl?
+    // XXX: Can we do without this mock and global since we have a default impl?
     struct MockThreshold {}
     impl TrustThreshold for MockThreshold {}
+    static THRESHOLD: &MockThreshold = &MockThreshold {};
 
+    // start all blockchains from here ...
     fn init_time() -> SystemTime {
         SystemTime::UNIX_EPOCH
     }
 
+    // create an initial trusted state from the given vals
     fn init_state(vals_vec: Vec<usize>) -> MockState {
         let time = init_time();
         let height = 1;
@@ -365,6 +365,7 @@ mod tests {
         MockState::new(sh, vals)
     }
 
+    // create the next state with the given vals and commit.
     fn next_state(
         vals_vec: Vec<usize>,
         commit_vec: Vec<Option<usize>>,
@@ -378,20 +379,20 @@ mod tests {
         (MockSignedHeader::new(header, commit), vals, next_vals)
     }
 
+    // make a state with the given vals and commit and ensure we get the error.
     fn assert_err(ts: &MockState, vals: Vec<usize>, commit: Vec<Option<usize>>, err: Error) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
         let result = verify_single(ts, &un_sh, &un_vals, &un_next_vals, THRESHOLD);
         assert_eq!(result, Err(err));
     }
 
+    // make a state with the given vals and commit and ensure we get no error.
     fn assert_ok(ts: &MockState, vals: Vec<usize>, commit: Vec<Option<usize>>) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
         assert!(verify_single(ts, &un_sh, &un_vals, &un_next_vals, THRESHOLD).is_ok());
     }
 
-    static THRESHOLD: &MockThreshold = &MockThreshold {};
-
-    // convenience for validators that signed commit
+    // convenience vars for validators that signed commit
     static S0: Option<usize> = Some(0);
     static S1: Option<usize> = Some(1);
     static S2: Option<usize> = Some(2);
@@ -399,7 +400,7 @@ mod tests {
     static S4: Option<usize> = Some(4);
     static S5: Option<usize> = Some(5);
 
-    // test verifying a skip header that we can trust with valid data and 1 validator.
+    // valid to skip, but invalid commit. 1 validator.
     #[test]
     fn test_verify_single_skip_1_val_verify() {
         let ts = &init_state(vec![0]);
@@ -411,8 +412,8 @@ mod tests {
         assert_err(ts, vec![1], vec![S0], Error::InsufficientVotingPower);
     }
 
-    // test whether we can jump to a new header with valid data and commit,
-    // starting with 1 validator.
+    // valid commit and data, starting with 1 validator.
+    // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_1_val_skip() {
         let ts = &init_state(vec![0]);
@@ -437,8 +438,8 @@ mod tests {
         assert_err(ts, vec![0, 1, 2, 3], vec![None, S1, S2, S3], err);
     }
 
-    // test whether we can jump to a new header with valid data and commit,
-    // starting with 2 validators.
+    // valid commit and data, starting with 2 validators.
+    // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_2_val_skip() {
         let ts = &init_state(vec![0, 1]);
@@ -465,8 +466,8 @@ mod tests {
         assert_err(ts, vec![0, 2, 3, 4], vec![None, S2, S3, S4], err);
     }
 
-    // test whether we can jump to a new header with valid data and commit,
-    // starting with 3 validators.
+    // valid commit and data, starting with 3 validators.
+    // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_3_val_skip() {
         let ts = &init_state(vec![0, 1, 2]);
