@@ -342,26 +342,58 @@ mod tests {
     struct MockThreshold {}
     impl TrustThreshold for MockThreshold{}
 
+    fn init_time() -> SystemTime {  SystemTime::UNIX_EPOCH }
+
+    fn init_state(vals_vec: Vec<usize>) -> MockState {
+        let time = init_time();
+        let height = 1;
+        let vals = &MockValSet::new(vals_vec);
+        let header = MockHeader::new(height, time, vals.hash(), vals.hash());
+        let commit = MockCommit::new(header.hash(), vec!(0));
+        let sh = &MockSignedHeader::new(header, commit);
+        MockState::new(sh, vals)
+    }
+
+    fn next_state(vals_vec: Vec<usize>, commit_vec: Vec<usize>) -> 
+        (MockSignedHeader, MockValSet, MockValSet) {
+        let time = init_time() + Duration::new(10, 0);
+        let height = 10;
+        let vals = MockValSet::new(vals_vec);
+        let next_vals = vals.clone();
+        let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
+        let commit = MockCommit::new(header.hash(), commit_vec);
+        (MockSignedHeader::new(header, commit), vals, next_vals)
+    }
+
+    // test skipping with valid data, but with
+    // various changes to validator set and who signs the commit
     #[test]
-    fn test_verify_single() {
-        let ts_time = SystemTime::UNIX_EPOCH;
-        let ts_height = 1;
-        let ts_vals = &MockValSet::new(vec!(0));
-        let ts_header = MockHeader::new(ts_height, ts_time, ts_vals.hash(), ts_vals.hash());
-        let ts_commit = MockCommit::new(ts_header.hash(), vec![0]);
-        let ts_sh = &MockSignedHeader::new(ts_header, ts_commit);
-        let ts = &MockState::new(ts_sh, ts_vals);
-
-        let un_time = ts_time + Duration::new(10, 0);
-        let un_height = 10;
-        let un_vals = ts_vals;
-        let un_next_vals = un_vals;
-        let un_header = MockHeader::new(un_height, un_time, un_vals.hash(), un_vals.hash());
-        let un_commit = MockCommit::new(un_header.hash(), vec![0]);
-        let un_sh = &MockSignedHeader::new(un_header, un_commit);
-
+    fn test_verify_single_1_val_skip() {
         let threshold = &MockThreshold{};
+        let ts = &init_state(vec!(0));
 
-        assert!(verify_single(ts, un_sh, un_vals, un_next_vals, threshold).is_ok());
+        // same validators, full commit; ok
+        let (un_sh, un_vals, un_next_vals) = next_state(vec!(0), vec!(0));
+        assert!(verify_single(ts, &un_sh, &un_vals, &un_next_vals, threshold).is_ok());
+
+        // same validators, empty commit; not ok
+        let (un_sh, un_vals, un_next_vals) = next_state(vec!(0), vec!());
+        let result = verify_single(ts, &un_sh, &un_vals, &un_next_vals, threshold);
+        assert_eq!(result, Err(Error::InvalidCommitLength));
+
+        // same validators, none in commit; not ok
+        let (un_sh, un_vals, un_next_vals) = next_state(vec!(0), vec!(1));
+        let result = verify_single(ts, &un_sh, &un_vals, &un_next_vals, threshold);
+        assert_eq!(result, Err(Error::InsufficientVotingPower));
+
+        // different validators, original commit; not ok
+        let (un_sh, un_vals, un_next_vals) = next_state(vec!(1), vec!(0));
+        let result = verify_single(ts, &un_sh, &un_vals, &un_next_vals, threshold);
+        assert_eq!(result, Err(Error::InsufficientVotingPower));
+
+        // different validators, correct commit; not ok
+        let (un_sh, un_vals, un_next_vals) = next_state(vec!(1), vec!(1));
+        let result = verify_single(ts, &un_sh, &un_vals, &un_next_vals, threshold);
+        assert_eq!(result, Err(Error::InsufficientVotingPower));
     }
 }
