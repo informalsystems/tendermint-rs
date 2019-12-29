@@ -76,7 +76,7 @@ where
     // for vals hash should be part of validate_vals_and_commit. then this function
     // is basically just verify_commit_trusting. Would need to update spec as well.
     // In sequential case, would still need to return early or not call check_support at all.
-    let _ = is_within_trust_period(h1.header(), trusting_period, now)?;
+    is_within_trust_period(h1.header(), trusting_period, now)?;
 
     // check the sequential case
     if h2.header().height() == h1.header().height().increment() {
@@ -136,7 +136,7 @@ where
     let commit = signed_header.commit();
 
     // basic validatity checks that header, commit, and vals match up
-    let _ = validate_vals_and_commit(header, commit, validators)?;
+    validate_vals_and_commit(header, commit, validators)?;
 
     // ensure that +2/3 validators signed correctly
     verify_commit_full(validators, commit)
