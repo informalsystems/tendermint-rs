@@ -160,7 +160,7 @@ where
 
     // Recursive call to update to the original untrusted_height.
     verify_and_update_bisection(
-        Height::from(untrusted_height),
+        untrusted_height,
         trust_threshold,
         trusting_period,
         now,
