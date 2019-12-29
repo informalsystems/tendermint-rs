@@ -143,7 +143,9 @@ where
 }
 
 /// Verify that +2/3 of the correct validator set signed this commit.
-/// NOTE: these validators are expected to be the correct validators for the commit.
+/// NOTE: these validators are expected to be the correct validators for the commit,
+/// but since we're using voting_power_in, we can't actually detect if there's
+/// votes from validators not in the set.
 pub fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), Error>
 where
     C: Commit,
@@ -153,6 +155,9 @@ where
 
     // check the signers account for +2/3 of the voting power
     if signed_power * 3 <= total_power * 2 {
+        // TODO(EB): Use a different error from
+        // verify_commit_trusting else bisection
+        // will happen when the commit is actually just invalid!
         return Err(Error::InsufficientVotingPower);
     }
 

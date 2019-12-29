@@ -82,6 +82,12 @@ pub trait Commit {
     /// Compute the voting power of the validators that correctly signed the commit,
     /// according to their voting power in the passed in validator set.
     /// Will return an error in case an invalid signature was included.
+    /// TODO/XXX: This cannot detect if a signature from an incorrect validator 
+    /// is included. That's fine when we're just trying to see if we can skip,
+    /// but when actually verifying it means we might accept commits that have sigs from 
+    /// outside the correct validator set, which is something we expect to be able to detect
+    /// (it's not a real issue, but it would indicate a faulty full node).
+    ///
     ///
     /// This method corresponds to the (pure) auxiliary function in the spec:
     /// `votingpower_in(signers(h.Commit),h.Header.V)`.
@@ -155,6 +161,8 @@ pub enum Error {
     InvalidCommitValue, // commit is not for the header we expected
     InvalidCommitLength,
 
+    // TODO(EB): we need to differentiate when this is from
+    // skipping and when it's from verifying !
     InsufficientVotingPower, // TODO(Liamsi): change to same name as spec if this changes (curently ErrTooMuchChange)
 
     RequestFailed,

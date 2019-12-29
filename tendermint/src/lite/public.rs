@@ -256,11 +256,11 @@ mod tests {
     #[derive(Clone, Debug, Serialize)]
     struct MockCommit {
         hash: Hash,
-        vals: Vec<usize>,
+        vals: Vec<Option<usize>>,
     }
 
     impl MockCommit {
-        fn new(hash: Hash, vals: Vec<usize>) -> MockCommit {
+        fn new(hash: Hash, vals: Vec<Option<usize>>) -> MockCommit {
             MockCommit { hash, vals }
         }
     }
@@ -275,10 +275,16 @@ mod tests {
         // just the intersection
         fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error> {
             let mut power = 0;
-            for signer in self.vals.iter() {
-                for val in vals.vals.iter() {
-                    if signer == val {
-                        power += 1
+
+            // we only care about the Somes.
+            // if there's a signer thats not in the val set,
+            // we can't detect it...
+            for signer_opt in self.vals.iter() {
+                if let Some(signer) = signer_opt {
+                    for val in vals.vals.iter() {
+                        if signer == val {
+                            power += 1
+                        }
                     }
                 }
             }
@@ -347,14 +353,14 @@ mod tests {
     fn init_state(vals_vec: Vec<usize>) -> MockState {
         let time = init_time();
         let height = 1;
-        let vals = &MockValSet::new(vals_vec);
+        let vals = &MockValSet::new(vals_vec.clone());
         let header = MockHeader::new(height, time, vals.hash(), vals.hash());
-        let commit = MockCommit::new(header.hash(), vec!(0));
+        let commit = MockCommit::new(header.hash(), vals_vec.into_iter().map(|x| Some(x)).collect());
         let sh = &MockSignedHeader::new(header, commit);
         MockState::new(sh, vals)
     }
 
-    fn next_state(vals_vec: Vec<usize>, commit_vec: Vec<usize>) -> 
+    fn next_state(vals_vec: Vec<usize>, commit_vec: Vec<Option<usize>>) -> 
         (MockSignedHeader, MockValSet, MockValSet) {
         let time = init_time() + Duration::new(10, 0);
         let height = 10;
@@ -365,35 +371,81 @@ mod tests {
         (MockSignedHeader::new(header, commit), vals, next_vals)
     }
 
-    // test skipping with valid data, but with
-    // various changes to validator set and who signs the commit
+    fn assert_err(ts: &MockState, vals: Vec<usize>, commit: Vec<Option<usize>>, err: Error) {
+        let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
+        let result = verify_single(ts, &un_sh, &un_vals, &un_next_vals, THRESHOLD);
+        assert_eq!(result, Err(err));
+    }
+
+    fn assert_ok(ts: &MockState, vals: Vec<usize>, commit: Vec<Option<usize>>) {
+        let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
+        assert!(verify_single(ts, &un_sh, &un_vals, &un_next_vals, THRESHOLD).is_ok());
+    }
+
+    static THRESHOLD: &MockThreshold = &MockThreshold{};
+
+    // test verifying a skip header that we can trust with valid data and 1 validator.
     #[test]
-    fn test_verify_single_1_val_skip() {
-        let threshold = &MockThreshold{};
+    fn test_verify_single_skip_1_val_verify() {
         let ts = &init_state(vec!(0));
 
-        // same validators, full commit; ok
-        let (un_sh, un_vals, un_next_vals) = next_state(vec!(0), vec!(0));
-        assert!(verify_single(ts, &un_sh, &un_vals, &un_next_vals, threshold).is_ok());
+        // 100% overlap, but wrong commit.
+        // NOTE: This should be an invalid commit error since there's 
+        // a vote from a validator not in the set !
+        // but voting_power_in isn't smart enough to see this ...
+        assert_err(ts, vec!(1), vec!(Some(0)), Error::InsufficientVotingPower);
+    }
 
-        // same validators, empty commit; not ok
-        let (un_sh, un_vals, un_next_vals) = next_state(vec!(0), vec!());
-        let result = verify_single(ts, &un_sh, &un_vals, &un_next_vals, threshold);
-        assert_eq!(result, Err(Error::InvalidCommitLength));
 
-        // same validators, none in commit; not ok
-        let (un_sh, un_vals, un_next_vals) = next_state(vec!(0), vec!(1));
-        let result = verify_single(ts, &un_sh, &un_vals, &un_next_vals, threshold);
-        assert_eq!(result, Err(Error::InsufficientVotingPower));
+    // test whether we can jump to a new header with valid data and commit,
+    // starting with 1 validator.
+    #[test]
+    fn test_verify_single_skip_1_val_skip() {
+        let ts = &init_state(vec!(0));
 
-        // different validators, original commit; not ok
-        let (un_sh, un_vals, un_next_vals) = next_state(vec!(1), vec!(0));
-        let result = verify_single(ts, &un_sh, &un_vals, &un_next_vals, threshold);
-        assert_eq!(result, Err(Error::InsufficientVotingPower));
+        //*****
+        // Ok
 
-        // different validators, correct commit; not ok
-        let (un_sh, un_vals, un_next_vals) = next_state(vec!(1), vec!(1));
-        let result = verify_single(ts, &un_sh, &un_vals, &un_next_vals, threshold);
-        assert_eq!(result, Err(Error::InsufficientVotingPower));
+        // 100% overlap (original signer is present in commit)
+        assert_ok(ts, vec!(0), vec!(Some(0)));
+        assert_ok(ts, vec!(0, 1), vec!(Some(0), Some(1)));
+        assert_ok(ts, vec!(0, 1, 2), vec!(Some(0), Some(1), Some(2)));
+        assert_ok(ts, vec!(0, 1, 2, 3), vec!(Some(0), Some(1), Some(2), Some(3)));
+
+        //*****
+        // Err
+
+        // 0% overlap - new val set without the original signer
+        assert_err(ts, vec!(1), vec!(Some(1)), Error::InsufficientVotingPower);
+        // 0% overlap - val set contains original signer, but they didn't sign
+        assert_err(ts, vec!(0, 1, 2, 3), vec!(None, Some(1), Some(2), Some(3)), Error::InsufficientVotingPower);
+    }
+
+    // test whether we can jump to a new header with valid data and commit,
+    // starting with 2 validators.
+    #[test]
+    fn test_verify_single_skip_2_val_skip() {
+        let ts = &init_state(vec!(0, 1));
+
+        //*************
+        // OK
+
+        // 100% overlap (both original signers still present)
+        assert_ok(ts, vec!(0, 1), vec!(Some(0), Some(1)));
+        assert_ok(ts, vec!(0, 1, 2), vec!(Some(0), Some(1), Some(2)));
+        
+        // 50% overlap (one original signer still present)
+        assert_ok(ts, vec!(0), vec!(Some(0)));
+        assert_ok(ts, vec!(0, 1, 2, 3), vec!(None, Some(1), Some(2), Some(3)));
+
+        //*************
+        // Err
+        
+        // 0% overlap (neither original signer still present)
+        assert_err(ts, vec!(2), vec!(Some(2)), Error::InsufficientVotingPower);
+
+        // 0% overlap (original signer is still in val set but not in commit)
+        assert_err(ts, vec!(0, 2, 3, 4), vec!(None, Some(2), Some(3), Some(4)), Error::InsufficientVotingPower);
+
     }
 }
