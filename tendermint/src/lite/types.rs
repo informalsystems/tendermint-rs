@@ -82,9 +82,9 @@ pub trait Commit {
     /// Compute the voting power of the validators that correctly signed the commit,
     /// according to their voting power in the passed in validator set.
     /// Will return an error in case an invalid signature was included.
-    /// TODO/XXX: This cannot detect if a signature from an incorrect validator 
+    /// TODO/XXX: This cannot detect if a signature from an incorrect validator
     /// is included. That's fine when we're just trying to see if we can skip,
-    /// but when actually verifying it means we might accept commits that have sigs from 
+    /// but when actually verifying it means we might accept commits that have sigs from
     /// outside the correct validator set, which is something we expect to be able to detect
     /// (it's not a real issue, but it would indicate a faulty full node).
     ///
@@ -149,7 +149,8 @@ pub trait Store {
     fn get_smaller_or_equal(&self, h: Height) -> Result<Self::TrustedState, Error>;
 }
 
-#[derive(Debug, PartialEq)]
+// NOTE: Copy/Clone for convenience in testing ...
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Error {
     Expired,
     DurationOutOfRange,
