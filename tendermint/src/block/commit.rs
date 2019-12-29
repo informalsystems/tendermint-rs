@@ -32,7 +32,7 @@ impl Precommits {
 
     /// Convert this collection of precommits into a vector
     pub fn into_vec(self) -> Vec<Option<Vote>> {
-        self.0.clone()
+        self.0
     }
 
     /// Iterate over the precommits in the collection
