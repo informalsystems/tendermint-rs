@@ -357,10 +357,7 @@ mod tests {
         let height = 1;
         let vals = &MockValSet::new(vals_vec.clone());
         let header = MockHeader::new(height, time, vals.hash(), vals.hash());
-        let commit = MockCommit::new(
-            header.hash(),
-            vals_vec.into_iter().map(|x| Some(x)).collect(),
-        );
+        let commit = MockCommit::new(header.hash(), vals_vec.into_iter().map(Some).collect());
         let sh = &MockSignedHeader::new(header, commit);
         MockState::new(sh, vals)
     }
