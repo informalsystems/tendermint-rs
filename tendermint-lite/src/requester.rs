@@ -30,9 +30,9 @@ impl lite::types::Requester for Requester {
         match r {
             Ok(response) => Ok(response.signed_header),
             Err(e) => {
-		println!("REQUEST ERR: {:?}", e);
-	        Err(lite::Error::RequestFailed)
-	    }
+                println!("REQUEST ERR: {:?}", e);
+                Err(lite::Error::RequestFailed)
+            }
         }
     }
 
