@@ -36,19 +36,6 @@ where
     }
 }
 
-pub fn validate_next_vals<H, V>(header: &H, next_vals: &V) -> Result<(), Error>
-where
-    H: Header,
-    V: ValidatorSet,
-{
-    // ensure the next validators in the header matches what was supplied.
-    if header.next_validators_hash() != next_vals.hash() {
-        return Err(Error::InvalidNextValidatorSet);
-    }
-
-    Ok(())
-}
-
 /// Captures the skipping condition, i.e., it defines when we can trust the header
 /// h2 based on a known trusted state.
 /// Note that the trusted header included in the trusted state and h2 have already
@@ -94,21 +81,29 @@ where
     verify_commit_trusting(h1_next_vals, h2.commit(), trust_threshold)
 }
 
-/// Validate the validators and commit against the header.
+/// Validate the validators, next validators, and commit against the header.
 // TODO(EB): consider making this a method on Commit so the details are hidden,
 // and so we can remove the votes_len() method (that check would be part of the
 // methods implementation). These checks aren't reflected
 // explicitly in the spec yet, only in the sentence "Additional checks should
 // be done in the implementation to ensure header is well formed".
-pub fn validate_vals_and_commit<H, V, C>(header: &H, commit: &C, vals: &V) -> Result<(), Error>
+pub fn validate_signed_header_and_vals<H, V, C>(
+    header: &H,
+    commit: &C,
+    vals: &V,
+    next_vals: &V,
+) -> Result<(), Error>
 where
     H: Header,
     V: ValidatorSet,
     C: Commit,
 {
-    // ensure the header validators match these validators
+    // ensure the header validator hashes match the given validators
     if header.validators_hash() != vals.hash() {
         return Err(Error::InvalidValidatorSet);
+    }
+    if header.next_validators_hash() != next_vals.hash() {
+        return Err(Error::InvalidNextValidatorSet);
     }
 
     // ensure the header matches the commit
@@ -132,11 +127,11 @@ where
     SH: SignedHeader<Commit = C>,
     C: Commit,
 {
-    let header = signed_header.header();
+    // XXX let header = signed_header.header();
     let commit = signed_header.commit();
 
     // basic validatity checks that header, commit, and vals match up
-    validate_vals_and_commit(header, commit, validators)?;
+    // XXX validate_vals_and_commit(header, commit, validators)?;
 
     // ensure that +2/3 validators signed correctly
     verify_commit_full(validators, commit)

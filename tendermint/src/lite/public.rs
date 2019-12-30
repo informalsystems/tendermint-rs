@@ -31,8 +31,12 @@ where
     // validate the untrusted header against its commit, vals, and next_vals
     let untrusted_header = untrusted_sh.header();
     let untrusted_commit = untrusted_sh.commit();
-    validate_vals_and_commit(untrusted_header, untrusted_commit, untrusted_vals)?;
-    validate_next_vals(untrusted_header, untrusted_next_vals)?;
+    validate_signed_header_and_vals(
+        untrusted_header,
+        untrusted_commit,
+        untrusted_vals,
+        untrusted_next_vals,
+    )?;
 
     // if the new height is not sequential, check if we can skip
     if untrusted_height > trusted_height.increment() {
