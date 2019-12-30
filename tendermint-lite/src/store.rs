@@ -4,6 +4,7 @@ use tendermint::lite::{Error, Header, SignedHeader, Store, TrustedState};
 
 use std::collections::HashMap;
 
+#[derive(Default)]
 pub struct MemStore {
     height: Height,
     store: HashMap<Height, State>,
@@ -39,7 +40,7 @@ impl Store for MemStore {
         }
     }
 
-    fn get_smaller_or_equal(&self, h: Height) -> Result<Self::TrustedState, Error> {
+    fn get_smaller_or_equal(&self, _height: Height) -> Result<Self::TrustedState, Error> {
         Err(Error::RequestFailed)
     }
 }

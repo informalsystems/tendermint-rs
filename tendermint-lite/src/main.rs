@@ -2,10 +2,9 @@ use tendermint::hash::Algorithm;
 use tendermint::lite;
 use tendermint::lite::Error;
 use tendermint::lite::{
-    Header as _, Requester as _, SignedHeader as _, Store as _, TrustThreshold, TrustedState as _,
+    Header as _, Requester as _, SignedHeader as _, Store as _, TrustedState as _,
     ValidatorSet as _,
 };
-use tendermint::net;
 use tendermint::rpc;
 use tendermint::{block::Height, Hash};
 
@@ -18,13 +17,13 @@ use std::time::{Duration, SystemTime};
 use tokio::runtime::Builder;
 
 // TODO: these should be config/args
-static subjective_height: u64 = 1;
-static subjective_vals_hash_hex: &str =
+static SUBJECTIVE_HEIGHT: u64 = 1;
+static SUBJECTIVE_VALS_HASH_HEX: &str =
     "A5A7DEA707ADE6156F8A981777CA093F178FC790475F6EC659B6617E704871DD";
-static rpc_addr: &str = "localhost:26657";
+static RPC_ADDR: &str = "localhost:26657";
 
 // TODO: this should somehow be configurable ...
-static threshold: &TrustThresholdOneThird = &TrustThresholdOneThird {};
+static THRESHOLD: &TrustThresholdOneThird = &TrustThresholdOneThird {};
 
 pub fn block_on<F: Future>(future: F) -> F::Output {
     Builder::new()
@@ -40,14 +39,14 @@ fn main() {
     let trusting_period = Duration::new(600, 0);
 
     // setup requester for primary peer
-    let client = block_on(rpc::Client::new(&rpc_addr.parse().unwrap())).unwrap();
+    let client = block_on(rpc::Client::new(&RPC_ADDR.parse().unwrap())).unwrap();
     let req = Requester::new(client);
     let mut store = MemStore::new();
 
-    let vals_hash = Hash::from_hex_upper(Algorithm::Sha256, subjective_vals_hash_hex).unwrap();
+    let vals_hash = Hash::from_hex_upper(Algorithm::Sha256, SUBJECTIVE_VALS_HASH_HEX).unwrap();
 
     validate_and_init_subjective_state(
-        Height::from(subjective_height),
+        Height::from(SUBJECTIVE_HEIGHT),
         vals_hash,
         &mut store,
         &req,
@@ -74,7 +73,7 @@ fn main() {
         let now = &SystemTime::now();
         lite::verify_and_update_bisection(
             latest_height,
-            threshold,
+            THRESHOLD,
             &trusting_period,
             now,
             &req,
@@ -105,7 +104,7 @@ fn validate_and_init_subjective_state(
     store: &mut MemStore,
     req: &Requester,
 ) -> Result<(), Error> {
-    if let Ok(_) = store.get(height) {
+    if store.get(height).is_ok() {
         // we already have this !
         return Ok(());
     }
@@ -118,7 +117,7 @@ fn validate_and_init_subjective_state(
         panic!("vals hash dont match")
     }
 
-    let signed_header = req.signed_header(subjective_height)?;
+    let signed_header = req.signed_header(SUBJECTIVE_HEIGHT)?;
 
     // TODO: validate signed_header.commit() with the vals ...
 

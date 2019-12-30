@@ -1,5 +1,5 @@
 use tendermint::lite::TrustedState;
-use tendermint::{block::signed_header::SignedHeader, lite, validator::Set};
+use tendermint::{block::signed_header::SignedHeader, validator::Set};
 
 #[derive(Clone)]
 pub struct State {
