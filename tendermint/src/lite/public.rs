@@ -316,7 +316,7 @@ mod tests {
         }
     }
 
-    // uses refs because the trait defines `new` to take refs ...
+    // Should we just make TrustedState this struct instead ?
     struct MockState {
         header: MockSignedHeader,
         vals: MockValSet,
