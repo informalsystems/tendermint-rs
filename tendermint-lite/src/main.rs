@@ -1,4 +1,4 @@
-use tendermint::hash::Algorithm;
+use tendermint::hash;
 use tendermint::lite;
 use tendermint::lite::Error;
 use tendermint::lite::{
@@ -43,7 +43,8 @@ fn main() {
     let req = Requester::new(client);
     let mut store = MemStore::new();
 
-    let vals_hash = Hash::from_hex_upper(Algorithm::Sha256, SUBJECTIVE_VALS_HASH_HEX).unwrap();
+    let vals_hash =
+        Hash::from_hex_upper(hash::Algorithm::Sha256, SUBJECTIVE_VALS_HASH_HEX).unwrap();
 
     validate_and_init_subjective_state(
         Height::from(SUBJECTIVE_HEIGHT),
