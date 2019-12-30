@@ -10,7 +10,7 @@ use std::time::SystemTime;
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header (at height h-1) and the validator set
 /// (at height h) to use to verify the next header.
-pub trait TrustedState {
+pub trait TrustedState: Clone {
     type LastHeader: SignedHeader;
     type ValidatorSet: ValidatorSet;
 
@@ -138,6 +138,7 @@ pub trait Store {
     type TrustedState: TrustedState;
 
     /// Add this state (header at height h, validators at height h+1) as trusted to the store.
+    // TODO: should this really take a reference?
     fn add(&mut self, trusted: &Self::TrustedState) -> Result<(), Error>;
 
     /// Retrieve the trusted state at height h if it exists.

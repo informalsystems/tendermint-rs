@@ -69,6 +69,7 @@ fn header_tests_verify() {
     run_test_cases(cases);
 }
 
+#[derive(Clone)]
 struct Trusted {
     last_signed_header: SignedHeader,
     validators: Set,

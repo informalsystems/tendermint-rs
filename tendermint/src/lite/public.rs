@@ -317,6 +317,7 @@ mod tests {
     }
 
     // Should we just make TrustedState this struct instead ?
+    #[derive(Clone)]
     struct MockState {
         header: MockSignedHeader,
         vals: MockValSet,
