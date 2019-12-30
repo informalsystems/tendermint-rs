@@ -12,9 +12,11 @@ pub struct Request {
 impl Request {
     /// Create a new request for commit info about a particular block
     pub fn new(height: block::Height) -> Self {
-        Self {
-            height: Some(height),
+        let mut height_opt = Some(height);
+        if height.value() == 0 {
+            height_opt = None
         }
+        Self { height: height_opt }
     }
 }
 

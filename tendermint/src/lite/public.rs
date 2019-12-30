@@ -31,16 +31,25 @@ where
     // validate the untrusted header against its commit, vals, and next_vals
     let untrusted_header = untrusted_sh.header();
     let untrusted_commit = untrusted_sh.commit();
+    println!(
+        "validating untrusted header at height {:?}: {:?}, {:?}",
+        untrusted_height,
+        untrusted_header.hash(),
+        untrusted_commit.header_hash(),
+    );
     validate_vals_and_commit(untrusted_header, untrusted_commit, untrusted_vals)?;
     validate_next_vals(untrusted_header, untrusted_next_vals)?;
 
     // if the new height is not sequential, check if we can skip
     if untrusted_height > trusted_height.increment() {
         let trusted_vals = trusted_state.validators();
+        println!("checking if we can skip to header {:?}", untrusted_height);
         verify_commit_trusting(trusted_vals, untrusted_commit, trust_threshold)?;
+        println!("... ok to skip to header {:?}!", untrusted_height);
     }
 
     // verify the untrusted commit
+    println!("verifying commit for header {:?}", untrusted_height);
     verify_commit_full(untrusted_vals, untrusted_sh.commit())
 }
 

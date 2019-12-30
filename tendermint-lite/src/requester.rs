@@ -6,12 +6,13 @@ use tendermint::validator;
 use core::future::Future;
 use tokio::runtime::Builder;
 
+// TODO rename to RPCRequester or something ...
 pub struct Requester {
     client: rpc::Client,
 }
 
 impl Requester {
-    fn new(client: rpc::Client) -> Self {
+    pub fn new(client: rpc::Client) -> Self {
         Requester { client }
     }
 }
@@ -28,7 +29,10 @@ impl lite::types::Requester for Requester {
         let r = block_on(self.client.commit(h));
         match r {
             Ok(response) => Ok(response.signed_header),
-            Err(e) => Err(lite::Error::RequestFailed),
+            Err(e) => {
+		println!("REQUEST ERR: {:?}", e);
+	        Err(lite::Error::RequestFailed)
+	    }
         }
     }
 
