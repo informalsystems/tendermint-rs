@@ -87,7 +87,14 @@ where
     store.add(&new_trusted_state)
 }
 
-/// Attempt to update the store to the given untrusted height.
+/// Attempt to update the store to the given untrusted height
+/// by requesting the necessary data (signed headers and validators).
+/// Returns an error if:
+///     - we're already at or past that height
+///     - our latest state expired
+///     - any requests fail
+///     - requested data is inconsistent (eg. vals don't match hashes in header)
+///     - validators did not correctly commit their blocks
 /// This function is recursive: it uses a bisection algorithm
 /// to request data for intermediate heights as necessary.
 /// Ensures our last trusted header hasn't expired yet, and that
@@ -111,11 +118,50 @@ where
     S: Store<TrustedState = TS>,
 {
     // Fetch the latest state and ensure it hasn't expired.
-    // Note when calling itself recursively, this check is redundant,
-    // but leaving it keeps things simple ...
+    // Note we only check for expiry once in this
+    // verify_and_update_bisection function since we assume the
+    // time is passed in and we don't access a clock internall.
+    // Thus the trust_period must be long enough to incorporate the
+    // expected time to complete this function.
     let trusted_state = store.get(Height::from(0))?;
     let trusted_sh = trusted_state.last_header();
     is_within_trust_period(trusted_sh.header(), trusting_period, now)?;
+
+    // TODO: consider fetching the header we're trying to sync to and
+    // checking that it's time is less then `now + X` for some small X.
+    // If not, it means that either our local clock is really slow
+    // or the blockchains BFT time is really wrong.
+    // In either case, we should probably raise an error.
+    // Note this would be stronger than checking that the untrusted
+    // header is within the trusting period, as it could still diverge
+    // significantly from `now`.
+
+    // inner recursive function which assumes
+    // trusting_period check is already done.
+    _verify_and_update_bisection(untrusted_height, trust_threshold, req, store)
+}
+
+// inner recursive function for verify_and_update_bisection.
+// see that function's docs.
+fn _verify_and_update_bisection<TS, SH, C, L, R, S>(
+    untrusted_height: Height,
+    trust_threshold: &L,
+    req: &R,
+    store: &mut S,
+) -> Result<(), Error>
+where
+    TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
+    SH: SignedHeader<Commit = C>,
+    C: Commit,
+    L: TrustThreshold,
+    R: Requester<SignedHeader = SH, ValidatorSet = C::ValidatorSet>,
+    S: Store<TrustedState = TS>,
+{
+    // this get is redundant the first time.
+    // TODO: possibly refactor so this func takes and returns
+    // trusted_state.
+    let trusted_state = store.get(Height::from(0))?;
+    let trusted_sh = trusted_state.last_header();
 
     // fetch the header and vals for the new height
     let untrusted_sh = &req.signed_header(untrusted_height)?;
@@ -148,29 +194,17 @@ where
     }
 
     // Get the pivot height for bisection.
-    let pivot_height: u64 = (trusted_sh.header().height().value() + untrusted_height.value()) / 2;
+    let trusted_h = trusted_sh.header().height().value();
+    let untrusted_h = untrusted_height.value();
+    let pivot_height = Height::from((trusted_h + untrusted_h) / 2);
 
     // Recursive call to update to the pivot height.
     // When this completes, we will either return an error or
     // have updated the store to the pivot height.
-    verify_and_update_bisection(
-        Height::from(pivot_height),
-        trust_threshold,
-        trusting_period,
-        now,
-        req,
-        store,
-    )?;
+    _verify_and_update_bisection(pivot_height, trust_threshold, req, store)?;
 
     // Recursive call to update to the original untrusted_height.
-    verify_and_update_bisection(
-        untrusted_height,
-        trust_threshold,
-        trusting_period,
-        now,
-        req,
-        store,
-    )
+    _verify_and_update_bisection(untrusted_height, trust_threshold, req, store)
 }
 
 mod tests {
