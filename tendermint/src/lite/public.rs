@@ -1,5 +1,6 @@
 use crate::block::Height;
 use crate::lite::*;
+use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
 // Verify a single untrusted header against a trusted state.
@@ -22,11 +23,6 @@ where
     L: TrustThreshold,
 {
     // ensure the new height is higher
-    let untrusted_height = untrusted_sh.header().height();
-    let trusted_height = trusted_state.last_header().header().height();
-    if untrusted_height <= trusted_height {
-        // TODO: return err
-    };
 
     // validate the untrusted header against its commit, vals, and next_vals
     let untrusted_header = untrusted_sh.header();
@@ -38,10 +34,30 @@ where
         untrusted_next_vals,
     )?;
 
-    // if the new height is not sequential, check if we can skip
-    if untrusted_height > trusted_height.increment() {
-        let trusted_vals = trusted_state.validators();
-        verify_commit_trusting(trusted_vals, untrusted_commit, trust_threshold)?;
+    // ensure the new height is higher.
+    // if its +1, ensure the vals are correct.
+    // if its >+1, ensure we can skip to it
+    let trusted_header = trusted_state.last_header().header();
+    let trusted_height = trusted_header.height();
+    let untrusted_height = untrusted_sh.header().height();
+    match untrusted_height.cmp(&trusted_height.increment()) {
+        Ordering::Less => {
+            return Err(Error::NonIncreasingHeight)
+        }
+        Ordering::Equal => {
+            let trusted_vals_hash = trusted_header.next_validators_hash();
+            let untrusted_vals_hash = untrusted_header.validators_hash();
+            if trusted_vals_hash != untrusted_vals_hash {
+                // TODO: more specific error 
+                // ie. differentiate from when next_vals.hash() doesnt
+                // match the header hash ...
+                return Err(Error::InvalidNextValidatorSet);
+            }
+        }
+        Ordering::Greater => {
+            let trusted_vals = trusted_state.validators();
+            verify_commit_trusting(trusted_vals, untrusted_commit, trust_threshold)?;
+        }
     }
 
     // verify the untrusted commit

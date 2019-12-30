@@ -155,6 +155,8 @@ pub enum Error {
     Expired,
     DurationOutOfRange,
 
+    NonIncreasingHeight,
+
     InvalidSignature, // TODO: deduplicate with ErrorKind::SignatureInvalid
 
     InvalidValidatorSet,
