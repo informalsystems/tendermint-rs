@@ -43,12 +43,7 @@ where
 // methods implementation). These checks aren't reflected
 // explicitly in the spec yet, only in the sentence "Additional checks should
 // be done in the implementation to ensure header is well formed".
-pub fn validate_signed_header_and_vals<H, V, C>(
-    header: &H,
-    commit: &C,
-    vals: &V,
-    next_vals: &V,
-) -> Result<(), Error>
+fn validate_untrusted<H, V, C>(header: &H, commit: &C, vals: &V, next_vals: &V) -> Result<(), Error>
 where
     H: Header,
     V: ValidatorSet,
@@ -146,7 +141,7 @@ where
     // validate the untrusted header against its commit, vals, and next_vals
     let untrusted_header = untrusted_sh.header();
     let untrusted_commit = untrusted_sh.commit();
-    validate_signed_header_and_vals(
+    validate_untrusted(
         untrusted_header,
         untrusted_commit,
         untrusted_vals,
