@@ -81,6 +81,34 @@ where
     verify_commit_trusting(h1_next_vals, h2.commit(), trust_threshold)
 }
 
+// XXX: Replaced by validate_signed_header_and_vals.
+// Remove when removing check_support
+fn validate_vals_and_commit<H, V, C>(header: &H, commit: &C, vals: &V) -> Result<(), Error>
+where
+    H: Header,
+    V: ValidatorSet,
+    C: Commit,
+{
+    // ensure the header validators match these validators
+    if header.validators_hash() != vals.hash() {
+        return Err(Error::InvalidValidatorSet);
+    }
+
+    // ensure the header matches the commit
+    if header.hash() != commit.header_hash() {
+        return Err(Error::InvalidCommitValue);
+    }
+
+    // ensure the validator size matches the commit size
+    // NOTE: this is commit structure specifc and should be
+    // hidden from the light client ...
+    if vals.len() != commit.votes_len() {
+        return Err(Error::InvalidCommitLength);
+    }
+
+    Ok(())
+}
+
 /// Validate the validators, next validators, and commit against the header.
 // TODO(EB): consider making this a method on Commit so the details are hidden,
 // and so we can remove the votes_len() method (that check would be part of the
@@ -127,11 +155,11 @@ where
     SH: SignedHeader<Commit = C>,
     C: Commit,
 {
-    // XXX let header = signed_header.header();
+    let header = signed_header.header();
     let commit = signed_header.commit();
 
     // basic validatity checks that header, commit, and vals match up
-    // XXX validate_vals_and_commit(header, commit, validators)?;
+    validate_vals_and_commit(header, commit, validators)?;
 
     // ensure that +2/3 validators signed correctly
     verify_commit_full(validators, commit)
