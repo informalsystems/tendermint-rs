@@ -142,11 +142,10 @@ pub trait Store {
 
     /// Retrieve the trusted state at height h if it exists.
     /// If it does not exist return an error.
+    /// If h=0, return the latest trusted state.
+    /// TODO: use an enum instead of special-casing 0, see
+    /// https://github.com/interchainio/tendermint-rs/issues/118
     fn get(&self, h: Height) -> Result<&Self::TrustedState, Error>;
-
-    /// Retrieve the trusted signed header with the largest height h' with h' <= h, if it exists.
-    /// If it does not exist return an error.
-    fn get_smaller_or_equal(&self, h: Height) -> Result<Self::TrustedState, Error>;
 }
 
 // NOTE: Copy/Clone for convenience in testing ...
