@@ -78,7 +78,7 @@ where
 }
 
 /// Verify that +2/3 of the correct validator set signed this commit.
-/// NOTE: these validators are expected to be the correct validators for the commit,
+/// NOTE: These validators are expected to be the correct validators for the commit,
 /// but since we're using voting_power_in, we can't actually detect if there's
 /// votes from validators not in the set.
 pub fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), Error>
@@ -143,7 +143,6 @@ where
     C: Commit,
     L: TrustThreshold,
 {
-    // ensure the new height is higher
 
     // validate the untrusted header against its commit, vals, and next_vals
     let untrusted_header = untrusted_sh.header();
@@ -204,7 +203,7 @@ where
     L: TrustThreshold,
     S: Store<TrustedState = TS>,
 {
-    // fetch the latest state and ensure it hasn't expired
+    // Fetch the latest state and ensure it hasn't expired.
     let trusted_state = store.get(Height::from(0))?;
     let trusted_sh = trusted_state.last_header();
     is_within_trust_period(trusted_sh.header(), trusting_period, now)?;
@@ -217,7 +216,7 @@ where
         trust_threshold,
     )?;
 
-    // the untrusted header is now trusted. update the store
+    // The untrusted header is now trusted; Update the store
     let new_trusted_state = TS::new(untrusted_sh, untrusted_next_vals);
     store.add(&new_trusted_state)
 }
