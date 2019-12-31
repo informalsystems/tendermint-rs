@@ -178,7 +178,7 @@ where
         }
     }
 
-    // verify the untrusted commit
+    // All validation passed successfully. Verify the validators correctly committed the block.
     verify_commit_full(untrusted_vals, untrusted_sh.commit())
 }
 
