@@ -1,12 +1,12 @@
 //! Core logic and traits of a light client.
 
-// TODO: don't expose the verifier, just the types and the public API.
-// the verifier has low level functions that can be used incorrectly.
-
-pub mod public;
 pub mod types;
 pub mod verifier;
 
-pub use self::public::*;
 pub use self::types::*;
-pub use self::verifier::*;
+
+// TODO: don't expose this once the json tests
+// switch to using one of the other functions
+pub use self::verifier::verify_single;
+
+pub use self::verifier::{verify_and_update_bisection, verify_and_update_single};
