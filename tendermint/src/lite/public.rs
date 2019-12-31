@@ -9,7 +9,7 @@ use std::time::{Duration, SystemTime};
 // and hence it's possible to use it incorrectly.
 // If trusted_state is not expired and this returns Ok, the
 // untrusted_sh and untrusted_next_vals can be considered trusted.
-fn verify_single<TS, SH, C, L>(
+pub fn verify_single<TS, SH, C, L>(
     trusted_state: &TS,
     untrusted_sh: &SH,
     untrusted_vals: &C::ValidatorSet,
@@ -41,14 +41,12 @@ where
     let trusted_height = trusted_header.height();
     let untrusted_height = untrusted_sh.header().height();
     match untrusted_height.cmp(&trusted_height.increment()) {
-        Ordering::Less => {
-            return Err(Error::NonIncreasingHeight)
-        }
+        Ordering::Less => return Err(Error::NonIncreasingHeight),
         Ordering::Equal => {
             let trusted_vals_hash = trusted_header.next_validators_hash();
             let untrusted_vals_hash = untrusted_header.validators_hash();
             if trusted_vals_hash != untrusted_vals_hash {
-                // TODO: more specific error 
+                // TODO: more specific error
                 // ie. differentiate from when next_vals.hash() doesnt
                 // match the header hash ...
                 return Err(Error::InvalidNextValidatorSet);
