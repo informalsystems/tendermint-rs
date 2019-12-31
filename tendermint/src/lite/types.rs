@@ -155,7 +155,8 @@ pub enum Error {
     InvalidCommitValue, // commit is not for the header we expected
     InvalidCommitLength,
 
-    InsufficientVotingPower, // TODO(Liamsi): change to same name as spec if this changes (curently ErrTooMuchChange)
+    InsufficientVotingPower, /* TODO(Liamsi): change to same name as spec if this changes
+                              * (curently ErrTooMuchChange) */
 
     RequestFailed,
 }

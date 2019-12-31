@@ -6,7 +6,7 @@
 //! ```
 //! // TODO: add a proper example maybe showing how a `can_trust_bisection`
 //! // looks using the types and methods in this crate/module.
-//!```
+//! ```
 
 use crate::block::Height;
 use crate::lite::{
