@@ -143,7 +143,6 @@ where
     C: Commit,
     L: TrustThreshold,
 {
-
     // validate the untrusted header against its commit, vals, and next_vals
     let untrusted_header = untrusted_sh.header();
     let untrusted_commit = untrusted_sh.commit();
