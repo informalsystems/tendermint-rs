@@ -36,7 +36,7 @@ pub fn block_on<F: Future>(future: F) -> F::Output {
 
 fn main() {
     // TODO: this should be config
-    let trusting_period = Duration::new(600, 0);
+    let trusting_period = Duration::new(6000, 0);
 
     // setup requester for primary peer
     let client = block_on(rpc::Client::new(&RPC_ADDR.parse().unwrap())).unwrap();
@@ -55,10 +55,17 @@ fn main() {
     .unwrap();
 
     loop {
-        // NOTE: 0 is a bad idea. use an Enum{ Height, LatestHeight } or something
-        // instead ..
         let latest = (&req).signed_header(0).unwrap();
-        let latest_height = latest.header().height();
+        let latest_peer_height = latest.header().height();
+
+        let latest = store.get(Height::from(0)).unwrap();
+        let latest_height = latest.last_header().header().height();
+
+        // only bisect to higher heights
+        if latest_peer_height <= latest_height {
+            std::thread::sleep(Duration::new(1, 0));
+            continue;
+        }
 
         println!(
             "attempting bisection from height {:?} to height {:?}",
@@ -68,12 +75,12 @@ fn main() {
                 .last_header()
                 .header()
                 .height(),
-            latest_height,
+            latest_peer_height,
         );
 
         let now = &SystemTime::now();
         lite::verify_and_update_bisection(
-            latest_height,
+            latest_peer_height,
             THRESHOLD,
             &trusting_period,
             now,
