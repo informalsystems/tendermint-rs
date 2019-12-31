@@ -39,8 +39,4 @@ impl Store for MemStore {
             None => Err(Error::RequestFailed),
         }
     }
-
-    fn get_smaller_or_equal(&self, _height: Height) -> Result<Self::TrustedState, Error> {
-        Err(Error::RequestFailed)
-    }
 }

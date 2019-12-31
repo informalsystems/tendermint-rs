@@ -143,16 +143,17 @@ where
     C: Commit,
     L: TrustThreshold,
 {
+    // validate the untrusted header against its commit, vals, and next_vals
+    let untrusted_header = untrusted_sh.header();
+    let untrusted_commit = untrusted_sh.commit();
+
     println!(
         "validating untrusted header at height {:?}: {:?}, {:?}",
-        untrusted_height,
+        untrusted_header.height(),
         untrusted_header.hash(),
         untrusted_commit.header_hash(),
     );
 
-    // validate the untrusted header against its commit, vals, and next_vals
-    let untrusted_header = untrusted_sh.header();
-    let untrusted_commit = untrusted_sh.commit();
     validate_signed_header_and_vals(
         untrusted_header,
         untrusted_commit,
@@ -497,7 +498,7 @@ mod tests {
         }
     }
 
-    // uses refs because the trait defines `new` to take refs ...
+    #[derive(Clone)]
     struct MockState {
         header: MockSignedHeader,
         vals: MockValSet,
