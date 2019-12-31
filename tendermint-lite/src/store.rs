@@ -1,16 +1,17 @@
 use crate::state::State;
 use tendermint::block::Height;
-use tendermint::lite::{Store, TrustedState, SignedHeader, Header, Error};
+use tendermint::lite::{Error, Header, SignedHeader, Store, TrustedState};
 
 use std::collections::HashMap;
 
+#[derive(Default)]
 pub struct MemStore {
     height: Height,
-    store: HashMap<Height, State>
+    store: HashMap<Height, State>,
 }
 
 impl MemStore {
-    fn new() -> MemStore {
+    pub fn new() -> MemStore {
         MemStore {
             height: Height::from(0),
             store: HashMap::new(),
@@ -33,13 +34,13 @@ impl Store for MemStore {
         if h.value() == 0 {
             height = self.height
         }
-        match self.store.get(&height){
+        match self.store.get(&height) {
             Some(state) => Ok(state),
-            None => Err(Error::RequestFailed)
+            None => Err(Error::RequestFailed),
         }
     }
 
-    fn get_smaller_or_equal(&self, h: Height) -> Result<Self::TrustedState, Error> {
+    fn get_smaller_or_equal(&self, _height: Height) -> Result<Self::TrustedState, Error> {
         Err(Error::RequestFailed)
     }
 }

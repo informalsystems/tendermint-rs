@@ -13,7 +13,10 @@ impl Request {
     /// Create a new request for commit info about a particular block
     pub fn new(height: block::Height) -> Self {
         Self {
-            height: Some(height),
+            height: match height.value() {
+                0 => None,
+                _ => Some(height),
+            },
         }
     }
 }

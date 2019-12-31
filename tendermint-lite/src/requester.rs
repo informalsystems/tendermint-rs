@@ -6,12 +6,13 @@ use tendermint::validator;
 use core::future::Future;
 use tokio::runtime::Builder;
 
+// TODO rename to RPCRequester or something ...
 pub struct Requester {
     client: rpc::Client,
 }
 
 impl Requester {
-    fn new(client: rpc::Client) -> Self {
+    pub fn new(client: rpc::Client) -> Self {
         Requester { client }
     }
 }
@@ -28,7 +29,10 @@ impl lite::types::Requester for Requester {
         let r = block_on(self.client.commit(h));
         match r {
             Ok(response) => Ok(response.signed_header),
-            Err(e) => Err(lite::Error::RequestFailed),
+            Err(e) => {
+                println!("REQUEST ERR: {:?}", e);
+                Err(lite::Error::RequestFailed)
+            }
         }
     }
 
@@ -40,7 +44,7 @@ impl lite::types::Requester for Requester {
         let r = block_on(self.client.validators(h));
         match r {
             Ok(response) => Ok(validator::Set::new(response.validators)),
-            Err(e) => Err(lite::Error::RequestFailed),
+            Err(_error) => Err(lite::Error::RequestFailed),
         }
     }
 }
@@ -57,15 +61,11 @@ pub fn block_on<F: Future>(future: F) -> F::Output {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::*;
-    use block::signed_header::SignedHeader;
     use tendermint::lite::types::Header as LiteHeader;
     use tendermint::lite::types::Requester as LiteRequester;
     use tendermint::lite::types::SignedHeader as LiteSignedHeader;
     use tendermint::lite::types::ValidatorSet as LiteValSet;
-    use tendermint::net;
     use tendermint::rpc;
-    use validator::Set;
 
     #[test]
     fn test_val_set() {
