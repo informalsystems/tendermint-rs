@@ -11,7 +11,8 @@ pub struct RemoteError {
 // <https://github.com/tendermint/tendermint/blob/master/privval/errors.go>
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(i32)]
-pub enum Code {
+enum Code {
+    #[allow(dead_code)]
     /// Generic error code useful when the others don't apply
     RemoteSignerError = 1,
 
