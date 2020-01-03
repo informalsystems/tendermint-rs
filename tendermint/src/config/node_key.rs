@@ -1,10 +1,7 @@
 //! Node keys
 
-use crate::{
-    error::{Error, ErrorKind},
-    private_key::PrivateKey,
-};
 use crate::{node, public_key::PublicKey};
+use crate::{private_key::PrivateKey, Error, ErrorKind};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
 

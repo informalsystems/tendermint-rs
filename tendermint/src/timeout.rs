@@ -82,7 +82,7 @@ impl Serialize for Timeout {
 #[cfg(test)]
 mod tests {
     use super::Timeout;
-    use crate::error::ErrorKind;
+    use crate::ErrorKind;
 
     #[test]
     fn parse_seconds() {

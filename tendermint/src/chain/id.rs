@@ -1,6 +1,6 @@
 //! Tendermint blockchain identifiers
 
-use crate::error::{Error, ErrorKind};
+use crate::{Error, ErrorKind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     cmp::Ordering,

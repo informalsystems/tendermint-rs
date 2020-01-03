@@ -22,7 +22,7 @@ macro_rules! err {
 #[derive(Debug)]
 pub struct Error {
     /// Contextual information about the error
-    inner: Context<ErrorKind>,
+    inner: Context<Kind>,
 
     /// Optional message to associate with the error
     msg: Option<String>,
@@ -32,7 +32,7 @@ impl Error {
     /// Create a new error from the given context and optional message
     pub fn new<C>(context: C, msg: Option<String>) -> Self
     where
-        C: Into<Context<ErrorKind>>,
+        C: Into<Context<Kind>>,
     {
         Self {
             inner: context.into(),
@@ -40,8 +40,8 @@ impl Error {
         }
     }
 
-    /// Obtain the error's `ErrorKind`
-    pub fn kind(&self) -> &ErrorKind {
+    /// Obtain the error's `Kind`
+    pub fn kind(&self) -> &Kind {
         self.inner.get_context()
     }
 
@@ -71,39 +71,39 @@ impl Fail for Error {
     }
 }
 
-impl From<ErrorKind> for Error {
-    fn from(kind: ErrorKind) -> Self {
+impl From<Kind> for Error {
+    fn from(kind: Kind) -> Self {
         Error::new(kind, None)
     }
 }
 
 impl From<chrono::ParseError> for Error {
     fn from(err: chrono::ParseError) -> Error {
-        err!(ErrorKind::Parse, err)
+        err!(Kind::Parse, err)
     }
 }
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
-        err!(ErrorKind::Io, err)
+        err!(Kind::Io, err)
     }
 }
 
 impl From<prost::DecodeError> for Error {
     fn from(err: prost::DecodeError) -> Self {
-        err!(ErrorKind::Parse, err)
+        err!(Kind::Parse, err)
     }
 }
 
 impl From<prost::EncodeError> for Error {
     fn from(err: prost::EncodeError) -> Self {
-        err!(ErrorKind::Parse, err)
+        err!(Kind::Parse, err)
     }
 }
 
 impl From<serde_json::error::Error> for Error {
     fn from(err: serde_json::error::Error) -> Self {
-        err!(ErrorKind::Parse, err)
+        err!(Kind::Parse, err)
     }
 }
 
@@ -112,28 +112,28 @@ impl From<signatory::signature::Error> for Error {
         use std::error::Error as _;
 
         if let Some(source) = err.source() {
-            err!(ErrorKind::Crypto, "signature error: {}", source)
+            err!(Kind::Crypto, "signature error: {}", source)
         } else {
-            err!(ErrorKind::Crypto, "signature error")
+            err!(Kind::Crypto, "signature error")
         }
     }
 }
 
 impl From<subtle_encoding::Error> for Error {
     fn from(err: subtle_encoding::Error) -> Error {
-        err!(ErrorKind::Parse, err)
+        err!(Kind::Parse, err)
     }
 }
 
 impl From<toml::de::Error> for Error {
     fn from(err: toml::de::Error) -> Self {
-        err!(ErrorKind::Parse, err)
+        err!(Kind::Parse, err)
     }
 }
 
 /// Kinds of errors
 #[derive(Clone, Eq, PartialEq, Debug, Fail)]
-pub enum ErrorKind {
+pub enum Kind {
     /// Cryptographic operation failed
     #[fail(display = "cryptographic error")]
     Crypto,

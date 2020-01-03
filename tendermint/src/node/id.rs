@@ -1,6 +1,6 @@
 //! Tendermint node IDs
 
-use crate::error::{Error, ErrorKind};
+use crate::{Error, ErrorKind};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
 use signatory::ed25519;

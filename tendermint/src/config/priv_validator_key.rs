@@ -1,12 +1,7 @@
 //! Validator private keys
 
 use crate::public_key::TendermintKey;
-use crate::{
-    account,
-    error::{Error, ErrorKind},
-    private_key::PrivateKey,
-    public_key::PublicKey,
-};
+use crate::{account, private_key::PrivateKey, public_key::PublicKey, Error, ErrorKind};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
 

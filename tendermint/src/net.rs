@@ -1,8 +1,7 @@
 //! Remote addresses (`tcp://` or `unix://`)
 
 use crate::{
-    error::{Error, ErrorKind},
-    node,
+    node, {Error, ErrorKind},
 };
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{

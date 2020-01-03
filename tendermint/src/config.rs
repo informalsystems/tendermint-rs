@@ -11,12 +11,7 @@ mod priv_validator_key;
 
 pub use self::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
 
-use crate::{
-    abci::tag,
-    error::{Error, ErrorKind},
-    genesis::Genesis,
-    net, node, Moniker, Timeout,
-};
+use crate::{abci::tag, genesis::Genesis, net, node, Error, ErrorKind, Moniker, Timeout};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{
     collections::BTreeMap,

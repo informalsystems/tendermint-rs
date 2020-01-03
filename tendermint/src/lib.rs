@@ -12,8 +12,7 @@
     unused_import_braces,
     unused_qualifications
 )]
-#![forbid(unsafe_code)]
-#![deny(
+#![allow(
     clippy::all,
     clippy::cargo,
     clippy::nursery,
@@ -21,6 +20,7 @@
     clippy::restriction,
     clippy::result_unrwap_used
 )]
+#![forbid(clippy::module_name_repetitions)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
     html_root_url = "https://docs.rs/tendermint/0.11.0"
@@ -69,7 +69,7 @@ pub mod vote;
 pub use crate::genesis::Genesis;
 pub use crate::{
     block::Block,
-    error::{Error, ErrorKind},
+    error::{Error, Kind as ErrorKind},
     hash::Hash,
     moniker::Moniker,
     public_key::{PublicKey, TendermintKey},

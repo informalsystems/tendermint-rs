@@ -1,6 +1,6 @@
 //! Timestamps used by Tendermint blockchains
 
-use crate::error::{Error, ErrorKind};
+use crate::{Error, ErrorKind};
 use chrono::{DateTime, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt;
