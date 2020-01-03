@@ -136,6 +136,7 @@ impl Tendermint {
 }
 
 /// Database backend
+#[allow(clippy::pub_enum_variant_names)]
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum DbBackend {
     /// LevelDB backend
