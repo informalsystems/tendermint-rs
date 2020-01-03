@@ -3,17 +3,17 @@
 
 #![allow(missing_docs)]
 
-pub mod block_id;
-pub mod ed25519;
-pub mod message;
-pub mod ping;
-pub mod proposal;
-pub mod remote_error;
-pub mod signature;
-pub mod time;
-pub mod validate;
-pub mod version;
-pub mod vote;
+mod block_id;
+mod ed25519;
+mod message;
+mod ping;
+mod proposal;
+mod remote_error;
+mod signature;
+mod time;
+mod validate;
+mod version;
+mod vote;
 
 pub use self::{
     block_id::{BlockId, Canonical as CanonicalBlockId, CanonicalPartSetHeader, PartsSetHeader},
@@ -26,5 +26,7 @@ pub use self::{
     time::TimeMsg,
     validate::ConsensusMessage,
     version::Consensus as ConsensusVersion,
-    vote::{SignVoteRequest, SignedVoteResponse, AMINO_NAME as VOTE_AMINO_NAME},
+    vote::{
+        CanonicalVote, SignVoteRequest, SignedVoteResponse, Vote, AMINO_NAME as VOTE_AMINO_NAME,
+    },
 };

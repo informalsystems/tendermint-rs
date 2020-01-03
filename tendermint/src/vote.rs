@@ -3,8 +3,7 @@
 mod power;
 
 pub use self::power::Power;
-use crate::amino_types;
-use crate::amino_types::AminoMessage;
+use crate::amino_types::{self, AminoMessage};
 use crate::{account, block, Signature, Time};
 use {
     crate::serializers,
@@ -72,7 +71,7 @@ impl Vote {
 /// SignedVote is the union of a canonicalized vote, the signature on
 /// the sign bytes of that vote and the id of the validator who signed it.
 pub struct SignedVote {
-    vote: amino_types::vote::CanonicalVote,
+    vote: amino_types::CanonicalVote,
     validator_address: account::Id,
     signature: Signature,
 }
@@ -81,12 +80,12 @@ impl SignedVote {
     /// Create new SignedVote from provided canonicalized vote, validator id, and
     /// the signature of that validator.
     pub fn new(
-        vote: amino_types::vote::Vote,
+        vote: amino_types::Vote,
         chain_id: &str,
         validator_address: account::Id,
         signature: Signature,
     ) -> SignedVote {
-        let canonical_vote = amino_types::vote::CanonicalVote::new(vote, chain_id);
+        let canonical_vote = amino_types::CanonicalVote::new(vote, chain_id);
         SignedVote {
             vote: canonical_vote,
             signature,
