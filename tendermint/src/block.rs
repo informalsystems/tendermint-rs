@@ -12,7 +12,7 @@ mod size;
 pub use self::{
     commit::*,
     header::{parse_non_empty_block_id, Header},
-    height::*,
+    height::{Height, Parse as ParseHeight},
     id::{Id, Parse as ParseId},
     meta::Meta,
     size::Size,

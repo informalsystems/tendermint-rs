@@ -24,6 +24,6 @@ pub use self::{
     signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
     validate::ConsensusMessage,
-    version::ConsensusVersion,
+    version::Consensus as ConsensusVersion,
     vote::{SignVoteRequest, SignedVoteResponse, AMINO_NAME as VOTE_AMINO_NAME},
 };

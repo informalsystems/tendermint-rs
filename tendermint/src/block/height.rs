@@ -95,7 +95,7 @@ impl Serialize for Height {
 }
 
 /// Parse `block::Height` from a type
-pub trait ParseHeight {
+pub trait Parse {
     /// Parse `block::Height`, or return an `Error` if parsing failed
     fn parse_block_height(&self) -> Result<Height, Error>;
 }
