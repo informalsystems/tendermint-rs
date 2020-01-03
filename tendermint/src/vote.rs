@@ -4,7 +4,7 @@ mod power;
 
 pub use self::power::Power;
 use crate::amino_types;
-use crate::amino_types::message::AminoMessage;
+use crate::amino_types::AminoMessage;
 use crate::{account, block, Signature, Time};
 use {
     crate::serializers,

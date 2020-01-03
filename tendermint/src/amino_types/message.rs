@@ -3,7 +3,7 @@ use std::convert::TryInto;
 
 /// Extend the original prost::Message trait with a few helper functions in order to
 /// reduce boiler-plate code (and without modifying the prost-amino dependency).
-pub trait AminoMessage: prost_amino::Message {
+pub trait Message: prost_amino::Message {
     /// Directly amino encode a prost-amino message into a freshly created Vec<u8>.
     /// This can be useful when passing those bytes directly to a hasher, or,
     /// to reduce boiler plate code when working with the encoded bytes.
@@ -34,6 +34,6 @@ pub trait AminoMessage: prost_amino::Message {
         res
     }
 }
-impl<M: prost_amino::Message> AminoMessage for M {
+impl<M: prost_amino::Message> Message for M {
     // blanket impl
 }

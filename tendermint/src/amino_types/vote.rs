@@ -239,7 +239,7 @@ impl ConsensusMessage for Vote {
 mod tests {
     use super::super::PartsSetHeader;
     use super::*;
-    use crate::amino_types::message::AminoMessage;
+    use crate::amino_types::AminoMessage;
     use crate::amino_types::SignedMsgType;
     use chrono::{DateTime, Utc};
 

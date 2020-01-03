@@ -2,7 +2,7 @@
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::serializers;
 use crate::{account, amino_types, block, chain, lite, Hash, Time};
-use amino_types::{message::AminoMessage, BlockId, ConsensusVersion, TimeMsg};
+use amino_types::{AminoMessage, BlockId, ConsensusVersion, TimeMsg};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 
