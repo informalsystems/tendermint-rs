@@ -305,8 +305,6 @@ mod tests {
             113, 134, 241, 104, 95, 33, 242, 72, 42, 244, 251, 52, 70, 168, 75, 53, 56, 213, 187,
             3,
         ];
-        let svr = SignVoteRequest::decode(got.clone()).unwrap();
-        println!("got back: {:?}", svr);
         assert_eq!(got, want);
     }
 
@@ -327,7 +325,6 @@ mod tests {
             vt_precommit.height = 1;
             vt_precommit.round = 1;
             vt_precommit.vote_type = SignedMsgType::PreCommit.to_u32(); // precommit
-            println!("{:?}", vt_precommit);
             let cv_precommit = Canonical::new(vt_precommit, "");
             let got = AminoMessage::bytes_vec(&cv_precommit);
             let want = vec![

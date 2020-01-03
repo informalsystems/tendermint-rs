@@ -17,10 +17,9 @@
     clippy::cargo,
     clippy::nursery,
     clippy::pedantic,
-    clippy::restriction,
-    clippy::result_unrwap_used
+    clippy::restriction
 )]
-#![deny(clippy::pub_enum_variant_names)]
+#![forbid(clippy::result_unrwap_used, clippy::print_stdout)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
     html_root_url = "https://docs.rs/tendermint/0.11.0"
