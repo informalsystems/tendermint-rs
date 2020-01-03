@@ -98,38 +98,44 @@ fn run_test_cases(cases: TestCases) {
     for (_, tc) in cases.test_cases.iter().enumerate() {
         let trusted_next_vals = tc.initial.clone().next_validator_set;
         let mut trusted_state = Trusted::new(&tc.initial.signed_header.clone(), &trusted_next_vals);
-        let trusting_period: std::time::Duration = tc.initial.clone().trusting_period.into();
-        let now = tc.initial.now;
         let expects_err = match &tc.expected_output {
             Some(eo) => eo.eq("error"),
             None => false,
         };
 
+        // TODO - we're currently using lite::verify_single which
+        // shouldn't even be exposed and doesn't check time.
+        // but the public functions take a store, which do check time,
+        // also take a store, so we need to mock one ...
+        /*
+        let trusting_period: std::time::Duration = tc.initial.clone().trusting_period.into();
+        let now = tc.initial.now;
+        */
+
         for (_, input) in tc.input.iter().enumerate() {
             println!("{}", tc.description);
-            let new_signed_header = &input.signed_header;
-            let new_vals = &input.validator_set;
+            let untrusted_signed_header = &input.signed_header;
+            let untrusted_vals = &input.validator_set;
+            let untrusted_next_vals = &input.next_validator_set;
             // Note that in the provided test files the other header is either assumed to
             // be "trusted" (verification already happened), or, it's the signed header verified in
             // the previous iteration of this loop. In both cases it is assumed that h1 was already
             // verified.
-            let h2_verif_res = lite::verify(new_signed_header, new_vals);
-            let mut check_support_res: Result<(), lite::Error> = Ok(());
-            if h2_verif_res.is_ok() {
-                check_support_res = lite::check_support(
-                    &trusted_state,
-                    &new_signed_header,
-                    &DefaultTrustLevel {},
-                    &trusting_period,
-                    &now.into(),
-                );
-                assert_eq!(check_support_res.is_err(), expects_err);
-                if check_support_res.is_ok() {
-                    trusted_state = Trusted::new(&new_signed_header, &input.next_validator_set);
+            match lite::verify_single(
+                &trusted_state,
+                &untrusted_signed_header,
+                &untrusted_vals,
+                &untrusted_next_vals,
+                &DefaultTrustLevel {},
+            ) {
+                Ok(_) => {
+                    trusted_state = Trusted::new(&untrusted_signed_header, &untrusted_next_vals);
+                    assert!(!expects_err);
+                }
+                Err(_) => {
+                    assert!(expects_err);
                 }
             }
-            let got_err = check_support_res.is_err() || h2_verif_res.is_err();
-            assert_eq!(expects_err, got_err);
         }
     }
 }
