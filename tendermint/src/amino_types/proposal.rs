@@ -1,9 +1,9 @@
 use super::{
-    block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
     remote_error::RemoteError,
     signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
     validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
+    BlockId, CanonicalBlockId, CanonicalPartSetHeader,
 };
 use crate::{
     block::{self, ParseId},

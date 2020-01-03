@@ -55,14 +55,14 @@ impl ConsensusMessage for BlockId {
 }
 
 #[derive(Clone, PartialEq, Message)]
-pub struct CanonicalBlockId {
+pub struct Canonical {
     #[prost(bytes, tag = "1")]
     pub hash: Vec<u8>,
     #[prost(message, tag = "2")]
     pub parts_header: Option<CanonicalPartSetHeader>,
 }
 
-impl block::ParseId for CanonicalBlockId {
+impl block::ParseId for Canonical {
     fn parse_block_id(&self) -> Result<block::Id, Error> {
         let hash = Hash::new(hash::Algorithm::Sha256, &self.hash)?;
         let parts_header = self
