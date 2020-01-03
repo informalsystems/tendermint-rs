@@ -19,7 +19,7 @@ pub use self::{
     block_id::{BlockId, Canonical as CanonicalBlockId, CanonicalPartSetHeader, PartsSetHeader},
     ed25519::{PubKeyRequest, PubKeyResponse, AMINO_NAME as PUBKEY_AMINO_NAME},
     message::Message as AminoMessage,
-    ping::{PingRequest, PingResponse, AMINO_NAME as PING_AMINO_NAME},
+    ping::{Request as PingRequest, Response as PingResponse, AMINO_NAME as PING_AMINO_NAME},
     proposal::{SignProposalRequest, SignedProposalResponse, AMINO_NAME as PROPOSAL_AMINO_NAME},
     remote_error::RemoteError,
     signature::{SignableMsg, SignedMsgType},
