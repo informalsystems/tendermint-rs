@@ -68,7 +68,7 @@ impl FromStr for Id {
 }
 
 /// Parse `block::Id` from a type
-pub trait ParseId {
+pub trait Parse {
     /// Parse `block::Id`, or return an `Error` if parsing failed
     fn parse_block_id(&self) -> Result<Id, Error>;
 }

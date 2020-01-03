@@ -13,7 +13,7 @@ pub use self::{
     commit::*,
     header::{parse_non_empty_block_id, Header},
     height::*,
-    id::{Id, ParseId},
+    id::{Id, Parse as ParseId},
     meta::Meta,
     size::Size,
 };

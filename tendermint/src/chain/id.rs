@@ -122,7 +122,7 @@ impl<'de> Deserialize<'de> for Id {
 }
 
 /// Parse `chain::Id` from a type
-pub trait ParseId {
+pub trait Parse {
     /// Parse `chain::Id`, or return an `Error` if parsing failed
     fn parse_chain_id(&self) -> Result<Id, Error>;
 }

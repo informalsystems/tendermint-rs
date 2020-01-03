@@ -4,6 +4,6 @@ pub mod id;
 mod info;
 
 pub use self::{
-    id::{Id, ParseId},
+    id::{Id, Parse as ParseId},
     info::*,
 };
