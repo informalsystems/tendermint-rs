@@ -27,6 +27,7 @@ pub use self::{
     validate::ConsensusMessage,
     version::Consensus as ConsensusVersion,
     vote::{
-        CanonicalVote, SignVoteRequest, SignedVoteResponse, Vote, AMINO_NAME as VOTE_AMINO_NAME,
+        Canonical as CanonicalVote, SignVoteRequest, SignedVoteResponse, Vote,
+        AMINO_NAME as VOTE_AMINO_NAME,
     },
 };

@@ -93,7 +93,7 @@ pub struct SignedVoteResponse {
 }
 
 #[derive(Clone, PartialEq, Message)]
-pub struct CanonicalVote {
+pub struct Canonical {
     #[prost(uint32, tag = "1")]
     pub vote_type: u32,
     #[prost(sfixed64)]
@@ -108,21 +108,21 @@ pub struct CanonicalVote {
     pub chain_id: String,
 }
 
-impl chain::ParseId for CanonicalVote {
+impl chain::ParseId for Canonical {
     fn parse_chain_id(&self) -> Result<chain::Id, Error> {
         self.chain_id.parse()
     }
 }
 
-impl block::ParseHeight for CanonicalVote {
+impl block::ParseHeight for Canonical {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
         block::Height::try_from(self.height)
     }
 }
 
-impl CanonicalVote {
-    pub fn new(vote: Vote, chain_id: &str) -> CanonicalVote {
-        CanonicalVote {
+impl Canonical {
+    pub fn new(vote: Vote, chain_id: &str) -> Canonical {
+        Canonical {
             vote_type: vote.vote_type,
             chain_id: chain_id.to_string(),
             block_id: match vote.block_id {
@@ -161,7 +161,7 @@ impl SignableMsg for SignVoteRequest {
             vo.signature = vec![];
         }
         let vote = svr.vote.unwrap();
-        let cv = CanonicalVote::new(vote, chain_id.as_str());
+        let cv = Canonical::new(vote, chain_id.as_str());
 
         cv.encode_length_delimited(sign_bytes)?;
 
@@ -312,7 +312,7 @@ mod tests {
 
     #[test]
     fn test_sign_bytes_compatibility() {
-        let cv = CanonicalVote::new(Vote::default(), "");
+        let cv = Canonical::new(Vote::default(), "");
         let mut got = vec![];
         // SignBytes are encoded using MarshalBinary and not MarshalBinaryBare
         cv.encode_length_delimited(&mut got).unwrap();
@@ -328,7 +328,7 @@ mod tests {
             vt_precommit.round = 1;
             vt_precommit.vote_type = SignedMsgType::PreCommit.to_u32(); // precommit
             println!("{:?}", vt_precommit);
-            let cv_precommit = CanonicalVote::new(vt_precommit, "");
+            let cv_precommit = Canonical::new(vt_precommit, "");
             let got = AminoMessage::bytes_vec(&cv_precommit);
             let want = vec![
                 0x8,  // (field_number << 3) | wire_type
@@ -350,7 +350,7 @@ mod tests {
             vt_prevote.round = 1;
             vt_prevote.vote_type = SignedMsgType::PreVote.to_u32();
 
-            let cv_prevote = CanonicalVote::new(vt_prevote, "");
+            let cv_prevote = Canonical::new(vt_prevote, "");
 
             let got = AminoMessage::bytes_vec(&cv_prevote);
 
@@ -373,7 +373,7 @@ mod tests {
             vt_no_type.height = 1;
             vt_no_type.round = 1;
 
-            let cv = CanonicalVote::new(vt_no_type, "");
+            let cv = Canonical::new(vt_no_type, "");
             let got = AminoMessage::bytes_vec(&cv);
 
             let want = vec![
@@ -392,7 +392,7 @@ mod tests {
             no_vote_type2.height = 1;
             no_vote_type2.round = 1;
 
-            let with_chain_id = CanonicalVote::new(no_vote_type2, "test_chain_id");
+            let with_chain_id = Canonical::new(no_vote_type2, "test_chain_id");
             got = AminoMessage::bytes_vec(&with_chain_id);
             let want = vec![
                 0x11, // (field_number << 3) | wire_type
