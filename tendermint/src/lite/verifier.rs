@@ -17,7 +17,7 @@ use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
 /// Returns an error if the header has expired according to the given
-/// trusting_period and current time. If so, the verifier must be reset subjectively.
+/// `trusting_period` and current time. If so, the verifier must be reset subjectively.
 pub fn is_within_trust_period<H>(
     last_header: &H,
     trusting_period: &Duration,
@@ -74,7 +74,7 @@ where
 
 /// Verify that +2/3 of the correct validator set signed this commit.
 /// NOTE: These validators are expected to be the correct validators for the commit,
-/// but since we're using voting_power_in, we can't actually detect if there's
+/// but since we're using `voting_power_in`, we can't actually detect if there's
 /// votes from validators not in the set.
 pub fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), Error>
 where
@@ -96,8 +96,8 @@ where
 
 /// Verify that +1/3 of the given validator set signed this commit.
 /// NOTE the given validators do not necessarily correspond to the validator set for this commit,
-/// but there may be some intersection. The trust_level parameter allows clients to require more
-/// than +1/3 by implementing the TrustLevel trait accordingly.
+/// but there may be some intersection. The `trust_level` parameter allows clients to require more
+/// than +1/3 by implementing the `TrustLevel` trait accordingly.
 pub fn verify_commit_trusting<C, L>(
     validators: &C::ValidatorSet,
     commit: &C,

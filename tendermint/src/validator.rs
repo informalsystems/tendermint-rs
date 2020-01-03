@@ -94,7 +94,7 @@ impl Info {
         self.voting_power.value()
     }
 
-    /// Verify the given signature against the given sign_bytes using the validators
+    /// Verify the given signature against the given `sign_bytes` using the validators
     /// public key.
     pub fn verify_signature(&self, sign_bytes: &[u8], signature: &[u8]) -> bool {
         if let Some(pk) = &self.pub_key.ed25519() {
@@ -128,7 +128,7 @@ impl Info {
     }
 }
 
-/// InfoHashable is the form of the validator used for computing the Merkle tree.
+/// [`InfoHashable`] is the form of the validator used for computing the Merkle tree.
 /// It does not include the address, as that is redundant with the pubkey,
 /// nor the proposer priority, as that changes with every block even if the validator set didn't.
 /// It contains only the pubkey and the voting power, and is amino encoded.
@@ -141,7 +141,7 @@ struct InfoHashable {
     voting_power: u64,
 }
 
-/// Info -> InfoHashable
+/// Info -> [`InfoHashable`]
 impl From<&Info> for InfoHashable {
     fn from(info: &Info) -> InfoHashable {
         InfoHashable {
@@ -205,10 +205,10 @@ pub struct Update {
 }
 
 /// Validator updates use a slightly different public key format than the one
-/// implemented in `tendermint::PublicKey`.
+/// implemented in [`tendermint::PublicKey`].
 ///
 /// This is an internal thunk type to parse the `validator_updates` format and
-/// then convert to `tendermint::PublicKey` in `deserialize_public_key` below.
+/// then convert to [`tendermint::PublicKey`] in `deserialize_public_key` below.
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
 enum PK {

@@ -1,4 +1,4 @@
-//! Application BlockChain Interface (ABCI)
+//! Application Block Chain Interface (ABCI)
 //!
 //! NOTE: This module contains types for ABCI responses as consumed from RPC
 //! endpoints. It does not contain an ABCI protocol implementation.

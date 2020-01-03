@@ -7,14 +7,14 @@ use crate::Hash;
 use failure::_core::fmt::Debug;
 use std::time::SystemTime;
 
-/// TrustedState stores the latest state trusted by a lite client,
+/// [`TrustedState`] stores the latest state trusted by a lite client,
 /// including the last header (at height h-1) and the validator set
 /// (at height h) to use to verify the next header.
 pub trait TrustedState {
     type LastHeader: SignedHeader;
     type ValidatorSet: ValidatorSet;
 
-    /// Initialize the TrustedState with the given signed header and validator set.
+    /// Initialize the [`TrustedState`] with the given signed header and validator set.
     /// Note that if the height of the passed in header is h-1, the passed in validator set
     /// must have been requested for height h.
     fn new(last_header: &Self::LastHeader, vals: &Self::ValidatorSet) -> Self;
@@ -23,7 +23,7 @@ pub trait TrustedState {
     fn validators(&self) -> &Self::ValidatorSet; // height H
 }
 
-/// SignedHeader bundles a Header and a Commit for convenience.
+/// [`SignedHeader`] bundles a Header and a Commit for convenience.
 pub trait SignedHeader {
     type Header: Header;
     type Commit: Commit;
@@ -38,7 +38,7 @@ pub trait SignedHeader {
 /// set that should sign the next header.
 pub trait Header: Debug {
     /// The header's notion of (bft-)time.
-    /// We assume it can be converted to SystemTime.
+    /// We assume it can be converted to [`SystemTime`].
     type Time: Into<SystemTime>;
 
     fn height(&self) -> Height;
@@ -50,7 +50,7 @@ pub trait Header: Debug {
     fn hash(&self) -> Hash;
 }
 
-/// ValidatorSet is the full validator set.
+/// [`ValidatorSet`] is the full validator set.
 /// It exposes its hash, which should match whats in a header,
 /// and its total power. It also has an underlying
 /// Validator type which can be used for verifying signatures.
@@ -101,20 +101,20 @@ pub trait Commit {
     fn votes_len(&self) -> usize;
 }
 
-/// TrustThreshold defines what fraction of the total voting power of a known
+/// [`TrustThreshold`] defines what fraction of the total voting power of a known
 /// and trusted validator set is sufficient for a commit to be
 /// accepted going forward.
 /// The default implementation returns true, iff at least a third of the trusted
 /// voting power signed (in other words at least one honest validator signed).
 /// Some clients might require more than +1/3 and can implement their own
-/// TrustLevel which can be passed into all relevant methods.
+/// [`TrustLevel`] which can be passed into all relevant methods.
 pub trait TrustThreshold {
     fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool {
         signed_voting_power * 3 > total_voting_power
     }
 }
 
-/// Requester can be used to request `SignedHeaders` and `ValidatorSet`s for a
+/// Requester can be used to request [`SignedHeader`]s and [`ValidatorSet`]s for a
 /// given height, e.g., by talking to a tendermint fullnode through RPC.
 pub trait Requester {
     // TODO(Liamsi): consider putting this trait and the Store into a separate module / file...
@@ -144,7 +144,7 @@ pub trait Store {
     /// If it does not exist return an error.
     /// If h=0, return the latest trusted state.
     /// TODO: use an enum instead of special-casing 0, see
-    /// https://github.com/interchainio/tendermint-rs/issues/118
+    /// [rpc: map height=0 to no parameters in the http call](https://github.com/interchainio/tendermint-rs/issues/118)
     fn get(&self, h: Height) -> Result<&Self::TrustedState, Error>;
 }
 
