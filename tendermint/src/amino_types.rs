@@ -23,7 +23,7 @@ pub use self::{
     proposal::{SignProposalRequest, SignedProposalResponse, AMINO_NAME as PROPOSAL_AMINO_NAME},
     remote_error::RemoteError,
     signature::{SignableMsg, SignedMsgType},
-    time::TimeMsg,
+    time::Msg as TimeMsg,
     validate::ConsensusMessage,
     version::Consensus as ConsensusVersion,
     vote::{

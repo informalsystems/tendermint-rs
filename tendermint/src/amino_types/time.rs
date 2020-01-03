@@ -8,7 +8,7 @@ use chrono::{TimeZone, Utc};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
-pub struct TimeMsg {
+pub struct Msg {
     // TODO(ismail): switch to protobuf's well known type as soon as
     // https://github.com/tendermint/go-amino/pull/224 was merged
     // and tendermint caught up on the latest amino release.
@@ -18,26 +18,26 @@ pub struct TimeMsg {
     pub nanos: i32,
 }
 
-impl ParseTimestamp for TimeMsg {
+impl ParseTimestamp for Msg {
     fn parse_timestamp(&self) -> Result<Time, Error> {
         Ok(Utc.timestamp(self.seconds, self.nanos as u32).into())
     }
 }
 
-impl From<Time> for TimeMsg {
-    fn from(ts: Time) -> TimeMsg {
+impl From<Time> for Msg {
+    fn from(ts: Time) -> Msg {
         // TODO: non-panicking method for getting this?
         let duration = ts.duration_since(Time::unix_epoch()).unwrap();
         let seconds = duration.as_secs() as i64;
         let nanos = duration.subsec_nanos() as i32;
 
-        TimeMsg { seconds, nanos }
+        Msg { seconds, nanos }
     }
 }
 
 /// Converts `Time` to a `SystemTime`.
-impl From<TimeMsg> for SystemTime {
-    fn from(time: TimeMsg) -> SystemTime {
+impl From<Msg> for SystemTime {
+    fn from(time: Msg) -> SystemTime {
         if time.seconds >= 0 {
             UNIX_EPOCH + Duration::new(time.seconds as u64, time.nanos as u32)
         } else {

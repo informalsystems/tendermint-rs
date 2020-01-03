@@ -1,9 +1,8 @@
 use super::{
     remote_error::RemoteError,
     signature::SignableMsg,
-    time::TimeMsg,
     validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
-    BlockId, CanonicalBlockId, CanonicalPartSetHeader, SignedMsgType,
+    BlockId, CanonicalBlockId, CanonicalPartSetHeader, SignedMsgType, TimeMsg,
 };
 use crate::amino_types::PartsSetHeader;
 use crate::{
