@@ -68,25 +68,25 @@ impl Vote {
     }
 }
 
-/// SignedVote is the union of a canonicalized vote, the signature on
+/// Signed is the union of a canonicalized vote, the signature on
 /// the sign bytes of that vote and the id of the validator who signed it.
-pub struct SignedVote {
+pub struct Signed {
     vote: amino_types::CanonicalVote,
     validator_address: account::Id,
     signature: Signature,
 }
 
-impl SignedVote {
-    /// Create new SignedVote from provided canonicalized vote, validator id, and
+impl Signed {
+    /// Create new Signed from provided canonicalized vote, validator id, and
     /// the signature of that validator.
     pub fn new(
         vote: amino_types::Vote,
         chain_id: &str,
         validator_address: account::Id,
         signature: Signature,
-    ) -> SignedVote {
+    ) -> Signed {
         let canonical_vote = amino_types::CanonicalVote::new(vote, chain_id);
-        SignedVote {
+        Signed {
             vote: canonical_vote,
             signature,
             validator_address,

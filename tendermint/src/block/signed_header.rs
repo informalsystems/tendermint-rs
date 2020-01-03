@@ -1,7 +1,7 @@
 //! SignedHeader contains commit and and block header.
 //! It is what the rpc endpoint /commit returns and hence can be used by a
 //! light client.
-use crate::{block, hash, lite, lite::Error, validator::Set, vote::SignedVote};
+use crate::{block, hash, lite, lite::Error, validator::Set, vote};
 use serde::{Deserialize, Serialize};
 
 /// Signed block headers
@@ -29,14 +29,14 @@ impl lite::SignedHeader for SignedHeader {
 impl SignedHeader {
     /// This is a private helper method to iterate over the underlying
     /// votes to compute the voting power (see `voting_power_in` below).
-    fn iter(&self) -> Vec<Option<SignedVote>> {
+    fn iter(&self) -> Vec<Option<vote::Signed>> {
         let chain_id = self.header.chain_id.to_string();
         let mut votes = self.commit.precommits.clone().into_vec();
         votes
             .drain(..)
             .map(|opt| {
                 opt.map(|vote| {
-                    SignedVote::new(
+                    vote::Signed::new(
                         (&vote).into(),
                         &chain_id,
                         vote.validator_address,
