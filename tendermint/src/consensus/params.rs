@@ -13,12 +13,12 @@ pub struct Params {
     pub evidence: evidence::Params,
 
     /// Validator parameters
-    pub validator: ValidatorParams,
+    pub validator: Validator,
 }
 
 /// Validator consensus parameters
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
-pub struct ValidatorParams {
+pub struct Validator {
     /// Allowed algorithms for validator signing
     pub pub_key_types: Vec<public_key::Algorithm>,
 }
