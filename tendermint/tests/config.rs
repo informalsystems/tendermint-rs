@@ -4,7 +4,11 @@
 
 mod files {
     use std::{fs, path::PathBuf, time::Duration};
-    use tendermint::{config::*, net, node};
+    use tendermint::config::{
+        AbciMode, DbBackend, LogFormat, NodeKey, PrivValidatorKey, Tendermint as TendermintConfig,
+        TxIndexer,
+    };
+    use tendermint::{net, node};
 
     /// Read a fixture file from the `support/config` directory
     fn read_fixture(name: &str) -> String {

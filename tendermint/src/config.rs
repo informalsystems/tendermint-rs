@@ -2,7 +2,7 @@
 //!
 //! This module contains types which correspond to the following config files:
 //!
-//! - `config.toml`: `config::TendermintConfig`
+//! - `config.toml`: `config::Tendermint`
 //! - `node_key.rs`: `config::node_key::NodeKey`
 //! - `priv_validator_key.rs`: `config::priv_validator_key::PrivValidatorKey`
 
@@ -22,7 +22,7 @@ use std::{
 
 /// Tendermint `config.toml` file
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct TendermintConfig {
+pub struct Tendermint {
     /// TCP or UNIX socket address of the ABCI application,
     /// or the name of an ABCI application compiled in with the Tendermint binary.
     pub proxy_app: net::Address,
@@ -78,25 +78,25 @@ pub struct TendermintConfig {
     pub filter_peers: bool,
 
     /// rpc server configuration options
-    pub rpc: RpcConfig,
+    pub rpc: Rpc,
 
     /// peer to peer configuration options
-    pub p2p: P2PConfig,
+    pub p2p: P2P,
 
     /// mempool configuration options
-    pub mempool: MempoolConfig,
+    pub mempool: Mempool,
 
     /// consensus configuration options
-    pub consensus: ConsensusConfig,
+    pub consensus: Consensus,
 
     /// transactions indexer configuration options
-    pub tx_index: TxIndexConfig,
+    pub tx_index: TxIndex,
 
     /// instrumentation configuration options
-    pub instrumentation: InstrumentationConfig,
+    pub instrumentation: Instrumentation,
 }
 
-impl TendermintConfig {
+impl Tendermint {
     /// Parse Tendermint `config.toml`
     pub fn parse_toml<T: AsRef<str>>(toml_string: T) -> Result<Self, Error> {
         Ok(toml::from_str(toml_string.as_ref())?)
@@ -255,7 +255,7 @@ pub enum AbciMode {
 
 /// Tendermint `config.toml` file's `[rpc]` section
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct RpcConfig {
+pub struct Rpc {
     /// TCP or UNIX socket address for the RPC server to listen on
     pub laddr: net::Address,
 
@@ -358,7 +358,7 @@ impl fmt::Display for CorsHeader {
 
 /// peer to peer configuration options
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct P2PConfig {
+pub struct P2P {
     /// Address to listen for incoming connections
     pub laddr: net::Address,
 
@@ -439,7 +439,7 @@ pub struct P2PConfig {
 
 /// mempool configuration options
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct MempoolConfig {
+pub struct Mempool {
     /// Recheck enabled
     pub recheck: bool,
 
@@ -464,7 +464,7 @@ pub struct MempoolConfig {
 
 /// consensus configuration options
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ConsensusConfig {
+pub struct Consensus {
     /// Path to WAL file
     pub wal_file: PathBuf,
 
@@ -507,7 +507,7 @@ pub struct ConsensusConfig {
 
 /// transactions indexer configuration options
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct TxIndexConfig {
+pub struct TxIndex {
     /// What indexer to use for transactions
     #[serde(default)]
     pub indexer: TxIndexer,
@@ -547,7 +547,7 @@ impl Default for TxIndexer {
 
 /// instrumentation configuration options
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct InstrumentationConfig {
+pub struct Instrumentation {
     /// When `true`, Prometheus metrics are served under /metrics on
     /// PrometheusListenAddr.
     pub prometheus: bool,
