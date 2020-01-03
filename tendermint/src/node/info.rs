@@ -8,7 +8,7 @@ use std::fmt::{self, Display};
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Info {
     /// Protocol version information
-    pub protocol_version: ProtocolVersionInfo,
+    pub protocol_version: ProtocolVersion,
 
     /// Node ID
     pub id: node::Id,
@@ -29,12 +29,12 @@ pub struct Info {
     pub moniker: Moniker,
 
     /// Other status information
-    pub other: OtherInfo,
+    pub other: Other,
 }
 
 /// Protocol version information
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct ProtocolVersionInfo {
+pub struct ProtocolVersion {
     /// P2P protocol version
     #[serde(
         serialize_with = "serializers::serialize_u64",
@@ -86,7 +86,7 @@ impl Display for ListenAddress {
 
 /// Other information
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct OtherInfo {
+pub struct Other {
     /// TX index status
     pub tx_index: TxIndexStatus,
 
