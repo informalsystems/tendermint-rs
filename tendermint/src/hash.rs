@@ -32,7 +32,7 @@ impl Hash {
         match alg {
             Algorithm::Sha256 => {
                 if bytes.len() == SHA256_HASH_SIZE {
-                    let mut h = [0u8; SHA256_HASH_SIZE];
+                    let mut h = [0_u8; SHA256_HASH_SIZE];
                     h.copy_from_slice(bytes);
                     Ok(Hash::Sha256(h))
                 } else {
@@ -46,7 +46,7 @@ impl Hash {
     pub fn from_hex_upper(alg: Algorithm, s: &str) -> Result<Hash, Error> {
         match alg {
             Algorithm::Sha256 => {
-                let mut h = [0u8; SHA256_HASH_SIZE];
+                let mut h = [0_u8; SHA256_HASH_SIZE];
                 Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h)?;
                 Ok(Hash::Sha256(h))
             }

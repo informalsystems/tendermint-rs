@@ -24,7 +24,7 @@ impl From<PubKeyResponse> for PublicKey {
     // This does not check if the underlying pub_key_ed25519 has the right size.
     // The caller needs to make sure that this is actually the case.
     fn from(response: PubKeyResponse) -> PublicKey {
-        let mut public_key = [0u8; PUBLIC_KEY_SIZE];
+        let mut public_key = [0_u8; PUBLIC_KEY_SIZE];
         public_key.copy_from_slice(response.pub_key_ed25519.as_ref());
         PublicKey::Ed25519(signatory::ed25519::PublicKey::new(public_key))
     }

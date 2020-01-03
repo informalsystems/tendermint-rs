@@ -73,7 +73,7 @@ impl<'de> Deserialize<'de> for Ed25519Keypair {
     fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let string = Zeroizing::new(String::deserialize(deserializer)?);
 
-        let mut keypair_bytes = [0u8; ED25519_KEYPAIR_SIZE];
+        let mut keypair_bytes = [0_u8; ED25519_KEYPAIR_SIZE];
         let decoded_len = Base64::default()
             .decode_to_slice(string.as_bytes(), &mut keypair_bytes)
             .map_err(|_| D::Error::custom("invalid Ed25519 keypair"))?;

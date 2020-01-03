@@ -76,7 +76,7 @@ impl FromStr for Id {
             }
         }
 
-        let mut bytes = [0u8; MAX_LENGTH];
+        let mut bytes = [0_u8; MAX_LENGTH];
         bytes[..name.as_bytes().len()].copy_from_slice(name.as_bytes());
         Ok(Id(bytes))
     }

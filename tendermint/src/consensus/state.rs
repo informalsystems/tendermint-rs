@@ -75,21 +75,21 @@ mod tests {
     #[test]
     fn state_ord_test() {
         let new = State {
-            height: block::Height::from(9001u64),
+            height: block::Height::from(9001_u64),
             round: 0,
             step: 0,
             block_id: None,
         };
 
         let old = State {
-            height: block::Height::from(1001u64),
+            height: block::Height::from(1001_u64),
             round: 1,
             step: 0,
             block_id: None,
         };
 
         let older = State {
-            height: block::Height::from(1001u64),
+            height: block::Height::from(1001_u64),
             round: 0,
             step: 0,
             block_id: None,

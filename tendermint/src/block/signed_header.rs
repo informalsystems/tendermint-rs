@@ -61,7 +61,7 @@ impl lite::Commit for SignedHeader {
     fn voting_power_in(&self, validators: &Set) -> Result<u64, Error> {
         // NOTE we don't know the validators that committed this block,
         // so we have to check for each vote if its validator is already known.
-        let mut signed_power = 0u64;
+        let mut signed_power = 0_u64;
         for vote_opt in &self.iter() {
             // skip absent and nil votes
             // NOTE: do we want to check the validity of votes

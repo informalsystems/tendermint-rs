@@ -70,7 +70,7 @@ impl FromStr for Hash {
             return Err(ErrorKind::Parse.into());
         }
 
-        let mut result_bytes = [0u8; LENGTH];
+        let mut result_bytes = [0_u8; LENGTH];
         result_bytes.copy_from_slice(&bytes);
         Ok(Hash(result_bytes))
     }

@@ -51,7 +51,7 @@ fn leaf_hash(bytes: &[u8]) -> Hash {
     let digest = Sha256::digest(&leaf_bytes);
 
     // copy the GenericArray out
-    let mut hash_bytes = [0u8; HASH_SIZE];
+    let mut hash_bytes = [0_u8; HASH_SIZE];
     hash_bytes.copy_from_slice(&digest);
     hash_bytes
 }
@@ -68,7 +68,7 @@ fn inner_hash(left: &[u8], right: &[u8]) -> Hash {
     let digest = Sha256::digest(&inner_bytes);
 
     // copy the GenericArray out
-    let mut hash_bytes = [0u8; HASH_SIZE];
+    let mut hash_bytes = [0_u8; HASH_SIZE];
     hash_bytes.copy_from_slice(&digest);
     hash_bytes
 }

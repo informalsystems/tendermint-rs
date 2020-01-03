@@ -48,7 +48,7 @@ impl lite::ValidatorSet for Set {
     }
 
     fn total_power(&self) -> u64 {
-        self.validators.iter().fold(0u64, |total, val_info| {
+        self.validators.iter().fold(0_u64, |total, val_info| {
             total + val_info.voting_power.value()
         })
     }

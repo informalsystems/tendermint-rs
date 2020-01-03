@@ -61,7 +61,7 @@ impl Debug for Id {
 impl From<ed25519::PublicKey> for Id {
     fn from(pk: ed25519::PublicKey) -> Id {
         let digest = Sha256::digest(pk.as_bytes());
-        let mut bytes = [0u8; LENGTH];
+        let mut bytes = [0_u8; LENGTH];
         bytes.copy_from_slice(&digest[..LENGTH]);
         Id(bytes)
     }
@@ -81,7 +81,7 @@ impl FromStr for Id {
             return Err(ErrorKind::Parse.into());
         }
 
-        let mut result_bytes = [0u8; LENGTH];
+        let mut result_bytes = [0_u8; LENGTH];
         result_bytes.copy_from_slice(&bytes);
         Ok(Id(result_bytes))
     }
