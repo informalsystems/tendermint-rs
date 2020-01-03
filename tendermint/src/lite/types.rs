@@ -166,7 +166,8 @@ pub enum Error {
     // TODO(EB): we need to differentiate when this is from
     // skipping and when it's from verifying !
     // https://github.com/interchainio/tendermint-rs/issues/119
-    InsufficientVotingPower, // TODO(Liamsi): change to same name as spec if this changes (curently ErrTooMuchChange)
+    InsufficientVotingPower, /* TODO(Liamsi): change to same name as spec if this changes
+                              * (curently ErrTooMuchChange) */
 
     RequestFailed,
 }
