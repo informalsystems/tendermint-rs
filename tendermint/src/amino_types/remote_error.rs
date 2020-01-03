@@ -11,7 +11,7 @@ pub struct RemoteError {
 // <https://github.com/tendermint/tendermint/blob/master/privval/errors.go>
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(i32)]
-pub enum RemoteErrorCode {
+pub enum Code {
     /// Generic error code useful when the others don't apply
     RemoteSignerError = 1,
 
@@ -23,7 +23,7 @@ impl RemoteError {
     /// Create a new double signing error with the given message
     pub fn double_sign(height: i64) -> Self {
         RemoteError {
-            code: RemoteErrorCode::DoubleSignError as i32,
+            code: Code::DoubleSignError as i32,
             description: format!("double signing requested at height: {}", height),
         }
     }
