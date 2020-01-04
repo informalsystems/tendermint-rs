@@ -85,19 +85,17 @@ impl PartsSetHeader {
     pub fn new(total: i64, hash: Vec<u8>) -> Self {
         PartsSetHeader { total, hash }
     }
+
+    fn parse_parts_header(&self) -> Option<block::parts::Header> {
+        Hash::new(hash::Algorithm::Sha256, &self.hash)
+            .map(|hash| block::parts::Header::new(self.total as u64, hash))
+            .ok()
+    }
 }
 
 impl From<&parts::Header> for PartsSetHeader {
     fn from(parts: &parts::Header) -> Self {
         PartsSetHeader::new(parts.total as i64, parts.hash.as_bytes().to_vec())
-    }
-}
-
-impl PartsSetHeader {
-    fn parse_parts_header(&self) -> Option<block::parts::Header> {
-        Hash::new(hash::Algorithm::Sha256, &self.hash)
-            .map(|hash| block::parts::Header::new(self.total as u64, hash))
-            .ok()
     }
 }
 

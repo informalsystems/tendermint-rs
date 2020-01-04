@@ -24,9 +24,7 @@ impl Set {
         vals.sort_by(|v1, v2| v1.address.partial_cmp(&v2.address).unwrap());
         Set { validators: vals }
     }
-}
 
-impl Set {
     /// Returns the validator with the given Id if its in the Set.
     pub fn validator(&self, val_id: account::Id) -> Option<Info> {
         self.validators
@@ -89,6 +87,23 @@ pub struct Info {
 }
 
 impl Info {
+    /// Create a new validator.
+    pub fn new(pk: PublicKey, vp: vote::Power) -> Info {
+        Info {
+            address: account::Id::from(pk),
+            pub_key: pk,
+            voting_power: vp,
+            proposer_priority: None,
+        }
+    }
+
+    // returns the bytes to be hashed into the Merkle tree -
+    // the leaves of the tree. this is an amino encoding of the
+    // pubkey and voting power, so it includes the pubkey's amino prefix.
+    fn hash_bytes(&self) -> Vec<u8> {
+        AminoMessage::bytes_vec(&InfoHashable::from(self))
+    }
+
     /// Return the voting power of the validator.
     pub fn power(&self) -> u64 {
         self.voting_power.value()
@@ -116,18 +131,6 @@ impl From<PublicKey> for account::Id {
     }
 }
 
-impl Info {
-    /// Create a new validator.
-    pub fn new(pk: PublicKey, vp: vote::Power) -> Info {
-        Info {
-            address: account::Id::from(pk),
-            pub_key: pk,
-            voting_power: vp,
-            proposer_priority: None,
-        }
-    }
-}
-
 /// [`InfoHashable`] is the form of the validator used for computing the Merkle tree.
 /// It does not include the address, as that is redundant with the pubkey,
 /// nor the proposer priority, as that changes with every block even if the validator set didn't.
@@ -148,15 +151,6 @@ impl From<&Info> for InfoHashable {
             pub_key: info.pub_key.as_bytes(),
             voting_power: info.voting_power.value(),
         }
-    }
-}
-
-// returns the bytes to be hashed into the Merkle tree -
-// the leaves of the tree. this is an amino encoding of the
-// pubkey and voting power, so it includes the pubkey's amino prefix.
-impl Info {
-    fn hash_bytes(&self) -> Vec<u8> {
-        AminoMessage::bytes_vec(&InfoHashable::from(self))
     }
 }
 

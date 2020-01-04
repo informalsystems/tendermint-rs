@@ -12,14 +12,15 @@
     unused_import_braces,
     unused_qualifications
 )]
-#![deny(
+#![allow(
     clippy::all,
     clippy::cargo,
     clippy::nursery,
     clippy::pedantic,
     clippy::restriction
 )]
-#![forbid(clippy::result_unrwap_used)]
+#![allow(clippy::result_unwrap_used)]
+#![forbid(clippy::multiple_inherent_impl)]
 #![allow(clippy::multiple_crate_versions)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
