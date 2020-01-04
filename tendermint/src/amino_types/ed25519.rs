@@ -23,17 +23,17 @@ pub struct PubKeyRequest {}
 impl From<PubKeyResponse> for PublicKey {
     // This does not check if the underlying pub_key_ed25519 has the right size.
     // The caller needs to make sure that this is actually the case.
-    fn from(response: PubKeyResponse) -> PublicKey {
+    fn from(response: PubKeyResponse) -> Self {
         let mut public_key = [0_u8; PUBLIC_KEY_SIZE];
         public_key.copy_from_slice(response.pub_key_ed25519.as_ref());
-        PublicKey::Ed25519(signatory::ed25519::PublicKey::new(public_key))
+        Self::Ed25519(signatory::ed25519::PublicKey::new(public_key))
     }
 }
 
 impl From<PublicKey> for PubKeyResponse {
-    fn from(public_key: PublicKey) -> PubKeyResponse {
+    fn from(public_key: PublicKey) -> Self {
         match public_key {
-            PublicKey::Ed25519(ref pk) => PubKeyResponse {
+            PublicKey::Ed25519(ref pk) => Self {
                 pub_key_ed25519: pk.as_bytes().to_vec(),
             },
             PublicKey::Secp256k1(_) => panic!("secp256k1 PubKeyResponse unimplemented"),

@@ -19,8 +19,8 @@ pub enum Code {
 }
 
 impl Default for Code {
-    fn default() -> Code {
-        Code::Ok
+    fn default() -> Self {
+        Self::Ok
     }
 }
 
@@ -28,8 +28,8 @@ impl Code {
     /// Was the response OK?
     pub fn is_ok(self) -> bool {
         match self {
-            Code::Ok => true,
-            Code::Err(_) => false,
+            Self::Ok => true,
+            Self::Err(_) => false,
         }
     }
 
@@ -45,16 +45,16 @@ impl Code {
 }
 
 impl From<u32> for Code {
-    fn from(value: u32) -> Code {
+    fn from(value: u32) -> Self {
         match value {
-            0 => Code::Ok,
-            err => Code::Err(err),
+            0 => Self::Ok,
+            err => Self::Err(err),
         }
     }
 }
 
 impl From<Code> for u32 {
-    fn from(code: Code) -> u32 {
+    fn from(code: Code) -> Self {
         match code {
             Code::Ok => 0,
             Code::Err(err) => err,

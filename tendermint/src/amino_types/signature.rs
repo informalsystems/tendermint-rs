@@ -39,19 +39,19 @@ impl SignedMsgType {
     pub fn to_u32(self) -> u32 {
         match self {
             // Votes
-            SignedMsgType::PreVote => 0x01,
-            SignedMsgType::PreCommit => 0x02,
+            Self::PreVote => 0x01,
+            Self::PreCommit => 0x02,
             // Proposals
-            SignedMsgType::Proposal => 0x20,
+            Self::Proposal => 0x20,
         }
     }
 
     #[allow(dead_code)]
-    fn from(data: u32) -> Result<SignedMsgType, DecodeError> {
+    fn from(data: u32) -> Result<Self, DecodeError> {
         match data {
-            0x01 => Ok(SignedMsgType::PreVote),
-            0x02 => Ok(SignedMsgType::PreCommit),
-            0x20 => Ok(SignedMsgType::Proposal),
+            0x01 => Ok(Self::PreVote),
+            0x02 => Ok(Self::PreCommit),
+            0x20 => Ok(Self::Proposal),
             _ => Err(DecodeError::new("Invalid vote type")),
         }
     }

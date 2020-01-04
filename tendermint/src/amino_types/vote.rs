@@ -52,7 +52,7 @@ impl Vote {
 
 impl From<&vote::Vote> for Vote {
     fn from(vote: &vote::Vote) -> Self {
-        Vote {
+        Self {
             vote_type: vote.vote_type.to_u32(),
             height: vote.height.value() as i64, // TODO potential overflow :-/
             round: vote.round as i64,
@@ -121,8 +121,8 @@ impl block::ParseHeight for Canonical {
 }
 
 impl Canonical {
-    pub fn new(vote: Vote, chain_id: &str) -> Canonical {
-        Canonical {
+    pub fn new(vote: Vote, chain_id: &str) -> Self {
+        Self {
             vote_type: vote.vote_type,
             chain_id: chain_id.to_string(),
             block_id: match vote.block_id {

@@ -21,7 +21,7 @@ impl Height {
 
     /// Increment the block height by 1
     pub fn increment(self) -> Self {
-        Height(self.0.checked_add(1).unwrap())
+        Self(self.0.checked_add(1).unwrap())
     }
 }
 
@@ -33,7 +33,7 @@ impl Debug for Height {
 
 impl Default for Height {
     fn default() -> Self {
-        Height(1)
+        Self(1)
     }
 }
 
@@ -46,9 +46,9 @@ impl Display for Height {
 impl TryFrom<i64> for Height {
     type Error = Error;
 
-    fn try_from(n: i64) -> Result<Height, Error> {
+    fn try_from(n: i64) -> Result<Self, Error> {
         if n >= 0 {
-            Ok(Height(n as u64))
+            Ok(Self(n as u64))
         } else {
             Err(ErrorKind::OutOfRange.into())
         }
@@ -56,20 +56,20 @@ impl TryFrom<i64> for Height {
 }
 
 impl From<u64> for Height {
-    fn from(n: u64) -> Height {
-        Height(n)
+    fn from(n: u64) -> Self {
+        Self(n)
     }
 }
 
 impl From<Height> for u64 {
-    fn from(height: Height) -> u64 {
+    fn from(height: Height) -> Self {
         height.0
     }
 }
 
 impl From<Height> for i64 {
-    fn from(height: Height) -> i64 {
-        height.0 as i64
+    fn from(height: Height) -> Self {
+        height.0 as Self
     }
 }
 

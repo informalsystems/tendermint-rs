@@ -8,8 +8,8 @@ pub struct Power(u64);
 
 impl Power {
     /// Create a new Power
-    pub fn new(p: u64) -> Power {
-        Power(p)
+    pub fn new(p: u64) -> Self {
+        Self(p)
     }
 
     /// Get the current voting power
@@ -24,14 +24,14 @@ impl Power {
 }
 
 impl From<Power> for u64 {
-    fn from(power: Power) -> u64 {
+    fn from(power: Power) -> Self {
         power.0
     }
 }
 
 impl<'de> Deserialize<'de> for Power {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Ok(Power(
+        Ok(Self(
             String::deserialize(deserializer)?
                 .parse()
                 .map_err(|e| D::Error::custom(format!("{}", e)))?,

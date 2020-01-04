@@ -33,7 +33,7 @@ impl FromStr for Proof {
 
     fn from_str(s: &str) -> Result<Self, Error> {
         let bytes = Hex::upper_case().decode(s)?;
-        Ok(Proof(bytes))
+        Ok(Self(bytes))
     }
 }
 

@@ -20,9 +20,9 @@ pub struct Set {
 impl Set {
     /// Create a new validator set.
     /// vals is mutable so it can be sorted by address.
-    pub fn new(mut vals: Vec<Info>) -> Set {
+    pub fn new(mut vals: Vec<Info>) -> Self {
         vals.sort_by(|v1, v2| v1.address.partial_cmp(&v2.address).unwrap());
-        Set { validators: vals }
+        Self { validators: vals }
     }
 
     /// Returns the validator with the given Id if its in the Set.
@@ -88,8 +88,8 @@ pub struct Info {
 
 impl Info {
     /// Create a new validator.
-    pub fn new(pk: PublicKey, vp: vote::Power) -> Info {
-        Info {
+    pub fn new(pk: PublicKey, vp: vote::Power) -> Self {
+        Self {
             address: account::Id::from(pk),
             pub_key: pk,
             voting_power: vp,
@@ -123,10 +123,10 @@ impl Info {
 }
 
 impl From<PublicKey> for account::Id {
-    fn from(pub_key: PublicKey) -> account::Id {
+    fn from(pub_key: PublicKey) -> Self {
         match pub_key {
-            PublicKey::Ed25519(pk) => account::Id::from(pk),
-            PublicKey::Secp256k1(pk) => account::Id::from(pk),
+            PublicKey::Ed25519(pk) => Self::from(pk),
+            PublicKey::Secp256k1(pk) => Self::from(pk),
         }
     }
 }
@@ -146,8 +146,8 @@ struct InfoHashable {
 
 /// Info -> [`InfoHashable`]
 impl From<&Info> for InfoHashable {
-    fn from(info: &Info) -> InfoHashable {
-        InfoHashable {
+    fn from(info: &Info) -> Self {
+        Self {
             pub_key: info.pub_key.as_bytes(),
             voting_power: info.voting_power.value(),
         }
@@ -166,14 +166,14 @@ impl ProposerPriority {
 }
 
 impl From<ProposerPriority> for i64 {
-    fn from(priority: ProposerPriority) -> i64 {
+    fn from(priority: ProposerPriority) -> Self {
         priority.value()
     }
 }
 
 impl<'de> Deserialize<'de> for ProposerPriority {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Ok(ProposerPriority(
+        Ok(Self(
             String::deserialize(deserializer)?
                 .parse()
                 .map_err(|e| D::Error::custom(format!("{}", e)))?,

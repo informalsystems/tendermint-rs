@@ -44,7 +44,7 @@ impl FromStr for Data {
             .or_else(|_| hex::decode(s))
             .map_err(|_| ErrorKind::Parse)?;
 
-        Ok(Data(bytes))
+        Ok(Self(bytes))
     }
 }
 

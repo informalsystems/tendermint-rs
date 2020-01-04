@@ -63,8 +63,8 @@ pub struct ListenAddress(String);
 
 impl ListenAddress {
     /// Construct `ListenAddress`
-    pub fn new(s: String) -> ListenAddress {
-        ListenAddress(s)
+    pub fn new(s: String) -> Self {
+        Self(s)
     }
 
     /// Convert `ListenAddress` to a `net::Address`
@@ -107,13 +107,13 @@ pub enum TxIndexStatus {
 }
 
 impl Default for TxIndexStatus {
-    fn default() -> TxIndexStatus {
-        TxIndexStatus::On
+    fn default() -> Self {
+        Self::On
     }
 }
 
 impl From<TxIndexStatus> for bool {
-    fn from(status: TxIndexStatus) -> bool {
+    fn from(status: TxIndexStatus) -> Self {
         match status {
             TxIndexStatus::On => true,
             TxIndexStatus::Off => false,

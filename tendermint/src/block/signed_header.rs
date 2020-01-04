@@ -15,7 +15,7 @@ pub struct SignedHeader {
 
 impl lite::SignedHeader for SignedHeader {
     type Header = block::Header;
-    type Commit = SignedHeader;
+    type Commit = Self;
 
     fn header(&self) -> &block::Header {
         &self.header

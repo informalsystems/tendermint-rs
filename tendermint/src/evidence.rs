@@ -17,12 +17,12 @@ pub struct Evidence(Vec<u8>);
 
 impl Evidence {
     /// Create a new raw evidence value from a byte vector
-    pub fn new<V>(into_vec: V) -> Evidence
+    pub fn new<V>(into_vec: V) -> Self
     where
         V: Into<Vec<u8>>,
     {
         // TODO(tarcieri): parse/validate evidence contents from amino messages
-        Evidence(into_vec.into())
+        Self(into_vec.into())
     }
 
     /// Serialize this evidence as an Amino message bytestring
@@ -36,7 +36,7 @@ impl<'de> Deserialize<'de> for Evidence {
         let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
             .map_err(|e| D::Error::custom(format!("{}", e)))?;
 
-        Ok(Evidence::new(bytes))
+        Ok(Self::new(bytes))
     }
 }
 
@@ -58,11 +58,11 @@ pub struct Data {
 
 impl Data {
     /// Create a new evidence data collection
-    pub fn new<I>(into_evidence: I) -> Data
+    pub fn new<I>(into_evidence: I) -> Self
     where
         I: Into<Vec<Evidence>>,
     {
-        Data {
+        Self {
             evidence: Some(into_evidence.into()),
         }
     }

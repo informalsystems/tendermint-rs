@@ -27,8 +27,8 @@ impl Request {
 }
 
 impl From<Range<block::Height>> for Request {
-    fn from(range: Range<block::Height>) -> Request {
-        Request::new(range.start, range.end)
+    fn from(range: Range<block::Height>) -> Self {
+        Self::new(range.start, range.end)
     }
 }
 

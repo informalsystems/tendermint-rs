@@ -18,8 +18,8 @@ pub struct Hash([u8; LENGTH]);
 
 impl Hash {
     /// Create a new transaction hash from raw bytes
-    pub fn new(bytes: [u8; LENGTH]) -> Hash {
-        Hash(bytes)
+    pub fn new(bytes: [u8; LENGTH]) -> Self {
+        Self(bytes)
     }
 
     /// Borrow the transaction hash as a byte slice
@@ -36,7 +36,7 @@ impl AsRef<[u8]> for Hash {
 
 impl ConstantTimeEq for Hash {
     #[inline]
-    fn ct_eq(&self, other: &Hash) -> subtle::Choice {
+    fn ct_eq(&self, other: &Self) -> subtle::Choice {
         self.as_bytes().ct_eq(other.as_bytes())
     }
 }
@@ -72,7 +72,7 @@ impl FromStr for Hash {
 
         let mut result_bytes = [0_u8; LENGTH];
         result_bytes.copy_from_slice(&bytes);
-        Ok(Hash(result_bytes))
+        Ok(Self(result_bytes))
     }
 }
 

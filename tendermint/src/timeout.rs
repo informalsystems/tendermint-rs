@@ -15,13 +15,13 @@ impl Deref for Timeout {
 }
 
 impl From<Duration> for Timeout {
-    fn from(duration: Duration) -> Timeout {
-        Timeout(duration)
+    fn from(duration: Duration) -> Self {
+        Self(duration)
     }
 }
 
 impl From<Timeout> for Duration {
-    fn from(timeout: Timeout) -> Duration {
+    fn from(timeout: Timeout) -> Self {
         timeout.0
     }
 }
@@ -53,7 +53,7 @@ impl FromStr for Timeout {
             _ => unreachable!(),
         };
 
-        Ok(Timeout(duration))
+        Ok(Self(duration))
     }
 }
 

@@ -16,11 +16,11 @@ pub struct Transaction(Vec<u8>);
 
 impl Transaction {
     /// Create a new raw transaction from a byte vector
-    pub fn new<V>(into_vec: V) -> Transaction
+    pub fn new<V>(into_vec: V) -> Self
     where
         V: Into<Vec<u8>>,
     {
-        Transaction(into_vec.into())
+        Self(into_vec.into())
     }
 
     /// Convert this transaction into a byte vector
@@ -68,11 +68,11 @@ pub struct Data {
 
 impl Data {
     /// Create a new transaction data collection
-    pub fn new<I>(into_transactions: I) -> Data
+    pub fn new<I>(into_transactions: I) -> Self
     where
         I: Into<Vec<Transaction>>,
     {
-        Data {
+        Self {
             txs: Some(into_transactions.into()),
         }
     }

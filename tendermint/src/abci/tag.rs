@@ -28,7 +28,7 @@ impl FromStr for Key {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Key(s.into()))
+        Ok(Self(s.into()))
     }
 }
 
@@ -52,7 +52,7 @@ impl FromStr for Value {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Value(s.into()))
+        Ok(Self(s.into()))
     }
 }
 

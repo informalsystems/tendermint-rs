@@ -199,7 +199,7 @@ impl FromStr for LogLevel {
             }
         }
 
-        Ok(LogLevel(levels))
+        Ok(Self(levels))
     }
 }
 
@@ -541,8 +541,8 @@ pub enum TxIndexer {
 }
 
 impl Default for TxIndexer {
-    fn default() -> TxIndexer {
-        TxIndexer::Kv
+    fn default() -> Self {
+        Self::Kv
     }
 }
 

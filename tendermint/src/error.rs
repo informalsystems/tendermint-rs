@@ -1,5 +1,9 @@
 //! Error types
 
+// TODO(xla): Clippy fires false positives in macros:
+// https://github.com/rust-lang/rust-clippy/issues/4887
+#![allow(clippy::use_self)]
+
 use failure::*;
 use std::{
     fmt::{self, Display},
@@ -73,12 +77,12 @@ impl Fail for Error {
 
 impl From<Kind> for Error {
     fn from(kind: Kind) -> Self {
-        Error::new(kind, None)
+        Self::new(kind, None)
     }
 }
 
 impl From<chrono::ParseError> for Error {
-    fn from(err: chrono::ParseError) -> Error {
+    fn from(err: chrono::ParseError) -> Self {
         err!(Kind::Parse, err)
     }
 }
@@ -120,7 +124,7 @@ impl From<signatory::signature::Error> for Error {
 }
 
 impl From<subtle_encoding::Error> for Error {
-    fn from(err: subtle_encoding::Error) -> Error {
+    fn from(err: subtle_encoding::Error) -> Self {
         err!(Kind::Parse, err)
     }
 }

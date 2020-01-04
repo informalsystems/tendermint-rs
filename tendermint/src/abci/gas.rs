@@ -24,13 +24,13 @@ impl Gas {
 }
 
 impl From<u64> for Gas {
-    fn from(amount: u64) -> Gas {
-        Gas(amount)
+    fn from(amount: u64) -> Self {
+        Self(amount)
     }
 }
 
 impl From<Gas> for u64 {
-    fn from(gas: Gas) -> u64 {
+    fn from(gas: Gas) -> Self {
         gas.0
     }
 }

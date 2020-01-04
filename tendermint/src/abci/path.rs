@@ -21,6 +21,6 @@ impl FromStr for Path {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Path(s.to_owned()))
+        Ok(Self(s.to_owned()))
     }
 }

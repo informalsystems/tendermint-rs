@@ -15,7 +15,7 @@ impl Signature {
     /// Return the algorithm used to create this particular signature
     pub fn algorithm(self) -> Algorithm {
         match self {
-            Signature::Ed25519(_) => Algorithm::Ed25519,
+            Self::Ed25519(_) => Algorithm::Ed25519,
         }
     }
 
@@ -28,7 +28,7 @@ impl Signature {
 impl AsRef<[u8]> for Signature {
     fn as_ref(&self) -> &[u8] {
         match self {
-            Signature::Ed25519(sig) => sig.as_ref(),
+            Self::Ed25519(sig) => sig.as_ref(),
         }
     }
 }
@@ -38,7 +38,7 @@ impl<'de> Deserialize<'de> for Signature {
         let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
             .map_err(|e| D::Error::custom(format!("{}", e)))?;
 
-        Ok(Signature::Ed25519(
+        Ok(Self::Ed25519(
             signatory::ed25519::Signature::from_bytes(&bytes)
                 .map_err(|e| D::Error::custom(format!("{}", e)))?,
         ))

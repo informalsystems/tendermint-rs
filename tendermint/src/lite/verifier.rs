@@ -349,8 +349,8 @@ mod tests {
     }
 
     impl MockHeader {
-        fn new(height: u64, time: SystemTime, vals: Hash, next_vals: Hash) -> MockHeader {
-            MockHeader {
+        fn new(height: u64, time: SystemTime, vals: Hash, next_vals: Hash) -> Self {
+            Self {
                 height,
                 time,
                 vals,
@@ -393,8 +393,8 @@ mod tests {
     }
 
     impl MockValSet {
-        fn new(vals: Vec<usize>) -> MockValSet {
-            MockValSet { vals }
+        fn new(vals: Vec<usize>) -> Self {
+            Self { vals }
         }
     }
 
@@ -422,8 +422,8 @@ mod tests {
     }
 
     impl MockCommit {
-        fn new(hash: Hash, vals: Vec<Option<usize>>) -> MockCommit {
-            MockCommit { hash, vals }
+        fn new(hash: Hash, vals: Vec<Option<usize>>) -> Self {
+            Self { hash, vals }
         }
     }
 
@@ -466,7 +466,7 @@ mod tests {
 
     impl MockSignedHeader {
         fn new(header: MockHeader, commit: MockCommit) -> Self {
-            MockSignedHeader { header, commit }
+            Self { header, commit }
         }
     }
 
@@ -492,8 +492,8 @@ mod tests {
         type ValidatorSet = MockValSet;
 
         // XXX: how to do this without cloning?!
-        fn new(header: &Self::LastHeader, vals: &Self::ValidatorSet) -> MockState {
-            MockState {
+        fn new(header: &Self::LastHeader, vals: &Self::ValidatorSet) -> Self {
+            Self {
                 header: header.clone(),
                 vals: vals.clone(),
             }

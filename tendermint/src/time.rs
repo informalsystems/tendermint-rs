@@ -16,7 +16,7 @@ pub struct Time(DateTime<Utc>);
 impl Time {
     /// Get a `Timestamp` representing the current wall clock time
     pub fn now() -> Self {
-        Time(Utc::now())
+        Self(Utc::now())
     }
 
     /// Get the `UNIX_EPOCH` time ("1970-01-01 00:00:00 UTC") as a `Timestamp`
@@ -26,7 +26,7 @@ impl Time {
 
     /// Calculate the amount of time which has passed since another `Timestamp`
     /// as a `std::time::Duration`
-    pub fn duration_since(&self, other: Time) -> Result<Duration, Error> {
+    pub fn duration_since(&self, other: Self) -> Result<Duration, Error> {
         self.0
             .signed_duration_since(other.0)
             .to_std()
@@ -34,8 +34,8 @@ impl Time {
     }
 
     /// Parse a timestamp from an RFC 3339 date
-    pub fn parse_from_rfc3339(s: &str) -> Result<Time, Error> {
-        Ok(Time(DateTime::parse_from_rfc3339(s)?.with_timezone(&Utc)))
+    pub fn parse_from_rfc3339(s: &str) -> Result<Self, Error> {
+        Ok(Self(DateTime::parse_from_rfc3339(s)?.with_timezone(&Utc)))
     }
 
     /// Return an RFC 3339 and ISO 8601 date and time string with 6 subseconds digits and Z.
@@ -60,43 +60,44 @@ impl FromStr for Time {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Time::parse_from_rfc3339(s)
+        Self::parse_from_rfc3339(s)
     }
 }
 
 impl From<DateTime<Utc>> for Time {
-    fn from(t: DateTime<Utc>) -> Time {
-        Time(t)
+    fn from(t: DateTime<Utc>) -> Self {
+        Self(t)
     }
 }
 
 impl From<Time> for DateTime<Utc> {
+    #![allow(clippy::use_self)]
     fn from(t: Time) -> DateTime<Utc> {
         t.0
     }
 }
 
 impl From<SystemTime> for Time {
-    fn from(t: SystemTime) -> Time {
-        Time(t.into())
+    fn from(t: SystemTime) -> Self {
+        Self(t.into())
     }
 }
 
 impl From<Time> for SystemTime {
-    fn from(t: Time) -> SystemTime {
+    fn from(t: Time) -> Self {
         t.to_system_time().unwrap()
     }
 }
 
 impl From<TAI64N> for Time {
-    fn from(t: TAI64N) -> Time {
-        Time(t.to_datetime_utc())
+    fn from(t: TAI64N) -> Self {
+        Self(t.to_datetime_utc())
     }
 }
 
 impl From<Time> for TAI64N {
-    fn from(t: Time) -> TAI64N {
-        TAI64N::from_datetime_utc(&t.0)
+    fn from(t: Time) -> Self {
+        Self::from_datetime_utc(&t.0)
     }
 }
 

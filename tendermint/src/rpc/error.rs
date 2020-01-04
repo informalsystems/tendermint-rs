@@ -19,10 +19,10 @@ pub struct Error {
 
 impl Error {
     /// Create a new RPC error
-    pub fn new(code: Code, data: Option<String>) -> Error {
+    pub fn new(code: Code, data: Option<String>) -> Self {
         let message = code.to_string();
 
-        Error {
+        Self {
             code,
             message,
             data,
@@ -30,8 +30,8 @@ impl Error {
     }
 
     /// Create a low-level HTTP error
-    pub fn http_error(message: impl Into<String>) -> Error {
-        Error {
+    pub fn http_error(message: impl Into<String>) -> Self {
+        Self {
             code: Code::HttpError,
             message: message.into(),
             data: None,
@@ -39,29 +39,29 @@ impl Error {
     }
 
     /// Create a new invalid parameter error
-    pub fn invalid_params(data: &str) -> Error {
-        Error::new(Code::InvalidParams, Some(data.to_string()))
+    pub fn invalid_params(data: &str) -> Self {
+        Self::new(Code::InvalidParams, Some(data.to_string()))
     }
 
     /// Create a new method-not-found error
-    pub fn method_not_found(name: &str) -> Error {
-        Error::new(Code::MethodNotFound, Some(name.to_string()))
+    pub fn method_not_found(name: &str) -> Self {
+        Self::new(Code::MethodNotFound, Some(name.to_string()))
     }
 
     /// Create a new parse error
-    pub fn parse_error<E>(error: E) -> Error
+    pub fn parse_error<E>(error: E) -> Self
     where
         E: Display,
     {
-        Error::new(Code::ParseError, Some(error.to_string()))
+        Self::new(Code::ParseError, Some(error.to_string()))
     }
 
     /// Create a new server error
-    pub fn server_error<D>(data: D) -> Error
+    pub fn server_error<D>(data: D) -> Self
     where
         D: Display,
     {
-        Error::new(Code::ServerError, Some(data.to_string()))
+        Self::new(Code::ServerError, Some(data.to_string()))
     }
 
     /// Obtain the `rpc::error::Code` for this error
@@ -102,14 +102,14 @@ impl Fail for Error {
 }
 
 impl From<http::Error> for Error {
-    fn from(http_error: http::Error) -> Error {
-        Error::http_error(http_error.to_string())
+    fn from(http_error: http::Error) -> Self {
+        Self::http_error(http_error.to_string())
     }
 }
 
 impl From<hyper::Error> for Error {
-    fn from(hyper_error: hyper::Error) -> Error {
-        Error::http_error(hyper_error.to_string())
+    fn from(hyper_error: hyper::Error) -> Self {
+        Self::http_error(hyper_error.to_string())
     }
 }
 
@@ -160,22 +160,22 @@ impl Code {
 }
 
 impl From<i32> for Code {
-    fn from(value: i32) -> Code {
+    fn from(value: i32) -> Self {
         match value {
-            0 => Code::HttpError,
-            -32700 => Code::ParseError,
-            -32600 => Code::InvalidRequest,
-            -32601 => Code::MethodNotFound,
-            -32602 => Code::InvalidParams,
-            -32603 => Code::InternalError,
-            -32000 => Code::ServerError,
-            other => Code::Other(other),
+            0 => Self::HttpError,
+            -32700 => Self::ParseError,
+            -32600 => Self::InvalidRequest,
+            -32601 => Self::MethodNotFound,
+            -32602 => Self::InvalidParams,
+            -32603 => Self::InternalError,
+            -32000 => Self::ServerError,
+            other => Self::Other(other),
         }
     }
 }
 
 impl From<Code> for i32 {
-    fn from(code: Code) -> i32 {
+    fn from(code: Code) -> Self {
         match code {
             Code::HttpError => 0,
             Code::ParseError => -32700,
@@ -191,7 +191,7 @@ impl From<Code> for i32 {
 
 impl<'de> Deserialize<'de> for Code {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Ok(Code::from(i32::deserialize(deserializer)?))
+        Ok(Self::from(i32::deserialize(deserializer)?))
     }
 }
 

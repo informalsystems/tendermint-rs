@@ -13,7 +13,7 @@ pub struct Consensus {
 
 impl From<&header::Version> for Consensus {
     fn from(version: &header::Version) -> Self {
-        Consensus {
+        Self {
             block: version.block,
             app: version.app,
         }

@@ -48,7 +48,7 @@ impl fmt::Display for State {
 }
 
 impl Ord for State {
-    fn cmp(&self, other: &State) -> Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         match self.height.cmp(&other.height) {
             Ordering::Greater => Ordering::Greater,
             Ordering::Less => Ordering::Less,
@@ -62,7 +62,7 @@ impl Ord for State {
 }
 
 impl PartialOrd for State {
-    fn partial_cmp(&self, other: &State) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }

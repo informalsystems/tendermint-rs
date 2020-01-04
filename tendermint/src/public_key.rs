@@ -35,21 +35,19 @@ pub enum PublicKey {
 
 impl PublicKey {
     /// From raw secp256k1 public key bytes
-    pub fn from_raw_secp256k1(bytes: &[u8]) -> Option<PublicKey> {
-        Some(PublicKey::Secp256k1(secp256k1::PublicKey::from_bytes(
-            bytes,
-        )?))
+    pub fn from_raw_secp256k1(bytes: &[u8]) -> Option<Self> {
+        Some(Self::Secp256k1(secp256k1::PublicKey::from_bytes(bytes)?))
     }
 
     /// From raw Ed25519 public key bytes
-    pub fn from_raw_ed25519(bytes: &[u8]) -> Option<PublicKey> {
-        Some(PublicKey::Ed25519(ed25519::PublicKey::from_bytes(bytes)?))
+    pub fn from_raw_ed25519(bytes: &[u8]) -> Option<Self> {
+        Some(Self::Ed25519(ed25519::PublicKey::from_bytes(bytes)?))
     }
 
     /// Get Ed25519 public key
     pub fn ed25519(self) -> Option<ed25519::PublicKey> {
         match self {
-            PublicKey::Ed25519(pk) => Some(pk),
+            Self::Ed25519(pk) => Some(pk),
             _ => None,
         }
     }
@@ -57,8 +55,8 @@ impl PublicKey {
     /// Serialize this key as raw bytes
     pub fn as_bytes(self) -> Vec<u8> {
         match self {
-            PublicKey::Ed25519(ref pk) => pk.as_bytes(),
-            PublicKey::Secp256k1(ref pk) => pk.as_bytes(),
+            Self::Ed25519(ref pk) => pk.as_bytes(),
+            Self::Secp256k1(ref pk) => pk.as_bytes(),
         }
         .to_vec()
     }
@@ -66,13 +64,13 @@ impl PublicKey {
     /// Serialize this key as amino bytes
     pub fn to_amino_bytes(self) -> Vec<u8> {
         match self {
-            PublicKey::Ed25519(ref pk) => {
+            Self::Ed25519(ref pk) => {
                 //Amino prefix for Pubkey
                 let mut key_bytes = vec![0x16, 0x24, 0xDE, 0x64, 0x20];
                 key_bytes.extend(pk.as_bytes());
                 key_bytes
             }
-            PublicKey::Secp256k1(ref pk) => {
+            Self::Secp256k1(ref pk) => {
                 let mut key_bytes = vec![0xEB, 0x5A, 0xE9, 0x87, 0x21];
                 key_bytes.extend(pk.as_bytes());
                 key_bytes
@@ -92,14 +90,14 @@ impl PublicKey {
 }
 
 impl From<ed25519::PublicKey> for PublicKey {
-    fn from(pk: ed25519::PublicKey) -> PublicKey {
-        PublicKey::Ed25519(pk)
+    fn from(pk: ed25519::PublicKey) -> Self {
+        Self::Ed25519(pk)
     }
 }
 
 impl From<secp256k1::PublicKey> for PublicKey {
-    fn from(pk: secp256k1::PublicKey) -> PublicKey {
-        PublicKey::Secp256k1(pk)
+    fn from(pk: secp256k1::PublicKey) -> Self {
+        Self::Secp256k1(pk)
     }
 }
 
@@ -115,18 +113,16 @@ pub enum TendermintKey {
 
 impl TendermintKey {
     /// Create a new account key from a `PublicKey`
-    pub fn new_account_key(public_key: PublicKey) -> Result<TendermintKey, Error> {
+    pub fn new_account_key(public_key: PublicKey) -> Result<Self, Error> {
         match public_key {
-            PublicKey::Ed25519(_) | PublicKey::Secp256k1(_) => {
-                Ok(TendermintKey::AccountKey(public_key))
-            }
+            PublicKey::Ed25519(_) | PublicKey::Secp256k1(_) => Ok(Self::AccountKey(public_key)),
         }
     }
 
     /// Create a new consensus key from a `PublicKey`
-    pub fn new_consensus_key(public_key: PublicKey) -> Result<TendermintKey, Error> {
+    pub fn new_consensus_key(public_key: PublicKey) -> Result<Self, Error> {
         match public_key {
-            PublicKey::Ed25519(_) => Ok(TendermintKey::AccountKey(public_key)),
+            PublicKey::Ed25519(_) => Ok(Self::AccountKey(public_key)),
             _ => Err(err!(
                 ErrorKind::InvalidKey,
                 "only ed25519 consensus keys are supported"
@@ -140,8 +136,8 @@ impl Deref for TendermintKey {
 
     fn deref(&self) -> &PublicKey {
         match self {
-            TendermintKey::AccountKey(key) => key,
-            TendermintKey::ConsensusKey(key) => key,
+            Self::AccountKey(key) => key,
+            Self::ConsensusKey(key) => key,
         }
     }
 }
@@ -160,8 +156,8 @@ impl Algorithm {
     /// Get the string label for this algorithm
     pub fn as_str(&self) -> &str {
         match self {
-            Algorithm::Ed25519 => "ed25519",
-            Algorithm::Secp256k1 => "secp256k1",
+            Self::Ed25519 => "ed25519",
+            Self::Secp256k1 => "secp256k1",
         }
     }
 }
@@ -177,8 +173,8 @@ impl FromStr for Algorithm {
 
     fn from_str(s: &str) -> Result<Self, Error> {
         match s {
-            "ed25519" => Ok(Algorithm::Ed25519),
-            "secp256k1" => Ok(Algorithm::Secp256k1),
+            "ed25519" => Ok(Self::Ed25519),
+            "secp256k1" => Ok(Self::Secp256k1),
             _ => Err(ErrorKind::Parse.into()),
         }
     }

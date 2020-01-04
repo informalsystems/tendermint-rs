@@ -56,7 +56,7 @@ impl Display for Id {
 }
 
 impl<'a> From<&'a str> for Id {
-    fn from(s: &str) -> Id {
+    fn from(s: &str) -> Self {
         Self::from_str(s).unwrap()
     }
 }
@@ -78,7 +78,7 @@ impl FromStr for Id {
 
         let mut bytes = [0_u8; MAX_LENGTH];
         bytes[..name.as_bytes().len()].copy_from_slice(name.as_bytes());
-        Ok(Id(bytes))
+        Ok(Self(bytes))
     }
 }
 
@@ -89,19 +89,19 @@ impl Hash for Id {
 }
 
 impl PartialOrd for Id {
-    fn partial_cmp(&self, other: &Id) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for Id {
-    fn cmp(&self, other: &Id) -> Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         self.as_str().cmp(other.as_str())
     }
 }
 
 impl PartialEq for Id {
-    fn eq(&self, other: &Id) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.as_str() == other.as_str()
     }
 }

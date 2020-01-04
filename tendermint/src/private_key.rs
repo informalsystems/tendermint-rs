@@ -24,14 +24,14 @@ impl PrivateKey {
     /// Get the public key associated with this private key
     pub fn public_key(&self) -> PublicKey {
         match self {
-            PrivateKey::Ed25519(private_key) => private_key.public_key(),
+            Self::Ed25519(private_key) => private_key.public_key(),
         }
     }
 
     /// If applicable, borrow the Ed25519 keypair
     pub fn ed25519_keypair(&self) -> Option<&Ed25519Keypair> {
         match self {
-            PrivateKey::Ed25519(keypair) => Some(keypair),
+            Self::Ed25519(keypair) => Some(keypair),
         }
     }
 }
@@ -64,8 +64,8 @@ impl Ed25519Keypair {
 }
 
 impl<'a> From<&'a Ed25519Keypair> for ed25519::Seed {
-    fn from(keypair: &'a Ed25519Keypair) -> ed25519::Seed {
-        ed25519::Seed::from_keypair(&keypair.0[..]).unwrap()
+    fn from(keypair: &'a Ed25519Keypair) -> Self {
+        Self::from_keypair(&keypair.0[..]).unwrap()
     }
 }
 
@@ -82,7 +82,7 @@ impl<'de> Deserialize<'de> for Ed25519Keypair {
             return Err(D::Error::custom("invalid Ed25519 keypair size"));
         }
 
-        Ok(Ed25519Keypair(keypair_bytes))
+        Ok(Self(keypair_bytes))
     }
 }
 

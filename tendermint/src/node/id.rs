@@ -21,8 +21,8 @@ pub struct Id([u8; LENGTH]);
 
 impl Id {
     /// Create a new Node ID from raw bytes
-    pub fn new(bytes: [u8; LENGTH]) -> Id {
-        Id(bytes)
+    pub fn new(bytes: [u8; LENGTH]) -> Self {
+        Self(bytes)
     }
 
     /// Borrow the node ID as a byte slice
@@ -38,7 +38,7 @@ impl AsRef<[u8]> for Id {
 }
 
 impl ConstantTimeEq for Id {
-    fn ct_eq(&self, other: &Id) -> subtle::Choice {
+    fn ct_eq(&self, other: &Self) -> subtle::Choice {
         self.as_bytes().ct_eq(other.as_bytes())
     }
 }
@@ -59,11 +59,11 @@ impl Debug for Id {
 }
 
 impl From<ed25519::PublicKey> for Id {
-    fn from(pk: ed25519::PublicKey) -> Id {
+    fn from(pk: ed25519::PublicKey) -> Self {
         let digest = Sha256::digest(pk.as_bytes());
         let mut bytes = [0_u8; LENGTH];
         bytes.copy_from_slice(&digest[..LENGTH]);
-        Id(bytes)
+        Self(bytes)
     }
 }
 
@@ -83,12 +83,12 @@ impl FromStr for Id {
 
         let mut result_bytes = [0_u8; LENGTH];
         result_bytes.copy_from_slice(&bytes);
-        Ok(Id(result_bytes))
+        Ok(Self(result_bytes))
     }
 }
 
 impl PartialEq for Id {
-    fn eq(&self, other: &Id) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
     }
 }

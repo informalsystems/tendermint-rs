@@ -48,8 +48,8 @@ impl<'de> Deserialize<'de> for Address {
 impl Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Address::Tcp { host, port, .. } => write!(f, "{}{}:{}", TCP_PREFIX, host, port),
-            Address::Unix { path } => write!(f, "{}{}", UNIX_PREFIX, path.display()),
+            Self::Tcp { host, port, .. } => write!(f, "{}{}:{}", TCP_PREFIX, host, port),
+            Self::Unix { path } => write!(f, "{}{}", UNIX_PREFIX, path.display()),
         }
     }
 }
@@ -61,7 +61,7 @@ impl FromStr for Address {
         if addr.starts_with(TCP_PREFIX) {
             Self::parse_tcp_addr(&addr[TCP_PREFIX.len()..])
         } else if addr.starts_with(UNIX_PREFIX) {
-            Ok(Address::Unix {
+            Ok(Self::Unix {
                 path: PathBuf::from(&addr[UNIX_PREFIX.len()..]),
             })
         } else if addr.contains("://") {
@@ -118,7 +118,7 @@ impl Address {
             )
         })?;
 
-        Ok(Address::Tcp {
+        Ok(Self::Tcp {
             peer_id,
             host,
             port,

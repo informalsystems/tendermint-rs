@@ -18,7 +18,7 @@ pub struct Version(String);
 impl Version {
     /// Get the currently supported JSONRPC version
     pub fn current() -> Self {
-        Version(SUPPORTED_VERSION.to_owned())
+        Self(SUPPORTED_VERSION.to_owned())
     }
 
     /// Is this JSONRPC version supported?
@@ -49,6 +49,6 @@ impl FromStr for Version {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Version(s.to_owned()))
+        Ok(Self(s.to_owned()))
     }
 }

@@ -18,7 +18,7 @@ impl Id {
             .set_version(uuid::Version::Random)
             .build();
 
-        Id(uuid.to_string())
+        Self(uuid.to_string())
     }
 }
 

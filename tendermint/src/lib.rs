@@ -20,8 +20,8 @@
     clippy::restriction
 )]
 #![allow(clippy::result_unwrap_used)]
-#![forbid(clippy::multiple_inherent_impl)]
-#![allow(clippy::multiple_crate_versions)]
+#![allow(clippy::implicit_return, clippy::multiple_crate_versions)]
+#![deny(clippy::use_self)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
     html_root_url = "https://docs.rs/tendermint/0.11.0"

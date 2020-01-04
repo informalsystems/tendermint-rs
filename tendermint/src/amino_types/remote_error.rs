@@ -23,7 +23,7 @@ enum Code {
 impl RemoteError {
     /// Create a new double signing error with the given message
     pub fn double_sign(height: i64) -> Self {
-        RemoteError {
+        Self {
             code: Code::DoubleSignError as i32,
             description: format!("double signing requested at height: {}", height),
         }

@@ -15,8 +15,8 @@ pub struct Request {
 
 impl Request {
     /// Create a new sync transaction broadcast RPC request
-    pub fn new(tx: Transaction) -> Request {
-        Request { tx }
+    pub fn new(tx: Transaction) -> Self {
+        Self { tx }
     }
 }
 

@@ -17,7 +17,7 @@ pub struct BlockId {
 
 impl BlockId {
     pub fn new(hash: Vec<u8>, parts_header: Option<PartsSetHeader>) -> Self {
-        BlockId { hash, parts_header }
+        Self { hash, parts_header }
     }
 }
 
@@ -35,7 +35,7 @@ impl block::ParseId for BlockId {
 impl From<&block::Id> for BlockId {
     fn from(bid: &block::Id) -> Self {
         let bid_hash = bid.hash.as_bytes();
-        BlockId::new(
+        Self::new(
             bid_hash.to_vec(),
             bid.parts.as_ref().map(PartsSetHeader::from),
         )
@@ -83,7 +83,7 @@ pub struct PartsSetHeader {
 
 impl PartsSetHeader {
     pub fn new(total: i64, hash: Vec<u8>) -> Self {
-        PartsSetHeader { total, hash }
+        Self { total, hash }
     }
 
     fn parse_parts_header(&self) -> Option<block::parts::Header> {
@@ -95,7 +95,7 @@ impl PartsSetHeader {
 
 impl From<&parts::Header> for PartsSetHeader {
     fn from(parts: &parts::Header) -> Self {
-        PartsSetHeader::new(parts.total as i64, parts.hash.as_bytes().to_vec())
+        Self::new(parts.total as i64, parts.hash.as_bytes().to_vec())
     }
 }
 

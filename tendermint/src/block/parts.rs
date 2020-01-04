@@ -23,6 +23,6 @@ pub struct Header {
 impl Header {
     /// Create a new parts header
     pub fn new(total: u64, hash: Hash) -> Self {
-        Header { total, hash }
+        Self { total, hash }
     }
 }

@@ -15,7 +15,7 @@ impl Log {
 
 impl From<&str> for Log {
     fn from(s: &str) -> Self {
-        Log(s.to_owned())
+        Self(s.to_owned())
     }
 }
 

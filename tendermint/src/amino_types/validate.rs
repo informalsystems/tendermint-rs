@@ -37,6 +37,6 @@ impl ToString for ValidationError {
 
 impl From<ValidationErrorKind> for ValidationError {
     fn from(kind: ValidationErrorKind) -> Self {
-        ValidationError(kind)
+        Self(kind)
     }
 }

@@ -84,9 +84,9 @@ impl Signed {
         chain_id: &str,
         validator_address: account::Id,
         signature: Signature,
-    ) -> Signed {
+    ) -> Self {
         let canonical_vote = amino_types::CanonicalVote::new(vote, chain_id);
-        Signed {
+        Self {
             vote: canonical_vote,
             signature,
             validator_address,
@@ -122,10 +122,10 @@ pub enum Type {
 
 impl Type {
     /// Deserialize this type from a byte
-    pub fn from_u8(byte: u8) -> Option<Type> {
+    pub fn from_u8(byte: u8) -> Option<Self> {
         match byte {
-            1 => Some(Type::Prevote),
-            2 => Some(Type::Precommit),
+            1 => Some(Self::Prevote),
+            2 => Some(Self::Precommit),
             _ => None,
         }
     }
@@ -150,6 +150,6 @@ impl Serialize for Type {
 impl<'de> Deserialize<'de> for Type {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let byte = u8::deserialize(deserializer)?;
-        Type::from_u8(byte).ok_or_else(|| D::Error::custom(format!("invalid vote type: {}", byte)))
+        Self::from_u8(byte).ok_or_else(|| D::Error::custom(format!("invalid vote type: {}", byte)))
     }
 }

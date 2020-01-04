@@ -28,13 +28,13 @@ pub enum Hash {
 impl Hash {
     #[allow(clippy::new_ret_no_self)]
     /// Create a new `Hash` with the given algorithm type
-    pub fn new(alg: Algorithm, bytes: &[u8]) -> Result<Hash, Error> {
+    pub fn new(alg: Algorithm, bytes: &[u8]) -> Result<Self, Error> {
         match alg {
             Algorithm::Sha256 => {
                 if bytes.len() == SHA256_HASH_SIZE {
                     let mut h = [0_u8; SHA256_HASH_SIZE];
                     h.copy_from_slice(bytes);
-                    Ok(Hash::Sha256(h))
+                    Ok(Self::Sha256(h))
                 } else {
                     Err(ErrorKind::Parse.into())
                 }
@@ -43,12 +43,12 @@ impl Hash {
     }
 
     /// Decode a `Hash` from upper-case hexadecimal
-    pub fn from_hex_upper(alg: Algorithm, s: &str) -> Result<Hash, Error> {
+    pub fn from_hex_upper(alg: Algorithm, s: &str) -> Result<Self, Error> {
         match alg {
             Algorithm::Sha256 => {
                 let mut h = [0_u8; SHA256_HASH_SIZE];
                 Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h)?;
-                Ok(Hash::Sha256(h))
+                Ok(Self::Sha256(h))
             }
         }
     }
@@ -56,14 +56,14 @@ impl Hash {
     /// Return the digest algorithm used to produce this hash
     pub fn algorithm(self) -> Algorithm {
         match self {
-            Hash::Sha256(_) => Algorithm::Sha256,
+            Self::Sha256(_) => Algorithm::Sha256,
         }
     }
 
     /// Borrow the `Hash` as a byte slice
     pub fn as_bytes(&self) -> &[u8] {
         match self {
-            Hash::Sha256(ref h) => h.as_ref(),
+            Self::Sha256(ref h) => h.as_ref(),
         }
     }
 }
@@ -71,7 +71,7 @@ impl Hash {
 impl Debug for Hash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Hash::Sha256(_) => write!(f, "Hash::Sha256({})", self),
+            Self::Sha256(_) => write!(f, "Hash::Sha256({})", self),
         }
     }
 }
@@ -79,7 +79,7 @@ impl Debug for Hash {
 impl Display for Hash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let hex = match self {
-            Hash::Sha256(ref h) => Hex::upper_case().encode_to_string(h).unwrap(),
+            Self::Sha256(ref h) => Hex::upper_case().encode_to_string(h).unwrap(),
         };
 
         write!(f, "{}", hex)
