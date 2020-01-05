@@ -136,8 +136,7 @@ impl Deref for TendermintKey {
 
     fn deref(&self) -> &PublicKey {
         match self {
-            Self::AccountKey(key) => key,
-            Self::ConsensusKey(key) => key,
+            Self::AccountKey(key) | Self::ConsensusKey(key) => key,
         }
     }
 }
