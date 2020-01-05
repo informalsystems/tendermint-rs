@@ -8,17 +8,17 @@ pub struct Power(u64);
 
 impl Power {
     /// Create a new Power
-    pub fn new(p: u64) -> Self {
+    pub const fn new(p: u64) -> Self {
         Self(p)
     }
 
     /// Get the current voting power
-    pub fn value(self) -> u64 {
+    pub const fn value(self) -> u64 {
         self.0
     }
 
     /// Is the current voting power zero?
-    pub fn is_zero(self) -> bool {
+    pub const fn is_zero(self) -> bool {
         self.0 == 0
     }
 }

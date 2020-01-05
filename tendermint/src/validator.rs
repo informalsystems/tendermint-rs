@@ -105,7 +105,7 @@ impl Info {
     }
 
     /// Return the voting power of the validator.
-    pub fn power(&self) -> u64 {
+    pub const fn power(&self) -> u64 {
         self.voting_power.value()
     }
 
@@ -160,7 +160,7 @@ pub struct ProposerPriority(i64);
 
 impl ProposerPriority {
     /// Get the current voting power
-    pub fn value(self) -> i64 {
+    pub const fn value(self) -> i64 {
         self.0
     }
 }

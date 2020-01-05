@@ -349,7 +349,7 @@ mod tests {
     }
 
     impl MockHeader {
-        fn new(height: u64, time: SystemTime, vals: Hash, next_vals: Hash) -> Self {
+        const fn new(height: u64, time: SystemTime, vals: Hash, next_vals: Hash) -> Self {
             Self {
                 height,
                 time,
@@ -465,7 +465,7 @@ mod tests {
     }
 
     impl MockSignedHeader {
-        fn new(header: MockHeader, commit: MockCommit) -> Self {
+        const fn new(header: MockHeader, commit: MockCommit) -> Self {
             Self { header, commit }
         }
     }
@@ -512,7 +512,7 @@ mod tests {
     static THRESHOLD: &MockThreshold = &MockThreshold {};
 
     // start all blockchains from here ...
-    fn init_time() -> SystemTime {
+    const fn init_time() -> SystemTime {
         SystemTime::UNIX_EPOCH
     }
 

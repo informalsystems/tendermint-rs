@@ -63,7 +63,7 @@ pub struct ListenAddress(String);
 
 impl ListenAddress {
     /// Construct `ListenAddress`
-    pub fn new(s: String) -> Self {
+    pub const fn new(s: String) -> Self {
         Self(s)
     }
 

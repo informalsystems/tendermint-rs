@@ -18,7 +18,7 @@ pub struct Gas(u64);
 
 impl Gas {
     /// Get the inner integer value
-    pub fn value(self) -> u64 {
+    pub const fn value(self) -> u64 {
         self.0
     }
 }

@@ -23,6 +23,7 @@ impl Transaction {
         Self(into_vec.into())
     }
 
+    #[allow(clippy::missing_const_for_fn)]
     /// Convert this transaction into a byte vector
     pub fn into_vec(self) -> Vec<u8> {
         self.0

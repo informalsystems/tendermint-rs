@@ -20,7 +20,7 @@ pub struct Id([u8; LENGTH]);
 
 impl Id {
     /// Create a new account ID from raw bytes
-    pub fn new(bytes: [u8; LENGTH]) -> Self {
+    pub const fn new(bytes: [u8; LENGTH]) -> Self {
         Self(bytes)
     }
 

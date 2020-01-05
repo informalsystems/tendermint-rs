@@ -17,7 +17,7 @@ pub struct Request {
 
 impl Request {
     /// Create a new request for information about a particular block
-    pub fn new(height: block::Height) -> Self {
+    pub const fn new(height: block::Height) -> Self {
         Self {
             height: Some(height),
         }

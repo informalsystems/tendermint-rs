@@ -39,7 +39,7 @@ pub struct Id {
 
 impl Id {
     /// Create a new `Id` from a hash byte slice
-    pub fn new(hash: Hash, parts: Option<parts::Header>) -> Self {
+    pub const fn new(hash: Hash, parts: Option<parts::Header>) -> Self {
         Self { hash, parts }
     }
 

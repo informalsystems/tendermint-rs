@@ -570,7 +570,7 @@ pub struct TransferRate(u64);
 
 impl TransferRate {
     /// Get the trasfer rate in bytes per second
-    pub fn bytes_per_sec(self) -> u64 {
+    pub const fn bytes_per_sec(self) -> u64 {
         self.0
     }
 }

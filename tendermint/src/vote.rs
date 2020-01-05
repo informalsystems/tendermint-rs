@@ -94,7 +94,7 @@ impl Signed {
     }
 
     /// Return the id of the validator that signed this vote.
-    pub fn validator_id(&self) -> account::Id {
+    pub const fn validator_id(&self) -> account::Id {
         self.validator_address
     }
 
@@ -131,12 +131,12 @@ impl Type {
     }
 
     /// Serialize this type as a byte
-    pub fn to_u8(self) -> u8 {
+    pub const fn to_u8(self) -> u8 {
         self as u8
     }
 
     /// Serialize this type as a 32-bit unsigned integer
-    pub fn to_u32(self) -> u32 {
+    pub const fn to_u32(self) -> u32 {
         self as u32
     }
 }

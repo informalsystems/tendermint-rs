@@ -11,7 +11,7 @@ pub struct Request {
 
 impl Request {
     /// List validators for a specific block
-    pub fn new(height: block::Height) -> Self {
+    pub const fn new(height: block::Height) -> Self {
         Self { height }
     }
 }

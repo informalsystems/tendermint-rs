@@ -15,7 +15,7 @@ pub struct Height(pub u64);
 
 impl Height {
     /// Get inner integer value. Alternative to `.0` or `.into()`
-    pub fn value(self) -> u64 {
+    pub const fn value(self) -> u64 {
         self.0
     }
 

@@ -53,6 +53,7 @@ impl Hash {
         }
     }
 
+    #[allow(clippy::missing_const_for_fn)]
     /// Return the digest algorithm used to produce this hash
     pub fn algorithm(self) -> Algorithm {
         match self {

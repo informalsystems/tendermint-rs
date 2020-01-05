@@ -18,7 +18,7 @@ pub struct Hash([u8; LENGTH]);
 
 impl Hash {
     /// Create a new transaction hash from raw bytes
-    pub fn new(bytes: [u8; LENGTH]) -> Self {
+    pub const fn new(bytes: [u8; LENGTH]) -> Self {
         Self(bytes)
     }
 

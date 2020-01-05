@@ -31,6 +31,7 @@ impl Precommits {
         Self(into_precommits.into())
     }
 
+    #[allow(clippy::missing_const_for_fn)]
     /// Convert this collection of precommits into a vector
     pub fn into_vec(self) -> Vec<Option<Vote>> {
         self.0

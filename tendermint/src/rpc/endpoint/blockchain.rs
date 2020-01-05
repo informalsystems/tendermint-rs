@@ -18,7 +18,7 @@ pub struct Request {
 
 impl Request {
     /// Request information about a sequence of blocks
-    pub fn new(min_height: block::Height, max_height: block::Height) -> Self {
+    pub const fn new(min_height: block::Height, max_height: block::Height) -> Self {
         Self {
             min_height,
             max_height,

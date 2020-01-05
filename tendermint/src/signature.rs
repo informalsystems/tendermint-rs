@@ -12,6 +12,7 @@ pub enum Signature {
 }
 
 impl Signature {
+    #[allow(clippy::missing_const_for_fn)]
     /// Return the algorithm used to create this particular signature
     pub fn algorithm(self) -> Algorithm {
         match self {

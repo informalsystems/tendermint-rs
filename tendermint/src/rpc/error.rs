@@ -65,7 +65,7 @@ impl Error {
     }
 
     /// Obtain the `rpc::error::Code` for this error
-    pub fn code(&self) -> Code {
+    pub const fn code(&self) -> Code {
         self.code
     }
 
