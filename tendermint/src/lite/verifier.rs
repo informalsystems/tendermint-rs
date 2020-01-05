@@ -323,7 +323,7 @@ where
 
     // Get the pivot height for bisection.
     let trusted_height = trusted_sh.header().height().value();
-    let pivot_height = Height::from((trusted_height + untrusted_height.value()) / 2);
+    let pivot_height = Height::from((trusted_height + untrusted_height.value()).wrapping_div(2));
 
     // Recursive call to update to the pivot height.
     // When this completes, we will either return an error or

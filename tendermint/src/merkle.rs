@@ -36,7 +36,13 @@ fn get_split_point(length: usize) -> usize {
         0 => panic!("tree is empty!"),
         1 => panic!("tree has only one element!"),
         2 => 1,
-        _ => length.next_power_of_two() / 2,
+        _ => {
+            let (div, overflow) = length.next_power_of_two().overflowing_div(2);
+            if overflow {
+                panic!("division result overflow");
+            }
+            div
+        }
     }
 }
 
