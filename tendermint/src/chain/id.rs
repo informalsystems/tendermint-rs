@@ -55,6 +55,8 @@ impl Display for Id {
     }
 }
 
+// TODO(xla): Convert to TryFrom.
+#[allow(clippy::fallible_impl_from)]
 impl<'a> From<&'a str> for Id {
     fn from(s: &str) -> Self {
         Self::from_str(s).unwrap()

@@ -63,6 +63,8 @@ impl Ed25519Keypair {
     }
 }
 
+// TODO(xla): Conver to TryFrom.
+#[allow(clippy::fallible_impl_from)]
 impl<'a> From<&'a Ed25519Keypair> for ed25519::Seed {
     fn from(keypair: &'a Ed25519Keypair) -> Self {
         Self::from_keypair(&keypair.0[..]).unwrap()

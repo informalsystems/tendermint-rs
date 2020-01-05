@@ -83,6 +83,8 @@ impl From<SystemTime> for Time {
     }
 }
 
+// TODO(xla): Convert to TryFrom.
+#[allow(clippy::fallible_impl_from)]
 impl From<Time> for SystemTime {
     fn from(t: Time) -> Self {
         t.to_system_time().unwrap()

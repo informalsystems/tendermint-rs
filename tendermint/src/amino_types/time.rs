@@ -24,6 +24,8 @@ impl ParseTimestamp for Msg {
     }
 }
 
+// TODO(xla): Convert to TryFrom.
+#[allow(clippy::fallible_impl_from)]
 impl From<Time> for Msg {
     fn from(ts: Time) -> Self {
         // TODO: non-panicking method for getting this?
