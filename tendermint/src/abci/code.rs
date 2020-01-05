@@ -57,7 +57,7 @@ impl From<u32> for Code {
 impl From<u64> for Code {
     fn from(value: u64) -> Self {
         let code = u32::try_from(value).expect("code out of range");
-        Code::from(code)
+        Self::from(code)
     }
 }
 
