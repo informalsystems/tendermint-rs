@@ -1,7 +1,7 @@
 use super::{
     remote_error::RemoteError,
     signature::{SignableMsg, SignedMsgType},
-    validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
+    validate::{ConsensusMessage, ValidationError, ValidationErrorKind},
     BlockId, CanonicalBlockId, CanonicalPartSetHeader, TimeMsg,
 };
 use crate::{
@@ -131,7 +131,7 @@ impl SignableMsg for SignProposalRequest {
     fn validate(&self) -> Result<(), ValidationError> {
         match self.proposal {
             Some(ref p) => p.validate_basic(),
-            None => Err(MissingConsensusMessage.into()),
+            None => Err(ValidationErrorKind::MissingConsensusMessage.into()),
         }
     }
     fn consensus_state(&self) -> Option<consensus::State> {
@@ -169,16 +169,16 @@ impl SignableMsg for SignProposalRequest {
 impl ConsensusMessage for Proposal {
     fn validate_basic(&self) -> Result<(), ValidationError> {
         if self.msg_type != SignedMsgType::Proposal.to_u32() {
-            return Err(InvalidMessageType.into());
+            return Err(ValidationErrorKind::InvalidMessageType.into());
         }
         if self.height < 0 {
-            return Err(NegativeHeight.into());
+            return Err(ValidationErrorKind::NegativeHeight.into());
         }
         if self.round < 0 {
-            return Err(NegativeRound.into());
+            return Err(ValidationErrorKind::NegativeRound.into());
         }
         if self.pol_round < -1 {
-            return Err(NegativePOLRound.into());
+            return Err(ValidationErrorKind::NegativePOLRound.into());
         }
         // TODO validate proposal's block_id
 

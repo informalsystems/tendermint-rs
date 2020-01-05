@@ -1,7 +1,7 @@
 use super::{
     remote_error::RemoteError,
     signature::SignableMsg,
-    validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
+    validate::{ConsensusMessage, ValidationError, ValidationErrorKind},
     BlockId, CanonicalBlockId, CanonicalPartSetHeader, SignedMsgType, TimeMsg,
 };
 use crate::amino_types::PartsSetHeader;
@@ -175,7 +175,7 @@ impl SignableMsg for SignVoteRequest {
     fn validate(&self) -> Result<(), ValidationError> {
         match self.vote {
             Some(ref v) => v.validate_basic(),
-            None => Err(MissingConsensusMessage.into()),
+            None => Err(ValidationErrorKind::MissingConsensusMessage.into()),
         }
     }
     fn consensus_state(&self) -> Option<consensus::State> {
@@ -211,19 +211,19 @@ impl SignableMsg for SignVoteRequest {
 impl ConsensusMessage for Vote {
     fn validate_basic(&self) -> Result<(), ValidationError> {
         if self.msg_type().is_none() {
-            return Err(InvalidMessageType.into());
+            return Err(ValidationErrorKind::InvalidMessageType.into());
         }
         if self.height < 0 {
-            return Err(NegativeHeight.into());
+            return Err(ValidationErrorKind::NegativeHeight.into());
         }
         if self.round < 0 {
-            return Err(NegativeRound.into());
+            return Err(ValidationErrorKind::NegativeRound.into());
         }
         if self.validator_index < 0 {
-            return Err(NegativeValidatorIndex.into());
+            return Err(ValidationErrorKind::NegativeValidatorIndex.into());
         }
         if self.validator_address.len() != VALIDATOR_ADDR_SIZE {
-            return Err(InvalidValidatorAddressSize.into());
+            return Err(ValidationErrorKind::InvalidValidatorAddressSize.into());
         }
 
         self.block_id
