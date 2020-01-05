@@ -204,7 +204,7 @@ impl SignableMsg for SignVoteRequest {
         self.vote.as_ref().map(|vote| vote.height)
     }
     fn msg_type(&self) -> Option<SignedMsgType> {
-        self.vote.as_ref().and_then(|vote| vote.msg_type())
+        self.vote.as_ref().and_then(Vote::msg_type)
     }
 }
 

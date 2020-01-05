@@ -37,11 +37,7 @@ impl Set {
 impl lite::ValidatorSet for Set {
     /// Compute the Merkle root of the validator set
     fn hash(&self) -> Hash {
-        let validator_bytes: Vec<Vec<u8>> = self
-            .validators
-            .iter()
-            .map(|validator| validator.hash_bytes())
-            .collect();
+        let validator_bytes: Vec<Vec<u8>> = self.validators.iter().map(Info::hash_bytes).collect();
         Hash::Sha256(merkle::simple_hash_from_byte_vectors(validator_bytes))
     }
 
@@ -66,7 +62,7 @@ fn parse_vals<'de, D>(d: D) -> Result<Vec<Info>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or_default())
+    Deserialize::deserialize(d).map(Option::unwrap_or_default)
 }
 
 /// Validator information
