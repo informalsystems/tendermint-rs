@@ -1,5 +1,6 @@
 use serde::de::{Deserialize, Deserializer, Visitor};
 use serde::{Serialize, Serializer};
+use std::convert::TryFrom;
 use std::fmt;
 
 /// ABCI application response codes.
@@ -53,6 +54,13 @@ impl From<u32> for Code {
     }
 }
 
+impl From<u64> for Code {
+    fn from(value: u64) -> Self {
+        let code = u32::try_from(value).expect("code out of range");
+        Code::from(code)
+    }
+}
+
 impl From<Code> for u32 {
     fn from(code: Code) -> Self {
         match code {
@@ -86,7 +94,7 @@ impl<'de> Deserialize<'de> for Code {
             where
                 E: serde::de::Error,
             {
-                Ok(Code::from(val as u32))
+                Ok(Code::from(val))
             }
 
             fn visit_str<E>(self, val: &str) -> Result<Self::Value, E>
