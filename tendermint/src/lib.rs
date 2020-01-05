@@ -22,7 +22,7 @@
 #![allow(clippy::result_unwrap_used)]
 #![allow(
     clippy::implicit_return,
-    clippy::index_slicing,
+    clippy::indexing_slicing,
     clippy::integer_arithmetic,
     clippy::multiple_crate_versions
 )]
