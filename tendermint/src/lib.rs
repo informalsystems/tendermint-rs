@@ -21,6 +21,7 @@
 )]
 #![allow(clippy::result_unwrap_used)]
 #![allow(
+    clippy::default_trait_access,
     clippy::implicit_return,
     clippy::indexing_slicing,
     clippy::integer_arithmetic,

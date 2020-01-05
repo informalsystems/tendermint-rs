@@ -24,7 +24,7 @@ impl Info {
     {
         Self {
             id: id.into(),
-            height: Default::default(),
+            height: block::Height::default(),
             last_block_id: None,
             time: None,
         }
