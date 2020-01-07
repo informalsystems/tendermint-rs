@@ -27,6 +27,7 @@
     clippy::integer_arithmetic,
     clippy::multiple_crate_versions
 )]
+#![deny(clippy::wildcard_enum_match_arm)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
     html_root_url = "https://docs.rs/tendermint/0.11.0"

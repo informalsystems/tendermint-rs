@@ -35,6 +35,7 @@ impl FromStr for Timeout {
             return Err(err!(ErrorKind::Parse, "invalid units"));
         }
 
+        #[allow(clippy::wildcard_enum_match_arm)]
         let units = match s.chars().nth(s.len() - 2) {
             Some('m') => "ms",
             Some('0'..='9') => "s",

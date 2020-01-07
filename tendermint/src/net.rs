@@ -161,7 +161,7 @@ mod tests {
                     assert_eq!(host, "35.192.61.41");
                     assert_eq!(port, 26656);
                 }
-                other => panic!("unexpected address type: {:?}", other),
+                other @ Address::Unix { .. } => panic!("unexpected address type: {:?}", other),
             }
         }
     }

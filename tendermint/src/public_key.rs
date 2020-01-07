@@ -48,7 +48,7 @@ impl PublicKey {
     pub fn ed25519(self) -> Option<ed25519::PublicKey> {
         match self {
             Self::Ed25519(pk) => Some(pk),
-            _ => None,
+            Self::Secp256k1(_pk) => None,
         }
     }
 
@@ -122,8 +122,8 @@ impl TendermintKey {
     /// Create a new consensus key from a `PublicKey`
     pub fn new_consensus_key(public_key: PublicKey) -> Result<Self, Error> {
         match public_key {
-            PublicKey::Ed25519(_) => Ok(Self::AccountKey(public_key)),
-            _ => Err(err!(
+            PublicKey::Ed25519(_pk) => Ok(Self::AccountKey(public_key)),
+            PublicKey::Secp256k1(_pk) => Err(err!(
                 ErrorKind::InvalidKey,
                 "only ed25519 consensus keys are supported"
             )),
