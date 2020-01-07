@@ -19,8 +19,8 @@
     clippy::pedantic,
     clippy::restriction
 )]
-#![allow(clippy::result_unwrap_used)]
 #![allow(
+    clippy::cast_sign_loss,
     clippy::default_trait_access,
     clippy::implicit_return,
     clippy::indexing_slicing,
