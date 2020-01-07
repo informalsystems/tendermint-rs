@@ -97,7 +97,7 @@ impl SignableMsg for SignProposalRequest {
         if let Some(ref mut pr) = spr.proposal {
             pr.signature = vec![];
         }
-        let proposal = spr.proposal.unwrap();
+        let proposal = spr.proposal.expect("Proposal missing");
         let cp = CanonicalProposal {
             chain_id: chain_id.to_string(),
             msg_type: SignedMsgType::Proposal.to_u32(),

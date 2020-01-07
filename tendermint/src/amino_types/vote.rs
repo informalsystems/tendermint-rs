@@ -160,7 +160,7 @@ impl SignableMsg for SignVoteRequest {
         if let Some(ref mut vo) = svr.vote {
             vo.signature = vec![];
         }
-        let vote = svr.vote.unwrap();
+        let vote = svr.vote.expect("Vote missing");
         let cv = Canonical::new(vote, chain_id.as_str());
 
         cv.encode_length_delimited(sign_bytes)?;

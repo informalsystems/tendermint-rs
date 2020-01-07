@@ -19,7 +19,7 @@
     clippy::pedantic,
     clippy::restriction
 )]
-#![deny(clippy::option_map_unwrap_or_else)]
+#![deny(clippy::option_unwrap_used)]
 #![allow(
     clippy::cast_sign_loss,
     clippy::default_trait_access,

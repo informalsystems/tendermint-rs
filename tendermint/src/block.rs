@@ -60,8 +60,8 @@ where
         Ok(None)
     } else {
         Ok(Some(Commit {
-            block_id: commit.block_id.unwrap(),
-            precommits: commit.precommits.unwrap(),
+            block_id: commit.block_id.expect("block id missing"),
+            precommits: commit.precommits.expect("precommits missing"),
         }))
     }
 }

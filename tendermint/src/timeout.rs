@@ -102,7 +102,11 @@ mod tests {
     #[test]
     fn reject_no_units() {
         assert_eq!(
-            *"123".parse::<Timeout>().err().unwrap().kind(),
+            *"123"
+                .parse::<Timeout>()
+                .err()
+                .expect("extracting error failed")
+                .kind(),
             ErrorKind::Parse
         );
     }

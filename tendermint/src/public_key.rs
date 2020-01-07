@@ -242,6 +242,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::option_unwrap_used)]
+
     use super::{PublicKey, TendermintKey};
     use subtle_encoding::hex;
 
@@ -283,7 +285,7 @@ mod tests {
         let pubkey: PublicKey = serde_json::from_str(json_string).unwrap();
 
         assert_eq!(
-            pubkey.ed25519().unwrap().as_ref(),
+            pubkey.ed25519().expect("no key present").as_ref(),
             [
                 69, 185, 115, 48, 238, 34, 179, 146, 245, 133, 156, 250, 194, 142, 36, 61, 186,
                 109, 204, 236, 174, 123, 162, 211, 147, 143, 165, 62, 16, 245, 21, 25

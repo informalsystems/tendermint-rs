@@ -135,7 +135,8 @@ mod tests {
         let id_bytes = Id::from_str(id_hex).expect("expected id_hex to decode properly");
 
         // get id for pubkey
-        let pubkey = ed25519::PublicKey::from_bytes(pubkey_bytes).unwrap();
+        let pubkey =
+            ed25519::PublicKey::from_bytes(pubkey_bytes).expect("unable to get public key");
         let id = Id::from(pubkey);
 
         assert_eq!(id_bytes.ct_eq(&id).unwrap_u8(), 1);

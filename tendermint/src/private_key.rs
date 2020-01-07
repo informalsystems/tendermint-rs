@@ -44,7 +44,7 @@ pub struct Ed25519Keypair([u8; ED25519_KEYPAIR_SIZE]);
 impl Ed25519Keypair {
     /// Get the public key associated with this keypair
     pub fn public_key(&self) -> PublicKey {
-        let seed = ed25519::Seed::from_keypair(&self.0[..]).unwrap();
+        let seed = ed25519::Seed::from_keypair(&self.0[..]).expect("unable to extract Seed");
         let pk = signatory_dalek::Ed25519Signer::from(&seed)
             .public_key()
             .unwrap();
@@ -63,11 +63,11 @@ impl Ed25519Keypair {
     }
 }
 
-// TODO(xla): Conver to TryFrom.
+// TODO(xla): Convert to TryFrom.
 #[allow(clippy::fallible_impl_from)]
 impl<'a> From<&'a Ed25519Keypair> for ed25519::Seed {
     fn from(keypair: &'a Ed25519Keypair) -> Self {
-        Self::from_keypair(&keypair.0[..]).unwrap()
+        Self::from_keypair(&keypair.0[..]).expect("unable to extract Seed")
     }
 }
 

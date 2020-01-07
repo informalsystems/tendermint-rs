@@ -153,7 +153,7 @@ mod tests {
                     port,
                 } => {
                     assert_eq!(
-                        peer_id.unwrap(),
+                        peer_id.expect("peer id missing"),
                         "abd636b766dcefb5322d8ca40011ec2cb35efbc2"
                             .parse::<node::Id>()
                             .unwrap()

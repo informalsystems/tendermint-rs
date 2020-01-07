@@ -148,14 +148,21 @@ mod tests {
 
     #[test]
     fn rejects_empty_chain_ids() {
-        assert_eq!(*"".parse::<Id>().err().unwrap().kind(), ErrorKind::Length);
+        assert_eq!(
+            *"".parse::<Id>().err().expect("unable to get error").kind(),
+            ErrorKind::Length
+        );
     }
 
     #[test]
     fn rejects_overlength_chain_ids() {
         let overlong_id = String::from_utf8(vec![b'x'; MAX_LENGTH + 1]).unwrap();
         assert_eq!(
-            *overlong_id.parse::<Id>().err().unwrap().kind(),
+            *overlong_id
+                .parse::<Id>()
+                .err()
+                .expect("unable to get error")
+                .kind(),
             ErrorKind::Length
         );
     }
