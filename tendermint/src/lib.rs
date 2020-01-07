@@ -26,7 +26,8 @@
     clippy::indexing_slicing,
     clippy::integer_arithmetic,
     clippy::missing_inline_in_public_items,
-    clippy::multiple_crate_versions
+    clippy::multiple_crate_versions,
+    clippy::must_use_candidate
 )]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
