@@ -81,10 +81,7 @@ impl Data {
 
 impl AsRef<[Evidence]> for Data {
     fn as_ref(&self) -> &[Evidence] {
-        self.evidence
-            .as_ref()
-            .map(Vec::as_slice)
-            .unwrap_or_else(|| &[])
+        self.evidence.as_ref().map_or_else(|| &[], Vec::as_slice)
     }
 }
 

@@ -19,6 +19,7 @@
     clippy::pedantic,
     clippy::restriction
 )]
+#![deny(clippy::option_map_unwrap_or_else)]
 #![allow(
     clippy::cast_sign_loss,
     clippy::default_trait_access,
@@ -29,7 +30,6 @@
     clippy::multiple_crate_versions,
     clippy::must_use_candidate
 )]
-#![deny(clippy::missing_docs_in_private_items)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
     html_root_url = "https://docs.rs/tendermint/0.11.0"

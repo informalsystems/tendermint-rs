@@ -36,8 +36,7 @@ impl State {
     pub fn block_id_prefix(&self) -> String {
         self.block_id
             .as_ref()
-            .map(block::Id::prefix)
-            .unwrap_or_else(|| NIL_PLACEHOLDER.to_owned())
+            .map_or_else(|| NIL_PLACEHOLDER.to_owned(), block::Id::prefix)
     }
 }
 
