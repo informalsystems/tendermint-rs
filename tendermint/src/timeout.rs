@@ -1,3 +1,5 @@
+//! Durations used for timeouts.
+
 use crate::{Error, ErrorKind};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{fmt, ops::Deref, str::FromStr, time::Duration};

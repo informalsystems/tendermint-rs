@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 /// Get commit information about a specific block
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
+    /// Block height.
     height: Option<block::Height>,
 }
 

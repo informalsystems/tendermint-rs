@@ -53,6 +53,7 @@ impl Serialize for Evidence {
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#evidencedata>
 #[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub struct Data {
+    /// List of `Evidence`.
     evidence: Option<Vec<Evidence>>,
 }
 

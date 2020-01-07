@@ -192,7 +192,7 @@ impl<'de> Deserialize<'de> for Algorithm {
     }
 }
 
-/// Serialize the bytes of an Ed25519 public key as Base64. Used for serializing JSON
+/// Serialize the bytes of an Ed25519 public key as Base64. Used for serializing JSON.
 fn serialize_ed25519_base64<S>(pk: &ed25519::PublicKey, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -202,7 +202,7 @@ where
         .serialize(serializer)
 }
 
-/// Serialize the bytes of a secp256k1 ECDSA public key as Base64. Used for serializing JSON
+/// Serialize the bytes of a secp256k1 ECDSA public key as Base64. Used for serializing JSON.
 fn serialize_secp256k1_base64<S>(
     pk: &secp256k1::PublicKey,
     serializer: S,
@@ -215,6 +215,7 @@ where
         .serialize(serializer)
 }
 
+/// Deserialize the bytes of an Ed25519 public key from Base64. Used for deserializing JSON.
 fn deserialize_ed25519_base64<'de, D>(deserializer: D) -> Result<ed25519::PublicKey, D::Error>
 where
     D: Deserializer<'de>,
@@ -225,6 +226,7 @@ where
     ed25519::PublicKey::from_bytes(&bytes).ok_or_else(|| D::Error::custom("invalid ed25519 key"))
 }
 
+/// Deserialize the bytes of a secp256k1 ECDSA public key from Base64. Used for deserializing JSON.
 fn deserialize_secp256k1_base64<'de, D>(
     deserializer: D,
 ) -> Result<signatory::ecdsa::curve::secp256k1::PublicKey, D::Error>

@@ -1,3 +1,7 @@
+//! ABCI application response codes.
+//!
+//! <https://tendermint.com/docs/spec/abci/abci.html#errors>
+
 use serde::de::{Deserialize, Deserializer, Visitor};
 use serde::{Serialize, Serializer};
 use std::convert::TryFrom;

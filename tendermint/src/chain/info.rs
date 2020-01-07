@@ -1,3 +1,5 @@
+//! Blockchain information.
+
 use crate::{block, chain, time::Time};
 
 /// Information about a particular Tendermint blockchain

@@ -1,3 +1,5 @@
+//! Height of a Block in the Tendermint blockchain.
+
 use crate::{Error, ErrorKind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{

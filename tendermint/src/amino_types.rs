@@ -1,6 +1,8 @@
 //! Message types serialized using the Amino serialization format
 //! <https://github.com/tendermint/amino_rs>
 
+// TODO(xla): Package needs extensive documentation pass, if stays around.
+#![allow(clippy::missing_docs_in_private_items)]
 #![allow(missing_docs)]
 
 mod block_id;

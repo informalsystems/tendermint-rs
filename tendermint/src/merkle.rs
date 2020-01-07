@@ -15,7 +15,7 @@ pub fn simple_hash_from_byte_vectors(byte_vecs: Vec<Vec<u8>>) -> Hash {
     simple_hash_from_byte_slices_inner(byte_vecs.as_slice())
 }
 
-// recurse into subtrees
+/// Recurse into subtrees.
 fn simple_hash_from_byte_slices_inner(byte_slices: &[Vec<u8>]) -> Hash {
     let length = byte_slices.len();
     match length {
@@ -30,7 +30,7 @@ fn simple_hash_from_byte_slices_inner(byte_slices: &[Vec<u8>]) -> Hash {
     }
 }
 
-// returns the largest power of 2 less than length
+/// Returns the largest power of 2 less than length.
 fn get_split_point(length: usize) -> usize {
     match length {
         0 => panic!("tree is empty!"),
@@ -46,7 +46,7 @@ fn get_split_point(length: usize) -> usize {
     }
 }
 
-// tmhash(0x00 || leaf)
+/// tmhash(0x00 || leaf).
 fn leaf_hash(bytes: &[u8]) -> Hash {
     // make a new array starting with 0 and copy in the bytes
     let mut leaf_bytes = Vec::with_capacity(bytes.len() + 1);
@@ -62,7 +62,7 @@ fn leaf_hash(bytes: &[u8]) -> Hash {
     hash_bytes
 }
 
-// tmhash(0x01 || left || right)
+/// tmhash(0x01 || left || right).
 fn inner_hash(left: &[u8], right: &[u8]) -> Hash {
     // make a new array starting with 0x1 and copy in the bytes
     let mut inner_bytes = Vec::with_capacity(left.len() + right.len() + 1);

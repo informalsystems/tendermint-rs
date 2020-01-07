@@ -1,3 +1,7 @@
+//! ABCI application state information.
+//!
+//! <https://docs.tendermint.com/master/spec/abci/abci.html#info>
+
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
 

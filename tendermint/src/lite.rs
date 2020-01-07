@@ -1,5 +1,9 @@
 //! Core logic and traits of a light client.
 
+// TODO(xla): Document package extensively, even private parts, as it will help guide the reader
+// and solidify abstractions.
+#![allow(clippy::missing_docs_in_private_items)]
+
 pub mod types;
 pub mod verifier;
 

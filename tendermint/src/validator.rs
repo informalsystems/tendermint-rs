@@ -13,6 +13,7 @@ use subtle_encoding::base64;
 /// Validator set contains a vector of validators
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Set {
+    /// List of `Validator`.
     #[serde(deserialize_with = "parse_vals")]
     validators: Vec<Info>,
 }
@@ -58,6 +59,7 @@ impl lite::ValidatorSet for Set {
 
 // TODO: maybe add a type (with an Option<Vec<Info>> field) instead
 // for light client integration tests only
+/// TODO(xla): Needs documentation.
 fn parse_vals<'de, D>(d: D) -> Result<Vec<Info>, D::Error>
 where
     D: Deserializer<'de>,
@@ -65,7 +67,7 @@ where
     Deserialize::deserialize(d).map(Option::unwrap_or_default)
 }
 
-/// Validator information
+/// Validator information.
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Info {
     /// Validator account address
@@ -93,9 +95,8 @@ impl Info {
         }
     }
 
-    // returns the bytes to be hashed into the Merkle tree -
-    // the leaves of the tree. this is an amino encoding of the
-    // pubkey and voting power, so it includes the pubkey's amino prefix.
+    /// Returns the bytes to be hashed into the Merkle tree - the leaves of the tree. this is an
+    /// amino encoding of the pubkey and voting power, so it includes the pubkey's amino prefix.
     fn hash_bytes(&self) -> Vec<u8> {
         AminoMessage::bytes_vec(&InfoHashable::from(self))
     }
@@ -134,8 +135,10 @@ impl From<PublicKey> for account::Id {
 /// TODO: currently only works for Ed25519 pubkeys
 #[derive(Clone, PartialEq, Message)]
 struct InfoHashable {
+    /// Validator public key.
     #[prost(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
     pub pub_key: Vec<u8>,
+    /// Validator voting power.
     #[prost(uint64, tag = "2")]
     voting_power: u64,
 }
@@ -207,6 +210,7 @@ enum PK {
     Ed25519(String),
 }
 
+/// TODO(xla): Needs documentation.
 fn deserialize_public_key<'de, D>(deserializer: D) -> Result<PublicKey, D::Error>
 where
     D: Deserializer<'de>,

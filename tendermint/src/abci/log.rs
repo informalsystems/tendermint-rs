@@ -1,3 +1,5 @@
+//! ABCI Log data.
+
 use crate::{Error, ErrorKind};
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};

@@ -1,3 +1,5 @@
+//! Channel IDs.
+
 use serde::{Deserialize, Serialize};
 
 /// Channel IDs

@@ -3,9 +3,10 @@
 use crate::{block, rpc, validator};
 use serde::{Deserialize, Serialize};
 
-/// List validators for a specific block
+/// List validators for a specific block.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
+    /// Block height.
     height: block::Height,
 }
 

@@ -5,12 +5,12 @@
 //! and remote procedure calls (JSONRPC).
 
 #![deny(
-    warnings,
     missing_docs,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
-    unused_qualifications
+    unused_qualifications,
+    warnings
 )]
 #![allow(
     clippy::all,
@@ -29,6 +29,7 @@
     clippy::multiple_crate_versions,
     clippy::must_use_candidate
 )]
+#![deny(clippy::missing_docs_in_private_items)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
     html_root_url = "https://docs.rs/tendermint/0.11.0"

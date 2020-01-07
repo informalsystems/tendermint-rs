@@ -65,6 +65,7 @@ where
     format!("{}", duration.as_nanos()).serialize(serializer)
 }
 
+/// TODO(xla): Needs documentation.
 pub(crate) fn parse_non_empty_hash<'de, D>(deserializer: D) -> Result<Option<Hash>, D::Error>
 where
     D: Deserializer<'de>,
@@ -78,6 +79,7 @@ where
     }
 }
 
+/// TODO(xla): Needs documentation.
 pub(crate) fn serialize_hex<S, T>(bytes: T, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -89,6 +91,7 @@ where
     serializer.serialize_str(&hex_string)
 }
 
+/// TODO(xla): Needs documentation.
 pub(crate) fn parse_hex<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
 where
     D: Deserializer<'de>,
@@ -98,6 +101,7 @@ where
     hex::decode(&string).map_err(Error::custom)
 }
 
+/// TODO(xla): Needs documentation.
 pub(crate) fn serialize_base64<S, T>(bytes: T, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -109,6 +113,7 @@ where
     serializer.serialize_str(&base64_string)
 }
 
+/// TODO(xla): Needs documentation.
 pub(crate) fn parse_base64<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
 where
     D: Deserializer<'de>,
@@ -118,6 +123,7 @@ where
     base64::decode(&string).map_err(Error::custom)
 }
 
+/// TODO(xla): Needs documentation.
 pub(crate) fn serialize_option_base64<S>(
     maybe_bytes: &Option<Vec<u8>>,
     serializer: S,
@@ -125,6 +131,7 @@ pub(crate) fn serialize_option_base64<S>(
 where
     S: Serializer,
 {
+    #[allow(clippy::missing_docs_in_private_items)]
     #[derive(Serialize)]
     struct Wrapper<'a>(#[serde(serialize_with = "serialize_base64")] &'a Vec<u8>);
 
@@ -134,10 +141,12 @@ where
     }
 }
 
+/// TODO(xla): Needs documentation.
 pub(crate) fn parse_option_base64<'de, D>(deserializer: D) -> Result<Option<Vec<u8>>, D::Error>
 where
     D: Deserializer<'de>,
 {
+    #[allow(clippy::missing_docs_in_private_items)]
     #[derive(Deserialize)]
     struct Wrapper(#[serde(deserialize_with = "parse_base64")] Vec<u8>);
 

@@ -7,6 +7,8 @@
 //!
 //! <https://github.com/tendermint/rust-abci>
 
+#![allow(clippy::missing_docs_in_private_items)]
+
 mod code;
 mod data;
 mod gas;

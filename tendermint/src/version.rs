@@ -1,3 +1,5 @@
+//! Tendermint version.
+
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
 

@@ -1,5 +1,8 @@
 //! Blocks within the chains of a Tendermint network
 
+// TODO(xla): Package needs extensive documentation pass.
+#![allow(clippy::missing_docs_in_private_items)]
+
 mod commit;
 pub mod header;
 mod height;
@@ -40,6 +43,7 @@ pub struct Block {
     pub last_commit: Option<Commit>,
 }
 
+// TODO(xla): Missing documentation.
 pub(crate) fn parse_non_empty_commit<'de, D>(deserializer: D) -> Result<Option<Commit>, D::Error>
 where
     D: Deserializer<'de>,

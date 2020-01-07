@@ -12,7 +12,7 @@ use std::{
     str::FromStr,
 };
 
-/// Gas: representation of transaction processing resource costs
+/// Gas representation of transaction processing resource costs.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Gas(u64);
 

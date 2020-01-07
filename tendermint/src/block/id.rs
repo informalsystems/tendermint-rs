@@ -1,3 +1,5 @@
+//! Block identifiers.
+
 use super::parts;
 use crate::{
     error::Error,

@@ -1,3 +1,5 @@
+//! ABCI transaction data.
+
 use crate::{Error, ErrorKind};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
