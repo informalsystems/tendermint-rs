@@ -46,13 +46,7 @@ fn main() {
     let vals_hash =
         Hash::from_hex_upper(hash::Algorithm::Sha256, SUBJECTIVE_VALS_HASH_HEX).unwrap();
 
-    subjective_init(
-        Height::from(SUBJECTIVE_HEIGHT),
-        vals_hash,
-        &mut store,
-        &req,
-    )
-    .unwrap();
+    subjective_init(Height::from(SUBJECTIVE_HEIGHT), vals_hash, &mut store, &req).unwrap();
 
     loop {
         let latest = (&req).signed_header(0).unwrap();
