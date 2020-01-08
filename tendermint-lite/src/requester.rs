@@ -6,18 +6,18 @@ use tendermint::validator;
 use core::future::Future;
 use tokio::runtime::Builder;
 
-// TODO rename to RPCRequester or something ...
-pub struct Requester {
+/// RPCRequester wraps the Tendermint rpc::Client.
+pub struct RPCRequester {
     client: rpc::Client,
 }
 
-impl Requester {
+impl RPCRequester {
     pub fn new(client: rpc::Client) -> Self {
-        Requester { client }
+        RPCRequester { client }
     }
 }
 
-impl lite::types::Requester for Requester {
+impl lite::types::Requester for RPCRequester {
     type SignedHeader = block::signed_header::SignedHeader;
     type ValidatorSet = validator::Set;
 
@@ -74,7 +74,7 @@ mod tests {
     /* #[test]
     fn test_val_set() {
         let client = block_on(rpc::Client::new(&"localhost:26657".parse().unwrap())).unwrap();
-        let req = Requester::new(client);
+        let req = RPCRequester::new(client);
         let r1 = req.validator_set(5).unwrap();
         let r2 = req.signed_header(5).unwrap();
         assert_eq!(r1.hash(), r2.header().validators_hash());
