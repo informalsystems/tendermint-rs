@@ -89,13 +89,16 @@ where
     serializer.serialize_str(&hex_string)
 }
 
+// decode upper or lowercase hex
 pub(crate) fn parse_hex<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
 where
     D: Deserializer<'de>,
 {
     use serde::de::Error;
     let string = String::deserialize(deserializer)?;
-    hex::decode(&string).map_err(Error::custom)
+    hex::decode_upper(&string)
+        .or_else(|_| hex::decode(&string))
+        .map_err(Error::custom)
 }
 
 pub(crate) fn serialize_base64<S, T>(bytes: T, serializer: S) -> Result<S::Ok, S::Error>
