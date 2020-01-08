@@ -22,14 +22,20 @@ impl lite::types::Requester for Requester {
     type ValidatorSet = validator::Set;
 
     /// Request the signed header at height h.
+    /// If h==0, request the latest signed header.
+    /// TODO: use an enum instead of h==0.
     fn signed_header<H>(&self, h: H) -> Result<Self::SignedHeader, lite::Error>
     where
         H: Into<block::Height>,
     {
-        let r = block_on(self.client.commit(h));
+        let height: block::Height = h.into();
+        let r = match height.value() {
+            0 => block_on(self.client.latest_commit()),
+            _ => block_on(self.client.commit(height)),
+        };
         match r {
             Ok(response) => Ok(response.signed_header),
-            Err(e) => Err(lite::Error::RequestFailed),
+            Err(_error) => Err(lite::Error::RequestFailed),
         }
     }
 
@@ -65,7 +71,7 @@ mod tests {
     use tendermint::rpc;
 
     // TODO: integration test
-    // #[test]
+    /* #[test]
     fn test_val_set() {
         let client = block_on(rpc::Client::new(&"localhost:26657".parse().unwrap())).unwrap();
         let req = Requester::new(client);
@@ -73,4 +79,5 @@ mod tests {
         let r2 = req.signed_header(5).unwrap();
         assert_eq!(r1.hash(), r2.header().validators_hash());
     }
+    */
 }
