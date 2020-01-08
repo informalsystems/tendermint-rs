@@ -9,7 +9,7 @@ use tendermint::rpc;
 use tendermint::{block::Height, Hash};
 
 use tendermint_lite::{
-    requester::Requester, state::State, store::MemStore, threshold::TrustThresholdOneThird,
+    requester::RPCRequester, state::State, store::MemStore, threshold::TrustThresholdOneThird,
 };
 
 use core::future::Future;
@@ -40,13 +40,13 @@ fn main() {
 
     // setup requester for primary peer
     let client = block_on(rpc::Client::new(&RPC_ADDR.parse().unwrap())).unwrap();
-    let req = Requester::new(client);
+    let req = RPCRequester::new(client);
     let mut store = MemStore::new();
 
     let vals_hash =
         Hash::from_hex_upper(hash::Algorithm::Sha256, SUBJECTIVE_VALS_HASH_HEX).unwrap();
 
-    validate_and_init_subjective_state(
+    subjective_init(
         Height::from(SUBJECTIVE_HEIGHT),
         vals_hash,
         &mut store,
@@ -103,14 +103,14 @@ fn main() {
  * `subjective_init(height, vals_hash, store, requester) -> Result<(), Error`
  * it would fetch the initial header/vals from the requester and populate a
  * trusted state and store it in the store ...
- * TODO: this should take traits ...
+ * TODO: this should take traits ... but how to deal with the State ?
  * TODO: better name ?
 */
-fn validate_and_init_subjective_state(
+fn subjective_init(
     height: Height,
     vals_hash: Hash,
     store: &mut MemStore,
-    req: &Requester,
+    req: &RPCRequester,
 ) -> Result<(), Error> {
     if store.get(height).is_ok() {
         // we already have this !
