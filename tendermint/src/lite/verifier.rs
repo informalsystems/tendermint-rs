@@ -142,13 +142,6 @@ where
     let untrusted_header = untrusted_sh.header();
     let untrusted_commit = untrusted_sh.commit();
 
-    println!(
-        "validating untrusted header at height {:?}: {:?}, {:?}",
-        untrusted_header.height(),
-        untrusted_header.hash(),
-        untrusted_commit.header_hash(),
-    );
-
     validate_untrusted(
         untrusted_header,
         untrusted_commit,
@@ -178,15 +171,12 @@ where
             }
         }
         Ordering::Greater => {
-            println!("checking if we can skip to header {:?}", untrusted_height);
             let trusted_vals = trusted_state.validators();
             verify_commit_trusting(trusted_vals, untrusted_commit, trust_threshold)?;
-            println!("... ok to skip to header {:?}!", untrusted_height);
         }
     }
 
     // All validation passed successfully. Verify the validators correctly committed the block.
-    println!("verifying commit for header {:?}", untrusted_height);
     verify_commit_full(untrusted_vals, untrusted_sh.commit())
 }
 

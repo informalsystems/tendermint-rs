@@ -29,10 +29,7 @@ impl lite::types::Requester for Requester {
         let r = block_on(self.client.commit(h));
         match r {
             Ok(response) => Ok(response.signed_header),
-            Err(e) => {
-                println!("REQUEST ERR: {:?}", e);
-                Err(lite::Error::RequestFailed)
-            }
+            Err(e) => Err(lite::Error::RequestFailed),
         }
     }
 
@@ -67,13 +64,13 @@ mod tests {
     use tendermint::lite::types::ValidatorSet as LiteValSet;
     use tendermint::rpc;
 
-    #[test]
+    // TODO: integration test
+    // #[test]
     fn test_val_set() {
         let client = block_on(rpc::Client::new(&"localhost:26657".parse().unwrap())).unwrap();
         let req = Requester::new(client);
-        let r = req.validator_set(5).unwrap();
-        println!("{:?}", r.hash());
-        let r = req.signed_header(5).unwrap();
-        println!("{:?}", r.header().validators_hash());
+        let r1 = req.validator_set(5).unwrap();
+        let r2 = req.signed_header(5).unwrap();
+        assert_eq!(r1.hash(), r2.header().validators_hash());
     }
 }
