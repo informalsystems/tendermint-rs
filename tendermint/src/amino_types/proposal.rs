@@ -52,7 +52,8 @@ pub struct SignProposalRequest {
 #[derive(Clone, PartialEq, Message)]
 struct CanonicalProposal {
     #[prost(uint32, tag = "1")]
-    msg_type: u32, // this is a byte in golang, which is a varint encoded UInt8 (using amino's EncodeUvarint)
+    msg_type: u32, /* this is a byte in golang, which is a varint encoded UInt8 (using amino's
+                    * EncodeUvarint) */
     #[prost(sfixed64)]
     height: i64,
     #[prost(sfixed64)]
@@ -228,8 +229,8 @@ mod tests {
         // cdc := amino.NewCodec()
         // privval.RegisterRemoteSignerMsg(cdc)
         // stamp, _ := time.Parse(time.RFC3339Nano, "2018-02-11T07:09:22.765Z")
-        // data, _ := cdc.MarshalBinaryLengthPrefixed(privval.SignProposalRequest{Proposal: &types.Proposal{
-        //     Type:     types.ProposalType, // 0x20
+        // data, _ := cdc.MarshalBinaryLengthPrefixed(privval.SignProposalRequest{Proposal:
+        // &types.Proposal{     Type:     types.ProposalType, // 0x20
         //     Height:   12345,
         //     Round:    23456,
         //     POLRound: -1,

@@ -1,0 +1,12 @@
+unstable_features = true
+
+# comments
+comment_width = 100
+wrap_comments = true
+
+# imports
+reorder_imports = true
+
+# strings
+format_strings = false
+max_width = 100
