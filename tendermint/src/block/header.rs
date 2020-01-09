@@ -61,8 +61,8 @@ pub struct Header {
     pub consensus_hash: Hash,
 
     /// State after txs from the previous block
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
-    pub app_hash: Option<Hash>,
+    #[serde(deserialize_with = "serializers::parse_hex")]
+    pub app_hash: Vec<u8>,
 
     /// Root hash of all results from the txs from the previous block
     #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
@@ -120,7 +120,7 @@ impl lite::Header for Header {
         fields_bytes.push(encode_hash(&self.validators_hash));
         fields_bytes.push(encode_hash(&self.next_validators_hash));
         fields_bytes.push(encode_hash(&self.consensus_hash));
-        fields_bytes.push(self.app_hash.as_ref().map_or(vec![], encode_hash));
+        fields_bytes.push(bytes_enc(&self.app_hash));
         fields_bytes.push(self.last_results_hash.as_ref().map_or(vec![], encode_hash));
         fields_bytes.push(self.evidence_hash.as_ref().map_or(vec![], encode_hash));
         fields_bytes.push(bytes_enc(self.proposer_address.as_bytes()));

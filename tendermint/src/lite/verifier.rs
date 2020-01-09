@@ -141,6 +141,7 @@ where
     // validate the untrusted header against its commit, vals, and next_vals
     let untrusted_header = untrusted_sh.header();
     let untrusted_commit = untrusted_sh.commit();
+
     validate_untrusted(
         untrusted_header,
         untrusted_commit,
@@ -154,6 +155,9 @@ where
     let trusted_header = trusted_state.last_header().header();
     let trusted_height = trusted_header.height();
     let untrusted_height = untrusted_sh.header().height();
+
+    // TODO: ensure the untrusted_header.bft_time() > trusted_header.bft_time()
+
     match untrusted_height.cmp(&trusted_height.increment()) {
         Ordering::Less => return Err(Error::NonIncreasingHeight),
         Ordering::Equal => {
@@ -263,6 +267,9 @@ where
     // Note this would be stronger than checking that the untrusted
     // header is within the trusting period, as it could still diverge
     // significantly from `now`.
+    // NOTE: we actually have to do this for every header we fetch,
+    // We do check bft_time is monotonic, but that check might happen too late.
+    // So every header we fetch must be checked to be less than now+X
 
     // inner recursive function which assumes
     // trusting_period check is already done.
@@ -482,7 +489,7 @@ mod tests {
         }
     }
 
-    // uses refs because the trait defines `new` to take refs ...
+    #[derive(Clone)]
     struct MockState {
         header: MockSignedHeader,
         vals: MockValSet,
