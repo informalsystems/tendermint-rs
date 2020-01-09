@@ -61,7 +61,6 @@ pub fn block_on<F: Future>(future: F) -> F::Output {
         .block_on(future)
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -73,6 +72,7 @@ mod tests {
 
     // TODO: integration test
     #[test]
+    #[ignore]
     fn test_val_set() {
         let client = block_on(rpc::Client::new(&"localhost:26657".parse().unwrap())).unwrap();
         let req = RPCRequester::new(client);
@@ -81,4 +81,3 @@ mod tests {
         assert_eq!(r1.hash(), r2.header().validators_hash());
     }
 }
-*/
