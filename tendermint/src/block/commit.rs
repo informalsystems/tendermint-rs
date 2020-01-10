@@ -4,7 +4,8 @@ use crate::{block, Vote};
 use serde::{Deserialize, Serialize};
 use std::{ops::Deref, slice};
 
-/// Commit contains the justification (ie. a set of signatures) that a block was committed by a set of validators.
+/// Commit contains the justification (ie. a set of signatures) that a block was committed by a set
+/// of validators.
 ///
 /// <https://github.com/tendermint/tendermint/blob/51dc810d041eaac78320adc6d53ad8b160b06601/types/block.go#L486-L502>
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#lastcommit>
@@ -32,7 +33,7 @@ impl Precommits {
 
     /// Convert this collection of precommits into a vector
     pub fn into_vec(self) -> Vec<Option<Vote>> {
-        self.0.clone()
+        self.0
     }
 
     /// Iterate over the precommits in the collection

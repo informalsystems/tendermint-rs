@@ -269,7 +269,10 @@ mod tests {
             ],
             validator_index: 56789,
             signature: vec![],
-            //signature: vec![130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233, 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6, 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118, 192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10],
+            /* signature: vec![130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24,
+             * 134, 212, 233, 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65,
+             * 174, 217, 42, 6, 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167,
+             * 39, 67, 35, 118, 192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10], */
         };
         let sign_vote_msg = SignVoteRequest { vote: Some(vote) };
         let mut got = vec![];
@@ -292,9 +295,9 @@ mod tests {
         //             Hash:  []byte("parts_hash"),
         //         },
         //     },
-        //     ValidatorAddress: []byte{0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35},
-        //     ValidatorIndex:   56789,
-        // }})
+        //     ValidatorAddress: []byte{0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21,
+        // 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35},     ValidatorIndex:
+        // 56789, }})
         // fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v",data), " "), ", "))
 
         let want = vec![

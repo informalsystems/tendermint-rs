@@ -49,18 +49,14 @@ impl fmt::Display for State {
 
 impl Ord for State {
     fn cmp(&self, other: &State) -> Ordering {
-        if self.height < other.height {
-            Ordering::Less
-        } else if self.height == other.height {
-            if self.round < other.round {
-                Ordering::Less
-            } else if self.round == other.round {
-                self.step.cmp(&other.step)
-            } else {
-                Ordering::Greater
-            }
-        } else {
-            Ordering::Greater
+        match self.height.cmp(&other.height) {
+            Ordering::Greater => Ordering::Greater,
+            Ordering::Less => Ordering::Less,
+            Ordering::Equal => match self.round.cmp(&other.round) {
+                Ordering::Greater => Ordering::Greater,
+                Ordering::Less => Ordering::Less,
+                Ordering::Equal => self.step.cmp(&other.step),
+            },
         }
     }
 }
