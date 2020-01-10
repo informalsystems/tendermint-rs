@@ -74,42 +74,6 @@ pub struct Header {
     pub proposer_address: account::Id,
 }
 
-/// Parse empty block id as None.
-pub fn parse_non_empty_block_id<'de, D>(deserializer: D) -> Result<Option<block::Id>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    struct Parts {
-        #[serde(deserialize_with = "serializers::parse_u64")]
-        total: u64,
-        hash: String,
-    }
-    #[derive(Deserialize)]
-    struct BlockId {
-        hash: String,
-        parts: Parts,
-    }
-    let tmp_id = BlockId::deserialize(deserializer)?;
-    if tmp_id.hash.is_empty() {
-        Ok(None)
-    } else {
-        Ok(Some(block::Id {
-            hash: Hash::from_str(&tmp_id.hash)
-                .map_err(|err| D::Error::custom(format!("{}", err)))?,
-            parts: if tmp_id.parts.hash.is_empty() {
-                None
-            } else {
-                Some(block::parts::Header {
-                    total: tmp_id.parts.total,
-                    hash: Hash::from_str(&tmp_id.parts.hash)
-                        .map_err(|err| D::Error::custom(format!("{}", err)))?,
-                })
-            },
-        }))
-    }
-}
-
 /// `Version` contains the protocol version for the blockchain and the
 /// application.
 ///
