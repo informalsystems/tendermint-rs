@@ -58,9 +58,9 @@ impl From<&vote::Vote> for Vote {
             vote_type: vote.vote_type.to_u32(),
             height: vote.height.value() as i64, // TODO potential overflow :-/
             round: vote.round as i64,
-            block_id: Some(BlockId {
-                hash: vote.block_id.hash.as_bytes().to_vec(),
-                parts_header: vote.block_id.parts.as_ref().map(PartsSetHeader::from),
+            block_id: vote.block_id.as_ref().map(|block_id| BlockId {
+                hash: block_id.hash.as_bytes().to_vec(),
+                parts_header: block_id.parts.as_ref().map(PartsSetHeader::from),
             }),
             timestamp: Some(TimeMsg::from(vote.timestamp)),
             validator_address: vote.validator_address.as_bytes().to_vec(),

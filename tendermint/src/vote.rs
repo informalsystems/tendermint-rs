@@ -32,7 +32,8 @@ pub struct Vote {
     pub round: u64,
 
     /// Block ID
-    pub block_id: block::Id,
+    #[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
+    pub block_id: Option<block::Id>,
 
     /// Timestamp
     pub timestamp: Time,
