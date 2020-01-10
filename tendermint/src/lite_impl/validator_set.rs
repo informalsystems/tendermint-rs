@@ -1,9 +1,9 @@
-//! Light client [`ValidatorSet`] implementation for [`Set`].
+//! [`lite::ValidatorSet`] implementation for [`validator::Set`].
 
-use crate::validator::Set;
+use crate::validator;
 use crate::{lite, merkle, Hash};
 
-impl lite::ValidatorSet for Set {
+impl lite::ValidatorSet for validator::Set {
     /// Compute the Merkle root of the validator set
     fn hash(&self) -> Hash {
         let validator_bytes: Vec<Vec<u8>> = self

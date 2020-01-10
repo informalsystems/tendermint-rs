@@ -1,4 +1,4 @@
-//! Light client header implementation.
+//! [`lite::Header`] implementation for [`block::Header`].
 
 use crate::amino_types::{message::AminoMessage, BlockId, ConsensusVersion, TimeMsg};
 use crate::merkle::simple_hash_from_byte_vectors;

@@ -1,4 +1,4 @@
-//! Light client signed header implementation.
+//! [`lite::SignedHeader`] implementation for [`block::signed_header::SignedHeader`].
 
 use crate::lite::Error;
 use crate::validator::Set;
