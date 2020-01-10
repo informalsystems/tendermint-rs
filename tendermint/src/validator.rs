@@ -135,7 +135,6 @@ impl Info {
     /// Returns the bytes to be hashed into the Merkle tree -
     /// the leaves of the tree. this is an amino encoding of the
     /// pubkey and voting power, so it includes the pubkey's amino prefix.
-    // TODO only used in lite impl ...
     pub fn hash_bytes(&self) -> Vec<u8> {
         AminoMessage::bytes_vec(&InfoHashable::from(self))
     }

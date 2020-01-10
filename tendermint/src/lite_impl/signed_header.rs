@@ -2,7 +2,7 @@
 
 use crate::lite::Error;
 use crate::validator::Set;
-use crate::{block, hash, lite};
+use crate::{block, hash, lite, vote};
 
 impl lite::SignedHeader for block::signed_header::SignedHeader {
     type Header = block::Header;
@@ -58,5 +58,27 @@ impl lite::Commit for block::signed_header::SignedHeader {
 
     fn votes_len(&self) -> usize {
         self.commit.precommits.len()
+    }
+}
+
+impl block::signed_header::SignedHeader {
+    /// This is a private helper method to iterate over the underlying
+    /// votes to compute the voting power (see `voting_power_in` below).
+    fn iter(&self) -> Vec<Option<vote::SignedVote>> {
+        let chain_id = self.header.chain_id.to_string();
+        let mut votes = self.commit.precommits.clone().into_vec();
+        votes
+            .drain(..)
+            .map(|opt| {
+                opt.map(|vote| {
+                    vote::SignedVote::new(
+                        (&vote).into(),
+                        &chain_id,
+                        vote.validator_address,
+                        vote.signature,
+                    )
+                })
+            })
+            .collect()
     }
 }
