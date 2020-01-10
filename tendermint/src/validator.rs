@@ -1,7 +1,5 @@
 //! Tendermint validators
 
-use crate::amino_types::message::AminoMessage;
-use crate::{account, lite, merkle, vote, Hash, PublicKey};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use signatory::{
     ed25519,
@@ -9,6 +7,9 @@ use signatory::{
 };
 use signatory_dalek::Ed25519Verifier;
 use subtle_encoding::base64;
+
+use crate::amino_types::message::AminoMessage;
+use crate::{account, vote, PublicKey};
 
 /// Validator set contains a vector of validators
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -24,6 +25,11 @@ impl Set {
         vals.sort_by(|v1, v2| v1.address.partial_cmp(&v2.address).unwrap());
         Set { validators: vals }
     }
+
+    /// Get Info of the underlying validators.
+    pub fn validators(&self) -> &Vec<Info> {
+        &self.validators
+    }
 }
 
 impl Set {
@@ -33,32 +39,6 @@ impl Set {
             .iter()
             .find(|val| val.address == val_id)
             .cloned()
-    }
-}
-
-impl lite::ValidatorSet for Set {
-    /// Compute the Merkle root of the validator set
-    fn hash(&self) -> Hash {
-        let validator_bytes: Vec<Vec<u8>> = self
-            .validators
-            .iter()
-            .map(|validator| validator.hash_bytes())
-            .collect();
-        Hash::Sha256(merkle::simple_hash_from_byte_vectors(validator_bytes))
-    }
-
-    fn total_power(&self) -> u64 {
-        self.validators.iter().fold(0u64, |total, val_info| {
-            total + val_info.voting_power.value()
-        })
-    }
-
-    fn len(&self) -> usize {
-        self.validators.len()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.validators.is_empty()
     }
 }
 
@@ -151,11 +131,11 @@ impl From<&Info> for InfoHashable {
     }
 }
 
-// returns the bytes to be hashed into the Merkle tree -
-// the leaves of the tree. this is an amino encoding of the
-// pubkey and voting power, so it includes the pubkey's amino prefix.
 impl Info {
-    fn hash_bytes(&self) -> Vec<u8> {
+    /// Returns the bytes to be hashed into the Merkle tree -
+    /// the leaves of the tree. this is an amino encoding of the
+    /// pubkey and voting power, so it includes the pubkey's amino prefix.
+    pub fn hash_bytes(&self) -> Vec<u8> {
         AminoMessage::bytes_vec(&InfoHashable::from(self))
     }
 }
@@ -234,9 +214,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::lite::ValidatorSet;
     use subtle_encoding::hex;
+
+    use crate::lite::ValidatorSet;
+
+    use super::*;
 
     // make a validator from a hex ed25519 pubkey and a voting power
     fn make_validator(pk_string: &str, vp: u64) -> Info {

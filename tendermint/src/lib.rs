@@ -43,6 +43,7 @@ pub mod genesis;
 pub mod hash;
 #[allow(dead_code, missing_docs)]
 pub mod lite;
+pub mod lite_impl;
 pub mod merkle;
 mod moniker;
 pub mod net;

@@ -1,5 +1,5 @@
 //! All traits that are necessary and need to be implemented to use the main
-//! verification logic in `super::verifier` for a light client.
+//! verification logic in [`super::verifier`] for a light client.
 
 use crate::block::Height;
 use crate::Hash;
@@ -114,7 +114,7 @@ pub trait TrustThreshold {
     }
 }
 
-/// Requester can be used to request `SignedHeaders` and `ValidatorSet`s for a
+/// Requester can be used to request [`SignedHeader`]s and [`ValidatorSet`]s for a
 /// given height, e.g., by talking to a tendermint fullnode through RPC.
 pub trait Requester {
     // TODO(Liamsi): consider putting this trait and the Store into a separate module / file...
