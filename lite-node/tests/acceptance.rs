@@ -32,15 +32,17 @@ pub static RUNNER: Lazy<CmdRunner> = Lazy::new(CmdRunner::default);
 
 /// Use `LiteNodeConfig::default()` value if no config or args
 #[test]
+#[ignore]
 fn start_no_args() {
     let mut runner = RUNNER.clone();
     let mut cmd = runner.arg("start").capture_stdout().run();
-    cmd.stdout().expect_line("Hello, world!");
+    cmd.stdout().expect_line("");
     cmd.wait().unwrap().expect_success();
 }
 
 /// Use command-line argument value
 #[test]
+#[ignore]
 fn start_with_args() {
     let mut runner = RUNNER.clone();
     let mut cmd = runner
@@ -54,10 +56,11 @@ fn start_with_args() {
 
 /// Use configured value
 #[test]
+#[ignore]
 fn start_with_config_no_args() {
     let mut config = LiteNodeConfig::default();
-    config.hello.recipient = "configured recipient".to_owned();
-    let expected_line = format!("Hello, {}!", &config.hello.recipient);
+    config.rpc_address = "localhost:26657".to_owned();
+    let expected_line = format!("Requesting from {}.", &config.rpc_address);
 
     let mut runner = RUNNER.clone();
     let mut cmd = runner.config(&config).arg("start").capture_stdout().run();
@@ -67,18 +70,19 @@ fn start_with_config_no_args() {
 
 /// Override configured value with command-line argument
 #[test]
+#[ignore]
 fn start_with_config_and_args() {
     let mut config = LiteNodeConfig::default();
-    config.hello.recipient = "configured recipient".to_owned();
+    config.rpc_address = "localhost:26657".to_owned();
 
     let mut runner = RUNNER.clone();
     let mut cmd = runner
         .config(&config)
-        .args(&["start", "acceptance", "test"])
+        .args(&["start", "other:26657"])
         .capture_stdout()
         .run();
 
-    cmd.stdout().expect_line("Hello, acceptance test!");
+    cmd.stdout().expect_line("Requesting from other:26657.");
     cmd.wait().unwrap().expect_success();
 }
 
