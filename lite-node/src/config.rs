@@ -7,8 +7,6 @@
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use tendermint::lite::TrustThreshold;
-
 /// LiteNode Configuration
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
