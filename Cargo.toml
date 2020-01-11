@@ -3,4 +3,5 @@
 members = [
     "tendermint",
     "tendermint-lite",
+    "lite-node",
 ]

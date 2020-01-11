@@ -1,0 +1,22 @@
+[package]
+name = "lite_node"
+authors = ["Ethan Buchman <ethan@coinculture.info>", "Ismail Khoffi <Ismail.Khoffi@gmail.com>"]
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+gumdrop = "0.7"
+serde = { version = "1", features = ["serde_derive"] }
+tendermint = { version = "0.11", path = "../tendermint" }
+tokio = "0.2"
+
+[dependencies.abscissa_core]
+version = "0.5.0"
+# optional: use `gimli` to capture backtraces
+# see https://github.com/rust-lang/backtrace-rs/issues/189
+# features = ["gimli-backtrace"]
+
+[dev-dependencies]
+abscissa_core = { version = "0.5.0", features = ["testing"] }
+once_cell = "1.2"
+
