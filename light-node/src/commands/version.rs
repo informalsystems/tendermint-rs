@@ -2,7 +2,7 @@
 
 #![allow(clippy::never_loop)]
 
-use super::LiteNodeCmd;
+use super::LightNodeCmd;
 use abscissa_core::{Command, Options, Runnable};
 
 /// `version` subcommand
@@ -12,6 +12,6 @@ pub struct VersionCmd {}
 impl Runnable for VersionCmd {
     /// Print version message
     fn run(&self) {
-        println!("{} {}", LiteNodeCmd::name(), LiteNodeCmd::version());
+        println!("{} {}", LightNodeCmd::name(), LightNodeCmd::version());
     }
 }

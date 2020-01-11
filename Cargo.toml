@@ -2,5 +2,5 @@
 
 members = [
     "tendermint",
-    "lite-node",
+    "light-node",
 ]

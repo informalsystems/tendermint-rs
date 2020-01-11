@@ -1,11 +1,11 @@
-//! Main entry point for LiteNode
+//! Main entry point for LightNode
 
 #![deny(warnings, missing_docs, trivial_casts, unused_qualifications)]
 #![forbid(unsafe_code)]
 
-use lite_node::application::APPLICATION;
+use light_node::application::APPLICATION;
 
-/// Boot LiteNode
+/// Boot LightNode
 fn main() {
     abscissa_core::boot(&APPLICATION);
 }

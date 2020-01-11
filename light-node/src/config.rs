@@ -1,4 +1,4 @@
-//! LiteNode Config
+//! LightNode Config
 //!
 //! See instructions in `commands.rs` to specify the path to your
 //! application's configuration file and/or command-line options
@@ -7,10 +7,10 @@
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-/// LiteNode Configuration
+/// LightNode Configuration
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct LiteNodeConfig {
+pub struct LightNodeConfig {
     /// RPC address to request headers and validators from.
     pub rpc_address: String,
     /// The duration until we consider a trusted state as expired.
@@ -22,8 +22,8 @@ pub struct LiteNodeConfig {
 /// Default configuration settings.
 ///
 /// Note: if your needs are as simple as below, you can
-/// use `#[derive(Default)]` on LiteNodeConfig instead.
-impl Default for LiteNodeConfig {
+/// use `#[derive(Default)]` on LightNodeConfig instead.
+impl Default for LightNodeConfig {
     fn default() -> Self {
         Self {
             rpc_address: "localhost:26657".to_owned(),

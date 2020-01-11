@@ -1,4 +1,4 @@
-//! LiteNode
+//! LightNode
 //!
 //! Application based on the [Abscissa] framework.
 //!

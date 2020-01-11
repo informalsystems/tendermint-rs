@@ -14,7 +14,7 @@ use tokio::runtime::Builder;
 
 use tendermint::lite::ValidatorSet as _;
 
-use crate::config::LiteNodeConfig;
+use crate::config::LightNodeConfig;
 use crate::requester::RPCRequester;
 use crate::state::State;
 use crate::store::MemStore;
@@ -111,14 +111,14 @@ impl Runnable for StartCmd {
     }
 }
 
-impl config::Override<LiteNodeConfig> for StartCmd {
+impl config::Override<LightNodeConfig> for StartCmd {
     // Process the given command line options, overriding settings from
     // a configuration file using explicit flags taken from command-line
     // arguments.
     fn override_config(
         &self,
-        mut config: LiteNodeConfig,
-    ) -> Result<LiteNodeConfig, FrameworkError> {
+        mut config: LightNodeConfig,
+    ) -> Result<LightNodeConfig, FrameworkError> {
         if !self.rpc_addr.is_empty() {
             config.rpc_address = self.rpc_addr.to_owned();
         }

@@ -19,7 +19,7 @@
 )]
 
 use abscissa_core::testing::prelude::*;
-use lite_node::config::LiteNodeConfig;
+use light_node::config::LightNodeConfig;
 use once_cell::sync::Lazy;
 
 /// Executes your application binary via `cargo run`.
@@ -30,7 +30,7 @@ use once_cell::sync::Lazy;
 /// invocations as `cargo test` executes tests in parallel by default.
 pub static RUNNER: Lazy<CmdRunner> = Lazy::new(CmdRunner::default);
 
-/// Use `LiteNodeConfig::default()` value if no config or args
+/// Use `LightNodeConfig::default()` value if no config or args
 #[test]
 #[ignore]
 fn start_no_args() {
@@ -58,7 +58,7 @@ fn start_with_args() {
 #[test]
 #[ignore]
 fn start_with_config_no_args() {
-    let mut config = LiteNodeConfig::default();
+    let mut config = LightNodeConfig::default();
     config.rpc_address = "localhost:26657".to_owned();
     let expected_line = format!("Requesting from {}.", &config.rpc_address);
 
@@ -72,7 +72,7 @@ fn start_with_config_no_args() {
 #[test]
 #[ignore]
 fn start_with_config_and_args() {
-    let mut config = LiteNodeConfig::default();
+    let mut config = LightNodeConfig::default();
     config.rpc_address = "localhost:26657".to_owned();
 
     let mut runner = RUNNER.clone();

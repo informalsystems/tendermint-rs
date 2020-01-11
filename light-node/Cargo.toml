@@ -1,5 +1,5 @@
 [package]
-name = "lite_node"
+name = "light_node"
 authors = ["Ethan Buchman <ethan@coinculture.info>", "Ismail Khoffi <Ismail.Khoffi@gmail.com>"]
 version = "0.1.0"
 edition = "2018"

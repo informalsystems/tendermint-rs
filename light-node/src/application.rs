@@ -1,38 +1,38 @@
-//! LiteNode Abscissa Application
+//! LightNode Abscissa Application
 
-use crate::{commands::LiteNodeCmd, config::LiteNodeConfig};
+use crate::{commands::LightNodeCmd, config::LightNodeConfig};
 use abscissa_core::{
     application::{self, AppCell},
     config, trace, Application, EntryPoint, FrameworkError, StandardPaths,
 };
 
 /// Application state
-pub static APPLICATION: AppCell<LiteNodeApp> = AppCell::new();
+pub static APPLICATION: AppCell<LightNodeApp> = AppCell::new();
 
 /// Obtain a read-only (multi-reader) lock on the application state.
 ///
 /// Panics if the application state has not been initialized.
-pub fn app_reader() -> application::lock::Reader<LiteNodeApp> {
+pub fn app_reader() -> application::lock::Reader<LightNodeApp> {
     APPLICATION.read()
 }
 
 /// Obtain an exclusive mutable lock on the application state.
-pub fn app_writer() -> application::lock::Writer<LiteNodeApp> {
+pub fn app_writer() -> application::lock::Writer<LightNodeApp> {
     APPLICATION.write()
 }
 
 /// Obtain a read-only (multi-reader) lock on the application configuration.
 ///
 /// Panics if the application configuration has not been loaded.
-pub fn app_config() -> config::Reader<LiteNodeApp> {
+pub fn app_config() -> config::Reader<LightNodeApp> {
     config::Reader::new(&APPLICATION)
 }
 
-/// LiteNode Application
+/// LightNode Application
 #[derive(Debug)]
-pub struct LiteNodeApp {
+pub struct LightNodeApp {
     /// Application configuration.
-    config: Option<LiteNodeConfig>,
+    config: Option<LightNodeConfig>,
 
     /// Application state.
     state: application::State<Self>,
@@ -42,7 +42,7 @@ pub struct LiteNodeApp {
 ///
 /// By default no configuration is loaded, and the framework state is
 /// initialized to a default, empty state (no components, threads, etc).
-impl Default for LiteNodeApp {
+impl Default for LightNodeApp {
     fn default() -> Self {
         Self {
             config: None,
@@ -51,18 +51,18 @@ impl Default for LiteNodeApp {
     }
 }
 
-impl Application for LiteNodeApp {
+impl Application for LightNodeApp {
     /// Entrypoint command for this application.
-    type Cmd = EntryPoint<LiteNodeCmd>;
+    type Cmd = EntryPoint<LightNodeCmd>;
 
     /// Application configuration.
-    type Cfg = LiteNodeConfig;
+    type Cfg = LightNodeConfig;
 
     /// Paths to resources within the application.
     type Paths = StandardPaths;
 
     /// Accessor for application configuration.
-    fn config(&self) -> &LiteNodeConfig {
+    fn config(&self) -> &LightNodeConfig {
         self.config.as_ref().expect("config not loaded")
     }
 
@@ -99,7 +99,7 @@ impl Application for LiteNodeApp {
     }
 
     /// Get tracing configuration from command-line options
-    fn tracing_config(&self, command: &EntryPoint<LiteNodeCmd>) -> trace::Config {
+    fn tracing_config(&self, command: &EntryPoint<LightNodeCmd>) -> trace::Config {
         if command.verbose {
             trace::Config::verbose()
         } else {

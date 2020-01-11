@@ -1,4 +1,4 @@
-//! LiteNode Subcommands
+//! LightNode Subcommands
 //!
 //! This is where you specify the subcommands of your application.
 //!
@@ -14,18 +14,18 @@ mod start;
 mod version;
 
 use self::{start::StartCmd, version::VersionCmd};
-use crate::config::LiteNodeConfig;
+use crate::config::LightNodeConfig;
 use abscissa_core::{
     config::Override, Command, Configurable, FrameworkError, Help, Options, Runnable,
 };
 use std::path::PathBuf;
 
-/// LiteNode Configuration Filename
-pub const CONFIG_FILE: &str = "lite_node.toml";
+/// LightNode Configuration Filename
+pub const CONFIG_FILE: &str = "light_node.toml";
 
-/// LiteNode Subcommands
+/// LightNode Subcommands
 #[derive(Command, Debug, Options, Runnable)]
-pub enum LiteNodeCmd {
+pub enum LightNodeCmd {
     /// The `help` subcommand
     #[options(help = "get usage information")]
     Help(Help<Self>),
@@ -40,7 +40,7 @@ pub enum LiteNodeCmd {
 }
 
 /// This trait allows you to define how application configuration is loaded.
-impl Configurable<LiteNodeConfig> for LiteNodeCmd {
+impl Configurable<LightNodeConfig> for LightNodeCmd {
     /// Location of the configuration file
     fn config_path(&self) -> Option<PathBuf> {
         // Check if the config file exists, and if it does not, ignore it.
@@ -60,9 +60,9 @@ impl Configurable<LiteNodeConfig> for LiteNodeCmd {
     ///
     /// This can be safely deleted if you don't want to override config
     /// settings from command-line options.
-    fn process_config(&self, config: LiteNodeConfig) -> Result<LiteNodeConfig, FrameworkError> {
+    fn process_config(&self, config: LightNodeConfig) -> Result<LightNodeConfig, FrameworkError> {
         match self {
-            LiteNodeCmd::Start(cmd) => cmd.override_config(config),
+            LightNodeCmd::Start(cmd) => cmd.override_config(config),
             _ => Ok(config),
         }
     }

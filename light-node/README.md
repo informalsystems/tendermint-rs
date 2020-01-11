@@ -1,4 +1,4 @@
-# LiteNode
+# LightNode
 
 Tendermint light client node.
 
