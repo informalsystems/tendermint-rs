@@ -17,19 +17,19 @@ use std::convert::TryFrom;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
-    #[prost(uint32, tag = "1")]
+    #[prost_amino(uint32, tag = "1")]
     pub msg_type: u32,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub height: i64,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub round: i64,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub pol_round: i64,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub block_id: Option<BlockId>,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub timestamp: Option<TimeMsg>,
-    #[prost(bytes)]
+    #[prost_amino(bytes)]
     pub signature: Vec<u8>,
 }
 
@@ -45,26 +45,26 @@ pub const AMINO_NAME: &str = "tendermint/remotesigner/SignProposalRequest";
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/SignProposalRequest"]
 pub struct SignProposalRequest {
-    #[prost(message, tag = "1")]
+    #[prost_amino(message, tag = "1")]
     pub proposal: Option<Proposal>,
 }
 
 #[derive(Clone, PartialEq, Message)]
 struct CanonicalProposal {
-    #[prost(uint32, tag = "1")]
+    #[prost_amino(uint32, tag = "1")]
     msg_type: u32, /* this is a byte in golang, which is a varint encoded UInt8 (using amino's
                     * EncodeUvarint) */
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     height: i64,
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     round: i64,
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     pol_round: i64,
-    #[prost(message)]
+    #[prost_amino(message)]
     block_id: Option<CanonicalBlockId>,
-    #[prost(message)]
+    #[prost_amino(message)]
     timestamp: Option<TimeMsg>,
-    #[prost(string)]
+    #[prost_amino(string)]
     pub chain_id: String,
 }
 
@@ -83,9 +83,9 @@ impl block::ParseHeight for CanonicalProposal {
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/SignedProposalResponse"]
 pub struct SignedProposalResponse {
-    #[prost(message, tag = "1")]
+    #[prost_amino(message, tag = "1")]
     pub proposal: Option<Proposal>,
-    #[prost(message, tag = "2")]
+    #[prost_amino(message, tag = "2")]
     pub err: Option<RemoteError>,
 }
 
@@ -195,7 +195,6 @@ mod tests {
     use crate::amino_types::block_id::PartsSetHeader;
     use chrono::{DateTime, Utc};
     use prost::Message;
-    use std::error::Error;
 
     #[test]
     fn test_serialization() {
@@ -294,7 +293,7 @@ mod tests {
 
         match SignProposalRequest::decode(&data) {
             Ok(have) => assert_eq!(have, want),
-            Err(err) => panic!(err.description().to_string()),
+            Err(err) => panic!(err.to_string()),
         }
     }
 }

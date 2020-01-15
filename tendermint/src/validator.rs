@@ -115,9 +115,9 @@ impl Info {
 /// TODO: currently only works for Ed25519 pubkeys
 #[derive(Clone, PartialEq, Message)]
 struct InfoHashable {
-    #[prost(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
+    #[prost_amino(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
     pub pub_key: Vec<u8>,
-    #[prost(uint64, tag = "2")]
+    #[prost_amino(uint64, tag = "2")]
     voting_power: u64,
 }
 
