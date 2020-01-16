@@ -49,6 +49,8 @@ impl Default for SubjectiveInit {
     fn default() -> Self {
         Self {
             height: 1,
+            // TODO(liamsi): a default hash here does not make sense unless it is a valid hash
+            // from a public network
             validators_hash: "A5A7DEA707ADE6156F8A981777CA093F178FC790475F6EC659B6617E704871DD"
                 .to_owned(),
         }

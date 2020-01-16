@@ -1,10 +1,8 @@
 //! LightNode Subcommands
 //!
-//! This is where you specify the subcommands of your application.
+//! The light client supports the following subcommands:
 //!
-//! The default application comes with two subcommands:
-//!
-//! - `start`: launches the application
+//! - `start`: launches the light client
 //! - `version`: print application version
 //!
 //! See the `impl Configurable` below for how to specify the path to the
@@ -30,11 +28,11 @@ pub enum LightNodeCmd {
     #[options(help = "get usage information")]
     Help(Help<Self>),
 
-    /// The `start` subcommand
-    #[options(help = "start the application")]
+    /// `start` the light client
+    #[options(help = "start the light client daemon with the given config or command line params")]
     Start(StartCmd),
 
-    /// The `version` subcommand
+    /// `version` of the light client
     #[options(help = "display version information")]
     Version(VersionCmd),
 }

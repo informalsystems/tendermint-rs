@@ -1,4 +1,4 @@
-//! `start` subcommand - example of how to write a subcommand
+//! `start` subcommand - start the light node.
 
 /// App-local prelude includes `app_reader()`/`app_writer()`/`app_config()`
 /// accessors along with logging macros. Customize as you see fit.
