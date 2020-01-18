@@ -38,7 +38,7 @@ impl From<PublicKey> for PubKeyResponse {
             PublicKey::Ed25519(ref pk) => Self {
                 pub_key_ed25519: pk.as_bytes().to_vec(),
             },
-            PublicKey::Secp256k1(_) => panic!("secp256k1 PubKeyResponse unimplemented"),
+            PublicKey::Secp256k1(_) => unimplemented!(),
         }
     }
 }

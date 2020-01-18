@@ -30,7 +30,10 @@ fn simple_hash_from_byte_slices_inner(byte_slices: &[Vec<u8>]) -> Hash {
     }
 }
 
+// TODO(xla): Rework into returning a Result and propagate errors. Great fit in the context of
+// https://github.com/interchainio/tendermint-rs/issues/73.
 /// Returns the largest power of 2 less than length.
+#[allow(clippy::panic)]
 fn get_split_point(length: usize) -> usize {
     match length {
         0 => panic!("tree is empty!"),
