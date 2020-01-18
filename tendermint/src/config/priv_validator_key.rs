@@ -48,6 +48,7 @@ impl PrivValidatorKey {
 
     /// Get the consensus public key for this validator private key
     pub fn consensus_pubkey(&self) -> TendermintKey {
-        TendermintKey::new_consensus_key(self.priv_key.public_key()).unwrap()
+        TendermintKey::new_consensus_key(self.priv_key.public_key())
+            .expect("unable to create consensus key")
     }
 }

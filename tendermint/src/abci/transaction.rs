@@ -53,7 +53,7 @@ impl<'de> Deserialize<'de> for Transaction {
 impl Serialize for Transaction {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         String::from_utf8(base64::encode(self.as_bytes()))
-            .unwrap()
+            .expect("Transaction encoding failed")
             .serialize(serializer)
     }
 }

@@ -14,7 +14,8 @@ pub trait Request: Debug + DeserializeOwned + Serialize + Sized {
 
     /// Serialize this request as JSON
     fn into_json(self) -> String {
-        serde_json::to_string_pretty(&Wrapper::new(self)).unwrap()
+        serde_json::to_string_pretty(&Wrapper::new(self))
+            .expect("request conversion into JSON failed")
     }
 }
 

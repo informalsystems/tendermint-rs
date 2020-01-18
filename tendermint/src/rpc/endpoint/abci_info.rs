@@ -62,6 +62,6 @@ where
     S: Serializer,
 {
     String::from_utf8(base64::encode(hash.as_bytes()))
-        .unwrap()
+        .expect("Hash conversion to string failed")
         .serialize(serializer)
 }

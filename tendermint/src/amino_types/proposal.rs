@@ -196,6 +196,7 @@ mod tests {
     use prost::Message;
     use std::error::Error;
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn test_serialization() {
         let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
@@ -255,6 +256,7 @@ mod tests {
         assert_eq!(got, want)
     }
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn test_deserialization() {
         let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();

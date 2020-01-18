@@ -87,12 +87,14 @@ mod tests {
     use super::Timeout;
     use crate::ErrorKind;
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn parse_seconds() {
         let timeout = "123s".parse::<Timeout>().unwrap();
         assert_eq!(timeout.as_secs(), 123);
     }
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn parse_milliseconds() {
         let timeout = "123ms".parse::<Timeout>().unwrap();

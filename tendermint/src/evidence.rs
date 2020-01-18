@@ -43,7 +43,7 @@ impl<'de> Deserialize<'de> for Evidence {
 impl Serialize for Evidence {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         String::from_utf8(base64::encode(self.to_amino_bytes()))
-            .unwrap()
+            .expect("Evidence encoding failed")
             .serialize(serializer)
     }
 }

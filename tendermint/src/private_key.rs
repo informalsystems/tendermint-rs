@@ -47,7 +47,7 @@ impl Ed25519Keypair {
         let seed = ed25519::Seed::from_keypair(&self.0[..]).expect("unable to extract Seed");
         let pk = signatory_dalek::Ed25519Signer::from(&seed)
             .public_key()
-            .unwrap();
+            .expect("unable to get public key");
 
         PublicKey::from(pk)
     }
@@ -91,7 +91,7 @@ impl<'de> Deserialize<'de> for Ed25519Keypair {
 impl Serialize for Ed25519Keypair {
     fn serialize<S: ser::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         String::from_utf8(Base64::default().encode(&self.0[..]))
-            .unwrap()
+            .expect("private key string encoding failed")
             .serialize(serializer)
     }
 }

@@ -28,7 +28,7 @@ impl Id {
 
         // We assert above the ID only has characters in the valid UTF-8 range,
         // so in theory this should never panic
-        str::from_utf8(byte_slice).unwrap()
+        str::from_utf8(byte_slice).expect("Id has non utf8 characters")
     }
 
     /// Get the chain ID as a raw bytes.
@@ -59,7 +59,7 @@ impl Display for Id {
 #[allow(clippy::fallible_impl_from)]
 impl<'a> From<&'a str> for Id {
     fn from(s: &str) -> Self {
-        Self::from_str(s).unwrap()
+        Self::from_str(s).expect("Id conversion from string failed")
     }
 }
 
@@ -135,6 +135,7 @@ mod tests {
 
     const EXAMPLE_CHAIN_ID: &str = "gaia-9000";
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn parses_valid_chain_ids() {
         assert_eq!(
@@ -154,6 +155,7 @@ mod tests {
         );
     }
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn rejects_overlength_chain_ids() {
         let overlong_id = String::from_utf8(vec![b'x'; MAX_LENGTH + 1]).unwrap();

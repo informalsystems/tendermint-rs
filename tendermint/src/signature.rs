@@ -49,7 +49,7 @@ impl<'de> Deserialize<'de> for Signature {
 impl Serialize for Signature {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         String::from_utf8(base64::encode(self.as_ref()))
-            .unwrap()
+            .expect("signature string conversion failed")
             .serialize(serializer)
     }
 }

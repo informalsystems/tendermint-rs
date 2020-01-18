@@ -380,9 +380,9 @@ mod tests {
     }
 
     fn json_hash<T: ?Sized + Serialize>(value: &T) -> Hash {
-        let encoded = serde_json::to_vec(value).unwrap();
+        let encoded = serde_json::to_vec(value).expect("Hash serialization failed");
         let hashed = Sha256::digest(&encoded);
-        Hash::new(Algorithm::Sha256, &hashed).unwrap()
+        Hash::new(Algorithm::Sha256, &hashed).expect("unable to create Hash")
     }
 
     // vals are just ints, each has power 1
@@ -660,6 +660,7 @@ mod tests {
         assert_err(ts, vec![0, 3, 4, 5], vec![None, S3, S4, S5], err);
     }
 
+    #[allow(clippy::result_unwrap_used)]
     fn fixed_hash() -> Hash {
         Hash::new(Algorithm::Sha256, &Sha256::digest(&[5])).unwrap()
     }

@@ -29,7 +29,9 @@ impl ParseTimestamp for Msg {
 impl From<Time> for Msg {
     fn from(ts: Time) -> Self {
         // TODO: non-panicking method for getting this?
-        let duration = ts.duration_since(Time::unix_epoch()).unwrap();
+        let duration = ts
+            .duration_since(Time::unix_epoch())
+            .expect("unable to get duration from epoch");
         let seconds = duration.as_secs() as i64;
         let nanos = duration.subsec_nanos() as i32;
 

@@ -20,6 +20,8 @@
     clippy::restriction
 )]
 #![deny(clippy::option_unwrap_used)]
+// TODO(xla): Review all uses of expect and try to rework into proper error handling, this crate
+// should ideally never panic.
 #![allow(
     clippy::cast_sign_loss,
     clippy::default_trait_access,
@@ -28,8 +30,11 @@
     clippy::integer_arithmetic,
     clippy::missing_inline_in_public_items,
     clippy::multiple_crate_versions,
-    clippy::must_use_candidate
+    clippy::must_use_candidate,
+    clippy::option_expect_used,
+    clippy::result_expect_used
 )]
+#![deny(clippy::result_unwrap_used)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
     html_root_url = "https://docs.rs/tendermint/0.11.0"

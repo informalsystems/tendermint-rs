@@ -80,7 +80,9 @@ impl Debug for Hash {
 impl Display for Hash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let hex = match self {
-            Self::Sha256(ref h) => Hex::upper_case().encode_to_string(h).unwrap(),
+            Self::Sha256(ref h) => Hex::upper_case()
+                .encode_to_string(h)
+                .expect("Hash encoding to string failed"),
         };
 
         write!(f, "{}", hex)

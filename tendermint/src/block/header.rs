@@ -188,7 +188,8 @@ pub struct Version {
 
 fn bytes_enc(bytes: &[u8]) -> Vec<u8> {
     let mut chain_id_enc = vec![];
-    prost_amino::encode_length_delimiter(bytes.len(), &mut chain_id_enc).unwrap();
+    prost_amino::encode_length_delimiter(bytes.len(), &mut chain_id_enc)
+        .expect("buffer size not sufficient to encode message");
     chain_id_enc.append(&mut bytes.to_vec());
     chain_id_enc
 }

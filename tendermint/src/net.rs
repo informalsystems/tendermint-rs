@@ -141,6 +141,7 @@ mod tests {
     const EXAMPLE_TCP_ADDR: &str =
         "tcp://abd636b766dcefb5322d8ca40011ec2cb35efbc2@35.192.61.41:26656";
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn parse_tcp_addr() {
         let tcp_addr_without_prefix = &EXAMPLE_TCP_ADDR[TCP_PREFIX.len()..];

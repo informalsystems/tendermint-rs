@@ -23,7 +23,9 @@ impl Display for Proof {
         write!(
             f,
             "{}",
-            &Hex::upper_case().encode_to_string(&self.0).unwrap()
+            &Hex::upper_case()
+                .encode_to_string(&self.0)
+                .expect("encoding Proof to string failed")
         )
     }
 }

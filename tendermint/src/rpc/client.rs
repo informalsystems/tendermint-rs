@@ -178,12 +178,15 @@ impl Client {
 
         {
             let headers = request.headers_mut();
-            headers.insert(header::CONTENT_TYPE, "application/json".parse().unwrap());
+            headers.insert(
+                header::CONTENT_TYPE,
+                "application/json".parse().expect("MIME type parse failed"),
+            );
             headers.insert(
                 header::USER_AGENT,
                 format!("tendermint.rs/{}", env!("CARGO_PKG_VERSION"))
                     .parse()
-                    .unwrap(),
+                    .expect("UA version formatting failed"),
             );
         }
 

@@ -242,6 +242,7 @@ mod tests {
     use crate::amino_types::SignedMsgType;
     use chrono::{DateTime, Utc};
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn test_vote_serialization() {
         let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
@@ -308,6 +309,7 @@ mod tests {
         assert_eq!(got, want);
     }
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn test_sign_bytes_compatibility() {
         let cv = Canonical::new(Vote::default(), "");
@@ -408,6 +410,7 @@ mod tests {
         }
     }
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn test_vote_rountrip_with_sig() {
         let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
@@ -456,6 +459,7 @@ mod tests {
         }
     }
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn test_deserialization() {
         let encoded = vec![

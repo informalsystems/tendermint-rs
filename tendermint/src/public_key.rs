@@ -85,7 +85,8 @@ impl PublicKey {
 
     /// Serialize this key as hexadecimal
     pub fn to_hex(self) -> String {
-        String::from_utf8(hex::encode_upper(self.to_amino_bytes())).unwrap()
+        String::from_utf8(hex::encode_upper(self.to_amino_bytes()))
+            .expect("public key encoding to hex failed")
     }
 }
 
@@ -198,7 +199,7 @@ where
     S: Serializer,
 {
     String::from_utf8(base64::encode(pk.as_bytes()))
-        .unwrap()
+        .expect("public key string encoding failed")
         .serialize(serializer)
 }
 
@@ -211,7 +212,7 @@ where
     S: Serializer,
 {
     String::from_utf8(base64::encode(pk.as_bytes()))
-        .unwrap()
+        .expect("public key string encoding failed")
         .serialize(serializer)
 }
 
@@ -250,6 +251,7 @@ mod tests {
     const EXAMPLE_CONSENSUS_KEY: &str =
         "4A25C6640A1F72B9C975338294EF51B6D1C33158BB6ECBA69FBC3FB5A33C9DCE";
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn test_consensus_serialization() {
         let example_key = TendermintKey::ConsensusKey(
@@ -266,6 +268,7 @@ mod tests {
     const EXAMPLE_ACCOUNT_KEY: &str =
         "02A1633CAFCC01EBFB6D78E39F687A1F0995C62FC95F51EAD10A02EE0BE551B5DC";
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn test_account_serialization() {
         let example_key = TendermintKey::AccountKey(
@@ -279,6 +282,7 @@ mod tests {
         );
     }
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn json_parsing() {
         let json_string = "{\"type\":\"tendermint/PubKeyEd25519\",\"value\":\"RblzMO4is5L1hZz6wo4kPbptzOyue6LTk4+lPhD1FRk=\"}";

@@ -124,6 +124,7 @@ impl Serialize for Id {
 mod tests {
     use super::*;
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn test_ed25519_id() {
         // test vector for pubkey and id (address)

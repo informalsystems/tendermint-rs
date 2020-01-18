@@ -87,7 +87,8 @@ impl From<SystemTime> for Time {
 #[allow(clippy::fallible_impl_from)]
 impl From<Time> for SystemTime {
     fn from(t: Time) -> Self {
-        t.to_system_time().unwrap()
+        t.to_system_time()
+            .expect("conversion to system time failed")
     }
 }
 

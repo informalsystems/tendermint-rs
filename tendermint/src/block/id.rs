@@ -82,6 +82,7 @@ mod tests {
     const EXAMPLE_SHA256_ID: &str =
         "26C0A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn parses_hex_strings() {
         let id = Id::from_str(EXAMPLE_SHA256_ID).unwrap();
@@ -93,6 +94,7 @@ mod tests {
         );
     }
 
+    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn serializes_hex_strings() {
         let id = Id::from_str(EXAMPLE_SHA256_ID).unwrap();

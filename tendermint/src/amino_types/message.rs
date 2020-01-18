@@ -15,7 +15,7 @@ pub trait Message: prost_amino::Message {
         Self: Sized,
     {
         let mut res = Vec::with_capacity(self.encoded_len());
-        self.encode(&mut res).unwrap();
+        self.encode(&mut res).expect("Message encoding failed");
         res
     }
 
@@ -30,7 +30,8 @@ pub trait Message: prost_amino::Message {
         let len = self.encoded_len();
         let mut res =
             Vec::with_capacity(len + encoded_len_varint(len.try_into().expect("length overflow")));
-        self.encode_length_delimited(&mut res).unwrap();
+        self.encode_length_delimited(&mut res)
+            .expect("Message encoding failed");
         res
     }
 }
