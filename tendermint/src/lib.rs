@@ -34,7 +34,7 @@
     clippy::option_expect_used,
     clippy::result_expect_used
 )]
-#![deny(clippy::result_unwrap_used)]
+#![deny(clippy::unreachable)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
     html_root_url = "https://docs.rs/tendermint/0.11.0"

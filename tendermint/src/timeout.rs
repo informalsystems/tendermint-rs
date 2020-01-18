@@ -32,6 +32,11 @@ impl FromStr for Timeout {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        enum Unit {
+            Milliseconds,
+            Seconds,
+        }
+
         // Timeouts are either 'ms' or 's', and should always end with 's'
         if s.len() < 2 || !s.ends_with('s') {
             return Err(err!(ErrorKind::Parse, "invalid units"));
@@ -39,21 +44,23 @@ impl FromStr for Timeout {
 
         #[allow(clippy::wildcard_enum_match_arm)]
         let units = match s.chars().nth(s.len() - 2) {
-            Some('m') => "ms",
-            Some('0'..='9') => "s",
+            Some('m') => Unit::Milliseconds,
+            Some('0'..='9') => Unit::Seconds,
             _ => return Err(err!(ErrorKind::Parse, "invalid units")),
         };
 
-        let numeric_part = s.chars().take(s.len() - units.len()).collect::<String>();
+        let numeric_part = match units {
+            Unit::Milliseconds => s.chars().take(s.len() - "ms".len()).collect::<String>(),
+            Unit::Seconds => s.chars().take(s.len() - "s".len()).collect::<String>(),
+        };
 
         let numeric_value = numeric_part
             .parse::<u64>()
             .map_err(|e| err!(ErrorKind::Parse, e))?;
 
         let duration = match units {
-            "s" => Duration::from_secs(numeric_value),
-            "ms" => Duration::from_millis(numeric_value),
-            _ => unreachable!(),
+            Unit::Milliseconds => Duration::from_millis(numeric_value),
+            Unit::Seconds => Duration::from_secs(numeric_value),
         };
 
         Ok(Self(duration))
