@@ -31,15 +31,14 @@ all-features = true
 circle-ci = { repository = "interchainio/tendermint-rs" }
 
 [dependencies]
-bytes = "0.4"
-bytes_0_5 = { version = "0.5", package = "bytes" }
+bytes = "0.5"
 chrono = { version = "0.4", features = ["serde"] }
 failure = "0.1"
 getrandom = "0.1"
 http = "0.2"
 hyper = "0.13"
-prost-amino = { git = "https://github.com/tendermint/amino_rs/", branch = "zaki-rename-prost" }
-prost-amino-derive = { git = "https://github.com/tendermint/amino_rs/", branch = "zaki-rename-prost" }
+prost-amino = { git = "https://github.com/tendermint/amino_rs/", branch = "update_bytes" }
+prost-amino-derive = { git = "https://github.com/tendermint/amino_rs/", branch = "update_bytes" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 signatory = { version = "0.17", features = ["ed25519", "ecdsa"] }

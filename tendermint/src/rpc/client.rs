@@ -7,7 +7,7 @@ use crate::{
     rpc::{self, endpoint::*, Error, Response},
     Genesis,
 };
-use bytes_0_5::buf::ext::BufExt;
+use bytes::buf::ext::BufExt;
 use hyper::header;
 
 /// Tendermint RPC client.
