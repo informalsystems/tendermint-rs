@@ -12,7 +12,7 @@ pub const AMINO_NAME: &str = "tendermint/remotesigner/PubKeyRequest";
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/PubKeyResponse"]
 pub struct PubKeyResponse {
-    #[prost(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
+    #[prost_amino(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
     pub pub_key_ed25519: Vec<u8>,
 }
 
@@ -45,7 +45,6 @@ impl From<PublicKey> for PubKeyResponse {
 mod tests {
     use super::*;
     use prost::Message;
-    use std::error::Error;
 
     #[test]
     fn test_empty_pubkey_msg() {
@@ -86,9 +85,9 @@ mod tests {
 
         assert_eq!(got, want);
 
-        match PubKeyRequest::decode(&want) {
+        match PubKeyRequest::decode(want.as_ref()) {
             Ok(have) => assert_eq!(have, msg),
-            Err(err) => panic!(err.description().to_string()),
+            Err(err) => panic!(err.to_string()),
         }
     }
 
@@ -128,7 +127,7 @@ mod tests {
 
         assert_eq!(got, encoded);
 
-        match PubKeyResponse::decode(&encoded) {
+        match PubKeyResponse::decode(encoded.as_ref()) {
             Ok(have) => assert_eq!(have, msg),
             Err(err) => panic!(err),
         }

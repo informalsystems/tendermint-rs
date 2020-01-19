@@ -22,21 +22,21 @@ const VALIDATOR_ADDR_SIZE: usize = 20;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Vote {
-    #[prost(uint32, tag = "1")]
+    #[prost_amino(uint32, tag = "1")]
     pub vote_type: u32,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub height: i64,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub round: i64,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub block_id: Option<BlockId>,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub timestamp: Option<TimeMsg>,
-    #[prost(bytes)]
+    #[prost_amino(bytes)]
     pub validator_address: Vec<u8>,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub validator_index: i64,
-    #[prost(bytes)]
+    #[prost_amino(bytes)]
     pub signature: Vec<u8>,
 }
 
@@ -81,32 +81,32 @@ pub const AMINO_NAME: &str = "tendermint/remotesigner/SignVoteRequest";
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/SignVoteRequest"]
 pub struct SignVoteRequest {
-    #[prost(message, tag = "1")]
+    #[prost_amino(message, tag = "1")]
     pub vote: Option<Vote>,
 }
 
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/SignedVoteResponse"]
 pub struct SignedVoteResponse {
-    #[prost(message, tag = "1")]
+    #[prost_amino(message, tag = "1")]
     pub vote: Option<Vote>,
-    #[prost(message, tag = "2")]
+    #[prost_amino(message, tag = "2")]
     pub err: Option<RemoteError>,
 }
 
 #[derive(Clone, PartialEq, Message)]
 pub struct CanonicalVote {
-    #[prost(uint32, tag = "1")]
+    #[prost_amino(uint32, tag = "1")]
     pub vote_type: u32,
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     pub height: i64,
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     pub round: i64,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub block_id: Option<CanonicalBlockId>,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub timestamp: Option<TimeMsg>,
-    #[prost(string)]
+    #[prost_amino(string)]
     pub chain_id: String,
 }
 
@@ -307,7 +307,7 @@ mod tests {
             113, 134, 241, 104, 95, 33, 242, 72, 42, 244, 251, 52, 70, 168, 75, 53, 56, 213, 187,
             3,
         ];
-        let svr = SignVoteRequest::decode(got.clone()).unwrap();
+        let svr = SignVoteRequest::decode(got.as_ref()).unwrap();
         println!("got back: {:?}", svr);
         assert_eq!(got, want);
     }
@@ -447,7 +447,7 @@ mod tests {
         };
         let mut got = vec![];
         let _have = vote.encode(&mut got);
-        let v = Vote::decode(&got).unwrap();
+        let v = Vote::decode(got.as_ref()).unwrap();
 
         assert_eq!(v, vote);
         // SignVoteRequest
@@ -456,7 +456,7 @@ mod tests {
             let mut got = vec![];
             let _have = svr.encode(&mut got);
 
-            let svr2 = SignVoteRequest::decode(&got).unwrap();
+            let svr2 = SignVoteRequest::decode(got.as_ref()).unwrap();
             assert_eq!(svr, svr2);
         }
     }
@@ -495,7 +495,7 @@ mod tests {
             signature: vec![],
         };
         let want = SignVoteRequest { vote: Some(vote) };
-        match SignVoteRequest::decode(&encoded) {
+        match SignVoteRequest::decode(encoded.as_ref()) {
             Ok(have) => {
                 assert_eq!(have, want);
             }
