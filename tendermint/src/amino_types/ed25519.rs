@@ -85,7 +85,7 @@ mod tests {
 
         assert_eq!(got, want);
 
-        match PubKeyRequest::decode(&want) {
+        match PubKeyRequest::decode(want.as_ref()) {
             Ok(have) => assert_eq!(have, msg),
             Err(err) => panic!(err.to_string()),
         }
@@ -127,7 +127,7 @@ mod tests {
 
         assert_eq!(got, encoded);
 
-        match PubKeyResponse::decode(&encoded) {
+        match PubKeyResponse::decode(encoded.as_ref()) {
             Ok(have) => assert_eq!(have, msg),
             Err(err) => panic!(err),
         }

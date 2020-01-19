@@ -291,7 +291,7 @@ mod tests {
             242, 227, 236, 2,
         ];
 
-        match SignProposalRequest::decode(&data) {
+        match SignProposalRequest::decode(data.as_ref()) {
             Ok(have) => assert_eq!(have, want),
             Err(err) => panic!(err.to_string()),
         }

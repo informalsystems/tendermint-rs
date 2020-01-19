@@ -307,7 +307,7 @@ mod tests {
             113, 134, 241, 104, 95, 33, 242, 72, 42, 244, 251, 52, 70, 168, 75, 53, 56, 213, 187,
             3,
         ];
-        let svr = SignVoteRequest::decode(got.clone()).unwrap();
+        let svr = SignVoteRequest::decode(got.as_ref()).unwrap();
         println!("got back: {:?}", svr);
         assert_eq!(got, want);
     }
@@ -447,7 +447,7 @@ mod tests {
         };
         let mut got = vec![];
         let _have = vote.encode(&mut got);
-        let v = Vote::decode(&got).unwrap();
+        let v = Vote::decode(got.as_ref()).unwrap();
 
         assert_eq!(v, vote);
         // SignVoteRequest
@@ -456,7 +456,7 @@ mod tests {
             let mut got = vec![];
             let _have = svr.encode(&mut got);
 
-            let svr2 = SignVoteRequest::decode(&got).unwrap();
+            let svr2 = SignVoteRequest::decode(got.as_ref()).unwrap();
             assert_eq!(svr, svr2);
         }
     }
@@ -495,7 +495,7 @@ mod tests {
             signature: vec![],
         };
         let want = SignVoteRequest { vote: Some(vote) };
-        match SignVoteRequest::decode(&encoded) {
+        match SignVoteRequest::decode(encoded.as_ref()) {
             Ok(have) => {
                 assert_eq!(have, want);
             }
