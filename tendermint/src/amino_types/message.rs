@@ -1,7 +1,7 @@
 use prost_amino::encoding::encoded_len_varint;
 use std::convert::TryInto;
 
-/// Extend the original prost::Message trait with a few helper functions in order to
+/// Extend the original prost_amino::Message trait with a few helper functions in order to
 /// reduce boiler-plate code (and without modifying the prost-amino dependency).
 pub trait AminoMessage: prost_amino::Message {
     /// Directly amino encode a prost-amino message into a freshly created Vec<u8>.

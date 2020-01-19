@@ -1,4 +1,5 @@
 use crate::block::*;
+use prost_amino_derive::Message;
 
 #[derive(Clone, Message)]
 pub struct ConsensusVersion {

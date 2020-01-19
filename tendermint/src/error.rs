@@ -5,7 +5,7 @@ use std::{
     fmt::{self, Display},
     io,
 };
-use {chrono, prost, subtle_encoding};
+use {chrono, prost_amino, subtle_encoding};
 
 /// Create a new error (of a given kind) with a formatted message
 #[allow(unused_macros)]
@@ -89,14 +89,14 @@ impl From<io::Error> for Error {
     }
 }
 
-impl From<prost::DecodeError> for Error {
-    fn from(err: prost::DecodeError) -> Self {
+impl From<prost_amino::DecodeError> for Error {
+    fn from(err: prost_amino::DecodeError) -> Self {
         err!(ErrorKind::Parse, err)
     }
 }
 
-impl From<prost::EncodeError> for Error {
-    fn from(err: prost::EncodeError) -> Self {
+impl From<prost_amino::EncodeError> for Error {
+    fn from(err: prost_amino::EncodeError) -> Self {
         err!(ErrorKind::Parse, err)
     }
 }

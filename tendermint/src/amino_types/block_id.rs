@@ -6,6 +6,7 @@ use crate::{
     hash,
     hash::{Hash, SHA256_HASH_SIZE},
 };
+use prost_amino_derive::Message;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct BlockId {

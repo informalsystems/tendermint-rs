@@ -11,7 +11,8 @@ use crate::{
     error::Error,
 };
 use bytes::BufMut;
-use prost::{EncodeError, Message};
+use prost_amino::{EncodeError, Message};
+use prost_amino_derive::Message;
 use signatory::ed25519;
 use std::convert::TryFrom;
 
@@ -194,7 +195,7 @@ mod tests {
     use super::*;
     use crate::amino_types::block_id::PartsSetHeader;
     use chrono::{DateTime, Utc};
-    use prost::Message;
+    use prost_amino::Message;
 
     #[test]
     fn test_serialization() {
