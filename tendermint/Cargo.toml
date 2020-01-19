@@ -41,9 +41,9 @@ prost-amino = "0.5"
 prost-amino-derive = "0.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
-signatory = { version = "0.17", features = ["ed25519", "ecdsa"] }
-signatory-dalek = "0.17"
-signatory-secp256k1 = "0.17"
+signatory = { version = "0.18", features = ["ed25519", "ecdsa"] }
+signatory-dalek = "0.18"
+signatory-secp256k1 = "0.18"
 sha2 = { version = "0.8", default-features = false }
 subtle = "2"
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
