@@ -1,5 +1,6 @@
 //! Tendermint validators
 
+use prost_amino_derive::Message;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use signatory::{
     ed25519,

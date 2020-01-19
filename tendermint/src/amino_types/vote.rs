@@ -14,7 +14,8 @@ use crate::{
     vote,
 };
 use bytes::BufMut;
-use prost::{error::EncodeError, Message};
+use prost_amino::{error::EncodeError, Message};
+use prost_amino_derive::Message;
 use signatory::ed25519;
 use std::convert::TryFrom;
 

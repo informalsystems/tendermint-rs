@@ -1,3 +1,5 @@
+use prost_amino_derive::Message;
+
 #[derive(Clone, PartialEq, Message)]
 pub struct RemoteError {
     #[prost_amino(sint32, tag = "1")]

@@ -1,4 +1,5 @@
 use crate::public_key::PublicKey;
+use prost_amino_derive::Message;
 use signatory::ed25519::PUBLIC_KEY_SIZE;
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
@@ -44,7 +45,7 @@ impl From<PublicKey> for PubKeyResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use prost::Message;
+    use prost_amino::Message;
 
     #[test]
     fn test_empty_pubkey_msg() {

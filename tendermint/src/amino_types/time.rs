@@ -5,6 +5,7 @@ use crate::{
     time::{ParseTimestamp, Time},
 };
 use chrono::{TimeZone, Utc};
+use prost_amino_derive::Message;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
