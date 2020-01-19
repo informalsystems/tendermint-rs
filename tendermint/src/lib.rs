@@ -26,7 +26,6 @@ extern crate prost_amino as prost;
 #[allow(unused_extern_crates)]
 #[macro_use]
 extern crate prost_amino_derive as prost_derive;
-extern crate bytes;
 
 #[macro_use]
 pub mod error;
