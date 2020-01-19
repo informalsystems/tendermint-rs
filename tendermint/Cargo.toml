@@ -37,8 +37,8 @@ failure = "0.1"
 getrandom = "0.1"
 http = "0.2"
 hyper = "0.13"
-prost-amino = { git = "https://github.com/tendermint/amino_rs/", branch = "update_bytes" }
-prost-amino-derive = { git = "https://github.com/tendermint/amino_rs/", branch = "update_bytes" }
+prost-amino = "0.5"
+prost-amino-derive = "0.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 signatory = { version = "0.17", features = ["ed25519", "ecdsa"] }
