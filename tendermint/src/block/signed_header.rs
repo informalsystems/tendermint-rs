@@ -22,7 +22,7 @@ impl lite::SignedHeader for SignedHeader {
     }
 
     fn commit(&self) -> &Self {
-        &self
+        self
     }
 }
 
