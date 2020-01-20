@@ -125,7 +125,7 @@ impl lite::Header for Header {
         fields_bytes.push(self.evidence_hash.as_ref().map_or(vec![], encode_hash));
         fields_bytes.push(bytes_enc(self.proposer_address.as_bytes()));
 
-        Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
+        Hash::Sha256(simple_hash_from_byte_vectors(&fields_bytes))
     }
 }
 

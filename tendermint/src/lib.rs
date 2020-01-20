@@ -19,7 +19,7 @@
     clippy::pedantic,
     clippy::restriction
 )]
-#![deny(clippy::panic)]
+#![deny(clippy::needless_pass_by_value)]
 // TODO(xla): Review all uses of expect and try to rework into proper error handling, this crate
 // should ideally never panic.
 #![allow(

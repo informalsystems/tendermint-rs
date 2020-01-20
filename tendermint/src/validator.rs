@@ -43,7 +43,7 @@ impl lite::ValidatorSet for Set {
     /// Compute the Merkle root of the validator set
     fn hash(&self) -> Hash {
         let validator_bytes: Vec<Vec<u8>> = self.validators.iter().map(Info::hash_bytes).collect();
-        Hash::Sha256(merkle::simple_hash_from_byte_vectors(validator_bytes))
+        Hash::Sha256(merkle::simple_hash_from_byte_vectors(&validator_bytes))
     }
 
     fn total_power(&self) -> u64 {

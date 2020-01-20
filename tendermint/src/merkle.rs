@@ -11,8 +11,8 @@ pub type Hash = [u8; HASH_SIZE];
 /// Compute a simple Merkle root from vectors of arbitrary byte vectors.
 /// The leaves of the tree are the bytes of the given byte vectors in
 /// the given order.
-pub fn simple_hash_from_byte_vectors(byte_vecs: Vec<Vec<u8>>) -> Hash {
-    simple_hash_from_byte_slices_inner(byte_vecs.as_slice())
+pub fn simple_hash_from_byte_vectors(byte_vecs: &[Vec<u8>]) -> Hash {
+    simple_hash_from_byte_slices_inner(byte_vecs)
 }
 
 /// Recurse into subtrees.
@@ -109,7 +109,7 @@ mod tests {
         let empty_leaf_root = &hex::decode(empty_leaf_root_hex).unwrap();
         let empty_tree: Vec<Vec<u8>> = vec![vec![]; 1];
 
-        let root = simple_hash_from_byte_vectors(empty_tree);
+        let root = simple_hash_from_byte_vectors(&empty_tree);
         assert_eq!(empty_leaf_root, &root);
     }
 
@@ -122,7 +122,7 @@ mod tests {
         let leaf_root = &hex::decode(leaf_root_hex).unwrap();
         let leaf_tree: Vec<Vec<u8>> = vec![leaf_string.as_bytes().to_vec(); 1];
 
-        let root = simple_hash_from_byte_vectors(leaf_tree);
+        let root = simple_hash_from_byte_vectors(&leaf_tree);
         assert_eq!(leaf_root, &root);
     }
 
