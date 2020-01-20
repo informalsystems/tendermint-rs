@@ -1,7 +1,8 @@
 //! Tendermint validators
 
 use crate::amino_types::AminoMessage;
-use crate::{account, lite, merkle, vote, Hash, PublicKey};
+use crate::{account, vote, PublicKey};
+use prost_amino_derive::Message;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use signatory::{
     ed25519,
@@ -30,34 +31,17 @@ impl Set {
         Self { validators: vals }
     }
 
+    /// Get Info of the underlying validators.
+    pub fn validators(&self) -> &Vec<Info> {
+        &self.validators
+    }
+
     /// Returns the validator with the given Id if its in the Set.
     pub fn validator(&self, val_id: account::Id) -> Option<Info> {
         self.validators
             .iter()
             .find(|val| val.address == val_id)
             .cloned()
-    }
-}
-
-impl lite::ValidatorSet for Set {
-    /// Compute the Merkle root of the validator set
-    fn hash(&self) -> Hash {
-        let validator_bytes: Vec<Vec<u8>> = self.validators.iter().map(Info::hash_bytes).collect();
-        Hash::Sha256(merkle::simple_hash_from_byte_vectors(&validator_bytes))
-    }
-
-    fn total_power(&self) -> u64 {
-        self.validators.iter().fold(0_u64, |total, val_info| {
-            total + val_info.voting_power.value()
-        })
-    }
-
-    fn len(&self) -> usize {
-        self.validators.len()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.validators.is_empty()
     }
 }
 
@@ -99,12 +83,6 @@ impl Info {
         }
     }
 
-    /// Returns the bytes to be hashed into the Merkle tree - the leaves of the tree. this is an
-    /// amino encoding of the pubkey and voting power, so it includes the pubkey's amino prefix.
-    fn hash_bytes(&self) -> Vec<u8> {
-        AminoMessage::bytes_vec(&InfoHashable::from(self))
-    }
-
     /// Return the voting power of the validator.
     pub const fn power(&self) -> u64 {
         self.voting_power.value()
@@ -140,10 +118,10 @@ impl From<PublicKey> for account::Id {
 #[derive(Clone, PartialEq, Message)]
 struct InfoHashable {
     /// Validator public key.
-    #[prost(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
+    #[prost_amino(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
     pub pub_key: Vec<u8>,
     /// Validator voting power.
-    #[prost(uint64, tag = "2")]
+    #[prost_amino(uint64, tag = "2")]
     voting_power: u64,
 }
 
@@ -154,6 +132,15 @@ impl From<&Info> for InfoHashable {
             pub_key: info.pub_key.as_bytes(),
             voting_power: info.voting_power.value(),
         }
+    }
+}
+
+impl Info {
+    /// Returns the bytes to be hashed into the Merkle tree -
+    /// the leaves of the tree. this is an amino encoding of the
+    /// pubkey and voting power, so it includes the pubkey's amino prefix.
+    pub fn hash_bytes(&self) -> Vec<u8> {
+        AminoMessage::bytes_vec(&InfoHashable::from(self))
     }
 }
 
@@ -232,9 +219,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::lite::ValidatorSet;
     use subtle_encoding::hex;
+
+    use crate::lite::ValidatorSet;
+
+    use super::*;
 
     // make a validator from a hex ed25519 pubkey and a voting power
     fn make_validator(pk_string: &str, vp: u64) -> Info {

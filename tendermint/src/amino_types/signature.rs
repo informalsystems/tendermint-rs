@@ -1,7 +1,7 @@
 use super::validate::ValidationError;
 use crate::{chain, consensus};
 use bytes::BufMut;
-use prost::{DecodeError, EncodeError};
+use prost_amino::{DecodeError, EncodeError};
 use signatory::ed25519;
 
 /// Amino messages which are signable within a Tendermint network

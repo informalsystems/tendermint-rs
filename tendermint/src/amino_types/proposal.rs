@@ -10,25 +10,26 @@ use crate::{
     error::Error,
 };
 use bytes::BufMut;
-use prost::{EncodeError, Message};
+use prost_amino::{EncodeError, Message};
+use prost_amino_derive::Message;
 use signatory::ed25519;
 use std::convert::TryFrom;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
-    #[prost(uint32, tag = "1")]
+    #[prost_amino(uint32, tag = "1")]
     pub msg_type: u32,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub height: i64,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub round: i64,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub pol_round: i64,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub block_id: Option<BlockId>,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub timestamp: Option<TimeMsg>,
-    #[prost(bytes)]
+    #[prost_amino(bytes)]
     pub signature: Vec<u8>,
 }
 
@@ -44,26 +45,26 @@ pub const AMINO_NAME: &str = "tendermint/remotesigner/SignProposalRequest";
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/SignProposalRequest"]
 pub struct SignProposalRequest {
-    #[prost(message, tag = "1")]
+    #[prost_amino(message, tag = "1")]
     pub proposal: Option<Proposal>,
 }
 
 #[derive(Clone, PartialEq, Message)]
 struct CanonicalProposal {
-    #[prost(uint32, tag = "1")]
+    #[prost_amino(uint32, tag = "1")]
     msg_type: u32, /* this is a byte in golang, which is a varint encoded UInt8 (using amino's
                     * EncodeUvarint) */
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     height: i64,
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     round: i64,
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     pol_round: i64,
-    #[prost(message)]
+    #[prost_amino(message)]
     block_id: Option<CanonicalBlockId>,
-    #[prost(message)]
+    #[prost_amino(message)]
     timestamp: Option<TimeMsg>,
-    #[prost(string)]
+    #[prost_amino(string)]
     pub chain_id: String,
 }
 
@@ -82,9 +83,9 @@ impl block::ParseHeight for CanonicalProposal {
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/SignedProposalResponse"]
 pub struct SignedProposalResponse {
-    #[prost(message, tag = "1")]
+    #[prost_amino(message, tag = "1")]
     pub proposal: Option<Proposal>,
-    #[prost(message, tag = "2")]
+    #[prost_amino(message, tag = "2")]
     pub err: Option<RemoteError>,
 }
 
@@ -194,7 +195,7 @@ mod tests {
     use super::*;
     use crate::amino_types::block_id::PartsSetHeader;
     use chrono::{DateTime, Utc};
-    use prost::Message;
+    use prost_amino::Message;
 
     #[test]
     fn test_serialization() {
@@ -291,7 +292,7 @@ mod tests {
             242, 227, 236, 2,
         ];
 
-        let have = SignProposalRequest::decode(&data).unwrap();
+        let have = SignProposalRequest::decode(data.as_ref()).unwrap();
         assert_eq!(have, want);
     }
 }

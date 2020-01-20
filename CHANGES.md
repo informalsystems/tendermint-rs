@@ -1,3 +1,9 @@
+## Pending [0.12.0] (2019-12-11)
+
+Dependencies
+- Update to bytes `0.5` and amino_rs `0.5`.
+- Tokens for amino_rs are now fully non-conflicting with prost. Allowing both to be used together 
+
 
 ## [0.11.0] (2019-12-11)
 

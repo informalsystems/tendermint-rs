@@ -35,13 +35,8 @@
 )]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
-    html_root_url = "https://docs.rs/tendermint/0.11.0"
+    html_root_url = "https://docs.rs/tendermint/0.12.0-rc0"
 )]
-
-extern crate prost_amino as prost;
-
-#[macro_use]
-extern crate prost_amino_derive as prost_derive;
 
 #[macro_use]
 pub mod error;
@@ -59,6 +54,7 @@ pub mod genesis;
 pub mod hash;
 #[allow(dead_code, missing_docs)]
 pub mod lite;
+pub mod lite_impl;
 pub mod merkle;
 mod moniker;
 pub mod net;

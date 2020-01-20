@@ -8,13 +8,14 @@
 //! // looks using the types and methods in this crate/module.
 //! ```
 
+use std::cmp::Ordering;
+use std::time::{Duration, SystemTime};
+
 use crate::block::Height;
 use crate::lite::{
     Commit, Error, Header, Requester, SignedHeader, Store, TrustThreshold, TrustedState,
     ValidatorSet,
 };
-use std::cmp::Ordering;
-use std::time::{Duration, SystemTime};
 
 /// Returns an error if the header has expired according to the given
 /// `trusting_period` and current time. If so, the verifier must be reset subjectively.
@@ -63,7 +64,7 @@ where
     }
 
     // ensure the validator size matches the commit size
-    // NOTE: this is commit structure specifc and should be
+    // NOTE: this is commit structure specific and should be
     // hidden from the light client ...
     if vals.len() != commit.votes_len() {
         return Err(Error::InvalidCommitLength);
@@ -141,6 +142,7 @@ where
     // validate the untrusted header against its commit, vals, and next_vals
     let untrusted_header = untrusted_sh.header();
     let untrusted_commit = untrusted_sh.commit();
+
     validate_untrusted(
         untrusted_header,
         untrusted_commit,
@@ -154,6 +156,9 @@ where
     let trusted_header = trusted_state.last_header().header();
     let trusted_height = trusted_header.height();
     let untrusted_height = untrusted_sh.header().height();
+
+    // TODO: ensure the untrusted_header.bft_time() > trusted_header.bft_time()
+
     match untrusted_height.cmp(&trusted_height.increment()) {
         Ordering::Less => return Err(Error::NonIncreasingHeight),
         Ordering::Equal => {
@@ -263,6 +268,9 @@ where
     // Note this would be stronger than checking that the untrusted
     // header is within the trusting period, as it could still diverge
     // significantly from `now`.
+    // NOTE: we actually have to do this for every header we fetch,
+    // We do check bft_time is monotonic, but that check might happen too late.
+    // So every header we fetch must be checked to be less than now+X
 
     // inner recursive function which assumes
     // trusting_period check is already done.
@@ -337,10 +345,12 @@ where
 #[allow(clippy::panic)]
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{hash::Algorithm, Hash};
     use serde::Serialize;
     use sha2::{Digest, Sha256};
+
+    use crate::{hash::Algorithm, Hash};
+
+    use super::*;
 
     #[derive(Clone, Debug, Serialize)]
     struct MockHeader {
@@ -483,7 +493,7 @@ mod tests {
         }
     }
 
-    // uses refs because the trait defines `new` to take refs ...
+    #[derive(Clone)]
     struct MockState {
         header: MockSignedHeader,
         vals: MockValSet,

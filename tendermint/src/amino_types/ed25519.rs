@@ -1,4 +1,5 @@
 use crate::public_key::PublicKey;
+use prost_amino_derive::Message;
 use signatory::ed25519::PUBLIC_KEY_SIZE;
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
@@ -12,7 +13,7 @@ pub const AMINO_NAME: &str = "tendermint/remotesigner/PubKeyRequest";
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/PubKeyResponse"]
 pub struct PubKeyResponse {
-    #[prost(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
+    #[prost_amino(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
     pub pub_key_ed25519: Vec<u8>,
 }
 
@@ -47,7 +48,7 @@ impl From<PublicKey> for PubKeyResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use prost::Message;
+    use prost_amino::Message;
 
     #[test]
     fn test_empty_pubkey_msg() {
@@ -88,7 +89,7 @@ mod tests {
 
         assert_eq!(got, want);
 
-        let have = PubKeyRequest::decode(&want).unwrap();
+        let have = PubKeyRequest::decode(want.as_ref()).unwrap();
         assert_eq!(have, msg);
     }
 
@@ -128,7 +129,7 @@ mod tests {
 
         assert_eq!(got, encoded);
 
-        let have = PubKeyResponse::decode(&encoded).unwrap();
+        let have = PubKeyResponse::decode(encoded.as_ref()).unwrap();
         assert_eq!(have, msg);
     }
 

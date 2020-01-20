@@ -12,7 +12,8 @@ use crate::{
     vote,
 };
 use bytes::BufMut;
-use prost::{error::EncodeError, Message};
+use prost_amino::{error::EncodeError, Message};
+use prost_amino_derive::Message;
 use signatory::ed25519;
 use std::convert::TryFrom;
 
@@ -20,21 +21,21 @@ const VALIDATOR_ADDR_SIZE: usize = 20;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Vote {
-    #[prost(uint32, tag = "1")]
+    #[prost_amino(uint32, tag = "1")]
     pub vote_type: u32,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub height: i64,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub round: i64,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub block_id: Option<BlockId>,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub timestamp: Option<TimeMsg>,
-    #[prost(bytes)]
+    #[prost_amino(bytes)]
     pub validator_address: Vec<u8>,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub validator_index: i64,
-    #[prost(bytes)]
+    #[prost_amino(bytes)]
     pub signature: Vec<u8>,
 }
 
@@ -58,9 +59,9 @@ impl From<&vote::Vote> for Vote {
             vote_type: vote.vote_type.to_u32(),
             height: i64::try_from(vote.height.value()).expect("overflow"),
             round: i64::try_from(vote.round).expect("overflow"),
-            block_id: Some(BlockId {
-                hash: vote.block_id.hash.as_bytes().to_vec(),
-                parts_header: vote.block_id.parts.as_ref().map(PartsSetHeader::from),
+            block_id: vote.block_id.as_ref().map(|block_id| BlockId {
+                hash: block_id.hash.as_bytes().to_vec(),
+                parts_header: block_id.parts.as_ref().map(PartsSetHeader::from),
             }),
             timestamp: Some(TimeMsg::from(vote.timestamp)),
             validator_address: vote.validator_address.as_bytes().to_vec(),
@@ -81,32 +82,32 @@ pub const AMINO_NAME: &str = "tendermint/remotesigner/SignVoteRequest";
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/SignVoteRequest"]
 pub struct SignVoteRequest {
-    #[prost(message, tag = "1")]
+    #[prost_amino(message, tag = "1")]
     pub vote: Option<Vote>,
 }
 
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/SignedVoteResponse"]
 pub struct SignedVoteResponse {
-    #[prost(message, tag = "1")]
+    #[prost_amino(message, tag = "1")]
     pub vote: Option<Vote>,
-    #[prost(message, tag = "2")]
+    #[prost_amino(message, tag = "2")]
     pub err: Option<RemoteError>,
 }
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Canonical {
-    #[prost(uint32, tag = "1")]
+    #[prost_amino(uint32, tag = "1")]
     pub vote_type: u32,
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     pub height: i64,
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     pub round: i64,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub block_id: Option<CanonicalBlockId>,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub timestamp: Option<TimeMsg>,
-    #[prost(string)]
+    #[prost_amino(string)]
     pub chain_id: String,
 }
 
@@ -447,7 +448,7 @@ mod tests {
         };
         let mut got = vec![];
         let _have = vote.encode(&mut got);
-        let v = Vote::decode(&got).unwrap();
+        let v = Vote::decode(got.as_ref()).unwrap();
 
         assert_eq!(v, vote);
         // SignVoteRequest
@@ -456,7 +457,7 @@ mod tests {
             let mut got = vec![];
             let _have = svr.encode(&mut got);
 
-            let svr2 = SignVoteRequest::decode(&got).unwrap();
+            let svr2 = SignVoteRequest::decode(got.as_ref()).unwrap();
             assert_eq!(svr, svr2);
         }
     }
@@ -496,7 +497,7 @@ mod tests {
             signature: vec![],
         };
         let want = SignVoteRequest { vote: Some(vote) };
-        let have = SignVoteRequest::decode(&encoded).unwrap();
+        let have = SignVoteRequest::decode(encoded.as_ref()).unwrap();
         assert_eq!(have, want);
     }
 }

@@ -1,13 +1,14 @@
 use crate::block::header;
+use prost_amino_derive::Message;
 
 #[derive(Clone, Message)]
 pub struct Consensus {
     /// Block version
-    #[prost(uint64, tag = "1")]
+    #[prost_amino(uint64, tag = "1")]
     pub block: u64,
 
     /// App version
-    #[prost(uint64, tag = "2")]
+    #[prost_amino(uint64, tag = "2")]
     pub app: u64,
 }
 
