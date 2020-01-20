@@ -443,9 +443,9 @@ mod tests {
             // we only care about the Somes.
             // if there's a signer thats not in the val set,
             // we can't detect it...
-            for signer_opt in self.vals.iter() {
+            for signer_opt in &self.vals {
                 if let Some(signer) = signer_opt {
-                    for val in vals.vals.iter() {
+                    for val in &vals.vals {
                         if signer == val {
                             power += 1
                         }
