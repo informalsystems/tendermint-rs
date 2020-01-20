@@ -19,7 +19,7 @@
     clippy::pedantic,
     clippy::restriction
 )]
-#![deny(clippy::option_unwrap_used)]
+#![deny(clippy::panic)]
 // TODO(xla): Review all uses of expect and try to rework into proper error handling, this crate
 // should ideally never panic.
 #![allow(
@@ -34,18 +34,13 @@
     clippy::option_expect_used,
     clippy::result_expect_used
 )]
-#![deny(clippy::panic)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
     html_root_url = "https://docs.rs/tendermint/0.11.0"
 )]
 
-// NOTE(EB): can't figure out how to easily remove the extern crate per Rust2018 upgrade ...
-#[allow(unused_extern_crates)]
 extern crate prost_amino as prost;
 
-// NOTE(EB): can't figure out how to easily remove the extern crate per Rust2018 upgrade ...
-#[allow(unused_extern_crates)]
 #[macro_use]
 extern crate prost_amino_derive as prost_derive;
 

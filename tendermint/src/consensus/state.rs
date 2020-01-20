@@ -66,6 +66,7 @@ impl PartialOrd for State {
     }
 }
 
+#[allow(clippy::panic)]
 #[cfg(test)]
 mod tests {
     use super::State;

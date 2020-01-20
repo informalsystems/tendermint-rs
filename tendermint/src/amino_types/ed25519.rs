@@ -43,11 +43,11 @@ impl From<PublicKey> for PubKeyResponse {
     }
 }
 
+#[allow(clippy::result_unwrap_used)]
 #[cfg(test)]
 mod tests {
     use super::*;
     use prost::Message;
-    use std::error::Error;
 
     #[test]
     fn test_empty_pubkey_msg() {
@@ -88,10 +88,8 @@ mod tests {
 
         assert_eq!(got, want);
 
-        match PubKeyRequest::decode(&want) {
-            Ok(have) => assert_eq!(have, msg),
-            Err(err) => panic!(err.description().to_string()),
-        }
+        let have = PubKeyRequest::decode(&want).unwrap();
+        assert_eq!(have, msg);
     }
 
     #[test]
@@ -130,10 +128,8 @@ mod tests {
 
         assert_eq!(got, encoded);
 
-        match PubKeyResponse::decode(&encoded) {
-            Ok(have) => assert_eq!(have, msg),
-            Err(err) => panic!(err),
-        }
+        let have = PubKeyResponse::decode(&encoded).unwrap();
+        assert_eq!(have, msg);
     }
 
     #[test]

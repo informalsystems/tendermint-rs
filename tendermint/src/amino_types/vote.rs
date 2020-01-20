@@ -494,11 +494,7 @@ mod tests {
             signature: vec![],
         };
         let want = SignVoteRequest { vote: Some(vote) };
-        match SignVoteRequest::decode(&encoded) {
-            Ok(have) => {
-                assert_eq!(have, want);
-            }
-            Err(err) => panic!(err.to_string()),
-        }
+        let have = SignVoteRequest::decode(&encoded).unwrap();
+        assert_eq!(have, want);
     }
 }

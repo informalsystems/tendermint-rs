@@ -334,6 +334,8 @@ where
     _verify_and_update_bisection(untrusted_height, trust_threshold, req, store)
 }
 
+#[allow(clippy::panic)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{hash::Algorithm, Hash};

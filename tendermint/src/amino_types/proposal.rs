@@ -188,15 +188,14 @@ impl ConsensusMessage for Proposal {
     }
 }
 
+#[allow(clippy::result_unwrap_used)]
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::amino_types::block_id::PartsSetHeader;
     use chrono::{DateTime, Utc};
     use prost::Message;
-    use std::error::Error;
 
-    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn test_serialization() {
         let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
@@ -256,7 +255,6 @@ mod tests {
         assert_eq!(got, want)
     }
 
-    #[allow(clippy::result_unwrap_used)]
     #[test]
     fn test_deserialization() {
         let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
@@ -293,9 +291,7 @@ mod tests {
             242, 227, 236, 2,
         ];
 
-        match SignProposalRequest::decode(&data) {
-            Ok(have) => assert_eq!(have, want),
-            Err(err) => panic!(err.description().to_string()),
-        }
+        let have = SignProposalRequest::decode(&data).unwrap();
+        assert_eq!(have, want);
     }
 }
