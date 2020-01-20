@@ -9,7 +9,7 @@ impl lite::ValidatorSet for validator::Set {
         let validator_bytes: Vec<Vec<u8>> = self
             .validators()
             .iter()
-            .map(|validator| validator.hash_bytes())
+            .map(validator::Info::hash_bytes)
             .collect();
         Hash::Sha256(merkle::simple_hash_from_byte_vectors(&validator_bytes))
     }

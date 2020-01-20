@@ -5,15 +5,15 @@ use crate::validator::Set;
 use crate::{block, hash, lite, vote};
 
 impl lite::SignedHeader for block::signed_header::SignedHeader {
+    type Commit = Self;
     type Header = block::Header;
-    type Commit = block::signed_header::SignedHeader;
 
     fn header(&self) -> &block::Header {
         &self.header
     }
 
     fn commit(&self) -> &Self {
-        &self
+        self
     }
 }
 

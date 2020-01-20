@@ -32,7 +32,7 @@ impl Set {
     }
 
     /// Get Info of the underlying validators.
-    pub fn validators(&self) -> &Vec<Info> {
+    pub const fn validators(&self) -> &Vec<Info> {
         &self.validators
     }
 
@@ -81,6 +81,13 @@ impl Info {
             voting_power: vp,
             proposer_priority: None,
         }
+    }
+
+    /// Returns the bytes to be hashed into the Merkle tree -
+    /// the leaves of the tree. this is an amino encoding of the
+    /// pubkey and voting power, so it includes the pubkey's amino prefix.
+    pub fn hash_bytes(&self) -> Vec<u8> {
+        AminoMessage::bytes_vec(&InfoHashable::from(self))
     }
 
     /// Return the voting power of the validator.
@@ -132,15 +139,6 @@ impl From<&Info> for InfoHashable {
             pub_key: info.pub_key.as_bytes(),
             voting_power: info.voting_power.value(),
         }
-    }
-}
-
-impl Info {
-    /// Returns the bytes to be hashed into the Merkle tree -
-    /// the leaves of the tree. this is an amino encoding of the
-    /// pubkey and voting power, so it includes the pubkey's amino prefix.
-    pub fn hash_bytes(&self) -> Vec<u8> {
-        AminoMessage::bytes_vec(&InfoHashable::from(self))
     }
 }
 

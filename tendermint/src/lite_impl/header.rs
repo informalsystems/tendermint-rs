@@ -24,6 +24,7 @@ impl lite::Header for block::Header {
         self.next_validators_hash
     }
 
+    // TODO(xla): This is fallabile and therefore should return a Result.
     fn hash(&self) -> Hash {
         // Note that if there is an encoding problem this will
         // panic (as the golang code would):
@@ -60,7 +61,8 @@ impl lite::Header for block::Header {
 
 fn bytes_enc(bytes: &[u8]) -> Vec<u8> {
     let mut chain_id_enc = vec![];
-    prost_amino::encode_length_delimiter(bytes.len(), &mut chain_id_enc).unwrap();
+    prost_amino::encode_length_delimiter(bytes.len(), &mut chain_id_enc)
+        .expect("amino bytes encoding failed");
     chain_id_enc.append(&mut bytes.to_vec());
     chain_id_enc
 }
