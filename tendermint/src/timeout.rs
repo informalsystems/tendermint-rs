@@ -33,7 +33,9 @@ impl FromStr for Timeout {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         enum Unit {
+            // Represents Milliseconds.
             Milliseconds,
+            // Represents Seconds.
             Seconds,
         }
 
