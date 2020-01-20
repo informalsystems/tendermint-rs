@@ -6,6 +6,7 @@ use crate::{
     hash,
     hash::{Hash, SHA256_HASH_SIZE},
 };
+use std::convert::TryFrom;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct BlockId {
@@ -93,9 +94,14 @@ impl PartsSetHeader {
     }
 }
 
+// TODO(xla): Rework into TryFrom.
+#[allow(clippy::fallible_impl_from)]
 impl From<&parts::Header> for PartsSetHeader {
     fn from(parts: &parts::Header) -> Self {
-        Self::new(parts.total as i64, parts.hash.as_bytes().to_vec())
+        Self::new(
+            i64::try_from(parts.total).expect("overflow"),
+            parts.hash.as_bytes().to_vec(),
+        )
     }
 }
 

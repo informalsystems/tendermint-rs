@@ -12,14 +12,13 @@
     unused_qualifications,
     warnings
 )]
-#![allow(
+#![deny(
     clippy::all,
     clippy::cargo,
     clippy::nursery,
     clippy::pedantic,
     clippy::restriction
 )]
-#![deny(clippy::needless_borrow)]
 // TODO(xla): Review all uses of expect and try to rework into proper error handling, this crate
 // should ideally never panic.
 #![allow(

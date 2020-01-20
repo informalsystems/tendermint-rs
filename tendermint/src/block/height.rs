@@ -69,12 +69,6 @@ impl From<Height> for u64 {
     }
 }
 
-impl From<Height> for i64 {
-    fn from(height: Height) -> Self {
-        height.0 as Self
-    }
-}
-
 impl FromStr for Height {
     type Err = Error;
 

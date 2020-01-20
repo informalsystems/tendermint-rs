@@ -44,6 +44,7 @@ impl NodeKey {
 
     // TODO(xla): Should return a Result or be implemented for all variants.
     /// Get node ID for this keypair
+    #[allow(clippy::unimplemented)]
     pub fn node_id(&self) -> node::Id {
         match &self.public_key() {
             PublicKey::Ed25519(key) => node::Id::from(*key),

@@ -5,6 +5,7 @@ use crate::{
     time::{ParseTimestamp, Time},
 };
 use chrono::{TimeZone, Utc};
+use std::convert::TryFrom;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
@@ -28,12 +29,11 @@ impl ParseTimestamp for Msg {
 #[allow(clippy::fallible_impl_from)]
 impl From<Time> for Msg {
     fn from(ts: Time) -> Self {
-        // TODO: non-panicking method for getting this?
         let duration = ts
             .duration_since(Time::unix_epoch())
             .expect("unable to get duration from epoch");
-        let seconds = duration.as_secs() as i64;
-        let nanos = duration.subsec_nanos() as i32;
+        let seconds = i64::try_from(duration.as_secs()).expect("overflow");
+        let nanos = i32::try_from(duration.subsec_nanos()).expect("overflow");
 
         Self { seconds, nanos }
     }

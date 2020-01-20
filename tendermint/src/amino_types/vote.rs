@@ -50,19 +50,21 @@ impl Vote {
     }
 }
 
+// TODO(xla): Rework into TryFrom.
+#[allow(clippy::fallible_impl_from)]
 impl From<&vote::Vote> for Vote {
     fn from(vote: &vote::Vote) -> Self {
         Self {
             vote_type: vote.vote_type.to_u32(),
-            height: vote.height.value() as i64, // TODO potential overflow :-/
-            round: vote.round as i64,
+            height: i64::try_from(vote.height.value()).expect("overflow"),
+            round: i64::try_from(vote.round).expect("overflow"),
             block_id: Some(BlockId {
                 hash: vote.block_id.hash.as_bytes().to_vec(),
                 parts_header: vote.block_id.parts.as_ref().map(PartsSetHeader::from),
             }),
             timestamp: Some(TimeMsg::from(vote.timestamp)),
             validator_address: vote.validator_address.as_bytes().to_vec(),
-            validator_index: vote.validator_index as i64, // TODO potential overflow :-/
+            validator_index: i64::try_from(vote.validator_index).expect("overflow"),
             signature: vote.signature.as_bytes().to_vec(),
         }
     }
@@ -248,7 +250,7 @@ mod tests {
         let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
         let t = TimeMsg {
             seconds: dt.timestamp(),
-            nanos: dt.timestamp_subsec_nanos() as i32,
+            nanos: i32::try_from(dt.timestamp_subsec_nanos()).unwrap(),
         };
         let vote = Vote {
             vote_type: SignedMsgType::PreVote.to_u32(),
@@ -416,7 +418,7 @@ mod tests {
         let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
         let t = TimeMsg {
             seconds: dt.timestamp(),
-            nanos: dt.timestamp_subsec_nanos() as i32,
+            nanos: i32::try_from(dt.timestamp_subsec_nanos()).unwrap(),
         };
         let vote = Vote {
             validator_address: vec![
@@ -472,7 +474,7 @@ mod tests {
         let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
         let t = TimeMsg {
             seconds: dt.timestamp(),
-            nanos: dt.timestamp_subsec_nanos() as i32,
+            nanos: i32::try_from(dt.timestamp_subsec_nanos()).unwrap(),
         };
         let vote = Vote {
             validator_address: vec![

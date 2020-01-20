@@ -201,7 +201,7 @@ mod tests {
         let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
         let t = TimeMsg {
             seconds: dt.timestamp(),
-            nanos: dt.timestamp_subsec_nanos() as i32,
+            nanos: i32::try_from(dt.timestamp_subsec_nanos()).expect("overflow"),
         };
         let proposal = Proposal {
             msg_type: SignedMsgType::Proposal.to_u32(),
@@ -260,7 +260,7 @@ mod tests {
         let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
         let t = TimeMsg {
             seconds: dt.timestamp(),
-            nanos: dt.timestamp_subsec_nanos() as i32,
+            nanos: i32::try_from(dt.timestamp_subsec_nanos()).expect("overflow"),
         };
         let proposal = Proposal {
             msg_type: SignedMsgType::Proposal.to_u32(),

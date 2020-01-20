@@ -31,7 +31,7 @@ impl From<PubKeyResponse> for PublicKey {
 }
 
 // TODO(xla): Either complete implementation or convert to TryFrom.
-#[allow(clippy::fallible_impl_from)]
+#[allow(clippy::fallible_impl_from, clippy::unimplemented)]
 impl From<PublicKey> for PubKeyResponse {
     fn from(public_key: PublicKey) -> Self {
         match public_key {
