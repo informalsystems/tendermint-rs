@@ -32,10 +32,11 @@ impl FromStr for Timeout {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        /// Supported units for durations used in conversion.
         enum Unit {
-            // Represents Milliseconds.
+            /// Represents Milliseconds.
             Milliseconds,
-            // Represents Seconds.
+            /// Represents Seconds.
             Seconds,
         }
 

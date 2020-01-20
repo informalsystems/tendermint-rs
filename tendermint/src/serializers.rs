@@ -163,12 +163,14 @@ pub(crate) fn parse_non_empty_block_id<'de, D>(
 where
     D: Deserializer<'de>,
 {
+    #[allow(clippy::missing_docs_in_private_items)]
     #[derive(Deserialize)]
     struct Parts {
         #[serde(deserialize_with = "parse_u64")]
         total: u64,
         hash: String,
     }
+    #[allow(clippy::missing_docs_in_private_items)]
     #[derive(Deserialize)]
     struct BlockId {
         hash: String,

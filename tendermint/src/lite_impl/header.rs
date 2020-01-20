@@ -59,6 +59,8 @@ impl lite::Header for block::Header {
     }
 }
 
+// TODO(xla): Add documentatio.
+#[allow(clippy::missing_docs_in_private_items)]
 fn bytes_enc(bytes: &[u8]) -> Vec<u8> {
     let mut chain_id_enc = vec![];
     prost_amino::encode_length_delimiter(bytes.len(), &mut chain_id_enc)
@@ -67,10 +69,14 @@ fn bytes_enc(bytes: &[u8]) -> Vec<u8> {
     chain_id_enc
 }
 
+// TODO(xla): Add documentatio.
+#[allow(clippy::missing_docs_in_private_items)]
 fn encode_hash(hash: &Hash) -> Vec<u8> {
     bytes_enc(hash.as_bytes())
 }
 
+// TODO(xla): Add documentatio.
+#[allow(clippy::missing_docs_in_private_items)]
 fn encode_varint(val: u64) -> Vec<u8> {
     let mut val_enc = vec![];
     prost_amino::encoding::encode_varint(val, &mut val_enc);
