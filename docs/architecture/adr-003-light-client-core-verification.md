@@ -1,237 +1,41 @@
-# ADR 002: Light Client ADR Index
+# ADR 003: Light Client Core Verification
 
 ## Changelog
 
-2019-10-30: First draft.
-2019-12-27: Add diagram and align with the code.
+This used to be part of ADR-002 but was factored out.
+
+2020-01-22: Factor this new ADR out of ADR-002 and reduce to just the core
+verification component.
+
+## Status
+
+Approved. Implemented.
 
 ## Context
 
-This is the first of multiple ADRs about the Tendermint light client in Rust.
-Light client specification and implementation is an ongoing work in progress, in 
-[English](), 
-[TLA+](), 
-[Go](),
-and [Rust]().
+The high level context for the light client is described in
+[ADR-002](adr-002-light-client-adr-index.md).
 
-It is especially important to review the Motivation and Structure of the Light
-Client as described in the English Specification before reading these ADRs for
-the necessary context.
+For reference, a schematic of the light node is below:
 
-Here we are concerned primarily with the implementation of a light node in Rust.
-A complete implementation of the light node includes many components, each of
-which deserves their own ADR. This ADR thus serves as an index for those, and
-may be updated over time as other components come into view or
-existing components are iterated upon.
+![Light Node Diagram](assets/light-node.png).
 
-Components include:
+Here we focus on the core verification library, which is reflected in the
+diagram as the "Light Client Verifier". 
 
-- ADR-003 - Core Verification Library: Data types, traits, and public API for
-  the core verification protocol, with support for use in light nodes and IBC
-  implemented
-- ADR-004 - Command Line Interface: Choice of framework for the CLI and
-  daemon, including config, arguments, logging, errors, etc.
-- ADR-005 - Fork Detection Module: Simple module to manage an address book of 
-  peers and search for conflicting commits
-
-
-A schematic diagram of the light node, as taken from the [English
-specification](), is provided below:
-
-The core light client library is built according to the
-[english](https://github.com/tendermint/tendermint/blob/master/docs/spec/consensus/light-client.md) 
-and
-[TLA+](https://github.com/interchainio/verification/blob/develop/spec/light-client/Lightclient.tla)
-specs (NOTE: both are still under development). Please read at least the english
-spec for important context on this document. 
-
-The light node process makes RPC requests for blockchain data from a list of
-full nodes, uses the library to verify this data, and updates its state
-accordingly. 
-
-The light client library should also work in the context of IBC, a protocol for
-communication between blockchains. In this case, instead of making RPC requests,
-IBC-enabled blockchains would receive the relevant data in transactions and
-would verify it using the same light client library. Thus the library should
-abstract over the source of data.
-
-While this document only covers the case of the light node, and not IBC,
-it's important to have clear separation of concerns so that the library can be
-reused in the IBC context. For more information on IBC, see the 
-[spec repo](https://github.com/cosmos/ics),
-especially the specifications for
-[client
-semantics](https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics)
-and [handler
-interface](https://github.com/cosmos/ics/tree/master/spec/ics-025-handler-interface)
-
-The light client operates primarily on data types that are already implemented
-(headers, public keys, signatures, votes, etc.). The crux of the light
-client is verifying validator sets by computing their merkle root, and verifying
+The core verification operates primarily on data types that are already implemented
+in tendermint-rs (headers, public keys, signatures, votes, etc.). The crux of the 
+library is verifying validator sets by computing their merkle root, and verifying
 commits by checking validator signatures. The particular data structures used by
-Tendermint have considerably more features/functionality, much of which is not
-needed for the light client protocol - hence the light client library should
-abstract over it.
+Tendermint have considerably more features/functionality than needed for this, 
+- hence the core verification library should abstract over it.
 
-In addition to the core verification logic, the light node needs a way to
-receive data from full nodes, to detect conflicting information, and to report
-on conflicts. While there are many ways for a full node to provide bad
-information, what we're really looking for is misbehaviour by the validators,
-which is reflected in conflicting commits (ie. commits for different blocks at
-the same height). 
+Here we describe the core verification library, including:
 
-In what follows we outline the following components of the light client software:
-
-- core light client verification library and traits
-- how Tendermint data-structures implement the core light client traits
-- how a light node requests information from full nodes and detects conflicts
-
-Note that the architecture of IBC is out of scope, suffice it to say that the
-core libraries (ie. the verification library and the implementation of core
-traits by the Tendermint types) will be re-usable by IBC.
+- traits and methods
+- implementations of traits for the existing Tendermint data-structures
 
 ## Decision
-
-Below is a schematic of the components of a light node:
-
-![Light Client Diagram](assets/adr-002-image.png)
-
-We take up the components of the diagram in term.
-
-### State
-
-The light node state contains the following:
-
-- current height (H) - height for the next header we want to verify
-- last header (H-1) - the last header we verified
-- current validators (H) - validators for the height we want to verify (including all validator pubkeys and voting powers)
-
-It also includes some configuration, which contains:
-
-- trusting period
-- initial list of full nodes
-- method (sequential or skipping)
-- trust level (if method==skipping)
-
-The node is initialized with a trusted header for some height H-1
-(call this header[H-1]), and a validator set for height H (call this vals[H]).
-
-The node may be initialized by the user with only a height and header hash, and
-proceed to request the full header and validator set from a full node. This
-reduces the initialization burden on the user, and simplifies passing this
-information into the process, but for the state to be properly initialized it
-will need to get the correct header and validator set before starting the light
-client syncing protocol.
-
-The configuration contains an initial list of full nodes (peers).
-For the sake of simplicity, one of the peers is selected as the "primary", while the
-rest are considered "backups". Most of the data is downloaded from the primary,
-and double checked against the backups.
-
-The state is considered "expired" if the difference between the current time and
-the time from the trusted header is greater than a configurable "trusting
-period". If at any point the state is expired, the node should log an error and
-exit - it's needs to be manually reset.
-
-### Syncer
-
-The Syncing co-ordinates the syncing and is the highest level component. 
-We consider two approaches to syncing the light node: sequential and skipping.
-
-#### Sequential Sync
-
-Inital state: 
-
-    - time T
-    - height H 
-    - header[H-1]
-    - vals[H]
-
-Here we describe the happy path:
-
-1) Request header[H], commit[H], and vals[H+1] from the primary, and check that they are well formed and from the correct height
-2) Pass header[H], commit[H], vals[H], and vals[H+1] to the verification library, which will:
-
-    - check that vals[H] and vals[H+1] are correctly reflected in header[H]
-    - check that commit[H] is for header[H]
-    - check that +2/3 of the validators correctly signed the hash of header[H]
-
-3) Request header[H] from each of the backups and check that they match header[H] received from the primary
-4) Update the state with header[H] and vals[H+1], and increment H
-5) return to (1)
-
-If (1) or (2) fails, mark the primary as bad and select a new peer to be the
-primary.
-
-If (3) returns a conflicting header, verify the header by requesting the
-corresponding commit and running the verification of (2). If the verification
-passes, there is a fork, and evidence should be published so the validators get
-slashed. We leave the mechanics of evidence to a future document. For now, the
-light client will just log an error and exit. If the verification fails, it
-means the backup that provided the conflict is bad and should be removed.
-
-#### Skipping Sync
-
-Skipping sync is essentially the same as sequential, except for a few points:
-
-- instead of verifying sequential headers, we attempt to "skip" ahead to the
-  full node's most recent height
-- skipping is only permitted if the validator set has not changed too much - ie.
-  if +1/3 of the last trusted validator set has signed the commit for the height we're attempting to skip to
-- if the validator set changes too much, we "bisect" the height space,
-  attempting to skip to a lower height, recursively. 
-- in the worst case, the bisection takes us to a sequential height
-
-### Requester
-
-The requester is simply a Tendermint RPC client. It makes requests to full
-nodes. It uses the `/commit` and `/validators` endpoints to get signed headers
-and validator sets for relevant heights. It may also use the `/status` endpoint
-to get the latest height of the full node (for skipping verification). It 
-uses the following trait (see below for definitions of the referenced types):
-
-```rust
-pub trait Requester {
-    type SignedHeader: SignedHeader;
-    type ValidatorSet: ValidatorSet;
-
-    fn signed_header<H>(&self, h: H) -> Result<Self::SignedHeader, Error>
-        where H: Into<Height>;
-
-    fn validator_set<H>(&self, h: H) -> Result<Self::ValidatorSet, Error>
-        where H: Into<Height>;
-}
-```
-
-Note that trait uses `Into<Height>` which is a common idiom for the codebase.
-
-### Detect
-
-The detection module is for checking if any of the backup nodes
-are reporting conflicting information. It requests headers from each backup node
-and compares them with a verified header from the primary. If there is a
-conflict, it attempts to verify the conflicting header via the verifier. If it
-can be verified, it indicates an attack on the light clients that should be
-punishable. The relevant information (ie. the two conflicting commits) are
-passed to the publisher.
-
-### Publisher
-
-For now, the publisher just logs an error, writes the conflicting commits to a
-file, and exits. We leave it to a future document to describe how this
-information can actually be published to the blockchain so the validators can be
-punished. Tendermint may need to expose a new RPC endpoint to facilitate this.
-
-See related [Tendermint issue #3244](https://github.com/tendermint/tendermint/issues/3244).
-
-### Address Book
-
-For now this is a simple list of HTTPS addresses corresponding to full nodes
-that the node connects to. One is randomly selected to be the primary, while
-others serve as backups. It's essential that the light node connect to at least
-one correct full node in order to detect conflicts in a timely fashion. We keep
-this mechanism simple for now, but in the future a more advanced peer discovery
-mechanism may be utilized.
 
 ### Verifier
 
