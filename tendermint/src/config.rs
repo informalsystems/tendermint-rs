@@ -55,7 +55,8 @@ pub struct TendermintConfig {
     /// Path to the JSON file containing the initial validator set and other meta data
     pub genesis_file: PathBuf,
 
-    /// Path to the JSON file containing the private key to use as a validator in the consensus protocol
+    /// Path to the JSON file containing the private key to use as a validator in the consensus
+    /// protocol
     pub priv_validator_key_file: Option<PathBuf>,
 
     /// Path to the JSON file containing the last sign state of a validator
@@ -66,7 +67,8 @@ pub struct TendermintConfig {
     #[serde(deserialize_with = "deserialize_optional_value")]
     pub priv_validator_laddr: Option<net::Address>,
 
-    /// Path to the JSON file containing the private key to use for node authentication in the p2p protocol
+    /// Path to the JSON file containing the private key to use for node authentication in the p2p
+    /// protocol
     pub node_key_file: PathBuf,
 
     /// Mechanism to connect to the ABCI application: socket | grpc
@@ -536,7 +538,8 @@ pub enum TxIndexer {
     #[serde(rename = "null")]
     Null,
 
-    /// "kv" (default) - the simplest possible indexer, backed by key-value storage (defaults to levelDB; see DBBackend).
+    /// "kv" (default) - the simplest possible indexer, backed by key-value storage (defaults to
+    /// levelDB; see DBBackend).
     #[serde(rename = "kv")]
     Kv,
 }

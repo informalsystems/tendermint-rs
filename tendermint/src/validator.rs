@@ -26,9 +26,17 @@ impl Set {
     }
 }
 
-impl lite::ValidatorSet for Set {
-    type Validator = Info;
+impl Set {
+    /// Returns the validator with the given Id if its in the Set.
+    pub fn validator(&self, val_id: account::Id) -> Option<Info> {
+        self.validators
+            .iter()
+            .find(|val| val.address == val_id)
+            .cloned()
+    }
+}
 
+impl lite::ValidatorSet for Set {
     /// Compute the Merkle root of the validator set
     fn hash(&self) -> Hash {
         let validator_bytes: Vec<Vec<u8>> = self
@@ -43,13 +51,6 @@ impl lite::ValidatorSet for Set {
         self.validators.iter().fold(0u64, |total, val_info| {
             total + val_info.voting_power.value()
         })
-    }
-
-    fn validator(&self, val_id: account::Id) -> Option<Self::Validator> {
-        self.validators
-            .iter()
-            .find(|val| val.address == val_id)
-            .cloned()
     }
 
     fn len(&self) -> usize {
@@ -87,12 +88,15 @@ pub struct Info {
     pub proposer_priority: Option<ProposerPriority>,
 }
 
-impl lite::Validator for Info {
-    fn power(&self) -> u64 {
+impl Info {
+    /// Return the voting power of the validator.
+    pub fn power(&self) -> u64 {
         self.voting_power.value()
     }
 
-    fn verify_signature(&self, sign_bytes: &[u8], signature: &[u8]) -> bool {
+    /// Verify the given signature against the given sign_bytes using the validators
+    /// public key.
+    pub fn verify_signature(&self, sign_bytes: &[u8], signature: &[u8]) -> bool {
         if let Some(pk) = &self.pub_key.ed25519() {
             let verifier = Ed25519Verifier::from(pk);
             if let Ok(sig) = ed25519::Signature::from_bytes(signature) {
