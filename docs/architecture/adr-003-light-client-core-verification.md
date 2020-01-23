@@ -4,7 +4,7 @@
 
 This used to be part of ADR-002 but was factored out.
 
-2020-01-22: Factor this new ADR out of ADR-002 and reduce to just the core
+- 2020-01-22: Factor this new ADR out of ADR-002 and reduce to just the core
 verification component.
 
 ## Status
@@ -27,22 +27,31 @@ The core verification operates primarily on data types that are already implemen
 in tendermint-rs (headers, public keys, signatures, votes, etc.). The crux of the 
 library is verifying validator sets by computing their merkle root, and verifying
 commits by checking validator signatures. The particular data structures used by
-Tendermint have considerably more features/functionality than needed for this, 
-- hence the core verification library should abstract over it.
+Tendermint have considerably more features/functionality than needed for this,
+hence the core verification library should abstract over it.
 
 Here we describe the core verification library, including:
 
-- traits and methods
+- traits and functions
 - implementations of traits for the existing Tendermint data-structures
 
 ## Decision
 
-### Verifier
+The implementation of the core verification involves two components:
 
-Most of the light client logic resides in the verifier, where commits for a
-header are actually verified. In order to abstract over all the data in the
-Tendermint data structures, we use a set of traits that provide only the
-information absolutely necessary for the light client. 
+- a new `light` crate, containing traits and functions defining the core verification
+  logic
+- a `light-impl` module within the `tendermint` crate, containing implementations of
+  the traits for the tendermint specific data structures
+
+The `light` crate should have minimal dependencies and not depend on
+`tendermint`. This way it will be kept clean, easy to test, and easily used for 
+variatons on tendermint with different header and vote data types.
+
+### Light Crate
+
+The light crate exposes traits for the block header, validator set, and commit 
+with the minimum information necessary to support general light client logic.
 
 According to the specification, the key functionality the light client
 verification requires is to determine the set of signers in a commit, and
@@ -75,8 +84,10 @@ We're only interested in knowing the total voting power from a given validator
 set that signed for the given block. Hence we can abstract over underlying votes and
 signatures and just expose a `voting_power_in`, as per the spec.
 
-The `header_hash` indicates the header being committed to, 
-and `vote_len` methods are for simple validity checks.
+The `header_hash` indicates the header being committed to
+and `vote_len` methods are for simple validity checks. NOTE
+we can probably remove `vote_len` and do the necessary check in
+`voting_power_in`.
 
 ```rust
 pub trait Commit {
@@ -89,9 +100,9 @@ pub trait Commit {
 ```
 
 By abstracting over the underlying vote type, this trait can support
-optimizations like batch verification, and changes to the
-underlying commit structure, like using agreggate signatures instead of
-individual votes. So long as it can be determined what voting power of a given validator set
+optimizations like batch verification of signatures, and the use of 
+agreggate signatures instead of individual votes. 
+So long as it can be determined what voting power of a given validator set
 signed correctly for the commit.
 
 The method `voting_power_in` performs the underlying signature verifications.
@@ -114,7 +125,6 @@ could disentangle commits to the proposal block parts for gossip (ie. the parts
 set hash) from commits to the header itself (ie. the header hash), but that's
 left for the future.
 
-
 For more background on implementation of Tendermint commits and votes, see:
 - [ADR-025](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-025-commit.md)
 - [Validator Signing Spec](https://github.com/tendermint/tendermint/blob/master/docs/spec/consensus/signing.md)
@@ -129,15 +139,9 @@ than a fraction of the total power.
 
 Most importantly, a validator set trait must facilitate computing `voting_power_in` 
 for a Commit, which means it needs to expose some way to determine the voting power 
-of the validators that signed. Note, however, that this functionality is not used 
-by the light client logic itself - it's only used by the implementation of
-Commit within the `voting_power_in` method. Hence, further abstraction may be
-warranted to eliminate the need for such a method. For instance, perhaps
-ValidatorSet could be an associated type of Commit, and then implementations of
-Commit would specify their ValidatorSet and how they verify signatures.
-
-In the meantime, we use a ValidatorSet trait that exposes a lookup method 
-for fetching validators by their Id. An associated validator type (below) can then expose 
+of the validators that signed, since voting power is not found in the commit
+itself. We do this using a `validator` lookup function that takes a validator Id
+and returns the validator. An associated validator type (below) can then expose 
 it's voting power and a method for verifying signatures. Implementations of Commit can use this to
 determine the voting power of the validators that signed. 
 
@@ -153,8 +157,17 @@ pub trait ValidatorSet {
 }
 ```
 
-Note that this also assumes `Commit` has access to the Id of the validators that
-signed. This is presently true, since Commit's contain the validator addresses
+But note this `validator` method is never used
+by the light client directly, it's only used by the implementation of
+the `voting_power_in` method. Hence, we might be able to remove it from the
+light crate by abstracting further, for instance by making
+the ValidatorSet an associated type of Commit; implementations of
+Commit could then specify their ValidatorSet and how they verify signatures and
+return voting powers.
+
+Note that we're also assuming that `Commit` has access to the Id of the validators that
+signed, which can then be used to look them up. 
+This is presently true, since Commit's contain the validator addresses
 along with the signatures. But if the addresses were removed, for instance to
 save space, the Commit trait would need access to the relevant validator set to 
 get the Ids, and this validator set may be different than the one being passed
@@ -177,11 +190,11 @@ pub trait Validator {
 ```
 
 This trait is needed for the validator lookup method in the ValidatorSet, but as
-per the note above, if that method can be eliminated, so can this trait.
+per the note above, if that method can be eliminated, so can this trait (!).
 
 ### State
 
-According the spec, the light client is expected to have a store that it can
+According to the spec, the light client is expected to have a store that it can
 persist trusted headers and validators to. This is necessary to fetch the last trusted
 validators to be used in verifying a new header, but it's also needed in case
 any conflicting commits are discovered and they need to be published to the

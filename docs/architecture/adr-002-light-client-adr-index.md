@@ -2,9 +2,9 @@
 
 ## Changelog
 
-2019-10-30: First draft.
-2019-12-27: Add diagram and align with the code.
-2020-01-22: Refactor into multiple ADRs
+- 2019-10-30: First draft.
+- 2019-12-27: Add diagram and align with the code.
+- 2020-01-22: Refactor into multiple ADRs
 
 ## Status
 
