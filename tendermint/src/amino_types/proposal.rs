@@ -1,5 +1,6 @@
 use super::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
+    compute_prefix,
     remote_error::RemoteError,
     signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
@@ -11,6 +12,7 @@ use crate::{
     error::Error,
 };
 use bytes::BufMut;
+use once_cell::sync::Lazy;
 use prost_amino::{EncodeError, Message};
 use prost_amino_derive::Message;
 use signatory::ed25519;
@@ -42,6 +44,7 @@ impl block::ParseHeight for Proposal {
 }
 
 pub const AMINO_NAME: &str = "tendermint/remotesigner/SignProposalRequest";
+pub static AMINO_PREFIX: Lazy<Vec<u8>> = Lazy::new(|| compute_prefix(AMINO_NAME));
 
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/SignProposalRequest"]

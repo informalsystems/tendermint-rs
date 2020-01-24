@@ -1,4 +1,6 @@
+use super::compute_prefix;
 use crate::public_key::PublicKey;
+use once_cell::sync::Lazy;
 use prost_amino_derive::Message;
 use signatory::ed25519::PUBLIC_KEY_SIZE;
 
@@ -9,6 +11,7 @@ use signatory::ed25519::PUBLIC_KEY_SIZE;
 // TODO(ismail): make this more generic (by modifying prost and adding a trait for PubKey)
 
 pub const AMINO_NAME: &str = "tendermint/remotesigner/PubKeyRequest";
+pub static AMINO_PREFIX: Lazy<Vec<u8>> = Lazy::new(|| compute_prefix(AMINO_NAME));
 
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/PubKeyResponse"]

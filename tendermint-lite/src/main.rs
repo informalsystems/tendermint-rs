@@ -99,7 +99,7 @@ fn main() {
  * trusted state and store it in the store ...
  * TODO: this should take traits ... but how to deal with the State ?
  * TODO: better name ?
-*/
+ */
 fn subjective_init(
     height: Height,
     vals_hash: Hash,
