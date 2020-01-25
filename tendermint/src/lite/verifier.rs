@@ -577,9 +577,8 @@ mod tests {
 
         // 100% overlap, but wrong commit.
         // NOTE: This should be an invalid commit error since there's
-        // a vote from a validator not in the set !
-        // but voting_power_in isn't smart enough to see this ...
-        assert_err(ts, vec![1], vec![S0], Error::InsufficientVotingPower);
+        // a vote from a validator not in the set.
+        assert_err(ts, vec![1], vec![S0], Error::InvalidCommit);
     }
 
     // valid commit and data, starting with 1 validator.
