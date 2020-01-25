@@ -162,12 +162,9 @@ pub enum Error {
     InvalidValidatorSet,
     InvalidNextValidatorSet,
     InvalidCommitValue, // commit is not for the header we expected
+    InvalidCommit,      // signers do not account for +2/3 of the voting power
     InvalidCommitLength,
 
-    // TODO(EB): we need to differentiate when this is from
-    // skipping and when it's from verifying !
-    // https://github.com/interchainio/tendermint-rs/issues/119
-    InsufficientVotingPower, /* TODO(Liamsi): change to same name as spec if this changes
-                              * (curently ErrTooMuchChange) */
+    InsufficientVotingPower, // trust threshold (default +1/3) is not met
     RequestFailed,
 }

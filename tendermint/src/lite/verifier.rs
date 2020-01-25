@@ -86,10 +86,7 @@ where
 
     // check the signers account for +2/3 of the voting power
     if signed_power * 3 <= total_power * 2 {
-        // TODO(EB): Use a different error from
-        // verify_commit_trusting else bisection
-        // will happen when the commit is actually just invalid!
-        return Err(Error::InsufficientVotingPower);
+        return Err(Error::InvalidCommit);
     }
 
     Ok(())
