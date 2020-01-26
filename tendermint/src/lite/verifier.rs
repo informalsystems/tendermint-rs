@@ -461,7 +461,9 @@ mod tests {
             self.vals.len()
         }
     }
+
     type MockState = TrustedState<MockCommit, MockHeader>;
+    type MockSignedHeader = SignedHeader<MockCommit, MockHeader>;
 
     // XXX: Can we do without this mock and global since we have a default impl?
     struct MockThreshold {}
@@ -474,28 +476,28 @@ mod tests {
     }
 
     // create an initial trusted state from the given vals
-    fn init_state(vals_vec: Vec<usize>) -> TrustedState<MockCommit, MockHeader> {
+    fn init_state(vals_vec: Vec<usize>) -> MockState {
         let time = init_time();
         let height = 1;
         let vals = &MockValSet::new(vals_vec.clone());
         let header = MockHeader::new(height, time, vals.hash(), vals.hash());
         let commit = MockCommit::new(header.hash(), vals_vec.into_iter().map(Some).collect());
         let sh = &SignedHeader::new(commit, header);
-        TrustedState::new(sh, vals)
+        MockState::new(sh, vals)
     }
 
     // create the next state with the given vals and commit.
     fn next_state(
         vals_vec: Vec<usize>,
         commit_vec: Vec<Option<usize>>,
-    ) -> (SignedHeader<MockCommit, MockHeader>, MockValSet, MockValSet) {
+    ) -> (MockSignedHeader, MockValSet, MockValSet) {
         let time = init_time() + Duration::new(10, 0);
         let height = 10;
         let vals = MockValSet::new(vals_vec);
         let next_vals = vals.clone();
         let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
         let commit = MockCommit::new(header.hash(), commit_vec);
-        (SignedHeader::new(commit, header), vals, next_vals)
+        (MockSignedHeader::new(commit, header), vals, next_vals)
     }
 
     // make a state with the given vals and commit and ensure we get the error.
