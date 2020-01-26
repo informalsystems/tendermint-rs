@@ -294,7 +294,8 @@ where
     // fetch the header and vals for the new height
     let untrusted_sh = &req.signed_header(untrusted_height)?;
     let untrusted_vals = &req.validator_set(untrusted_height)?;
-    let untrusted_next_vals = &req.validator_set(untrusted_height + 1)?;
+    let untrusted_next_vals =
+        &req.validator_set(untrusted_height.checked_add(1).expect("height overflow"))?;
 
     // check if we can skip to this height and if it verifies.
     match verify_single(
@@ -324,7 +325,7 @@ where
     // Get the pivot height for bisection.
     let trusted_h = trusted_sh.header().height();
     let untrusted_h = untrusted_height;
-    let pivot_height = (trusted_h + untrusted_h) / 2;
+    let pivot_height = trusted_h.checked_add(untrusted_h).expect("height overflow") / 2;
 
     // Recursive call to update to the pivot height.
     // When this completes, we will either return an error or
