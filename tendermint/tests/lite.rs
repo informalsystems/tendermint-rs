@@ -99,7 +99,7 @@ fn run_test_cases(cases: TestCases) {
             // verified.
             match lite::verify_single(
                 &trusted_state,
-                &(untrusted_signed_header.clone().into()),
+                &untrusted_signed_header.into(),
                 &untrusted_vals,
                 &untrusted_next_vals,
                 &TrustThresholdFraction::default(),
