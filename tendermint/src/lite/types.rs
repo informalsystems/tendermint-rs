@@ -114,7 +114,6 @@ where
     C: Commit,
 {
     /// Add this state (header at height h, validators at height h+1) as trusted to the store.
-    // TODO: should this really take a reference?
     fn add(&mut self, trusted: TrustedState<C, H>) -> Result<(), Error>;
 
     /// Retrieve the trusted state at height h if it exists.
