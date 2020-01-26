@@ -1,13 +1,11 @@
 use tendermint::hash;
 use tendermint::lite;
-use tendermint::lite::Error;
+use tendermint::lite::{Error, TrustThresholdFraction};
 use tendermint::lite::{Header as _, Requester as _, Store as _, ValidatorSet as _};
 use tendermint::rpc;
 use tendermint::{block::Height, Hash};
 
-use tendermint_lite::{
-    requester::RPCRequester, store::MemStore, threshold::TrustThresholdOneThird,
-};
+use tendermint_lite::{requester::RPCRequester, store::MemStore};
 
 use core::future::Future;
 use std::time::{Duration, SystemTime};
@@ -19,9 +17,6 @@ static SUBJECTIVE_HEIGHT: u64 = 1;
 static SUBJECTIVE_VALS_HASH_HEX: &str =
     "A5A7DEA707ADE6156F8A981777CA093F178FC790475F6EC659B6617E704871DD";
 static RPC_ADDR: &str = "localhost:26657";
-
-// TODO: this should somehow be configurable ...
-static THRESHOLD: &TrustThresholdOneThird = &TrustThresholdOneThird {};
 
 pub fn block_on<F: Future>(future: F) -> F::Output {
     Builder::new()
@@ -68,7 +63,7 @@ fn main() {
         let now = &SystemTime::now();
         lite::verify_and_update_bisection(
             latest_peer_height,
-            THRESHOLD,
+            &TrustThresholdFraction::default(),
             &trusting_period,
             now,
             &req,

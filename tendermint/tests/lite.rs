@@ -2,6 +2,7 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
 use std::{fs, path::PathBuf};
 use tendermint::block::Header;
+use tendermint::lite::TrustThresholdFraction;
 use tendermint::{block::signed_header::SignedHeader, lite, validator, validator::Set, Time};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -42,9 +43,6 @@ struct LiteBlock {
     validator_set: Set,
     next_validator_set: Set,
 }
-
-pub struct DefaultTrustLevel {}
-impl lite::TrustThreshold for DefaultTrustLevel {}
 
 const TEST_FILES_PATH: &str = "./tests/support/lite/";
 fn read_json_fixture(name: &str) -> String {
@@ -104,7 +102,7 @@ fn run_test_cases(cases: TestCases) {
                 &(untrusted_signed_header.clone().into()),
                 &untrusted_vals,
                 &untrusted_next_vals,
-                &DefaultTrustLevel {},
+                &TrustThresholdFraction::default(),
             ) {
                 Ok(_) => {
                     let last: lite::SignedHeader<SignedHeader, Header> =

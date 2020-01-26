@@ -83,14 +83,41 @@ pub trait Commit: Clone {
 /// The default implementation returns true, iff at least a third of the trusted
 /// voting power signed (in other words at least one honest validator signed).
 /// Some clients might require more than +1/3 and can implement their own
-/// TrustLevel which can be passed into all relevant methods.
+/// TrustThreshold which can be passed into all relevant methods.
 pub trait TrustThreshold {
-    fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool {
-        signed_voting_power * 3 > total_voting_power
+    fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool;
+}
+
+pub struct TrustThresholdFraction {
+    numerator: u64,
+    denominator: u64,
+}
+
+impl TrustThresholdFraction {
+    pub fn new(numerator: u64, denominator: u64) -> Self {
+        // TODO: should we make sure we got a proper fraction here?
+        Self {
+            numerator,
+            denominator,
+        }
     }
 }
 
-// TODO: add default TrustThreshold
+// TODO: should this go in the central place all impls live instead? (currently lite_impl)
+impl TrustThreshold for TrustThresholdFraction {
+    fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool {
+        signed_voting_power * self.denominator > total_voting_power * self.numerator
+    }
+}
+
+impl Default for TrustThresholdFraction {
+    fn default() -> Self {
+        Self {
+            numerator: 1,
+            denominator: 3,
+        }
+    }
+}
 
 /// Requester can be used to request [`SignedHeader`]s and [`ValidatorSet`]s for a
 /// given height, e.g., by talking to a tendermint fullnode through RPC.

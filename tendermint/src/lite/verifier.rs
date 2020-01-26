@@ -18,7 +18,7 @@ use crate::lite::{
 
 /// Returns an error if the header has expired according to the given
 /// trusting_period and current time. If so, the verifier must be reset subjectively.
-pub fn is_within_trust_period<H>(
+fn is_within_trust_period<H>(
     last_header: &H,
     trusting_period: &Duration,
     now: &SystemTime,
@@ -343,6 +343,7 @@ mod tests {
     use crate::{hash::Algorithm, Hash};
 
     use super::*;
+    use crate::lite::TrustThresholdFraction;
 
     #[derive(Clone, Debug, Serialize)]
     struct MockHeader {
@@ -465,11 +466,6 @@ mod tests {
     type MockState = TrustedState<MockCommit, MockHeader>;
     type MockSignedHeader = SignedHeader<MockCommit, MockHeader>;
 
-    // XXX: Can we do without this mock and global since we have a default impl?
-    struct MockThreshold {}
-    impl TrustThreshold for MockThreshold {}
-    static THRESHOLD: &MockThreshold = &MockThreshold {};
-
     // start all blockchains from here ...
     fn init_time() -> SystemTime {
         SystemTime::UNIX_EPOCH
@@ -508,14 +504,27 @@ mod tests {
         err: Error,
     ) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
-        let result = verify_single(ts, &un_sh, &un_vals, &un_next_vals, THRESHOLD);
+        let result = verify_single(
+            ts,
+            &un_sh,
+            &un_vals,
+            &un_next_vals,
+            &TrustThresholdFraction::default(),
+        );
         assert_eq!(result, Err(err));
     }
 
     // make a state with the given vals and commit and ensure we get no error.
     fn assert_ok(ts: &MockState, vals: Vec<usize>, commit: Vec<Option<usize>>) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
-        assert!(verify_single(ts, &un_sh, &un_vals, &un_next_vals, THRESHOLD).is_ok());
+        assert!(verify_single(
+            ts,
+            &un_sh,
+            &un_vals,
+            &un_next_vals,
+            &TrustThresholdFraction::default()
+        )
+        .is_ok());
     }
 
     // convenience vars for validators that signed commit
