@@ -1,19 +1,17 @@
 use tendermint::hash;
 use tendermint::lite;
 use tendermint::lite::Error;
-use tendermint::lite::{
-    Header as _, Requester as _, SignedHeader as _, Store as _, TrustedState as _,
-    ValidatorSet as _,
-};
+use tendermint::lite::{Header as _, Requester as _, Store as _, ValidatorSet as _};
 use tendermint::rpc;
 use tendermint::{block::Height, Hash};
 
 use tendermint_lite::{
-    requester::RPCRequester, state::State, store::MemStore, threshold::TrustThresholdOneThird,
+    requester::RPCRequester, store::MemStore, threshold::TrustThresholdOneThird,
 };
 
 use core::future::Future;
 use std::time::{Duration, SystemTime};
+use tendermint_lite::store::State;
 use tokio::runtime::Builder;
 
 // TODO: these should be config/args
@@ -52,7 +50,7 @@ fn main() {
         let latest = (&req).signed_header(0).unwrap();
         let latest_peer_height = latest.header().height();
 
-        let latest = store.get(Height::from(0)).unwrap();
+        let latest = store.get(0).unwrap();
         let latest_height = latest.last_header().header().height();
 
         // only bisect to higher heights
@@ -63,12 +61,7 @@ fn main() {
 
         println!(
             "attempting bisection from height {:?} to height {:?}",
-            store
-                .get(Height::from(0))
-                .unwrap()
-                .last_header()
-                .header()
-                .height(),
+            store.get(0).unwrap().last_header().header().height(),
             latest_peer_height,
         );
 
@@ -106,13 +99,13 @@ fn subjective_init(
     store: &mut MemStore,
     req: &RPCRequester,
 ) -> Result<(), Error> {
-    if store.get(height).is_ok() {
+    if store.get(height.value()).is_ok() {
         // we already have this !
         return Ok(());
     }
 
     // check that the val hash matches
-    let vals = req.validator_set(height)?;
+    let vals = req.validator_set(height.value())?;
 
     if vals.hash() != vals_hash {
         // TODO
@@ -123,11 +116,11 @@ fn subjective_init(
 
     // TODO: validate signed_header.commit() with the vals ...
 
-    let next_vals = req.validator_set(height.increment())?;
+    let next_vals = req.validator_set(height.increment().value())?;
 
     // TODO: check next_vals ...
 
-    let trusted_state = &State::new(&signed_header, &next_vals);
+    let trusted_state = State::new(&signed_header, &next_vals);
 
     store.add(trusted_state)?;
 

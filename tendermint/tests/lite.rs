@@ -1,7 +1,7 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
 use std::{fs, path::PathBuf};
-use tendermint::lite::TrustedState;
+use tendermint::block::Header;
 use tendermint::{block::signed_header::SignedHeader, lite, validator, validator::Set, Time};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -69,36 +69,13 @@ fn header_tests_verify() {
     run_test_cases(cases);
 }
 
-#[derive(Clone)]
-struct Trusted {
-    last_signed_header: SignedHeader,
-    validators: Set,
-}
-
-impl lite::TrustedState for Trusted {
-    type LastHeader = SignedHeader;
-    type ValidatorSet = Set;
-
-    fn new(last_header: &Self::LastHeader, vals: &Self::ValidatorSet) -> Self {
-        Self {
-            last_signed_header: last_header.clone(),
-            validators: vals.clone(),
-        }
-    }
-
-    fn last_header(&self) -> &Self::LastHeader {
-        &self.last_signed_header
-    }
-
-    fn validators(&self) -> &Self::ValidatorSet {
-        &self.validators
-    }
-}
+type Trusted = lite::TrustedState<SignedHeader, Header>;
 
 fn run_test_cases(cases: TestCases) {
     for (_, tc) in cases.test_cases.iter().enumerate() {
         let trusted_next_vals = tc.initial.clone().next_validator_set;
-        let mut trusted_state = Trusted::new(&tc.initial.signed_header.clone(), &trusted_next_vals);
+        let mut trusted_state =
+            Trusted::new(&tc.initial.signed_header.clone().into(), &trusted_next_vals);
         let expects_err = match &tc.expected_output {
             Some(eo) => eo.eq("error"),
             None => false,
@@ -124,13 +101,15 @@ fn run_test_cases(cases: TestCases) {
             // verified.
             match lite::verify_single(
                 &trusted_state,
-                &untrusted_signed_header,
+                &(untrusted_signed_header.clone().into()),
                 &untrusted_vals,
                 &untrusted_next_vals,
                 &DefaultTrustLevel {},
             ) {
                 Ok(_) => {
-                    trusted_state = Trusted::new(&untrusted_signed_header, &untrusted_next_vals);
+                    let last: lite::SignedHeader<SignedHeader, Header> =
+                        untrusted_signed_header.into();
+                    trusted_state = Trusted::new(&last, &untrusted_next_vals);
                     assert!(!expects_err);
                 }
                 Err(_) => {

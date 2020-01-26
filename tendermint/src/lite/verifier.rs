@@ -11,9 +11,8 @@
 use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
-use crate::block::Height;
 use crate::lite::{
-    Commit, Error, Header, Requester, SignedHeader, Store, TrustThreshold, TrustedState,
+    Commit, Error, Header, Height, Requester, SignedHeader, Store, TrustThreshold, TrustedState,
     ValidatorSet,
 };
 
@@ -123,16 +122,15 @@ where
 // and hence it's possible to use it incorrectly.
 // If trusted_state is not expired and this returns Ok, the
 // untrusted_sh and untrusted_next_vals can be considered trusted.
-pub fn verify_single<TS, SH, C, L>(
-    trusted_state: &TS,
-    untrusted_sh: &SH,
+pub fn verify_single<H, C, L>(
+    trusted_state: &TrustedState<C, H>,
+    untrusted_sh: &SignedHeader<C, H>,
     untrusted_vals: &C::ValidatorSet,
     untrusted_next_vals: &C::ValidatorSet,
     trust_threshold: &L,
 ) -> Result<(), Error>
 where
-    TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
-    SH: SignedHeader<Commit = C>,
+    H: Header,
     C: Commit,
     L: TrustThreshold,
 {
@@ -156,7 +154,7 @@ where
 
     // TODO: ensure the untrusted_header.bft_time() > trusted_header.bft_time()
 
-    match untrusted_height.cmp(&trusted_height.increment()) {
+    match untrusted_height.cmp(&trusted_height.checked_add(1).expect("height overflow")) {
         Ordering::Less => return Err(Error::NonIncreasingHeight),
         Ordering::Equal => {
             let trusted_vals_hash = trusted_header.next_validators_hash();
@@ -183,8 +181,8 @@ where
 /// the untrusted header can be verified using only our latest trusted
 /// state from the store.
 /// This function is primarily for use by IBC handlers.
-pub fn verify_and_update_single<TS, SH, C, L, S>(
-    untrusted_sh: &SH,
+pub fn verify_and_update_single<H, C, L, S>(
+    untrusted_sh: &SignedHeader<C, H>,
     untrusted_vals: &C::ValidatorSet,
     untrusted_next_vals: &C::ValidatorSet,
     trust_threshold: &L,
@@ -193,14 +191,13 @@ pub fn verify_and_update_single<TS, SH, C, L, S>(
     store: &mut S,
 ) -> Result<(), Error>
 where
-    TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
-    SH: SignedHeader<Commit = C>,
+    H: Header,
     C: Commit,
     L: TrustThreshold,
-    S: Store<TrustedState = TS>,
+    S: Store<C, H>,
 {
     // Fetch the latest state and ensure it hasn't expired.
-    let trusted_state = store.get(Height::from(0))?;
+    let trusted_state = store.get(0)?;
     let trusted_sh = trusted_state.last_header();
     is_within_trust_period(trusted_sh.header(), trusting_period, now)?;
 
@@ -213,8 +210,8 @@ where
     )?;
 
     // The untrusted header is now trusted; Update the store
-    let new_trusted_state = TS::new(untrusted_sh, untrusted_next_vals);
-    store.add(&new_trusted_state)
+    let new_trusted_state = TrustedState::new(untrusted_sh, untrusted_next_vals);
+    store.add(new_trusted_state)
 }
 
 /// Attempt to update the store to the given untrusted height
@@ -231,7 +228,7 @@ where
 /// data from the untrusted height can be verified, possibly using
 /// data from intermediate heights.
 /// This function is primarily for use by a light node.
-pub fn verify_and_update_bisection<TS, SH, C, L, R, S>(
+pub fn verify_and_update_bisection<C, H, L, R, S>(
     untrusted_height: Height,
     trust_threshold: &L,
     trusting_period: &Duration,
@@ -240,12 +237,11 @@ pub fn verify_and_update_bisection<TS, SH, C, L, R, S>(
     store: &mut S,
 ) -> Result<(), Error>
 where
-    TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
-    SH: SignedHeader<Commit = C>,
+    H: Header,
     C: Commit,
     L: TrustThreshold,
-    R: Requester<SignedHeader = SH, ValidatorSet = C::ValidatorSet>,
-    S: Store<TrustedState = TS>,
+    R: Requester<C, H>,
+    S: Store<C, H>,
 {
     // Fetch the latest state and ensure it hasn't expired.
     // Note we only check for expiry once in this
@@ -253,7 +249,7 @@ where
     // time is passed in and we don't access a clock internall.
     // Thus the trust_period must be long enough to incorporate the
     // expected time to complete this function.
-    let trusted_state = store.get(Height::from(0))?;
+    let trusted_state = store.get(0)?;
     let trusted_sh = trusted_state.last_header();
     is_within_trust_period(trusted_sh.header(), trusting_period, now)?;
 
@@ -276,30 +272,29 @@ where
 
 // inner recursive function for verify_and_update_bisection.
 // see that function's docs.
-fn _verify_and_update_bisection<TS, SH, C, L, R, S>(
+fn _verify_and_update_bisection<H, C, L, R, S>(
     untrusted_height: Height,
     trust_threshold: &L,
     req: &R,
     store: &mut S,
 ) -> Result<(), Error>
 where
-    TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
-    SH: SignedHeader<Commit = C>,
+    H: Header,
     C: Commit,
     L: TrustThreshold,
-    R: Requester<SignedHeader = SH, ValidatorSet = C::ValidatorSet>,
-    S: Store<TrustedState = TS>,
+    R: Requester<C, H>,
+    S: Store<C, H>,
 {
     // this get is redundant the first time.
     // TODO: possibly refactor so this func takes and returns
     // trusted_state.
-    let trusted_state = store.get(Height::from(0))?;
+    let trusted_state = store.get(0)?;
     let trusted_sh = trusted_state.last_header();
 
     // fetch the header and vals for the new height
     let untrusted_sh = &req.signed_header(untrusted_height)?;
     let untrusted_vals = &req.validator_set(untrusted_height)?;
-    let untrusted_next_vals = &req.validator_set(untrusted_height.increment())?;
+    let untrusted_next_vals = &req.validator_set(untrusted_height + 1)?;
 
     // check if we can skip to this height and if it verifies.
     match verify_single(
@@ -312,8 +307,8 @@ where
         Ok(_) => {
             // Successfully verified!
             // Trust the new state and return.
-            let new_trusted_state = TS::new(untrusted_sh, untrusted_next_vals);
-            return store.add(&new_trusted_state);
+            let new_trusted_state = TrustedState::new(untrusted_sh, untrusted_next_vals);
+            return store.add(new_trusted_state);
         }
         Err(e) => {
             // If something went wrong, return the error.
@@ -327,9 +322,9 @@ where
     }
 
     // Get the pivot height for bisection.
-    let trusted_h = trusted_sh.header().height().value();
-    let untrusted_h = untrusted_height.value();
-    let pivot_height = Height::from((trusted_h + untrusted_h) / 2);
+    let trusted_h = trusted_sh.header().height();
+    let untrusted_h = untrusted_height;
+    let pivot_height = (trusted_h + untrusted_h) / 2;
 
     // Recursive call to update to the pivot height.
     // When this completes, we will either return an error or
@@ -371,7 +366,7 @@ mod tests {
         type Time = SystemTime;
 
         fn height(&self) -> Height {
-            Height::from(self.height)
+            self.height
         }
         fn bft_time(&self) -> Self::Time {
             self.time
@@ -465,54 +460,7 @@ mod tests {
             self.vals.len()
         }
     }
-
-    #[derive(Clone)]
-    struct MockSignedHeader {
-        header: MockHeader,
-        commit: MockCommit,
-    }
-
-    impl MockSignedHeader {
-        fn new(header: MockHeader, commit: MockCommit) -> Self {
-            MockSignedHeader { header, commit }
-        }
-    }
-
-    impl SignedHeader for MockSignedHeader {
-        type Header = MockHeader;
-        type Commit = MockCommit;
-        fn header(&self) -> &Self::Header {
-            &self.header
-        }
-        fn commit(&self) -> &Self::Commit {
-            &self.commit
-        }
-    }
-
-    #[derive(Clone)]
-    struct MockState {
-        header: MockSignedHeader,
-        vals: MockValSet,
-    }
-
-    impl TrustedState for MockState {
-        type LastHeader = MockSignedHeader;
-        type ValidatorSet = MockValSet;
-
-        // XXX: how to do this without cloning?!
-        fn new(header: &Self::LastHeader, vals: &Self::ValidatorSet) -> MockState {
-            MockState {
-                header: header.clone(),
-                vals: vals.clone(),
-            }
-        }
-        fn last_header(&self) -> &Self::LastHeader {
-            &self.header
-        }
-        fn validators(&self) -> &Self::ValidatorSet {
-            &self.vals
-        }
-    }
+    type MockState = TrustedState<MockCommit, MockHeader>;
 
     // XXX: Can we do without this mock and global since we have a default impl?
     struct MockThreshold {}
@@ -525,32 +473,37 @@ mod tests {
     }
 
     // create an initial trusted state from the given vals
-    fn init_state(vals_vec: Vec<usize>) -> MockState {
+    fn init_state(vals_vec: Vec<usize>) -> TrustedState<MockCommit, MockHeader> {
         let time = init_time();
         let height = 1;
         let vals = &MockValSet::new(vals_vec.clone());
         let header = MockHeader::new(height, time, vals.hash(), vals.hash());
         let commit = MockCommit::new(header.hash(), vals_vec.into_iter().map(Some).collect());
-        let sh = &MockSignedHeader::new(header, commit);
-        MockState::new(sh, vals)
+        let sh = &SignedHeader::new(commit, header);
+        TrustedState::new(sh, vals)
     }
 
     // create the next state with the given vals and commit.
     fn next_state(
         vals_vec: Vec<usize>,
         commit_vec: Vec<Option<usize>>,
-    ) -> (MockSignedHeader, MockValSet, MockValSet) {
+    ) -> (SignedHeader<MockCommit, MockHeader>, MockValSet, MockValSet) {
         let time = init_time() + Duration::new(10, 0);
         let height = 10;
         let vals = MockValSet::new(vals_vec);
         let next_vals = vals.clone();
         let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
         let commit = MockCommit::new(header.hash(), commit_vec);
-        (MockSignedHeader::new(header, commit), vals, next_vals)
+        (SignedHeader::new(commit, header), vals, next_vals)
     }
 
     // make a state with the given vals and commit and ensure we get the error.
-    fn assert_err(ts: &MockState, vals: Vec<usize>, commit: Vec<Option<usize>>, err: Error) {
+    fn assert_err(
+        ts: &TrustedState<MockCommit, MockHeader>,
+        vals: Vec<usize>,
+        commit: Vec<Option<usize>>,
+        err: Error,
+    ) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
         let result = verify_single(ts, &un_sh, &un_vals, &un_next_vals, THRESHOLD);
         assert_eq!(result, Err(err));

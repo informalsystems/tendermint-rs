@@ -1,9 +1,12 @@
-use tendermint::block;
-use tendermint::lite;
+use tendermint::block::signed_header::SignedHeader as TMCommit;
+use tendermint::block::Header as TMHeader;
 use tendermint::rpc;
 use tendermint::validator;
+use tendermint::{block, lite};
 
 use core::future::Future;
+use tendermint::lite::{Height, SignedHeader};
+use tendermint::validator::Set;
 use tokio::runtime::Builder;
 
 /// RPCRequester wraps the Tendermint rpc::Client.
@@ -17,33 +20,26 @@ impl RPCRequester {
     }
 }
 
-impl lite::types::Requester for RPCRequester {
-    type SignedHeader = block::signed_header::SignedHeader;
-    type ValidatorSet = validator::Set;
+type TMSignedHeader = SignedHeader<TMCommit, TMHeader>;
 
+impl lite::types::Requester<TMCommit, TMHeader> for RPCRequester {
     /// Request the signed header at height h.
     /// If h==0, request the latest signed header.
     /// TODO: use an enum instead of h==0.
-    fn signed_header<H>(&self, h: H) -> Result<Self::SignedHeader, lite::Error>
-    where
-        H: Into<block::Height>,
-    {
+    fn signed_header(&self, h: Height) -> Result<TMSignedHeader, lite::Error> {
         let height: block::Height = h.into();
         let r = match height.value() {
             0 => block_on(self.client.latest_commit()),
             _ => block_on(self.client.commit(height)),
         };
         match r {
-            Ok(response) => Ok(response.signed_header),
+            Ok(response) => Ok(response.signed_header.into()),
             Err(_error) => Err(lite::Error::RequestFailed),
         }
     }
 
     /// Request the validator set at height h.
-    fn validator_set<H>(&self, h: H) -> Result<Self::ValidatorSet, lite::Error>
-    where
-        H: Into<block::Height>,
-    {
+    fn validator_set(&self, h: Height) -> Result<Set, lite::Error> {
         let r = block_on(self.client.validators(h));
         match r {
             Ok(response) => Ok(validator::Set::new(response.validators)),
@@ -66,7 +62,6 @@ mod tests {
     use super::*;
     use tendermint::lite::types::Header as LiteHeader;
     use tendermint::lite::types::Requester as LiteRequester;
-    use tendermint::lite::types::SignedHeader as LiteSignedHeader;
     use tendermint::lite::types::ValidatorSet as LiteValSet;
     use tendermint::rpc;
 

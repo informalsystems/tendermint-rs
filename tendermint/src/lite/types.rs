@@ -1,42 +1,18 @@
 //! All traits that are necessary and need to be implemented to use the main
 //! verification logic in [`super::verifier`] for a light client.
 
-use crate::block::Height;
 use crate::Hash;
 
 use failure::_core::fmt::Debug;
 use std::time::SystemTime;
 
-/// TrustedState stores the latest state trusted by a lite client,
-/// including the last header (at height h-1) and the validator set
-/// (at height h) to use to verify the next header.
-pub trait TrustedState: Clone {
-    type LastHeader: SignedHeader;
-    type ValidatorSet: ValidatorSet;
-
-    /// Initialize the TrustedState with the given signed header and validator set.
-    /// Note that if the height of the passed in header is h-1, the passed in validator set
-    /// must have been requested for height h.
-    fn new(last_header: &Self::LastHeader, vals: &Self::ValidatorSet) -> Self;
-
-    fn last_header(&self) -> &Self::LastHeader; // height H-1
-    fn validators(&self) -> &Self::ValidatorSet; // height H
-}
-
-/// SignedHeader bundles a Header and a Commit for convenience.
-pub trait SignedHeader {
-    type Header: Header;
-    type Commit: Commit;
-
-    fn header(&self) -> &Self::Header;
-    fn commit(&self) -> &Self::Commit;
-}
+pub type Height = u64;
 
 /// Header contains meta data about the block -
 /// the height, the time, the hash of the validator set
 /// that should sign this header, and the hash of the validator
 /// set that should sign the next header.
-pub trait Header: Debug {
+pub trait Header: Debug + Clone {
     /// The header's notion of (bft-)time.
     /// We assume it can be converted to SystemTime.
     type Time: Into<SystemTime>;
@@ -56,7 +32,7 @@ pub trait Header: Debug {
 /// Validator type which can be used for verifying signatures.
 /// It also provides a lookup method to fetch a validator by
 /// its identifier.
-pub trait ValidatorSet {
+pub trait ValidatorSet: Clone {
     /// Hash of the validator set.
     fn hash(&self) -> Hash;
 
@@ -73,7 +49,7 @@ pub trait ValidatorSet {
 /// Commit is proof a Header is valid.
 /// It has an underlying Vote type with the relevant vote data
 /// for verification.
-pub trait Commit {
+pub trait Commit: Clone {
     type ValidatorSet: ValidatorSet;
 
     /// Hash of the header this commit is for.
@@ -114,39 +90,104 @@ pub trait TrustThreshold {
     }
 }
 
+// TODO: add default TrustThreshold
+
 /// Requester can be used to request [`SignedHeader`]s and [`ValidatorSet`]s for a
 /// given height, e.g., by talking to a tendermint fullnode through RPC.
-pub trait Requester {
-    // TODO(Liamsi): consider putting this trait and the Store into a separate module / file...
-    type SignedHeader: SignedHeader;
-    type ValidatorSet: ValidatorSet;
-
+pub trait Requester<C, H>
+where
+    C: Commit,
+    H: Header,
+{
     /// Request the signed header at height h.
-    fn signed_header<H>(&self, h: H) -> Result<Self::SignedHeader, Error>
-    where
-        H: Into<Height>;
+    fn signed_header(&self, h: Height) -> Result<SignedHeader<C, H>, Error>;
 
     /// Request the validator set at height h.
-    fn validator_set<H>(&self, h: H) -> Result<Self::ValidatorSet, Error>
-    where
-        H: Into<Height>;
+    fn validator_set(&self, h: Height) -> Result<C::ValidatorSet, Error>;
 }
 
 /// This store can be used to store all the headers that have passed basic verification
 /// and that are within the light client's trust period.
-pub trait Store {
-    type TrustedState: TrustedState;
-
+pub trait Store<C, H>
+where
+    H: Header,
+    C: Commit,
+{
     /// Add this state (header at height h, validators at height h+1) as trusted to the store.
     // TODO: should this really take a reference?
-    fn add(&mut self, trusted: &Self::TrustedState) -> Result<(), Error>;
+    fn add(&mut self, trusted: TrustedState<C, H>) -> Result<(), Error>;
 
     /// Retrieve the trusted state at height h if it exists.
     /// If it does not exist return an error.
     /// If h=0, return the latest trusted state.
     /// TODO: use an enum instead of special-casing 0, see
     /// https://github.com/interchainio/tendermint-rs/issues/118
-    fn get(&self, h: Height) -> Result<&Self::TrustedState, Error>;
+    fn get(&self, h: Height) -> Result<&TrustedState<C, H>, Error>;
+}
+
+/// TrustedState stores the latest state trusted by a lite client,
+/// including the last header (at height h-1) and the validator set
+/// (at height h) to use to verify the next header.
+#[derive(Clone)]
+pub struct TrustedState<C, H>
+where
+    H: Header,
+    C: Commit,
+{
+    last_header: SignedHeader<C, H>, // height H-1
+    validators: C::ValidatorSet,     // height H
+}
+
+impl<'a, C, H> TrustedState<C, H>
+where
+    H: Header,
+    C: Commit,
+{
+    /// Initialize the TrustedState with the given signed header and validator set.
+    /// Note that if the height of the passed in header is h-1, the passed in validator set
+    /// must have been requested for height h.
+    pub fn new(last_header: &SignedHeader<C, H>, validators: &C::ValidatorSet) -> Self {
+        Self {
+            last_header: last_header.clone(),
+            validators: validators.clone(),
+        }
+    }
+
+    pub fn last_header(&self) -> &SignedHeader<C, H> {
+        &self.last_header
+    }
+
+    pub fn validators(&self) -> &C::ValidatorSet {
+        &self.validators
+    }
+}
+
+/// SignedHeader bundles a Header and a Commit for convenience.
+#[derive(Clone)]
+pub struct SignedHeader<C, H>
+where
+    C: Commit,
+    H: Header,
+{
+    commit: C,
+    header: H,
+}
+
+impl<C, H> SignedHeader<C, H>
+where
+    C: Commit,
+    H: Header,
+{
+    pub fn new(commit: C, header: H) -> Self {
+        Self { commit, header }
+    }
+    pub fn commit(&self) -> &C {
+        &self.commit
+    }
+
+    pub fn header(&self) -> &H {
+        &self.header
+    }
 }
 
 // NOTE: Copy/Clone for convenience in testing ...
