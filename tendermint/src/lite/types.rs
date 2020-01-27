@@ -12,7 +12,7 @@ pub type Height = u64;
 /// the height, the time, the hash of the validator set
 /// that should sign this header, and the hash of the validator
 /// set that should sign the next header.
-pub trait Header: Debug + Clone {
+pub trait Header: Clone {
     /// The header's notion of (bft-)time.
     /// We assume it can be converted to SystemTime.
     type Time: Into<SystemTime>;

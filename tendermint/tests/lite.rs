@@ -3,14 +3,7 @@ use serde_json;
 use std::{fs, path::PathBuf};
 use tendermint::block::Header;
 use tendermint::lite::TrustThresholdFraction;
-use tendermint::{block::signed_header::SignedHeader, lite, validator, validator::Set, Time};
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct TestSuite {
-    signed_header: SignedHeader,
-    last_validators: Vec<validator::Info>,
-    validators: Vec<validator::Info>,
-}
+use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Time};
 
 #[derive(Clone, Debug)]
 struct Duration(u64);
