@@ -112,13 +112,31 @@ impl TrustThreshold for TrustThresholdFraction {
 
 impl Default for TrustThresholdFraction {
     fn default() -> Self {
-        Self {
-            numerator: 1,
-            denominator: 3,
-        }
+        Self::new(1, 3)
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::lite::{TrustThreshold, TrustThresholdFraction};
+
+    #[test]
+    fn default_is_enough_power() {
+        let threshold = TrustThresholdFraction::default();
+
+        // 100% > 33%
+        assert!(threshold.is_enough_power(3, 3));
+
+        // 66% > 33%
+        assert!(threshold.is_enough_power(2, 3));
+
+        // 33% <= 33%
+        assert_eq!(threshold.is_enough_power(1, 3), false);
+
+        // 1% < 33%
+        assert_eq!(threshold.is_enough_power(1, 100), false);
+    }
+}
 /// Requester can be used to request [`SignedHeader`]s and [`ValidatorSet`]s for a
 /// given height, e.g., by talking to a tendermint fullnode through RPC.
 pub trait Requester<C, H>
