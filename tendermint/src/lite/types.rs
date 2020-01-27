@@ -126,7 +126,7 @@ where
     C: Commit,
     H: Header,
 {
-    /// Request the signed header at height h.
+    /// Request the [`SignedHeader`] at height h.
     fn signed_header(&self, h: Height) -> Result<SignedHeader<C, H>, Error>;
 
     /// Request the validator set at height h.
@@ -188,7 +188,7 @@ where
     }
 }
 
-/// SignedHeader bundles a Header and a Commit for convenience.
+/// SignedHeader bundles a [`Header`] and a [`Commit`] for convenience.
 #[derive(Clone)]
 pub struct SignedHeader<C, H>
 where
