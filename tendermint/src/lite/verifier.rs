@@ -653,5 +653,11 @@ mod tests {
         // greater than the period, not OK
         let now = header_time + period + Duration::new(1, 0);
         assert!(is_within_trust_period(&header, &period, &now).is_err());
+
+        // bft time in header is later than now, not OK:
+        let now = SystemTime::UNIX_EPOCH;
+        let later_than_now = now + Duration::new(60, 0);
+        let future_header = MockHeader::new(4, later_than_now, fixed_hash(), fixed_hash());
+        assert!(is_within_trust_period(&future_header, &period, &now).is_err());
     }
 }
