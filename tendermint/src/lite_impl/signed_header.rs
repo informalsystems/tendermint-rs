@@ -43,8 +43,11 @@ impl lite::Commit for block::signed_header::SignedHeader {
         Ok(signed_power)
     }
 
-    fn votes_len(&self) -> usize {
-        self.commit.precommits.len()
+    fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error> {
+        if self.commit.precommits.len() != vals.validators().len() {
+            return Err(lite::Error::InvalidCommitSignatures);
+        }
+        Ok(())
     }
 }
 

@@ -72,9 +72,11 @@ pub trait Commit: Clone {
     /// can be cross-referenced with the given `vals`.
     fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error>;
 
-    /// Return the number of votes included in this commit
-    /// (including nil/empty votes).
-    fn votes_len(&self) -> usize;
+    /// Implementers should add addition validation related to the given validator set
+    /// or other implementation specific validation here.
+    /// Examples might include that the length of the included signatures match with
+    /// the number of validators.
+    fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error>;
 }
 
 /// TrustThreshold defines what fraction of the total voting power of a known
@@ -247,8 +249,8 @@ pub enum Error {
     InvalidValidatorSet,
     InvalidNextValidatorSet,
     InvalidCommitValue, // commit is not for the header we expected
-    InvalidCommit,      // signers do not account for +2/3 of the voting power
-    InvalidCommitLength,
+    InvalidCommitSignatures,
+    InvalidCommit, // signers do not account for +2/3 of the voting power
 
     InsufficientVotingPower, // trust threshold (default +1/3) is not met
     RequestFailed,

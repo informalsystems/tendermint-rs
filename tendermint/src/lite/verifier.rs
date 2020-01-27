@@ -37,18 +37,20 @@ where
     }
 }
 
-/// Validate the validators, next validators, and commit against the header.
-// TODO(EB): consider making this a method on Commit so the details are hidden,
-// and so we can remove the votes_len() method (that check would be part of the
-// methods implementation). These checks aren't reflected
-// explicitly in the spec yet, only in the sentence "Additional checks should
-// be done in the implementation to ensure header is well formed".
-fn validate_untrusted<H, V, C>(header: &H, commit: &C, vals: &V, next_vals: &V) -> Result<(), Error>
+/// Validate the validators, next validators, against the signed header.
+/// This is equivalent to validateSignedHeaderAndVals in the spec.
+fn validate<C, H>(
+    signed_header: &SignedHeader<C, H>,
+    vals: &C::ValidatorSet,
+    next_vals: &C::ValidatorSet,
+) -> Result<(), Error>
 where
-    H: Header,
-    V: ValidatorSet,
     C: Commit,
+    H: Header,
 {
+    let header = signed_header.header();
+    let commit = signed_header.commit();
+
     // ensure the header validator hashes match the given validators
     if header.validators_hash() != vals.hash() {
         return Err(Error::InvalidValidatorSet);
@@ -62,12 +64,8 @@ where
         return Err(Error::InvalidCommitValue);
     }
 
-    // ensure the validator size matches the commit size
-    // NOTE: this is commit structure specific and should be
-    // hidden from the light client ...
-    if vals.len() != commit.votes_len() {
-        return Err(Error::InvalidCommitLength);
-    }
+    // additional implementation specific validation:
+    commit.validate(vals)?;
 
     Ok(())
 }
@@ -138,12 +136,7 @@ where
     let untrusted_header = untrusted_sh.header();
     let untrusted_commit = untrusted_sh.commit();
 
-    validate_untrusted(
-        untrusted_header,
-        untrusted_commit,
-        untrusted_vals,
-        untrusted_next_vals,
-    )?;
+    validate(untrusted_sh, untrusted_vals, untrusted_next_vals)?;
 
     // ensure the new height is higher.
     // if its +1, ensure the vals are correct.
@@ -423,11 +416,11 @@ mod tests {
     #[derive(Clone, Debug, Serialize)]
     struct MockCommit {
         hash: Hash,
-        vals: Vec<Option<usize>>,
+        vals: Vec<usize>,
     }
 
     impl MockCommit {
-        fn new(hash: Hash, vals: Vec<Option<usize>>) -> MockCommit {
+        fn new(hash: Hash, vals: Vec<usize>) -> MockCommit {
             MockCommit { hash, vals }
         }
     }
@@ -446,20 +439,19 @@ mod tests {
             // we only care about the Somes.
             // if there's a signer thats not in the val set,
             // we can't detect it...
-            for signer_opt in self.vals.iter() {
-                if let Some(signer) = signer_opt {
-                    for val in vals.vals.iter() {
-                        if signer == val {
-                            power += 1
-                        }
+            for signer in self.vals.iter() {
+                for val in vals.vals.iter() {
+                    if signer == val {
+                        power += 1
                     }
                 }
             }
             Ok(power)
         }
 
-        fn votes_len(&self) -> usize {
-            self.vals.len()
+        fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
+            // do not check anything here
+            Ok(())
         }
     }
 
@@ -477,7 +469,7 @@ mod tests {
         let height = 1;
         let vals = &MockValSet::new(vals_vec.clone());
         let header = MockHeader::new(height, time, vals.hash(), vals.hash());
-        let commit = MockCommit::new(header.hash(), vals_vec.into_iter().map(Some).collect());
+        let commit = MockCommit::new(header.hash(), vals_vec);
         let sh = &SignedHeader::new(commit, header);
         MockState::new(sh, vals)
     }
@@ -485,7 +477,7 @@ mod tests {
     // create the next state with the given vals and commit.
     fn next_state(
         vals_vec: Vec<usize>,
-        commit_vec: Vec<Option<usize>>,
+        commit_vec: Vec<usize>,
     ) -> (MockSignedHeader, MockValSet, MockValSet) {
         let time = init_time() + Duration::new(10, 0);
         let height = 10;
@@ -500,7 +492,7 @@ mod tests {
     fn assert_err(
         ts: &TrustedState<MockCommit, MockHeader>,
         vals: Vec<usize>,
-        commit: Vec<Option<usize>>,
+        commit: Vec<usize>,
         err: Error,
     ) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
@@ -515,7 +507,7 @@ mod tests {
     }
 
     // make a state with the given vals and commit and ensure we get no error.
-    fn assert_ok(ts: &MockState, vals: Vec<usize>, commit: Vec<Option<usize>>) {
+    fn assert_ok(ts: &MockState, vals: Vec<usize>, commit: Vec<usize>) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
         assert!(verify_single(
             ts,
@@ -528,12 +520,12 @@ mod tests {
     }
 
     // convenience vars for validators that signed commit
-    static S0: Option<usize> = Some(0);
-    static S1: Option<usize> = Some(1);
-    static S2: Option<usize> = Some(2);
-    static S3: Option<usize> = Some(3);
-    static S4: Option<usize> = Some(4);
-    static S5: Option<usize> = Some(5);
+    static S0: usize = 0;
+    static S1: usize = 1;
+    static S2: usize = 2;
+    static S3: usize = 3;
+    static S4: usize = 4;
+    static S5: usize = 5;
 
     // valid to skip, but invalid commit. 1 validator.
     #[test]
@@ -569,7 +561,7 @@ mod tests {
         assert_err(ts, vec![1], vec![S1], err);
 
         // 0% overlap - val set contains original signer, but they didn't sign
-        assert_err(ts, vec![0, 1, 2, 3], vec![None, S1, S2, S3], err);
+        assert_err(ts, vec![0, 1, 2, 3], vec![S1, S2, S3], err);
     }
 
     // valid commit and data, starting with 2 validators.
@@ -588,7 +580,7 @@ mod tests {
 
         // 50% overlap (one original signer still present)
         assert_ok(ts, vec![0], vec![S0]);
-        assert_ok(ts, vec![0, 1, 2, 3], vec![None, S1, S2, S3]);
+        assert_ok(ts, vec![0, 1, 2, 3], vec![S1, S2, S3]);
 
         //*************
         // Err
@@ -597,7 +589,7 @@ mod tests {
         assert_err(ts, vec![2], vec![S2], err);
 
         // 0% overlap (original signer is still in val set but not in commit)
-        assert_err(ts, vec![0, 2, 3, 4], vec![None, S2, S3, S4], err);
+        assert_err(ts, vec![0, 2, 3, 4], vec![S2, S3, S4], err);
     }
 
     // valid commit and data, starting with 3 validators.
@@ -616,7 +608,7 @@ mod tests {
 
         // 66% overlap (two original signers still present)
         assert_ok(ts, vec![0, 1], vec![S0, S1]);
-        assert_ok(ts, vec![0, 1, 2, 3], vec![None, S1, S2, S3]);
+        assert_ok(ts, vec![0, 1, 2, 3], vec![S1, S2, S3]);
 
         //*************
         // Err
@@ -629,7 +621,7 @@ mod tests {
         assert_err(ts, vec![3], vec![S2], err);
 
         // 0% overlap (original signer is still in val set but not in commit)
-        assert_err(ts, vec![0, 3, 4, 5], vec![None, S3, S4, S5], err);
+        assert_err(ts, vec![0, 3, 4, 5], vec![S3, S4, S5], err);
     }
 
     fn fixed_hash() -> Hash {
