@@ -164,7 +164,7 @@ where
     validators: C::ValidatorSet,     // height H
 }
 
-impl<'a, C, H> TrustedState<C, H>
+impl<C, H> TrustedState<C, H>
 where
     H: Header,
     C: Commit,
