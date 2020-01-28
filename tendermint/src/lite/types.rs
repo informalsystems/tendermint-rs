@@ -139,6 +139,7 @@ mod tests {
         assert_eq!(threshold.is_enough_power(1, 100), false);
     }
 }
+
 /// Requester can be used to request [`SignedHeader`]s and [`ValidatorSet`]s for a
 /// given height, e.g., by talking to a tendermint fullnode through RPC.
 pub trait Requester<C, H>

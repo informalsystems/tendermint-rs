@@ -2,8 +2,9 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
 use std::{fs, path::PathBuf};
 use tendermint::block::Header;
-use tendermint::lite::TrustThresholdFraction;
+use tendermint::lite::{Store, TrustThresholdFraction};
 use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Time};
+use tendermint_lite::store;
 
 #[derive(Clone, Debug)]
 struct Duration(u64);
@@ -65,42 +66,38 @@ type Trusted = lite::TrustedState<SignedHeader, Header>;
 fn run_test_cases(cases: TestCases) {
     for (_, tc) in cases.test_cases.iter().enumerate() {
         let trusted_next_vals = tc.initial.clone().next_validator_set;
-        let mut trusted_state =
+        let trusted_state =
             Trusted::new(&tc.initial.signed_header.clone().into(), &trusted_next_vals);
         let expects_err = match &tc.expected_output {
             Some(eo) => eo.eq("error"),
             None => false,
         };
 
-        // TODO - we're currently using lite::verify_single which
-        // shouldn't even be exposed and doesn't check time.
-        // but the public functions take a store, which do check time,
-        // also take a store, so we need to mock one ...
-        /*
         let trusting_period: std::time::Duration = tc.initial.clone().trusting_period.into();
-        let now = tc.initial.now;
-        */
+        let tm_now = tc.initial.now;
+        let now = tm_now.to_system_time().unwrap();
+        // Note: Alternative to using mem-store from the light node crate would be mocking
+        // the store here directly.
+        let mut store = store::MemStore::new();
+        store
+            .add(trusted_state)
+            .expect("adding trusted state to store failed");
 
         for (_, input) in tc.input.iter().enumerate() {
             println!("{}", tc.description);
             let untrusted_signed_header = &input.signed_header;
             let untrusted_vals = &input.validator_set;
             let untrusted_next_vals = &input.next_validator_set;
-            // Note that in the provided test files the other header is either assumed to
-            // be "trusted" (verification already happened), or, it's the signed header verified in
-            // the previous iteration of this loop. In both cases it is assumed that h1 was already
-            // verified.
-            match lite::verify_single(
-                &trusted_state,
+            match lite::verify_and_update_single(
                 &untrusted_signed_header.into(),
                 &untrusted_vals,
                 &untrusted_next_vals,
                 &TrustThresholdFraction::default(),
+                &trusting_period,
+                &now,
+                &mut store,
             ) {
                 Ok(_) => {
-                    let last: lite::SignedHeader<SignedHeader, Header> =
-                        untrusted_signed_header.into();
-                    trusted_state = Trusted::new(&last, &untrusted_next_vals);
                     assert!(!expects_err);
                 }
                 Err(_) => {
