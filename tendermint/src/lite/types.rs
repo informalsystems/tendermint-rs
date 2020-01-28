@@ -72,10 +72,10 @@ pub trait Commit: Clone {
     /// can be cross-referenced with the given `vals`.
     fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error>;
 
-    /// Implementers should add addition validation related to the given validator set
+    /// Implementers should add addition validation against the given validator set
     /// or other implementation specific validation here.
-    /// Examples might include that the length of the included signatures match with
-    /// the number of validators.
+    /// E.g. validate that the length of the included signatures in the commit match
+    /// with the number of validators.
     fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error>;
 }
 

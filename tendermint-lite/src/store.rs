@@ -3,7 +3,7 @@ use tendermint::lite::{Error, Header, Height, Store, TrustedState};
 use std::collections::HashMap;
 use tendermint::block;
 
-type State = TrustedState<block::signed_header::SignedHeader, block::header::Header>;
+pub type State = TrustedState<block::signed_header::SignedHeader, block::header::Header>;
 
 #[derive(Default)]
 pub struct MemStore {
