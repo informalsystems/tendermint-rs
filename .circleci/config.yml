@@ -1,25 +1,61 @@
-version: 2
+version: 2.1
 
-jobs:
-  rust/format:
+executors:
+  cargo-executor:
     docker:
       - image: rust:1
+    resource_class: large
+  cargo-audit-executor:
+    docker:
+      - image: rust:1
+    resource_class: small
+
+commands:
+  install_coverage_dependencies:
     steps:
-      - checkout
       - run:
-          name: Update toolchain
+          name: Install grcov and zip
           command: |
-            test -z "stable" || echo "stable" >rust-toolchain
-            rustup show active-toolchain
+            apt-get update
+            apt-get install -y zip
+            cargo install --force grcov
+  print_version_info:
+    steps:
       - run:
           name: Version information
           command: |
             rustup --version
             rustc --version
             cargo --version
+  update_stable_toolchain:
+    steps:
+      - run:
+          name: Update toolchain
+          command: |
+            test -z "stable" || echo "stable" >rust-toolchain
+            rustup show active-toolchain
+  update_nightly_toolchain:
+    steps:
+      - run:
+          name: Update nightly toolchain
+          command: |
+            test -z "nightly" || echo "nightly" >rust-toolchain
+            rustup show active-toolchain
+  calculate_cargo_dependencies:
+    steps:
       - run:
           name: Calculate dependencies
           command: test -e Cargo.lock || cargo generate-lockfile
+
+jobs:
+  format:
+    description: Check proper formatting
+    executor: cargo-executor
+    steps:
+      - checkout
+      - update_stable_toolchain
+      - print_version_info
+      - calculate_cargo_dependencies
       - run:
           name: Check formatting
           command: |
@@ -28,25 +64,14 @@ jobs:
             else
               echo Skipping rustfmt
             fi
-  rust/clippy:
-    docker:
-      - image: rust:1
+  clippy:
+    description: Lint using clippy
+    executor: cargo-executor
     steps:
       - checkout
-      - run:
-          name: Update toolchain
-          command: |
-            test -z "stable" || echo "stable" >rust-toolchain
-            rustup show active-toolchain
-      - run:
-          name: Version information
-          command: |
-            rustup --version
-            rustc --version
-            cargo --version
-      - run:
-          name: Calculate dependencies
-          command: test -e Cargo.lock || cargo generate-lockfile
+      - update_stable_toolchain
+      - print_version_info
+      - calculate_cargo_dependencies
       - run:
           name: Run clippy checks
           command: |
@@ -55,27 +80,14 @@ jobs:
             else
               echo Skipping clippy
             fi
-  rust/test-stable:
-    docker:
-      - image: rust:1
+  test-stable:
+    description: Run all tests using the stable toolchain
+    executor: cargo-executor
     steps:
       - checkout
-      - run:
-          name: Update toolchain
-          command: |
-            test -z "stable" || echo "stable" >rust-toolchain
-            rustup show active-toolchain
-      - run:
-          name: Version information
-          command: |
-            rustup --version
-            rustc --version
-            cargo --version
-      - run:
-          name: Calculate dependencies
-          command: |
-            rustc --version >rust-version
-            test -e Cargo.lock || cargo generate-lockfile
+      - update_stable_toolchain
+      - print_version_info
+      - calculate_cargo_dependencies
       - restore_cache:
           keys:
             - v6-cargo-cache-{{arch}}-{{checksum "rust-version"}}-false-{{checksum "Cargo.lock"}}
@@ -90,33 +102,30 @@ jobs:
       - run:
           name: Run all tests
           command: cargo test --all
-  rust/test-nightly-coverage:
-    docker:
-      - image: rust:1
+  audit:
+    description: Audit for vulnerable dependencies
+    executor: cargo-audit-executor
     steps:
       - checkout
+      - update_stable_toolchain
+      - print_version_info
       - run:
-          name: Update toolchain (nightly)
+          name: Install Cargo Audit
           command: |
-            test -z "nightly" || echo "nightly" >rust-toolchain
-            rustup show active-toolchain
+            cargo install --force cargo-audit
       - run:
-          name: Version information
+          name: Run Cargo Audit
           command: |
-            rustup --version
-            rustc --version
-            cargo --version
-      - run:
-          name: Install coverage dependencies
-          command: |
-            apt-get update
-            apt-get install -y zip
-            cargo install --force grcov
-      - run:
-          name: Calculate dependencies
-          command: |
-            rustc --version >rust-version
-            test -e Cargo.lock || cargo generate-lockfile
+            cargo audit
+  test-nightly-coverage:
+    description: Collect and upload test coverage using the nighly toolchain
+    executor: cargo-executor
+    steps:
+      - checkout
+      - update_nightly_toolchain
+      - print_version_info
+      - install_coverage_dependencies
+      - calculate_cargo_dependencies
       - restore_cache:
           keys:
             - v6-cargo-cache-{{arch}}-{{checksum "rust-version"}}-false-{{checksum "Cargo.lock"}}
@@ -143,11 +152,12 @@ jobs:
             bash <(curl -s https://codecov.io/bash) -f lcov.info
             rm -f lcov.info
             rm -f ccov.zip
+
 workflows:
-  build:
+  commit-workflow:
     jobs:
-      - rust/format
-      - rust/clippy
-      - rust/test-stable
-      - rust/test-nightly-coverage
-  version: 2
+      - format
+      - clippy
+      - test-stable
+      - test-nightly-coverage
+      - audit
