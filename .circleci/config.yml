@@ -152,6 +152,8 @@ jobs:
             zip -0 ccov.zip `find . \( -name "*tendermint*.gc*" \) -print`
             grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" -o lcov.info
             bash <(curl -s https://codecov.io/bash) -f lcov.info
+            rm -f lcov.info
+            rm -f ccov.zip
 workflows:
   build:
     jobs:
