@@ -403,12 +403,6 @@ mod tests {
         fn total_power(&self) -> u64 {
             self.vals.len() as u64
         }
-        fn len(&self) -> usize {
-            self.vals.len()
-        }
-        fn is_empty(&self) -> bool {
-            self.len() == 0
-        }
     }
 
     // commit is a list of vals that signed.

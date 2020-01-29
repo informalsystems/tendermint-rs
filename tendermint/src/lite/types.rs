@@ -38,12 +38,6 @@ pub trait ValidatorSet: Clone {
 
     /// Total voting power of the set
     fn total_power(&self) -> u64;
-
-    /// Return the number of validators in this validator set.
-    fn len(&self) -> usize;
-
-    /// Returns true iff the validator set is empty.
-    fn is_empty(&self) -> bool;
 }
 
 /// Commit is proof a Header is valid.
