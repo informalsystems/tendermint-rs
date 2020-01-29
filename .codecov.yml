@@ -1,0 +1,23 @@
+codecov:
+  require_ci_to_pass: yes
+
+ignore:
+
+coverage:
+  precision: 1
+  round: down
+  # we should increase this to 70% ?
+  range: "50...100"
+
+  status:
+    project: true
+    patch: true
+    changes: true
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: yes
+      macro: no

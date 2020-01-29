@@ -105,7 +105,7 @@ jobs:
       - run:
           name: Run all tests
           command: cargo test --all
-  rust/test-coverage:
+  rust/test-nightly-coverage:
     docker:
       - image: rust:1
     steps:
@@ -168,5 +168,5 @@ workflows:
       - rust/format
       - rust/clippy
       - rust/test-stable
-      - rust/test-coverage
+      - rust/test-nightly-coverage
   version: 2
