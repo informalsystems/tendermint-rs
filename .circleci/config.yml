@@ -121,24 +121,21 @@ jobs:
           keys:
             - v6-cargo-cache-{{arch}}-{{checksum "rust-version"}}-false-{{checksum "Cargo.lock"}}
       - run:
-          name: Build using coverage related flags
+          name: Run tests with coverage env
           command: |
             export CARGO_INCREMENTAL=0
             export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads"
             cargo clean
-            cargo build --all --verbose
+            cargo test --all --verbose
       - save_cache:
           paths:
             - /usr/local/cargo/registry
             - target
           key: v6-cargo-cache-{{arch}}-{{checksum "rust-version"}}-false-{{checksum "Cargo.lock"}}
       - run:
-          name: Run all tests
-          command: cargo test --all --verbose
-      - run:
           name: Collect and upload test coverage
           command: |
-            # This currently only matches gco files in crates named tendermint*:
+            # This currently only matches gc files in crates named *tendermint*:
             zip -0 ccov.zip `find . \( -name "*tendermint*.gc*" \) -print`
             grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" -o lcov.info
             bash <(curl -s https://codecov.io/bash) -f lcov.info
