@@ -88,17 +88,9 @@ jobs:
       - update_stable_toolchain
       - print_version_info
       - calculate_cargo_dependencies
-      - restore_cache:
-          keys:
-            - v6-cargo-cache-{{arch}}-{{checksum "rust-version"}}-false-{{checksum "Cargo.lock"}}
       - run:
           name: Build all targets
           command: cargo build --all --all-targets
-      - save_cache:
-          paths:
-            - /usr/local/cargo/registry
-            - target
-          key: v6-cargo-cache-{{arch}}-{{checksum "rust-version"}}-false-{{checksum "Cargo.lock"}}
       - run:
           name: Run all tests
           command: cargo test --all
@@ -126,9 +118,6 @@ jobs:
       - print_version_info
       - install_coverage_dependencies
       - calculate_cargo_dependencies
-      - restore_cache:
-          keys:
-            - v6-cargo-cache-{{arch}}-{{checksum "rust-version"}}-false-{{checksum "Cargo.lock"}}
       - run:
           name: Run tests with coverage env
           command: |
@@ -136,11 +125,6 @@ jobs:
             export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads"
             cargo clean
             cargo test --all --verbose
-      - save_cache:
-          paths:
-            - /usr/local/cargo/registry
-            - target
-          key: v6-cargo-cache-{{arch}}-{{checksum "rust-version"}}-false-{{checksum "Cargo.lock"}}
       - run:
           name: Collect and upload test coverage
           command: |
