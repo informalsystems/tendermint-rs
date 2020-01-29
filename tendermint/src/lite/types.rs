@@ -112,28 +112,6 @@ impl Default for TrustThresholdFraction {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::lite::{TrustThreshold, TrustThresholdFraction};
-
-    #[test]
-    fn default_is_enough_power() {
-        let threshold = TrustThresholdFraction::default();
-
-        // 100% > 33%
-        assert!(threshold.is_enough_power(3, 3));
-
-        // 66% > 33%
-        assert!(threshold.is_enough_power(2, 3));
-
-        // 33% <= 33%
-        assert_eq!(threshold.is_enough_power(1, 3), false);
-
-        // 1% < 33%
-        assert_eq!(threshold.is_enough_power(1, 100), false);
-    }
-}
-
 /// Requester can be used to request [`SignedHeader`]s and [`ValidatorSet`]s for a
 /// given height, e.g., by talking to a tendermint fullnode through RPC.
 pub trait Requester<C, H>
@@ -204,7 +182,7 @@ where
 }
 
 /// SignedHeader bundles a [`Header`] and a [`Commit`] for convenience.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)] // NOTE: Copy/Clone/Debug for convenience in testing ...
 pub struct SignedHeader<C, H>
 where
     C: Commit,
@@ -222,6 +200,7 @@ where
     pub fn new(commit: C, header: H) -> Self {
         Self { commit, header }
     }
+
     pub fn commit(&self) -> &C {
         &self.commit
     }
@@ -243,10 +222,109 @@ pub enum Error {
 
     InvalidValidatorSet,
     InvalidNextValidatorSet,
-    InvalidCommitValue, // commit is not for the header we expected
+    InvalidCommitValue,
+    // commit is not for the header we expected
     InvalidCommitSignatures,
     InvalidCommit, // signers do not account for +2/3 of the voting power
 
-    InsufficientVotingPower, // trust threshold (default +1/3) is not met
+    InsufficientVotingPower,
+    // trust threshold (default +1/3) is not met
     RequestFailed,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::lite::{Commit, Error, Header, SignedHeader, TrustedState, ValidatorSet};
+    use crate::lite::{TrustThreshold, TrustThresholdFraction};
+    use crate::Hash;
+    use std::time::SystemTime;
+
+    #[test]
+    fn default_is_enough_power() {
+        let threshold = TrustThresholdFraction::default();
+
+        // 100% > 33%
+        assert!(threshold.is_enough_power(3, 3));
+
+        // 66% > 33%
+        assert!(threshold.is_enough_power(2, 3));
+
+        // 33% <= 33%
+        assert_eq!(threshold.is_enough_power(1, 3), false);
+
+        // 1% < 33%
+        assert_eq!(threshold.is_enough_power(1, 100), false);
+    }
+
+    #[derive(Clone, Debug, PartialEq)]
+    struct MockCommit {}
+
+    #[derive(Clone, Debug, PartialEq)]
+    struct MockValSet {}
+
+    impl ValidatorSet for MockValSet {
+        fn hash(&self) -> Hash {
+            unimplemented!()
+        }
+        fn total_power(&self) -> u64 {
+            0
+        }
+    }
+
+    #[derive(Clone, Debug, PartialEq)]
+    struct MockHeader {}
+
+    impl Header for MockHeader {
+        type Time = SystemTime;
+
+        fn height(&self) -> u64 {
+            unimplemented!()
+        }
+        fn bft_time(&self) -> Self::Time {
+            unimplemented!()
+        }
+        fn validators_hash(&self) -> Hash {
+            unimplemented!()
+        }
+        fn next_validators_hash(&self) -> Hash {
+            unimplemented!()
+        }
+        fn hash(&self) -> Hash {
+            unimplemented!()
+        }
+    }
+
+    impl Commit for MockCommit {
+        type ValidatorSet = MockValSet;
+
+        fn header_hash(&self) -> Hash {
+            unimplemented!()
+        }
+        fn voting_power_in(&self, _: &Self::ValidatorSet) -> Result<u64, Error> {
+            Ok(0)
+        }
+        fn validate(&self, _: &Self::ValidatorSet) -> Result<(), Error> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn signed_header() {
+        let h = MockHeader {};
+        let c = MockCommit {};
+        let sh = SignedHeader::new(c.clone(), h.clone());
+        assert_eq!(sh.commit(), &c);
+        assert_eq!(sh.header(), &h);
+    }
+
+    #[test]
+    fn trusted_state() {
+        let h = MockHeader {};
+        let c = MockCommit {};
+        let vs = MockValSet {};
+        let sh = SignedHeader::new(c, h);
+        let ts = TrustedState::new(&sh, &vs);
+        assert_eq!(ts.last_header(), &sh);
+        assert_eq!(ts.validators(), &vs);
+    }
 }
