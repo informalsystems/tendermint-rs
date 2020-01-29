@@ -7,11 +7,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Checkout submodules
-          command: |
-            git submodule sync
-            git submodule update --init
-      - run:
           name: Update toolchain
           command: |
             test -z "stable" || echo "stable" >rust-toolchain
@@ -38,11 +33,6 @@ jobs:
       - image: rust:1
     steps:
       - checkout
-      - run:
-          name: Checkout submodules
-          command: |
-            git submodule sync
-            git submodule update --init
       - run:
           name: Update toolchain
           command: |
@@ -116,7 +106,7 @@ jobs:
             git submodule sync
             git submodule update --init
       - run:
-          name: Update toolchain
+          name: Update toolchain (nightly)
           command: |
             test -z "nightly" || echo "nightly" >rust-toolchain
             rustup show active-toolchain
@@ -130,7 +120,7 @@ jobs:
           name: Install coverage dependencies
           command: |
             apt-get update
-            apt-get install -y lcov zip
+            apt-get install -y zip
             cargo install --force grcov
       - run:
           name: Calculate dependencies
