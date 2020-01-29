@@ -1,46 +1,171 @@
 version: 2
 
 jobs:
-  build:
+  rust/format:
     docker:
-    - image: circleci/rust
+      - image: circleci/rust:buster
     steps:
-    - checkout
-    - run:
-        name: rustfmt
-        command: |
-          cargo fmt --version
-          cargo fmt -- --check
-    - run:
-        name: clippy
-        command: |
-          if rustup component add clippy; then
-            cargo clippy --version
-            cargo clippy --all --all-targets -- -Dwarnings -Drust-2018-idioms
-          else
-            echo Skipping clippy
-          fi
-    - run:
-        name: build 
-        command: |
-          rustc --version
-          cargo --version
-          cargo build 
-    - run:
-        name: build --benches
-        command: |
-          rustc --version
-          cargo --version
-          cargo build --benches
-    - run:
-        name: build --release
-        command: |
-          rustc --version
-          cargo --version
-          cargo build --release
-    - run:
-        name: test
-        command: |
-          rustc --version
-          cargo --version
-          cargo test 
+      - checkout
+      - run:
+          name: Checkout submodules
+          command: |
+            git submodule sync
+            git submodule update --init
+      - run:
+          name: Update toolchain
+          command: |
+            test -z "stable" || echo "stable" >rust-toolchain
+            rustup show active-toolchain
+      - run:
+          name: Version information
+          command: |
+            rustup --version
+            rustc --version
+            cargo --version
+      - run:
+          name: Calculate dependencies
+          command: test -e Cargo.lock || cargo generate-lockfile
+      - run:
+          name: Check formatting
+          command: |
+            if rustup component add rustfmt; then
+              cargo fmt --all -- --check
+            else
+              echo Skipping rustfmt
+            fi
+  rust/clippy:
+    docker:
+      - image: rust:1
+    steps:
+      - checkout
+      - run:
+          name: Checkout submodules
+          command: |
+            git submodule sync
+            git submodule update --init
+      - run:
+          name: Update toolchain
+          command: |
+            test -z "stable" || echo "stable" >rust-toolchain
+            rustup show active-toolchain
+      - run:
+          name: Version information
+          command: |
+            rustup --version
+            rustc --version
+            cargo --version
+      - run:
+          name: Calculate dependencies
+          command: test -e Cargo.lock || cargo generate-lockfile
+      - run:
+          name: Run clippy checks
+          command: |
+            if rustup component add clippy; then
+              cargo clippy --all --all-targets -- -Dwarnings -Drust-2018-idioms
+            else
+              echo Skipping clippy
+            fi
+  rust/test-stable:
+    docker:
+      - image: rust:1
+    steps:
+      - checkout
+      - run:
+          name: Checkout submodules
+          command: |
+            git submodule sync
+            git submodule update --init
+      - run:
+          name: Update toolchain
+          command: |
+            test -z "stable" || echo "stable" >rust-toolchain
+            rustup show active-toolchain
+      - run:
+          name: Version information
+          command: |
+            rustup --version
+            rustc --version
+            cargo --version
+      - run:
+          name: Calculate dependencies
+          command: |
+            rustc --version >rust-version
+            test -e Cargo.lock || cargo generate-lockfile
+      - restore_cache:
+          keys:
+            - v6-cargo-cache-{{arch}}-{{checksum "rust-version"}}-false-{{checksum "Cargo.lock"}}
+      - run:
+          name: Build all targets
+          command: cargo build --all --all-targets
+      - save_cache:
+          paths:
+            - /usr/local/cargo/registry
+            - target
+          key: v6-cargo-cache-{{arch}}-{{checksum "rust-version"}}-false-{{checksum "Cargo.lock"}}
+      - run:
+          name: Run all tests
+          command: cargo test --all
+  rust/test-coverage:
+    docker:
+      - image: rust:1
+    steps:
+      - checkout
+      - run:
+          name: Checkout submodules
+          command: |
+            git submodule sync
+            git submodule update --init
+      - run:
+          name: Update toolchain
+          command: |
+            test -z "nightly" || echo "nightly" >rust-toolchain
+            rustup show active-toolchain
+      - run:
+          name: Version information
+          command: |
+            rustup --version
+            rustc --version
+            cargo --version
+      - run:
+          name: Install coverage dependencies
+          command: |
+            apt-get update
+            apt-get install -y lcov zip
+            cargo install --force grcov
+      - run:
+          name: Calculate dependencies
+          command: |
+            rustc --version >rust-version
+            test -e Cargo.lock || cargo generate-lockfile
+      - restore_cache:
+          keys:
+            - v6-cargo-cache-{{arch}}-{{checksum "rust-version"}}-false-{{checksum "Cargo.lock"}}
+      - run:
+          name: Build using coverage related flags
+          command: |
+            export CARGO_INCREMENTAL=0
+            export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads"
+            cargo build --all --verbose
+      - save_cache:
+          paths:
+            - /usr/local/cargo/registry
+            - target
+          key: v6-cargo-cache-{{arch}}-{{checksum "rust-version"}}-false-{{checksum "Cargo.lock"}}
+      - run:
+          name: Run all tests
+          command: cargo test --all --verbose
+      - run:
+          name: Collect and upload test coverage
+          command: |
+            # This currently only matches gco files in crates named tendermint*:
+            zip -0 ccov.zip `find . \( -name "*tendermint*.gc*" \) -print`
+            grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" -o lcov.info
+            bash <(curl -s https://codecov.io/bash) -f lcov.info
+workflows:
+  build:
+    jobs:
+      - rust/format
+      - rust/clippy
+      - rust/test-stable
+      - rust/test-coverage
+  version: 2
