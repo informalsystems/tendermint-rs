@@ -61,11 +61,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Checkout submodules
-          command: |
-            git submodule sync
-            git submodule update --init
-      - run:
           name: Update toolchain
           command: |
             test -z "stable" || echo "stable" >rust-toolchain
@@ -100,11 +95,6 @@ jobs:
       - image: rust:1
     steps:
       - checkout
-      - run:
-          name: Checkout submodules
-          command: |
-            git submodule sync
-            git submodule update --init
       - run:
           name: Update toolchain (nightly)
           command: |
