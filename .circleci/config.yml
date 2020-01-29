@@ -3,7 +3,7 @@ version: 2
 jobs:
   rust/format:
     docker:
-      - image: circleci/rust:buster
+      - image: rust:1
     steps:
       - checkout
       - run:
@@ -135,7 +135,9 @@ jobs:
       - run:
           name: Collect and upload test coverage
           command: |
-            # This currently only matches gc files in crates named *tendermint*:
+            # Note: this currently only matches gc files in crates named *tendermint*.
+            # This is something to keep in mind if we create crates that do not have tendermint in
+            # their name.
             zip -0 ccov.zip `find . \( -name "*tendermint*.gc*" \) -print`
             grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" -o lcov.info
             bash <(curl -s https://codecov.io/bash) -f lcov.info
