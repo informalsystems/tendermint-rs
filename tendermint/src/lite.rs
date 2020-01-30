@@ -5,4 +5,4 @@ pub mod verifier;
 
 pub use self::types::*;
 
-pub use self::verifier::{verify_and_update_bisection, verify_and_update_single};
+pub use self::verifier::{verify_bisection, verify_single};

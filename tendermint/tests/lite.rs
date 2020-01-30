@@ -80,7 +80,7 @@ fn run_test_cases(cases: TestCases) {
         // the store here directly.
         let mut store = store::MemStore::new();
         store
-            .add(trusted_state)
+            .add(trusted_state.clone())
             .expect("adding trusted state to store failed");
 
         for (_, input) in tc.input.iter().enumerate() {
@@ -88,16 +88,18 @@ fn run_test_cases(cases: TestCases) {
             let untrusted_signed_header = &input.signed_header;
             let untrusted_vals = &input.validator_set;
             let untrusted_next_vals = &input.next_validator_set;
-            match lite::verify_and_update_single(
+            let trusted_state = store.get(0).expect("couldn't get from store");
+            match lite::verify_single(
+                trusted_state.clone(),
                 &untrusted_signed_header.into(),
                 &untrusted_vals,
                 &untrusted_next_vals,
                 &TrustThresholdFraction::default(),
                 &trusting_period,
                 &now,
-                &mut store,
             ) {
-                Ok(_) => {
+                Ok(new_state) => {
+                    store.add(new_state).expect("couldn't store");
                     assert!(!expects_err);
                 }
                 Err(_) => {

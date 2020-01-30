@@ -12,7 +12,7 @@ use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
 use crate::lite::{
-    Commit, Error, Header, Height, Requester, SignedHeader, Store, TrustThreshold, TrustedState,
+    Commit, Error, Header, Height, Requester, SignedHeader, TrustThreshold, TrustedState,
     ValidatorSet,
 };
 
@@ -120,7 +120,7 @@ where
 // and hence it's possible to use it incorrectly.
 // If trusted_state is not expired and this returns Ok, the
 // untrusted_sh and untrusted_next_vals can be considered trusted.
-fn verify_single<H, C, L>(
+fn verify_single_inner<H, C, L>(
     trusted_state: &TrustedState<C, H>,
     untrusted_sh: &SignedHeader<C, H>,
     untrusted_vals: &C::ValidatorSet,
@@ -169,42 +169,44 @@ where
     verify_commit_full(untrusted_vals, untrusted_sh.commit())
 }
 
-/// Attempt to update the store to the given untrusted header.
+/// Verify a single untrusted header against a trusted state.
 /// Ensures our last trusted header hasn't expired yet, and that
 /// the untrusted header can be verified using only our latest trusted
 /// state from the store.
+///
+/// On success, the caller is responsible for updating the store with the returned
+/// header to be trusted.
+///
 /// This function is primarily for use by IBC handlers.
-pub fn verify_and_update_single<H, C, L, S>(
+pub fn verify_single<H, C, L>(
+    trusted_state: TrustedState<C, H>,
     untrusted_sh: &SignedHeader<C, H>,
     untrusted_vals: &C::ValidatorSet,
     untrusted_next_vals: &C::ValidatorSet,
     trust_threshold: &L,
     trusting_period: &Duration,
     now: &SystemTime,
-    store: &mut S,
-) -> Result<(), Error>
+) -> Result<TrustedState<C, H>, Error>
 where
     H: Header,
     C: Commit,
     L: TrustThreshold,
-    S: Store<C, H>,
 {
     // Fetch the latest state and ensure it hasn't expired.
-    let trusted_state = store.get(0)?;
     let trusted_sh = trusted_state.last_header();
     is_within_trust_period(trusted_sh.header(), trusting_period, now)?;
 
-    verify_single(
-        trusted_state,
+    verify_single_inner(
+        &trusted_state,
         untrusted_sh,
         untrusted_vals,
         untrusted_next_vals,
         trust_threshold,
     )?;
 
-    // The untrusted header is now trusted; Update the store
-    let new_trusted_state = TrustedState::new(untrusted_sh, untrusted_next_vals);
-    store.add(new_trusted_state)
+    // The untrusted header is now trusted;
+    // return to the caller so they can update the store:
+    Ok(TrustedState::new(untrusted_sh, untrusted_next_vals))
 }
 
 /// Attempt to "bisect" to the given untrusted height
@@ -227,7 +229,7 @@ where
 /// data from intermediate heights.
 ///
 /// This function is primarily for use by a light node.
-pub fn verify_and_update_bisection<C, H, L, R>(
+pub fn verify_bisection<C, H, L, R>(
     trusted_state: TrustedState<C, H>,
     untrusted_height: Height,
     trust_threshold: &L,
@@ -264,12 +266,12 @@ where
 
     // inner recursive function which assumes
     // trusting_period check is already done.
-    verify_and_update_bisection_inner(&trusted_state, untrusted_height, trust_threshold, req)
+    verify_bisection_inner(&trusted_state, untrusted_height, trust_threshold, req)
 }
 
 // inner recursive function for verify_and_update_bisection.
 // see that function's docs.
-fn verify_and_update_bisection_inner<H, C, L, R>(
+fn verify_bisection_inner<H, C, L, R>(
     trusted_state: &TrustedState<C, H>,
     untrusted_height: Height,
     trust_threshold: &L,
@@ -288,7 +290,7 @@ where
         &req.validator_set(untrusted_height.checked_add(1).expect("height overflow"))?;
 
     // check if we can skip to this height and if it verifies.
-    match verify_single(
+    match verify_single_inner(
         trusted_state,
         untrusted_sh,
         untrusted_vals,
@@ -319,12 +321,11 @@ where
     // Recursive call to update to the pivot height.
     // When this completes, we will either return an error or
     // have updated the store to the pivot height.
-    let trusted_left =
-        verify_and_update_bisection_inner(trusted_state, pivot_height, trust_threshold, req)?;
+    let trusted_left = verify_bisection_inner(trusted_state, pivot_height, trust_threshold, req)?;
     // TODO: clarify that we do not store these intermediate states anymore?
 
     // Recursive call to update to the original untrusted_height.
-    verify_and_update_bisection_inner(&trusted_left, untrusted_height, trust_threshold, req)
+    verify_bisection_inner(&trusted_left, untrusted_height, trust_threshold, req)
 }
 
 #[cfg(test)]
@@ -374,7 +375,7 @@ mod tests {
         err: Error,
     ) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
-        let result = verify_single(
+        let result = verify_single_inner(
             ts,
             &un_sh,
             &un_vals,
@@ -387,7 +388,7 @@ mod tests {
     // make a state with the given vals and commit and ensure we get no error.
     fn assert_ok(ts: &MockState, vals: Vec<usize>, commit: Vec<usize>) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
-        assert!(verify_single(
+        assert!(verify_single_inner(
             ts,
             &un_sh,
             &un_vals,
