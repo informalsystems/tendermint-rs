@@ -151,7 +151,7 @@ where
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header (at height h-1) and the validator set
 /// (at height h) to use to verify the next header.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TrustedState<C, H>
 where
     H: Header,
@@ -243,6 +243,7 @@ pub(super) mod mocks {
     use crate::{hash::Algorithm, Hash};
 
     use super::*;
+    use std::collections::HashMap;
 
     #[derive(Clone, Debug, PartialEq, Serialize)]
     pub struct MockHeader {
@@ -324,7 +325,6 @@ pub(super) mod mocks {
             MockCommit { hash, vals }
         }
     }
-
     impl Commit for MockCommit {
         type ValidatorSet = MockValSet;
 
@@ -335,8 +335,6 @@ pub(super) mod mocks {
         // just the intersection
         fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error> {
             let mut power = 0;
-
-            // we only care about the Somes.
             // if there's a signer thats not in the val set,
             // we can't detect it...
             for signer in self.vals.iter() {
@@ -352,6 +350,40 @@ pub(super) mod mocks {
         fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
             // do not check anything here
             Ok(())
+        }
+    }
+    pub type MockSignedHeader = SignedHeader<MockCommit, MockHeader>;
+    pub type MockTrustedState = TrustedState<MockCommit, MockHeader>;
+    // Mock requester holds a map from height to
+    // Headers and commits.
+    #[derive(Clone, Debug)]
+    pub struct MockRequester {
+        pub signed_headers: HashMap<u64, SignedHeader<MockCommit, MockHeader>>,
+        pub validators: HashMap<u64, MockValSet>,
+    }
+    impl MockRequester {
+        pub fn new() -> Self {
+            Self {
+                signed_headers: HashMap::new(),
+                validators: HashMap::new(),
+            }
+        }
+    }
+    impl Requester<MockCommit, MockHeader> for MockRequester {
+        fn signed_header(&self, h: u64) -> Result<SignedHeader<MockCommit, MockHeader>, Error> {
+            if let Some(sh) = self.signed_headers.get(&h) {
+                return Ok(sh.to_owned());
+            }
+            println!("couldn't get sh for: {}", &h);
+            Err(Error::RequestFailed)
+        }
+
+        fn validator_set(&self, h: u64) -> Result<MockValSet, Error> {
+            if let Some(vs) = self.validators.get(&h) {
+                return Ok(vs.to_owned());
+            }
+            println!("couldn't get vals for: {}", &h);
+            Err(Error::RequestFailed)
         }
     }
 

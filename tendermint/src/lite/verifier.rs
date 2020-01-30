@@ -373,9 +373,8 @@ mod tests {
     }
 
     // create an initial trusted state from the given vals
-    fn init_state(vals_vec: Vec<usize>) -> MockState {
+    fn init_trusted_state(vals_vec: Vec<usize>, height: u64) -> MockState {
         let time = init_time();
-        let height = 1;
         let vals = &MockValSet::new(vals_vec.clone());
         let header = MockHeader::new(height, time, vals.hash(), vals.hash());
         let commit = MockCommit::new(header.hash(), vals_vec);
@@ -439,7 +438,7 @@ mod tests {
     // valid to skip, but invalid commit. 1 validator.
     #[test]
     fn test_verify_single_skip_1_val_verify() {
-        let ts = &init_state(vec![0]);
+        let ts = &init_trusted_state(vec![0], 1);
 
         // 100% overlap, but wrong commit.
         // NOTE: This should be an invalid commit error since there's
@@ -451,7 +450,7 @@ mod tests {
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_1_val_skip() {
-        let ts = &init_state(vec![0]);
+        let ts = &init_trusted_state(vec![0], 1);
         let err = Error::InsufficientVotingPower;
 
         //*****
@@ -477,7 +476,7 @@ mod tests {
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_2_val_skip() {
-        let ts = &init_state(vec![0, 1]);
+        let ts = &init_trusted_state(vec![0, 1], 1);
         let err = Error::InsufficientVotingPower;
 
         //*************
@@ -505,7 +504,7 @@ mod tests {
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_3_val_skip() {
-        let ts = &init_state(vec![0, 1, 2]);
+        let ts = &init_trusted_state(vec![0, 1, 2], 1);
         let err = Error::InsufficientVotingPower;
 
         //*************
@@ -531,6 +530,33 @@ mod tests {
 
         // 0% overlap (original signer is still in val set but not in commit)
         assert_single_err(ts, vec![0, 3, 4, 5], vec![S3, S4, S5], err);
+    }
+
+    #[test]
+    fn test_verify_bisection_1_val_2_heights() {
+        let ts = &init_trusted_state(vec![0], 1);
+        let ts2 = &init_trusted_state(vec![0], 2);
+
+        let mut req = MockRequester::new();
+        req.signed_headers.insert(1, ts.last_header().clone());
+        req.validators.insert(1, ts.validators().clone());
+        req.signed_headers.insert(2, ts2.last_header().clone());
+        req.validators.insert(2, ts2.validators().clone());
+        req.validators.insert(3, ts2.validators().clone());
+
+        let mut cache: Vec<MockTrustedState> = Vec::new();
+        let ts_new = verify_bisection_inner(
+            ts,
+            2,
+            TrustThresholdFraction::default(),
+            &req,
+            cache.as_mut(),
+        )
+        .expect("should have passed");
+        // TODO: more tests necessary... this doesn't even really do bisection
+        // (bc we're done after the "left half")
+        assert_eq!(ts_new.last_header().header().height(), 2);
+        assert_eq!(cache.len(), 1);
     }
 
     #[test]
