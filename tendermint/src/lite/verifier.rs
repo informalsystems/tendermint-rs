@@ -329,6 +329,7 @@ where
     _verify_and_update_bisection(untrusted_height, trust_threshold, req, store)
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::lite::mocks::*;
