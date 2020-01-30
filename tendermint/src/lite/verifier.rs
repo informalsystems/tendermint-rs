@@ -398,7 +398,7 @@ mod tests {
     }
 
     // make a state with the given vals and commit and ensure we get the error.
-    fn assert_err(
+    fn assert_single_err(
         ts: &TrustedState<MockCommit, MockHeader>,
         vals: Vec<usize>,
         commit: Vec<usize>,
@@ -416,7 +416,7 @@ mod tests {
     }
 
     // make a state with the given vals and commit and ensure we get no error.
-    fn assert_ok(ts: &MockState, vals: Vec<usize>, commit: Vec<usize>) {
+    fn assert_single_ok(ts: &MockState, vals: Vec<usize>, commit: Vec<usize>) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
         assert!(verify_single_inner(
             ts,
@@ -444,7 +444,7 @@ mod tests {
         // 100% overlap, but wrong commit.
         // NOTE: This should be an invalid commit error since there's
         // a vote from a validator not in the set.
-        assert_err(ts, vec![1], vec![S0], Error::InvalidCommit);
+        assert_single_err(ts, vec![1], vec![S0], Error::InvalidCommit);
     }
 
     // valid commit and data, starting with 1 validator.
@@ -458,19 +458,19 @@ mod tests {
         // Ok
 
         // 100% overlap (original signer is present in commit)
-        assert_ok(ts, vec![0], vec![S0]);
-        assert_ok(ts, vec![0, 1], vec![S0, S1]);
-        assert_ok(ts, vec![0, 1, 2], vec![S0, S1, S2]);
-        assert_ok(ts, vec![0, 1, 2, 3], vec![S0, S1, S2, S3]);
+        assert_single_ok(ts, vec![0], vec![S0]);
+        assert_single_ok(ts, vec![0, 1], vec![S0, S1]);
+        assert_single_ok(ts, vec![0, 1, 2], vec![S0, S1, S2]);
+        assert_single_ok(ts, vec![0, 1, 2, 3], vec![S0, S1, S2, S3]);
 
         //*****
         // Err
 
         // 0% overlap - new val set without the original signer
-        assert_err(ts, vec![1], vec![S1], err);
+        assert_single_err(ts, vec![1], vec![S1], err);
 
         // 0% overlap - val set contains original signer, but they didn't sign
-        assert_err(ts, vec![0, 1, 2, 3], vec![S1, S2, S3], err);
+        assert_single_err(ts, vec![0, 1, 2, 3], vec![S1, S2, S3], err);
     }
 
     // valid commit and data, starting with 2 validators.
@@ -484,21 +484,21 @@ mod tests {
         // OK
 
         // 100% overlap (both original signers still present)
-        assert_ok(ts, vec![0, 1], vec![S0, S1]);
-        assert_ok(ts, vec![0, 1, 2], vec![S0, S1, S2]);
+        assert_single_ok(ts, vec![0, 1], vec![S0, S1]);
+        assert_single_ok(ts, vec![0, 1, 2], vec![S0, S1, S2]);
 
         // 50% overlap (one original signer still present)
-        assert_ok(ts, vec![0], vec![S0]);
-        assert_ok(ts, vec![0, 1, 2, 3], vec![S1, S2, S3]);
+        assert_single_ok(ts, vec![0], vec![S0]);
+        assert_single_ok(ts, vec![0, 1, 2, 3], vec![S1, S2, S3]);
 
         //*************
         // Err
 
         // 0% overlap (neither original signer still present)
-        assert_err(ts, vec![2], vec![S2], err);
+        assert_single_err(ts, vec![2], vec![S2], err);
 
         // 0% overlap (original signer is still in val set but not in commit)
-        assert_err(ts, vec![0, 2, 3, 4], vec![S2, S3, S4], err);
+        assert_single_err(ts, vec![0, 2, 3, 4], vec![S2, S3, S4], err);
     }
 
     // valid commit and data, starting with 3 validators.
@@ -512,25 +512,25 @@ mod tests {
         // OK
 
         // 100% overlap (both original signers still present)
-        assert_ok(ts, vec![0, 1, 2], vec![S0, S1, S2]);
-        assert_ok(ts, vec![0, 1, 2, 3], vec![S0, S1, S2, S3]);
+        assert_single_ok(ts, vec![0, 1, 2], vec![S0, S1, S2]);
+        assert_single_ok(ts, vec![0, 1, 2, 3], vec![S0, S1, S2, S3]);
 
         // 66% overlap (two original signers still present)
-        assert_ok(ts, vec![0, 1], vec![S0, S1]);
-        assert_ok(ts, vec![0, 1, 2, 3], vec![S1, S2, S3]);
+        assert_single_ok(ts, vec![0, 1], vec![S0, S1]);
+        assert_single_ok(ts, vec![0, 1, 2, 3], vec![S1, S2, S3]);
 
         //*************
         // Err
 
         // 33% overlap (one original signer still present)
-        assert_err(ts, vec![0], vec![S0], err);
-        assert_err(ts, vec![0, 3], vec![S0, S3], err);
+        assert_single_err(ts, vec![0], vec![S0], err);
+        assert_single_err(ts, vec![0, 3], vec![S0, S3], err);
 
         // 0% overlap (neither original signer still present)
-        assert_err(ts, vec![3], vec![S2], err);
+        assert_single_err(ts, vec![3], vec![S2], err);
 
         // 0% overlap (original signer is still in val set but not in commit)
-        assert_err(ts, vec![0, 3, 4, 5], vec![S3, S4, S5], err);
+        assert_single_err(ts, vec![0, 3, 4, 5], vec![S3, S4, S5], err);
     }
 
     #[test]
