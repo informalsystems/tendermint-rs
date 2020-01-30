@@ -61,15 +61,21 @@ fn main() {
         );
 
         let now = &SystemTime::now();
-        lite::verify_and_update_bisection(
+        let trusted_state = store.get(0).expect("can not read trusted state");
+
+        let new_state = lite::verify_and_update_bisection(
+            trusted_state.clone(),
             latest_peer_height,
             &TrustThresholdFraction::default(),
             &trusting_period,
             now,
             &req,
-            &mut store,
         )
         .unwrap();
+
+        store
+            .add(new_state)
+            .expect("couldn't store new trusted state");
 
         println!("Succeeded bisecting!");
 

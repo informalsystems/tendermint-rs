@@ -207,42 +207,46 @@ where
     store.add(new_trusted_state)
 }
 
-/// Attempt to update the store to the given untrusted height
+/// Attempt to "bisect" to the given untrusted height
 /// by requesting the necessary data (signed headers and validators).
+///
+/// On success, callers are responsible for persisting the returned state
+/// which can now be trusted.
+///
 /// Returns an error if:
 ///     - we're already at or past that height
 ///     - our latest state expired
 ///     - any requests fail
 ///     - requested data is inconsistent (eg. vals don't match hashes in header)
 ///     - validators did not correctly commit their blocks
+///
 /// This function is recursive: it uses a bisection algorithm
 /// to request data for intermediate heights as necessary.
 /// Ensures our last trusted header hasn't expired yet, and that
 /// data from the untrusted height can be verified, possibly using
 /// data from intermediate heights.
+///
 /// This function is primarily for use by a light node.
-pub fn verify_and_update_bisection<C, H, L, R, S>(
+pub fn verify_and_update_bisection<C, H, L, R>(
+    trusted_state: TrustedState<C, H>,
     untrusted_height: Height,
     trust_threshold: &L,
     trusting_period: &Duration,
     now: &SystemTime,
     req: &R,
-    store: &mut S,
-) -> Result<(), Error>
+) -> Result<TrustedState<C, H>, Error>
 where
     H: Header,
     C: Commit,
     L: TrustThreshold,
     R: Requester<C, H>,
-    S: Store<C, H>,
 {
-    // Fetch the latest state and ensure it hasn't expired.
+    // Ensure the latest state hasn't expired.
     // Note we only check for expiry once in this
     // verify_and_update_bisection function since we assume the
-    // time is passed in and we don't access a clock internall.
+    // time is passed in and we don't access a clock internal.
     // Thus the trust_period must be long enough to incorporate the
     // expected time to complete this function.
-    let trusted_state = store.get(0)?;
     let trusted_sh = trusted_state.last_header();
     is_within_trust_period(trusted_sh.header(), trusting_period, now)?;
 
@@ -260,9 +264,7 @@ where
 
     // inner recursive function which assumes
     // trusting_period check is already done.
-    let new_trusted =
-        verify_and_update_bisection_inner(trusted_state, untrusted_height, trust_threshold, req)?;
-    store.add(new_trusted)
+    verify_and_update_bisection_inner(&trusted_state, untrusted_height, trust_threshold, req)
 }
 
 // inner recursive function for verify_and_update_bisection.
