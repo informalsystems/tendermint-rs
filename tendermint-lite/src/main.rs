@@ -63,7 +63,7 @@ fn main() {
         let now = &SystemTime::now();
         let trusted_state = store.get(0).expect("can not read trusted state");
 
-        let new_state = lite::verify_bisection(
+        let new_states = lite::verify_bisection(
             trusted_state.clone(),
             latest_peer_height,
             TrustThresholdFraction::default(),
@@ -73,9 +73,11 @@ fn main() {
         )
         .unwrap();
 
-        store
-            .add(new_state)
-            .expect("couldn't store new trusted state");
+        for new_state in new_states {
+            store
+                .add(new_state)
+                .expect("couldn't store new trusted state");
+        }
 
         println!("Succeeded bisecting!");
 

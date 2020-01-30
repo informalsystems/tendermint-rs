@@ -151,7 +151,7 @@ where
 /// TrustedState stores the latest state trusted by a lite client,
 /// including the last header (at height h-1) and the validator set
 /// (at height h) to use to verify the next header.
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct TrustedState<C, H>
 where
     H: Header,
