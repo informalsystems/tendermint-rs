@@ -96,7 +96,7 @@ where
 pub fn verify_commit_trusting<C, L>(
     validators: &C::ValidatorSet,
     commit: &C,
-    trust_level: &L,
+    trust_level: L,
 ) -> Result<(), Error>
 where
     C: Commit,
@@ -125,7 +125,7 @@ fn verify_single_inner<H, C, L>(
     untrusted_sh: &SignedHeader<C, H>,
     untrusted_vals: &C::ValidatorSet,
     untrusted_next_vals: &C::ValidatorSet,
-    trust_threshold: &L,
+    trust_threshold: L,
 ) -> Result<(), Error>
 where
     H: Header,
@@ -183,7 +183,7 @@ pub fn verify_single<H, C, L>(
     untrusted_sh: &SignedHeader<C, H>,
     untrusted_vals: &C::ValidatorSet,
     untrusted_next_vals: &C::ValidatorSet,
-    trust_threshold: &L,
+    trust_threshold: L,
     trusting_period: &Duration,
     now: &SystemTime,
 ) -> Result<TrustedState<C, H>, Error>
@@ -232,7 +232,7 @@ where
 pub fn verify_bisection<C, H, L, R>(
     trusted_state: TrustedState<C, H>,
     untrusted_height: Height,
-    trust_threshold: &L,
+    trust_threshold: L,
     trusting_period: &Duration,
     now: &SystemTime,
     req: &R,
@@ -274,7 +274,7 @@ where
 fn verify_bisection_inner<H, C, L, R>(
     trusted_state: &TrustedState<C, H>,
     untrusted_height: Height,
-    trust_threshold: &L,
+    trust_threshold: L,
     req: &R,
 ) -> Result<TrustedState<C, H>, Error>
 where
@@ -380,7 +380,7 @@ mod tests {
             &un_sh,
             &un_vals,
             &un_next_vals,
-            &TrustThresholdFraction::default(),
+            TrustThresholdFraction::default(),
         );
         assert_eq!(result, Err(err));
     }
@@ -393,7 +393,7 @@ mod tests {
             &un_sh,
             &un_vals,
             &un_next_vals,
-            &TrustThresholdFraction::default()
+            TrustThresholdFraction::default()
         )
         .is_ok());
     }

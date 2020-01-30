@@ -76,7 +76,7 @@ pub trait Commit: Clone {
 /// TrustThreshold defines how much of the total voting power of a known
 /// and trusted validator set is sufficient for a commit to be
 /// accepted going forward.
-pub trait TrustThreshold {
+pub trait TrustThreshold: Copy + Clone {
     fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool;
 }
 
@@ -87,6 +87,7 @@ pub trait TrustThreshold {
 /// voting power signed (in other words at least one honest validator signed).
 /// Some clients might require more than +1/3 and can implement their own
 /// [`TrustThreshold`] which can be passed into all relevant methods.
+#[derive(Copy, Clone)]
 pub struct TrustThresholdFraction {
     numerator: u64,
     denominator: u64,

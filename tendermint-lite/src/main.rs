@@ -66,7 +66,7 @@ fn main() {
         let new_state = lite::verify_bisection(
             trusted_state.clone(),
             latest_peer_height,
-            &TrustThresholdFraction::default(),
+            TrustThresholdFraction::default(),
             &trusting_period,
             now,
             &req,

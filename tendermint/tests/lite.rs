@@ -94,7 +94,7 @@ fn run_test_cases(cases: TestCases) {
                 &untrusted_signed_header.into(),
                 &untrusted_vals,
                 &untrusted_next_vals,
-                &TrustThresholdFraction::default(),
+                TrustThresholdFraction::default(),
                 &trusting_period,
                 &now,
             ) {
