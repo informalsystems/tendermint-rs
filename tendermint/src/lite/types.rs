@@ -73,17 +73,20 @@ pub trait Commit: Clone {
     fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error>;
 }
 
-/// TrustThreshold defines what fraction of the total voting power of a known
+/// TrustThreshold defines how much of the total voting power of a known
 /// and trusted validator set is sufficient for a commit to be
 /// accepted going forward.
-/// The default implementation returns true, iff at least a third of the trusted
-/// voting power signed (in other words at least one honest validator signed).
-/// Some clients might require more than +1/3 and can implement their own
-/// TrustThreshold which can be passed into all relevant methods.
 pub trait TrustThreshold {
     fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool;
 }
 
+/// TrustThresholdFraction defines what fraction of the total voting power of a known
+/// and trusted validator set is sufficient for a commit to be
+/// accepted going forward.
+/// The [`Default::default()`] returns true, iff at least a third of the trusted
+/// voting power signed (in other words at least one honest validator signed).
+/// Some clients might require more than +1/3 and can implement their own
+/// [`TrustThreshold`] which can be passed into all relevant methods.
 pub struct TrustThresholdFraction {
     numerator: u64,
     denominator: u64,
@@ -232,11 +235,135 @@ pub enum Error {
     RequestFailed,
 }
 
+pub(super) mod mocks {
+    use serde::Serialize;
+    use sha2::{Digest, Sha256};
+
+    use crate::{hash::Algorithm, Hash};
+
+    use super::*;
+
+    #[derive(Clone, Debug, PartialEq, Serialize)]
+    pub struct MockHeader {
+        height: u64,
+        time: SystemTime,
+        vals: Hash,
+        next_vals: Hash,
+    }
+
+    impl MockHeader {
+        pub fn new(height: u64, time: SystemTime, vals: Hash, next_vals: Hash) -> MockHeader {
+            MockHeader {
+                height,
+                time,
+                vals,
+                next_vals,
+            }
+        }
+    }
+
+    impl Header for MockHeader {
+        type Time = SystemTime;
+
+        fn height(&self) -> Height {
+            self.height
+        }
+        fn bft_time(&self) -> Self::Time {
+            self.time
+        }
+        fn validators_hash(&self) -> Hash {
+            self.vals
+        }
+        fn next_validators_hash(&self) -> Hash {
+            self.next_vals
+        }
+        fn hash(&self) -> Hash {
+            json_hash(self)
+        }
+    }
+
+    pub fn json_hash<T: ?Sized + Serialize>(value: &T) -> Hash {
+        let encoded = serde_json::to_vec(value).unwrap();
+        let hashed = Sha256::digest(&encoded);
+        Hash::new(Algorithm::Sha256, &hashed).unwrap()
+    }
+
+    // vals are just ints, each has power 1
+    #[derive(Clone, Debug, PartialEq, Serialize)]
+    pub struct MockValSet {
+        // NOTE: use HashSet instead?
+        vals: Vec<usize>,
+    }
+
+    impl MockValSet {
+        pub fn new(vals: Vec<usize>) -> MockValSet {
+            MockValSet { vals }
+        }
+    }
+
+    impl ValidatorSet for MockValSet {
+        fn hash(&self) -> Hash {
+            json_hash(&self)
+        }
+        fn total_power(&self) -> u64 {
+            self.vals.len() as u64
+        }
+    }
+
+    // commit is a list of vals that signed.
+    // use None if the val didn't sign.
+    #[derive(Clone, Debug, PartialEq, Serialize)]
+    pub struct MockCommit {
+        hash: Hash,
+        vals: Vec<usize>,
+    }
+
+    impl MockCommit {
+        pub fn new(hash: Hash, vals: Vec<usize>) -> MockCommit {
+            MockCommit { hash, vals }
+        }
+    }
+
+    impl Commit for MockCommit {
+        type ValidatorSet = MockValSet;
+
+        fn header_hash(&self) -> Hash {
+            self.hash
+        }
+
+        // just the intersection
+        fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error> {
+            let mut power = 0;
+
+            // we only care about the Somes.
+            // if there's a signer thats not in the val set,
+            // we can't detect it...
+            for signer in self.vals.iter() {
+                for val in vals.vals.iter() {
+                    if signer == val {
+                        power += 1
+                    }
+                }
+            }
+            Ok(power)
+        }
+
+        fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
+            // do not check anything here
+            Ok(())
+        }
+    }
+
+    pub fn fixed_hash() -> Hash {
+        Hash::new(Algorithm::Sha256, &Sha256::digest(&[5])).unwrap()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::lite::{Commit, Error, Header, SignedHeader, TrustedState, ValidatorSet};
+    use crate::lite::types::mocks::*;
+    use crate::lite::{Commit, Header, SignedHeader, TrustedState, ValidatorSet};
     use crate::lite::{TrustThreshold, TrustThresholdFraction};
-    use crate::Hash;
     use std::time::SystemTime;
 
     #[test]
@@ -256,75 +383,38 @@ mod tests {
         assert_eq!(threshold.is_enough_power(1, 100), false);
     }
 
-    #[derive(Clone, Debug, PartialEq)]
-    struct MockCommit {}
-
-    #[derive(Clone, Debug, PartialEq)]
-    struct MockValSet {}
-
-    impl ValidatorSet for MockValSet {
-        fn hash(&self) -> Hash {
-            unimplemented!()
-        }
-        fn total_power(&self) -> u64 {
-            0
-        }
-    }
-
-    #[derive(Clone, Debug, PartialEq)]
-    struct MockHeader {}
-
-    impl Header for MockHeader {
-        type Time = SystemTime;
-
-        fn height(&self) -> u64 {
-            unimplemented!()
-        }
-        fn bft_time(&self) -> Self::Time {
-            unimplemented!()
-        }
-        fn validators_hash(&self) -> Hash {
-            unimplemented!()
-        }
-        fn next_validators_hash(&self) -> Hash {
-            unimplemented!()
-        }
-        fn hash(&self) -> Hash {
-            unimplemented!()
-        }
-    }
-
-    impl Commit for MockCommit {
-        type ValidatorSet = MockValSet;
-
-        fn header_hash(&self) -> Hash {
-            unimplemented!()
-        }
-        fn voting_power_in(&self, _: &Self::ValidatorSet) -> Result<u64, Error> {
-            Ok(0)
-        }
-        fn validate(&self, _: &Self::ValidatorSet) -> Result<(), Error> {
-            Ok(())
-        }
-    }
-
     #[test]
     fn signed_header() {
-        let h = MockHeader {};
-        let c = MockCommit {};
+        let vs = &MockValSet::new(vec![1, 2]);
+        let h = MockHeader::new(0, SystemTime::UNIX_EPOCH, vs.hash(), vs.hash());
+        let c_header_hash = h.hash();
+        let c_vals: Vec<usize> = vec![1];
+        let c = MockCommit::new(c_header_hash, c_vals);
+        assert_eq!(c.header_hash(), c_header_hash);
         let sh = SignedHeader::new(c.clone(), h.clone());
-        assert_eq!(sh.commit(), &c);
         assert_eq!(sh.header(), &h);
+        assert_eq!(sh.commit(), &c);
+
+        assert_eq!(sh.commit().header_hash(), h.hash());
+        assert_eq!(
+            sh.commit()
+                .voting_power_in(vs)
+                .expect("mock shouldn't fail"),
+            1
+        );
+        assert_eq!(sh.header().height(), h.height());
+        assert_eq!(sh.header().bft_time(), h.bft_time());
+        assert!(sh.commit().validate(vs).is_ok());
     }
 
     #[test]
     fn trusted_state() {
-        let h = MockHeader {};
-        let c = MockCommit {};
-        let vs = MockValSet {};
+        let vs = &MockValSet::new(vec![1]);
+        let h = MockHeader::new(0, SystemTime::UNIX_EPOCH, vs.hash(), vs.hash());
+        let c = MockCommit::new(h.hash(), vec![]);
         let sh = SignedHeader::new(c, h);
-        let ts = TrustedState::new(&sh, &vs);
+        let ts = TrustedState::new(&sh, vs);
         assert_eq!(ts.last_header(), &sh);
-        assert_eq!(ts.validators(), &vs);
+        assert_eq!(ts.validators(), vs);
     }
 }

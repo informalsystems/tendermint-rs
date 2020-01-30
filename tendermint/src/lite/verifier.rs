@@ -330,124 +330,9 @@ where
 }
 
 mod tests {
-    use serde::Serialize;
-    use sha2::{Digest, Sha256};
-
-    use crate::{hash::Algorithm, Hash};
-
     use super::*;
+    use crate::lite::mocks::*;
     use crate::lite::TrustThresholdFraction;
-
-    #[derive(Clone, Debug, Serialize)]
-    struct MockHeader {
-        height: u64,
-        time: SystemTime,
-        vals: Hash,
-        next_vals: Hash,
-    }
-
-    impl MockHeader {
-        fn new(height: u64, time: SystemTime, vals: Hash, next_vals: Hash) -> MockHeader {
-            MockHeader {
-                height,
-                time,
-                vals,
-                next_vals,
-            }
-        }
-    }
-
-    impl Header for MockHeader {
-        type Time = SystemTime;
-
-        fn height(&self) -> Height {
-            self.height
-        }
-        fn bft_time(&self) -> Self::Time {
-            self.time
-        }
-        fn validators_hash(&self) -> Hash {
-            self.vals
-        }
-        fn next_validators_hash(&self) -> Hash {
-            self.next_vals
-        }
-        fn hash(&self) -> Hash {
-            json_hash(self)
-        }
-    }
-
-    fn json_hash<T: ?Sized + Serialize>(value: &T) -> Hash {
-        let encoded = serde_json::to_vec(value).unwrap();
-        let hashed = Sha256::digest(&encoded);
-        Hash::new(Algorithm::Sha256, &hashed).unwrap()
-    }
-
-    // vals are just ints, each has power 1
-    #[derive(Clone, Debug, Serialize)]
-    struct MockValSet {
-        // NOTE: use HashSet instead?
-        vals: Vec<usize>,
-    }
-
-    impl MockValSet {
-        fn new(vals: Vec<usize>) -> MockValSet {
-            MockValSet { vals }
-        }
-    }
-
-    impl ValidatorSet for MockValSet {
-        fn hash(&self) -> Hash {
-            json_hash(&self)
-        }
-        fn total_power(&self) -> u64 {
-            self.vals.len() as u64
-        }
-    }
-
-    // commit is a list of vals that signed.
-    // use None if the val didn't sign.
-    #[derive(Clone, Debug, Serialize)]
-    struct MockCommit {
-        hash: Hash,
-        vals: Vec<usize>,
-    }
-
-    impl MockCommit {
-        fn new(hash: Hash, vals: Vec<usize>) -> MockCommit {
-            MockCommit { hash, vals }
-        }
-    }
-
-    impl Commit for MockCommit {
-        type ValidatorSet = MockValSet;
-
-        fn header_hash(&self) -> Hash {
-            self.hash
-        }
-
-        // just the intersection
-        fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error> {
-            let mut power = 0;
-
-            // we only care about the Somes.
-            // if there's a signer thats not in the val set,
-            // we can't detect it...
-            for signer in self.vals.iter() {
-                for val in vals.vals.iter() {
-                    if signer == val {
-                        power += 1
-                    }
-                }
-            }
-            Ok(power)
-        }
-
-        fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
-            // do not check anything here
-            Ok(())
-        }
-    }
 
     type MockState = TrustedState<MockCommit, MockHeader>;
     type MockSignedHeader = SignedHeader<MockCommit, MockHeader>;
@@ -616,10 +501,6 @@ mod tests {
 
         // 0% overlap (original signer is still in val set but not in commit)
         assert_err(ts, vec![0, 3, 4, 5], vec![S3, S4, S5], err);
-    }
-
-    fn fixed_hash() -> Hash {
-        Hash::new(Algorithm::Sha256, &Sha256::digest(&[5])).unwrap()
     }
 
     #[test]
