@@ -260,30 +260,25 @@ where
 
     // inner recursive function which assumes
     // trusting_period check is already done.
-    _verify_and_update_bisection(untrusted_height, trust_threshold, req, store)
+    let new_trusted =
+        verify_and_update_bisection_inner(trusted_state, untrusted_height, trust_threshold, req)?;
+    store.add(new_trusted)
 }
 
 // inner recursive function for verify_and_update_bisection.
 // see that function's docs.
-fn _verify_and_update_bisection<H, C, L, R, S>(
+fn verify_and_update_bisection_inner<H, C, L, R>(
+    trusted_state: &TrustedState<C, H>,
     untrusted_height: Height,
     trust_threshold: &L,
     req: &R,
-    store: &mut S,
-) -> Result<(), Error>
+) -> Result<TrustedState<C, H>, Error>
 where
     H: Header,
     C: Commit,
     L: TrustThreshold,
     R: Requester<C, H>,
-    S: Store<C, H>,
 {
-    // this get is redundant the first time.
-    // TODO: possibly refactor so this func takes and returns
-    // trusted_state.
-    let trusted_state = store.get(0)?;
-    let trusted_sh = trusted_state.last_header();
-
     // fetch the header and vals for the new height
     let untrusted_sh = &req.signed_header(untrusted_height)?;
     let untrusted_vals = &req.validator_set(untrusted_height)?;
@@ -300,9 +295,8 @@ where
     ) {
         Ok(_) => {
             // Successfully verified!
-            // Trust the new state and return.
-            let new_trusted_state = TrustedState::new(untrusted_sh, untrusted_next_vals);
-            return store.add(new_trusted_state);
+            // return the new to be trusted state and return.
+            return Ok(TrustedState::new(untrusted_sh, untrusted_next_vals));
         }
         Err(e) => {
             // If something went wrong, return the error.
@@ -316,17 +310,19 @@ where
     }
 
     // Get the pivot height for bisection.
-    let trusted_h = trusted_sh.header().height();
+    let trusted_h = trusted_state.last_header().header().height();
     let untrusted_h = untrusted_height;
     let pivot_height = trusted_h.checked_add(untrusted_h).expect("height overflow") / 2;
 
     // Recursive call to update to the pivot height.
     // When this completes, we will either return an error or
     // have updated the store to the pivot height.
-    _verify_and_update_bisection(pivot_height, trust_threshold, req, store)?;
+    let trusted_left =
+        verify_and_update_bisection_inner(trusted_state, pivot_height, trust_threshold, req)?;
+    // TODO: clarify that we do not store these intermediate states anymore?
 
     // Recursive call to update to the original untrusted_height.
-    _verify_and_update_bisection(untrusted_height, trust_threshold, req, store)
+    verify_and_update_bisection_inner(&trusted_left, untrusted_height, trust_threshold, req)
 }
 
 #[cfg(test)]
