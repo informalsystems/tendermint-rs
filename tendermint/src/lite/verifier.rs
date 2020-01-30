@@ -15,7 +15,6 @@ use crate::lite::{
     Commit, Error, Header, Height, Requester, SignedHeader, TrustThreshold, TrustedState,
     ValidatorSet,
 };
-use std::collections::HashMap;
 
 /// Returns an error if the header has expired according to the given
 /// trusting_period and current time. If so, the verifier must be reset subjectively.
@@ -210,8 +209,6 @@ where
     Ok(TrustedState::new(untrusted_sh, untrusted_next_vals))
 }
 
-type StateMemo<C, H> = HashMap<Height, TrustedState<C, H>>;
-
 /// Attempt to "bisect" from the passed-in trusted state (with header of height h)
 /// to the given untrusted height (h+n) by requesting the necessary
 /// data (signed headers and validators from height (h, h+n]).
@@ -269,7 +266,7 @@ where
     // So every header we fetch must be checked to be less than now+X
 
     // this is only used to memoize intermediate trusted states:
-    let mut cache: StateMemo<C, H> = HashMap::new();
+    let mut cache: Vec<TrustedState<C, H>> = Vec::new();
     // inner recursive function which assumes
     // trusting_period check is already done.
     verify_bisection_inner(
@@ -280,7 +277,7 @@ where
         &mut cache,
     )?;
     // return all intermediate trusted states up to untrusted_height
-    Ok(cache.iter().map(|(_, v)| v.clone()).collect())
+    Ok(cache)
 }
 
 // inner recursive function for verify_and_update_bisection.
@@ -295,7 +292,7 @@ fn verify_bisection_inner<H, C, L, R>(
     untrusted_height: Height,
     trust_threshold: L,
     req: &R,
-    mut cache: &mut StateMemo<C, H>,
+    mut cache: &mut Vec<TrustedState<C, H>>,
 ) -> Result<TrustedState<C, H>, Error>
 where
     H: Header,
@@ -321,7 +318,7 @@ where
             // Successfully verified!
             // memoize the new to be trusted state and return.
             let ts = TrustedState::new(untrusted_sh, untrusted_next_vals);
-            cache.insert(untrusted_height, ts.clone());
+            cache.push(ts.clone());
             return Ok(ts);
         }
         Err(e) => {
