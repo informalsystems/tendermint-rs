@@ -538,11 +538,7 @@ mod tests {
 
     #[test]
     fn test_verify_bisection_1_val_1_height() {
-        let mut vals_per_height: Vec<Vec<usize>> = Vec::new();
-        vals_per_height.push(vec![0]); // 1
-        vals_per_height.push(vec![0]); // 2
-        vals_per_height.push(vec![0]); // 3
-        let req = init_requester(vals_per_height);
+        let req = init_requester(vec![vec![0], vec![0], vec![0]]);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
@@ -564,12 +560,7 @@ mod tests {
 
     #[test]
     fn test_verify_bisection_1_val_2_heights() {
-        let mut vals_per_height: Vec<Vec<usize>> = Vec::new();
-        vals_per_height.push(vec![0]); // 1
-        vals_per_height.push(vec![0]); // 2
-        vals_per_height.push(vec![0]); // 3
-        vals_per_height.push(vec![0]); // 4
-        let req = init_requester(vals_per_height);
+        let req = init_requester(vec![vec![0], vec![0], vec![0], vec![0]]);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
@@ -595,11 +586,11 @@ mod tests {
     fn test_verify_bisection_1_val_4_heights_check_all_intermediate() {
         let mut vals_per_height: Vec<Vec<usize>> = Vec::new();
         vals_per_height.push(vec![0, 1, 2, 3, 4, 5]); // 1
-        vals_per_height.push(vec![0, 1, 2]); // 2
-        vals_per_height.push(vec![0, 1]); // 3
-        vals_per_height.push(vec![1, 2]); // 4
-        vals_per_height.push(vec![0, 2]); // 5 <- too much change, need to bisect...
-        vals_per_height.push(vec![0, 2]); // 6
+        vals_per_height.push(vec![0, 1, 2]); // 2 -> 50% val change
+        vals_per_height.push(vec![0, 1]); // 3 -> 33% change
+        vals_per_height.push(vec![1, 2]); // 4 -> 50% change
+        vals_per_height.push(vec![0, 2]); // 5 -> 50% <- too much change (from 1), need to bisect...
+        vals_per_height.push(vec![0, 2]); // 6 -> (only need to validate 5)
         let req = init_requester(vals_per_height);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
@@ -621,6 +612,10 @@ mod tests {
             cache.get(0).expect("elem").last_header().header().height()
         );
 
+        assert_uniqeness(cache);
+    }
+
+    fn assert_uniqeness(cache: Vec<TrustedState<MockCommit, MockHeader>>) {
         let mut uniq = cache.clone();
         uniq.dedup();
         assert_eq!(cache, uniq);
