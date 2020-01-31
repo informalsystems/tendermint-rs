@@ -365,7 +365,6 @@ mod tests {
     use crate::lite::TrustThresholdFraction;
 
     type MockState = TrustedState<MockCommit, MockHeader>;
-    type MockSignedHeader = SignedHeader<MockCommit, MockHeader>;
 
     // start all blockchains from here ...
     fn init_time() -> SystemTime {
@@ -373,10 +372,15 @@ mod tests {
     }
 
     // create an initial trusted state from the given vals
-    fn init_trusted_state(vals_vec: Vec<usize>, height: u64) -> MockState {
+    fn init_trusted_state(
+        vals_vec: Vec<usize>,
+        next_vals_vec: Vec<usize>,
+        height: u64,
+    ) -> MockState {
         let time = init_time();
         let vals = &MockValSet::new(vals_vec.clone());
-        let header = MockHeader::new(height, time, vals.hash(), vals.hash());
+        let next_vals = &MockValSet::new(next_vals_vec);
+        let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
         let commit = MockCommit::new(header.hash(), vals_vec);
         let sh = &SignedHeader::new(commit, header);
         MockState::new(sh, vals)
@@ -438,7 +442,7 @@ mod tests {
     // valid to skip, but invalid commit. 1 validator.
     #[test]
     fn test_verify_single_skip_1_val_verify() {
-        let ts = &init_trusted_state(vec![0], 1);
+        let ts = &init_trusted_state(vec![0], vec![0], 1);
 
         // 100% overlap, but wrong commit.
         // NOTE: This should be an invalid commit error since there's
@@ -450,7 +454,7 @@ mod tests {
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_1_val_skip() {
-        let ts = &init_trusted_state(vec![0], 1);
+        let ts = &init_trusted_state(vec![0], vec![0], 1);
         let err = Error::InsufficientVotingPower;
 
         //*****
@@ -476,7 +480,7 @@ mod tests {
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_2_val_skip() {
-        let ts = &init_trusted_state(vec![0, 1], 1);
+        let ts = &init_trusted_state(vec![0, 1], vec![0, 1], 1);
         let err = Error::InsufficientVotingPower;
 
         //*************
@@ -504,7 +508,7 @@ mod tests {
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_3_val_skip() {
-        let ts = &init_trusted_state(vec![0, 1, 2], 1);
+        let ts = &init_trusted_state(vec![0, 1, 2], vec![0, 1, 2], 1);
         let err = Error::InsufficientVotingPower;
 
         //*************
@@ -533,30 +537,113 @@ mod tests {
     }
 
     #[test]
-    fn test_verify_bisection_1_val_2_heights() {
-        let ts = &init_trusted_state(vec![0], 1);
-        let ts2 = &init_trusted_state(vec![0], 2);
-
-        let mut req = MockRequester::new();
-        req.signed_headers.insert(1, ts.last_header().clone());
-        req.validators.insert(1, ts.validators().clone());
-        req.signed_headers.insert(2, ts2.last_header().clone());
-        req.validators.insert(2, ts2.validators().clone());
-        req.validators.insert(3, ts2.validators().clone());
+    fn test_verify_bisection_1_val_1_height() {
+        let mut vals_per_height: Vec<Vec<usize>> = Vec::new();
+        vals_per_height.push(vec![0]); // 1
+        vals_per_height.push(vec![0]); // 2
+        vals_per_height.push(vec![0]); // 3
+        let req = init_requester(vals_per_height);
+        let sh = req.signed_header(1).expect("first sh not present");
+        let vals = req.validator_set(1).expect("init. valset not present");
+        let ts = &MockState::new(&sh, &vals);
 
         let mut cache: Vec<MockTrustedState> = Vec::new();
         let ts_new = verify_bisection_inner(
-            ts,
+            &ts,
             2,
             TrustThresholdFraction::default(),
             &req,
             cache.as_mut(),
         )
         .expect("should have passed");
-        // TODO: more tests necessary... this doesn't even really do bisection
+        // Note: this doesn't even really do bisection
         // (bc we're done after the "left half")
         assert_eq!(ts_new.last_header().header().height(), 2);
         assert_eq!(cache.len(), 1);
+    }
+
+    #[test]
+    fn test_verify_bisection_1_val_2_heights() {
+        let mut vals_per_height: Vec<Vec<usize>> = Vec::new();
+        vals_per_height.push(vec![0]); // 1
+        vals_per_height.push(vec![0]); // 2
+        vals_per_height.push(vec![0]); // 3
+        vals_per_height.push(vec![0]); // 4
+        let req = init_requester(vals_per_height);
+        let sh = req.signed_header(1).expect("first sh not present");
+        let vals = req.validator_set(1).expect("init. valset not present");
+        let ts = &MockState::new(&sh, &vals);
+
+        let mut cache: Vec<MockTrustedState> = Vec::new();
+        let ts_new = verify_bisection_inner(
+            &ts,
+            3,
+            TrustThresholdFraction::default(),
+            &req,
+            cache.as_mut(),
+        )
+        .expect("should have passed");
+        assert_eq!(ts_new.last_header().header().height(), 3);
+        assert_eq!(cache.len(), 1);
+
+        let mut uniq = cache.clone();
+        uniq.dedup();
+        assert_eq!(cache, uniq);
+    }
+
+    #[test]
+    fn test_verify_bisection_1_val_4_heights_check_all_intermediate() {
+        let mut vals_per_height: Vec<Vec<usize>> = Vec::new();
+        vals_per_height.push(vec![0, 1, 2, 3, 4, 5]); // 1
+        vals_per_height.push(vec![0, 1, 2]); // 2
+        vals_per_height.push(vec![0, 1]); // 3
+        vals_per_height.push(vec![1, 2]); // 4
+        vals_per_height.push(vec![0, 2]); // 5 <- too much change, need to bisect...
+        vals_per_height.push(vec![0, 2]); // 6
+        let req = init_requester(vals_per_height);
+        let sh = req.signed_header(1).expect("first sh not present");
+        let vals = req.validator_set(1).expect("init. valset not present");
+        let ts = &MockState::new(&sh, &vals);
+
+        let mut cache: Vec<MockTrustedState> = Vec::new();
+        let ts_new = verify_bisection_inner(
+            &ts,
+            5,
+            TrustThresholdFraction::default(),
+            &req,
+            cache.as_mut(),
+        )
+        .expect("should have passed");
+        assert_eq!(ts_new.last_header().header().height(), 5);
+        assert_eq!(cache.len(), 3);
+        println!(
+            "{:?}",
+            cache.get(0).expect("elem").last_header().header().height()
+        );
+
+        let mut uniq = cache.clone();
+        uniq.dedup();
+        assert_eq!(cache, uniq);
+    }
+
+    fn init_requester(vals_for_height: Vec<Vec<usize>>) -> MockRequester {
+        let mut req = MockRequester::new();
+        let max_height = vals_for_height.len();
+        for (h, vals) in vals_for_height.iter().enumerate() {
+            let height = (h + 1) as u64; // height starts with 1 ...
+            if height < max_height as u64 {
+                let next_vals = vals_for_height.get(h + 1).expect("next_vals missing");
+                let ts = init_trusted_state(vals.to_owned(), next_vals.to_owned(), height);
+                req.signed_headers.insert(height, ts.last_header().clone());
+                req.validators.insert(height, ts.validators().to_owned());
+            } else {
+                // these will be requested in the last call of verify_bisection_inner
+                // and verified against next_validators of the header in the last SignedHeader:
+                let vals = &MockValSet::new(vals.clone());
+                req.validators.insert(height, vals.to_owned());
+            }
+        }
+        req
     }
 
     #[test]

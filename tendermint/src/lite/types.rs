@@ -358,7 +358,7 @@ pub(super) mod mocks {
     // Headers and commits.
     #[derive(Clone, Debug)]
     pub struct MockRequester {
-        pub signed_headers: HashMap<u64, SignedHeader<MockCommit, MockHeader>>,
+        pub signed_headers: HashMap<u64, MockSignedHeader>,
         pub validators: HashMap<u64, MockValSet>,
     }
     impl MockRequester {
@@ -371,6 +371,7 @@ pub(super) mod mocks {
     }
     impl Requester<MockCommit, MockHeader> for MockRequester {
         fn signed_header(&self, h: u64) -> Result<SignedHeader<MockCommit, MockHeader>, Error> {
+            println!("requested signed header for height:{:?}", h);
             if let Some(sh) = self.signed_headers.get(&h) {
                 return Ok(sh.to_owned());
             }
@@ -379,6 +380,7 @@ pub(super) mod mocks {
         }
 
         fn validator_set(&self, h: u64) -> Result<MockValSet, Error> {
+            println!("requested validators for height:{:?}", h);
             if let Some(vs) = self.validators.get(&h) {
                 return Ok(vs.to_owned());
             }
