@@ -605,7 +605,7 @@ mod tests {
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
 
-        assert_bisection_ok(&req, &ts, 4, 1);
+        assert_bisection_ok(&req, &ts, 3, 1);
     }
 
     #[test]
