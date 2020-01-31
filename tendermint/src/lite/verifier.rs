@@ -400,6 +400,30 @@ mod tests {
         (MockSignedHeader::new(commit, header), vals, next_vals)
     }
 
+    // Init a mock Requester.
+    // For each pair of lists of validators (cur and next vals) we
+    // init a trusted state (signed header and vals);
+    // these are (signed) headers and validators will be returned by the Requester.
+    fn init_requester(vals_for_height: Vec<Vec<usize>>) -> MockRequester {
+        let mut req = MockRequester::new();
+        let max_height = vals_for_height.len();
+        for (h, vals) in vals_for_height.iter().enumerate() {
+            let height = (h + 1) as u64; // height starts with 1 ...
+            if height < max_height as u64 {
+                let next_vals = vals_for_height.get(h + 1).expect("next_vals missing");
+                let ts = init_trusted_state(vals.to_owned(), next_vals.to_owned(), height);
+                req.signed_headers.insert(height, ts.last_header().clone());
+                req.validators.insert(height, ts.validators().to_owned());
+            } else {
+                // these will be requested in the last call of verify_bisection_inner
+                // and verified against next_validators of the header in the last SignedHeader:
+                let vals = &MockValSet::new(vals.clone());
+                req.validators.insert(height, vals.to_owned());
+            }
+        }
+        req
+    }
+
     // make a state with the given vals and commit and ensure we get the error.
     fn assert_single_err(
         ts: &TrustedState<MockCommit, MockHeader>,
@@ -429,6 +453,34 @@ mod tests {
             TrustThresholdFraction::default()
         )
         .is_ok());
+    }
+
+    // make a sequence of states with the given vals for the requester
+    // and ensure bisection yields no error.
+    fn assert_bisection_ok(
+        req: &MockRequester,
+        ts: &TrustedState<MockCommit, MockHeader>,
+        untrusted_height: u64,
+        expected_num_of_requests: usize,
+    ) {
+        let mut cache: Vec<MockTrustedState> = Vec::new();
+        let ts_new = verify_bisection_inner(
+            &ts,
+            untrusted_height,
+            TrustThresholdFraction::default(),
+            req,
+            cache.as_mut(),
+        )
+        .expect("should have passed");
+        assert_eq!(ts_new.last_header().header().height(), untrusted_height);
+        assert_eq!(cache.len(), expected_num_of_requests);
+        assert_uniqueness(cache);
+    }
+
+    fn assert_uniqueness(cache: Vec<TrustedState<MockCommit, MockHeader>>) {
+        let mut uniq = cache.clone();
+        uniq.dedup();
+        assert_eq!(cache, uniq);
     }
 
     // convenience vars for validators that signed commit
@@ -543,19 +595,7 @@ mod tests {
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
 
-        let mut cache: Vec<MockTrustedState> = Vec::new();
-        let ts_new = verify_bisection_inner(
-            &ts,
-            2,
-            TrustThresholdFraction::default(),
-            &req,
-            cache.as_mut(),
-        )
-        .expect("should have passed");
-        // Note: this doesn't even really do bisection
-        // (bc we're done after the "left half")
-        assert_eq!(ts_new.last_header().header().height(), 2);
-        assert_eq!(cache.len(), 1);
+        assert_bisection_ok(&req, &ts, 2, 1);
     }
 
     #[test]
@@ -565,21 +605,7 @@ mod tests {
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
 
-        let mut cache: Vec<MockTrustedState> = Vec::new();
-        let ts_new = verify_bisection_inner(
-            &ts,
-            3,
-            TrustThresholdFraction::default(),
-            &req,
-            cache.as_mut(),
-        )
-        .expect("should have passed");
-        assert_eq!(ts_new.last_header().header().height(), 3);
-        assert_eq!(cache.len(), 1);
-
-        let mut uniq = cache.clone();
-        uniq.dedup();
-        assert_eq!(cache, uniq);
+        assert_bisection_ok(&req, &ts, 4, 1);
     }
 
     #[test]
@@ -596,49 +622,7 @@ mod tests {
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
 
-        let mut cache: Vec<MockTrustedState> = Vec::new();
-        let ts_new = verify_bisection_inner(
-            &ts,
-            5,
-            TrustThresholdFraction::default(),
-            &req,
-            cache.as_mut(),
-        )
-        .expect("should have passed");
-        assert_eq!(ts_new.last_header().header().height(), 5);
-        assert_eq!(cache.len(), 3);
-        println!(
-            "{:?}",
-            cache.get(0).expect("elem").last_header().header().height()
-        );
-
-        assert_uniqeness(cache);
-    }
-
-    fn assert_uniqeness(cache: Vec<TrustedState<MockCommit, MockHeader>>) {
-        let mut uniq = cache.clone();
-        uniq.dedup();
-        assert_eq!(cache, uniq);
-    }
-
-    fn init_requester(vals_for_height: Vec<Vec<usize>>) -> MockRequester {
-        let mut req = MockRequester::new();
-        let max_height = vals_for_height.len();
-        for (h, vals) in vals_for_height.iter().enumerate() {
-            let height = (h + 1) as u64; // height starts with 1 ...
-            if height < max_height as u64 {
-                let next_vals = vals_for_height.get(h + 1).expect("next_vals missing");
-                let ts = init_trusted_state(vals.to_owned(), next_vals.to_owned(), height);
-                req.signed_headers.insert(height, ts.last_header().clone());
-                req.validators.insert(height, ts.validators().to_owned());
-            } else {
-                // these will be requested in the last call of verify_bisection_inner
-                // and verified against next_validators of the header in the last SignedHeader:
-                let vals = &MockValSet::new(vals.clone());
-                req.validators.insert(height, vals.to_owned());
-            }
-        }
-        req
+        assert_bisection_ok(&req, &ts, 5, 3);
     }
 
     #[test]
