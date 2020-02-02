@@ -56,3 +56,5 @@ zeroize = { version = "1.1", features = ["zeroize_derive"] }
 [dev-dependencies]
 serde_json = "1"
 tokio = "0.2"
+# Note: used in tests only:
+tendermint-lite = {path = "../tendermint-lite"}

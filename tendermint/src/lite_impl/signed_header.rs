@@ -4,19 +4,6 @@ use crate::lite::Error;
 use crate::validator::Set;
 use crate::{block, hash, lite, vote};
 
-impl lite::SignedHeader for block::signed_header::SignedHeader {
-    type Header = block::Header;
-    type Commit = block::signed_header::SignedHeader;
-
-    fn header(&self) -> &block::Header {
-        &self.header
-    }
-
-    fn commit(&self) -> &Self {
-        &self
-    }
-}
-
 impl lite::Commit for block::signed_header::SignedHeader {
     type ValidatorSet = Set;
 
@@ -56,8 +43,11 @@ impl lite::Commit for block::signed_header::SignedHeader {
         Ok(signed_power)
     }
 
-    fn votes_len(&self) -> usize {
-        self.commit.precommits.len()
+    fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error> {
+        if self.commit.precommits.len() != vals.validators().len() {
+            return Err(lite::Error::InvalidCommitSignatures);
+        }
+        Ok(())
     }
 }
 
@@ -80,5 +70,21 @@ impl block::signed_header::SignedHeader {
                 })
             })
             .collect()
+    }
+}
+
+impl From<block::signed_header::SignedHeader>
+    for lite::types::SignedHeader<block::signed_header::SignedHeader, block::header::Header>
+{
+    fn from(sh: block::signed_header::SignedHeader) -> Self {
+        Self::new(sh.clone(), sh.header)
+    }
+}
+
+impl From<&block::signed_header::SignedHeader>
+    for lite::types::SignedHeader<block::signed_header::SignedHeader, block::header::Header>
+{
+    fn from(sh: &block::signed_header::SignedHeader) -> Self {
+        Self::new(sh.clone(), sh.clone().header)
     }
 }

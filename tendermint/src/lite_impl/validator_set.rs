@@ -19,12 +19,4 @@ impl lite::ValidatorSet for validator::Set {
             total + val_info.voting_power.value()
         })
     }
-
-    fn len(&self) -> usize {
-        self.validators().len()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.validators().is_empty()
-    }
 }

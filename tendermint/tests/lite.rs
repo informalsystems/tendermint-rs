@@ -1,15 +1,10 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
 use std::{fs, path::PathBuf};
-use tendermint::lite::TrustedState;
-use tendermint::{block::signed_header::SignedHeader, lite, validator, validator::Set, Time};
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct TestSuite {
-    signed_header: SignedHeader,
-    last_validators: Vec<validator::Info>,
-    validators: Vec<validator::Info>,
-}
+use tendermint::block::Header;
+use tendermint::lite::{Store, TrustThresholdFraction};
+use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Time};
+use tendermint_lite::store;
 
 #[derive(Clone, Debug)]
 struct Duration(u64);
@@ -43,9 +38,6 @@ struct LiteBlock {
     next_validator_set: Set,
 }
 
-pub struct DefaultTrustLevel {}
-impl lite::TrustThreshold for DefaultTrustLevel {}
-
 const TEST_FILES_PATH: &str = "./tests/support/lite/";
 fn read_json_fixture(name: &str) -> String {
     fs::read_to_string(PathBuf::from(TEST_FILES_PATH).join(name.to_owned() + ".json")).unwrap()
@@ -69,68 +61,45 @@ fn header_tests_verify() {
     run_test_cases(cases);
 }
 
-#[derive(Clone)]
-struct Trusted {
-    last_signed_header: SignedHeader,
-    validators: Set,
-}
-
-impl lite::TrustedState for Trusted {
-    type LastHeader = SignedHeader;
-    type ValidatorSet = Set;
-
-    fn new(last_header: &Self::LastHeader, vals: &Self::ValidatorSet) -> Self {
-        Self {
-            last_signed_header: last_header.clone(),
-            validators: vals.clone(),
-        }
-    }
-
-    fn last_header(&self) -> &Self::LastHeader {
-        &self.last_signed_header
-    }
-
-    fn validators(&self) -> &Self::ValidatorSet {
-        &self.validators
-    }
-}
+type Trusted = lite::TrustedState<SignedHeader, Header>;
 
 fn run_test_cases(cases: TestCases) {
     for (_, tc) in cases.test_cases.iter().enumerate() {
         let trusted_next_vals = tc.initial.clone().next_validator_set;
-        let mut trusted_state = Trusted::new(&tc.initial.signed_header.clone(), &trusted_next_vals);
+        let trusted_state =
+            Trusted::new(&tc.initial.signed_header.clone().into(), &trusted_next_vals);
         let expects_err = match &tc.expected_output {
             Some(eo) => eo.eq("error"),
             None => false,
         };
 
-        // TODO - we're currently using lite::verify_single which
-        // shouldn't even be exposed and doesn't check time.
-        // but the public functions take a store, which do check time,
-        // also take a store, so we need to mock one ...
-        /*
         let trusting_period: std::time::Duration = tc.initial.clone().trusting_period.into();
-        let now = tc.initial.now;
-        */
+        let tm_now = tc.initial.now;
+        let now = tm_now.to_system_time().unwrap();
+        // Note: Alternative to using mem-store from the light node crate would be mocking
+        // the store here directly.
+        let mut store = store::MemStore::new();
+        store
+            .add(trusted_state.clone())
+            .expect("adding trusted state to store failed");
 
         for (_, input) in tc.input.iter().enumerate() {
             println!("{}", tc.description);
             let untrusted_signed_header = &input.signed_header;
             let untrusted_vals = &input.validator_set;
             let untrusted_next_vals = &input.next_validator_set;
-            // Note that in the provided test files the other header is either assumed to
-            // be "trusted" (verification already happened), or, it's the signed header verified in
-            // the previous iteration of this loop. In both cases it is assumed that h1 was already
-            // verified.
+            let trusted_state = store.get(0).expect("couldn't get from store");
             match lite::verify_single(
-                &trusted_state,
-                &untrusted_signed_header,
+                trusted_state.clone(),
+                &untrusted_signed_header.into(),
                 &untrusted_vals,
                 &untrusted_next_vals,
-                &DefaultTrustLevel {},
+                TrustThresholdFraction::default(),
+                &trusting_period,
+                &now,
             ) {
-                Ok(_) => {
-                    trusted_state = Trusted::new(&untrusted_signed_header, &untrusted_next_vals);
+                Ok(new_state) => {
+                    store.add(new_state).expect("couldn't store");
                     assert!(!expects_err);
                 }
                 Err(_) => {
