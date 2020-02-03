@@ -88,8 +88,8 @@ fn run_test_cases(cases: TestCases) {
         let tm_now = tc.initial.now;
         let now = tm_now.to_system_time().unwrap();
 
-        for (_, input) in tc.input.iter().enumerate() {
-            println!("{}", tc.description);
+        for (i, input) in tc.input.iter().enumerate() {
+            println!("i: {}, {}", i, tc.description);
             let untrusted_signed_header = &input.signed_header;
             let untrusted_vals = &input.validator_set;
             let untrusted_next_vals = &input.next_validator_set;

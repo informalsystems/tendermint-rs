@@ -47,6 +47,12 @@ impl lite::Commit for block::signed_header::SignedHeader {
         if self.commit.precommits.len() != vals.validators().len() {
             return Err(lite::Error::InvalidCommitSignatures);
         }
+        if let Some(parts) = &self.commit.block_id.parts {
+            if parts.hash != self.header_hash() {
+                // TODO(ismail): we need a better error here!
+                return Err(lite::Error::InvalidCommit);
+            }
+        }
         Ok(())
     }
 }
