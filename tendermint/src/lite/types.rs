@@ -133,24 +133,6 @@ where
     fn validator_set(&self, h: Height) -> Result<C::ValidatorSet, Error>;
 }
 
-/// This store can be used to store all the headers that have passed basic verification
-/// and that are within the light client's trust period.
-pub trait Store<C, H>
-where
-    H: Header,
-    C: Commit,
-{
-    /// Add this state (header at height h, validators at height h+1) as trusted to the store.
-    fn add(&mut self, trusted: TrustedState<C, H>) -> Result<(), Error>;
-
-    /// Retrieve the trusted state at height h if it exists.
-    /// If it does not exist return an error.
-    /// If h=0, return the latest trusted state.
-    /// TODO: use an enum instead of special-casing 0, see
-    /// https://github.com/interchainio/tendermint-rs/issues/118
-    fn get(&self, h: Height) -> Result<&TrustedState<C, H>, Error>;
-}
-
 /// TrustedState contains a state trusted by a lite client,
 /// including the last header (at height h-1) and the validator set
 /// (at height h) to use to verify the next header.

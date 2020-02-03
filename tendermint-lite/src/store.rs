@@ -1,4 +1,4 @@
-use tendermint::lite::{Error, Header, Height, Store, TrustedState};
+use tendermint::lite::{Error, Header, Height, TrustedState};
 
 use std::collections::HashMap;
 use tendermint::block;
@@ -20,15 +20,15 @@ impl MemStore {
     }
 }
 
-impl Store<block::signed_header::SignedHeader, block::header::Header> for MemStore {
-    fn add(&mut self, trusted: State) -> Result<(), Error> {
+impl MemStore {
+    pub fn add(&mut self, trusted: State) -> Result<(), Error> {
         let height = trusted.last_header().header().height();
         self.height = height;
         self.store.insert(height, trusted);
         Ok(())
     }
 
-    fn get(&self, h: Height) -> Result<&State, Error> {
+    pub fn get(&self, h: Height) -> Result<&State, Error> {
         let mut height = h;
         if h == 0 {
             height = self.height
