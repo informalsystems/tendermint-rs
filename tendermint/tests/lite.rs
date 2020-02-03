@@ -91,7 +91,6 @@ fn run_test_cases(cases: TestCases) {
                 &now,
             ) {
                 Ok(new_state) => {
-
                     let expected_state = TrustedState::new(
                         &untrusted_signed_header.to_owned().into(),
                         untrusted_next_vals,
