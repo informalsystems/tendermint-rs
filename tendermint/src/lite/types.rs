@@ -87,19 +87,21 @@ pub trait TrustThreshold: Copy + Clone {
 /// voting power signed (in other words at least one honest validator signed).
 /// Some clients might require more than +1/3 and can implement their own
 /// [`TrustThreshold`] which can be passed into all relevant methods.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct TrustThresholdFraction {
     numerator: u64,
     denominator: u64,
 }
 
 impl TrustThresholdFraction {
-    pub fn new(numerator: u64, denominator: u64) -> Self {
-        // TODO: should we make sure we got a proper fraction here?
-        Self {
-            numerator,
-            denominator,
+    pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
+        if numerator <= denominator && denominator > 0 {
+            return Ok(Self {
+                numerator,
+                denominator,
+            });
         }
+        Err(Error::InvalidTrustThreshold)
     }
 }
 
@@ -113,6 +115,7 @@ impl TrustThreshold for TrustThresholdFraction {
 impl Default for TrustThresholdFraction {
     fn default() -> Self {
         Self::new(1, 3)
+            .expect("initializing TrustThresholdFraction with valid fraction mustn't panic")
     }
 }
 
@@ -226,14 +229,16 @@ pub enum Error {
 
     InvalidValidatorSet,
     InvalidNextValidatorSet,
-    InvalidCommitValue,
-    // commit is not for the header we expected
+    InvalidCommitValue, // commit is not for the header we expected
+
     InvalidCommitSignatures,
     InvalidCommit, // signers do not account for +2/3 of the voting power
 
-    InsufficientVotingPower,
-    // trust threshold (default +1/3) is not met
+    InsufficientVotingPower, // trust threshold (default +1/3) is not met
+
     RequestFailed,
+
+    InvalidTrustThreshold,
 }
 
 pub(super) mod mocks {
@@ -451,5 +456,20 @@ mod tests {
         let ts = TrustedState::new(&sh, vs);
         assert_eq!(ts.last_header(), &sh);
         assert_eq!(ts.validators(), vs);
+    }
+
+    #[test]
+    fn trust_threshold_fraction() {
+        assert_eq!(
+            TrustThresholdFraction::default(),
+            TrustThresholdFraction::new(1, 3).expect("mustn't panic")
+        );
+        assert!(
+            TrustThresholdFraction::default(),
+            TrustThresholdFraction::new(2, 3).is_ok()
+        );
+
+        assert!(TrustThresholdFraction::new(3, 1).is_err());
+        assert!(TrustThresholdFraction::new(1, 0).is_err());
     }
 }
