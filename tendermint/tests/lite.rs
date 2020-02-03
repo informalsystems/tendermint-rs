@@ -2,7 +2,7 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
 use std::{fs, path::PathBuf};
 use tendermint::block::Header;
-use tendermint::lite::TrustThresholdFraction;
+use tendermint::lite::{TrustThresholdFraction, TrustedState};
 use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Time};
 
 #[derive(Clone, Debug)]
@@ -65,7 +65,7 @@ type Trusted = lite::TrustedState<SignedHeader, Header>;
 fn run_test_cases(cases: TestCases) {
     for (_, tc) in cases.test_cases.iter().enumerate() {
         let trusted_next_vals = tc.initial.clone().next_validator_set;
-        let trusted_state =
+        let mut latest_trusted =
             Trusted::new(&tc.initial.signed_header.clone().into(), &trusted_next_vals);
         let expects_err = match &tc.expected_output {
             Some(eo) => eo.eq("error"),
@@ -82,7 +82,7 @@ fn run_test_cases(cases: TestCases) {
             let untrusted_vals = &input.validator_set;
             let untrusted_next_vals = &input.next_validator_set;
             match lite::verify_single(
-                trusted_state.clone(),
+                latest_trusted.clone(),
                 &untrusted_signed_header.into(),
                 &untrusted_vals,
                 &untrusted_next_vals,
@@ -91,10 +91,15 @@ fn run_test_cases(cases: TestCases) {
                 &now,
             ) {
                 Ok(new_state) => {
-                    let expected_sh: lite::SignedHeader<SignedHeader, Header> =
-                        input.signed_header.clone().into();
-                    assert_eq!(new_state.last_header().to_owned(), expected_sh);
+
+                    let expected_state = TrustedState::new(
+                        &untrusted_signed_header.to_owned().into(),
+                        untrusted_next_vals,
+                    );
+                    assert_eq!(new_state, expected_state);
                     assert!(!expects_err);
+
+                    latest_trusted = new_state.clone();
                 }
                 Err(_) => {
                     assert!(expects_err);
