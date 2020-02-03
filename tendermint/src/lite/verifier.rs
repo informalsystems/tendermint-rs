@@ -247,7 +247,7 @@ where
     // Ensure the latest state hasn't expired.
     // Note we only check for expiry once in this
     // verify_and_update_bisection function since we assume the
-    // time is passed in and we don't access a clock internal.
+    // time is passed in and we don't access a clock internally.
     // Thus the trust_period must be long enough to incorporate the
     // expected time to complete this function.
     let trusted_sh = trusted_state.last_header();

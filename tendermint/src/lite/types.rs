@@ -151,7 +151,7 @@ where
     fn get(&self, h: Height) -> Result<&TrustedState<C, H>, Error>;
 }
 
-/// TrustedState stores the latest state trusted by a lite client,
+/// TrustedState contains a state trusted by a lite client,
 /// including the last header (at height h-1) and the validator set
 /// (at height h) to use to verify the next header.
 #[derive(Clone, Debug, PartialEq)]
@@ -318,7 +318,6 @@ pub(super) mod mocks {
     }
 
     // commit is a list of vals that signed.
-    // use None if the val didn't sign.
     #[derive(Clone, Debug, PartialEq, Serialize)]
     pub struct MockCommit {
         hash: Hash,
