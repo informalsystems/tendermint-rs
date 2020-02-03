@@ -352,7 +352,10 @@ pub(super) mod mocks {
         }
 
         fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
-            // do not check anything here
+            // some implementation specific checks:
+            if self.vals.is_empty() || self.hash.algorithm() != Algorithm::Sha256 {
+                return Err(Error::InvalidCommitValue);
+            }
             Ok(())
         }
     }
