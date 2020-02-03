@@ -15,7 +15,7 @@ use {
 /// include information about the validator signing it.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#vote>
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Vote {
     /// Type of vote (prevote or precommit)
     #[serde(rename = "type")]

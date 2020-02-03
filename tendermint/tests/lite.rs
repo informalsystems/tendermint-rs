@@ -2,9 +2,8 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
 use std::{fs, path::PathBuf};
 use tendermint::block::Header;
-use tendermint::lite::{Store, TrustThresholdFraction};
+use tendermint::lite::TrustThresholdFraction;
 use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Time};
-use tendermint_lite::store;
 
 #[derive(Clone, Debug)]
 struct Duration(u64);
@@ -76,19 +75,12 @@ fn run_test_cases(cases: TestCases) {
         let trusting_period: std::time::Duration = tc.initial.clone().trusting_period.into();
         let tm_now = tc.initial.now;
         let now = tm_now.to_system_time().unwrap();
-        // Note: Alternative to using mem-store from the light node crate would be mocking
-        // the store here directly.
-        let mut store = store::MemStore::new();
-        store
-            .add(trusted_state.clone())
-            .expect("adding trusted state to store failed");
 
         for (_, input) in tc.input.iter().enumerate() {
             println!("{}", tc.description);
             let untrusted_signed_header = &input.signed_header;
             let untrusted_vals = &input.validator_set;
             let untrusted_next_vals = &input.next_validator_set;
-            let trusted_state = store.get(0).expect("couldn't get from store");
             match lite::verify_single(
                 trusted_state.clone(),
                 &untrusted_signed_header.into(),
@@ -99,7 +91,9 @@ fn run_test_cases(cases: TestCases) {
                 &now,
             ) {
                 Ok(new_state) => {
-                    store.add(new_state).expect("couldn't store");
+                    let expected_sh: lite::SignedHeader<SignedHeader, Header> =
+                        input.signed_header.clone().into();
+                    assert_eq!(new_state.last_header().to_owned(), expected_sh);
                     assert!(!expects_err);
                 }
                 Err(_) => {
