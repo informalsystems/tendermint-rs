@@ -490,7 +490,9 @@ mod tests {
 
         // 100% overlap, but wrong commit.
         // NOTE: This should be an invalid commit error since there's
-        // a vote from a validator not in the set.
+        // a vote from a validator not in the set!
+        // but voting_power_in isn't smart enough to see this ...
+        // TODO(ismail): https://github.com/interchainio/tendermint-rs/issues/140
         assert_single_err(ts, vec![1], vec![0], Error::InvalidCommit);
     }
 
