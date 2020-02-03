@@ -583,22 +583,15 @@ mod tests {
     }
 
     #[test]
-    fn test_verify_bisection_1_val_1_height() {
+    fn test_verify_bisection_1_val() {
         let req = init_requester(vec![vec![0], vec![0], vec![0]]);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
 
         assert_bisection_ok(&req, &ts, 2, 1);
-    }
 
-    #[test]
-    fn test_verify_bisection_1_val_2_heights() {
         let req = init_requester(vec![vec![0], vec![0], vec![0], vec![0]]);
-        let sh = req.signed_header(1).expect("first sh not present");
-        let vals = req.validator_set(1).expect("init. valset not present");
-        let ts = &MockState::new(&sh, &vals);
-
         assert_bisection_ok(&req, &ts, 3, 1);
     }
 
