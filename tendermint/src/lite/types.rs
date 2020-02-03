@@ -231,8 +231,8 @@ pub enum Error {
     InvalidNextValidatorSet,
     InvalidCommitValue, // commit is not for the header we expected
 
-    InvalidCommitSignatures,
-    InvalidCommit, // signers do not account for +2/3 of the voting power
+    InvalidCommitSignatures, // Note: this is only used by implementation (ie. expected return in Commit::validate())
+    InvalidCommit,           // signers do not account for +2/3 of the voting power
 
     InsufficientVotingPower, // trust threshold (default +1/3) is not met
 
@@ -354,7 +354,7 @@ pub(super) mod mocks {
         fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
             // some implementation specific checks:
             if self.vals.is_empty() || self.hash.algorithm() != Algorithm::Sha256 {
-                return Err(Error::InvalidCommitValue);
+                return Err(Error::InvalidCommitSignatures);
             }
             Ok(())
         }
