@@ -416,10 +416,10 @@ mod tests {
         assert!(threshold.is_enough_power(2, 3));
 
         // 33% <= 33%
-        assert_eq!(threshold.is_enough_power(1, 3), false);
+        assert!(!threshold.is_enough_power(1, 3));
 
         // 1% < 33%
-        assert_eq!(threshold.is_enough_power(1, 100), false);
+        assert!(!threshold.is_enough_power(1, 100));
     }
 
     #[test]
@@ -463,10 +463,7 @@ mod tests {
             TrustThresholdFraction::default(),
             TrustThresholdFraction::new(1, 3).expect("mustn't panic")
         );
-        assert!(
-            TrustThresholdFraction::default(),
-            TrustThresholdFraction::new(2, 3).is_ok()
-        );
+        assert!(TrustThresholdFraction::new(2, 3).is_ok());
 
         assert!(TrustThresholdFraction::new(3, 1).is_err());
         assert!(TrustThresholdFraction::new(1, 0).is_err());
