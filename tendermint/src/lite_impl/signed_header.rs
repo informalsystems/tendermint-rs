@@ -73,8 +73,12 @@ impl block::signed_header::SignedHeader {
     }
 }
 
+// type alias the concrete types to make the From impls more readable
+type TMSignedHeader = block::signed_header::SignedHeader;
+type TMBlockHeader = block::header::Header;
+
 impl From<block::signed_header::SignedHeader>
-    for lite::types::SignedHeader<block::signed_header::SignedHeader, block::header::Header>
+    for lite::types::SignedHeader<TMSignedHeader, TMBlockHeader>
 {
     fn from(sh: block::signed_header::SignedHeader) -> Self {
         Self::new(sh.clone(), sh.header)
@@ -82,7 +86,7 @@ impl From<block::signed_header::SignedHeader>
 }
 
 impl From<&block::signed_header::SignedHeader>
-    for lite::types::SignedHeader<block::signed_header::SignedHeader, block::header::Header>
+    for lite::types::SignedHeader<TMSignedHeader, TMBlockHeader>
 {
     fn from(sh: &block::signed_header::SignedHeader) -> Self {
         Self::new(sh.clone(), sh.clone().header)
