@@ -10,12 +10,12 @@ struct Duration(u64);
 
 #[derive(Deserialize, Clone, Debug)]
 struct TestCases {
+    batch_name: String,
     test_cases: Vec<TestCase>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 struct TestCase {
-    test_name: String,
     description: String,
     initial: Initial,
     input: Vec<LiteBlock>,
@@ -44,19 +44,31 @@ fn read_json_fixture(name: &str) -> String {
 
 #[test]
 fn val_set_tests_verify() {
-    let cases: TestCases = serde_json::from_str(&read_json_fixture("val_set_tests")).unwrap();
+    let cases: TestCases = serde_json::from_str(&read_json_fixture("single_step_sequential/val_set_tests")).unwrap();
     run_test_cases(cases);
 }
 
 #[test]
 fn commit_tests_verify() {
-    let cases: TestCases = serde_json::from_str(&read_json_fixture("commit_tests")).unwrap();
+    let cases: TestCases = serde_json::from_str(&read_json_fixture("single_step_sequential/commit_tests")).unwrap();
     run_test_cases(cases);
 }
 
 #[test]
 fn header_tests_verify() {
-    let cases: TestCases = serde_json::from_str(&read_json_fixture("header_tests")).unwrap();
+    let cases: TestCases = serde_json::from_str(&read_json_fixture("single_step_sequential/header_tests")).unwrap();
+    run_test_cases(cases);
+}
+
+#[test]
+fn single_skip_val_set_tests_verify() {
+    let cases: TestCases = serde_json::from_str(&read_json_fixture("single_step_skipping/val_set_tests")).unwrap();
+    run_test_cases(cases);
+}
+
+#[test]
+fn single_skip_commit_tests_verify() {
+    let cases: TestCases = serde_json::from_str(&read_json_fixture("single_step_skipping/commit_tests")).unwrap();
     run_test_cases(cases);
 }
 
