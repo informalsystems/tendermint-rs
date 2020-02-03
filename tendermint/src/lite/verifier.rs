@@ -403,24 +403,24 @@ mod tests {
     // Init a mock Requester.
     // For each pair of lists of validators (cur and next vals) we
     // init a trusted state (signed header and vals);
+    // Note: from the final_state we only feed the validators into the Requester.
     // these are (signed) headers and validators will be returned by the Requester.
-    fn init_requester(vals_for_height: Vec<Vec<usize>>) -> MockRequester {
+    fn init_requester(vals_for_height: Vec<Vec<usize>>, final_state: &MockState) -> MockRequester {
         let mut req = MockRequester::new();
-        let max_height = vals_for_height.len();
+        let max_height = vals_for_height.len() as u64;
         for (h, vals) in vals_for_height.iter().enumerate() {
             let height = (h + 1) as u64; // height starts with 1 ...
-            if height < max_height as u64 {
+            if height < max_height {
                 let next_vals = vals_for_height.get(h + 1).expect("next_vals missing");
                 let ts = init_trusted_state(vals.to_owned(), next_vals.to_owned(), height);
                 req.signed_headers.insert(height, ts.last_header().clone());
                 req.validators.insert(height, ts.validators().to_owned());
-            } else {
-                // these will be requested in the last call of verify_bisection_inner
-                // and verified against next_validators of the header in the last SignedHeader:
-                let vals = &MockValSet::new(vals.clone());
-                req.validators.insert(height, vals.to_owned());
             }
         }
+        // these will be requested in the last call of verify_bisection_inner
+        // and verified against next_validators of the header in the last SignedHeader:
+        req.validators
+            .insert(max_height, final_state.validators().to_owned());
         req
     }
 
@@ -462,6 +462,7 @@ mod tests {
         ts: &TrustedState<MockCommit, MockHeader>,
         untrusted_height: u64,
         expected_num_of_requests: usize,
+        expected_final_state: &MockState,
     ) {
         let mut cache: Vec<MockTrustedState> = Vec::new();
         let ts_new = verify_bisection_inner(
@@ -472,7 +473,7 @@ mod tests {
             cache.as_mut(),
         )
         .expect("should have passed");
-        assert_eq!(ts_new.last_header().header().height(), untrusted_height);
+        assert_eq!(ts_new, expected_final_state.to_owned());
         assert_eq!(cache.len(), expected_num_of_requests);
         assert_uniqueness(cache);
     }
@@ -584,15 +585,17 @@ mod tests {
 
     #[test]
     fn test_verify_bisection_1_val() {
-        let req = init_requester(vec![vec![0], vec![0], vec![0]]);
+        let final_state = init_trusted_state(vec![0], vec![0], 2);
+        let req = init_requester(vec![vec![0], vec![0], vec![0]], &final_state);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
 
-        assert_bisection_ok(&req, &ts, 2, 1);
+        assert_bisection_ok(&req, &ts, 2, 1, &final_state);
 
-        let req = init_requester(vec![vec![0], vec![0], vec![0], vec![0]]);
-        assert_bisection_ok(&req, &ts, 3, 1);
+        let final_state = init_trusted_state(vec![0], vec![0], 3);
+        let req = init_requester(vec![vec![0], vec![0], vec![0], vec![0]], &final_state);
+        assert_bisection_ok(&req, &ts, 3, 1, &final_state);
     }
 
     #[test]
@@ -604,12 +607,13 @@ mod tests {
         vals_per_height.push(vec![1, 2]); // 4 -> 50% change
         vals_per_height.push(vec![0, 2]); // 5 -> 50% <- too much change (from 1), need to bisect...
         vals_per_height.push(vec![0, 2]); // 6 -> (only need to validate 5)
-        let req = init_requester(vals_per_height);
+        let final_ts = init_trusted_state(vec![0, 2], vec![0, 2], 5);
+        let req = init_requester(vals_per_height, &final_ts);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
 
-        assert_bisection_ok(&req, &ts, 5, 3);
+        assert_bisection_ok(&req, &ts, 5, 3, &final_ts);
     }
 
     #[test]
