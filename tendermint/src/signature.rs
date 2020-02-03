@@ -5,7 +5,7 @@ use signatory::signature::Signature as _;
 use subtle_encoding::base64;
 
 /// Signatures
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Signature {
     /// Ed25519 block signature
     Ed25519(signatory::ed25519::Signature),

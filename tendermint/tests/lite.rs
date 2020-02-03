@@ -2,9 +2,8 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
 use std::{fs, path::PathBuf};
 use tendermint::block::Header;
-use tendermint::lite::{Store, TrustThresholdFraction};
+use tendermint::lite::{TrustThresholdFraction, TrustedState};
 use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Time};
-use tendermint_lite::store;
 
 #[derive(Clone, Debug)]
 struct Duration(u64);
@@ -66,7 +65,7 @@ type Trusted = lite::TrustedState<SignedHeader, Header>;
 fn run_test_cases(cases: TestCases) {
     for (_, tc) in cases.test_cases.iter().enumerate() {
         let trusted_next_vals = tc.initial.clone().next_validator_set;
-        let trusted_state =
+        let mut latest_trusted =
             Trusted::new(&tc.initial.signed_header.clone().into(), &trusted_next_vals);
         let expects_err = match &tc.expected_output {
             Some(eo) => eo.eq("error"),
@@ -76,21 +75,14 @@ fn run_test_cases(cases: TestCases) {
         let trusting_period: std::time::Duration = tc.initial.clone().trusting_period.into();
         let tm_now = tc.initial.now;
         let now = tm_now.to_system_time().unwrap();
-        // Note: Alternative to using mem-store from the light node crate would be mocking
-        // the store here directly.
-        let mut store = store::MemStore::new();
-        store
-            .add(trusted_state.clone())
-            .expect("adding trusted state to store failed");
 
         for (_, input) in tc.input.iter().enumerate() {
             println!("{}", tc.description);
             let untrusted_signed_header = &input.signed_header;
             let untrusted_vals = &input.validator_set;
             let untrusted_next_vals = &input.next_validator_set;
-            let trusted_state = store.get(0).expect("couldn't get from store");
             match lite::verify_single(
-                trusted_state.clone(),
+                latest_trusted.clone(),
                 &untrusted_signed_header.into(),
                 &untrusted_vals,
                 &untrusted_next_vals,
@@ -99,8 +91,14 @@ fn run_test_cases(cases: TestCases) {
                 &now,
             ) {
                 Ok(new_state) => {
-                    store.add(new_state).expect("couldn't store");
+                    let expected_state = TrustedState::new(
+                        &untrusted_signed_header.to_owned().into(),
+                        untrusted_next_vals,
+                    );
+                    assert_eq!(new_state, expected_state);
                     assert!(!expects_err);
+
+                    latest_trusted = new_state.clone();
                 }
                 Err(_) => {
                     assert!(expects_err);

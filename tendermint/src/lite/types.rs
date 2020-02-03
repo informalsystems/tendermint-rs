@@ -87,19 +87,21 @@ pub trait TrustThreshold: Copy + Clone {
 /// voting power signed (in other words at least one honest validator signed).
 /// Some clients might require more than +1/3 and can implement their own
 /// [`TrustThreshold`] which can be passed into all relevant methods.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct TrustThresholdFraction {
     numerator: u64,
     denominator: u64,
 }
 
 impl TrustThresholdFraction {
-    pub fn new(numerator: u64, denominator: u64) -> Self {
-        // TODO: should we make sure we got a proper fraction here?
-        Self {
-            numerator,
-            denominator,
+    pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
+        if numerator <= denominator && denominator > 0 {
+            return Ok(Self {
+                numerator,
+                denominator,
+            });
         }
+        Err(Error::InvalidTrustThreshold)
     }
 }
 
@@ -113,6 +115,7 @@ impl TrustThreshold for TrustThresholdFraction {
 impl Default for TrustThresholdFraction {
     fn default() -> Self {
         Self::new(1, 3)
+            .expect("initializing TrustThresholdFraction with valid fraction mustn't panic")
     }
 }
 
@@ -130,25 +133,7 @@ where
     fn validator_set(&self, h: Height) -> Result<C::ValidatorSet, Error>;
 }
 
-/// This store can be used to store all the headers that have passed basic verification
-/// and that are within the light client's trust period.
-pub trait Store<C, H>
-where
-    H: Header,
-    C: Commit,
-{
-    /// Add this state (header at height h, validators at height h+1) as trusted to the store.
-    fn add(&mut self, trusted: TrustedState<C, H>) -> Result<(), Error>;
-
-    /// Retrieve the trusted state at height h if it exists.
-    /// If it does not exist return an error.
-    /// If h=0, return the latest trusted state.
-    /// TODO: use an enum instead of special-casing 0, see
-    /// https://github.com/interchainio/tendermint-rs/issues/118
-    fn get(&self, h: Height) -> Result<&TrustedState<C, H>, Error>;
-}
-
-/// TrustedState stores the latest state trusted by a lite client,
+/// TrustedState contains a state trusted by a lite client,
 /// including the last header (at height h-1) and the validator set
 /// (at height h) to use to verify the next header.
 #[derive(Clone, Debug, PartialEq)]
@@ -226,14 +211,16 @@ pub enum Error {
 
     InvalidValidatorSet,
     InvalidNextValidatorSet,
-    InvalidCommitValue,
-    // commit is not for the header we expected
-    InvalidCommitSignatures,
-    InvalidCommit, // signers do not account for +2/3 of the voting power
+    InvalidCommitValue, // commit is not for the header we expected
 
-    InsufficientVotingPower,
-    // trust threshold (default +1/3) is not met
+    InvalidCommitSignatures, // Note: this is only used by implementation (ie. expected return in Commit::validate())
+    InvalidCommit,           // signers do not account for +2/3 of the voting power
+
+    InsufficientVotingPower, // trust threshold (default +1/3) is not met
+
     RequestFailed,
+
+    InvalidTrustThreshold,
 }
 
 pub(super) mod mocks {
@@ -313,7 +300,6 @@ pub(super) mod mocks {
     }
 
     // commit is a list of vals that signed.
-    // use None if the val didn't sign.
     #[derive(Clone, Debug, PartialEq, Serialize)]
     pub struct MockCommit {
         hash: Hash,
@@ -348,7 +334,10 @@ pub(super) mod mocks {
         }
 
         fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
-            // do not check anything here
+            // some implementation specific checks:
+            if self.vals.is_empty() || self.hash.algorithm() != Algorithm::Sha256 {
+                return Err(Error::InvalidCommitSignatures);
+            }
             Ok(())
         }
     }
@@ -412,10 +401,10 @@ mod tests {
         assert!(threshold.is_enough_power(2, 3));
 
         // 33% <= 33%
-        assert_eq!(threshold.is_enough_power(1, 3), false);
+        assert!(!threshold.is_enough_power(1, 3));
 
         // 1% < 33%
-        assert_eq!(threshold.is_enough_power(1, 100), false);
+        assert!(!threshold.is_enough_power(1, 100));
     }
 
     #[test]
@@ -451,5 +440,17 @@ mod tests {
         let ts = TrustedState::new(&sh, vs);
         assert_eq!(ts.last_header(), &sh);
         assert_eq!(ts.validators(), vs);
+    }
+
+    #[test]
+    fn trust_threshold_fraction() {
+        assert_eq!(
+            TrustThresholdFraction::default(),
+            TrustThresholdFraction::new(1, 3).expect("mustn't panic")
+        );
+        assert!(TrustThresholdFraction::new(2, 3).is_ok());
+
+        assert!(TrustThresholdFraction::new(3, 1).is_err());
+        assert!(TrustThresholdFraction::new(1, 0).is_err());
     }
 }

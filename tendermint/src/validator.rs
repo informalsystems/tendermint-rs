@@ -13,7 +13,7 @@ use crate::amino_types::message::AminoMessage;
 use crate::{account, vote, PublicKey};
 
 /// Validator set contains a vector of validators
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Set {
     #[serde(deserialize_with = "parse_vals")]
     validators: Vec<Info>,

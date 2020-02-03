@@ -1,7 +1,7 @@
 use tendermint::hash;
 use tendermint::lite;
 use tendermint::lite::{Error, TrustThresholdFraction};
-use tendermint::lite::{Header as _, Requester as _, Store as _, ValidatorSet as _};
+use tendermint::lite::{Header as _, Requester as _, ValidatorSet as _};
 use tendermint::rpc;
 use tendermint::{block::Height, Hash};
 
