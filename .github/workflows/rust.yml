@@ -52,14 +52,31 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
+          command: clean
+      - uses: actions-rs/cargo@v1
+        with:
           command: test
           args: --all-features --no-fail-fast
         env:
           CARGO_INCREMENTAL: "0"
           RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads"
       - uses: actions-rs/grcov@v0.1
-      - name: Coveralls upload
-        uses: coverallsapp/github-action@master
+      # - name: Collect and upload test coverage
+      #   run: |
+      #     # Note: this currently only matches gc files in crates named *tendermint*.
+      #     # This is something to keep in mind if we create crates that do not have tendermint in
+      #     # their name.
+      #     zip -0 ccov.zip `find . \( -name "*tendermint*.gc*" \) -print`
+      #     grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" -o lcov.info
+      #     bash <(curl -s https://codecov.io/bash) -f lcov.info
+      #     rm -f lcov.info
+      #     rm -f ccov.zip
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ${{ steps.coverage.outputs.report }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          yml: ./codecov.yml
+          fail_ci_if_error: true
