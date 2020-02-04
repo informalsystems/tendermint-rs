@@ -75,8 +75,6 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: /tmp/grcov-report-amxwxiojm7o
-          flags: unittests
-          name: codecov-umbrella
+          # file: /tmp/grcov*
           yml: ./codecov.yml
           fail_ci_if_error: true
