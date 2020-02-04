@@ -64,51 +64,6 @@ jobs:
             else
               echo Skipping rustfmt
             fi
-  clippy:
-    description: Lint using clippy
-    executor: cargo-executor
-    steps:
-      - checkout
-      - update_stable_toolchain
-      - print_version_info
-      - calculate_cargo_dependencies
-      - run:
-          name: Run clippy checks
-          command: |
-            if rustup component add clippy; then
-              cargo clippy --all --all-targets -- -Dwarnings -Drust-2018-idioms
-            else
-              echo Skipping clippy
-            fi
-  test-stable:
-    description: Run all tests using the stable toolchain
-    executor: cargo-executor
-    steps:
-      - checkout
-      - update_stable_toolchain
-      - print_version_info
-      - calculate_cargo_dependencies
-      - run:
-          name: Build all targets
-          command: cargo build --all --all-targets
-      - run:
-          name: Run all tests
-          command: cargo test --all
-  audit:
-    description: Audit for vulnerable dependencies
-    executor: cargo-audit-executor
-    steps:
-      - checkout
-      - update_stable_toolchain
-      - print_version_info
-      - run:
-          name: Install Cargo Audit
-          command: |
-            cargo install --force cargo-audit
-      - run:
-          name: Run Cargo Audit
-          command: |
-            cargo audit
   test-nightly-coverage:
     description: Collect and upload test coverage using the nighly toolchain
     executor: cargo-executor
