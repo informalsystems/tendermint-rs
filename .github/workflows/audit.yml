@@ -4,7 +4,6 @@ on:
     paths:
       - "**/Cargo.toml"
       - "**/Cargo.lock"
-
 jobs:
   security_audit:
     runs-on: ubuntu-latest
