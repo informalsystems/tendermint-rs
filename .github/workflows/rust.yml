@@ -75,6 +75,6 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          # file: /tmp/grcov*
+          file: ${{ steps.coverage.outputs.report }}
           yml: ./codecov.yml
           fail_ci_if_error: true
