@@ -47,13 +47,10 @@ impl lite::Commit for block::signed_header::SignedHeader {
         if self.commit.precommits.len() != vals.validators().len() {
             return Err(lite::Error::InvalidCommitSignatures);
         }
-        // TODO: https://github.com/interchainio/tendermint-rs/pull/143/commits/0a30022fa47e909e6c7b20417dd178c8a3b84838#r374958528
-        // if let Some(parts) = &self.commit.block_id.parts {
-        //     if parts.hash != self.header_hash() {
-        //         // TODO(ismail): we need a better error here!
-        //         return Err(lite::Error::InvalidCommit);
-        //     }
-        // }
+        // TODO: compare to the go code for more implementation related checks and clarify if this:
+        // https://github.com/interchainio/tendermint-rs/pull/143/commits/0a30022fa47e909e6c7b20417dd178c8a3b84838#r374958528
+        // should go here or somewhere else
+
         Ok(())
     }
 }
