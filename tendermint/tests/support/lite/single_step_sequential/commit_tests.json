@@ -1626,7 +1626,7 @@
  			"expected_output": "error"
  		},
  		{
- 			"description": "Case: one lite block, less than one-third vals don't sign, no error",
+ 			"description": "Case: one lite block, more than two-thirds vals did sign, no error",
  			"initial": {
  				"signed_header": {
  					"header": {
