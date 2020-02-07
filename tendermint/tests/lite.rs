@@ -65,6 +65,9 @@ struct MockRequester {
 }  
 
 impl Requester<SignedHeader, Header> for MockRequester {
+    type SignedHeader = SignedHeader;
+    type ValidatorSet = Set;
+
     fn signed_header(&self, h: u64) -> Result<SignedHeader, Error> {
         println!("requested signed header for height:{:?}", h);
         if let Some(sh) = self.signed_headers.get(&h) {
