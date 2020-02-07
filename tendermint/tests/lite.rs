@@ -43,9 +43,7 @@ struct LiteBlock {
 struct TestBisection {
     description: String,
     trust_options: TrustOptions,
-    primary: MockRequester,
-    // TODO: this won't work like this; see comment on MockRequester::new
-    witnesses: Vec<MockRequester>,
+    primary: Provider,
     height_to_verify: Height,
     trust_level: TrustThresholdFraction,
     now: std::time::SystemTime,
@@ -53,24 +51,21 @@ struct TestBisection {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+struct Provider {
+    chain_id: String,
+    lite_blocks: Vec<LiteBlock>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 struct TrustOptions {
-    // TODO: @Shivani: we should prob. change this in the go-code?
-    // other fields in JSON are non-capitalized
-    #[serde(alias = "Period")] // this is capitalized in the json
     period: Duration,
-    #[serde(alias = "Height")]
     height: Height,
-    #[serde(alias = "Hash")]
-    hash: Hash, // TODO: this is currently base64 enc. in the JSON
+    hash: Hash,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 struct MockRequester {
     chain_id: String,
-    // TODO: this won't work because in the JSON this isn't a map from
-    // u64 -> SignedHeader
-    // either you collect the data yourself (it's just a list and t, or, you write
-    // a custom deserializer
     signed_headers: HashMap<u64, SignedHeader>,
     validators: HashMap<u64, Set>,
 }
@@ -98,8 +93,6 @@ impl Requester<SignedHeader, Header> for MockRequester {
 }
 
 impl MockRequester {
-    // TODO: this needs to be initialized via the data collected from the JSON file(s)
-    // prob. via a helper method that goes through the list you have in the JSON
     #![allow(dead_code)]
     fn new(chain_id: String, lite_blocks: Vec<LiteBlock>) -> Self {
         let mut sh_map: HashMap<u64, SignedHeader> = HashMap::new();
@@ -206,10 +199,7 @@ fn run_test_cases(cases: TestCases) {
 }
 
 #[test]
-#[ignore]
 fn bisection_simple() {
-    // TODO: there are a few serialization issues that need fixing before we can
-    // actually read the JSON -> then remove above's #[ignore] !
     let case: TestBisection =
         serde_json::from_str(&read_json_fixture("many_header_bisection/happy_path")).unwrap();
     run_bisection_test(case);
@@ -222,7 +212,10 @@ fn run_bisection_test(case: TestBisection) {
     let trust_threshold = case.trust_level;
     let trusting_period = case.trust_options.period;
     let now = case.now;
-    let req = case.primary;
+
+    let provider = case.primary;
+    let req = MockRequester::new(provider.chain_id, provider.lite_blocks);
+
     let expected_output = case.expected_output;
 
     let trusted_height = case.trust_options.height.try_into().unwrap();
