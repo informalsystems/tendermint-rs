@@ -1,9 +1,10 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
-use std::{fs, path::PathBuf};
+use std::convert::TryInto;
+use std::{fs, path::PathBuf, collections::HashMap};
 use tendermint::block::Header;
-use tendermint::lite::{TrustThresholdFraction, TrustedState};
-use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Time};
+use tendermint::lite::{TrustThresholdFraction, TrustedState, Requester, types::Error};
+use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Time, Hash};
 
 #[derive(Clone, Debug)]
 struct Duration(u64);
@@ -35,6 +36,52 @@ struct LiteBlock {
     signed_header: SignedHeader,
     validator_set: Set,
     next_validator_set: Set,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+struct TestBisection {
+    description: String,
+    trust_options: TrustOptions,
+    primary: MockRequester,
+    witnesses: Vec<MockRequester>,
+    height_to_verify: i64,
+    trust_level: TrustThresholdFraction,
+    now: std::time::SystemTime,
+    expected_output: String,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+struct TrustOptions {
+    period: std::time::Duration,
+    height: i64,
+    hash: Hash,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+struct MockRequester {
+    chain_id: String,
+    signed_headers: HashMap<u64, SignedHeader>,
+    validators: HashMap<u64, Set>,
+}  
+
+impl Requester<SignedHeader, Header> for MockRequester {
+    fn signed_header(&self, h: u64) -> Result<SignedHeader, Error> {
+        println!("requested signed header for height:{:?}", h);
+        if let Some(sh) = self.signed_headers.get(&h) {
+            return Ok(sh.to_owned());
+        }
+        println!("couldn't get sh for: {}", &h);
+        Err(Error::RequestFailed)
+    }
+
+    fn validator_set(&self, h: u64) -> Result<Set, Error> {
+        println!("requested validators for height:{:?}", h);
+        if let Some(vs) = self.validators.get(&h) {
+            return Ok(vs.to_owned());
+        }
+        println!("couldn't get vals for: {}", &h);
+        Err(Error::RequestFailed)
+    }
 }
 
 const TEST_FILES_PATH: &str = "./tests/support/lite/";
@@ -123,6 +170,49 @@ fn run_test_cases(cases: TestCases) {
             }
         }
     }
+}
+
+#[test]
+fn bisection_simple() {
+    let case: TestBisection =
+        serde_json::from_str(&read_json_fixture("many_header_bisection/happy_path")).unwrap();
+    run_bisection_test(case);
+}
+
+fn run_bisection_test(case: TestBisection) {
+    println!("{}", case.description);
+
+    let untrusted_height = case.height_to_verify.try_into().unwrap();
+    let trust_threshold = case.trust_level;
+    let trusting_period = case.trust_options.period;
+    let now = case.now;
+    let req = case.primary;
+    let expected_output = case.expected_output;
+
+    let trusted_height = case.trust_options.height.try_into().unwrap();
+    let trusted_header = &req.signed_header(trusted_height)?;
+    let trusted_vals = &req.validator_set(trusted_height+1)?;
+
+    let trusted_state = TrustedState::new(trusted_header, trusted_vals);
+
+    let output: String;
+
+    match lite::verify_bisection(
+        trusted_state,
+        untrusted_height,
+        trust_threshold,
+        &trusting_period,
+        &now,
+        &req
+    ) {
+        Ok(new_states) => {
+            output = "no error".to_string();
+        }
+        Err(_) => {
+            output = "error".to_string();
+        }
+    }
+    assert_eq!(output, expected_output);
 }
 
 impl<'de> Deserialize<'de> for Duration {
