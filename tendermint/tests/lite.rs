@@ -1,9 +1,11 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
+use std::collections::HashMap;
+use std::convert::TryInto;
 use std::{fs, path::PathBuf};
 use tendermint::block::Header;
-use tendermint::lite::{TrustThresholdFraction, TrustedState};
-use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Time};
+use tendermint::lite::{Error, Requester, TrustThresholdFraction, TrustedState};
+use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Hash, Time};
 
 #[derive(Clone, Debug)]
 struct Duration(u64);
@@ -63,14 +65,14 @@ struct MockRequester {
     validators: HashMap<u64, Set>,
 }
 
-impl Requester<SignedHeader, Header> for MockRequester {
-    type SignedHeader = SignedHeader;
-    type ValidatorSet = Set;
+type LightSignedHeader = lite::types::SignedHeader<SignedHeader, Header>;
 
-    fn signed_header(&self, h: u64) -> Result<SignedHeader, Error> {
+impl Requester<SignedHeader, Header> for MockRequester {
+    fn signed_header(&self, h: u64) -> Result<LightSignedHeader, Error> {
         println!("requested signed header for height:{:?}", h);
         if let Some(sh) = self.signed_headers.get(&h) {
-            return Ok(sh.to_owned());
+            let lsh: LightSignedHeader = sh.into();
+            return Ok(lsh.to_owned());
         }
         println!("couldn't get sh for: {}", &h);
         Err(Error::RequestFailed)
@@ -192,8 +194,12 @@ fn run_bisection_test(case: TestBisection) {
     let expected_output = case.expected_output;
 
     let trusted_height = case.trust_options.height.try_into().unwrap();
-    let trusted_header = &req.signed_header(trusted_height)?;
-    let trusted_vals = &req.validator_set(trusted_height+1)?;
+    let trusted_header = &req
+        .signed_header(trusted_height)
+        .expect("could not 'request' signed header");
+    let trusted_vals = &req
+        .validator_set(trusted_height + 1)
+        .expect("could not 'request' validator set");
 
     let trusted_state = TrustedState::new(trusted_header, trusted_vals);
 
@@ -205,9 +211,10 @@ fn run_bisection_test(case: TestBisection) {
         trust_threshold,
         &trusting_period,
         &now,
-        &req
+        &req,
     ) {
         Ok(new_states) => {
+            // TODO: make some assertions on the new_states or don't intro the variable here
             output = "no error".to_string();
         }
         Err(_) => {

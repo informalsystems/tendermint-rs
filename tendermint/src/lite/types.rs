@@ -4,6 +4,7 @@
 use crate::Hash;
 
 use failure::_core::fmt::Debug;
+use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 
 pub type Height = u64;
