@@ -4,6 +4,7 @@
 use crate::Hash;
 
 use failure::_core::fmt::Debug;
+use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 
 pub type Height = u64;
@@ -87,7 +88,7 @@ pub trait TrustThreshold: Copy + Clone {
 /// voting power signed (in other words at least one honest validator signed).
 /// Some clients might require more than +1/3 and can implement their own
 /// [`TrustThreshold`] which can be passed into all relevant methods.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TrustThresholdFraction {
     numerator: u64,
     denominator: u64,
