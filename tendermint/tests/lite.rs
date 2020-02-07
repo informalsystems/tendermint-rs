@@ -1,15 +1,10 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
-use std::{fs, path::PathBuf};
-use tendermint::lite::TrustedState;
-use tendermint::{block::signed_header::SignedHeader, lite, validator, validator::Set, Time};
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct TestSuite {
-    signed_header: SignedHeader,
-    last_validators: Vec<validator::Info>,
-    validators: Vec<validator::Info>,
-}
+use std::convert::TryInto;
+use std::{fs, path::PathBuf, collections::HashMap};
+use tendermint::block::Header;
+use tendermint::lite::{TrustThresholdFraction, TrustedState, Requester, types::Error};
+use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Time, Hash};
 
 #[derive(Clone, Debug)]
 struct Duration(u64);
@@ -43,8 +38,51 @@ struct LiteBlock {
     next_validator_set: Set,
 }
 
-pub struct DefaultTrustLevel {}
-impl lite::TrustThreshold for DefaultTrustLevel {}
+#[derive(Deserialize, Clone, Debug)]
+struct TestBisection {
+    description: String,
+    trust_options: TrustOptions,
+    primary: MockRequester,
+    witnesses: Vec<MockRequester>,
+    height_to_verify: i64,
+    trust_level: TrustThresholdFraction,
+    now: std::time::SystemTime,
+    expected_output: String,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+struct TrustOptions {
+    period: std::time::Duration,
+    height: i64,
+    hash: Hash,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+struct MockRequester {
+    chain_id: String,
+    signed_headers: HashMap<u64, SignedHeader>,
+    validators: HashMap<u64, Set>,
+}  
+
+impl Requester<SignedHeader, Header> for MockRequester {
+    fn signed_header(&self, h: u64) -> Result<SignedHeader, Error> {
+        println!("requested signed header for height:{:?}", h);
+        if let Some(sh) = self.signed_headers.get(&h) {
+            return Ok(sh.to_owned());
+        }
+        println!("couldn't get sh for: {}", &h);
+        Err(Error::RequestFailed)
+    }
+
+    fn validator_set(&self, h: u64) -> Result<Set, Error> {
+        println!("requested validators for height:{:?}", h);
+        if let Some(vs) = self.validators.get(&h) {
+            return Ok(vs.to_owned());
+        }
+        println!("couldn't get vals for: {}", &h);
+        Err(Error::RequestFailed)
+    }
+}
 
 const TEST_FILES_PATH: &str = "./tests/support/lite/";
 fn read_json_fixture(name: &str) -> String {
@@ -53,91 +91,78 @@ fn read_json_fixture(name: &str) -> String {
 
 #[test]
 fn val_set_tests_verify() {
-    let cases: TestCases = serde_json::from_str(&read_json_fixture("single_step_sequential/val_set_tests")).unwrap();
+    let cases: TestCases =
+        serde_json::from_str(&read_json_fixture("single_step_sequential/val_set_tests")).unwrap();
     run_test_cases(cases);
 }
 
 #[test]
 fn commit_tests_verify() {
-    let cases: TestCases = serde_json::from_str(&read_json_fixture("single_step_sequential/commit_tests")).unwrap();
+    let cases: TestCases =
+        serde_json::from_str(&read_json_fixture("single_step_sequential/commit_tests")).unwrap();
     run_test_cases(cases);
 }
 
 #[test]
 fn header_tests_verify() {
-    let cases: TestCases = serde_json::from_str(&read_json_fixture("single_step_sequential/header_tests")).unwrap();
+    let cases: TestCases =
+        serde_json::from_str(&read_json_fixture("single_step_sequential/header_tests")).unwrap();
     run_test_cases(cases);
 }
 
 #[test]
 fn single_skip_val_set_tests_verify() {
-    let cases: TestCases = serde_json::from_str(&read_json_fixture("single_step_skipping/val_set_tests")).unwrap();
+    let cases: TestCases =
+        serde_json::from_str(&read_json_fixture("single_step_skipping/val_set_tests")).unwrap();
     run_test_cases(cases);
 }
 
-#[derive(Clone)]
-struct Trusted {
-    last_signed_header: SignedHeader,
-    validators: Set,
+#[test]
+fn single_skip_commit_tests_verify() {
+    let cases: TestCases =
+        serde_json::from_str(&read_json_fixture("single_step_skipping/commit_tests")).unwrap();
+    run_test_cases(cases);
 }
 
-impl lite::TrustedState for Trusted {
-    type LastHeader = SignedHeader;
-    type ValidatorSet = Set;
-
-    fn new(last_header: &Self::LastHeader, vals: &Self::ValidatorSet) -> Self {
-        Self {
-            last_signed_header: last_header.clone(),
-            validators: vals.clone(),
-        }
-    }
-
-    fn last_header(&self) -> &Self::LastHeader {
-        &self.last_signed_header
-    }
-
-    fn validators(&self) -> &Self::ValidatorSet {
-        &self.validators
-    }
-}
+type Trusted = lite::TrustedState<SignedHeader, Header>;
 
 fn run_test_cases(cases: TestCases) {
     for (_, tc) in cases.test_cases.iter().enumerate() {
         let trusted_next_vals = tc.initial.clone().next_validator_set;
-        let mut trusted_state = Trusted::new(&tc.initial.signed_header.clone(), &trusted_next_vals);
+        let mut latest_trusted =
+            Trusted::new(&tc.initial.signed_header.clone().into(), &trusted_next_vals);
         let expects_err = match &tc.expected_output {
             Some(eo) => eo.eq("error"),
             None => false,
         };
 
-        // TODO - we're currently using lite::verify_single which
-        // shouldn't even be exposed and doesn't check time.
-        // but the public functions take a store, which do check time,
-        // also take a store, so we need to mock one ...
-        /*
         let trusting_period: std::time::Duration = tc.initial.clone().trusting_period.into();
-        let now = tc.initial.now;
-        */
+        let tm_now = tc.initial.now;
+        let now = tm_now.to_system_time().unwrap();
 
-        for (_, input) in tc.input.iter().enumerate() {
-            println!("{}", tc.description);
+        for (i, input) in tc.input.iter().enumerate() {
+            println!("i: {}, {}", i, tc.description);
             let untrusted_signed_header = &input.signed_header;
             let untrusted_vals = &input.validator_set;
             let untrusted_next_vals = &input.next_validator_set;
-            // Note that in the provided test files the other header is either assumed to
-            // be "trusted" (verification already happened), or, it's the signed header verified in
-            // the previous iteration of this loop. In both cases it is assumed that h1 was already
-            // verified.
             match lite::verify_single(
-                &trusted_state,
-                &untrusted_signed_header,
+                latest_trusted.clone(),
+                &untrusted_signed_header.into(),
                 &untrusted_vals,
                 &untrusted_next_vals,
-                &DefaultTrustLevel {},
+                TrustThresholdFraction::default(),
+                &trusting_period,
+                &now,
             ) {
-                Ok(_) => {
-                    trusted_state = Trusted::new(&untrusted_signed_header, &untrusted_next_vals);
+                Ok(new_state) => {
+                    let expected_state = TrustedState::new(
+                        &untrusted_signed_header.to_owned().into(),
+                        untrusted_next_vals,
+                    );
+                    assert_eq!(new_state, expected_state);
                     assert!(!expects_err);
+
+                    latest_trusted = new_state.clone();
                 }
                 Err(_) => {
                     assert!(expects_err);
@@ -145,6 +170,49 @@ fn run_test_cases(cases: TestCases) {
             }
         }
     }
+}
+
+#[test]
+fn bisection_simple() {
+    let case: TestBisection =
+        serde_json::from_str(&read_json_fixture("many_header_bisection/happy_path")).unwrap();
+    run_bisection_test(case);
+}
+
+fn run_bisection_test(case: TestBisection) {
+    println!("{}", case.description);
+
+    let untrusted_height = case.height_to_verify.try_into().unwrap();
+    let trust_threshold = case.trust_level;
+    let trusting_period = case.trust_options.period;
+    let now = case.now;
+    let req = case.primary;
+    let expected_output = case.expected_output;
+
+    let trusted_height = case.trust_options.height.try_into().unwrap();
+    let trusted_header = &req.signed_header(trusted_height)?;
+    let trusted_vals = &req.validator_set(trusted_height+1)?;
+
+    let trusted_state = TrustedState::new(trusted_header, trusted_vals);
+
+    let output: String;
+
+    match lite::verify_bisection(
+        trusted_state,
+        untrusted_height,
+        trust_threshold,
+        &trusting_period,
+        &now,
+        &req
+    ) {
+        Ok(new_states) => {
+            output = "no error".to_string();
+        }
+        Err(_) => {
+            output = "error".to_string();
+        }
+    }
+    assert_eq!(output, expected_output);
 }
 
 impl<'de> Deserialize<'de> for Duration {
