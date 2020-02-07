@@ -1,10 +1,9 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
-use std::convert::TryInto;
-use std::{fs, path::PathBuf, collections::HashMap};
+use std::{fs, path::PathBuf};
 use tendermint::block::Header;
-use tendermint::lite::{TrustThresholdFraction, TrustedState, Requester, types::Error};
-use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Time, Hash};
+use tendermint::lite::{TrustThresholdFraction, TrustedState};
+use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Time};
 
 #[derive(Clone, Debug)]
 struct Duration(u64);
@@ -62,7 +61,7 @@ struct MockRequester {
     chain_id: String,
     signed_headers: HashMap<u64, SignedHeader>,
     validators: HashMap<u64, Set>,
-}  
+}
 
 impl Requester<SignedHeader, Header> for MockRequester {
     type SignedHeader = SignedHeader;

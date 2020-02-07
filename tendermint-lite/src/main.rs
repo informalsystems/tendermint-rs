@@ -1,19 +1,15 @@
 use tendermint::hash;
 use tendermint::lite;
-use tendermint::lite::Error;
-use tendermint::lite::{
-    Header as _, Requester as _, SignedHeader as _, Store as _, TrustedState as _,
-    ValidatorSet as _,
-};
+use tendermint::lite::{Error, TrustThresholdFraction};
+use tendermint::lite::{Header as _, Requester as _, ValidatorSet as _};
 use tendermint::rpc;
 use tendermint::{block::Height, Hash};
 
-use tendermint_lite::{
-    requester::RPCRequester, state::State, store::MemStore, threshold::TrustThresholdOneThird,
-};
+use tendermint_lite::{requester::RPCRequester, store::MemStore};
 
 use core::future::Future;
 use std::time::{Duration, SystemTime};
+use tendermint_lite::store::State;
 use tokio::runtime::Builder;
 
 // TODO: these should be config/args
@@ -21,9 +17,6 @@ static SUBJECTIVE_HEIGHT: u64 = 1;
 static SUBJECTIVE_VALS_HASH_HEX: &str =
     "A5A7DEA707ADE6156F8A981777CA093F178FC790475F6EC659B6617E704871DD";
 static RPC_ADDR: &str = "localhost:26657";
-
-// TODO: this should somehow be configurable ...
-static THRESHOLD: &TrustThresholdOneThird = &TrustThresholdOneThird {};
 
 pub fn block_on<F: Future>(future: F) -> F::Output {
     Builder::new()
@@ -52,7 +45,7 @@ fn main() {
         let latest = (&req).signed_header(0).unwrap();
         let latest_peer_height = latest.header().height();
 
-        let latest = store.get(Height::from(0)).unwrap();
+        let latest = store.get(0).unwrap();
         let latest_height = latest.last_header().header().height();
 
         // only bisect to higher heights
@@ -63,25 +56,28 @@ fn main() {
 
         println!(
             "attempting bisection from height {:?} to height {:?}",
-            store
-                .get(Height::from(0))
-                .unwrap()
-                .last_header()
-                .header()
-                .height(),
+            store.get(0).unwrap().last_header().header().height(),
             latest_peer_height,
         );
 
         let now = &SystemTime::now();
-        lite::verify_and_update_bisection(
+        let trusted_state = store.get(0).expect("can not read trusted state");
+
+        let new_states = lite::verify_bisection(
+            trusted_state.clone(),
             latest_peer_height,
-            THRESHOLD,
+            TrustThresholdFraction::default(),
             &trusting_period,
             now,
             &req,
-            &mut store,
         )
         .unwrap();
+
+        for new_state in new_states {
+            store
+                .add(new_state)
+                .expect("couldn't store new trusted state");
+        }
 
         println!("Succeeded bisecting!");
 
@@ -106,13 +102,13 @@ fn subjective_init(
     store: &mut MemStore,
     req: &RPCRequester,
 ) -> Result<(), Error> {
-    if store.get(height).is_ok() {
+    if store.get(height.value()).is_ok() {
         // we already have this !
         return Ok(());
     }
 
     // check that the val hash matches
-    let vals = req.validator_set(height)?;
+    let vals = req.validator_set(height.value())?;
 
     if vals.hash() != vals_hash {
         // TODO
@@ -123,11 +119,11 @@ fn subjective_init(
 
     // TODO: validate signed_header.commit() with the vals ...
 
-    let next_vals = req.validator_set(height.increment())?;
+    let next_vals = req.validator_set(height.increment().value())?;
 
     // TODO: check next_vals ...
 
-    let trusted_state = &State::new(&signed_header, &next_vals);
+    let trusted_state = State::new(&signed_header, &next_vals);
 
     store.add(trusted_state)?;
 

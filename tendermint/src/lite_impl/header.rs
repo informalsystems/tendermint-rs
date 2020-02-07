@@ -1,6 +1,7 @@
 //! [`lite::Header`] implementation for [`block::Header`].
 
 use crate::amino_types::{message::AminoMessage, BlockId, ConsensusVersion, TimeMsg};
+use crate::lite::Height;
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::Hash;
 use crate::{block, lite, Time};
@@ -8,8 +9,8 @@ use crate::{block, lite, Time};
 impl lite::Header for block::Header {
     type Time = Time;
 
-    fn height(&self) -> block::Height {
-        self.height
+    fn height(&self) -> Height {
+        self.height.value()
     }
 
     fn bft_time(&self) -> Time {

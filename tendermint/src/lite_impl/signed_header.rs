@@ -4,19 +4,6 @@ use crate::lite::Error;
 use crate::validator::Set;
 use crate::{block, hash, lite, vote};
 
-impl lite::SignedHeader for block::signed_header::SignedHeader {
-    type Header = block::Header;
-    type Commit = block::signed_header::SignedHeader;
-
-    fn header(&self) -> &block::Header {
-        &self.header
-    }
-
-    fn commit(&self) -> &Self {
-        &self
-    }
-}
-
 impl lite::Commit for block::signed_header::SignedHeader {
     type ValidatorSet = Set;
 
@@ -56,8 +43,15 @@ impl lite::Commit for block::signed_header::SignedHeader {
         Ok(signed_power)
     }
 
-    fn votes_len(&self) -> usize {
-        self.commit.precommits.len()
+    fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error> {
+        if self.commit.precommits.len() != vals.validators().len() {
+            return Err(lite::Error::InvalidCommitSignatures);
+        }
+        // TODO: compare to the go code for more implementation related checks and clarify if this:
+        // https://github.com/interchainio/tendermint-rs/pull/143/commits/0a30022fa47e909e6c7b20417dd178c8a3b84838#r374958528
+        // should go here or somewhere else
+
+        Ok(())
     }
 }
 
@@ -80,5 +74,25 @@ impl block::signed_header::SignedHeader {
                 })
             })
             .collect()
+    }
+}
+
+// type alias the concrete types to make the From impls more readable
+type TMSignedHeader = block::signed_header::SignedHeader;
+type TMBlockHeader = block::header::Header;
+
+impl From<block::signed_header::SignedHeader>
+    for lite::types::SignedHeader<TMSignedHeader, TMBlockHeader>
+{
+    fn from(sh: block::signed_header::SignedHeader) -> Self {
+        Self::new(sh.clone(), sh.header)
+    }
+}
+
+impl From<&block::signed_header::SignedHeader>
+    for lite::types::SignedHeader<TMSignedHeader, TMBlockHeader>
+{
+    fn from(sh: &block::signed_header::SignedHeader) -> Self {
+        Self::new(sh.clone(), sh.clone().header)
     }
 }

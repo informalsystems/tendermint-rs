@@ -9,7 +9,7 @@ use std::{ops::Deref, slice};
 ///
 /// <https://github.com/tendermint/tendermint/blob/51dc810d041eaac78320adc6d53ad8b160b06601/types/block.go#L486-L502>
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#lastcommit>
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Commit {
     /// Block ID of the last commit
     pub block_id: block::Id,
@@ -53,5 +53,12 @@ impl Deref for Precommits {
 
     fn deref(&self) -> &[Option<Vote>] {
         self.as_ref()
+    }
+}
+
+impl PartialEq for Precommits {
+    fn eq(&self, other: &Self) -> bool {
+        // Note: this is used for asserts in tests:
+        self.0.clone().into_iter().eq(other.0.clone().into_iter())
     }
 }
