@@ -53,9 +53,13 @@ struct TestBisection {
 
 #[derive(Deserialize, Clone, Debug)]
 struct TrustOptions {
+    // TODO: @Shivani: we should prob. change this in the go-code?
+    // other fields in JSON are non-capitalized
     #[serde(alias = "Period")] // this is capitalized in the json
     period: Duration,
+    #[serde(alias = "Height")]
     height: i64,
+    #[serde(alias = "Hash")]
     hash: Hash,
 }
 
