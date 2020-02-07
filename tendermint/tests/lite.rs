@@ -71,8 +71,7 @@ impl Requester<SignedHeader, Header> for MockRequester {
     fn signed_header(&self, h: u64) -> Result<LightSignedHeader, Error> {
         println!("requested signed header for height:{:?}", h);
         if let Some(sh) = self.signed_headers.get(&h) {
-            let lsh: LightSignedHeader = sh.into();
-            return Ok(lsh.to_owned());
+            return Ok(sh.into());
         }
         println!("couldn't get sh for: {}", &h);
         Err(Error::RequestFailed)
@@ -213,8 +212,8 @@ fn run_bisection_test(case: TestBisection) {
         &now,
         &req,
     ) {
-        Ok(new_states) => {
-            // TODO: make some assertions on the new_states or don't intro the variable here
+        Ok(_) => {
+            // TODO: should we make some assertions on the returned new_states?
             output = "no error".to_string();
         }
         Err(_) => {
