@@ -1,8 +1,9 @@
-use crate::state::State;
-use tendermint::block::Height;
-use tendermint::lite::{Error, Header, SignedHeader, Store, TrustedState};
+use tendermint::lite::{Error, Header, Height, TrustedState};
 
 use std::collections::HashMap;
+use tendermint::block;
+
+pub type State = TrustedState<block::signed_header::SignedHeader, block::header::Header>;
 
 #[derive(Default)]
 pub struct MemStore {
@@ -13,25 +14,23 @@ pub struct MemStore {
 impl MemStore {
     pub fn new() -> MemStore {
         MemStore {
-            height: Height::from(0),
+            height: 0,
             store: HashMap::new(),
         }
     }
 }
 
-impl Store for MemStore {
-    type TrustedState = State;
-
-    fn add(&mut self, trusted: &Self::TrustedState) -> Result<(), Error> {
+impl MemStore {
+    pub fn add(&mut self, trusted: State) -> Result<(), Error> {
         let height = trusted.last_header().header().height();
         self.height = height;
-        self.store.insert(height, trusted.clone());
+        self.store.insert(height, trusted);
         Ok(())
     }
 
-    fn get(&self, h: Height) -> Result<&Self::TrustedState, Error> {
+    pub fn get(&self, h: Height) -> Result<&State, Error> {
         let mut height = h;
-        if h.value() == 0 {
+        if h == 0 {
             height = self.height
         }
         match self.store.get(&height) {

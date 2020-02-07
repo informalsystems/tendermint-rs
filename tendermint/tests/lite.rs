@@ -1,10 +1,11 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
+use std::collections::HashMap;
 use std::convert::TryInto;
-use std::{fs, path::PathBuf, collections::HashMap};
-use tendermint::block::Header;
-use tendermint::lite::{TrustThresholdFraction, TrustedState, Requester, types::Error};
-use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Time, Hash};
+use std::{fs, path::PathBuf};
+use tendermint::block::{Header, Height};
+use tendermint::lite::{Error, Requester, TrustThresholdFraction, TrustedState};
+use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Hash, Time};
 
 #[derive(Clone, Debug)]
 struct Duration(u64);
@@ -43,8 +44,9 @@ struct TestBisection {
     description: String,
     trust_options: TrustOptions,
     primary: MockRequester,
+    // TODO: this won't work like this; see comment on MockRequester::new
     witnesses: Vec<MockRequester>,
-    height_to_verify: i64,
+    height_to_verify: Height,
     trust_level: TrustThresholdFraction,
     now: std::time::SystemTime,
     expected_output: String,
@@ -52,23 +54,34 @@ struct TestBisection {
 
 #[derive(Deserialize, Clone, Debug)]
 struct TrustOptions {
-    period: std::time::Duration,
-    height: i64,
-    hash: Hash,
+    // TODO: @Shivani: we should prob. change this in the go-code?
+    // other fields in JSON are non-capitalized
+    #[serde(alias = "Period")] // this is capitalized in the json
+    period: Duration,
+    #[serde(alias = "Height")]
+    height: Height,
+    #[serde(alias = "Hash")]
+    hash: Hash, // TODO: this is currently base64 enc. in the JSON
 }
 
 #[derive(Deserialize, Clone, Debug)]
 struct MockRequester {
     chain_id: String,
+    // TODO: this won't work because in the JSON this isn't a map from
+    // u64 -> SignedHeader
+    // either you collect the data yourself (it's just a list and t, or, you write
+    // a custom deserializer
     signed_headers: HashMap<u64, SignedHeader>,
     validators: HashMap<u64, Set>,
-}  
+}
+
+type LightSignedHeader = lite::types::SignedHeader<SignedHeader, Header>;
 
 impl Requester<SignedHeader, Header> for MockRequester {
-    fn signed_header(&self, h: u64) -> Result<SignedHeader, Error> {
+    fn signed_header(&self, h: u64) -> Result<LightSignedHeader, Error> {
         println!("requested signed header for height:{:?}", h);
         if let Some(sh) = self.signed_headers.get(&h) {
-            return Ok(sh.to_owned());
+            return Ok(sh.into());
         }
         println!("couldn't get sh for: {}", &h);
         Err(Error::RequestFailed)
@@ -81,6 +94,26 @@ impl Requester<SignedHeader, Header> for MockRequester {
         }
         println!("couldn't get vals for: {}", &h);
         Err(Error::RequestFailed)
+    }
+}
+
+impl MockRequester {
+    // TODO: this needs to be initialized via the data collected from the JSON file(s)
+    // prob. via a helper method that goes through the list you have in the JSON
+    #![allow(dead_code)]
+    fn new(chain_id: String, lite_blocks: Vec<LiteBlock>) -> Self {
+        let mut sh_map: HashMap<u64, SignedHeader> = HashMap::new();
+        let mut val_map: HashMap<u64, Set> = HashMap::new();
+        for lite_block in lite_blocks {
+            let height = lite_block.signed_header.header.height;
+            sh_map.insert(height.into(), lite_block.signed_header);
+            val_map.insert(height.into(), lite_block.validator_set);
+        }
+        Self {
+            chain_id,
+            signed_headers: sh_map,
+            validators: val_map,
+        }
     }
 }
 
@@ -173,7 +206,10 @@ fn run_test_cases(cases: TestCases) {
 }
 
 #[test]
+#[ignore]
 fn bisection_simple() {
+    // TODO: there are a few serialization issues that need fixing before we can
+    // actually read the JSON -> then remove above's #[ignore] !
     let case: TestBisection =
         serde_json::from_str(&read_json_fixture("many_header_bisection/happy_path")).unwrap();
     run_bisection_test(case);
@@ -190,8 +226,12 @@ fn run_bisection_test(case: TestBisection) {
     let expected_output = case.expected_output;
 
     let trusted_height = case.trust_options.height.try_into().unwrap();
-    let trusted_header = &req.signed_header(trusted_height)?;
-    let trusted_vals = &req.validator_set(trusted_height+1)?;
+    let trusted_header = &req
+        .signed_header(trusted_height)
+        .expect("could not 'request' signed header");
+    let trusted_vals = &req
+        .validator_set(trusted_height + 1)
+        .expect("could not 'request' validator set");
 
     let trusted_state = TrustedState::new(trusted_header, trusted_vals);
 
@@ -201,11 +241,12 @@ fn run_bisection_test(case: TestBisection) {
         trusted_state,
         untrusted_height,
         trust_threshold,
-        &trusting_period,
+        &trusting_period.into(),
         &now,
-        &req
+        &req,
     ) {
-        Ok(new_states) => {
+        Ok(_) => {
+            // TODO: should we make some assertions on the returned new_states?
             output = "no error".to_string();
         }
         Err(_) => {
