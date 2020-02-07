@@ -53,7 +53,8 @@ struct TestBisection {
 
 #[derive(Deserialize, Clone, Debug)]
 struct TrustOptions {
-    period: std::time::Duration,
+    #[serde(alias = "Period")] // this is capitalized in the json
+    period: Duration,
     height: i64,
     hash: Hash,
 }
@@ -208,7 +209,7 @@ fn run_bisection_test(case: TestBisection) {
         trusted_state,
         untrusted_height,
         trust_threshold,
-        &trusting_period,
+        &trusting_period.into(),
         &now,
         &req,
     ) {
