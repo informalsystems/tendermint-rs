@@ -44,6 +44,7 @@ struct TestBisection {
     description: String,
     trust_options: TrustOptions,
     primary: MockRequester,
+    // TODO: this won't work like this; see comment on MockRequester::new
     witnesses: Vec<MockRequester>,
     height_to_verify: Height,
     trust_level: TrustThresholdFraction,
@@ -98,16 +99,20 @@ impl Requester<SignedHeader, Header> for MockRequester {
 
 impl MockRequester {
     // TODO: this needs to be initialized via the data collected from the JSON file(s)
-    // prob. via a helper method that goes through the list you have in the JSOn
-    fn new(
-        chain_id: String,
-        signed_headers: HashMap<u64, SignedHeader>,
-        validators: HashMap<u64, Set>,
-    ) -> Self {
+    // prob. via a helper method that goes through the list you have in the JSON
+    #![allow(dead_code)]
+    fn new(chain_id: String, lite_blocks: Vec<LiteBlock>) -> Self {
+        let mut sh_map: HashMap<u64, SignedHeader> = HashMap::new();
+        let mut val_map: HashMap<u64, Set> = HashMap::new();
+        for lite_block in lite_blocks {
+            let height = lite_block.signed_header.header.height;
+            sh_map.insert(height.into(), lite_block.signed_header);
+            val_map.insert(height.into(), lite_block.validator_set);
+        }
         Self {
             chain_id,
-            signed_headers,
-            validators,
+            signed_headers: sh_map,
+            validators: val_map,
         }
     }
 }
