@@ -66,6 +66,10 @@ struct TrustOptions {
 #[derive(Deserialize, Clone, Debug)]
 struct MockRequester {
     chain_id: String,
+    // TODO: this won't work because in the JSON this isn't a map from
+    // u64 -> SignedHeader
+    // either you collect the data yourself (it's just a list and t, or, you write
+    // a custom deserializer
     signed_headers: HashMap<u64, SignedHeader>,
     validators: HashMap<u64, Set>,
 }
@@ -89,6 +93,22 @@ impl Requester<SignedHeader, Header> for MockRequester {
         }
         println!("couldn't get vals for: {}", &h);
         Err(Error::RequestFailed)
+    }
+}
+
+impl MockRequester {
+    // TODO: this needs to be initialized via the data collected from the JSON file(s)
+    // prob. via a helper method that goes through the list you have in the JSOn
+    fn new(
+        chain_id: String,
+        signed_headers: HashMap<u64, SignedHeader>,
+        validators: HashMap<u64, Set>,
+    ) -> Self {
+        Self {
+            chain_id,
+            signed_headers,
+            validators,
+        }
     }
 }
 
