@@ -7,19 +7,16 @@ use crate::prelude::*;
 use core::future::Future;
 use tendermint::hash;
 use tendermint::lite;
-use tendermint::lite::{Error, Header, Requester, SignedHeader, Store, TrustedState};
+use tendermint::lite::{Error, Header, Height, Requester, TrustThresholdFraction};
 use tendermint::rpc;
-use tendermint::{block::Height, Hash};
+use tendermint::Hash;
 use tokio::runtime::Builder;
 
 use tendermint::lite::ValidatorSet as _;
 
 use crate::config::LightNodeConfig;
 use crate::requester::RPCRequester;
-use crate::state::State;
-use crate::store::MemStore;
-use crate::threshold::TrustThresholdOneThird;
-
+use crate::store::{MemStore, State};
 use abscissa_core::{config, Command, FrameworkError, Options, Runnable};
 use std::time::{Duration, SystemTime};
 
@@ -36,11 +33,6 @@ pub struct StartCmd {
     #[options(free)]
     rpc_addr: String,
 }
-
-// TODO: this should also somehow be configurable ...
-// we can't simply add this as a field in the config because this either would
-// be a trait (`TrustThreshold`) or immediately and impl thereof (`TrustThresholdOneThird`).
-static THRESHOLD: &TrustThresholdOneThird = &TrustThresholdOneThird {};
 
 impl Runnable for StartCmd {
     /// Start the application.
@@ -59,46 +51,35 @@ impl Runnable for StartCmd {
 
         println!("Requesting from {}.", config.rpc_address);
 
-        subjective_init(
-            Height::from(config.subjective_init.height),
-            vals_hash,
-            &mut store,
-            &req,
-        )
-        .unwrap();
+        subjective_init(config.subjective_init.height, vals_hash, &mut store, &req).unwrap();
 
         loop {
-            let latest = (&req).signed_header(0).unwrap();
-            let latest_peer_height = latest.header().height();
+            let latest_sh = (&req).signed_header(0).unwrap();
+            let latest_peer_height = latest_sh.header().height();
 
-            let latest = store.get(Height::from(0)).unwrap();
-            let latest_height = latest.last_header().header().height();
+            let latest_trusted = store.get(0).unwrap();
+            let latest_trusted_height = latest_trusted.last_header().header().height();
 
             // only bisect to higher heights
-            if latest_peer_height <= latest_height {
+            if latest_peer_height <= latest_trusted_height {
                 std::thread::sleep(Duration::new(1, 0));
                 continue;
             }
 
             println!(
                 "attempting bisection from height {:?} to height {:?}",
-                store
-                    .get(Height::from(0))
-                    .unwrap()
-                    .last_header()
-                    .header()
-                    .height(),
+                latest_trusted_height,
                 latest_peer_height,
             );
 
             let now = &SystemTime::now();
-            lite::verify_and_update_bisection(
+            lite::verify_bisection(
+                latest_trusted.to_owned(),
                 latest_peer_height,
-                THRESHOLD, // TODO
+                TrustThresholdFraction::default(), // TODO
                 &config.trusting_period,
                 now,
                 &req,
-                &mut store,
             )
             .unwrap();
 
@@ -159,13 +140,13 @@ fn subjective_init(
 
     // TODO: validate signed_header.commit() with the vals ...
 
-    let next_vals = req.validator_set(height.increment())?;
+    let next_vals = req.validator_set(height + 1)?;
 
     // TODO: check next_vals ...
 
     let trusted_state = &State::new(&signed_header, &next_vals);
 
-    store.add(trusted_state)?;
+    store.add(trusted_state.to_owned())?;
 
     Ok(())
 }
