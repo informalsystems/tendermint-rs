@@ -46,7 +46,7 @@ struct TestBisection {
     primary: Provider,
     height_to_verify: Height,
     trust_level: TrustThresholdFraction,
-    now: std::time::SystemTime,
+    now: Time,
     expected_output: String,
 }
 
@@ -235,7 +235,7 @@ fn run_bisection_test(case: TestBisection) {
         untrusted_height,
         trust_threshold,
         &trusting_period.into(),
-        &now,
+        &now.into(),
         &req,
     ) {
         Ok(_) => {
