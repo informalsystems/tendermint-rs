@@ -2,7 +2,7 @@
  	"description": "Case: Trusted height=1, bisecting to verify height=12, should not expect error",
  	"trust_options": {
  		"period": "10800000000000",
- 		"heigth": "1",
+ 		"height": "1",
  		"hash": "4377F05069A53C5DD8F1FBB69A6E36CF5D762446B5853A0366A1F9AFAEC851BD"
  	},
  	"primary": {
