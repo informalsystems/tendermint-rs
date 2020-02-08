@@ -68,8 +68,7 @@ impl Runnable for StartCmd {
 
             println!(
                 "attempting bisection from height {:?} to height {:?}",
-                latest_trusted_height,
-                latest_peer_height,
+                latest_trusted_height, latest_peer_height,
             );
 
             let now = &SystemTime::now();
