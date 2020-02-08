@@ -1,5 +1,5 @@
 {
- 	"description": "Case: Trusted height=1, bisecting to verify height=11, should not expect error",
+ 	"description": "Case: Trusted height=1, bisecting to verify height=10, should not expect error",
  	"trust_options": {
  		"period": "10800000000000",
  		"height": "1",
