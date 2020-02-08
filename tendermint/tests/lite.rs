@@ -93,7 +93,6 @@ impl Requester<SignedHeader, Header> for MockRequester {
 }
 
 impl MockRequester {
-    #![allow(dead_code)]
     fn new(chain_id: String, lite_blocks: Vec<LiteBlock>) -> Self {
         let mut sh_map: HashMap<u64, SignedHeader> = HashMap::new();
         let mut val_map: HashMap<u64, Set> = HashMap::new();
