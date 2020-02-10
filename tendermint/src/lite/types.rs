@@ -27,11 +27,7 @@ pub trait Header: Clone {
 }
 
 /// ValidatorSet is the full validator set.
-/// It exposes its hash, which should match whats in a header,
-/// and its total power. It also has an underlying
-/// Validator type which can be used for verifying signatures.
-/// It also provides a lookup method to fetch a validator by
-/// its identifier.
+/// It exposes its hash and its total power.
 pub trait ValidatorSet: Clone {
     /// Hash of the validator set.
     fn hash(&self) -> Hash;
@@ -40,9 +36,9 @@ pub trait ValidatorSet: Clone {
     fn total_power(&self) -> u64;
 }
 
-/// Commit is proof a Header is valid.
-/// It has an underlying Vote type with the relevant vote data
-/// for verification.
+/// Commit is used to prove a Header can be trusted.
+/// Verifying the Commit requires access to an associated ValidatorSet
+/// to determine what voting power signed the commit.
 pub trait Commit: Clone {
     type ValidatorSet: ValidatorSet;
 
