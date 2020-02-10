@@ -209,6 +209,7 @@ where
 pub enum Error {
     Expired,
     DurationOutOfRange,
+    NonIncreasingTime,
 
     NonIncreasingHeight,
 

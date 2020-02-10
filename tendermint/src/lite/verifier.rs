@@ -145,7 +145,10 @@ where
     let trusted_height = trusted_header.height();
     let untrusted_height = untrusted_sh.header().height();
 
-    // TODO: ensure the untrusted_header.bft_time() > trusted_header.bft_time()
+    // ensure the untrusted_header.bft_time() > trusted_header.bft_time()
+    if untrusted_header.bft_time() <= trusted_header.bft_time() {
+        return Err(Error::NonIncreasingTime);
+    }
 
     match untrusted_height.cmp(&trusted_height.checked_add(1).expect("height overflow")) {
         Ordering::Less => return Err(Error::NonIncreasingHeight),
