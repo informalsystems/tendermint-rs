@@ -647,9 +647,6 @@ mod tests {
 
         // Error: can't bisect from trusted height 1 to height 1 (here we tamper with time but
         // expect to fail on NonIncreasingHeight):
-        let req = init_requester(vec![vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2]]);
-        assert_bisection_err(&req, &ts, 1, Error::NonIncreasingTime);
-
         let mut req = init_requester(vec![vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2]]);
         let sh = req.signed_headers.get(&1_u64).unwrap();
         let mut time_tampered_header = sh.header().clone();
