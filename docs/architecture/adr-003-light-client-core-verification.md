@@ -218,7 +218,7 @@ The amount of validator set change that occur when skipping to a higher height d
 trust threshold, as per the spec. Here we define it as a trait that encapsulated the math of what percent
 of validators need to sign:
 
-```
+```rust
 pub trait TrustThreshold: Copy + Clone {
     fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool;
 }
@@ -230,7 +230,7 @@ We provide a conenvient implementation that takes a numerator and a denominator.
 
 The light node needs to make requests to full nodes during bisection for intermediate signed headers and validator sets:
 
-```
+```rust
 pub trait Requester<C, H>
 where
     C: Commit,
@@ -257,7 +257,7 @@ the one that actually created the commit.
 
 These are implemented in a common function, `verify_single_inner`:
 
-```
+```rust
 fn verify_single_inner<H, C, L>(
     trusted_state: &TrustedState<C, H>,
     untrusted_sh: &SignedHeader<C, H>,
@@ -274,7 +274,7 @@ and check we haven't expired.
 For IBC, since it can't make its own requests, the public function just takes the untrusted state
 in full, and return it as a TrustedState if it verifies:
 
-```
+```rust
 pub fn verify_single<H, C, T>(
     trusted_state: TrustedState<C, H>,
     untrusted_sh: &SignedHeader<C, H>,
@@ -291,7 +291,7 @@ It will fetch that header and try to verify it using the skipping method,
 and will run a bisection algorithm to recursively request headers of lower height
 as needed. It returns a list of headers it verified along the way:
 
-```
+```rust
 pub fn verify_bisection<C, H, L, R>(
     trusted_state: TrustedState<C, H>,
     untrusted_height: Height,
