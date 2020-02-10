@@ -503,6 +503,24 @@ mod tests {
         assert_eq!(result, Err(err));
     }
 
+    fn assert_bisection_err_state(
+        req: &MockRequester,
+        ts: &TrustedState<MockCommit, MockHeader>,
+        untrusted_height: u64,
+        expected_final_state: &MockState,
+    ) {
+        let mut cache: Vec<MockTrustedState> = Vec::new();
+        let ts_new = verify_bisection_inner(
+            &ts,
+            untrusted_height,
+            TrustThresholdFraction::default(),
+            req,
+            cache.as_mut(),
+        )
+        .expect("should not have passed");
+        assert_ne!(ts_new, expected_final_state.to_owned());
+    }
+
     // valid to skip, but invalid commit. 1 validator.
     #[test]
     fn test_verify_single_skip_1_val_verify() {
@@ -615,6 +633,16 @@ mod tests {
         let final_state = init_trusted_state(vec![0], vec![0], 3);
         let req = init_requester(vec![vec![0], vec![0], vec![0], vec![0], vec![0]]);
         assert_bisection_ok(&req, &ts, 3, 1, &final_state);
+    }
+
+     #[test]
+    fn test_verify_bisection_not_enough_commits() {
+        let req = init_requester(vec![vec![0,1,2,3], vec![0,1,2,3], vec![0,1,2,3], vec![0], vec![0]]);
+        let ts = init_trusted_state(vec![0,1,2,3], vec![0,1,2,3], 1);
+        let ns = next_state(vec![0,1,2,3], vec![0]);
+        let expected_state = &MockState::new(&ns.0, &ns.1);
+
+        assert_bisection_err_state(&req, &ts, 3, &expected_state);
     }
 
     #[test]
