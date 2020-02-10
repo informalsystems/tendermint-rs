@@ -631,9 +631,14 @@ mod tests {
 
         assert_bisection_ok(&req, &ts, 5, 3, &final_ts);
 
+        // Error: fails due to missing vals for height 6:
         let mut faulty_req = req;
         faulty_req.validators.remove(&6_u64);
         assert_bisection_err(&faulty_req, &ts, 5, Error::RequestFailed);
+
+        // Error: can't bisect from trusted height 1 to height 1
+        let req = init_requester(vec![vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2]]);
+        assert_bisection_err(&req, &ts, 1, Error::NonIncreasingHeight);
     }
 
     #[test]
