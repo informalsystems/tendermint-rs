@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint"
-version    = "0.11.0" # Also update `html_root_url` in lib.rs when bumping this
+version    = "0.12.0-rc0" # Also update `html_root_url` in lib.rs when bumping this
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
 repository = "https://github.com/interchainio/tendermint-rs/tree/master/tendermint"
@@ -31,20 +31,20 @@ all-features = true
 circle-ci = { repository = "interchainio/tendermint-rs" }
 
 [dependencies]
-bytes = "0.4"
-bytes_0_5 = { version = "0.5", package = "bytes" }
+bytes = "0.5"
 chrono = { version = "0.4", features = ["serde"] }
 failure = "0.1"
 getrandom = "0.1"
 http = "0.2"
 hyper = "0.13"
-prost-amino = { version = "0.4.0" }
-prost-amino-derive = { version = "0.4.0" }
+once_cell = "1.3"
+prost-amino = "0.5"
+prost-amino-derive = "0.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
-signatory = { version = "0.17", features = ["ed25519", "ecdsa"] }
-signatory-dalek = "0.17"
-signatory-secp256k1 = "0.17"
+signatory = { version = "0.18", features = ["ed25519", "ecdsa"] }
+signatory-dalek = "0.18"
+signatory-secp256k1 = "0.18"
 sha2 = { version = "0.8", default-features = false }
 subtle = "2"
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }

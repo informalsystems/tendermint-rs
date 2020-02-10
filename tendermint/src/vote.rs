@@ -15,7 +15,7 @@ use {
 /// include information about the validator signing it.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#vote>
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Vote {
     /// Type of vote (prevote or precommit)
     #[serde(rename = "type")]
@@ -32,7 +32,8 @@ pub struct Vote {
     pub round: u64,
 
     /// Block ID
-    pub block_id: block::Id,
+    #[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
+    pub block_id: Option<block::Id>,
 
     /// Timestamp
     pub timestamp: Time,

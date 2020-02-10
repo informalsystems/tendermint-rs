@@ -5,6 +5,7 @@ use crate::{
     time::{ParseTimestamp, Time},
 };
 use chrono::{TimeZone, Utc};
+use prost_amino_derive::Message;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone, PartialEq, Message)]
@@ -12,9 +13,9 @@ pub struct TimeMsg {
     // TODO(ismail): switch to protobuf's well known type as soon as
     // https://github.com/tendermint/go-amino/pull/224 was merged
     // and tendermint caught up on the latest amino release.
-    #[prost(int64, tag = "1")]
+    #[prost_amino(int64, tag = "1")]
     pub seconds: i64,
-    #[prost(int32, tag = "2")]
+    #[prost_amino(int32, tag = "2")]
     pub nanos: i32,
 }
 

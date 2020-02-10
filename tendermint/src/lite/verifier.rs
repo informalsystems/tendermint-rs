@@ -8,17 +8,17 @@
 //! // looks using the types and methods in this crate/module.
 //! ```
 
-use crate::block::Height;
-use crate::lite::{
-    Commit, Error, Header, Requester, SignedHeader, Store, TrustThreshold, TrustedState,
-    ValidatorSet,
-};
 use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
+use crate::lite::{
+    Commit, Error, Header, Height, Requester, SignedHeader, TrustThreshold, TrustedState,
+    ValidatorSet,
+};
+
 /// Returns an error if the header has expired according to the given
 /// trusting_period and current time. If so, the verifier must be reset subjectively.
-pub fn is_within_trust_period<H>(
+fn is_within_trust_period<H>(
     last_header: &H,
     trusting_period: &Duration,
     now: &SystemTime,
@@ -37,18 +37,20 @@ where
     }
 }
 
-/// Validate the validators, next validators, and commit against the header.
-// TODO(EB): consider making this a method on Commit so the details are hidden,
-// and so we can remove the votes_len() method (that check would be part of the
-// methods implementation). These checks aren't reflected
-// explicitly in the spec yet, only in the sentence "Additional checks should
-// be done in the implementation to ensure header is well formed".
-fn validate_untrusted<H, V, C>(header: &H, commit: &C, vals: &V, next_vals: &V) -> Result<(), Error>
+/// Validate the validators, next validators, against the signed header.
+/// This is equivalent to validateSignedHeaderAndVals in the spec.
+fn validate<C, H>(
+    signed_header: &SignedHeader<C, H>,
+    vals: &C::ValidatorSet,
+    next_vals: &C::ValidatorSet,
+) -> Result<(), Error>
 where
-    H: Header,
-    V: ValidatorSet,
     C: Commit,
+    H: Header,
 {
+    let header = signed_header.header();
+    let commit = signed_header.commit();
+
     // ensure the header validator hashes match the given validators
     if header.validators_hash() != vals.hash() {
         return Err(Error::InvalidValidatorSet);
@@ -62,12 +64,8 @@ where
         return Err(Error::InvalidCommitValue);
     }
 
-    // ensure the validator size matches the commit size
-    // NOTE: this is commit structure specifc and should be
-    // hidden from the light client ...
-    if vals.len() != commit.votes_len() {
-        return Err(Error::InvalidCommitLength);
-    }
+    // additional implementation specific validation:
+    commit.validate(vals)?;
 
     Ok(())
 }
@@ -85,10 +83,7 @@ where
 
     // check the signers account for +2/3 of the voting power
     if signed_power * 3 <= total_power * 2 {
-        // TODO(EB): Use a different error from
-        // verify_commit_trusting else bisection
-        // will happen when the commit is actually just invalid!
-        return Err(Error::InsufficientVotingPower);
+        return Err(Error::InvalidCommit);
     }
 
     Ok(())
@@ -101,7 +96,7 @@ where
 pub fn verify_commit_trusting<C, L>(
     validators: &C::ValidatorSet,
     commit: &C,
-    trust_level: &L,
+    trust_level: L,
 ) -> Result<(), Error>
 where
     C: Commit,
@@ -125,28 +120,23 @@ where
 // and hence it's possible to use it incorrectly.
 // If trusted_state is not expired and this returns Ok, the
 // untrusted_sh and untrusted_next_vals can be considered trusted.
-pub fn verify_single<TS, SH, C, L>(
-    trusted_state: &TS,
-    untrusted_sh: &SH,
+fn verify_single_inner<H, C, L>(
+    trusted_state: &TrustedState<C, H>,
+    untrusted_sh: &SignedHeader<C, H>,
     untrusted_vals: &C::ValidatorSet,
     untrusted_next_vals: &C::ValidatorSet,
-    trust_threshold: &L,
+    trust_threshold: L,
 ) -> Result<(), Error>
 where
-    TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
-    SH: SignedHeader<Commit = C>,
+    H: Header,
     C: Commit,
     L: TrustThreshold,
 {
     // validate the untrusted header against its commit, vals, and next_vals
     let untrusted_header = untrusted_sh.header();
     let untrusted_commit = untrusted_sh.commit();
-    validate_untrusted(
-        untrusted_header,
-        untrusted_commit,
-        untrusted_vals,
-        untrusted_next_vals,
-    )?;
+
+    validate(untrusted_sh, untrusted_vals, untrusted_next_vals)?;
 
     // ensure the new height is higher.
     // if its +1, ensure the vals are correct.
@@ -154,7 +144,10 @@ where
     let trusted_header = trusted_state.last_header().header();
     let trusted_height = trusted_header.height();
     let untrusted_height = untrusted_sh.header().height();
-    match untrusted_height.cmp(&trusted_height.increment()) {
+
+    // TODO: ensure the untrusted_header.bft_time() > trusted_header.bft_time()
+
+    match untrusted_height.cmp(&trusted_height.checked_add(1).expect("height overflow")) {
         Ordering::Less => return Err(Error::NonIncreasingHeight),
         Ordering::Equal => {
             let trusted_vals_hash = trusted_header.next_validators_hash();
@@ -176,82 +169,87 @@ where
     verify_commit_full(untrusted_vals, untrusted_sh.commit())
 }
 
-/// Attempt to update the store to the given untrusted header.
+/// Verify a single untrusted header against a trusted state.
 /// Ensures our last trusted header hasn't expired yet, and that
 /// the untrusted header can be verified using only our latest trusted
 /// state from the store.
+///
+/// On success, the caller is responsible for updating the store with the returned
+/// header to be trusted.
+///
 /// This function is primarily for use by IBC handlers.
-pub fn verify_and_update_single<TS, SH, C, L, S>(
-    untrusted_sh: &SH,
+pub fn verify_single<H, C, L>(
+    trusted_state: TrustedState<C, H>,
+    untrusted_sh: &SignedHeader<C, H>,
     untrusted_vals: &C::ValidatorSet,
     untrusted_next_vals: &C::ValidatorSet,
-    trust_threshold: &L,
+    trust_threshold: L,
     trusting_period: &Duration,
     now: &SystemTime,
-    store: &mut S,
-) -> Result<(), Error>
+) -> Result<TrustedState<C, H>, Error>
 where
-    TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
-    SH: SignedHeader<Commit = C>,
+    H: Header,
     C: Commit,
     L: TrustThreshold,
-    S: Store<TrustedState = TS>,
 {
     // Fetch the latest state and ensure it hasn't expired.
-    let trusted_state = store.get(Height::from(0))?;
     let trusted_sh = trusted_state.last_header();
     is_within_trust_period(trusted_sh.header(), trusting_period, now)?;
 
-    verify_single(
-        trusted_state,
+    verify_single_inner(
+        &trusted_state,
         untrusted_sh,
         untrusted_vals,
         untrusted_next_vals,
         trust_threshold,
     )?;
 
-    // The untrusted header is now trusted; Update the store
-    let new_trusted_state = TS::new(untrusted_sh, untrusted_next_vals);
-    store.add(&new_trusted_state)
+    // The untrusted header is now trusted;
+    // return to the caller so they can update the store:
+    Ok(TrustedState::new(untrusted_sh, untrusted_next_vals))
 }
 
-/// Attempt to update the store to the given untrusted height
-/// by requesting the necessary data (signed headers and validators).
+/// Attempt to "bisect" from the passed-in trusted state (with header of height h)
+/// to the given untrusted height (h+n) by requesting the necessary
+/// data (signed headers and validators from height (h, h+n]).
+///
+/// On success, callers are responsible for storing the returned states
+/// which can now be trusted.
+///
 /// Returns an error if:
 ///     - we're already at or past that height
 ///     - our latest state expired
 ///     - any requests fail
 ///     - requested data is inconsistent (eg. vals don't match hashes in header)
 ///     - validators did not correctly commit their blocks
+///
 /// This function is recursive: it uses a bisection algorithm
 /// to request data for intermediate heights as necessary.
 /// Ensures our last trusted header hasn't expired yet, and that
 /// data from the untrusted height can be verified, possibly using
 /// data from intermediate heights.
+///
 /// This function is primarily for use by a light node.
-pub fn verify_and_update_bisection<TS, SH, C, L, R, S>(
+pub fn verify_bisection<C, H, L, R>(
+    trusted_state: TrustedState<C, H>,
     untrusted_height: Height,
-    trust_threshold: &L,
+    trust_threshold: L,
     trusting_period: &Duration,
     now: &SystemTime,
     req: &R,
-    store: &mut S,
-) -> Result<(), Error>
+) -> Result<Vec<TrustedState<C, H>>, Error>
 where
-    TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
-    SH: SignedHeader<Commit = C>,
+    H: Header,
     C: Commit,
     L: TrustThreshold,
-    R: Requester<SignedHeader = SH, ValidatorSet = C::ValidatorSet>,
-    S: Store<TrustedState = TS>,
+    R: Requester<C, H>,
 {
-    // Fetch the latest state and ensure it hasn't expired.
+    // Ensure the latest state hasn't expired.
     // Note we only check for expiry once in this
     // verify_and_update_bisection function since we assume the
-    // time is passed in and we don't access a clock internall.
+    // time is passed in and we don't access a clock internally.
     // Thus the trust_period must be long enough to incorporate the
     // expected time to complete this function.
-    let trusted_state = store.get(Height::from(0))?;
     let trusted_sh = trusted_state.last_header();
     is_within_trust_period(trusted_sh.header(), trusting_period, now)?;
 
@@ -263,41 +261,53 @@ where
     // Note this would be stronger than checking that the untrusted
     // header is within the trusting period, as it could still diverge
     // significantly from `now`.
+    // NOTE: we actually have to do this for every header we fetch,
+    // We do check bft_time is monotonic, but that check might happen too late.
+    // So every header we fetch must be checked to be less than now+X
 
+    // this is only used to memoize intermediate trusted states:
+    let mut cache: Vec<TrustedState<C, H>> = Vec::new();
     // inner recursive function which assumes
     // trusting_period check is already done.
-    _verify_and_update_bisection(untrusted_height, trust_threshold, req, store)
+    verify_bisection_inner(
+        &trusted_state,
+        untrusted_height,
+        trust_threshold,
+        req,
+        &mut cache,
+    )?;
+    // return all intermediate trusted states up to untrusted_height
+    Ok(cache)
 }
 
 // inner recursive function for verify_and_update_bisection.
 // see that function's docs.
-fn _verify_and_update_bisection<TS, SH, C, L, R, S>(
+// A cache is passed in to memoize all new states to be trusted.
+// Note: we only write to the cache and it guarantees that we do
+// not store states twice.
+// Additionally, a new state is returned for convenience s.t. it can
+// be used for the other half of the recursion.
+fn verify_bisection_inner<H, C, L, R>(
+    trusted_state: &TrustedState<C, H>,
     untrusted_height: Height,
-    trust_threshold: &L,
+    trust_threshold: L,
     req: &R,
-    store: &mut S,
-) -> Result<(), Error>
+    mut cache: &mut Vec<TrustedState<C, H>>,
+) -> Result<TrustedState<C, H>, Error>
 where
-    TS: TrustedState<LastHeader = SH, ValidatorSet = C::ValidatorSet>,
-    SH: SignedHeader<Commit = C>,
+    H: Header,
     C: Commit,
     L: TrustThreshold,
-    R: Requester<SignedHeader = SH, ValidatorSet = C::ValidatorSet>,
-    S: Store<TrustedState = TS>,
+    R: Requester<C, H>,
 {
-    // this get is redundant the first time.
-    // TODO: possibly refactor so this func takes and returns
-    // trusted_state.
-    let trusted_state = store.get(Height::from(0))?;
-    let trusted_sh = trusted_state.last_header();
-
     // fetch the header and vals for the new height
     let untrusted_sh = &req.signed_header(untrusted_height)?;
     let untrusted_vals = &req.validator_set(untrusted_height)?;
-    let untrusted_next_vals = &req.validator_set(untrusted_height.increment())?;
+    let untrusted_next_vals =
+        &req.validator_set(untrusted_height.checked_add(1).expect("height overflow"))?;
 
     // check if we can skip to this height and if it verifies.
-    match verify_single(
+    match verify_single_inner(
         trusted_state,
         untrusted_sh,
         untrusted_vals,
@@ -306,9 +316,10 @@ where
     ) {
         Ok(_) => {
             // Successfully verified!
-            // Trust the new state and return.
-            let new_trusted_state = TS::new(untrusted_sh, untrusted_next_vals);
-            return store.add(&new_trusted_state);
+            // memoize the new to be trusted state and return.
+            let ts = TrustedState::new(untrusted_sh, untrusted_next_vals);
+            cache.push(ts.clone());
+            return Ok(ts);
         }
         Err(e) => {
             // If something went wrong, return the error.
@@ -322,195 +333,38 @@ where
     }
 
     // Get the pivot height for bisection.
-    let trusted_h = trusted_sh.header().height().value();
-    let untrusted_h = untrusted_height.value();
-    let pivot_height = Height::from((trusted_h + untrusted_h) / 2);
+    let trusted_h = trusted_state.last_header().header().height();
+    let untrusted_h = untrusted_height;
+    let pivot_height = trusted_h.checked_add(untrusted_h).expect("height overflow") / 2;
 
-    // Recursive call to update to the pivot height.
+    // Recursive call to bisect to the pivot height.
     // When this completes, we will either return an error or
-    // have updated the store to the pivot height.
-    _verify_and_update_bisection(pivot_height, trust_threshold, req, store)?;
+    // have updated the cache to the pivot height.
+    let trusted_left = verify_bisection_inner(
+        trusted_state,
+        pivot_height,
+        trust_threshold,
+        req,
+        &mut cache,
+    )?;
 
     // Recursive call to update to the original untrusted_height.
-    _verify_and_update_bisection(untrusted_height, trust_threshold, req, store)
+    verify_bisection_inner(
+        &trusted_left,
+        untrusted_height,
+        trust_threshold,
+        req,
+        &mut cache,
+    )
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{hash::Algorithm, Hash};
-    use serde::Serialize;
-    use sha2::{Digest, Sha256};
+    use crate::lite::mocks::*;
+    use crate::lite::TrustThresholdFraction;
 
-    #[derive(Clone, Debug, Serialize)]
-    struct MockHeader {
-        height: u64,
-        time: SystemTime,
-        vals: Hash,
-        next_vals: Hash,
-    }
-
-    impl MockHeader {
-        fn new(height: u64, time: SystemTime, vals: Hash, next_vals: Hash) -> MockHeader {
-            MockHeader {
-                height,
-                time,
-                vals,
-                next_vals,
-            }
-        }
-    }
-
-    impl Header for MockHeader {
-        type Time = SystemTime;
-
-        fn height(&self) -> Height {
-            Height::from(self.height)
-        }
-        fn bft_time(&self) -> Self::Time {
-            self.time
-        }
-        fn validators_hash(&self) -> Hash {
-            self.vals
-        }
-        fn next_validators_hash(&self) -> Hash {
-            self.next_vals
-        }
-        fn hash(&self) -> Hash {
-            json_hash(self)
-        }
-    }
-
-    fn json_hash<T: ?Sized + Serialize>(value: &T) -> Hash {
-        let encoded = serde_json::to_vec(value).unwrap();
-        let hashed = Sha256::digest(&encoded);
-        Hash::new(Algorithm::Sha256, &hashed).unwrap()
-    }
-
-    // vals are just ints, each has power 1
-    #[derive(Clone, Debug, Serialize)]
-    struct MockValSet {
-        // NOTE: use HashSet instead?
-        vals: Vec<usize>,
-    }
-
-    impl MockValSet {
-        fn new(vals: Vec<usize>) -> MockValSet {
-            MockValSet { vals }
-        }
-    }
-
-    impl ValidatorSet for MockValSet {
-        fn hash(&self) -> Hash {
-            json_hash(&self)
-        }
-        fn total_power(&self) -> u64 {
-            self.vals.len() as u64
-        }
-        fn len(&self) -> usize {
-            self.vals.len()
-        }
-        fn is_empty(&self) -> bool {
-            self.len() == 0
-        }
-    }
-
-    // commit is a list of vals that signed.
-    // use None if the val didn't sign.
-    #[derive(Clone, Debug, Serialize)]
-    struct MockCommit {
-        hash: Hash,
-        vals: Vec<Option<usize>>,
-    }
-
-    impl MockCommit {
-        fn new(hash: Hash, vals: Vec<Option<usize>>) -> MockCommit {
-            MockCommit { hash, vals }
-        }
-    }
-
-    impl Commit for MockCommit {
-        type ValidatorSet = MockValSet;
-
-        fn header_hash(&self) -> Hash {
-            self.hash
-        }
-
-        // just the intersection
-        fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error> {
-            let mut power = 0;
-
-            // we only care about the Somes.
-            // if there's a signer thats not in the val set,
-            // we can't detect it...
-            for signer_opt in self.vals.iter() {
-                if let Some(signer) = signer_opt {
-                    for val in vals.vals.iter() {
-                        if signer == val {
-                            power += 1
-                        }
-                    }
-                }
-            }
-            Ok(power)
-        }
-
-        fn votes_len(&self) -> usize {
-            self.vals.len()
-        }
-    }
-
-    #[derive(Clone)]
-    struct MockSignedHeader {
-        header: MockHeader,
-        commit: MockCommit,
-    }
-
-    impl MockSignedHeader {
-        fn new(header: MockHeader, commit: MockCommit) -> Self {
-            MockSignedHeader { header, commit }
-        }
-    }
-
-    impl SignedHeader for MockSignedHeader {
-        type Header = MockHeader;
-        type Commit = MockCommit;
-        fn header(&self) -> &Self::Header {
-            &self.header
-        }
-        fn commit(&self) -> &Self::Commit {
-            &self.commit
-        }
-    }
-
-    // uses refs because the trait defines `new` to take refs ...
-    struct MockState {
-        header: MockSignedHeader,
-        vals: MockValSet,
-    }
-
-    impl TrustedState for MockState {
-        type LastHeader = MockSignedHeader;
-        type ValidatorSet = MockValSet;
-
-        // XXX: how to do this without cloning?!
-        fn new(header: &Self::LastHeader, vals: &Self::ValidatorSet) -> MockState {
-            MockState {
-                header: header.clone(),
-                vals: vals.clone(),
-            }
-        }
-        fn last_header(&self) -> &Self::LastHeader {
-            &self.header
-        }
-        fn validators(&self) -> &Self::ValidatorSet {
-            &self.vals
-        }
-    }
-
-    // XXX: Can we do without this mock and global since we have a default impl?
-    struct MockThreshold {}
-    impl TrustThreshold for MockThreshold {}
-    static THRESHOLD: &MockThreshold = &MockThreshold {};
+    type MockState = TrustedState<MockCommit, MockHeader>;
 
     // start all blockchains from here ...
     fn init_time() -> SystemTime {
@@ -518,20 +372,24 @@ mod tests {
     }
 
     // create an initial trusted state from the given vals
-    fn init_state(vals_vec: Vec<usize>) -> MockState {
+    fn init_trusted_state(
+        vals_vec: Vec<usize>,
+        next_vals_vec: Vec<usize>,
+        height: u64,
+    ) -> MockState {
         let time = init_time();
-        let height = 1;
         let vals = &MockValSet::new(vals_vec.clone());
-        let header = MockHeader::new(height, time, vals.hash(), vals.hash());
-        let commit = MockCommit::new(header.hash(), vals_vec.into_iter().map(Some).collect());
-        let sh = &MockSignedHeader::new(header, commit);
+        let next_vals = &MockValSet::new(next_vals_vec);
+        let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
+        let commit = MockCommit::new(header.hash(), vals_vec);
+        let sh = &SignedHeader::new(commit, header);
         MockState::new(sh, vals)
     }
 
     // create the next state with the given vals and commit.
     fn next_state(
         vals_vec: Vec<usize>,
-        commit_vec: Vec<Option<usize>>,
+        commit_vec: Vec<usize>,
     ) -> (MockSignedHeader, MockValSet, MockValSet) {
         let time = init_time() + Duration::new(10, 0);
         let height = 10;
@@ -539,130 +397,219 @@ mod tests {
         let next_vals = vals.clone();
         let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
         let commit = MockCommit::new(header.hash(), commit_vec);
-        (MockSignedHeader::new(header, commit), vals, next_vals)
+        (MockSignedHeader::new(commit, header), vals, next_vals)
+    }
+
+    // Init a mock Requester.
+    // For each pair of lists of validators (cur and next vals) we
+    // init a trusted state (signed header and vals);
+    // these are (signed) headers and validators will be returned by the Requester.
+    fn init_requester(vals_for_height: Vec<Vec<usize>>) -> MockRequester {
+        let mut req = MockRequester::new();
+        let max_height = vals_for_height.len();
+        for (h, vals) in vals_for_height.iter().enumerate() {
+            let height = (h + 1) as u64; // height starts with 1 ...
+            if height < max_height as u64 {
+                let next_vals = vals_for_height.get(h + 1).expect("next_vals missing");
+                let ts = init_trusted_state(vals.to_owned(), next_vals.to_owned(), height);
+                req.signed_headers.insert(height, ts.last_header().clone());
+                req.validators.insert(height, ts.validators().to_owned());
+            } else {
+                // these will be requested in the last call of verify_bisection_inner
+                // and verified against next_validators of the header in the last SignedHeader:
+                let vals = &MockValSet::new(vals.clone());
+                req.validators.insert(height, vals.to_owned());
+            }
+        }
+        req
     }
 
     // make a state with the given vals and commit and ensure we get the error.
-    fn assert_err(ts: &MockState, vals: Vec<usize>, commit: Vec<Option<usize>>, err: Error) {
+    fn assert_single_err(
+        ts: &TrustedState<MockCommit, MockHeader>,
+        vals: Vec<usize>,
+        commit: Vec<usize>,
+        err: Error,
+    ) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
-        let result = verify_single(ts, &un_sh, &un_vals, &un_next_vals, THRESHOLD);
+        let result = verify_single_inner(
+            ts,
+            &un_sh,
+            &un_vals,
+            &un_next_vals,
+            TrustThresholdFraction::default(),
+        );
         assert_eq!(result, Err(err));
     }
 
     // make a state with the given vals and commit and ensure we get no error.
-    fn assert_ok(ts: &MockState, vals: Vec<usize>, commit: Vec<Option<usize>>) {
+    fn assert_single_ok(ts: &MockState, vals: Vec<usize>, commit: Vec<usize>) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
-        assert!(verify_single(ts, &un_sh, &un_vals, &un_next_vals, THRESHOLD).is_ok());
+        assert!(verify_single_inner(
+            ts,
+            &un_sh,
+            &un_vals,
+            &un_next_vals,
+            TrustThresholdFraction::default()
+        )
+        .is_ok());
     }
 
-    // convenience vars for validators that signed commit
-    static S0: Option<usize> = Some(0);
-    static S1: Option<usize> = Some(1);
-    static S2: Option<usize> = Some(2);
-    static S3: Option<usize> = Some(3);
-    static S4: Option<usize> = Some(4);
-    static S5: Option<usize> = Some(5);
+    // make a sequence of states with the given vals for the requester
+    // and ensure bisection yields no error.
+    fn assert_bisection_ok(
+        req: &MockRequester,
+        ts: &TrustedState<MockCommit, MockHeader>,
+        untrusted_height: u64,
+        expected_num_of_requests: usize,
+    ) {
+        let mut cache: Vec<MockTrustedState> = Vec::new();
+        let ts_new = verify_bisection_inner(
+            &ts,
+            untrusted_height,
+            TrustThresholdFraction::default(),
+            req,
+            cache.as_mut(),
+        )
+        .expect("should have passed");
+        assert_eq!(ts_new.last_header().header().height(), untrusted_height);
+        assert_eq!(cache.len(), expected_num_of_requests);
+        assert_uniqueness(cache);
+    }
+
+    fn assert_uniqueness(cache: Vec<TrustedState<MockCommit, MockHeader>>) {
+        let mut uniq = cache.clone();
+        uniq.dedup();
+        assert_eq!(cache, uniq);
+    }
 
     // valid to skip, but invalid commit. 1 validator.
     #[test]
     fn test_verify_single_skip_1_val_verify() {
-        let ts = &init_state(vec![0]);
+        let ts = &init_trusted_state(vec![0], vec![0], 1);
 
         // 100% overlap, but wrong commit.
         // NOTE: This should be an invalid commit error since there's
-        // a vote from a validator not in the set !
+        // a vote from a validator not in the set!
         // but voting_power_in isn't smart enough to see this ...
-        assert_err(ts, vec![1], vec![S0], Error::InsufficientVotingPower);
+        // TODO(ismail): https://github.com/interchainio/tendermint-rs/issues/140
+        assert_single_err(ts, vec![1], vec![0], Error::InvalidCommit);
     }
 
     // valid commit and data, starting with 1 validator.
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_1_val_skip() {
-        let ts = &init_state(vec![0]);
+        let ts = &init_trusted_state(vec![0], vec![0], 1);
         let err = Error::InsufficientVotingPower;
 
         //*****
         // Ok
 
         // 100% overlap (original signer is present in commit)
-        assert_ok(ts, vec![0], vec![S0]);
-        assert_ok(ts, vec![0, 1], vec![S0, S1]);
-        assert_ok(ts, vec![0, 1, 2], vec![S0, S1, S2]);
-        assert_ok(ts, vec![0, 1, 2, 3], vec![S0, S1, S2, S3]);
+        assert_single_ok(ts, vec![0], vec![0]);
+        assert_single_ok(ts, vec![0, 1], vec![0, 1]);
+        assert_single_ok(ts, vec![0, 1, 2], vec![0, 1, 2]);
+        assert_single_ok(ts, vec![0, 1, 2, 3], vec![0, 1, 2, 3]);
 
         //*****
         // Err
 
         // 0% overlap - new val set without the original signer
-        assert_err(ts, vec![1], vec![S1], err);
+        assert_single_err(ts, vec![1], vec![1], err);
 
         // 0% overlap - val set contains original signer, but they didn't sign
-        assert_err(ts, vec![0, 1, 2, 3], vec![None, S1, S2, S3], err);
+        assert_single_err(ts, vec![0, 1, 2, 3], vec![1, 2, 3], err);
     }
 
     // valid commit and data, starting with 2 validators.
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_2_val_skip() {
-        let ts = &init_state(vec![0, 1]);
+        let ts = &init_trusted_state(vec![0, 1], vec![0, 1], 1);
         let err = Error::InsufficientVotingPower;
 
         //*************
         // OK
 
         // 100% overlap (both original signers still present)
-        assert_ok(ts, vec![0, 1], vec![S0, S1]);
-        assert_ok(ts, vec![0, 1, 2], vec![S0, S1, S2]);
+        assert_single_ok(ts, vec![0, 1], vec![0, 1]);
+        assert_single_ok(ts, vec![0, 1, 2], vec![0, 1, 2]);
 
         // 50% overlap (one original signer still present)
-        assert_ok(ts, vec![0], vec![S0]);
-        assert_ok(ts, vec![0, 1, 2, 3], vec![None, S1, S2, S3]);
+        assert_single_ok(ts, vec![0], vec![0]);
+        assert_single_ok(ts, vec![0, 1, 2, 3], vec![1, 2, 3]);
 
         //*************
         // Err
 
         // 0% overlap (neither original signer still present)
-        assert_err(ts, vec![2], vec![S2], err);
+        assert_single_err(ts, vec![2], vec![2], err);
 
         // 0% overlap (original signer is still in val set but not in commit)
-        assert_err(ts, vec![0, 2, 3, 4], vec![None, S2, S3, S4], err);
+        assert_single_err(ts, vec![0, 2, 3, 4], vec![2, 3, 4], err);
     }
 
     // valid commit and data, starting with 3 validators.
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_3_val_skip() {
-        let ts = &init_state(vec![0, 1, 2]);
+        let ts = &init_trusted_state(vec![0, 1, 2], vec![0, 1, 2], 1);
         let err = Error::InsufficientVotingPower;
 
         //*************
         // OK
 
         // 100% overlap (both original signers still present)
-        assert_ok(ts, vec![0, 1, 2], vec![S0, S1, S2]);
-        assert_ok(ts, vec![0, 1, 2, 3], vec![S0, S1, S2, S3]);
+        assert_single_ok(ts, vec![0, 1, 2], vec![0, 1, 2]);
+        assert_single_ok(ts, vec![0, 1, 2, 3], vec![0, 1, 2, 3]);
 
         // 66% overlap (two original signers still present)
-        assert_ok(ts, vec![0, 1], vec![S0, S1]);
-        assert_ok(ts, vec![0, 1, 2, 3], vec![None, S1, S2, S3]);
+        assert_single_ok(ts, vec![0, 1], vec![0, 1]);
+        assert_single_ok(ts, vec![0, 1, 2, 3], vec![1, 2, 3]);
 
         //*************
         // Err
 
         // 33% overlap (one original signer still present)
-        assert_err(ts, vec![0], vec![S0], err);
-        assert_err(ts, vec![0, 3], vec![S0, S3], err);
+        assert_single_err(ts, vec![0], vec![0], err);
+        assert_single_err(ts, vec![0, 3], vec![0, 3], err);
 
         // 0% overlap (neither original signer still present)
-        assert_err(ts, vec![3], vec![S2], err);
+        assert_single_err(ts, vec![3], vec![2], err);
 
         // 0% overlap (original signer is still in val set but not in commit)
-        assert_err(ts, vec![0, 3, 4, 5], vec![None, S3, S4, S5], err);
+        assert_single_err(ts, vec![0, 3, 4, 5], vec![3, 4, 5], err);
     }
 
-    fn fixed_hash() -> Hash {
-        Hash::new(Algorithm::Sha256, &Sha256::digest(&[5])).unwrap()
+    #[test]
+    fn test_verify_bisection_1_val() {
+        let req = init_requester(vec![vec![0], vec![0], vec![0]]);
+        let sh = req.signed_header(1).expect("first sh not present");
+        let vals = req.validator_set(1).expect("init. valset not present");
+        let ts = &MockState::new(&sh, &vals);
+
+        assert_bisection_ok(&req, &ts, 2, 1);
+
+        let req = init_requester(vec![vec![0], vec![0], vec![0], vec![0]]);
+        assert_bisection_ok(&req, &ts, 3, 1);
+    }
+
+    #[test]
+    fn test_verify_bisection_1_val_4_heights_check_all_intermediate() {
+        let mut vals_per_height: Vec<Vec<usize>> = Vec::new();
+        vals_per_height.push(vec![0, 1, 2, 3, 4, 5]); // 1
+        vals_per_height.push(vec![0, 1, 2]); // 2 -> 50% val change
+        vals_per_height.push(vec![0, 1]); // 3 -> 33% change
+        vals_per_height.push(vec![1, 2]); // 4 -> 50% change
+        vals_per_height.push(vec![0, 2]); // 5 -> 50% <- too much change (from 1), need to bisect...
+        vals_per_height.push(vec![0, 2]); // 6 -> (only need to validate 5)
+        let req = init_requester(vals_per_height);
+        let sh = req.signed_header(1).expect("first sh not present");
+        let vals = req.validator_set(1).expect("init. valset not present");
+        let ts = &MockState::new(&sh, &vals);
+
+        assert_bisection_ok(&req, &ts, 5, 3);
     }
 
     #[test]
@@ -682,5 +629,11 @@ mod tests {
         // greater than the period, not OK
         let now = header_time + period + Duration::new(1, 0);
         assert!(is_within_trust_period(&header, &period, &now).is_err());
+
+        // bft time in header is later than now, not OK:
+        let now = SystemTime::UNIX_EPOCH;
+        let later_than_now = now + Duration::new(60, 0);
+        let future_header = MockHeader::new(4, later_than_now, fixed_hash(), fixed_hash());
+        assert!(is_within_trust_period(&future_header, &period, &now).is_err());
     }
 }

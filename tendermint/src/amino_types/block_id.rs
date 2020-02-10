@@ -6,12 +6,13 @@ use crate::{
     hash,
     hash::{Hash, SHA256_HASH_SIZE},
 };
+use prost_amino_derive::Message;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct BlockId {
-    #[prost(bytes, tag = "1")]
+    #[prost_amino(bytes, tag = "1")]
     pub hash: Vec<u8>,
-    #[prost(message, tag = "2")]
+    #[prost_amino(message, tag = "2")]
     pub parts_header: Option<PartsSetHeader>,
 }
 
@@ -56,9 +57,9 @@ impl ConsensusMessage for BlockId {
 
 #[derive(Clone, PartialEq, Message)]
 pub struct CanonicalBlockId {
-    #[prost(bytes, tag = "1")]
+    #[prost_amino(bytes, tag = "1")]
     pub hash: Vec<u8>,
-    #[prost(message, tag = "2")]
+    #[prost_amino(message, tag = "2")]
     pub parts_header: Option<CanonicalPartSetHeader>,
 }
 
@@ -75,9 +76,9 @@ impl block::ParseId for CanonicalBlockId {
 
 #[derive(Clone, PartialEq, Message)]
 pub struct PartsSetHeader {
-    #[prost(int64, tag = "1")]
+    #[prost_amino(int64, tag = "1")]
     pub total: i64,
-    #[prost(bytes, tag = "2")]
+    #[prost_amino(bytes, tag = "2")]
     pub hash: Vec<u8>,
 }
 
@@ -116,9 +117,9 @@ impl ConsensusMessage for PartsSetHeader {
 
 #[derive(Clone, PartialEq, Message)]
 pub struct CanonicalPartSetHeader {
-    #[prost(bytes, tag = "1")]
+    #[prost_amino(bytes, tag = "1")]
     pub hash: Vec<u8>,
-    #[prost(int64, tag = "2")]
+    #[prost_amino(int64, tag = "2")]
     pub total: i64,
 }
 

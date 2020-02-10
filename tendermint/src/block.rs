@@ -11,13 +11,13 @@ mod size;
 
 pub use self::{
     commit::*,
-    header::{parse_non_empty_block_id, Header},
+    header::Header,
     height::*,
     id::{Id, ParseId},
     meta::Meta,
     size::Size,
 };
-use crate::{abci::transaction, evidence};
+use crate::{abci::transaction, evidence, serializers};
 use serde::{Deserialize, Deserializer, Serialize};
 
 /// Blocks consist of a header, transactions, votes (the commit), and a list of
@@ -46,7 +46,7 @@ where
 {
     #[derive(Deserialize)]
     struct TmpCommit {
-        #[serde(deserialize_with = "parse_non_empty_block_id")]
+        #[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
         block_id: Option<Id>,
         precommits: Option<Precommits>,
     }
