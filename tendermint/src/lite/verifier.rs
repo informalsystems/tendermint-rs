@@ -631,7 +631,7 @@ mod tests {
 
         assert_bisection_ok(&req, &ts, 5, 3, &final_ts);
 
-        let mut faulty_req = req.clone();
+        let mut faulty_req = req;
         faulty_req.validators.remove(&6_u64);
         assert_bisection_err(&faulty_req, &ts, 5, Error::RequestFailed);
     }
