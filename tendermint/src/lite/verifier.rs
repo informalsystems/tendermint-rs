@@ -74,7 +74,7 @@ where
 /// NOTE: These validators are expected to be the correct validators for the commit,
 /// but since we're using voting_power_in, we can't actually detect if there's
 /// votes from validators not in the set.
-pub fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), Error>
+fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), Error>
 where
     C: Commit,
 {
@@ -93,7 +93,7 @@ where
 /// NOTE the given validators do not necessarily correspond to the validator set for this commit,
 /// but there may be some intersection. The trust_level parameter allows clients to require more
 /// than +1/3 by implementing the TrustLevel trait accordingly.
-pub fn verify_commit_trusting<C, L>(
+fn verify_commit_trusting<C, L>(
     validators: &C::ValidatorSet,
     commit: &C,
     trust_level: L,
