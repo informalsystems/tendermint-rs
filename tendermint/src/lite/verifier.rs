@@ -146,7 +146,7 @@ where
     let untrusted_height = untrusted_sh.header().height();
 
     // ensure the untrusted_header.bft_time() > trusted_header.bft_time()
-    if untrusted_header.bft_time() <= trusted_header.bft_time() {
+    if untrusted_header.bft_time().into() <= trusted_header.bft_time().into() {
         return Err(Error::NonIncreasingTime);
     }
 
@@ -380,12 +380,13 @@ mod tests {
         next_vals_vec: Vec<usize>,
         height: u64,
     ) -> MockState {
-        let time = init_time();
+        // time has to be increasing:
+        let time = init_time() + Duration::new(height * 2, 0);
         let vals = &MockValSet::new(vals_vec.clone());
         let next_vals = &MockValSet::new(next_vals_vec);
         let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
         let commit = MockCommit::new(header.hash(), vals_vec);
-        let sh = &SignedHeader::new(commit, header);
+        let sh = &MockSignedHeader::new(commit, header);
         MockState::new(sh, vals)
     }
 
@@ -640,7 +641,23 @@ mod tests {
         assert_bisection_err(&faulty_req, &ts, 5, Error::RequestFailed);
 
         // Error: can't bisect from trusted height 1 to height 1
+        // (here because non-increasing time is caught first)
         let req = init_requester(vec![vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2]]);
+        assert_bisection_err(&req, &ts, 1, Error::NonIncreasingTime);
+
+        // Error: can't bisect from trusted height 1 to height 1 (here we tamper with time but
+        // expect to fail on NonIncreasingHeight):
+        let req = init_requester(vec![vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2]]);
+        assert_bisection_err(&req, &ts, 1, Error::NonIncreasingTime);
+
+        let mut req = init_requester(vec![vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2]]);
+        let sh = req.signed_headers.get(&1_u64).unwrap();
+        let mut time_tampered_header = sh.header().clone();
+        time_tampered_header.set_time(init_time() + Duration::new(5, 0));
+        let tampered_commit = MockCommit::new(time_tampered_header.hash(), vec![0, 1, 2]);
+        let new_sh = MockSignedHeader::new(tampered_commit, time_tampered_header);
+        // replace the signed header:
+        req.signed_headers.insert(1, new_sh);
         assert_bisection_err(&req, &ts, 1, Error::NonIncreasingHeight);
     }
 

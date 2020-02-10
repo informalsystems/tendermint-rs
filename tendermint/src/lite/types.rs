@@ -255,6 +255,10 @@ pub(super) mod mocks {
                 next_vals,
             }
         }
+
+        pub fn set_time(&mut self, new_time: SystemTime) {
+            self.time = new_time
+        }
     }
 
     impl Header for MockHeader {
