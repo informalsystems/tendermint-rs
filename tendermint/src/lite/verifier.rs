@@ -403,9 +403,9 @@ mod tests {
     // Init a mock Requester.
     // For each pair of lists of validators (cur and next vals) we
     // init a trusted state (signed header and vals);
-    // Note: from the final_state we only feed the validators into the Requester.
-    // these are (signed) headers and validators will be returned by the Requester.
-    fn init_requester(vals_for_height: Vec<Vec<usize>>, final_state: &MockState) -> MockRequester {
+    // Note: for bisection up-to height n, provide n+2 validators as validators for n+1
+    // will be requested to verify height n.
+    fn init_requester(vals_for_height: Vec<Vec<usize>>) -> MockRequester {
         let mut req = MockRequester::new();
         let max_height = vals_for_height.len() as u64;
         for (h, vals) in vals_for_height.iter().enumerate() {
@@ -417,10 +417,6 @@ mod tests {
                 req.validators.insert(height, ts.validators().to_owned());
             }
         }
-        // these will be requested in the last call of verify_bisection_inner
-        // and verified against next_validators of the header in the last SignedHeader:
-        req.validators
-            .insert(max_height, final_state.validators().to_owned());
         req
     }
 
@@ -455,7 +451,7 @@ mod tests {
         .is_ok());
     }
 
-    // make a sequence of states with the given vals for the requester
+    // use the sequence of states with the given vals for the requester
     // and ensure bisection yields no error.
     fn assert_bisection_ok(
         req: &MockRequester,
@@ -482,6 +478,25 @@ mod tests {
         let mut uniq = cache.clone();
         uniq.dedup();
         assert_eq!(cache, uniq);
+    }
+
+    // use the sequence of states with the given vals for the requester
+    // and ensure we get the expected error.
+    fn assert_bisection_err(
+        req: &MockRequester,
+        ts: &TrustedState<MockCommit, MockHeader>,
+        untrusted_height: u64,
+        err: Error,
+    ) {
+        let mut cache: Vec<MockTrustedState> = Vec::new();
+        let result = verify_bisection_inner(
+            &ts,
+            untrusted_height,
+            TrustThresholdFraction::default(),
+            req,
+            cache.as_mut(),
+        );
+        assert_eq!(result, Err(err));
     }
 
     // valid to skip, but invalid commit. 1 validator.
@@ -586,7 +601,7 @@ mod tests {
     #[test]
     fn test_verify_bisection_1_val() {
         let final_state = init_trusted_state(vec![0], vec![0], 2);
-        let req = init_requester(vec![vec![0], vec![0], vec![0]], &final_state);
+        let req = init_requester(vec![vec![0], vec![0], vec![0], vec![0]]);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
@@ -594,26 +609,31 @@ mod tests {
         assert_bisection_ok(&req, &ts, 2, 1, &final_state);
 
         let final_state = init_trusted_state(vec![0], vec![0], 3);
-        let req = init_requester(vec![vec![0], vec![0], vec![0], vec![0]], &final_state);
+        let req = init_requester(vec![vec![0], vec![0], vec![0], vec![0], vec![0]]);
         assert_bisection_ok(&req, &ts, 3, 1, &final_state);
     }
 
     #[test]
-    fn test_verify_bisection_1_val_4_heights_check_all_intermediate() {
+    fn test_verify_bisection_6_vals_5_heights_check_all_intermediate() {
         let mut vals_per_height: Vec<Vec<usize>> = Vec::new();
         vals_per_height.push(vec![0, 1, 2, 3, 4, 5]); // 1
         vals_per_height.push(vec![0, 1, 2]); // 2 -> 50% val change
         vals_per_height.push(vec![0, 1]); // 3 -> 33% change
         vals_per_height.push(vec![1, 2]); // 4 -> 50% change
         vals_per_height.push(vec![0, 2]); // 5 -> 50% <- too much change (from 1), need to bisect...
-        vals_per_height.push(vec![0, 2]); // 6 -> (only need to validate 5)
+        vals_per_height.push(vec![0, 2]); // 6 -> (only needed to validate 5)
+        vals_per_height.push(vec![0, 2]); // 7 -> (only used to construct state 6)
         let final_ts = init_trusted_state(vec![0, 2], vec![0, 2], 5);
-        let req = init_requester(vals_per_height, &final_ts);
+        let req = init_requester(vals_per_height);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
 
         assert_bisection_ok(&req, &ts, 5, 3, &final_ts);
+
+        let mut faulty_req = req.clone();
+        faulty_req.validators.remove(&6_u64);
+        assert_bisection_err(&faulty_req, &ts, 5, Error::RequestFailed);
     }
 
     #[test]

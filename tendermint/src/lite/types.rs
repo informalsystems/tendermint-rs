@@ -97,7 +97,7 @@ impl TrustThresholdFraction {
     /// Instantiate a TrustThresholdFraction if the given denominator and
     /// numerator are valid.
     ///
-    /// The parameters are valid iff `1/3 < numerator/denominator < 1`.
+    /// The parameters are valid iff `1/3 <= numerator/denominator <= 1`.
     /// In any other case we return [`Error::InvalidTrustThreshold`].
     pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
         if numerator <= denominator && denominator > 0 && 3 * numerator >= denominator {
