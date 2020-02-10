@@ -618,7 +618,10 @@ mod tests {
     }
 
     #[test]
-    fn test_verify_bisection_6_vals_5_heights_check_all_intermediate() {
+    fn test_verify_bisection() {
+        //*************
+        // OK
+
         let mut vals_per_height: Vec<Vec<usize>> = Vec::new();
         vals_per_height.push(vec![0, 1, 2, 3, 4, 5]); // 1
         vals_per_height.push(vec![0, 1, 2]); // 2 -> 50% val change
@@ -635,7 +638,10 @@ mod tests {
 
         assert_bisection_ok(&req, &ts, 5, 3, &final_ts);
 
-        // Error: fails due to missing vals for height 6:
+        //*************
+        // Err
+
+        // fails due to missing vals for height 6:
         let mut faulty_req = req;
         faulty_req.validators.remove(&6_u64);
         assert_bisection_err(&faulty_req, &ts, 5, Error::RequestFailed);
@@ -645,7 +651,7 @@ mod tests {
         let req = init_requester(vec![vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2]]);
         assert_bisection_err(&req, &ts, 1, Error::NonIncreasingTime);
 
-        // Error: can't bisect from trusted height 1 to height 1 (here we tamper with time but
+        // can't bisect from trusted height 1 to height 1 (here we tamper with time but
         // expect to fail on NonIncreasingHeight):
         let mut req = init_requester(vec![vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2]]);
         let sh = req.signed_headers.get(&1_u64).unwrap();
