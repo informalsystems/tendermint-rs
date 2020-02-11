@@ -45,9 +45,11 @@ struct TestBisection {
     trust_options: TrustOptions,
     primary: Provider,
     height_to_verify: Height,
+    // TODO: make trust_level deserialize from string instead of integer
+    // TODO: trust_level should go under TrustOptions
     trust_level: TrustThresholdFraction,
     now: Time,
-    expected_output: String,
+    expected_output: Option<String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -58,6 +60,7 @@ struct Provider {
 
 #[derive(Deserialize, Clone, Debug)]
 struct TrustOptions {
+    // TODO: add trust_level here
     period: Duration,
     height: Height,
     hash: Hash,
@@ -96,6 +99,13 @@ impl MockRequester {
     fn new(chain_id: String, lite_blocks: Vec<LiteBlock>) -> Self {
         let mut sh_map: HashMap<u64, SignedHeader> = HashMap::new();
         let mut val_map: HashMap<u64, Set> = HashMap::new();
+        let last_block = lite_blocks
+            .get(lite_blocks.len() - 1)
+            .expect("last entry not found");
+        val_map.insert(
+            last_block.signed_header.header.height.increment().value(),
+            last_block.to_owned().next_validator_set,
+        );
         for lite_block in lite_blocks {
             let height = lite_block.signed_header.header.height;
             sh_map.insert(height.into(), lite_block.signed_header);
@@ -197,6 +207,8 @@ fn run_test_cases(cases: TestCases) {
     }
 }
 
+// Link to the commit where the happy_path.json was created:
+// https://github.com/Shivani912/tendermint/commit/89aa17ab9ae0a76941eb15b7957452ec78ce5696
 #[test]
 fn bisection_simple() {
     let case: TestBisection =
@@ -215,7 +227,10 @@ fn run_bisection_test(case: TestBisection) {
     let provider = case.primary;
     let req = MockRequester::new(provider.chain_id, provider.lite_blocks);
 
-    let expected_output = case.expected_output;
+    let expects_err = match &case.expected_output {
+        Some(eo) => eo.eq("error"),
+        None => false,
+    };
 
     let trusted_height = case.trust_options.height.try_into().unwrap();
     let trusted_header = &req
@@ -227,8 +242,6 @@ fn run_bisection_test(case: TestBisection) {
 
     let trusted_state = TrustedState::new(trusted_header, trusted_vals);
 
-    let output: String;
-
     match lite::verify_bisection(
         trusted_state,
         untrusted_height,
@@ -237,15 +250,25 @@ fn run_bisection_test(case: TestBisection) {
         &now.into(),
         &req,
     ) {
-        Ok(_) => {
-            // TODO: should we make some assertions on the returned new_states?
-            output = "no error".to_string();
+        Ok(new_states) => {
+            let untrusted_signed_header = &req
+                .signed_header(untrusted_height)
+                .expect("header at untrusted height not found");
+            let untrusted_next_vals = &req
+                .validator_set(untrusted_height + 1)
+                .expect("val set at untrusted height not found");
+            let expected_state = TrustedState::new(
+                &untrusted_signed_header.to_owned().into(),
+                untrusted_next_vals,
+            );
+            assert_eq!(new_states[new_states.len() - 1], expected_state);
+            assert_eq!(new_states.len(), 2);
+            assert!(!expects_err);
         }
         Err(_) => {
-            output = "error".to_string();
+            assert!(expects_err);
         }
     }
-    assert_eq!(output, expected_output);
 }
 
 impl<'de> Deserialize<'de> for Duration {
