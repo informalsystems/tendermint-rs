@@ -1,6 +1,6 @@
 use tendermint::hash;
 use tendermint::lite;
-use tendermint::lite::{Error, TrustThresholdFraction};
+use tendermint::lite::TrustThresholdFraction;
 use tendermint::lite::{Header as _, Requester as _, ValidatorSet as _};
 use tendermint::rpc;
 use tendermint::{block::Height, Hash};
@@ -9,6 +9,7 @@ use tendermint_lite::{requester::RPCRequester, store::MemStore};
 
 use core::future::Future;
 use std::time::{Duration, SystemTime};
+use tendermint::lite::errors::ErrorKind;
 use tendermint_lite::store::State;
 use tokio::runtime::Builder;
 
@@ -101,7 +102,7 @@ fn subjective_init(
     vals_hash: Hash,
     store: &mut MemStore,
     req: &RPCRequester,
-) -> Result<(), Error> {
+) -> Result<(), ErrorKind> {
     if store.get(height.value()).is_ok() {
         // we already have this !
         return Ok(());

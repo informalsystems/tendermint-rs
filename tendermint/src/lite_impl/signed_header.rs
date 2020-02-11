@@ -1,6 +1,6 @@
 //! [`lite::SignedHeader`] implementation for [`block::signed_header::SignedHeader`].
 
-use crate::lite::Error;
+use crate::lite::errors::ErrorKind;
 use crate::validator::Set;
 use crate::{block, hash, lite, vote};
 
@@ -10,7 +10,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
     fn header_hash(&self) -> hash::Hash {
         self.commit.block_id.hash
     }
-    fn voting_power_in(&self, validators: &Set) -> Result<u64, Error> {
+    fn voting_power_in(&self, validators: &Set) -> Result<u64, ErrorKind> {
         // NOTE we don't know the validators that committed this block,
         // so we have to check for each vote if its validator is already known.
         let mut signed_power = 0u64;
@@ -35,7 +35,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
             let sign_bytes = vote.sign_bytes();
 
             if !val.verify_signature(&sign_bytes, vote.signature()) {
-                return Err(Error::InvalidSignature);
+                return Err(ErrorKind::InvalidSignature);
             }
             signed_power += val.power();
         }
@@ -43,9 +43,15 @@ impl lite::Commit for block::signed_header::SignedHeader {
         Ok(signed_power)
     }
 
-    fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error> {
+    fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), ErrorKind> {
         if self.commit.precommits.len() != vals.validators().len() {
-            return Err(lite::Error::InvalidCommitSignatures);
+            return Err(lite::errors::ErrorKind::InvalidCommitSignatures {
+                info: format!(
+                    "pre-commit length: {} doesn't match validator length: {}",
+                    self.commit.precommits.len(),
+                    vals.validators().len()
+                ),
+            });
         }
         // TODO: compare to the go code for more implementation related checks and clarify if this:
         // https://github.com/interchainio/tendermint-rs/pull/143/commits/0a30022fa47e909e6c7b20417dd178c8a3b84838#r374958528

@@ -11,9 +11,9 @@
 use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
+use crate::lite::errors::ErrorKind;
 use crate::lite::{
-    Commit, Error, Header, Height, Requester, SignedHeader, TrustThreshold, TrustedState,
-    ValidatorSet,
+    Commit, Header, Height, Requester, SignedHeader, TrustThreshold, TrustedState, ValidatorSet,
 };
 
 /// Returns an error if the header has expired according to the given
@@ -22,18 +22,21 @@ fn is_within_trust_period<H>(
     last_header: &H,
     trusting_period: &Duration,
     now: &SystemTime,
-) -> Result<(), Error>
+) -> Result<(), ErrorKind>
 where
     H: Header,
 {
     match now.duration_since(last_header.bft_time().into()) {
         Ok(passed) => {
             if passed > *trusting_period {
-                return Err(Error::Expired);
+                return Err(ErrorKind::Expired {
+                    at: last_header.bft_time().into() + *trusting_period,
+                    now: *now,
+                });
             }
             Ok(())
         }
-        Err(_) => Err(Error::DurationOutOfRange),
+        Err(e) => Err(ErrorKind::DurationOutOfRange(e)),
     }
 }
 
@@ -43,7 +46,7 @@ fn validate<C, H>(
     signed_header: &SignedHeader<C, H>,
     vals: &C::ValidatorSet,
     next_vals: &C::ValidatorSet,
-) -> Result<(), Error>
+) -> Result<(), ErrorKind>
 where
     C: Commit,
     H: Header,
@@ -53,15 +56,24 @@ where
 
     // ensure the header validator hashes match the given validators
     if header.validators_hash() != vals.hash() {
-        return Err(Error::InvalidValidatorSet);
+        return Err(ErrorKind::InvalidValidatorSet {
+            header_val_hash: header.validators_hash(),
+            val_hash: vals.hash(),
+        });
     }
     if header.next_validators_hash() != next_vals.hash() {
-        return Err(Error::InvalidNextValidatorSet);
+        return Err(ErrorKind::InvalidNextValidatorSet {
+            header_next_val_hash: header.next_validators_hash(),
+            next_val_hash: next_vals.hash(),
+        });
     }
 
     // ensure the header matches the commit
     if header.hash() != commit.header_hash() {
-        return Err(Error::InvalidCommitValue);
+        return Err(ErrorKind::InvalidCommitValue {
+            header_hash: header.hash(),
+            commit_hash: commit.header_hash(),
+        });
     }
 
     // additional implementation specific validation:
@@ -74,7 +86,7 @@ where
 /// NOTE: These validators are expected to be the correct validators for the commit,
 /// but since we're using voting_power_in, we can't actually detect if there's
 /// votes from validators not in the set.
-pub fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), Error>
+pub fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), ErrorKind>
 where
     C: Commit,
 {
@@ -83,7 +95,10 @@ where
 
     // check the signers account for +2/3 of the voting power
     if signed_power * 3 <= total_power * 2 {
-        return Err(Error::InvalidCommit);
+        return Err(ErrorKind::InvalidCommit {
+            total: total_power,
+            signed: signed_power,
+        });
     }
 
     Ok(())
@@ -97,7 +112,7 @@ pub fn verify_commit_trusting<C, L>(
     validators: &C::ValidatorSet,
     commit: &C,
     trust_level: L,
-) -> Result<(), Error>
+) -> Result<(), ErrorKind>
 where
     C: Commit,
     L: TrustThreshold,
@@ -108,7 +123,11 @@ where
     // check the signers account for +1/3 of the voting power (or more if the
     // trust_level requires so)
     if !trust_level.is_enough_power(signed_power, total_power) {
-        return Err(Error::InsufficientVotingPower);
+        return Err(ErrorKind::InsufficientVotingPower {
+            total: total_power,
+            signed: signed_power,
+            trust_treshold: format!("{:?}", trust_level),
+        });
     }
 
     Ok(())
@@ -126,7 +145,7 @@ fn verify_single_inner<H, C, L>(
     untrusted_vals: &C::ValidatorSet,
     untrusted_next_vals: &C::ValidatorSet,
     trust_threshold: L,
-) -> Result<(), Error>
+) -> Result<(), ErrorKind>
 where
     H: Header,
     C: Commit,
@@ -148,7 +167,12 @@ where
     // TODO: ensure the untrusted_header.bft_time() > trusted_header.bft_time()
 
     match untrusted_height.cmp(&trusted_height.checked_add(1).expect("height overflow")) {
-        Ordering::Less => return Err(Error::NonIncreasingHeight),
+        Ordering::Less => {
+            return Err(ErrorKind::NonIncreasingHeight {
+                got: untrusted_height,
+                expected: trusted_height + 1,
+            })
+        }
         Ordering::Equal => {
             let trusted_vals_hash = trusted_header.next_validators_hash();
             let untrusted_vals_hash = untrusted_header.validators_hash();
@@ -156,7 +180,10 @@ where
                 // TODO: more specific error
                 // ie. differentiate from when next_vals.hash() doesnt
                 // match the header hash ...
-                return Err(Error::InvalidNextValidatorSet);
+                return Err(ErrorKind::InvalidNextValidatorSet {
+                    header_next_val_hash: trusted_vals_hash,
+                    next_val_hash: untrusted_vals_hash,
+                });
             }
         }
         Ordering::Greater => {
@@ -186,7 +213,7 @@ pub fn verify_single<H, C, L>(
     trust_threshold: L,
     trusting_period: &Duration,
     now: &SystemTime,
-) -> Result<TrustedState<C, H>, Error>
+) -> Result<TrustedState<C, H>, ErrorKind>
 where
     H: Header,
     C: Commit,
@@ -237,7 +264,7 @@ pub fn verify_bisection<C, H, L, R>(
     trusting_period: &Duration,
     now: &SystemTime,
     req: &R,
-) -> Result<Vec<TrustedState<C, H>>, Error>
+) -> Result<Vec<TrustedState<C, H>>, ErrorKind>
 where
     H: Header,
     C: Commit,
@@ -293,7 +320,7 @@ fn verify_bisection_inner<H, C, L, R>(
     trust_threshold: L,
     req: &R,
     mut cache: &mut Vec<TrustedState<C, H>>,
-) -> Result<TrustedState<C, H>, Error>
+) -> Result<TrustedState<C, H>, ErrorKind>
 where
     H: Header,
     C: Commit,
@@ -322,13 +349,13 @@ where
             return Ok(ts);
         }
         Err(e) => {
-            // If something went wrong, return the error.
-            if e != Error::InsufficientVotingPower {
+            if let ErrorKind::InsufficientVotingPower { .. } = e {
+                // Insufficient voting power to update.
+                // Engage bisection, below.
+            } else {
+                // If something went wrong, return the error.
                 return Err(e);
             }
-
-            // Insufficient voting power to update.
-            // Engage bisection, below.
         }
     }
 
@@ -429,7 +456,7 @@ mod tests {
         ts: &TrustedState<MockCommit, MockHeader>,
         vals: Vec<usize>,
         commit: Vec<usize>,
-        err: Error,
+        err: &ErrorKind,
     ) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
         let result = verify_single_inner(
@@ -439,7 +466,8 @@ mod tests {
             &un_next_vals,
             TrustThresholdFraction::default(),
         );
-        assert_eq!(result, Err(err));
+        assert!(result.is_err());
+        assert_eq!(format!("{}", result.unwrap_err()), format!("{}", err));
     }
 
     // make a state with the given vals and commit and ensure we get no error.
@@ -493,7 +521,15 @@ mod tests {
         // a vote from a validator not in the set!
         // but voting_power_in isn't smart enough to see this ...
         // TODO(ismail): https://github.com/interchainio/tendermint-rs/issues/140
-        assert_single_err(ts, vec![1], vec![0], Error::InvalidCommit);
+        assert_single_err(
+            ts,
+            vec![1],
+            vec![0],
+            &ErrorKind::InvalidCommit {
+                total: 1,
+                signed: 0,
+            },
+        );
     }
 
     // valid commit and data, starting with 1 validator.
@@ -501,8 +537,6 @@ mod tests {
     #[test]
     fn test_verify_single_skip_1_val_skip() {
         let ts = &init_trusted_state(vec![0], vec![0], 1);
-        let err = Error::InsufficientVotingPower;
-
         //*****
         // Ok
 
@@ -514,12 +548,17 @@ mod tests {
 
         //*****
         // Err
+        let err = ErrorKind::InsufficientVotingPower {
+            total: 1,
+            signed: 0,
+            trust_treshold: "TrustThresholdFraction { numerator: 1, denominator: 3 }".to_string(),
+        };
 
         // 0% overlap - new val set without the original signer
-        assert_single_err(ts, vec![1], vec![1], err);
+        assert_single_err(ts, vec![1], vec![1], &err);
 
         // 0% overlap - val set contains original signer, but they didn't sign
-        assert_single_err(ts, vec![0, 1, 2, 3], vec![1, 2, 3], err);
+        assert_single_err(ts, vec![0, 1, 2, 3], vec![1, 2, 3], &err);
     }
 
     // valid commit and data, starting with 2 validators.
@@ -527,7 +566,6 @@ mod tests {
     #[test]
     fn test_verify_single_skip_2_val_skip() {
         let ts = &init_trusted_state(vec![0, 1], vec![0, 1], 1);
-        let err = Error::InsufficientVotingPower;
 
         //*************
         // OK
@@ -542,12 +580,17 @@ mod tests {
 
         //*************
         // Err
+        let err = ErrorKind::InsufficientVotingPower {
+            total: 2,
+            signed: 0,
+            trust_treshold: "TrustThresholdFraction { numerator: 1, denominator: 3 }".to_string(),
+        };
 
         // 0% overlap (neither original signer still present)
-        assert_single_err(ts, vec![2], vec![2], err);
+        assert_single_err(ts, vec![2], vec![2], &err);
 
         // 0% overlap (original signer is still in val set but not in commit)
-        assert_single_err(ts, vec![0, 2, 3, 4], vec![2, 3, 4], err);
+        assert_single_err(ts, vec![0, 2, 3, 4], vec![2, 3, 4], &err);
     }
 
     // valid commit and data, starting with 3 validators.
@@ -555,7 +598,6 @@ mod tests {
     #[test]
     fn test_verify_single_skip_3_val_skip() {
         let ts = &init_trusted_state(vec![0, 1, 2], vec![0, 1, 2], 1);
-        let err = Error::InsufficientVotingPower;
 
         //*************
         // OK
@@ -570,16 +612,28 @@ mod tests {
 
         //*************
         // Err
+        let trust_thres_str = "TrustThresholdFraction { numerator: 1, denominator: 3 }";
+        let err = ErrorKind::InsufficientVotingPower {
+            total: 3,
+            signed: 1,
+            trust_treshold: trust_thres_str.to_string(),
+        };
 
         // 33% overlap (one original signer still present)
-        assert_single_err(ts, vec![0], vec![0], err);
-        assert_single_err(ts, vec![0, 3], vec![0, 3], err);
+        assert_single_err(ts, vec![0], vec![0], &err);
+        assert_single_err(ts, vec![0, 3], vec![0, 3], &err);
 
         // 0% overlap (neither original signer still present)
-        assert_single_err(ts, vec![3], vec![2], err);
+        assert_single_err(ts, vec![3], vec![2], &err);
+
+        let err = ErrorKind::InsufficientVotingPower {
+            total: 3,
+            signed: 0,
+            trust_treshold: trust_thres_str.to_string(),
+        };
 
         // 0% overlap (original signer is still in val set but not in commit)
-        assert_single_err(ts, vec![0, 3, 4, 5], vec![3, 4, 5], err);
+        assert_single_err(ts, vec![0, 3, 4, 5], vec![3, 4, 5], &err);
     }
 
     #[test]
