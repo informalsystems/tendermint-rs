@@ -729,7 +729,7 @@ mod tests {
     fn test_bisection_not_enough_commits() {
         let vals_vec = vec![0, 1, 2, 4];
         let commit_vec = vec![0, 1, 2, 4];
-        let vac1 = ValsAndCommit::new(vals_vec.clone(), commit_vec.clone());
+        let vac1 = ValsAndCommit::new(vals_vec.clone(), commit_vec);
         let vac2 = ValsAndCommit::new(vals_vec.clone(), vec![0]);
         let req = &init_requester(vec![
             vac1.clone(),
