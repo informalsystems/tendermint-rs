@@ -58,8 +58,8 @@ pub enum Kind {
     #[error("A valid threshold is `1/3 <= threshold <= 1`, got: {got}")]
     InvalidTrustThreshold { got: String },
 
-    #[error("Implementation specific error: {0}")]
-    ImplementationSpecific(String),
+    #[error("Implementation specific error")]
+    ImplementationSpecific,
 }
 
 impl Kind {

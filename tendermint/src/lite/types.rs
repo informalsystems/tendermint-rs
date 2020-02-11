@@ -311,10 +311,9 @@ pub(super) mod mocks {
         fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
             // some implementation specific checks:
             if self.vals.is_empty() || self.hash.algorithm() != Algorithm::Sha256 {
-                return Err(Kind::ImplementationSpecific(
-                    "validator set is empty, or, invalid hash algo".to_string(),
-                )
-                .into());
+                return Err(Kind::ImplementationSpecific
+                    .context("validator set is empty, or, invalid hash algo".to_string())
+                    .into());
             }
             Ok(())
         }
