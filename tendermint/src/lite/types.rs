@@ -3,7 +3,7 @@
 
 use crate::Hash;
 
-use crate::lite::errors::ErrorKind;
+use crate::lite::errors::{Error, ErrorKind};
 use failure::_core::fmt::Debug;
 use std::time::SystemTime;
 
@@ -61,13 +61,13 @@ pub trait Commit: Clone {
     /// Note this expects the Commit to be able to compute `signers(h.Commit)`,
     /// ie. the identity of the validators that signed it, so they
     /// can be cross-referenced with the given `vals`.
-    fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, ErrorKind>;
+    fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error>;
 
     /// Implementers should add addition validation against the given validator set
     /// or other implementation specific validation here.
     /// E.g. validate that the length of the included signatures in the commit match
     /// with the number of validators.
-    fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), ErrorKind>;
+    fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error>;
 }
 
 /// TrustThreshold defines how much of the total voting power of a known
@@ -294,7 +294,7 @@ pub(super) mod mocks {
         }
 
         // just the intersection
-        fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, ErrorKind> {
+        fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error> {
             let mut power = 0;
             // if there's a signer thats not in the val set,
             // we can't detect it...
@@ -308,12 +308,13 @@ pub(super) mod mocks {
             Ok(power)
         }
 
-        fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), ErrorKind> {
+        fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
             // some implementation specific checks:
             if self.vals.is_empty() || self.hash.algorithm() != Algorithm::Sha256 {
                 return Err(ErrorKind::InvalidCommitSignatures {
                     info: "validator set is empty, or, invalida hash algo".to_string(),
-                });
+                }
+                .into());
             }
             Ok(())
         }

@@ -1,8 +1,13 @@
 //! All error types tied to the light client.
 
 use crate::Hash;
+use anomaly::{BoxError, Context};
 use std::time::{SystemTime, SystemTimeError};
 use thiserror::Error;
+
+/// The main error type verification methods will return.
+/// See [`ErrorKind`] for the different kind of errors.
+pub type Error = anomaly::Error<ErrorKind>;
 
 #[derive(Clone, Debug, Error)]
 pub enum ErrorKind {
@@ -54,8 +59,15 @@ pub enum ErrorKind {
     }, // trust threshold (default +1/3) is not met
 
     #[error("{0:?}")]
-    RequestFailed(String),
+    RequestFailed(String), // Note: we don't want to depend on the tendermint rpc error types, otherwise we should do #[from] Error instead of expecting a string
 
     #[error("A valid threshold is `1/3 <= threshold <= 1`, got: {got}")]
     InvalidTrustThreshold { got: String },
+}
+
+impl ErrorKind {
+    /// Add additional context.
+    pub fn context(self, source: impl Into<BoxError>) -> Context<ErrorKind> {
+        Context::new(self, Some(source.into()))
+    }
 }

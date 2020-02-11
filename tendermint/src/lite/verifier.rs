@@ -11,7 +11,7 @@
 use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
-use crate::lite::errors::ErrorKind;
+use crate::lite::errors::{Error, ErrorKind};
 use crate::lite::{
     Commit, Header, Height, Requester, SignedHeader, TrustThreshold, TrustedState, ValidatorSet,
 };
@@ -22,7 +22,7 @@ fn is_within_trust_period<H>(
     last_header: &H,
     trusting_period: &Duration,
     now: &SystemTime,
-) -> Result<(), ErrorKind>
+) -> Result<(), Error>
 where
     H: Header,
 {
@@ -32,11 +32,12 @@ where
                 return Err(ErrorKind::Expired {
                     at: last_header.bft_time().into() + *trusting_period,
                     now: *now,
-                });
+                }
+                .into());
             }
             Ok(())
         }
-        Err(e) => Err(e.into()),
+        Err(e) => Err(ErrorKind::DurationOutOfRange(e).into()),
     }
 }
 
@@ -46,7 +47,7 @@ fn validate<C, H>(
     signed_header: &SignedHeader<C, H>,
     vals: &C::ValidatorSet,
     next_vals: &C::ValidatorSet,
-) -> Result<(), ErrorKind>
+) -> Result<(), Error>
 where
     C: Commit,
     H: Header,
@@ -59,13 +60,15 @@ where
         return Err(ErrorKind::InvalidValidatorSet {
             header_val_hash: header.validators_hash(),
             val_hash: vals.hash(),
-        });
+        }
+        .into());
     }
     if header.next_validators_hash() != next_vals.hash() {
         return Err(ErrorKind::InvalidNextValidatorSet {
             header_next_val_hash: header.next_validators_hash(),
             next_val_hash: next_vals.hash(),
-        });
+        }
+        .into());
     }
 
     // ensure the header matches the commit
@@ -73,7 +76,8 @@ where
         return Err(ErrorKind::InvalidCommitValue {
             header_hash: header.hash(),
             commit_hash: commit.header_hash(),
-        });
+        }
+        .into());
     }
 
     // additional implementation specific validation:
@@ -86,7 +90,7 @@ where
 /// NOTE: These validators are expected to be the correct validators for the commit,
 /// but since we're using voting_power_in, we can't actually detect if there's
 /// votes from validators not in the set.
-pub fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), ErrorKind>
+pub fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), Error>
 where
     C: Commit,
 {
@@ -98,7 +102,8 @@ where
         return Err(ErrorKind::InvalidCommit {
             total: total_power,
             signed: signed_power,
-        });
+        }
+        .into());
     }
 
     Ok(())
@@ -112,7 +117,7 @@ pub fn verify_commit_trusting<C, L>(
     validators: &C::ValidatorSet,
     commit: &C,
     trust_level: L,
-) -> Result<(), ErrorKind>
+) -> Result<(), Error>
 where
     C: Commit,
     L: TrustThreshold,
@@ -127,7 +132,8 @@ where
             total: total_power,
             signed: signed_power,
             trust_treshold: format!("{:?}", trust_level),
-        });
+        }
+        .into());
     }
 
     Ok(())
@@ -145,7 +151,7 @@ fn verify_single_inner<H, C, L>(
     untrusted_vals: &C::ValidatorSet,
     untrusted_next_vals: &C::ValidatorSet,
     trust_threshold: L,
-) -> Result<(), ErrorKind>
+) -> Result<(), Error>
 where
     H: Header,
     C: Commit,
@@ -171,7 +177,8 @@ where
             return Err(ErrorKind::NonIncreasingHeight {
                 got: untrusted_height,
                 expected: trusted_height + 1,
-            })
+            }
+            .into())
         }
         Ordering::Equal => {
             let trusted_vals_hash = trusted_header.next_validators_hash();
@@ -183,7 +190,8 @@ where
                 return Err(ErrorKind::InvalidNextValidatorSet {
                     header_next_val_hash: trusted_vals_hash,
                     next_val_hash: untrusted_vals_hash,
-                });
+                }
+                .into());
             }
         }
         Ordering::Greater => {
@@ -213,7 +221,7 @@ pub fn verify_single<H, C, L>(
     trust_threshold: L,
     trusting_period: &Duration,
     now: &SystemTime,
-) -> Result<TrustedState<C, H>, ErrorKind>
+) -> Result<TrustedState<C, H>, Error>
 where
     H: Header,
     C: Commit,
@@ -264,7 +272,7 @@ pub fn verify_bisection<C, H, L, R>(
     trusting_period: &Duration,
     now: &SystemTime,
     req: &R,
-) -> Result<Vec<TrustedState<C, H>>, ErrorKind>
+) -> Result<Vec<TrustedState<C, H>>, Error>
 where
     H: Header,
     C: Commit,
@@ -320,7 +328,7 @@ fn verify_bisection_inner<H, C, L, R>(
     trust_threshold: L,
     req: &R,
     mut cache: &mut Vec<TrustedState<C, H>>,
-) -> Result<TrustedState<C, H>, ErrorKind>
+) -> Result<TrustedState<C, H>, Error>
 where
     H: Header,
     C: Commit,
@@ -349,12 +357,12 @@ where
             return Ok(ts);
         }
         Err(e) => {
-            if let ErrorKind::InsufficientVotingPower { .. } = e {
+            match e.kind() {
                 // Insufficient voting power to update.
                 // Engage bisection, below.
-            } else {
+                &ErrorKind::InsufficientVotingPower { .. } => (),
                 // If something went wrong, return the error.
-                return Err(e);
+                real_err => return Err(real_err.to_owned().into()),
             }
         }
     }
