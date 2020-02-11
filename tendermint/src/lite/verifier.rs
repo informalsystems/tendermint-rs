@@ -376,36 +376,31 @@ mod tests {
 
     // create an initial trusted state from the given vals
     fn init_trusted_state(
-        vals_vec: Vec<usize>,
-        commit_vec: Vec<usize>,
+        vals_and_commit_vec: ValsAndCommit,
         next_vals_vec: Vec<usize>,
         height: u64,
     ) -> MockState {
         // time has to be increasing:
         let time = init_time() + Duration::new(height * 2, 0);
-        let vals = &MockValSet::new(vals_vec);
+        let vals = &MockValSet::new(vals_and_commit_vec.vals_vec);
         let next_vals = &MockValSet::new(next_vals_vec);
         let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
-        let commit = MockCommit::new(header.hash(), commit_vec);
+        let commit = MockCommit::new(header.hash(), vals_and_commit_vec.commit_vec);
         let sh = &MockSignedHeader::new(commit, header);
         MockState::new(sh, vals)
     }
 
     // create the next state with the given vals and commit.
-    fn next_state(
-        vals_vec: Vec<usize>,
-        commit_vec: Vec<usize>,
-    ) -> (MockSignedHeader, MockValSet, MockValSet) {
+    fn next_state(vals_and_commit: ValsAndCommit) -> (MockSignedHeader, MockValSet, MockValSet) {
         let time = init_time() + Duration::new(10, 0);
         let height = 10;
-        let vals = MockValSet::new(vals_vec);
+        let vals = MockValSet::new(vals_and_commit.vals_vec);
         let next_vals = vals.clone();
         let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
-        let commit = MockCommit::new(header.hash(), commit_vec);
+        let commit = MockCommit::new(header.hash(), vals_and_commit.commit_vec);
         (MockSignedHeader::new(commit, header), vals, next_vals)
     }
 
-    // TODO: find a better name
     #[derive(Clone)]
     struct ValsAndCommit {
         vals_vec: Vec<usize>,
@@ -436,12 +431,7 @@ mod tests {
                     .expect("next_vals missing")
                     .vals_vec
                     .clone();
-                let ts = &init_trusted_state(
-                    vac.vals_vec.to_owned(),
-                    vac.commit_vec.to_owned(),
-                    next_vals.to_owned(),
-                    height,
-                );
+                let ts = &init_trusted_state(vac.to_owned(), next_vals.to_owned(), height);
                 req.signed_headers.insert(height, ts.last_header().clone());
                 req.validators.insert(height, ts.validators().to_owned());
             }
@@ -452,11 +442,10 @@ mod tests {
     // make a state with the given vals and commit and ensure we get the error.
     fn assert_single_err(
         ts: &TrustedState<MockCommit, MockHeader>,
-        vals: Vec<usize>,
-        commit: Vec<usize>,
+        vals_and_commit: ValsAndCommit,
         err: Error,
     ) {
-        let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
+        let (un_sh, un_vals, un_next_vals) = next_state(vals_and_commit);
         let result = verify_single_inner(
             ts,
             &un_sh,
@@ -468,8 +457,8 @@ mod tests {
     }
 
     // make a state with the given vals and commit and ensure we get no error.
-    fn assert_single_ok(ts: &MockState, vals: Vec<usize>, commit: Vec<usize>) {
-        let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
+    fn assert_single_ok(ts: &MockState, vals_and_commit: ValsAndCommit) {
+        let (un_sh, un_vals, un_next_vals) = next_state(vals_and_commit);
         assert!(verify_single_inner(
             ts,
             &un_sh,
@@ -531,115 +520,145 @@ mod tests {
     // valid to skip, but invalid commit. 1 validator.
     #[test]
     fn test_verify_single_skip_1_val_verify() {
-        let ts = &init_trusted_state(vec![0], vec![0], vec![0], 1);
+        let vac = ValsAndCommit::new(vec![0], vec![0]);
+        let ts = &init_trusted_state(vac, vec![0], 1);
 
         // 100% overlap, but wrong commit.
         // NOTE: This should be an invalid commit error since there's
         // a vote from a validator not in the set!
         // but voting_power_in isn't smart enough to see this ...
         // TODO(ismail): https://github.com/interchainio/tendermint-rs/issues/140
-        assert_single_err(ts, vec![1], vec![0], Error::InvalidCommit);
+        let invalid_vac = ValsAndCommit::new(vec![1], vec![0]);
+        assert_single_err(ts, invalid_vac, Error::InvalidCommit);
     }
 
     // valid commit and data, starting with 1 validator.
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_1_val_skip() {
-        let ts = &init_trusted_state(vec![0], vec![0], vec![0], 1);
+        let mut vac = ValsAndCommit::new(vec![0], vec![0]);
+        let ts = &init_trusted_state(vac.clone(), vec![0], 1);
         let err = Error::InsufficientVotingPower;
 
         //*****
         // Ok
 
         // 100% overlap (original signer is present in commit)
-        assert_single_ok(ts, vec![0], vec![0]);
-        assert_single_ok(ts, vec![0, 1], vec![0, 1]);
-        assert_single_ok(ts, vec![0, 1, 2], vec![0, 1, 2]);
-        assert_single_ok(ts, vec![0, 1, 2, 3], vec![0, 1, 2, 3]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1], vec![0, 1]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![0, 1, 2, 3]);
+        assert_single_ok(ts, vac);
 
         //*****
         // Err
 
         // 0% overlap - new val set without the original signer
-        assert_single_err(ts, vec![1], vec![1], err);
+        vac = ValsAndCommit::new(vec![1], vec![1]);
+        assert_single_err(ts, vac, err);
 
         // 0% overlap - val set contains original signer, but they didn't sign
-        assert_single_err(ts, vec![0, 1, 2, 3], vec![1, 2, 3], err);
+        vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![1, 2, 3]);
+        assert_single_err(ts, vac, err);
     }
 
     // valid commit and data, starting with 2 validators.
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_2_val_skip() {
-        let ts = &init_trusted_state(vec![0, 1], vec![0, 1], vec![0, 1], 1);
+        let mut vac = ValsAndCommit::new(vec![0, 1], vec![0, 1]);
+        let ts = &init_trusted_state(vac.clone(), vec![0, 1], 1);
         let err = Error::InsufficientVotingPower;
 
         //*************
         // OK
 
         // 100% overlap (both original signers still present)
-        assert_single_ok(ts, vec![0, 1], vec![0, 1]);
-        assert_single_ok(ts, vec![0, 1, 2], vec![0, 1, 2]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
+        assert_single_ok(ts, vac);
 
         // 50% overlap (one original signer still present)
-        assert_single_ok(ts, vec![0], vec![0]);
-        assert_single_ok(ts, vec![0, 1, 2, 3], vec![1, 2, 3]);
+        vac = ValsAndCommit::new(vec![0], vec![0]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![1, 2, 3]);
+        assert_single_ok(ts, vac);
 
         //*************
         // Err
 
         // 0% overlap (neither original signer still present)
-        assert_single_err(ts, vec![2], vec![2], err);
+        vac = ValsAndCommit::new(vec![2], vec![2]);
+        assert_single_err(ts, vac, err);
 
         // 0% overlap (original signer is still in val set but not in commit)
-        assert_single_err(ts, vec![0, 2, 3, 4], vec![2, 3, 4], err);
+        vac = ValsAndCommit::new(vec![0, 2, 3, 4], vec![2, 3, 4]);
+        assert_single_err(ts, vac, err);
     }
 
     // valid commit and data, starting with 3 validators.
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_3_val_skip() {
-        let ts = &init_trusted_state(vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2], 1);
+        let mut vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
+        let ts = &init_trusted_state(vac.clone(), vec![0, 1, 2], 1);
         let err = Error::InsufficientVotingPower;
 
         //*************
         // OK
 
         // 100% overlap (both original signers still present)
-        assert_single_ok(ts, vec![0, 1, 2], vec![0, 1, 2]);
-        assert_single_ok(ts, vec![0, 1, 2, 3], vec![0, 1, 2, 3]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![0, 1, 2, 3]);
+        assert_single_ok(ts, vac);
 
         // 66% overlap (two original signers still present)
-        assert_single_ok(ts, vec![0, 1], vec![0, 1]);
-        assert_single_ok(ts, vec![0, 1, 2, 3], vec![1, 2, 3]);
+        vac = ValsAndCommit::new(vec![0, 1], vec![0, 1]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![1, 2, 3]);
+        assert_single_ok(ts, vac);
 
         //*************
         // Err
 
         // 33% overlap (one original signer still present)
-        assert_single_err(ts, vec![0], vec![0], err);
-        assert_single_err(ts, vec![0, 3], vec![0, 3], err);
+        vac = ValsAndCommit::new(vec![0], vec![0]);
+        assert_single_err(ts, vac, err);
+
+        vac = ValsAndCommit::new(vec![0, 3], vec![0, 3]);
+        assert_single_err(ts, vac, err);
 
         // 0% overlap (neither original signer still present)
-        assert_single_err(ts, vec![3], vec![2], err);
+        vac = ValsAndCommit::new(vec![3], vec![2]);
+        assert_single_err(ts, vac, err);
 
         // 0% overlap (original signer is still in val set but not in commit)
-        assert_single_err(ts, vec![0, 3, 4, 5], vec![3, 4, 5], err);
+        vac = ValsAndCommit::new(vec![0, 3, 4, 5], vec![3, 4, 5]);
+        assert_single_err(ts, vac, err);
     }
 
     #[test]
     fn test_verify_bisection_1_val() {
-        let final_state = init_trusted_state(vec![0], vec![0], vec![0], 2);
         let vac = ValsAndCommit::new(vec![0], vec![0]);
-        let req = init_requester(vec![vac.clone(), vac.clone(), vac.clone(), vac]);
+        let final_state = init_trusted_state(vac.clone(), vec![0], 2);
+        let req = init_requester(vec![vac.clone(), vac.clone(), vac.clone(), vac.clone()]);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
 
         assert_bisection_ok(&req, &ts, 2, 1, &final_state);
 
-        let final_state = init_trusted_state(vec![0], vec![0], vec![0], 3);
-        let vac = ValsAndCommit::new(vec![0], vec![0]);
+        let final_state = init_trusted_state(vac.clone(), vec![0], 3);
+        // let vac = ValsAndCommit::new(vec![0], vec![0]);
         let req = init_requester(vec![
             vac.clone(),
             vac.clone(),
@@ -666,7 +685,8 @@ mod tests {
         vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 2], vec![0, 2])); // 5 -> 50% <- too much change (from 1), need to bisect...
         vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 2], vec![0, 2])); // 6 -> (only needed to validate 5)
         vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 2], vec![0, 2])); // 7 -> (only used to construct state 6)
-        let final_ts = init_trusted_state(vec![0, 2], vec![0, 2], vec![0, 2], 5);
+        let vac = ValsAndCommit::new(vec![0, 2], vec![0, 2]);
+        let final_ts = init_trusted_state(vac, vec![0, 2], 5);
         let req = init_requester(vals_and_commit_for_height);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
@@ -711,8 +731,14 @@ mod tests {
         let commit_vec = vec![0, 1, 2, 4];
         let vac1 = ValsAndCommit::new(vals_vec.clone(), commit_vec.clone());
         let vac2 = ValsAndCommit::new(vals_vec.clone(), vec![0]);
-        let req = &init_requester(vec![vac1, vac2.clone(), vac2.clone(), vac2.clone(), vac2]);
-        let ts = &init_trusted_state(vals_vec.clone(), commit_vec, vals_vec, 1);
+        let req = &init_requester(vec![
+            vac1.clone(),
+            vac2.clone(),
+            vac2.clone(),
+            vac2.clone(),
+            vac2,
+        ]);
+        let ts = &init_trusted_state(vac1, vals_vec, 1);
         let err = Error::InvalidCommit;
 
         assert_bisection_err(req, ts, 3, err);
