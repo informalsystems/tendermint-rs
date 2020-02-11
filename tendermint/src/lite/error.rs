@@ -52,8 +52,8 @@ pub enum Kind {
         trust_treshold: String,
     }, // trust threshold (default +1/3) is not met
 
-    #[error("{0:?}")]
-    RequestFailed(String), // Note: we don't want to depend on the tendermint rpc error types, otherwise we should do #[from] Error instead of expecting a string
+    #[error("Request failed")]
+    RequestFailed,
 
     #[error("A valid threshold is `1/3 <= threshold <= 1`, got: {got}")]
     InvalidTrustThreshold { got: String },
@@ -66,5 +66,53 @@ impl Kind {
     /// Add additional context.
     pub fn context(self, source: impl Into<BoxError>) -> Context<Kind> {
         Context::new(self, Some(source.into()))
+    }
+}
+
+// TODO test
+//  Err(Kind::ImplementationSpecific
+//                    .context("validator set is empty, or, invalid hash algo".to_string())
+//                    .into()))
+#[cfg(test)]
+mod tests {
+    use crate::lite::error::{Error as LiteErr, Kind};
+    use std::error::Error;
+
+    #[test]
+    fn test_implementation_specific() {
+        let e: Result<(), LiteErr> = Err(Kind::ImplementationSpecific
+            .context("Some implementation specific error which doesn't need to be a string")
+            .into());
+        let err_kind = e.unwrap_err();
+        // could we match against the Kind?
+        assert_eq!(
+            format!("{:?}", &Kind::ImplementationSpecific),
+            format!("{:?}", err_kind.kind())
+        );
+        // do we still have that context error?
+        assert_eq!(
+            format!(
+                "{:?}",
+                Some("Some implementation specific error which doesn't need to be a string")
+            ),
+            format!("{:?}", err_kind.source())
+        );
+
+        // Can we do the same with some actual implementation of std::error::Error?
+        // produce sth we know yields an Error (we don't care what it is):
+        let res = "xc".parse::<u32>();
+        let source_err = res.unwrap_err();
+        let e: Result<(), LiteErr> = Err(Kind::ImplementationSpecific
+            .context(source_err.clone())
+            .into());
+        let err_kind = e.unwrap_err();
+        assert_eq!(
+            format!("{:?}", &Kind::ImplementationSpecific),
+            format!("{:?}", err_kind.kind())
+        );
+        assert_eq!(
+            format!("{}", source_err),
+            format!("{}", err_kind.source().unwrap())
+        );
     }
 }
