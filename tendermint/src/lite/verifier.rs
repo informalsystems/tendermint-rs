@@ -11,7 +11,7 @@
 use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
-use crate::lite::error::{Error, ErrorKind};
+use crate::lite::error::{Error, Kind};
 use crate::lite::{
     Commit, Header, Height, Requester, SignedHeader, TrustThreshold, TrustedState, ValidatorSet,
 };
@@ -29,7 +29,7 @@ where
     match now.duration_since(last_header.bft_time().into()) {
         Ok(passed) => {
             if passed > *trusting_period {
-                return Err(ErrorKind::Expired {
+                return Err(Kind::Expired {
                     at: last_header.bft_time().into() + *trusting_period,
                     now: *now,
                 }
@@ -37,7 +37,7 @@ where
             }
             Ok(())
         }
-        Err(e) => Err(ErrorKind::DurationOutOfRange(e).into()),
+        Err(e) => Err(Kind::DurationOutOfRange(e).into()),
     }
 }
 
@@ -57,14 +57,14 @@ where
 
     // ensure the header validator hashes match the given validators
     if header.validators_hash() != vals.hash() {
-        return Err(ErrorKind::InvalidValidatorSet {
+        return Err(Kind::InvalidValidatorSet {
             header_val_hash: header.validators_hash(),
             val_hash: vals.hash(),
         }
         .into());
     }
     if header.next_validators_hash() != next_vals.hash() {
-        return Err(ErrorKind::InvalidNextValidatorSet {
+        return Err(Kind::InvalidNextValidatorSet {
             header_next_val_hash: header.next_validators_hash(),
             next_val_hash: next_vals.hash(),
         }
@@ -73,7 +73,7 @@ where
 
     // ensure the header matches the commit
     if header.hash() != commit.header_hash() {
-        return Err(ErrorKind::InvalidCommitValue {
+        return Err(Kind::InvalidCommitValue {
             header_hash: header.hash(),
             commit_hash: commit.header_hash(),
         }
@@ -99,7 +99,7 @@ where
 
     // check the signers account for +2/3 of the voting power
     if signed_power * 3 <= total_power * 2 {
-        return Err(ErrorKind::InvalidCommit {
+        return Err(Kind::InvalidCommit {
             total: total_power,
             signed: signed_power,
         }
@@ -128,7 +128,7 @@ where
     // check the signers account for +1/3 of the voting power (or more if the
     // trust_level requires so)
     if !trust_level.is_enough_power(signed_power, total_power) {
-        return Err(ErrorKind::InsufficientVotingPower {
+        return Err(Kind::InsufficientVotingPower {
             total: total_power,
             signed: signed_power,
             trust_treshold: format!("{:?}", trust_level),
@@ -174,7 +174,7 @@ where
 
     match untrusted_height.cmp(&trusted_height.checked_add(1).expect("height overflow")) {
         Ordering::Less => {
-            return Err(ErrorKind::NonIncreasingHeight {
+            return Err(Kind::NonIncreasingHeight {
                 got: untrusted_height,
                 expected: trusted_height + 1,
             }
@@ -187,7 +187,7 @@ where
                 // TODO: more specific error
                 // ie. differentiate from when next_vals.hash() doesnt
                 // match the header hash ...
-                return Err(ErrorKind::InvalidNextValidatorSet {
+                return Err(Kind::InvalidNextValidatorSet {
                     header_next_val_hash: trusted_vals_hash,
                     next_val_hash: untrusted_vals_hash,
                 }
@@ -360,7 +360,7 @@ where
             match e.kind() {
                 // Insufficient voting power to update.
                 // Engage bisection, below.
-                &ErrorKind::InsufficientVotingPower { .. } => (),
+                &Kind::InsufficientVotingPower { .. } => (),
                 // If something went wrong, return the error.
                 real_err => return Err(real_err.to_owned().into()),
             }
@@ -464,7 +464,7 @@ mod tests {
         ts: &TrustedState<MockCommit, MockHeader>,
         vals: Vec<usize>,
         commit: Vec<usize>,
-        err: &ErrorKind,
+        err: &Kind,
     ) {
         let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
         let result = verify_single_inner(
@@ -533,7 +533,7 @@ mod tests {
             ts,
             vec![1],
             vec![0],
-            &ErrorKind::InvalidCommit {
+            &Kind::InvalidCommit {
                 total: 1,
                 signed: 0,
             },
@@ -556,7 +556,7 @@ mod tests {
 
         //*****
         // Err
-        let err = ErrorKind::InsufficientVotingPower {
+        let err = Kind::InsufficientVotingPower {
             total: 1,
             signed: 0,
             trust_treshold: "TrustThresholdFraction { numerator: 1, denominator: 3 }".to_string(),
@@ -588,7 +588,7 @@ mod tests {
 
         //*************
         // Err
-        let err = ErrorKind::InsufficientVotingPower {
+        let err = Kind::InsufficientVotingPower {
             total: 2,
             signed: 0,
             trust_treshold: "TrustThresholdFraction { numerator: 1, denominator: 3 }".to_string(),
@@ -621,7 +621,7 @@ mod tests {
         //*************
         // Err
         let trust_thres_str = "TrustThresholdFraction { numerator: 1, denominator: 3 }";
-        let err = ErrorKind::InsufficientVotingPower {
+        let err = Kind::InsufficientVotingPower {
             total: 3,
             signed: 1,
             trust_treshold: trust_thres_str.to_string(),
@@ -634,7 +634,7 @@ mod tests {
         // 0% overlap (neither original signer still present)
         assert_single_err(ts, vec![3], vec![2], &err);
 
-        let err = ErrorKind::InsufficientVotingPower {
+        let err = Kind::InsufficientVotingPower {
             total: 3,
             signed: 0,
             trust_treshold: trust_thres_str.to_string(),

@@ -7,10 +7,10 @@ use thiserror::Error;
 
 /// The main error type verification methods will return.
 /// See [`ErrorKind`] for the different kind of errors.
-pub type Error = anomaly::Error<ErrorKind>;
+pub type Error = anomaly::Error<Kind>;
 
 #[derive(Clone, Debug, Error)]
-pub enum ErrorKind {
+pub enum Kind {
     #[error("old header has expired at {at:?} (now: {now:?})")]
     Expired { at: SystemTime, now: SystemTime },
 
@@ -65,9 +65,9 @@ pub enum ErrorKind {
     InvalidTrustThreshold { got: String },
 }
 
-impl ErrorKind {
+impl Kind {
     /// Add additional context.
-    pub fn context(self, source: impl Into<BoxError>) -> Context<ErrorKind> {
+    pub fn context(self, source: impl Into<BoxError>) -> Context<Kind> {
         Context::new(self, Some(source.into()))
     }
 }

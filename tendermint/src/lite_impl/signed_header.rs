@@ -1,6 +1,6 @@
 //! [`lite::SignedHeader`] implementation for [`block::signed_header::SignedHeader`].
 
-use crate::lite::error::{Error, ErrorKind};
+use crate::lite::error::{Error, Kind};
 use crate::validator::Set;
 use crate::{block, hash, lite, vote};
 
@@ -35,7 +35,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
             let sign_bytes = vote.sign_bytes();
 
             if !val.verify_signature(&sign_bytes, vote.signature()) {
-                return Err(ErrorKind::InvalidSignature.into());
+                return Err(Kind::InvalidSignature.into());
             }
             signed_power += val.power();
         }
@@ -45,7 +45,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
 
     fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error> {
         if self.commit.precommits.len() != vals.validators().len() {
-            return Err(lite::error::ErrorKind::InvalidCommitSignatures {
+            return Err(lite::error::Kind::InvalidCommitSignatures {
                 info: format!(
                     "pre-commit length: {} doesn't match validator length: {}",
                     self.commit.precommits.len(),

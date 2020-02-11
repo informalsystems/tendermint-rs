@@ -3,7 +3,7 @@
 
 use crate::Hash;
 
-use crate::lite::error::{Error, ErrorKind};
+use crate::lite::error::{Error, Kind};
 use failure::_core::fmt::Debug;
 use std::time::SystemTime;
 
@@ -91,14 +91,14 @@ pub struct TrustThresholdFraction {
 }
 
 impl TrustThresholdFraction {
-    pub fn new(numerator: u64, denominator: u64) -> Result<Self, ErrorKind> {
+    pub fn new(numerator: u64, denominator: u64) -> Result<Self, Kind> {
         if numerator <= denominator && denominator > 0 {
             return Ok(Self {
                 numerator,
                 denominator,
             });
         }
-        Err(ErrorKind::InvalidTrustThreshold {
+        Err(Kind::InvalidTrustThreshold {
             got: format!("{}/{}", numerator, denominator),
         })
     }
@@ -126,10 +126,10 @@ where
     H: Header,
 {
     /// Request the [`SignedHeader`] at height h.
-    fn signed_header(&self, h: Height) -> Result<SignedHeader<C, H>, ErrorKind>;
+    fn signed_header(&self, h: Height) -> Result<SignedHeader<C, H>, Kind>;
 
     /// Request the validator set at height h.
-    fn validator_set(&self, h: Height) -> Result<C::ValidatorSet, ErrorKind>;
+    fn validator_set(&self, h: Height) -> Result<C::ValidatorSet, Kind>;
 }
 
 /// TrustedState contains a state trusted by a lite client,
@@ -311,7 +311,7 @@ pub(super) mod mocks {
         fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
             // some implementation specific checks:
             if self.vals.is_empty() || self.hash.algorithm() != Algorithm::Sha256 {
-                return Err(ErrorKind::InvalidCommitSignatures {
+                return Err(Kind::InvalidCommitSignatures {
                     info: "validator set is empty, or, invalid hash algo".to_string(),
                 }
                 .into());
@@ -337,25 +337,22 @@ pub(super) mod mocks {
         }
     }
     impl Requester<MockCommit, MockHeader> for MockRequester {
-        fn signed_header(&self, h: u64) -> Result<SignedHeader<MockCommit, MockHeader>, ErrorKind> {
+        fn signed_header(&self, h: u64) -> Result<SignedHeader<MockCommit, MockHeader>, Kind> {
             println!("requested signed header for height:{:?}", h);
             if let Some(sh) = self.signed_headers.get(&h) {
                 return Ok(sh.to_owned());
             }
             println!("couldn't get sh for: {}", &h);
-            Err(ErrorKind::RequestFailed(format!(
-                "couldn't get sh for: {}",
-                &h
-            )))
+            Err(Kind::RequestFailed(format!("couldn't get sh for: {}", &h)))
         }
 
-        fn validator_set(&self, h: u64) -> Result<MockValSet, ErrorKind> {
+        fn validator_set(&self, h: u64) -> Result<MockValSet, Kind> {
             println!("requested validators for height:{:?}", h);
             if let Some(vs) = self.validators.get(&h) {
                 return Ok(vs.to_owned());
             }
             println!("couldn't get vals for: {}", &h);
-            Err(ErrorKind::RequestFailed(format!(
+            Err(Kind::RequestFailed(format!(
                 "couldn't get vals for: {}",
                 &h
             )))

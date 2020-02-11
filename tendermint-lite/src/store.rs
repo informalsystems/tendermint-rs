@@ -2,7 +2,7 @@ use tendermint::lite::{Header, Height, TrustedState};
 
 use std::collections::HashMap;
 use tendermint::block;
-use tendermint::lite::error::ErrorKind;
+use tendermint::lite::error::Kind;
 
 pub type State = TrustedState<block::signed_header::SignedHeader, block::header::Header>;
 
@@ -22,21 +22,21 @@ impl MemStore {
 }
 
 impl MemStore {
-    pub fn add(&mut self, trusted: State) -> Result<(), ErrorKind> {
+    pub fn add(&mut self, trusted: State) -> Result<(), Kind> {
         let height = trusted.last_header().header().height();
         self.height = height;
         self.store.insert(height, trusted);
         Ok(())
     }
 
-    pub fn get(&self, h: Height) -> Result<&State, ErrorKind> {
+    pub fn get(&self, h: Height) -> Result<&State, Kind> {
         let mut height = h;
         if h == 0 {
             height = self.height
         }
         match self.store.get(&height) {
             Some(state) => Ok(state),
-            None => Err(ErrorKind::RequestFailed(format!(
+            None => Err(Kind::RequestFailed(format!(
                 "could not load height {} from strore",
                 height
             ))),
