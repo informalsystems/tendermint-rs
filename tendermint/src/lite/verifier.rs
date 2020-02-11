@@ -383,7 +383,7 @@ mod tests {
     ) -> MockState {
         // time has to be increasing:
         let time = init_time() + Duration::new(height * 2, 0);
-        let vals = &MockValSet::new(vals_vec.clone());
+        let vals = &MockValSet::new(vals_vec);
         let next_vals = &MockValSet::new(next_vals_vec);
         let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
         let commit = MockCommit::new(header.hash(), commit_vec);
@@ -620,7 +620,7 @@ mod tests {
     fn test_verify_bisection_1_val() {
         let final_state = init_trusted_state(vec![0], vec![0], vec![0], 2);
         let vac = ValsAndCommit::new(vec![0], vec![0]);
-        let req = init_requester(vec![vac.clone(), vac.clone(), vac.clone(), vac.clone()]);
+        let req = init_requester(vec![vac.clone(), vac.clone(), vac.clone(), vac]);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
@@ -629,7 +629,7 @@ mod tests {
 
         let final_state = init_trusted_state(vec![0], vec![0], vec![0], 3);
         let vac = ValsAndCommit::new(vec![0], vec![0]);
-        let req = init_requester(vec![vac.clone(),vac.clone(),vac.clone(),vac.clone(),vac.clone()]);
+        let req = init_requester(vec![vac.clone(),vac.clone(),vac.clone(),vac.clone(),vac]);
         assert_bisection_ok(&req, &ts, 3, 1, &final_state);
     }
 
@@ -666,13 +666,13 @@ mod tests {
         // Error: can't bisect from trusted height 1 to height 1
         // (here because non-increasing time is caught first)
         let vac = ValsAndCommit::new(vec![0,1,2], vec![0,1,2]);
-        let req = init_requester(vec![vac.clone(), vac.clone(), vac.clone()]);
+        let req = init_requester(vec![vac.clone(), vac.clone(), vac]);
         assert_bisection_err(&req, &ts, 1, Error::NonIncreasingTime);
 
         // can't bisect from trusted height 1 to height 1 (here we tamper with time but
         // expect to fail on NonIncreasingHeight):
         let vac = ValsAndCommit::new(vec![0,1,2], vec![0,1,2]);
-        let mut req = init_requester(vec![vac.clone(),vac.clone(),vac.clone()]);
+        let mut req = init_requester(vec![vac.clone(),vac.clone(),vac]);
         let sh = req.signed_headers.get(&1_u64).unwrap();
         let mut time_tampered_header = sh.header().clone();
         time_tampered_header.set_time(init_time() + Duration::new(5, 0));
@@ -695,7 +695,7 @@ mod tests {
         let commit_vec = vec![0,1,2,4];
         let vac1 = ValsAndCommit::new(vals_vec.clone(), commit_vec.clone());
         let vac2 = ValsAndCommit::new(vals_vec.clone(), vec![0]);
-        let req = &init_requester(vec![vac1.clone(), vac2.clone(), vac2.clone(), vac2.clone(), vac2.clone()]);
+        let req = &init_requester(vec![vac1, vac2.clone(), vac2.clone(), vac2.clone(), vac2]);
         let ts = &init_trusted_state(vals_vec.clone(), commit_vec, vals_vec, 1);
         let err = Error::InvalidCommit;
 
