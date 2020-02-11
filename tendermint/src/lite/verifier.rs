@@ -405,7 +405,6 @@ mod tests {
         (MockSignedHeader::new(commit, header), vals, next_vals)
     }
 
-
     // TODO: find a better name
     #[derive(Clone)]
     struct ValsAndCommit {
@@ -415,7 +414,10 @@ mod tests {
 
     impl ValsAndCommit {
         pub fn new(vals_vec: Vec<usize>, commit_vec: Vec<usize>) -> ValsAndCommit {
-            ValsAndCommit {vals_vec, commit_vec}
+            ValsAndCommit {
+                vals_vec,
+                commit_vec,
+            }
         }
     }
     // Init a mock Requester.
@@ -429,8 +431,17 @@ mod tests {
         for (h, vac) in vals_and_commit_for_height.iter().enumerate() {
             let height = (h + 1) as u64; // height starts with 1 ...
             if height < max_height {
-                let next_vals = vals_and_commit_for_height.get(h + 1).expect("next_vals missing").vals_vec.clone();
-                let ts = &init_trusted_state(vac.vals_vec.to_owned(), vac.commit_vec.to_owned(), next_vals.to_owned(), height);
+                let next_vals = vals_and_commit_for_height
+                    .get(h + 1)
+                    .expect("next_vals missing")
+                    .vals_vec
+                    .clone();
+                let ts = &init_trusted_state(
+                    vac.vals_vec.to_owned(),
+                    vac.commit_vec.to_owned(),
+                    next_vals.to_owned(),
+                    height,
+                );
                 req.signed_headers.insert(height, ts.last_header().clone());
                 req.validators.insert(height, ts.validators().to_owned());
             }
@@ -520,7 +531,7 @@ mod tests {
     // valid to skip, but invalid commit. 1 validator.
     #[test]
     fn test_verify_single_skip_1_val_verify() {
-        let ts = &init_trusted_state(vec![0],vec![0], vec![0], 1);
+        let ts = &init_trusted_state(vec![0], vec![0], vec![0], 1);
 
         // 100% overlap, but wrong commit.
         // NOTE: This should be an invalid commit error since there's
@@ -560,7 +571,7 @@ mod tests {
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_2_val_skip() {
-        let ts = &init_trusted_state(vec![0, 1], vec![0, 1],vec![0, 1], 1);
+        let ts = &init_trusted_state(vec![0, 1], vec![0, 1], vec![0, 1], 1);
         let err = Error::InsufficientVotingPower;
 
         //*************
@@ -629,10 +640,15 @@ mod tests {
 
         let final_state = init_trusted_state(vec![0], vec![0], vec![0], 3);
         let vac = ValsAndCommit::new(vec![0], vec![0]);
-        let req = init_requester(vec![vac.clone(),vac.clone(),vac.clone(),vac.clone(),vac]);
+        let req = init_requester(vec![
+            vac.clone(),
+            vac.clone(),
+            vac.clone(),
+            vac.clone(),
+            vac,
+        ]);
         assert_bisection_ok(&req, &ts, 3, 1, &final_state);
     }
-
 
     #[test]
     fn test_verify_bisection() {
@@ -640,13 +656,16 @@ mod tests {
         // OK
 
         let mut vals_and_commit_for_height: Vec<ValsAndCommit> = Vec::new();
-        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0,1,2,3,4,5], vec![0,1,2,3,4,5])); // 1
-        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0,1,2], vec![0,1,2])); // 2 -> 50% val change
-        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0,1], vec![0,1])); // 3 -> 33% change
-        vals_and_commit_for_height.push(ValsAndCommit::new(vec![1,2], vec![1,2])); // 4 -> 50% change
-        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0,2], vec![0,2])); // 5 -> 50% <- too much change (from 1), need to bisect...
-        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0,2], vec![0,2])); // 6 -> (only needed to validate 5)
-        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0,2], vec![0,2])); // 7 -> (only used to construct state 6)
+        vals_and_commit_for_height.push(ValsAndCommit::new(
+            vec![0, 1, 2, 3, 4, 5],
+            vec![0, 1, 2, 3, 4, 5],
+        )); // 1
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2])); // 2 -> 50% val change
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 1], vec![0, 1])); // 3 -> 33% change
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![1, 2], vec![1, 2])); // 4 -> 50% change
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 2], vec![0, 2])); // 5 -> 50% <- too much change (from 1), need to bisect...
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 2], vec![0, 2])); // 6 -> (only needed to validate 5)
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 2], vec![0, 2])); // 7 -> (only used to construct state 6)
         let final_ts = init_trusted_state(vec![0, 2], vec![0, 2], vec![0, 2], 5);
         let req = init_requester(vals_and_commit_for_height);
         let sh = req.signed_header(1).expect("first sh not present");
@@ -665,14 +684,14 @@ mod tests {
 
         // Error: can't bisect from trusted height 1 to height 1
         // (here because non-increasing time is caught first)
-        let vac = ValsAndCommit::new(vec![0,1,2], vec![0,1,2]);
+        let vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
         let req = init_requester(vec![vac.clone(), vac.clone(), vac]);
         assert_bisection_err(&req, &ts, 1, Error::NonIncreasingTime);
 
         // can't bisect from trusted height 1 to height 1 (here we tamper with time but
         // expect to fail on NonIncreasingHeight):
-        let vac = ValsAndCommit::new(vec![0,1,2], vec![0,1,2]);
-        let mut req = init_requester(vec![vac.clone(),vac.clone(),vac]);
+        let vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
+        let mut req = init_requester(vec![vac.clone(), vac.clone(), vac]);
         let sh = req.signed_headers.get(&1_u64).unwrap();
         let mut time_tampered_header = sh.header().clone();
         time_tampered_header.set_time(init_time() + Duration::new(5, 0));
@@ -681,9 +700,6 @@ mod tests {
         // replace the signed header:
         req.signed_headers.insert(1, new_sh);
         assert_bisection_err(&req, &ts, 1, Error::NonIncreasingHeight);
-
-
-        
     }
 
     // can't bisect from height 1 to height 3
@@ -691,8 +707,8 @@ mod tests {
     // errors with an 'InvalidCommit'
     #[test]
     fn test_bisection_not_enough_commits() {
-        let vals_vec = vec![0,1,2,4];
-        let commit_vec = vec![0,1,2,4];
+        let vals_vec = vec![0, 1, 2, 4];
+        let commit_vec = vec![0, 1, 2, 4];
         let vac1 = ValsAndCommit::new(vals_vec.clone(), commit_vec.clone());
         let vac2 = ValsAndCommit::new(vals_vec.clone(), vec![0]);
         let req = &init_requester(vec![vac1, vac2.clone(), vac2.clone(), vac2.clone(), vac2]);
