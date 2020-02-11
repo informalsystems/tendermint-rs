@@ -681,6 +681,25 @@ mod tests {
         // replace the signed header:
         req.signed_headers.insert(1, new_sh);
         assert_bisection_err(&req, &ts, 1, Error::NonIncreasingHeight);
+
+
+        
+    }
+
+    // can't bisect from height 1 to height 3
+    // because there isn't enough signatures/commits for header at height 3
+    // errors with an 'InvalidCommit'
+    #[test]
+    fn test_bisection_not_enough_commits() {
+        let vals_vec = vec![0,1,2,4];
+        let commit_vec = vec![0,1,2,4];
+        let vac1 = ValsAndCommit::new(vals_vec.clone(), commit_vec.clone());
+        let vac2 = ValsAndCommit::new(vals_vec.clone(), vec![0]);
+        let req = &init_requester(vec![vac1.clone(), vac2.clone(), vac2.clone(), vac2.clone(), vac2.clone()]);
+        let ts = &init_trusted_state(vals_vec.clone(), commit_vec, vals_vec, 1);
+        let err = Error::InvalidCommit;
+
+        assert_bisection_err(req, ts, 3, err);
     }
 
     #[test]
