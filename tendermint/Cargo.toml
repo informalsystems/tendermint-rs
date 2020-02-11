@@ -34,6 +34,8 @@ circle-ci = { repository = "interchainio/tendermint-rs" }
 bytes = "0.5"
 chrono = { version = "0.4", features = ["serde"] }
 failure = "0.1"
+anomaly = "0.2"
+thiserror = "1"
 getrandom = "0.1"
 http = "0.2"
 hyper = "0.13"

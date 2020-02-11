@@ -3,6 +3,7 @@
 
 use crate::Hash;
 
+use crate::lite::error::{Error, Kind};
 use failure::_core::fmt::Debug;
 use std::time::SystemTime;
 
@@ -72,7 +73,7 @@ pub trait Commit: Clone {
 /// TrustThreshold defines how much of the total voting power of a known
 /// and trusted validator set is sufficient for a commit to be
 /// accepted going forward.
-pub trait TrustThreshold: Copy + Clone {
+pub trait TrustThreshold: Copy + Clone + Debug {
     fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool;
 }
 
@@ -90,14 +91,16 @@ pub struct TrustThresholdFraction {
 }
 
 impl TrustThresholdFraction {
-    pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
+    pub fn new(numerator: u64, denominator: u64) -> Result<Self, Kind> {
         if numerator <= denominator && denominator > 0 {
             return Ok(Self {
                 numerator,
                 denominator,
             });
         }
-        Err(Error::InvalidTrustThreshold)
+        Err(Kind::InvalidTrustThreshold {
+            got: format!("{}/{}", numerator, denominator),
+        })
     }
 }
 
@@ -123,10 +126,10 @@ where
     H: Header,
 {
     /// Request the [`SignedHeader`] at height h.
-    fn signed_header(&self, h: Height) -> Result<SignedHeader<C, H>, Error>;
+    fn signed_header(&self, h: Height) -> Result<SignedHeader<C, H>, Kind>;
 
     /// Request the validator set at height h.
-    fn validator_set(&self, h: Height) -> Result<C::ValidatorSet, Error>;
+    fn validator_set(&self, h: Height) -> Result<C::ValidatorSet, Kind>;
 }
 
 /// TrustedState contains a state trusted by a lite client,
@@ -193,30 +196,6 @@ where
     pub fn header(&self) -> &H {
         &self.header
     }
-}
-
-// NOTE: Copy/Clone for convenience in testing ...
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Error {
-    Expired,
-    DurationOutOfRange,
-
-    NonIncreasingHeight,
-
-    InvalidSignature, // TODO: deduplicate with ErrorKind::SignatureInvalid
-
-    InvalidValidatorSet,
-    InvalidNextValidatorSet,
-    InvalidCommitValue, // commit is not for the header we expected
-
-    InvalidCommitSignatures, // Note: this is only used by implementation (ie. expected return in Commit::validate())
-    InvalidCommit,           // signers do not account for +2/3 of the voting power
-
-    InsufficientVotingPower, // trust threshold (default +1/3) is not met
-
-    RequestFailed,
-
-    InvalidTrustThreshold,
 }
 
 pub(super) mod mocks {
@@ -332,7 +311,10 @@ pub(super) mod mocks {
         fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
             // some implementation specific checks:
             if self.vals.is_empty() || self.hash.algorithm() != Algorithm::Sha256 {
-                return Err(Error::InvalidCommitSignatures);
+                return Err(Kind::InvalidCommitSignatures {
+                    info: "validator set is empty, or, invalid hash algo".to_string(),
+                }
+                .into());
             }
             Ok(())
         }
@@ -355,22 +337,25 @@ pub(super) mod mocks {
         }
     }
     impl Requester<MockCommit, MockHeader> for MockRequester {
-        fn signed_header(&self, h: u64) -> Result<SignedHeader<MockCommit, MockHeader>, Error> {
+        fn signed_header(&self, h: u64) -> Result<SignedHeader<MockCommit, MockHeader>, Kind> {
             println!("requested signed header for height:{:?}", h);
             if let Some(sh) = self.signed_headers.get(&h) {
                 return Ok(sh.to_owned());
             }
             println!("couldn't get sh for: {}", &h);
-            Err(Error::RequestFailed)
+            Err(Kind::RequestFailed(format!("couldn't get sh for: {}", &h)))
         }
 
-        fn validator_set(&self, h: u64) -> Result<MockValSet, Error> {
+        fn validator_set(&self, h: u64) -> Result<MockValSet, Kind> {
             println!("requested validators for height:{:?}", h);
             if let Some(vs) = self.validators.get(&h) {
                 return Ok(vs.to_owned());
             }
             println!("couldn't get vals for: {}", &h);
-            Err(Error::RequestFailed)
+            Err(Kind::RequestFailed(format!(
+                "couldn't get vals for: {}",
+                &h
+            )))
         }
     }
 
