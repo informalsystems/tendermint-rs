@@ -312,7 +312,7 @@ pub(super) mod mocks {
             // some implementation specific checks:
             if self.vals.is_empty() || self.hash.algorithm() != Algorithm::Sha256 {
                 return Err(ErrorKind::InvalidCommitSignatures {
-                    info: "validator set is empty, or, invalida hash algo".to_string(),
+                    info: "validator set is empty, or, invalid hash algo".to_string(),
                 }
                 .into());
             }
