@@ -376,47 +376,62 @@ mod tests {
 
     // create an initial trusted state from the given vals
     fn init_trusted_state(
-        vals_vec: Vec<usize>,
+        vals_and_commit_vec: ValsAndCommit,
         next_vals_vec: Vec<usize>,
         height: u64,
     ) -> MockState {
         // time has to be increasing:
         let time = init_time() + Duration::new(height * 2, 0);
-        let vals = &MockValSet::new(vals_vec.clone());
+        let vals = &MockValSet::new(vals_and_commit_vec.vals_vec);
         let next_vals = &MockValSet::new(next_vals_vec);
         let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
-        let commit = MockCommit::new(header.hash(), vals_vec);
+        let commit = MockCommit::new(header.hash(), vals_and_commit_vec.commit_vec);
         let sh = &MockSignedHeader::new(commit, header);
         MockState::new(sh, vals)
     }
 
     // create the next state with the given vals and commit.
-    fn next_state(
-        vals_vec: Vec<usize>,
-        commit_vec: Vec<usize>,
-    ) -> (MockSignedHeader, MockValSet, MockValSet) {
+    fn next_state(vals_and_commit: ValsAndCommit) -> (MockSignedHeader, MockValSet, MockValSet) {
         let time = init_time() + Duration::new(10, 0);
         let height = 10;
-        let vals = MockValSet::new(vals_vec);
+        let vals = MockValSet::new(vals_and_commit.vals_vec);
         let next_vals = vals.clone();
         let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
-        let commit = MockCommit::new(header.hash(), commit_vec);
+        let commit = MockCommit::new(header.hash(), vals_and_commit.commit_vec);
         (MockSignedHeader::new(commit, header), vals, next_vals)
     }
 
+    #[derive(Clone)]
+    struct ValsAndCommit {
+        vals_vec: Vec<usize>,
+        commit_vec: Vec<usize>,
+    }
+
+    impl ValsAndCommit {
+        pub fn new(vals_vec: Vec<usize>, commit_vec: Vec<usize>) -> ValsAndCommit {
+            ValsAndCommit {
+                vals_vec,
+                commit_vec,
+            }
+        }
+    }
     // Init a mock Requester.
     // For each pair of lists of validators (cur and next vals) we
     // init a trusted state (signed header and vals);
     // Note: for bisection up-to height n, provide n+2 validators as validators for n+1
     // will be requested to verify height n.
-    fn init_requester(vals_for_height: Vec<Vec<usize>>) -> MockRequester {
+    fn init_requester(vals_and_commit_for_height: Vec<ValsAndCommit>) -> MockRequester {
         let mut req = MockRequester::new();
-        let max_height = vals_for_height.len() as u64;
-        for (h, vals) in vals_for_height.iter().enumerate() {
+        let max_height = vals_and_commit_for_height.len() as u64;
+        for (h, vac) in vals_and_commit_for_height.iter().enumerate() {
             let height = (h + 1) as u64; // height starts with 1 ...
             if height < max_height {
-                let next_vals = vals_for_height.get(h + 1).expect("next_vals missing");
-                let ts = init_trusted_state(vals.to_owned(), next_vals.to_owned(), height);
+                let next_vals = vals_and_commit_for_height
+                    .get(h + 1)
+                    .expect("next_vals missing")
+                    .vals_vec
+                    .clone();
+                let ts = &init_trusted_state(vac.to_owned(), next_vals.to_owned(), height);
                 req.signed_headers.insert(height, ts.last_header().clone());
                 req.validators.insert(height, ts.validators().to_owned());
             }
@@ -427,11 +442,10 @@ mod tests {
     // make a state with the given vals and commit and ensure we get the error.
     fn assert_single_err(
         ts: &TrustedState<MockCommit, MockHeader>,
-        vals: Vec<usize>,
-        commit: Vec<usize>,
+        vals_and_commit: ValsAndCommit,
         err: Error,
     ) {
-        let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
+        let (un_sh, un_vals, un_next_vals) = next_state(vals_and_commit);
         let result = verify_single_inner(
             ts,
             &un_sh,
@@ -443,8 +457,8 @@ mod tests {
     }
 
     // make a state with the given vals and commit and ensure we get no error.
-    fn assert_single_ok(ts: &MockState, vals: Vec<usize>, commit: Vec<usize>) {
-        let (un_sh, un_vals, un_next_vals) = next_state(vals, commit);
+    fn assert_single_ok(ts: &MockState, vals_and_commit: ValsAndCommit) {
+        let (un_sh, un_vals, un_next_vals) = next_state(vals_and_commit);
         assert!(verify_single_inner(
             ts,
             &un_sh,
@@ -506,114 +520,152 @@ mod tests {
     // valid to skip, but invalid commit. 1 validator.
     #[test]
     fn test_verify_single_skip_1_val_verify() {
-        let ts = &init_trusted_state(vec![0], vec![0], 1);
+        let vac = ValsAndCommit::new(vec![0], vec![0]);
+        let ts = &init_trusted_state(vac, vec![0], 1);
 
         // 100% overlap, but wrong commit.
         // NOTE: This should be an invalid commit error since there's
         // a vote from a validator not in the set!
         // but voting_power_in isn't smart enough to see this ...
         // TODO(ismail): https://github.com/interchainio/tendermint-rs/issues/140
-        assert_single_err(ts, vec![1], vec![0], Error::InvalidCommit);
+        let invalid_vac = ValsAndCommit::new(vec![1], vec![0]);
+        assert_single_err(ts, invalid_vac, Error::InvalidCommit);
     }
 
     // valid commit and data, starting with 1 validator.
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_1_val_skip() {
-        let ts = &init_trusted_state(vec![0], vec![0], 1);
+        let mut vac = ValsAndCommit::new(vec![0], vec![0]);
+        let ts = &init_trusted_state(vac.clone(), vec![0], 1);
         let err = Error::InsufficientVotingPower;
 
         //*****
         // Ok
 
         // 100% overlap (original signer is present in commit)
-        assert_single_ok(ts, vec![0], vec![0]);
-        assert_single_ok(ts, vec![0, 1], vec![0, 1]);
-        assert_single_ok(ts, vec![0, 1, 2], vec![0, 1, 2]);
-        assert_single_ok(ts, vec![0, 1, 2, 3], vec![0, 1, 2, 3]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1], vec![0, 1]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![0, 1, 2, 3]);
+        assert_single_ok(ts, vac);
 
         //*****
         // Err
 
         // 0% overlap - new val set without the original signer
-        assert_single_err(ts, vec![1], vec![1], err);
+        vac = ValsAndCommit::new(vec![1], vec![1]);
+        assert_single_err(ts, vac, err);
 
         // 0% overlap - val set contains original signer, but they didn't sign
-        assert_single_err(ts, vec![0, 1, 2, 3], vec![1, 2, 3], err);
+        vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![1, 2, 3]);
+        assert_single_err(ts, vac, err);
     }
 
     // valid commit and data, starting with 2 validators.
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_2_val_skip() {
-        let ts = &init_trusted_state(vec![0, 1], vec![0, 1], 1);
+        let mut vac = ValsAndCommit::new(vec![0, 1], vec![0, 1]);
+        let ts = &init_trusted_state(vac.clone(), vec![0, 1], 1);
         let err = Error::InsufficientVotingPower;
 
         //*************
         // OK
 
         // 100% overlap (both original signers still present)
-        assert_single_ok(ts, vec![0, 1], vec![0, 1]);
-        assert_single_ok(ts, vec![0, 1, 2], vec![0, 1, 2]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
+        assert_single_ok(ts, vac);
 
         // 50% overlap (one original signer still present)
-        assert_single_ok(ts, vec![0], vec![0]);
-        assert_single_ok(ts, vec![0, 1, 2, 3], vec![1, 2, 3]);
+        vac = ValsAndCommit::new(vec![0], vec![0]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![1, 2, 3]);
+        assert_single_ok(ts, vac);
 
         //*************
         // Err
 
         // 0% overlap (neither original signer still present)
-        assert_single_err(ts, vec![2], vec![2], err);
+        vac = ValsAndCommit::new(vec![2], vec![2]);
+        assert_single_err(ts, vac, err);
 
         // 0% overlap (original signer is still in val set but not in commit)
-        assert_single_err(ts, vec![0, 2, 3, 4], vec![2, 3, 4], err);
+        vac = ValsAndCommit::new(vec![0, 2, 3, 4], vec![2, 3, 4]);
+        assert_single_err(ts, vac, err);
     }
 
     // valid commit and data, starting with 3 validators.
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_3_val_skip() {
-        let ts = &init_trusted_state(vec![0, 1, 2], vec![0, 1, 2], 1);
+        let mut vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
+        let ts = &init_trusted_state(vac.clone(), vec![0, 1, 2], 1);
         let err = Error::InsufficientVotingPower;
 
         //*************
         // OK
 
         // 100% overlap (both original signers still present)
-        assert_single_ok(ts, vec![0, 1, 2], vec![0, 1, 2]);
-        assert_single_ok(ts, vec![0, 1, 2, 3], vec![0, 1, 2, 3]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![0, 1, 2, 3]);
+        assert_single_ok(ts, vac);
 
         // 66% overlap (two original signers still present)
-        assert_single_ok(ts, vec![0, 1], vec![0, 1]);
-        assert_single_ok(ts, vec![0, 1, 2, 3], vec![1, 2, 3]);
+        vac = ValsAndCommit::new(vec![0, 1], vec![0, 1]);
+        assert_single_ok(ts, vac);
+
+        vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![1, 2, 3]);
+        assert_single_ok(ts, vac);
 
         //*************
         // Err
 
         // 33% overlap (one original signer still present)
-        assert_single_err(ts, vec![0], vec![0], err);
-        assert_single_err(ts, vec![0, 3], vec![0, 3], err);
+        vac = ValsAndCommit::new(vec![0], vec![0]);
+        assert_single_err(ts, vac, err);
+
+        vac = ValsAndCommit::new(vec![0, 3], vec![0, 3]);
+        assert_single_err(ts, vac, err);
 
         // 0% overlap (neither original signer still present)
-        assert_single_err(ts, vec![3], vec![2], err);
+        vac = ValsAndCommit::new(vec![3], vec![2]);
+        assert_single_err(ts, vac, err);
 
         // 0% overlap (original signer is still in val set but not in commit)
-        assert_single_err(ts, vec![0, 3, 4, 5], vec![3, 4, 5], err);
+        vac = ValsAndCommit::new(vec![0, 3, 4, 5], vec![3, 4, 5]);
+        assert_single_err(ts, vac, err);
     }
 
     #[test]
     fn test_verify_bisection_1_val() {
-        let final_state = init_trusted_state(vec![0], vec![0], 2);
-        let req = init_requester(vec![vec![0], vec![0], vec![0], vec![0]]);
+        let vac = ValsAndCommit::new(vec![0], vec![0]);
+        let final_state = init_trusted_state(vac.clone(), vec![0], 2);
+        let req = init_requester(vec![vac.clone(), vac.clone(), vac.clone(), vac.clone()]);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
 
         assert_bisection_ok(&req, &ts, 2, 1, &final_state);
 
-        let final_state = init_trusted_state(vec![0], vec![0], 3);
-        let req = init_requester(vec![vec![0], vec![0], vec![0], vec![0], vec![0]]);
+        let final_state = init_trusted_state(vac.clone(), vec![0], 3);
+        // let vac = ValsAndCommit::new(vec![0], vec![0]);
+        let req = init_requester(vec![
+            vac.clone(),
+            vac.clone(),
+            vac.clone(),
+            vac.clone(),
+            vac,
+        ]);
         assert_bisection_ok(&req, &ts, 3, 1, &final_state);
     }
 
@@ -622,16 +674,20 @@ mod tests {
         //*************
         // OK
 
-        let mut vals_per_height: Vec<Vec<usize>> = Vec::new();
-        vals_per_height.push(vec![0, 1, 2, 3, 4, 5]); // 1
-        vals_per_height.push(vec![0, 1, 2]); // 2 -> 50% val change
-        vals_per_height.push(vec![0, 1]); // 3 -> 33% change
-        vals_per_height.push(vec![1, 2]); // 4 -> 50% change
-        vals_per_height.push(vec![0, 2]); // 5 -> 50% <- too much change (from 1), need to bisect...
-        vals_per_height.push(vec![0, 2]); // 6 -> (only needed to validate 5)
-        vals_per_height.push(vec![0, 2]); // 7 -> (only used to construct state 6)
-        let final_ts = init_trusted_state(vec![0, 2], vec![0, 2], 5);
-        let req = init_requester(vals_per_height);
+        let mut vals_and_commit_for_height: Vec<ValsAndCommit> = Vec::new();
+        vals_and_commit_for_height.push(ValsAndCommit::new(
+            vec![0, 1, 2, 3, 4, 5],
+            vec![0, 1, 2, 3, 4, 5],
+        )); // 1
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2])); // 2 -> 50% val change
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 1], vec![0, 1])); // 3 -> 33% change
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![1, 2], vec![1, 2])); // 4 -> 50% change
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 2], vec![0, 2])); // 5 -> 50% <- too much change (from 1), need to bisect...
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 2], vec![0, 2])); // 6 -> (only needed to validate 5)
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 2], vec![0, 2])); // 7 -> (only used to construct state 6)
+        let vac = ValsAndCommit::new(vec![0, 2], vec![0, 2]);
+        let final_ts = init_trusted_state(vac, vec![0, 2], 5);
+        let req = init_requester(vals_and_commit_for_height);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
@@ -648,12 +704,14 @@ mod tests {
 
         // Error: can't bisect from trusted height 1 to height 1
         // (here because non-increasing time is caught first)
-        let req = init_requester(vec![vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2]]);
+        let vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
+        let req = init_requester(vec![vac.clone(), vac.clone(), vac]);
         assert_bisection_err(&req, &ts, 1, Error::NonIncreasingTime);
 
         // can't bisect from trusted height 1 to height 1 (here we tamper with time but
         // expect to fail on NonIncreasingHeight):
-        let mut req = init_requester(vec![vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2]]);
+        let vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
+        let mut req = init_requester(vec![vac.clone(), vac.clone(), vac]);
         let sh = req.signed_headers.get(&1_u64).unwrap();
         let mut time_tampered_header = sh.header().clone();
         time_tampered_header.set_time(init_time() + Duration::new(5, 0));
@@ -662,6 +720,28 @@ mod tests {
         // replace the signed header:
         req.signed_headers.insert(1, new_sh);
         assert_bisection_err(&req, &ts, 1, Error::NonIncreasingHeight);
+    }
+
+    // can't bisect from height 1 to height 3
+    // because there isn't enough signatures/commits for header at height 3
+    // errors with an 'InvalidCommit'
+    #[test]
+    fn test_bisection_not_enough_commits() {
+        let vals_vec = vec![0, 1, 2, 4];
+        let commit_vec = vec![0, 1, 2, 4];
+        let vac1 = ValsAndCommit::new(vals_vec.clone(), commit_vec);
+        let vac2 = ValsAndCommit::new(vals_vec.clone(), vec![0]);
+        let req = &init_requester(vec![
+            vac1.clone(),
+            vac2.clone(),
+            vac2.clone(),
+            vac2.clone(),
+            vac2,
+        ]);
+        let ts = &init_trusted_state(vac1, vals_vec, 1);
+        let err = Error::InvalidCommit;
+
+        assert_bisection_err(req, ts, 3, err);
     }
 
     #[test]
