@@ -26,7 +26,7 @@ impl lite::types::Requester<TMCommit, TMHeader> for RPCRequester {
     /// Request the signed header at height h.
     /// If h==0, request the latest signed header.
     /// TODO: use an enum instead of h==0.
-    fn signed_header(&self, h: Height) -> Result<TMSignedHeader, error::Kind> {
+    fn signed_header(&self, h: Height) -> Result<TMSignedHeader, error::Error> {
         let height: block::Height = h.into();
         let r = match height.value() {
             0 => block_on(self.client.latest_commit()),
@@ -34,16 +34,16 @@ impl lite::types::Requester<TMCommit, TMHeader> for RPCRequester {
         };
         match r {
             Ok(response) => Ok(response.signed_header.into()),
-            Err(error) => Err(error::Kind::RequestFailed(format!("{:?}", error))),
+            Err(error) => Err(error::Kind::RequestFailed.context(error).into()),
         }
     }
 
     /// Request the validator set at height h.
-    fn validator_set(&self, h: Height) -> Result<Set, error::Kind> {
+    fn validator_set(&self, h: Height) -> Result<Set, error::Error> {
         let r = block_on(self.client.validators(h));
         match r {
             Ok(response) => Ok(validator::Set::new(response.validators)),
-            Err(error) => Err(error::Kind::RequestFailed(format!("{:?}", error))),
+            Err(error) => Err(error::Kind::RequestFailed.context(error).into()),
         }
     }
 }

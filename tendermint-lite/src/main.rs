@@ -9,7 +9,7 @@ use tendermint_lite::{requester::RPCRequester, store::MemStore};
 
 use core::future::Future;
 use std::time::{Duration, SystemTime};
-use tendermint::lite::error::Kind;
+use tendermint::lite::error::Error;
 use tendermint_lite::store::State;
 use tokio::runtime::Builder;
 
@@ -102,7 +102,7 @@ fn subjective_init(
     vals_hash: Hash,
     store: &mut MemStore,
     req: &RPCRequester,
-) -> Result<(), Kind> {
+) -> Result<(), Error> {
     if store.get(height.value()).is_ok() {
         // we already have this !
         return Ok(());
