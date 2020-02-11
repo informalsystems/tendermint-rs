@@ -627,11 +627,11 @@ mod tests {
 
         assert_bisection_ok(&req, &ts, 2, 1, &final_state);
 
-        let final_state = init_trusted_state(vec![0], vec![0], 3);
-        let req = init_requester(vec![vec![0], vec![0], vec![0], vec![0], vec![0]]);
+        let final_state = init_trusted_state(vec![0], vec![0], vec![0], 3);
+        let vac = ValsAndCommit::new(vec![0], vec![0]);
+        let req = init_requester(vec![vac.clone(),vac.clone(),vac.clone(),vac.clone(),vac.clone()]);
         assert_bisection_ok(&req, &ts, 3, 1, &final_state);
     }
-
 
 
     #[test]
@@ -639,16 +639,16 @@ mod tests {
         //*************
         // OK
 
-        let mut vals_per_height: Vec<Vec<usize>> = Vec::new();
-        vals_per_height.push(vec![0, 1, 2, 3, 4, 5]); // 1
-        vals_per_height.push(vec![0, 1, 2]); // 2 -> 50% val change
-        vals_per_height.push(vec![0, 1]); // 3 -> 33% change
-        vals_per_height.push(vec![1, 2]); // 4 -> 50% change
-        vals_per_height.push(vec![0, 2]); // 5 -> 50% <- too much change (from 1), need to bisect...
-        vals_per_height.push(vec![0, 2]); // 6 -> (only needed to validate 5)
-        vals_per_height.push(vec![0, 2]); // 7 -> (only used to construct state 6)
-        let final_ts = init_trusted_state(vec![0, 2], vec![0, 2], 5);
-        let req = init_requester(vals_per_height);
+        let mut vals_and_commit_for_height: Vec<ValsAndCommit> = Vec::new();
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0,1,2,3,4,5], vec![0,1,2,3,4,5])); // 1
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0,1,2], vec![0,1,2])); // 2 -> 50% val change
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0,1], vec![0,1])); // 3 -> 33% change
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![1,2], vec![1,2])); // 4 -> 50% change
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0,2], vec![0,2])); // 5 -> 50% <- too much change (from 1), need to bisect...
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0,2], vec![0,2])); // 6 -> (only needed to validate 5)
+        vals_and_commit_for_height.push(ValsAndCommit::new(vec![0,2], vec![0,2])); // 7 -> (only used to construct state 6)
+        let final_ts = init_trusted_state(vec![0, 2], vec![0, 2], vec![0, 2], 5);
+        let req = init_requester(vals_and_commit_for_height);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
@@ -665,12 +665,14 @@ mod tests {
 
         // Error: can't bisect from trusted height 1 to height 1
         // (here because non-increasing time is caught first)
-        let req = init_requester(vec![vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2]]);
+        let vac = ValsAndCommit::new(vec![0,1,2], vec![0,1,2]);
+        let req = init_requester(vec![vac.clone(), vac.clone(), vac.clone()]);
         assert_bisection_err(&req, &ts, 1, Error::NonIncreasingTime);
 
         // can't bisect from trusted height 1 to height 1 (here we tamper with time but
         // expect to fail on NonIncreasingHeight):
-        let mut req = init_requester(vec![vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2]]);
+        let vac = ValsAndCommit::new(vec![0,1,2], vec![0,1,2]);
+        let mut req = init_requester(vec![vac.clone(),vac.clone(),vac.clone()]);
         let sh = req.signed_headers.get(&1_u64).unwrap();
         let mut time_tampered_header = sh.header().clone();
         time_tampered_header.set_time(init_time() + Duration::new(5, 0));
