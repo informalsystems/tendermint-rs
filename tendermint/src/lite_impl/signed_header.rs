@@ -37,9 +37,10 @@ impl lite::Commit for block::signed_header::SignedHeader {
             if !val.verify_signature(&sign_bytes, vote.signature()) {
                 return Err(Kind::ImplementationSpecific
                     .context(format!(
-                        "Couldn't verify signature {:?} with validator {:?}",
+                        "Couldn't verify signature {:?} with validator {:?} on sign_bytes {:?}",
                         vote.signature(),
-                        val
+                        val,
+                        sign_bytes,
                     ))
                     .into());
             }

@@ -38,7 +38,7 @@ pub enum Kind {
         next_val_hash: Hash,
     },
 
-    /// commit is not for the header we expected.
+    /// Commit is not for the header we expected.
     #[error(
         "header hash does not match the hash in the commit ({header_hash:?}!={commit_hash:?})"
     )]
