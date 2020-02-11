@@ -10,7 +10,7 @@ pub enum ErrorKind {
     Expired { at: SystemTime, now: SystemTime },
 
     #[error("duration error {:?}", _0)]
-    DurationOutOfRange(SystemTimeError),
+    DurationOutOfRange(#[from] SystemTimeError),
 
     #[error("expected height >= {expected} (got: {got})")]
     NonIncreasingHeight { got: u64, expected: u64 },

@@ -36,7 +36,7 @@ where
             }
             Ok(())
         }
-        Err(e) => Err(ErrorKind::DurationOutOfRange(e)),
+        Err(e) => Err(e.into()),
     }
 }
 
