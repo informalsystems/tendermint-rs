@@ -20,9 +20,6 @@ pub enum Kind {
     #[error("expected height >= {expected} (got: {got})")]
     NonIncreasingHeight { got: u64, expected: u64 },
 
-    #[error("could not verify signature")]
-    InvalidSignature, // TODO: deduplicate with tendermint::ErrorKind::SignatureInvalid
-
     #[error("header's validator hash does not match actual validator hash ({header_val_hash:?}!={val_hash:?})")]
     InvalidValidatorSet {
         header_val_hash: Hash,
@@ -43,9 +40,6 @@ pub enum Kind {
         commit_hash: Hash,
     }, // commit is not for the header we expected
 
-    #[error("error validating commit signatures: {info}")]
-    InvalidCommitSignatures { info: String }, // Note: this is only used by implementation (ie. expected return in Commit::validate())
-
     #[error("signed voting power ({signed}) do not account for +2/3 of the total voting power: ({total})")]
     InvalidCommit { total: u64, signed: u64 },
 
@@ -63,6 +57,9 @@ pub enum Kind {
 
     #[error("A valid threshold is `1/3 <= threshold <= 1`, got: {got}")]
     InvalidTrustThreshold { got: String },
+
+    #[error("Implementation specific error: {0}")]
+    ImplementationSpecific(String),
 }
 
 impl Kind {

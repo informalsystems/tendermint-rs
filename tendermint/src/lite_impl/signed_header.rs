@@ -35,7 +35,12 @@ impl lite::Commit for block::signed_header::SignedHeader {
             let sign_bytes = vote.sign_bytes();
 
             if !val.verify_signature(&sign_bytes, vote.signature()) {
-                return Err(Kind::InvalidSignature.into());
+                return Err(Kind::ImplementationSpecific(format!(
+                    "Couldn't verify signature {:?} with validator {:?}",
+                    vote.signature(),
+                    val
+                ))
+                .into());
             }
             signed_power += val.power();
         }
@@ -45,13 +50,11 @@ impl lite::Commit for block::signed_header::SignedHeader {
 
     fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error> {
         if self.commit.precommits.len() != vals.validators().len() {
-            return Err(lite::error::Kind::InvalidCommitSignatures {
-                info: format!(
-                    "pre-commit length: {} doesn't match validator length: {}",
-                    self.commit.precommits.len(),
-                    vals.validators().len()
-                ),
-            }
+            return Err(lite::error::Kind::ImplementationSpecific(format!(
+                "pre-commit length: {} doesn't match validator length: {}",
+                self.commit.precommits.len(),
+                vals.validators().len()
+            ))
             .into());
         }
         // TODO: compare to the go code for more implementation related checks and clarify if this:
