@@ -1,6 +1,6 @@
 //! [`lite::SignedHeader`] implementation for [`block::signed_header::SignedHeader`].
 
-use crate::lite::Error;
+use crate::lite::error::{Error, Kind};
 use crate::validator::Set;
 use crate::{block, hash, lite, vote};
 
@@ -35,7 +35,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
             let sign_bytes = vote.sign_bytes();
 
             if !val.verify_signature(&sign_bytes, vote.signature()) {
-                return Err(Error::InvalidSignature);
+                return Err(Kind::InvalidSignature.into());
             }
             signed_power += val.power();
         }
@@ -45,8 +45,19 @@ impl lite::Commit for block::signed_header::SignedHeader {
 
     fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error> {
         if self.commit.precommits.len() != vals.validators().len() {
-            return Err(lite::Error::InvalidCommitSignatures);
+            return Err(lite::error::Kind::InvalidCommitSignatures {
+                info: format!(
+                    "pre-commit length: {} doesn't match validator length: {}",
+                    self.commit.precommits.len(),
+                    vals.validators().len()
+                ),
+            }
+            .into());
         }
+        // TODO: compare to the go code for more implementation related checks and clarify if this:
+        // https://github.com/interchainio/tendermint-rs/pull/143/commits/0a30022fa47e909e6c7b20417dd178c8a3b84838#r374958528
+        // should go here or somewhere else
+
         Ok(())
     }
 }
