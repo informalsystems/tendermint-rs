@@ -5,7 +5,7 @@ use tendermint::validator;
 use tendermint::{block, lite};
 
 use core::future::Future;
-use tendermint::lite::{errors, Height, SignedHeader};
+use tendermint::lite::{error, Height, SignedHeader};
 use tendermint::validator::Set;
 use tokio::runtime::Builder;
 
@@ -26,7 +26,7 @@ impl lite::types::Requester<TMCommit, TMHeader> for RPCRequester {
     /// Request the signed header at height h.
     /// If h==0, request the latest signed header.
     /// TODO: use an enum instead of h==0.
-    fn signed_header(&self, h: Height) -> Result<TMSignedHeader, errors::ErrorKind> {
+    fn signed_header(&self, h: Height) -> Result<TMSignedHeader, error::ErrorKind> {
         let height: block::Height = h.into();
         let r = match height.value() {
             0 => block_on(self.client.latest_commit()),
@@ -34,16 +34,16 @@ impl lite::types::Requester<TMCommit, TMHeader> for RPCRequester {
         };
         match r {
             Ok(response) => Ok(response.signed_header.into()),
-            Err(error) => Err(errors::ErrorKind::RequestFailed(format!("{:?}", error))),
+            Err(error) => Err(error::ErrorKind::RequestFailed(format!("{:?}", error))),
         }
     }
 
     /// Request the validator set at height h.
-    fn validator_set(&self, h: Height) -> Result<Set, errors::ErrorKind> {
+    fn validator_set(&self, h: Height) -> Result<Set, error::ErrorKind> {
         let r = block_on(self.client.validators(h));
         match r {
             Ok(response) => Ok(validator::Set::new(response.validators)),
-            Err(error) => Err(errors::ErrorKind::RequestFailed(format!("{:?}", error))),
+            Err(error) => Err(error::ErrorKind::RequestFailed(format!("{:?}", error))),
         }
     }
 }

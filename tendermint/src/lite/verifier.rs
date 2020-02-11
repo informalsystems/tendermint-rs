@@ -11,7 +11,7 @@
 use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
-use crate::lite::errors::{Error, ErrorKind};
+use crate::lite::error::{Error, ErrorKind};
 use crate::lite::{
     Commit, Header, Height, Requester, SignedHeader, TrustThreshold, TrustedState, ValidatorSet,
 };

@@ -3,7 +3,7 @@
 
 use crate::Hash;
 
-use crate::lite::errors::{Error, ErrorKind};
+use crate::lite::error::{Error, ErrorKind};
 use failure::_core::fmt::Debug;
 use std::time::SystemTime;
 

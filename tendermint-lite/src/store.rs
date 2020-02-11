@@ -2,7 +2,7 @@ use tendermint::lite::{Header, Height, TrustedState};
 
 use std::collections::HashMap;
 use tendermint::block;
-use tendermint::lite::errors::ErrorKind;
+use tendermint::lite::error::ErrorKind;
 
 pub type State = TrustedState<block::signed_header::SignedHeader, block::header::Header>;
 

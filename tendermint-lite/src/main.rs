@@ -9,7 +9,7 @@ use tendermint_lite::{requester::RPCRequester, store::MemStore};
 
 use core::future::Future;
 use std::time::{Duration, SystemTime};
-use tendermint::lite::errors::ErrorKind;
+use tendermint::lite::error::ErrorKind;
 use tendermint_lite::store::State;
 use tokio::runtime::Builder;
 
