@@ -377,6 +377,7 @@ mod tests {
     // create an initial trusted state from the given vals
     fn init_trusted_state(
         vals_vec: Vec<usize>,
+        commit_vec: Vec<usize>,
         next_vals_vec: Vec<usize>,
         height: u64,
     ) -> MockState {
@@ -385,7 +386,7 @@ mod tests {
         let vals = &MockValSet::new(vals_vec.clone());
         let next_vals = &MockValSet::new(next_vals_vec);
         let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
-        let commit = MockCommit::new(header.hash(), vals_vec);
+        let commit = MockCommit::new(header.hash(), commit_vec);
         let sh = &MockSignedHeader::new(commit, header);
         MockState::new(sh, vals)
     }
@@ -404,19 +405,32 @@ mod tests {
         (MockSignedHeader::new(commit, header), vals, next_vals)
     }
 
+
+    // TODO: find a better name
+    #[derive(Clone)]
+    struct ValsAndCommit {
+        vals_vec: Vec<usize>,
+        commit_vec: Vec<usize>,
+    }
+
+    impl ValsAndCommit {
+        pub fn new(vals_vec: Vec<usize>, commit_vec: Vec<usize>) -> ValsAndCommit {
+            ValsAndCommit {vals_vec, commit_vec}
+        }
+    }
     // Init a mock Requester.
     // For each pair of lists of validators (cur and next vals) we
     // init a trusted state (signed header and vals);
     // Note: for bisection up-to height n, provide n+2 validators as validators for n+1
     // will be requested to verify height n.
-    fn init_requester(vals_for_height: Vec<Vec<usize>>) -> MockRequester {
+    fn init_requester(vals_and_commit_for_height: Vec<ValsAndCommit>) -> MockRequester {
         let mut req = MockRequester::new();
-        let max_height = vals_for_height.len() as u64;
-        for (h, vals) in vals_for_height.iter().enumerate() {
+        let max_height = vals_and_commit_for_height.len() as u64;
+        for (h, vac) in vals_and_commit_for_height.iter().enumerate() {
             let height = (h + 1) as u64; // height starts with 1 ...
             if height < max_height {
-                let next_vals = vals_for_height.get(h + 1).expect("next_vals missing");
-                let ts = init_trusted_state(vals.to_owned(), next_vals.to_owned(), height);
+                let next_vals = vals_and_commit_for_height.get(h + 1).expect("next_vals missing").vals_vec.clone();
+                let ts = &init_trusted_state(vac.vals_vec.to_owned(), vac.commit_vec.to_owned(), next_vals.to_owned(), height);
                 req.signed_headers.insert(height, ts.last_header().clone());
                 req.validators.insert(height, ts.validators().to_owned());
             }
@@ -503,28 +517,10 @@ mod tests {
         assert_eq!(result, Err(err));
     }
 
-    fn assert_bisection_err_state(
-        req: &MockRequester,
-        ts: &TrustedState<MockCommit, MockHeader>,
-        untrusted_height: u64,
-        expected_final_state: &MockState,
-    ) {
-        let mut cache: Vec<MockTrustedState> = Vec::new();
-        let ts_new = verify_bisection_inner(
-            &ts,
-            untrusted_height,
-            TrustThresholdFraction::default(),
-            req,
-            cache.as_mut(),
-        )
-        .expect("should not have passed");
-        assert_ne!(ts_new, expected_final_state.to_owned());
-    }
-
     // valid to skip, but invalid commit. 1 validator.
     #[test]
     fn test_verify_single_skip_1_val_verify() {
-        let ts = &init_trusted_state(vec![0], vec![0], 1);
+        let ts = &init_trusted_state(vec![0],vec![0], vec![0], 1);
 
         // 100% overlap, but wrong commit.
         // NOTE: This should be an invalid commit error since there's
@@ -538,7 +534,7 @@ mod tests {
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_1_val_skip() {
-        let ts = &init_trusted_state(vec![0], vec![0], 1);
+        let ts = &init_trusted_state(vec![0], vec![0], vec![0], 1);
         let err = Error::InsufficientVotingPower;
 
         //*****
@@ -564,7 +560,7 @@ mod tests {
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_2_val_skip() {
-        let ts = &init_trusted_state(vec![0, 1], vec![0, 1], 1);
+        let ts = &init_trusted_state(vec![0, 1], vec![0, 1],vec![0, 1], 1);
         let err = Error::InsufficientVotingPower;
 
         //*************
@@ -592,7 +588,7 @@ mod tests {
     // test if we can skip to it.
     #[test]
     fn test_verify_single_skip_3_val_skip() {
-        let ts = &init_trusted_state(vec![0, 1, 2], vec![0, 1, 2], 1);
+        let ts = &init_trusted_state(vec![0, 1, 2], vec![0, 1, 2], vec![0, 1, 2], 1);
         let err = Error::InsufficientVotingPower;
 
         //*************
@@ -622,8 +618,9 @@ mod tests {
 
     #[test]
     fn test_verify_bisection_1_val() {
-        let final_state = init_trusted_state(vec![0], vec![0], 2);
-        let req = init_requester(vec![vec![0], vec![0], vec![0], vec![0]]);
+        let final_state = init_trusted_state(vec![0], vec![0], vec![0], 2);
+        let vac = ValsAndCommit::new(vec![0], vec![0]);
+        let req = init_requester(vec![vac.clone(), vac.clone(), vac.clone(), vac.clone()]);
         let sh = req.signed_header(1).expect("first sh not present");
         let vals = req.validator_set(1).expect("init. valset not present");
         let ts = &MockState::new(&sh, &vals);
@@ -635,15 +632,7 @@ mod tests {
         assert_bisection_ok(&req, &ts, 3, 1, &final_state);
     }
 
-     #[test]
-    fn test_verify_bisection_not_enough_commits() {
-        let req = init_requester(vec![vec![0,1,2,3], vec![0,1,2,3], vec![0,1,2,3], vec![0], vec![0]]);
-        let ts = init_trusted_state(vec![0,1,2,3], vec![0,1,2,3], 1);
-        let ns = next_state(vec![0,1,2,3], vec![0]);
-        let expected_state = &MockState::new(&ns.0, &ns.1);
 
-        assert_bisection_err_state(&req, &ts, 3, &expected_state);
-    }
 
     #[test]
     fn test_verify_bisection() {
