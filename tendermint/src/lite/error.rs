@@ -6,43 +6,52 @@ use std::time::{SystemTime, SystemTimeError};
 use thiserror::Error;
 
 /// The main error type verification methods will return.
-/// See [`ErrorKind`] for the different kind of errors.
+/// See [`Kind`] for the different kind of errors.
 pub type Error = anomaly::Error<Kind>;
 
+/// All error kinds related to the light client.
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
+    /// The provided header expired.
     #[error("old header has expired at {at:?} (now: {now:?})")]
     Expired { at: SystemTime, now: SystemTime },
 
+    /// Trusted header is from the future.
     #[error("duration error {:?}", _0)]
     DurationOutOfRange(#[from] SystemTimeError),
 
+    /// Header height smaller than expected.
     #[error("expected height >= {expected} (got: {got})")]
     NonIncreasingHeight { got: u64, expected: u64 },
 
+    /// Invalid validator hash.
     #[error("header's validator hash does not match actual validator hash ({header_val_hash:?}!={val_hash:?})")]
     InvalidValidatorSet {
         header_val_hash: Hash,
         val_hash: Hash,
     },
 
+    /// Invalid next validator hash.
     #[error("header's next validator hash does not match next_val_hash ({header_next_val_hash:?}!={next_val_hash:?})")]
     InvalidNextValidatorSet {
         header_next_val_hash: Hash,
         next_val_hash: Hash,
     },
 
+    /// commit is not for the header we expected.
     #[error(
         "header hash does not match the hash in the commit ({header_hash:?}!={commit_hash:?})"
     )]
     InvalidCommitValue {
         header_hash: Hash,
         commit_hash: Hash,
-    }, // commit is not for the header we expected
+    },
 
+    /// Signed power does not account for +2/3 of total voting power.
     #[error("signed voting power ({signed}) do not account for +2/3 of the total voting power: ({total})")]
     InvalidCommit { total: u64, signed: u64 },
 
+    /// This means the trust threshold (default +1/3) is not met.
     #[error("signed voting power ({}) is too small fraction of total voting power: ({}), threshold: {}",
         .signed, .total, .trust_treshold
     )]
@@ -50,14 +59,19 @@ pub enum Kind {
         total: u64,
         signed: u64,
         trust_treshold: String,
-    }, // trust threshold (default +1/3) is not met
+    },
 
-    #[error("Request failed")]
-    RequestFailed,
-
+    /// This is returned if an invalid TrustThreshold is created.
     #[error("A valid threshold is `1/3 <= threshold <= 1`, got: {got}")]
     InvalidTrustThreshold { got: String },
 
+    /// Use the [`Kind::context`] method to wrap the underlying error of
+    /// the implementation, if any.
+    #[error("Request failed")]
+    RequestFailed,
+
+    /// Use the [`Kind::context`] method to wrap the underlying error of
+    /// the implementation, if any.
     #[error("Implementation specific error")]
     ImplementationSpecific,
 }
@@ -69,10 +83,6 @@ impl Kind {
     }
 }
 
-// TODO test
-//  Err(Kind::ImplementationSpecific
-//                    .context("validator set is empty, or, invalid hash algo".to_string())
-//                    .into()))
 #[cfg(test)]
 mod tests {
     use crate::lite::error::{Error as LiteErr, Kind};
