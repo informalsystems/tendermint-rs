@@ -1,14 +1,10 @@
 //! JSONRPC error types
 
-use thiserror::Error;
-use anomaly::{BoxError, Context};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Display};
+use thiserror::Error;
 
 /// Tendermint RPC errors
-//pub type Error = BoxError;
-
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Error {
     /// Error code
@@ -156,10 +152,6 @@ impl Code {
     pub fn value(self) -> i32 {
         i32::from(self)
     }
-    /// Add additional context.
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Code> {
-    Context::new(self, Some(source.into()))
-    }
 }
 
 impl From<i32> for Code {
@@ -201,5 +193,24 @@ impl<'de> Deserialize<'de> for Code {
 impl Serialize for Code {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.value().serialize(serializer)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::rpc::error::Code;
+    use crate::rpc::Error;
+
+    #[test]
+    fn test_serialize() {
+        let expect =
+            "{\"code\":-32700,\"message\":\"Parse error. Invalid JSON\",\"data\":\"hello world\"}";
+        let pe = Error::parse_error("hello world");
+        let pe_json = serde_json::to_string(&pe).expect("could not write JSON");
+        assert_eq!(pe_json, expect);
+        let res: Error = serde_json::from_str(expect).expect("could not read JSON");
+        assert_eq!(res.code, Code::ParseError);
+        assert_eq!(res.code.value(), -32700);
+        assert_eq!(res.data, Some("hello world".to_string()));
     }
 }

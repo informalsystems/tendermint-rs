@@ -1,9 +1,11 @@
 //! Remote addresses (`tcp://` or `unix://`)
 
 use crate::{
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     node,
 };
+use anomaly::{fail, format_err};
+
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display},
@@ -67,7 +69,7 @@ impl FromStr for Address {
             })
         } else if addr.contains("://") {
             // The only supported URI prefixes are `tcp://` and `unix://`
-            Err(err!(ErrorKind::Parse, "invalid address prefix: {:?}", addr))
+            fail!(Kind::Parse, "invalid address prefix: {:?}", addr)
         } else {
             // If the address has no URI prefix, assume TCP
             Self::parse_tcp_addr(addr)
@@ -86,33 +88,31 @@ impl Address {
         let (peer_id, authority) = match authority_parts.len() {
             1 => (None, authority_parts[0]),
             2 => (Some(authority_parts[0].parse()?), authority_parts[1]),
-            _ => {
-                return Err(err!(
-                    ErrorKind::Parse,
-                    "invalid {} address (bad authority): {}",
-                    TCP_PREFIX,
-                    addr
-                ))
-            }
+            _ => fail!(
+                Kind::Parse,
+                "invalid {} address (bad authority): {}",
+                TCP_PREFIX,
+                addr
+            ),
         };
 
         let host_and_port: Vec<&str> = authority.split(':').collect();
 
         if host_and_port.len() != 2 {
-            return Err(err!(
-                ErrorKind::Parse,
+            fail!(
+                Kind::Parse,
                 "invalid {} address (missing port): {}",
                 TCP_PREFIX,
                 addr
-            ));
+            );
         }
 
         // TODO(tarcieri): default for missing hostname?
         let host = host_and_port[0].to_owned();
 
         let port = host_and_port[1].parse::<u16>().map_err(|_| {
-            err!(
-                ErrorKind::Parse,
+            format_err!(
+                Kind::Parse,
                 "invalid {} address (bad port): {}",
                 TCP_PREFIX,
                 addr

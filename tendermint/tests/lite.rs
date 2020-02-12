@@ -1,9 +1,11 @@
+use anomaly::fail;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::{fs, path::PathBuf};
 use tendermint::block::{Header, Height};
+use tendermint::lite::error::{Error, Kind};
 use tendermint::lite::{Requester, TrustThresholdFraction, TrustedState};
 use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Hash, Time};
 
@@ -82,7 +84,7 @@ impl Requester<SignedHeader, Header> for MockRequester {
             return Ok(sh.into());
         }
         println!("couldn't get sh for: {}", &h);
-        Err(Error::RequestFailed)
+        fail!(Kind::RequestFailed, "couldn't get sh for: {}", &h);
     }
 
     fn validator_set(&self, h: u64) -> Result<Set, Error> {
@@ -91,7 +93,7 @@ impl Requester<SignedHeader, Header> for MockRequester {
             return Ok(vs.to_owned());
         }
         println!("couldn't get vals for: {}", &h);
-        Err(Error::RequestFailed)
+        fail!(Kind::RequestFailed, "couldn't get vals for: {}", &h);
     }
 }
 

@@ -1,6 +1,6 @@
 //! Tendermint blockchain identifiers
 
-use crate::error::{Error, ErrorKind};
+use crate::error::{Error, Kind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     cmp::Ordering,
@@ -66,13 +66,13 @@ impl FromStr for Id {
     /// Parses string to create a new chain ID
     fn from_str(name: &str) -> Result<Self, Error> {
         if name.is_empty() || name.len() > MAX_LENGTH {
-            return Err(ErrorKind::Length.into());
+            return Err(Kind::Length.into());
         }
 
         for byte in name.as_bytes() {
             match byte {
                 b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' => (),
-                _ => return Err(ErrorKind::Parse.into()),
+                _ => return Err(Kind::Parse.into()),
             }
         }
 
@@ -146,15 +146,18 @@ mod tests {
 
     #[test]
     fn rejects_empty_chain_ids() {
-        assert_eq!(*"".parse::<Id>().err().unwrap().kind(), ErrorKind::Length);
+        assert_eq!(
+            *"".parse::<Id>().unwrap_err().to_string(),
+            Kind::Length.to_string()
+        );
     }
 
     #[test]
     fn rejects_overlength_chain_ids() {
         let overlong_id = String::from_utf8(vec![b'x'; MAX_LENGTH + 1]).unwrap();
         assert_eq!(
-            *overlong_id.parse::<Id>().err().unwrap().kind(),
-            ErrorKind::Length
+            *overlong_id.parse::<Id>().unwrap_err().to_string(),
+            Kind::Length.to_string()
         );
     }
 }

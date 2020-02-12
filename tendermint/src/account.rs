@@ -1,6 +1,6 @@
 //! Tendermint accounts
 
-use crate::error::{Error, ErrorKind};
+use crate::error::{Error, Kind};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
 use signatory::{ecdsa::curve::secp256k1, ed25519};
@@ -86,10 +86,10 @@ impl FromStr for Id {
         // Accept either upper or lower case hex
         let bytes = hex::decode_upper(s)
             .or_else(|_| hex::decode(s))
-            .map_err(|_| ErrorKind::Parse)?;
+            .map_err(|_| Kind::Parse)?;
 
         if bytes.len() != LENGTH {
-            return Err(ErrorKind::Parse.into());
+            return Err(Kind::Parse.into());
         }
 
         let mut result_bytes = [0u8; LENGTH];
