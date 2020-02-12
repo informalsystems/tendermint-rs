@@ -256,7 +256,7 @@ fn run_bisection_test(case: TestBisection) {
                 .validator_set(untrusted_height + 1)
                 .expect("val set at untrusted height not found");
             let expected_state = TrustedState::new(
-                &untrusted_signed_header.to_owned(), //.into(),
+                &untrusted_signed_header.to_owned(),
                 untrusted_next_vals,
             );
             assert_eq!(new_states[new_states.len() - 1], expected_state);
