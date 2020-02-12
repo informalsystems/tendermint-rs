@@ -475,7 +475,7 @@ mod tests {
             TrustThresholdFraction::default(),
         );
         assert!(result.is_err());
-        assert_eq!(format!("{}", result.unwrap_err()), format!("{}", err));
+        assert_eq!(result.unwrap_err().to_string(), err.to_string());
     }
 
     // make a state with the given vals and commit and ensure we get no error.
