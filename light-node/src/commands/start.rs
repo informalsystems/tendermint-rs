@@ -7,7 +7,7 @@ use crate::prelude::*;
 use core::future::Future;
 use tendermint::hash;
 use tendermint::lite;
-use tendermint::lite::{Error, Header, Height, Requester, TrustThresholdFraction};
+use tendermint::lite::{Header, Height, Requester, TrustThresholdFraction};
 use tendermint::rpc;
 use tendermint::Hash;
 use tokio::runtime::Builder;
@@ -19,6 +19,7 @@ use crate::requester::RPCRequester;
 use crate::store::{MemStore, State};
 use abscissa_core::{config, Command, FrameworkError, Options, Runnable};
 use std::time::{Duration, SystemTime};
+use tendermint::lite::error::Error;
 
 /// `start` subcommand
 ///
