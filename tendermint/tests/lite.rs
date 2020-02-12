@@ -99,9 +99,7 @@ impl MockRequester {
     fn new(chain_id: String, lite_blocks: Vec<LiteBlock>) -> Self {
         let mut sh_map: HashMap<u64, SignedHeader> = HashMap::new();
         let mut val_map: HashMap<u64, Set> = HashMap::new();
-        let last_block = lite_blocks
-            .get(lite_blocks.len() - 1)
-            .expect("last entry not found");
+        let last_block = lite_blocks.last().expect("last entry not found");
         val_map.insert(
             last_block.signed_header.header.height.increment().value(),
             last_block.to_owned().next_validator_set,
