@@ -105,7 +105,8 @@ impl TrustThresholdFraction {
         }
         Err(Kind::InvalidTrustThreshold {
             got: format!("{}/{}", numerator, denominator),
-        }.into())
+        }
+        .into())
     }
 }
 

@@ -24,6 +24,10 @@ pub enum Kind {
     #[error("expected height >= {expected} (got: {got})")]
     NonIncreasingHeight { got: u64, expected: u64 },
 
+    /// Header time is in the past compared to already trusted header.
+    #[error("untrusted header time <= trusted header time")]
+    NonIncreasingTime,
+
     /// Invalid validator hash.
     #[error("header's validator hash does not match actual validator hash ({header_val_hash:?}!={val_hash:?})")]
     InvalidValidatorSet {

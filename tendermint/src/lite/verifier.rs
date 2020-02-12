@@ -172,7 +172,7 @@ where
 
     // ensure the untrusted_header.bft_time() > trusted_header.bft_time()
     if untrusted_header.bft_time().into() <= trusted_header.bft_time().into() {
-        return Err(Error::NonIncreasingTime);
+        return Err(Kind::NonIncreasingTime.into());
     }
 
     match untrusted_height.cmp(&trusted_height.checked_add(1).expect("height overflow")) {
@@ -550,7 +550,11 @@ mod tests {
             req,
             cache.as_mut(),
         );
-        assert_eq!(result, Err(err));
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().kind().to_string(),
+            err.kind().to_string()
+        );
     }
 
     // valid to skip, but invalid commit. 1 validator.
@@ -565,11 +569,14 @@ mod tests {
         // but voting_power_in isn't smart enough to see this ...
         // TODO(ismail): https://github.com/interchainio/tendermint-rs/issues/140
         let invalid_vac = ValsAndCommit::new(vec![1], vec![0]);
-        assert_single_err(ts, invalid_vac,
-            &Kind::InvalidCommit {
+        assert_single_err(
+            ts,
+            invalid_vac,
+            Kind::InvalidCommit {
                 total: 1,
                 signed: 0,
-            },
+            }
+            .into(),
         );
     }
 
@@ -604,11 +611,11 @@ mod tests {
 
         // 0% overlap - new val set without the original signer
         vac = ValsAndCommit::new(vec![1], vec![1]);
-        assert_single_err(ts, vac, &err);
+        assert_single_err(ts, vac, err.clone().into());
 
         // 0% overlap - val set contains original signer, but they didn't sign
         vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![1, 2, 3]);
-        assert_single_err(ts, vac, &err);
+        assert_single_err(ts, vac, err.into());
     }
 
     // valid commit and data, starting with 2 validators.
@@ -644,11 +651,11 @@ mod tests {
 
         // 0% overlap (neither original signer still present)
         vac = ValsAndCommit::new(vec![2], vec![2]);
-        assert_single_err(ts, vac, &err);
+        assert_single_err(ts, vac, err.clone().into());
 
         // 0% overlap (original signer is still in val set but not in commit)
         vac = ValsAndCommit::new(vec![0, 2, 3, 4], vec![2, 3, 4]);
-        assert_single_err(ts, vac, &err);
+        assert_single_err(ts, vac, err.into());
     }
 
     // valid commit and data, starting with 3 validators.
@@ -685,14 +692,14 @@ mod tests {
 
         // 33% overlap (one original signer still present)
         vac = ValsAndCommit::new(vec![0], vec![0]);
-        assert_single_err(ts, vac, err);
+        assert_single_err(ts, vac, err.clone().into());
 
         vac = ValsAndCommit::new(vec![0, 3], vec![0, 3]);
-        assert_single_err(ts, vac, err);
+        assert_single_err(ts, vac, err.clone().into());
 
         // 0% overlap (neither original signer still present)
         vac = ValsAndCommit::new(vec![3], vec![2]);
-        assert_single_err(ts, vac, &err);
+        assert_single_err(ts, vac, err.into());
 
         let err = Kind::InsufficientVotingPower {
             total: 3,
@@ -702,7 +709,7 @@ mod tests {
 
         // 0% overlap (original signer is still in val set but not in commit)
         vac = ValsAndCommit::new(vec![0, 3, 4, 5], vec![3, 4, 5]);
-        assert_single_err(ts, vac, &err);
+        assert_single_err(ts, vac, err.into());
     }
 
     #[test]
@@ -759,13 +766,13 @@ mod tests {
         // fails due to missing vals for height 6:
         let mut faulty_req = req;
         faulty_req.validators.remove(&6_u64);
-        assert_bisection_err(&faulty_req, &ts, 5, Error::RequestFailed);
+        assert_bisection_err(&faulty_req, &ts, 5, Kind::RequestFailed.into());
 
         // Error: can't bisect from trusted height 1 to height 1
         // (here because non-increasing time is caught first)
         let vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
         let req = init_requester(vec![vac.clone(), vac.clone(), vac]);
-        assert_bisection_err(&req, &ts, 1, Error::NonIncreasingTime);
+        assert_bisection_err(&req, &ts, 1, Kind::NonIncreasingTime.into());
 
         // can't bisect from trusted height 1 to height 1 (here we tamper with time but
         // expect to fail on NonIncreasingHeight):
@@ -778,7 +785,16 @@ mod tests {
         let new_sh = MockSignedHeader::new(tampered_commit, time_tampered_header);
         // replace the signed header:
         req.signed_headers.insert(1, new_sh);
-        assert_bisection_err(&req, &ts, 1, Error::NonIncreasingHeight);
+        assert_bisection_err(
+            &req,
+            &ts,
+            1,
+            Kind::NonIncreasingHeight {
+                got: 1,
+                expected: 2,
+            }
+            .into(),
+        );
     }
 
     // can't bisect from height 1 to height 3
@@ -798,9 +814,17 @@ mod tests {
             vac2,
         ]);
         let ts = &init_trusted_state(vac1, vals_vec, 1);
-        let err = Error::InvalidCommit;
 
-        assert_bisection_err(req, ts, 3, err);
+        assert_bisection_err(
+            req,
+            ts,
+            3,
+            Kind::InvalidCommit {
+                total: 4,
+                signed: 1,
+            }
+            .into(),
+        );
     }
 
     #[test]
