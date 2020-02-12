@@ -16,6 +16,7 @@ pub struct Error {
     /// Additional data about the error
     data: Option<String>,
 }
+impl std::error::Error for Error {}
 
 impl Error {
     /// Create a new RPC error
@@ -92,12 +93,6 @@ impl Display for Error {
             ),
             None => write!(f, "{} (code: {})", self.message, self.code.value()),
         }
-    }
-}
-
-impl Fail for Error {
-    fn name(&self) -> Option<&str> {
-        self.code.name()
     }
 }
 

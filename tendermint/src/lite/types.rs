@@ -3,6 +3,7 @@
 
 use crate::Hash;
 
+use crate::lite::error::{Error, Kind};
 use failure::_core::fmt::Debug;
 use std::time::SystemTime;
 
@@ -27,11 +28,7 @@ pub trait Header: Clone {
 }
 
 /// ValidatorSet is the full validator set.
-/// It exposes its hash, which should match whats in a header,
-/// and its total power. It also has an underlying
-/// Validator type which can be used for verifying signatures.
-/// It also provides a lookup method to fetch a validator by
-/// its identifier.
+/// It exposes its hash and its total power.
 pub trait ValidatorSet: Clone {
     /// Hash of the validator set.
     fn hash(&self) -> Hash;
@@ -40,9 +37,9 @@ pub trait ValidatorSet: Clone {
     fn total_power(&self) -> u64;
 }
 
-/// Commit is proof a Header is valid.
-/// It has an underlying Vote type with the relevant vote data
-/// for verification.
+/// Commit is used to prove a Header can be trusted.
+/// Verifying the Commit requires access to an associated ValidatorSet
+/// to determine what voting power signed the commit.
 pub trait Commit: Clone {
     type ValidatorSet: ValidatorSet;
 
@@ -76,7 +73,7 @@ pub trait Commit: Clone {
 /// TrustThreshold defines how much of the total voting power of a known
 /// and trusted validator set is sufficient for a commit to be
 /// accepted going forward.
-pub trait TrustThreshold: Copy + Clone {
+pub trait TrustThreshold: Copy + Clone + Debug {
     fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool;
 }
 
@@ -94,14 +91,16 @@ pub struct TrustThresholdFraction {
 }
 
 impl TrustThresholdFraction {
-    pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
+    pub fn new(numerator: u64, denominator: u64) -> Result<Self, Kind> {
         if numerator <= denominator && denominator > 0 {
             return Ok(Self {
                 numerator,
                 denominator,
             });
         }
-        Err(Error::InvalidTrustThreshold)
+        Err(Kind::InvalidTrustThreshold {
+            got: format!("{}/{}", numerator, denominator),
+        })
     }
 }
 
@@ -197,30 +196,6 @@ where
     pub fn header(&self) -> &H {
         &self.header
     }
-}
-
-// NOTE: Copy/Clone for convenience in testing ...
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Error {
-    Expired,
-    DurationOutOfRange,
-
-    NonIncreasingHeight,
-
-    InvalidSignature, // TODO: deduplicate with ErrorKind::SignatureInvalid
-
-    InvalidValidatorSet,
-    InvalidNextValidatorSet,
-    InvalidCommitValue, // commit is not for the header we expected
-
-    InvalidCommitSignatures, // Note: this is only used by implementation (ie. expected return in Commit::validate())
-    InvalidCommit,           // signers do not account for +2/3 of the voting power
-
-    InsufficientVotingPower, // trust threshold (default +1/3) is not met
-
-    RequestFailed,
-
-    InvalidTrustThreshold,
 }
 
 pub(super) mod mocks {
@@ -336,7 +311,9 @@ pub(super) mod mocks {
         fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
             // some implementation specific checks:
             if self.vals.is_empty() || self.hash.algorithm() != Algorithm::Sha256 {
-                return Err(Error::InvalidCommitSignatures);
+                return Err(Kind::ImplementationSpecific
+                    .context("validator set is empty, or, invalid hash algo".to_string())
+                    .into());
             }
             Ok(())
         }
@@ -365,7 +342,9 @@ pub(super) mod mocks {
                 return Ok(sh.to_owned());
             }
             println!("couldn't get sh for: {}", &h);
-            Err(Error::RequestFailed)
+            Err(Kind::RequestFailed
+                .context(format!("couldn't get sh for: {}", &h))
+                .into())
         }
 
         fn validator_set(&self, h: u64) -> Result<MockValSet, Error> {
@@ -374,7 +353,9 @@ pub(super) mod mocks {
                 return Ok(vs.to_owned());
             }
             println!("couldn't get vals for: {}", &h);
-            Err(Error::RequestFailed)
+            Err(Kind::RequestFailed
+                .context(format!("couldn't get vals for: {}", &h))
+                .into())
         }
     }
 
