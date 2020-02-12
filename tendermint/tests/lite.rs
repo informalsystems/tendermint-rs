@@ -104,8 +104,8 @@ fn run_test_cases(cases: TestCases) {
                 &untrusted_vals,
                 &untrusted_next_vals,
                 TrustThresholdFraction::default(),
-                &trusting_period,
-                &now,
+                trusting_period,
+                now,
             ) {
                 Ok(new_state) => {
                     let expected_state = TrustedState::new(

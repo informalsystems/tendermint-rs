@@ -61,14 +61,14 @@ fn main() {
             latest_peer_height,
         );
 
-        let now = &SystemTime::now();
+        let now = SystemTime::now();
         let trusted_state = store.get(0).expect("can not read trusted state");
 
         let new_states = lite::verify_bisection(
             trusted_state.clone(),
             latest_peer_height,
             TrustThresholdFraction::default(),
-            &trusting_period,
+            trusting_period,
             now,
             &req,
         )
