@@ -31,8 +31,7 @@ where
     let header_time: SystemTime = last_header.bft_time().into();
     let expires_at = header_time.add(trusting_period);
     // Ensure now > expires_at.
-    // TODO: shouldn't this be <= instead below:
-    if expires_at < now {
+    if expires_at <= now {
         return Err(Kind::Expired {
             at: expires_at,
             now,
@@ -693,9 +692,9 @@ mod tests {
         let header = MockHeader::new(4, header_time, fixed_hash(), fixed_hash());
         assert!(is_within_trust_period(&header, period, now).is_ok());
 
-        // equal to the period, OK
+        // equal to the period, not OK
         let now = header_time + period;
-        assert!(is_within_trust_period(&header, period, now).is_ok());
+        assert!(is_within_trust_period(&header, period, now).is_err());
 
         // greater than the period, not OK
         let now = header_time + period + Duration::new(1, 0);
