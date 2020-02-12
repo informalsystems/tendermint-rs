@@ -43,7 +43,7 @@ where
     ensure!(
         header_time <= now,
         Kind::DurationOutOfRange,
-        "header time ({:?}) >  now ({:?})",
+        "header time: ({:?}) > now: ({:?})",
         header_time,
         now
     );
