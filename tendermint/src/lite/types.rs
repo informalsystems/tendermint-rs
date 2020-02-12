@@ -7,6 +7,8 @@ use crate::lite::error::{Error, Kind};
 use failure::_core::fmt::Debug;
 use std::time::SystemTime;
 
+use anomaly::fail;
+
 pub type Height = u64;
 
 /// Header contains meta data about the block -
@@ -311,9 +313,10 @@ pub(super) mod mocks {
         fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
             // some implementation specific checks:
             if self.vals.is_empty() || self.hash.algorithm() != Algorithm::Sha256 {
-                return Err(Kind::ImplementationSpecific
-                    .context("validator set is empty, or, invalid hash algo".to_string())
-                    .into());
+                fail!(
+                    Kind::ImplementationSpecific,
+                    "validator set is empty, or, invalid hash algo"
+                );
             }
             Ok(())
         }
@@ -342,9 +345,7 @@ pub(super) mod mocks {
                 return Ok(sh.to_owned());
             }
             println!("couldn't get sh for: {}", &h);
-            Err(Kind::RequestFailed
-                .context(format!("couldn't get sh for: {}", &h))
-                .into())
+            fail!(Kind::RequestFailed, "couldn't get sh for: {}", &h);
         }
 
         fn validator_set(&self, h: u64) -> Result<MockValSet, Error> {
@@ -353,9 +354,7 @@ pub(super) mod mocks {
                 return Ok(vs.to_owned());
             }
             println!("couldn't get vals for: {}", &h);
-            Err(Kind::RequestFailed
-                .context(format!("couldn't get vals for: {}", &h))
-                .into())
+            fail!(Kind::RequestFailed, "couldn't get vals for: {}", &h);
         }
     }
 
