@@ -15,30 +15,38 @@ use crate::lite::error::{Error, Kind};
 use crate::lite::{
     Commit, Header, Height, Requester, SignedHeader, TrustThreshold, TrustedState, ValidatorSet,
 };
+use anomaly::ensure;
+use std::ops::Add;
 
 /// Returns an error if the header has expired according to the given
 /// trusting_period and current time. If so, the verifier must be reset subjectively.
 fn is_within_trust_period<H>(
     last_header: &H,
-    trusting_period: &Duration,
-    now: &SystemTime,
+    trusting_period: Duration,
+    now: SystemTime,
 ) -> Result<(), Error>
 where
     H: Header,
 {
-    match now.duration_since(last_header.bft_time().into()) {
-        Ok(passed) => {
-            if passed > *trusting_period {
-                return Err(Kind::Expired {
-                    at: last_header.bft_time().into() + *trusting_period,
-                    now: *now,
-                }
-                .into());
-            }
-            Ok(())
+    let header_time: SystemTime = last_header.bft_time().into();
+    let expires_at = header_time.add(trusting_period);
+    // Ensure now > expires_at.
+    if expires_at <= now {
+        return Err(Kind::Expired {
+            at: expires_at,
+            now,
         }
-        Err(e) => Err(Kind::DurationOutOfRange(e).into()),
+        .into());
     }
+    // Also make sure the header is not after now.
+    ensure!(
+        header_time <= now,
+        Kind::DurationOutOfRange,
+        "header time: ({:?}) > now: ({:?})",
+        header_time,
+        now
+    );
+    Ok(())
 }
 
 /// Validate the validators, next validators, against the signed header.
@@ -219,8 +227,8 @@ pub fn verify_single<H, C, L>(
     untrusted_vals: &C::ValidatorSet,
     untrusted_next_vals: &C::ValidatorSet,
     trust_threshold: L,
-    trusting_period: &Duration,
-    now: &SystemTime,
+    trusting_period: Duration,
+    now: SystemTime,
 ) -> Result<TrustedState<C, H>, Error>
 where
     H: Header,
@@ -269,8 +277,8 @@ pub fn verify_bisection<C, H, L, R>(
     trusted_state: TrustedState<C, H>,
     untrusted_height: Height,
     trust_threshold: L,
-    trusting_period: &Duration,
-    now: &SystemTime,
+    trusting_period: Duration,
+    now: SystemTime,
     req: &R,
 ) -> Result<Vec<TrustedState<C, H>>, Error>
 where
@@ -459,7 +467,7 @@ mod tests {
         req
     }
 
-    // make a state with the given vals and commit and ensure we get the error.
+    // make a state with the given vals and commit and ensure we get the expected error kind.
     fn assert_single_err(
         ts: &TrustedState<MockCommit, MockHeader>,
         vals: Vec<usize>,
@@ -475,7 +483,7 @@ mod tests {
             TrustThresholdFraction::default(),
         );
         assert!(result.is_err());
-        assert_eq!(format!("{}", result.unwrap_err()), format!("{}", err));
+        assert_eq!(result.unwrap_err().to_string(), err.to_string());
     }
 
     // make a state with the given vals and commit and ensure we get no error.
@@ -682,20 +690,20 @@ mod tests {
 
         // less than the period, OK
         let header = MockHeader::new(4, header_time, fixed_hash(), fixed_hash());
-        assert!(is_within_trust_period(&header, &period, &now).is_ok());
+        assert!(is_within_trust_period(&header, period, now).is_ok());
 
-        // equal to the period, OK
+        // equal to the period, not OK
         let now = header_time + period;
-        assert!(is_within_trust_period(&header, &period, &now).is_ok());
+        assert!(is_within_trust_period(&header, period, now).is_err());
 
         // greater than the period, not OK
         let now = header_time + period + Duration::new(1, 0);
-        assert!(is_within_trust_period(&header, &period, &now).is_err());
+        assert!(is_within_trust_period(&header, period, now).is_err());
 
         // bft time in header is later than now, not OK:
         let now = SystemTime::UNIX_EPOCH;
         let later_than_now = now + Duration::new(60, 0);
         let future_header = MockHeader::new(4, later_than_now, fixed_hash(), fixed_hash());
-        assert!(is_within_trust_period(&future_header, &period, &now).is_err());
+        assert!(is_within_trust_period(&future_header, period, now).is_err());
     }
 }
