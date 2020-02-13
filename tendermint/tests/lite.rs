@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::{fs, path::PathBuf};
 use tendermint::block::{Header, Height};
-use tendermint::lite::{Error, Requester, TrustThresholdFraction, TrustedState};
+use tendermint::lite::{Requester, TrustThresholdFraction, TrustedState};
 use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Hash, Time};
 
 #[derive(Clone, Debug)]

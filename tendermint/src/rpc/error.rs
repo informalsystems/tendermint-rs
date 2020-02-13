@@ -1,10 +1,14 @@
 //! JSONRPC error types
 
-use failure::Fail;
+use thiserror::Error;
+use anomaly::{BoxError, Context};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Display};
 
 /// Tendermint RPC errors
+//pub type Error = BoxError;
+
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Error {
     /// Error code
@@ -112,38 +116,38 @@ impl From<hyper::Error> for Error {
 ///
 /// See `func RPC*Error()` definitions in:
 /// <https://github.com/tendermint/tendermint/blob/master/rpc/lib/types/types.go>
-#[derive(Copy, Clone, Debug, Eq, Fail, Hash, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, Error, Hash, PartialEq, PartialOrd, Ord)]
 pub enum Code {
     /// Low-level HTTP error
-    #[fail(display = "HTTP error")]
+    #[error("HTTP error")]
     HttpError,
 
     /// Parse error i.e. invalid JSON (-32700)
-    #[fail(display = "Parse error. Invalid JSON")]
+    #[error("Parse error. Invalid JSON")]
     ParseError,
 
     /// Invalid request (-32600)
-    #[fail(display = "Invalid Request")]
+    #[error("Invalid Request")]
     InvalidRequest,
 
     /// Method not found error (-32601)
-    #[fail(display = "Method not found")]
+    #[error("Method not found")]
     MethodNotFound,
 
     /// Invalid parameters (-32602)
-    #[fail(display = "Invalid params")]
+    #[error("Invalid params")]
     InvalidParams,
 
     /// Internal error (-32603)
-    #[fail(display = "Internal error")]
+    #[error("Internal error")]
     InternalError,
 
     /// Server error (-32000)
-    #[fail(display = "Server error")]
+    #[error("Server error")]
     ServerError,
 
     /// Other error types
-    #[fail(display = "Error (code: {})", 0)]
+    #[error("Error (code: {})", 0)]
     Other(i32),
 }
 
@@ -151,6 +155,10 @@ impl Code {
     /// Get the integer error value for this code
     pub fn value(self) -> i32 {
         i32::from(self)
+    }
+    /// Add additional context.
+    pub fn context(self, source: impl Into<BoxError>) -> Context<Code> {
+    Context::new(self, Some(source.into()))
     }
 }
 
