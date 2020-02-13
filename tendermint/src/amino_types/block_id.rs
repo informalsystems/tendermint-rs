@@ -1,4 +1,4 @@
-use super::validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*};
+use super::validate::{ConsensusMessage, Kind::*};
 use crate::block::parts;
 use crate::{
     block,
@@ -44,7 +44,7 @@ impl From<&block::Id> for BlockId {
 }
 
 impl ConsensusMessage for BlockId {
-    fn validate_basic(&self) -> Result<(), ValidationError> {
+    fn validate_basic(&self) -> Result<(), Error> {
         // Hash can be empty in case of POLBlockID in Proposal.
         if !self.hash.is_empty() && self.hash.len() != SHA256_HASH_SIZE {
             return Err(InvalidHashSize.into());
@@ -103,7 +103,7 @@ impl PartsSetHeader {
 }
 
 impl ConsensusMessage for PartsSetHeader {
-    fn validate_basic(&self) -> Result<(), ValidationError> {
+    fn validate_basic(&self) -> Result<(), Error> {
         if self.total < 0 {
             return Err(NegativeTotal.into());
         }

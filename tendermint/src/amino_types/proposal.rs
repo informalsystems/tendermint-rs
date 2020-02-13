@@ -4,8 +4,9 @@ use super::{
     remote_error::RemoteError,
     signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
-    validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
+    validate::{ConsensusMessage, Kind::*},
 };
+use crate::amino_types::validate;
 use crate::{
     block::{self, ParseId},
     chain, consensus,
@@ -133,7 +134,7 @@ impl SignableMsg for SignProposalRequest {
             prop.signature = sig.as_ref().to_vec();
         }
     }
-    fn validate(&self) -> Result<(), ValidationError> {
+    fn validate(&self) -> Result<(), validate::Error> {
         match self.proposal {
             Some(ref p) => p.validate_basic(),
             None => Err(MissingConsensusMessage.into()),
@@ -172,7 +173,7 @@ impl SignableMsg for SignProposalRequest {
 }
 
 impl ConsensusMessage for Proposal {
-    fn validate_basic(&self) -> Result<(), ValidationError> {
+    fn validate_basic(&self) -> Result<(), Error> {
         if self.msg_type != SignedMsgType::Proposal.to_u32() {
             return Err(InvalidMessageType.into());
         }
