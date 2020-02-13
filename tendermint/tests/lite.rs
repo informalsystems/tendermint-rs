@@ -246,8 +246,8 @@ fn run_bisection_test(case: TestBisection) {
         trusted_state,
         untrusted_height,
         trust_threshold,
-        &trusting_period.into(),
-        &now.into(),
+        trusting_period.into(),
+        now.into(),
         &req,
     ) {
         Ok(new_states) => {
