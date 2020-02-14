@@ -2,7 +2,7 @@
 
 use crate::Hash;
 use anomaly::{BoxError, Context};
-use std::time::{SystemTime, SystemTimeError};
+use std::time::SystemTime;
 use thiserror::Error;
 
 /// The main error type verification methods will return.
@@ -17,8 +17,8 @@ pub enum Kind {
     Expired { at: SystemTime, now: SystemTime },
 
     /// Trusted header is from the future.
-    #[error("duration error {:?}", _0)]
-    DurationOutOfRange(#[from] SystemTimeError),
+    #[error("trusted header time is too far in the future")]
+    DurationOutOfRange,
 
     /// Header height smaller than expected.
     #[error("expected height >= {expected} (got: {got})")]
