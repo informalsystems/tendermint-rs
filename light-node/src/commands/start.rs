@@ -72,12 +72,12 @@ impl Runnable for StartCmd {
                 latest_trusted_height, latest_peer_height,
             );
 
-            let now = &SystemTime::now();
+            let now = SystemTime::now();
             lite::verify_bisection(
                 latest_trusted.to_owned(),
                 latest_peer_height,
                 TrustThresholdFraction::default(), // TODO
-                &config.trusting_period,
+                config.trusting_period,
                 now,
                 &req,
             )
