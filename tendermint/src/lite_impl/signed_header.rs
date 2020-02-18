@@ -3,6 +3,7 @@
 use crate::lite::error::{Error, Kind};
 use crate::validator::Set;
 use crate::{block, hash, lite, vote};
+use anomaly::fail;
 
 impl lite::Commit for block::signed_header::SignedHeader {
     type ValidatorSet = Set;
@@ -35,14 +36,13 @@ impl lite::Commit for block::signed_header::SignedHeader {
             let sign_bytes = vote.sign_bytes();
 
             if !val.verify_signature(&sign_bytes, vote.signature()) {
-                return Err(Kind::ImplementationSpecific
-                    .context(format!(
-                        "Couldn't verify signature {:?} with validator {:?} on sign_bytes {:?}",
-                        vote.signature(),
-                        val,
-                        sign_bytes,
-                    ))
-                    .into());
+                fail!(
+                    Kind::ImplementationSpecific,
+                    "Couldn't verify signature {:?} with validator {:?} on sign_bytes {:?}",
+                    vote.signature(),
+                    val,
+                    sign_bytes,
+                );
             }
             signed_power += val.power();
         }
@@ -52,13 +52,12 @@ impl lite::Commit for block::signed_header::SignedHeader {
 
     fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error> {
         if self.commit.precommits.len() != vals.validators().len() {
-            return Err(lite::error::Kind::ImplementationSpecific
-                .context(format!(
-                    "pre-commit length: {} doesn't match validator length: {}",
-                    self.commit.precommits.len(),
-                    vals.validators().len()
-                ))
-                .into());
+            fail!(
+                lite::error::Kind::ImplementationSpecific,
+                "pre-commit length: {} doesn't match validator length: {}",
+                self.commit.precommits.len(),
+                vals.validators().len()
+            );
         }
         // TODO: compare to the go code for more implementation related checks and clarify if this:
         // https://github.com/interchainio/tendermint-rs/pull/143/commits/0a30022fa47e909e6c7b20417dd178c8a3b84838#r374958528
