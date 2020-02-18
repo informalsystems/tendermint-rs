@@ -1,4 +1,4 @@
-use super::validate::Error;
+use super::validate;
 use crate::{chain, consensus};
 use bytes::BufMut;
 use prost_amino::{DecodeError, EncodeError};
@@ -15,7 +15,7 @@ pub trait SignableMsg {
 
     /// Set the Ed25519 signature on the underlying message
     fn set_signature(&mut self, sig: &ed25519::Signature);
-    fn validate(&self) -> Result<(), Error>;
+    fn validate(&self) -> Result<(), validate::Error>;
     fn consensus_state(&self) -> Option<consensus::State>;
     fn height(&self) -> Option<i64>;
     fn msg_type(&self) -> Option<SignedMsgType>;

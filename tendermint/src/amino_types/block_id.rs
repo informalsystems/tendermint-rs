@@ -1,4 +1,4 @@
-use super::validate::{ConsensusMessage, Kind::*};
+use super::validate::{ConsensusMessage, Kind::InvalidHashSize, Kind::NegativeTotal};
 use crate::block::parts;
 use crate::{
     block,
