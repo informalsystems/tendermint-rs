@@ -174,7 +174,7 @@ impl SignableMsg for SignProposalRequest {
 }
 
 impl ConsensusMessage for Proposal {
-    fn validate_basic(&self) -> Result<(), error::Error> {
+    fn validate_basic(&self) -> Result<(), validate::Error> {
         if self.msg_type != SignedMsgType::Proposal.to_u32() {
             return Err(InvalidMessageType.into());
         }
