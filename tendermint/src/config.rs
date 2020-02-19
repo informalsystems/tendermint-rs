@@ -13,10 +13,11 @@ pub use self::{node_key::NodeKey, priv_validator_key::PrivValidatorKey};
 
 use crate::{
     abci::tag,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     genesis::Genesis,
     net, node, Moniker, Timeout,
 };
+use anomaly::{fail, format_err};
 use serde::{de, de::Error as _, ser, Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -113,8 +114,8 @@ impl TendermintConfig {
         P: AsRef<Path>,
     {
         let toml_string = fs::read_to_string(path).map_err(|e| {
-            err!(
-                ErrorKind::Parse,
+            format_err!(
+                Kind::Parse,
                 "couldn't open {}: {}",
                 path.as_ref().display(),
                 e
@@ -128,7 +129,7 @@ impl TendermintConfig {
     pub fn load_genesis_file(&self, home: impl AsRef<Path>) -> Result<Genesis, Error> {
         let path = home.as_ref().join(&self.genesis_file);
         let genesis_json = fs::read_to_string(&path)
-            .map_err(|e| err!(ErrorKind::Parse, "couldn't open {}: {}", path.display(), e))?;
+            .map_err(|e| format_err!(Kind::Parse, "couldn't open {}: {}", path.display(), e))?;
 
         Ok(serde_json::from_str(genesis_json.as_ref())?)
     }
@@ -188,18 +189,14 @@ impl FromStr for LogLevel {
             let parts = level.split(':').collect::<Vec<_>>();
 
             if parts.len() != 2 {
-                return Err(err!(ErrorKind::Parse, "error parsing log level: {}", level));
+                fail!(Kind::Parse, "error parsing log level: {}", level);
             }
 
             let key = parts[0].to_owned();
             let value = parts[1].to_owned();
 
             if levels.insert(key, value).is_some() {
-                return Err(err!(
-                    ErrorKind::Parse,
-                    "duplicate log level setting for: {}",
-                    level
-                ));
+                fail!(Kind::Parse, "duplicate log level setting for: {}", level);
             }
         }
 

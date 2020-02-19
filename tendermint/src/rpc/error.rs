@@ -1,8 +1,8 @@
 //! JSONRPC error types
 
-use failure::Fail;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Display};
+use thiserror::Error;
 
 /// Tendermint RPC errors
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -112,38 +112,38 @@ impl From<hyper::Error> for Error {
 ///
 /// See `func RPC*Error()` definitions in:
 /// <https://github.com/tendermint/tendermint/blob/master/rpc/lib/types/types.go>
-#[derive(Copy, Clone, Debug, Eq, Fail, Hash, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, Error, Hash, PartialEq, PartialOrd, Ord)]
 pub enum Code {
     /// Low-level HTTP error
-    #[fail(display = "HTTP error")]
+    #[error("HTTP error")]
     HttpError,
 
     /// Parse error i.e. invalid JSON (-32700)
-    #[fail(display = "Parse error. Invalid JSON")]
+    #[error("Parse error. Invalid JSON")]
     ParseError,
 
     /// Invalid request (-32600)
-    #[fail(display = "Invalid Request")]
+    #[error("Invalid Request")]
     InvalidRequest,
 
     /// Method not found error (-32601)
-    #[fail(display = "Method not found")]
+    #[error("Method not found")]
     MethodNotFound,
 
     /// Invalid parameters (-32602)
-    #[fail(display = "Invalid params")]
+    #[error("Invalid params")]
     InvalidParams,
 
     /// Internal error (-32603)
-    #[fail(display = "Internal error")]
+    #[error("Internal error")]
     InternalError,
 
     /// Server error (-32000)
-    #[fail(display = "Server error")]
+    #[error("Server error")]
     ServerError,
 
     /// Other error types
-    #[fail(display = "Error (code: {})", 0)]
+    #[error("Error (code: {})", 0)]
     Other(i32),
 }
 
@@ -193,5 +193,24 @@ impl<'de> Deserialize<'de> for Code {
 impl Serialize for Code {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.value().serialize(serializer)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::rpc::error::Code;
+    use crate::rpc::Error;
+
+    #[test]
+    fn test_serialize() {
+        let expect =
+            "{\"code\":-32700,\"message\":\"Parse error. Invalid JSON\",\"data\":\"hello world\"}";
+        let pe = Error::parse_error("hello world");
+        let pe_json = serde_json::to_string(&pe).expect("could not write JSON");
+        assert_eq!(pe_json, expect);
+        let res: Error = serde_json::from_str(expect).expect("could not read JSON");
+        assert_eq!(res.code, Code::ParseError);
+        assert_eq!(res.code.value(), -32700);
+        assert_eq!(res.data, Some("hello world".to_string()));
     }
 }
