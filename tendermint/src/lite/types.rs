@@ -94,8 +94,13 @@ pub struct TrustThresholdFraction {
 }
 
 impl TrustThresholdFraction {
-    pub fn new(numerator: u64, denominator: u64) -> Result<Self, Kind> {
-        if numerator <= denominator && denominator > 0 {
+    /// Instantiate a TrustThresholdFraction if the given denominator and
+    /// numerator are valid.
+    ///
+    /// The parameters are valid iff `1/3 <= numerator/denominator <= 1`.
+    /// In any other case we return [`Error::InvalidTrustThreshold`].
+    pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
+        if numerator <= denominator && denominator > 0 && 3 * numerator >= denominator {
             return Ok(Self {
                 numerator,
                 denominator,
@@ -103,7 +108,8 @@ impl TrustThresholdFraction {
         }
         Err(Kind::InvalidTrustThreshold {
             got: format!("{}/{}", numerator, denominator),
-        })
+        }
+        .into())
     }
 }
 
@@ -226,6 +232,10 @@ pub(super) mod mocks {
                 vals,
                 next_vals,
             }
+        }
+
+        pub fn set_time(&mut self, new_time: SystemTime) {
+            self.time = new_time
         }
     }
 
@@ -430,8 +440,13 @@ mod tests {
             TrustThresholdFraction::new(1, 3).expect("mustn't panic")
         );
         assert!(TrustThresholdFraction::new(2, 3).is_ok());
+        assert!(TrustThresholdFraction::new(1, 1).is_ok());
 
         assert!(TrustThresholdFraction::new(3, 1).is_err());
+        assert!(TrustThresholdFraction::new(1, 4).is_err());
+        assert!(TrustThresholdFraction::new(1, 5).is_err());
+        assert!(TrustThresholdFraction::new(2, 7).is_err());
+        assert!(TrustThresholdFraction::new(0, 1).is_err());
         assert!(TrustThresholdFraction::new(1, 0).is_err());
     }
 }
