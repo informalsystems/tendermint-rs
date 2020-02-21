@@ -63,6 +63,25 @@ impl lite::Commit for block::signed_header::SignedHeader {
         // https://github.com/interchainio/tendermint-rs/pull/143/commits/0a30022fa47e909e6c7b20417dd178c8a3b84838#r374958528
         // should go here or somewhere else
 
+        // make sure each vote is for the correct header
+        for precommit in self.commit.precommits.iter() {
+            match precommit {
+                Some(p) => {
+                    if p.header_hash() != self.header_hash() {
+                        return Err(lite::error::Kind::ImplementationSpecific
+                        .context(format!(
+                            "precommit.block_id doesn't match with commit.block_id"
+                        ))
+                        .into());
+                    }
+
+                    
+                },
+                None => ()
+
+            }
+            
+        }
         Ok(())
     }
 }

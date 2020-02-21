@@ -3,7 +3,7 @@
 mod power;
 
 pub use self::power::Power;
-use crate::amino_types;
+use crate::{amino_types, hash};
 use crate::amino_types::message::AminoMessage;
 use crate::{account, block, Signature, Time};
 use {
@@ -66,6 +66,15 @@ impl Vote {
         match self.vote_type {
             Type::Precommit => true,
             Type::Prevote => false,
+        }
+    }
+
+    /// Returns block_id.hash
+    pub fn header_hash(&self) -> hash::Hash {
+        match &self.block_id {
+            Some(b) => b.hash,
+            // TODO: do better than panic
+            None => panic!(),
         }
     }
 }
