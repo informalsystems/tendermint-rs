@@ -69,12 +69,11 @@ impl lite::Commit for block::signed_header::SignedHeader {
                 Some(precommit) => {
                     if let Some(header_hash) = precommit.header_hash() {
                         if header_hash != self.header_hash() {
-                            return Err(lite::error::Kind::ImplementationSpecific
-                                .context(format!(
-                                    "vote from validator {} is not for the current header",
-                                    precommit.validator_address
-                                ))
-                                .into());
+                            fail!(
+                                lite::error::Kind::ImplementationSpecific,
+                                "vote from validator {} is not for the current header",
+                                precommit.validator_address
+                            );
                         }
                     }
                 }
