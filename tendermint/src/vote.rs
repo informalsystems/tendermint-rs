@@ -3,9 +3,9 @@
 mod power;
 
 pub use self::power::Power;
-use crate::{amino_types, hash};
 use crate::amino_types::message::AminoMessage;
 use crate::{account, block, Signature, Time};
+use crate::{amino_types, hash};
 use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},

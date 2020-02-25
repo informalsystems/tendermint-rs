@@ -722,24 +722,24 @@ mod tests {
 
     #[test]
     fn test_verify_single_skip_4_val_skip() {
-        let mut vac = ValsAndCommit::new(vec![0,1,2,3], vec![0,1,2,3]);
-        let ts = &init_trusted_state(vac.clone(), vec![0,1,2,3], 1);
+        let mut vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![0, 1, 2, 3]);
+        let ts = &init_trusted_state(vac.clone(), vec![0, 1, 2, 3], 1);
 
         // 100% overlap (all signers present)
         assert_single_ok(ts, vac.clone());
 
         // 75% overlap (three signers present)
-        vac = ValsAndCommit::new(vec![0,1,2], vec![0,1,2]);
+        vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
         assert_single_ok(ts, vac.clone());
 
-        vac = ValsAndCommit::new(vec![0,1,2,4], vec![0,1,2,4]);
+        vac = ValsAndCommit::new(vec![0, 1, 2, 4], vec![0, 1, 2, 4]);
         assert_single_ok(ts, vac.clone());
 
         // 50% overlap (two signers still present)
-        vac = ValsAndCommit::new(vec![0,1], vec![0,1]);
+        vac = ValsAndCommit::new(vec![0, 1], vec![0, 1]);
         assert_single_ok(ts, vac.clone());
 
-        vac = ValsAndCommit::new(vec![0,1,4,5], vec![0,1,4,5]);
+        vac = ValsAndCommit::new(vec![0, 1, 4, 5], vec![0, 1, 4, 5]);
         assert_single_ok(ts, vac.clone());
 
         let trust_thres_str = "TrustThresholdFraction { numerator: 1, denominator: 3 }";
@@ -750,9 +750,9 @@ mod tests {
         };
 
         // 25% overlap (one signer still present)
-        vac = ValsAndCommit::new(vec![0,4,5,6], vec![0,4,5,6]);
+        vac = ValsAndCommit::new(vec![0, 4, 5, 6], vec![0, 4, 5, 6]);
         assert_single_err(ts, vac, err.into());
-        
+
         let err = Kind::InsufficientVotingPower {
             total: 4,
             signed: 0,
@@ -760,11 +760,11 @@ mod tests {
         };
 
         // 0% overlap (none of the signers present)
-        vac = ValsAndCommit::new(vec![4,5,6], vec![4,5,6]);
+        vac = ValsAndCommit::new(vec![4, 5, 6], vec![4, 5, 6]);
         assert_single_err(ts, vac, err.clone().into());
 
         // 0% overlap (one signer present in val set but does not commit)
-        vac = ValsAndCommit::new(vec![3,4,5,6], vec![4,5,6]);
+        vac = ValsAndCommit::new(vec![3, 4, 5, 6], vec![4, 5, 6]);
         assert_single_err(ts, vac, err.into());
     }
 
