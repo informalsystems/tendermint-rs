@@ -70,11 +70,11 @@ impl Vote {
     }
 
     /// Returns block_id.hash
-    pub fn header_hash(&self) -> hash::Hash {
+    pub fn header_hash(&self) -> Option<hash::Hash> {
         match &self.block_id {
-            Some(b) => b.hash,
+            Some(b) => Some(b.hash),
             // TODO: do better than panic
-            None => panic!(),
+            None => None,
         }
     }
 }

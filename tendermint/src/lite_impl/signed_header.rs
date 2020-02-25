@@ -64,16 +64,24 @@ impl lite::Commit for block::signed_header::SignedHeader {
         // should go here or somewhere else
 
         // make sure each vote is for the correct header
-        for precommit in self.commit.precommits.iter() {
-            match precommit {
-                Some(p) => {
-                    if p.header_hash() != self.header_hash() {
-                        return Err(lite::error::Kind::ImplementationSpecific
-                        .context(format!(
-                            "precommit.block_id doesn't match with commit.block_id"
-                        ))
-                        .into());
+        for precommit_opt in self.commit.precommits.iter() {
+            match precommit_opt {
+                Some(precommit) => {
+                    match precommit.header_hash()
+                    {
+                        Some(header_hash) => {
+                            if header_hash != self.header_hash() {
+                                return Err(lite::error::Kind::ImplementationSpecific
+                                    .context(format!(
+                                        "vote from validator {} is not for the current header",
+                                        precommit.validator_address
+                                    ))
+                                    .into());
+                            }
+                        },
+                        None => ()
                     }
+
 
                     
                 },
