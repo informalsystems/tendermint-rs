@@ -66,8 +66,8 @@ impl lite::Commit for block::signed_header::SignedHeader {
         // make sure each vote is for the correct header
         for precommit_opt in self.commit.precommits.iter() {
             match precommit_opt {
-                Some(precommit) => match precommit.header_hash() {
-                    Some(header_hash) => {
+                Some(precommit) => {
+                    if let Some(header_hash) = precommit.header_hash() {
                         if header_hash != self.header_hash() {
                             return Err(lite::error::Kind::ImplementationSpecific
                                 .context(format!(
@@ -77,8 +77,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
                                 .into());
                         }
                     }
-                    None => (),
-                },
+                }
                 None => (),
             }
         }
