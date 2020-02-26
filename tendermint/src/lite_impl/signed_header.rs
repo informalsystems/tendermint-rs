@@ -71,7 +71,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
                                 "validator({}) voted for header {}, but current header is {}",
                                 precommit.validator_address,
                                 header_hash,
-                                self.header_hash
+                                self.header_hash()
                             );
                         }
                     }
