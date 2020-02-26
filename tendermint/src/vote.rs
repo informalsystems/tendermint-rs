@@ -73,7 +73,6 @@ impl Vote {
     pub fn header_hash(&self) -> Option<hash::Hash> {
         match &self.block_id {
             Some(b) => Some(b.hash),
-            // TODO: do better than panic
             None => None,
         }
     }
