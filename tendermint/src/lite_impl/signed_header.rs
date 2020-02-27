@@ -59,9 +59,29 @@ impl lite::Commit for block::signed_header::SignedHeader {
                 vals.validators().len()
             );
         }
-        // TODO: compare to the go code for more implementation related checks and clarify if this:
-        // https://github.com/interchainio/tendermint-rs/pull/143/commits/0a30022fa47e909e6c7b20417dd178c8a3b84838#r374958528
-        // should go here or somewhere else
+
+        // make sure each vote is for the correct header
+        for precommit_opt in self.commit.precommits.iter() {
+            match precommit_opt {
+                Some(precommit) => {
+                    if let Some(header_hash) = precommit.header_hash() {
+                        if header_hash != self.header_hash() {
+                            fail!(
+                                lite::error::Kind::ImplementationSpecific,
+                                "validator({}) voted for header {}, but current header is {}",
+                                precommit.validator_address,
+                                header_hash,
+                                self.header_hash()
+                            );
+                        }
+                    }
+                }
+                None => (),
+            }
+        }
+
+        // TODO: check here if all the votes are from correct validators
+        // TODO: return error kind "InvalidValidator" if we find a vote from a validator not in the val set
 
         Ok(())
     }

@@ -3,9 +3,9 @@
 mod power;
 
 pub use self::power::Power;
-use crate::amino_types;
 use crate::amino_types::message::AminoMessage;
 use crate::{account, block, Signature, Time};
+use crate::{amino_types, hash};
 use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
@@ -66,6 +66,14 @@ impl Vote {
         match self.vote_type {
             Type::Precommit => true,
             Type::Prevote => false,
+        }
+    }
+
+    /// Returns block_id.hash
+    pub fn header_hash(&self) -> Option<hash::Hash> {
+        match &self.block_id {
+            Some(b) => Some(b.hash),
+            None => None,
         }
     }
 }
