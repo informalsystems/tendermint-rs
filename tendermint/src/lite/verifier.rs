@@ -726,21 +726,21 @@ mod tests {
         let ts = &init_trusted_state(vac.clone(), vec![0, 1, 2, 3], 1);
 
         // 100% overlap (all signers present)
-        assert_single_ok(ts, vac.clone());
+        assert_single_ok(ts, vac);
 
         // 75% overlap (three signers present)
         let vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
-        assert_single_ok(ts, vac.clone());
+        assert_single_ok(ts, vac);
 
         let vac = ValsAndCommit::new(vec![0, 1, 2, 4], vec![0, 1, 2, 4]);
-        assert_single_ok(ts, vac.clone());
+        assert_single_ok(ts, vac);
 
         // 50% overlap (two signers still present)
         let vac = ValsAndCommit::new(vec![0, 1], vec![0, 1]);
-        assert_single_ok(ts, vac.clone());
+        assert_single_ok(ts, vac);
 
         let vac = ValsAndCommit::new(vec![0, 1, 4, 5], vec![0, 1, 4, 5]);
-        assert_single_ok(ts, vac.clone());
+        assert_single_ok(ts, vac);
 
         let trust_thres_str = "TrustThresholdFraction { numerator: 1, denominator: 3 }";
         let err = Kind::InsufficientVotingPower {
