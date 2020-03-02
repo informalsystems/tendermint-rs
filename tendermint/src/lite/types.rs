@@ -144,7 +144,7 @@ where
 /// TrustedState contains a state trusted by a lite client,
 /// including the last header (at height h-1) and the validator set
 /// (at height h) to use to verify the next header.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TrustedState<C, H>
 where
     H: Header,
@@ -179,7 +179,7 @@ where
 }
 
 /// SignedHeader bundles a [`Header`] and a [`Commit`] for convenience.
-#[derive(Clone, Debug, PartialEq)] // NOTE: Copy/Clone/Debug for convenience in testing ...
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)] // NOTE: Copy/Clone/Debug for convenience in testing ...
 pub struct SignedHeader<C, H>
 where
     C: Commit,
