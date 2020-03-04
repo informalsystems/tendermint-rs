@@ -4,12 +4,14 @@ use super::{
     remote_error::RemoteError,
     signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
-    validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
+    validate::{
+        self, ConsensusMessage, Kind::InvalidMessageType, Kind::MissingConsensusMessage,
+        Kind::NegativeHeight, Kind::NegativePOLRound, Kind::NegativeRound,
+    },
 };
 use crate::{
     block::{self, ParseId},
-    chain, consensus,
-    error::Error,
+    chain, consensus, error,
 };
 use bytes::BufMut;
 use once_cell::sync::Lazy;
@@ -38,7 +40,7 @@ pub struct Proposal {
 
 // TODO(tony): custom derive proc macro for this e.g. `derive(ParseBlockHeight)`
 impl block::ParseHeight for Proposal {
-    fn parse_block_height(&self) -> Result<block::Height, Error> {
+    fn parse_block_height(&self) -> Result<block::Height, error::Error> {
         block::Height::try_from(self.height)
     }
 }
@@ -73,13 +75,13 @@ struct CanonicalProposal {
 }
 
 impl chain::ParseId for CanonicalProposal {
-    fn parse_chain_id(&self) -> Result<chain::Id, Error> {
+    fn parse_chain_id(&self) -> Result<chain::Id, error::Error> {
         self.chain_id.parse()
     }
 }
 
 impl block::ParseHeight for CanonicalProposal {
-    fn parse_block_height(&self) -> Result<block::Height, Error> {
+    fn parse_block_height(&self) -> Result<block::Height, error::Error> {
         block::Height::try_from(self.height)
     }
 }
@@ -133,7 +135,7 @@ impl SignableMsg for SignProposalRequest {
             prop.signature = sig.as_ref().to_vec();
         }
     }
-    fn validate(&self) -> Result<(), ValidationError> {
+    fn validate(&self) -> Result<(), validate::Error> {
         match self.proposal {
             Some(ref p) => p.validate_basic(),
             None => Err(MissingConsensusMessage.into()),
@@ -172,7 +174,7 @@ impl SignableMsg for SignProposalRequest {
 }
 
 impl ConsensusMessage for Proposal {
-    fn validate_basic(&self) -> Result<(), ValidationError> {
+    fn validate_basic(&self) -> Result<(), validate::Error> {
         if self.msg_type != SignedMsgType::Proposal.to_u32() {
             return Err(InvalidMessageType.into());
         }

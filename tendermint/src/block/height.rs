@@ -1,4 +1,4 @@
-use crate::error::{Error, ErrorKind};
+use crate::error::{Error, Kind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     convert::TryFrom,
@@ -50,7 +50,7 @@ impl TryFrom<i64> for Height {
         if n >= 0 {
             Ok(Height(n as u64))
         } else {
-            Err(ErrorKind::OutOfRange.into())
+            Err(Kind::OutOfRange.into())
         }
     }
 }
@@ -77,7 +77,7 @@ impl FromStr for Height {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(s.parse::<u64>().map_err(|_| ErrorKind::Parse)?.into())
+        Ok(s.parse::<u64>().map_err(|_| Kind::Parse)?.into())
     }
 }
 

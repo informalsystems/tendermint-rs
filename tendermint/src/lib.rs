@@ -53,7 +53,7 @@ pub mod vote;
 pub use crate::genesis::Genesis;
 pub use crate::{
     block::Block,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     hash::Hash,
     moniker::Moniker,
     public_key::{PublicKey, TendermintKey},

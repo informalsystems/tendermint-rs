@@ -1,42 +1,30 @@
-use failure::*;
+use thiserror::Error;
 
 pub trait ConsensusMessage {
-    fn validate_basic(&self) -> Result<(), ValidationError>;
+    fn validate_basic(&self) -> Result<(), Error>;
 }
 
-pub struct ValidationError(ValidationErrorKind);
+pub type Error = anomaly::BoxError;
 
 /// Kinds of validation errors
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum ValidationErrorKind {
-    #[fail(display = "invalid Type")]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Error)]
+pub enum Kind {
+    #[error("invalid Type")]
     InvalidMessageType,
-    #[fail(display = "consensus message is missing")]
+    #[error("consensus message is missing")]
     MissingConsensusMessage,
-    #[fail(display = "negative height")]
+    #[error("negative height")]
     NegativeHeight,
-    #[fail(display = "negative round")]
+    #[error("negative round")]
     NegativeRound,
-    #[fail(display = "negative POLRound (exception: -1)")]
+    #[error("negative POLRound (exception: -1)")]
     NegativePOLRound,
-    #[fail(display = "negative ValidatorIndex")]
+    #[error("negative ValidatorIndex")]
     NegativeValidatorIndex,
-    #[fail(display = "expected ValidatorAddress size to be 20 bytes")]
+    #[error("expected ValidatorAddress size to be 20 bytes")]
     InvalidValidatorAddressSize,
-    #[fail(display = "Wrong hash: expected Hash size to be 32 bytes")]
+    #[error("Wrong hash: expected Hash size to be 32 bytes")]
     InvalidHashSize,
-    #[fail(display = "negative total")]
+    #[error("negative total")]
     NegativeTotal,
-}
-
-impl ToString for ValidationError {
-    fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-}
-
-impl From<ValidationErrorKind> for ValidationError {
-    fn from(kind: ValidationErrorKind) -> Self {
-        ValidationError(kind)
-    }
 }

@@ -1,6 +1,6 @@
 //! Hash functions and their outputs
 
-use crate::error::{Error, ErrorKind};
+use crate::error::{Error, Kind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Debug, Display},
@@ -36,7 +36,7 @@ impl Hash {
                     h.copy_from_slice(bytes);
                     Ok(Hash::Sha256(h))
                 } else {
-                    Err(ErrorKind::Parse.into())
+                    Err(Kind::Parse.into())
                 }
             }
         }
