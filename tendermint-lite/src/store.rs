@@ -1,7 +1,8 @@
-use tendermint::lite::{Error, Header, Height, TrustedState};
+use tendermint::lite::{Header, Height, TrustedState};
 
 use std::collections::HashMap;
 use tendermint::block;
+use tendermint::lite::error::{Error, Kind};
 
 pub type State = TrustedState<block::signed_header::SignedHeader, block::header::Header>;
 
@@ -35,7 +36,9 @@ impl MemStore {
         }
         match self.store.get(&height) {
             Some(state) => Ok(state),
-            None => Err(Error::RequestFailed),
+            None => Err(Kind::RequestFailed
+                .context(format!("could not load height {} from store", height))
+                .into()),
         }
     }
 }

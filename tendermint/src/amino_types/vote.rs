@@ -4,7 +4,8 @@ use super::{
     remote_error::RemoteError,
     signature::SignableMsg,
     time::TimeMsg,
-    validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
+    validate,
+    validate::{ConsensusMessage, Kind::*},
     SignedMsgType,
 };
 use crate::amino_types::PartsSetHeader;
@@ -178,7 +179,7 @@ impl SignableMsg for SignVoteRequest {
             vt.signature = sig.as_ref().to_vec();
         }
     }
-    fn validate(&self) -> Result<(), ValidationError> {
+    fn validate(&self) -> Result<(), validate::Error> {
         match self.vote {
             Some(ref v) => v.validate_basic(),
             None => Err(MissingConsensusMessage.into()),
@@ -215,7 +216,7 @@ impl SignableMsg for SignVoteRequest {
 }
 
 impl ConsensusMessage for Vote {
-    fn validate_basic(&self) -> Result<(), ValidationError> {
+    fn validate_basic(&self) -> Result<(), validate::Error> {
         if self.msg_type().is_none() {
             return Err(InvalidMessageType.into());
         }

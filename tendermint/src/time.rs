@@ -1,6 +1,6 @@
 //! Timestamps used by Tendermint blockchains
 
-use crate::error::{Error, ErrorKind};
+use crate::error::{Error, Kind};
 use chrono::{DateTime, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -30,7 +30,7 @@ impl Time {
         self.0
             .signed_duration_since(other.0)
             .to_std()
-            .map_err(|_| ErrorKind::OutOfRange.into())
+            .map_err(|_| Kind::OutOfRange.into())
     }
 
     /// Parse a timestamp from an RFC 3339 date

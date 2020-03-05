@@ -1,6 +1,6 @@
 use tendermint::hash;
 use tendermint::lite;
-use tendermint::lite::{Error, TrustThresholdFraction};
+use tendermint::lite::TrustThresholdFraction;
 use tendermint::lite::{Header as _, Requester as _, ValidatorSet as _};
 use tendermint::rpc;
 use tendermint::{block::Height, Hash};
@@ -9,6 +9,7 @@ use tendermint_lite::{requester::RPCRequester, store::MemStore};
 
 use core::future::Future;
 use std::time::{Duration, SystemTime};
+use tendermint::lite::error::Error;
 use tendermint_lite::store::State;
 use tokio::runtime::Builder;
 
@@ -60,14 +61,14 @@ fn main() {
             latest_peer_height,
         );
 
-        let now = &SystemTime::now();
+        let now = SystemTime::now();
         let trusted_state = store.get(0).expect("can not read trusted state");
 
         let new_states = lite::verify_bisection(
             trusted_state.clone(),
             latest_peer_height,
             TrustThresholdFraction::default(),
-            &trusting_period,
+            trusting_period,
             now,
             &req,
         )

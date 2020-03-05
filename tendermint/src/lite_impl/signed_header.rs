@@ -1,8 +1,9 @@
 //! [`lite::SignedHeader`] implementation for [`block::signed_header::SignedHeader`].
 
-use crate::lite::Error;
+use crate::lite::error::{Error, Kind};
 use crate::validator::Set;
 use crate::{block, hash, lite, vote};
+use anomaly::fail;
 
 impl lite::Commit for block::signed_header::SignedHeader {
     type ValidatorSet = Set;
@@ -35,7 +36,13 @@ impl lite::Commit for block::signed_header::SignedHeader {
             let sign_bytes = vote.sign_bytes();
 
             if !val.verify_signature(&sign_bytes, vote.signature()) {
-                return Err(Error::InvalidSignature);
+                fail!(
+                    Kind::ImplementationSpecific,
+                    "Couldn't verify signature {:?} with validator {:?} on sign_bytes {:?}",
+                    vote.signature(),
+                    val,
+                    sign_bytes,
+                );
             }
             signed_power += val.power();
         }
@@ -45,8 +52,37 @@ impl lite::Commit for block::signed_header::SignedHeader {
 
     fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error> {
         if self.commit.precommits.len() != vals.validators().len() {
-            return Err(lite::Error::InvalidCommitSignatures);
+            fail!(
+                lite::error::Kind::ImplementationSpecific,
+                "pre-commit length: {} doesn't match validator length: {}",
+                self.commit.precommits.len(),
+                vals.validators().len()
+            );
         }
+
+        // make sure each vote is for the correct header
+        for precommit_opt in self.commit.precommits.iter() {
+            match precommit_opt {
+                Some(precommit) => {
+                    if let Some(header_hash) = precommit.header_hash() {
+                        if header_hash != self.header_hash() {
+                            fail!(
+                                lite::error::Kind::ImplementationSpecific,
+                                "validator({}) voted for header {}, but current header is {}",
+                                precommit.validator_address,
+                                header_hash,
+                                self.header_hash()
+                            );
+                        }
+                    }
+                }
+                None => (),
+            }
+        }
+
+        // TODO: check here if all the votes are from correct validators
+        // TODO: return error kind "InvalidValidator" if we find a vote from a validator not in the val set
+
         Ok(())
     }
 }

@@ -3,8 +3,12 @@
 
 use crate::Hash;
 
-use failure::_core::fmt::Debug;
+use crate::lite::error::{Error, Kind};
+use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 use std::time::SystemTime;
+
+use anomaly::fail;
 
 pub type Height = u64;
 
@@ -27,11 +31,7 @@ pub trait Header: Clone {
 }
 
 /// ValidatorSet is the full validator set.
-/// It exposes its hash, which should match whats in a header,
-/// and its total power. It also has an underlying
-/// Validator type which can be used for verifying signatures.
-/// It also provides a lookup method to fetch a validator by
-/// its identifier.
+/// It exposes its hash and its total power.
 pub trait ValidatorSet: Clone {
     /// Hash of the validator set.
     fn hash(&self) -> Hash;
@@ -40,9 +40,9 @@ pub trait ValidatorSet: Clone {
     fn total_power(&self) -> u64;
 }
 
-/// Commit is proof a Header is valid.
-/// It has an underlying Vote type with the relevant vote data
-/// for verification.
+/// Commit is used to prove a Header can be trusted.
+/// Verifying the Commit requires access to an associated ValidatorSet
+/// to determine what voting power signed the commit.
 pub trait Commit: Clone {
     type ValidatorSet: ValidatorSet;
 
@@ -76,7 +76,7 @@ pub trait Commit: Clone {
 /// TrustThreshold defines how much of the total voting power of a known
 /// and trusted validator set is sufficient for a commit to be
 /// accepted going forward.
-pub trait TrustThreshold: Copy + Clone {
+pub trait TrustThreshold: Copy + Clone + Debug {
     fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool;
 }
 
@@ -87,21 +87,29 @@ pub trait TrustThreshold: Copy + Clone {
 /// voting power signed (in other words at least one honest validator signed).
 /// Some clients might require more than +1/3 and can implement their own
 /// [`TrustThreshold`] which can be passed into all relevant methods.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TrustThresholdFraction {
     numerator: u64,
     denominator: u64,
 }
 
 impl TrustThresholdFraction {
+    /// Instantiate a TrustThresholdFraction if the given denominator and
+    /// numerator are valid.
+    ///
+    /// The parameters are valid iff `1/3 <= numerator/denominator <= 1`.
+    /// In any other case we return [`Error::InvalidTrustThreshold`].
     pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
-        if numerator <= denominator && denominator > 0 {
+        if numerator <= denominator && denominator > 0 && 3 * numerator >= denominator {
             return Ok(Self {
                 numerator,
                 denominator,
             });
         }
-        Err(Error::InvalidTrustThreshold)
+        Err(Kind::InvalidTrustThreshold {
+            got: format!("{}/{}", numerator, denominator),
+        }
+        .into())
     }
 }
 
@@ -136,7 +144,7 @@ where
 /// TrustedState contains a state trusted by a lite client,
 /// including the last header (at height h-1) and the validator set
 /// (at height h) to use to verify the next header.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TrustedState<C, H>
 where
     H: Header,
@@ -171,7 +179,7 @@ where
 }
 
 /// SignedHeader bundles a [`Header`] and a [`Commit`] for convenience.
-#[derive(Clone, Debug, PartialEq)] // NOTE: Copy/Clone/Debug for convenience in testing ...
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)] // NOTE: Copy/Clone/Debug for convenience in testing ...
 pub struct SignedHeader<C, H>
 where
     C: Commit,
@@ -199,30 +207,6 @@ where
     }
 }
 
-// NOTE: Copy/Clone for convenience in testing ...
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Error {
-    Expired,
-    DurationOutOfRange,
-
-    NonIncreasingHeight,
-
-    InvalidSignature, // TODO: deduplicate with ErrorKind::SignatureInvalid
-
-    InvalidValidatorSet,
-    InvalidNextValidatorSet,
-    InvalidCommitValue, // commit is not for the header we expected
-
-    InvalidCommitSignatures, // Note: this is only used by implementation (ie. expected return in Commit::validate())
-    InvalidCommit,           // signers do not account for +2/3 of the voting power
-
-    InsufficientVotingPower, // trust threshold (default +1/3) is not met
-
-    RequestFailed,
-
-    InvalidTrustThreshold,
-}
-
 pub(super) mod mocks {
     use serde::Serialize;
     use sha2::{Digest, Sha256};
@@ -248,6 +232,10 @@ pub(super) mod mocks {
                 vals,
                 next_vals,
             }
+        }
+
+        pub fn set_time(&mut self, new_time: SystemTime) {
+            self.time = new_time
         }
     }
 
@@ -336,7 +324,10 @@ pub(super) mod mocks {
         fn validate(&self, _vals: &Self::ValidatorSet) -> Result<(), Error> {
             // some implementation specific checks:
             if self.vals.is_empty() || self.hash.algorithm() != Algorithm::Sha256 {
-                return Err(Error::InvalidCommitSignatures);
+                fail!(
+                    Kind::ImplementationSpecific,
+                    "validator set is empty, or, invalid hash algo"
+                );
             }
             Ok(())
         }
@@ -365,7 +356,7 @@ pub(super) mod mocks {
                 return Ok(sh.to_owned());
             }
             println!("couldn't get sh for: {}", &h);
-            Err(Error::RequestFailed)
+            fail!(Kind::RequestFailed, "couldn't get sh for: {}", &h);
         }
 
         fn validator_set(&self, h: u64) -> Result<MockValSet, Error> {
@@ -374,7 +365,7 @@ pub(super) mod mocks {
                 return Ok(vs.to_owned());
             }
             println!("couldn't get vals for: {}", &h);
-            Err(Error::RequestFailed)
+            fail!(Kind::RequestFailed, "couldn't get vals for: {}", &h);
         }
     }
 
@@ -449,8 +440,13 @@ mod tests {
             TrustThresholdFraction::new(1, 3).expect("mustn't panic")
         );
         assert!(TrustThresholdFraction::new(2, 3).is_ok());
+        assert!(TrustThresholdFraction::new(1, 1).is_ok());
 
         assert!(TrustThresholdFraction::new(3, 1).is_err());
+        assert!(TrustThresholdFraction::new(1, 4).is_err());
+        assert!(TrustThresholdFraction::new(1, 5).is_err());
+        assert!(TrustThresholdFraction::new(2, 7).is_err());
+        assert!(TrustThresholdFraction::new(0, 1).is_err());
         assert!(TrustThresholdFraction::new(1, 0).is_err());
     }
 }
