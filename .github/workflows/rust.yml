@@ -1,6 +1,14 @@
 name: Rust
 on: [pull_request]
 jobs:
+  cleanup-runs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: rokroskar/workflow-run-cleanup-action@master
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
+
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -13,6 +21,7 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
+
   clippy_check:
     runs-on: ubuntu-latest
     steps:
@@ -26,6 +35,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
+
   test-stable:
     runs-on: ubuntu-latest
     steps:
@@ -42,6 +52,7 @@ jobs:
         with:
           command: test
           args: --all-features --no-fail-fast
+
   test-nightly-coverage:
     runs-on: ubuntu-latest
     steps:
@@ -61,16 +72,6 @@ jobs:
           CARGO_INCREMENTAL: "0"
           RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads"
       - uses: actions-rs/grcov@v0.1
-      # - name: Collect and upload test coverage
-      #   run: |
-      #     # Note: this currently only matches gc files in crates named *tendermint*.
-      #     # This is something to keep in mind if we create crates that do not have tendermint in
-      #     # their name.
-      #     zip -0 ccov.zip `find . \( -name "*tendermint*.gc*" \) -print`
-      #     grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" -o lcov.info
-      #     bash <(curl -s https://codecov.io/bash) -f lcov.info
-      #     rm -f lcov.info
-      #     rm -f ccov.zip
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
