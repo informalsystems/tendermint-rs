@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AnalysisUIOptions">
+    <option name="SCOPE_TYPE" value="3" />
+  </component>
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="CargoProjects">
+    <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="4b5b8bc4-c6a3-4bdc-8d94-612523f0fa6d" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tendermint/src/lite/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/tendermint/src/lite/error.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tendermint/src/lite_impl/signed_header.rs" beforeDir="false" afterPath="$PROJECT_DIR$/tendermint/src/lite_impl/signed_header.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tendermint/tests/support/lite/single_step_sequential/val_set_tests.json" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Rust File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="master" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="qhWJwUrN" />
+  </component>
+  <component name="ProjectId" id="1Y8MPz1ZaPj9mplT2G8J3KbQwDt" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
+    <property name="node.js.path.for.package.eslint" value="project" />
+    <property name="node.js.path.for.package.tslint" value="project" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
+    <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
+    <property name="org.rust.hideDetachedFileNotifications/Users/home/code/tendermint-rs/tendermint/src/block/commit_new.rs" value="true" />
+    <property name="org.rust.hideDetachedFileNotifications/Users/home/code/tendermint-rs/tendermint/src/block/commit_sig.rs" value="true" />
+    <property name="settings.editor.selected.configurable" value="configurable.group.tools" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/tendermint/tests/support/lite" />
+    </key>
+  </component>
+  <component name="RustProjectSettings">
+    <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="4b5b8bc4-c6a3-4bdc-8d94-612523f0fa6d" name="Default Changelist" comment="" />
+      <created>1582319747704</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1582319747704</updated>
+      <workItem from="1582319750367" duration="16746000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="144" y="79" key="DiffContextDialog" timestamp="1582661103398">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="144" y="79" key="DiffContextDialog/0.0.1440.900@0.0.1440.900" timestamp="1582661103398" />
+    <state x="141" y="68" key="MergeDialog" timestamp="1582661107199">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="141" y="68" key="MergeDialog/0.0.1440.900@0.0.1440.900" timestamp="1582661107199" />
+    <state x="433" y="173" key="MultipleFileMergeDialog" timestamp="1582661107255">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="433" y="173" key="MultipleFileMergeDialog/0.0.1440.900@0.0.1440.900" timestamp="1582661107255" />
+    <state x="229" y="89" key="SettingsEditor" timestamp="1582563593851">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="229" y="89" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1582563593851" />
+    <state x="510" y="161" key="VCS.ChangeListViewerDialog" timestamp="1582660551036">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="510" y="161" key="VCS.ChangeListViewerDialog/0.0.1440.900@0.0.1440.900" timestamp="1582660551036" />
+    <state x="420" y="215" key="Vcs.Multiple.Commit.Info.Dialog.Key" timestamp="1582660982976">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="420" y="215" key="Vcs.Multiple.Commit.Info.Dialog.Key/0.0.1440.900@0.0.1440.900" timestamp="1582660982976" />
+    <state x="100" y="100" width="1240" height="700" key="com.intellij.dvcs.ui.CompareBranchesDialog" timestamp="1582659923780">
+      <screen x="0" y="23" width="1440" height="826" />
+    </state>
+    <state x="100" y="100" width="1240" height="700" key="com.intellij.dvcs.ui.CompareBranchesDialog/0.0.1440.900@0.0.1440.900" timestamp="1582659868029" />
+    <state x="100" y="100" width="1240" height="700" key="com.intellij.dvcs.ui.CompareBranchesDialog/0.23.1440.826@0.23.1440.826" timestamp="1582659923780" />
+    <state x="399" y="268" key="com.intellij.ide.util.TipDialog" timestamp="1582319790047">
+      <screen x="0" y="23" width="1440" height="826" />
+    </state>
+    <state x="399" y="268" key="com.intellij.ide.util.TipDialog/0.23.1440.826@0.23.1440.826" timestamp="1582319790047" />
+    <state x="385" y="188" width="670" height="737" key="search.everywhere.popup" timestamp="1582563315505">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="385" y="188" width="670" height="737" key="search.everywhere.popup/0.0.1440.900@0.0.1440.900" timestamp="1582563315505" />
+    <state x="385" y="196" width="670" height="676" key="search.everywhere.popup/0.23.1440.826@0.23.1440.826" timestamp="1582320108586" />
+  </component>
+</project>

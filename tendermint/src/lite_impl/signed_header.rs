@@ -1,6 +1,7 @@
 //! [`lite::SignedHeader`] implementation for [`block::signed_header::SignedHeader`].
 
 use crate::lite::error::{Error, Kind};
+use crate::lite::ValidatorSet;
 use crate::validator::Set;
 use crate::{block, hash, lite, vote};
 use anomaly::fail;
@@ -60,10 +61,10 @@ impl lite::Commit for block::signed_header::SignedHeader {
             );
         }
 
-        // make sure each vote is for the correct header
         for precommit_opt in self.commit.precommits.iter() {
             match precommit_opt {
                 Some(precommit) => {
+                    // make sure each vote is for the correct header
                     if let Some(header_hash) = precommit.header_hash() {
                         if header_hash != self.header_hash() {
                             fail!(
@@ -75,13 +76,20 @@ impl lite::Commit for block::signed_header::SignedHeader {
                             );
                         }
                     }
+
+                    // returns FaultyFullNode error if it detects a signer isn't present in the validator set
+                    if vals.validator(precommit.validator_address) == None {
+                        let reason = format!(
+                            "Found a faulty signer ({}) not present in the validator set ({})",
+                            precommit.validator_address,
+                            vals.hash()
+                        );
+                        return Err(Kind::FaultyFullNode { reason }.into());
+                    }
                 }
                 None => (),
             }
         }
-
-        // TODO: check here if all the votes are from correct validators
-        // TODO: return error kind "InvalidValidator" if we find a vote from a validator not in the val set
 
         Ok(())
     }
