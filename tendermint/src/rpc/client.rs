@@ -187,7 +187,7 @@ impl Client {
             );
         }
 
-        let http_client = hyper::Client::builder().keep_alive(true).build_http();
+        let http_client = hyper::Client::builder().build_http();
         let response = http_client.request(request).await?;
         let response_body = hyper::body::aggregate(response.into_body()).await?;
         R::Response::from_reader(response_body.reader())
