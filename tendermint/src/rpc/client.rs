@@ -20,10 +20,14 @@ pub struct Client {
 
 impl Client {
     /// Create a new Tendermint RPC client, connecting to the given address
-    pub async fn new(address: &net::Address) -> Result<Self, Error> {
-        let client = Client {
-            address: address.clone(),
-        };
+    pub fn new(address: net::Address) -> Self {
+        Self { address }
+    }
+
+    /// Create a new Tendermint RPC client, connecting to the given address,
+    /// and perform a health check.
+    pub async fn new_healthy(address: net::Address) -> Result<Self, Error> {
+        let client = Self::new(address);
         client.health().await?;
         Ok(client)
     }

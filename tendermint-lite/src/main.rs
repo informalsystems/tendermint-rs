@@ -33,7 +33,7 @@ fn main() {
     let trusting_period = Duration::new(6000, 0);
 
     // setup requester for primary peer
-    let client = block_on(rpc::Client::new(&RPC_ADDR.parse().unwrap())).unwrap();
+    let client = block_on(rpc::Client::new_healthy(RPC_ADDR.parse().unwrap())).unwrap();
     let req = RPCRequester::new(client);
     let mut store = MemStore::new();
 
