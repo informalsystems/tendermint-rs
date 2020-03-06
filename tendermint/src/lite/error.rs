@@ -78,6 +78,10 @@ pub enum Kind {
     /// the implementation, if any.
     #[error("Implementation specific error")]
     ImplementationSpecific,
+
+    /// This is returned when a faulty i.e misbehaving full node is found
+    #[error("Found faulty full node")]
+    FaultyFullNode,
 }
 
 impl Kind {
