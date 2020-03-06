@@ -80,8 +80,8 @@ pub enum Kind {
     ImplementationSpecific,
 
     /// This is returned when a faulty i.e misbehaving full node is found
-    #[error("Faulty full node: {reason}")]
-    FaultyFullNode { reason: String },
+    #[error("Found faulty full node")]
+    FaultyFullNode,
 }
 
 impl Kind {

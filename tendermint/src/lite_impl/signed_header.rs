@@ -54,7 +54,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
     fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error> {
         if self.commit.precommits.len() != vals.validators().len() {
             fail!(
-                lite::error::Kind::ImplementationSpecific,
+                Kind::ImplementationSpecific,
                 "pre-commit length: {} doesn't match validator length: {}",
                 self.commit.precommits.len(),
                 vals.validators().len()
@@ -68,7 +68,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
                     if let Some(header_hash) = precommit.header_hash() {
                         if header_hash != self.header_hash() {
                             fail!(
-                                lite::error::Kind::ImplementationSpecific,
+                                Kind::ImplementationSpecific,
                                 "validator({}) voted for header {}, but current header is {}",
                                 precommit.validator_address,
                                 header_hash,
@@ -84,7 +84,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
                             precommit.validator_address,
                             vals.hash()
                         );
-                        return Err(Kind::FaultyFullNode { reason }.into());
+                        fail!(Kind::FaultyFullNode, reason);
                     }
                 }
                 None => (),
