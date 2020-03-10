@@ -33,7 +33,13 @@ fn main() {
     let trusting_period = Duration::new(6000, 0);
 
     // setup requester for primary peer
-    let client = block_on(rpc::Client::new_healthy(RPC_ADDR.parse().unwrap())).unwrap();
+    let client = rpc::Client::new(RPC_ADDR.parse().unwrap());
+
+    if let Err(err) = block_on(client.health()) {
+        eprintln!("error: health check failed: {}", err);
+        std::process::exit(1);
+    }
+
     let req = RPCRequester::new(client);
     let mut store = MemStore::new();
 

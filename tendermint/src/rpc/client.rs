@@ -24,14 +24,6 @@ impl Client {
         Self { address }
     }
 
-    /// Create a new Tendermint RPC client, connecting to the given address,
-    /// and perform a health check.
-    pub async fn new_healthy(address: net::Address) -> Result<Self, Error> {
-        let client = Self::new(address);
-        client.health().await?;
-        Ok(client)
-    }
-
     /// `/abci_info`: get information about the ABCI application.
     pub async fn abci_info(&self) -> Result<abci_info::AbciInfo, Error> {
         Ok(self.perform(abci_info::Request).await?.response)
