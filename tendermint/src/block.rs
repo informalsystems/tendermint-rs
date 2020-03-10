@@ -8,6 +8,7 @@ mod meta;
 pub mod parts;
 pub mod signed_header;
 mod size;
+pub mod commit_sig;
 
 pub use self::{
     commit::*,
@@ -16,6 +17,7 @@ pub use self::{
     id::{Id, ParseId},
     meta::Meta,
     size::Size,
+    commit_sig::*,
 };
 use crate::{abci::transaction, evidence, serializers};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -46,18 +48,22 @@ where
 {
     #[derive(Deserialize)]
     struct TmpCommit {
+        pub height: Height,
+        pub round: u64,
         #[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
-        block_id: Option<Id>,
-        precommits: Option<Precommits>,
+        pub block_id: Option<Id>,
+        pub signatures: Option<CommitSigs>,
     }
 
     let commit = TmpCommit::deserialize(deserializer)?;
-    if commit.block_id.is_none() || commit.precommits.is_none() {
+    if commit.block_id.is_none() || commit.signatures.is_none() {
         Ok(None)
     } else {
         Ok(Some(Commit {
+            height: commit.height,
+            round: commit.round,
             block_id: commit.block_id.unwrap(),
-            precommits: commit.precommits.unwrap(),
+            signatures: commit.signatures.unwrap(),
         }))
     }
 }
