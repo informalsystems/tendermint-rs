@@ -20,12 +20,8 @@ pub struct Client {
 
 impl Client {
     /// Create a new Tendermint RPC client, connecting to the given address
-    pub async fn new(address: &net::Address) -> Result<Self, Error> {
-        let client = Client {
-            address: address.clone(),
-        };
-        client.health().await?;
-        Ok(client)
+    pub fn new(address: net::Address) -> Self {
+        Self { address }
     }
 
     /// `/abci_info`: get information about the ABCI application.
