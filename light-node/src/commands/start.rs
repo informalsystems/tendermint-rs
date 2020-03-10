@@ -4,15 +4,12 @@
 /// accessors along with logging macros. Customize as you see fit.
 use crate::prelude::*;
 
-use core::future::Future;
 use tendermint::hash;
 use tendermint::lite;
+use tendermint::lite::ValidatorSet as _;
 use tendermint::lite::{Header, Height, Requester, TrustThresholdFraction};
 use tendermint::rpc;
 use tendermint::Hash;
-use tokio::runtime::Builder;
-
-use tendermint::lite::ValidatorSet as _;
 
 use crate::config::LightNodeConfig;
 use crate::requester::RPCRequester;
@@ -40,7 +37,7 @@ impl Runnable for StartCmd {
     fn run(&self) {
         let config = app_config();
 
-        let client = block_on(rpc::Client::new(&config.rpc_address.parse().unwrap())).unwrap();
+        let client = rpc::Client::new(config.rpc_address.parse().unwrap());
         let req = RPCRequester::new(client);
         let mut store = MemStore::new();
 
@@ -149,13 +146,4 @@ fn subjective_init(
     store.add(trusted_state.to_owned())?;
 
     Ok(())
-}
-
-fn block_on<F: Future>(future: F) -> F::Output {
-    Builder::new()
-        .basic_scheduler()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
