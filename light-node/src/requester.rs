@@ -69,7 +69,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_val_set() {
-        let client = block_on(rpc::Client::new(&"localhost:26657".parse().unwrap())).unwrap();
+        let client = rpc::Client::new("localhost:26657".parse().unwrap());
         let req = RPCRequester::new(client);
         let r1 = req.validator_set(5).unwrap();
         let r2 = req.signed_header(5).unwrap();

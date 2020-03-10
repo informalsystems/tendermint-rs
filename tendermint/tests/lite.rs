@@ -119,6 +119,8 @@ impl MockRequester {
     }
 }
 
+// Link to the commit that generated below JSON test files:
+// https://github.com/Shivani912/tendermint/commit/f7d16ab59b55a4f1a5cdbfa6b0c24467aa88fdb2
 const TEST_FILES_PATH: &str = "./tests/support/lite/";
 fn read_json_fixture(name: &str) -> String {
     fs::read_to_string(PathBuf::from(TEST_FILES_PATH).join(name.to_owned() + ".json")).unwrap()

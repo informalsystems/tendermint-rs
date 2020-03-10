@@ -24,7 +24,15 @@ mod rpc {
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> Client {
-        block_on(Client::new(&"tcp://127.0.0.1:26657".parse().unwrap())).unwrap()
+        Client::new("tcp://127.0.0.1:26657".parse().unwrap())
+    }
+
+    /// `/health` endpoint
+    #[test]
+    #[ignore]
+    fn health() {
+        let result = block_on(localhost_rpc_client().health());
+        assert!(result.is_ok(), "health check failed");
     }
 
     /// `/abci_info` endpoint
