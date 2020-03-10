@@ -7,11 +7,9 @@ use tendermint::{block::Height, Hash};
 
 use tendermint_lite::{requester::RPCRequester, store::MemStore};
 
-use core::future::Future;
 use std::time::{Duration, SystemTime};
 use tendermint::lite::error::Error;
 use tendermint_lite::store::State;
-use tokio::runtime::Builder;
 
 // TODO: these should be config/args
 static SUBJECTIVE_HEIGHT: u64 = 1;
@@ -19,23 +17,15 @@ static SUBJECTIVE_VALS_HASH_HEX: &str =
     "A5A7DEA707ADE6156F8A981777CA093F178FC790475F6EC659B6617E704871DD";
 static RPC_ADDR: &str = "localhost:26657";
 
-pub fn block_on<F: Future>(future: F) -> F::Output {
-    Builder::new()
-        .basic_scheduler()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
-}
-
-fn main() {
+#[tokio::main]
+async fn main() {
     // TODO: this should be config
     let trusting_period = Duration::new(6000, 0);
 
     // setup requester for primary peer
     let client = rpc::Client::new(RPC_ADDR.parse().unwrap());
 
-    if let Err(err) = block_on(client.health()) {
+    if let Err(err) = client.health().await {
         eprintln!("error: health check failed: {}", err);
         std::process::exit(1);
     }
@@ -46,10 +36,12 @@ fn main() {
     let vals_hash =
         Hash::from_hex_upper(hash::Algorithm::Sha256, SUBJECTIVE_VALS_HASH_HEX).unwrap();
 
-    subjective_init(Height::from(SUBJECTIVE_HEIGHT), vals_hash, &mut store, &req).unwrap();
+    subjective_init(Height::from(SUBJECTIVE_HEIGHT), vals_hash, &mut store, &req)
+        .await
+        .unwrap();
 
     loop {
-        let latest = (&req).signed_header(0).unwrap();
+        let latest = (&req).signed_header(0).await.unwrap();
         let latest_peer_height = latest.header().height();
 
         let latest = store.get(0).unwrap();
@@ -78,6 +70,7 @@ fn main() {
             now,
             &req,
         )
+        .await
         .unwrap();
 
         for new_state in new_states {
@@ -103,7 +96,7 @@ fn main() {
  * TODO: this should take traits ... but how to deal with the State ?
  * TODO: better name ?
  */
-fn subjective_init(
+async fn subjective_init(
     height: Height,
     vals_hash: Hash,
     store: &mut MemStore,
@@ -115,18 +108,18 @@ fn subjective_init(
     }
 
     // check that the val hash matches
-    let vals = req.validator_set(height.value())?;
+    let vals = req.validator_set(height.value()).await?;
 
     if vals.hash() != vals_hash {
         // TODO
         panic!("vals hash dont match")
     }
 
-    let signed_header = req.signed_header(SUBJECTIVE_HEIGHT)?;
+    let signed_header = req.signed_header(SUBJECTIVE_HEIGHT).await?;
 
     // TODO: validate signed_header.commit() with the vals ...
 
-    let next_vals = req.validator_set(height.increment().value())?;
+    let next_vals = req.validator_set(height.increment().value()).await?;
 
     // TODO: check next_vals ...
 
