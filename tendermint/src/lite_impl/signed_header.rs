@@ -3,8 +3,9 @@
 use crate::lite::error::{Error, Kind};
 use crate::lite::ValidatorSet;
 use crate::validator::Set;
-use crate::{block, hash, lite, vote};
+use crate::{block, hash, lite, vote, Vote};
 use anomaly::fail;
+use crate::block::Commit;
 
 impl lite::Commit for block::signed_header::SignedHeader {
     type ValidatorSet = Set;
@@ -52,47 +53,38 @@ impl lite::Commit for block::signed_header::SignedHeader {
     }
 
     fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error> {
-        if self.commit.precommits.len() != vals.validators().len() {
+        if self.commit.signatures.len() != vals.validators().len() {
             fail!(
                 Kind::ImplementationSpecific,
                 "pre-commit length: {} doesn't match validator length: {}",
-                self.commit.precommits.len(),
+                self.commit.signatures.len(),
                 vals.validators().len()
             );
         }
 
-        for precommit_opt in self.commit.precommits.iter() {
-            match precommit_opt {
-                Some(precommit) => {
-                    // make sure each vote is for the correct header
-                    if let Some(header_hash) = precommit.header_hash() {
-                        if header_hash != self.header_hash() {
-                            fail!(
-                                Kind::ImplementationSpecific,
-                                "validator({}) voted for header {}, but current header is {}",
-                                precommit.validator_address,
-                                header_hash,
-                                self.header_hash()
-                            );
-                        }
-                    }
+        for commit_sig in self.commit.signatures.iter() {
 
-                    // returns FaultyFullNode error if it detects a signer isn't present in the validator set
-                    if vals.validator(precommit.validator_address) == None {
-                        let reason = format!(
-                            "Found a faulty signer ({}) not present in the validator set ({})",
-                            precommit.validator_address,
-                            vals.hash()
-                        );
-                        fail!(Kind::FaultyFullNode, reason);
-                    }
-                }
-                None => (),
+            // returns FaultyFullNode error if it detects a signer isn't present in the validator set
+            if vals.validator(commit_sig.validator_address) == None {
+                let reason = format!(
+                    "Found a faulty signer ({}) not present in the validator set ({})",
+                    commit_sig.validator_address,
+                    vals.hash()
+                );
+                fail!(Kind::FaultyFullNode, reason);
             }
         }
 
         Ok(())
     }
+}
+
+fn commit_to_votes(commit: Commit) -> vote::Votes {
+    let votes: vote::Votes = Default::default();
+    for commit_sig in commit.signatures.iter() {
+        
+    }
+    votes
 }
 
 impl block::signed_header::SignedHeader {
