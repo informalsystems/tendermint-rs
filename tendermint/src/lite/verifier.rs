@@ -20,7 +20,7 @@ use std::ops::Add;
 
 /// Returns an error if the header has expired according to the given
 /// trusting_period and current time. If so, the verifier must be reset subjectively.
-fn is_within_trust_period<H>(
+pub fn is_within_trust_period<H>(
     last_header: &H,
     trusting_period: Duration,
     now: SystemTime,
@@ -51,7 +51,7 @@ where
 
 /// Validate the validators, next validators, against the signed header.
 /// This is equivalent to validateSignedHeaderAndVals in the spec.
-fn validate<C, H>(
+pub fn validate<C, H>(
     signed_header: &SignedHeader<C, H>,
     vals: &C::ValidatorSet,
     next_vals: &C::ValidatorSet,
@@ -98,7 +98,7 @@ where
 /// NOTE: These validators are expected to be the correct validators for the commit,
 /// but since we're using voting_power_in, we can't actually detect if there's
 /// votes from validators not in the set.
-fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), Error>
+pub fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), Error>
 where
     C: Commit,
 {
@@ -121,7 +121,7 @@ where
 /// NOTE the given validators do not necessarily correspond to the validator set for this commit,
 /// but there may be some intersection. The trust_level parameter allows clients to require more
 /// than +1/3 by implementing the TrustLevel trait accordingly.
-fn verify_commit_trusting<C, L>(
+pub fn verify_commit_trusting<C, L>(
     validators: &C::ValidatorSet,
     commit: &C,
     trust_level: L,
