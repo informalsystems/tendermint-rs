@@ -8,4 +8,6 @@ edition = "2018"
 
 [dependencies]
 tendermint = { path = "../tendermint" }
-tokio = "0.2"
+
+async-trait = "0.1"
+tokio = { version = "0.2", features = ["full"] }
