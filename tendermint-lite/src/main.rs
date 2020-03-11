@@ -130,7 +130,7 @@ fn subjective_init(
 
     // TODO: check next_vals ...
 
-    let trusted_state = State::new(&signed_header, &next_vals);
+    let trusted_state = State::new(signed_header, next_vals);
 
     store.add(trusted_state)?;
 
