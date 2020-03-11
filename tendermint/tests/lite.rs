@@ -1,4 +1,5 @@
 use anomaly::fail;
+use async_trait::async_trait;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use serde_json;
 use std::collections::HashMap;
@@ -77,8 +78,9 @@ struct MockRequester {
 
 type LightSignedHeader = lite::types::SignedHeader<SignedHeader, Header>;
 
+#[async_trait]
 impl Requester<SignedHeader, Header> for MockRequester {
-    fn signed_header(&self, h: u64) -> Result<LightSignedHeader, Error> {
+    async fn signed_header(&self, h: u64) -> Result<LightSignedHeader, Error> {
         println!("requested signed header for height:{:?}", h);
         if let Some(sh) = self.signed_headers.get(&h) {
             return Ok(sh.into());
@@ -87,7 +89,7 @@ impl Requester<SignedHeader, Header> for MockRequester {
         fail!(Kind::RequestFailed, "couldn't get sh for: {}", &h);
     }
 
-    fn validator_set(&self, h: u64) -> Result<Set, Error> {
+    async fn validator_set(&self, h: u64) -> Result<Set, Error> {
         println!("requested validators for height:{:?}", h);
         if let Some(vs) = self.validators.get(&h) {
             return Ok(vs.to_owned());
@@ -211,14 +213,14 @@ fn run_test_cases(cases: TestCases) {
 
 // Link to the commit where the happy_path.json was created:
 // https://github.com/Shivani912/tendermint/commit/89aa17ab9ae0a76941eb15b7957452ec78ce5696
-#[test]
-fn bisection_simple() {
+#[tokio::test]
+async fn bisection_simple() {
     let case: TestBisection =
         serde_json::from_str(&read_json_fixture("many_header_bisection/happy_path")).unwrap();
-    run_bisection_test(case);
+    run_bisection_test(case).await;
 }
 
-fn run_bisection_test(case: TestBisection) {
+async fn run_bisection_test(case: TestBisection) {
     println!("{}", case.description);
 
     let untrusted_height = case.height_to_verify.try_into().unwrap();
@@ -237,9 +239,11 @@ fn run_bisection_test(case: TestBisection) {
     let trusted_height = case.trust_options.height.try_into().unwrap();
     let trusted_header = &req
         .signed_header(trusted_height)
+        .await
         .expect("could not 'request' signed header");
     let trusted_vals = &req
         .validator_set(trusted_height + 1)
+        .await
         .expect("could not 'request' validator set");
 
     let trusted_state = TrustedState::new(trusted_header, trusted_vals);
@@ -251,16 +255,23 @@ fn run_bisection_test(case: TestBisection) {
         trusting_period.into(),
         now.into(),
         &req,
-    ) {
+    )
+    .await
+    {
         Ok(new_states) => {
             let untrusted_signed_header = &req
                 .signed_header(untrusted_height)
+                .await
                 .expect("header at untrusted height not found");
+
             let untrusted_next_vals = &req
                 .validator_set(untrusted_height + 1)
+                .await
                 .expect("val set at untrusted height not found");
+
             let expected_state =
                 TrustedState::new(&untrusted_signed_header.to_owned(), untrusted_next_vals);
+
             assert_eq!(new_states[new_states.len() - 1], expected_state);
             assert_eq!(new_states.len(), 2);
             assert!(!expects_err);

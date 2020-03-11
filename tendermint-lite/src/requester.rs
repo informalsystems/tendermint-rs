@@ -1,13 +1,12 @@
+use async_trait::async_trait;
+
 use tendermint::block::signed_header::SignedHeader as TMCommit;
 use tendermint::block::Header as TMHeader;
+use tendermint::lite::{error, Height, SignedHeader};
 use tendermint::rpc;
 use tendermint::validator;
-use tendermint::{block, lite};
-
-use core::future::Future;
-use tendermint::lite::{error, Height, SignedHeader};
 use tendermint::validator::Set;
-use tokio::runtime::Builder;
+use tendermint::{block, lite};
 
 /// RPCRequester wraps the Tendermint rpc::Client.
 pub struct RPCRequester {
@@ -22,15 +21,16 @@ impl RPCRequester {
 
 type TMSignedHeader = SignedHeader<TMCommit, TMHeader>;
 
+#[async_trait]
 impl lite::types::Requester<TMCommit, TMHeader> for RPCRequester {
     /// Request the signed header at height h.
     /// If h==0, request the latest signed header.
     /// TODO: use an enum instead of h==0.
-    fn signed_header(&self, h: Height) -> Result<TMSignedHeader, error::Error> {
+    async fn signed_header(&self, h: Height) -> Result<TMSignedHeader, error::Error> {
         let height: block::Height = h.into();
         let r = match height.value() {
-            0 => block_on(self.client.latest_commit()),
-            _ => block_on(self.client.commit(height)),
+            0 => self.client.latest_commit().await,
+            _ => self.client.commit(height).await,
         };
         match r {
             Ok(response) => Ok(response.signed_header.into()),
@@ -39,22 +39,13 @@ impl lite::types::Requester<TMCommit, TMHeader> for RPCRequester {
     }
 
     /// Request the validator set at height h.
-    fn validator_set(&self, h: Height) -> Result<Set, error::Error> {
-        let r = block_on(self.client.validators(h));
+    async fn validator_set(&self, h: Height) -> Result<Set, error::Error> {
+        let r = self.client.validators(h).await;
         match r {
             Ok(response) => Ok(validator::Set::new(response.validators)),
             Err(error) => Err(error::Kind::RequestFailed.context(error).into()),
         }
     }
-}
-
-pub fn block_on<F: Future>(future: F) -> F::Output {
-    Builder::new()
-        .basic_scheduler()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 
 #[cfg(test)]
@@ -66,13 +57,13 @@ mod tests {
     use tendermint::rpc;
 
     // TODO: integration test
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_val_set() {
+    async fn test_val_set() {
         let client = rpc::Client::new("localhost:26657".parse().unwrap());
         let req = RPCRequester::new(client);
-        let r1 = req.validator_set(5).unwrap();
-        let r2 = req.signed_header(5).unwrap();
+        let r1 = req.validator_set(5).await.unwrap();
+        let r2 = req.signed_header(5).await.unwrap();
         assert_eq!(r1.hash(), r2.header().validators_hash());
     }
 }

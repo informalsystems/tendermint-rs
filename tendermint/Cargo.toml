@@ -31,10 +31,11 @@ all-features = true
 circle-ci = { repository = "interchainio/tendermint-rs" }
 
 [dependencies]
+anomaly = "0.2"
+async-trait = "0.1"
 bytes = "0.5"
 chrono = { version = "0.4", features = ["serde"] }
-anomaly = "0.2"
-thiserror = "1"
+futures = "0.3"
 getrandom = "0.1"
 http = "0.2"
 hyper = "0.13"
@@ -43,13 +44,14 @@ prost-amino = "0.5"
 prost-amino-derive = "0.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
+sha2 = { version = "0.8", default-features = false }
 signatory = { version = "0.18", features = ["ed25519", "ecdsa"] }
 signatory-dalek = "0.18"
 signatory-secp256k1 = "0.18"
-sha2 = { version = "0.8", default-features = false }
 subtle = "2"
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
 tai64 = { version = "3", features = ["chrono"] }
+thiserror = "1"
 toml = { version = "0.5" }
 uuid = { version = "0.8", default-features = false }
 zeroize = { version = "1.1", features = ["zeroize_derive"] }
