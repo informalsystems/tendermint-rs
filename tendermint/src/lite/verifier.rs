@@ -16,11 +16,12 @@ use crate::lite::{
     Commit, Header, Height, Requester, SignedHeader, TrustThreshold, TrustedState, ValidatorSet,
 };
 use anomaly::ensure;
+use futures::future::{FutureExt, LocalBoxFuture};
 use std::ops::Add;
 
 /// Returns an error if the header has expired according to the given
 /// trusting_period and current time. If so, the verifier must be reset subjectively.
-fn is_within_trust_period<H>(
+pub fn is_within_trust_period<H>(
     last_header: &H,
     trusting_period: Duration,
     now: SystemTime,
@@ -51,7 +52,7 @@ where
 
 /// Validate the validators, next validators, against the signed header.
 /// This is equivalent to validateSignedHeaderAndVals in the spec.
-fn validate<C, H>(
+pub fn validate<C, H>(
     signed_header: &SignedHeader<C, H>,
     vals: &C::ValidatorSet,
     next_vals: &C::ValidatorSet,
@@ -98,7 +99,7 @@ where
 /// NOTE: These validators are expected to be the correct validators for the commit,
 /// but since we're using voting_power_in, we can't actually detect if there's
 /// votes from validators not in the set.
-fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), Error>
+pub fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), Error>
 where
     C: Commit,
 {
@@ -121,7 +122,7 @@ where
 /// NOTE the given validators do not necessarily correspond to the validator set for this commit,
 /// but there may be some intersection. The trust_level parameter allows clients to require more
 /// than +1/3 by implementing the TrustLevel trait accordingly.
-fn verify_commit_trusting<C, L>(
+pub fn verify_commit_trusting<C, L>(
     validators: &C::ValidatorSet,
     commit: &C,
     trust_level: L,
@@ -279,7 +280,7 @@ where
 /// data from intermediate heights.
 ///
 /// This function is primarily for use by a light node.
-pub fn verify_bisection<C, H, L, R>(
+pub async fn verify_bisection<C, H, L, R>(
     trusted_state: TrustedState<C, H>,
     untrusted_height: Height,
     trust_threshold: L,
@@ -316,6 +317,7 @@ where
 
     // this is only used to memoize intermediate trusted states:
     let mut cache: Vec<TrustedState<C, H>> = Vec::new();
+
     // inner recursive function which assumes
     // trusting_period check is already done.
     verify_bisection_inner(
@@ -324,7 +326,9 @@ where
         trust_threshold,
         req,
         &mut cache,
-    )?;
+    )
+    .await?;
+
     // return all intermediate trusted states up to untrusted_height
     Ok(cache)
 }
@@ -336,75 +340,81 @@ where
 // not store states twice.
 // Additionally, a new state is returned for convenience s.t. it can
 // be used for the other half of the recursion.
-fn verify_bisection_inner<H, C, L, R>(
-    trusted_state: &TrustedState<C, H>,
+fn verify_bisection_inner<'a, H, C, L, R>(
+    trusted_state: &'a TrustedState<C, H>,
     untrusted_height: Height,
     trust_threshold: L,
-    req: &R,
-    mut cache: &mut Vec<TrustedState<C, H>>,
-) -> Result<TrustedState<C, H>, Error>
+    req: &'a R,
+    mut cache: &'a mut Vec<TrustedState<C, H>>,
+) -> LocalBoxFuture<'a, Result<TrustedState<C, H>, Error>>
 where
     H: Header,
     C: Commit,
-    L: TrustThreshold,
+    L: TrustThreshold + 'a,
     R: Requester<C, H>,
 {
-    // fetch the header and vals for the new height
-    let untrusted_sh = req.signed_header(untrusted_height)?;
-    let untrusted_vals = req.validator_set(untrusted_height)?;
-    let untrusted_next_vals =
-        req.validator_set(untrusted_height.checked_add(1).expect("height overflow"))?;
+    async move {
+        // fetch the header and vals for the new height
+        let untrusted_sh = req.signed_header(untrusted_height).await?;
+        let untrusted_vals = req.validator_set(untrusted_height).await?;
+        let untrusted_next_vals = req
+            .validator_set(untrusted_height.checked_add(1).expect("height overflow"))
+            .await?;
 
-    // check if we can skip to this height and if it verifies.
-    match verify_single_inner(
-        trusted_state,
-        &untrusted_sh,
-        &untrusted_vals,
-        &untrusted_next_vals,
-        trust_threshold,
-    ) {
-        Ok(_) => {
-            // Successfully verified!
-            // memoize the new to be trusted state and return.
-            let ts = TrustedState::new(untrusted_sh, untrusted_next_vals);
-            cache.push(ts.clone());
-            return Ok(ts);
-        }
-        Err(e) => {
-            match e.kind() {
-                // Insufficient voting power to update.
-                // Engage bisection, below.
-                &Kind::InsufficientVotingPower { .. } => (),
-                // If something went wrong, return the error.
-                real_err => return Err(real_err.to_owned().into()),
+        // check if we can skip to this height and if it verifies.
+        match verify_single_inner(
+            trusted_state,
+            &untrusted_sh,
+            &untrusted_vals,
+            &untrusted_next_vals,
+            trust_threshold,
+        ) {
+            Ok(_) => {
+                // Successfully verified!
+                // memoize the new to be trusted state and return.
+                let ts = TrustedState::new(untrusted_sh, untrusted_next_vals);
+                cache.push(ts.clone());
+                return Ok(ts);
+            }
+            Err(e) => {
+                match e.kind() {
+                    // Insufficient voting power to update.
+                    // Engage bisection, below.
+                    &Kind::InsufficientVotingPower { .. } => (),
+                    // If something went wrong, return the error.
+                    real_err => return Err(real_err.to_owned().into()),
+                }
             }
         }
+
+        // Get the pivot height for bisection.
+        let trusted_h = trusted_state.last_header().header().height();
+        let untrusted_h = untrusted_height;
+        let pivot_height = trusted_h.checked_add(untrusted_h).expect("height overflow") / 2;
+
+        // Recursive call to bisect to the pivot height.
+        // When this completes, we will either return an error or
+        // have updated the cache to the pivot height.
+        let trusted_left = verify_bisection_inner(
+            trusted_state,
+            pivot_height,
+            trust_threshold,
+            req,
+            &mut cache,
+        )
+        .await?;
+
+        // Recursive call to update to the original untrusted_height.
+        verify_bisection_inner(
+            &trusted_left,
+            untrusted_height,
+            trust_threshold,
+            req,
+            &mut cache,
+        )
+        .await
     }
-
-    // Get the pivot height for bisection.
-    let trusted_h = trusted_state.last_header().header().height();
-    let untrusted_h = untrusted_height;
-    let pivot_height = trusted_h.checked_add(untrusted_h).expect("height overflow") / 2;
-
-    // Recursive call to bisect to the pivot height.
-    // When this completes, we will either return an error or
-    // have updated the cache to the pivot height.
-    let trusted_left = verify_bisection_inner(
-        trusted_state,
-        pivot_height,
-        trust_threshold,
-        req,
-        &mut cache,
-    )?;
-
-    // Recursive call to update to the original untrusted_height.
-    verify_bisection_inner(
-        &trusted_left,
-        untrusted_height,
-        trust_threshold,
-        req,
-        &mut cache,
-    )
+    .boxed_local()
 }
 
 #[cfg(test)]
@@ -518,7 +528,7 @@ mod tests {
 
     // use the sequence of states with the given vals for the requester
     // and ensure bisection yields no error.
-    fn assert_bisection_ok(
+    async fn assert_bisection_ok(
         req: &MockRequester,
         ts: &TrustedState<MockCommit, MockHeader>,
         untrusted_height: u64,
@@ -533,7 +543,9 @@ mod tests {
             req,
             cache.as_mut(),
         )
+        .await
         .expect("should have passed");
+
         assert_eq!(ts_new, expected_final_state.to_owned());
         assert_eq!(cache.len(), expected_num_of_requests);
         assert_uniqueness(cache);
@@ -547,7 +559,7 @@ mod tests {
 
     // use the sequence of states with the given vals for the requester
     // and ensure we get the expected error.
-    fn assert_bisection_err(
+    async fn assert_bisection_err(
         req: &MockRequester,
         ts: &TrustedState<MockCommit, MockHeader>,
         untrusted_height: u64,
@@ -560,7 +572,8 @@ mod tests {
             TrustThresholdFraction::default(),
             req,
             cache.as_mut(),
-        );
+        )
+        .await;
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().kind().to_string(),
@@ -569,8 +582,8 @@ mod tests {
     }
 
     // valid to skip, but invalid commit. 1 validator.
-    #[test]
-    fn test_verify_single_skip_1_val_verify() {
+    #[tokio::test]
+    async fn test_verify_single_skip_1_val_verify() {
         let vac = ValsAndCommit::new(vec![0], vec![0]);
         let ts = &init_trusted_state(vac, vec![0], 1);
 
@@ -593,8 +606,8 @@ mod tests {
 
     // valid commit and data, starting with 1 validator.
     // test if we can skip to it.
-    #[test]
-    fn test_verify_single_skip_1_val_skip() {
+    #[tokio::test]
+    async fn test_verify_single_skip_1_val_skip() {
         let mut vac = ValsAndCommit::new(vec![0], vec![0]);
         let ts = &init_trusted_state(vac.clone(), vec![0], 1);
         //*****
@@ -631,8 +644,8 @@ mod tests {
 
     // valid commit and data, starting with 2 validators.
     // test if we can skip to it.
-    #[test]
-    fn test_verify_single_skip_2_val_skip() {
+    #[tokio::test]
+    async fn test_verify_single_skip_2_val_skip() {
         let mut vac = ValsAndCommit::new(vec![0, 1], vec![0, 1]);
         let ts = &init_trusted_state(vac.clone(), vec![0, 1], 1);
 
@@ -671,8 +684,8 @@ mod tests {
 
     // valid commit and data, starting with 3 validators.
     // test if we can skip to it.
-    #[test]
-    fn test_verify_single_skip_3_val_skip() {
+    #[tokio::test]
+    async fn test_verify_single_skip_3_val_skip() {
         let mut vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
         let ts = &init_trusted_state(vac.clone(), vec![0, 1, 2], 1);
 
@@ -723,8 +736,8 @@ mod tests {
         assert_single_err(ts, vac, err.into());
     }
 
-    #[test]
-    fn test_verify_single_skip_4_val_skip() {
+    #[tokio::test]
+    async fn test_verify_single_skip_4_val_skip() {
         let vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![0, 1, 2, 3]);
         let ts = &init_trusted_state(vac.clone(), vec![0, 1, 2, 3], 1);
 
@@ -771,16 +784,20 @@ mod tests {
         assert_single_err(ts, vac, err.into());
     }
 
-    #[test]
-    fn test_verify_bisection_1_val() {
+    #[tokio::test]
+    async fn test_verify_bisection_1_val() {
         let vac = ValsAndCommit::new(vec![0], vec![0]);
         let final_state = init_trusted_state(vac.clone(), vec![0], 2);
         let req = init_requester(vec![vac.clone(), vac.clone(), vac.clone(), vac.clone()]);
-        let sh = req.signed_header(1).expect("first sh not present");
-        let vals = req.validator_set(1).expect("init. valset not present");
+        let sh = req.signed_header(1).await.expect("first sh not present");
+        let vals = req
+            .validator_set(1)
+            .await
+            .expect("init. valset not present");
+
         let ts = MockState::new(sh, vals);
 
-        assert_bisection_ok(&req, &ts, 2, 1, &final_state);
+        assert_bisection_ok(&req, &ts, 2, 1, &final_state).await;
 
         let final_state = init_trusted_state(vac.clone(), vec![0], 3);
         // let vac = ValsAndCommit::new(vec![0], vec![0]);
@@ -791,11 +808,12 @@ mod tests {
             vac.clone(),
             vac,
         ]);
-        assert_bisection_ok(&req, &ts, 3, 1, &final_state);
+
+        assert_bisection_ok(&req, &ts, 3, 1, &final_state).await;
     }
 
-    #[test]
-    fn test_verify_bisection() {
+    #[tokio::test]
+    async fn test_verify_bisection() {
         //*************
         // OK
 
@@ -813,11 +831,15 @@ mod tests {
         let vac = ValsAndCommit::new(vec![0, 2], vec![0, 2]);
         let final_ts = init_trusted_state(vac, vec![0, 2], 5);
         let req = init_requester(vals_and_commit_for_height);
-        let sh = req.signed_header(1).expect("first sh not present");
-        let vals = req.validator_set(1).expect("init. valset not present");
+        let sh = req.signed_header(1).await.expect("first sh not present");
+        let vals = req
+            .validator_set(1)
+            .await
+            .expect("init. valset not present");
+
         let ts = &MockState::new(sh, vals);
 
-        assert_bisection_ok(&req, &ts, 5, 3, &final_ts);
+        assert_bisection_ok(&req, &ts, 5, 3, &final_ts).await;
 
         //*************
         // Err
@@ -825,13 +847,13 @@ mod tests {
         // fails due to missing vals for height 6:
         let mut faulty_req = req;
         faulty_req.validators.remove(&6_u64);
-        assert_bisection_err(&faulty_req, &ts, 5, Kind::RequestFailed.into());
+        assert_bisection_err(&faulty_req, &ts, 5, Kind::RequestFailed.into()).await;
 
         // Error: can't bisect from trusted height 1 to height 1
         // (here because non-increasing time is caught first)
         let vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
         let req = init_requester(vec![vac.clone(), vac.clone(), vac]);
-        assert_bisection_err(&req, &ts, 1, Kind::NonIncreasingTime.into());
+        assert_bisection_err(&req, &ts, 1, Kind::NonIncreasingTime.into()).await;
 
         // can't bisect from trusted height 1 to height 1 (here we tamper with time but
         // expect to fail on NonIncreasingHeight):
@@ -853,14 +875,15 @@ mod tests {
                 expected: 2,
             }
             .into(),
-        );
+        )
+        .await;
     }
 
     // can't bisect from height 1 to height 3
     // because there isn't enough signatures/commits for header at height 3
     // errors with an 'InvalidCommit'
-    #[test]
-    fn test_bisection_not_enough_commits() {
+    #[tokio::test]
+    async fn test_bisection_not_enough_commits() {
         let vals_vec = vec![0, 1, 2, 4];
         let commit_vec = vec![0, 1, 2, 4];
         let vac1 = ValsAndCommit::new(vals_vec.clone(), commit_vec);
@@ -883,7 +906,8 @@ mod tests {
                 signed: 1,
             }
             .into(),
-        );
+        )
+        .await;
     }
 
     #[test]
