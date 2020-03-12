@@ -9,18 +9,7 @@
 /// cargo test -- --ignored
 /// ```
 mod rpc {
-    use core::future::Future;
     use tendermint::rpc::Client;
-    use tokio::runtime::Builder;
-
-    fn block_on<F: Future>(future: F) -> F::Output {
-        Builder::new()
-            .basic_scheduler()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(future)
-    }
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> Client {
@@ -28,72 +17,85 @@ mod rpc {
     }
 
     /// `/health` endpoint
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn health() {
-        let result = block_on(localhost_rpc_client().health());
+    async fn health() {
+        let result = localhost_rpc_client().health().await;
+
         assert!(result.is_ok(), "health check failed");
     }
 
     /// `/abci_info` endpoint
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn abci_info() {
-        let abci_info = block_on(localhost_rpc_client().abci_info()).unwrap();
+    async fn abci_info() {
+        let abci_info = localhost_rpc_client().abci_info().await.unwrap();
+
         assert_eq!(&abci_info.data, "GaiaApp");
     }
 
     /// `/abci_query` endpoint
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn abci_query() {
+    async fn abci_query() {
         let key = "unpopulated_key".parse().unwrap();
-        let abci_query =
-            block_on(localhost_rpc_client().abci_query(Some(key), vec![], None, false)).unwrap();
+        let abci_query = localhost_rpc_client()
+            .abci_query(Some(key), vec![], None, false)
+            .await
+            .unwrap();
+
         assert_eq!(abci_query.key.as_ref().unwrap(), &Vec::<u8>::new());
         assert_eq!(abci_query.value.as_ref(), None);
     }
 
     /// `/block` endpoint
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn block() {
+    async fn block() {
         let height = 1u64;
-        let block_info = block_on(localhost_rpc_client().block(height)).unwrap();
+        let block_info = localhost_rpc_client().block(height).await.unwrap();
+
         assert_eq!(block_info.block_meta.header.height.value(), height);
     }
 
     /// `/block_results` endpoint
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn block_results() {
+    async fn block_results() {
         let height = 1u64;
-        let block_results = block_on(localhost_rpc_client().block_results(height)).unwrap();
+        let block_results = localhost_rpc_client().block_results(height).await.unwrap();
+
         assert_eq!(block_results.height.value(), height);
     }
 
     /// `/blockchain` endpoint
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn blockchain() {
-        let blockchain_info = block_on(localhost_rpc_client().blockchain(1u64, 10u64)).unwrap();
+    async fn blockchain() {
+        let blockchain_info = localhost_rpc_client()
+            .blockchain(1u64, 10u64)
+            .await
+            .unwrap();
+
         assert_eq!(blockchain_info.block_metas.len(), 10);
     }
 
     /// `/commit` endpoint
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn commit() {
+    async fn commit() {
         let height = 1u64;
-        let commit_info = block_on(localhost_rpc_client().block(height)).unwrap();
+        let commit_info = localhost_rpc_client().block(height).await.unwrap();
+
         assert_eq!(commit_info.block_meta.header.height.value(), height);
     }
 
     /// `/genesis` endpoint
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn genesis() {
-        let genesis = block_on(localhost_rpc_client().genesis()).unwrap();
+    async fn genesis() {
+        let genesis = localhost_rpc_client().genesis().await.unwrap();
+
         assert_eq!(
             genesis.consensus_params.validator.pub_key_types[0].to_string(),
             "ed25519"
@@ -101,18 +103,19 @@ mod rpc {
     }
 
     /// `/net_info` endpoint integration test
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn net_info() {
-        let net_info = block_on(localhost_rpc_client().net_info()).unwrap();
+    async fn net_info() {
+        let net_info = localhost_rpc_client().net_info().await.unwrap();
+
         assert!(net_info.listening);
     }
 
     /// `/status` endpoint integration test
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn status_integration() {
-        let status = block_on(localhost_rpc_client().status()).unwrap();
+    async fn status_integration() {
+        let status = localhost_rpc_client().status().await.unwrap();
 
         // For lack of better things to test
         assert_eq!(status.validator_info.voting_power.value(), 10);

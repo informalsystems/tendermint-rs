@@ -1,14 +1,14 @@
 //! All traits that are necessary and need to be implemented to use the main
 //! verification logic in [`super::verifier`] for a light client.
 
-use crate::Hash;
-
-use crate::lite::error::{Error, Kind};
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::time::SystemTime;
 
-use anomaly::fail;
+use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+
+use crate::lite::error::{Error, Kind};
+use crate::Hash;
 
 pub type Height = u64;
 
@@ -129,16 +129,17 @@ impl Default for TrustThresholdFraction {
 
 /// Requester can be used to request [`SignedHeader`]s and [`ValidatorSet`]s for a
 /// given height, e.g., by talking to a tendermint fullnode through RPC.
+#[async_trait]
 pub trait Requester<C, H>
 where
     C: Commit,
     H: Header,
 {
     /// Request the [`SignedHeader`] at height h.
-    fn signed_header(&self, h: Height) -> Result<SignedHeader<C, H>, Error>;
+    async fn signed_header(&self, h: Height) -> Result<SignedHeader<C, H>, Error>;
 
     /// Request the validator set at height h.
-    fn validator_set(&self, h: Height) -> Result<C::ValidatorSet, Error>;
+    async fn validator_set(&self, h: Height) -> Result<C::ValidatorSet, Error>;
 }
 
 /// TrustedState contains a state trusted by a lite client,
@@ -162,10 +163,10 @@ where
     /// Initialize the TrustedState with the given signed header and validator set.
     /// Note that if the height of the passed in header is h-1, the passed in validator set
     /// must have been requested for height h.
-    pub fn new(last_header: &SignedHeader<C, H>, validators: &C::ValidatorSet) -> Self {
+    pub fn new(last_header: SignedHeader<C, H>, validators: C::ValidatorSet) -> Self {
         Self {
-            last_header: last_header.clone(),
-            validators: validators.clone(),
+            last_header,
+            validators,
         }
     }
 
@@ -207,13 +208,15 @@ where
     }
 }
 
+#[cfg(test)]
 pub(super) mod mocks {
+    use anomaly::fail;
     use serde::Serialize;
     use sha2::{Digest, Sha256};
 
+    use super::*;
     use crate::{hash::Algorithm, Hash};
 
-    use super::*;
     use std::collections::HashMap;
 
     #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -332,8 +335,10 @@ pub(super) mod mocks {
             Ok(())
         }
     }
+
     pub type MockSignedHeader = SignedHeader<MockCommit, MockHeader>;
     pub type MockTrustedState = TrustedState<MockCommit, MockHeader>;
+
     // Mock requester holds a map from height to
     // Headers and commits.
     #[derive(Clone, Debug)]
@@ -341,6 +346,7 @@ pub(super) mod mocks {
         pub signed_headers: HashMap<u64, MockSignedHeader>,
         pub validators: HashMap<u64, MockValSet>,
     }
+
     impl MockRequester {
         pub fn new() -> Self {
             Self {
@@ -349,8 +355,13 @@ pub(super) mod mocks {
             }
         }
     }
+
+    #[async_trait]
     impl Requester<MockCommit, MockHeader> for MockRequester {
-        fn signed_header(&self, h: u64) -> Result<SignedHeader<MockCommit, MockHeader>, Error> {
+        async fn signed_header(
+            &self,
+            h: u64,
+        ) -> Result<SignedHeader<MockCommit, MockHeader>, Error> {
             println!("requested signed header for height:{:?}", h);
             if let Some(sh) = self.signed_headers.get(&h) {
                 return Ok(sh.to_owned());
@@ -359,7 +370,7 @@ pub(super) mod mocks {
             fail!(Kind::RequestFailed, "couldn't get sh for: {}", &h);
         }
 
-        fn validator_set(&self, h: u64) -> Result<MockValSet, Error> {
+        async fn validator_set(&self, h: u64) -> Result<MockValSet, Error> {
             println!("requested validators for height:{:?}", h);
             if let Some(vs) = self.validators.get(&h) {
                 return Ok(vs.to_owned());
@@ -424,13 +435,13 @@ mod tests {
 
     #[test]
     fn trusted_state() {
-        let vs = &MockValSet::new(vec![1]);
+        let vs = MockValSet::new(vec![1]);
         let h = MockHeader::new(0, SystemTime::UNIX_EPOCH, vs.hash(), vs.hash());
         let c = MockCommit::new(h.hash(), vec![]);
         let sh = SignedHeader::new(c, h);
-        let ts = TrustedState::new(&sh, vs);
+        let ts = TrustedState::new(sh.clone(), vs.clone());
         assert_eq!(ts.last_header(), &sh);
-        assert_eq!(ts.validators(), vs);
+        assert_eq!(ts.validators(), &vs);
     }
 
     #[test]
