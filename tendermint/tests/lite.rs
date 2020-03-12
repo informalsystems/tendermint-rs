@@ -48,7 +48,6 @@ struct TestBisection {
     trust_options: TrustOptions,
     primary: Provider,
     height_to_verify: Height,
-    // TODO: make trust_level deserialize from string instead of integer
     // TODO: trust_level should go under TrustOptions
     trust_level: TrustThresholdFraction,
     now: Time,

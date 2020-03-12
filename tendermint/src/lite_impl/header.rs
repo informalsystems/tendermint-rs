@@ -38,8 +38,6 @@ impl lite::Header for block::Header {
         fields_bytes.push(bytes_enc(self.chain_id.as_bytes()));
         fields_bytes.push(encode_varint(self.height.value()));
         fields_bytes.push(AminoMessage::bytes_vec(&TimeMsg::from(self.time)));
-        fields_bytes.push(encode_varint(self.num_txs));
-        fields_bytes.push(encode_varint(self.total_txs));
         fields_bytes.push(
             self.last_block_id
                 .as_ref()

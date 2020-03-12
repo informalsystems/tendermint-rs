@@ -1,6 +1,7 @@
 //! Blocks within the chains of a Tendermint network
 
 mod commit;
+pub mod commit_sig;
 pub mod header;
 mod height;
 mod id;
@@ -8,16 +9,15 @@ mod meta;
 pub mod parts;
 pub mod signed_header;
 mod size;
-pub mod commit_sig;
 
 pub use self::{
     commit::*,
+    commit_sig::*,
     header::Header,
     height::*,
     id::{Id, ParseId},
     meta::Meta,
     size::Size,
-    commit_sig::*,
 };
 use crate::{abci::transaction, evidence, serializers};
 use serde::{Deserialize, Deserializer, Serialize};

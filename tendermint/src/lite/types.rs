@@ -6,6 +6,7 @@ use std::time::SystemTime;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use crate::serializers;
 
 use crate::lite::error::{Error, Kind};
 use crate::Hash;
@@ -89,7 +90,9 @@ pub trait TrustThreshold: Copy + Clone + Debug {
 /// [`TrustThreshold`] which can be passed into all relevant methods.
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TrustThresholdFraction {
+    #[serde(deserialize_with = "serializers::parse_u64")]
     numerator: u64,
+    #[serde(deserialize_with = "serializers::parse_u64")]
     denominator: u64,
 }
 

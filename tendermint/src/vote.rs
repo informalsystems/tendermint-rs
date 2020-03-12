@@ -10,7 +10,6 @@ use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
 };
-use std::slice;
 
 /// Votes are signed messages from validators for a particular block which
 /// include information about the validator signing it.
@@ -76,22 +75,6 @@ impl Vote {
             Some(b) => Some(b.hash),
             None => None,
         }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct Votes(Vec<Option<Vote>>);
-
-impl Votes {
-
-    /// Convert this collection of CommitSigs into a vector
-    pub fn into_vec(self) -> Vec<Option<Vote>> {
-        self.0
-    }
-
-    /// Iterate over the CommitSigs in the collection
-    pub fn iter(&self) -> slice::Iter<'_, Option<Vote>> {
-        self.0.iter()
     }
 }
 
