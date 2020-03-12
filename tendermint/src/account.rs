@@ -12,7 +12,6 @@ use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 
 /// Size of an  account ID in bytes
-// TODO: Is it okay to publicize this??
 pub const LENGTH: usize = 20;
 
 /// Account IDs
