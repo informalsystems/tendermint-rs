@@ -121,7 +121,7 @@ impl MockRequester {
 }
 
 // Link to the commit that generated below JSON test files:
-// https://github.com/Shivani912/tendermint/commit/f7d16ab59b55a4f1a5cdbfa6b0c24467aa88fdb2
+// https://github.com/Shivani912/tendermint/commit/d2c25c6d6e407d4f56944c9d778d60f2319cdaab
 const TEST_FILES_PATH: &str = "./tests/support/lite/";
 fn read_json_fixture(name: &str) -> String {
     fs::read_to_string(PathBuf::from(TEST_FILES_PATH).join(name.to_owned() + ".json")).unwrap()
@@ -215,7 +215,7 @@ fn run_test_cases(cases: TestCases) {
 }
 
 // Link to the commit where the happy_path.json was created:
-// https://github.com/Shivani912/tendermint/commit/89aa17ab9ae0a76941eb15b7957452ec78ce5696
+// https://github.com/Shivani912/tendermint/commit/d2c25c6d6e407d4f56944c9d778d60f2319cdaab
 #[tokio::test]
 async fn bisection_simple() {
     let case: TestBisection =
