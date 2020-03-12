@@ -1,10 +1,10 @@
 //! Commits to a Tendermint blockchain
 
-use crate::block::{Height, Id};
 use crate::block::commit_sig::CommitSig;
+use crate::block::{Height, Id};
+use crate::serializers;
 use serde::{Deserialize, Serialize};
 use std::{ops::Deref, slice};
-use crate::serializers;
 
 /// Commit contains the justification (ie. a set of signatures) that a block was committed by a set
 /// of validators.
@@ -18,8 +18,8 @@ pub struct Commit {
 
     /// Round
     #[serde(
-            serialize_with = "serializers::serialize_u64",
-            deserialize_with = "serializers::parse_u64"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
     pub round: u64,
 

@@ -3,9 +3,8 @@
 use crate::lite::error::{Error, Kind};
 use crate::lite::ValidatorSet;
 use crate::validator::Set;
-use crate::{block, hash, lite, vote, Vote};
+use crate::{block, hash, lite, vote};
 use anomaly::fail;
-use crate::block::Commit;
 
 impl lite::Commit for block::signed_header::SignedHeader {
     type ValidatorSet = Set;
@@ -17,15 +16,11 @@ impl lite::Commit for block::signed_header::SignedHeader {
         // NOTE we don't know the validators that committed this block,
         // so we have to check for each vote if its validator is already known.
         let mut signed_power = 0u64;
-        for vote_opt in &self.iter() {
+        for vote in &self.iter().unwrap() {
             // skip absent and nil votes
             // NOTE: do we want to check the validity of votes
             // for nil ?
             // TODO: clarify this!
-            let vote = match vote_opt {
-                Some(v) => v,
-                None => continue,
-            };
 
             // check if this vote is from a known validator
             let val_id = vote.validator_id();
@@ -63,15 +58,16 @@ impl lite::Commit for block::signed_header::SignedHeader {
         }
 
         for commit_sig in self.commit.signatures.iter() {
-
-            // returns FaultyFullNode error if it detects a signer isn't present in the validator set
-            if vals.validator(commit_sig.validator_address) == None {
-                let reason = format!(
-                    "Found a faulty signer ({}) not present in the validator set ({})",
-                    commit_sig.validator_address,
-                    vals.hash()
-                );
-                fail!(Kind::FaultyFullNode, reason);
+            // returns FaultyFullNode error if it detects a signer that is not present in the validator set
+            if let Some(val_addr) = commit_sig.validator_address {
+                if vals.validator(val_addr) == None {
+                    let reason = format!(
+                        "Found a faulty signer ({}) not present in the validator set ({})",
+                        val_addr,
+                        vals.hash()
+                    );
+                    fail!(Kind::FaultyFullNode, reason);
+                }
             }
         }
 
@@ -79,33 +75,62 @@ impl lite::Commit for block::signed_header::SignedHeader {
     }
 }
 
-fn commit_to_votes(commit: Commit) -> vote::Votes {
-    let votes: vote::Votes = Default::default();
-    for commit_sig in commit.signatures.iter() {
-        
+fn commit_to_votes(commit: block::Commit) -> Result<Vec<vote::Vote>, Error> {
+    let mut votes: Vec<vote::Vote> = Default::default();
+    for (i, commit_sig) in commit.signatures.iter().enumerate() {
+        if commit_sig.is_absent() {
+            continue;
+        }
+
+        match commit_sig.validator_address {
+            Some(val_addr) => {
+                if let Some(sig) = commit_sig.signature.clone() {
+                    let vote = vote::Vote {
+                        vote_type: vote::Type::Precommit,
+                        height: commit.height,
+                        round: commit.round,
+                        block_id: Option::from(commit.block_id.clone()),
+                        timestamp: commit_sig.timestamp,
+                        validator_address: val_addr,
+                        validator_index: i as u64,
+                        signature: sig,
+                    };
+                    votes.push(vote);
+                }
+            }
+            None => {
+                fail!(
+                    Kind::ImplementationSpecific,
+                    "validator address missing in commit_sig {:#?}",
+                    commit_sig
+                );
+            }
+        }
     }
-    votes
+    Ok(votes)
 }
 
 impl block::signed_header::SignedHeader {
     /// This is a private helper method to iterate over the underlying
     /// votes to compute the voting power (see `voting_power_in` below).
-    fn iter(&self) -> Vec<Option<vote::SignedVote>> {
+    fn iter(&self) -> Result<Vec<vote::SignedVote>, Error> {
         let chain_id = self.header.chain_id.to_string();
-        let mut votes = self.commit.precommits.clone().into_vec();
-        votes
+        // if let Ok(mut votes) = commit_to_votes(self.commit.clone())
+        let mut votes = match commit_to_votes(self.commit.clone()) {
+            Ok(votes_vec) => votes_vec,
+            Err(e) => return Err(e),
+        };
+        Ok(votes
             .drain(..)
-            .map(|opt| {
-                opt.map(|vote| {
-                    vote::SignedVote::new(
-                        (&vote).into(),
-                        &chain_id,
-                        vote.validator_address,
-                        vote.signature,
-                    )
-                })
+            .map(|vote| {
+                vote::SignedVote::new(
+                    (&vote).into(),
+                    &chain_id,
+                    vote.validator_address,
+                    vote.signature,
+                )
             })
-            .collect()
+            .collect())
     }
 }
 

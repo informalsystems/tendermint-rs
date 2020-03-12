@@ -48,28 +48,29 @@ mod endpoints {
         assert_eq!(header.version.block, 10);
         assert_eq!(header.chain_id.as_str(), EXAMPLE_CHAIN);
         assert_eq!(header.height.value(), 15);
-        assert_eq!(header.num_txs, 2);
 
         assert_eq!(data.iter().len(), 2);
         assert_eq!(evidence.iter().len(), 0);
-        assert_eq!(last_commit.unwrap().precommits.len(), 65);
+        assert_eq!(last_commit.unwrap().signatures.len(), 65);
     }
 
-    #[test]
-    fn block_empty_block_id() {
-        let response =
-            endpoint::block::Response::from_string(&read_json_fixture("block_empty_block_id"))
-                .unwrap();
-
-        let tendermint::Block { last_commit, .. } = response.block;
-
-        assert_eq!(last_commit.as_ref().unwrap().precommits.len(), 2);
-        assert!(last_commit.unwrap().precommits[0]
-            .as_ref()
-            .unwrap()
-            .block_id
-            .is_none());
-    }
+    // NOTE: Since the commit struct changed, the votes i.e. CommitSig no longer contains BlockID
+    // TODO: Do we still need this test?
+    // #[test]
+    // fn block_empty_block_id() {
+    //     let response =
+    //         endpoint::block::Response::from_string(&read_json_fixture("block_empty_block_id"))
+    //             .unwrap();
+    //
+    //     let tendermint::Block { last_commit, .. } = response.block;
+    //
+    //     assert_eq!(last_commit.as_ref().unwrap().precommits.len(), 2);
+    //     assert!(last_commit.unwrap().precommits[0]
+    //         .as_ref()
+    //         .unwrap()
+    //         .block_id
+    //         .is_none());
+    // }
 
     #[test]
     fn first_block() {
@@ -208,7 +209,7 @@ mod endpoints {
         // header etc:
         let commit = response.signed_header.commit;
         let block_id = commit.block_id;
-        let _precommits = commit.precommits;
+        let _signatures = commit.signatures;
         assert_eq!(header.hash(), block_id.hash);
     }
 
