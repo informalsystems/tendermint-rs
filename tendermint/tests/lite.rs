@@ -169,7 +169,8 @@ fn run_test_cases(cases: TestCases) {
     for (_, tc) in cases.test_cases.iter().enumerate() {
         let trusted_next_vals = tc.initial.clone().next_validator_set;
         let mut latest_trusted =
-            Trusted::new(&tc.initial.signed_header.clone().into(), &trusted_next_vals);
+            Trusted::new(tc.initial.signed_header.clone().into(), trusted_next_vals);
+
         let expects_err = match &tc.expected_output {
             Some(eo) => eo.eq("error"),
             None => false,
@@ -181,23 +182,26 @@ fn run_test_cases(cases: TestCases) {
 
         for (i, input) in tc.input.iter().enumerate() {
             println!("i: {}, {}", i, tc.description);
+
             let untrusted_signed_header = &input.signed_header;
             let untrusted_vals = &input.validator_set;
             let untrusted_next_vals = &input.next_validator_set;
+
             match lite::verify_single(
                 latest_trusted.clone(),
                 &untrusted_signed_header.into(),
-                &untrusted_vals,
-                &untrusted_next_vals,
+                untrusted_vals,
+                untrusted_next_vals,
                 TrustThresholdFraction::default(),
                 trusting_period,
                 now,
             ) {
                 Ok(new_state) => {
                     let expected_state = TrustedState::new(
-                        &untrusted_signed_header.to_owned().into(),
-                        untrusted_next_vals,
+                        untrusted_signed_header.clone().into(),
+                        untrusted_next_vals.clone(),
                     );
+
                     assert_eq!(new_state, expected_state);
                     assert!(!expects_err);
 
@@ -237,11 +241,11 @@ async fn run_bisection_test(case: TestBisection) {
     };
 
     let trusted_height = case.trust_options.height.try_into().unwrap();
-    let trusted_header = &req
+    let trusted_header = req
         .signed_header(trusted_height)
         .await
         .expect("could not 'request' signed header");
-    let trusted_vals = &req
+    let trusted_vals = req
         .validator_set(trusted_height + 1)
         .await
         .expect("could not 'request' validator set");
@@ -259,19 +263,17 @@ async fn run_bisection_test(case: TestBisection) {
     .await
     {
         Ok(new_states) => {
-            let untrusted_signed_header = &req
+            let untrusted_signed_header = req
                 .signed_header(untrusted_height)
                 .await
                 .expect("header at untrusted height not found");
 
-            let untrusted_next_vals = &req
+            let untrusted_next_vals = req
                 .validator_set(untrusted_height + 1)
                 .await
                 .expect("val set at untrusted height not found");
 
-            let expected_state =
-                TrustedState::new(&untrusted_signed_header.to_owned(), untrusted_next_vals);
-
+            let expected_state = TrustedState::new(untrusted_signed_header, untrusted_next_vals);
             assert_eq!(new_states[new_states.len() - 1], expected_state);
             assert_eq!(new_states.len(), 2);
             assert!(!expects_err);

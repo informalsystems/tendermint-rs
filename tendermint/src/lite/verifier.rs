@@ -253,7 +253,10 @@ where
 
     // The untrusted header is now trusted;
     // return to the caller so they can update the store:
-    Ok(TrustedState::new(untrusted_sh, untrusted_next_vals))
+    Ok(TrustedState::new(
+        untrusted_sh.clone(),
+        untrusted_next_vals.clone(),
+    ))
 }
 
 /// Attempt to "bisect" from the passed-in trusted state (with header of height h)
@@ -352,18 +355,18 @@ where
 {
     async move {
         // fetch the header and vals for the new height
-        let untrusted_sh = &req.signed_header(untrusted_height).await?;
-        let untrusted_vals = &req.validator_set(untrusted_height).await?;
-        let untrusted_next_vals = &req
+        let untrusted_sh = req.signed_header(untrusted_height).await?;
+        let untrusted_vals = req.validator_set(untrusted_height).await?;
+        let untrusted_next_vals = req
             .validator_set(untrusted_height.checked_add(1).expect("height overflow"))
             .await?;
 
         // check if we can skip to this height and if it verifies.
         match verify_single_inner(
             trusted_state,
-            untrusted_sh,
-            untrusted_vals,
-            untrusted_next_vals,
+            &untrusted_sh,
+            &untrusted_vals,
+            &untrusted_next_vals,
             trust_threshold,
         ) {
             Ok(_) => {
@@ -435,11 +438,11 @@ mod tests {
     ) -> MockState {
         // time has to be increasing:
         let time = init_time() + Duration::new(height * 2, 0);
-        let vals = &MockValSet::new(vals_and_commit_vec.vals_vec);
-        let next_vals = &MockValSet::new(next_vals_vec);
+        let vals = MockValSet::new(vals_and_commit_vec.vals_vec);
+        let next_vals = MockValSet::new(next_vals_vec);
         let header = MockHeader::new(height, time, vals.hash(), next_vals.hash());
         let commit = MockCommit::new(header.hash(), vals_and_commit_vec.commit_vec);
-        let sh = &MockSignedHeader::new(commit, header);
+        let sh = MockSignedHeader::new(commit, header);
         MockState::new(sh, vals)
     }
 
@@ -792,7 +795,7 @@ mod tests {
             .await
             .expect("init. valset not present");
 
-        let ts = &MockState::new(&sh, &vals);
+        let ts = MockState::new(sh, vals);
 
         assert_bisection_ok(&req, &ts, 2, 1, &final_state).await;
 
@@ -834,7 +837,7 @@ mod tests {
             .await
             .expect("init. valset not present");
 
-        let ts = &MockState::new(&sh, &vals);
+        let ts = &MockState::new(sh, vals);
 
         assert_bisection_ok(&req, &ts, 5, 3, &final_ts).await;
 

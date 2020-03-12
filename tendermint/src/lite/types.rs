@@ -163,10 +163,10 @@ where
     /// Initialize the TrustedState with the given signed header and validator set.
     /// Note that if the height of the passed in header is h-1, the passed in validator set
     /// must have been requested for height h.
-    pub fn new(last_header: &SignedHeader<C, H>, validators: &C::ValidatorSet) -> Self {
+    pub fn new(last_header: SignedHeader<C, H>, validators: C::ValidatorSet) -> Self {
         Self {
-            last_header: last_header.clone(),
-            validators: validators.clone(),
+            last_header,
+            validators,
         }
     }
 
@@ -435,13 +435,13 @@ mod tests {
 
     #[test]
     fn trusted_state() {
-        let vs = &MockValSet::new(vec![1]);
+        let vs = MockValSet::new(vec![1]);
         let h = MockHeader::new(0, SystemTime::UNIX_EPOCH, vs.hash(), vs.hash());
         let c = MockCommit::new(h.hash(), vec![]);
         let sh = SignedHeader::new(c, h);
-        let ts = TrustedState::new(&sh, vs);
+        let ts = TrustedState::new(sh.clone(), vs.clone());
         assert_eq!(ts.last_header(), &sh);
-        assert_eq!(ts.validators(), vs);
+        assert_eq!(ts.validators(), &vs);
     }
 
     #[test]
