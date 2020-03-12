@@ -8,15 +8,21 @@
 //! // looks using the types and methods in this crate/module.
 //! ```
 
+use futures::stream::Stream;
+use futures::task::{Context, Poll};
+use std::pin::Pin;
+
 use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
 use crate::lite::error::{Error, Kind};
 use crate::lite::{
-    Commit, Header, Height, Requester, SignedHeader, TrustThreshold, TrustedState, ValidatorSet,
+    Commit, Header, Height, Requester, SignedHeader, TrustThreshold, TrustThresholdFraction,
+    TrustedState, ValidatorSet,
 };
+use crate::validator::Set;
 use anomaly::ensure;
-use futures::future::{FutureExt, LocalBoxFuture};
+use std::cell::RefCell;
 use std::ops::Add;
 
 /// Returns an error if the header has expired according to the given
@@ -54,8 +60,8 @@ where
 /// This is equivalent to validateSignedHeaderAndVals in the spec.
 pub fn validate<C, H>(
     signed_header: &SignedHeader<C, H>,
-    vals: &C::ValidatorSet,
-    next_vals: &C::ValidatorSet,
+    vals: &Set,
+    next_vals: &Set,
 ) -> Result<(), Error>
 where
     C: Commit,
@@ -99,7 +105,7 @@ where
 /// NOTE: These validators are expected to be the correct validators for the commit,
 /// but since we're using voting_power_in, we can't actually detect if there's
 /// votes from validators not in the set.
-pub fn verify_commit_full<C>(vals: &C::ValidatorSet, commit: &C) -> Result<(), Error>
+pub fn verify_commit_full<C>(vals: &Set, commit: &C) -> Result<(), Error>
 where
     C: Commit,
 {
@@ -122,14 +128,13 @@ where
 /// NOTE the given validators do not necessarily correspond to the validator set for this commit,
 /// but there may be some intersection. The trust_level parameter allows clients to require more
 /// than +1/3 by implementing the TrustLevel trait accordingly.
-pub fn verify_commit_trusting<C, L>(
-    validators: &C::ValidatorSet,
+pub fn verify_commit_trusting<C>(
+    validators: &Set,
     commit: &C,
-    trust_level: L,
+    trust_level: TrustThresholdFraction,
 ) -> Result<(), Error>
 where
     C: Commit,
-    L: TrustThreshold,
 {
     let total_power = validators.total_power();
     let signed_power = commit.voting_power_in(validators)?;
@@ -154,17 +159,16 @@ where
 // and hence it's possible to use it incorrectly.
 // If trusted_state is not expired and this returns Ok, the
 // untrusted_sh and untrusted_next_vals can be considered trusted.
-fn verify_single_inner<H, C, L>(
+fn verify_single_inner<H, C>(
     trusted_state: &TrustedState<C, H>,
     untrusted_sh: &SignedHeader<C, H>,
-    untrusted_vals: &C::ValidatorSet,
-    untrusted_next_vals: &C::ValidatorSet,
-    trust_threshold: L,
+    untrusted_vals: &Set,
+    untrusted_next_vals: &Set,
+    trust_threshold: TrustThresholdFraction,
 ) -> Result<(), Error>
 where
     H: Header,
     C: Commit,
-    L: TrustThreshold,
 {
     // validate the untrusted header against its commit, vals, and next_vals
     let untrusted_header = untrusted_sh.header();
@@ -225,19 +229,18 @@ where
 /// header to be trusted.
 ///
 /// This function is primarily for use by IBC handlers.
-pub fn verify_single<H, C, L>(
+pub fn verify_single<H, C>(
     trusted_state: TrustedState<C, H>,
     untrusted_sh: &SignedHeader<C, H>,
-    untrusted_vals: &C::ValidatorSet,
-    untrusted_next_vals: &C::ValidatorSet,
-    trust_threshold: L,
+    untrusted_vals: &Set,
+    untrusted_next_vals: &Set,
+    trust_threshold: TrustThresholdFraction,
     trusting_period: Duration,
     now: SystemTime,
 ) -> Result<TrustedState<C, H>, Error>
 where
     H: Header,
     C: Commit,
-    L: TrustThreshold,
 {
     // Fetch the latest state and ensure it hasn't expired.
     let trusted_sh = trusted_state.last_header();
@@ -254,6 +257,110 @@ where
     // The untrusted header is now trusted;
     // return to the caller so they can update the store:
     Ok(TrustedState::new(untrusted_sh, untrusted_next_vals))
+}
+
+pub struct BisectionVerifier<C: Commit, H: Header> {
+    trusted_left: RefCell<Option<TrustedState<C, H>>>,
+    untrusted_height: RefCell<Option<Height>>,
+    trusted_state: RefCell<Option<TrustedState<C, H>>>,
+    pivot_height: RefCell<Option<Height>>,
+    trust_threshold: TrustThresholdFraction,
+    untrusted_sh: RefCell<Option<SignedHeader<C, H>>>,
+    untrusted_vals: RefCell<Option<Set>>,
+    untrusted_next_vals: RefCell<Option<Set>>,
+}
+
+impl<C: Commit, H: Header> BisectionVerifier<C, H> {
+    pub async fn update(&self, requester: &dyn Requester<C, H>) -> Result<(), Error> {
+        let pivot_height = self.pivot_height.borrow();
+        let untrusted_height = self.untrusted_height.borrow();
+        let current_untrusted_height = match pivot_height.as_ref() {
+            Some(pivot) => pivot,
+            None => untrusted_height
+                .as_ref()
+                .expect("No untrusted height present."),
+        };
+        *self.untrusted_sh.borrow_mut() =
+            Some(requester.signed_header(*current_untrusted_height).await?);
+        *self.untrusted_vals.borrow_mut() =
+            Some(requester.validator_set(*current_untrusted_height).await?);
+        *self.untrusted_next_vals.borrow_mut() = Some(
+            requester
+                .validator_set(
+                    current_untrusted_height
+                        .checked_add(1)
+                        .expect("height overflow"),
+                )
+                .await?,
+        );
+        Ok(())
+    }
+}
+
+impl<C: Commit, H: Header> Stream for BisectionVerifier<C, H> {
+    type Item = Option<TrustedState<C, H>>;
+
+    fn poll_next(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<Self::Item>> {
+        let (current_untrusted_height, current_trusted_state) =
+            match self.pivot_height.borrow_mut().take() {
+                Some(pivot) => (
+                    pivot,
+                    self.trusted_state
+                        .borrow_mut()
+                        .take()
+                        .expect("No trusted state to match pivot."),
+                ),
+                None => {
+                    let height = self
+                        .untrusted_height
+                        .borrow_mut()
+                        .take()
+                        .expect("No untrusted height present.");
+                    let state = self
+                        .trusted_left
+                        .borrow_mut()
+                        .take()
+                        .expect("No trusted left present.");
+                    (height, state)
+                }
+            };
+
+        // check if we can skip to this height and if it verifies.
+        match verify_single_inner(
+            &current_trusted_state,
+            self.untrusted_sh.borrow().as_ref().expect(""),
+            self.untrusted_vals.borrow().as_ref().expect(""),
+            self.untrusted_next_vals.borrow().as_ref().expect(""),
+            self.trust_threshold,
+        ) {
+            Ok(_) => {
+                // Successfully verified!
+                let signed_headers = self.untrusted_sh.borrow_mut().take().expect("");
+                let next_validators = self.untrusted_next_vals.borrow_mut().take().expect("");
+                let ts = TrustedState::new(&signed_headers, &next_validators);
+                *self.trusted_left.borrow_mut() = Some(ts.clone());
+                *self.untrusted_height.borrow_mut() = Some(current_untrusted_height);
+                Poll::Ready(Some(Some(ts)))
+            }
+            Err(e) => {
+                match e.kind() {
+                    // Insufficient voting power to update.
+                    // Engage bisection.
+                    &Kind::InsufficientVotingPower { .. } => {
+                        // Get the pivot height for bisection.
+                        let trusted_h = current_trusted_state.last_header().header().height();
+                        let untrusted_h = current_untrusted_height;
+                        *self.pivot_height.borrow_mut() =
+                            Some(trusted_h.checked_add(untrusted_h).expect("height overflow") / 2);
+                        *self.trusted_state.borrow_mut() = Some(current_trusted_state);
+                        Poll::Ready(Some(None))
+                    }
+                    // If something went wrong, terminate.
+                    _ => Poll::Ready(None),
+                }
+            }
+        }
+    }
 }
 
 /// Attempt to "bisect" from the passed-in trusted state (with header of height h)
@@ -277,19 +384,16 @@ where
 /// data from intermediate heights.
 ///
 /// This function is primarily for use by a light node.
-pub async fn verify_bisection<C, H, L, R>(
+pub fn verify_bisection<C, H>(
     trusted_state: TrustedState<C, H>,
     untrusted_height: Height,
-    trust_threshold: L,
+    trust_threshold: TrustThresholdFraction,
     trusting_period: Duration,
     now: SystemTime,
-    req: &R,
-) -> Result<Vec<TrustedState<C, H>>, Error>
+) -> Result<BisectionVerifier<C, H>, Error>
 where
-    H: Header,
-    C: Commit,
-    L: TrustThreshold,
-    R: Requester<C, H>,
+    H: Header + 'static,
+    C: Commit + 'static,
 {
     // Ensure the latest state hasn't expired.
     // Note we only check for expiry once in this
@@ -312,106 +416,16 @@ where
     // We do check bft_time is monotonic, but that check might happen too late.
     // So every header we fetch must be checked to be less than now+X
 
-    // this is only used to memoize intermediate trusted states:
-    let mut cache: Vec<TrustedState<C, H>> = Vec::new();
-
-    // inner recursive function which assumes
-    // trusting_period check is already done.
-    verify_bisection_inner(
-        &trusted_state,
-        untrusted_height,
+    Ok(BisectionVerifier {
+        trusted_left: RefCell::new(None),
+        untrusted_height: RefCell::new(Some(untrusted_height)),
+        trusted_state: RefCell::new(Some(trusted_state)),
+        pivot_height: RefCell::new(None),
         trust_threshold,
-        req,
-        &mut cache,
-    )
-    .await?;
-
-    // return all intermediate trusted states up to untrusted_height
-    Ok(cache)
-}
-
-// inner recursive function for verify_and_update_bisection.
-// see that function's docs.
-// A cache is passed in to memoize all new states to be trusted.
-// Note: we only write to the cache and it guarantees that we do
-// not store states twice.
-// Additionally, a new state is returned for convenience s.t. it can
-// be used for the other half of the recursion.
-fn verify_bisection_inner<'a, H, C, L, R>(
-    trusted_state: &'a TrustedState<C, H>,
-    untrusted_height: Height,
-    trust_threshold: L,
-    req: &'a R,
-    mut cache: &'a mut Vec<TrustedState<C, H>>,
-) -> LocalBoxFuture<'a, Result<TrustedState<C, H>, Error>>
-where
-    H: Header,
-    C: Commit,
-    L: TrustThreshold + 'a,
-    R: Requester<C, H>,
-{
-    async move {
-        // fetch the header and vals for the new height
-        let untrusted_sh = &req.signed_header(untrusted_height).await?;
-        let untrusted_vals = &req.validator_set(untrusted_height).await?;
-        let untrusted_next_vals = &req
-            .validator_set(untrusted_height.checked_add(1).expect("height overflow"))
-            .await?;
-
-        // check if we can skip to this height and if it verifies.
-        match verify_single_inner(
-            trusted_state,
-            untrusted_sh,
-            untrusted_vals,
-            untrusted_next_vals,
-            trust_threshold,
-        ) {
-            Ok(_) => {
-                // Successfully verified!
-                // memoize the new to be trusted state and return.
-                let ts = TrustedState::new(untrusted_sh, untrusted_next_vals);
-                cache.push(ts.clone());
-                return Ok(ts);
-            }
-            Err(e) => {
-                match e.kind() {
-                    // Insufficient voting power to update.
-                    // Engage bisection, below.
-                    &Kind::InsufficientVotingPower { .. } => (),
-                    // If something went wrong, return the error.
-                    real_err => return Err(real_err.to_owned().into()),
-                }
-            }
-        }
-
-        // Get the pivot height for bisection.
-        let trusted_h = trusted_state.last_header().header().height();
-        let untrusted_h = untrusted_height;
-        let pivot_height = trusted_h.checked_add(untrusted_h).expect("height overflow") / 2;
-
-        // Recursive call to bisect to the pivot height.
-        // When this completes, we will either return an error or
-        // have updated the cache to the pivot height.
-        let trusted_left = verify_bisection_inner(
-            trusted_state,
-            pivot_height,
-            trust_threshold,
-            req,
-            &mut cache,
-        )
-        .await?;
-
-        // Recursive call to update to the original untrusted_height.
-        verify_bisection_inner(
-            &trusted_left,
-            untrusted_height,
-            trust_threshold,
-            req,
-            &mut cache,
-        )
-        .await
-    }
-    .boxed_local()
+        untrusted_sh: RefCell::new(None),
+        untrusted_vals: RefCell::new(None),
+        untrusted_next_vals: RefCell::new(None),
+    })
 }
 
 #[cfg(test)]

@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use crate::lite::error::{Error, Kind};
+use crate::validator::Set;
 use crate::Hash;
 
 pub type Height = u64;
@@ -44,8 +45,6 @@ pub trait ValidatorSet: Clone {
 /// Verifying the Commit requires access to an associated ValidatorSet
 /// to determine what voting power signed the commit.
 pub trait Commit: Clone {
-    type ValidatorSet: ValidatorSet;
-
     /// Hash of the header this commit is for.
     fn header_hash(&self) -> Hash;
 
@@ -64,13 +63,13 @@ pub trait Commit: Clone {
     /// Note this expects the Commit to be able to compute `signers(h.Commit)`,
     /// ie. the identity of the validators that signed it, so they
     /// can be cross-referenced with the given `vals`.
-    fn voting_power_in(&self, vals: &Self::ValidatorSet) -> Result<u64, Error>;
+    fn voting_power_in(&self, vals: &Set) -> Result<u64, Error>;
 
     /// Implementers should add addition validation against the given validator set
     /// or other implementation specific validation here.
     /// E.g. validate that the length of the included signatures in the commit match
     /// with the number of validators.
-    fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error>;
+    fn validate(&self, vals: &Set) -> Result<(), Error>;
 }
 
 /// TrustThreshold defines how much of the total voting power of a known
@@ -139,7 +138,7 @@ where
     async fn signed_header(&self, h: Height) -> Result<SignedHeader<C, H>, Error>;
 
     /// Request the validator set at height h.
-    async fn validator_set(&self, h: Height) -> Result<C::ValidatorSet, Error>;
+    async fn validator_set(&self, h: Height) -> Result<Set, Error>;
 }
 
 /// TrustedState contains a state trusted by a lite client,
@@ -152,7 +151,7 @@ where
     C: Commit,
 {
     last_header: SignedHeader<C, H>, // height H-1
-    validators: C::ValidatorSet,     // height H
+    validators: Set,                 // height H
 }
 
 impl<C, H> TrustedState<C, H>
@@ -163,7 +162,7 @@ where
     /// Initialize the TrustedState with the given signed header and validator set.
     /// Note that if the height of the passed in header is h-1, the passed in validator set
     /// must have been requested for height h.
-    pub fn new(last_header: &SignedHeader<C, H>, validators: &C::ValidatorSet) -> Self {
+    pub fn new(last_header: &SignedHeader<C, H>, validators: &Set) -> Self {
         Self {
             last_header: last_header.clone(),
             validators: validators.clone(),
@@ -174,7 +173,7 @@ where
         &self.last_header
     }
 
-    pub fn validators(&self) -> &C::ValidatorSet {
+    pub fn validators(&self) -> &Set {
         &self.validators
     }
 }

@@ -1,3 +1,8 @@
+#[macro_use]
+extern crate futures;
+
+use futures::stream::StreamExt;
+
 use tendermint::hash;
 use tendermint::lite;
 use tendermint::lite::TrustThresholdFraction;
@@ -62,21 +67,31 @@ async fn main() {
         let now = SystemTime::now();
         let trusted_state = store.get(0).expect("can not read trusted state");
 
-        let new_states = lite::verify_bisection(
+        let mut new_states_stream = lite::verify_bisection(
             trusted_state.clone(),
             latest_peer_height,
             TrustThresholdFraction::default(),
             trusting_period,
             now,
-            &req,
         )
-        .await
-        .unwrap();
+        .unwrap()
+        .fuse();
 
-        for new_state in new_states {
-            store
-                .add(new_state)
-                .expect("couldn't store new trusted state");
+        loop {
+            if let Err(err) = new_states_stream.get_ref().update(&req).await {
+                panic!("Error during update of bisection verifier: {:?}", err);
+            }
+
+            select! {
+                new_state = new_states_stream.select_next_some() => {
+                    if let Some(new_state) = new_state {
+                        store
+                            .add(new_state)
+                            .expect("couldn't store new trusted state");
+                    }
+                }
+                complete => break,
+            }
         }
 
         println!("Succeeded bisecting!");

@@ -7,8 +7,6 @@ use crate::{block, hash, lite, vote};
 use anomaly::fail;
 
 impl lite::Commit for block::signed_header::SignedHeader {
-    type ValidatorSet = Set;
-
     fn header_hash(&self) -> hash::Hash {
         self.commit.block_id.hash
     }
@@ -51,7 +49,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
         Ok(signed_power)
     }
 
-    fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error> {
+    fn validate(&self, vals: &Set) -> Result<(), Error> {
         if self.commit.precommits.len() != vals.validators().len() {
             fail!(
                 Kind::ImplementationSpecific,
@@ -77,7 +75,8 @@ impl lite::Commit for block::signed_header::SignedHeader {
                         }
                     }
 
-                    // returns FaultyFullNode error if it detects a signer isn't present in the validator set
+                    // returns FaultyFullNode error if it detects a signer isn't present in the
+                    // validator set
                     if vals.validator(precommit.validator_address) == None {
                         let reason = format!(
                             "Found a faulty signer ({}) not present in the validator set ({})",
