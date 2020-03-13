@@ -307,8 +307,7 @@ impl<C: Commit, H: Header> Stream for BisectionVerifier<C, H> {
                     pivot,
                     self.trusted_state
                         .borrow_mut()
-                        .take()
-                        .expect("No trusted state to match pivot."),
+                        .take(),
                 ),
                 None => {
                     let height = self
@@ -319,11 +318,18 @@ impl<C: Commit, H: Header> Stream for BisectionVerifier<C, H> {
                     let state = self
                         .trusted_left
                         .borrow_mut()
-                        .take()
-                        .expect("No trusted left present.");
+                        .take();
                     (height, state)
                 }
             };
+
+        let current_trusted_state = match current_trusted_state {
+            Some(state) => state,
+            None => {
+                // Terminate.
+                return Poll::Ready(None);
+            }
+        };
 
         // check if we can skip to this height and if it verifies.
         match verify_single_inner(
