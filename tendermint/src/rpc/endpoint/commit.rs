@@ -1,6 +1,6 @@
 //! `/commit` endpoint JSONRPC wrapper
 
-use crate::{block, rpc};
+use crate::{block, block::signed_header::SignedHeader, rpc};
 use serde::{Deserialize, Serialize};
 
 /// Get commit information about a specific block
@@ -37,12 +37,3 @@ pub struct Response {
 }
 
 impl rpc::Response for Response {}
-
-/// Signed block headers
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SignedHeader {
-    /// Block header
-    pub header: block::Header,
-    /// Commit containing signatures for the header
-    pub commit: block::Commit,
-}

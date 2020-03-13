@@ -1,6 +1,8 @@
 //! Serde serializers
 
+use crate::{block, Hash};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use std::str::FromStr;
 use std::time::Duration;
 use subtle_encoding::{base64, hex};
 
@@ -63,6 +65,19 @@ where
     format!("{}", duration.as_nanos()).serialize(serializer)
 }
 
+pub(crate) fn parse_non_empty_hash<'de, D>(deserializer: D) -> Result<Option<Hash>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let o: Option<String> = Option::deserialize(deserializer)?;
+    match o.filter(|s| !s.is_empty()) {
+        None => Ok(None),
+        Some(s) => Ok(Some(
+            Hash::from_str(&s).map_err(|err| D::Error::custom(format!("{}", err)))?,
+        )),
+    }
+}
+
 pub(crate) fn serialize_hex<S, T>(bytes: T, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -74,13 +89,16 @@ where
     serializer.serialize_str(&hex_string)
 }
 
+// decode upper or lowercase hex
 pub(crate) fn parse_hex<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
 where
     D: Deserializer<'de>,
 {
     use serde::de::Error;
     let string = String::deserialize(deserializer)?;
-    hex::decode(&string).map_err(Error::custom)
+    hex::decode_upper(&string)
+        .or_else(|_| hex::decode(&string))
+        .map_err(Error::custom)
 }
 
 pub(crate) fn serialize_base64<S, T>(bytes: T, serializer: S) -> Result<S::Ok, S::Error>
@@ -128,4 +146,42 @@ where
 
     let v = Option::deserialize(deserializer)?;
     Ok(v.map(|Wrapper(a)| a))
+}
+
+/// Parse empty block id as None.
+pub(crate) fn parse_non_empty_block_id<'de, D>(
+    deserializer: D,
+) -> Result<Option<block::Id>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    struct Parts {
+        #[serde(deserialize_with = "parse_u64")]
+        total: u64,
+        hash: String,
+    }
+    #[derive(Deserialize)]
+    struct BlockId {
+        hash: String,
+        parts: Parts,
+    }
+    let tmp_id = BlockId::deserialize(deserializer)?;
+    if tmp_id.hash.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(block::Id {
+            hash: Hash::from_str(&tmp_id.hash)
+                .map_err(|err| D::Error::custom(format!("{}", err)))?,
+            parts: if tmp_id.parts.hash.is_empty() {
+                None
+            } else {
+                Some(block::parts::Header {
+                    total: tmp_id.parts.total,
+                    hash: Hash::from_str(&tmp_id.parts.hash)
+                        .map_err(|err| D::Error::custom(format!("{}", err)))?,
+                })
+            },
+        }))
+    }
 }

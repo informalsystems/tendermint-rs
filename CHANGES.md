@@ -1,3 +1,9 @@
+## Pending [0.12.0] (2019-12-11)
+
+Dependencies
+- Update to bytes `0.5` and amino_rs `0.5`.
+- Tokens for amino_rs are now fully non-conflicting with prost. Allowing both to be used together 
+
 
 ## [0.11.0] (2019-12-11)
 
@@ -11,7 +17,7 @@ This release also contains a first draft of the Tendermint Light Client :).
 
 The changes are organized in sections for better readability.
 
-Organizatinoal Changes:
+Organizational Changes:
 
 - Reorganized the crate into a workspace with a `tendermint` crate ([#30])
 - Remove all optional compilation ([#16])

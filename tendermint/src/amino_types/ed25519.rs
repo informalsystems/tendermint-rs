@@ -1,4 +1,7 @@
+use super::compute_prefix;
 use crate::public_key::PublicKey;
+use once_cell::sync::Lazy;
+use prost_amino_derive::Message;
 use signatory::ed25519::PUBLIC_KEY_SIZE;
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
@@ -8,11 +11,12 @@ use signatory::ed25519::PUBLIC_KEY_SIZE;
 // TODO(ismail): make this more generic (by modifying prost and adding a trait for PubKey)
 
 pub const AMINO_NAME: &str = "tendermint/remotesigner/PubKeyRequest";
+pub static AMINO_PREFIX: Lazy<Vec<u8>> = Lazy::new(|| compute_prefix(AMINO_NAME));
 
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/PubKeyResponse"]
 pub struct PubKeyResponse {
-    #[prost(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
+    #[prost_amino(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
     pub pub_key_ed25519: Vec<u8>,
 }
 
@@ -44,8 +48,7 @@ impl From<PublicKey> for PubKeyResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use prost::Message;
-    use std::error::Error;
+    use prost_amino::Message;
 
     #[test]
     fn test_empty_pubkey_msg() {
@@ -86,9 +89,9 @@ mod tests {
 
         assert_eq!(got, want);
 
-        match PubKeyRequest::decode(&want) {
+        match PubKeyRequest::decode(want.as_ref()) {
             Ok(have) => assert_eq!(have, msg),
-            Err(err) => panic!(err.description().to_string()),
+            Err(err) => panic!(err.to_string()),
         }
     }
 
@@ -102,7 +105,8 @@ mod tests {
         //  var pubKey [32]byte
         //	copy(pubKey[:],[]byte{0x79, 0xce, 0xd, 0xe0, 0x43, 0x33, 0x4a, 0xec, 0xe0, 0x8b, 0x7b,
         //  0xb5, 0x61, 0xbc, 0xe7, 0xc1,
-        //	0xd4, 0x69, 0xc3, 0x44, 0x26, 0xec, 0xef, 0xc0, 0x72, 0xa, 0x52, 0x4d, 0x37, 0x32, 0xef, 0xed})
+        //	0xd4, 0x69, 0xc3, 0x44, 0x26, 0xec, 0xef, 0xc0, 0x72, 0xa, 0x52, 0x4d, 0x37, 0x32, 0xef,
+        // 0xed})
         //
         //	b, _ = cdc.MarshalBinary(&privval.PubKeyResponse{PubKey: crypto.PubKeyEd25519(pubKey)})
         //	fmt.Printf("%#v\n\n", b)
@@ -127,7 +131,7 @@ mod tests {
 
         assert_eq!(got, encoded);
 
-        match PubKeyResponse::decode(&encoded) {
+        match PubKeyResponse::decode(encoded.as_ref()) {
             Ok(have) => assert_eq!(have, msg),
             Err(err) => panic!(err),
         }

@@ -1,7 +1,7 @@
-use super::validate::ValidationError;
+use super::validate;
 use crate::{chain, consensus};
 use bytes::BufMut;
-use prost::{DecodeError, EncodeError};
+use prost_amino::{DecodeError, EncodeError};
 use signatory::ed25519;
 
 /// Amino messages which are signable within a Tendermint network
@@ -15,7 +15,7 @@ pub trait SignableMsg {
 
     /// Set the Ed25519 signature on the underlying message
     fn set_signature(&mut self, sig: &ed25519::Signature);
-    fn validate(&self) -> Result<(), ValidationError>;
+    fn validate(&self) -> Result<(), validate::Error>;
     fn consensus_state(&self) -> Option<consensus::State>;
     fn height(&self) -> Option<i64>;
     fn msg_type(&self) -> Option<SignedMsgType>;

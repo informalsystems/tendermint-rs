@@ -1,9 +1,11 @@
 use super::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
+    compute_prefix,
     remote_error::RemoteError,
     signature::SignableMsg,
     time::TimeMsg,
-    validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
+    validate,
+    validate::{ConsensusMessage, Kind::*},
     SignedMsgType,
 };
 use crate::amino_types::PartsSetHeader;
@@ -11,10 +13,12 @@ use crate::{
     block::{self, ParseId},
     chain, consensus,
     error::Error,
-    vote, Hash,
+    vote,
 };
 use bytes::BufMut;
-use prost::{error::EncodeError, Message};
+use once_cell::sync::Lazy;
+use prost_amino::{error::EncodeError, Message};
+use prost_amino_derive::Message;
 use signatory::ed25519;
 use std::convert::TryFrom;
 
@@ -22,21 +26,21 @@ const VALIDATOR_ADDR_SIZE: usize = 20;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Vote {
-    #[prost(uint32, tag = "1")]
+    #[prost_amino(uint32, tag = "1")]
     pub vote_type: u32,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub height: i64,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub round: i64,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub block_id: Option<BlockId>,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub timestamp: Option<TimeMsg>,
-    #[prost(bytes)]
+    #[prost_amino(bytes)]
     pub validator_address: Vec<u8>,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub validator_index: i64,
-    #[prost(bytes)]
+    #[prost_amino(bytes)]
     pub signature: Vec<u8>,
 }
 
@@ -58,15 +62,9 @@ impl From<&vote::Vote> for Vote {
             vote_type: vote.vote_type.to_u32(),
             height: vote.height.value() as i64, // TODO potential overflow :-/
             round: vote.round as i64,
-            block_id: Some(BlockId {
-                hash: match vote.block_id.hash {
-                    Hash::Sha256(h) => h.to_vec(),
-                    _ => vec![],
-                },
-                parts_header: match &vote.block_id.parts {
-                    Some(parts) => Some(PartsSetHeader::from(parts)),
-                    None => None,
-                },
+            block_id: vote.block_id.as_ref().map(|block_id| BlockId {
+                hash: block_id.hash.as_bytes().to_vec(),
+                parts_header: block_id.parts.as_ref().map(PartsSetHeader::from),
             }),
             timestamp: Some(TimeMsg::from(vote.timestamp)),
             validator_address: vote.validator_address.as_bytes().to_vec(),
@@ -83,36 +81,37 @@ impl block::ParseHeight for Vote {
 }
 
 pub const AMINO_NAME: &str = "tendermint/remotesigner/SignVoteRequest";
+pub static AMINO_PREFIX: Lazy<Vec<u8>> = Lazy::new(|| compute_prefix(AMINO_NAME));
 
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/SignVoteRequest"]
 pub struct SignVoteRequest {
-    #[prost(message, tag = "1")]
+    #[prost_amino(message, tag = "1")]
     pub vote: Option<Vote>,
 }
 
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/SignedVoteResponse"]
 pub struct SignedVoteResponse {
-    #[prost(message, tag = "1")]
+    #[prost_amino(message, tag = "1")]
     pub vote: Option<Vote>,
-    #[prost(message, tag = "2")]
+    #[prost_amino(message, tag = "2")]
     pub err: Option<RemoteError>,
 }
 
 #[derive(Clone, PartialEq, Message)]
 pub struct CanonicalVote {
-    #[prost(uint32, tag = "1")]
+    #[prost_amino(uint32, tag = "1")]
     pub vote_type: u32,
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     pub height: i64,
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     pub round: i64,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub block_id: Option<CanonicalBlockId>,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub timestamp: Option<TimeMsg>,
-    #[prost(string)]
+    #[prost_amino(string)]
     pub chain_id: String,
 }
 
@@ -180,7 +179,7 @@ impl SignableMsg for SignVoteRequest {
             vt.signature = sig.as_ref().to_vec();
         }
     }
-    fn validate(&self) -> Result<(), ValidationError> {
+    fn validate(&self) -> Result<(), validate::Error> {
         match self.vote {
             Some(ref v) => v.validate_basic(),
             None => Err(MissingConsensusMessage.into()),
@@ -217,7 +216,7 @@ impl SignableMsg for SignVoteRequest {
 }
 
 impl ConsensusMessage for Vote {
-    fn validate_basic(&self) -> Result<(), ValidationError> {
+    fn validate_basic(&self) -> Result<(), validate::Error> {
         if self.msg_type().is_none() {
             return Err(InvalidMessageType.into());
         }
@@ -246,9 +245,9 @@ impl ConsensusMessage for Vote {
 mod tests {
     use super::super::PartsSetHeader;
     use super::*;
+    use crate::amino_types::message::AminoMessage;
     use crate::amino_types::SignedMsgType;
     use chrono::{DateTime, Utc};
-    use prost::Message;
 
     #[test]
     fn test_vote_serialization() {
@@ -275,7 +274,10 @@ mod tests {
             ],
             validator_index: 56789,
             signature: vec![],
-            //signature: vec![130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233, 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6, 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118, 192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10],
+            /* signature: vec![130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24,
+             * 134, 212, 233, 100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65,
+             * 174, 217, 42, 6, 184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167,
+             * 39, 67, 35, 118, 192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10], */
         };
         let sign_vote_msg = SignVoteRequest { vote: Some(vote) };
         let mut got = vec![];
@@ -298,9 +300,9 @@ mod tests {
         //             Hash:  []byte("parts_hash"),
         //         },
         //     },
-        //     ValidatorAddress: []byte{0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35},
-        //     ValidatorIndex:   56789,
-        // }})
+        //     ValidatorAddress: []byte{0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21,
+        // 0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35},     ValidatorIndex:
+        // 56789, }})
         // fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v",data), " "), ", "))
 
         let want = vec![
@@ -310,7 +312,7 @@ mod tests {
             113, 134, 241, 104, 95, 33, 242, 72, 42, 244, 251, 52, 70, 168, 75, 53, 56, 213, 187,
             3,
         ];
-        let svr = SignVoteRequest::decode(got.clone()).unwrap();
+        let svr = SignVoteRequest::decode(got.as_ref()).unwrap();
         println!("got back: {:?}", svr);
         assert_eq!(got, want);
     }
@@ -334,8 +336,7 @@ mod tests {
             vt_precommit.vote_type = SignedMsgType::PreCommit.to_u32(); // precommit
             println!("{:?}", vt_precommit);
             let cv_precommit = CanonicalVote::new(vt_precommit, "");
-            got = vec![];
-            cv_precommit.encode(&mut got).unwrap();
+            let got = AminoMessage::bytes_vec(&cv_precommit);
             let want = vec![
                 0x8,  // (field_number << 3) | wire_type
                 0x2,  // PrecommitType
@@ -356,10 +357,9 @@ mod tests {
             vt_prevote.round = 1;
             vt_prevote.vote_type = SignedMsgType::PreVote.to_u32();
 
-            got = vec![];
             let cv_prevote = CanonicalVote::new(vt_prevote, "");
 
-            cv_prevote.encode(&mut got).unwrap();
+            let got = AminoMessage::bytes_vec(&cv_prevote);
 
             let want = vec![
                 0x8,  // (field_number << 3) | wire_type
@@ -380,9 +380,8 @@ mod tests {
             vt_no_type.height = 1;
             vt_no_type.round = 1;
 
-            got = vec![];
             let cv = CanonicalVote::new(vt_no_type, "");
-            cv.encode(&mut got).unwrap();
+            let got = AminoMessage::bytes_vec(&cv);
 
             let want = vec![
                 0x11, // (field_number << 3) | wire_type
@@ -401,8 +400,7 @@ mod tests {
             no_vote_type2.round = 1;
 
             let with_chain_id = CanonicalVote::new(no_vote_type2, "test_chain_id");
-            got = vec![];
-            with_chain_id.encode(&mut got).unwrap();
+            got = AminoMessage::bytes_vec(&with_chain_id);
             let want = vec![
                 0x11, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
@@ -454,7 +452,7 @@ mod tests {
         };
         let mut got = vec![];
         let _have = vote.encode(&mut got);
-        let v = Vote::decode(&got).unwrap();
+        let v = Vote::decode(got.as_ref()).unwrap();
 
         assert_eq!(v, vote);
         // SignVoteRequest
@@ -463,7 +461,7 @@ mod tests {
             let mut got = vec![];
             let _have = svr.encode(&mut got);
 
-            let svr2 = SignVoteRequest::decode(&got).unwrap();
+            let svr2 = SignVoteRequest::decode(got.as_ref()).unwrap();
             assert_eq!(svr, svr2);
         }
     }
@@ -502,7 +500,7 @@ mod tests {
             signature: vec![],
         };
         let want = SignVoteRequest { vote: Some(vote) };
-        match SignVoteRequest::decode(&encoded) {
+        match SignVoteRequest::decode(encoded.as_ref()) {
             Ok(have) => {
                 assert_eq!(have, want);
             }

@@ -1,0 +1,87 @@
+{
+  "jsonrpc": "2.0",
+  "id": "",
+  "result": {
+    "block_meta": {
+      "block_id": {
+        "hash": "2638F126FC7ABCBCA071B3EFD7207CB11B8F0518D5209717A31115AA9B1F6A68",
+        "parts": {
+          "total": "1",
+          "hash": "E1ACF6037E216A2C455DBBAE23C266ECA07C7F5540CAE9383146D7B20E5CA24D"
+        }
+      },
+      "header": {
+        "version": {
+          "block": "10",
+          "app": "0"
+        },
+        "chain_id": "cosmoshub-1",
+        "height": "1",
+        "time": "2019-11-20T08:56:48.618137Z",
+        "num_txs": "0",
+        "total_txs": "0",
+        "last_block_id": {
+          "hash": "",
+          "parts": {
+            "total": "0",
+            "hash": ""
+          }
+        },
+        "last_commit_hash": "",
+        "data_hash": "",
+        "validators_hash": "2ADC39A2BA237647FD3D6524739F0952F7AC8BBC895F120403DD4EAA8DCF248A",
+        "next_validators_hash": "2ADC39A2BA237647FD3D6524739F0952F7AC8BBC895F120403DD4EAA8DCF248A",
+        "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+        "app_hash": "E0ADD6C9D9C3520D5D5242E2B33FA259FB75B7E2F59C0A2E40FF2493F6C72050",
+        "last_results_hash": "",
+        "evidence_hash": "",
+        "proposer_address": "B84241A54F45F970C173811AF184803264140906"
+      }
+    },
+    "block": {
+      "header": {
+        "version": {
+          "block": "10",
+          "app": "0"
+        },
+        "chain_id": "cosmoshub-1",
+        "height": "1",
+        "time": "2019-11-20T08:56:48.618137Z",
+        "num_txs": "0",
+        "total_txs": "0",
+        "last_block_id": {
+          "hash": "",
+          "parts": {
+            "total": "0",
+            "hash": ""
+          }
+        },
+        "last_commit_hash": "",
+        "data_hash": "",
+        "validators_hash": "2ADC39A2BA237647FD3D6524739F0952F7AC8BBC895F120403DD4EAA8DCF248A",
+        "next_validators_hash": "2ADC39A2BA237647FD3D6524739F0952F7AC8BBC895F120403DD4EAA8DCF248A",
+        "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+        "app_hash": "E0ADD6C9D9C3520D5D5242E2B33FA259FB75B7E2F59C0A2E40FF2493F6C72050",
+        "last_results_hash": "",
+        "evidence_hash": "",
+        "proposer_address": "B84241A54F45F970C173811AF184803264140906"
+      },
+      "data": {
+        "txs": null
+      },
+      "evidence": {
+        "evidence": null
+      },
+      "last_commit": {
+        "block_id": {
+          "hash": "",
+          "parts": {
+            "total": "0",
+            "hash": ""
+          }
+        },
+        "precommits": null
+      }
+    }
+  }
+}

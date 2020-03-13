@@ -1,80 +1,87 @@
 use super::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader},
+    compute_prefix,
     remote_error::RemoteError,
     signature::{SignableMsg, SignedMsgType},
     time::TimeMsg,
-    validate::{ConsensusMessage, ValidationError, ValidationErrorKind::*},
+    validate::{
+        self, ConsensusMessage, Kind::InvalidMessageType, Kind::MissingConsensusMessage,
+        Kind::NegativeHeight, Kind::NegativePOLRound, Kind::NegativeRound,
+    },
 };
 use crate::{
     block::{self, ParseId},
-    chain, consensus,
-    error::Error,
+    chain, consensus, error,
 };
 use bytes::BufMut;
-use prost::{EncodeError, Message};
+use once_cell::sync::Lazy;
+use prost_amino::{EncodeError, Message};
+use prost_amino_derive::Message;
 use signatory::ed25519;
 use std::convert::TryFrom;
 
 #[derive(Clone, PartialEq, Message)]
 pub struct Proposal {
-    #[prost(uint32, tag = "1")]
+    #[prost_amino(uint32, tag = "1")]
     pub msg_type: u32,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub height: i64,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub round: i64,
-    #[prost(int64)]
+    #[prost_amino(int64)]
     pub pol_round: i64,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub block_id: Option<BlockId>,
-    #[prost(message)]
+    #[prost_amino(message)]
     pub timestamp: Option<TimeMsg>,
-    #[prost(bytes)]
+    #[prost_amino(bytes)]
     pub signature: Vec<u8>,
 }
 
 // TODO(tony): custom derive proc macro for this e.g. `derive(ParseBlockHeight)`
 impl block::ParseHeight for Proposal {
-    fn parse_block_height(&self) -> Result<block::Height, Error> {
+    fn parse_block_height(&self) -> Result<block::Height, error::Error> {
         block::Height::try_from(self.height)
     }
 }
 
 pub const AMINO_NAME: &str = "tendermint/remotesigner/SignProposalRequest";
+pub static AMINO_PREFIX: Lazy<Vec<u8>> = Lazy::new(|| compute_prefix(AMINO_NAME));
 
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/SignProposalRequest"]
 pub struct SignProposalRequest {
-    #[prost(message, tag = "1")]
+    #[prost_amino(message, tag = "1")]
     pub proposal: Option<Proposal>,
 }
 
 #[derive(Clone, PartialEq, Message)]
 struct CanonicalProposal {
-    #[prost(uint32, tag = "1")]
-    msg_type: u32, // this is a byte in golang, which is a varint encoded UInt8 (using amino's EncodeUvarint)
-    #[prost(sfixed64)]
+    #[prost_amino(uint32, tag = "1")]
+    msg_type: u32, /* this is a byte in golang, which is a varint encoded UInt8 (using amino's
+                    * EncodeUvarint) */
+    #[prost_amino(sfixed64)]
     height: i64,
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     round: i64,
-    #[prost(sfixed64)]
+    #[prost_amino(sfixed64)]
     pol_round: i64,
-    #[prost(message)]
+    #[prost_amino(message)]
     block_id: Option<CanonicalBlockId>,
-    #[prost(message)]
+    #[prost_amino(message)]
     timestamp: Option<TimeMsg>,
-    #[prost(string)]
+    #[prost_amino(string)]
     pub chain_id: String,
 }
 
 impl chain::ParseId for CanonicalProposal {
-    fn parse_chain_id(&self) -> Result<chain::Id, Error> {
+    fn parse_chain_id(&self) -> Result<chain::Id, error::Error> {
         self.chain_id.parse()
     }
 }
 
 impl block::ParseHeight for CanonicalProposal {
-    fn parse_block_height(&self) -> Result<block::Height, Error> {
+    fn parse_block_height(&self) -> Result<block::Height, error::Error> {
         block::Height::try_from(self.height)
     }
 }
@@ -82,9 +89,9 @@ impl block::ParseHeight for CanonicalProposal {
 #[derive(Clone, PartialEq, Message)]
 #[amino_name = "tendermint/remotesigner/SignedProposalResponse"]
 pub struct SignedProposalResponse {
-    #[prost(message, tag = "1")]
+    #[prost_amino(message, tag = "1")]
     pub proposal: Option<Proposal>,
-    #[prost(message, tag = "2")]
+    #[prost_amino(message, tag = "2")]
     pub err: Option<RemoteError>,
 }
 
@@ -128,7 +135,7 @@ impl SignableMsg for SignProposalRequest {
             prop.signature = sig.as_ref().to_vec();
         }
     }
-    fn validate(&self) -> Result<(), ValidationError> {
+    fn validate(&self) -> Result<(), validate::Error> {
         match self.proposal {
             Some(ref p) => p.validate_basic(),
             None => Err(MissingConsensusMessage.into()),
@@ -167,7 +174,7 @@ impl SignableMsg for SignProposalRequest {
 }
 
 impl ConsensusMessage for Proposal {
-    fn validate_basic(&self) -> Result<(), ValidationError> {
+    fn validate_basic(&self) -> Result<(), validate::Error> {
         if self.msg_type != SignedMsgType::Proposal.to_u32() {
             return Err(InvalidMessageType.into());
         }
@@ -193,8 +200,7 @@ mod tests {
     use super::*;
     use crate::amino_types::block_id::PartsSetHeader;
     use chrono::{DateTime, Utc};
-    use prost::Message;
-    use std::error::Error;
+    use prost_amino::Message;
 
     #[test]
     fn test_serialization() {
@@ -228,8 +234,8 @@ mod tests {
         // cdc := amino.NewCodec()
         // privval.RegisterRemoteSignerMsg(cdc)
         // stamp, _ := time.Parse(time.RFC3339Nano, "2018-02-11T07:09:22.765Z")
-        // data, _ := cdc.MarshalBinaryLengthPrefixed(privval.SignProposalRequest{Proposal: &types.Proposal{
-        //     Type:     types.ProposalType, // 0x20
+        // data, _ := cdc.MarshalBinaryLengthPrefixed(privval.SignProposalRequest{Proposal:
+        // &types.Proposal{     Type:     types.ProposalType, // 0x20
         //     Height:   12345,
         //     Round:    23456,
         //     POLRound: -1,
@@ -291,9 +297,9 @@ mod tests {
             242, 227, 236, 2,
         ];
 
-        match SignProposalRequest::decode(&data) {
+        match SignProposalRequest::decode(data.as_ref()) {
             Ok(have) => assert_eq!(have, want),
-            Err(err) => panic!(err.description().to_string()),
+            Err(err) => panic!(err.to_string()),
         }
     }
 }

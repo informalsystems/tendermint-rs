@@ -7,7 +7,7 @@ use crate::{
     rpc::{self, endpoint::*, Error, Response},
     Genesis,
 };
-use bytes_0_5::buf::ext::BufExt;
+use bytes::buf::ext::BufExt;
 use hyper::header;
 
 /// Tendermint RPC client.
@@ -20,12 +20,8 @@ pub struct Client {
 
 impl Client {
     /// Create a new Tendermint RPC client, connecting to the given address
-    pub async fn new(address: &net::Address) -> Result<Self, Error> {
-        let client = Client {
-            address: address.clone(),
-        };
-        client.health().await?;
-        Ok(client)
+    pub fn new(address: net::Address) -> Self {
+        Self { address }
     }
 
     /// `/abci_info`: get information about the ABCI application.
@@ -117,6 +113,14 @@ impl Client {
         self.perform(commit::Request::new(height.into())).await
     }
 
+    /// `/validators`: get validators a given height.
+    pub async fn validators<H>(&self, height: H) -> Result<validators::Response, Error>
+    where
+        H: Into<Height>,
+    {
+        self.perform(validators::Request::new(height.into())).await
+    }
+
     /// `/commit`: get the latest block commit
     pub async fn latest_commit(&self) -> Result<commit::Response, Error> {
         self.perform(commit::Request::default()).await
@@ -179,7 +183,7 @@ impl Client {
             );
         }
 
-        let http_client = hyper::Client::builder().keep_alive(true).build_http();
+        let http_client = hyper::Client::builder().build_http();
         let response = http_client.request(request).await?;
         let response_body = hyper::body::aggregate(response.into_body()).await?;
         R::Response::from_reader(response_body.reader())
