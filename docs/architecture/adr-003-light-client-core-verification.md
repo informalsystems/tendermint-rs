@@ -241,6 +241,8 @@ where
 }
 ```
 
+In practice, this can be implemented as a Tendermint RPC client making requests 
+to the `/commit` and `/validators` endpoints of full nodes. 
 For testing, the Requester can be implemented by JSON files.
 
 ### Verification

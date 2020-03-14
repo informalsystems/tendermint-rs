@@ -90,6 +90,6 @@ impl Data {
 
 impl AsRef<[Transaction]> for Data {
     fn as_ref(&self) -> &[Transaction] {
-        self.txs.as_ref().map(Vec::as_slice).unwrap_or_else(|| &[])
+        self.txs.as_deref().unwrap_or_else(|| &[])
     }
 }

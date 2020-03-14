@@ -2,39 +2,66 @@
 
 ## Changelog
 
-2020-01-22: Some content copied from old ADR-002
+- 2020-02-09: Update about Abscissa
+- 2020-01-22: Some content copied from old ADR-002
 
 ## Status
 
-WIP. Just copied over from old ADR. Needs rework
+WIP. 
 
 ## Context
 
+The high level context for the light client is described in
+[ADR-002](adr-002-light-client-adr-index.md).
 
-### State
+For reference, a schematic of the light node is below:
 
-The light node state contains the following:
+![Light Node Diagram](assets/light-node.png).
 
-- current height (H) - height for the next header we want to verify
-- last header (H-1) - the last header we verified
-- current validators (H) - validators for the height we want to verify (including all validator pubkeys and voting powers)
+Here we focus on how the Light Node process itself is composed.
+The light node process must consider the following features:
 
-It also includes some configuration, which contains:
+- command line UX and flags
+- config file
+- logging
+- error handling
+- state management
+- exposing RPC servers
+
+Ideally, it can support all of this with a minimum of dependencies.
+
+We'd like to be able to start a light node process and have it sync to the
+latest height and stay synced while it runs.
+
+## Decision
+
+### Abscissa
+
+[Abscissa](https://github.com/iqlusioninc/abscissa) is a framework for building CLI 
+tools in Rust by Tony Arcieri of Iqlusion. 
+It's focus is on security and minimizing dependencies. 
+The full list of dependencies can be found [here](https://github.com/iqlusioninc/abscissa#depencencies).
+
+For instance, while it includes functionality for command-line option parsing like that 
+provided by `structopt` + `clap`, it does so with far less dependencies.
+
+[Users](https://github.com/iqlusioninc/abscissa#projects-using-abscissa)
+of note include the [Tendermint KMS](https://github.com/tendermint/kms)
+for validators and the new 
+[Zebra ZCash full node](https://github.com/ZcashFoundation/zebra).
+
+See the [introductory blog
+post](https://iqlusion.blog/introducing-abscissa-rust-application-framework)
+for more details.
+
+### Config
+
+Config includes:
 
 - trusting period
 - initial list of full nodes
 - method (sequential or skipping)
 - trust level (if method==skipping)
-
-The node is initialized with a trusted header for some height H-1
-(call this header[H-1]), and a validator set for height H (call this vals[H]).
-
-The node may be initialized by the user with only a height and header hash, and
-proceed to request the full header and validator set from a full node. This
-reduces the initialization burden on the user, and simplifies passing this
-information into the process, but for the state to be properly initialized it
-will need to get the correct header and validator set before starting the light
-client syncing protocol.
 
 The configuration contains an initial list of full nodes (peers).
 For the sake of simplicity, one of the peers is selected as the "primary", while the
@@ -46,75 +73,19 @@ the time from the trusted header is greater than a configurable "trusting
 period". If at any point the state is expired, the node should log an error and
 exit - it's needs to be manually reset.
 
-### Syncer
 
-The Syncing co-ordinates the syncing and is the highest level component. 
-We consider two approaches to syncing the light node: sequential and skipping.
+### Initialization
 
-#### Sequential Sync
+The node is initialized with a trusted header for some height and a validator set for the next height.
 
-Inital state: 
+The node may be initialized by the user with only a height and header hash, and
+proceed to request the full header and validator set from a full node. This
+reduces the initialization burden on the user, and simplifies passing this
+information into the process, but for the state to be properly initialized it
+will need to get the correct header and validator set before starting the light
+client syncing protocol.
 
-    - time T
-    - height H 
-    - header[H-1]
-    - vals[H]
+### State
 
-Here we describe the happy path:
-
-1) Request header[H], commit[H], and vals[H+1] from the primary, and check that they are well formed and from the correct height
-2) Pass header[H], commit[H], vals[H], and vals[H+1] to the verification library, which will:
-
-    - check that vals[H] and vals[H+1] are correctly reflected in header[H]
-    - check that commit[H] is for header[H]
-    - check that +2/3 of the validators correctly signed the hash of header[H]
-
-3) Request header[H] from each of the backups and check that they match header[H] received from the primary
-4) Update the state with header[H] and vals[H+1], and increment H
-5) return to (1)
-
-If (1) or (2) fails, mark the primary as bad and select a new peer to be the
-primary.
-
-If (3) returns a conflicting header, verify the header by requesting the
-corresponding commit and running the verification of (2). If the verification
-passes, there is a fork, and evidence should be published so the validators get
-slashed. We leave the mechanics of evidence to a future document. For now, the
-light client will just log an error and exit. If the verification fails, it
-means the backup that provided the conflict is bad and should be removed.
-
-#### Skipping Sync
-
-Skipping sync is essentially the same as sequential, except for a few points:
-
-- instead of verifying sequential headers, we attempt to "skip" ahead to the
-  full node's most recent height
-- skipping is only permitted if the validator set has not changed too much - ie.
-  if +1/3 of the last trusted validator set has signed the commit for the height we're attempting to skip to
-- if the validator set changes too much, we "bisect" the height space,
-  attempting to skip to a lower height, recursively. 
-- in the worst case, the bisection takes us to a sequential height
-
-### Requester
-
-The requester is simply a Tendermint RPC client. It makes requests to full
-nodes. It uses the `/commit` and `/validators` endpoints to get signed headers
-and validator sets for relevant heights. It may also use the `/status` endpoint
-to get the latest height of the full node (for skipping verification). It 
-uses the following trait (see below for definitions of the referenced types):
-
-```rust
-pub trait Requester {
-    type SignedHeader: SignedHeader;
-    type ValidatorSet: ValidatorSet;
-
-    fn signed_header<H>(&self, h: H) -> Result<Self::SignedHeader, Error>
-        where H: Into<Height>;
-
-    fn validator_set<H>(&self, h: H) -> Result<Self::ValidatorSet, Error>
-        where H: Into<Height>;
-}
-```
-
-Note that trait uses `Into<Height>` which is a common idiom for the codebase.
-
+The light node will need to maintain state including the current height, the
+last verified and trusted header, and the current set of trusted validators.
