@@ -7,7 +7,7 @@ mod endpoints {
     use tendermint::rpc::{self, endpoint, Response};
 
     const EXAMPLE_APP: &str = "GaiaApp";
-    const EXAMPLE_CHAIN: &str = "cosmoshub-1";
+    const EXAMPLE_CHAIN: &str = "cosmoshub-2";
 
     fn read_json_fixture(name: &str) -> String {
         fs::read_to_string(PathBuf::from("./tests/support/rpc/").join(name.to_owned() + ".json"))

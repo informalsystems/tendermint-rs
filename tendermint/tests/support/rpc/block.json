@@ -15,7 +15,7 @@
           "block": "10",
           "app": "0"
         },
-        "chain_id": "cosmoshub-1",
+        "chain_id": "cosmoshub-2",
         "height": "15",
         "time": "2019-03-13T23:09:34.503701042Z",
         "num_txs": "2",
@@ -44,7 +44,7 @@
           "block": "10",
           "app": "0"
         },
-        "chain_id": "cosmoshub-1",
+        "chain_id": "cosmoshub-2",
         "height": "15",
         "time": "2019-03-13T23:09:34.503701042Z",
         "num_txs": "2",
