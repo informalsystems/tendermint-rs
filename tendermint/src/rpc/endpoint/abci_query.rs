@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
     /// Path to the data
+    #[serde(skip_serializing_if = "Option::is_none")]
     path: Option<Path>,
 
     /// Data to query
@@ -20,6 +21,7 @@ pub struct Request {
     data: Vec<u8>,
 
     /// Block height
+    #[serde(skip_serializing_if = "Option::is_none")]
     height: Option<block::Height>,
 
     /// Include proof in response
