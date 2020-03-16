@@ -47,11 +47,11 @@ mod endpoints {
 
         assert_eq!(header.version.block, 10);
         assert_eq!(header.chain_id.as_str(), EXAMPLE_CHAIN);
-        assert_eq!(header.height.value(), 15);
+        assert_eq!(header.height.value(), 10);
 
-        assert_eq!(data.iter().len(), 2);
+        assert_eq!(data.iter().len(), 0);
         assert_eq!(evidence.iter().len(), 0);
-        assert_eq!(last_commit.unwrap().signatures.len(), 65);
+        assert_eq!(last_commit.unwrap().signatures.len(), 1);
     }
 
     // NOTE: Since the commit struct changed, the votes i.e. CommitSig no longer contains BlockID
