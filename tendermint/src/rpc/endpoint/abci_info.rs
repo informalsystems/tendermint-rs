@@ -36,11 +36,11 @@ pub struct AbciInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
 
-    /// Last block height
+    /// Last block height, omit empty
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_block_height: Option<block::Height>,
 
-    /// Last app hash for the block
+    /// Last app hash for the block, omit empty
     #[serde(
         serialize_with = "serialize_app_hash",
         deserialize_with = "parse_app_hash",
@@ -57,9 +57,9 @@ where
     let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
         .map_err(|e| D::Error::custom(format!("{}", e)))?;
 
-    Hash::new(hash::Algorithm::Sha256, &bytes)
-        .map(Some)
-        .map_err(|e| D::Error::custom(format!("{}", e)))
+    Hash::new(hash::Algorithm::Sha256, &bytes) // This never returns None
+        .map(Some) // Return Option<Hash> (syntactic sugar so the value can be omitted in the struct)
+        .map_err(|e| D::Error::custom(format!("{}", e))) // or return custom Error
 }
 
 /// Serialize Base64-encoded app hash
@@ -72,6 +72,8 @@ where
         .serialize(serializer)
 }
 
+/// Default trait implements default values for the optional last_block_height and last_block_app_hash
+/// for cases where they were omitted from the JSON.
 impl Default for AbciInfo {
     fn default() -> Self {
         AbciInfo {
