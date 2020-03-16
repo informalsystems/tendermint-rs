@@ -47,11 +47,31 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --all --all-targets
+          args: --workspace --all-targets
       - uses: actions-rs/cargo@v1
         with:
           command: test
           args: --all-features --no-fail-fast
+
+  test-integration-ignored:
+    runs-on: ubuntu-latest
+    services:
+      tendermint:
+        image: interchainio/tendermint
+        ports:
+          - 26656:26656
+          - 26657:26657
+          - 26660:26660
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p tendermint --test integration --no-fail-fast -- --ignored
 
   test-nightly-coverage:
     runs-on: ubuntu-latest
