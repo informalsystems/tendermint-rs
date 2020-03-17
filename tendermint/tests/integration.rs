@@ -55,7 +55,7 @@ mod rpc {
         let height = 1u64;
         let block_info = localhost_rpc_client().block(height).await.unwrap();
 
-        assert_eq!(block_info.block_meta.header.height.value(), height);
+        assert_eq!(block_info.block.header.height.value(), height);
     }
 
     /// `/block_results` endpoint
@@ -87,7 +87,7 @@ mod rpc {
         let height = 1u64;
         let commit_info = localhost_rpc_client().block(height).await.unwrap();
 
-        assert_eq!(commit_info.block_meta.header.height.value(), height);
+        assert_eq!(commit_info.block.header.height.value(), height);
     }
 
     /// `/genesis` endpoint

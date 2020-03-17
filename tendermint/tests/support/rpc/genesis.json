@@ -4,7 +4,7 @@
   "result": {
     "genesis": {
       "genesis_time": "2019-03-13T23:00:00Z",
-      "chain_id": "cosmoshub-1",
+      "chain_id": "cosmoshub-2",
       "consensus_params": {
         "block": {
           "max_bytes": "200000",
