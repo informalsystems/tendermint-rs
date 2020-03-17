@@ -31,7 +31,7 @@ mod rpc {
     async fn abci_info() {
         let abci_info = localhost_rpc_client().abci_info().await.unwrap();
 
-        assert_eq!(&abci_info.data, "GaiaApp");
+        assert_eq!(&abci_info.data, "{\"size\":0}");
     }
 
     /// `/abci_query` endpoint

@@ -23,5 +23,5 @@ pub struct Genesis<AppState = serde_json::Value> {
     pub app_hash: Option<Hash>,
 
     /// App state
-    pub app_state: AppState,
+    pub app_state: Option<AppState>,
 }

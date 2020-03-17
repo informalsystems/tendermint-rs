@@ -21,7 +21,7 @@ mod endpoints {
             .response;
 
         assert_eq!(response.data.as_str(), EXAMPLE_APP);
-        assert_eq!(response.last_block_height.value(), 488_120);
+        assert_eq!(response.last_block_height.unwrap().value(), 488_120);
     }
 
     #[test]
@@ -48,7 +48,6 @@ mod endpoints {
         assert_eq!(header.version.block, 10);
         assert_eq!(header.chain_id.as_str(), EXAMPLE_CHAIN);
         assert_eq!(header.height.value(), 10);
-
         assert_eq!(data.iter().len(), 0);
         assert_eq!(evidence.iter().len(), 0);
         assert_eq!(last_commit.unwrap().signatures.len(), 1);
