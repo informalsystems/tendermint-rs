@@ -48,10 +48,9 @@ struct TestBisection {
     trust_options: TrustOptions,
     primary: Provider,
     height_to_verify: Height,
-    // TODO: trust_level should go under TrustOptions
-    trust_level: TrustThresholdFraction,
     now: Time,
     expected_output: Option<String>,
+    expected_num_of_bisections: i32,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -62,10 +61,10 @@ struct Provider {
 
 #[derive(Deserialize, Clone, Debug)]
 struct TrustOptions {
-    // TODO: add trust_level here
     period: Duration,
     height: Height,
     hash: Hash,
+    trust_level: TrustThresholdFraction,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -121,7 +120,7 @@ impl MockRequester {
 }
 
 // Link to the commit that generated below JSON test files:
-// https://github.com/Shivani912/tendermint/commit/d2c25c6d6e407d4f56944c9d778d60f2319cdaab
+// https://github.com/Shivani912/tendermint/commit/e02f8fd54a278f0192353e54b84a027c8fe31c1e
 const TEST_FILES_PATH: &str = "./tests/support/lite/";
 fn read_json_fixture(name: &str) -> String {
     fs::read_to_string(PathBuf::from(TEST_FILES_PATH).join(name.to_owned() + ".json")).unwrap()
@@ -215,11 +214,39 @@ fn run_test_cases(cases: TestCases) {
 }
 
 // Link to the commit where the happy_path.json was created:
-// https://github.com/Shivani912/tendermint/commit/d2c25c6d6e407d4f56944c9d778d60f2319cdaab
+// https://github.com/Shivani912/tendermint/commit/f8305c9a0e05696340fd8853ed5657a2075df895
 #[tokio::test]
-async fn bisection_simple() {
+async fn bisection_happy_path() {
     let case: TestBisection =
         serde_json::from_str(&read_json_fixture("many_header_bisection/happy_path")).unwrap();
+    run_bisection_test(case).await;
+}
+
+#[tokio::test]
+async fn bisection_header_out_of_trusting_period() {
+    let case: TestBisection =
+        serde_json::from_str(&read_json_fixture("many_header_bisection/header_out_of_trusting_period")).unwrap();
+    run_bisection_test(case).await;
+}
+
+#[tokio::test]
+async fn bisection_invalid_validator_set() {
+    let case: TestBisection =
+        serde_json::from_str(&read_json_fixture("many_header_bisection/invalid_validator_set")).unwrap();
+    run_bisection_test(case).await;
+}
+
+#[tokio::test]
+async fn bisection_not_enough_commits() {
+    let case: TestBisection =
+        serde_json::from_str(&read_json_fixture("many_header_bisection/not_enough_commits")).unwrap();
+    run_bisection_test(case).await;
+}
+
+#[tokio::test]
+async fn bisection_worst_case() {
+    let case: TestBisection =
+        serde_json::from_str(&read_json_fixture("many_header_bisection/worst_case")).unwrap();
     run_bisection_test(case).await;
 }
 
@@ -227,7 +254,7 @@ async fn run_bisection_test(case: TestBisection) {
     println!("{}", case.description);
 
     let untrusted_height = case.height_to_verify.try_into().unwrap();
-    let trust_threshold = case.trust_level;
+    let trust_threshold = case.trust_options.trust_level;
     let trusting_period = case.trust_options.period;
     let now = case.now;
 
@@ -238,6 +265,8 @@ async fn run_bisection_test(case: TestBisection) {
         Some(eo) => eo.eq("error"),
         None => false,
     };
+
+    let expected_num_of_bisections = case.expected_num_of_bisections;
 
     let trusted_height = case.trust_options.height.try_into().unwrap();
     let trusted_header = req
@@ -274,7 +303,7 @@ async fn run_bisection_test(case: TestBisection) {
 
             let expected_state = TrustedState::new(untrusted_signed_header, untrusted_next_vals);
             assert_eq!(new_states[new_states.len() - 1], expected_state);
-            assert_eq!(new_states.len(), 2);
+            assert_eq!(new_states.len() as i32, expected_num_of_bisections);
             assert!(!expects_err);
         }
         Err(_) => {

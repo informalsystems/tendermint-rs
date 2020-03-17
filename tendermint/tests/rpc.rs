@@ -53,8 +53,7 @@ mod endpoints {
         assert_eq!(last_commit.unwrap().signatures.len(), 1);
     }
 
-    // NOTE: Since the commit struct changed, the votes i.e. CommitSig no longer contains BlockID
-    // TODO: Do we still need this test?
+    // TODO: Update this test and its json file
     // #[test]
     // fn block_empty_block_id() {
     //     let response =
