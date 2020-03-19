@@ -50,6 +50,9 @@ pub mod validator;
 mod version;
 pub mod vote;
 
+#[cfg(test)]
+mod test;
+
 pub use crate::genesis::Genesis;
 pub use crate::{
     block::Block,
