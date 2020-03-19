@@ -136,10 +136,10 @@ where
     H: Header,
 {
     /// Request the [`SignedHeader`] at height h.
-    async fn signed_header(&self, h: Height) -> Result<SignedHeader<C, H>, Error>;
+    async fn signed_header(&mut self, h: Height) -> Result<SignedHeader<C, H>, Error>;
 
     /// Request the validator set at height h.
-    async fn validator_set(&self, h: Height) -> Result<C::ValidatorSet, Error>;
+    async fn validator_set(&mut self, h: Height) -> Result<C::ValidatorSet, Error>;
 }
 
 /// TrustedState contains a state trusted by a lite client,

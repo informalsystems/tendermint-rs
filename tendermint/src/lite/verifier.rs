@@ -286,7 +286,7 @@ pub async fn verify_bisection<C, H, L, R>(
     trust_threshold: L,
     trusting_period: Duration,
     now: SystemTime,
-    req: &R,
+    req: &mut R,
 ) -> Result<Vec<TrustedState<C, H>>, Error>
 where
     H: Header,
@@ -344,7 +344,7 @@ fn verify_bisection_inner<'a, H, C, L, R>(
     trusted_state: &'a TrustedState<C, H>,
     untrusted_height: Height,
     trust_threshold: L,
-    req: &'a R,
+    req: &'a mut R,
     mut cache: &'a mut Vec<TrustedState<C, H>>,
 ) -> LocalBoxFuture<'a, Result<TrustedState<C, H>, Error>>
 where

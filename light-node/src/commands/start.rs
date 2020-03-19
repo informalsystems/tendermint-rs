@@ -41,7 +41,7 @@ impl Runnable for StartCmd {
             let config = app_config();
 
             let client = rpc::Client::new(config.rpc_address.parse().unwrap());
-            let req = RPCRequester::new(client);
+            let mut req = RPCRequester::new(client);
             let mut store = MemStore::new();
 
             let vals_hash = Hash::from_hex_upper(
@@ -52,12 +52,17 @@ impl Runnable for StartCmd {
 
             println!("Requesting from {}.", config.rpc_address);
 
-            subjective_init(config.subjective_init.height, vals_hash, &mut store, &req)
-                .await
-                .unwrap();
+            subjective_init(
+                config.subjective_init.height,
+                vals_hash,
+                &mut store,
+                &mut req,
+            )
+            .await
+            .unwrap();
 
             loop {
-                let latest_sh = (&req).signed_header(0).await.unwrap();
+                let latest_sh = (&mut req).signed_header(0).await.unwrap();
                 let latest_peer_height = latest_sh.header().height();
 
                 let latest_trusted = store.get(0).unwrap();
@@ -81,7 +86,7 @@ impl Runnable for StartCmd {
                     TrustThresholdFraction::default(), // TODO
                     config.trusting_period,
                     now,
-                    &req,
+                    &mut req,
                 )
                 .await
                 .unwrap();
@@ -123,12 +128,12 @@ impl config::Override<LightNodeConfig> for StartCmd {
  * trusted state and store it in the store ...
  * TODO: this should take traits ... but how to deal with the State ?
  * TODO: better name ?
-*/
+ */
 async fn subjective_init(
     height: Height,
     vals_hash: Hash,
     store: &mut MemStore,
-    req: &RPCRequester,
+    req: &mut RPCRequester,
 ) -> Result<(), Error> {
     if store.get(height).is_ok() {
         // we already have this !
