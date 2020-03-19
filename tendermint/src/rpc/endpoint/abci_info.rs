@@ -1,6 +1,6 @@
 //! `/abci_info` endpoint JSONRPC wrapper
 
-use crate::{block, hash, rpc, Hash};
+use crate::{block, hash, rpc, Hash, version};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use subtle_encoding::base64;
 
@@ -35,6 +35,10 @@ pub struct AbciInfo {
     /// Version
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+
+    /// App version, omit empty
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub app_version: Option<version::Protocol>,
 
     /// Last block height, omit empty
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -79,6 +83,7 @@ impl Default for AbciInfo {
         AbciInfo {
             data: "".to_string(),
             version: None,
+            app_version: None,
             last_block_height: None,
             last_block_app_hash: None,
         }
