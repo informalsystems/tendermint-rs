@@ -1,6 +1,6 @@
 //! `/abci_info` endpoint JSONRPC wrapper
 
-use crate::{block, hash, rpc, Hash, version};
+use crate::{block, hash, rpc, version, Hash};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use subtle_encoding::base64;
 

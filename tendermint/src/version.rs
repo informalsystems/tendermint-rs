@@ -24,7 +24,6 @@ impl Protocol {
     pub fn value(self) -> u64 {
         self.0
     }
-
 }
 
 impl Debug for Protocol {

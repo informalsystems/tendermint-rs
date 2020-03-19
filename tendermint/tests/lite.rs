@@ -224,22 +224,28 @@ async fn bisection_happy_path() {
 
 #[tokio::test]
 async fn bisection_header_out_of_trusting_period() {
-    let case: TestBisection =
-        serde_json::from_str(&read_json_fixture("many_header_bisection/header_out_of_trusting_period")).unwrap();
+    let case: TestBisection = serde_json::from_str(&read_json_fixture(
+        "many_header_bisection/header_out_of_trusting_period",
+    ))
+    .unwrap();
     run_bisection_test(case).await;
 }
 
 #[tokio::test]
 async fn bisection_invalid_validator_set() {
-    let case: TestBisection =
-        serde_json::from_str(&read_json_fixture("many_header_bisection/invalid_validator_set")).unwrap();
+    let case: TestBisection = serde_json::from_str(&read_json_fixture(
+        "many_header_bisection/invalid_validator_set",
+    ))
+    .unwrap();
     run_bisection_test(case).await;
 }
 
 #[tokio::test]
 async fn bisection_not_enough_commits() {
-    let case: TestBisection =
-        serde_json::from_str(&read_json_fixture("many_header_bisection/not_enough_commits")).unwrap();
+    let case: TestBisection = serde_json::from_str(&read_json_fixture(
+        "many_header_bisection/not_enough_commits",
+    ))
+    .unwrap();
     run_bisection_test(case).await;
 }
 
