@@ -97,3 +97,15 @@ pub struct Version {
     )]
     pub app: u64,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Header;
+    use crate::test::test_serialization_roundtrip;
+
+    #[test]
+    fn serialization_roundtrip() {
+        let json_data = include_str!("../../tests/support/serialization/block/header.json");
+        test_serialization_roundtrip::<Header>(json_data);
+    }
+}
