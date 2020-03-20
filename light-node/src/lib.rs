@@ -5,7 +5,7 @@
 //! [Abscissa]: https://github.com/iqlusioninc/abscissa
 
 // Tip: Deny warnings with `RUSTFLAGS="-D warnings"` environment variable in CI
-#![recursion_limit="256"]
+#![recursion_limit = "256"]
 #![forbid(unsafe_code)]
 #![warn(
     rust_2018_idioms,

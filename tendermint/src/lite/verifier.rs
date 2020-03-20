@@ -529,7 +529,7 @@ mod tests {
     // use the sequence of states with the given vals for the requester
     // and ensure bisection yields no error.
     async fn assert_bisection_ok(
-        req: &MockRequester,
+        req: &mut MockRequester,
         ts: &TrustedState<MockCommit, MockHeader>,
         untrusted_height: u64,
         expected_num_of_requests: usize,
@@ -560,7 +560,7 @@ mod tests {
     // use the sequence of states with the given vals for the requester
     // and ensure we get the expected error.
     async fn assert_bisection_err(
-        req: &MockRequester,
+        req: &mut MockRequester,
         ts: &TrustedState<MockCommit, MockHeader>,
         untrusted_height: u64,
         err: Error,
@@ -788,7 +788,7 @@ mod tests {
     async fn test_verify_bisection_1_val() {
         let vac = ValsAndCommit::new(vec![0], vec![0]);
         let final_state = init_trusted_state(vac.clone(), vec![0], 2);
-        let req = init_requester(vec![vac.clone(), vac.clone(), vac.clone(), vac.clone()]);
+        let mut req = init_requester(vec![vac.clone(), vac.clone(), vac.clone(), vac.clone()]);
         let sh = req.signed_header(1).await.expect("first sh not present");
         let vals = req
             .validator_set(1)
@@ -797,11 +797,11 @@ mod tests {
 
         let ts = MockState::new(sh, vals);
 
-        assert_bisection_ok(&req, &ts, 2, 1, &final_state).await;
+        assert_bisection_ok(&mut req, &ts, 2, 1, &final_state).await;
 
         let final_state = init_trusted_state(vac.clone(), vec![0], 3);
         // let vac = ValsAndCommit::new(vec![0], vec![0]);
-        let req = init_requester(vec![
+        let mut req = init_requester(vec![
             vac.clone(),
             vac.clone(),
             vac.clone(),
@@ -809,7 +809,7 @@ mod tests {
             vac,
         ]);
 
-        assert_bisection_ok(&req, &ts, 3, 1, &final_state).await;
+        assert_bisection_ok(&mut req, &ts, 3, 1, &final_state).await;
     }
 
     #[tokio::test]
@@ -830,7 +830,7 @@ mod tests {
         vals_and_commit_for_height.push(ValsAndCommit::new(vec![0, 2], vec![0, 2])); // 7 -> (only used to construct state 6)
         let vac = ValsAndCommit::new(vec![0, 2], vec![0, 2]);
         let final_ts = init_trusted_state(vac, vec![0, 2], 5);
-        let req = init_requester(vals_and_commit_for_height);
+        let mut req = init_requester(vals_and_commit_for_height);
         let sh = req.signed_header(1).await.expect("first sh not present");
         let vals = req
             .validator_set(1)
@@ -839,7 +839,7 @@ mod tests {
 
         let ts = &MockState::new(sh, vals);
 
-        assert_bisection_ok(&req, &ts, 5, 3, &final_ts).await;
+        assert_bisection_ok(&mut req, &ts, 5, 3, &final_ts).await;
 
         //*************
         // Err
@@ -847,13 +847,13 @@ mod tests {
         // fails due to missing vals for height 6:
         let mut faulty_req = req;
         faulty_req.validators.remove(&6_u64);
-        assert_bisection_err(&faulty_req, &ts, 5, Kind::RequestFailed.into()).await;
+        assert_bisection_err(&mut faulty_req, &ts, 5, Kind::RequestFailed.into()).await;
 
         // Error: can't bisect from trusted height 1 to height 1
         // (here because non-increasing time is caught first)
         let vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
-        let req = init_requester(vec![vac.clone(), vac.clone(), vac]);
-        assert_bisection_err(&req, &ts, 1, Kind::NonIncreasingTime.into()).await;
+        let mut req = init_requester(vec![vac.clone(), vac.clone(), vac]);
+        assert_bisection_err(&mut req, &ts, 1, Kind::NonIncreasingTime.into()).await;
 
         // can't bisect from trusted height 1 to height 1 (here we tamper with time but
         // expect to fail on NonIncreasingHeight):
@@ -867,7 +867,7 @@ mod tests {
         // replace the signed header:
         req.signed_headers.insert(1, new_sh);
         assert_bisection_err(
-            &req,
+            &mut req,
             &ts,
             1,
             Kind::NonIncreasingHeight {
@@ -888,7 +888,7 @@ mod tests {
         let commit_vec = vec![0, 1, 2, 4];
         let vac1 = ValsAndCommit::new(vals_vec.clone(), commit_vec);
         let vac2 = ValsAndCommit::new(vals_vec.clone(), vec![0]);
-        let req = &init_requester(vec![
+        let mut req = init_requester(vec![
             vac1.clone(),
             vac2.clone(),
             vac2.clone(),
@@ -898,7 +898,7 @@ mod tests {
         let ts = &init_trusted_state(vac1, vals_vec, 1);
 
         assert_bisection_err(
-            req,
+            &mut req,
             ts,
             3,
             Kind::InvalidCommit {

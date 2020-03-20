@@ -80,7 +80,7 @@ type LightSignedHeader = lite::types::SignedHeader<SignedHeader, Header>;
 
 #[async_trait]
 impl Requester<SignedHeader, Header> for MockRequester {
-    async fn signed_header(&self, h: u64) -> Result<LightSignedHeader, Error> {
+    async fn signed_header(&mut self, h: u64) -> Result<LightSignedHeader, Error> {
         println!("requested signed header for height:{:?}", h);
         if let Some(sh) = self.signed_headers.get(&h) {
             return Ok(sh.into());
@@ -89,7 +89,7 @@ impl Requester<SignedHeader, Header> for MockRequester {
         fail!(Kind::RequestFailed, "couldn't get sh for: {}", &h);
     }
 
-    async fn validator_set(&self, h: u64) -> Result<Set, Error> {
+    async fn validator_set(&mut self, h: u64) -> Result<Set, Error> {
         println!("requested validators for height:{:?}", h);
         if let Some(vs) = self.validators.get(&h) {
             return Ok(vs.to_owned());
@@ -233,7 +233,7 @@ async fn run_bisection_test(case: TestBisection) {
     let now = case.now;
 
     let provider = case.primary;
-    let req = MockRequester::new(provider.chain_id, provider.lite_blocks);
+    let mut req = MockRequester::new(provider.chain_id, provider.lite_blocks);
 
     let expects_err = match &case.expected_output {
         Some(eo) => eo.eq("error"),
@@ -258,7 +258,7 @@ async fn run_bisection_test(case: TestBisection) {
         trust_threshold,
         trusting_period.into(),
         now.into(),
-        &req,
+        &mut req,
     )
     .await
     {

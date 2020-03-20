@@ -19,28 +19,7 @@ pub struct RPCRequester {
 
 impl RPCRequester {
     pub fn new(client: rpc::Client) -> Self {
-        let rpc_request_sender = RPCRequesterTask::new(client);
-        RPCRequester { rpc_request_sender }
-    }
-}
-
-enum RPCRequest {
-    SignedHeader(Height, oneshot::Sender<RPCResponse>),
-    ValidatorSet(Height, oneshot::Sender<RPCResponse>),
-}
-
-enum RPCResponse {
-    SignedHeader(TMSignedHeader),
-    ValidatorSet(Set),
-}
-
-struct RPCRequesterTask {
-    client: rpc::Client,
-}
-
-impl RPCRequesterTask {
-    pub fn new(client: rpc::Client) -> mpsc::Sender<RPCRequest> {
-        let (sender, mut receiver) = mpsc::channel(1);
+        let (rpc_request_sender, receiver) = mpsc::channel(1);
         let mut receiver = receiver.fuse();
         tokio::spawn(async move {
             loop {
@@ -67,8 +46,18 @@ impl RPCRequesterTask {
                 }
             }
         });
-        sender
+        RPCRequester { rpc_request_sender }
     }
+}
+
+enum RPCRequest {
+    SignedHeader(Height, oneshot::Sender<RPCResponse>),
+    ValidatorSet(Height, oneshot::Sender<RPCResponse>),
+}
+
+enum RPCResponse {
+    SignedHeader(TMSignedHeader),
+    ValidatorSet(Set),
 }
 
 type TMSignedHeader = SignedHeader<TMCommit, TMHeader>;
@@ -79,8 +68,9 @@ impl lite::types::Requester<TMCommit, TMHeader> for RPCRequester {
     /// If h==0, request the latest signed header.
     /// TODO: use an enum instead of h==0.
     async fn signed_header(&mut self, h: Height) -> Result<TMSignedHeader, error::Error> {
-        let (sender, mut receiver) = oneshot::channel();
-        self.rpc_request_sender
+        let (sender, receiver) = oneshot::channel();
+        let _ = self
+            .rpc_request_sender
             .send(RPCRequest::SignedHeader(h, sender))
             .await;
         match receiver.await {
@@ -92,9 +82,10 @@ impl lite::types::Requester<TMCommit, TMHeader> for RPCRequester {
 
     /// Request the validator set at height h.
     async fn validator_set(&mut self, h: Height) -> Result<Set, error::Error> {
-        let (sender, mut receiver) = oneshot::channel();
-        self.rpc_request_sender
-            .send(RPCRequest::SignedHeader(h, sender))
+        let (sender, receiver) = oneshot::channel();
+        let _ = self
+            .rpc_request_sender
+            .send(RPCRequest::ValidatorSet(h, sender))
             .await;
         match receiver.await {
             Ok(RPCResponse::ValidatorSet(set)) => {
@@ -119,7 +110,7 @@ mod tests {
     #[ignore]
     async fn test_val_set() {
         let client = rpc::Client::new("localhost:26657".parse().unwrap());
-        let req = RPCRequester::new(client);
+        let mut req = RPCRequester::new(client);
         let r1 = req.validator_set(5).await.unwrap();
         let r2 = req.signed_header(5).await.unwrap();
         assert_eq!(r1.hash(), r2.header().validators_hash());

@@ -359,7 +359,7 @@ pub(super) mod mocks {
     #[async_trait]
     impl Requester<MockCommit, MockHeader> for MockRequester {
         async fn signed_header(
-            &self,
+            &mut self,
             h: u64,
         ) -> Result<SignedHeader<MockCommit, MockHeader>, Error> {
             println!("requested signed header for height:{:?}", h);
@@ -370,7 +370,7 @@ pub(super) mod mocks {
             fail!(Kind::RequestFailed, "couldn't get sh for: {}", &h);
         }
 
-        async fn validator_set(&self, h: u64) -> Result<MockValSet, Error> {
+        async fn validator_set(&mut self, h: u64) -> Result<MockValSet, Error> {
             println!("requested validators for height:{:?}", h);
             if let Some(vs) = self.validators.get(&h) {
                 return Ok(vs.to_owned());
