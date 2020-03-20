@@ -26,3 +26,4 @@ pub mod error;
 pub mod prelude;
 pub mod requester;
 pub mod store;
+pub mod verifier;

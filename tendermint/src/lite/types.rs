@@ -16,7 +16,7 @@ pub type Height = u64;
 /// the height, the time, the hash of the validator set
 /// that should sign this header, and the hash of the validator
 /// set that should sign the next header.
-pub trait Header: Clone {
+pub trait Header: Clone + Send + 'static {
     /// The header's notion of (bft-)time.
     /// We assume it can be converted to SystemTime.
     type Time: Into<SystemTime>;
@@ -32,7 +32,7 @@ pub trait Header: Clone {
 
 /// ValidatorSet is the full validator set.
 /// It exposes its hash and its total power.
-pub trait ValidatorSet: Clone {
+pub trait ValidatorSet: Clone + Send + 'static {
     /// Hash of the validator set.
     fn hash(&self) -> Hash;
 
@@ -43,7 +43,7 @@ pub trait ValidatorSet: Clone {
 /// Commit is used to prove a Header can be trusted.
 /// Verifying the Commit requires access to an associated ValidatorSet
 /// to determine what voting power signed the commit.
-pub trait Commit: Clone {
+pub trait Commit: Clone + Send + 'static {
     type ValidatorSet: ValidatorSet;
 
     /// Hash of the header this commit is for.
