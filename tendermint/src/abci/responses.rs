@@ -42,7 +42,7 @@ where
 ///
 /// This type corresponds to the `ResponseDeliverTx` proto from:
 ///
-/// <https://github.com/tendermint/tendermint/blob/develop/abci/types/types.proto>
+/// <https://github.com/tendermint/tendermint/blob/master/abci/types/types.proto>
 // TODO(tarcieri): generate this automatically from the proto
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DeliverTx {
@@ -59,19 +59,25 @@ pub struct DeliverTx {
     pub info: Option<Info>,
 
     /// Amount of gas wanted
-    #[serde(default, rename = "gasWanted")]
+    // #[serde(default, rename = "gasWanted")]
     pub gas_wanted: Gas,
 
     /// Amount of gas used
-    #[serde(default, rename = "gasUsed")]
+    // #[serde(default, rename = "gasUsed")]
     pub gas_used: Gas,
 
     /// Tags
     #[serde(default)]
-    pub tags: Vec<Tag>,
+    pub events: Vec<Event>,
 
     /// Codespace
     pub codespace: Option<Codespace>,
+}
+
+pub struct Event {
+    #[serde(rename = "type")]
+    pub type_str: String,
+    pub attributes: Vec<Tag>,
 }
 
 /// Begin block response.

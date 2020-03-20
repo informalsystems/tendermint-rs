@@ -92,5 +92,10 @@ pub struct Params {
         serialize_with = "serializers::serialize_u64",
         deserialize_with = "serializers::parse_u64"
     )]
-    pub max_age: u64,
+    pub max_age_num_blocks: u64,
+
+    pub max_age_duration: Duration,
 }
+
+#[derive(Clone, Debug)]
+struct Duration(u64);

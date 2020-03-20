@@ -20,5 +20,5 @@ pub mod transaction;
 
 pub use self::{
     code::Code, data::Data, gas::Gas, info::Info, log::Log, path::Path, proof::Proof,
-    responses::Responses, transaction::Transaction,
+    responses::{Responses, DeliverTx, Event}, transaction::Transaction,
 };
