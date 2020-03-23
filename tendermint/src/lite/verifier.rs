@@ -154,7 +154,7 @@ where
 // and hence it's possible to use it incorrectly.
 // If trusted_state is not expired and this returns Ok, the
 // untrusted_sh and untrusted_next_vals can be considered trusted.
-fn verify_single_inner<H, C, L>(
+pub fn verify_single_inner<H, C, L>(
     trusted_state: &TrustedState<C, H>,
     untrusted_sh: &SignedHeader<C, H>,
     untrusted_vals: &C::ValidatorSet,
