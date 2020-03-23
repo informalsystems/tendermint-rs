@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use std::time::SystemTime;
 
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::lite::error::{Error, Kind};
 use crate::Hash;
@@ -16,7 +16,7 @@ pub type Height = u64;
 /// the height, the time, the hash of the validator set
 /// that should sign this header, and the hash of the validator
 /// set that should sign the next header.
-pub trait Header: Clone {
+pub trait Header: Clone + Debug + Serialize + DeserializeOwned {
     /// The header's notion of (bft-)time.
     /// We assume it can be converted to SystemTime.
     type Time: Into<SystemTime>;
@@ -32,7 +32,7 @@ pub trait Header: Clone {
 
 /// ValidatorSet is the full validator set.
 /// It exposes its hash and its total power.
-pub trait ValidatorSet: Clone {
+pub trait ValidatorSet: Clone + Debug + Serialize + DeserializeOwned {
     /// Hash of the validator set.
     fn hash(&self) -> Hash;
 
@@ -43,7 +43,7 @@ pub trait ValidatorSet: Clone {
 /// Commit is used to prove a Header can be trusted.
 /// Verifying the Commit requires access to an associated ValidatorSet
 /// to determine what voting power signed the commit.
-pub trait Commit: Clone {
+pub trait Commit: Clone + Debug + Serialize + DeserializeOwned {
     type ValidatorSet: ValidatorSet;
 
     /// Hash of the header this commit is for.
@@ -76,7 +76,7 @@ pub trait Commit: Clone {
 /// TrustThreshold defines how much of the total voting power of a known
 /// and trusted validator set is sufficient for a commit to be
 /// accepted going forward.
-pub trait TrustThreshold: Copy + Clone + Debug {
+pub trait TrustThreshold: Copy + Clone + Debug + Serialize + DeserializeOwned {
     fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool;
 }
 
@@ -145,7 +145,12 @@ where
 /// TrustedState contains a state trusted by a lite client,
 /// including the last header (at height h-1) and the validator set
 /// (at height h) to use to verify the next header.
+///
+/// **Note:** The `#[serde(bound = ...)]` attribute is required to
+/// derive `Deserialize` for this struct as Serde is not able to infer
+/// the proper bound when associated types are involved.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(bound(deserialize = "C::ValidatorSet: Deserialize<'de>"))]
 pub struct TrustedState<C, H>
 where
     H: Header,
@@ -180,12 +185,8 @@ where
 }
 
 /// SignedHeader bundles a [`Header`] and a [`Commit`] for convenience.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)] // NOTE: Copy/Clone/Debug for convenience in testing ...
-pub struct SignedHeader<C, H>
-where
-    C: Commit,
-    H: Header,
-{
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SignedHeader<C, H> {
     commit: C,
     header: H,
 }
@@ -219,7 +220,7 @@ pub(super) mod mocks {
 
     use std::collections::HashMap;
 
-    #[derive(Clone, Debug, PartialEq, Serialize)]
+    #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
     pub struct MockHeader {
         height: u64,
         time: SystemTime,
@@ -269,7 +270,7 @@ pub(super) mod mocks {
     }
 
     // vals are just ints, each has power 1
-    #[derive(Clone, Debug, PartialEq, Serialize)]
+    #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
     pub struct MockValSet {
         // NOTE: use HashSet instead?
         vals: Vec<usize>,
@@ -291,7 +292,7 @@ pub(super) mod mocks {
     }
 
     // commit is a list of vals that signed.
-    #[derive(Clone, Debug, PartialEq, Serialize)]
+    #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
     pub struct MockCommit {
         hash: Hash,
         vals: Vec<usize>,
