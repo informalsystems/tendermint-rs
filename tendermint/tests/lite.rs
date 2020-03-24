@@ -8,10 +8,8 @@ use std::{fs, path::PathBuf};
 use tendermint::block::{Header, Height};
 use tendermint::lite::error::{Error, Kind};
 use tendermint::lite::{Requester, TrustThresholdFraction, TrustedState};
-use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Hash, Time};
+use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Hash, Time, evidence::Duration};
 
-#[derive(Clone, Debug)]
-struct Duration(u64);
 
 #[derive(Deserialize, Clone, Debug)]
 struct TestCases {
@@ -318,18 +316,3 @@ async fn run_bisection_test(case: TestBisection) {
     }
 }
 
-impl<'de> Deserialize<'de> for Duration {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Ok(Duration(
-            String::deserialize(deserializer)?
-                .parse()
-                .map_err(|e| D::Error::custom(format!("{}", e)))?,
-        ))
-    }
-}
-
-impl From<Duration> for std::time::Duration {
-    fn from(d: Duration) -> std::time::Duration {
-        std::time::Duration::from_nanos(d.0)
-    }
-}

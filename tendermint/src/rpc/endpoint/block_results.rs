@@ -36,16 +36,16 @@ pub struct Response {
     pub height: block::Height,
 
     /// Txs results
-    pub txs_results: abci::DeliverTx,
+    pub txs_results: Option<Vec<abci::DeliverTx>>,
 
     /// Begin block events
-    pub begin_block_events: abci::Event,
+    pub begin_block_events: Option<Vec<abci::Event>>,
 
     /// End block events
-    pub end_block_events: abci::Event,
+    pub end_block_events: Option<Vec<abci::Event>>,
 
     /// Validator updates
-    #[serde(deserialize_with = "deserialize_validator_updates")]
+    #[serde(deserialize_with = "abci::responses::deserialize_validator_updates")]
     pub validator_updates: Vec<validator::Update>,
 
     /// New consensus params

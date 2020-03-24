@@ -94,8 +94,35 @@ pub struct Params {
     )]
     pub max_age_num_blocks: u64,
 
+    /// Max age duration
     pub max_age_duration: Duration,
 }
 
-#[derive(Clone, Debug)]
-struct Duration(u64);
+/// Duration
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Duration(u64);
+
+impl<'de> Deserialize<'de> for Duration {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Ok(Duration(
+            String::deserialize(deserializer)?
+                .parse()
+                .map_err(|e| D::Error::custom(format!("{}", e)))?,
+        ))
+    }
+}
+
+impl From<Duration> for std::time::Duration {
+    fn from(d: Duration) -> std::time::Duration {
+        std::time::Duration::from_nanos(d.0)
+    }
+}
+
+impl Serialize for Duration {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+    {
+        format!("{:?}", &self).serialize(serializer)
+    }
+}

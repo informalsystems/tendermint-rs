@@ -59,24 +59,26 @@ pub struct DeliverTx {
     pub info: Option<Info>,
 
     /// Amount of gas wanted
-    // #[serde(default, rename = "gasWanted")]
-    pub gas_wanted: Gas,
+    pub gas_wanted: Option<Gas>,
 
     /// Amount of gas used
-    // #[serde(default, rename = "gasUsed")]
-    pub gas_used: Gas,
+    pub gas_used: Option<Gas>,
 
-    /// Tags
-    #[serde(default)]
-    pub events: Vec<Event>,
+    /// Events
+    pub events: Option<Vec<Event>>,
 
     /// Codespace
     pub codespace: Option<Codespace>,
 }
 
+/// Event
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Event {
+    /// Event type
     #[serde(rename = "type")]
     pub type_str: String,
+
+    /// Attributes
     pub attributes: Vec<Tag>,
 }
 
@@ -114,7 +116,7 @@ pub struct EndBlock {
 }
 
 /// Return an empty vec in the event `validator_updates` is `null`
-fn deserialize_validator_updates<'de, D>(
+pub fn deserialize_validator_updates<'de, D>(
     deserializer: D,
 ) -> Result<Vec<validator::Update>, D::Error>
 where

@@ -14,7 +14,7 @@ mod info;
 mod log;
 mod path;
 mod proof;
-mod responses;
+pub mod responses;
 pub mod tag;
 pub mod transaction;
 
