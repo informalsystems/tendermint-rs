@@ -28,7 +28,7 @@ authors = [
 all-features = true
 
 [badges]
-circle-ci = { repository = "interchainio/tendermint-rs" }
+codecov = { repository = "..."}
 
 [dependencies]
 anomaly = "0.2"
