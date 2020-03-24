@@ -41,7 +41,7 @@ impl Runnable for StartCmd {
             let config = app_config();
 
             let client = rpc::Client::new(config.rpc_address.parse().unwrap());
-            let mut req = RPCRequester::new(client);
+            let mut req = RPCRequester::new_with_client(client);
             let mut store = MemStore::new();
 
             let vals_hash = Hash::from_hex_upper(

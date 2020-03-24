@@ -18,7 +18,11 @@ pub struct RPCRequester {
 }
 
 impl RPCRequester {
-    pub fn new(client: rpc::Client) -> Self {
+    pub fn new(rpc_request_sender: mpsc::Sender<RPCRequest>) -> RPCRequester {
+        RPCRequester { rpc_request_sender }
+    }
+
+    pub fn new_with_client(client: rpc::Client) -> Self {
         let (rpc_request_sender, receiver) = mpsc::channel(1);
         let mut receiver = receiver.fuse();
         tokio::spawn(async move {
@@ -46,16 +50,16 @@ impl RPCRequester {
                 }
             }
         });
-        RPCRequester { rpc_request_sender }
+        RPCRequester::new(rpc_request_sender)
     }
 }
 
-enum RPCRequest {
+pub enum RPCRequest {
     SignedHeader(Height, oneshot::Sender<RPCResponse>),
     ValidatorSet(Height, oneshot::Sender<RPCResponse>),
 }
 
-enum RPCResponse {
+pub enum RPCResponse {
     SignedHeader(TMSignedHeader),
     ValidatorSet(Set),
 }
@@ -110,7 +114,7 @@ mod tests {
     #[ignore]
     async fn test_val_set() {
         let client = rpc::Client::new("localhost:26657".parse().unwrap());
-        let mut req = RPCRequester::new(client);
+        let mut req = RPCRequester::new_with_client(client);
         let r1 = req.validator_set(5).await.unwrap();
         let r2 = req.signed_header(5).await.unwrap();
         assert_eq!(r1.hash(), r2.header().validators_hash());
