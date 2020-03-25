@@ -57,8 +57,8 @@ pub struct AbciInfo {
 
 pub struct AppHash(
     #[serde(
-        deserialize_with = "serializers::parse_hex",
-        serialize_with = "serializers::serialize_hex")]
+        deserialize_with = "serializers::parse_base64",
+        serialize_with = "serializers::serialize_base64")]
     Vec<u8>
 );
 
