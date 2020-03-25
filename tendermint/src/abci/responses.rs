@@ -47,28 +47,28 @@ where
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DeliverTx {
     /// ABCI application response code
-    pub code: Option<Code>,
+    pub code: Code,
 
     /// ABCI application data
-    pub data: Option<Data>,
+    pub data: Data,
 
     /// ABCI log data (nondeterministic)
-    pub log: Option<Log>,
+    pub log: Log,
 
     /// ABCI info (nondeterministic)
-    pub info: Option<Info>,
+    pub info: Info,
 
     /// Amount of gas wanted
-    pub gas_wanted: Option<Gas>,
+    pub gas_wanted: Gas,
 
     /// Amount of gas used
-    pub gas_used: Option<Gas>,
+    pub gas_used: Gas,
 
     /// Events
-    pub events: Option<Vec<Event>>,
+    pub events: Vec<Event>,
 
     /// Codespace
-    pub codespace: Option<Codespace>,
+    pub codespace: Codespace,
 }
 
 /// Event
