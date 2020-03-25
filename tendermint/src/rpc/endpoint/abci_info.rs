@@ -48,20 +48,13 @@ pub struct AbciInfo {
     pub last_block_height: Option<block::Height>,
 
     /// Last app hash for the block, omit empty
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub last_block_app_hash: Option<AppHash>,
-}
-
-/// App hash
-#[derive(Clone, Debug, Deserialize, Serialize)]
-
-pub struct AppHash(
     #[serde(
+        skip_serializing_if = "Vec::is_empty",
         deserialize_with = "serializers::parse_base64",
-        serialize_with = "serializers::serialize_base64")]
-    Vec<u8>
-);
-
+        serialize_with = "serializers::serialize_base64",
+    )]
+    pub last_block_app_hash: Vec<u8>,
+}
 
 /// Default trait implements default values for the optional last_block_height and last_block_app_hash
 /// for cases where they were omitted from the JSON.
@@ -72,7 +65,7 @@ impl Default for AbciInfo {
             version: None,
             app_version: None,
             last_block_height: None,
-            last_block_app_hash: None,
+            last_block_app_hash: Vec::from(""),
         }
     }
 }
