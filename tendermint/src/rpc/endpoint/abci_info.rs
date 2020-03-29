@@ -1,8 +1,9 @@
 //! `/abci_info` endpoint JSONRPC wrapper
 
-use crate::{block, rpc};
 use crate::serializers;
+use crate::{block, rpc};
 use serde::{Deserialize, Serialize};
+use serde_bytes;
 
 /// Request ABCI information from a node
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -33,8 +34,7 @@ pub struct AbciInfo {
     pub data: String,
 
     /// Version
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
+    pub version: String,
 
     /// App version
     #[serde(
@@ -43,15 +43,10 @@ pub struct AbciInfo {
     )]
     pub app_version: u64,
 
-    /// Last block height, omit empty
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub last_block_height: Option<block::Height>,
+    /// Last block height
+    pub last_block_height: block::Height,
 
-    /// Last app hash for the block, omit empty
-    #[serde(
-        skip_serializing_if = "Vec::is_empty",
-        deserialize_with = "serializers::parse_base64",
-        serialize_with = "serializers::serialize_base64",
-    )]
+    /// Last app hash for the block
+    #[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]
     pub last_block_app_hash: Vec<u8>,
 }

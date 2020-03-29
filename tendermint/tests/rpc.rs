@@ -21,7 +21,7 @@ mod endpoints {
             .response;
 
         assert_eq!(response.data.as_str(), EXAMPLE_APP);
-        assert_eq!(response.last_block_height.unwrap().value(), 488_120);
+        assert_eq!(response.last_block_height.value(), 488_120);
     }
 
     #[test]
@@ -98,13 +98,9 @@ mod endpoints {
                 .unwrap();
         assert_eq!(response.height.value(), 1814);
 
-        let tendermint::abci::Responses {
-            deliver_tx,
-            end_block,
-            ..
-        } = response.results;
-
-        let log_json = &deliver_tx[0].log.as_ref().unwrap().parse_json().unwrap();
+        let validator_updates = response.validator_updates;
+        let deliver_tx = response.txs_results.unwrap();
+        let log_json = &deliver_tx[0].log.parse_json().unwrap();
         let log_json_value = &log_json.as_array().as_ref().unwrap()[0];
 
         assert_eq!(log_json_value["msg_index"].as_str().unwrap(), "0");
@@ -113,19 +109,7 @@ mod endpoints {
         assert_eq!(deliver_tx[0].gas_wanted.value(), 200_000);
         assert_eq!(deliver_tx[0].gas_used.value(), 105_662);
 
-        let tag = deliver_tx[0]
-            .tags
-            .iter()
-            .find(|t| t.key.as_ref().eq("ZGVzdGluYXRpb24tdmFsaWRhdG9y"))
-            .unwrap();
-
-        assert_eq!(
-            tag.value.as_ref(),
-            "Y29zbW9zdmFsb3BlcjFlaDVtd3UwNDRnZDVudGtrYzJ4Z2ZnODI0N21nYzU2Zno0c2RnMw=="
-        );
-
-        let validator_update = &end_block.as_ref().unwrap().validator_updates[0];
-        assert_eq!(validator_update.power.value(), 1_233_243);
+        assert_eq!(validator_updates[0].power.value(), 1_233_243);
     }
 
     #[test]
