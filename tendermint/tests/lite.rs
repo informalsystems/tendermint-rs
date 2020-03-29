@@ -1,6 +1,6 @@
 use anomaly::fail;
 use async_trait::async_trait;
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -8,8 +8,9 @@ use std::{fs, path::PathBuf};
 use tendermint::block::{Header, Height};
 use tendermint::lite::error::{Error, Kind};
 use tendermint::lite::{Requester, TrustThresholdFraction, TrustedState};
-use tendermint::{block::signed_header::SignedHeader, lite, validator::Set, Hash, Time, evidence::Duration};
-
+use tendermint::{
+    block::signed_header::SignedHeader, evidence::Duration, lite, validator::Set, Hash, Time,
+};
 
 #[derive(Deserialize, Clone, Debug)]
 struct TestCases {
@@ -315,4 +316,3 @@ async fn run_bisection_test(case: TestBisection) {
         }
     }
 }
-

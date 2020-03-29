@@ -19,6 +19,13 @@ pub mod tag;
 pub mod transaction;
 
 pub use self::{
-    code::Code, data::Data, gas::Gas, info::Info, log::Log, path::Path, proof::Proof,
-    responses::{Responses, DeliverTx, Event}, transaction::Transaction,
+    code::Code,
+    data::Data,
+    gas::Gas,
+    info::Info,
+    log::Log,
+    path::Path,
+    proof::Proof,
+    responses::{DeliverTx, Event, Responses},
+    transaction::Transaction,
 };

@@ -21,5 +21,4 @@ pub struct Size {
         deserialize_with = "serializers::parse_i64"
     )]
     pub max_gas: i64,
-
 }

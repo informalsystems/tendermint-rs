@@ -120,8 +120,8 @@ impl From<Duration> for std::time::Duration {
 
 impl Serialize for Duration {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         format!("{:?}", &self).serialize(serializer)
     }
