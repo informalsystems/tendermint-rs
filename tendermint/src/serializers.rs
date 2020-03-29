@@ -122,6 +122,7 @@ where
     base64::decode(&string).map_err(Error::custom)
 }
 
+#[allow(dead_code)]
 pub(crate) fn serialize_option_base64<S>(
     maybe_bytes: &Option<Vec<u8>>,
     serializer: S,
@@ -138,6 +139,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn parse_option_base64<'de, D>(deserializer: D) -> Result<Option<Vec<u8>>, D::Error>
 where
     D: Deserializer<'de>,

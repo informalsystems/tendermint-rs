@@ -47,7 +47,6 @@ pub struct Response {
     pub last_height: block::Height,
 
     /// Block metadata
-    #[serde(default)]
     pub block_metas: Vec<block::Meta>,
 }
 
