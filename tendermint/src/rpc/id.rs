@@ -3,9 +3,17 @@
 use getrandom::getrandom;
 use serde::{Deserialize, Serialize};
 
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd)]
+#[serde(untagged)]
+pub enum IdType {
+    Num(i64),
+    Str(String),
+    None,
+}
+
 /// JSONRPC ID: request-specific identifier
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct Id(String);
+pub struct Id(IdType);
 
 impl Id {
     /// Create a JSONRPC ID containing a UUID v4 (i.e. random)
@@ -18,12 +26,16 @@ impl Id {
             .set_version(uuid::Version::Random)
             .build();
 
-        Id(uuid.to_string())
+        Id(IdType::Str(uuid.to_string()))
     }
 }
 
 impl AsRef<str> for Id {
     fn as_ref(&self) -> &str {
-        self.0.as_ref()
+        match self {
+            Id(IdType::Num(_)) => "",
+            Id(IdType::Str(s)) => s.as_ref(),
+            Id(IdType::None) => "",
+        }
     }
 }
