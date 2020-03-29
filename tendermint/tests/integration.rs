@@ -57,6 +57,7 @@ mod rpc {
         assert_eq!(abci_query.info, String::new());
         assert_eq!(abci_query.index, 0);
         assert_eq!(&abci_query.key, &Vec::<u8>::new());
+        assert!(&abci_query.key.is_empty());
         assert!(abci_query.value.is_none());
         assert!(abci_query.proof.is_none());
         assert!(abci_query.height.value() > 0);
