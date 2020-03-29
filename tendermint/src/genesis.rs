@@ -1,6 +1,6 @@
 //! Genesis data
 
-use crate::{chain, consensus, serializers, validator, Time};
+use crate::{chain, consensus, validator, Time};
 use serde::{Deserialize, Serialize};
 
 /// Genesis data
@@ -19,10 +19,7 @@ pub struct Genesis<AppState = serde_json::Value> {
     pub validators: Vec<validator::Info>,
 
     /// App hash
-    #[serde(
-        serialize_with = "serializers::serialize_hex",
-        deserialize_with = "serializers::parse_hex"
-    )]
+    #[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]
     pub app_hash: Vec<u8>,
 
     /// App state
