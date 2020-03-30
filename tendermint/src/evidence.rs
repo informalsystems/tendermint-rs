@@ -98,31 +98,18 @@ pub struct Params {
     pub max_age_duration: Duration,
 }
 
-/// Duration
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Duration(u64);
-
-impl<'de> Deserialize<'de> for Duration {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Ok(Duration(
-            String::deserialize(deserializer)?
-                .parse()
-                .map_err(|e| D::Error::custom(format!("{}", e)))?,
-        ))
-    }
-}
+/// Duration is a wrapper around std::time::Duration
+/// essentially, to keep the usages look cleaner
+/// i.e. you can avoid using serde annotations everywhere
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+pub struct Duration(#[serde(
+    serialize_with = "serializers::serialize_duration",
+    deserialize_with = "serializers::parse_duration")]
+        std::time::Duration
+);
 
 impl From<Duration> for std::time::Duration {
     fn from(d: Duration) -> std::time::Duration {
-        std::time::Duration::from_nanos(d.0)
-    }
-}
-
-impl Serialize for Duration {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        format!("{:?}", &self).serialize(serializer)
+        d.0
     }
 }
