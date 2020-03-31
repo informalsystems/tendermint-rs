@@ -1,6 +1,8 @@
 pub trait Predicate {
     fn eval(&self) -> bool;
+}
 
+pub trait PredicateExt {
     fn and<P>(self, other: P) -> AndPredicate<Self, P>
     where
         Self: Sized,
@@ -35,6 +37,8 @@ pub trait Predicate {
         ConstPredicate::new(value)
     }
 }
+
+impl<P: Predicate> PredicateExt for P {}
 
 pub struct ConstPredicate(bool);
 
