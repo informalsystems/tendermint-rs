@@ -61,12 +61,12 @@ impl lite::Commit for block::signed_header::SignedHeader {
             // returns FaultyFullNode error if it detects a signer that is not present in the validator set
             if let Some(val_addr) = commit_sig.validator_address {
                 if vals.validator(val_addr) == None {
-                    let reason = format!(
+                    fail!(
+                        Kind::FaultyFullNode,
                         "Found a faulty signer ({}) not present in the validator set ({})",
                         val_addr,
                         vals.hash()
                     );
-                    fail!(Kind::FaultyFullNode, reason);
                 }
             }
         }
