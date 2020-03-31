@@ -126,8 +126,18 @@ pub fn never(value: bool) -> ConstPredicate {
     always(!value)
 }
 
-pub fn not<P: Predicate>(p: P) -> NotPredicate<P> {
+pub fn not<P>(p: P) -> NotPredicate<P>
+where
+    P: Predicate,
+{
     p.not()
+}
+
+pub fn from_fn<F>(f: F) -> FnPredicate<F>
+where
+    F: Fn() -> bool,
+{
+    FnPredicate::new(f)
 }
 
 #[cfg(test)]
