@@ -29,13 +29,3 @@ impl Id {
         Id::Str(uuid.to_string())
     }
 }
-
-impl AsRef<str> for Id {
-    fn as_ref(&self) -> &str {
-        match self {
-            Id::Num(_) => "",
-            Id::Str(s) => s.as_ref(),
-            Id::None => "",
-        }
-    }
-}
