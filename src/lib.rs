@@ -1,7 +1,9 @@
-use std::fmt;
+use std::fmt::{self, Display};
 use std::marker::PhantomData;
 
-pub trait Predicate: fmt::Display {
+pub mod macros;
+
+pub trait Predicate: Display {
     fn eval(&self) -> bool;
 }
 
@@ -74,7 +76,7 @@ impl Predicate for ConstPredicate {
     }
 }
 
-impl fmt::Display for ConstPredicate {
+impl Display for ConstPredicate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
@@ -95,10 +97,10 @@ where
     }
 }
 
-impl<P, Q> fmt::Display for AndPredicate<P, Q>
+impl<P, Q> Display for AndPredicate<P, Q>
 where
-    P: fmt::Display,
-    Q: fmt::Display,
+    P: Display,
+    Q: Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({} && {})", self.left, self.right)
@@ -120,10 +122,10 @@ where
     }
 }
 
-impl<P, Q> fmt::Display for OrPredicate<P, Q>
+impl<P, Q> Display for OrPredicate<P, Q>
 where
-    P: fmt::Display,
-    Q: fmt::Display,
+    P: Display,
+    Q: Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({} || {})", self.left, self.right)
@@ -147,9 +149,9 @@ where
     }
 }
 
-impl<P> fmt::Display for NotPredicate<P>
+impl<P> Display for NotPredicate<P>
 where
-    P: fmt::Display,
+    P: Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "!{}", self.0)
@@ -171,13 +173,43 @@ where
     }
 }
 
-impl<P, Q> fmt::Display for ImpliesPredicate<P, Q>
+impl<P, Q> Display for ImpliesPredicate<P, Q>
 where
-    P: fmt::Display,
-    Q: fmt::Display,
+    P: Display,
+    Q: Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({} ==> {})", self.assumption, self.conclusion)
+    }
+}
+
+pub struct LessThanPredicate<T> {
+    left: T,
+    right: T,
+}
+
+impl<T> LessThanPredicate<T> {
+    pub fn new(left: T, right: T) -> Self {
+        Self { left, right }
+    }
+}
+
+impl<T> Predicate for LessThanPredicate<T>
+where
+    T: PartialOrd,
+    T: Display,
+{
+    fn eval(&self) -> bool {
+        self.left.lt(&self.right)
+    }
+}
+
+impl<T> Display for LessThanPredicate<T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({} < {})", self.left, self.right)
     }
 }
 
@@ -208,7 +240,7 @@ where
     }
 }
 
-impl<F> fmt::Display for FnPredicate<F> {
+impl<F> Display for FnPredicate<F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.descr {
             Some(ref descr) => write!(f, "<{}>", descr),
@@ -228,7 +260,7 @@ impl<T> Predicate for TaggedPredicate<T> {
     }
 }
 
-impl<T> fmt::Display for TaggedPredicate<T> {
+impl<T> Display for TaggedPredicate<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.predicate.fmt(f)
         // let tag_name = std::any::type_name::<T>();
@@ -249,6 +281,10 @@ where
     P: Predicate,
 {
     p.not()
+}
+
+pub fn less_than<T>(left: T, right: T) -> LessThanPredicate<T> {
+    LessThanPredicate::new(left, right)
 }
 
 pub fn from_fn<F>(f: F) -> FnPredicate<F>
