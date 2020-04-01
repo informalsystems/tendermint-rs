@@ -39,6 +39,7 @@
 ///
 /// impl pred::Predicate for Test {
 ///     fn eval(&self) -> bool {
+///         let _self = &self;
 ///         let Test { a, b } = &self;
 ///         *a > 0 && *b
 ///     }
@@ -46,6 +47,7 @@
 ///
 /// impl ::std::fmt::Display for Test {
 ///     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+///         let _self = &self;
 ///         let Test { a, b } = &self;
 ///         write!(f, "{} > 0 && {}", a, b)
 ///     }
@@ -53,15 +55,21 @@
 /// ```
 #[macro_export]
 macro_rules! predicate {
-    ( $name:ident
+    ( $self:ident =>
+      $( #[ $attr:meta ] )*
+      $name:ident
       < $( $param:ident : $cons:path ),* >
       ( $( $field:ident : $typ:ty ),* )
       @ $tag:ident $eval:block
       # $($fmt:expr),* ) => {
+
+        #[allow(unused_code, unused_variables, unused_qualifications)]
+        $( #[ $attr ] )*
         pub struct $name< $($param),* > {
             $( $field: $typ, )*
         }
 
+        #[allow(unused_code, unused_variables, unused_qualifications)]
         impl < $($param),* > $name < $($param),* >
             where $( $param : $cons + 'static ),*
         {
@@ -75,19 +83,23 @@ macro_rules! predicate {
             }
         }
 
+        #[allow(unused_code, unused_variables, unused_qualifications)]
         impl < $($param),* > $crate::Predicate for $name < $($param),* >
             where $( $param : $cons ),*
         {
             fn eval(&self) -> bool {
+                let $self = &self;
                 let $name { $( $field, )* } = &self;
                 $eval
             }
         }
 
+        #[allow(unused_code, unused_variables, unused_qualifications)]
         impl < $($param),* > ::std::fmt::Display for $name < $($param),* >
             where $( $param : $cons ),*
         {
             fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                let $self = &self;
                 let $name { $( $field, )* } = &self;
                 write!(f, $($fmt,)*)
             }
@@ -102,13 +114,14 @@ mod tests {
 
     pub struct Tag;
 
-    predicate! {
+    predicate! { _self =>
+        #[derive(Debug)]
         Test<>(a: i32, b: bool) @ Tag {
             *a > 0 && *b
         } # "{} > 0 && {}", a, b
     }
 
-    predicate! {
+    predicate! { _self =>
         Complex<P: Predicate, Q: Predicate>(p: P, q: Q) @ Tag {
             p.eval() && !q.eval()
         } # "{} && !{}", p, q
