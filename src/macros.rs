@@ -1,31 +1,98 @@
+/// A macro for generating `Predicate`s.
+///
+/// ## Example
+///
+/// When invoked this way:
+///
+/// ```rust,ignore
+/// use pred::predicate;
+///
+/// pub struct Tag;
+///
+/// predicate! {
+///     Test(a: u32, b: bool) @ Tag {
+///         self.a > 0 && self.b
+///     } # "{} > 0 && {}", self.a, self.b
+/// }
+/// ```
+///
+/// the macro expands to:
+///
+/// ```
+/// pub struct Tag;
+///
+/// pub struct Test {
+///     a: u32,
+///     b: bool
+/// }
+///
+/// impl Test {
+///     pub fn new(a: u32, b: bool) -> Self {
+///         Self { a, b }
+///     }
+///
+///     pub fn pred(a: u32, b: bool) -> pred::TaggedPredicate<Tag> {
+///          let __p = Self::new(a, b);
+///          pred::PredicateExt::tag(__p)
+///     }
+/// }
+///
+/// impl pred::Predicate for Test {
+///     fn eval(&self) -> bool {
+///         let Test { a, b } = &self;
+///         *a > 0 && *b
+///     }
+/// }
+///
+/// impl ::std::fmt::Display for Test {
+///     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+///         let Test { a, b } = &self;
+///         write!(f, "{} > 0 && {}", a, b)
+///     }
+/// }
+/// ```
 #[macro_export]
 macro_rules! predicate {
-    ( $name:ident ( $( $field:ident : $typ:ty ),* ) @ $tag:ident $eval:block # $($fmt:expr,)* ) => {
-        paste::item! {
-            pub type [<$name Pred>] = $crate::TaggedPredicate<$tag>;
+    ( $name:ident
+      < $( $param:ident : $cons:path ),* >
+      ( $( $field:ident : $typ:ty ),* )
+      @ $tag:ident $eval:block
+      # $($fmt:expr),* ) => {
+        pub struct $name< $($param),* > {
+            $( $field: $typ, )*
+        }
 
-            pub struct $name {
-                $( $field: $typ, )*
+        impl < $($param),* > $name < $($param),* >
+            where $( $param : $cons + 'static ),*
+        {
+            pub fn new($( $field : $typ, )*) -> Self {
+                Self { $( $field, )* }
             }
 
-            impl $name {
-                pub fn pred($( $field : $typ, )*) -> [<$name Pred>] {
-                    let p = Self { $( $field, )* };
-                    $crate::PredicateExt::tag(p)
-                }
-            }
-
-            impl $crate::Predicate for $name {
-                fn eval(&self) -> bool $eval
-            }
-
-            impl ::std::fmt::Display for $name {
-                fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                    write!(f, $($fmt,)*)
-                }
+            pub fn pred($( $field : $typ, )*) -> $crate::TaggedPredicate< $tag > {
+                let __p = Self::new( $( $field, )* );
+                $crate::PredicateExt::tag(__p)
             }
         }
-    };
+
+        impl < $($param),* > $crate::Predicate for $name < $($param),* >
+            where $( $param : $cons ),*
+        {
+            fn eval(&self) -> bool {
+                let $name { $( $field, )* } = &self;
+                $eval
+            }
+        }
+
+        impl < $($param),* > ::std::fmt::Display for $name < $($param),* >
+            where $( $param : $cons ),*
+        {
+            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                let $name { $( $field, )* } = &self;
+                write!(f, $($fmt,)*)
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -36,9 +103,15 @@ mod tests {
     pub struct Tag;
 
     predicate! {
-        Test(a: i32, b: bool) @ Tag {
-            self.a > 0 && self.b
-        } # "{} > 0 && {}", self.a, self.b,
+        Test<>(a: i32, b: bool) @ Tag {
+            *a > 0 && *b
+        } # "{} > 0 && {}", a, b
+    }
+
+    predicate! {
+        Complex<P: Predicate, Q: Predicate>(p: P, q: Q) @ Tag {
+            p.eval() && !q.eval()
+        } # "{} && !{}", p, q
     }
 
     #[test]
@@ -65,36 +138,3 @@ mod tests {
         assert_eq!(p.to_string(), "4 > 0 && true");
     }
 }
-
-// predicate! {
-//     Test(a: u32, b: bool) @ Tag {
-//         self.a > 0 && self.b
-//     } # "{} > 0 && {}", self.a, self.b
-// }
-//
-// pub type TestPred = TaggedPredicate<Tag>;
-//
-// #[derive(Debug)]
-// pub struct Test {
-//     a: u32,
-//     b: bool
-// }
-//
-// impl Test {
-//     pub fn pred(a: u32, b: bool) -> TestPred {
-//          let p = Self { a, b );
-//          crate::PredicateExt::tag(p)
-//     }
-// }
-//
-// impl Predicate for Test {
-//     fn eval(&self) -> bool {
-//         self.a > 0 && self.b
-//     }
-// }
-//
-// impl fmt::Display for Test {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{} > 0 && {}", self.a, self.b)
-//     }
-// }

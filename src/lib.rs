@@ -1,7 +1,7 @@
 use std::fmt::{self, Display};
 use std::marker::PhantomData;
 
-pub mod macros;
+mod macros;
 
 pub trait Predicate: Display {
     fn eval(&self) -> bool;
