@@ -10,9 +10,11 @@
 /// pub struct Tag;
 ///
 /// predicate! {
-///     Test(a: u32, b: bool) @ Tag {
+///     Test(a: u32, b: bool) {
 ///         self.a > 0 && self.b
-///     } # "{} > 0 && {}", self.a, self.b
+///     }
+///     @ Tag
+///     # "{} > 0 && {}", self.a, self.b
 /// }
 /// ```
 ///
@@ -60,7 +62,8 @@ macro_rules! predicate {
       $name:ident
       < $( $param:ident : $cons:path ),* >
       ( $( $field:ident : $typ:ty ),* )
-      @ $tag:ident $eval:block
+      $eval:block
+      @ $tag:ident
       # $($fmt:expr),* ) => {
 
         #[allow(unused_code, unused_variables, unused_qualifications)]
@@ -116,15 +119,19 @@ mod tests {
 
     predicate! { _self =>
         #[derive(Debug)]
-        Test<>(a: i32, b: bool) @ Tag {
+        Test<>(a: i32, b: bool) {
             *a > 0 && *b
-        } # "{} > 0 && {}", a, b
+        }
+        @ Tag
+        # "{} > 0 && {}", a, b
     }
 
     predicate! { _self =>
-        Complex<P: Predicate, Q: Predicate>(p: P, q: Q) @ Tag {
+        Complex<P: Predicate, Q: Predicate>(p: P, q: Q) {
             p.eval() && !q.eval()
-        } # "{} && !{}", p, q
+        }
+        @ Tag
+        # "{} && !{}", p, q
     }
 
     #[test]

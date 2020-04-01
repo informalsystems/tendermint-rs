@@ -1,7 +1,10 @@
 #![allow(unused_variables, unreachable_code)]
 
 use derive_more::Display;
+
 use pred::*;
+
+//--------------------------------------------------------------------------------
 
 #[derive(Debug, Display)]
 #[display(fmt = "<some header>")]
@@ -22,6 +25,8 @@ pub struct TrustThreshold {
     denominator: u64,
 }
 
+//--------------------------------------------------------------------------------
+
 pub struct IsEnoughPower;
 
 predicate! { this =>
@@ -30,11 +35,15 @@ predicate! { this =>
         signed_power: u64,
         total_power: u64,
         trust_threshold: TrustThreshold
-    ) @ IsEnoughPower {
+    ) {
         signed_power * trust_threshold.denominator > total_power * trust_threshold.numerator
-    } # "real_is_enough_power(signed: {}, power: {}, trust_threshold: {})#{}",
-        signed_power, total_power, trust_threshold, this.eval()
+    }
+    @ IsEnoughPower
+    # "real_is_enough_power(signed: {}, power: {}, trust_threshold: {})#{}",
+      signed_power, total_power, trust_threshold, this.eval()
 }
+
+//--------------------------------------------------------------------------------
 
 pub struct ValidCommit;
 
@@ -44,11 +53,15 @@ predicate! { this =>
         header: Header,
         commit: Commit,
         trust_threshold: TrustThreshold
-    ) @ ValidCommit {
+    ) {
         true // TODO
-    } # "real_valid_commit(header: {}, commit: {}, trust_threshold: {})#{}",
-        header, commit, trust_threshold, this.eval()
+    }
+    @ ValidCommit
+    # "real_valid_commit(header: {}, commit: {}, trust_threshold: {})#{}",
+      header, commit, trust_threshold, this.eval()
 }
+
+//--------------------------------------------------------------------------------
 
 pub struct Verify;
 pub type VerifyPred = TaggedPredicate<Verify>;
@@ -70,6 +83,8 @@ pub fn mock_verify_pred(enough_power: bool, valid_commit: bool) -> VerifyPred {
     is_enough_power.and(valid_commit).tag()
 }
 
+//--------------------------------------------------------------------------------
+
 pub fn verify(verify_pred: VerifyPred) -> Result<(), &'static str> {
     if verify_pred.eval() {
         Ok(())
@@ -77,6 +92,8 @@ pub fn verify(verify_pred: VerifyPred) -> Result<(), &'static str> {
         Err("woops")
     }
 }
+
+//--------------------------------------------------------------------------------
 
 #[allow(unused_must_use)]
 fn main() {
