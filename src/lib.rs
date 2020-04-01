@@ -278,8 +278,9 @@ impl<T> Predicate for TaggedPredicate<T> {
 
 impl<T> Display for TaggedPredicate<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let tag_name = std::any::type_name::<T>();
-        write!(f, "{}@{}", tag_name, self.pred)
+        self.pred.fmt(f)
+        // let tag_name = std::any::type_name::<T>();
+        // write!(f, "{}@{}", tag_name, self.pred)
     }
 }
 
