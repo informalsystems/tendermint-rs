@@ -1,22 +1,25 @@
 #![allow(unused_variables, unreachable_code)]
 
+use derive_more::Display;
 use pred::*;
 
-#[derive(Debug)]
+#[derive(Debug, Display)]
+#[display(fmt = "<some header>")]
 pub struct Header;
-#[derive(Debug)]
+
+#[derive(Debug, Display)]
+#[display(fmt = "<some commit>")]
 pub struct Commit;
-#[derive(Debug)]
+
+#[derive(Debug, Display)]
+#[display(fmt = "<some validator set>")]
 pub struct ValidatorSet;
-#[derive(Copy, Clone, Debug)]
+
+#[derive(Copy, Clone, Debug, Display)]
+#[display(fmt = "{}/{}", numerator, denominator)]
 pub struct TrustThreshold {
     numerator: u64,
     denominator: u64,
-}
-impl std::fmt::Display for TrustThreshold {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}/{}", self.numerator, self.denominator)
-    }
 }
 
 pub struct IsEnoughPower;
@@ -43,7 +46,7 @@ predicate! { this =>
         trust_threshold: TrustThreshold
     ) @ ValidCommit {
         true // TODO
-    } # "real_valid_commit(header: {:?}, commit: {:?}, trust_threshold: {})#{}",
+    } # "real_valid_commit(header: {}, commit: {}, trust_threshold: {})#{}",
         header, commit, trust_threshold, this.eval()
 }
 
