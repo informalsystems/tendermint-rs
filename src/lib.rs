@@ -250,21 +250,61 @@ impl<F> Display for FnPredicate<F> {
 }
 
 pub struct TaggedPredicate<T> {
-    predicate: Box<dyn Predicate>,
+    pred: Box<dyn Predicate>,
     tag: PhantomData<T>,
+}
+
+impl<T> TaggedPredicate<T> {
+    pub fn new(pred: impl Predicate + 'static) -> Self {
+        Self {
+            pred: Box::new(pred),
+            tag: PhantomData,
+        }
+    }
 }
 
 impl<T> Predicate for TaggedPredicate<T> {
     fn eval(&self) -> bool {
-        self.predicate.eval()
+        self.pred.eval()
     }
 }
 
 impl<T> Display for TaggedPredicate<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.predicate.fmt(f)
-        // let tag_name = std::any::type_name::<T>();
-        // write!(f, "[{}]@{}", self.predicate, tag_name)
+        let tag_name = std::any::type_name::<T>();
+        write!(f, "{}@{}", tag_name, self.pred)
+    }
+}
+
+pub struct NamedPredicate<P> {
+    pred: P,
+    name: String,
+}
+
+impl<P> NamedPredicate<P> {
+    pub fn new(pred: P, name: impl Into<String>) -> Self {
+        Self {
+            pred,
+            name: name.into(),
+        }
+    }
+}
+
+impl<P> Predicate for NamedPredicate<P>
+where
+    P: Predicate,
+{
+    fn eval(&self) -> bool {
+        self.pred.eval()
+    }
+}
+
+impl<P> Display for NamedPredicate<P>
+where
+    P: Predicate,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}#{}", self.name, self.pred)
     }
 }
 
@@ -294,11 +334,12 @@ where
     FnPredicate::new(f)
 }
 
-pub fn tag<T>(p: impl Predicate + 'static) -> TaggedPredicate<T> {
-    TaggedPredicate {
-        predicate: Box::new(p),
-        tag: PhantomData,
-    }
+pub fn tag<T>(pred: impl Predicate + 'static) -> TaggedPredicate<T> {
+    TaggedPredicate::new(pred)
+}
+
+pub fn named<P>(pred: P, name: impl Into<String>) -> NamedPredicate<P> {
+    NamedPredicate::new(pred, name)
 }
 
 #[cfg(test)]
