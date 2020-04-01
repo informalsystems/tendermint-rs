@@ -256,6 +256,38 @@ impl<F> Display for FnPredicate<F> {
     }
 }
 
+pub struct CurriedPredicate<A> {
+    f: Box<dyn Fn(&A) -> bool>,
+    a: A,
+}
+
+impl<A> CurriedPredicate<A> {
+    pub fn new<F>(a: A, f: F) -> Self
+    where
+        F: Fn(&A) -> bool + 'static,
+    {
+        Self { f: Box::new(f), a }
+    }
+}
+
+impl<A> Predicate for CurriedPredicate<A>
+where
+    A: Display,
+{
+    fn eval(&self) -> bool {
+        (self.f)(&self.a)
+    }
+}
+
+impl<A> Display for CurriedPredicate<A>
+where
+    A: Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.a)
+    }
+}
+
 pub struct TaggedPredicate<T> {
     pred: Box<dyn Predicate>,
     tag: PhantomData<T>,
@@ -350,10 +382,43 @@ pub fn named<P>(pred: P, name: impl Into<String>) -> NamedPredicate<P> {
     NamedPredicate::new(pred, name)
 }
 
+pub fn pred<F, A>(f: F) -> impl Fn(A) -> CurriedPredicate<A>
+where
+    F: for<'r> Fn(&'r A) -> bool + Clone + 'static,
+    A: 'static,
+{
+    move |a: A| CurriedPredicate::new(a, f.clone())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use derive_more::Display;
     use quickcheck_macros::quickcheck;
+
+    #[derive(Display)]
+    #[display(fmt = "bar:{} > 0", bar)]
+    struct Foo {
+        bar: i32,
+    }
+
+    #[quickcheck]
+    fn test_make_foo(bar: i32) -> bool {
+        let make_foo = pred(|foo: &Foo| foo.bar > 0);
+        let foo_pred = make_foo(Foo { bar });
+
+        evals_to(foo_pred, bar > 0)
+    }
+
+    #[quickcheck]
+    fn test_display_foo(bar: i32) -> bool {
+        let make_foo = pred(|foo: &Foo| foo.bar > 0);
+
+        let foo = Foo { bar };
+        let foo_pred = make_foo(foo);
+
+        foo_pred.to_string() == format!("bar:{} > 0", bar)
+    }
 
     #[quickcheck]
     fn always_eval_to_value(value: bool) -> bool {
