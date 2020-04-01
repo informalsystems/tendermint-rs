@@ -1,77 +1,68 @@
-use pred::*;
-use std::fmt;
+#![allow(unused_variables, unreachable_code)]
 
-pub struct IsEnoughPower;
-pub type PredIsEnoughPower = TaggedPredicate<IsEnoughPower>;
+use pred::*;
 
 #[derive(Debug)]
-pub struct MockIsEnoughPower(bool);
-impl MockIsEnoughPower {
-    pub fn pred(value: bool) -> PredIsEnoughPower {
-        Self(value).tag()
-    }
-}
-impl Predicate for MockIsEnoughPower {
-    fn eval(&self) -> bool {
-        self.0
-    }
-}
-impl fmt::Display for MockIsEnoughPower {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
+pub struct Header;
+#[derive(Debug)]
+pub struct Commit;
+#[derive(Debug)]
+pub struct ValidatorSet;
+#[derive(Debug)]
+pub struct TrustThreshold {
+    numerator: u64,
+    denominator: u64,
 }
 
-pub struct RealIsEnoughPower;
-impl RealIsEnoughPower {
-    pub fn pred() -> PredIsEnoughPower {
-        Self.tag()
-    }
-}
-impl Predicate for RealIsEnoughPower {
-    fn eval(&self) -> bool {
-        true
-    }
-}
-impl fmt::Display for RealIsEnoughPower {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "RealIsEnoughPower(commit, header)")
-    }
+pub struct IsEnoughPower;
+
+predicate! { _self =>
+    #[derive(Debug)]
+    RealIsEnoughPower<>(
+        signed_power: u64,
+        total_power: u64,
+        trust_threshold: TrustThreshold
+    ) @ IsEnoughPower {
+        signed_power * trust_threshold.denominator > total_power * trust_threshold.numerator
+    } # "{:?}", _self
 }
 
 pub struct ValidCommit;
-pub type PredValidCommit = TaggedPredicate<ValidCommit>;
 
-pub struct RealValidCommit;
-impl RealValidCommit {
-    pub fn pred() -> PredValidCommit {
-        Self.tag()
-    }
+predicate! { _self =>
+    #[derive(Debug)]
+    RealValidCommit<>(
+        header: Header,
+        commit: Commit,
+        trust_threshold: TrustThreshold
+    ) @ ValidCommit {
+        todo!()
+    } # "{:?}", _self
 }
-impl Predicate for RealValidCommit {
-    fn eval(&self) -> bool {
-        true
-    }
-}
-impl fmt::Display for RealValidCommit {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "RealValidCommit(commit, trust_level)")
-    }
+
+predicate! { _self =>
+    #[derive(Debug)]
+    MockValidCommit<>(value: bool) @ ValidCommit {
+        *value
+    } # "{:?}", _self
 }
 
 pub struct Verify;
 pub type VerifyPred = TaggedPredicate<Verify>;
 
-pub fn real_verify_pred() -> VerifyPred {
-    let is_enough_power = RealIsEnoughPower::pred();
-    let valid_commit = RealValidCommit::pred();
+pub fn real_verify_pred(header: Header, commit: Commit, trust_level: TrustThreshold) -> VerifyPred {
+    let total_power = todo!();
+    let signed_power = todo!();
+
+    let is_enough_power = RealIsEnoughPower::pred(total_power, signed_power, trust_level);
+    let valid_commit = RealValidCommit::pred(header, commit, trust_level);
 
     is_enough_power.and(valid_commit).tag()
 }
 
-pub fn mock_verify_pred() -> VerifyPred {
-    let is_enough_power = MockIsEnoughPower::pred(false);
-    let valid_commit = RealValidCommit::pred();
+pub fn mock_verify_pred(enough_power: bool, valid_commit: bool) -> VerifyPred {
+    let is_enough_power = always(enough_power);
+    let valid_commit = always(valid_commit);
 
     is_enough_power.and(valid_commit).tag()
 }
@@ -86,11 +77,13 @@ pub fn verify(verify_pred: VerifyPred) -> Result<(), &'static str> {
 
 #[allow(unused_must_use)]
 fn main() {
-    println!("\n{}", real_verify_pred());
-    let res = verify(real_verify_pred());
-    dbg!(res);
+    // println!("\n{}", real_verify_pred());
+    // let res = verify(real_verify_pred());
+    // dbg!(res);
 
-    println!("\n{}", mock_verify_pred());
-    let res = verify(mock_verify_pred());
+    let p = mock_verify_pred(true, false);
+
+    println!("\n{}", p);
+    let res = verify(p);
     dbg!(res);
 }
