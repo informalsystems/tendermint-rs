@@ -61,8 +61,8 @@ pub fn real_verify_pred(header: Header, commit: Commit, trust_level: TrustThresh
 }
 
 pub fn mock_verify_pred(enough_power: bool, valid_commit: bool) -> VerifyPred {
-    let is_enough_power = always(enough_power);
-    let valid_commit = always(valid_commit);
+    let is_enough_power = always(enough_power).named("is_enough_power");
+    let valid_commit = always(valid_commit).named("is_valid_commit");
 
     is_enough_power.and(valid_commit).tag()
 }

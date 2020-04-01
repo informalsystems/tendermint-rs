@@ -58,6 +58,13 @@ pub trait PredicateExt {
     {
         crate::tag(self)
     }
+
+    fn named(self, name: impl Into<String>) -> NamedPredicate<Self>
+    where
+        Self: Sized,
+    {
+        crate::named(self, name)
+    }
 }
 
 impl<P: Predicate> PredicateExt for P {}
