@@ -1,4 +1,7 @@
-pub trait Predicate {
+use std::fmt;
+use std::marker::PhantomData;
+
+pub trait Predicate: fmt::Display {
     fn eval(&self) -> bool;
 }
 
@@ -30,11 +33,28 @@ pub trait PredicateExt {
         NotPredicate(self)
     }
 
+    fn implies<P>(self, other: P) -> ImpliesPredicate<Self, P>
+    where
+        Self: Sized,
+    {
+        ImpliesPredicate {
+            assumption: self,
+            conclusion: other,
+        }
+    }
+
     fn constant(self, value: bool) -> ConstPredicate
     where
         Self: Sized,
     {
         ConstPredicate::new(value)
+    }
+
+    fn tag<T>(self) -> TaggedPredicate<T>
+    where
+        Self: Sized + Predicate + 'static,
+    {
+        crate::tag(self)
     }
 }
 
@@ -54,6 +74,12 @@ impl Predicate for ConstPredicate {
     }
 }
 
+impl fmt::Display for ConstPredicate {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 pub struct AndPredicate<P, Q> {
     left: P,
     right: Q,
@@ -69,6 +95,16 @@ where
     }
 }
 
+impl<P, Q> fmt::Display for AndPredicate<P, Q>
+where
+    P: fmt::Display,
+    Q: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({} && {})", self.left, self.right)
+    }
+}
+
 pub struct OrPredicate<P, Q> {
     left: P,
     right: Q,
@@ -81,6 +117,16 @@ where
 {
     fn eval(&self) -> bool {
         self.left.eval() || self.right.eval()
+    }
+}
+
+impl<P, Q> fmt::Display for OrPredicate<P, Q>
+where
+    P: fmt::Display,
+    Q: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({} || {})", self.left, self.right)
     }
 }
 
@@ -101,11 +147,55 @@ where
     }
 }
 
-pub struct FnPredicate<F>(F);
+impl<P> fmt::Display for NotPredicate<P>
+where
+    P: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "!{}", self.0)
+    }
+}
+
+pub struct ImpliesPredicate<P, Q> {
+    assumption: P,
+    conclusion: Q,
+}
+
+impl<P, Q> Predicate for ImpliesPredicate<P, Q>
+where
+    P: Predicate,
+    Q: Predicate,
+{
+    fn eval(&self) -> bool {
+        !self.assumption.eval() || self.conclusion.eval()
+    }
+}
+
+impl<P, Q> fmt::Display for ImpliesPredicate<P, Q>
+where
+    P: fmt::Display,
+    Q: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({} ==> {})", self.assumption, self.conclusion)
+    }
+}
+
+pub struct FnPredicate<F> {
+    f: F,
+    descr: Option<String>,
+}
 
 impl<F> FnPredicate<F> {
     pub fn new(f: F) -> Self {
-        Self(f)
+        Self { f, descr: None }
+    }
+
+    pub fn describe(self, descr: impl Into<String>) -> Self {
+        Self {
+            f: self.f,
+            descr: Some(descr.into()),
+        }
     }
 }
 
@@ -114,7 +204,35 @@ where
     F: Fn() -> bool,
 {
     fn eval(&self) -> bool {
-        self.0()
+        (self.f)()
+    }
+}
+
+impl<F> fmt::Display for FnPredicate<F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.descr {
+            Some(ref descr) => write!(f, "<{}>", descr),
+            None => write!(f, "<function>"),
+        }
+    }
+}
+
+pub struct TaggedPredicate<T> {
+    predicate: Box<dyn Predicate>,
+    tag: PhantomData<T>,
+}
+
+impl<T> Predicate for TaggedPredicate<T> {
+    fn eval(&self) -> bool {
+        self.predicate.eval()
+    }
+}
+
+impl<T> fmt::Display for TaggedPredicate<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.predicate.fmt(f)
+        // let tag_name = std::any::type_name::<T>();
+        // write!(f, "[{}]@{}", self.predicate, tag_name)
     }
 }
 
@@ -140,52 +258,58 @@ where
     FnPredicate::new(f)
 }
 
+pub fn tag<T>(p: impl Predicate + 'static) -> TaggedPredicate<T> {
+    TaggedPredicate {
+        predicate: Box::new(p),
+        tag: PhantomData,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use quickcheck_macros::quickcheck;
 
     #[quickcheck]
-    fn const_eval_to_value(value: bool) -> bool {
-        let p = ConstPredicate::new(value);
-        is_eq(p, value)
+    fn always_eval_to_value(value: bool) -> bool {
+        let p = always(value);
+        evals_to(p, value)
     }
 
     #[quickcheck]
     fn and_eval_to_conj(left: bool, right: bool) -> bool {
-        let p = ConstPredicate::new(left);
-        let q = ConstPredicate::new(right);
-        is_eq(p.and(q), left && right)
+        let p = always(left);
+        let q = always(right);
+        evals_to(p.and(q), left && right)
     }
 
     #[quickcheck]
     fn or_eval_to_disj(left: bool, right: bool) -> bool {
-        let p = ConstPredicate::new(left);
-        let q = ConstPredicate::new(right);
-        is_eq(p.or(q), left || right)
+        let p = always(left);
+        let q = always(right);
+        evals_to(p.or(q), left || right)
     }
 
     #[quickcheck]
     fn not_eval_to_neg(value: bool) -> bool {
-        let p = ConstPredicate::new(value);
-        is_eq(p.not(), !value)
+        let p = always(value);
+        evals_to(p.not(), !value)
+    }
+
+    #[quickcheck]
+    fn implies_eval_to_implication(assumption: bool, conclusion: bool) -> bool {
+        let p = always(assumption);
+        let q = always(conclusion);
+        evals_to(p.implies(q), !assumption || conclusion)
     }
 
     #[quickcheck]
     fn fn_eval_to_fn(value: bool) -> bool {
         let p = FnPredicate::new(|| value);
-        is_eq(p, value)
+        evals_to(p, value)
     }
 
-    fn is_eq(p: impl Predicate, result: bool) -> bool {
+    fn evals_to(p: impl Predicate, result: bool) -> bool {
         p.eval() == result
     }
-
-    // fn is_true(p: impl Predicate) -> bool {
-    //     is_eq(p, true)
-    // }
-
-    // fn assert_true(p: impl Predicate) {
-    //     assert!(is_true(p));
-    // }
 }
