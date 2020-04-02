@@ -1,9 +1,6 @@
-use std::fmt::{self, Display};
 use std::marker::PhantomData;
 
-mod macros;
-
-pub trait Predicate: Display {
+pub trait Predicate {
     fn eval(&self) -> bool;
 }
 
@@ -83,11 +80,11 @@ impl Predicate for ConstPredicate {
     }
 }
 
-impl Display for ConstPredicate {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
+// impl Display for ConstPredicate {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "{}", self.0)
+//     }
+// }
 
 pub struct AndPredicate<P, Q> {
     left: P,
@@ -104,15 +101,15 @@ where
     }
 }
 
-impl<P, Q> Display for AndPredicate<P, Q>
-where
-    P: Display,
-    Q: Display,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({} && {})", self.left, self.right)
-    }
-}
+// impl<P, Q> Display for AndPredicate<P, Q>
+// where
+//     P: Display,
+//     Q: Display,
+// {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "({} && {})", self.left, self.right)
+//     }
+// }
 
 pub struct OrPredicate<P, Q> {
     left: P,
@@ -129,15 +126,15 @@ where
     }
 }
 
-impl<P, Q> Display for OrPredicate<P, Q>
-where
-    P: Display,
-    Q: Display,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({} || {})", self.left, self.right)
-    }
-}
+// impl<P, Q> Display for OrPredicate<P, Q>
+// where
+//     P: Display,
+//     Q: Display,
+// {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "({} || {})", self.left, self.right)
+//     }
+// }
 
 pub struct NotPredicate<P>(P);
 
@@ -156,14 +153,14 @@ where
     }
 }
 
-impl<P> Display for NotPredicate<P>
-where
-    P: Display,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "!{}", self.0)
-    }
-}
+// impl<P> Display for NotPredicate<P>
+// where
+//     P: Display,
+// {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "!{}", self.0)
+//     }
+// }
 
 pub struct ImpliesPredicate<P, Q> {
     assumption: P,
@@ -180,15 +177,15 @@ where
     }
 }
 
-impl<P, Q> Display for ImpliesPredicate<P, Q>
-where
-    P: Display,
-    Q: Display,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({} ==> {})", self.assumption, self.conclusion)
-    }
-}
+// impl<P, Q> Display for ImpliesPredicate<P, Q>
+// where
+//     P: Display,
+//     Q: Display,
+// {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "({} ==> {})", self.assumption, self.conclusion)
+//     }
+// }
 
 pub struct LessThanPredicate<T> {
     left: T,
@@ -204,21 +201,20 @@ impl<T> LessThanPredicate<T> {
 impl<T> Predicate for LessThanPredicate<T>
 where
     T: PartialOrd,
-    T: Display,
 {
     fn eval(&self) -> bool {
         self.left.lt(&self.right)
     }
 }
 
-impl<T> Display for LessThanPredicate<T>
-where
-    T: Display,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({} < {})", self.left, self.right)
-    }
-}
+// impl<T> Display for LessThanPredicate<T>
+// where
+//     T: Display,
+// {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "({} < {})", self.left, self.right)
+//     }
+// }
 
 pub struct FnPredicate<F> {
     f: F,
@@ -236,6 +232,10 @@ impl<F> FnPredicate<F> {
             descr: Some(descr.into()),
         }
     }
+
+    pub fn descr(&self) -> &Option<String> {
+        &self.descr
+    }
 }
 
 impl<F> Predicate for FnPredicate<F>
@@ -247,14 +247,14 @@ where
     }
 }
 
-impl<F> Display for FnPredicate<F> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.descr {
-            Some(ref descr) => write!(f, "<{}>", descr),
-            None => write!(f, "<function>"),
-        }
-    }
-}
+// impl<F> Display for FnPredicate<F> {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         match self.descr {
+//             Some(ref descr) => write!(f, "<{}>", descr),
+//             None => write!(f, "<function>"),
+//         }
+//     }
+// }
 
 pub struct CurriedPredicate<A> {
     f: Box<dyn Fn(&A) -> bool>,
@@ -270,23 +270,20 @@ impl<A> CurriedPredicate<A> {
     }
 }
 
-impl<A> Predicate for CurriedPredicate<A>
-where
-    A: Display,
-{
+impl<A> Predicate for CurriedPredicate<A> {
     fn eval(&self) -> bool {
         (self.f)(&self.a)
     }
 }
 
-impl<A> Display for CurriedPredicate<A>
-where
-    A: Display,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.a)
-    }
-}
+// impl<A> Display for CurriedPredicate<A>
+// where
+//     A: Display,
+// {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "{}#{}", self.a, self.eval())
+//     }
+// }
 
 pub struct TaggedPredicate<T> {
     pred: Box<dyn Predicate>,
@@ -308,13 +305,13 @@ impl<T> Predicate for TaggedPredicate<T> {
     }
 }
 
-impl<T> Display for TaggedPredicate<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.pred.fmt(f)
-        // let tag_name = std::any::type_name::<T>();
-        // write!(f, "{}@{}", tag_name, self.pred)
-    }
-}
+// impl<T> Display for TaggedPredicate<T> {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         self.pred.fmt(f)
+//         // let tag_name = std::any::type_name::<T>();
+//         // write!(f, "{}@{}", tag_name, self.pred)
+//     }
+// }
 
 pub struct NamedPredicate<P> {
     pred: P,
@@ -328,6 +325,10 @@ impl<P> NamedPredicate<P> {
             name: name.into(),
         }
     }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
 }
 
 impl<P> Predicate for NamedPredicate<P>
@@ -339,14 +340,14 @@ where
     }
 }
 
-impl<P> Display for NamedPredicate<P>
-where
-    P: Predicate,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}#{}", self.name, self.pred)
-    }
-}
+// impl<P> Display for NamedPredicate<P>
+// where
+//     P: Predicate,
+// {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "{}#{}", self.name, self.pred)
+//     }
+// }
 
 pub fn always(value: bool) -> ConstPredicate {
     ConstPredicate::new(value)
@@ -390,11 +391,21 @@ where
     move |a: A| CurriedPredicate::new(a, f.clone())
 }
 
+pub fn tagged_pred<T, F, A>(f: F) -> impl Fn(A) -> TaggedPredicate<T>
+where
+    F: for<'r> Fn(&'r A) -> bool + Clone + 'static,
+    A: 'static,
+{
+    move |a: A| CurriedPredicate::new(a, f.clone()).tag()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use derive_more::Display;
     use quickcheck_macros::quickcheck;
+
+    struct SomeTag;
 
     #[derive(Display)]
     #[display(fmt = "bar:{} > 0", bar)]
@@ -404,21 +415,21 @@ mod tests {
 
     #[quickcheck]
     fn test_make_foo(bar: i32) -> bool {
-        let make_foo = pred(|foo: &Foo| foo.bar > 0);
-        let foo_pred = make_foo(Foo { bar });
+        let make_foo = tagged_pred::<SomeTag, _, _>(|foo: &Foo| foo.bar > 0);
+        let foo_pred = make_foo(Foo { bar }); // TaggedPredicate<SomeTag>
 
         evals_to(foo_pred, bar > 0)
     }
 
-    #[quickcheck]
-    fn test_display_foo(bar: i32) -> bool {
-        let make_foo = pred(|foo: &Foo| foo.bar > 0);
+    // #[quickcheck]
+    // fn test_display_foo(bar: i32) -> bool {
+    //     let make_foo = tagged_pred::<SomeTag, _, _>(|foo: &Foo| foo.bar > 0);
 
-        let foo = Foo { bar };
-        let foo_pred = make_foo(foo);
+    //     let foo = Foo { bar };
+    //     let foo_pred = make_foo(foo); // TaggedPredicate<SomeTag>
 
-        foo_pred.to_string() == format!("bar:{} > 0", bar)
-    }
+    //     foo_pred.to_string() == format!("bar:{} > 0#{}", bar, bar > 0)
+    // }
 
     #[quickcheck]
     fn always_eval_to_value(value: bool) -> bool {
