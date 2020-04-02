@@ -1,6 +1,11 @@
+use std::fmt::Display;
 use std::marker::PhantomData;
 
-pub trait Predicate {
+use crate::inspect::{Inspect, PredTree};
+
+pub mod inspect;
+
+pub trait Predicate: Inspect {
     fn eval(&self) -> bool;
 }
 
@@ -80,11 +85,11 @@ impl Predicate for ConstPredicate {
     }
 }
 
-// impl Display for ConstPredicate {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{}", self.0)
-//     }
-// }
+impl Inspect for ConstPredicate {
+    fn inspect(&self) -> PredTree {
+        PredTree::Leaf((self.0.to_string(), self.eval()).into())
+    }
+}
 
 pub struct AndPredicate<P, Q> {
     left: P,
@@ -101,15 +106,18 @@ where
     }
 }
 
-// impl<P, Q> Display for AndPredicate<P, Q>
-// where
-//     P: Display,
-//     Q: Display,
-// {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "({} && {})", self.left, self.right)
-//     }
-// }
+impl<P, Q> Inspect for AndPredicate<P, Q>
+where
+    P: Predicate,
+    Q: Predicate,
+{
+    fn inspect(&self) -> PredTree {
+        PredTree::Node {
+            content: ("and".to_string(), self.eval()).into(),
+            children: vec![self.left.inspect(), self.right.inspect()],
+        }
+    }
+}
 
 pub struct OrPredicate<P, Q> {
     left: P,
@@ -126,15 +134,18 @@ where
     }
 }
 
-// impl<P, Q> Display for OrPredicate<P, Q>
-// where
-//     P: Display,
-//     Q: Display,
-// {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "({} || {})", self.left, self.right)
-//     }
-// }
+impl<P, Q> Inspect for OrPredicate<P, Q>
+where
+    P: Predicate,
+    Q: Predicate,
+{
+    fn inspect(&self) -> PredTree {
+        PredTree::Node {
+            content: ("or".to_string(), self.eval()).into(),
+            children: vec![self.left.inspect(), self.right.inspect()],
+        }
+    }
+}
 
 pub struct NotPredicate<P>(P);
 
@@ -153,14 +164,17 @@ where
     }
 }
 
-// impl<P> Display for NotPredicate<P>
-// where
-//     P: Display,
-// {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "!{}", self.0)
-//     }
-// }
+impl<P> Inspect for NotPredicate<P>
+where
+    P: Predicate,
+{
+    fn inspect(&self) -> PredTree {
+        PredTree::Node {
+            content: ("not".to_string(), self.eval()).into(),
+            children: vec![self.0.inspect()],
+        }
+    }
+}
 
 pub struct ImpliesPredicate<P, Q> {
     assumption: P,
@@ -177,15 +191,18 @@ where
     }
 }
 
-// impl<P, Q> Display for ImpliesPredicate<P, Q>
-// where
-//     P: Display,
-//     Q: Display,
-// {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "({} ==> {})", self.assumption, self.conclusion)
-//     }
-// }
+impl<P, Q> Inspect for ImpliesPredicate<P, Q>
+where
+    P: Predicate,
+    Q: Predicate,
+{
+    fn inspect(&self) -> PredTree {
+        PredTree::Node {
+            content: ("implies".to_string(), self.eval()).into(),
+            children: vec![self.assumption.inspect(), self.conclusion.inspect()],
+        }
+    }
+}
 
 pub struct LessThanPredicate<T> {
     left: T,
@@ -200,21 +217,21 @@ impl<T> LessThanPredicate<T> {
 
 impl<T> Predicate for LessThanPredicate<T>
 where
-    T: PartialOrd,
+    T: PartialOrd + Display,
 {
     fn eval(&self) -> bool {
         self.left.lt(&self.right)
     }
 }
 
-// impl<T> Display for LessThanPredicate<T>
-// where
-//     T: Display,
-// {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "({} < {})", self.left, self.right)
-//     }
-// }
+impl<T> Inspect for LessThanPredicate<T>
+where
+    T: PartialOrd + Display,
+{
+    fn inspect(&self) -> PredTree {
+        PredTree::Leaf((format!("{} < {}", self.left, self.right), self.eval()).into())
+    }
+}
 
 pub struct FnPredicate<F> {
     f: F,
@@ -247,14 +264,17 @@ where
     }
 }
 
-// impl<F> Display for FnPredicate<F> {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         match self.descr {
-//             Some(ref descr) => write!(f, "<{}>", descr),
-//             None => write!(f, "<function>"),
-//         }
-//     }
-// }
+impl<F> Inspect for FnPredicate<F>
+where
+    F: Fn() -> bool,
+{
+    fn inspect(&self) -> PredTree {
+        match self.descr() {
+            Some(descr) => PredTree::Leaf((format!("<{}>", descr), self.eval()).into()),
+            None => PredTree::Leaf(("<function>".to_string(), self.eval()).into()),
+        }
+    }
+}
 
 pub struct CurriedPredicate<A> {
     f: Box<dyn Fn(&A) -> bool>,
@@ -270,20 +290,23 @@ impl<A> CurriedPredicate<A> {
     }
 }
 
-impl<A> Predicate for CurriedPredicate<A> {
+impl<A> Predicate for CurriedPredicate<A>
+where
+    A: Display,
+{
     fn eval(&self) -> bool {
         (self.f)(&self.a)
     }
 }
 
-// impl<A> Display for CurriedPredicate<A>
-// where
-//     A: Display,
-// {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{}#{}", self.a, self.eval())
-//     }
-// }
+impl<A> Inspect for CurriedPredicate<A>
+where
+    A: Display,
+{
+    fn inspect(&self) -> PredTree {
+        PredTree::Leaf((format!("{}", self.a), self.eval()).into())
+    }
+}
 
 pub struct TaggedPredicate<T> {
     pred: Box<dyn Predicate>,
@@ -305,13 +328,11 @@ impl<T> Predicate for TaggedPredicate<T> {
     }
 }
 
-// impl<T> Display for TaggedPredicate<T> {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         self.pred.fmt(f)
-//         // let tag_name = std::any::type_name::<T>();
-//         // write!(f, "{}@{}", tag_name, self.pred)
-//     }
-// }
+impl<T> Inspect for TaggedPredicate<T> {
+    fn inspect(&self) -> PredTree {
+        self.pred.inspect()
+    }
+}
 
 pub struct NamedPredicate<P> {
     pred: P,
@@ -340,14 +361,17 @@ where
     }
 }
 
-// impl<P> Display for NamedPredicate<P>
-// where
-//     P: Predicate,
-// {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{}#{}", self.name, self.pred)
-//     }
-// }
+impl<P> Inspect for NamedPredicate<P>
+where
+    P: Predicate,
+{
+    fn inspect(&self) -> PredTree {
+        PredTree::Node {
+            content: (self.name.clone(), self.eval()).into(),
+            children: vec![self.pred.inspect()],
+        }
+    }
+}
 
 pub fn always(value: bool) -> ConstPredicate {
     ConstPredicate::new(value)
@@ -394,7 +418,7 @@ where
 pub fn tagged_pred<T, F, A>(f: F) -> impl Fn(A) -> TaggedPredicate<T>
 where
     F: for<'r> Fn(&'r A) -> bool + Clone + 'static,
-    A: 'static,
+    A: Display + 'static,
 {
     move |a: A| CurriedPredicate::new(a, f.clone()).tag()
 }
