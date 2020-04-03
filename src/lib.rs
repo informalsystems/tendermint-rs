@@ -477,7 +477,7 @@ mod tests {
     struct SomeTag;
 
     #[derive(Display)]
-    #[display(fmt = "bar:{} > 0", bar)]
+    #[display(fmt = "bar({} > 0)", bar)]
     struct Foo {
         bar: i32,
     }
@@ -485,20 +485,35 @@ mod tests {
     #[quickcheck]
     fn test_make_foo(bar: i32) -> bool {
         let make_foo = tagged_pred::<SomeTag, _, _>(|foo: &Foo| foo.bar > 0);
-        let foo_pred = make_foo(Foo { bar }); // TaggedPredicate<SomeTag>
+        let foo_pred = make_foo(Foo { bar });
 
         evals_to(foo_pred, bar > 0)
     }
 
-    // #[quickcheck]
-    // fn test_display_foo(bar: i32) -> bool {
-    //     let make_foo = tagged_pred::<SomeTag, _, _>(|foo: &Foo| foo.bar > 0);
+    #[quickcheck]
+    #[cfg(feature = "no-color")]
+    fn test_display_foo_no_colors(bar: i32) -> bool {
+        let make_foo = tagged_pred::<SomeTag, _, _>(|foo: &Foo| foo.bar > 0);
 
-    //     let foo = Foo { bar };
-    //     let foo_pred = make_foo(foo); // TaggedPredicate<SomeTag>
+        let foo = Foo { bar };
+        let foo_pred = make_foo(foo);
 
-    //     foo_pred.to_string() == format!("bar:{} > 0#{}", bar, bar > 0)
-    // }
+        foo_pred.inspect().to_string() == format!("bar({} > 0)\n", bar)
+    }
+
+    #[quickcheck]
+    #[cfg(not(feature = "no-color"))]
+    fn test_display_foo_colors(bar: i32) -> bool {
+        use colored::Colorize;
+
+        let make_foo = tagged_pred::<SomeTag, _, _>(|foo: &Foo| foo.bar > 0);
+
+        let foo = Foo { bar };
+        let foo_pred = make_foo(foo);
+
+        let color = if bar > 0 { "green" } else { "red" };
+        foo_pred.inspect().to_string() == format!("{}\n", format!("bar({} > 0)", bar).color(color))
+    }
 
     #[quickcheck]
     fn always_eval_to_value(value: bool) -> bool {
