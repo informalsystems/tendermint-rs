@@ -1,12 +1,21 @@
 use std::fmt::Display;
 use std::marker::PhantomData;
 
-use crate::inspect::{Inspect, PredTree};
+cfg_if::cfg_if! {
+    if #[cfg(feature = "inspect")] {
+        pub mod inspect;
 
-pub mod inspect;
+        use crate::inspect::{PredTree};
+        pub use crate::inspect::{Inspect};
 
-pub trait Predicate: Inspect {
-    fn eval(&self) -> bool;
+        pub trait Predicate: Inspect {
+            fn eval(&self) -> bool;
+        }
+    } else {
+        pub trait Predicate {
+            fn eval(&self) -> bool;
+        }
+    }
 }
 
 pub trait PredicateExt {
@@ -85,6 +94,7 @@ impl Predicate for ConstPredicate {
     }
 }
 
+#[cfg(feature = "inspect")]
 impl Inspect for ConstPredicate {
     fn inspect(&self) -> PredTree {
         PredTree::Leaf((self.0.to_string(), self.eval()).into())
@@ -106,6 +116,7 @@ where
     }
 }
 
+#[cfg(feature = "inspect")]
 impl<P, Q> Inspect for AndPredicate<P, Q>
 where
     P: Predicate,
@@ -134,6 +145,7 @@ where
     }
 }
 
+#[cfg(feature = "inspect")]
 impl<P, Q> Inspect for OrPredicate<P, Q>
 where
     P: Predicate,
@@ -164,6 +176,7 @@ where
     }
 }
 
+#[cfg(feature = "inspect")]
 impl<P> Inspect for NotPredicate<P>
 where
     P: Predicate,
@@ -191,6 +204,7 @@ where
     }
 }
 
+#[cfg(feature = "inspect")]
 impl<P, Q> Inspect for ImpliesPredicate<P, Q>
 where
     P: Predicate,
@@ -224,6 +238,7 @@ where
     }
 }
 
+#[cfg(feature = "inspect")]
 impl<T> Inspect for LessThanPredicate<T>
 where
     T: PartialOrd + Display,
@@ -264,6 +279,7 @@ where
     }
 }
 
+#[cfg(feature = "inspect")]
 impl<F> Inspect for FnPredicate<F>
 where
     F: Fn() -> bool,
@@ -299,6 +315,7 @@ where
     }
 }
 
+#[cfg(feature = "inspect")]
 impl<A> Inspect for CurriedPredicate<A>
 where
     A: Display,
@@ -328,6 +345,7 @@ impl<T> Predicate for TaggedPredicate<T> {
     }
 }
 
+#[cfg(feature = "inspect")]
 impl<T> Inspect for TaggedPredicate<T> {
     fn inspect(&self) -> PredTree {
         self.pred.inspect()
@@ -361,6 +379,7 @@ where
     }
 }
 
+#[cfg(feature = "inspect")]
 impl<P> Inspect for NamedPredicate<P>
 where
     P: Predicate,

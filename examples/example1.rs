@@ -2,7 +2,7 @@
 
 use derive_more::Display;
 
-use pred::{inspect::Inspect, *};
+use pred::*;
 
 //--------------------------------------------------------------------------------
 
@@ -133,12 +133,17 @@ fn main() {
         },
     );
 
+    #[cfg(feature = "inspect")]
     println!("\n{}", p.inspect());
+
     let res = verify(p);
     dbg!(res);
 
     let p = mock_verify_pred(true, false);
+
+    #[cfg(feature = "inspect")]
     println!("\n{}", p.inspect());
+
     let res = verify(p);
     dbg!(res);
 }
