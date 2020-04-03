@@ -1,21 +1,15 @@
 use std::fmt::Display;
 use std::marker::PhantomData;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "inspect")] {
-        pub mod inspect;
+#[cfg(feature = "inspect")]
+pub mod inspect;
+#[cfg(feature = "inspect")]
+pub use crate::inspect::Inspect;
+#[cfg(feature = "inspect")]
+use crate::inspect::PredTree;
 
-        use crate::inspect::{PredTree};
-        pub use crate::inspect::{Inspect};
-
-        pub trait Predicate: Inspect {
-            fn eval(&self) -> bool;
-        }
-    } else {
-        pub trait Predicate {
-            fn eval(&self) -> bool;
-        }
-    }
+pub trait Predicate {
+    fn eval(&self) -> bool;
 }
 
 pub trait PredicateExt {
@@ -63,9 +57,18 @@ pub trait PredicateExt {
         ConstPredicate::new(value)
     }
 
+    #[cfg(not(feature = "inspect"))]
     fn tag<T>(self) -> TaggedPredicate<T>
     where
         Self: Sized + Predicate + 'static,
+    {
+        crate::tag(self)
+    }
+
+    #[cfg(feature = "inspect")]
+    fn tag<T>(self) -> TaggedPredicate<T>
+    where
+        Self: Sized + Predicate + Inspect + 'static,
     {
         crate::tag(self)
     }
@@ -119,8 +122,8 @@ where
 #[cfg(feature = "inspect")]
 impl<P, Q> Inspect for AndPredicate<P, Q>
 where
-    P: Predicate,
-    Q: Predicate,
+    P: Predicate + Inspect,
+    Q: Predicate + Inspect,
 {
     fn inspect(&self) -> PredTree {
         PredTree::Node {
@@ -148,8 +151,8 @@ where
 #[cfg(feature = "inspect")]
 impl<P, Q> Inspect for OrPredicate<P, Q>
 where
-    P: Predicate,
-    Q: Predicate,
+    P: Predicate + Inspect,
+    Q: Predicate + Inspect,
 {
     fn inspect(&self) -> PredTree {
         PredTree::Node {
@@ -179,7 +182,7 @@ where
 #[cfg(feature = "inspect")]
 impl<P> Inspect for NotPredicate<P>
 where
-    P: Predicate,
+    P: Predicate + Inspect,
 {
     fn inspect(&self) -> PredTree {
         PredTree::Node {
@@ -207,8 +210,8 @@ where
 #[cfg(feature = "inspect")]
 impl<P, Q> Inspect for ImpliesPredicate<P, Q>
 where
-    P: Predicate,
-    Q: Predicate,
+    P: Predicate + Inspect,
+    Q: Predicate + Inspect,
 {
     fn inspect(&self) -> PredTree {
         PredTree::Node {
@@ -325,12 +328,29 @@ where
     }
 }
 
+#[cfg(feature = "inspect")]
+trait InspectablePredicate: Predicate + Inspect {}
+#[cfg(feature = "inspect")]
+impl<P> InspectablePredicate for P where P: Predicate + Inspect {}
+
 pub struct TaggedPredicate<T> {
+    #[cfg(feature = "inspect")]
+    pred: Box<dyn InspectablePredicate>,
+    #[cfg(not(feature = "inspect"))]
     pred: Box<dyn Predicate>,
     tag: PhantomData<T>,
 }
 
 impl<T> TaggedPredicate<T> {
+    #[cfg(feature = "inspect")]
+    pub fn new(pred: impl Predicate + Inspect + 'static) -> Self {
+        Self {
+            pred: Box::new(pred),
+            tag: PhantomData,
+        }
+    }
+
+    #[cfg(not(feature = "inspect"))]
     pub fn new(pred: impl Predicate + 'static) -> Self {
         Self {
             pred: Box::new(pred),
@@ -382,7 +402,7 @@ where
 #[cfg(feature = "inspect")]
 impl<P> Inspect for NamedPredicate<P>
 where
-    P: Predicate,
+    P: Predicate + Inspect,
 {
     fn inspect(&self) -> PredTree {
         PredTree::Node {
@@ -418,6 +438,12 @@ where
     FnPredicate::new(f)
 }
 
+#[cfg(feature = "inspect")]
+pub fn tag<T>(pred: impl Predicate + Inspect + 'static) -> TaggedPredicate<T> {
+    TaggedPredicate::new(pred)
+}
+
+#[cfg(not(feature = "inspect"))]
 pub fn tag<T>(pred: impl Predicate + 'static) -> TaggedPredicate<T> {
     TaggedPredicate::new(pred)
 }
@@ -517,3 +543,4 @@ mod tests {
         p.eval() == result
     }
 }
+
