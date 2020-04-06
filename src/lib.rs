@@ -1,18 +1,24 @@
+//! This library implements boolean-valued, fully saturated, boolean functions.
+//! This allows combinatorial logic to be created, assembled and inspected at runtime.
+
 use std::fmt::Display;
 use std::marker::PhantomData;
 
 #[cfg(feature = "inspect")]
 pub mod inspect;
-#[cfg(feature = "inspect")]
-pub use crate::inspect::Inspect;
-#[cfg(feature = "inspect")]
-use crate::inspect::PredTree;
 
+#[cfg(feature = "inspect")]
+use crate::inspect::{Inspect, PredTree};
+
+/// A fully saturated predicate which can be evaluated to a boolean value.
 pub trait Predicate {
+    /// Evaluates the predicate to a boolean value.
     fn eval(&self) -> bool;
 }
 
+/// Extension methods for predicates.
 pub trait PredicateExt {
+    /// Build the conjunction of this predicate with `other`.
     fn and<P>(self, other: P) -> AndPredicate<Self, P>
     where
         Self: Sized,
@@ -23,6 +29,7 @@ pub trait PredicateExt {
         }
     }
 
+    /// Build the disjunction of this predicate with `other`.
     fn or<P>(self, other: P) -> OrPredicate<Self, P>
     where
         Self: Sized,
@@ -33,6 +40,7 @@ pub trait PredicateExt {
         }
     }
 
+    /// Build the negation of this predicate.
     fn not(self) -> NotPredicate<Self>
     where
         Self: Sized,
@@ -40,6 +48,7 @@ pub trait PredicateExt {
         NotPredicate(self)
     }
 
+    /// Build the implication of this predicate to `other`.
     fn implies<P>(self, other: P) -> ImpliesPredicate<Self, P>
     where
         Self: Sized,
@@ -50,6 +59,10 @@ pub trait PredicateExt {
         }
     }
 
+    /// Convenience method to force evaluation of this predicate to `value`.
+    ///
+    /// ## TODO
+    /// - Preserve underlying predicate
     fn constant(self, value: bool) -> ConstPredicate
     where
         Self: Sized,
@@ -57,6 +70,7 @@ pub trait PredicateExt {
         ConstPredicate::new(value)
     }
 
+    /// Attach a type-level tag to this predicate.
     #[cfg(not(feature = "inspect"))]
     fn tag<T>(self) -> TaggedPredicate<T>
     where
@@ -65,6 +79,7 @@ pub trait PredicateExt {
         crate::tag(self)
     }
 
+    /// Attach a type-level tag to this predicate.
     #[cfg(feature = "inspect")]
     fn tag<T>(self) -> TaggedPredicate<T>
     where
@@ -73,6 +88,7 @@ pub trait PredicateExt {
         crate::tag(self)
     }
 
+    /// Provide a name for this predicate, which will be displayed when inspecting it.
     fn named(self, name: impl Into<String>) -> NamedPredicate<Self>
     where
         Self: Sized,
@@ -412,14 +428,17 @@ where
     }
 }
 
+/// Build a predicate which always evaluates to `value`
 pub fn always(value: bool) -> ConstPredicate {
     ConstPredicate::new(value)
 }
 
+/// Build a predicate which always evaluates to the negation of `value`.
 pub fn never(value: bool) -> ConstPredicate {
     always(!value)
 }
 
+/// Negate the given predicate.
 pub fn not<P>(p: P) -> NotPredicate<P>
 where
     P: Predicate,
@@ -427,10 +446,13 @@ where
     p.not()
 }
 
+/// Builds a predicate which evaluates to true when `left` is strictly smaller than `right`,
+/// and to `false` otherwise.
 pub fn less_than<T>(left: T, right: T) -> LessThanPredicate<T> {
     LessThanPredicate::new(left, right)
 }
 
+/// Builds a predicate which evaluates to the result of invoking the given closure.
 pub fn from_fn<F>(f: F) -> FnPredicate<F>
 where
     F: Fn() -> bool,
@@ -438,20 +460,26 @@ where
     FnPredicate::new(f)
 }
 
+/// Attach a type-level tag to this predicate.
 #[cfg(feature = "inspect")]
 pub fn tag<T>(pred: impl Predicate + Inspect + 'static) -> TaggedPredicate<T> {
     TaggedPredicate::new(pred)
 }
 
+/// Attach a type-level tag to this predicate.
 #[cfg(not(feature = "inspect"))]
 pub fn tag<T>(pred: impl Predicate + 'static) -> TaggedPredicate<T> {
     TaggedPredicate::new(pred)
 }
 
+/// Provide a name for the given predicate, which will be displayed when inspecting it.
 pub fn named<P>(pred: P, name: impl Into<String>) -> NamedPredicate<P> {
     NamedPredicate::new(pred, name)
 }
 
+/// Returns a function which can be applied to a value of type `A`,
+/// to which the given closure will be applied when evaluating the
+/// resulting predicate.
 pub fn pred<F, A>(f: F) -> impl Fn(A) -> CurriedPredicate<A>
 where
     F: for<'r> Fn(&'r A) -> bool + Clone + 'static,
@@ -460,6 +488,11 @@ where
     move |a: A| CurriedPredicate::new(a, f.clone())
 }
 
+/// Returns a function which can be applied to a value of type `A`,
+/// to which the given closure will be applied when evaluating the
+/// resulting predicate.
+///
+/// This function also tags the predicate with the given tag `T`.
 pub fn tagged_pred<T, F, A>(f: F) -> impl Fn(A) -> TaggedPredicate<T>
 where
     F: for<'r> Fn(&'r A) -> bool + Clone + 'static,

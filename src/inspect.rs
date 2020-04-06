@@ -1,6 +1,10 @@
+//! Provides datatypes and an `Inspect` trait for inspecting and pretty-printing predicates.
+
 use colored::*;
 use std::fmt::{self, Display};
 
+/// Packs together a string to be printed when inspecting a predicate,
+/// as well as the result of its evaluation.
 pub struct PredRes((String, bool));
 
 impl From<(String, bool)> for PredRes {
@@ -20,15 +24,41 @@ impl Display for PredRes {
     }
 }
 
+/// A tree-like representation of a predicate and the result of its evaluation.
 pub type PredTree = Tree<PredRes>;
 
+/// This trait can be implemented by predicates which are to be inspected at runtime.
 pub trait Inspect {
+    /// Builds a tree-like representation of this predicate.
+    ///
+    /// See the `leaf` and `node` functions in this module for more
+    /// information on how to build such trees.
     fn inspect(&self) -> PredTree;
 }
 
+/// Just a regular tree-like structure with named nodes.
 pub enum Tree<A> {
     Leaf(A),
     Node { content: A, children: Vec<Tree<A>> },
+}
+
+/// Builds a leaf of the tree.
+///
+/// The provided `content` will be displayed (via its `Display` instance)
+/// when pretty-printing the tree.
+pub fn leaf<A>(content: A) -> Tree<A> {
+    Tree::Leaf(content)
+}
+
+/// Builds a node of the tree.
+///
+/// The provided `content` will be displayed (via its `Display` instance)
+/// when pretty-printing the tree.
+pub fn node<A>(content: A, children: impl Into<Vec<Tree<A>>>) -> Tree<A> {
+    Tree::Node {
+        content,
+        children: children.into(),
+    }
 }
 
 impl<A> Tree<A> {
