@@ -3,29 +3,32 @@
 use colored::*;
 use std::fmt::{self, Display};
 
+#[cfg(feature = "inspect-dot")]
+pub mod dot;
+
 /// Packs together a string to be printed when inspecting a predicate,
 /// as well as the result of its evaluation.
-pub struct PredRes((String, bool));
+pub struct Label((String, bool));
 
-impl From<(String, bool)> for PredRes {
+impl From<(String, bool)> for Label {
     fn from(sb: (String, bool)) -> Self {
         Self(sb)
     }
 }
 
-impl Display for PredRes {
+impl Display for Label {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let PredRes((content, result)) = self;
+        let Label((label, result)) = self;
         if *result {
-            write!(f, "{}", content.green())
+            write!(f, "{}", label.green())
         } else {
-            write!(f, "{}", content.red())
+            write!(f, "{}", label.red())
         }
     }
 }
 
 /// A tree-like representation of a predicate and the result of its evaluation.
-pub type PredTree = Tree<PredRes>;
+pub type PredTree = Tree<Label>;
 
 /// This trait can be implemented by predicates which are to be inspected at runtime.
 pub trait Inspect {
@@ -39,29 +42,36 @@ pub trait Inspect {
 /// Just a regular tree-like structure with named nodes.
 pub enum Tree<A> {
     Leaf(A),
-    Node { content: A, children: Vec<Tree<A>> },
+    Node { label: A, children: Vec<Tree<A>> },
 }
 
 /// Builds a leaf of the tree.
 ///
-/// The provided `content` will be displayed (via its `Display` instance)
+/// The provided `label` will be displayed (via its `Display` instance)
 /// when pretty-printing the tree.
-pub fn leaf<A>(content: A) -> Tree<A> {
-    Tree::Leaf(content)
+pub fn leaf<A>(label: A) -> Tree<A> {
+    Tree::Leaf(label)
 }
 
 /// Builds a node of the tree.
 ///
-/// The provided `content` will be displayed (via its `Display` instance)
+/// The provided `label` will be displayed (via its `Display` instance)
 /// when pretty-printing the tree.
-pub fn node<A>(content: A, children: impl Into<Vec<Tree<A>>>) -> Tree<A> {
+pub fn node<A>(label: A, children: impl Into<Vec<Tree<A>>>) -> Tree<A> {
     Tree::Node {
-        content,
+        label,
         children: children.into(),
     }
 }
 
 impl<A> Tree<A> {
+    pub fn label(&self) -> &A {
+        match self {
+            Self::Leaf(label) => label,
+            Self::Node { label, .. } => label,
+        }
+    }
+
     pub fn is_leaf(&self) -> bool {
         if let Self::Leaf(_) = self {
             true
@@ -71,6 +81,7 @@ impl<A> Tree<A> {
     }
 }
 
+#[cfg(feature = "inspect-text")]
 impl<A> Display for Tree<A>
 where
     A: Display,
@@ -94,11 +105,11 @@ where
             let prefix = format!("{}{}", padding, sign);
 
             match cur {
-                Tree::Leaf(content) => {
-                    writeln!(f, "{prefix}{}", content, prefix = prefix)?;
+                Tree::Leaf(label) => {
+                    writeln!(f, "{prefix}{}", label, prefix = prefix)?;
                 }
-                Tree::Node { content, children } => {
-                    writeln!(f, "{prefix}{}", content, prefix = prefix)?;
+                Tree::Node { label, children } => {
+                    writeln!(f, "{prefix}{}", label, prefix = prefix)?;
 
                     for (idx, child) in children.iter().enumerate() {
                         go(f, child, level + 1, idx == children.len() - 1)?;
@@ -114,8 +125,9 @@ where
 }
 
 #[cfg(test)]
-mod tests {
+mod text_tests {
     use super::*;
+    use fixtures::*;
 
     static FILES_SMALL_STR: &str = "pred
 ├── Cargo.lock
@@ -162,19 +174,24 @@ mod tests {
         let formatted = format!("{}", files_big());
         assert_eq!(FILES_BIG_STR, &formatted);
     }
+}
 
-    fn files_small() -> Tree<String> {
+#[cfg(test)]
+mod fixtures {
+    use super::*;
+
+    pub fn files_small() -> Tree<String> {
         Tree::Node {
-            content: "pred".to_string(),
+            label: "pred".to_string(),
             children: vec![
                 Tree::Leaf("Cargo.lock".to_string()),
                 Tree::Leaf("Cargo.toml".to_string()),
                 Tree::Node {
-                    content: "examples".to_string(),
+                    label: "examples".to_string(),
                     children: vec![Tree::Leaf("example1.rs".to_string())],
                 },
                 Tree::Node {
-                    content: "src".to_string(),
+                    label: "src".to_string(),
                     children: vec![
                         Tree::Leaf("inspect.rs".to_string()),
                         Tree::Leaf("lib.rs".to_string()),
@@ -182,7 +199,7 @@ mod tests {
                     ],
                 },
                 Tree::Node {
-                    content: "target".to_string(),
+                    label: "target".to_string(),
                     children: vec![
                         Tree::Leaf("debug".to_string()),
                         Tree::Leaf("doc".to_string()),
@@ -192,24 +209,24 @@ mod tests {
         }
     }
 
-    fn files_big() -> Tree<String> {
+    pub fn files_big() -> Tree<String> {
         Tree::Node {
-            content: "pred".to_string(),
+            label: "pred".to_string(),
             children: vec![
                 Tree::Leaf("Cargo.lock".to_string()),
                 Tree::Leaf("Cargo.toml".to_string()),
                 Tree::Node {
-                    content: "examples".to_string(),
+                    label: "examples".to_string(),
                     children: vec![Tree::Leaf("example1.rs".to_string())],
                 },
                 Tree::Node {
-                    content: "src".to_string(),
+                    label: "src".to_string(),
                     children: vec![
                         Tree::Leaf("inspect.rs".to_string()),
                         Tree::Leaf("lib.rs".to_string()),
                         Tree::Leaf("macros.rs".to_string()),
                         Tree::Node {
-                            content: "bin".to_string(),
+                            label: "bin".to_string(),
                             children: vec![
                                 Tree::Leaf("foo.rs".to_string()),
                                 Tree::Leaf("bar.rs".to_string()),
@@ -218,11 +235,11 @@ mod tests {
                     ],
                 },
                 Tree::Node {
-                    content: "target".to_string(),
+                    label: "target".to_string(),
                     children: vec![
                         Tree::Leaf("debug".to_string()),
                         Tree::Node {
-                            content: "rls".to_string(),
+                            label: "rls".to_string(),
                             children: vec![
                                 Tree::Leaf("release".to_string()),
                                 Tree::Leaf("stuff.txt".to_string()),

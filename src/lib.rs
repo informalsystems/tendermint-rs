@@ -143,7 +143,7 @@ where
 {
     fn inspect(&self) -> PredTree {
         PredTree::Node {
-            content: ("and".to_string(), self.eval()).into(),
+            label: ("and".to_string(), self.eval()).into(),
             children: vec![self.left.inspect(), self.right.inspect()],
         }
     }
@@ -172,7 +172,7 @@ where
 {
     fn inspect(&self) -> PredTree {
         PredTree::Node {
-            content: ("or".to_string(), self.eval()).into(),
+            label: ("or".to_string(), self.eval()).into(),
             children: vec![self.left.inspect(), self.right.inspect()],
         }
     }
@@ -202,7 +202,7 @@ where
 {
     fn inspect(&self) -> PredTree {
         PredTree::Node {
-            content: ("not".to_string(), self.eval()).into(),
+            label: ("not".to_string(), self.eval()).into(),
             children: vec![self.0.inspect()],
         }
     }
@@ -231,7 +231,7 @@ where
 {
     fn inspect(&self) -> PredTree {
         PredTree::Node {
-            content: ("implies".to_string(), self.eval()).into(),
+            label: ("implies".to_string(), self.eval()).into(),
             children: vec![self.assumption.inspect(), self.conclusion.inspect()],
         }
     }
@@ -422,7 +422,7 @@ where
 {
     fn inspect(&self) -> PredTree {
         PredTree::Node {
-            content: (self.name.clone(), self.eval()).into(),
+            label: (self.name.clone(), self.eval()).into(),
             children: vec![self.pred.inspect()],
         }
     }

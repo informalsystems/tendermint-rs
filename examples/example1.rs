@@ -2,7 +2,7 @@
 
 use derive_more::Display;
 
-use pred::*;
+use pred::{inspect::*, *};
 
 //--------------------------------------------------------------------------------
 
@@ -136,6 +136,9 @@ fn main() {
     #[cfg(feature = "inspect")]
     println!("\n{}", p.inspect());
 
+    #[cfg(feature = "inspect-dot")]
+    println!("{}", p.inspect().to_graph());
+
     let res = verify(p);
     dbg!(res);
 
@@ -143,6 +146,9 @@ fn main() {
 
     #[cfg(feature = "inspect")]
     println!("\n{}", p.inspect());
+
+    #[cfg(feature = "inspect-dot")]
+    println!("{}", p.inspect().to_graph());
 
     let res = verify(p);
     dbg!(res);

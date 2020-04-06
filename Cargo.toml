@@ -5,15 +5,16 @@ authors = ["Romain Ruetschi <romain@informal.systems>"]
 edition = "2018"
 
 [features]
-default = ["inspect"]
-inspect = ["colored"]
-no-color = ["colored/no-color"]
+default = ["inspect-text"]
+inspect = []
+inspect-text = ["inspect", "colored"]
+inspect-dot = ["inspect"]
 
 [dependencies]
 cfg-if = "0.1.10"
 derive_more = "0.99.5"
 
-# feature: inspect/colors
+# feature: inspect-text
 colored = { version = "1.9.3", optional = true }
 
 [dev-dependencies]
