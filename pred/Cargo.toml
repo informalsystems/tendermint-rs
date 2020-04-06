@@ -1,0 +1,22 @@
+[package]
+name = "pred"
+version = "0.1.0"
+authors = ["Romain Ruetschi <romain@informal.systems>"]
+edition = "2018"
+
+[features]
+default = ["inspect-text"]
+inspect = []
+inspect-text = ["inspect", "colored"]
+inspect-dot = ["inspect"]
+
+[dependencies]
+cfg-if = "0.1.10"
+derive_more = "0.99.5"
+
+# feature: inspect-text
+colored = { version = "1.9.3", optional = true }
+
+[dev-dependencies]
+quickcheck = "0.9.2"
+quickcheck_macros = "0.9.1"
