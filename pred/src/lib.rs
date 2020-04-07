@@ -118,6 +118,12 @@ where
     }
 }
 
+impl<P: Predicate> Predicate for &P {
+    fn eval(&self) -> bool {
+        (*self).eval()
+    }
+}
+
 impl<P: Predicate> PredicateExt for P {}
 
 #[cfg(feature = "inspect")]

@@ -39,6 +39,12 @@ pub trait Inspect {
     fn inspect(&self) -> PredTree;
 }
 
+impl<T: Inspect> Inspect for &T {
+    fn inspect(&self) -> PredTree {
+        (*self).inspect()
+    }
+}
+
 /// Just a regular tree-like structure with named nodes.
 pub enum Tree<A> {
     Leaf(A),
