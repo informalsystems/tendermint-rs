@@ -47,15 +47,16 @@ fn real_is_enough_power(
     total_power: u64,
     trust_threshold: TrustThreshold,
 ) -> TaggedPredicate<IsEnoughPower> {
-    let make = tagged_pred(|r: &RealIsEnoughPower| {
-        r.signed_power * r.trust_threshold.denominator > r.total_power * r.trust_threshold.numerator
-    });
+    todo!()
+    // let make = tagged_pred(|r: &RealIsEnoughPower| {
+    //     r.signed_power * r.trust_threshold.denominator > r.total_power * r.trust_threshold.numerator
+    // });
 
-    make(RealIsEnoughPower {
-        signed_power,
-        total_power,
-        trust_threshold,
-    })
+    // make(RealIsEnoughPower {
+    //     signed_power,
+    //     total_power,
+    //     trust_threshold,
+    // })
 }
 
 //--------------------------------------------------------------------------------
@@ -80,12 +81,13 @@ pub fn real_valid_commit(
     commit: Commit,
     trust_threshold: TrustThreshold,
 ) -> TaggedPredicate<ValidCommit> {
-    let make = tagged_pred(|v: &RealValidCommit| true);
-    make(RealValidCommit {
-        header,
-        commit,
-        trust_threshold,
-    })
+    todo!()
+    // let make = tagged_pred(|v: &RealValidCommit| true);
+    // make(RealValidCommit {
+    //     header,
+    //     commit,
+    //     trust_threshold,
+    // })
 }
 
 //--------------------------------------------------------------------------------

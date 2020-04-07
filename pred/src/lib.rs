@@ -17,7 +17,10 @@ pub trait Predicate {
 }
 
 /// Extension methods for predicates.
-pub trait PredicateExt {
+pub trait PredicateExt
+where
+    Self: Predicate,
+{
     /// Build the conjunction of this predicate with `other`.
     fn and<P>(self, other: P) -> AndPredicate<Self, P>
     where
@@ -74,7 +77,7 @@ pub trait PredicateExt {
     #[cfg(not(feature = "inspect"))]
     fn tag<T>(self) -> TaggedPredicate<T>
     where
-        Self: Sized + Predicate + 'static,
+        Self: Sized + 'static,
     {
         crate::tag(self)
     }
@@ -83,7 +86,7 @@ pub trait PredicateExt {
     #[cfg(feature = "inspect")]
     fn tag<T>(self) -> TaggedPredicate<T>
     where
-        Self: Sized + Predicate + Inspect + 'static,
+        Self: Sized + Inspect + 'static,
     {
         crate::tag(self)
     }
@@ -95,9 +98,32 @@ pub trait PredicateExt {
     {
         crate::named(self, name)
     }
+
+    /// Box this predicate
+    #[cfg(feature = "inspect")]
+    fn boxed(self) -> BoxedPredicate
+    where
+        Self: Sized + Inspect + 'static,
+    {
+        crate::boxed(self)
+    }
+
+    /// Box this predicate
+    #[cfg(not(feature = "inspect"))]
+    fn boxed(self) -> BoxedPredicate
+    where
+        Self: Sized + 'static,
+    {
+        crate::boxed(self)
+    }
 }
 
 impl<P: Predicate> PredicateExt for P {}
+
+#[cfg(feature = "inspect")]
+trait InspectablePredicate: Predicate + Inspect {}
+#[cfg(feature = "inspect")]
+impl<P> InspectablePredicate for P where P: Predicate + Inspect {}
 
 pub struct ConstPredicate(bool);
 
@@ -267,25 +293,42 @@ where
     }
 }
 
+pub struct FnRefPredicate<F> {
+    f: F,
+}
+
+impl<F> FnRefPredicate<F> {
+    pub fn new(f: F) -> Self {
+        Self { f }
+    }
+}
+
+impl<F> Predicate for FnRefPredicate<F>
+where
+    F: Fn() -> bool,
+{
+    fn eval(&self) -> bool {
+        (self.f)()
+    }
+}
+
+#[cfg(feature = "inspect")]
+impl<F> Inspect for FnRefPredicate<F>
+where
+    F: Fn() -> bool,
+{
+    fn inspect(&self) -> PredTree {
+        PredTree::Leaf(("<function>".to_string(), self.eval()).into())
+    }
+}
+
 pub struct FnPredicate<F> {
     f: F,
-    descr: Option<String>,
 }
 
 impl<F> FnPredicate<F> {
     pub fn new(f: F) -> Self {
-        Self { f, descr: None }
-    }
-
-    pub fn describe(self, descr: impl Into<String>) -> Self {
-        Self {
-            f: self.f,
-            descr: Some(descr.into()),
-        }
-    }
-
-    pub fn descr(&self) -> &Option<String> {
-        &self.descr
+        Self { f }
     }
 }
 
@@ -304,50 +347,9 @@ where
     F: Fn() -> bool,
 {
     fn inspect(&self) -> PredTree {
-        match self.descr() {
-            Some(descr) => PredTree::Leaf((format!("<{}>", descr), self.eval()).into()),
-            None => PredTree::Leaf(("<function>".to_string(), self.eval()).into()),
-        }
+        PredTree::Leaf(("<function>".to_string(), self.eval()).into())
     }
 }
-
-pub struct CurriedPredicate<A> {
-    f: Box<dyn Fn(&A) -> bool>,
-    a: A,
-}
-
-impl<A> CurriedPredicate<A> {
-    pub fn new<F>(a: A, f: F) -> Self
-    where
-        F: Fn(&A) -> bool + 'static,
-    {
-        Self { f: Box::new(f), a }
-    }
-}
-
-impl<A> Predicate for CurriedPredicate<A>
-where
-    A: Display,
-{
-    fn eval(&self) -> bool {
-        (self.f)(&self.a)
-    }
-}
-
-#[cfg(feature = "inspect")]
-impl<A> Inspect for CurriedPredicate<A>
-where
-    A: Display,
-{
-    fn inspect(&self) -> PredTree {
-        PredTree::Leaf((format!("{}", self.a), self.eval()).into())
-    }
-}
-
-#[cfg(feature = "inspect")]
-trait InspectablePredicate: Predicate + Inspect {}
-#[cfg(feature = "inspect")]
-impl<P> InspectablePredicate for P where P: Predicate + Inspect {}
 
 pub struct TaggedPredicate<T> {
     #[cfg(feature = "inspect")]
@@ -428,6 +430,42 @@ where
     }
 }
 
+pub struct BoxedPredicate {
+    #[cfg(feature = "inspect")]
+    pred: Box<dyn InspectablePredicate>,
+    #[cfg(not(feature = "inspect"))]
+    pred: Box<dyn Predicate>,
+}
+
+impl BoxedPredicate {
+    #[cfg(feature = "inspect")]
+    pub fn new(pred: impl Predicate + Inspect + 'static) -> Self {
+        Self {
+            pred: Box::new(pred),
+        }
+    }
+
+    #[cfg(not(feature = "inspect"))]
+    pub fn new(pred: impl Predicate + 'static) -> Self {
+        Self {
+            pred: Box::new(pred),
+        }
+    }
+}
+
+impl Predicate for BoxedPredicate {
+    fn eval(&self) -> bool {
+        self.pred.eval()
+    }
+}
+
+#[cfg(feature = "inspect")]
+impl Inspect for BoxedPredicate {
+    fn inspect(&self) -> PredTree {
+        self.pred.inspect()
+    }
+}
+
 /// Build a predicate which always evaluates to `value`
 pub fn always(value: bool) -> ConstPredicate {
     ConstPredicate::new(value)
@@ -460,6 +498,14 @@ where
     FnPredicate::new(f)
 }
 
+/// Builds a predicate which evaluates to the result of invoking the given closure.
+pub fn from_fn_ref<F>(f: F) -> FnRefPredicate<F>
+where
+    F: Fn() -> bool,
+{
+    FnRefPredicate::new(f)
+}
+
 /// Attach a type-level tag to this predicate.
 #[cfg(feature = "inspect")]
 pub fn tag<T>(pred: impl Predicate + Inspect + 'static) -> TaggedPredicate<T> {
@@ -477,75 +523,44 @@ pub fn named<P>(pred: P, name: impl Into<String>) -> NamedPredicate<P> {
     NamedPredicate::new(pred, name)
 }
 
-/// Returns a function which can be applied to a value of type `A`,
-/// to which the given closure will be applied when evaluating the
-/// resulting predicate.
-pub fn pred<F, A>(f: F) -> impl Fn(A) -> CurriedPredicate<A>
-where
-    F: for<'r> Fn(&'r A) -> bool + Clone + 'static,
-    A: 'static,
-{
-    move |a: A| CurriedPredicate::new(a, f.clone())
-}
-
-/// Returns a function which can be applied to a value of type `A`,
-/// to which the given closure will be applied when evaluating the
-/// resulting predicate.
-///
-/// This function also tags the predicate with the given tag `T`.
-pub fn tagged_pred<T, F, A>(f: F) -> impl Fn(A) -> TaggedPredicate<T>
-where
-    F: for<'r> Fn(&'r A) -> bool + Clone + 'static,
-    A: Display + 'static,
-{
-    move |a: A| CurriedPredicate::new(a, f.clone()).tag()
+/// Box the given predicate
+pub fn boxed(pred: impl Predicate + Inspect + 'static) -> BoxedPredicate {
+    BoxedPredicate::new(pred)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use derive_more::Display;
+    // use derive_more::Display;
     use quickcheck_macros::quickcheck;
 
-    struct SomeTag;
-
-    #[derive(Display)]
-    #[display(fmt = "bar({} > 0)", bar)]
+    // #[derive(Display)]
+    // #[display(fmt = "bar({} > 0)", self.bar[0])]
     struct Foo {
-        bar: i32,
+        bar: Vec<i32>,
     }
 
     #[quickcheck]
-    fn test_make_foo(bar: i32) -> bool {
-        let make_foo = tagged_pred::<SomeTag, _, _>(|foo: &Foo| foo.bar > 0);
-        let foo_pred = make_foo(Foo { bar });
+    fn test_from_fn(bar: i32) -> bool {
+        let foo = Foo { bar: vec![bar] };
+        let foo_pred = from_fn(|| foo.bar[0] > 0);
 
         evals_to(foo_pred, bar > 0)
     }
 
     #[quickcheck]
-    #[cfg(feature = "no-color")]
-    fn test_display_foo_no_colors(bar: i32) -> bool {
-        let make_foo = tagged_pred::<SomeTag, _, _>(|foo: &Foo| foo.bar > 0);
+    fn test_from_fn_ref(bar: i32) -> bool {
+        let foo = Foo { bar: vec![bar] };
+        let p = make_foo_pred(&foo);
+        let q = make_foo_pred(&foo);
+        let pq = p.and(q); // .tag::<i32>();
 
-        let foo = Foo { bar };
-        let foo_pred = make_foo(foo);
-
-        foo_pred.inspect().to_string() == format!("bar({} > 0)\n", bar)
+        evals_to(pq, foo.bar[0] > 0)
     }
 
-    #[quickcheck]
-    #[cfg(not(feature = "no-color"))]
-    fn test_display_foo_colors(bar: i32) -> bool {
-        use colored::Colorize;
-
-        let make_foo = tagged_pred::<SomeTag, _, _>(|foo: &Foo| foo.bar > 0);
-
-        let foo = Foo { bar };
-        let foo_pred = make_foo(foo);
-
-        let color = if bar > 0 { "green" } else { "red" };
-        foo_pred.inspect().to_string() == format!("{}\n", format!("bar({} > 0)", bar).color(color))
+    fn make_foo_pred<'a>(foo: &'a Foo) -> impl InspectablePredicate + 'a {
+        let foo_pred = from_fn(move || foo.bar[0] > 0);
+        foo_pred
     }
 
     #[quickcheck]
