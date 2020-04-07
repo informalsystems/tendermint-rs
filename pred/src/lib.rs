@@ -572,7 +572,14 @@ pub fn named<P>(pred: P, name: impl Into<String>) -> NamedPredicate<P> {
 }
 
 /// Box the given predicate
+#[cfg(feature = "inspect")]
 pub fn boxed(pred: impl Predicate + Inspect + 'static) -> BoxedPredicate {
+    BoxedPredicate::new(pred)
+}
+
+/// Box the given predicate
+#[cfg(not(feature = "inspect"))]
+pub fn boxed(pred: impl Predicate + 'static) -> BoxedPredicate {
     BoxedPredicate::new(pred)
 }
 
