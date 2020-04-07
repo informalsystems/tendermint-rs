@@ -299,35 +299,6 @@ where
     }
 }
 
-pub struct FnRefPredicate<F> {
-    f: F,
-}
-
-impl<F> FnRefPredicate<F> {
-    pub fn new(f: F) -> Self {
-        Self { f }
-    }
-}
-
-impl<F> Predicate for FnRefPredicate<F>
-where
-    F: Fn() -> bool,
-{
-    fn eval(&self) -> bool {
-        (self.f)()
-    }
-}
-
-#[cfg(feature = "inspect")]
-impl<F> Inspect for FnRefPredicate<F>
-where
-    F: Fn() -> bool,
-{
-    fn inspect(&self) -> PredTree {
-        PredTree::Leaf(("<function>".to_string(), self.eval()).into())
-    }
-}
-
 pub struct FnPredicate<F> {
     f: F,
 }
@@ -502,14 +473,6 @@ where
     F: Fn() -> bool,
 {
     FnPredicate::new(f)
-}
-
-/// Builds a predicate which evaluates to the result of invoking the given closure.
-pub fn from_fn_ref<F>(f: F) -> FnRefPredicate<F>
-where
-    F: Fn() -> bool,
-{
-    FnRefPredicate::new(f)
 }
 
 /// Attach a type-level tag to this predicate.
