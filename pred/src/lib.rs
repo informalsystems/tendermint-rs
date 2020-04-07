@@ -91,6 +91,22 @@ where
         crate::tag(self)
     }
 
+    #[cfg(feature = "inspect")]
+    fn tag_ref<'a, T>(&'a self) -> TaggedRefPredicate<'a, T>
+    where
+        Self: Sized + Inspect,
+    {
+        crate::tag_ref(self)
+    }
+
+    #[cfg(not(feature = "inspect"))]
+    fn tag_ref<'a, T>(&'a self) -> TaggedRefPredicate<'a, T>
+    where
+        Self: Sized,
+    {
+        crate::tag_ref(self)
+    }
+
     /// Provide a name for this predicate, which will be displayed when inspecting it.
     fn named(self, name: impl Into<String>) -> NamedPredicate<Self>
     where
@@ -367,6 +383,51 @@ impl<T> Inspect for TaggedPredicate<T> {
     }
 }
 
+pub struct TaggedRefPredicate<'a, T> {
+    #[cfg(feature = "inspect")]
+    pred: &'a dyn InspectablePredicate,
+    #[cfg(not(feature = "inspect"))]
+    pred: &'a dyn Predicate,
+    tag: PhantomData<T>,
+}
+
+impl<'a, T> TaggedRefPredicate<'a, T> {
+    #[cfg(feature = "inspect")]
+    pub fn new<P>(pred: &'a P) -> Self
+    where
+        P: Predicate + Inspect,
+    {
+        Self {
+            pred,
+            tag: PhantomData,
+        }
+    }
+
+    #[cfg(not(feature = "inspect"))]
+    pub fn new<P>(pred: &'a P) -> Self
+    where
+        P: Predicate,
+    {
+        Self {
+            pred,
+            tag: PhantomData,
+        }
+    }
+}
+
+impl<'a, T> Predicate for TaggedRefPredicate<'a, T> {
+    fn eval(&self) -> bool {
+        self.pred.eval()
+    }
+}
+
+#[cfg(feature = "inspect")]
+impl<'a, T> Inspect for TaggedRefPredicate<'a, T> {
+    fn inspect(&self) -> PredTree {
+        self.pred.inspect()
+    }
+}
+
 pub struct NamedPredicate<P> {
     pred: P,
     name: String,
@@ -487,6 +548,24 @@ pub fn tag<T>(pred: impl Predicate + 'static) -> TaggedPredicate<T> {
     TaggedPredicate::new(pred)
 }
 
+/// Attach a type-level tag to this predicate.
+#[cfg(feature = "inspect")]
+pub fn tag_ref<'a, T, P>(pred: &'a P) -> TaggedRefPredicate<'a, T>
+where
+    P: Predicate + Inspect,
+{
+    TaggedRefPredicate::new(pred)
+}
+
+/// Attach a type-level tag to this predicate.
+#[cfg(not(feature = "inspect"))]
+pub fn tag_ref<'a, T, P>(pred: &'a P) -> TaggedRefPredicate<'a, T>
+where
+    P: Predicate,
+{
+    TaggedRefPredicate::new(pred)
+}
+
 /// Provide a name for the given predicate, which will be displayed when inspecting it.
 pub fn named<P>(pred: P, name: impl Into<String>) -> NamedPredicate<P> {
     NamedPredicate::new(pred, name)
@@ -522,15 +601,25 @@ mod tests {
         let foo = Foo { bar: vec![bar] };
         let p = make_foo_pred(&foo);
         let q = make_foo_pred(&foo);
-        let pq = p.and(q); // .tag::<i32>();
+        let pq = p.and(q);
+        let t = pq.tag_ref::<i32>();
 
-        evals_to(pq, foo.bar[0] > 0)
+        evals_to(t, foo.bar[0] > 0)
     }
 
-    fn make_foo_pred<'a>(foo: &'a Foo) -> impl InspectablePredicate + 'a {
+    fn make_foo_pred<'a>(foo: &'a Foo) -> impl Predicate + Inspect + 'a {
         let foo_pred = from_fn(move || foo.bar[0] > 0);
         foo_pred
     }
+
+    // fn make_bar_pred<'a, P>(p: &'a P, q: &'a P) -> TaggedRefPredicate<'a, i32>
+    // where
+    //     P: Predicate + Inspect,
+    // {
+    //     let pq = p.and(q);
+    //     let t = pq.tag_ref::<i32>();
+    //     t
+    // }
 
     #[quickcheck]
     fn always_eval_to_value(value: bool) -> bool {
