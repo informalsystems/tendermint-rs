@@ -606,27 +606,27 @@ mod tests {
     #[quickcheck]
     fn test_from_fn_ref(bar: i32) -> bool {
         let foo = Foo { bar: vec![bar] };
-        let p = make_foo_pred(&foo);
-        let q = make_foo_pred(&foo);
-        let pq = p.and(q);
+
+        let p = make_foo_pred(&foo, 1);
+        let q = make_foo_pred(&foo, 2);
+        let pq = make_bar_pred(&p, &q);
         let t = pq.tag_ref::<i32>();
 
-        evals_to(t, foo.bar[0] > 0)
+        evals_to(t, foo.bar[0] == 1 || foo.bar[0] == 2)
     }
 
-    fn make_foo_pred<'a>(foo: &'a Foo) -> impl Predicate + Inspect + 'a {
-        let foo_pred = from_fn(move || foo.bar[0] > 0);
+    fn make_foo_pred<'a>(foo: &'a Foo, n: i32) -> impl Predicate + Inspect + 'a {
+        let foo_pred = from_fn(move || foo.bar[0] != n);
         foo_pred
     }
 
-    // fn make_bar_pred<'a, P>(p: &'a P, q: &'a P) -> TaggedRefPredicate<'a, i32>
-    // where
-    //     P: Predicate + Inspect,
-    // {
-    //     let pq = p.and(q);
-    //     let t = pq.tag_ref::<i32>();
-    //     t
-    // }
+    fn make_bar_pred<'a, P>(p: &'a P, q: &'a P) -> impl Predicate + Inspect + 'a
+    where
+        P: Predicate + Inspect,
+    {
+        let pq = p.and(q).not().named("bar");
+        pq
+    }
 
     #[quickcheck]
     fn always_eval_to_value(value: bool) -> bool {
