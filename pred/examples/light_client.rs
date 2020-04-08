@@ -82,12 +82,34 @@ trait VotingPowerCalculator: Sized {
     fn total_power_of(&self, validators: &ValidatorSet) -> Result<u64, Error>;
 }
 
+impl<T: VotingPowerCalculator> VotingPowerCalculator for &T {
+    fn voting_power_in(&self, commit: &Commit, validators: &ValidatorSet) -> Result<u64, Error> {
+        (*self).voting_power_in(commit, validators)
+    }
+
+    fn total_power_of(&self, validators: &ValidatorSet) -> Result<u64, Error> {
+        (*self).total_power_of(validators)
+    }
+}
+
 trait CommitValidator: Sized {
     fn validate(&self, commit: &Commit, validators: &ValidatorSet) -> Result<(), Error>;
 }
 
+impl<T: CommitValidator> CommitValidator for &T {
+    fn validate(&self, commit: &Commit, validators: &ValidatorSet) -> Result<(), Error> {
+        (*self).validate(commit, validators)
+    }
+}
+
 trait HeaderHasher: Sized {
     fn hash(&self, header: &Header) -> Hash; // Or Error?
+}
+
+impl<T: HeaderHasher> HeaderHasher for &T {
+    fn hash(&self, header: &Header) -> Hash {
+        (*self).hash(header)
+    }
 }
 
 /// Predicates
@@ -96,11 +118,11 @@ fn _validator_sets_match(signed_header: &SignedHeader, validators: &ValidatorSet
     signed_header.validator_hash == validators.hash
 }
 
-fn validator_sets_match(
-    signed_header: SignedHeader,
-    validators: ValidatorSet,
-) -> impl Predicate + Inspect {
-    pred::from_fn(move || _validator_sets_match(&signed_header, &validators))
+fn validator_sets_match<'a>(
+    signed_header: &'a SignedHeader,
+    validators: &'a ValidatorSet,
+) -> impl Predicate + Inspect + 'a {
+    pred::from_fn(move || _validator_sets_match(signed_header, validators))
         .named("validator_sets_match")
 }
 
@@ -108,10 +130,10 @@ fn _next_validators_match(signed_header: &SignedHeader, validators: &ValidatorSe
     signed_header.validator_hash == validators.hash
 }
 
-fn next_validators_match(
-    signed_header: SignedHeader,
-    validators: ValidatorSet,
-) -> impl Predicate + Inspect {
+fn next_validators_match<'a>(
+    signed_header: &'a SignedHeader,
+    validators: &'a ValidatorSet,
+) -> impl Predicate + Inspect + 'a {
     pred::from_fn(move || _next_validators_match(&signed_header, &validators))
         .named("next_validators_match")
 }
@@ -119,16 +141,16 @@ fn next_validators_match(
 fn _header_matches_commit(
     header: &Header,
     commit: &Commit,
-    header_hasher: &impl HeaderHasher,
+    header_hasher: impl HeaderHasher,
 ) -> bool {
     header_hasher.hash(header) == commit.header_hash
 }
 
-fn header_matches_commit(
-    header: Header,
-    commit: Commit,
-    header_hasher: impl HeaderHasher,
-) -> impl Predicate + Inspect {
+fn header_matches_commit<'a>(
+    header: &'a Header,
+    commit: &'a Commit,
+    header_hasher: &'a impl HeaderHasher,
+) -> impl Predicate + Inspect + 'a {
     pred::from_fn(move || _header_matches_commit(&header, &commit, &header_hasher))
         .named("header_matches_commit")
 }
@@ -136,16 +158,16 @@ fn header_matches_commit(
 fn _valid_commit(
     commit: &Commit,
     validators: &ValidatorSet,
-    validator: &impl CommitValidator,
+    validator: impl CommitValidator,
 ) -> bool {
     validator.validate(commit, validators).is_ok()
 }
 
-fn valid_commit(
-    commit: Commit,
-    validators: ValidatorSet,
-    validator: impl CommitValidator,
-) -> impl Predicate + Inspect {
+fn valid_commit<'a>(
+    commit: &'a Commit,
+    validators: &'a ValidatorSet,
+    validator: &'a impl CommitValidator,
+) -> impl Predicate + Inspect + 'a {
     pred::from_fn(move || _valid_commit(&commit, &validators, &validator)).named("valid_commit")
 }
 
@@ -156,11 +178,11 @@ fn _is_within_trusted_period(header: &Header, trusting_period: Duration, now: Sy
     header_time < now && expires_at > now
 }
 
-fn is_within_trusted_period(
-    header: Header,
+fn is_within_trusted_period<'a>(
+    header: &'a Header,
     trusting_period: Duration,
     now: SystemTime,
-) -> impl Predicate + Inspect {
+) -> impl Predicate + Inspect + 'a {
     pred::from_fn(move || _is_within_trusted_period(&header, trusting_period, now))
         .named("is_within_trusted_period")
 }
@@ -169,7 +191,10 @@ fn _is_monotonic_bft_time(header_a: &Header, header_b: &Header) -> bool {
     header_b.bft_time >= header_a.bft_time
 }
 
-fn is_monotonic_bft_time(header_a: Header, header_b: Header) -> impl Predicate + Inspect {
+fn is_monotonic_bft_time<'a>(
+    header_a: &'a Header,
+    header_b: &'a Header,
+) -> impl Predicate + Inspect + 'a {
     pred::from_fn(move || _is_monotonic_bft_time(&header_a, &header_b))
         .named("is_monotonic_bft_time")
 }
@@ -178,7 +203,10 @@ fn _is_monotonic_height(header_a: &Header, header_b: &Header) -> bool {
     header_a.height > header_b.height
 }
 
-fn is_monotonic_height(header_a: Header, header_b: Header) -> impl Predicate + Inspect {
+fn is_monotonic_height<'a>(
+    header_a: &'a Header,
+    header_b: &'a Header,
+) -> impl Predicate + Inspect + 'a {
     pred::from_fn(move || _is_monotonic_height(&header_a, &header_b)).named("is_monotonic_height")
 }
 
@@ -199,12 +227,12 @@ fn _has_sufficient_voting_power(
     }
 }
 
-fn has_sufficient_voting_power(
-    commit: Commit,
-    validators: ValidatorSet,
-    trust_level: TrustLevel,
-    calculator: impl VotingPowerCalculator,
-) -> impl Predicate + Inspect {
+fn has_sufficient_voting_power<'a>(
+    commit: &'a Commit,
+    validators: &'a ValidatorSet,
+    trust_level: &'a TrustLevel,
+    calculator: &'a impl VotingPowerCalculator,
+) -> impl Predicate + Inspect + 'a {
     pred::from_fn(move || {
         _has_sufficient_voting_power(&commit, &validators, &trust_level, &calculator)
     })
@@ -225,12 +253,12 @@ fn _has_sufficient_validators_overlap(
     )
 }
 
-fn has_sufficient_validators_overlap(
-    untrusted_commit: Commit,
-    trusted_validators: ValidatorSet,
-    trust_level: TrustLevel,
-    calculator: impl VotingPowerCalculator,
-) -> impl Predicate + Inspect {
+fn has_sufficient_validators_overlap<'a>(
+    untrusted_commit: &'a Commit,
+    trusted_validators: &'a ValidatorSet,
+    trust_level: &'a TrustLevel,
+    calculator: &'a impl VotingPowerCalculator,
+) -> impl Predicate + Inspect + 'a {
     pred::from_fn(move || {
         _has_sufficient_validators_overlap(
             &untrusted_commit,
@@ -256,12 +284,12 @@ fn _has_sufficient_signers_overlap(
     )
 }
 
-fn has_sufficient_signers_overlap(
-    untrusted_commit: Commit,
-    untrusted_validators: ValidatorSet,
-    trust_level: TrustLevel,
-    calculator: impl VotingPowerCalculator,
-) -> impl Predicate + Inspect {
+fn has_sufficient_signers_overlap<'a>(
+    untrusted_commit: &'a Commit,
+    untrusted_validators: &'a ValidatorSet,
+    trust_level: &'a TrustLevel,
+    calculator: &'a impl VotingPowerCalculator,
+) -> impl Predicate + Inspect + 'a {
     pred::from_fn(move || {
         _has_sufficient_signers_overlap(
             &untrusted_commit,
@@ -282,68 +310,65 @@ fn _invalid_next_validator_set(
         && trusted_state.validators.hash != untrusted_next_vals.hash
 }
 
-fn invalid_next_validator_set(
-    trusted_state: TrustedState,
-    untrusted_sh: SignedHeader,
-    untrusted_next_vals: ValidatorSet,
-) -> impl Predicate + Inspect {
+fn invalid_next_validator_set<'a>(
+    trusted_state: &'a TrustedState,
+    untrusted_sh: &'a SignedHeader,
+    untrusted_next_vals: &'a ValidatorSet,
+) -> impl Predicate + Inspect + 'a {
     pred::from_fn(move || {
         _invalid_next_validator_set(&trusted_state, &untrusted_sh, &untrusted_next_vals)
     })
     .named("invalid_next_validator_set")
 }
 
-fn verify_pred(
-    trusted_state: TrustedState,
-    untrusted_sh: SignedHeader,
-    untrusted_vals: ValidatorSet,
-    untrusted_next_vals: ValidatorSet,
-    trust_level: TrustLevel,
+fn verify_pred<'a>(
+    trusted_state: &'a TrustedState,
+    untrusted_sh: &'a SignedHeader,
+    untrusted_vals: &'a ValidatorSet,
+    untrusted_next_vals: &'a ValidatorSet,
+    trust_level: &'a TrustLevel,
 
     // Operations
-    validator: impl CommitValidator + Clone,
-    calculator: impl VotingPowerCalculator + Clone,
-    header_hasher: impl HeaderHasher + Clone,
-) -> impl Predicate + Inspect {
-    validator_sets_match(untrusted_sh.clone(), untrusted_vals.clone())
-        .and(next_validators_match(
-            untrusted_sh.clone(),
-            untrusted_next_vals.clone(),
-        ))
+    validator: &'a impl CommitValidator,
+    calculator: &'a impl VotingPowerCalculator,
+    header_hasher: &'a impl HeaderHasher,
+) -> impl Predicate + Inspect + 'a {
+    validator_sets_match(&untrusted_sh, &untrusted_vals)
+        .and(next_validators_match(&untrusted_sh, &untrusted_next_vals))
         .and(header_matches_commit(
-            untrusted_sh.header.clone(),
-            untrusted_sh.commit.clone(),
-            header_hasher.clone(),
+            &untrusted_sh.header,
+            &untrusted_sh.commit,
+            header_hasher,
         ))
         .and(valid_commit(
-            untrusted_sh.commit.clone(),
-            untrusted_sh.validators.clone(),
-            validator.clone(),
+            &untrusted_sh.commit,
+            &untrusted_sh.validators,
+            validator,
         ))
         .and(is_monotonic_bft_time(
-            untrusted_sh.header.clone(),
-            trusted_state.header.clone(),
+            &untrusted_sh.header,
+            &trusted_state.header,
         ))
         .and(is_monotonic_height(
-            trusted_state.header.clone(),
-            untrusted_sh.header.clone(),
+            &trusted_state.header,
+            &untrusted_sh.header,
         ))
         .and(not(invalid_next_validator_set(
-            trusted_state.clone(),
-            untrusted_sh.clone(),
-            untrusted_next_vals.clone(),
+            trusted_state,
+            untrusted_sh,
+            untrusted_next_vals,
         )))
         .and(has_sufficient_validators_overlap(
-            untrusted_sh.commit.clone(),
-            trusted_state.validators.clone(),
-            trust_level.clone(),
-            calculator.clone(),
+            &untrusted_sh.commit,
+            &trusted_state.validators,
+            trust_level,
+            calculator,
         ))
         .and(has_sufficient_signers_overlap(
-            untrusted_sh.commit.clone(),
-            untrusted_vals.clone(),
-            trust_level.clone(),
-            calculator.clone(),
+            &untrusted_sh.commit,
+            untrusted_vals,
+            trust_level,
+            calculator,
         ))
 }
 
@@ -355,64 +380,46 @@ fn verify(
     trust_level: TrustLevel,
 
     // Operations
-    validator: impl CommitValidator + Clone,
-    calculator: impl VotingPowerCalculator + Clone,
-    header_hasher: impl HeaderHasher + Clone,
+    validator: impl CommitValidator,
+    calculator: impl VotingPowerCalculator,
+    header_hasher: impl HeaderHasher,
 ) -> Result<(), Error> {
     // shouldn't this return a new TrustedState?
 
-    if !validator_sets_match(untrusted_sh.clone(), untrusted_vals.clone()).eval() {
+    if !validator_sets_match(&untrusted_sh, &untrusted_vals).eval() {
         return Err(Error::InvalidValidatorSet);
     }
 
-    if !next_validators_match(untrusted_sh.clone(), untrusted_next_vals.clone()).eval() {
+    if !next_validators_match(&untrusted_sh, &untrusted_next_vals).eval() {
         return Err(Error::InvalidNextValidatorSet);
     }
 
-    if !header_matches_commit(
-        untrusted_sh.header.clone(),
-        untrusted_sh.commit.clone(),
-        header_hasher.clone(),
-    )
-    .eval()
-    {
+    if !header_matches_commit(&untrusted_sh.header, &untrusted_sh.commit, &header_hasher).eval() {
         return Err(Error::InvalidCommitValue);
     }
 
-    if !valid_commit(
-        untrusted_sh.commit.clone(),
-        untrusted_sh.validators.clone(),
-        validator.clone(),
-    )
-    .eval()
-    {
+    if !valid_commit(&untrusted_sh.commit, &untrusted_sh.validators, &validator).eval() {
         return Err(Error::ImplementationSpecific);
     }
 
-    if !is_monotonic_bft_time(untrusted_sh.header.clone(), trusted_state.header.clone()).eval() {
+    if !is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.header).eval() {
         return Err(Error::NonMonotonicBftTime);
     }
 
-    if !is_monotonic_height(trusted_state.header.clone(), untrusted_sh.header.clone()).eval() {
+    if !is_monotonic_height(&trusted_state.header, &untrusted_sh.header).eval() {
         return Err(Error::NonIncreasingHeight);
     }
 
     // XXX: why not integrate this into next_validators_match check?
-    if !invalid_next_validator_set(
-        trusted_state.clone(),
-        untrusted_sh.clone(),
-        untrusted_next_vals.clone(),
-    )
-    .eval()
-    {
+    if !invalid_next_validator_set(&trusted_state, &untrusted_sh, &untrusted_next_vals).eval() {
         return Err(Error::InvalidNextValidatorSet);
     }
 
     if !has_sufficient_validators_overlap(
-        untrusted_sh.commit.clone(),
-        trusted_state.validators.clone(),
-        trust_level.clone(),
-        calculator.clone(),
+        &untrusted_sh.commit,
+        &trusted_state.validators,
+        &trust_level,
+        &calculator,
     )
     .eval()
     {
@@ -420,10 +427,10 @@ fn verify(
     }
 
     if !has_sufficient_signers_overlap(
-        untrusted_sh.commit.clone(),
-        untrusted_vals.clone(),
-        trust_level.clone(),
-        calculator.clone(),
+        &untrusted_sh.commit,
+        &untrusted_vals,
+        &trust_level,
+        &calculator,
     )
     .eval()
     {
@@ -498,14 +505,14 @@ fn main() {
     }
 
     let pred = verify_pred(
-        trusted_state,
-        untrusted_sh,
-        untrusted_vals,
-        untrusted_next_vals,
-        trust_level,
-        MockCommitValidator,
-        MockVotingPowerCalculator,
-        MockHeaderHasher,
+        &trusted_state,
+        &untrusted_sh,
+        &untrusted_vals,
+        &untrusted_next_vals,
+        &trust_level,
+        &MockCommitValidator,
+        &MockVotingPowerCalculator,
+        &MockHeaderHasher,
     );
 
     #[cfg(feature = "inspect-dot")]
