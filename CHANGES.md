@@ -4,6 +4,7 @@ Dependencies
 - Update to bytes `0.5` and amino_rs `0.5`.
 - Tokens for amino_rs are now fully non-conflicting with prost. Allowing both to be used together 
 - Made RPC type values optional for full compatibility with tendermint-go@v0.32: `abci_info`, `abci_query` [#120]
+- JSON ID is JSON specification compatible and accepts int, string or null - [#88]
 
 ## [0.11.0] (2019-12-11)
 
