@@ -45,7 +45,10 @@ pub struct Header {
     pub consensus_hash: Hash,
 
     /// State after txs from the previous block
-    #[serde(deserialize_with = "serializers::parse_hex")]
+    #[serde(
+        serialize_with = "serializers::serialize_hex",
+        deserialize_with = "serializers::parse_hex"
+    )]
     pub app_hash: Vec<u8>,
 
     /// Root hash of all results from the txs from the previous block
@@ -79,4 +82,16 @@ pub struct Version {
         deserialize_with = "serializers::parse_u64"
     )]
     pub app: u64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Header;
+    use crate::test::test_serialization_roundtrip;
+
+    #[test]
+    fn serialization_roundtrip() {
+        let json_data = include_str!("../../tests/support/serialization/block/header.json");
+        test_serialization_roundtrip::<Header>(json_data);
+    }
 }

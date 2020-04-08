@@ -582,8 +582,8 @@ mod tests {
     }
 
     // valid to skip, but invalid commit. 1 validator.
-    #[tokio::test]
-    async fn test_verify_single_skip_1_val_verify() {
+    #[test]
+    fn test_verify_single_skip_1_val_verify() {
         let vac = ValsAndCommit::new(vec![0], vec![0]);
         let ts = &init_trusted_state(vac, vec![0], 1);
 
@@ -606,8 +606,8 @@ mod tests {
 
     // valid commit and data, starting with 1 validator.
     // test if we can skip to it.
-    #[tokio::test]
-    async fn test_verify_single_skip_1_val_skip() {
+    #[test]
+    fn test_verify_single_skip_1_val_skip() {
         let mut vac = ValsAndCommit::new(vec![0], vec![0]);
         let ts = &init_trusted_state(vac.clone(), vec![0], 1);
         //*****
@@ -644,8 +644,8 @@ mod tests {
 
     // valid commit and data, starting with 2 validators.
     // test if we can skip to it.
-    #[tokio::test]
-    async fn test_verify_single_skip_2_val_skip() {
+    #[test]
+    fn test_verify_single_skip_2_val_skip() {
         let mut vac = ValsAndCommit::new(vec![0, 1], vec![0, 1]);
         let ts = &init_trusted_state(vac.clone(), vec![0, 1], 1);
 
@@ -684,8 +684,8 @@ mod tests {
 
     // valid commit and data, starting with 3 validators.
     // test if we can skip to it.
-    #[tokio::test]
-    async fn test_verify_single_skip_3_val_skip() {
+    #[test]
+    fn test_verify_single_skip_3_val_skip() {
         let mut vac = ValsAndCommit::new(vec![0, 1, 2], vec![0, 1, 2]);
         let ts = &init_trusted_state(vac.clone(), vec![0, 1, 2], 1);
 
@@ -736,8 +736,8 @@ mod tests {
         assert_single_err(ts, vac, err.into());
     }
 
-    #[tokio::test]
-    async fn test_verify_single_skip_4_val_skip() {
+    #[test]
+    fn test_verify_single_skip_4_val_skip() {
         let vac = ValsAndCommit::new(vec![0, 1, 2, 3], vec![0, 1, 2, 3]);
         let ts = &init_trusted_state(vac.clone(), vec![0, 1, 2, 3], 1);
 
