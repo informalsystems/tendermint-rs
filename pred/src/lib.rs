@@ -285,6 +285,36 @@ where
     }
 }
 
+pub struct EqualPredicate<T> {
+    left: T,
+    right: T,
+}
+
+impl<T> EqualPredicate<T> {
+    pub fn new(left: T, right: T) -> Self {
+        Self { left, right }
+    }
+}
+
+impl<T> Predicate for EqualPredicate<T>
+where
+    T: PartialEq + Display,
+{
+    fn eval(&self) -> bool {
+        self.left == self.right
+    }
+}
+
+#[cfg(feature = "inspect")]
+impl<T> Inspect for EqualPredicate<T>
+where
+    T: PartialEq + Display,
+{
+    fn inspect(&self) -> PredTree {
+        PredTree::Leaf((format!("{} == {}", self.left, self.right), self.eval()).into())
+    }
+}
+
 pub struct LessThanPredicate<T> {
     left: T,
     right: T,
@@ -312,6 +342,36 @@ where
 {
     fn inspect(&self) -> PredTree {
         PredTree::Leaf((format!("{} < {}", self.left, self.right), self.eval()).into())
+    }
+}
+
+pub struct GreaterThanPredicate<T> {
+    left: T,
+    right: T,
+}
+
+impl<T> GreaterThanPredicate<T> {
+    pub fn new(left: T, right: T) -> Self {
+        Self { left, right }
+    }
+}
+
+impl<T> Predicate for GreaterThanPredicate<T>
+where
+    T: PartialOrd + Display,
+{
+    fn eval(&self) -> bool {
+        self.left.gt(&self.right)
+    }
+}
+
+#[cfg(feature = "inspect")]
+impl<T> Inspect for GreaterThanPredicate<T>
+where
+    T: PartialOrd + Display,
+{
+    fn inspect(&self) -> PredTree {
+        PredTree::Leaf((format!("{} > {}", self.left, self.right), self.eval()).into())
     }
 }
 
@@ -522,10 +582,22 @@ where
     p.not()
 }
 
+/// Builds a predicate which evaluates to true when `left` is equal to `right`,
+/// and to `false` otherwise.
+pub fn equal<T>(left: T, right: T) -> EqualPredicate<T> {
+    EqualPredicate::new(left, right)
+}
+
 /// Builds a predicate which evaluates to true when `left` is strictly smaller than `right`,
 /// and to `false` otherwise.
 pub fn less_than<T>(left: T, right: T) -> LessThanPredicate<T> {
     LessThanPredicate::new(left, right)
+}
+
+/// Builds a predicate which evaluates to true when `left` is strictly greater than `right`,
+/// and to `false` otherwise.
+pub fn greater_than<T>(left: T, right: T) -> GreaterThanPredicate<T> {
+    GreaterThanPredicate::new(left, right)
 }
 
 /// Builds a predicate which evaluates to the result of invoking the given closure.
@@ -586,11 +658,8 @@ pub fn boxed(pred: impl Predicate + 'static) -> BoxedPredicate {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // use derive_more::Display;
     use quickcheck_macros::quickcheck;
 
-    // #[derive(Display)]
-    // #[display(fmt = "bar({} > 0)", self.bar[0])]
     struct Foo {
         bar: Vec<i32>,
     }
@@ -652,6 +721,24 @@ mod tests {
     fn not_eval_to_neg(value: bool) -> bool {
         let p = always(value);
         evals_to(p.not(), !value)
+    }
+
+    #[quickcheck]
+    fn less_than_eval(left: i32, right: i32) -> bool {
+        let p = less_than(left, right);
+        evals_to(p, left < right)
+    }
+
+    #[quickcheck]
+    fn greater_than_eval(left: i32, right: i32) -> bool {
+        let p = greater_than(left, right);
+        evals_to(p, left > right)
+    }
+
+    #[quickcheck]
+    fn equal_eval(left: i32, right: i32) -> bool {
+        let p = equal(left, right);
+        evals_to(p, left == right)
     }
 
     #[quickcheck]
