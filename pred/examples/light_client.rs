@@ -331,69 +331,17 @@ fn verify_pred(
     invalid_next_validator_set: impl Predicate + Inspect,
     has_sufficient_validators_overlap: impl Predicate + Inspect,
     has_sufficient_signers_overlap: impl Predicate + Inspect,
-) -> impl Predicate + Inspect {
+) -> impl Assertion<Error> + Predicate + Inspect {
     validator_sets_match
-        .and(next_validators_match)
-        .and(header_matches_commit)
-        .and(valid_commit)
-        .and(is_monotonic_bft_time)
-        .and(is_monotonic_height)
-        .and(not(invalid_next_validator_set))
-        .and(has_sufficient_validators_overlap)
-        .and(has_sufficient_signers_overlap)
-}
-
-fn verify(
-    validator_sets_match: impl Predicate,
-    next_validators_match: impl Predicate,
-    header_matches_commit: impl Predicate,
-    valid_commit: impl Predicate,
-    is_monotonic_bft_time: impl Predicate,
-    is_monotonic_height: impl Predicate,
-    invalid_next_validator_set: impl Predicate,
-    has_sufficient_validators_overlap: impl Predicate,
-    has_sufficient_signers_overlap: impl Predicate,
-) -> Result<(), Error> {
-    // shouldn't this return a new TrustedState?
-
-    if !validator_sets_match.eval() {
-        return Err(Error::InvalidValidatorSet);
-    }
-
-    if !next_validators_match.eval() {
-        return Err(Error::InvalidNextValidatorSet);
-    }
-
-    if !header_matches_commit.eval() {
-        return Err(Error::InvalidCommitValue);
-    }
-
-    if !valid_commit.eval() {
-        return Err(Error::ImplementationSpecific);
-    }
-
-    if !is_monotonic_bft_time.eval() {
-        return Err(Error::NonMonotonicBftTime);
-    }
-
-    if !is_monotonic_height.eval() {
-        return Err(Error::NonIncreasingHeight);
-    }
-
-    // XXX: why not integrate this into next_validators_match check?
-    if !invalid_next_validator_set.eval() {
-        return Err(Error::InvalidNextValidatorSet);
-    }
-
-    if !has_sufficient_validators_overlap.eval() {
-        return Err(Error::InsufficientVotingPower);
-    }
-
-    if !has_sufficient_signers_overlap.eval() {
-        return Err(Error::InvalidCommit);
-    }
-
-    Ok(())
+        .to_assert(|_| Error::InvalidValidatorSet)
+        .and(next_validators_match.to_assert(|_| Error::InvalidNextValidatorSet))
+        .and(header_matches_commit.to_assert(|_| Error::InvalidCommitValue))
+        .and(valid_commit.to_assert(|_| Error::ImplementationSpecific))
+        .and(is_monotonic_bft_time.to_assert(|_| Error::NonMonotonicBftTime))
+        .and(is_monotonic_height.to_assert(|_| Error::NonIncreasingHeight))
+        .and(not(invalid_next_validator_set).to_assert(|_| Error::InvalidNextValidatorSet))
+        .and(has_sufficient_validators_overlap.to_assert(|_| Error::InsufficientVotingPower))
+        .and(has_sufficient_signers_overlap.to_assert(|_| Error::InvalidCommit))
 }
 
 fn main() {
@@ -490,7 +438,7 @@ fn main() {
         &MockVotingPowerCalculator,
     );
 
-    let pred = verify_pred(
+    let verify_pred = verify_pred(
         &p_validator_sets_match,
         &p_next_validators_match,
         &p_header_matches_commit,
@@ -503,28 +451,18 @@ fn main() {
     );
 
     #[cfg(feature = "inspect-dot")]
-    println!("{}", pred.inspect().to_graph());
+    println!("{}", verify_pred.inspect().to_graph());
 
     #[cfg(feature = "inspect-text")]
-    println!("{}", pred.inspect());
+    println!("{}", verify_pred.inspect());
 
-    println!("Result: {}", pred.eval());
+    println!("Result: {}", verify_pred.eval());
 
-    let result = verify(
-        &p_validator_sets_match,
-        &p_next_validators_match,
-        &p_header_matches_commit,
-        &p_valid_commit,
-        &p_is_monotonic_bft_time,
-        &p_is_monotonic_height,
-        &p_invalid_next_validator_set,
-        &p_has_sufficient_validators_overlap,
-        &p_has_sufficient_signers_overlap,
-    );
+    let result = verify_pred.assert();
 
     println!("Result: {}", result.is_ok());
 
-    if pred.eval() {
+    if verify_pred.eval() {
         assert!(result.is_ok());
     } else {
         assert!(result.is_err());

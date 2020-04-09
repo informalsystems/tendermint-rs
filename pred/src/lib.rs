@@ -16,11 +16,63 @@ pub trait Predicate {
     fn eval(&self) -> bool;
 }
 
+pub trait Assertion<E> {
+    fn assert(&self) -> Result<(), E>;
+}
+
+pub struct Assert<P, E> {
+    pred: P,
+    if_false: Box<dyn Fn(&P) -> E>,
+}
+
+impl<P, E> Assertion<E> for Assert<P, E>
+where
+    P: Predicate,
+{
+    fn assert(&self) -> Result<(), E> {
+        if self.pred.eval() {
+            Ok(())
+        } else {
+            Err((self.if_false)(&self.pred))
+        }
+    }
+}
+
+impl<P, E> Predicate for Assert<P, E>
+where
+    P: Predicate,
+{
+    fn eval(&self) -> bool {
+        self.assert().is_ok()
+    }
+}
+
+#[cfg(feature = "inspect")]
+impl<P, E> Inspect for Assert<P, E>
+where
+    P: Inspect,
+{
+    fn inspect(&self) -> PredTree {
+        self.pred.inspect()
+    }
+}
+
 /// Extension methods for predicates.
 pub trait PredicateExt
 where
     Self: Predicate,
 {
+    fn to_assert<E, F>(self, if_false: F) -> Assert<Self, E>
+    where
+        Self: Sized,
+        F: Fn(&Self) -> E + 'static,
+    {
+        Assert {
+            pred: self,
+            if_false: Box::new(if_false),
+        }
+    }
+
     /// Build the conjunction of this predicate with `other`.
     fn and<P>(self, other: P) -> AndPredicate<Self, P>
     where
@@ -183,6 +235,18 @@ where
     }
 }
 
+impl<P, Q, E> Assertion<E> for AndPredicate<P, Q>
+where
+    P: Assertion<E>,
+    Q: Assertion<E>,
+{
+    fn assert(&self) -> Result<(), E> {
+        self.left.assert()?;
+        self.right.assert()?;
+        Ok(())
+    }
+}
+
 #[cfg(feature = "inspect")]
 impl<P, Q> Inspect for AndPredicate<P, Q>
 where
@@ -209,6 +273,20 @@ where
 {
     fn eval(&self) -> bool {
         self.left.eval() || self.right.eval()
+    }
+}
+
+impl<P, Q, E> Assertion<E> for OrPredicate<P, Q>
+where
+    P: Assertion<E>,
+    Q: Assertion<E>,
+{
+    fn assert(&self) -> Result<(), E> {
+        if self.left.assert().is_err() {
+            self.right.assert()
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -653,6 +731,17 @@ pub fn boxed(pred: impl Predicate + Inspect + 'static) -> BoxedPredicate {
 #[cfg(not(feature = "inspect"))]
 pub fn boxed(pred: impl Predicate + 'static) -> BoxedPredicate {
     BoxedPredicate::new(pred)
+}
+
+pub fn assert<P, E>(pred: P, f: impl Fn(&P) -> E + 'static) -> Assert<P, E>
+where
+    P: Predicate,
+{
+    pred.to_assert(f)
+}
+
+pub fn const_assert<E>(value: bool, f: impl Fn() -> E + 'static) -> Assert<ConstPredicate, E> {
+    ConstPredicate::new(value).to_assert(move |_| f())
 }
 
 #[cfg(test)]
