@@ -321,119 +321,75 @@ fn invalid_next_validator_set<'a>(
     .named("invalid_next_validator_set")
 }
 
-fn verify_pred<'a>(
-    trusted_state: &'a TrustedState,
-    untrusted_sh: &'a SignedHeader,
-    untrusted_vals: &'a ValidatorSet,
-    untrusted_next_vals: &'a ValidatorSet,
-    trust_level: &'a TrustLevel,
-
-    // Operations
-    validator: &'a impl CommitValidator,
-    calculator: &'a impl VotingPowerCalculator,
-    header_hasher: &'a impl HeaderHasher,
-) -> impl Predicate + Inspect + 'a {
-    validator_sets_match(&untrusted_sh, &untrusted_vals)
-        .and(next_validators_match(&untrusted_sh, &untrusted_next_vals))
-        .and(header_matches_commit(
-            &untrusted_sh.header,
-            &untrusted_sh.commit,
-            header_hasher,
-        ))
-        .and(valid_commit(
-            &untrusted_sh.commit,
-            &untrusted_sh.validators,
-            validator,
-        ))
-        .and(is_monotonic_bft_time(
-            &untrusted_sh.header,
-            &trusted_state.header,
-        ))
-        .and(is_monotonic_height(
-            &trusted_state.header,
-            &untrusted_sh.header,
-        ))
-        .and(not(invalid_next_validator_set(
-            trusted_state,
-            untrusted_sh,
-            untrusted_next_vals,
-        )))
-        .and(has_sufficient_validators_overlap(
-            &untrusted_sh.commit,
-            &trusted_state.validators,
-            trust_level,
-            calculator,
-        ))
-        .and(has_sufficient_signers_overlap(
-            &untrusted_sh.commit,
-            untrusted_vals,
-            trust_level,
-            calculator,
-        ))
+fn verify_pred(
+    validator_sets_match: impl Predicate + Inspect,
+    next_validators_match: impl Predicate + Inspect,
+    header_matches_commit: impl Predicate + Inspect,
+    valid_commit: impl Predicate + Inspect,
+    is_monotonic_bft_time: impl Predicate + Inspect,
+    is_monotonic_height: impl Predicate + Inspect,
+    invalid_next_validator_set: impl Predicate + Inspect,
+    has_sufficient_validators_overlap: impl Predicate + Inspect,
+    has_sufficient_signers_overlap: impl Predicate + Inspect,
+) -> impl Predicate + Inspect {
+    validator_sets_match
+        .and(next_validators_match)
+        .and(header_matches_commit)
+        .and(valid_commit)
+        .and(is_monotonic_bft_time)
+        .and(is_monotonic_height)
+        .and(not(invalid_next_validator_set))
+        .and(has_sufficient_validators_overlap)
+        .and(has_sufficient_signers_overlap)
 }
 
 fn verify(
-    trusted_state: TrustedState,
-    untrusted_sh: SignedHeader,
-    untrusted_vals: ValidatorSet,
-    untrusted_next_vals: ValidatorSet,
-    trust_level: TrustLevel,
-
-    // Operations
-    validator: impl CommitValidator,
-    calculator: impl VotingPowerCalculator,
-    header_hasher: impl HeaderHasher,
+    validator_sets_match: impl Predicate,
+    next_validators_match: impl Predicate,
+    header_matches_commit: impl Predicate,
+    valid_commit: impl Predicate,
+    is_monotonic_bft_time: impl Predicate,
+    is_monotonic_height: impl Predicate,
+    invalid_next_validator_set: impl Predicate,
+    has_sufficient_validators_overlap: impl Predicate,
+    has_sufficient_signers_overlap: impl Predicate,
 ) -> Result<(), Error> {
     // shouldn't this return a new TrustedState?
 
-    if !validator_sets_match(&untrusted_sh, &untrusted_vals).eval() {
+    if !validator_sets_match.eval() {
         return Err(Error::InvalidValidatorSet);
     }
 
-    if !next_validators_match(&untrusted_sh, &untrusted_next_vals).eval() {
+    if !next_validators_match.eval() {
         return Err(Error::InvalidNextValidatorSet);
     }
 
-    if !header_matches_commit(&untrusted_sh.header, &untrusted_sh.commit, &header_hasher).eval() {
+    if !header_matches_commit.eval() {
         return Err(Error::InvalidCommitValue);
     }
 
-    if !valid_commit(&untrusted_sh.commit, &untrusted_sh.validators, &validator).eval() {
+    if !valid_commit.eval() {
         return Err(Error::ImplementationSpecific);
     }
 
-    if !is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.header).eval() {
+    if !is_monotonic_bft_time.eval() {
         return Err(Error::NonMonotonicBftTime);
     }
 
-    if !is_monotonic_height(&trusted_state.header, &untrusted_sh.header).eval() {
+    if !is_monotonic_height.eval() {
         return Err(Error::NonIncreasingHeight);
     }
 
     // XXX: why not integrate this into next_validators_match check?
-    if !invalid_next_validator_set(&trusted_state, &untrusted_sh, &untrusted_next_vals).eval() {
+    if !invalid_next_validator_set.eval() {
         return Err(Error::InvalidNextValidatorSet);
     }
 
-    if !has_sufficient_validators_overlap(
-        &untrusted_sh.commit,
-        &trusted_state.validators,
-        &trust_level,
-        &calculator,
-    )
-    .eval()
-    {
+    if !has_sufficient_validators_overlap.eval() {
         return Err(Error::InsufficientVotingPower);
     }
 
-    if !has_sufficient_signers_overlap(
-        &untrusted_sh.commit,
-        &untrusted_vals,
-        &trust_level,
-        &calculator,
-    )
-    .eval()
-    {
+    if !has_sufficient_signers_overlap.eval() {
         return Err(Error::InvalidCommit);
     }
 
@@ -504,15 +460,46 @@ fn main() {
         }
     }
 
-    let pred = verify_pred(
-        &trusted_state,
-        &untrusted_sh,
-        &untrusted_vals,
-        &untrusted_next_vals,
-        &trust_level,
-        &MockCommitValidator,
-        &MockVotingPowerCalculator,
+    let p_validator_sets_match = validator_sets_match(&untrusted_sh, &untrusted_vals);
+    let p_next_validators_match = next_validators_match(&untrusted_sh, &untrusted_next_vals);
+    let p_header_matches_commit = header_matches_commit(
+        &untrusted_sh.header,
+        &untrusted_sh.commit,
         &MockHeaderHasher,
+    );
+    let p_valid_commit = valid_commit(
+        &untrusted_sh.commit,
+        &untrusted_sh.validators,
+        &MockCommitValidator,
+    );
+    let p_is_monotonic_bft_time =
+        is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.header);
+    let p_is_monotonic_height = is_monotonic_height(&trusted_state.header, &untrusted_sh.header);
+    let p_invalid_next_validator_set =
+        invalid_next_validator_set(&trusted_state, &untrusted_sh, &untrusted_next_vals);
+    let p_has_sufficient_validators_overlap = has_sufficient_validators_overlap(
+        &untrusted_sh.commit,
+        &trusted_state.validators,
+        &trust_level,
+        &MockVotingPowerCalculator,
+    );
+    let p_has_sufficient_signers_overlap = has_sufficient_signers_overlap(
+        &untrusted_sh.commit,
+        &untrusted_vals,
+        &trust_level,
+        &MockVotingPowerCalculator,
+    );
+
+    let pred = verify_pred(
+        &p_validator_sets_match,
+        &p_next_validators_match,
+        &p_header_matches_commit,
+        &p_valid_commit,
+        &p_is_monotonic_bft_time,
+        &p_is_monotonic_height,
+        &p_invalid_next_validator_set,
+        &p_has_sufficient_validators_overlap,
+        &p_has_sufficient_signers_overlap,
     );
 
     #[cfg(feature = "inspect-dot")]
@@ -520,4 +507,26 @@ fn main() {
 
     #[cfg(feature = "inspect-text")]
     println!("{}", pred.inspect());
+
+    println!("Result: {}", pred.eval());
+
+    let result = verify(
+        &p_validator_sets_match,
+        &p_next_validators_match,
+        &p_header_matches_commit,
+        &p_valid_commit,
+        &p_is_monotonic_bft_time,
+        &p_is_monotonic_height,
+        &p_invalid_next_validator_set,
+        &p_has_sufficient_validators_overlap,
+        &p_has_sufficient_signers_overlap,
+    );
+
+    println!("Result: {}", result.is_ok());
+
+    if pred.eval() {
+        assert!(result.is_ok());
+    } else {
+        assert!(result.is_err());
+    }
 }
