@@ -121,7 +121,7 @@ of *h.NextValidators*, such that:
 
 #### **[TMBC-CorrFull]**: 
 Every correct full node locally stores a prefix of the
-current list of headers from [**[TMBC-SEQ]**](TMBC-SEQ-link).
+current list of headers from [**[TMBC-SEQ]**][TMBC-SEQ-link].
 
 
 
