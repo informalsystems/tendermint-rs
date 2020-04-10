@@ -66,7 +66,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
     }
 }
 
-// this private helper function does *not* to any validation but extracts
+// this private helper function does *not* do any validation but extracts
 // all non-BlockIDFlagAbsent votes from the commit:
 fn non_absent_votes(commit: &block::Commit) -> Vec<vote::Vote> {
     let mut votes: Vec<vote::Vote> = Default::default();
