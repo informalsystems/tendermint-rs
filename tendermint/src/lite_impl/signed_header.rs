@@ -5,6 +5,7 @@ use crate::lite::ValidatorSet;
 use crate::validator::Set;
 use crate::{block, block::BlockIDFlag, hash, lite, vote};
 use anomaly::fail;
+use std::convert::TryFrom;
 
 impl lite::Commit for block::signed_header::SignedHeader {
     type ValidatorSet = Set;
@@ -84,7 +85,8 @@ fn non_absent_votes(commit: &block::Commit) -> Vec<vote::Vote> {
                     block_id: Option::from(commit.block_id.clone()),
                     timestamp: commit_sig.timestamp,
                     validator_address: val_addr,
-                    validator_index: u64::try_from(i).expect("usize to u64 conversion failed for val index"),
+                    validator_index: u64::try_from(i)
+                        .expect("usize to u64 conversion failed for validator index"),
                     signature: sig,
                 };
                 votes.push(vote);
