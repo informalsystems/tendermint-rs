@@ -8,6 +8,7 @@ pub mod ed25519;
 pub mod message;
 pub mod ping;
 pub mod proposal;
+mod registered_json;
 pub mod remote_error;
 pub mod signature;
 pub mod time;
