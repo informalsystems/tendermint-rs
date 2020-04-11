@@ -46,7 +46,7 @@ where
 }
 
 /// Parse `Duration` from a JSON string containing a nanosecond count
-pub(crate) fn parse_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+pub fn parse_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -59,7 +59,7 @@ where
 }
 
 /// Serialize `Duration` as a JSON string containing a nanosecond count
-pub(crate) fn serialize_duration<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize_duration<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
