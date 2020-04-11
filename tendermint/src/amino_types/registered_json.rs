@@ -13,13 +13,18 @@ mod test {
         // but this is orthogonal to what this code wants to show.
     }
 
+    #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+    struct MsgOtherMadeUp {
+        pub test: String,
+    }
+
     // TODO: deserves a better name
     #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
     struct AminoJSON<T: Serialize + DeserializeOwned> {
         #[serde(alias = "type")]
-        pub type_name: Option<String>,
-        #[serde(bound(deserialize = "Option<T>: Deserialize<'de>"))]
-        pub value: Option<T>,
+        pub type_name: String,
+        #[serde(bound(deserialize = ""))]
+        pub value: T,
     }
 
     #[test]
@@ -32,5 +37,10 @@ mod test {
         let msg_unjail = res.unwrap().value;
         println!("{:?}", msg_unjail);
         test_serialization_roundtrip::<AminoJSON<MsgUnjail>>(&json_data);
+
+        let json_data2 = r#"{"type":"Foo","value":{"test":"Bar"}}"#;
+        let res2 = serde_json::from_str::<AminoJSON<MsgOtherMadeUp>>(json_data2);
+        println!("res: {:?}", res2);
+        test_serialization_roundtrip::<AminoJSON<MsgOtherMadeUp>>(&json_data2);
     }
 }
