@@ -45,10 +45,10 @@ transactions in the blocks in order to catch-up to the current height
 of the blockchain and the corresponding application state.
 
 In practice it is sufficient to catch-up only close to the current
-height: The Tendermint consensus reactor implements a similar
-functionality and can synchronize a node that is approximately 100
-blocks away from the current height of the blockchain. Fastsync should
-bring a node within this range.
+height: The Tendermint consensus reactor implements its own catch-up
+functionality and can synchronize a node that is close to the current height,
+perhaps within 10 blocks away from the current height of the blockchain.
+Fastsync should bring a node within this range.
 
 ### Blockchain
 
@@ -84,9 +84,9 @@ appended before time *t + ETIME*.
 
 #### **[TMBC-Auth-Byz]**:
 The authenticated Byzantine model assumes that no node (faulty or
-correct) may break digital signatures and in addition to this, no
+correct) may break digital signatures, but otherwise, no additional
 assumption is made about the internal behavior of faulty full
-nodes. That is, faulty nodes are limited in that they cannot forge
+nodes. That is, faulty nodes are only limited in that they cannot forge
 messages.
 
 <!-- The authenticated Byzantine model assumes [TMBC-Sign-NoForge] and -->
@@ -153,7 +153,7 @@ application state *s* that corresponds to the block and state of that
 height of the blockchain [**[TMBC-SEQ]**][TMBC-SEQ-link], and produces
 as output (i) a list *L* of blocks starting at height *h* to some height
 *terminationHeight*, and (ii) the application state when applying the
-transaction of the list *L* to *s*. Fastsync has to satisfy the following
+transactions of the list *L* to *s*. Fastsync has to satisfy the following
 properties [FS-Seq-?]:
 
 
@@ -787,7 +787,7 @@ checks in this order we observe:
   - If the first check passes and the second check
     fails (*VerifyCommit*), then the peer that provided *b1* is
     faulty.
-  - If both checks pass, the can trust *b1*
+  - If both checks pass, we can trust *b1*
 
 Based on this reasoning, we can ensure to only remove faulty peers
 from *peerIDs*.  That is, if
