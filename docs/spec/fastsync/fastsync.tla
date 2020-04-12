@@ -4,10 +4,10 @@
  protocol as implemented here:
  https://github.com/tendermint/tendermint/tree/master/blockchain/v2.
 
- We assume a system in which one node is trying to sync with the blockchain
-(replicated state machine) by downloading blocks and executing transactions
-(part of the block) against the application, and the set of full nodes
-(we call them peers) that are block providers.
+We assume a system in which one node is trying to sync with the blockchain
+(replicated state machine) by downloading blocks from the set of full nodes
+(we call them peers) that are block providers, and executing transactions
+(part of the block) against the application.
 
 Peers can be faulty, and we don't make any assumption about the rate of correct/faulty
 nodes in the node peerset (i.e., they can all be faulty). Correct peers are part
@@ -29,13 +29,13 @@ executes).
 As part of the fast sync protocol a node and the peers exchange the following messages:
 
 - StatusRequest
-- StatusReply
+- StatusResponse
 - BlockRequest
-- BlockReply
+- BlockResponse
 
 A node is periodically issuing StatusRequests to query peers for their current height (to decide what
-blocks to ask from what peers). Based on StatusReplies (that are sent by peers), the node queries
-blocks for some height(s) by sending them BlockRequest messages. A peer provides a requested block by
+blocks to ask from what peers). Based on StatusResponses (that are sent by peers), the node queries
+blocks for some height(s) by sending peers BlockRequest messages. A peer provides a requested block by
 BlockResponse message. In addition to those messages, a node in this spec receives additional
 input messages (events):
 
@@ -361,7 +361,7 @@ ExecuteBlocks(bPool) ==
     LET block1 == bStore[bPool.height] IN
     LET block2 == bStore[bPool.height+1] IN
 
-    IF block1 = NilBlock \/ block2 = NilBlock \* we don't have two next consequtive blocks
+    IF block1 = NilBlock \/ block2 = NilBlock \* we don't have two next consecutive blocks
     THEN bPool
     ELSE IF bPool.height > 1 /\ ~VerifyCommit(block1, block2.lastCommit)
          THEN RemovePeers({bPool.receivedBlocks[block1.height], bPool.receivedBlocks[block2.height]}, bPool)
@@ -373,7 +373,7 @@ ExecuteBlocks(bPool) ==
 \* See https://github.com/tendermint/tendermint/blob/dac030d6daf4d3e066d84275911128856838af4e/blockchain/v2/scheduler.go#L613
 TryPrunePeer(bPool, suspectedSet, isTimedOut) ==
     (* -----------------------------------------------------------------------------------------------------------------------*)
-    (* Corresponds to function prunablePeers the in scheduler.go file. Note that this function only checks if block has been  *)
+    (* Corresponds to function prunablePeers in scheduler.go file. Note that this function only checks if block has been  *)
     (* received from a peer during peerTimeout period.                                                                        *)
     (* Note that in case no request has been scheduled to a correct peer, or a request has been scheduled                     *)
     (* recently, so the peer hasn't responded yet, a peer will be removed as no block is received within peerTimeout.         *)
