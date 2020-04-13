@@ -73,11 +73,14 @@ Heights == 1..MAX_HEIGHT
 \* simplifies execute blocks logic. Used only in block store.
 HeightsPlus == 1..MAX_HEIGHT+1
 
+\* a special value for an undefined height
+NilHeight == 0
+
 \* the set of all peer ids the node can receive a message from
 AllPeerIds == CORRECT \union FAULTY
 
 \* the set of potential blocks ids. For simplification, correct blocks are equal to block height.
-BlockIds == Heights
+BlockIds == Heights \union {NilHeight}
 
 LastCommits == [blockId: BlockIds, enoughVotingPower: BOOLEAN]
 
@@ -91,15 +94,12 @@ NilCommit == [blockId |-> 0, enoughVotingPower |-> TRUE]
 
 Blocks == [height: Heights, lastCommit: LastCommits, wellFormed: BOOLEAN]
 
-BlocksWithNil == [height: Heights, lastCommit: LastCommits \union {NilCommit}, wellFormed: BOOLEAN]
+\*BlocksWithNil == [height: Heights, lastCommit: LastCommits, wellFormed: BOOLEAN]
 
 \* correct node will create always valid blocks, i.e., wellFormed = true and lastCommit is correct.
 CorrectBlock(h) == [height |-> h, lastCommit |-> CorrectLastCommit(h), wellFormed |-> TRUE]
 
 NilBlock == [height |-> 0, lastCommit |-> NilCommit, wellFormed |-> TRUE]
-
-\* a special value for an undefined height
-NilHeight == 0
 
 \* a special value for an undefined peer
 NilPeer == 0
@@ -112,7 +112,6 @@ NoMsg == [type |-> "None"]
 \* the variables of the node running fastsync
 VARIABLES
   state,                                     \* running or finished
-  blockPool
   (*
   blockPool [
     height,                                 \* current height we are trying to sync. Last block executed is height - 1
@@ -125,10 +124,11 @@ VARIABLES
     syncedBlocks                            \* number of blocks synced since last syncTimeout. If it is 0 when the next timeout occurs, then protocol terminates.
   ]
   *)
+  blockPool
+  
 
 \* the variables of the peers providing blocks
 VARIABLES
-  peersState
   (*
   peersState [
     peerHeights,                             \* track peer heights
@@ -136,6 +136,8 @@ VARIABLES
     blocksRequested                          \* set of BlockRequests received that are not answered yet
   ]
   *)
+  peersState
+  
 
  \* the variables for the network and scheduler
  VARIABLES
@@ -159,7 +161,7 @@ ControlMsgs ==
 InMsgs ==
     {NoMsg}
         \union
-    [type: {"blockResponse"}, peerId: AllPeerIds, block: BlocksWithNil]
+    [type: {"blockResponse"}, peerId: AllPeerIds, block: Blocks]
         \union
     [type: {"statusResponse"}, peerId: AllPeerIds, height: Heights]
         \union
@@ -193,15 +195,15 @@ InitNode ==
 \* Remove faulty peers.
 \* Returns new block pool.
 \* See https://github.com/tendermint/tendermint/blob/dac030d6daf4d3e066d84275911128856838af4e/blockchain/v2/scheduler.go#L222
-RemovePeers(peers, bPool) ==
-    LET pIds == bPool.peerIds \ peers IN
+RemovePeers(rmPeers, bPool) ==
+    LET keepPeers == bPool.peerIds \ rmPeers IN
     LET pHeights ==
-        [p \in AllPeerIds |-> IF p \in peers THEN NilHeight ELSE bPool.peerHeights[p]] IN
+        [p \in AllPeerIds |-> IF p \in rmPeers THEN NilHeight ELSE bPool.peerHeights[p]] IN
 
     LET failedRequests ==
         {h \in Heights: /\ h >= bPool.height
-                        /\ bPool.pendingBlocks[h] \in peers
-                        /\ bPool.receivedBlocks[h] \in peers} IN
+                        /\ \/ bPool.pendingBlocks[h] \in rmPeers
+                           \/ bPool.receivedBlocks[h] \in rmPeers} IN
     LET pBlocks ==
         [h \in Heights |-> IF h \in failedRequests THEN NilPeer ELSE bPool.pendingBlocks[h]] IN
     LET rBlocks ==
@@ -209,9 +211,9 @@ RemovePeers(peers, bPool) ==
     LET bStore ==
         [h \in Heights |-> IF h \in failedRequests THEN NilBlock ELSE bPool.blockStore[h]] IN
 
-    IF pIds /= bPool.peerIds
+    IF keepPeers /= bPool.peerIds
     THEN [bPool EXCEPT
-            !.peerIds = pIds,
+            !.peerIds = keepPeers,
             !.peerHeights = pHeights,
             !.pendingBlocks = pBlocks,
             !.receivedBlocks = rBlocks,
@@ -385,8 +387,10 @@ TryPrunePeer(bPool, suspectedSet, isTimedOut) ==
 
     (*
       Corresponds to logic for pruning a peer that is responsible for delivering block for the next height.
-      If a peer responsible for next height is correct, we don't remove it as logic is based on difference between pending time
-      and current time. In the synchronous system model, correct peer will always respond timely.
+      The pruning logic for the next height is based on the time when a BlockRequest is sent. Therefore, if a request is sent 
+      to a correct peer for the next height (blockPool.height), it should never be removed by this check as we assume that
+      correct peers respond timely and reliably. However, if a request is sent to a faulty peer then we 
+      might get response on time or not, which is modelled with nondeterministic isTimedOut flag.
       See scheduler.go
       https://github.com/tendermint/tendermint/blob/4298bbcc4e25be78e3c4f21979d6aa01aede6e87/blockchain/v2/scheduler.go#L617
     *)
@@ -532,8 +536,7 @@ SendSyncTimeoutMessage ==
     /\ UNCHANGED peersState
 
 
-SendControlMessage(pState) ==
-    \/ SendStatusResponseMessage(pState)
+SendControlMessage ==
     \/ SendAddPeerMessage
     \/ SendRemovePeerMessage
     \/ SendSyncTimeoutMessage
@@ -551,10 +554,14 @@ SendBlockResponseMessage(pState) ==
     \/  /\ peersState' = pState
         /\ inMsg' \in [type: {"blockResponse"}, peerId: FAULTY, block: Blocks]
 
-NextEnvStep(pState) ==
+SendResponseMessage(pState) == 
     \/  SendBlockResponseMessage(pState)
+    \/  SendStatusResponseMessage(pState)
+
+NextEnvStep(pState) ==
+    \/  SendResponseMessage(pState)
     \/  GrowBlockchain(pState)
-    \/  SendControlMessage(pState)
+    \/  SendControlMessage
 
 
 \* Peers consume a message and update it's local state. It then makes a single step, i.e., it sends at most single message.
@@ -623,7 +630,7 @@ TypeOK ==
                 height: Heights,
                 peerIds: SUBSET AllPeerIds,
                 peerHeights: [AllPeerIds -> Heights \union {NilHeight}],
-                blockStore: [Heights -> BlocksWithNil \union {NilBlock}],
+                blockStore: [Heights -> Blocks \union {NilBlock}],
                 receivedBlocks: [Heights -> AllPeerIds \union {NilPeer}],
                 pendingBlocks: [Heights -> AllPeerIds \union {NilPeer}],
                 syncedBlocks: Heights \union {NilHeight, -1},
@@ -652,10 +659,20 @@ PeerSetIsNeverEmpty == blockPool.peerIds /= {}
 StateNotFinished ==
     state /= "finished" \/ MaxPeerHeight(blockPool) = 1
 
+BlockPoolInvariant ==
+    \A h \in Heights:
+      \* waiting for a block to arrive
+      \/  /\ blockPool.receivedBlocks[h] = NilPeer
+          /\ blockPool.blockStore[h] = NilBlock
+      \* valid block is received and is present in the store
+      \/  /\ blockPool.receivedBlocks[h] /= NilPeer
+          /\ blockPool.blockStore[h] /= NilBlock
+          /\ blockPool.pendingBlocks[h] = NilPeer
+
 =============================================================================
 
 \*=============================================================================
 \* Modification History
+\* Last modified Mon Apr 13 18:58:59 CEST 2020 by zarkomilosevic
 \* Last modified Thu Apr 09 12:53:53 CEST 2020 by igor
-\* Last modified Wed Apr 08 17:02:14 CEST 2020 by zarkomilosevic
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic
