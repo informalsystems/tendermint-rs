@@ -264,7 +264,7 @@ Upon termination, the application state is the one that corresponds to
 the blockchain at height *terminationHeight*.
 
 > As the block of height *h + 1* is needed to verify the block of
-> height *h* we highlight th following clarification of the
+> height *h* we highlight the following clarification of the
 > termination height.
 
 
