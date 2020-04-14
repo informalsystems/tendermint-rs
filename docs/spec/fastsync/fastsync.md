@@ -7,31 +7,80 @@
 This document is the English specification of the *Fastsync*
 protocol. It consists of the following parts:
 
-- [Part I](#part-i---outside-view): Informal introduction; high-level (sequential) specification of the problem
-  addressed by *Fastsync*
-  
-- [Part II](#part-ii---protocol-view): Protocol view, 
-    - temporal logic specifications, 
-	- description of Fastsync V2 (the protocol underlying the current Golang
-      implementation)
-	- analysis of Fastsync V2 that highlights several issues that
-      prevent achieving some of the desired fault-tolerance properties
+- [Part I](#part-i---outside-view): This parts gives an introduction
+  into the problem addressed by the Fastsync protocol.
 
-- [Part III](#part-iii---suggestions-for-an-improved-fastsync-implementation): some suggestions on how to address the issues in the future
+   - [Context of this document](#Context-of-this-document): describes
+     other components that are relevant for this specification,
+     possible interactions, and use cases, etc.
+	 We also describe some [blockchain](#Blockchain) notions
+     necessary for this specification.
+		 
+   - [Informal Problem statement](#Informal-Problem-statement): For
+   the 
+   general audience, that is, engineers who want to get an overview
+   over 
+   what the component is doing
+   from a bird's eye view. 
+
+   - [Sequential Problem statement](#Sequential-Problem-statement):
+     Provides a mathematical definition of the problem statement in
+     its sequential form, that is, ignoring the distributed aspect of
+     the implementation of the blockchain.
+
+  
+- [Part II](#part-ii---protocol-view): Here we introduce the protocol
+  view, that is, distributed aspects,
+  and temporal logic specifications. In this specification we provide a
+  description of Fastsync V2 (the protocol underlying the current Golang
+  implementation), and an analysis of Fastsync V2 that highlights 
+  several issues that
+  prevent achieving some of the desired fault-tolerance
+  properties.
+  
+    - [Environment/Assumptions/Incentives](#Environment/Assumptions/Incentives): 
+  distributed aspects, including timing and correctness assumptions.
+  
+    - [Distributed Problem Statement](#Distributed-Problem-Statement):
+	  We discuss [design choices](#Design-choices) that relax the
+	  termination requirements of the
+        (abstract) sequential problem statement to be solvable in a
+        distributed
+		unreliable environment, and we describe which messages should be
+	  exchanged. We also give [temporal
+	  properties](#Temporal-Properties) here that formalize safety and
+        liveness
+		properties
+		
+    - [Definitions](#Definitions): Describes inputs, outputs,
+      variables used by the protocol, auxiliary functions
+	  
+    - [Algorithm Invariants](#Algorithm-Invariants): invariants over
+      the protocol variables that the implementation should maintain.
+	  
+    - [FastSync V2](#FastSync-V2): gives an outline of the solution,
+      and details of the functions used (with preconditions,
+      postconditions, error conditions).
+	  
+    - [Analysis of Fastsync V2](#Analysis-of-Fastsync-V2): describes
+      undesireable scenarios of Fastsync V2, and why they violate
+      desireable temporal logic specification in an unreliable
+      distributed system.
+
+- [Part III](#part-iii---suggestions-for-an-improved-fastsync-implementation):
+  some suggestions on how to address the issues in the future.
+  
+   - [Desirable Temporal Properties](#Desirable-Temporal-Properties):
+     we give temporal properties that describe a fault-tolerant
+     version
+	 of FastSync.
+	 
+   - [Suggestions](#Suggestions)  to address the issues discussed in the analysis.
   
 
 # Part I - Outside view
 
 ## Context of this document
-
-<!--
-> mention other components and or specifications that are relevant for this
-spec. Possible interactions, possible use cases, etc. 
----->
-<!--
-> should give the reader the understanding in what environment this component
-will be used. 
----->
 
 Fastsync is a protocol that is used by a full node to catch-up to the
 current state of a Tendermint blockchain. Its typical use case is a
@@ -149,10 +198,7 @@ current list of headers from [**[TMBC-SEQ]**][TMBC-SEQ-link].
 
 ## Informal Problem statement
 
-<!--
-> for the general audience, that is, engineers who want to get an overview over what the component is doing
-from a bird's eye view. 
----->
+
 A full node has as input a block of the blockchain at height *h* and
 the corresponding application state (or the prefix of the current
 blockchain until height *h*). It has access to a set *peerIDs* of full
@@ -164,9 +210,7 @@ block and then terminates.
 
 ## Sequential Problem statement
 
-<!--
-> should be English and precise. will be accompanied with a TLA spec.
----->
+
 
 *Fastsync* gets as input a block of height *h* and the corresponding
 application state *s* that corresponds to the block and state of that
@@ -219,18 +263,6 @@ Commit of the block at height  *terminationHeight + 1* in the blockchain.
 
 ## Environment/Assumptions/Incentives
 
-<!--
-> Introduce distributed aspects 
----->
-<!--
-> Timing and correctness assumptions. Possibly with justification that the
-assumptions make sense, e.g., it is in the interest of a full node to behave
-correctly 
----->
-<!--
-> should have clear formalization in temporal logic.
----->
-
 
 #### **[FS-A-NODE]**:
 We consider a node *FS* that performs *Fastsync*.
@@ -261,18 +293,11 @@ Delta*. This implies that we need a timeout of at least *2 Delta* for
 remote procedure calls to ensure that the response of a correct peer
 arrives before the timeout expires.
 
-<!--
-#### **[FS-A-LCC]**:
-The node *FS* executing Fastsync is following the protocol (it is correct).
----->
 
 ## Distributed Problem Statement
 
 ### Design choices
 
-<!--
-> input/output variables used to define the temporal properties. Most likely they come from an ADR
----->
 
 #### Two Kinds of Termination
 
@@ -555,6 +580,7 @@ can only be incremented if all blocks with lower height have been verified.
 
 ## FastSync V2
 
+
 <!--
 > Basic data structures. Simplified, so that we can focus on the distributed
 algorithm here. If existing: link to Tendermint data structures, and mentioned
@@ -690,12 +716,13 @@ func OnBlockResponse(addr Address, b Block)
     - *pendingblocks(b.Height) = addr*
 	- *b* satisfies basic soundness  
 - Expected postcondition
-    - if function `Execute` has been executed without error or was not executed:
+    - if function `Execute` has been executed without error or was not
+      executed:
         - *receivedBlocks(b.Height) = addr*
-	    - *blockstore(b.Height) = b*
-		- *peerTimeStamp[addr]* is set to a time between invocation and
+        - *blockstore(b.Height) = b*
+        - *peerTimeStamp[addr]* is set to a time between invocation and
           return of the function.
-		- *peerRate[addr]* is updated according to size of received
+        - *peerRate[addr]* is updated according to size of received
           block
 - Error condition
     - if precondition is violated: *addr* not in *peerIDs*; reset
@@ -773,7 +800,7 @@ guaranteed that a "reasonable" target height will be reached.
 
 # Part III - Suggestions for an Improved Fastsync Implementation 
 
-### Temporal Properties
+## Desirable Temporal Properties
 
 Instead of the limited termination properties [FS-VC-ALL-CORR-TERM]
 and [FS-VC-ALL-CORR-NONABORT], a fault-tolerant solution shall satisfy
@@ -787,6 +814,8 @@ it will terminate successfully.)
 #### **[NewFS-VC-TERM]**:
 *Fastsync* eventually terminates (successfully or with failure).
 
+
+## Suggestions
 
 ### Solution for [FS-ISSUE-KILL]
 
@@ -900,8 +929,7 @@ func SequentialVerify {
 			blockstore.RemoveFromPeer(receivedBlocks[height + 1]);
 			// we remove all blocks received from the faulty peer
 		    peerIDs.Remove(receivedBlocks(bnew.Height));
-			exit;
-			}
+			exit;			}
 		}
 }
 ```
