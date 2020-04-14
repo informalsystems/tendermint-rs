@@ -240,7 +240,7 @@ properties [FS-SEQ-?]:
 *Fastsync* eventually terminates.
 
  
-#### **[FS-SEQ-TERM]**:
+#### **[FS-SEQ-SAFE-START]**:
 Let *bh* be the height of the blockchain at the time *Fastsync*
 starts. By assumption we have *bh >= h*.
 When *Fastsync* terminates, it outputs a list of all blocks from
@@ -252,7 +252,7 @@ height *h* to some height *terminationHeight >= bh - 1*.
 > better to link the target height to a time close to the
 > termination. This is capture by the following specification:
 
-#### **[FS-SEQ-TERM-SYNC]**:
+#### **[FS-SEQ-SAFE-SYNC]**:
 Let *eh* be the height of the blockchain at the time *Fastsync*
 terminates.  There is a constant *D >= 1* such that when *Fastsync*
 terminates, it outputs a list of all blocks from height *h* to some
@@ -319,7 +319,7 @@ arrives before the timeout expires.
 We do not assume that there is a correct full node in
 *peerIDs*. Under this assumption no protocol can guarantee the combination
 of the properties [FS-SEQ-LIVE] and
-[FS-SEQ-TERM] and [FS-SEQ-TERM-SYNC] described in the sequential
+[FS-SEQ-SAFE-START] and [FS-SEQ-SAFE-SYNC] described in the sequential
 specification above. Thus, in the (unreliable) distributed setting, we
 consider two kinds of termination (successful and failure) and we will
 specify below under what (favorable) conditions *Fastsync* ensures to
@@ -391,7 +391,7 @@ Initially, the set *peerIDs* contains at least one correct full node.
 
 > While in principle the above condition can be part of a sufficient
 > condition to solve [FS-SEQ-LIVE] and
-> [FS-SEQ-TERM] and [FS-SEQ-TERM-SYNC], we will see below that the
+> [FS-SEQ-SAFE-START] and [FS-SEQ-SAFE-SYNC], we will see below that the
 > current implementation of Fastsync (V2) requires the following (much
 > stronger) requirement
 
@@ -425,7 +425,7 @@ blockchain.
 
 > As this specification does
 > not assume that a correct peer is at the most recent height
-> of the blockchain (it might lag behind), the property [FS-SEQ-TERM]
+> of the blockchain (it might lag behind), the property [FS-SEQ-SAFE-START]
 > cannot be ensured in an unreliable distributed setting. We consider
 > the following relaxation. (Which is typically sufficient for
 > Tendermint, as the consensus reactor then synchronizes from that
