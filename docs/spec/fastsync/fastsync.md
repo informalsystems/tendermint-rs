@@ -271,7 +271,7 @@ the blockchain at height *terminationHeight*.
 #### **[FS-SEQ-HEIGHT]**: 
 The returned value *terminationHeight* is the height of the block with the largest
 height that could be verified. In order to do so, *Fastsync* needs the
-Commit of the block at height  *terminationHeight + 1* in the blockchain.
+block at height  *terminationHeight + 1* of the blockchain.
 
 
 # Part II - Protocol view
