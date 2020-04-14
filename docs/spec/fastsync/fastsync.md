@@ -87,7 +87,6 @@ these tags we frequently use the following short forms:
 - FS: Fastsync
 - LIVE: liveness
 - INV: invariant
-- TERM: termination
 - A: assumption
 - V2: refers to specifics of Fastsync V2
 - FS-VAR: refers to properties of Fastsync protocol variables
