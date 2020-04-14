@@ -93,6 +93,26 @@ messages.
 <!-- [TMBC-FaultyFull], that is, faulty nodes are limited in that they -->
 <!-- cannot forge messages [TMBC-Sign-NoForge]. -->
 
+
+> We observed that in the existing documentation the term
+> *validator* refers to both a data structure and a full node that
+> participates in the distributed computation. Therefore, we introduce
+> the notions *validator pair* and *validator node*, respectively, to
+> distinguish these notions in the cases where they are not clear from
+> the context.
+
+
+#### **[TMBC-VALIDATOR-Pair]**:
+
+Given a full node, a 
+*validator pair* is a pair *(address, voting_power)*, where 
+  - *address* is the address (public key) of a full node, 
+  - *voting_power* is an integer (representing the full node's
+  voting power in a certain consensus instance).
+  
+> In the Golang implementation the data type for *validator
+> pair* is called `Validator`
+
 #### **[TMBC-VALIDATOR-Set]**:
 
 A *validator set* is a set of validator pairs. For a validator set
@@ -150,7 +170,7 @@ block and then terminates.
 
 *Fastsync* gets as input a block of height *h* and the corresponding
 application state *s* that corresponds to the block and state of that
-height of the blockchain [**[TMBC-SEQ]**][TMBC-SEQ-link], and produces
+height of the blockchain, and produces
 as output (i) a list *L* of blocks starting at height *h* to some height
 *terminationHeight*, and (ii) the application state when applying the
 transactions of the list *L* to *s*. Fastsync has to satisfy the following
@@ -162,10 +182,10 @@ properties [FS-Seq-?]:
 
  
 #### **[FS-Seq-Term]**:
-Let *bh* be the height of the blockchain at the time *Fastsync* starts.
+Let *bh* be the height of the blockchain at the time *Fastsync*
+starts. By assumption we have *bh >= h*.
 When *Fastsync* terminates, it outputs a list of all blocks from
-height *h* to some height *terminationHeight >= bh - 1*,
-[**[TMBC-SEQ]**][TMBC-SEQ-link].
+height *h* to some height *terminationHeight >= bh - 1*.
 
 > The above property is independent of how many blocks are added to the
 > blockchain while Fastsync is running. It links the target height to the
@@ -175,9 +195,9 @@ height *h* to some height *terminationHeight >= bh - 1*,
 
 #### **[FS-Seq-Term-SYNC]**:
 Let *eh* be the height of the blockchain at the time *Fastsync*
-terminates.  There is a constant *D* such that when *Fastsync*
+terminates.  There is a constant *D >= 1* such that when *Fastsync*
 terminates, it outputs a list of all blocks from height *h* to some
-height *terminationHeight >= eh - D*, [**[TMBC-SEQ]**][TMBC-SEQ-link].
+height *terminationHeight >= eh - D*.
 
 
 #### **[FS-Seq-Inv]**:
@@ -273,7 +293,7 @@ problem statement:
 #### Remote Functions
 
 The Tendermint Full Node exposes the following functions over
-Tendermint RPC. The "Expected precondition" are only expected for
+remote procedure calls. The "Expected precondition" are only expected for
 correct peers (as no assumption is made on internals of faulty
 processes [FS-A-PEER]).
 
@@ -408,7 +428,7 @@ some height *terminationHeight >= maxh*.
 > "synchronized with the blockchain", and *blockchainheight* is the height
 > of the blockchain at time *term*, then  *terminationHeight* may even
 > achieve
-> blockchainheight - TD / ETIME*;
+> *blockchainheight - TD / ETIME*;
 > cf. [**[TMBC-SEQ-APPEND-E]**][TMBC-SEQ-APPEND-E-link]. 
 
 
