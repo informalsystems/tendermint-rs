@@ -210,7 +210,7 @@ current list of headers from [**[TMBC-SEQ]**][TMBC-SEQ-link].
 
 
 
-## Informal Problem statement
+## Fastsync Informal Problem statement
 
 
 A full node has as input a block of the blockchain at height *h* and
