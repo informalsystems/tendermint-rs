@@ -331,7 +331,7 @@ problem statement:
 
 #### Remote Functions
 
-The Tendermint Full Node exposes the following functions over
+Peers expose the following functions over
 remote procedure calls. The "Expected precondition" are only expected for
 correct peers (as no assumption is made on internals of faulty
 processes [FS-A-PEER]).
