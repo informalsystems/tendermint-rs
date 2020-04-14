@@ -282,7 +282,7 @@ block at height  *terminationHeight + 1* of the blockchain.
 We consider a node *FS* that performs *Fastsync*.
 
 #### **[FS-A-PEER-IDS]**:
-*FS* has access to a set *peerIDs* of IDs (public keys) of peers (full
+*FS* has access to a set *peerIDs* of IDs (public keys) of peers
      nodes). During the execution of *Fastsync*, another protocol (outside
      of this specification) may add new IDs to *peerIDs*.
 
