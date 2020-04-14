@@ -171,7 +171,7 @@ Given a full node, a
 *validator pair* is a pair *(address, voting_power)*, where 
   - *address* is the address (public key) of a full node, 
   - *voting_power* is an integer (representing the full node's
-  voting power in a certain consensus instance).
+  voting power in a given consensus instance).
   
 > In the Golang implementation the data type for *validator
 > pair* is called `Validator`
