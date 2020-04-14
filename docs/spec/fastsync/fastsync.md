@@ -146,7 +146,7 @@ appended before time *t + ETIME*.
 
 
 #### **[TMBC-AUTH-BYZ]**:
-The authenticated Byzantine model assumes that no node (faulty or
+We assume the authenticated Byzantine fault model in which no node (faulty or
 correct) may break digital signatures, but otherwise, no additional
 assumption is made about the internal behavior of faulty full
 nodes. That is, faulty nodes are only limited in that they cannot forge
