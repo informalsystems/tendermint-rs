@@ -146,7 +146,7 @@ appended before time *t + ETIME*.
 
 
 #### **[TMBC-AUTH-BYZ]**:
-The authenticated Byzantine model assumes that no node (faulty or
+We assume the authenticated Byzantine fault model in which no node (faulty or
 correct) may break digital signatures, but otherwise, no additional
 assumption is made about the internal behavior of faulty 
 nodes. That is, faulty nodes are only limited in that they cannot forge
@@ -171,10 +171,10 @@ Given a full node, a
 *validator pair* is a pair *(address, voting_power)*, where 
   - *address* is the address (public key) of a full node, 
   - *voting_power* is an integer (representing the full node's
-  voting power in a certain consensus instance).
+  voting power in a given consensus instance).
   
 > In the Golang implementation the data type for *validator
-> pair* is called `Validator`
+> pair* is called `Validator`.
 
 #### **[TMBC-VALIDATOR-SET]**:
 
@@ -210,7 +210,7 @@ current list of headers from [**[TMBC-SEQ]**][TMBC-SEQ-link].
 
 
 
-## Informal Problem statement
+## Fastsync Informal Problem statement
 
 
 A full node has as input a block of the blockchain at height *h* and
