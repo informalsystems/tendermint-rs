@@ -174,7 +174,7 @@ Given a full node, a
   voting power in a given consensus instance).
   
 > In the Golang implementation the data type for *validator
-> pair* is called `Validator`
+> pair* is called `Validator`.
 
 #### **[TMBC-VALIDATOR-SET]**:
 
