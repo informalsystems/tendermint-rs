@@ -250,7 +250,7 @@ height *h* to some height *terminationHeight >= bh - 1*.
 > blockchain while Fastsync is running. It links the target height to the
 > initial state. If Fastsync has to catch-up many blocks, it would be
 > better to link the target height to a time close to the
-> termination. This is capture by the following specification:
+> termination. This is captured by the following specification:
 
 #### **[FS-SEQ-TERM-SYNC]**:
 Let *eh* be the height of the blockchain at the time *Fastsync*
