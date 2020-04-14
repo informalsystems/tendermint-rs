@@ -232,7 +232,7 @@ height of the blockchain, and produces
 as output (i) a list *L* of blocks starting at height *h* to some height
 *terminationHeight*, and (ii) the application state when applying the
 transactions of the list *L* to *s*. Fastsync has to satisfy the following
-properties [FS-SEQ-?]:
+properties:
 
 
 #### **[FS-SEQ-LIVE]**: 
