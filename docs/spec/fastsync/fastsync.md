@@ -16,7 +16,7 @@ protocol. It consists of the following parts:
 	 We also describe some [blockchain](#Blockchain) notions
      necessary for this specification.
 		 
-   - [Informal Problem statement](#Informal-Problem-statement): For
+   - [Fastsync Informal Problem statement](#Fastsync-Informal-Problem-statement): For
    the 
    general audience, that is, engineers who want to get an overview
    over 
@@ -148,7 +148,7 @@ appended before time *t + ETIME*.
 #### **[TMBC-AUTH-BYZ]**:
 The authenticated Byzantine model assumes that no node (faulty or
 correct) may break digital signatures, but otherwise, no additional
-assumption is made about the internal behavior of faulty full
+assumption is made about the internal behavior of faulty 
 nodes. That is, faulty nodes are only limited in that they cannot forge
 messages.
 
@@ -411,12 +411,12 @@ Under [FS-ALL-CORR-PEER], *Fastsync* never terminates with failure.
 
 
 #### **[FS-VC-STATE-INV]**:
-If *FastSync* terminates successfully at height *terminationHeight*, then the
+If *FastSync* terminates successfully, then the
 application state is the one that corresponds to the blockchain at
 height *terminationHeight*.
 
 #### **[FS-VC-BLOCKS-INV]**:
-If *FastSync* terminates successfully at height *terminationHeight*, then the
+If *FastSync* terminates successfully, then the
 returned list of blocks  is the one that corresponds to the blocks of
 the
 blockchain.
