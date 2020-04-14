@@ -78,6 +78,21 @@ protocol. It consists of the following parts:
    - [Suggestions](#Suggestions)  to address the issues discussed in the analysis.
   
 
+In this document we quite extensively use tags in order to be able to
+reference assumptions, invariants, etc. in future communication. In
+these tags we frequently use the following short forms:
+
+- TMBC: Tendermint blockchain
+- SEQ: for sequential specifications
+- FS: Fastsync
+- LIVE: liveness
+- INV: invariant
+- TERM: termination
+- A: assumption
+- V2: refers to specifics of Fastsync V2
+- FS-VAR: refers to properties of Fastsync protocol variables
+- NewFS: refers to improved future Fastsync implementations
+
 # Part I - Outside view
 
 ## Context of this document
@@ -131,7 +146,7 @@ If a header is appended at time *t* then no additional header will be
 appended before time *t + ETIME*.
 
 
-#### **[TMBC-Auth-Byz]**:
+#### **[TMBC-AUTH-BYZ]**:
 The authenticated Byzantine model assumes that no node (faulty or
 correct) may break digital signatures, but otherwise, no additional
 assumption is made about the internal behavior of faulty full
@@ -151,7 +166,7 @@ messages.
 > the context.
 
 
-#### **[TMBC-VALIDATOR-Pair]**:
+#### **[TMBC-VALIDATOR-PAIR]**:
 
 Given a full node, a 
 *validator pair* is a pair *(address, voting_power)*, where 
@@ -162,7 +177,7 @@ Given a full node, a
 > In the Golang implementation the data type for *validator
 > pair* is called `Validator`
 
-#### **[TMBC-VALIDATOR-Set]**:
+#### **[TMBC-VALIDATOR-SET]**:
 
 A *validator set* is a set of validator pairs. For a validator set
 *vs*, we write *TotalVotingPower(vs)* for the sum of the voting powers
@@ -188,7 +203,7 @@ of *h.NextValidators*, such that:
   - For every validator pair *(n,p)* in *CorrV*, it holds *correctUntil(n,
     h.Time + trustingPeriod)*.
 
-#### **[TMBC-CorrFull]**: 
+#### **[TMBC-CORR-FULL]**: 
 Every correct full node locally stores a prefix of the
 current list of headers from [**[TMBC-SEQ]**][TMBC-SEQ-link].
 
@@ -218,14 +233,14 @@ height of the blockchain, and produces
 as output (i) a list *L* of blocks starting at height *h* to some height
 *terminationHeight*, and (ii) the application state when applying the
 transactions of the list *L* to *s*. Fastsync has to satisfy the following
-properties [FS-Seq-?]:
+properties [FS-SEQ-?]:
 
 
-#### **[FS-Seq-Live]**: 
+#### **[FS-SEQ-LIVE]**: 
 *Fastsync* eventually terminates.
 
  
-#### **[FS-Seq-Term]**:
+#### **[FS-SEQ-TERM]**:
 Let *bh* be the height of the blockchain at the time *Fastsync*
 starts. By assumption we have *bh >= h*.
 When *Fastsync* terminates, it outputs a list of all blocks from
@@ -237,14 +252,14 @@ height *h* to some height *terminationHeight >= bh - 1*.
 > better to link the target height to a time close to the
 > termination. This is capture by the following specification:
 
-#### **[FS-Seq-Term-SYNC]**:
+#### **[FS-SEQ-TERM-SYNC]**:
 Let *eh* be the height of the blockchain at the time *Fastsync*
 terminates.  There is a constant *D >= 1* such that when *Fastsync*
 terminates, it outputs a list of all blocks from height *h* to some
 height *terminationHeight >= eh - D*.
 
 
-#### **[FS-Seq-Inv]**:
+#### **[FS-SEQ-INV]**:
 Upon termination, the application state is the one that corresponds to
 the blockchain at height *terminationHeight*.
 
@@ -253,7 +268,7 @@ the blockchain at height *terminationHeight*.
 > termination height.
 
 
-#### **[FS-Seq-Height]**: 
+#### **[FS-SEQ-HEIGHT]**: 
 The returned value *terminationHeight* is the height of the block with the largest
 height that could be verified. In order to do so, *Fastsync* needs the
 Commit of the block at height  *terminationHeight + 1* in the blockchain.
@@ -277,10 +292,10 @@ We consider a node *FS* that performs *Fastsync*.
 #### **[FS-A-PEER]**:
 Peers can be faulty, and we do not make any assumptions about the number or
 ratio of correct/faulty nodes. Faulty processes may be Byzantine
-according to [**[TMBC-Auth-Byz]**][TMBC-Auth-Byz-link].
+according to [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link].
 
 #### **[FS-A-VAL]**:
-The system satisfies [**[TMBC-Auth-Byz]**][TMBC-Auth-Byz-link] and [**[TMBC-FM-2THIRDS]**][TMBC-FM-2THIRDS-link]. Thus, there is a
+The system satisfies [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link] and [**[TMBC-FM-2THIRDS]**][TMBC-FM-2THIRDS-link]. Thus, there is a
 blockchain that satisfies the soundness requirements (that is, the
 validation rules in [[block]]).
 
@@ -303,8 +318,8 @@ arrives before the timeout expires.
 
 We do not assume that there is a correct full node in
 *peerIDs*. Under this assumption no protocol can guarantee the combination
-of the properties [FS-Seq-Live] and
-[FS-Seq-Term] and [FS-Seq-Term-SYNC] described in the sequential
+of the properties [FS-SEQ-LIVE] and
+[FS-SEQ-TERM] and [FS-SEQ-TERM-SYNC] described in the sequential
 specification above. Thus, in the (unreliable) distributed setting, we
 consider two kinds of termination (successful and failure) and we will
 specify below under what (favorable) conditions *Fastsync* ensures to
@@ -337,10 +352,10 @@ func Status(addr Address) (int64, error)
 - Expected postcondition
   - if *addr* is correct: Returns the current height `height` of the
     peer. [FS-A-COMM]
-  - if *addr* is faulty: Returns an arbitrary height. [**[TMBC-Auth-Byz]**][TMBC-Auth-Byz-link]
+  - if *addr* is faulty: Returns an arbitrary height. [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
 - Error condition
    * if *addr* is correct: none. By [FS-A-COMM] we assume communication is reliable and timely.
-   * if *addr* is faulty: arbitrary error (including timeout). [**[TMBC-Auth-Byz]**][TMBC-Auth-Byz-link]
+   * if *addr* is faulty: arbitrary error (including timeout). [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
 ----
 
 
@@ -354,10 +369,10 @@ func Block(addr Address, height int64) (Block, error)
 - Expected postcondition
   - if *addr* is correct: Returns the block of height `height`
   from the blockchain. [FS-A-COMM]
-  - if *addr* is faulty: Returns arbitrary block [**[TMBC-Auth-Byz]**][TMBC-Auth-Byz-link]
+  - if *addr* is faulty: Returns arbitrary block [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
 - Error condition
   - if *addr* is correct: precondition violated. [FS-A-COMM]
-  - if *addr* is faulty: arbitrary error (including timeout). [**[TMBC-Auth-Byz]**][TMBC-Auth-Byz-link]
+  - if *addr* is faulty: arbitrary error (including timeout). [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
 ----
 
 ### Temporal Properties
@@ -375,8 +390,8 @@ safety and liveness properties below:
 Initially, the set *peerIDs* contains at least one correct full node.
 
 > While in principle the above condition can be part of a sufficient
-> condition to solve [FS-Seq-Live] and
-> [FS-Seq-Term] and [FS-Seq-Term-SYNC], we will see below that the
+> condition to solve [FS-SEQ-LIVE] and
+> [FS-SEQ-TERM] and [FS-SEQ-TERM-SYNC], we will see below that the
 > current implementation of Fastsync (V2) requires the following (much
 > stronger) requirement
 
@@ -410,7 +425,7 @@ blockchain.
 
 > As this specification does
 > not assume that a correct peer is at the most recent height
-> of the blockchain (it might lag behind), the property [FS-Seq-Term]
+> of the blockchain (it might lag behind), the property [FS-SEQ-TERM]
 > cannot be ensured in an unreliable distributed setting. We consider
 > the following relaxation. (Which is typically sufficient for
 > Tendermint, as the consensus reactor then synchronizes from that
@@ -418,7 +433,7 @@ blockchain.
 
 #### **[FS-VC-CORR-INV]**:
 Under [FS-ALL-CORR-PEER], let *maxh* be the maximum 
-height of a correct peer [**[TMBC-CorrFull]**][TMBC-CorrFull-link]
+height of a correct peer [**[TMBC-CORR-FULL]**][TMBC-CORR-FULL-link]
 in *peerIDs* at the time *Fastsync* starts. If *FastSync* terminates
 successfully, it is at some height *terminationHeight >= maxh - 1*.
 
@@ -434,7 +449,7 @@ successfully, it is at some height *terminationHeight >= maxh - 1*.
 Under [FS-ALL-CORR-PEER], there exists a constant time interval *TD*, such
 that if *term* is the time *Fastsync* terminates and
 *maxh* be the maximum height of a correct peer
-[**[TMBC-CorrFull]**][TMBC-CorrFull-link] in *peerIDs* at the time
+[**[TMBC-CORR-FULL]**][TMBC-CORR-FULL-link] in *peerIDs* at the time
 *term - TD*, then if *FastSync* terminates successfully, it is at
 some height *terminationHeight >= maxh*.
 
@@ -600,7 +615,7 @@ trigger the execution of these functions:
 
 - `QueryStatus()`: regularly (currently every 10sec; necessarily
   interval greater than *2 Delta*) queries all peers from *peerIDs*
-  for their current height [TMBC-CorrFull]. It does so
+  for their current height [TMBC-CORR-FULL]. It does so
   by calling `Status(n)` remotely on all peers *n*.
   
 - `CreateRequest`: regularly checks whether certain blocks have no
@@ -1086,7 +1101,7 @@ Arguments:
 
 [TMBC-SEQ-link]: #tmbc-seq
 
-[TMBC-CorrFull-link]: #tmbc-corrfull
+[TMBC-CORR-FULL-link]: #tmbc-corrfull
 
 [TMBC-CORRECT-link]: #tmbc-correct
 
@@ -1112,7 +1127,7 @@ Arguments:
 
 <!-- [TMBC-SEQ-link]: https://github.com/informalsystems/VDD/tree/master/blockchain/blockchain.md#tmbc-seq -->
 
-<!-- [TMBC-CorrFull-link]: https://github.com/informalsystems/VDD/tree/master/blockchain/blockchain.md#tmbc-corrfull -->
+<!-- [TMBC-CORR-FULL-link]: https://github.com/informalsystems/VDD/tree/master/blockchain/blockchain.md#tmbc-corrfull -->
 
 <!-- [TMBC-Sign-link]: https://github.com/informalsystems/VDD/tree/master/blockchain/blockchain.md#tmbc-sign -->
 
