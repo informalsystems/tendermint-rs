@@ -732,7 +732,7 @@ func OnBlockResponse(addr Address, b Block)
         - *peerTimeStamp[addr]* is set to a time between invocation and
           return of the function.
         - *peerRate[addr]* is updated according to size of received
-          block
+          block and time it has passed between current time and last block received from this peer (addr)
 - Error condition
     - if precondition is violated: *addr* not in *peerIDs*; reset
 	*pendingblocks(b.Height)* to nil;
