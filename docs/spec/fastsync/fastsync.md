@@ -1,105 +1,9 @@
 # Fastsync
 
-<!--
-> Rough outline of what the component is doing and why. 2-3 paragraphs 
----->
-
-This document is the English specification of the *Fastsync*
-protocol. It consists of the following parts:
-
-- [Part I](#part-i---outside-view): This parts gives an introduction
-  into the problem addressed by the Fastsync protocol.
-
-   - [Context of this document](#Context-of-this-document): describes
-     other components that are relevant for this specification,
-     possible interactions, and use cases, etc.
-	 We also describe some [blockchain](#Blockchain) notions
-     necessary for this specification.
-		 
-   - [Fastsync Informal Problem statement](#Fastsync-Informal-Problem-statement): For
-   the 
-   general audience, that is, engineers who want to get an overview
-   over 
-   what the component is doing
-   from a bird's eye view. 
-
-   - [Sequential Problem statement](#Sequential-Problem-statement):
-     Provides a mathematical definition of the problem statement in
-     its sequential form, that is, ignoring the distributed aspect of
-     the implementation of the blockchain.
-
-  
-- [Part II](#part-ii---protocol-view): Here we introduce the protocol
-  view, that is, distributed aspects,
-  and temporal logic specifications. In this specification we provide a
-  description of Fastsync V2 (the protocol underlying the current Golang
-  implementation), and an analysis of Fastsync V2 that highlights 
-  several issues that
-  prevent achieving some of the desired fault-tolerance
-  properties.
-  
-    - [Environment/Assumptions/Incentives](#Environment/Assumptions/Incentives): 
-  distributed aspects, including timing and correctness assumptions.
-  
-    - [Distributed Problem Statement](#Distributed-Problem-Statement):
-	  We discuss [design choices](#Design-choices) that relax the
-	  termination requirements of the
-        (abstract) sequential problem statement to be solvable in a
-        distributed
-		unreliable environment, and we describe which messages should be
-	  exchanged. We also give [temporal
-	  properties](#Temporal-Properties) here that formalize safety and
-        liveness
-		properties
-		
-    - [Definitions](#Definitions): Describes inputs, outputs,
-      variables used by the protocol, auxiliary functions
-	  
-    - [Algorithm Invariants](#Algorithm-Invariants): invariants over
-      the protocol variables that the implementation should maintain.
-	  
-    - [FastSync V2](#FastSync-V2): gives an outline of the solution,
-      and details of the functions used (with preconditions,
-      postconditions, error conditions).
-	  
-    - [Analysis of Fastsync V2](#Analysis-of-Fastsync-V2): describes
-      undesireable scenarios of Fastsync V2, and why they violate
-      desireable temporal logic specification in an unreliable
-      distributed system.
-
-- [Part III](#part-iii---suggestions-for-an-improved-fastsync-implementation):
-  some suggestions on how to address the issues in the future.
-  
-   - [Desirable Temporal Properties](#Desirable-Temporal-Properties):
-     we give temporal properties that describe a fault-tolerant
-     version
-	 of FastSync.
-	 
-   - [Suggestions](#Suggestions)  to address the issues discussed in the analysis.
-  
-
-In this document we quite extensively use tags in order to be able to
-reference assumptions, invariants, etc. in future communication. In
-these tags we frequently use the following short forms:
-
-- TMBC: Tendermint blockchain
-- SEQ: for sequential specifications
-- FS: Fastsync
-- LIVE: liveness
-- INV: invariant
-- A: assumption
-- V2: refers to specifics of Fastsync V2
-- FS-VAR: refers to properties of Fastsync protocol variables
-- NewFS: refers to improved future Fastsync implementations
-
-# Part I - Outside view
-
-## Context of this document
-
-Fastsync is a protocol that is used by a full node to catch-up to the
+Fastsync is a protocol that is used by a node to catch-up to the
 current state of a Tendermint blockchain. Its typical use case is a
-full node that was disconnected from the system for some time. The
-recovering full node locally has a copy of a prefix of the blockchain,
+node that was disconnected from the system for some time. The
+recovering node locally has a copy of a prefix of the blockchain,
 and the corresponding application state that is slightly outdated. It
 then queries its peers for the blocks that were decided on by the
 Tendermint blockchain during the period the full node was
@@ -113,11 +17,86 @@ functionality and can synchronize a node that is close to the current height,
 perhaps within 10 blocks away from the current height of the blockchain.
 Fastsync should bring a node within this range.
 
-### Blockchain
+## Outline
+<!--
+> Rough outline of what the component is doing and why. 2-3 paragraphs 
+---->
 
-> We will briefly list some of the notions
-> of blockchains as required for this specification. More details can
-> be found  [here][block].
+This document is the English specification of the *Fastsync*
+protocol. It consists of the following parts:
+
+- [Part I](#part-i---tendermint-blockchain): Introduction of Tendermint
+blockchain terms that are relevant for FastSync protocol.
+
+- [Part II](#part-ii---sequential-definition-of-fastsync-problem): Introduction
+of the problem addressed by the Fastsync protocol.
+    - [Fastsync Informal Problem statement](#Fastsync-Informal-Problem-statement):
+    For the general audience, that is, engineers who want to get an overview
+    over what the component is doing from a bird's eye view.
+
+    - [Sequential Problem statement](#Sequential-Problem-statement):
+    Provides a mathematical definition of the problem statement in
+    its sequential form, that is, ignoring the distributed aspect of
+    the implementation of the blockchain.
+
+- [Part III](#part-iii---fastsync-as-distributed-system): Distributed
+  aspects of the fast sync problem, system assumptions and temporal
+  logic specifications.
+
+    - [Environment/Assumptions/Incentives](#Environment/Assumptions/Incentives):
+      timing and correctness assumptions.
+
+    - [Distributed Problem Statement](#Distributed-Problem-Statement):
+      [temporal properties](#Temporal-Properties) that formalize safety and liveness
+      properties of fast sync in distributed setting.
+
+- [Part IV](#part-iv---fastsync-protocol): Specification of Fastsync V2
+  (the protocol underlying the current Golang implementation).
+
+     - [Definitions](#Definitions): Describes inputs, outputs,
+       variables used by the protocol, auxiliary functions
+
+     - [FastSync V2](#FastSync-V2): gives an outline of the solution,
+       and details of the functions used (with preconditions,
+       postconditions, error conditions).
+
+     - [Algorithm Invariants](#Algorithm-Invariants): invariants over
+       the protocol variables that the implementation should maintain.
+
+
+- [Part V](#part-i---analysis-and-improvements): Analysis
+  of Fastsync V2 that highlights several issues that prevent achieving
+  some of the desired fault-tolerance properties. We also give some
+  suggestions on how to address the issues in the future.
+
+     - [Analysis of Fastsync V2](#Analysis-of-Fastsync-V2): describes
+        undesirable scenarios of Fastsync V2, and why they violate
+        desirable temporal logic specification in an unreliable
+        distributed system.
+
+
+     - [Suggestions](#Suggestions)  to address the issues discussed in the analysis.
+
+
+In this document we quite extensively use tags in order to be able to
+reference assumptions, invariants, etc. in future communication. In
+these tags we frequently use the following short forms:
+
+- TMBC: Tendermint blockchain
+- SEQ: for sequential specifications
+- FS: Fastsync
+- LIVE: liveness
+- SAFE: safety
+- INV: invariant
+- A: assumption
+- V2: refers to specifics of Fastsync V2
+- FS-VAR: refers to properties of Fastsync protocol variables
+- NewFS: refers to improved future Fastsync implementations
+
+# Part I - Tendermint Blockchain
+
+We will briefly list some of the notions of Tendermint blockchains that are
+required for this specification. More details can be found  [here][block].
 
 #### **[TMBC-HEADER]**:
 A set of blockchain transactions is stored in a data structure called
@@ -131,16 +110,15 @@ headers, rather than a list of blocks.
 
 The Tendermint blockchain is a list *chain* of headers. 
 
-#### **[TMBC-SEQ-GROW]**: 
+#### **[TMBC-SEQ-GROW]**:
 
 During operation, new headers may be appended to the list one by one.
-
 
 > In the following, *ETIME* is a lower bound
 > on the time interval between the times at which two
 > successor blocks are added. 
 
-#### **[TMBC-SEQ-APPEND-E]**: 
+#### **[TMBC-SEQ-APPEND-E]**:
 If a header is appended at time *t* then no additional header will be
 appended before time *t + ETIME*.
 
@@ -202,16 +180,14 @@ of *h.NextValidators*, such that:
   - For every validator pair *(n,p)* in *CorrV*, it holds *correctUntil(n,
     h.Time + trustingPeriod)*.
 
-#### **[TMBC-CORR-FULL]**: 
+#### **[TMBC-CORR-FULL]**:
 Every correct full node locally stores a prefix of the
 current list of headers from [**[TMBC-SEQ]**][TMBC-SEQ-link].
 
 
+# Part II - Sequential Definition of Fastsync Problem
 
-
-
-## Fastsync Informal Problem statement
-
+## Informal Problem statement
 
 A full node has as input a block of the blockchain at height *h* and
 the corresponding application state (or the prefix of the current
@@ -221,10 +197,7 @@ to read blocks of the Tendermint blockchain (in a safe way, that is,
 it checks the soundness conditions), until it has read the most recent
 block and then terminates.
 
-
 ## Sequential Problem statement
-
-
 
 *Fastsync* gets as input a block of height *h* and the corresponding
 application state *s* that corresponds to the block and state of that
@@ -234,8 +207,7 @@ as output (i) a list *L* of blocks starting at height *h* to some height
 transactions of the list *L* to *s*. Fastsync has to satisfy the following
 properties:
 
-
-#### **[FS-SEQ-LIVE]**: 
+#### **[FS-SEQ-LIVE]**:
 *Fastsync* eventually terminates.
 
  
@@ -267,16 +239,15 @@ the blockchain at height *terminationHeight*.
 > termination height.
 
 
-#### **[FS-SEQ-HEIGHT]**: 
+#### **[FS-SEQ-HEIGHT]**:
 The returned value *terminationHeight* is the height of the block with the largest
 height that could be verified. In order to do so, *Fastsync* needs the
 block at height  *terminationHeight + 1* of the blockchain.
 
 
-# Part II - Protocol view
+# Part III - FastSync as Distributed System
 
 ## Environment/Assumptions/Incentives
-
 
 #### **[FS-A-NODE]**:
 We consider a node *FS* that performs *Fastsync*.
@@ -285,8 +256,6 @@ We consider a node *FS* that performs *Fastsync*.
 *FS* has access to a set *peerIDs* of IDs (public keys) of peers
      . During the execution of *Fastsync*, another protocol (outside
      of this specification) may add new IDs to *peerIDs*.
-
-
 
 #### **[FS-A-PEER]**:
 Peers can be faulty, and we do not make any assumptions about the number or
@@ -307,13 +276,7 @@ Delta*. This implies that we need a timeout of at least *2 Delta* for
 remote procedure calls to ensure that the response of a correct peer
 arrives before the timeout expires.
 
-
-## Distributed Problem Statement
-
-### Design choices
-
-
-#### Two Kinds of Termination
+## Two Kinds of Termination
 
 We do not assume that there is a correct full node in
 *peerIDs*. Under this assumption no protocol can guarantee the combination
@@ -328,62 +291,12 @@ problem statement:
 #### **[FS-DISTR-TERM]**:
 *Fastsync* eventually terminates: it either *terminates successfully* or it  *terminates with failure*.
 
-
-#### Remote Functions
-
-Peers expose the following functions over
-remote procedure calls. The "Expected precondition" are only expected for
-correct peers (as no assumption is made on internals of faulty
-processes [FS-A-PEER]).
-
-
-> In this document we describe the communication with peers 
-via asynchronous RPCs.
-
-
-```go
-func Status(addr Address) (int64, error)
-```
-- Implementation remark
-   - RPC to full node *addr*
-- Expected precondition
-  - none
-- Expected postcondition
-  - if *addr* is correct: Returns the current height `height` of the
-    peer. [FS-A-COMM]
-  - if *addr* is faulty: Returns an arbitrary height. [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
-- Error condition
-   * if *addr* is correct: none. By [FS-A-COMM] we assume communication is reliable and timely.
-   * if *addr* is faulty: arbitrary error (including timeout). [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
-----
-
-
- ```go
-func Block(addr Address, height int64) (Block, error)
-```
-- Implementation remark
-   - RPC to full node *addr*
-- Expected precondition
-  - 'height` is less than or equal to height of the peer
-- Expected postcondition
-  - if *addr* is correct: Returns the block of height `height`
-  from the blockchain. [FS-A-COMM]
-  - if *addr* is faulty: Returns arbitrary block [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
-- Error condition
-  - if *addr* is correct: precondition violated. [FS-A-COMM]
-  - if *addr* is faulty: arbitrary error (including timeout). [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
-----
-
-### Temporal Properties
-
-
-#### Fairness
+## Fairness
 
 As mentioned above, without assumptions on the correctness of some
 peers, no protocol can achieve the required specifications. Therefore, 
 we sometimes consider the following (fairness) constraint in the
 safety and liveness properties below:
-
 
 #### **[FS-SOME-CORR-PEER]**:
 Initially, the set *peerIDs* contains at least one correct full node.
@@ -397,10 +310,7 @@ Initially, the set *peerIDs* contains at least one correct full node.
 #### **[FS-ALL-CORR-PEER]**:
 At all times, the set *peerIDs* contains only correct full nodes.
 
-
-#### Safety
-
-
+## Safety
 <!--
 > safety specifications / invariants in English 
 ---->
@@ -418,8 +328,7 @@ height *terminationHeight*.
 #### **[FS-VC-BLOCKS-INV]**:
 If *FastSync* terminates successfully, then the
 returned list of blocks  is the one that corresponds to the blocks of
-the
-blockchain.
+the blockchain.
 
 
 > As this specification does
@@ -470,20 +379,10 @@ some height *terminationHeight >= maxh*.
 > *blockchainheight - TD / ETIME*;
 > cf. [**[TMBC-SEQ-APPEND-E]**][TMBC-SEQ-APPEND-E-link]. 
 
-
-
-
-
-#### Liveness
-
-
+## Liveness
 
 #### **[FS-VC-ALL-CORR-TERM]**:
 Under [FS-ALL-CORR-PEER], *Fastsync* eventually terminates successfully.
-
-
-
-
 
 > We observe that all specifications that impose successful
 > termination at an acceptable height are all conditional under
@@ -492,19 +391,22 @@ Under [FS-ALL-CORR-PEER], *Fastsync* eventually terminates successfully.
 > discuss this, and suggestions how to solve this after the
 > description of the current protocol.
 
+
+# Part IV - Fastsync protocol
+
 ## Definitions
 
 <!--
-> In this section we become more concrete, with basic (abstracted) data types 
+> In this section we become more concrete, with basic (abstracted) data types
 ---->
 <!--
 > some math that allows to write specifications and pseudo code solution below.
-Some variables, etc. 
+Some variables, etc.
 ---->
 
 > We now introduce variables and auxiliary functions used by the protocol.
 
-#### Inputs
+### Inputs
 - *startBlock*: the block Fastsync starts from
 - *startState*: application state corresponding to *startBlock.Height*
 
@@ -512,7 +414,7 @@ Some variables, etc.
 - *startBlock* is from the blockchain
 - *startState* is the application state of the blockchain at Height *startBlock.Height*.
 
-#### Variables
+### Variables
 - *height*: initially *startBlock.Height + 1*
   > height should be thought of the "height of the next block we need to download"
 - *state*: initially *startState*
@@ -530,13 +432,12 @@ Some variables, etc.
 - *pendingTime*: stores for each peer the last time a block was requested
 - *peerRate*: stores for each peer the rate of received data in Bytes/second
 
-#### Auxiliary Functions
+### Auxiliary Functions
 
 #### **[FS-FUNC-TARGET]**:
 - *TargetHeight = max {peerHeigts(addr): addr in peerIDs} union {height}*
 
 #### **[FS-FUNC-MATCH]**:
-
 
 ```go
 func VerifyCommit(b Block, c Commit) Boolean
@@ -544,7 +445,7 @@ func VerifyCommit(b Block, c Commit) Boolean
 - Comment
     - Corresponds to `verifyCommit(chainID string, blockID
      types.BlockID, height int64, commit *types.Commit) error` in the
-     current Golang implementation, which expects blockID and height 
+     current Golang implementation, which expects blockID and height
 	 (from the first block) and the
      corresponding commit from the following block. We use the
      simplified form for ease in presentation.
@@ -563,38 +464,54 @@ func VerifyCommit(b Block, c Commit) Boolean
     - none
 ----
 
-## Algorithm Invariants
+### Remote Functions
 
-> In contrast to the temporal properties above that define the problem
-> statement, the following are invariants on the solution to the
-> problem, that is on the algorithm. These invariants are useful for
-> the verification, but can also guide the implementation.
+Peers expose the following functions over
+remote procedure calls. The "Expected precondition" are only expected for
+correct peers (as no assumption is made on internals of faulty
+processes [FS-A-PEER]).
 
-#### **[FS-VAR-STATE-INV]**:
-It is always the case that *state* corresponds to the application state of the
-blockchain of that height, that is, *state = chain[height -
-1].AppState*; *chain* is defined in
-[**[TMBC-SEQ]**][TMBC-SEQ-link].
 
-#### **[FS-VAR-PEER-INV]**:
-It is always the case that the set *peerIDs* only contains nodes that
-have not yet misbehaved (by sending wrong data or timing out).
+> In this document we describe the communication with peers
+via asynchronous RPCs.
 
-#### **[FS-VAR-BLOCK-INV]**:
-For *startBlock.Height <= i < height - 1*, let *b(i)* be the block with
-height *i* in *blockstore*, it always holds that
-*VerifyCommit(b(i), b(i+1).Commit) = true*. This means that *height*
-can only be incremented if all blocks with lower height have been verified.
 
+```go
+func Status(addr Address) (int64, error)
+```
+- Implementation remark
+   - RPC to full node *addr*
+- Expected precondition
+  - none
+- Expected postcondition
+  - if *addr* is correct: Returns the current height `height` of the
+    peer. [FS-A-COMM]
+  - if *addr* is faulty: Returns an arbitrary height. [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
+- Error condition
+   * if *addr* is correct: none. By [FS-A-COMM] we assume communication is reliable and timely.
+   * if *addr* is faulty: arbitrary error (including timeout). [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
+----
+
+
+ ```go
+func Block(addr Address, height int64) (Block, error)
+```
+- Implementation remark
+   - RPC to full node *addr*
+- Expected precondition
+  - 'height` is less than or equal to height of the peer
+- Expected postcondition
+  - if *addr* is correct: Returns the block of height `height`
+  from the blockchain. [FS-A-COMM]
+  - if *addr* is faulty: Returns arbitrary block [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
+- Error condition
+  - if *addr* is correct: precondition violated. [FS-A-COMM]
+  - if *addr* is faulty: arbitrary error (including timeout). [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
+----
 
 ## FastSync V2
 
-
-
-
 ### Outline
-
-
 
 The protocol is described in terms of functions that are triggered by
 (external) events. The implementation uses a scheduler and a
@@ -651,9 +568,6 @@ before the next block is executed, *Fastsync* terminates.
 We say that if *peerIDs* is empty upon termination, then *Fastsync* terminates
 with failure, otherwise it terminates successfully.
 
-
-
-
 ### Details
 
 <!--
@@ -664,8 +578,6 @@ with failure, otherwise it terminates successfully.
 > - Expected postcondition
 > - Error condition
 ---->
-
-
 
 ```go
 func QueryStatus()
@@ -740,7 +652,6 @@ func OnBlockResponse(addr Address, b Block)
 ----
 
 
-
 ```go
 func Execute()
 ```
@@ -761,6 +672,32 @@ func Execute()
 - Error condition
     - none
 ----
+
+## Algorithm Invariants
+
+> In contrast to the temporal properties above that define the problem
+> statement, the following are invariants on the solution to the
+> problem, that is on the algorithm. These invariants are useful for
+> the verification, but can also guide the implementation.
+
+#### **[FS-VAR-STATE-INV]**:
+It is always the case that *state* corresponds to the application state of the
+blockchain of that height, that is, *state = chain[height -
+1].AppState*; *chain* is defined in
+[**[TMBC-SEQ]**][TMBC-SEQ-link].
+
+#### **[FS-VAR-PEER-INV]**:
+It is always the case that the set *peerIDs* only contains nodes that
+have not yet misbehaved (by sending wrong data or timing out).
+
+#### **[FS-VAR-BLOCK-INV]**:
+For *startBlock.Height <= i < height - 1*, let *b(i)* be the block with
+height *i* in *blockstore*, it always holds that
+*VerifyCommit(b(i), b(i+1).Commit) = true*. This means that *height*
+can only be incremented if all blocks with lower height have been verified.
+
+
+# Part V -- Analysis and Improvements
 
 ## Analysis of Fastsync V2
 
@@ -805,9 +742,9 @@ restricted to [FS-ALL-CORR-PEER]. Again, if faults would be considered,
 this would imply that if *Fastsync* terminates, it cannot be
 guaranteed that a "reasonable" target height will be reached.
 
-# Part III - Suggestions for an Improved Fastsync Implementation 
+## Suggestions for an Improved Fastsync Implementation
 
-## Desirable Temporal Properties
+### Desirable Temporal Properties
 
 Instead of the limited termination properties [FS-VC-ALL-CORR-TERM]
 and [FS-VC-ALL-CORR-NONABORT], a fault-tolerant solution shall satisfy
@@ -820,7 +757,6 @@ it will terminate successfully.)
 
 #### **[NewFS-VC-TERM]**:
 *Fastsync* eventually terminates (successfully or with failure).
-
 
 ## Suggestions
 
