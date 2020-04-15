@@ -613,7 +613,9 @@ trigger the execution of these functions:
   
 > We have left the strategy how peers are selected unspecified, and
 > the currently existing different implementations of Fastsync differ
-> in this aspect. 
+> in this aspect. In V2, a peer *p* is selected with the minimum number of 
+> pending requests that can serve the required height *h*, that is
+> with *peerHeight(p) >= h*.
 
 The functions `Status` and `Block` are called by asynchronous
 RPC. When they return, the following functions are called:
