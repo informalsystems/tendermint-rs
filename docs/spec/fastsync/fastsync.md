@@ -476,20 +476,13 @@ some height *terminationHeight >= maxh*.
 
 #### Liveness
 
-<!--
-> liveness specifications in English. Possibly with timing/fairness requirements:
-e.g., if the component is connected to a correct full node and communication is
-reliable and timely, then something good happens eventually. 
----->
+
 
 #### **[FS-VC-ALL-CORR-TERM]**:
 Under [FS-ALL-CORR-PEER], *Fastsync* eventually terminates successfully.
 
 
-<!--
-> How is the problem statement linked to the "Sequential Problem statement". 
-Simulation, implementation, etc. relations 
----->
+
 
 
 > We observe that all specifications that impose successful
@@ -532,7 +525,9 @@ Some variables, etc.
 - *blockstore*: stores for each height greater than
     *startBlock.Height*, the block of that height. initially nil for
     all heights
-- *peerTimeStamp*: stores for each peer the last time a block was received
+- *peerTimeStamp*: stores for each peer the last time a block was
+  received
+- *pendingTime*: stores for each peer the last time a block was requested
 - *peerRate*: stores for each peer the rate of received data in Bytes/second
 
 #### Auxiliary Functions
@@ -595,17 +590,11 @@ can only be incremented if all blocks with lower height have been verified.
 ## FastSync V2
 
 
-<!--
-> Basic data structures. Simplified, so that we can focus on the distributed
-algorithm here. If existing: link to Tendermint data structures, and mentioned
-if details were omitted. 
----->
+
 
 ### Outline
 
-<!--
-> Describe solution (in English), decomposition into functions, where communication to other components happens.
----->
+
 
 The protocol is described in terms of functions that are triggered by
 (external) events. The implementation uses a scheduler and a
@@ -645,10 +634,14 @@ RPC. When they return, the following functions are called:
 > implemented in Fastsync V2
 
 #### **[FS-V2-PEER-REMOVE]**:
-Periodically, *peerTimeStamp* and *peerRate* are analyzed. If a peer *p*
+Periodically, *peerTimeStamp* and *peerRate* and *pendingTime* are
+analyzed. 
+If a peer *p*
 has not provided a block recently (check of *peerTimeStamp[p]*) or it
 has not provided sufficiently many data (check of *peerRate[p]*), then
-*p* is removed from *peerIDs*.
+*p* is removed from *peerIDs*. In addition, *pendingTime* is used to
+estimate whether the peer that is responsible for current height is
+still connected.
   
 #### **[FS-V2-TIMEOUT]**:
 
