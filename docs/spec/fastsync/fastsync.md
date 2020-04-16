@@ -92,7 +92,7 @@ these tags we frequently use the following short forms:
 # Part I - Tendermint Blockchain
 
 We will briefly list some of the notions of Tendermint blockchains that are
-required for this specification. More details can be found  [here][block].
+required for this specification. More details can be found [here][block].
 
 #### **[TMBC-HEADER]**:
 A set of blockchain transactions is stored in a data structure called
@@ -209,8 +209,9 @@ as output (i) a list *L* of blocks starting at height *h* to some height
 *terminationHeight*, and (ii) the application state when applying the
 transactions of the list *L* to *s*. 
 
-> As the block of height *h + 1* is needed to verify the block of
-> height *h*, let us clarify the following on the
+> In Tendermint, the commit for block of height *h* is contained in block *h + 1*,
+> and thus the block of height *h + 1* is needed to verify the block of
+> height *h*. Let us therefore clarify the following on the
 > termination height:
 > The returned value *terminationHeight* is the height of the block with the largest
 > height that could be verified. In order to do so, *Fastsync* needs the
@@ -348,7 +349,7 @@ successfully, it is at some height *terminationHeight >= maxh - 1*.
 #### **[FS-DIST-SAFE-SYNC]**:
 Under [FS-SOME-CORR-PEER], there exists a constant time interval *TD*, such
 that if *term* is the time *Fastsync* terminates and
-*maxh* be the maximum height of a correct peer
+*maxh* is the maximum height of a correct peer
 [**[TMBC-CORR-FULL]**][TMBC-CORR-FULL-link] in *peerIDs* at the time
 *term - TD*, then if *FastSync* terminates successfully, it is at
 some height *terminationHeight >= maxh - 1*.
@@ -394,10 +395,44 @@ If there is one correct process in *peerIDs* [FS-SOME-CORR-PEER],
 
 # Part IV - Fastsync protocol
 
-**TODO:** Write a paragraph on the execution model!
+Here we provide a specification of the FastSync V2 protocol as it is currently
+implemented. The V2 design is the result of significant refactoring to improve
+the testability and determinism in the implementation. The architecture is
+detailed in
+[ADR-43](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-043-blockchain-riri-org.md).
+
+In the original design, a go-routine (thread of execution) was spawned for each block requested, and
+was responsible for both protocol logic and IO. In the V2 design, protocol logic
+is decoupled from IO by using three total threads of execution: a scheduler, a
+processer, and a demuxer.
+
+The scheduler contains the business logic for managing
+peers and requesting blocks from them, while the processor handles the
+computationally expensive block execution. Both the scheduler and processor
+are structured as finite state machines that receive input events and emit
+output events. The demuxer is responsible for all IO, including translating
+between internal events and IO messages, and routing events between components.
+
+Protocols in Tendermint can be considered to consist of two
+components: a "core" state machine and a "peer" state machine. The core state
+machine refers to the internal state managed by the node, while the peer state
+machine determines what messages to send to peers. In the FastSync design, the
+core and peer state machines correspond to the processor and scheduler,
+respectively.
+
+In the case of FastSync, the core state machine (the processor) is effectively
+just the Tendermint block execution function, while virtually all protocol logic
+is contained in the peer state machine (the scheduler). The processor is
+only implemented as a separate component due to the computationally expensive nature
+of block execution. We therefore focus our specification here on the peer state machine
+(the scheduler component), capturing the core state machine (the processor component)
+in the single `Execute` function, defined below.
+
+While the internal details of the `Execute` function are not relevant for the
+FastSync protocol and are thus not part of this specification, they will be
+defined in detail at a later date in a separate Block Execution specification.
 
 ## Definitions
-
 
 > We now introduce variables and auxiliary functions used by the protocol.
 
@@ -412,7 +447,7 @@ If there is one correct process in *peerIDs* [FS-SOME-CORR-PEER],
 
 ### Variables
 
-- *height*: initially *startBlock.Height + 1*
+- *height*: kinitially *startBlock.Height + 1*
   > height should be thought of the "height of the next block we need to download"
 - *state*: initially *startState*
 - *peerIDs*: peer addresses [FS-A-PEER-IDS](#fs-a-peer-ids)
@@ -463,13 +498,71 @@ func VerifyCommit(b Block, c Commit) Boolean
     - none
 ----
 
+### Messages
+
+Peers participating in FastSync exchange the following set of messages. Messages are
+encoded using the Amino serialization protocol. We define each message here
+using Go syntax, annoted with the Amino type name. 
+
+```go
+// type: "tendermint/blockchain/BlockRequest"
+type bcBlockRequestMessage struct {
+	Height int64
+}
+```
+
+Remark:
+- `msg.Height` >= 0
+
+```go
+// type: "tendermint/blockchain/NoBlockResponse"
+type bcNoBlockResponseMessage struct {
+	Height int64
+}
+```
+
+Remark:
+- `msg.Height` >= 0
+- This message type is included in the protocol for convenience and is not expected to be sent between two correct peers
+
+```go
+// type: "tendermint/blockchain/BlockResponse"
+type bcBlockResponseMessage struct {
+	Block *types.Block
+}
+```
+
+Remark:
+- `msg.Block` is a Tendermint block as defined in [[block].
+- `msg.Block` != nil
+
+
+```go
+// type: "tendermint/blockchain/StatusRequest"
+type bcStatusRequestMessage struct {
+	Height int64
+}
+```
+
+Remark:
+- `msg.Height` >= 0
+
+```go
+// type: "tendermint/blockchain/StatusResponse"
+type bcStatusResponseMessage struct {
+	Height int64
+}
+```
+
+Remark:
+- `msg.Height` >= 0
 
 ### Remote Functions
 
 Peers expose the following functions over
 remote procedure calls. The "Expected precondition" are only expected for
 correct peers (as no assumption is made on internals of faulty
-processes [FS-A-PEER]).
+processes [FS-A-PEER]). These functions are implemented using the above defined message types.
 
 
 > In this document we describe the communication with peers
@@ -481,6 +574,8 @@ func Status(addr Address) (int64, error)
 ```
 - Implementation remark
    - RPC to full node *addr*
+   - Request message: `bcStatusRequestMessage`.
+   - Response message: `bcStatusResponseMessage`.
 - Expected precondition
   - none
 - Expected postcondition
@@ -498,14 +593,16 @@ func Block(addr Address, height int64) (Block, error)
 ```
 - Implementation remark
    - RPC to full node *addr*
+   - Request message: `bcBlockRequestMessage`.
+   - Response message: `bcBlockResponseMessage` or `bcNoBlockResponseMessage`.
 - Expected precondition
   - 'height` is less than or equal to height of the peer
 - Expected postcondition
   - if *addr* is correct: Returns the block of height `height`
   from the blockchain. [FS-A-COMM]
-  - if *addr* is faulty: Returns arbitrary block [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
+  - if *addr* is faulty: Returns arbitrary or no block [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
 - Error condition
-  - if *addr* is correct: precondition violated. [FS-A-COMM]
+  - if *addr* is correct: precondition violated (returns `bcNoBlockResponseMessage`). [FS-A-COMM]
   - if *addr* is faulty: arbitrary error (including timeout). [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
 ----
 
