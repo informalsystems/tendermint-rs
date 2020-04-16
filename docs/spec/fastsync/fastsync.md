@@ -43,11 +43,11 @@ of the problem addressed by the Fastsync protocol.
   aspects of the fast sync problem, system assumptions and temporal
   logic specifications.
 
-    - [Environment/Assumptions/Incentives](#Environment/Assumptions/Incentives):
+    - [Environment, Assumptions, and Incentives](#Environment,-Assumptions,-and-Incentives):
       timing and correctness assumptions.
 
     - [Distributed Problem Statement](#Distributed-Problem-Statement):
-      [temporal properties](#Temporal-Properties) that formalize safety and liveness
+      temporal properties that formalize safety and liveness
       properties of fast sync in distributed setting.
 
 - [Part IV](#part-iv---fastsync-protocol): Specification of Fastsync V2
@@ -64,7 +64,7 @@ of the problem addressed by the Fastsync protocol.
        the protocol variables that the implementation should maintain.
 
 
-- [Part V](#part-i---analysis-and-improvements): Analysis
+- [Part V](#part-v---analysis-and-improvements): Analysis
   of Fastsync V2 that highlights several issues that prevent achieving
   some of the desired fault-tolerance properties. We also give some
   suggestions on how to address the issues in the future.
@@ -187,7 +187,7 @@ current list of headers from [**[TMBC-SEQ]**][TMBC-SEQ-link].
 
 # Part II - Sequential Definition of Fastsync Problem
 
-## Informal Problem statement
+## Fastsync Informal Problem statement
 
 A full node has as input a block of the blockchain at height *h* and
 the corresponding application state (or the prefix of the current
@@ -247,7 +247,7 @@ block at height  *terminationHeight + 1* of the blockchain.
 
 # Part III - FastSync as Distributed System
 
-## Environment/Assumptions/Incentives
+## Environment, Assumptions, and Incentives
 
 #### **[FS-A-NODE]**:
 We consider a node *FS* that performs *Fastsync*.
@@ -276,7 +276,9 @@ Delta*. This implies that we need a timeout of at least *2 Delta* for
 remote procedure calls to ensure that the response of a correct peer
 arrives before the timeout expires.
 
-## Two Kinds of Termination
+## Distributed Problem Statement
+
+### Two Kinds of Termination
 
 We do not assume that there is a correct full node in
 *peerIDs*. Under this assumption no protocol can guarantee the combination
@@ -291,7 +293,7 @@ problem statement:
 #### **[FS-DISTR-TERM]**:
 *Fastsync* eventually terminates: it either *terminates successfully* or it  *terminates with failure*.
 
-## Fairness
+### Fairness
 
 As mentioned above, without assumptions on the correctness of some
 peers, no protocol can achieve the required specifications. Therefore, 
@@ -310,7 +312,7 @@ Initially, the set *peerIDs* contains at least one correct full node.
 #### **[FS-ALL-CORR-PEER]**:
 At all times, the set *peerIDs* contains only correct full nodes.
 
-## Safety
+### Safety
 <!--
 > safety specifications / invariants in English 
 ---->
@@ -379,7 +381,7 @@ some height *terminationHeight >= maxh*.
 > *blockchainheight - TD / ETIME*;
 > cf. [**[TMBC-SEQ-APPEND-E]**][TMBC-SEQ-APPEND-E-link]. 
 
-## Liveness
+### Liveness
 
 #### **[FS-VC-ALL-CORR-TERM]**:
 Under [FS-ALL-CORR-PEER], *Fastsync* eventually terminates successfully.
@@ -697,7 +699,7 @@ height *i* in *blockstore*, it always holds that
 can only be incremented if all blocks with lower height have been verified.
 
 
-# Part V -- Analysis and Improvements
+# Part V - Analysis and Improvements
 
 ## Analysis of Fastsync V2
 
