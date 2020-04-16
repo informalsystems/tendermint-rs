@@ -32,12 +32,13 @@ As part of the fast sync protocol a node and the peers exchange the following me
 - StatusResponse
 - BlockRequest
 - BlockResponse
+- NoBlockResponse.
 
 A node is periodically issuing StatusRequests to query peers for their current height (to decide what
 blocks to ask from what peers). Based on StatusResponses (that are sent by peers), the node queries
 blocks for some height(s) by sending peers BlockRequest messages. A peer provides a requested block by
-BlockResponse message. In addition to those messages, a node in this spec receives additional
-input messages (events):
+BlockResponse message. If a peer does not want to provide a requested block, then it sends NoBlockResponse message.
+In addition to those messages, a node in this spec receives additional input messages (events):
 
 - AddPeer
 - RemovePeer
@@ -50,8 +51,6 @@ a connection with the peer is terminated. Finally SyncTimeout is used to model a
 We assume that fast sync protocol starts when connections with some number of peers
 are established. Therefore, peer set is initialised with non-empty set of peer ids. Note however
 that node does not know initially the peer heights.
-
-English specification of the fast sync protocol can be found here: TODO[Add correct link].
 *)
 
 EXTENDS Integers, FiniteSets, Sequences
@@ -163,6 +162,8 @@ InMsgs ==
         \union
     [type: {"blockResponse"}, peerId: AllPeerIds, block: Blocks]
         \union
+    [type: {"noBlockResponse"}, peerId: AllPeerIds, height: Heights]
+        \union    
     [type: {"statusResponse"}, peerId: AllPeerIds, height: Heights]
         \union
     ControlMsgs
@@ -266,6 +267,10 @@ HandleBlockResponse(msg, bPool) ==
             !.pendingBlocks = [bPool.pendingBlocks EXCEPT![h] = NilPeer]
          ]
     ELSE RemovePeers({msg.peerId}, bPool)
+    
+ HandleNoBlockResponse(msg, bPool) ==
+    RemovePeers({msg.peerId}, bPool)
+       
 
 \* Compute max peer height.
 \* See https://github.com/tendermint/tendermint/blob/dac030d6daf4d3e066d84275911128856838af4e/blockchain/v2/scheduler.go#L440
@@ -415,6 +420,8 @@ HandleSyncTimeout(bPool) ==
 HandleResponse(msg, bPool) ==
     IF msg.type = "blockResponse" THEN
       HandleBlockResponse(msg, bPool)
+    ELSE IF msg.type = "noBlockResponse" THEN
+      HandleNoBlockResponse(msg, bPool)
     ELSE IF msg.type = "statusResponse" THEN
       HandleStatusResponse(msg, bPool)
     ELSE IF msg.type = "addPeer" THEN
@@ -553,10 +560,17 @@ SendBlockResponseMessage(pState) ==
 
     \/  /\ peersState' = pState
         /\ inMsg' \in [type: {"blockResponse"}, peerId: FAULTY, block: Blocks]
-
+        
+ SendNoBlockResponseMessage(pState) == 
+    /\ peersState' = pState
+    /\ inMsg' \in [type: {"noBlockResponse"}, peerId: FAULTY, height: Heights]
+        
+                   
 SendResponseMessage(pState) == 
     \/  SendBlockResponseMessage(pState)
+    \/  SendNoBlockResponseMessage(pState)
     \/  SendStatusResponseMessage(pState)
+    
 
 NextEnvStep(pState) ==
     \/  SendResponseMessage(pState)
@@ -673,6 +687,6 @@ BlockPoolInvariant ==
 
 \*=============================================================================
 \* Modification History
-\* Last modified Mon Apr 13 18:58:59 CEST 2020 by zarkomilosevic
+\* Last modified Thu Apr 16 16:57:22 CEST 2020 by zarkomilosevic
 \* Last modified Thu Apr 09 12:53:53 CEST 2020 by igor
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic
