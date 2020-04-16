@@ -30,23 +30,24 @@ blockchain terms that are relevant for FastSync protocol.
 
 - [Part II](#part-ii---sequential-definition-of-fastsync-problem): Introduction
 of the problem addressed by the Fastsync protocol.
-    - [Fastsync Informal Problem statement](#Fastsync-Informal-Problem-statement):
-    For the general audience, that is, engineers who want to get an overview
-    over what the component is doing from a bird's eye view.
+    - [Fastsync Informal Problem
+      statement](#Fastsync-Informal-Problem-statement): For the general
+      audience, that is, engineers who want to get an overview over what
+      the component is doing from a bird's eye view.
 
     - [Sequential Problem statement](#Sequential-Problem-statement):
-    Provides a mathematical definition of the problem statement in
-    its sequential form, that is, ignoring the distributed aspect of
-    the implementation of the blockchain.
+      Provides a mathematical definition of the problem statement in
+      its sequential form, that is, ignoring the distributed aspect of
+      the implementation of the blockchain.
 
 - [Part III](#part-iii---fastsync-as-distributed-system): Distributed
   aspects of the fast sync problem, system assumptions and temporal
   logic specifications.
 
-    - [Computational Model](#Computational-Model):
+  - [Computational Model](#Computational-Model):
       timing and correctness assumptions.
 
-    - [Distributed Problem Statement](#Distributed-Problem-Statement):
+  - [Distributed Problem Statement](#Distributed-Problem-Statement):
       temporal properties that formalize safety and liveness
       properties of fast sync in distributed setting.
 
@@ -74,7 +75,7 @@ of the problem addressed by the Fastsync protocol.
         desirable temporal logic specification in an unreliable
         distributed system.
 
-     - [Suggestions](#Suggestions)  to address the issues discussed in the analysis.
+     - [Suggestions](#Suggestions-for-an-Improved-Fastsync-Implementation)  to address the issues discussed in the analysis.
 
 
 In this document we quite extensively use tags in order to be able to
@@ -342,7 +343,7 @@ that if *term* is the time *Fastsync* terminates and
 *maxh* be the maximum height of a correct peer
 [**[TMBC-CORR-FULL]**][TMBC-CORR-FULL-link] in *peerIDs* at the time
 *term - TD*, then if *FastSync* terminates successfully, it is at
-some height *terminationHeight >= maxh*.
+some height *terminationHeight >= maxh - 1*.
 
 
 > *TD* might depend on timeouts etc. We suggest that an acceptable
@@ -353,7 +354,12 @@ some height *terminationHeight >= maxh*.
 > for communication delay between the peer and *FS*. After the peer sent
 > the last message to *FS*, the peer and *FS* run concurrently and
 > independently. There is no assumption on the rate at which a peer can
-> add blocks (e.g., it might be in the process of catching up itself).
+> add blocks (e.g., it might be in the process of catching up
+> itself). Hence, without additional assumption we cannot link
+> [FS-DIST-SAFE-SYNC] to
+> [**[FS-SEQ-SAFE-SYNC]**](#FS-SEQ-SAFE-SYNC), in particular to the 
+> parameter *D*. We discuss a
+> way to achieve this below:
 
 > **Relation to [FS-SEQ-SAFE-SYNC]:**  
 > Under [FS-SOME-CORR-PEER], if *peerIDs* contains a full node that is
