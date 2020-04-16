@@ -74,7 +74,6 @@ of the problem addressed by the Fastsync protocol.
         desirable temporal logic specification in an unreliable
         distributed system.
 
-
      - [Suggestions](#Suggestions)  to address the issues discussed in the analysis.
 
 
@@ -215,10 +214,6 @@ transactions of the list *L* to *s*.
 
 
 Fastsync has to satisfy the following properties:
-
-#### **[FS-SEQ-LIVE]**:
-*Fastsync* eventually terminates.
-
  
 #### **[FS-SEQ-SAFE-START]**:
 Let *bh* be the height of the blockchain at the time *Fastsync*
@@ -239,9 +234,14 @@ terminates, it outputs a list of all blocks from height *h* to some
 height *terminationHeight >= eh - D*.
 
 
-#### **[FS-SEQ-INV]**:
+#### **[FS-SEQ-STATE-INV]**:
 Upon termination, the application state is the one that corresponds to
 the blockchain at height *terminationHeight*.
+
+
+
+#### **[FS-SEQ-LIVE]**:
+*Fastsync* eventually terminates.
 
 
 
@@ -315,13 +315,19 @@ Initially, the set *peerIDs* contains at least one correct full node.
 At all times, the set *peerIDs* contains only correct full nodes.
 
 ### Safety
-<!--
-> safety specifications / invariants in English 
----->
 
 
 #### **[FS-VC-ALL-CORR-NONABORT]**:
 Under [FS-ALL-CORR-PEER], *Fastsync* never terminates with failure.
+
+> The following property corresponds to [FS-SEQ-SAFE-START]
+
+#### **[FS-VC-CORR-SAFE-START]**:
+Let *maxh* be the maximum 
+height of a correct peer [**[TMBC-CORR-FULL]**][TMBC-CORR-FULL-link]
+in *peerIDs* at the time *Fastsync* starts. If *FastSync* terminates
+successfully, it is at some height *terminationHeight >= maxh - 1*.
+
 
 
 #### **[FS-VC-STATE-INV]**:
@@ -343,11 +349,7 @@ the blockchain.
 > Tendermint, as the consensus reactor then synchronizes from that
 > height.)
 
-#### **[FS-VC-CORR-INV]**:
-Under [FS-ALL-CORR-PEER], let *maxh* be the maximum 
-height of a correct peer [**[TMBC-CORR-FULL]**][TMBC-CORR-FULL-link]
-in *peerIDs* at the time *Fastsync* starts. If *FastSync* terminates
-successfully, it is at some height *terminationHeight >= maxh - 1*.
+
 
 > The above property is independent of how many blocks are added to the
 > blockchain (and learned by the peers) while *Fastsync* is running. It
@@ -385,7 +387,7 @@ some height *terminationHeight >= maxh*.
 
 ### Liveness
 
-#### **[FS-VC-ALL-CORR-TERM]**:
+#### **[FS-VC-ALL-CORR-LIVE]**:
 Under [FS-ALL-CORR-PEER], *Fastsync* eventually terminates successfully.
 
 > We observe that all specifications that impose successful
@@ -736,12 +738,12 @@ but faulty peers are regularly asked for blocks.
 
 The issues [FS-ISSUE-KILL] and [FS-ISSUE-NON-TERM] explain why the
 temporal properties that are relevant for termination, namely,
-[FS-VC-ALL-CORR-TERM] and [FS-VC-ALL-CORR-NONABORT], need to be
+[FS-VC-ALL-CORR-LIVE] and [FS-VC-ALL-CORR-NONABORT], need to be
 restricted to the case where all peers are correct
 [FS-ALL-CORR-PEER]. In a fault tolerance context this is problematic,
 as it means that faulty peers can prevent *FastSync* from termination.
 
-Similarly, [FS-VC-CORR-INV-SYNC] and [FS-VC-CORR-INV] needed to be
+Similarly, [FS-VC-CORR-INV-SYNC] and [FS-VC-CORR-SAFE-START] needed to be
 restricted to [FS-ALL-CORR-PEER]. Again, if faults would be considered,
 this would imply that if *Fastsync* terminates, it cannot be
 guaranteed that a "reasonable" target height will be reached.
@@ -750,7 +752,7 @@ guaranteed that a "reasonable" target height will be reached.
 
 ### Desirable Temporal Properties
 
-Instead of the limited termination properties [FS-VC-ALL-CORR-TERM]
+Instead of the limited termination properties [FS-VC-ALL-CORR-LIVE]
 and [FS-VC-ALL-CORR-NONABORT], a fault-tolerant solution shall satisfy
 the following two properties:
 
