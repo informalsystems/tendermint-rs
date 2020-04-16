@@ -1,5 +1,6 @@
 # Fastsync
 
+
 Fastsync is a protocol that is used by a node to catch-up to the
 current state of a Tendermint blockchain. Its typical use case is a
 node that was disconnected from the system for some time. The
@@ -18,12 +19,6 @@ perhaps within 10 blocks away from the current height of the blockchain.
 Fastsync should bring a node within this range.
 
 ## Outline
-<!--
-> Rough outline of what the component is doing and why. 2-3 paragraphs 
----->
-
-This document is the English specification of the *Fastsync*
-protocol. It consists of the following parts:
 
 - [Part I](#part-i---tendermint-blockchain): Introduction of Tendermint
 blockchain terms that are relevant for FastSync protocol.
@@ -93,6 +88,7 @@ these tags we frequently use the following short forms:
 - FS-VAR: refers to properties of Fastsync protocol variables
 - NewFS: refers to improved future Fastsync implementations
 
+
 # Part I - Tendermint Blockchain
 
 We will briefly list some of the notions of Tendermint blockchains that are
@@ -118,7 +114,9 @@ During operation, new headers may be appended to the list one by one.
 > on the time interval between the times at which two
 > successor blocks are added. 
 
+
 #### **[TMBC-SEQ-APPEND-E]**:
+
 If a header is appended at time *t* then no additional header will be
 appended before time *t + ETIME*.
 
@@ -180,9 +178,12 @@ of *h.NextValidators*, such that:
   - For every validator pair *(n,p)* in *CorrV*, it holds *correctUntil(n,
     h.Time + trustingPeriod)*.
 
+
 #### **[TMBC-CORR-FULL]**:
+
 Every correct full node locally stores a prefix of the
 current list of headers from [**[TMBC-SEQ]**][TMBC-SEQ-link].
+
 
 
 # Part II - Sequential Definition of Fastsync Problem
@@ -197,7 +198,9 @@ to read blocks of the Tendermint blockchain (in a safe way, that is,
 it checks the soundness conditions), until it has read the most recent
 block and then terminates.
 
+
 ## Sequential Problem statement
+
 
 *Fastsync* gets as input a block of height *h* and the corresponding
 application state *s* that corresponds to the block and state of that
@@ -215,6 +218,7 @@ transactions of the list *L* to *s*.
 
 
 Fastsync has to satisfy the following properties:
+
  
 #### **[FS-SEQ-SAFE-START]**:
 Let *bh* be the height of the blockchain at the time *Fastsync*
@@ -235,6 +239,7 @@ terminates, it outputs a list of all blocks from height *h* to some
 height *terminationHeight >= eh - D*.
 
 
+
 #### **[FS-SEQ-SAFE-STATE]**:
 Upon termination, the application state is the one that corresponds to
 the blockchain at height *terminationHeight*.
@@ -248,6 +253,7 @@ the blockchain at height *terminationHeight*.
 
 ## Computational Model
 
+
 #### **[FS-A-NODE]**:
 We consider a node *FS* that performs *Fastsync*.
 
@@ -255,6 +261,7 @@ We consider a node *FS* that performs *Fastsync*.
 *FS* has access to a set *peerIDs* of IDs (public keys) of peers
      . During the execution of *Fastsync*, another protocol (outside
      of this specification) may add new IDs to *peerIDs*.
+
 
 #### **[FS-A-PEER]**:
 Peers can be faulty, and we do not make any assumptions about the number or
@@ -276,6 +283,7 @@ Delta*. This implies that we need a timeout of at least *2 Delta* for
 remote procedure calls to ensure that the response of a correct peer
 arrives before the timeout expires.
 
+
 ## Distributed Problem Statement
 
 ### Two Kinds of Termination
@@ -289,6 +297,7 @@ consider two kinds of termination (successful and failure) and we will
 specify below under what (favorable) conditions *Fastsync* ensures to
 terminate successfully, and satisfy the requirements of the sequential
 problem statement:
+
 
 #### **[FS-DIST-LIVE]**:
 *Fastsync* eventually terminates: it either *terminates successfully* or
@@ -324,7 +333,6 @@ Initially, the set *peerIDs* contains at least one correct full node.
 > Tendermint, as the consensus reactor then synchronizes from that
 > height.)
 
-
 #### **[FS-DIST-SAFE-START]**:
 Let *maxh* be the maximum 
 height of a correct peer [**[TMBC-CORR-FULL]**][TMBC-CORR-FULL-link]
@@ -349,6 +357,7 @@ some height *terminationHeight >= maxh - 1*.
 > *TD* might depend on timeouts etc. We suggest that an acceptable
 > value for *TD* is in the range of approx. 10 sec., that is the
 > interval between two calls `QueryStatus()`; see below.
+
 
 > We use *term - TD* as reference time, as we have to account
 > for communication delay between the peer and *FS*. After the peer sent
@@ -400,7 +409,9 @@ If there is one correct process in *peerIDs* [FS-SOME-CORR-PEER],
 - *startBlock* is from the blockchain
 - *startState* is the application state of the blockchain at Height *startBlock.Height*.
 
+
 ### Variables
+
 - *height*: initially *startBlock.Height + 1*
   > height should be thought of the "height of the next block we need to download"
 - *state*: initially *startState*
@@ -415,6 +426,7 @@ If there is one correct process in *peerIDs* [FS-SOME-CORR-PEER],
     all heights
 - *peerTimeStamp*: stores for each peer the last time a block was
   received
+
 - *pendingTime*: stores for a given height the time a block was requested
 - *peerRate*: stores for each peer the rate of received data in Bytes/second
 
@@ -424,6 +436,7 @@ If there is one correct process in *peerIDs* [FS-SOME-CORR-PEER],
 - *TargetHeight = max {peerHeigts(addr): addr in peerIDs} union {height}*
 
 #### **[FS-FUNC-MATCH]**:
+
 
 ```go
 func VerifyCommit(b Block, c Commit) Boolean
@@ -449,6 +462,7 @@ func VerifyCommit(b Block, c Commit) Boolean
 - Error condition
     - none
 ----
+
 
 ### Remote Functions
 
@@ -516,7 +530,10 @@ trigger the execution of these functions:
   
 > We have left the strategy how peers are selected unspecified, and
 > the currently existing different implementations of Fastsync differ
-> in this aspect. 
+> in this aspect. In V2, a peer *p* is selected with the minimum number of 
+> pending requests that can serve the required height *h*, that is
+> with *peerHeight(p) >= h*.
+
 
 The functions `Status` and `Block` are called by asynchronous
 RPC. When they return, the following functions are called:
@@ -545,6 +562,7 @@ has not provided sufficiently many data (check of *peerRate[p]*), then
 *p* is removed from *peerIDs*. In addition, *pendingTime* is used to
 estimate whether the peer that is responsible for the current height
 has provided the corresponding block on time.
+
   
 #### **[FS-V2-TIMEOUT]**:
 
@@ -553,6 +571,7 @@ executed (that is, when the height is incremented). If the timeout expires
 before the next block is executed, *Fastsync* terminates.
 If this happens, then *Fastsync* terminates
 with failure.
+
 
 ### Details
 
@@ -628,7 +647,7 @@ func OnBlockResponse(addr Address, b Block)
         - *peerTimeStamp[addr]* is set to a time between invocation and
           return of the function.
         - *peerRate[addr]* is updated according to size of received
-          block
+          block and time it has passed between current time and last block received from this peer (addr)
 - Error condition
     - if precondition is violated: *addr* not in *peerIDs*; reset
 	*pendingblocks(b.Height)* to nil;
@@ -705,7 +724,6 @@ By [FS-A-PEER] we do not put a restriction on the number
   of faulty peers, so that faulty peers can make *FS* to remove all
   correct peers from *peerIDs*. As a result, this version of
   *Fastsync* violates [FS-DIST-SAFE-SYNC].
-
 
 
 ####  **[FS-ISSUE-NON-TERM]**:
@@ -785,6 +803,7 @@ ensure the following invariant:
 #### **[NewFS-VAR-PEER-INV]**:
 If a peer never misbehaves, it is never removed from *peerIDs*. It
 follows that under [FS-SOME-CORR-PEER], *peerIDs* is always non-empty.
+
 
 > To ensure this, we suggest to change the protocol as follows:
 
