@@ -43,7 +43,7 @@ of the problem addressed by the Fastsync protocol.
   aspects of the fast sync problem, system assumptions and temporal
   logic specifications.
 
-    - [Environment, Assumptions, and Incentives](#Environment,-Assumptions,-and-Incentives):
+    - [Computational Model](#Computational-Model):
       timing and correctness assumptions.
 
     - [Distributed Problem Statement](#Distributed-Problem-Statement):
@@ -247,7 +247,7 @@ block at height  *terminationHeight + 1* of the blockchain.
 
 # Part III - FastSync as Distributed System
 
-## Environment, Assumptions, and Incentives
+## Computational Model
 
 #### **[FS-A-NODE]**:
 We consider a node *FS* that performs *Fastsync*.
