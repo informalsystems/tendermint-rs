@@ -289,7 +289,7 @@ specify below under what (favorable) conditions *Fastsync* ensures to
 terminate successfully, and satisfy the requirements of the sequential
 problem statement:
 
-#### **[FS-DISTR-LIVE]**:
+#### **[FS-DIST-LIVE]**:
 *Fastsync* eventually terminates: it either *terminates successfully* or
 it *terminates with failure*.
 
@@ -303,27 +303,17 @@ safety and liveness properties below:
 #### **[FS-SOME-CORR-PEER]**:
 Initially, the set *peerIDs* contains at least one correct full node.
 
-TODO: Fix this paragraph!
-> While in principle the above condition can be part of a sufficient
+> While in principle the above condition [FS-SOME-CORR-PEER] 
+> can be part of a sufficient
 > condition to solve [FS-SEQ-LIVE] and
-> [FS-SEQ-SAFE-START] and [FS-SEQ-SAFE-SYNC], we will see below that the
-> current implementation of Fastsync (V2) requires the following (much
-> stronger) requirement
+> [FS-SEQ-SAFE-START] and [FS-SEQ-SAFE-SYNC] in the distributed
+> setting (their corresponding properties are given below), we will discuss in 
+> [Part V](#part-v---analysis-and-improvements) that the
+> current implementation of Fastsync (V2) requires the much
+> stronger requirement [**[FS-ALL-CORR-PEER]**](#FS-ALL-CORR-PEER)
+> given in Part V.
 
 ### Safety
-
-> The following property corresponds to [FS-SEQ-SAFE-START]
-
-#### **[FS-DIST-SAFE-START]**:
-Let *maxh* be the maximum 
-height of a correct peer [**[TMBC-CORR-FULL]**][TMBC-CORR-FULL-link]
-in *peerIDs* at the time *Fastsync* starts. If *FastSync* terminates
-successfully, it is at some height *terminationHeight >= maxh - 1*.
-
-#### **[FS-DIST-NONABORT]**:
-If there is one correct process in *peerIDs* [FS-SOME-CORR-PEER],
-*Fastsync* never terminates with failure. (Together with [FS-DISTR-LIVE]
-below that means it will terminate successfully.)
 
 > As this specification does
 > not assume that a correct peer is at the most recent height
@@ -333,12 +323,17 @@ below that means it will terminate successfully.)
 > Tendermint, as the consensus reactor then synchronizes from that
 > height.)
 
-> The above property is independent of how many blocks are added to the
-> blockchain (and learned by the peers) while *Fastsync* is running. It
-> links the target height to the initial state. If *Fastsync* has to
-> catch-up many blocks, it would be better to  link the
-> target height to a time close to the termination. This is captured by
-> the following specification:
+
+#### **[FS-DIST-SAFE-START]**:
+Let *maxh* be the maximum 
+height of a correct peer [**[TMBC-CORR-FULL]**][TMBC-CORR-FULL-link]
+in *peerIDs* at the time *Fastsync* starts. If *FastSync* terminates
+successfully, it is at some height *terminationHeight >= maxh - 1*.
+
+
+> To address [FS-SEQ-SAFE-SYNC] we consider the following property in
+> the distributed setting. See the comments below on the relation to
+> the sequential version.
 
 
 #### **[FS-DIST-SAFE-SYNC]**:
@@ -349,42 +344,45 @@ that if *term* is the time *Fastsync* terminates and
 *term - TD*, then if *FastSync* terminates successfully, it is at
 some height *terminationHeight >= maxh*.
 
+
+> *TD* might depend on timeouts etc. We suggest that an acceptable
+> value for *TD* is in the range of approx. 10 sec., that is the
+> interval between two calls `QueryStatus()`; see below.
+
 > We use *term - TD* as reference time, as we have to account
 > for communication delay between the peer and *FS*. After the peer sent
 > the last message to *FS*, the peer and *FS* run concurrently and
 > independently. There is no assumption on the rate at which a peer can
 > add blocks (e.g., it might be in the process of catching up itself).
 
->  *TD* might depend on timeouts etc. We suggest that an acceptable
->  value for *TD* is in the range of approx. 10 sec., that is the
->  interval between two calls `QueryStatus()`; see below.
-
-
+> **Relation to [FS-SEQ-SAFE-SYNC]:**  
 > Under [FS-SOME-CORR-PEER], if *peerIDs* contains a full node that is
 > "synchronized with the blockchain", and *blockchainheight* is the height
 > of the blockchain at time *term*, then  *terminationHeight* may even
 > achieve
 > *blockchainheight - TD / ETIME*;
-> cf. [**[TMBC-SEQ-APPEND-E]**][TMBC-SEQ-APPEND-E-link]. 
+> cf. [**[TMBC-SEQ-APPEND-E]**][TMBC-SEQ-APPEND-E-link], that is,
+> the parameter *D* from [FS-SEQ-SAFE-SYNC] is in the range of  *TD / ETIME*.
 
 
 #### **[FS-DIST-SAFE-STATE]**:
-It's the same as the sequential version [FS-SEQ-SAFE-STATE].
+It is the same as the sequential version
+[**[FS-SEQ-SAFE-STATE]**](FS-SEQ-SAFE-STATE).
+
+
+#### **[FS-DIST-NONABORT]**:
+If there is one correct process in *peerIDs* [FS-SOME-CORR-PEER],
+*Fastsync* never terminates with failure. (Together with [FS-DIST-LIVE]
+ that means it will terminate successfully.)
+
 
 
 # Part IV - Fastsync protocol
 
-TODO: Write a paragraph on the execution model!
+**TODO:** Write a paragraph on the execution model!
 
 ## Definitions
 
-<!--
-> In this section we become more concrete, with basic (abstracted) data types
----->
-<!--
-> some math that allows to write specifications and pseudo code solution below.
-Some variables, etc.
----->
 
 > We now introduce variables and auxiliary functions used by the protocol.
 
@@ -651,8 +649,10 @@ func Execute()
 	  receivedBlocks(a.Height) and receivedBlocks(b.Height) not in peerIDs
 	- height is updated height of complete prefix that matches the blockchain
 	- state is the one of the blockchain at height *height - 1*
-	- if updated height is equal to TargetHeight then Fastsync terminates
-	  successfully.
+	- if the new value of *height* is equal to *TargetHeight*, then
+	Fastsync 
+	**terminates
+	  successfully**.
 - Error condition
     - none
 ----
@@ -698,7 +698,8 @@ and block b was faulty and provided by a faulty peer, the protocol
 By [FS-A-PEER] we do not put a restriction on the number
   of faulty peers, so that faulty peers can make *FS* to remove all
   correct peers from *peerIDs*. As a result, this version of
-  *Fastsync* violates [FS-VC-CORR-INV-SYNC].
+  *Fastsync* violates [FS-DIST-SAFE-SYNC].
+
 
 
 ####  **[FS-ISSUE-NON-TERM]**:
@@ -708,45 +709,42 @@ faulty peers may be in *peerIDs*. They can thus control at which rate
 *Fastsync* gets blocks. If the timeout duration from [FS-V2-TIMEOUT]
 is greater than the time it takes to add a block to the blockchain
 (LTIME in [**[TMBC-SEQ-APPEND-E]**][TMBC-SEQ-APPEND-E-link]), the
-protocol may never terminate and thus violate [FS-VC-TERM].  This
+protocol may never terminate and thus violate [FS-DIST-LIVE].  This
 scenario is even possible if a correct peer is always in *peerIDs*,
 but faulty peers are regularly asked for blocks.
 
 ### Consequence
 
-The issues [FS-ISSUE-KILL] and [FS-ISSUE-NON-TERM] explain why the
-temporal properties that are relevant for termination, namely,
-[FS-VC-ALL-CORR-LIVE] and [FS-VC-ALL-CORR-NONABORT], need to be
-restricted to the case where all peers are correct
-[FS-ALL-CORR-PEER]. In a fault tolerance context this is problematic,
-as it means that faulty peers can prevent *FastSync* from termination.
-
-Similarly, [FS-VC-CORR-INV-SYNC] and [FS-VC-CORR-SAFE-START] needed to be
-restricted to [FS-ALL-CORR-PEER]. Again, if faults would be considered,
-this would imply that if *Fastsync* terminates, it cannot be
-guaranteed that a "reasonable" target height will be reached.
-
-### Safety
+The issues [FS-ISSUE-KILL] and [FS-ISSUE-NON-TERM] explain why 
+does not satisfy the property [FS-DIST-LIVE] relevant for termination.
+As a result, V2 only solves the specifications in a restricted form,
+namely, when all peers are correct:
 
 #### **[FS-ALL-CORR-PEER]**:
 At all times, the set *peerIDs* contains only correct full nodes.
 
+With this restriction we can give the achieved properties: 
+
 #### **[FS-VC-ALL-CORR-NONABORT]**:
 Under [FS-ALL-CORR-PEER], *Fastsync* never terminates with failure.
 
-### Liveness
 
 #### **[FS-VC-ALL-CORR-LIVE]**:
 Under [FS-ALL-CORR-PEER], *Fastsync* eventually terminates successfully.
 
-> We observe that all specifications that impose successful
-> termination at an acceptable height are all conditional under
-> [FS-ALL-CORR-PEER], that is, large parts of the current
-> implementations of FastSync (V2) are not fault-tolerant. We will
+
+> In a fault tolerance context this is problematic,
+> as it means that faulty peers can prevent *FastSync* from termination.
+> We observe that this also touches other properties, namely,
+> [FS-DIST-SAFE-START] and [FS-DIST-SAFE-SYNC]: 
+> Termination at an acceptable height are all conditional under
+> "successful termination". The properties above severely restrict
+> under which circumstances FastSync (V2) terminates successfully.
+> As a result, large parts of the current
+> implementation of  are not fault-tolerant. We will
 > discuss this, and suggestions how to solve this after the
 > description of the current protocol.
 
-TODO: This part need to be rewritten.
 
 ## Suggestions for an Improved Fastsync Implementation
 
@@ -782,7 +780,7 @@ ensure the following invariant:
 If a peer never misbehaves, it is never removed from *peerIDs*. It
 follows that under [FS-SOME-CORR-PEER], *peerIDs* is always non-empty.
 
-> To perform these checks, we suggest to change the protocol as follows
+> To ensure this, we suggest to change the protocol as follows:
 
 
 #### Fastsync has the following configuration parameters:
@@ -902,7 +900,7 @@ func Execute()
 ### Solution for [FS-ISSUE-NON-TERM]
 
 As discussed above, the advantageous termination requirement is the
-combination of [NewFS-VC-NONABORT] and [NewFS-VC-TERM], that is, *Fastsync*
+combination of [FS-DIST-LIVE] and [FS-DIST-NONABORT], that is, *Fastsync*
 should terminate successfully in case there is at least one correct
 peer in *peerIDs*. For this we have to ensure that faulty processes
 cannot slow us down and provide blocks at a lower rate than the
@@ -940,11 +938,10 @@ A time interval *[begin,end]* is *good period* if:
 - no faulty peer is added before time *end*
 
 > In the analysis below we assume that the termination condition of
-> *Fastsync* V2 [FS-V2-TIMEOUT] (that is, termination when the height is not incremented for
-> some time), is replaced by the termination condition
+> *Fastsync* is
 > *height = TargetHeight* in the postcondition of
 > `Execute`. Therefore, [NewFS-A-STATUS-INTERVAL] does not interfere
-> with in analysis. If a correct peer reports a new height "shortly
+> with this analysis. If a correct peer reports a new height "shortly
 > before termination" this leads to an additional round trip to
 > request and add the new block. Then [NewFS-A-DELTA] ensures that
 > *Fastsync* catches up.
