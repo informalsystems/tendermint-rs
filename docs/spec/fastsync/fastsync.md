@@ -516,7 +516,7 @@ type bcBlockRequestMessage struct {
 ```
 
 Remark:
-- `msg.Height` >= 0
+- `msg.Height` > 0
 
 #### bcNoBlockResponseMessage
 
@@ -528,7 +528,7 @@ type bcNoBlockResponseMessage struct {
 ```
 
 Remark:
-- `msg.Height` >= 0
+- `msg.Height` > 0
 - This message type is included in the protocol for convenience and is not expected to be sent between two correct peers
 
 #### bcBlockResponseMessage
@@ -541,7 +541,7 @@ type bcBlockResponseMessage struct {
 ```
 
 Remark:
-- `msg.Block` is a Tendermint block as defined in [[block].
+- `msg.Block` is a Tendermint block as defined in [[block]].
 - `msg.Block` != nil
 
 #### bcStatusRequestMessage
@@ -554,7 +554,7 @@ type bcStatusRequestMessage struct {
 ```
 
 Remark:
-- `msg.Height` >= 0
+- `msg.Height` > 0
 
 #### bcStatusResponseMessage
 
@@ -566,7 +566,7 @@ type bcStatusResponseMessage struct {
 ```
 
 Remark:
-- `msg.Height` >= 0
+- `msg.Height` > 0
 
 ### Remote Functions
 
