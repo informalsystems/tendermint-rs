@@ -204,8 +204,14 @@ application state *s* that corresponds to the block and state of that
 height of the blockchain, and produces
 as output (i) a list *L* of blocks starting at height *h* to some height
 *terminationHeight*, and (ii) the application state when applying the
-transactions of the list *L* to *s*. Fastsync has to satisfy the following
-properties:
+transactions of the list *L* to *s*. 
+
+> The returned value *terminationHeight* is the height of the block with the largest
+> height that could be verified. In order to do so, *Fastsync* needs the
+> block at height  *terminationHeight + 1* of the blockchain.
+
+
+Fastsync has to satisfy the following properties:
 
 #### **[FS-SEQ-LIVE]**:
 *Fastsync* eventually terminates.
@@ -239,10 +245,6 @@ the blockchain at height *terminationHeight*.
 > termination height.
 
 
-#### **[FS-SEQ-HEIGHT]**:
-The returned value *terminationHeight* is the height of the block with the largest
-height that could be verified. In order to do so, *Fastsync* needs the
-block at height  *terminationHeight + 1* of the blockchain.
 
 
 # Part III - FastSync as Distributed System
