@@ -502,7 +502,11 @@ func VerifyCommit(b Block, c Commit) Boolean
 
 Peers participating in FastSync exchange the following set of messages. Messages are
 encoded using the Amino serialization protocol. We define each message here
-using Go syntax, annoted with the Amino type name. 
+using Go syntax, annoted with the Amino type name. The prefix `bc` refers to
+`blockchain`, which is the name of the FastSync reactor in the Go
+implementation.
+
+#### bcBlockRequestMessage
 
 ```go
 // type: "tendermint/blockchain/BlockRequest"
@@ -513,6 +517,8 @@ type bcBlockRequestMessage struct {
 
 Remark:
 - `msg.Height` >= 0
+
+#### bcNoBlockResponseMessage
 
 ```go
 // type: "tendermint/blockchain/NoBlockResponse"
@@ -525,6 +531,8 @@ Remark:
 - `msg.Height` >= 0
 - This message type is included in the protocol for convenience and is not expected to be sent between two correct peers
 
+#### bcBlockResponseMessage
+
 ```go
 // type: "tendermint/blockchain/BlockResponse"
 type bcBlockResponseMessage struct {
@@ -536,6 +544,7 @@ Remark:
 - `msg.Block` is a Tendermint block as defined in [[block].
 - `msg.Block` != nil
 
+#### bcStatusRequestMessage
 
 ```go
 // type: "tendermint/blockchain/StatusRequest"
@@ -546,6 +555,8 @@ type bcStatusRequestMessage struct {
 
 Remark:
 - `msg.Height` >= 0
+
+#### bcStatusResponseMessage
 
 ```go
 // type: "tendermint/blockchain/StatusResponse"
