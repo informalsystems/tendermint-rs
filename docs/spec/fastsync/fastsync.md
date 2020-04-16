@@ -325,12 +325,12 @@ Under [FS-ALL-CORR-PEER], *Fastsync* never terminates with failure.
 
 
 #### **[FS-VC-STATE-INV]**:
-If *FastSync* terminates successfully, then the
+If *FastSync* terminates, then the
 application state is the one that corresponds to the blockchain at
 height *terminationHeight*.
 
 #### **[FS-VC-BLOCKS-INV]**:
-If *FastSync* terminates successfully, then the
+If *FastSync* terminates, then the
 returned list of blocks  is the one that corresponds to the blocks of
 the blockchain.
 
