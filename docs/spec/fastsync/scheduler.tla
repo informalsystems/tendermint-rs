@@ -16,9 +16,9 @@ EXTENDS Integers, FiniteSets
 
 \* the protocol parameters
 CONSTANTS
-    PeerIDs,        \* potential peer ids, a set of integers, e.g., 0..2
-    ultimateHeight, \* the maximum height of the blockchain, an integer, e.g., 3
-    numRequests     \* the number of requests made per batch, e.g., 2
+    PeerIDs,        \* potential peer ids, a set of integers, e.g. 0..2
+    ultimateHeight, \* the maximum height of the blockchain, an integer, e.g. 3
+    numRequests     \* the maximum number of requests made when scheduling new blocks, e.g. 2
 
 \* a few definitions
 None == -1                      \* an undefined value
@@ -68,6 +68,8 @@ VARIABLE scheduler
             a set of heights for which blocks are to be scheduled or pending
          receivedBlocks: [Heights -> PeerIDs],
             a set of heights for which blocks were received but not yet processed
+         blocks: Heights,
+            the full set of blocks requested or downloaded by the scheduler
     *)
     
 vars == <<turn, envRunning, inEvent, scRunning, outEvent, scheduler>>    
@@ -102,7 +104,7 @@ OutEvents ==
 (* ----------------------------------------------------------------------------------------------*)
 (* The behavior of the scheduler that keeps track of peers, block requests and responses, etc.   *)
 (* See scheduler.go                                                                              *)
-(* https://github.com/tendermint/tendermint/tree/brapse/blockchain-v2-riri-reactor-2/scheduler.go*)
+(* https://github.com/tendermint/tendermint/blob/v0.33.3/blockchain/v2/scheduler.go              *)
 (* ----------------------------------------------------------------------------------------------*)
 
 addPeer(sc, peerID) == 
@@ -175,7 +177,7 @@ setPeerHeight(sc, peerID, height) ==
     LET newMph == maxHeight(newPeerStates, newPeerHeights) IN
     LET res == addNewBlocks(sc, newMph) IN
     LET newSc == [sc EXCEPT 
-      !.peerHeights = newPeerHeights, !.peerStates = newPeerStates, 
+      !.peerHeights = newPeerHeights, !.peerStates = newPeerStates,
       !.blocks = res.newBlocks, !.blockStates = res.newBlockStates] IN
     [err |-> noErr, val |-> newSc]
     
@@ -600,5 +602,5 @@ SchedulerIncreasePre ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Apr 13 13:14:32 CEST 2020 by ancaz
+\* Last modified Thu Apr 16 13:21:33 CEST 2020 by ancaz
 \* Created Sat Feb 08 13:12:30 CET 2020 by ancaz
