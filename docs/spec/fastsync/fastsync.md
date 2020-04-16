@@ -373,7 +373,7 @@ some height *terminationHeight >= maxh - 1*.
 
 #### **[FS-DIST-SAFE-STATE]**:
 It is the same as the sequential version
-[**[FS-SEQ-SAFE-STATE]**](FS-SEQ-SAFE-STATE).
+[**[FS-SEQ-SAFE-STATE]**](#FS-SEQ-SAFE-STATE).
 
 
 #### **[FS-DIST-NONABORT]**:
