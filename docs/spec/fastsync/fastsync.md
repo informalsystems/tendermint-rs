@@ -206,6 +206,9 @@ as output (i) a list *L* of blocks starting at height *h* to some height
 *terminationHeight*, and (ii) the application state when applying the
 transactions of the list *L* to *s*. 
 
+> As the block of height *h + 1* is needed to verify the block of
+> height *h*, let us clarify the following on the
+> termination height:
 > The returned value *terminationHeight* is the height of the block with the largest
 > height that could be verified. In order to do so, *Fastsync* needs the
 > block at height  *terminationHeight + 1* of the blockchain.
@@ -240,9 +243,6 @@ height *terminationHeight >= eh - D*.
 Upon termination, the application state is the one that corresponds to
 the blockchain at height *terminationHeight*.
 
-> As the block of height *h + 1* is needed to verify the block of
-> height *h* we highlight the following clarification of the
-> termination height.
 
 
 
