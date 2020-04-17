@@ -44,6 +44,11 @@ impl Error {
         Error::new(Code::InvalidParams, Some(data.to_string()))
     }
 
+    /// Create a new websocket error
+    pub fn websocket_error(cause: &str) -> Error {
+        Error::new(Code::WebSocketError, Some(cause.to_string()))
+    }
+
     /// Create a new method-not-found error
     pub fn method_not_found(name: &str) -> Error {
         Error::new(Code::MethodNotFound, Some(name.to_string()))
@@ -142,6 +147,10 @@ pub enum Code {
     #[error("Server error")]
     ServerError,
 
+    /// Websocket error
+    #[error("Websocket Eroor")]
+    WebSocketError,
+
     /// Other error types
     #[error("Error (code: {})", 0)]
     Other(i32),
@@ -179,6 +188,7 @@ impl From<Code> for i32 {
             Code::InvalidParams => -32602,
             Code::InternalError => -32603,
             Code::ServerError => -32000,
+            Code::WebSocketError => 0,
             Code::Other(other) => other,
         }
     }

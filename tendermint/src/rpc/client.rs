@@ -1,5 +1,6 @@
 //! Tendermint RPC client
 
+use super::subscribe::{Event, WebSocketEvents};
 use crate::{
     abci::{self, Transaction},
     block::Height,
@@ -16,12 +17,16 @@ use hyper::header;
 pub struct Client {
     /// Address of the RPC server
     address: net::Address,
+    ws: Option<WebSocketEvents>,
 }
 
 impl Client {
     /// Create a new Tendermint RPC client, connecting to the given address
     pub fn new(address: net::Address) -> Self {
-        Self { address }
+        Self {
+            address,
+            ws: None,
+        }
     }
 
     /// `/abci_info`: get information about the ABCI application.
@@ -187,5 +192,37 @@ impl Client {
         let response = http_client.request(request).await?;
         let response_body = hyper::body::aggregate(response.into_body()).await?;
         R::Response::from_reader(response_body.reader())
+    }
+
+    //TODO Have a query type instead of a string
+    /// Subscribe to the Events Websocket with a query string for example "tm.event = 'NewBlock'"
+    pub async fn subscribe(&mut self, query: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let (host, port) = match &self.address {
+            net::Address::Tcp { host, port, .. } => (host, port),
+            other => {
+                let err: Box<dyn std::error::Error> =
+                    Error::invalid_params(&format!("invalid RPC address: {:?}", other)).into();
+
+                return Err(err);
+            }
+        };
+        let ws = WebSocketEvents::subscribe(&format!("http://{}:{}/", host, port), query).await?;
+
+        self.ws = Some(ws);
+
+        Ok(())
+    }
+
+    //TODO Have a query type instead of a string
+    /// Subscribe to the Events Websocket with a query string for example "tm.event = 'NewBlock'"
+    pub async fn get_event(&mut self) -> Result<Event, Box<dyn std::error::Error>> {
+        match self.ws {
+            Some(ref mut socket) => Ok(socket.next_event().await?),
+            None => {
+                let err: Box<dyn std::error::Error> =
+                    Error::websocket_error("No websocket connection").into();
+                 Err(err)
+            }
+        }
     }
 }
