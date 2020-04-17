@@ -1,6 +1,7 @@
 //! Tendermint accounts
 
 use crate::error::{Error, Kind};
+use ripemd160::Ripemd160;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
 use signatory::{ecdsa::curve::secp256k1, ed25519};
@@ -58,12 +59,13 @@ impl Debug for Id {
     }
 }
 
-// TODO: should be RIPEMD160(SHA256(pk))
+// RIPEMD160(SHA256(pk))
 impl From<secp256k1::PublicKey> for Id {
     fn from(pk: secp256k1::PublicKey) -> Id {
-        let digest = Sha256::digest(pk.as_bytes());
+        let sha_digest = Sha256::digest(pk.as_bytes());
+        let ripemd_digest = Ripemd160::digest(&sha_digest[..]);
         let mut bytes = [0u8; LENGTH];
-        bytes.copy_from_slice(&digest[..LENGTH]);
+        bytes.copy_from_slice(&ripemd_digest[..LENGTH]);
         Id(bytes)
     }
 }
@@ -136,6 +138,24 @@ mod tests {
 
         // get id for pubkey
         let pubkey = ed25519::PublicKey::from_bytes(pubkey_bytes).unwrap();
+        let id = Id::from(pubkey);
+
+        assert_eq!(id_bytes.ct_eq(&id).unwrap_u8(), 1);
+    }
+
+    #[test]
+    fn test_secp_id() {
+        // test vector for pubkey and id (address)
+        let pubkey_hex = "02950E1CDFCB133D6024109FD489F734EEB4502418E538C28481F22BCE276F248C";
+        // SHA256: 034f706ac824dbb0d227c2ca30439e5be3766cfddc90f00bd530951d638b43a4
+        let id_hex = "7C2BB42A8BE69791EC763E51F5A49BCD41E82237";
+
+        // decode pubkey and address
+        let pubkey_bytes = &hex::decode_upper(pubkey_hex).unwrap();
+        let id_bytes = Id::from_str(id_hex).expect("expected id_hex to decode properly");
+
+        // get id for pubkey
+        let pubkey = secp256k1::PublicKey::from_bytes(pubkey_bytes).unwrap();
         let id = Id::from(pubkey);
 
         assert_eq!(id_bytes.ct_eq(&id).unwrap_u8(), 1);
