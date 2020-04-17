@@ -23,10 +23,7 @@ pub struct Client {
 impl Client {
     /// Create a new Tendermint RPC client, connecting to the given address
     pub fn new(address: net::Address) -> Self {
-        Self {
-            address,
-            ws: None,
-        }
+        Self { address, ws: None }
     }
 
     /// `/abci_info`: get information about the ABCI application.
@@ -221,7 +218,7 @@ impl Client {
             None => {
                 let err: Box<dyn std::error::Error> =
                     Error::websocket_error("No websocket connection").into();
-                 Err(err)
+                Err(err)
             }
         }
     }
