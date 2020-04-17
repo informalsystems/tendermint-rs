@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 gumdrop = "0.7"
 serde = { version = "1", features = ["serde_derive"] }
-tendermint = { version = "0.12.0-rc0", path = "../tendermint" }
+tendermint = { version = "0.13.0-dev", path = "../tendermint" }
 async-trait = "0.1"
 tokio = { version = "0.2", features = ["full"] }
 abscissa_tokio = "0.5"
