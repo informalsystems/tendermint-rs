@@ -1,4 +1,6 @@
-## Pending [0.12.0] (2019-12-11)
+## Pending [0.13.0] (dev)
+
+## [0.12.0] (2020-04-17)
 
 Dependencies
 - Update to bytes `0.5` and amino_rs `0.5`.
