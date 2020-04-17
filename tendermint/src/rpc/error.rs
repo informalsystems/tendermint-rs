@@ -148,7 +148,7 @@ pub enum Code {
     ServerError,
 
     /// Websocket error
-    #[error("Websocket Eroor")]
+    #[error("Websocket Error")]
     WebSocketError,
 
     /// Other error types
