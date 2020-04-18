@@ -143,4 +143,16 @@ mod rpc {
         // For lack of better things to test
         assert_eq!(status.validator_info.voting_power.value(), 10);
     }
+
+    #[tokio::test]
+    #[ignore]
+    async fn event_subscription() {
+        let _ = localhost_rpc_client().subscribe("tm.event = 'NewBlock").await.unwrap();
+
+        let _event = localhost_rpc_client().get_event().await.unwrap();
+
+        // // For lack of better things to test
+        // assert_eq!(status.validator_info.voting_power.value(), 10);
+    }
+
 }
