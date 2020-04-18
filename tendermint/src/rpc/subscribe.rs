@@ -12,7 +12,7 @@ pub enum Event {
 
 impl WebSocketEvents {
     pub async fn subscribe(url: &str, query: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let (mut ws_stream, _) = connect_async(&format!("http://{}/subscribe", url)).await?;
+        let (mut ws_stream, _) = connect_async(&format!("ws://{}/subscribe", url)).await?;
 
         ws_stream.send(Message::text(query)).await?;
 
