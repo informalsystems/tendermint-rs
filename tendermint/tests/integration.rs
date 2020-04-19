@@ -12,6 +12,7 @@ mod rpc {
     use std::cmp::min;
     use tendermint::abci::Code;
     use tendermint::abci::Log;
+    use tendermint::rpc::endpoint::subscribe::Event;
     use tendermint::rpc::Client;
 
     /// Get the address of the local node
@@ -145,16 +146,17 @@ mod rpc {
     }
 
     #[tokio::test]
-    #[ignore]
+    //#[ignore]
     async fn event_subscription() {
-        let _ = localhost_rpc_client()
-            .subscribe("tm.event = 'NewBlock")
-            .await
-            .unwrap();
+        let mut client = localhost_rpc_client();
+        let _ = client.subscribe("tm.event='NewBlock'").await.unwrap();
 
-        let _event = localhost_rpc_client().get_event().await.unwrap();
+        let resp = client.get_event().await.unwrap();
 
-        // // For lack of better things to test
-        // assert_eq!(status.validator_info.voting_power.value(), 10);
+        match resp {
+            Event::GenericJSONEvent { data: _ } => assert!(true),
+
+            Event::GenericStringEvent { data: _ } => assert!(false),
+        }
     }
 }

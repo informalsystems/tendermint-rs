@@ -11,4 +11,5 @@ pub mod genesis;
 pub mod health;
 pub mod net_info;
 pub mod status;
+pub mod subscribe;
 pub mod validators;

@@ -1,11 +1,10 @@
 //! Tendermint RPC client
 
-use super::subscribe::{Event, WebSocketEvents};
 use crate::{
     abci::{self, Transaction},
     block::Height,
     net,
-    rpc::{self, endpoint::*, Error, Response},
+    rpc::{self, endpoint::*, Error, Request, Response},
     Genesis,
 };
 use bytes::buf::ext::BufExt;
@@ -17,7 +16,7 @@ use hyper::header;
 pub struct Client {
     /// Address of the RPC server
     address: net::Address,
-    ws: Option<WebSocketEvents>,
+    ws: Option<rpc::endpoint::subscribe::WebSocketEvents>,
 }
 
 impl Client {
@@ -155,7 +154,7 @@ impl Client {
     /// Perform a request against the RPC endpoint
     pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
-        R: rpc::Request,
+        R: Request,
     {
         let request_body = request.into_json();
 
@@ -184,7 +183,7 @@ impl Client {
                     .unwrap(),
             );
         }
-
+        dbg!(&request);
         let http_client = hyper::Client::builder().build_http();
         let response = http_client.request(request).await?;
         let response_body = hyper::body::aggregate(response.into_body()).await?;
@@ -203,7 +202,9 @@ impl Client {
                 return Err(err);
             }
         };
-        let ws = WebSocketEvents::subscribe(&format!("http://{}:{}/", host, port), query).await?;
+        let mut ws =
+            subscribe::WebSocketEvents::websocket(&format!("ws://{}:{}", host, port)).await?;
+        ws.subscribe(query).await?;
 
         self.ws = Some(ws);
 
@@ -212,7 +213,7 @@ impl Client {
 
     //TODO Have a query type instead of a string
     /// Subscribe to the Events Websocket with a query string for example "tm.event = 'NewBlock'"
-    pub async fn get_event(&mut self) -> Result<Event, Box<dyn std::error::Error>> {
+    pub async fn get_event(&mut self) -> Result<subscribe::Event, Box<dyn std::error::Error>> {
         match self.ws {
             Some(ref mut socket) => Ok(socket.next_event().await?),
             None => {

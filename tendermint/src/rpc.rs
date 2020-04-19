@@ -9,7 +9,6 @@ mod id;
 mod method;
 pub mod request;
 pub mod response;
-mod subscribe;
 mod version;
 
 pub use self::{

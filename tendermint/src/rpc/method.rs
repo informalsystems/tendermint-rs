@@ -53,6 +53,9 @@ pub enum Method {
 
     /// Get validator info for a block
     Validators,
+
+    /// Subscribe to events over the websocket
+    Subscribe,
 }
 
 impl Method {
@@ -73,6 +76,7 @@ impl Method {
             Method::NetInfo => "net_info",
             Method::Status => "status",
             Method::Validators => "validators",
+            Method::Subscribe => "subscribe",
         }
     }
 }
@@ -96,6 +100,7 @@ impl FromStr for Method {
             "net_info" => Method::NetInfo,
             "status" => Method::Status,
             "validators" => Method::Validators,
+            "subscribe" => Method::Subscribe,
             other => return Err(Error::method_not_found(other)),
         })
     }
