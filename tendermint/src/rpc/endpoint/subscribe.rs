@@ -77,8 +77,7 @@ impl WebSocketEvents {
 
     /// Send JSON RPC with query subscription over WebSocket
     pub async fn subscribe(&mut self, query: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let _ = self
-            .socket
+        self.socket
             .send(Message::text(Request::new(query.to_owned()).into_json()))
             .await?;
         Ok(())
