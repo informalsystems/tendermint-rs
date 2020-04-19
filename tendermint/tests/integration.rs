@@ -146,7 +146,7 @@ mod rpc {
     }
 
     #[tokio::test]
-    //#[ignore]
+    #[ignore]
     async fn event_subscription() {
         let mut client = localhost_rpc_client();
         let _ = client.subscribe("tm.event='NewBlock'").await.unwrap();
