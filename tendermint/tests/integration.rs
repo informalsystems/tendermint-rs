@@ -13,6 +13,7 @@ mod rpc {
     use tendermint::abci::Code;
     use tendermint::abci::Log;
     use tendermint::rpc::Client;
+    use tendermint::rpc::event_listener::Event;
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> Client {
@@ -152,7 +153,7 @@ mod rpc {
         )
         .await
         .unwrap();
-        let _ = client.subscribe("tm.event='NewBlock'").await.unwrap();
+        let _ = client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
 
         let resp = client.get_event().await.unwrap();
 
