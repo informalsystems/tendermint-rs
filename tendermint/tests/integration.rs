@@ -12,7 +12,6 @@ mod rpc {
     use std::cmp::min;
     use tendermint::abci::Code;
     use tendermint::abci::Log;
-    use tendermint::rpc::event_listener::Event;
     use tendermint::rpc::Client;
 
     /// Get the address of the local node

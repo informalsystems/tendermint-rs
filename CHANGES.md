@@ -1,4 +1,13 @@
-## Pending [0.12.0] (2019-12-11)
+## [0.13.0] (2020-04-20)
+
+Dependencies:
+
+- Update `signatory` requirement to v0.19 ([#227])
+
+[0.13.0]: https://github.com/informalsystems/tendermint-rs/pull/228
+[#227]: https://github.com/informalsystems/tendermint-rs/pull/227
+
+## [0.12.0] (2020-04-17)
 
 Dependencies
 - Update to bytes `0.5` and amino_rs `0.5`.
