@@ -11,7 +11,7 @@ pub struct Request {
 }
 
 impl Request {
-    /// List validators for a specific block
+    /// Query the Tendermint nodes event and stream events over web socket
     pub fn new(query: String) -> Self {
         Self { query }
     }
