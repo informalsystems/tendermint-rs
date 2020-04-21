@@ -12,7 +12,7 @@ mod rpc {
     use std::cmp::min;
     use tendermint::abci::Code;
     use tendermint::abci::Log;
-    use tendermint::rpc::endpoint::subscribe::Event;
+    use tendermint::rpc::event_listener::Event;
     use tendermint::rpc::Client;
 
     /// Get the address of the local node
@@ -148,7 +148,9 @@ mod rpc {
     #[tokio::test]
     #[ignore]
     async fn event_subscription() {
-        let mut client = localhost_rpc_client();
+        let mut client = tendermint::rpc::event_listener::EventListener::connect(
+            "tcp://127.0.0.1:26657".parse().unwrap(),
+        ).await().unwrap();
         let _ = client.subscribe("tm.event='NewBlock'").await.unwrap();
 
         let resp = client.get_event().await.unwrap();

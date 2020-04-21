@@ -53,7 +53,6 @@ where
 
     /// Convert this wrapper into a result type
     pub fn into_result(self) -> Result<R, Error> {
-        dbg!(&self.error);
         // Ensure we're using a supported RPC version
         self.version().ensure_supported()?;
 
