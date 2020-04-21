@@ -18,7 +18,7 @@ impl EventListener {
     /// Constructor for event listener
     pub async fn connect(
         address: net::Address,
-    ) -> Result<EventListener, Box<dyn std::error::Error>> {
+    ) -> Result<EventListener,RPCError> {
         let (host, port) = match &address {
             net::Address::Tcp { host, port, .. } => (host, port),
             other => {
@@ -33,7 +33,7 @@ impl EventListener {
         Ok(EventListener { socket: ws_stream })
     }
     /// Subscribe to event query stream over the websocket
-    pub async fn subscribe(&mut self, query: String) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn subscribe(&mut self, query: String) -> Result<(), RPCError> {
         self.socket
             .send(Message::text(
                 subscribe::Request::new(query.to_owned()).into_json(),
@@ -44,12 +44,12 @@ impl EventListener {
 
     //TODO Have a query type instead of a string
     /// Subscribe to the Events Websocket with a query string for example "tm.event = 'NewBlock'"
-    pub async fn get_event(&mut self) -> Result<Event, Box<dyn std::error::Error>> {
+    pub async fn get_event(&mut self) -> Result<Event, RPCError> {
         let msg = self
             .socket
             .next()
             .await
-            .ok_or_else(|| "web socket closed")??;
+            .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
 
         match msg.to_string().parse::<serde_json::Value>() {
             Ok(data) => Ok(Event::GenericJSONEvent { data }),

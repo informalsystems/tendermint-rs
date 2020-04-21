@@ -3,6 +3,7 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Display};
 use thiserror::Error;
+use async_tungstenite::tungstenite::Error as WSError;
 
 /// Tendermint RPC errors
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -45,8 +46,8 @@ impl Error {
     }
 
     /// Create a new websocket error
-    pub fn websocket_error(cause: &str) -> Error {
-        Error::new(Code::WebSocketError, Some(cause.to_string()))
+    pub fn websocket_error(cause:  impl Into<String>) -> Error {
+        Error::new(Code::WebSocketError, Some(cause.into()))
     }
 
     /// Create a new method-not-found error
@@ -110,6 +111,12 @@ impl From<http::Error> for Error {
 impl From<hyper::Error> for Error {
     fn from(hyper_error: hyper::Error) -> Error {
         Error::http_error(hyper_error.to_string())
+    }
+}
+
+impl From<WSError> for Error{
+    fn from(websocket_error: WSError)-> Error{
+        Error::websocket_error(websocket_error.to_string())
     }
 }
 
