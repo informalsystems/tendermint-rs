@@ -32,6 +32,7 @@ impl EventListener {
             connect_async(&format!("ws://{}:{}/websocket", host, port)).await?;
         Ok(EventListener { socket: ws_stream })
     }
+    //TODO Have a query type instead of a string
     /// Subscribe to event query stream over the websocket
     pub async fn subscribe(&mut self, query: String) -> Result<(), RPCError> {
         self.socket
@@ -42,7 +43,6 @@ impl EventListener {
         Ok(())
     }
 
-    //TODO Have a query type instead of a string
     /// Subscribe to the Events Websocket with a query string for example "tm.event = 'NewBlock'"
     pub async fn get_event(&mut self) -> Result<Event, RPCError> {
         let msg = self
