@@ -1,4 +1,4 @@
-//! `/subscribe` endpoint JSONRPC wrappera
+//! `/subscribe` endpoint JSONRPC wrapper
 
 use crate::rpc;
 use serde::{Deserialize, Serialize};
