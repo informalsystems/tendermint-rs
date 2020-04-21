@@ -4,7 +4,7 @@ use crate::{
     abci::{self, Transaction},
     block::Height,
     net,
-    rpc::{ endpoint::*, Error, Request, Response},
+    rpc::{endpoint::*, Error, Request, Response},
     Genesis,
 };
 use bytes::buf::ext::BufExt;

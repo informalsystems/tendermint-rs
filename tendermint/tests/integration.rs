@@ -150,7 +150,9 @@ mod rpc {
     async fn event_subscription() {
         let mut client = tendermint::rpc::event_listener::EventListener::connect(
             "tcp://127.0.0.1:26657".parse().unwrap(),
-        ).await().unwrap();
+        )
+        .await
+        .unwrap();
         let _ = client.subscribe("tm.event='NewBlock'").await.unwrap();
 
         let resp = client.get_event().await.unwrap();
