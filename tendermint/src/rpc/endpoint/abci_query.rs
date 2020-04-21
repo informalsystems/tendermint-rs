@@ -62,6 +62,7 @@ impl rpc::Response for Response {}
 
 /// ABCI query results
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
+#[serde(default)]
 pub struct AbciQuery {
     /// Response code
     pub code: Code,
@@ -70,7 +71,8 @@ pub struct AbciQuery {
     pub log: Log,
 
     /// Info value
-    pub info: Option<String>,
+    #[serde(default = "String::new")]
+    pub info: String,
 
     /// Index
     #[serde(
@@ -82,12 +84,12 @@ pub struct AbciQuery {
     /// Key
     #[serde(
         default,
-        serialize_with = "serializers::serialize_option_base64",
-        deserialize_with = "serializers::parse_option_base64"
+        serialize_with = "serializers::serialize_base64",
+        deserialize_with = "serializers::parse_base64"
     )]
-    pub key: Option<Vec<u8>>,
+    pub key: Vec<u8>,
 
-    /// Value
+    /// Value (might be explicit null)
     #[serde(
         default,
         serialize_with = "serializers::serialize_option_base64",
@@ -95,12 +97,13 @@ pub struct AbciQuery {
     )]
     pub value: Option<Vec<u8>>,
 
-    /// Proof (if requested)
+    /// Proof (might be explicit null)
     pub proof: Option<Proof>,
 
     /// Block height
     pub height: block::Height,
 
     /// Codespace
-    pub codespace: Option<String>,
+    #[serde(default = "String::new")]
+    pub codespace: String,
 }

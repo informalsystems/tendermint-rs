@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display};
+use std::fmt::{self, Debug, Display};
 
 /// Tendermint version
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]

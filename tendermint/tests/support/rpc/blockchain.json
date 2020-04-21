@@ -17,7 +17,7 @@
             "block": "10",
             "app": "0"
           },
-          "chain_id": "cosmoshub-1",
+          "chain_id": "cosmoshub-2",
           "height": "10",
           "time": "2019-03-13T23:08:45.915941777Z",
           "num_txs": "1",
@@ -53,7 +53,7 @@
             "block": "10",
             "app": "0"
           },
-          "chain_id": "cosmoshub-1",
+          "chain_id": "cosmoshub-2",
           "height": "9",
           "time": "2019-03-13T23:08:38.954781954Z",
           "num_txs": "0",
@@ -89,7 +89,7 @@
             "block": "10",
             "app": "0"
           },
-          "chain_id": "cosmoshub-1",
+          "chain_id": "cosmoshub-2",
           "height": "8",
           "time": "2019-03-13T23:08:31.890373101Z",
           "num_txs": "0",
@@ -125,7 +125,7 @@
             "block": "10",
             "app": "0"
           },
-          "chain_id": "cosmoshub-1",
+          "chain_id": "cosmoshub-2",
           "height": "7",
           "time": "2019-03-13T23:08:19.589587064Z",
           "num_txs": "1",
@@ -161,7 +161,7 @@
             "block": "10",
             "app": "0"
           },
-          "chain_id": "cosmoshub-1",
+          "chain_id": "cosmoshub-2",
           "height": "6",
           "time": "2019-03-13T23:08:00.786335199Z",
           "num_txs": "0",
@@ -197,7 +197,7 @@
             "block": "10",
             "app": "0"
           },
-          "chain_id": "cosmoshub-1",
+          "chain_id": "cosmoshub-2",
           "height": "5",
           "time": "2019-03-13T23:07:54.139565804Z",
           "num_txs": "0",
@@ -233,7 +233,7 @@
             "block": "10",
             "app": "0"
           },
-          "chain_id": "cosmoshub-1",
+          "chain_id": "cosmoshub-2",
           "height": "4",
           "time": "2019-03-13T23:07:47.021138899Z",
           "num_txs": "0",
@@ -269,7 +269,7 @@
             "block": "10",
             "app": "0"
           },
-          "chain_id": "cosmoshub-1",
+          "chain_id": "cosmoshub-2",
           "height": "3",
           "time": "2019-03-13T23:07:40.055158729Z",
           "num_txs": "0",
@@ -305,7 +305,7 @@
             "block": "10",
             "app": "0"
           },
-          "chain_id": "cosmoshub-1",
+          "chain_id": "cosmoshub-2",
           "height": "2",
           "time": "2019-03-13T23:07:33.018721592Z",
           "num_txs": "0",
@@ -341,7 +341,7 @@
             "block": "10",
             "app": "0"
           },
-          "chain_id": "cosmoshub-1",
+          "chain_id": "cosmoshub-2",
           "height": "1",
           "time": "2019-03-13T23:00:00Z",
           "num_txs": "0",

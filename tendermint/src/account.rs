@@ -13,7 +13,7 @@ use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
 
 /// Size of an  account ID in bytes
-const LENGTH: usize = 20;
+pub const LENGTH: usize = 20;
 
 /// Account IDs
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]

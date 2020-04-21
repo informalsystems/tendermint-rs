@@ -1,6 +1,6 @@
 //! `/block_results` endpoint JSONRPC wrapper
 
-use crate::{abci, block, rpc};
+use crate::{abci, block, consensus, rpc, validator};
 use serde::{Deserialize, Serialize};
 
 /// Get ABCI results at a given height.
@@ -35,8 +35,21 @@ pub struct Response {
     /// Block height
     pub height: block::Height,
 
-    /// Block results
-    pub results: abci::Responses,
+    /// Txs results (might be explicit null)
+    pub txs_results: Option<Vec<abci::DeliverTx>>,
+
+    /// Begin block events (might be explicit null)
+    pub begin_block_events: Option<Vec<abci::Event>>,
+
+    /// End block events (might be explicit null)
+    pub end_block_events: Option<Vec<abci::Event>>,
+
+    /// Validator updates (might be explicit null)
+    #[serde(deserialize_with = "abci::responses::deserialize_validator_updates")]
+    pub validator_updates: Vec<validator::Update>,
+
+    /// New consensus params (might be explicit null)
+    pub consensus_param_updates: Option<consensus::Params>,
 }
 
 impl rpc::Response for Response {}

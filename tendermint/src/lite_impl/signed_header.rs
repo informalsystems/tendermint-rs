@@ -3,8 +3,9 @@
 use crate::lite::error::{Error, Kind};
 use crate::lite::ValidatorSet;
 use crate::validator::Set;
-use crate::{block, hash, lite, vote};
+use crate::{block, block::BlockIDFlag, hash, lite, vote};
 use anomaly::fail;
+use std::convert::TryFrom;
 
 impl lite::Commit for block::signed_header::SignedHeader {
     type ValidatorSet = Set;
@@ -16,17 +17,9 @@ impl lite::Commit for block::signed_header::SignedHeader {
         // NOTE we don't know the validators that committed this block,
         // so we have to check for each vote if its validator is already known.
         let mut signed_power = 0u64;
-        for vote_opt in &self.iter() {
-            // skip absent and nil votes
-            // NOTE: do we want to check the validity of votes
-            // for nil ?
-            // TODO: clarify this!
-            let vote = match vote_opt {
-                Some(v) => v,
-                None => continue,
-            };
-
-            // check if this vote is from a known validator
+        for vote in &self.signed_votes() {
+            // Only count if this vote is from a known validator.
+            // TODO: we still need to check that we didn't see a vote from this validator twice ...
             let val_id = vote.validator_id();
             let val = match validators.validator(val_id) {
                 Some(v) => v,
@@ -52,42 +45,109 @@ impl lite::Commit for block::signed_header::SignedHeader {
     }
 
     fn validate(&self, vals: &Self::ValidatorSet) -> Result<(), Error> {
-        if self.commit.precommits.len() != vals.validators().len() {
+        // TODO: self.commit.block_id cannot be zero in the same way as in go
+        // clarify if this another encoding related issue
+        if self.commit.signatures.len() == 0 {
+            fail!(Kind::ImplementationSpecific, "no signatures for commit");
+        }
+        if self.commit.signatures.len() != vals.validators().len() {
             fail!(
                 Kind::ImplementationSpecific,
                 "pre-commit length: {} doesn't match validator length: {}",
-                self.commit.precommits.len(),
+                self.commit.signatures.len(),
                 vals.validators().len()
             );
         }
 
-        for precommit_opt in self.commit.precommits.iter() {
-            match precommit_opt {
-                Some(precommit) => {
-                    // make sure each vote is for the correct header
-                    if let Some(header_hash) = precommit.header_hash() {
-                        if header_hash != self.header_hash() {
-                            fail!(
-                                Kind::ImplementationSpecific,
-                                "validator({}) voted for header {}, but current header is {}",
-                                precommit.validator_address,
-                                header_hash,
-                                self.header_hash()
-                            );
-                        }
-                    }
+        for commit_sig in self.commit.signatures.iter() {
+            commit_sig.validate(vals)?;
+        }
 
-                    // returns FaultyFullNode error if it detects a signer isn't present in the validator set
-                    if vals.validator(precommit.validator_address) == None {
-                        let reason = format!(
+        Ok(())
+    }
+}
+
+// this private helper function does *not* do any validation but extracts
+// all non-BlockIDFlagAbsent votes from the commit:
+fn non_absent_votes(commit: &block::Commit) -> Vec<vote::Vote> {
+    let mut votes: Vec<vote::Vote> = Default::default();
+    for (i, commit_sig) in commit.signatures.iter().enumerate() {
+        if commit_sig.is_absent() {
+            continue;
+        }
+
+        if let Some(val_addr) = commit_sig.validator_address {
+            if let Some(sig) = commit_sig.signature.clone() {
+                let vote = vote::Vote {
+                    vote_type: vote::Type::Precommit,
+                    height: commit.height,
+                    round: commit.round,
+                    block_id: Option::from(commit.block_id.clone()),
+                    timestamp: commit_sig.timestamp,
+                    validator_address: val_addr,
+                    validator_index: u64::try_from(i)
+                        .expect("usize to u64 conversion failed for validator index"),
+                    signature: sig,
+                };
+                votes.push(vote);
+            }
+        }
+    }
+    votes
+}
+
+// TODO: consider moving this into commit_sig.rs instead and making it pub
+impl block::commit_sig::CommitSig {
+    fn validate(&self, vals: &Set) -> Result<(), Error> {
+        match self.block_id_flag {
+            BlockIDFlag::BlockIDFlagAbsent => {
+                if self.validator_address.is_some() {
+                    fail!(
+                        Kind::ImplementationSpecific,
+                        "validator address is present for absent CommitSig {:#?}",
+                        self
+                    );
+                }
+                if self.signature.is_some() {
+                    fail!(
+                        Kind::ImplementationSpecific,
+                        "signature is present for absent CommitSig {:#?}",
+                        self
+                    );
+                }
+                // TODO: deal with Time
+                // see https://github.com/informalsystems/tendermint-rs/pull/196#discussion_r401027989
+            }
+            BlockIDFlag::BlockIDFlagCommit | BlockIDFlag::BlockIDFlagNil => {
+                if self.validator_address.is_none() {
+                    fail!(
+                        Kind::ImplementationSpecific,
+                        "missing validator address for non-absent CommitSig {:#?}",
+                        self
+                    );
+                }
+                if self.signature.is_none() {
+                    fail!(
+                        Kind::ImplementationSpecific,
+                        "missing signature for non-absent CommitSig {:#?}",
+                        self
+                    );
+                }
+                // TODO: this last check is only necessary if we do full verification (2/3) but the
+                // above checks should actually happen always (even if we skip forward)
+                //
+                // returns ImplementationSpecific error if it detects a signer
+                // that is not present in the validator set:
+                if let Some(val_addr) = self.validator_address {
+                    if vals.validator(val_addr) == None {
+                        fail!(
+                            Kind::ImplementationSpecific,
                             "Found a faulty signer ({}) not present in the validator set ({})",
-                            precommit.validator_address,
+                            val_addr,
                             vals.hash()
                         );
-                        fail!(Kind::FaultyFullNode, reason);
                     }
                 }
-                None => (),
             }
         }
 
@@ -98,20 +158,18 @@ impl lite::Commit for block::signed_header::SignedHeader {
 impl block::signed_header::SignedHeader {
     /// This is a private helper method to iterate over the underlying
     /// votes to compute the voting power (see `voting_power_in` below).
-    fn iter(&self) -> Vec<Option<vote::SignedVote>> {
+    fn signed_votes(&self) -> Vec<vote::SignedVote> {
         let chain_id = self.header.chain_id.to_string();
-        let mut votes = self.commit.precommits.clone().into_vec();
+        let mut votes = non_absent_votes(&self.commit);
         votes
             .drain(..)
-            .map(|opt| {
-                opt.map(|vote| {
-                    vote::SignedVote::new(
-                        (&vote).into(),
-                        &chain_id,
-                        vote.validator_address,
-                        vote.signature,
-                    )
-                })
+            .map(|vote| {
+                vote::SignedVote::new(
+                    (&vote).into(),
+                    &chain_id,
+                    vote.validator_address,
+                    vote.signature,
+                )
             })
             .collect()
     }

@@ -4,6 +4,7 @@
 use std::fmt::Debug;
 use std::time::SystemTime;
 
+use crate::serializers;
 use async_trait::async_trait;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -89,7 +90,15 @@ pub trait TrustThreshold: Copy + Clone + Debug + Serialize + DeserializeOwned {
 /// [`TrustThreshold`] which can be passed into all relevant methods.
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TrustThresholdFraction {
+    #[serde(
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
+    )]
     numerator: u64,
+    #[serde(
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
+    )]
     denominator: u64,
 }
 
@@ -391,6 +400,7 @@ mod tests {
     use crate::lite::types::mocks::*;
     use crate::lite::{Commit, Header, SignedHeader, TrustedState, ValidatorSet};
     use crate::lite::{TrustThreshold, TrustThresholdFraction};
+    use crate::test::test_serialization_roundtrip;
     use std::time::SystemTime;
 
     #[test]
@@ -460,5 +470,12 @@ mod tests {
         assert!(TrustThresholdFraction::new(2, 7).is_err());
         assert!(TrustThresholdFraction::new(0, 1).is_err());
         assert!(TrustThresholdFraction::new(1, 0).is_err());
+    }
+
+    #[test]
+    fn trust_threshold_fraction_serialization_roundtrip() {
+        let json_data =
+            include_str!("../../tests/support/serialization/trust_threshold/fraction.json");
+        test_serialization_roundtrip::<TrustThresholdFraction>(json_data);
     }
 }

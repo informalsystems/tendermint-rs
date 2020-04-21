@@ -35,8 +35,8 @@ impl rpc::Request for Request {
 /// Block responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
-    /// Block metadata
-    pub block_meta: block::Meta,
+    /// Block ID
+    pub block_id: block::Id,
 
     /// Block data
     pub block: Block,

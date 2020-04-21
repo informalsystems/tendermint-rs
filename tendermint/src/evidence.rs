@@ -92,5 +92,26 @@ pub struct Params {
         serialize_with = "serializers::serialize_u64",
         deserialize_with = "serializers::parse_u64"
     )]
-    pub max_age: u64,
+    pub max_age_num_blocks: u64,
+
+    /// Max age duration
+    pub max_age_duration: Duration,
+}
+
+/// Duration is a wrapper around std::time::Duration
+/// essentially, to keep the usages look cleaner
+/// i.e. you can avoid using serde annotations everywhere
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+pub struct Duration(
+    #[serde(
+        serialize_with = "serializers::serialize_duration",
+        deserialize_with = "serializers::parse_duration"
+    )]
+    std::time::Duration,
+);
+
+impl From<Duration> for std::time::Duration {
+    fn from(d: Duration) -> std::time::Duration {
+        d.0
+    }
 }

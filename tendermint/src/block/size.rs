@@ -21,11 +21,4 @@ pub struct Size {
         deserialize_with = "serializers::parse_i64"
     )]
     pub max_gas: i64,
-
-    /// Time iota in ms
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
-    pub time_iota_ms: u64,
 }

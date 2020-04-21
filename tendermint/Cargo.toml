@@ -28,7 +28,7 @@ authors = [
 all-features = true
 
 [badges]
-circle-ci = { repository = "interchainio/tendermint-rs" }
+codecov = { repository = "..."}
 
 [dependencies]
 anomaly = "0.2"
@@ -44,6 +44,7 @@ prost-amino = "0.5"
 prost-amino-derive = "0.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
+serde_bytes = "0.11"
 sha2 = { version = "0.8", default-features = false }
 signatory = { version = "0.19", features = ["ed25519", "ecdsa"] }
 signatory-dalek = "0.19"

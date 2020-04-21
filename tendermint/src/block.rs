@@ -1,6 +1,7 @@
 //! Blocks within the chains of a Tendermint network
 
 mod commit;
+pub mod commit_sig;
 pub mod header;
 mod height;
 mod id;
@@ -11,6 +12,7 @@ mod size;
 
 pub use self::{
     commit::*,
+    commit_sig::*,
     header::Header,
     height::*,
     id::{Id, ParseId},
@@ -46,18 +48,26 @@ where
 {
     #[derive(Deserialize)]
     struct TmpCommit {
+        pub height: Height,
+        #[serde(
+            serialize_with = "serializers::serialize_u64",
+            deserialize_with = "serializers::parse_u64"
+        )]
+        pub round: u64,
         #[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
-        block_id: Option<Id>,
-        precommits: Option<Precommits>,
+        pub block_id: Option<Id>,
+        pub signatures: Option<CommitSigs>,
     }
 
     let commit = TmpCommit::deserialize(deserializer)?;
-    if commit.block_id.is_none() || commit.precommits.is_none() {
+    if commit.block_id.is_none() || commit.signatures.is_none() {
         Ok(None)
     } else {
         Ok(Some(Commit {
+            height: commit.height,
+            round: commit.round,
             block_id: commit.block_id.unwrap(),
-            precommits: commit.precommits.unwrap(),
+            signatures: commit.signatures.unwrap(),
         }))
     }
 }

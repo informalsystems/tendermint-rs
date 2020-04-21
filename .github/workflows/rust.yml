@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       tendermint:
-        image: interchainio/tendermint
+        image: tendermint/tendermint
         ports:
           - 26656:26656
           - 26657:26657

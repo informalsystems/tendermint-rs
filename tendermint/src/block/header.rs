@@ -23,20 +23,6 @@ pub struct Header {
     /// Current timestamp
     pub time: Time,
 
-    /// Number of transactions in block
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
-    pub num_txs: u64,
-
-    /// Total number of transactions
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
-    pub total_txs: u64,
-
     /// Previous block info
     #[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
     pub last_block_id: Option<block::Id>,

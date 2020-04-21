@@ -10,7 +10,7 @@
       },
       "id": "6b90d376f9bfdd83c6d9351bf7b2f458b74deacc",
       "listen_addr": "tcp://0.0.0.0:26656",
-      "network": "cosmoshub-1",
+      "network": "cosmoshub-2",
       "version": "0.30.1",
       "channels": "4020212223303800",
       "moniker": "technodrome",

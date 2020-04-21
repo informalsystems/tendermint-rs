@@ -1,8 +1,9 @@
 //! `/abci_info` endpoint JSONRPC wrapper
 
-use crate::{block, hash, rpc, Hash};
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use subtle_encoding::base64;
+use crate::serializers;
+use crate::{block, rpc};
+use serde::{Deserialize, Serialize};
+use serde_bytes;
 
 /// Request ABCI information from a node
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -26,61 +27,26 @@ pub struct Response {
 impl rpc::Response for Response {}
 
 /// ABCI information
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 #[serde(default)]
 pub struct AbciInfo {
     /// Name of the application
     pub data: String,
 
     /// Version
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
+    pub version: String,
 
-    /// Last block height, omit empty
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub last_block_height: Option<block::Height>,
-
-    /// Last app hash for the block, omit empty
+    /// App version
     #[serde(
-        serialize_with = "serialize_app_hash",
-        deserialize_with = "parse_app_hash",
-        skip_serializing_if = "Option::is_none"
+        serialize_with = "serializers::serialize_u64",
+        deserialize_with = "serializers::parse_u64"
     )]
-    pub last_block_app_hash: Option<Hash>,
-}
+    pub app_version: u64,
 
-/// Parse Base64-encoded app hash
-pub(crate) fn parse_app_hash<'de, D>(deserializer: D) -> Result<Option<Hash>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
-        .map_err(|e| D::Error::custom(format!("{}", e)))?;
+    /// Last block height
+    pub last_block_height: block::Height,
 
-    Hash::new(hash::Algorithm::Sha256, &bytes) // This never returns None
-        .map(Some) // Return Option<Hash> (syntactic sugar so the value can be omitted in the struct)
-        .map_err(|e| D::Error::custom(format!("{}", e))) // or return custom Error
-}
-
-/// Serialize Base64-encoded app hash
-pub(crate) fn serialize_app_hash<S>(hash: &Option<Hash>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    String::from_utf8(base64::encode(hash.unwrap().as_bytes()))
-        .unwrap()
-        .serialize(serializer)
-}
-
-/// Default trait implements default values for the optional last_block_height and last_block_app_hash
-/// for cases where they were omitted from the JSON.
-impl Default for AbciInfo {
-    fn default() -> Self {
-        AbciInfo {
-            data: "".to_string(),
-            version: None,
-            last_block_height: None,
-            last_block_app_hash: None,
-        }
-    }
+    /// Last app hash for the block
+    #[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]
+    pub last_block_app_hash: Vec<u8>,
 }

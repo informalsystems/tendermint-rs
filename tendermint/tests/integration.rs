@@ -9,6 +9,9 @@
 /// cargo test -- --ignored
 /// ```
 mod rpc {
+    use std::cmp::min;
+    use tendermint::abci::Code;
+    use tendermint::abci::Log;
     use tendermint::rpc::Client;
 
     /// Get the address of the local node
@@ -31,7 +34,12 @@ mod rpc {
     async fn abci_info() {
         let abci_info = localhost_rpc_client().abci_info().await.unwrap();
 
+        assert_eq!(&abci_info.version, "0.16.1");
+        assert_eq!(abci_info.app_version, 1u64);
+        // the kvstore app's reply will contain "{\"size\":0}" as data right from the start
         assert_eq!(&abci_info.data, "{\"size\":0}");
+        assert_eq!(abci_info.data.is_empty(), false);
+        assert_eq!(abci_info.last_block_app_hash[0], 65);
     }
 
     /// `/abci_query` endpoint
@@ -44,8 +52,16 @@ mod rpc {
             .await
             .unwrap();
 
-        assert_eq!(abci_query.key.as_ref().unwrap(), &Vec::<u8>::new());
-        assert_eq!(abci_query.value.as_ref(), None);
+        assert_eq!(abci_query.code, Code::Ok);
+        assert_eq!(abci_query.log, Log::from("does not exist"));
+        assert_eq!(abci_query.info, String::new());
+        assert_eq!(abci_query.index, 0);
+        assert_eq!(&abci_query.key, &Vec::<u8>::new());
+        assert!(&abci_query.key.is_empty());
+        assert!(abci_query.value.is_none());
+        assert!(abci_query.proof.is_none());
+        assert!(abci_query.height.value() > 0);
+        assert_eq!(abci_query.codespace, String::new());
     }
 
     /// `/block` endpoint
@@ -55,7 +71,8 @@ mod rpc {
         let height = 1u64;
         let block_info = localhost_rpc_client().block(height).await.unwrap();
 
-        assert_eq!(block_info.block_meta.header.height.value(), height);
+        assert!(block_info.block.last_commit.is_none());
+        assert_eq!(block_info.block.header.height.value(), height);
     }
 
     /// `/block_results` endpoint
@@ -66,18 +83,23 @@ mod rpc {
         let block_results = localhost_rpc_client().block_results(height).await.unwrap();
 
         assert_eq!(block_results.height.value(), height);
+        assert!(block_results.txs_results.is_none());
     }
 
     /// `/blockchain` endpoint
     #[tokio::test]
     #[ignore]
     async fn blockchain() {
+        let max_height = 10u64;
         let blockchain_info = localhost_rpc_client()
-            .blockchain(1u64, 10u64)
+            .blockchain(1u64, max_height)
             .await
             .unwrap();
 
-        assert_eq!(blockchain_info.block_metas.len(), 10);
+        assert_eq!(
+            blockchain_info.block_metas.len() as u64,
+            min(max_height, blockchain_info.last_height.value())
+        );
     }
 
     /// `/commit` endpoint
@@ -85,9 +107,10 @@ mod rpc {
     #[ignore]
     async fn commit() {
         let height = 1u64;
-        let commit_info = localhost_rpc_client().block(height).await.unwrap();
+        let commit_info = localhost_rpc_client().commit(height).await.unwrap();
 
-        assert_eq!(commit_info.block_meta.header.height.value(), height);
+        assert_eq!(commit_info.signed_header.header.height.value(), height);
+        assert_eq!(commit_info.canonical, true);
     }
 
     /// `/genesis` endpoint

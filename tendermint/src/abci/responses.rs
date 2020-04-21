@@ -42,36 +42,44 @@ where
 ///
 /// This type corresponds to the `ResponseDeliverTx` proto from:
 ///
-/// <https://github.com/tendermint/tendermint/blob/develop/abci/types/types.proto>
+/// <https://github.com/tendermint/tendermint/blob/master/abci/types/types.proto>
 // TODO(tarcieri): generate this automatically from the proto
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DeliverTx {
     /// ABCI application response code
-    pub code: Option<Code>,
+    pub code: Code,
 
     /// ABCI application data
-    pub data: Option<Data>,
+    pub data: Data,
 
     /// ABCI log data (nondeterministic)
-    pub log: Option<Log>,
+    pub log: Log,
 
     /// ABCI info (nondeterministic)
-    pub info: Option<Info>,
+    pub info: Info,
 
     /// Amount of gas wanted
-    #[serde(default, rename = "gasWanted")]
     pub gas_wanted: Gas,
 
     /// Amount of gas used
-    #[serde(default, rename = "gasUsed")]
     pub gas_used: Gas,
 
-    /// Tags
-    #[serde(default)]
-    pub tags: Vec<Tag>,
+    /// Events
+    pub events: Vec<Event>,
 
     /// Codespace
-    pub codespace: Option<Codespace>,
+    pub codespace: Codespace,
+}
+
+/// Event
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Event {
+    /// Event type
+    #[serde(rename = "type")]
+    pub type_str: String,
+
+    /// Attributes
+    pub attributes: Vec<Tag>,
 }
 
 /// Begin block response.
@@ -108,7 +116,7 @@ pub struct EndBlock {
 }
 
 /// Return an empty vec in the event `validator_updates` is `null`
-fn deserialize_validator_updates<'de, D>(
+pub fn deserialize_validator_updates<'de, D>(
     deserializer: D,
 ) -> Result<Vec<validator::Update>, D::Error>
 where
