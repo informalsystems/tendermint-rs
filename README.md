@@ -3,8 +3,9 @@
 [![Crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
 [![Build Status][build-image]][build-link]
+[![Audit Status][audit-image]][audit-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
-![Rust 1.35+][rustc-image]
+![Rust 1.39+][rustc-image]
 
 Rust crate for interacting with [Tendermint]: a high-performance blockchain
 consensus engine that powers Byzantine fault tolerant applications written
@@ -14,11 +15,11 @@ in any programming language.
 
 ## Requirements
 
-- Rust 1.35+
+- Rust 1.39+
 
 ## License
 
-Copyright © 2018-2019 Tendermint
+Copyright © 2020 Informal Systems
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -38,11 +39,13 @@ limitations under the License.
 [crate-link]: https://crates.io/crates/tendermint
 [docs-image]: https://docs.rs/tendermint/badge.svg
 [docs-link]: https://docs.rs/tendermint/
-[build-image]: https://circleci.com/gh/interchainio/tendermint-rs.svg?style=shield
-[build-link]: https://circleci.com/gh/interchainio/tendermint-rs
+[build-image]: https://github.com/informalsystems/tendermint-rs/workflows/Rust/badge.svg
+[build-link]: https://github.com/informalsystems/tendermint-rs/actions?query=workflow%3ARust
+[audit-image]: https://github.com/informalsystems/tendermint-rs/workflows/Audit-Check/badge.svg
+[audit-link]: https://github.com/informalsystems/tendermint-rs/actions?query=workflow%3AAudit-Check
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
 [license-link]: https://github.com/interchainio/tendermint-rs/blob/master/LICENSE
-[rustc-image]: https://img.shields.io/badge/rustc-1.35+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.39+-blue.svg
 
 [//]: # (general links)
 
