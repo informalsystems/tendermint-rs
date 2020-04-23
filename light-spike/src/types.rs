@@ -1,10 +1,11 @@
 use derive_more::Display;
+use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 
 pub use tendermint::hash::Hash;
 pub use tendermint::lite::types::Height;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum Error {
     ImplementationSpecific,
     InsufficientValidatorsOverlap,
@@ -18,7 +19,7 @@ pub enum Error {
     NotWithinTrustPeriod,
 }
 
-#[derive(Clone, Debug, Display)]
+#[derive(Clone, Debug, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct Header {
     pub height: Height,
@@ -28,7 +29,7 @@ pub struct Header {
     pub hash: Hash, // TODO: What if we don't have this
 }
 
-#[derive(Clone, Debug, Display)]
+#[derive(Clone, Debug, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct ValidatorSet {
     pub hash: Hash,
@@ -40,20 +41,20 @@ impl From<std::vec::Vec<tendermint::validator::Info>> for ValidatorSet {
     }
 }
 
-#[derive(Clone, Debug, Display)]
+#[derive(Clone, Debug, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct Commit {
     pub header_hash: Hash,
 }
 
-#[derive(Copy, Clone, Debug, Display)]
+#[derive(Copy, Clone, Debug, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct TrustThreshold {
     pub numerator: u64,
     pub denominator: u64,
 }
 
-#[derive(Clone, Debug, Display)]
+#[derive(Clone, Debug, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct SignedHeader {
     pub header: Header,
@@ -68,9 +69,17 @@ impl From<tendermint::block::signed_header::SignedHeader> for SignedHeader {
     }
 }
 
-#[derive(Clone, Debug, Display)]
+#[derive(Clone, Debug, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct TrustedState {
     pub header: Header,
     pub validators: ValidatorSet,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LightBlock {
+    pub height: Height,
+    pub signed_header: SignedHeader,
+    pub validator_set: ValidatorSet,
+    pub next_validator_set: ValidatorSet,
 }
