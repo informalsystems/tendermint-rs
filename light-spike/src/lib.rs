@@ -1,6 +1,8 @@
+pub mod components;
 pub mod operations;
 pub mod predicates;
 pub mod prelude;
+pub mod trace;
 pub mod types;
 
 #[cfg(test)]

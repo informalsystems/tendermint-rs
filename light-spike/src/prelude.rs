@@ -1,4 +1,5 @@
 pub use crate::operations::*;
+pub use crate::trace::*;
 pub use crate::types::*;
 
 pub use std::time::{Duration, SystemTime};
