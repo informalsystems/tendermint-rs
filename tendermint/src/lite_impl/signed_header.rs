@@ -98,6 +98,7 @@ fn non_absent_votes(commit: &block::Commit) -> Vec<vote::Vote> {
         let extracted_validator_address;
         let extracted_timestamp;
         let extracted_signature;
+        let block_id;
         match commit_sig {
             CommitSig::BlockIDFlagAbsent { .. } => continue,
             CommitSig::BlockIDFlagCommit {
@@ -108,6 +109,7 @@ fn non_absent_votes(commit: &block::Commit) -> Vec<vote::Vote> {
                 extracted_validator_address = validator_address;
                 extracted_timestamp = timestamp;
                 extracted_signature = signature;
+                block_id = Some(commit.block_id.clone());
             }
             CommitSig::BlockIDFlagNil {
                 validator_address,
@@ -117,13 +119,14 @@ fn non_absent_votes(commit: &block::Commit) -> Vec<vote::Vote> {
                 extracted_validator_address = validator_address;
                 extracted_timestamp = timestamp;
                 extracted_signature = signature;
+                block_id = None;
             }
         }
         votes.push(vote::Vote {
             vote_type: vote::Type::Precommit,
             height: commit.height,
             round: commit.round,
-            block_id: Option::from(commit.block_id.clone()),
+            block_id,
             timestamp: *extracted_timestamp,
             validator_address: *extracted_validator_address,
             validator_index: u64::try_from(i)
