@@ -50,12 +50,23 @@ impl VerificationPredicates for ProductionPredicates {
         (header_time < now && expires_at > now).true_or(Error::NotWithinTrustPeriod)
     }
 
-    fn is_monotonic_bft_time(&self, header_a: &Header, header_b: &Header) -> Result<(), Error> {
-        (header_b.bft_time >= header_a.bft_time).true_or(Error::NonMonotonicBftTime)
+    fn is_monotonic_bft_time(
+        &self,
+        untrusted_header: &Header,
+        trusted_header: &Header,
+    ) -> Result<(), Error> {
+        (untrusted_header.bft_time > trusted_header.bft_time).true_or(Error::NonMonotonicBftTime)
     }
 
-    fn is_monotonic_height(&self, header_a: &Header, header_b: &Header) -> Result<(), Error> {
-        (header_a.height > header_b.height).true_or(Error::NonIncreasingHeight)
+    fn is_monotonic_height(
+        &self,
+        untrusted_header: &Header,
+        trusted_header: &Header,
+    ) -> Result<(), Error> {
+        (untrusted_header.height > trusted_header.height).true_or(Error::NonIncreasingHeight {
+            got: untrusted_header.height,
+            expected: trusted_header.height + 1,
+        })
     }
 
     fn has_sufficient_voting_power(
