@@ -38,9 +38,17 @@ pub trait VerificationPredicates {
         now: SystemTime,
     ) -> Result<(), Error>;
 
-    fn is_monotonic_bft_time(&self, header_a: &Header, header_b: &Header) -> Result<(), Error>;
+    fn is_monotonic_bft_time(
+        &self,
+        untrusted_header: &Header,
+        trusted_header: &Header,
+    ) -> Result<(), Error>;
 
-    fn is_monotonic_height(&self, header_a: &Header, header_b: &Header) -> Result<(), Error>;
+    fn is_monotonic_height(
+        &self,
+        untrusted_header: &Header,
+        trusted_header: &Header,
+    ) -> Result<(), Error>;
 
     fn has_sufficient_voting_power(
         &self,
@@ -84,12 +92,22 @@ pub fn verify_untrusted_light_block(
     untrusted_vals: &ValidatorSet,
     untrusted_next_vals: &ValidatorSet,
     trust_threshold: &TrustThreshold,
+    trusting_period: Duration,
+    now: SystemTime,
 ) -> Result<(), Error> {
+    // Ensure the latest trusted header hasn't expired
+    pred.is_within_trust_period(&trusted_state.header, trusting_period, now)?;
+
+    // Ensure the header validator hashes match the given validators
     pred.validator_sets_match(&untrusted_sh, &untrusted_vals)?;
+
+    // Ensure the header next validator hashes match the given next validators
     pred.next_validators_match(&untrusted_sh, &untrusted_next_vals)?;
 
+    // Ensure the header matches the commit
     pred.header_matches_commit(&untrusted_sh.header, &untrusted_sh.commit, &header_hasher)?;
 
+    // Additional implementation specific validation
     pred.valid_commit(
         &untrusted_sh.commit,
         &untrusted_sh.validators,
@@ -98,9 +116,24 @@ pub fn verify_untrusted_light_block(
 
     pred.is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.header)?;
 
-    pred.is_monotonic_height(&trusted_state.header, &untrusted_sh.header)?;
+    if untrusted_sh.header.height == trusted_state.header.height {
+        pred.valid_next_validator_set(&trusted_state, &untrusted_sh, &untrusted_next_vals)?;
+    } else if untrusted_sh.header.height > trusted_state.header.height {
+        pred.has_sufficient_voting_power(
+            &untrusted_sh.commit,
+            &untrusted_sh.validators,
+            &trust_threshold,
+            &voting_power_calculator,
+        )?;
+    } else {
+        pred.is_monotonic_height(&trusted_state.header, &untrusted_sh.header)?;
 
-    pred.valid_next_validator_set(&trusted_state, &untrusted_sh, &untrusted_next_vals)?;
+        // Ensure that the check above will always fail.
+        unreachable!();
+    }
+
+    // All validation passed successfully.
+    // Verify the validators correctly committed the block.
 
     pred.has_sufficient_validators_overlap(
         &untrusted_sh.commit,

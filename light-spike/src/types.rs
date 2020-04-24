@@ -14,7 +14,7 @@ pub enum Error {
     InvalidCommitValue,
     InvalidNextValidatorSet,
     InvalidValidatorSet,
-    NonIncreasingHeight,
+    NonIncreasingHeight { got: Height, expected: Height },
     NonMonotonicBftTime,
     NotWithinTrustPeriod,
 }
