@@ -40,7 +40,7 @@ pub struct Scheduler<VP> {
     trace: Sender<BoxedEvent>,
     rpc: Rpc,
     verifier: Verifier<VP>, // FIXME: Figure another way to get at the verifier
-    trusted_store: TSReadWriter,
+    trusted_store: TSReader,
 }
 
 impl<VP> Scheduler<VP>
@@ -51,7 +51,7 @@ where
         trace: Sender<BoxedEvent>,
         rpc: Rpc,
         verifier: Verifier<VP>,
-        trusted_store: TSReadWriter,
+        trusted_store: TSReader,
     ) -> Self {
         Self {
             trace,
@@ -113,9 +113,6 @@ where
         self.trace(SchedulerOutput::ValidLightBlock(vec![
             new_trusted_state.clone()
         ]));
-
-        self.trusted_store
-            .set(new_trusted_state.header.height, new_trusted_state.clone());
 
         Ok(vec![new_trusted_state])
     }
