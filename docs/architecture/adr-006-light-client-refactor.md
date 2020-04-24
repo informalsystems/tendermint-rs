@@ -46,7 +46,7 @@ The light client maintains state about commit/header/validators abbreviated as L
 ### Verification Flow
 The flow of events and mutations on state necessary for verification.
 
-![State Diagram](assets/light-client-verificaiton-flow.png)
+![State Diagram](assets/light-client-verification-flow.png)
 
 ### Detection Flow
 The flow of events and mutations on state necessary for fork detection.
