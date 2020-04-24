@@ -7,35 +7,35 @@ use tendermint::{block, rpc};
 use crate::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum RequesterError {
+pub enum RpcError {
     RpcError(rpc::Error),
 }
 
 #[typetag::serde]
-impl Event for RequesterError {}
+impl Event for RpcError {}
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum RequesterInput {
+pub enum RpcInput {
     FetchState(Height),
 }
 
 #[typetag::serde]
-impl Event for RequesterInput {}
+impl Event for RpcInput {}
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum RequesterOutput {
+pub enum RpcOutput {
     FetchedLightBlock(LightBlock),
 }
 
 #[typetag::serde]
-impl Event for RequesterOutput {}
+impl Event for RpcOutput {}
 
-pub struct Requester {
+pub struct Rpc {
     rpc_client: rpc::Client,
     trace: Sender<BoxedEvent>,
 }
 
-impl Requester {
+impl Rpc {
     pub fn new(rpc_client: rpc::Client, trace: Sender<BoxedEvent>) -> Self {
         Self { rpc_client, trace }
     }
@@ -44,8 +44,8 @@ impl Requester {
         self.trace.send(Box::new(e)).expect("could not trace event");
     }
 
-    pub fn fetch_light_block(&self, height: Height) -> Result<LightBlock, RequesterError> {
-        self.trace(RequesterInput::FetchState(height));
+    pub fn fetch_light_block(&self, height: Height) -> Result<LightBlock, RpcError> {
+        self.trace(RpcInput::FetchState(height));
 
         let signed_header = self.fetch_signed_header(height)?;
         let validator_set = self.fetch_validator_set(height)?;
@@ -58,12 +58,12 @@ impl Requester {
             next_validator_set,
         };
 
-        self.trace(RequesterOutput::FetchedLightBlock(light_block.clone()));
+        self.trace(RpcOutput::FetchedLightBlock(light_block.clone()));
 
         Ok(light_block)
     }
 
-    fn fetch_signed_header(&self, h: Height) -> Result<SignedHeader, RequesterError> {
+    fn fetch_signed_header(&self, h: Height) -> Result<SignedHeader, RpcError> {
         let height: block::Height = h.into();
 
         let res = block_on(async {
@@ -75,16 +75,16 @@ impl Requester {
 
         match res {
             Ok(response) => Ok(response.signed_header.into()),
-            Err(err) => Err(RequesterError::RpcError(err)),
+            Err(err) => Err(RpcError::RpcError(err)),
         }
     }
 
-    fn fetch_validator_set(&self, height: Height) -> Result<ValidatorSet, RequesterError> {
+    fn fetch_validator_set(&self, height: Height) -> Result<ValidatorSet, RpcError> {
         let res = block_on(self.rpc_client.validators(height));
 
         match res {
             Ok(response) => Ok(response.validators.into()),
-            Err(err) => Err(RequesterError::RpcError(err)),
+            Err(err) => Err(RpcError::RpcError(err)),
         }
     }
 }
