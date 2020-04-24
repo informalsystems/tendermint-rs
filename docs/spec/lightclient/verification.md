@@ -230,7 +230,7 @@ cf. [TMBC-VALIDATOR-Set]
 
 
 ### Inputs
-- *trustedHeader*: the VerificationHeader verification starts from
+- *trustedHeader*: the Verification Header verification starts from
 - *peer*: peer address
 - *targetHeight*:
 
@@ -247,8 +247,8 @@ cf. [TMBC-VALIDATOR-Set]
 
 ### Variables
 
-*height*: initially *trustedHeader.Height*
-*nextHeight*: initially *targetHeight*
+- *height*: initially *trustedHeader.Height*
+- *nextHeight*: initially *targetHeight*
 > *nextHeight* should be thought of the "height of the next header we need
 to download and verify"
 - *trustedStore*: stores verification headers that have been downloaded and that
@@ -260,6 +260,7 @@ to download and verify"
 > full node from which the lightlient downloaded the header   
 - *headerToVerify*: a verification header. Initially nil	
    - written by IO
+- *Error*: error information. Initially nil.
 
 ### **[LCV-INV-VAL]**
 At all times
@@ -279,7 +280,7 @@ At all times
   
 ### Remote Functions
   ```go
-func Commit(height int64) (SignedHeader, error)
+func Commit(addr Address, height int64) (SignedHeader, error)
 ```
 - Implementation remark
    - RPC to full node *n*
@@ -297,7 +298,7 @@ func Commit(height int64) (SignedHeader, error)
 
 
  ```go    
-func Validators(height int64) (ValidatorSet, error)
+func Validators(addr Address, height int64) (ValidatorSet, error)
 ```
 - Implementation remark
    - RPC to full node *n*
@@ -317,9 +318,34 @@ func Validators(height int64) (ValidatorSet, error)
 
 ### Outline
 
-- init checks time
-- IO is called to download the next header
-- OutputResult returns
+The protocols is described in terms of the following functions.
+
+- `init` does some initial checks
+- `IO` is called to download the next header, and validator sets
+- `OutputResult` returns the result
+- `VerifyBisection` calls `verifySingle` to see whether a new header can
+  be trusted. If not, it does bisection by updating the nextheight
+  variable
+- `verifySingle` checks a new header based on the most recently trusted
+  header
+  
+In the current Rust architecture we consider a sequential flow, that
+is,
+
+- `init`,
+- execution of a loop where first `IO` and then `VerifyBisection` are invoked 
+  (`VerifyBisection` calls `verifySingle`)
+- `OutputResult`.
+
+
+### Details
+
+
+```go
+func Init
+```
+checks time
+
 
 
 ```go
@@ -338,13 +364,6 @@ func IO
    - if postcondition is violated (peer faulty)
 
 
-
-
-
-```go
-func Init
-```
-checks time
 
 
 
