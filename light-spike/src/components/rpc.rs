@@ -7,7 +7,7 @@ use tendermint::{block, rpc};
 
 use crate::prelude::*;
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RpcError {
     RpcError(rpc::Error),
 }
