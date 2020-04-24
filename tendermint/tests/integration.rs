@@ -12,8 +12,8 @@ mod rpc {
     use std::cmp::min;
     use tendermint::abci::Code;
     use tendermint::abci::Log;
-    use tendermint::rpc::Client;
     use tendermint::rpc::event_listener::Event;
+    use tendermint::rpc::Client;
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> Client {
@@ -146,21 +146,29 @@ mod rpc {
     }
 
     #[tokio::test]
-    #[ignore]
+    // #[ignore]
     async fn event_subscription() {
         let mut client = tendermint::rpc::event_listener::EventListener::connect(
             "tcp://127.0.0.1:26657".parse().unwrap(),
         )
         .await
         .unwrap();
-        let _ = client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
+        let _ = client.subscribe("tm.event='Tx'".to_owned()).await.unwrap();
+        // let _ = client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
 
+        // Collect and throw away the response to subscribe
+        let _ = client.get_event().await.unwrap();
+
+        // Loop here is helpful when debuging parsing of JSON events
+        // loop{
         let resp = client.get_event().await.unwrap();
-
+        dbg!(&resp);
+        // }
         match resp {
             Event::GenericJSONEvent { data: _ } => assert!(true),
 
             Event::GenericStringEvent { data: _ } => assert!(false),
+            Event::JsonRPCTransctionResult { data: _ } => assert!(true),
         }
     }
 }

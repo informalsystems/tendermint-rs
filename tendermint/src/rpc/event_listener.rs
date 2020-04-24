@@ -7,6 +7,8 @@ use crate::{
 };
 use async_tungstenite::{tokio::connect_async, tokio::TokioAdapter, tungstenite::Message};
 use futures::prelude::*;
+use serde::{Deserialize, Serialize};
+
 use tokio::net::TcpStream;
 
 /// Event Listener over webocket. https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
@@ -16,14 +18,12 @@ pub struct EventListener {
 
 impl EventListener {
     /// Constructor for event listener
-    pub async fn connect(
-        address: net::Address,
-    ) -> Result<EventListener,RPCError> {
+    pub async fn connect(address: net::Address) -> Result<EventListener, RPCError> {
         let (host, port) = match &address {
             net::Address::Tcp { host, port, .. } => (host, port),
             other => {
                 return Err(
-                    RPCError::invalid_params(&format!("invalid RPC address: {:?}", other)).into(),
+                    RPCError::invalid_params(&format!("invalid RPC address: {:?}", other)),
                 );
             }
         };
@@ -51,11 +51,14 @@ impl EventListener {
             .await
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
 
-        match msg.to_string().parse::<serde_json::Value>() {
-            Ok(data) => Ok(Event::GenericJSONEvent { data }),
-            Err(_) => Ok(Event::GenericStringEvent {
-                data: msg.to_string(),
-            }),
+        match serde_json::from_str::<JSONRPC>(&msg.to_string()) {
+            Ok(data) => Ok(Event::JsonRPCTransctionResult { data }),
+            Err(_) => match msg.to_string().parse::<serde_json::Value>() {
+                Ok(data) => Ok(Event::GenericJSONEvent { data }),
+                Err(_) => Ok(Event::GenericStringEvent {
+                    data: msg.to_string(),
+                }),
+            },
         }
     }
 }
@@ -64,6 +67,12 @@ impl EventListener {
 /// The Event enum is typed events emmitted by the Websockets
 #[derive(Debug)]
 pub enum Event {
+    /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
+    JsonRPCTransctionResult {
+        /// the tx result data
+        data: JSONRPC,
+    },
+
     ///Generic event containing json data
     GenericJSONEvent {
         /// generic event json data
@@ -74,4 +83,63 @@ pub enum Event {
         /// generic string data
         data: String,
     },
+}
+
+/// Standard JSON RPC Wrapper
+#[derive(Serialize, Deserialize, Debug)]
+pub struct JSONRPC {
+    jsonrpc: String,
+    id: String,
+    result: RPCResult,
+}
+/// JSON RPC Result Type
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RPCResult {
+    query: String,
+    data: Data,
+    events: std::collections::HashMap<String, Vec<String>>,
+}
+
+/// TX data
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Data {
+    #[serde(rename = "type")]
+    data_type: String,
+    value: TxValue,
+}
+/// TX value
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TxValue {
+    #[serde(rename = "TxResult")]
+    tx_result: TxResult,
+}
+/// Tx Result
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TxResult {
+    height: String,
+    index: i64,
+    tx: String,
+    result: TxResultResult,
+}
+/// TX Results Results
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TxResultResult {
+    log: String,
+    gas_wanted: String,
+    gas_used: String,
+    events: Vec<TxEvent>,
+}
+
+/// Tx Events
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TxEvent {
+    #[serde(rename = "type")]
+    event_type: String,
+    attributes: Vec<Attribute>,
+}
+/// Event Attributes
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Attribute {
+    key: String,
+    value: String,
 }
