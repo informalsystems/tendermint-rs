@@ -26,7 +26,7 @@ impl Trace {
         )
     }
 
-    pub fn run(&mut self) {
+    pub fn collect(&mut self) {
         loop {
             if let Ok(event) = self.recv.recv() {
                 self.events.push(event);
@@ -75,7 +75,7 @@ mod tests {
 
         std::mem::drop(send);
 
-        trace.run();
+        trace.collect();
 
         let mut output = Vec::new();
         let mut ser = serde_json::Serializer::pretty(&mut output);
