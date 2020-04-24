@@ -71,7 +71,7 @@ impl VerificationPredicates for ProductionPredicates {
         trusting_period: Duration,
         now: SystemTime,
     ) -> Result<(), Error> {
-        let header_time: SystemTime = header.bft_time.into();
+        let header_time = header.bft_time;
         let expires_at = header_time + trusting_period;
 
         ensure!(

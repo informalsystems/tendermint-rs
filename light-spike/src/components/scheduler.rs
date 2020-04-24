@@ -76,7 +76,7 @@ where
         ));
 
         if let Some(trusted_state_in_store) = self.trusted_store.get(light_block.height) {
-            let output = vec![trusted_state_in_store.clone()];
+            let output = vec![trusted_state_in_store];
             self.trace(SchedulerOutput::ValidLightBlock(output.clone()));
             return Ok(output);
         }
@@ -137,8 +137,8 @@ where
 
         self.trace(SchedulerOutput::PerformBisectionAt {
             pivot_height,
+            trust_threshold,
             trusted_state: trusted_state.clone(),
-            trust_threshold: trust_threshold.clone(),
         });
 
         let pivot_light_block = self

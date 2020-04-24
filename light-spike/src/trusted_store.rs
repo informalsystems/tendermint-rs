@@ -5,6 +5,7 @@ use std::{
 
 use crate::prelude::*;
 
+#[derive(Default)]
 pub struct TrustedStore {
     store: HashMap<Height, TrustedState>,
 }
