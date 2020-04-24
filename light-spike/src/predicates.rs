@@ -80,7 +80,7 @@ pub trait VerificationPredicates {
         untrusted_next_vals: &ValidatorSet,
     ) -> Result<(), Error>;
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, clippy::comparison_chain)]
     fn verify_untrusted_light_block(
         &self,
         voting_power_calculator: impl VotingPowerCalculator,
@@ -117,7 +117,6 @@ pub trait VerificationPredicates {
 
         self.is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.header)?;
 
-        #[allow(clippy::comparison_chain)]
         if untrusted_sh.header.height == trusted_state.header.height {
             self.valid_next_validator_set(&untrusted_sh, &untrusted_next_vals)?;
         } else if untrusted_sh.header.height > trusted_state.header.height {
