@@ -17,7 +17,7 @@ macro_rules! ensure {
 
 pub type Error = anomaly::Error<ErrorKind>;
 
-#[derive(Debug, Clone, Error, Serialize, Deserialize)]
+#[derive(Debug, Clone, Error, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ErrorKind {
     #[error("header from the future: header_time={header_time:?} now={now:?}")]
     HeaderFromTheFuture {

@@ -79,74 +79,76 @@ pub trait VerificationPredicates {
         untrusted_sh: &SignedHeader,
         untrusted_next_vals: &ValidatorSet,
     ) -> Result<(), Error>;
-}
 
-pub fn verify_untrusted_light_block(
-    pred: impl VerificationPredicates,
-    voting_power_calculator: impl VotingPowerCalculator,
-    commit_validator: impl CommitValidator,
-    header_hasher: impl HeaderHasher,
-    trusted_state: &TrustedState,
-    untrusted_sh: &SignedHeader,
-    untrusted_vals: &ValidatorSet,
-    untrusted_next_vals: &ValidatorSet,
-    trust_threshold: &TrustThreshold,
-    trusting_period: Duration,
-    now: SystemTime,
-) -> Result<(), Error> {
-    // Ensure the latest trusted header hasn't expired
-    pred.is_within_trust_period(&trusted_state.header, trusting_period, now)?;
+    fn verify_untrusted_light_block(
+        &self,
+        voting_power_calculator: impl VotingPowerCalculator,
+        commit_validator: impl CommitValidator,
+        header_hasher: impl HeaderHasher,
+        trusted_state: &TrustedState,
+        light_block: &LightBlock,
+        trust_threshold: &TrustThreshold,
+        trusting_period: Duration,
+        now: SystemTime,
+    ) -> Result<(), Error> {
+        let untrusted_sh = &light_block.signed_header;
+        let untrusted_vals = &light_block.validator_set;
+        let untrusted_next_vals = &light_block.next_validator_set;
 
-    // Ensure the header validator hashes match the given validators
-    pred.validator_sets_match(&untrusted_sh, &untrusted_vals)?;
+        // Ensure the latest trusted header hasn't expired
+        self.is_within_trust_period(&trusted_state.header, trusting_period, now)?;
 
-    // Ensure the header next validator hashes match the given next validators
-    pred.next_validators_match(&untrusted_sh, &untrusted_next_vals)?;
+        // Ensure the header validator hashes match the given validators
+        self.validator_sets_match(&untrusted_sh, &untrusted_vals)?;
 
-    // Ensure the header matches the commit
-    pred.header_matches_commit(&untrusted_sh.header, &untrusted_sh.commit, &header_hasher)?;
+        // Ensure the header next validator hashes match the given next validators
+        self.next_validators_match(&untrusted_sh, &untrusted_next_vals)?;
 
-    // Additional implementation specific validation
-    pred.valid_commit(
-        &untrusted_sh.commit,
-        &untrusted_sh.validators,
-        &commit_validator,
-    )?;
+        // Ensure the header matches the commit
+        self.header_matches_commit(&untrusted_sh.header, &untrusted_sh.commit, &header_hasher)?;
 
-    pred.is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.header)?;
-
-    if untrusted_sh.header.height == trusted_state.header.height {
-        pred.valid_next_validator_set(&untrusted_sh, &untrusted_next_vals)?;
-    } else if untrusted_sh.header.height > trusted_state.header.height {
-        pred.has_sufficient_voting_power(
+        // Additional implementation specific validation
+        self.valid_commit(
             &untrusted_sh.commit,
             &untrusted_sh.validators,
+            &commit_validator,
+        )?;
+
+        self.is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.header)?;
+
+        if untrusted_sh.header.height == trusted_state.header.height {
+            self.valid_next_validator_set(&untrusted_sh, &untrusted_next_vals)?;
+        } else if untrusted_sh.header.height > trusted_state.header.height {
+            self.has_sufficient_voting_power(
+                &untrusted_sh.commit,
+                &untrusted_sh.validators,
+                &trust_threshold,
+                &voting_power_calculator,
+            )?;
+        } else {
+            self.is_monotonic_height(&trusted_state.header, &untrusted_sh.header)?;
+
+            // Ensure that the check above will always fail.
+            unreachable!();
+        }
+
+        // All validation passed successfully.
+        // Verify the validators correctly committed the block.
+
+        self.has_sufficient_validators_overlap(
+            &untrusted_sh.commit,
+            &trusted_state.validators,
             &trust_threshold,
             &voting_power_calculator,
         )?;
-    } else {
-        pred.is_monotonic_height(&trusted_state.header, &untrusted_sh.header)?;
 
-        // Ensure that the check above will always fail.
-        unreachable!();
+        self.has_sufficient_signers_overlap(
+            &untrusted_sh.commit,
+            &untrusted_vals,
+            &trust_threshold,
+            &voting_power_calculator,
+        )?;
+
+        Ok(())
     }
-
-    // All validation passed successfully.
-    // Verify the validators correctly committed the block.
-
-    pred.has_sufficient_validators_overlap(
-        &untrusted_sh.commit,
-        &trusted_state.validators,
-        &trust_threshold,
-        &voting_power_calculator,
-    )?;
-
-    pred.has_sufficient_signers_overlap(
-        &untrusted_sh.commit,
-        &untrusted_vals,
-        &trust_threshold,
-        &voting_power_calculator,
-    )?;
-
-    Ok(())
 }
