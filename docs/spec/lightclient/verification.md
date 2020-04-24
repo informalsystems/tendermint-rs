@@ -1,8 +1,5 @@
-**VDD example for high-level English spec** 
+**Preparation for high-level English spec for new architecture** 
 
-
-TODO: check that reliable communication is defined properly
-TODO: authentication
 
 
 # Core Verification
@@ -210,161 +207,158 @@ now - *trustingPeriod*
 > some math that allows to write specifications and pseudo code solution below.
 Some variables, etc.
 
-### Data structures
+> We now introduce variables and auxiliary functions used by the protocol.
 
-**TODO:** High level explanations of data structures?  
-**TODO:** *State* is missing. Should be made consistent with detector. We should decide what it contains: e.g., (i) set of headers,
-(ii) set of TrustedState (iii) set of pairs: Trustedstate, address of
-full node from which the lightlient downloaded the header  
+### Data Types
 
-In the following, only the details of the data structures needed for
-this specification are given.
-
-#### **[LCV-TRUSTED-STATE]**
-A `TrustedState` is a data stucture that is used to store data about 
-correct headers (defined below) in the *State* of the light client. 
-It has the following fields:
-  - `SignedHeader`, a [signed header][fullnode-data-structures]
-  - `ValidatorSet`, a [validator set][blockchain-validator-set]
-
-
-#### **[LCV-CORRECT-SIGNED-HEADER]**
-A signed header *sh* of height *h* is correct, if it coincides with the header at height *h* on the blockchain, and:
- - if the `Commit` of *sh* equals to the `LastCommit` of height *h+1*
-   (canonic commit) [**[TMBC-SOUND-DISTR-LAST-COMM]**][TMBC-SOUND-DISTR-LAST-COMMIT-link]
-, or
- - if the `Commit` of *sh* contains signatures of validators of height
-   *h* that represent more than two-thirds of the voting power at
-   height *h* [**[TMBC-SOUND-DISTR-PossCommit]**][TMBC-SOUND-DISTR-PossCommit-link].
-
-<!---
-
-### Auxiliary Functions (Local)
-
-
-**TODO:** should this be here? We do not use it in the current level of
-abstraction when defining the functions.  
-We assume the following auxiliary functions:
 ```go
-func validateSignedHeaderAndVals(sh SignedHeader, 
-                                 vs ValidatorSet,
-                                 nextVs ValidatorSet) error
+type SignedHeader struct {
+    Header        Header
+    Commit        Commit       
+}
 ```
-- Implementation remark
-   - Local auxiliary function
-- Expected precondition
-   - The signed header `sh` and the validator sets `vs, nextVs` are consistent
-- Expected postcondition
-   - Returns `nil` if the precondition holds
-- Error condition
-   - precondition violated
 
--->
+```
+type VerificationHeader struct {
+	signedHeader SignedHeader
+    Validators  ValidatorSet
+    NextValidators ValidatorSet
+}
+```	
+cf. [TMBC-VALIDATOR-Set]
 
-## Solution
 
-> Basic data structures. Simplified, so that we can focus on the distributed
-algorithm here. If existing: link to Tendermint data structures, and mentioned
-if details were omitted.
 
-> Pseudo code of the solution
+### Inputs
+- *trustedHeader*: the VerificationHeader verification starts from
+- *peer*: peer address
+- *targetHeight*:
 
-The light client verifier has the following configuration parameters:
+#### **[LCV-A-INIT]**:
+- *trustedHeader.signedHeader* is from the blockchain
+- *targetHeight > trustedHeader.height*
+
+### Configuration Parameters
+
 - *trustThreshold*: a float. Can be used if correctness should not be based on more voting power and 1/3.
 - *trustingPeriod*: a time duration [**[TMBC-TIME_PARAMS]**][TMBC-TIME_PARAMS-link].
 - *clockDrift*: a time duration. Correction parameter dealing with only approximately synchronized clocks.
 
 
+### Variables
 
-We start by presenting the function `VerifyHeaderAtHeight`. 
-This function implements the problem statement and is used in
-[**[LCV-VC-Live]**](#lcv-vc-live). Within the light client
-architecture, verification is embedded as described in [LCV-TState]
-and [LCV-INTF] just below.
+*height*: initially *trustedHeader.Height*
+*nextHeight*: initially *targetHeight*
+> *nextHeight* should be thought of the "height of the next header we need
+to download and verify"
+- *trustedStore*: stores verification headers that have been downloaded and that
+    passed verification. Initially it only contains *startBlock*:
+> Something like this was called *State* in ADR. Should be made
+>    consistent 
+>	with detector. We should decide what it contains: e.g., (i) set of headers,
+> (ii) set of TrustedState (iii) set of pairs: Trustedstate, address of
+> full node from which the lightlient downloaded the header   
+- *headerToVerify*: a verification header. Initially nil	
+   - written by IO
 
-#### **[LCV-TState]**: 
-
-`VerifyHeaderAtHeight` is called with `trustedState`, whose header is
-the header that  has maximal height in *State*, and the address *addr*
-of the primary (if called from the detector, the address of a secondary).
-
----
-
-
-#### **[LCV-INTF]**:
-*State* is supposed to be maintained outside of this specification. When 
-`VerifyHeaderAtHeight` is called, the signed header of the `trustedState` passed as input is in *State*. When the function returns a `TrustedState`, its signed header is added to *State*.
-
----
-
-The function `VerifyHeaderAtHeight` checks timestamps, and in case these preliminary checks go through, it calls bisection, by calling the function `VerifyBisection`.
-The function `VerifyBisection` implements
-the recursive logic for checking whether it is possible to build a trust
-relationship between `trustedState` and untrusted header at `untrustedHeight`.
+### **[LCV-INV-VAL]**
+At all times
+- *headerToVerify.Validators = hash(headerToVerify.signedHeader.Header.Validators)*
+- *headerToVerify.NextValidators = hash(headerToVerify.signedHeader.Header.NextValidators)*
 
 
 
-#### **[LCV-MAIN-VerifyHeaderAtHeight]**:
-```go
-func VerifyHeaderAtHeight(untrustedHeight int64,
-                          trustedState TrustedState,
-			              addr Address) (TrustedState, error)
+
+### Auxiliary Functions
+
+#### **[LCV-FUNC-REF]**:
+- *refHeader*: is the header from *trustedStore* with the maximal
+  height
+  
+**TODO:** messages
+  
+### Remote Functions
+  ```go
+func Commit(height int64) (SignedHeader, error)
 ```
 - Implementation remark
-  - *startTime* and *endTime* are the local system time right after
-  invocation of `VerifyHeaderAtHeight` and right before the function
-  returns, respectively.
-- Expected precondition
-  - The field `Time` of the signed header of `trustedState` is within *trustingPeriod* from *startTime*
-- Expected postcondition: 
-  - Returns `(trustedState, OK)` under [**[FN-LuckyCase]**][FN-LuckyCase-link], 
-  if the signed header of `trustedState`:
-      - is the header at height `untrustedHeight` of the blockchain, and 
-      - was generated within *trustingPeriod* from *endTime*
-  - Returns `(trustedState, EXPIRED)` under [**[FN-LuckyCase]**][FN-LuckyCase-link], if
-  the signed header of `trustedState`:
-      - is the header at height `untrustedHeight` of the blockchain, and 
-      - was generated after *endTime - trustingPeriod* 
-- Error conditions
-  - precondition violated 
-  - [**[FN-LuckyCase]**][FN-LuckyCase-link] does not hold
-  - [**[FN-ManifestFaulty]**][FN-ManifestFaulty-link] holds
-  
----
+   - RPC to full node *n*
+- Expected precodnition
+  - header of `height` exists on blockchain
+- Expected postcondition
+  - if *n* is correct: Returns the signed header of height `height`
+  from the blockchain if communication is timely (no timeout)
+  - if *n* is faulty: Returns a signed header with arbitrary content
+- Error condition
+   * if *n* is correct: precondition violated or timeout
+   * if *n* is faulty: arbitrary error
+
+----
 
 
-`VerifyBisection` is used to get a trusted state, whose signed header has height `untrustedHeight` in the blockchain. 
-To do so, `VerifyBisection` first downloads the necessary information
-from the peer, by calling `QueryFullNode`.
-This information includes a signed header `sh`, and two validator sets `vs, nextVs`.
-The result of `QueryFullNode`, together with the `trustedState`, is passed as input
-to the function `VerifySingle`.
-If there are no errors, `VerifySingle` returns a new trusted state.
-In `VerifyBisection`, either the new trusted state obtained as result of `VerifySingle` is returned, 
-or a new signed header is computed recursively. 
+ ```go    
+func Validators(height int64) (ValidatorSet, error)
+```
+- Implementation remark
+   - RPC to full node *n*
+- Expected precodnition
+  - header of `height` exists on blockchain
+- Expected postcondition
+  - if *n* is correct: Returns the validator set of height `height`
+  from the blockchain if communication is timely (no timeout)
+  - if *n* is faulty: Returns arbitrary validator set
+- Error condition
+  - if *n* is correct: precondition violated or timeout 
+  - if *n* is faulty: arbitrary error
 
-#### **[LCV-VerifyBisection]**:
+----
 
-We give the pseudocode of `VerifyBisection` below, as well as the specifications
-of the functions called by it.
+## Core Verification
+
+### Outline
+
+- init checks time
+- IO is called to download the next header
+- OutputResult returns
+
 
 ```go
-func VerifyBisection(untrustedHeight int64,
-                     trustedState TrustedState,
-		             addr Address
-                     now Time
-		     ) (TrustedState, error) {
+func IO
+```
+- Implementation remarks:
+     - This function make externals RPC calls to the full node; 
+	 Validators(nextHeight), Validators(nextHeight+1), Commit (nextHeight)
+- Expected precondition:
+   - headerToVerify is nil or headerToVerify.Height < nextHeight
+- Expected postcondition:
+   - **TODO** *headerToVerify* is the header retured by *peer* for height *height*
+   - *headerToVerify.Validators = hash(headerToVerify.signedHeader.Header.Validators)*
+   - *headerToVerify.NextValidators = hash(headerToVerify.signedHeader.Header.NextValidators)*
+- Error condition
+   - if postcondition is violated (peer faulty)
 
-  sh, vs, nextVs, err := QueryFullNode(addr,untrustedHeight)
-  if err == nil {
-    newTrustedState, err := VerifySingle(sh, vs, nextVs, trustedState)
+
+
+
+
+```go
+func Init
+```
+checks time
+
+
+
+
+```go
+func VerifyBisection {
+    err := VerifySingle(trustedHeader, headerToVerify)
     if err == OK {
-      return newTrustedState 
+      height = nextHeight
+	  nextHeight = targetHeight
     } else if err = CANNOT_VERIFY{
-      compute pivot
-      newTrustedState := VerifyBisection(pivot, trustedState, now)
-      return VerifyBisection(untrustedHeight, newTrustedState, now)
-      }
+      compute pivot // (height + nextHeight) / 2
+      nextHeight = pivot
+    }
   }
 }
 ```
@@ -381,52 +375,10 @@ func VerifyBisection(untrustedHeight int64,
 
 ---
 
-#### **[LCV-QueryFullNode]**:
-
-`QueryFullNode` is called by `VerifyBisection`, and it is used to gather information from a
-full node at address `addr`.
-```go
-func QueryFullNode(addr Address, 
-                  untrustedHeight int64) 
-                  (SignedHeader,  ValidatorSet, ValidatorSet, error)
-```
--  Implementation remark
-   - Used to communicate with a full node *n* at address *addr* via RPCs `Commit` and `Validators` 
-   - The only function that makes external calls!
-   - in order to ensure [**[FN-LuckyCase]**][FN-LuckyCase-link] the
-     timeout for the RPCs must be greater than or equal to *2 Delta*, cf.
-	 [**[LCV-A-Comm]**](#lcv-a-comm).
-- Expected precondition
-  - true
-- Expected postcondition: 
-  - If *n* is correct and there is no error in the RPC to *n*: Returns the following data:
-    - `SignedHeader` of height `untrustedHeight`, 
-    - `ValidatorSet` of height `untrustedHeight`, 
-    - `ValidatorSet` of height `untrustedHeight + 1` 
-  - The field time of the returned signed header is smaller than `now + clockDrift`
-- Error conditions
-  - precondition violated
-  - The field time of the returned signed header is greater than or
-    equal to `now + clockDrift`
-  - If *n* is faulty or there is an error in the RPC to *n*
-
-*Remark*: Observe that the error conditions includes "error in RPC to *n*" but
-*not* [**[FN-LuckyCase]**][FN-LuckyCase-link].
-A faulty peer might return arbitrary values, without
-forcing the function to report an error.
-
----
-
-If `QueryFullNode` returns without error, `VerifyBisection` calls `VerifySingle`.
-
-#### **[LCV-VerifySingle]**:
-
 
 ```go
-func VerifySingle(untrustedSh SignedHeader,
-                  untrustedVs ValidatorSet,
-                  untrustedNextVs ValidatorSet,
-                  trustedState TrustedState) (TrustedState, error)
+func VerifySingle(untrustedVh VerificationHeader,
+                  trustedVh VerificationHeader) (TrustedState, error)
 ```
 
 - Implementation remarks:
@@ -466,29 +418,69 @@ checks [**[TMBC-SOUND-?]**][blockchain].
 
 ---
 
-If `VerifySingle` is successful, it returns `(TrustedState,OK)` to
-`VerifyBisection` which in turn also returns this `TrustedState`.  If
-`(trustedState, CANNOT_VERIFY)` is returned, `VerifyBisection`
-computes a pivot height between the height of the signed header of the
-trusted state `trustedState` and the height `untrustedHeight`, and
-calls itself recursively. If an error is reported by `VerifySingle`,
-the error should be propagated.
+
+
+```go
+func OutputResult
+```
+- Implementation remark
+  - *Time* is the local time when the function is scheduled
+- Expected precondition
+  - *ref-Header.Height = targetHeight* OR **some error**
+- Expected postcondition: 
+  - Returns `(trustedStore, OK)`
+     if the signed header of `trustedState`:
+      - is the header at height `untrustedHeight` of the blockchain, and 
+      - was generated within *trustingPeriod* from *endTime*
+  - Returns `(trustedStore, EXPIRED)` under [**[FN-LuckyCase]**][FN-LuckyCase-link], if
+  the signed header of `trustedState`:
+      - is the header at height `untrustedHeight` of the blockchain, and 
+      - was generated after *endTime - trustingPeriod* 
+
+
+
+
+
+#### **[LCV-QueryFullNode]**:
+
+`QueryFullNode` is called by `VerifyBisection`, and it is used to gather information from a
+full node at address `addr`.
+```go
+func QueryFullNode(addr Address, 
+                  untrustedHeight int64) 
+                  (SignedHeader,  ValidatorSet, ValidatorSet, error)
+```
+-  Implementation remark
+   - Used to communicate with a full node *n* at address *addr* via RPCs `Commit` and `Validators` 
+   - The only function that makes external calls!
+   - in order to ensure [**[FN-LuckyCase]**][FN-LuckyCase-link] the
+     timeout for the RPCs must be greater than or equal to *2 Delta*, cf.
+	 [**[LCV-A-Comm]**](#lcv-a-comm).
+- Expected precondition
+  - true
+- Expected postcondition: 
+  - If *n* is correct and there is no error in the RPC to *n*: Returns the following data:
+    - `SignedHeader` of height `untrustedHeight`, 
+    - `ValidatorSet` of height `untrustedHeight`, 
+    - `ValidatorSet` of height `untrustedHeight + 1` 
+  - The field time of the returned signed header is smaller than `now + clockDrift`
+- Error conditions
+  - precondition violated
+  - The field time of the returned signed header is greater than or
+    equal to `now + clockDrift`
+  - If *n* is faulty or there is an error in the RPC to *n*
+
+*Remark*: Observe that the error conditions includes "error in RPC to *n*" but
+*not* [**[FN-LuckyCase]**][FN-LuckyCase-link].
+A faulty peer might return arbitrary values, without
+forcing the function to report an error.
 
 ---
 
+If `QueryFullNode` returns without error, `VerifyBisection` calls `VerifySingle`.
 
 
-## Correctness arguments
 
-> Proof sketches of why we believe the solution satisfies the specifications.
-Possibly giving inductive invariants that can be used to prove the specifications
->Link to Part I
-
-**TO BE ARGUED**
-
-### Why the protocol implements the distributed spec
-
-> distributed algorithm correctness proof comes here.
 
 
 # References
