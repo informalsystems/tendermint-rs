@@ -23,12 +23,8 @@ impl Trace {
     }
 
     pub fn collect(&mut self) {
-        loop {
-            if let Ok(event) = self.recv.recv() {
-                self.events.push(event);
-            } else {
-                break;
-            }
+        while let Ok(event) = self.recv.recv() {
+            self.events.push(event);
         }
     }
 
