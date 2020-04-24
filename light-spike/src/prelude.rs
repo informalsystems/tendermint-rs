@@ -1,8 +1,12 @@
+pub use crate::components::rpc::Rpc;
+pub use crate::components::scheduler::Scheduler;
+pub use crate::components::verifier::Verifier;
 pub use crate::errors::*;
 pub use crate::event::*;
 pub use crate::operations::*;
 pub use crate::predicates::VerificationPredicates;
 pub use crate::trace::*;
+pub use crate::trusted_store::*;
 pub use crate::types::*;
 pub use crate::{ensure, impl_event};
 

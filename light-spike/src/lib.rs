@@ -13,6 +13,7 @@ pub mod operations;
 pub mod predicates;
 pub mod prelude;
 pub mod trace;
+pub mod trusted_store;
 pub mod types;
 
 #[cfg(test)]
