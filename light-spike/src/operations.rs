@@ -3,27 +3,26 @@
 use crate::prelude::*;
 
 pub trait VotingPowerCalculator {
-    // TODO: What kind of errors should we be reporting here?
-    fn voting_power_in(&self, commit: &Commit, validators: &ValidatorSet) -> Result<u64, Error>;
-    fn total_power_of(&self, validators: &ValidatorSet) -> Result<u64, Error>;
+    fn total_power_of(&self, validators: &ValidatorSet) -> u64;
+    fn voting_power_in(&self, commit: &Commit, validators: &ValidatorSet) -> u64;
 }
 
 impl<T: VotingPowerCalculator> VotingPowerCalculator for &T {
-    fn voting_power_in(&self, commit: &Commit, validators: &ValidatorSet) -> Result<u64, Error> {
+    fn voting_power_in(&self, commit: &Commit, validators: &ValidatorSet) -> u64 {
         (*self).voting_power_in(commit, validators)
     }
 
-    fn total_power_of(&self, validators: &ValidatorSet) -> Result<u64, Error> {
+    fn total_power_of(&self, validators: &ValidatorSet) -> u64 {
         (*self).total_power_of(validators)
     }
 }
 
 impl VotingPowerCalculator for Box<dyn VotingPowerCalculator> {
-    fn voting_power_in(&self, commit: &Commit, validators: &ValidatorSet) -> Result<u64, Error> {
+    fn voting_power_in(&self, commit: &Commit, validators: &ValidatorSet) -> u64 {
         self.as_ref().voting_power_in(commit, validators)
     }
 
-    fn total_power_of(&self, validators: &ValidatorSet) -> Result<u64, Error> {
+    fn total_power_of(&self, validators: &ValidatorSet) -> u64 {
         self.as_ref().total_power_of(validators)
     }
 }

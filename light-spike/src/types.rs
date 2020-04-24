@@ -7,16 +7,47 @@ pub use tendermint::lite::types::Height;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum Error {
+    HeaderFromTheFuture {
+        header_time: SystemTime,
+        now: SystemTime,
+    },
     ImplementationSpecific,
-    InsufficientValidatorsOverlap,
-    InsufficientVotingPower,
-    InvalidCommit,
-    InvalidCommitValue,
-    InvalidNextValidatorSet,
-    InvalidValidatorSet,
-    NonIncreasingHeight { got: Height, expected: Height },
-    NonMonotonicBftTime,
-    NotWithinTrustPeriod,
+    InsufficientValidatorsOverlap {
+        total_power: u64,
+        signed_power: u64,
+    },
+    InsufficientVotingPower {
+        total_power: u64,
+        voting_power: u64,
+    },
+    InvalidCommit {
+        total_power: u64,
+        signed_power: u64,
+    },
+    InvalidCommitValue {
+        header_hash: Hash,
+        commit_hash: Hash,
+    },
+    InvalidNextValidatorSet {
+        header_next_validators_hash: Hash,
+        next_validators_hash: Hash,
+    },
+    InvalidValidatorSet {
+        header_validators_hash: Hash,
+        validators_hash: Hash,
+    },
+    NonIncreasingHeight {
+        got: Height,
+        expected: Height,
+    },
+    NonMonotonicBftTime {
+        header_bft_time: SystemTime,
+        trusted_header_bft_time: SystemTime,
+    },
+    NotWithinTrustPeriod {
+        at: SystemTime,
+        now: SystemTime,
+    },
 }
 
 #[derive(Clone, Debug, Display, Serialize, Deserialize)]
@@ -24,8 +55,8 @@ pub enum Error {
 pub struct Header {
     pub height: Height,
     pub bft_time: SystemTime,
-    pub validator_set_hash: Hash,
-    pub next_validator_set_hash: Hash,
+    pub validators_hash: Hash,
+    pub next_validators_hash: Hash,
     pub hash: Hash, // TODO: What if we don't have this
 }
 

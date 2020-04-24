@@ -56,7 +56,7 @@ pub trait VerificationPredicates {
         validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
         calculator: &impl VotingPowerCalculator,
-    ) -> Result<(), Error>;
+    ) -> Result<(), (Error, u64, u64)>;
 
     fn has_sufficient_validators_overlap(
         &self,
@@ -76,7 +76,6 @@ pub trait VerificationPredicates {
 
     fn valid_next_validator_set(
         &self,
-        trusted_state: &TrustedState,
         untrusted_sh: &SignedHeader,
         untrusted_next_vals: &ValidatorSet,
     ) -> Result<(), Error>;
@@ -117,14 +116,15 @@ pub fn verify_untrusted_light_block(
     pred.is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.header)?;
 
     if untrusted_sh.header.height == trusted_state.header.height {
-        pred.valid_next_validator_set(&trusted_state, &untrusted_sh, &untrusted_next_vals)?;
+        pred.valid_next_validator_set(&untrusted_sh, &untrusted_next_vals)?;
     } else if untrusted_sh.header.height > trusted_state.header.height {
         pred.has_sufficient_voting_power(
             &untrusted_sh.commit,
             &untrusted_sh.validators,
             &trust_threshold,
             &voting_power_calculator,
-        )?;
+        )
+        .map_err(|(e, _, _)| e)?;
     } else {
         pred.is_monotonic_height(&trusted_state.header, &untrusted_sh.header)?;
 
