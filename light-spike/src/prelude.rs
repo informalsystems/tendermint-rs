@@ -1,3 +1,5 @@
+pub use crate::ensure;
+pub use crate::errors::*;
 pub use crate::operations::*;
 pub use crate::trace::*;
 pub use crate::types::*;
