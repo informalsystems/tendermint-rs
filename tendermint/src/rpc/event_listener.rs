@@ -22,9 +22,10 @@ impl EventListener {
         let (host, port) = match &address {
             net::Address::Tcp { host, port, .. } => (host, port),
             other => {
-                return Err(
-                    RPCError::invalid_params(&format!("invalid RPC address: {:?}", other)),
-                );
+                return Err(RPCError::invalid_params(&format!(
+                    "invalid RPC address: {:?}",
+                    other
+                )));
             }
         };
         //TODO This doesn't have any way to handle a connection over TLS
@@ -94,7 +95,7 @@ pub struct JSONRPC {
 }
 /// JSON RPC Result Type
 #[derive(Serialize, Deserialize, Debug)]
-pub struct RPCResult {
+struct RPCResult {
     query: String,
     data: Data,
     events: std::collections::HashMap<String, Vec<String>>,
@@ -102,20 +103,20 @@ pub struct RPCResult {
 
 /// TX data
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Data {
+struct Data {
     #[serde(rename = "type")]
     data_type: String,
     value: TxValue,
 }
 /// TX value
 #[derive(Serialize, Deserialize, Debug)]
-pub struct TxValue {
+struct TxValue {
     #[serde(rename = "TxResult")]
     tx_result: TxResult,
 }
 /// Tx Result
 #[derive(Serialize, Deserialize, Debug)]
-pub struct TxResult {
+struct TxResult {
     height: String,
     index: i64,
     tx: String,
@@ -123,7 +124,7 @@ pub struct TxResult {
 }
 /// TX Results Results
 #[derive(Serialize, Deserialize, Debug)]
-pub struct TxResultResult {
+struct TxResultResult {
     log: String,
     gas_wanted: String,
     gas_used: String,
@@ -132,14 +133,29 @@ pub struct TxResultResult {
 
 /// Tx Events
 #[derive(Serialize, Deserialize, Debug)]
-pub struct TxEvent {
+struct TxEvent {
     #[serde(rename = "type")]
     event_type: String,
     attributes: Vec<Attribute>,
 }
 /// Event Attributes
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Attribute {
+struct Attribute {
     key: String,
     value: String,
+}
+
+impl JSONRPC {
+    /// Extract events from TXEvent if event matches are type query
+    pub fn extract_events(
+        &self,
+        type_query: &str,
+    ) -> Result<std::collections::HashMap<String, Vec<String>>, &'static str> {
+        let events = &self.result.events;
+        if events["message.module"][0] == type_query {
+            return Ok(events.clone());
+        } else {
+            return Err("Incorrect Event Type");
+        }
+    }
 }
