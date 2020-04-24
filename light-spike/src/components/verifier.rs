@@ -1,3 +1,5 @@
+// FIXME: Figure out how to get rid of type parameter
+
 use std::sync::mpsc::Sender;
 
 use serde::{Deserialize, Serialize};

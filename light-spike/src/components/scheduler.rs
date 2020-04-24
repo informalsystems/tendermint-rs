@@ -1,3 +1,5 @@
+// FIXME: Figure out a way to decouple components
+
 use std::sync::mpsc::Sender;
 
 use serde::{Deserialize, Serialize};
@@ -39,7 +41,7 @@ impl_event!(SchedulerOutput);
 pub struct Scheduler<VP> {
     trace: Sender<BoxedEvent>,
     rpc: Rpc,
-    verifier: Verifier<VP>, // FIXME: Figure another way to get at the verifier
+    verifier: Verifier<VP>,
     trusted_store: TSReader,
 }
 
