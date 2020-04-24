@@ -1,12 +1,8 @@
-use std::fmt::Debug;
 use std::sync::mpsc::{channel, Receiver, Sender};
 
 use serde::{Serialize, Serializer};
 
-#[typetag::serde(tag = "type")]
-pub trait Event: Debug {}
-
-pub type BoxedEvent = Box<dyn Event>;
+use crate::event::BoxedEvent;
 
 pub struct Trace {
     events: Vec<BoxedEvent>,
@@ -46,22 +42,22 @@ impl Trace {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde::{Deserialize, Serialize};
 
-    #[derive(Debug, Serialize, Deserialize)]
+    use super::*;
+    use crate::event::Event;
+    use crate::impl_event;
+
+    #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
     struct Foo {
         foo: u32,
     }
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
     struct Bar {
         bar: Option<String>,
     }
-
-    #[typetag::serde]
-    impl Event for Foo {}
-    #[typetag::serde]
-    impl Event for Bar {}
+    impl_event!(Foo);
+    impl_event!(Bar);
 
     #[test]
     fn test_serialize() {
@@ -86,7 +82,8 @@ mod tests {
 
         let events: Vec<Box<dyn Event>> = serde_json::from_str(&as_string).unwrap();
         for event in events {
-            dbg!(event);
+            assert_eq!(&event, &event);
+            dbg!(&event);
         }
     }
 }
