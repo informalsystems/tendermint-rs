@@ -58,4 +58,3 @@ impl HeaderHasher for Box<dyn HeaderHasher> {
         self.as_ref().hash(header)
     }
 }
-

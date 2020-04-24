@@ -30,4 +30,3 @@ impl PartialEq for BoxedEvent {
         self.box_eq(other.as_any())
     }
 }
-

@@ -174,4 +174,3 @@ where
         self.trace.send(Box::new(e)).expect("could not trace event");
     }
 }
-
