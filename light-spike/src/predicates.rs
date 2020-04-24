@@ -56,7 +56,7 @@ pub trait VerificationPredicates {
         validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
         calculator: &impl VotingPowerCalculator,
-    ) -> Result<(), (Error, u64, u64)>;
+    ) -> Result<(), Error>;
 
     fn has_sufficient_validators_overlap(
         &self,
@@ -123,8 +123,7 @@ pub fn verify_untrusted_light_block(
             &untrusted_sh.validators,
             &trust_threshold,
             &voting_power_calculator,
-        )
-        .map_err(|(e, _, _)| e)?;
+        )?;
     } else {
         pred.is_monotonic_height(&trusted_state.header, &untrusted_sh.header)?;
 

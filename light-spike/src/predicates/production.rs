@@ -9,10 +9,15 @@ impl VerificationPredicates for ProductionPredicates {
         signed_header: &SignedHeader,
         validators: &ValidatorSet,
     ) -> Result<(), Error> {
-        (signed_header.validators_hash == validators.hash).true_or(Error::InvalidValidatorSet {
-            header_validators_hash: signed_header.validators_hash,
-            validators_hash: validators.hash,
-        })
+        ensure!(
+            signed_header.validators_hash == validators.hash,
+            ErrorKind::InvalidValidatorSet {
+                header_validators_hash: signed_header.validators_hash,
+                validators_hash: validators.hash,
+            }
+        );
+
+        Ok(())
     }
 
     fn next_validators_match(
@@ -20,10 +25,15 @@ impl VerificationPredicates for ProductionPredicates {
         signed_header: &SignedHeader,
         validators: &ValidatorSet,
     ) -> Result<(), Error> {
-        (signed_header.validators_hash == validators.hash).true_or(Error::InvalidNextValidatorSet {
-            header_next_validators_hash: signed_header.validators_hash,
-            next_validators_hash: validators.hash,
-        })
+        ensure!(
+            signed_header.validators_hash == validators.hash,
+            ErrorKind::InvalidNextValidatorSet {
+                header_next_validators_hash: signed_header.validators_hash,
+                next_validators_hash: validators.hash,
+            }
+        );
+
+        Ok(())
     }
 
     fn header_matches_commit(
@@ -33,10 +43,16 @@ impl VerificationPredicates for ProductionPredicates {
         header_hasher: impl HeaderHasher,
     ) -> Result<(), Error> {
         let header_hash = header_hasher.hash(header);
-        (header_hash == commit.header_hash).true_or(Error::InvalidCommitValue {
-            header_hash,
-            commit_hash: commit.header_hash,
-        })
+
+        ensure!(
+            header_hash == commit.header_hash,
+            ErrorKind::InvalidCommitValue {
+                header_hash,
+                commit_hash: commit.header_hash,
+            }
+        );
+
+        Ok(())
     }
 
     fn valid_commit(
@@ -57,12 +73,18 @@ impl VerificationPredicates for ProductionPredicates {
         let header_time: SystemTime = header.bft_time.into();
         let expires_at = header_time + trusting_period;
 
-        (header_time < now && expires_at > now).true_or(Error::NotWithinTrustPeriod {
-            at: expires_at,
-            now,
-        })?;
+        ensure!(
+            header_time < now && expires_at > now,
+            ErrorKind::NotWithinTrustPeriod {
+                at: expires_at,
+                now,
+            }
+        );
 
-        (header_time <= now).true_or(Error::HeaderFromTheFuture { header_time, now })?;
+        ensure!(
+            header_time <= now,
+            ErrorKind::HeaderFromTheFuture { header_time, now }
+        );
 
         Ok(())
     }
@@ -72,10 +94,15 @@ impl VerificationPredicates for ProductionPredicates {
         untrusted_header: &Header,
         trusted_header: &Header,
     ) -> Result<(), Error> {
-        (untrusted_header.bft_time > trusted_header.bft_time).true_or(Error::NonMonotonicBftTime {
-            header_bft_time: untrusted_header.bft_time,
-            trusted_header_bft_time: trusted_header.bft_time,
-        })
+        ensure!(
+            untrusted_header.bft_time > trusted_header.bft_time,
+            ErrorKind::NonMonotonicBftTime {
+                header_bft_time: untrusted_header.bft_time,
+                trusted_header_bft_time: trusted_header.bft_time,
+            }
+        );
+
+        Ok(())
     }
 
     fn is_monotonic_height(
@@ -83,10 +110,15 @@ impl VerificationPredicates for ProductionPredicates {
         untrusted_header: &Header,
         trusted_header: &Header,
     ) -> Result<(), Error> {
-        (untrusted_header.height > trusted_header.height).true_or(Error::NonIncreasingHeight {
-            got: untrusted_header.height,
-            expected: trusted_header.height + 1,
-        })
+        ensure!(
+            untrusted_header.height > trusted_header.height,
+            ErrorKind::NonIncreasingHeight {
+                got: untrusted_header.height,
+                expected: trusted_header.height + 1,
+            }
+        );
+
+        Ok(())
     }
 
     fn has_sufficient_voting_power(
@@ -95,21 +127,19 @@ impl VerificationPredicates for ProductionPredicates {
         validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
         calculator: &impl VotingPowerCalculator,
-    ) -> Result<(), (Error, u64, u64)> {
+    ) -> Result<(), Error> {
         let total_power = calculator.total_power_of(validators);
         let voting_power = calculator.voting_power_in(commit, validators);
 
-        let result =
-            voting_power * trust_threshold.denominator > total_power * trust_threshold.numerator;
-
-        result.true_or((
-            Error::InsufficientVotingPower {
+        ensure!(
+            voting_power * trust_threshold.denominator > total_power * trust_threshold.numerator,
+            ErrorKind::InsufficientVotingPower {
                 total_power,
                 voting_power,
-            },
-            total_power,
-            voting_power,
-        ))
+            }
+        );
+
+        Ok(())
     }
 
     fn has_sufficient_validators_overlap(
@@ -125,12 +155,15 @@ impl VerificationPredicates for ProductionPredicates {
             trust_threshold,
             calculator,
         )
-        .map_err(
-            |(_, total_power, signed_power)| Error::InsufficientValidatorsOverlap {
+        .map_err(|_| {
+            let total_power = calculator.total_power_of(trusted_validators);
+            let signed_power = calculator.voting_power_in(untrusted_commit, trusted_validators);
+            ErrorKind::InsufficientValidatorsOverlap {
                 total_power,
                 signed_power,
-            },
-        )
+            }
+            .into()
+        })
     }
 
     fn has_sufficient_signers_overlap(
@@ -146,9 +179,14 @@ impl VerificationPredicates for ProductionPredicates {
             trust_threshold,
             calculator,
         )
-        .map_err(|(_, total_power, signed_power)| Error::InvalidCommit {
-            total_power,
-            signed_power,
+        .map_err(|_| {
+            let total_power = calculator.total_power_of(untrusted_validators);
+            let signed_power = calculator.voting_power_in(untrusted_commit, untrusted_validators);
+            ErrorKind::InvalidCommit {
+                total_power,
+                signed_power,
+            }
+            .into()
         })
     }
 
@@ -157,11 +195,14 @@ impl VerificationPredicates for ProductionPredicates {
         untrusted_sh: &SignedHeader,
         untrusted_next_vals: &ValidatorSet,
     ) -> Result<(), Error> {
-        (untrusted_sh.header.next_validators_hash != untrusted_next_vals.hash).false_or(
-            Error::InvalidNextValidatorSet {
+        ensure!(
+            untrusted_sh.header.next_validators_hash == untrusted_next_vals.hash,
+            ErrorKind::InvalidNextValidatorSet {
                 header_next_validators_hash: untrusted_next_vals.hash,
                 next_validators_hash: untrusted_next_vals.hash,
-            },
-        )
+            }
+        );
+
+        Ok(())
     }
 }
