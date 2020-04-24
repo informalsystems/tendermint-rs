@@ -1,34 +1,32 @@
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::future::Future;
 use std::sync::mpsc::Sender;
+
+use serde::{Deserialize, Serialize};
 use tendermint::{block, rpc};
 
 use crate::prelude::*;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RpcError {
     RpcError(rpc::Error),
 }
 
-#[typetag::serde]
-impl Event for RpcError {}
+impl_event!(RpcError);
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RpcInput {
     FetchState(Height),
 }
 
-#[typetag::serde]
-impl Event for RpcInput {}
+impl_event!(RpcInput);
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RpcOutput {
     FetchedLightBlock(LightBlock),
 }
 
-#[typetag::serde]
-impl Event for RpcOutput {}
+impl_event!(RpcOutput);
 
 pub struct Rpc {
     rpc_client: rpc::Client,
@@ -92,4 +90,3 @@ impl Rpc {
 fn block_on<F: Future>(_future: F) -> F::Output {
     todo!()
 }
-

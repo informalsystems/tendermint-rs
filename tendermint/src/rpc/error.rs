@@ -5,7 +5,7 @@ use std::fmt::{self, Display};
 use thiserror::Error;
 
 /// Tendermint RPC errors
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Error {
     /// Error code
     code: Code,

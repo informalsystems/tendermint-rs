@@ -1,5 +1,6 @@
 pub mod components;
 pub mod errors;
+pub mod event;
 pub mod operations;
 pub mod predicates;
 pub mod prelude;
