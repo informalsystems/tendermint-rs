@@ -1,6 +1,7 @@
 pub use crate::errors::*;
 pub use crate::event::*;
 pub use crate::operations::*;
+pub use crate::predicates::VerificationPredicates;
 pub use crate::trace::*;
 pub use crate::types::*;
 pub use crate::{ensure, impl_event};

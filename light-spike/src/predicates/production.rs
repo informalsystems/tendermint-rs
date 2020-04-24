@@ -1,6 +1,7 @@
 use super::VerificationPredicates;
 use crate::prelude::*;
 
+#[derive(Copy, Clone, Debug)]
 pub struct ProductionPredicates;
 
 impl VerificationPredicates for ProductionPredicates {

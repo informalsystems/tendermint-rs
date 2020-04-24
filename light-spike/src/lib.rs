@@ -1,3 +1,11 @@
+#![deny(rust_2018_idioms)]
+#![deny(nonstandard_style)]
+#![warn(
+     unreachable_pub,
+     // missing_docs,
+     // missing_doc_code_examples
+ )]
+
 pub mod components;
 pub mod errors;
 pub mod event;
