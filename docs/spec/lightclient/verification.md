@@ -1,10 +1,7 @@
 **Preparation for high-level English spec for new architecture** 
 
-
-
 # Core Verification
 
-> Rough outline of what the component is doing and why. 2-3 paragraphs
 
 The light client implements a read operation of a
 [header][TMBC-HEADER-link] from the [blockchain][TMBC-SEQ-link], by
@@ -37,15 +34,12 @@ that need to be checked, by exploiting the guarantees provided by the
 
 # Part I - Tendermint Blockchain
 
+**TODO**
+
 # Part II - Sequential Definition of Fastsync Problem
 
 ## Context of this document
 
-> mention other components and/or specifications that are relevant for this
-spec. Possible interactions, possible use cases, etc.
-
-> should give the reader the understanding in what environment this component
-will be used.
 
 
 In this document we specify the light client verification component, called *Verifier*.
@@ -87,7 +81,7 @@ stored.
 
 #### **[LCV-SEQ-LIFE]**: 
 The *Verifier* gets as input a height *h*, and eventually stores the
-header of height *h* of the blockchain, that is, *chain[h]* [**[TMBC-SEQ]**][TMBC-SEQ-link].
+header of height *h* of the blockchain, that is, *chain[h]*.
 
 #### **[LCV-SEQ-SAFE]**:
 The *Verifier* never stores a header which is not in the blockchain.
