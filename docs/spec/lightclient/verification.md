@@ -396,15 +396,15 @@ cf. [TMBC-VALIDATOR-Set]
 
 - *height*: initially *trustedHeader.Height*
 - *nextHeight*: initially *targetHeight*
-> *nextHeight* should be thought of the "height of the next header we need
-to download and verify"
+  > *nextHeight* should be thought of the "height of the next header we need
+  > to download and verify"
 - *trustedStore*: stores verification headers that have been downloaded and that
     passed verification. Initially it only contains *startBlock*:
-> Something like this was called *State* in ADR. Should be made
->    consistent 
->	with detector. We should decide what it contains: e.g., (i) set of headers,
-> (ii) set of TrustedState (iii) set of pairs: Trustedstate, address of
-> full node from which the lightlient downloaded the header   
+  > Something like this was called *State* in ADR. Should be made
+  >    consistent 
+  >	with detector. We should decide what it contains: e.g., (i) set of headers,
+  > (ii) set of TrustedState (iii) set of pairs: Trustedstate, address of
+  > full node from which the lightlient downloaded the header   
 - *untrustedStore*: stores verification headers 
    that have been downloaded and that failed
    verification, but may still be OK. Initially empty
@@ -475,7 +475,7 @@ func Commit(addr Address, height int64) (SignedHeader, error)
    * if *n* is correct: precondition violated or timeout
    * if *n* is faulty: arbitrary error
 
-----
+---
 
 
  ```go    
@@ -493,7 +493,7 @@ func Validators(addr Address, height int64) (ValidatorSet, error)
   - if *n* is correct: precondition violated or timeout 
   - if *n* is faulty: arbitrary error
 
-----
+---
 
 ## Core Verification
 
@@ -545,7 +545,7 @@ func getHeaderData
   - *nextheight > refHeader.signedHeader.Header.Height*
 - Expected postcondition: 
   - If *n* is correct, it returns the following data:
-c    - *headerToVerify.signedHeader* is a signed header consistent with
+    - *headerToVerify.signedHeader* is a signed header consistent with
       the blockchain
     - *headerToVerify.Validators* is the validator set of the
       blockchain at height *nextheight*
