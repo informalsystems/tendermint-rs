@@ -149,10 +149,11 @@ impl JSONRPC {
     /// Extract events from TXEvent if event matches are type query
     pub fn extract_events(
         &self,
-        type_query: &str,
+        module_query: &str,
+        action_query: &str,
     ) -> Result<std::collections::HashMap<String, Vec<String>>, &'static str> {
         let events = &self.result.events;
-        if events["message.module"][0] == type_query {
+        if events["message.module"][0] == module_query && events["message.action"][0] == action_query {
             return Ok(events.clone());
         } else {
             return Err("Incorrect Event Type");
