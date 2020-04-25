@@ -262,11 +262,6 @@ to download and verify"
    - written by IO
 - *Error*: error information. Initially nil.
 
-### **[LCV-INV-VAL]**
-At all times
-- *headerToVerify.Validators = hash(headerToVerify.signedHeader.Header.Validators)*
-- *headerToVerify.NextValidators = hash(headerToVerify.signedHeader.Header.NextValidators)*
-
 
 
 
@@ -276,7 +271,19 @@ At all times
 - *refHeader*: is the header from *trustedStore* with the maximal
   height
   
+  
+
 **TODO:** messages
+  
+  
+### Algorithm Invariants
+
+### **[LCV-INV-VAL]**
+At all times
+- *headerToVerify.Validators = hash(headerToVerify.signedHeader.Header.Validators)*
+- *headerToVerify.NextValidators = hash(headerToVerify.signedHeader.Header.NextValidators)*
+
+
   
 ### Remote Functions
   ```go
@@ -320,52 +327,68 @@ func Validators(addr Address, height int64) (ValidatorSet, error)
 
 The protocols is described in terms of the following functions.
 
-- `init` does some initial checks
-- `IO` is called to download the next header, and validator sets
-- `OutputResult` returns the result
+- `getHeaderData` is called to do IO, that is, 
+  download the next header, and validator sets
 - `VerifyBisection` calls `verifySingle` to see whether a new header can
   be trusted. If not, it does bisection by updating the nextheight
   variable
 - `verifySingle` checks a new header based on the most recently trusted
   header
   
-In the current Rust architecture we consider a sequential flow, that
-is,
 
-- `init`,
-- execution of a loop where first `IO` and then `VerifyBisection` are invoked 
-  (`VerifyBisection` calls `verifySingle`)
-- `OutputResult`.
+In the current Rust architecture we consider a sequential flow, that
+is, execution of a loop where first `getHeaderData` and then
+`VerifyBisection` are invoked (`VerifyBisection` calls `verifySingle`).
+
+
+
+#### **[LCV-TERM-EXPIRED]**
+If *refHeader.signedHeader.header.time < now - trustingPeriod* 
+set *Error = EXPIRED* and **terminate with failure**.
+
+#### **[LCV-TERM-SUCCESS]**
+If *Height = targetHeight* then **terminate successfully**
 
 
 ### Details
 
 
-```go
-func Init
-```
-checks time
 
-
+**TODO:** synchronous algorithm?
 
 ```go
-func IO
+func getHeaderData
 ```
-- Implementation remarks:
-     - This function make externals RPC calls to the full node; 
-	 Validators(nextHeight), Validators(nextHeight+1), Commit (nextHeight)
-- Expected precondition:
-   - headerToVerify is nil or headerToVerify.Height < nextHeight
-- Expected postcondition:
-   - **TODO** *headerToVerify* is the header retured by *peer* for height *height*
-   - *headerToVerify.Validators = hash(headerToVerify.signedHeader.Header.Validators)*
-   - *headerToVerify.NextValidators = hash(headerToVerify.signedHeader.Header.NextValidators)*
-- Error condition
-   - if postcondition is violated (peer faulty)
+-  Implementation remark
+   - Used to communicate with a full node *n* at address *addr* via 
+     RPCs `Commit` and `Validators` 
+   - The only function that makes external calls!
+   - This function make externals RPC calls to the full node; 
+      - `Validators(nextHeight)`
+	  - `Validators(nextHeight+1)` 
+	  - `Commit (nextHeight)`
+   
+- Expected precondition
+  - *nextheight > refHeader.signedHeader.Header.Height*
+- Expected postcondition: 
+  - If *n* is correct, it returns the following data:
+c    - *headerToVerify.signedHeader* is a signed header consistent with
+      the blockchain
+    - *headerToVerify.Validators* is the validator set of the
+      blockchain at height *nextheight*
+    - *headerToVerify.NextValidators* is the validator set of the
+      blockchain at height *nextheight + 1*
+    - *headerToVerify.signedHeader.Header.Time < now + clockDrift*
+  - If *n* is faulty, returns arbitrary 
+  - [LCV-INV-VAL] (if *n* is faulty or not)
+- Error conditions
+  - precondition violated
+  - If the field time of the returned signed header is greater than or
+    equal to `now + clockDrift`, then set *error = InvalidHeaderTime*
+    and **terminate with failure**.
+  - If *n* is faulty
 
-
-
-
+---
 
 
 ```go
@@ -382,121 +405,54 @@ func VerifyBisection {
 }
 ```
 - Expected precondition
-  - the field `Time` of the signed header of `trustedState` is within *trustingPeriod* from `now`
+  - none
 - Expected postcondition
-  - Returns a trusted state whose header is the header at height `untrustedHeight` from the blockchain, if [**[FN-LuckyCase]**][FN-LuckyCase-link] holds, and if the field `Time` of the header of the returned trusted state is greater than `now + clockDrift`     
+  - *nextHeight <= targetHeight*
+  - *nextHeight > height*
 - Error conditions 
-  - violated precondition 
-  - [**[FN-LuckyCase]**][FN-LuckyCase-link] does not hold
-  - the header lies in the future  
-  **TODO:** What is the precise
-    condition about the future?
-
+  - IF `VerifySingle` returns a error code *code* different from OK or
+  CANNOT_VERIFY then set *error = code*
+    and **terminate with failure**.
 ---
 
 
 ```go
 func VerifySingle(untrustedVh VerificationHeader,
-                  trustedVh VerificationHeader) (TrustedState, error)
+                  trustedVh VerificationHeader) (error)
 ```
 
-- Implementation remarks:
-     - This function does not make external RPC calls to the full node; the whole logic is
-based on the local (given) state. 
 - Expected precondition:
-   - the field `Time` of the untrusted signed header `untrustedSh` is greater than `now + clockDrift` 
-   - the signed header of the trusted state was generated within the *trustingPeriod*
-   - the height and `Time` of the signed header of the trusted state are smaller than the height and 
-  `Time` of the untrusted signed header `untrustedSh`, respectively
+   - the `height` and `Time` of `trustedVh` are smaller than the height and 
+  `Time` of `untrustedVh`, respectively
    - the *SignedHeader* satisfies the soundness requirements
      [**[TMBC-SOUND-?]**][blockchain], in particular
-      - the untrusted signed header `untrustedSh` and the untrusted validator sets `untrustedVs`, 
-  `untrustedNextVs` are consistent
-      - if the untrusted signed header `unstrustedSh` is the immediate successor of 
-  the signed header of the trusted state `trustedState`, then it holds that 
-  the next validator set of the signed header of the `trustedState` is equal to the untrusted 
-  validator set `untrustedVs`, and moreover, more than two-thirds of the validators 
-  signed
+      - if the untrusted signed header `unstrustedVh` is the immediate 
+	  successor  of  `trustedVh`, then it holds that
+	      - *trustedVh.NextValidators = untrustedVh.Validators*, and
+		  moreover, 
+		  - more than two-thirds of the validators signed
 - Expected postcondition: 
-    - Returns `(trustedState, OK)` if:
-        - the untrusted signed header `untrustedSh` is the immediate successor of the signed header
-    of the trusted state `trustedState`  [TMBC-SOUND-?], or
-        - the untrusted signed header `untrustedSh` is a successor of
-        the signed header of the trusted state `trustedState` and the
-        validators that have more than *max(1/3,trustThreshold)* of
-        voting power in the trusted state `trustedState` signed the
-        untrusted signed header `untrustedSh` 
-		header passes the tests [TMBC-VAL-CONTAINS-CORR] and [TMBC-VAL-COMMIT]
-	- Returns `(trustedState, CANNOT_VERIFY)` if
+    - Returns `OK` if:
+        - *untrustedVh* is the immediate successor of *trustedVh*, or
+        - *untrustedVh* is the successor of *trustedVh*, 
+		   - and a set of
+             validators that have more than *max(1/3,trustThreshold)* of
+             voting power in *trustedVh*  signed *untrustedVh*
+           - and header passes the tests [TMBC-VAL-CONTAINS-CORR] and [TMBC-VAL-COMMIT]
+	- Returns `CANNOT_VERIFY` if
 	[**[TMBC-VAL-CONTAINS-CORR]**][TMBC-VAL-CONTAINS-CORR-link] 
 	fails and header is does not violate the soundness
 checks [**[TMBC-SOUND-?]**][blockchain].
 - Error condition: 
    - precondition violated
-   - the untrusted signed header `untrustedSh` is not a successor of the signed header of the trusted state `trustedState`
 
 ---
 
 
 
-```go
-func OutputResult
-```
-- Implementation remark
-  - *Time* is the local time when the function is scheduled
-- Expected precondition
-  - *ref-Header.Height = targetHeight* OR **some error**
-- Expected postcondition: 
-  - Returns `(trustedStore, OK)`
-     if the signed header of `trustedState`:
-      - is the header at height `untrustedHeight` of the blockchain, and 
-      - was generated within *trustingPeriod* from *endTime*
-  - Returns `(trustedStore, EXPIRED)` under [**[FN-LuckyCase]**][FN-LuckyCase-link], if
-  the signed header of `trustedState`:
-      - is the header at height `untrustedHeight` of the blockchain, and 
-      - was generated after *endTime - trustingPeriod* 
 
 
 
-
-
-#### **[LCV-QueryFullNode]**:
-
-`QueryFullNode` is called by `VerifyBisection`, and it is used to gather information from a
-full node at address `addr`.
-```go
-func QueryFullNode(addr Address, 
-                  untrustedHeight int64) 
-                  (SignedHeader,  ValidatorSet, ValidatorSet, error)
-```
--  Implementation remark
-   - Used to communicate with a full node *n* at address *addr* via RPCs `Commit` and `Validators` 
-   - The only function that makes external calls!
-   - in order to ensure [**[FN-LuckyCase]**][FN-LuckyCase-link] the
-     timeout for the RPCs must be greater than or equal to *2 Delta*, cf.
-	 [**[LCV-A-Comm]**](#lcv-a-comm).
-- Expected precondition
-  - true
-- Expected postcondition: 
-  - If *n* is correct and there is no error in the RPC to *n*: Returns the following data:
-    - `SignedHeader` of height `untrustedHeight`, 
-    - `ValidatorSet` of height `untrustedHeight`, 
-    - `ValidatorSet` of height `untrustedHeight + 1` 
-  - The field time of the returned signed header is smaller than `now + clockDrift`
-- Error conditions
-  - precondition violated
-  - The field time of the returned signed header is greater than or
-    equal to `now + clockDrift`
-  - If *n* is faulty or there is an error in the RPC to *n*
-
-*Remark*: Observe that the error conditions includes "error in RPC to *n*" but
-*not* [**[FN-LuckyCase]**][FN-LuckyCase-link].
-A faulty peer might return arbitrary values, without
-forcing the function to report an error.
-
----
-
-If `QueryFullNode` returns without error, `VerifyBisection` calls `VerifySingle`.
 
 
 
