@@ -34,31 +34,170 @@ that need to be checked, by exploiting the guarantees provided by the
 
 # Part I - Tendermint Blockchain
 
-**TODO**
 
-# Part II - Sequential Definition of Fastsync Problem
+## Header Fields necessary for the Light Client
+
+#### **[TMBC-HEADER]**:
+A set of blockchain transactions is stored in a data structure called
+*block*, which contains a field called *header*. (The data structure
+*block* is defined [here][block]).  As the header contains hashes to
+the relevant fields of the block, for the purpose of this
+specification, we will assume that the blockchain is a list of
+headers, rather than a list of blocks. 
+
+#### **[TMBC-HASH-UNIQUENESS]**:
+We assume that every hash in the header identifies the data it hashes. 
+Therefore, in this specification, we do not distinguish between hashes and the 
+data they represent.
+
+
+#### **[TMBC-HEADER-Fields]**:
+A header contains the following fields:
+
+ - `Height`: non-negative integer
+ - `Time`: time (integer)
+ - `LastBlockID`: Hashvalue
+ - `LastCommit` DomainCommit
+ - `Validators`: DomainVal
+ - `NextValidators`: DomainVal
+ - `Data`: DomainTX
+ - `AppState`: DomainApp
+ - `LastResults`: DomainRes
+
+
+#### **[TMBC-SEQ]**:
+
+The Tendermint blockchain is a list *chain* of headers. 
+
+
+#### **[TMBC-VALIDATOR-Pair]**:
+
+Given a full node, a 
+*validator pair* is a pair *(address, voting_power)*, where 
+  - *address* is the address (public key) of a full node, 
+  - *voting_power* is an integer (representing the full node's
+  voting power in a certain consensus instance).
+  
+> In the Golang implementation the data type for *validator
+pair* is called `Validator`
+
+
+#### **[TMBC-VALIDATOR-Set]**:
+
+A *validator set* is a set of validator pairs. For a validator set
+*vs*, we write *TotalVotingPower(vs)* for the sum of the voting powers
+of its validator pairs.
+
+#### **[TMBC-VOTE]**:
+A *vote* contains a `prevote` or `precommit` message sent and signed by
+a validator node during the execution of [consensus][arXiv]. Each 
+message contain the following fields
+   - `Type`: prevote or precommit
+   - `Height`: positive integer
+   - `Round` a positive integer
+   - `BlockID` a Hashvalue of a block (not necessarily a block of the chain)
+
+
+
+#### **[TMBC-COMMIT]**:
+A commit is a set of votes.
+
+**TODO:** clarify whether `prevote` or `precommit` are equivalent in
+the Commit.
+
+## Tendermint Failure Model
+
+#### **[TMBC-AUTH-BYZ]**:
+We assume the authenticated Byzantine fault model in which no node (faulty or
+correct) may break digital signatures, but otherwise, no additional
+assumption is made about the internal behavior of faulty 
+nodes. That is, faulty nodes are only limited in that they cannot forge
+messages.
+
+
+#### **[TMBC-TIME-PARAMS]**:
+A Tendermint blockchain has the following configuration parameters:
+ - *unbondingPeriod*: a time duration.
+ - *trustingPeriod*: a time duration smaller than *unbondingPeriod*.
+
+
+#### **[TMBC-CORRECT]**:
+We define a predicate *correctUntil(n, t)*, where *n* is a node and *t* is a 
+time point. 
+The predicate *correctUntil(n, t)* is true if and only if the node *n* 
+follows all the protocols (at least) until time *t*.
+
+
+
+#### **[TMBC-FM-2THIRDS]**:
+If a block *h* is in the chain,
+then there exists a subset *CorrV*
+of *h.NextValidators*, such that:
+  - *TotalVotingPower(CorrV) > 2/3
+    TotalVotingPower(h.NextValidators)*; cf. [TMBC-VALIDATOR-Set]
+  - For every validator pair *(n,p)* in *CorrV*, it holds *correctUntil(n,
+    h.Time + trustingPeriod)*; cf. [TMBC-CORRECT]
+
+
+> The definition of correct
+> [**[TMBC-CORRECT]**](TMBC-CORRECT-link) refers to realtime, while it
+> is used here with *Time* and *trustingPeriod*, which are "hardware
+> times".  We do not make a distinction here.
+
+## What the Light Client Checks
+
+
+> From [TMBC-FM-2THIRDS] we directly derive the following observation:
+
+#### **[TMBC-VAL-CONTAINS-CORR]**:
+
+Given a (trusted) block *tb* of the blockchain, a given set of full nodes 
+*N* contains a correct node at a real-time *t*, if
+   - *t - trustingPeriod < tb.Time < t*
+   - the voting power in tb.NextValidators of nodes in *N* is more
+     than 1/3 of *TotalVotingPower(tb.NextValidators)*
+
+
+#### **[TMBC-SOUND-DISTR-PossCommit]**:
+For a block *b*, each element *pc* of *PossibleCommit(b)* satisfies:
+  - each vote *v* in *pc* satisfies
+     * *pc* contains only votes (cf. [TMBC-VOTE])
+	 by validators from *b.Validators*
+     * v.blockID = hash(b)
+	 * v.Height = b.Height  
+	 **TODO:** complete the checks here
+  - the sum of the voting powers in *pc* is greater than 2/3
+  *TotalVotingPower(b.Validators)*
+
+> The following property comes from the validity of the [consensus][arXiv]: A
+> correct validator node only sends `prevote` or `precommit`, if
+> `BlockID` of the new (to-be-decided) block is equal to the hash of
+> the last block.
+
+#### **[TMBC-VAL-COMMIT]**:
+
+If for a block *b*,  a commit *c*
+  - contains at least one validator pair *(v,p)* such that *v* is a correct
+    validator node, and
+  - is contained in *PossibleCommit(b)*
+  
+then the block *b* is on the blockchain.
+
+
+
 
 ## Context of this document
 
 
 
-In this document we specify the light client verification component, called *Verifier*.
-The *Verifier* communicates with a full node. 
-As full nodes may be faulty, the light client has to check whether
-the header it receives coincides with the one generated by Tendermint consensus. 
-The central features used in this specification are:
+In this document we specify the light client verification component,
+called *Verifier*.  The *Verifier* communicates with a full node.  As
+full nodes may be faulty, the light client has to check whether the
+header it receives coincides with the one generated by Tendermint
+consensus.
 
- - Tendermint blockchain ensures several [soundness properties][blockchain]
-   [TMBC-SOUND-?]. If a block does not satisfy this soundness
-   properties it did not originate from the blockchain. Verification
-   encodes these tests,
-
- - the Tendermint [security model][TMBC-FM-2THIRDS-link] guarantees that there is a set of full 
- nodes that represent more than two-thirds of the voting power in the *NextValidators* set, such that the full nodes in this set are correct from 
- the time a block is generated until the trusting period has passed.
-
-
- To do verification checks based on these properties, the two 
+ To do verification (in particular the function
+`VerifySingle`) checks based on these properties, the two 
  properties [[TMBC-VAL-CONTAINS-CORR]][TMBC-VAL-CONTAINS-CORR-link] and
 [[TMBC-VAL-COMMIT]][TMBC-VAL-COMMIT-link]  formalize the checks done
  by this specification:
@@ -67,21 +206,24 @@ one has to check that *cub* is in *PossibleCommit(ub)*, and that *cub*
 contains a correct node using *tb*.
 
 
+
+# Part II - Sequential Definition of Fastsync Problem
+
+
 ## Informal Problem statement
 
 
-Given a height *h* as an input, the *Verifier* stores a header of
-height *h* locally.  This header is generated by the Tendermint
-[blockchain][blockchain]. In particular, a header that violates one of
-the [soundness properties][blockchain] [TMBC-SOUND-?] should never be
-stored.
+Given a height *targetHeight* as an input, the *Verifier* stores a header of
+height *targetHeight* locally.  This header is generated by the Tendermint
+[blockchain][blockchain]. In particular, a header that was not
+generated by the blockchain should never be stored.
 
 
 ## Sequential Problem statement
 
 #### **[LCV-SEQ-LIFE]**: 
-The *Verifier* gets as input a height *h*, and eventually stores the
-header of height *h* of the blockchain, that is, *chain[h]*.
+The *Verifier* gets as input a height *targetHeight*, and eventually stores the
+header of height *targetHeight* of the blockchain.
 
 #### **[LCV-SEQ-SAFE]**:
 The *Verifier* never stores a header which is not in the blockchain.
@@ -157,7 +299,7 @@ contains headers.
 The light client has a local variable *primary* that contains the Address (ID) of a full node.
 
 #### **[LCV-DIST-INIT]**:
-*trustedStore* is initialized with *inithead* that was correctly 
+*trustedStore* is initialized with a header *trustedHeader* that was correctly 
 generated by the Tendermint consensus.
 
 ### Temporal Properties
@@ -167,11 +309,16 @@ It is always the case that every header in *trustedStore* was generated by an in
 
 #### **[LCV-DIST-LIFE]**:
 From time to time, a new instance of the verifier is called with a
-height *h*. Each instance must eventually terminate. 
-  - If the full node (primary) with which the verifier communicates is correct
-    *trustedStore* contains a header whose age is less than the
-    trusting period, then The instance adds a header *hd* with height
-    *h* to *trustedStore* and it **terminates successfully**
+height *targetHeight*. Each instance must eventually terminate. 
+  - If
+     - the full node (primary) with which the verifier communicates is
+       correct, and 
+     - *trustedStore* contains a header whose age is less than the
+        trusting period, 
+
+    then the instance adds a header *hd* with height
+    *targetHeight* to *trustedStore* and it **terminates successfully**
+	
   - Otherwise, it **terminates with failure**
 
 
@@ -232,7 +379,7 @@ cf. [TMBC-VALIDATOR-Set]
 ### Inputs
 - *trustedHeader*: the Verification Header verification starts from
 - *primary*: peer address
-- *targetHeight*:
+- *targetHeight*: they height of the needed header
 
 #### **[LCV-A-INIT]**:
 - *trustedHeader.signedHeader* is from the blockchain
@@ -365,7 +512,8 @@ In the current Rust architecture we consider a sequential flow, that
 is, execution of a loop where first `getHeaderData` and then
 `VerifyBisection` are invoked (`VerifyBisection` calls `verifySingle`).
  `getHeaderData` only needs to be called if *untrustedStore* does
- not contain a header of height *nextHeight*.
+ not contain a header of height *nextHeight*, otherwise the header is
+ just moved from *untrustedStore* to *headerToVerify*.
 
 ### Termination Conditions
 
@@ -419,14 +567,14 @@ c    - *headerToVerify.signedHeader* is a signed header consistent with
 ```go
 func VerifyBisection {
     err := VerifySingle(trustedHeader, headerToVerify)
-    if err == OK {
-      height = nextHeight
+    if err == OK { 
 	  trustedStore.add(headerToVerify)
 	  // **TODO:** reset headerToVerify to nil?
+      height = nextHeight
 	  nextHeight = targetHeight
     } else if err = CANNOT_VERIFY{
-      compute pivot // (height + nextHeight) / 2
 	  untrustedStore.add(headerToVerify)
+      compute pivot // (height + nextHeight) / 2
       nextHeight = pivot
     }
   }
@@ -515,3 +663,5 @@ At all times
 [fullnode-data-structures]: https://github.com/tendermint/spec/blob/master/spec/blockchain/fullnode.md#data-structures
 
 [FN-ManifestFaulty-link]: https://github.com/tendermint/spec/blob/master/spec/blockchain/fullnode.md#fn-manifestfaulty
+
+[arXiv]: https://arxiv.org/abs/1807.04938
