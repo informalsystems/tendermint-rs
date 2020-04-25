@@ -283,8 +283,8 @@ terminate successfully, and satisfy the requirements of the sequential
 problem statement:
 
 
-#### **[LCV-DIST-LIVE]**:
-*Core Verification* eventually terminates: it either *terminates
+#### **[LCV-DIST-TERM]**:
+*Core Verification* either *terminates
 successfully* or it *terminates with failure*.
 
 
@@ -394,24 +394,28 @@ cf. [TMBC-VALIDATOR-Set]
 
 ### Variables
 
-- *height*: initially *trustedHeader.Height*
+- *currentHeight*: initially *trustedHeader.Height*
 - *nextHeight*: initially *targetHeight*
   > *nextHeight* should be thought of the "height of the next header we need
   > to download and verify"
 - *trustedStore*: stores verification headers that have been downloaded and that
-    passed verification. Initially it only contains *startBlock*:
+    passed verification. Initially it only contains *trustedHeader*.
   > Something like this was called *State* in ADR. Should be made
   >    consistent 
   >	with detector. We should decide what it contains: e.g., (i) set of headers,
   > (ii) set of TrustedState (iii) set of pairs: Trustedstate, address of
-  > full node from which the lightlient downloaded the header   
+  > full node from which the lightlient downloaded the header
 - *untrustedStore*: stores verification headers 
    that have been downloaded and that failed
    verification, but may still be OK. Initially empty
-- *headerToVerify*: a verification header. Initially nil	
-   - written by IO
 - *Error*: error information. Initially nil.
 
+- *headerToVerify*: a verification header. Initially nil  
+  **TODO:** decide whether passing of information should be done via
+  shared variables  
+  > used to hand the header to bisection. Might be a parameter
+  > currently written by IO (or copied if a candidate is already 
+  > in *untrustedStore*
 
 
 
@@ -429,7 +433,7 @@ func VerifySingle(untrustedVh VerificationHeader,
 ```
 
 - Expected precondition:
-   - the `height` and `Time` of `trustedVh` are smaller than the height and 
+   - the `Height` and `Time` of `trustedVh` are smaller than the Height and 
   `Time` of `untrustedVh`, respectively
    - the *SignedHeader* satisfies the soundness requirements
      [**[TMBC-SOUND-?]**][blockchain], in particular
@@ -509,7 +513,7 @@ The protocols is described in terms of the following functions.
   
 
 In the current Rust architecture we consider a sequential flow, that
-is, execution of a loop where first `getHeaderData` and then
+is, execution of a loop where first `getHeaderData(primary)` and then
 `VerifyBisection` are invoked (`VerifyBisection` calls `verifySingle`).
  `getHeaderData` only needs to be called if *untrustedStore* does
  not contain a header of height *nextHeight*, otherwise the header is
@@ -522,7 +526,7 @@ If *refHeader.signedHeader.header.time < now - trustingPeriod*
 set *Error = EXPIRED* then **terminate with failure**.
 
 #### **[LCV-TERM-SUCCESS]**
-If *Height = targetHeight* then **terminate successfully**
+If *currentHeight = targetHeight* then **terminate successfully**
 
 
 ### Details
@@ -530,7 +534,7 @@ If *Height = targetHeight* then **terminate successfully**
 
 
 ```go
-func getHeaderData
+func getHeaderData(addr Address)
 ```
 -  Implementation remark
    - Used to communicate with a full node *n* at address *addr* via 
@@ -570,11 +574,11 @@ func VerifyBisection {
     if err == OK { 
 	  trustedStore.add(headerToVerify)
 	  // **TODO:** reset headerToVerify to nil?
-      height = nextHeight
+      currentHeight = nextHeight
 	  nextHeight = targetHeight
     } else if err = CANNOT_VERIFY{
 	  untrustedStore.add(headerToVerify)
-      compute pivot // (height + nextHeight) / 2
+      compute pivot // (currentHeight + nextHeight) / 2
       nextHeight = pivot
     }
   }
@@ -582,11 +586,11 @@ func VerifyBisection {
 ```
 - Expected precondition
   - height of *headerToVerify* is *nextHeight*
-  - height of *trustedHeader* is *Height*
+  - height of *trustedHeader* is *currentHeight*
 - Expected postcondition
   - *nextHeight <= targetHeight*
-  - *nextHeight > height*
-  - height of *trustedHeader* is *Height*
+  - *nextHeight > currentHeight*
+  - height of *trustedHeader* is *currentHeight*
 - Error conditions 
   - IF `VerifySingle` returns a error code *code* different from OK or
   CANNOT_VERIFY then set *error = code*
