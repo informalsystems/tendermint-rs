@@ -258,6 +258,9 @@ to download and verify"
 >	with detector. We should decide what it contains: e.g., (i) set of headers,
 > (ii) set of TrustedState (iii) set of pairs: Trustedstate, address of
 > full node from which the lightlient downloaded the header   
+- *untrustedStore*: stores verification headers 
+   that have been downloaded and that failed
+   verification, but may still be OK. Initially empty
 - *headerToVerify*: a verification header. Initially nil	
    - written by IO
 - *Error*: error information. Initially nil.
@@ -361,7 +364,8 @@ The protocols is described in terms of the following functions.
 In the current Rust architecture we consider a sequential flow, that
 is, execution of a loop where first `getHeaderData` and then
 `VerifyBisection` are invoked (`VerifyBisection` calls `verifySingle`).
-
+ `getHeaderData` only needs to be called if *untrustedStore* does
+ not contain a header of height *nextHeight*.
 
 ### Termination Conditions
 
@@ -376,8 +380,6 @@ If *Height = targetHeight* then **terminate successfully**
 ### Details
 
 
-
-**TODO:** synchronous algorithm?
 
 ```go
 func getHeaderData
@@ -419,23 +421,34 @@ func VerifyBisection {
     err := VerifySingle(trustedHeader, headerToVerify)
     if err == OK {
       height = nextHeight
+	  trustedStore.add(headerToVerify)
+	  // **TODO:** reset headerToVerify to nil?
 	  nextHeight = targetHeight
     } else if err = CANNOT_VERIFY{
       compute pivot // (height + nextHeight) / 2
+	  untrustedStore.add(headerToVerify)
       nextHeight = pivot
     }
   }
 }
 ```
 - Expected precondition
-  - none
+  - height of *headerToVerify* is *nextHeight*
+  - height of *trustedHeader* is *Height*
 - Expected postcondition
   - *nextHeight <= targetHeight*
   - *nextHeight > height*
+  - height of *trustedHeader* is *Height*
 - Error conditions 
   - IF `VerifySingle` returns a error code *code* different from OK or
   CANNOT_VERIFY then set *error = code*
     and **terminate with failure**.
+	
+> **TODO:** I encoded a bisection which is the most simple to
+> describe. With the current variables, we could also try to verify all
+> headers in *untrustedStore* which uses more of the already
+> downloaded headers.	
+	
 ---
 
 
