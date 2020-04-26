@@ -18,7 +18,7 @@ pub struct EventListener {
 
 impl EventListener {
     /// Constructor for event listener
-    pub async fn connect(address: net::Address) -> Result<EventListener, RPCError> {
+    pub async fn connect(address: &net::Address) -> Result<EventListener, RPCError> {
         let (host, port) = match &address {
             net::Address::Tcp { host, port, .. } => (host, port),
             other => {
@@ -35,7 +35,7 @@ impl EventListener {
     }
     //TODO Have a query type instead of a string
     /// Subscribe to event query stream over the websocket
-    pub async fn subscribe(&mut self, query: String) -> Result<(), RPCError> {
+    pub async fn subscribe(&mut self, query: &str) -> Result<(), RPCError> {
         self.socket
             .send(Message::text(
                 subscribe::Request::new(query.to_owned()).into_json(),
