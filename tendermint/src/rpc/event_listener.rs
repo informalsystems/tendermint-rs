@@ -19,7 +19,7 @@ pub struct EventListener {
 impl EventListener {
     /// Constructor for event listener
     pub async fn connect(address: &net::Address) -> Result<EventListener, RPCError> {
-        let (host, port) = match &address {
+        let (host, port) = match address {
             net::Address::Tcp { host, port, .. } => (host, port),
             other => {
                 return Err(RPCError::invalid_params(&format!(
