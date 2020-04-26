@@ -146,14 +146,14 @@ mod rpc {
     }
 
     #[tokio::test]
-    // #[ignore]
+     #[ignore]
     async fn event_subscription() {
         let mut client = tendermint::rpc::event_listener::EventListener::connect(
             "tcp://127.0.0.1:26657".parse().unwrap(),
         )
         .await
         .unwrap();
-        let _ = client.subscribe("tm.event='Tx'".to_owned()).await.unwrap();
+        let _ = client.subscribe(&"tm.event='Tx'".to_owned()).await.unwrap();
         // let _ = client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
 
         // Collect and throw away the response to subscribe
