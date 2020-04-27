@@ -5,7 +5,7 @@ use std::{
 
 use crate::prelude::*;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct TrustedStore {
     store: HashMap<Height, TrustedState>,
 }
@@ -36,6 +36,7 @@ impl TrustedStore {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct TSReader {
     ts: Arc<RwLock<TrustedStore>>,
 }
@@ -46,6 +47,7 @@ impl TSReader {
     }
 }
 
+#[derive(Debug)]
 pub struct TSReadWriter {
     ts: Arc<RwLock<TrustedStore>>,
 }
