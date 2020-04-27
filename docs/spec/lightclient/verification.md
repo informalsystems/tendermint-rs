@@ -51,7 +51,7 @@ Therefore, in this specification, we do not distinguish between hashes and the
 data they represent.
 
 
-#### **[TMBC-HEADER-Fields]**:
+#### **[TMBC-HEADER-FIELDS]**:
 A header contains the following fields:
 
  - `Height`: non-negative integer
@@ -70,7 +70,7 @@ A header contains the following fields:
 The Tendermint blockchain is a list *chain* of headers. 
 
 
-#### **[TMBC-VALIDATOR-Pair]**:
+#### **[TMBC-VALIDATOR-PAIR]**:
 
 Given a full node, a 
 *validator pair* is a pair *(address, voting_power)*, where 
@@ -82,7 +82,7 @@ Given a full node, a
 pair* is called `Validator`
 
 
-#### **[TMBC-VALIDATOR-Set]**:
+#### **[TMBC-VALIDATOR-SET]**:
 
 A *validator set* is a set of validator pairs. For a validator set
 *vs*, we write *TotalVotingPower(vs)* for the sum of the voting powers
@@ -134,7 +134,7 @@ If a block *h* is in the chain,
 then there exists a subset *CorrV*
 of *h.NextValidators*, such that:
   - *TotalVotingPower(CorrV) > 2/3
-    TotalVotingPower(h.NextValidators)*; cf. [TMBC-VALIDATOR-Set]
+    TotalVotingPower(h.NextValidators)*; cf. [TMBC-VALIDATOR-SET]
   - For every validator pair *(n,p)* in *CorrV*, it holds *correctUntil(n,
     h.Time + trustingPeriod)*; cf. [TMBC-CORRECT]
 
@@ -372,7 +372,7 @@ type VerificationHeader struct {
     NextValidators ValidatorSet
 }
 ```	
-cf. [TMBC-VALIDATOR-Set]
+
 
 
 
@@ -433,29 +433,42 @@ func VerifySingle(untrustedVh VerificationHeader,
 ```
 
 - Expected precondition:
+   - trustedVh.signedHeader.Commit is a commit is for the header 
+     trustedVh.signedHeader.Header, i.e. it contains
+     the correct hash of the header
    - the `Height` and `Time` of `trustedVh` are smaller than the Height and 
   `Time` of `untrustedVh`, respectively
-   - the *SignedHeader* satisfies the soundness requirements
-     [**[TMBC-SOUND-?]**][blockchain], in particular
-      - if the untrusted signed header `unstrustedVh` is the immediate 
+   - the *untrustedVH.SignedHeader* is well-formed (passes the tests from
+     [[block]]), and in particular
+      - if the untrusted header `unstrustedVh` is the immediate 
 	  successor  of  `trustedVh`, then it holds that
-	      - *trustedVh.NextValidators = untrustedVh.Validators*, and
+	      - *trustedVh.signedHeader.Header.NextValidators = 
+		  untrustedVh.signedHeader.Header.Validators*, and
 		  moreover, 
-		  - more than two-thirds of the validators signed
+		  - *untrustedVh.signedHeader.Header.Commit* 
+		     - contains signatures by more than two-thirds of the validators 
+		     - contains no signature from nodes that are not in *trustedVh.signedHeader.Header.NextValidators*
 - Expected postcondition: 
-    - Returns `OK` if:
-        - *untrustedVh* is the immediate successor of *trustedVh*, or
-        - *untrustedVh* is the successor of *trustedVh*, 
-		   - and a set of
+    - Returns `OK`:
+        - if *untrustedVh* is the immediate successor of *trustedVh*,
+          or otherwise,
+        - if
+		   -  signatures of a set of
              validators that have more than *max(1/3,trustThreshold)* of
-             voting power in *trustedVh*  signed *untrustedVh*
-           - and header passes the tests [TMBC-VAL-CONTAINS-CORR] and [TMBC-VAL-COMMIT]
-	- Returns `CANNOT_VERIFY` if
-	[**[TMBC-VAL-CONTAINS-CORR]**][TMBC-VAL-CONTAINS-CORR-link] 
-	fails and header is does not violate the soundness
-checks [**[TMBC-SOUND-?]**][blockchain].
+             voting power in
+             *trustedVh.signedHeader.Header.NextValidators*
+			 is contained in *untrustedVh.SignedHeader.Commit*
+           - (that is, header passes the tests [**[TMBC-VAL-CONTAINS-CORR]**][TMBC-VAL-CONTAINS-CORR-link]  and [**[TMBC-VAL-COMMIT]**][TMBC-VAL-COMMIT-link])
+	- Returns `CANNOT_VERIFY` 
+        -  *untrustedVh* is *not* the immediate successor of
+           *trustedVh*
+		   and the  *max(1/3,trustThreshold)* threshold is not reached
+        - (that is, if
+	     [**[TMBC-VAL-CONTAINS-CORR]**][TMBC-VAL-CONTAINS-CORR-link] 
+	     fails and header is does not violate the soundness
+         checks [[block]]).
 - Error condition: 
-   - precondition violated
+   - if precondition violated it returns a different error code
 
 ---
  
@@ -468,36 +481,41 @@ checks [**[TMBC-SOUND-?]**][blockchain].
 func Commit(addr Address, height int64) (SignedHeader, error)
 ```
 - Implementation remark
-   - RPC to full node *n*
+   - RPC to peer with Address *addr*
+   - Request message: **TODO**
+   - Response message: **TODO**
 - Expected precodnition
-  - header of `height` exists on blockchain
+  - `height` is less than or equal to height of the peer
 - Expected postcondition
-  - if *n* is correct: Returns the signed header of height `height`
-  from the blockchain if communication is timely (no timeout)
-  - if *n* is faulty: Returns a signed header with arbitrary content
+  - if *addr* is correct: Returns the signed header of height `height`
+  from the blockchain
+  - if *addr* is faulty: Returns a signed header with arbitrary content
 - Error condition
-   * if *n* is correct: precondition violated or timeout
+   * if *n* is correct: precondition violated **TODO:** mention message
    * if *n* is faulty: arbitrary error
 
 ---
 
 
- ```go    
+ ```go
 func Validators(addr Address, height int64) (ValidatorSet, error)
 ```
 - Implementation remark
-   - RPC to full node *n*
+   - RPC to peer with Address *addr*
+   - Request message: **TODO**
+   - Response message: **TODO**
 - Expected precodnition
-  - header of `height` exists on blockchain
+  - `height` is less than or equal to height of the peer
 - Expected postcondition
-  - if *n* is correct: Returns the validator set of height `height`
-  from the blockchain if communication is timely (no timeout)
-  - if *n* is faulty: Returns arbitrary validator set
+  - if *addr* is correct: Returns the validator set of height `height`
+  from the blockchain
+  - if *addr* is faulty: Returns a validator set with arbitrary content
 - Error condition
-  - if *n* is correct: precondition violated or timeout 
-  - if *n* is faulty: arbitrary error
+   * if *n* is correct: precondition violated **TODO:** mention message
+   * if *n* is faulty: arbitrary error
 
 ---
+
 
 ## Core Verification
 
