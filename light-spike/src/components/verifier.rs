@@ -17,7 +17,7 @@ impl_event!(VerifierError);
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum VerifierInput {
-    VerifyUntrustedLightBlock(LightBlock),
+    VerifyLightBlock(LightBlock),
 }
 
 impl_event!(VerifierInput);
@@ -54,7 +54,7 @@ impl Verifier {
         }
     }
 
-    pub fn verify_untrusted_light_block(
+    pub fn verify_light_block(
         &self,
         trusted_state: TrustedState,
         light_block: LightBlock,
@@ -62,12 +62,10 @@ impl Verifier {
         trusting_period: Duration,
         now: SystemTime,
     ) -> Result<TrustedState, VerifierError> {
-        self.trace(VerifierInput::VerifyUntrustedLightBlock(
-            light_block.clone(),
-        ));
+        self.trace(VerifierInput::VerifyLightBlock(light_block.clone()));
 
         self.predicates
-            .verify_untrusted_light_block(
+            .verify_light_block(
                 &self.voting_power_calculator,
                 &self.commit_validator,
                 &self.header_hasher,
