@@ -38,21 +38,18 @@ pub enum SchedulerOutput {
 
 impl_event!(SchedulerOutput);
 
-pub struct Scheduler<VP> {
+pub struct Scheduler {
     trace: Sender<BoxedEvent>,
     rpc: Rpc,
-    verifier: Verifier<VP>,
+    verifier: Verifier,
     trusted_store: TSReader,
 }
 
-impl<VP> Scheduler<VP>
-where
-    VP: VerificationPredicates,
-{
+impl Scheduler {
     pub fn new(
         trace: Sender<BoxedEvent>,
         rpc: Rpc,
-        verifier: Verifier<VP>,
+        verifier: Verifier,
         trusted_store: TSReader,
     ) -> Self {
         Self {
