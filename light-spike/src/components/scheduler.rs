@@ -1,18 +1,11 @@
-// FIXME: Figure out a way to decouple components
-
-use std::sync::mpsc::Sender;
-
+use async_recursion::async_recursion;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use super::rpc::RpcError;
-use super::verifier::VerifierError;
 use crate::prelude::*;
 
 #[derive(Clone, Debug, Error, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SchedulerError {
-    #[error("RPC error")]
-    RpcError(RpcError),
     #[error("invalid light block: {0}")]
     InvalidLightBlock(VerifierError),
 }
@@ -39,28 +32,22 @@ pub enum SchedulerOutput {
 impl_event!(SchedulerOutput);
 
 pub struct Scheduler {
-    trace: Sender<BoxedEvent>,
-    rpc: Rpc,
-    verifier: Verifier,
+    rpc_chan: RpcChan,
+    verifier_chan: VerifierChan,
     trusted_store: TSReader,
 }
 
 impl Scheduler {
-    pub fn new(
-        trace: Sender<BoxedEvent>,
-        rpc: Rpc,
-        verifier: Verifier,
-        trusted_store: TSReader,
-    ) -> Self {
+    pub fn new(rpc_chan: RpcChan, verifier_chan: VerifierChan, trusted_store: TSReader) -> Self {
         Self {
-            trace,
-            rpc,
-            verifier,
+            rpc_chan,
+            verifier_chan,
             trusted_store,
         }
     }
 
-    pub fn verify_light_block(
+    #[async_recursion(?Send)]
+    pub async fn verify_light_block(
         &mut self,
         trusted_state: TrustedState,
         light_block: LightBlock,
@@ -68,55 +55,93 @@ impl Scheduler {
         trusting_period: Duration,
         now: SystemTime,
     ) -> Result<Vec<TrustedState>, SchedulerError> {
-        self.trace(SchedulerInput::VerifyUntrustedLightBlock(
-            light_block.clone(),
-        ));
-
         if let Some(trusted_state_in_store) = self.trusted_store.get(light_block.height) {
             let output = vec![trusted_state_in_store];
-            self.trace(SchedulerOutput::ValidLightBlock(output.clone()));
             return Ok(output);
         }
 
-        let verifier_result = self.verifier.verify_light_block(
-            trusted_state.clone(),
-            light_block.clone(),
-            trust_threshold,
-            trusting_period,
-            now,
-        );
+        let verifier_result = self
+            .perform_verify_light_block(
+                trusted_state.clone(),
+                light_block.clone(),
+                trust_threshold,
+                trusting_period,
+                now,
+            )
+            .await;
 
         match verifier_result {
-            Ok(trusted_state) => self.verification_succeded(trusted_state),
-            Err(VerifierError::InvalidLightBlock(ErrorKind::InsufficientVotingPower {
-                ..
-            })) => self.perform_bisection(
+            VerifierResponse::VerificationSucceeded(trusted_state) => {
+                self.verification_succeded(trusted_state)
+            }
+            VerifierResponse::VerificationFailed(err) => {
+                self.verification_failed(
+                    err,
+                    trusted_state,
+                    light_block,
+                    trust_threshold,
+                    trusting_period,
+                    now,
+                )
+                .await
+            }
+        }
+    }
+
+    async fn perform_verify_light_block(
+        &mut self,
+        trusted_state: TrustedState,
+        light_block: LightBlock,
+        trust_threshold: TrustThreshold,
+        trusting_period: Duration,
+        now: SystemTime,
+    ) -> VerifierResponse {
+        self.verifier_chan
+            .query(VerifierRequest::VerifyLightBlock {
                 trusted_state,
                 light_block,
                 trust_threshold,
                 trusting_period,
                 now,
-            ),
-            Err(err) => {
-                let output = SchedulerError::InvalidLightBlock(err);
-                self.trace(output.clone());
-                Err(output)
-            }
-        }
+            })
+            .await
     }
 
     fn verification_succeded(
         &mut self,
         new_trusted_state: TrustedState,
     ) -> Result<Vec<TrustedState>, SchedulerError> {
-        self.trace(SchedulerOutput::ValidLightBlock(vec![
-            new_trusted_state.clone()
-        ]));
-
         Ok(vec![new_trusted_state])
     }
 
-    pub fn perform_bisection(
+    async fn verification_failed(
+        &mut self,
+        err: VerifierError,
+        trusted_state: TrustedState,
+        light_block: LightBlock,
+        trust_threshold: TrustThreshold,
+        trusting_period: Duration,
+        now: SystemTime,
+    ) -> Result<Vec<TrustedState>, SchedulerError> {
+        match err {
+            VerifierError::InvalidLightBlock(ErrorKind::InsufficientVotingPower { .. }) => {
+                self.perform_bisection(
+                    trusted_state,
+                    light_block,
+                    trust_threshold,
+                    trusting_period,
+                    now,
+                )
+                .await
+            }
+            err => {
+                let output = SchedulerError::InvalidLightBlock(err);
+                Err(output)
+            }
+        }
+    }
+
+    pub async fn perform_bisection(
         &mut self,
         trusted_state: TrustedState,
         light_block: LightBlock,
@@ -132,34 +157,29 @@ impl Scheduler {
             .expect("height overflow")
             / 2;
 
-        self.trace(SchedulerOutput::PerformBisectionAt {
-            pivot_height,
-            trust_threshold,
-            trusted_state: trusted_state.clone(),
-        });
+        let pivot_light_block = self.request_fetch_light_block(pivot_height).await?;
 
-        let pivot_light_block = self
-            .rpc
-            .fetch_light_block(pivot_height)
-            .map_err(SchedulerError::RpcError)?;
-
-        let mut pivot_trusted_states = self.verify_light_block(
-            trusted_state,
-            pivot_light_block,
-            trust_threshold,
-            trusting_period,
-            now,
-        )?;
+        let mut pivot_trusted_states = self
+            .verify_light_block(
+                trusted_state,
+                pivot_light_block,
+                trust_threshold,
+                trusting_period,
+                now,
+            )
+            .await?;
 
         let trusted_state_left = pivot_trusted_states.last().cloned().unwrap(); // FIXME: Unwrap
 
-        let mut new_trusted_states = self.verify_light_block(
-            trusted_state_left,
-            light_block,
-            trust_threshold,
-            trusting_period,
-            now,
-        )?;
+        let mut new_trusted_states = self
+            .verify_light_block(
+                trusted_state_left,
+                light_block,
+                trust_threshold,
+                trusting_period,
+                now,
+            )
+            .await?;
 
         new_trusted_states.append(&mut pivot_trusted_states);
         new_trusted_states.sort_by_key(|ts| ts.header.height);
@@ -167,7 +187,17 @@ impl Scheduler {
         Ok(new_trusted_states)
     }
 
-    fn trace(&self, e: impl Event + 'static) {
-        self.trace.send(Box::new(e)).expect("could not trace event");
+    async fn request_fetch_light_block(
+        &mut self,
+        height: Height,
+    ) -> Result<LightBlock, SchedulerError> {
+        let rpc_response = self
+            .rpc_chan
+            .query(RpcRequest::FetchLightBlock(height))
+            .await;
+
+        match rpc_response {
+            RpcResponse::FetchedLightBlock(light_block) => Ok(light_block),
+        }
     }
 }

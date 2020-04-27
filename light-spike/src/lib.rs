@@ -15,6 +15,7 @@ pub mod prelude;
 pub mod trace;
 pub mod trusted_store;
 pub mod types;
+pub mod bichan;
 
 #[cfg(test)]
 mod tests {
