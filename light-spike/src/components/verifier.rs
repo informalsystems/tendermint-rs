@@ -29,28 +29,25 @@ pub enum VerifierOutput {
 
 impl_event!(VerifierOutput);
 
-pub struct Verifier<VP> {
+pub struct Verifier {
     trace: Sender<BoxedEvent>,
-    predicates: VP,
+    predicates: Box<dyn VerificationPredicates>,
     voting_power_calculator: Box<dyn VotingPowerCalculator>,
     commit_validator: Box<dyn CommitValidator>,
     header_hasher: Box<dyn HeaderHasher>,
 }
 
-impl<VP> Verifier<VP>
-where
-    VP: VerificationPredicates,
-{
+impl Verifier {
     pub fn new(
         trace: Sender<BoxedEvent>,
-        predicates: VP,
+        predicates: impl VerificationPredicates + 'static,
         voting_power_calculator: impl VotingPowerCalculator + 'static,
         commit_validator: impl CommitValidator + 'static,
         header_hasher: impl HeaderHasher + 'static,
     ) -> Self {
         Self {
             trace,
-            predicates,
+            predicates: Box::new(predicates),
             voting_power_calculator: Box::new(voting_power_calculator),
             commit_validator: Box::new(commit_validator),
             header_hasher: Box::new(header_hasher),

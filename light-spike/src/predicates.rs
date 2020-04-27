@@ -21,14 +21,14 @@ pub trait VerificationPredicates {
         &self,
         header: &Header,
         commit: &Commit,
-        header_hasher: impl HeaderHasher,
+        header_hasher: &dyn HeaderHasher,
     ) -> Result<(), Error>;
 
     fn valid_commit(
         &self,
         commit: &Commit,
         validators: &ValidatorSet,
-        validator: impl CommitValidator,
+        validator: &dyn CommitValidator,
     ) -> Result<(), Error>;
 
     fn is_within_trust_period(
@@ -55,7 +55,7 @@ pub trait VerificationPredicates {
         commit: &Commit,
         validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
-        calculator: &impl VotingPowerCalculator,
+        calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), Error>;
 
     fn has_sufficient_validators_overlap(
@@ -63,7 +63,7 @@ pub trait VerificationPredicates {
         untrusted_commit: &Commit,
         trusted_validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
-        calculator: &impl VotingPowerCalculator,
+        calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), Error>;
 
     fn has_sufficient_signers_overlap(
@@ -71,7 +71,7 @@ pub trait VerificationPredicates {
         untrusted_commit: &Commit,
         untrusted_validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
-        calculator: &impl VotingPowerCalculator,
+        calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), Error>;
 
     fn valid_next_validator_set(
@@ -83,9 +83,9 @@ pub trait VerificationPredicates {
     #[allow(clippy::too_many_arguments, clippy::comparison_chain)]
     fn verify_untrusted_light_block(
         &self,
-        voting_power_calculator: impl VotingPowerCalculator,
-        commit_validator: impl CommitValidator,
-        header_hasher: impl HeaderHasher,
+        voting_power_calculator: &dyn VotingPowerCalculator,
+        commit_validator: &dyn CommitValidator,
+        header_hasher: &dyn HeaderHasher,
         trusted_state: &TrustedState,
         light_block: &LightBlock,
         trust_threshold: &TrustThreshold,
@@ -106,13 +106,13 @@ pub trait VerificationPredicates {
         self.next_validators_match(&untrusted_sh, &untrusted_next_vals)?;
 
         // Ensure the header matches the commit
-        self.header_matches_commit(&untrusted_sh.header, &untrusted_sh.commit, &header_hasher)?;
+        self.header_matches_commit(&untrusted_sh.header, &untrusted_sh.commit, header_hasher)?;
 
         // Additional implementation specific validation
         self.valid_commit(
             &untrusted_sh.commit,
             &untrusted_sh.validators,
-            &commit_validator,
+            commit_validator,
         )?;
 
         self.is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.header)?;
@@ -124,7 +124,7 @@ pub trait VerificationPredicates {
                 &untrusted_sh.commit,
                 &untrusted_sh.validators,
                 &trust_threshold,
-                &voting_power_calculator,
+                voting_power_calculator,
             )?;
         } else {
             self.is_monotonic_height(&trusted_state.header, &untrusted_sh.header)?;
@@ -140,14 +140,14 @@ pub trait VerificationPredicates {
             &untrusted_sh.commit,
             &trusted_state.validators,
             &trust_threshold,
-            &voting_power_calculator,
+            voting_power_calculator,
         )?;
 
         self.has_sufficient_signers_overlap(
             &untrusted_sh.commit,
             &untrusted_vals,
             &trust_threshold,
-            &voting_power_calculator,
+            voting_power_calculator,
         )?;
 
         Ok(())

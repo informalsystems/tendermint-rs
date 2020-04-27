@@ -41,7 +41,7 @@ impl VerificationPredicates for ProductionPredicates {
         &self,
         header: &Header,
         commit: &Commit,
-        header_hasher: impl HeaderHasher,
+        header_hasher: &dyn HeaderHasher,
     ) -> Result<(), Error> {
         let header_hash = header_hasher.hash(header);
 
@@ -60,7 +60,7 @@ impl VerificationPredicates for ProductionPredicates {
         &self,
         commit: &Commit,
         validators: &ValidatorSet,
-        validator: impl CommitValidator,
+        validator: &dyn CommitValidator,
     ) -> Result<(), Error> {
         validator.validate(commit, validators)
     }
@@ -127,7 +127,7 @@ impl VerificationPredicates for ProductionPredicates {
         commit: &Commit,
         validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
-        calculator: &impl VotingPowerCalculator,
+        calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), Error> {
         let total_power = calculator.total_power_of(validators);
         let voting_power = calculator.voting_power_in(commit, validators);
@@ -148,7 +148,7 @@ impl VerificationPredicates for ProductionPredicates {
         untrusted_commit: &Commit,
         trusted_validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
-        calculator: &impl VotingPowerCalculator,
+        calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), Error> {
         self.has_sufficient_voting_power(
             untrusted_commit,
@@ -172,7 +172,7 @@ impl VerificationPredicates for ProductionPredicates {
         untrusted_commit: &Commit,
         untrusted_validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
-        calculator: &impl VotingPowerCalculator,
+        calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), Error> {
         self.has_sufficient_voting_power(
             untrusted_commit,
