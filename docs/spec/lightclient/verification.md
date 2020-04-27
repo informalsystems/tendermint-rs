@@ -366,7 +366,7 @@ type SignedHeader struct {
 ```
 
 ```
-type VerificationHeader struct {
+type LightBlock struct {
 	signedHeader SignedHeader
     Validators  ValidatorSet
     NextValidators ValidatorSet
@@ -377,7 +377,7 @@ type VerificationHeader struct {
 
 
 ### Inputs
-- *trustedHeader*: the Verification Header verification starts from
+- *trustedHeader*: the LightBlock verification starts from
 - *primary*: peer address
 - *targetHeight*: they height of the needed header
 
@@ -398,19 +398,19 @@ type VerificationHeader struct {
 - *nextHeight*: initially *targetHeight*
   > *nextHeight* should be thought of the "height of the next header we need
   > to download and verify"
-- *trustedStore*: stores verification headers that have been downloaded and that
+- *trustedStore*: stores light blocks that have been downloaded and that
     passed verification. Initially it only contains *trustedHeader*.
   > Something like this was called *State* in ADR. Should be made
   >    consistent 
   >	with detector. We should decide what it contains: e.g., (i) set of headers,
   > (ii) set of TrustedState (iii) set of pairs: Trustedstate, address of
   > full node from which the lightlient downloaded the header
-- *untrustedStore*: stores verification headers 
+- *untrustedStore*: stores light blocks
    that have been downloaded and that failed
    verification, but may still be OK. Initially empty
 - *Error*: error information. Initially nil.
 
-- *headerToVerify*: a verification header. Initially nil  
+- *headerToVerify*: a light block. Initially nil  
   **TODO:** decide whether passing of information should be done via
   shared variables  
   > used to hand the header to bisection. Might be a parameter
@@ -428,8 +428,8 @@ type VerificationHeader struct {
   
 #### **[LCV-FUNC-VERIF]**:
 ```go
-func VerifySingle(untrustedVh VerificationHeader,
-                  trustedVh VerificationHeader) (error)
+func VerifySingle(untrustedVh LightBlock,
+                  trustedVh LightBlock) (error)
 ```
 
 - Expected precondition:
