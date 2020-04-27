@@ -60,7 +60,7 @@ impl Scheduler {
         }
     }
 
-    pub fn verify_untrusted_light_block(
+    pub fn verify_light_block(
         &mut self,
         trusted_state: TrustedState,
         light_block: LightBlock,
@@ -78,7 +78,7 @@ impl Scheduler {
             return Ok(output);
         }
 
-        let verifier_result = self.verifier.verify_untrusted_light_block(
+        let verifier_result = self.verifier.verify_light_block(
             trusted_state.clone(),
             light_block.clone(),
             trust_threshold,
@@ -143,7 +143,7 @@ impl Scheduler {
             .fetch_light_block(pivot_height)
             .map_err(SchedulerError::RpcError)?;
 
-        let mut pivot_trusted_states = self.verify_untrusted_light_block(
+        let mut pivot_trusted_states = self.verify_light_block(
             trusted_state,
             pivot_light_block,
             trust_threshold,
@@ -153,7 +153,7 @@ impl Scheduler {
 
         let trusted_state_left = pivot_trusted_states.last().cloned().unwrap(); // FIXME: Unwrap
 
-        let mut new_trusted_states = self.verify_untrusted_light_block(
+        let mut new_trusted_states = self.verify_light_block(
             trusted_state_left,
             light_block,
             trust_threshold,

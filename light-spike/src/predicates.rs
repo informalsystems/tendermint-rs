@@ -81,7 +81,7 @@ pub trait VerificationPredicates {
     ) -> Result<(), Error>;
 
     #[allow(clippy::too_many_arguments, clippy::comparison_chain)]
-    fn verify_untrusted_light_block(
+    fn verify_light_block(
         &self,
         voting_power_calculator: &dyn VotingPowerCalculator,
         commit_validator: &dyn CommitValidator,
