@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use std::future::Future;
-use std::sync::mpsc::Sender;
+// use std::sync::mpsc::Sender;
 
 use serde::{Deserialize, Serialize};
 use tendermint::{block, rpc};
@@ -32,20 +32,26 @@ impl_event!(RpcOutput);
 
 pub struct Rpc {
     rpc_client: rpc::Client,
-    trace: Sender<BoxedEvent>,
+    // trace: Sender<BoxedEvent>,
 }
 
 impl Rpc {
-    pub fn new(rpc_client: rpc::Client, trace: Sender<BoxedEvent>) -> Self {
-        Self { rpc_client, trace }
+    pub fn new(
+        rpc_client: rpc::Client,
+        // trace: Sender<BoxedEvent>
+    ) -> Self {
+        Self {
+            rpc_client,
+            // trace
+        }
     }
 
-    fn trace(&self, e: impl Event + 'static) {
-        self.trace.send(Box::new(e)).expect("could not trace event");
-    }
+    // fn trace(&self, e: impl Event + 'static) {
+    //     self.trace.send(Box::new(e)).expect("could not trace event");
+    // }
 
-    pub fn fetch_light_block(&self, height: Height) -> Result<LightBlock, RpcError> {
-        self.trace(RpcInput::FetchState(height));
+    pub fn fetch_light_block(&self, height: Height) -> Result<RpcOutput, RpcError> {
+        // self.trace(RpcInput::FetchState(height));
 
         let signed_header = self.fetch_signed_header(height)?;
         let validator_set = self.fetch_validator_set(height)?;
@@ -58,9 +64,9 @@ impl Rpc {
             next_validator_set,
         };
 
-        self.trace(RpcOutput::FetchedLightBlock(light_block.clone()));
+        // self.trace(RpcOutput::FetchedLightBlock(light_block.clone()));
 
-        Ok(light_block)
+        Ok(RpcOutput::FetchedLightBlock(light_block))
     }
 
     fn fetch_signed_header(&self, h: Height) -> Result<SignedHeader, RpcError> {

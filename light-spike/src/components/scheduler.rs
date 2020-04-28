@@ -28,11 +28,6 @@ impl_event!(SchedulerInput);
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SchedulerOutput {
     ValidLightBlock(Vec<TrustedState>),
-    PerformBisectionAt {
-        pivot_height: Height,
-        trusted_state: TrustedState,
-        trust_threshold: TrustThreshold,
-    },
 }
 
 impl_event!(SchedulerOutput);
@@ -52,10 +47,9 @@ impl Scheduler {
         trusted_state: TrustedState,
         light_block: LightBlock,
         options: VerificationOptions,
-    ) -> Result<Vec<TrustedState>, SchedulerError> {
+    ) -> Result<SchedulerOutput, SchedulerError> {
         if let Some(trusted_state_in_store) = self.trusted_store.get(light_block.height) {
-            let output = vec![trusted_state_in_store];
-            return Ok(output);
+            return self.verification_succeded(trusted_state_in_store);
         }
 
         let verifier_result = self.perform_verify_light_block(
@@ -92,8 +86,8 @@ impl Scheduler {
     fn verification_succeded(
         &self,
         new_trusted_state: TrustedState,
-    ) -> Result<Vec<TrustedState>, SchedulerError> {
-        Ok(vec![new_trusted_state])
+    ) -> Result<SchedulerOutput, SchedulerError> {
+        Ok(SchedulerOutput::ValidLightBlock(vec![new_trusted_state]))
     }
 
     fn verification_failed(
@@ -103,7 +97,7 @@ impl Scheduler {
         trusted_state: TrustedState,
         light_block: LightBlock,
         options: VerificationOptions,
-    ) -> Result<Vec<TrustedState>, SchedulerError> {
+    ) -> Result<SchedulerOutput, SchedulerError> {
         match err {
             VerifierError::InvalidLightBlock(VerificationError::InsufficientVotingPower {
                 ..
@@ -121,7 +115,7 @@ impl Scheduler {
         trusted_state: TrustedState,
         light_block: LightBlock,
         options: VerificationOptions,
-    ) -> Result<Vec<TrustedState>, SchedulerError> {
+    ) -> Result<SchedulerOutput, SchedulerError> {
         // Get the pivot height for bisection.
         let trusted_height = trusted_state.header.height;
         let untrusted_height = light_block.height;
@@ -132,18 +126,18 @@ impl Scheduler {
 
         let pivot_light_block = self.request_fetch_light_block(router, pivot_height)?;
 
-        let mut pivot_trusted_states =
+        let SchedulerOutput::ValidLightBlock(mut pivot_trusted_states) =
             self.verify_light_block(router, trusted_state, pivot_light_block, options)?;
 
         let trusted_state_left = pivot_trusted_states.last().cloned().unwrap(); // FIXME: Unwrap
 
-        let mut new_trusted_states =
+        let SchedulerOutput::ValidLightBlock(mut new_trusted_states) =
             self.verify_light_block(router, trusted_state_left, light_block, options)?;
 
         new_trusted_states.append(&mut pivot_trusted_states);
         new_trusted_states.sort_by_key(|ts| ts.header.height);
 
-        Ok(new_trusted_states)
+        Ok(SchedulerOutput::ValidLightBlock(new_trusted_states))
     }
 
     fn request_fetch_light_block(

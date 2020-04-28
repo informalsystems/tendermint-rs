@@ -13,7 +13,11 @@ impl_event!(VerifierError);
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum VerifierInput {
-    VerifyLightBlock(LightBlock),
+    VerifyLightBlock {
+        trusted_state: TrustedState,
+        light_block: LightBlock,
+        options: VerificationOptions,
+    },
 }
 
 impl_event!(VerifierInput);
@@ -52,7 +56,7 @@ impl Verifier {
         trusted_state: TrustedState,
         light_block: LightBlock,
         options: VerificationOptions,
-    ) -> Result<TrustedState, VerifierError> {
+    ) -> Result<VerifierOutput, VerifierError> {
         self.predicates.verify_light_block(
             &self.voting_power_calculator,
             &self.commit_validator,
@@ -67,6 +71,6 @@ impl Verifier {
             validators: light_block.validator_set,
         };
 
-        Ok(new_trusted_state)
+        Ok(VerifierOutput::ValidLightBlock(new_trusted_state))
     }
 }

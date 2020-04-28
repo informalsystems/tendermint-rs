@@ -20,7 +20,9 @@ impl Router for &mut Demuxer {
             RpcRequest::FetchLightBlock(height) => {
                 let result = self.rpc.fetch_light_block(height);
                 match result {
-                    Ok(light_block) => RpcResponse::FetchedLightBlock(light_block),
+                    Ok(RpcOutput::FetchedLightBlock(light_block)) => {
+                        RpcResponse::FetchedLightBlock(light_block)
+                    }
                     Err(_err) => todo!(),
                 }
             }
@@ -39,7 +41,9 @@ impl Router for &mut Demuxer {
                     .verify_light_block(trusted_state, light_block, options);
 
                 match result {
-                    Ok(trusted_state) => VerifierResponse::VerificationSucceeded(trusted_state),
+                    Ok(VerifierOutput::ValidLightBlock(trusted_state)) => {
+                        VerifierResponse::VerificationSucceeded(trusted_state)
+                    }
                     Err(err) => VerifierResponse::VerificationFailed(err),
                 }
             }
@@ -73,7 +77,7 @@ impl Demuxer {
             .verify_light_block(&self, trusted_state, light_block, options);
 
         match result {
-            Ok(new_trusted_states) => {
+            Ok(SchedulerOutput::ValidLightBlock(new_trusted_states)) => {
                 for ts in &new_trusted_states {
                     self.trusted_store.add(ts.clone());
                 }
