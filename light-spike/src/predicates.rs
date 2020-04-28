@@ -89,16 +89,14 @@ pub trait VerificationPredicates {
         header_hasher: &dyn HeaderHasher,
         trusted_state: &TrustedState,
         light_block: &LightBlock,
-        trust_threshold: &TrustThreshold,
-        trusting_period: Duration,
-        now: SystemTime,
+        options: VerificationOptions,
     ) -> Result<(), VerificationError> {
         let untrusted_sh = &light_block.signed_header;
         let untrusted_vals = &light_block.validator_set;
         let untrusted_next_vals = &light_block.next_validator_set;
 
         // Ensure the latest trusted header hasn't expired
-        self.is_within_trust_period(&trusted_state.header, trusting_period, now)?;
+        self.is_within_trust_period(&trusted_state.header, options.trusting_period, options.now)?;
 
         // Ensure the header validator hashes match the given validators
         self.validator_sets_match(&untrusted_sh, &untrusted_vals)?;
@@ -124,7 +122,7 @@ pub trait VerificationPredicates {
             self.has_sufficient_voting_power(
                 &untrusted_sh.commit,
                 &untrusted_sh.validators,
-                &trust_threshold,
+                &options.trust_threshold,
                 voting_power_calculator,
             )?;
         } else {
@@ -140,14 +138,14 @@ pub trait VerificationPredicates {
         self.has_sufficient_validators_overlap(
             &untrusted_sh.commit,
             &trusted_state.validators,
-            &trust_threshold,
+            &options.trust_threshold,
             voting_power_calculator,
         )?;
 
         self.has_sufficient_signers_overlap(
             &untrusted_sh.commit,
             &untrusted_vals,
-            &trust_threshold,
+            &options.trust_threshold,
             voting_power_calculator,
         )?;
 

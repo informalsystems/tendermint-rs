@@ -15,9 +15,7 @@ pub enum VerifierRequest {
     VerifyLightBlock {
         trusted_state: TrustedState,
         light_block: LightBlock,
-        trust_threshold: TrustThreshold,
-        trusting_period: Duration,
-        now: SystemTime,
+        options: VerificationOptions,
     },
 }
 

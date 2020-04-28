@@ -32,17 +32,11 @@ impl Router for &mut Demuxer {
             VerifierRequest::VerifyLightBlock {
                 trusted_state,
                 light_block,
-                trust_threshold,
-                trusting_period,
-                now,
+                options,
             } => {
-                let result = self.verifier.verify_light_block(
-                    trusted_state,
-                    light_block,
-                    trust_threshold,
-                    trusting_period,
-                    now,
-                );
+                let result = self
+                    .verifier
+                    .verify_light_block(trusted_state, light_block, options);
 
                 match result {
                     Ok(trusted_state) => VerifierResponse::VerificationSucceeded(trusted_state),
@@ -72,18 +66,11 @@ impl Demuxer {
         &mut self,
         trusted_state: TrustedState,
         light_block: LightBlock,
-        trust_threshold: TrustThreshold,
-        trusting_period: Duration,
-        now: SystemTime,
+        options: VerificationOptions,
     ) -> Result<Vec<TrustedState>, DemuxerError> {
-        let result = self.scheduler.verify_light_block(
-            &self,
-            trusted_state,
-            light_block,
-            trust_threshold,
-            trusting_period,
-            now,
-        );
+        let result = self
+            .scheduler
+            .verify_light_block(&self, trusted_state, light_block, options);
 
         match result {
             Ok(new_trusted_states) => {

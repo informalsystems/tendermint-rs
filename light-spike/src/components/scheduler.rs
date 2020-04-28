@@ -3,6 +3,13 @@ use thiserror::Error;
 
 use crate::prelude::*;
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct VerificationOptions {
+    pub trust_threshold: TrustThreshold,
+    pub trusting_period: Duration,
+    pub now: SystemTime,
+}
+
 #[derive(Clone, Debug, Error, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SchedulerError {
     #[error("invalid light block")]
@@ -44,9 +51,7 @@ impl Scheduler {
         router: &impl Router,
         trusted_state: TrustedState,
         light_block: LightBlock,
-        trust_threshold: TrustThreshold,
-        trusting_period: Duration,
-        now: SystemTime,
+        options: VerificationOptions,
     ) -> Result<Vec<TrustedState>, SchedulerError> {
         if let Some(trusted_state_in_store) = self.trusted_store.get(light_block.height) {
             let output = vec![trusted_state_in_store];
@@ -57,24 +62,16 @@ impl Scheduler {
             router,
             trusted_state.clone(),
             light_block.clone(),
-            trust_threshold,
-            trusting_period,
-            now,
+            options,
         );
 
         match verifier_result {
             VerifierResponse::VerificationSucceeded(trusted_state) => {
                 self.verification_succeded(trusted_state)
             }
-            VerifierResponse::VerificationFailed(err) => self.verification_failed(
-                router,
-                err,
-                trusted_state,
-                light_block,
-                trust_threshold,
-                trusting_period,
-                now,
-            ),
+            VerifierResponse::VerificationFailed(err) => {
+                self.verification_failed(router, err, trusted_state, light_block, options)
+            }
         }
     }
 
@@ -83,16 +80,12 @@ impl Scheduler {
         router: &impl Router,
         trusted_state: TrustedState,
         light_block: LightBlock,
-        trust_threshold: TrustThreshold,
-        trusting_period: Duration,
-        now: SystemTime,
+        options: VerificationOptions,
     ) -> VerifierResponse {
         router.query_verifier(VerifierRequest::VerifyLightBlock {
             trusted_state,
             light_block,
-            trust_threshold,
-            trusting_period,
-            now,
+            options,
         })
     }
 
@@ -109,21 +102,12 @@ impl Scheduler {
         err: VerifierError,
         trusted_state: TrustedState,
         light_block: LightBlock,
-        trust_threshold: TrustThreshold,
-        trusting_period: Duration,
-        now: SystemTime,
+        options: VerificationOptions,
     ) -> Result<Vec<TrustedState>, SchedulerError> {
         match err {
             VerifierError::InvalidLightBlock(VerificationError::InsufficientVotingPower {
                 ..
-            }) => self.perform_bisection(
-                router,
-                trusted_state,
-                light_block,
-                trust_threshold,
-                trusting_period,
-                now,
-            ),
+            }) => self.perform_bisection(router, trusted_state, light_block, options),
             err => {
                 let output = SchedulerError::InvalidLightBlock(err);
                 Err(output)
@@ -136,9 +120,7 @@ impl Scheduler {
         router: &impl Router,
         trusted_state: TrustedState,
         light_block: LightBlock,
-        trust_threshold: TrustThreshold,
-        trusting_period: Duration,
-        now: SystemTime,
+        options: VerificationOptions,
     ) -> Result<Vec<TrustedState>, SchedulerError> {
         // Get the pivot height for bisection.
         let trusted_height = trusted_state.header.height;
@@ -150,25 +132,13 @@ impl Scheduler {
 
         let pivot_light_block = self.request_fetch_light_block(router, pivot_height)?;
 
-        let mut pivot_trusted_states = self.verify_light_block(
-            router,
-            trusted_state,
-            pivot_light_block,
-            trust_threshold,
-            trusting_period,
-            now,
-        )?;
+        let mut pivot_trusted_states =
+            self.verify_light_block(router, trusted_state, pivot_light_block, options)?;
 
         let trusted_state_left = pivot_trusted_states.last().cloned().unwrap(); // FIXME: Unwrap
 
-        let mut new_trusted_states = self.verify_light_block(
-            router,
-            trusted_state_left,
-            light_block,
-            trust_threshold,
-            trusting_period,
-            now,
-        )?;
+        let mut new_trusted_states =
+            self.verify_light_block(router, trusted_state_left, light_block, options)?;
 
         new_trusted_states.append(&mut pivot_trusted_states);
         new_trusted_states.sort_by_key(|ts| ts.header.height);

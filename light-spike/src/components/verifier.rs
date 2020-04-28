@@ -51,9 +51,7 @@ impl Verifier {
         &self,
         trusted_state: TrustedState,
         light_block: LightBlock,
-        trust_threshold: TrustThreshold,
-        trusting_period: Duration,
-        now: SystemTime,
+        options: VerificationOptions,
     ) -> Result<TrustedState, VerifierError> {
         self.predicates.verify_light_block(
             &self.voting_power_calculator,
@@ -61,9 +59,7 @@ impl Verifier {
             &self.header_hasher,
             &trusted_state,
             &light_block,
-            &trust_threshold,
-            trusting_period,
-            now,
+            options,
         )?;
 
         let new_trusted_state = TrustedState {
