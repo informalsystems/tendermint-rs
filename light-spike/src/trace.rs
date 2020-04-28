@@ -1,11 +1,10 @@
 use std::sync::mpsc::{channel, Receiver, Sender};
 
-use serde::{Serialize, Serializer};
-
 use crate::event::BoxedEvent;
 
+#[derive(Debug)]
 pub struct Trace {
-    events: Vec<BoxedEvent>,
+    pub events: Vec<BoxedEvent>,
     recv: Receiver<BoxedEvent>,
 }
 
@@ -26,13 +25,6 @@ impl Trace {
         while let Ok(event) = self.recv.recv() {
             self.events.push(event);
         }
-    }
-
-    pub fn serialize<S>(self, ser: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.events.serialize(ser)
     }
 }
 
@@ -69,11 +61,7 @@ mod tests {
 
         trace.collect();
 
-        let mut output = Vec::new();
-        let mut ser = serde_json::Serializer::pretty(&mut output);
-        trace.serialize(&mut ser).unwrap();
-
-        let as_string = String::from_utf8(output).unwrap();
+        let as_string = serde_json::to_string(&trace.events).unwrap();
         println!("{}", as_string);
 
         let events: Vec<Box<dyn Event>> = serde_json::from_str(&as_string).unwrap();
