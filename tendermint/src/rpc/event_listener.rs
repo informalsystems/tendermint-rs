@@ -153,8 +153,8 @@ impl JSONRPC {
         action_query: &str,
     ) -> Result<std::collections::HashMap<String, Vec<String>>, &'static str> {
         let events = &self.result.events;
-        if events["message.module"][0] == module_query
-            && events["message.action"][0] == action_query
+        if events["message.module"].contains(&module_query.to_owned())
+            && events["message.action"].contains(&action_query.to_owned())
         {
             Ok(events.clone())
         } else {

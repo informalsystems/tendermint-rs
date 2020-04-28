@@ -146,7 +146,7 @@ mod rpc {
     }
 
     #[tokio::test]
-     #[ignore]
+    #[ignore]
     async fn event_subscription() {
         let mut client = tendermint::rpc::event_listener::EventListener::connect(
             "tcp://127.0.0.1:26657".parse().unwrap(),
@@ -165,9 +165,8 @@ mod rpc {
         dbg!(&resp);
         // }
         match resp {
-            Event::GenericJSONEvent { data: _ } => assert!(true),
-
             Event::GenericStringEvent { data: _ } => assert!(false),
+            Event::GenericJSONEvent { data: _ } => assert!(true),
             Event::JsonRPCTransctionResult { data: _ } => assert!(true),
         }
     }
