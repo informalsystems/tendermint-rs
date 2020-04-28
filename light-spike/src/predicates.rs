@@ -126,9 +126,8 @@ pub trait VerificationPredicates {
                 voting_power_calculator,
             )?;
         } else {
+            // This check will always fail since trusted_state.header < untrusted_sh.header
             self.is_monotonic_height(&trusted_state.header, &untrusted_sh.header)?;
-
-            // Ensure that the check above will always fail.
             unreachable!();
         }
 
