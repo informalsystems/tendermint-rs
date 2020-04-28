@@ -1,18 +1,10 @@
-// FIXME: Figure out a way to decouple components
-
-use std::sync::mpsc::Sender;
-
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use super::rpc::RpcError;
-use super::verifier::VerifierError;
 use crate::prelude::*;
 
 #[derive(Clone, Debug, Error, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SchedulerError {
-    #[error("RPC error")]
-    RpcError(RpcError),
     #[error("invalid light block: {0}")]
     InvalidLightBlock(VerifierError),
 }
@@ -39,46 +31,30 @@ pub enum SchedulerOutput {
 impl_event!(SchedulerOutput);
 
 pub struct Scheduler {
-    trace: Sender<BoxedEvent>,
-    rpc: Rpc,
-    verifier: Verifier,
     trusted_store: TSReader,
 }
 
 impl Scheduler {
-    pub fn new(
-        trace: Sender<BoxedEvent>,
-        rpc: Rpc,
-        verifier: Verifier,
-        trusted_store: TSReader,
-    ) -> Self {
-        Self {
-            trace,
-            rpc,
-            verifier,
-            trusted_store,
-        }
+    pub fn new(trusted_store: TSReader) -> Self {
+        Self { trusted_store }
     }
 
     pub fn verify_light_block(
-        &mut self,
+        &self,
+        router: &impl Router,
         trusted_state: TrustedState,
         light_block: LightBlock,
         trust_threshold: TrustThreshold,
         trusting_period: Duration,
         now: SystemTime,
     ) -> Result<Vec<TrustedState>, SchedulerError> {
-        self.trace(SchedulerInput::VerifyUntrustedLightBlock(
-            light_block.clone(),
-        ));
-
         if let Some(trusted_state_in_store) = self.trusted_store.get(light_block.height) {
             let output = vec![trusted_state_in_store];
-            self.trace(SchedulerOutput::ValidLightBlock(output.clone()));
             return Ok(output);
         }
 
-        let verifier_result = self.verifier.verify_light_block(
+        let verifier_result = self.perform_verify_light_block(
+            router,
             trusted_state.clone(),
             light_block.clone(),
             trust_threshold,
@@ -87,37 +63,76 @@ impl Scheduler {
         );
 
         match verifier_result {
-            Ok(trusted_state) => self.verification_succeded(trusted_state),
-            Err(VerifierError::InvalidLightBlock(ErrorKind::InsufficientVotingPower {
-                ..
-            })) => self.perform_bisection(
+            VerifierResponse::VerificationSucceeded(trusted_state) => {
+                self.verification_succeded(trusted_state)
+            }
+            VerifierResponse::VerificationFailed(err) => self.verification_failed(
+                router,
+                err,
                 trusted_state,
                 light_block,
                 trust_threshold,
                 trusting_period,
                 now,
             ),
-            Err(err) => {
+        }
+    }
+
+    fn perform_verify_light_block(
+        &self,
+        router: &impl Router,
+        trusted_state: TrustedState,
+        light_block: LightBlock,
+        trust_threshold: TrustThreshold,
+        trusting_period: Duration,
+        now: SystemTime,
+    ) -> VerifierResponse {
+        router.query_verifier(VerifierRequest::VerifyLightBlock {
+            trusted_state,
+            light_block,
+            trust_threshold,
+            trusting_period,
+            now,
+        })
+    }
+
+    fn verification_succeded(
+        &self,
+        new_trusted_state: TrustedState,
+    ) -> Result<Vec<TrustedState>, SchedulerError> {
+        Ok(vec![new_trusted_state])
+    }
+
+    fn verification_failed(
+        &self,
+        router: &impl Router,
+        err: VerifierError,
+        trusted_state: TrustedState,
+        light_block: LightBlock,
+        trust_threshold: TrustThreshold,
+        trusting_period: Duration,
+        now: SystemTime,
+    ) -> Result<Vec<TrustedState>, SchedulerError> {
+        match err {
+            VerifierError::InvalidLightBlock(ErrorKind::InsufficientVotingPower { .. }) => self
+                .perform_bisection(
+                    router,
+                    trusted_state,
+                    light_block,
+                    trust_threshold,
+                    trusting_period,
+                    now,
+                ),
+            err => {
                 let output = SchedulerError::InvalidLightBlock(err);
-                self.trace(output.clone());
                 Err(output)
             }
         }
     }
 
-    fn verification_succeded(
-        &mut self,
-        new_trusted_state: TrustedState,
-    ) -> Result<Vec<TrustedState>, SchedulerError> {
-        self.trace(SchedulerOutput::ValidLightBlock(vec![
-            new_trusted_state.clone()
-        ]));
-
-        Ok(vec![new_trusted_state])
-    }
-
-    pub fn perform_bisection(
-        &mut self,
+    fn perform_bisection(
+        &self,
+        router: &impl Router,
         trusted_state: TrustedState,
         light_block: LightBlock,
         trust_threshold: TrustThreshold,
@@ -132,18 +147,10 @@ impl Scheduler {
             .expect("height overflow")
             / 2;
 
-        self.trace(SchedulerOutput::PerformBisectionAt {
-            pivot_height,
-            trust_threshold,
-            trusted_state: trusted_state.clone(),
-        });
-
-        let pivot_light_block = self
-            .rpc
-            .fetch_light_block(pivot_height)
-            .map_err(SchedulerError::RpcError)?;
+        let pivot_light_block = self.request_fetch_light_block(router, pivot_height)?;
 
         let mut pivot_trusted_states = self.verify_light_block(
+            router,
             trusted_state,
             pivot_light_block,
             trust_threshold,
@@ -154,6 +161,7 @@ impl Scheduler {
         let trusted_state_left = pivot_trusted_states.last().cloned().unwrap(); // FIXME: Unwrap
 
         let mut new_trusted_states = self.verify_light_block(
+            router,
             trusted_state_left,
             light_block,
             trust_threshold,
@@ -167,7 +175,15 @@ impl Scheduler {
         Ok(new_trusted_states)
     }
 
-    fn trace(&self, e: impl Event + 'static) {
-        self.trace.send(Box::new(e)).expect("could not trace event");
+    fn request_fetch_light_block(
+        &self,
+        router: &impl Router,
+        height: Height,
+    ) -> Result<LightBlock, SchedulerError> {
+        let rpc_response = router.query_rpc(RpcRequest::FetchLightBlock(height));
+
+        match rpc_response {
+            RpcResponse::FetchedLightBlock(light_block) => Ok(light_block),
+        }
     }
 }

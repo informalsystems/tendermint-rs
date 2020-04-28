@@ -31,8 +31,9 @@ impl TrustedStore {
         self.store.get(&height)
     }
 
-    pub fn set(&mut self, height: Height, trusted_state: TrustedState) {
-        self.store.insert(height, trusted_state);
+    pub fn add(&mut self, trusted_state: TrustedState) {
+        self.store
+            .insert(trusted_state.header.height, trusted_state);
     }
 }
 
@@ -57,8 +58,8 @@ impl TSReadWriter {
         self.ts.read().unwrap().get(height).cloned()
     }
 
-    pub fn set(&mut self, height: Height, trusted_state: TrustedState) {
+    pub fn add(&mut self, trusted_state: TrustedState) {
         let mut ts = self.ts.write().unwrap();
-        ts.set(height, trusted_state);
+        ts.add(trusted_state);
     }
 }

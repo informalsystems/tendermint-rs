@@ -1,7 +1,3 @@
-// FIXME: Figure out how to get rid of type parameter
-
-use std::sync::mpsc::Sender;
-
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -30,7 +26,6 @@ pub enum VerifierOutput {
 impl_event!(VerifierOutput);
 
 pub struct Verifier {
-    trace: Sender<BoxedEvent>,
     predicates: Box<dyn VerificationPredicates>,
     voting_power_calculator: Box<dyn VotingPowerCalculator>,
     commit_validator: Box<dyn CommitValidator>,
@@ -39,14 +34,12 @@ pub struct Verifier {
 
 impl Verifier {
     pub fn new(
-        trace: Sender<BoxedEvent>,
         predicates: impl VerificationPredicates + 'static,
         voting_power_calculator: impl VotingPowerCalculator + 'static,
         commit_validator: impl CommitValidator + 'static,
         header_hasher: impl HeaderHasher + 'static,
     ) -> Self {
         Self {
-            trace,
             predicates: Box::new(predicates),
             voting_power_calculator: Box::new(voting_power_calculator),
             commit_validator: Box::new(commit_validator),
@@ -62,8 +55,6 @@ impl Verifier {
         trusting_period: Duration,
         now: SystemTime,
     ) -> Result<TrustedState, VerifierError> {
-        self.trace(VerifierInput::VerifyLightBlock(light_block.clone()));
-
         self.predicates
             .verify_light_block(
                 &self.voting_power_calculator,
@@ -82,12 +73,6 @@ impl Verifier {
             validators: light_block.validator_set,
         };
 
-        self.trace(VerifierOutput::ValidLightBlock(new_trusted_state.clone()));
-
         Ok(new_trusted_state)
-    }
-
-    fn trace(&self, e: impl Event + 'static) {
-        self.trace.send(Box::new(e)).expect("could not trace event");
     }
 }
