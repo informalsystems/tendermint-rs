@@ -114,7 +114,7 @@ impl Scheduler {
         now: SystemTime,
     ) -> Result<Vec<TrustedState>, SchedulerError> {
         match err {
-            VerifierError::InvalidLightBlock(VerificationErrorKind::InsufficientVotingPower {
+            VerifierError::InvalidLightBlock(VerificationError::InsufficientVotingPower {
                 ..
             }) => self.perform_bisection(
                 router,

@@ -6,10 +6,8 @@ use thiserror::Error;
 
 use crate::prelude::*;
 
-pub type VerificationError = anomaly::Error<VerificationErrorKind>;
-
 #[derive(Debug, Clone, Error, PartialEq, Eq, Serialize, Deserialize)]
-pub enum VerificationErrorKind {
+pub enum VerificationError {
     #[error("header from the future: header_time={header_time:?} now={now:?}")]
     HeaderFromTheFuture {
         header_time: SystemTime,
@@ -23,8 +21,10 @@ pub enum VerificationErrorKind {
     InsufficientValidatorsOverlap { total_power: u64, signed_power: u64 },
     #[error("insufficient voting power: total_power={total_power} voting_power={voting_power}")]
     InsufficientVotingPower { total_power: u64, voting_power: u64 },
-    #[error("invalid commit: total_power={total_power} signed_power={signed_power}")]
-    InvalidCommit { total_power: u64, signed_power: u64 },
+    #[error("invalid commit power: total_power={total_power} signed_power={signed_power}")]
+    InsufficientCommitPower { total_power: u64, signed_power: u64 },
+    #[error("invalid commit: {0}")]
+    InvalidCommit(String),
     #[error("invalid commit value: header_hash={header_hash} commit_hash={commit_hash}")]
     InvalidCommitValue {
         header_hash: Hash,
@@ -51,7 +51,7 @@ pub enum VerificationErrorKind {
     NotWithinTrustPeriod { at: SystemTime, now: SystemTime },
 }
 
-impl VerificationErrorKind {
+impl VerificationError {
     /// Add additional context (i.e. include a source error and capture a backtrace).
     /// You can convert the resulting `Context` into an `Error` by calling `.into()`.
     pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {

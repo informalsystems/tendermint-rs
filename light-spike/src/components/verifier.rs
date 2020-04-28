@@ -6,7 +6,7 @@ use crate::prelude::*;
 #[derive(Clone, Debug, Error, PartialEq, Eq, Serialize, Deserialize)]
 pub enum VerifierError {
     #[error("invalid light block")]
-    InvalidLightBlock(#[from] VerificationErrorKind),
+    InvalidLightBlock(#[from] VerificationError),
 }
 
 impl_event!(VerifierError);
@@ -55,18 +55,16 @@ impl Verifier {
         trusting_period: Duration,
         now: SystemTime,
     ) -> Result<TrustedState, VerifierError> {
-        self.predicates
-            .verify_light_block(
-                &self.voting_power_calculator,
-                &self.commit_validator,
-                &self.header_hasher,
-                &trusted_state,
-                &light_block,
-                &trust_threshold,
-                trusting_period,
-                now,
-            )
-            .map_err(|e| e.kind().to_owned())?;
+        self.predicates.verify_light_block(
+            &self.voting_power_calculator,
+            &self.commit_validator,
+            &self.header_hasher,
+            &trusted_state,
+            &light_block,
+            &trust_threshold,
+            trusting_period,
+            now,
+        )?;
 
         let new_trusted_state = TrustedState {
             header: light_block.signed_header.header,
