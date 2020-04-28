@@ -4,12 +4,14 @@ use std::sync::mpsc::Sender;
 
 use serde::{Deserialize, Serialize};
 use tendermint::{block, rpc};
+use thiserror::Error;
 
 use crate::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Error, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RpcError {
-    RpcError(rpc::Error),
+    #[error(transparent)]
+    RpcError(#[from] rpc::Error),
 }
 
 impl_event!(RpcError);

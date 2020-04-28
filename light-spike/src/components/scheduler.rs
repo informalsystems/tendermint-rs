@@ -5,8 +5,8 @@ use crate::prelude::*;
 
 #[derive(Clone, Debug, Error, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SchedulerError {
-    #[error("invalid light block: {0}")]
-    InvalidLightBlock(VerifierError),
+    #[error("invalid light block")]
+    InvalidLightBlock(#[from] VerifierError),
 }
 
 impl_event!(SchedulerError);
@@ -114,15 +114,16 @@ impl Scheduler {
         now: SystemTime,
     ) -> Result<Vec<TrustedState>, SchedulerError> {
         match err {
-            VerifierError::InvalidLightBlock(ErrorKind::InsufficientVotingPower { .. }) => self
-                .perform_bisection(
-                    router,
-                    trusted_state,
-                    light_block,
-                    trust_threshold,
-                    trusting_period,
-                    now,
-                ),
+            VerifierError::InvalidLightBlock(VerificationErrorKind::InsufficientVotingPower {
+                ..
+            }) => self.perform_bisection(
+                router,
+                trusted_state,
+                light_block,
+                trust_threshold,
+                trusting_period,
+                now,
+            ),
             err => {
                 let output = SchedulerError::InvalidLightBlock(err);
                 Err(output)

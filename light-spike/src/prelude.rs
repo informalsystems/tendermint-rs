@@ -6,6 +6,7 @@ pub use crate::components::verifier::*;
 pub use crate::errors::*;
 pub use crate::event::*;
 pub use crate::operations::*;
+pub use crate::predicates::errors::*;
 pub use crate::predicates::VerificationPredicates;
 pub use crate::trace::*;
 pub use crate::trusted_store::*;

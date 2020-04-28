@@ -1,6 +1,7 @@
 //! Crypto function traits allowing mocking out during testing
 
 use crate::prelude::*;
+use anomaly::BoxError;
 
 pub trait VotingPowerCalculator {
     fn total_power_of(&self, validators: &ValidatorSet) -> u64;
@@ -28,17 +29,17 @@ impl VotingPowerCalculator for Box<dyn VotingPowerCalculator> {
 }
 
 pub trait CommitValidator {
-    fn validate(&self, commit: &Commit, validators: &ValidatorSet) -> Result<(), Error>;
+    fn validate(&self, commit: &Commit, validators: &ValidatorSet) -> Result<(), BoxError>;
 }
 
 impl<T: CommitValidator> CommitValidator for &T {
-    fn validate(&self, commit: &Commit, validators: &ValidatorSet) -> Result<(), Error> {
+    fn validate(&self, commit: &Commit, validators: &ValidatorSet) -> Result<(), BoxError> {
         (*self).validate(commit, validators)
     }
 }
 
 impl CommitValidator for Box<dyn CommitValidator> {
-    fn validate(&self, commit: &Commit, validators: &ValidatorSet) -> Result<(), Error> {
+    fn validate(&self, commit: &Commit, validators: &ValidatorSet) -> Result<(), BoxError> {
         self.as_ref().validate(commit, validators)
     }
 }

@@ -2,6 +2,7 @@ use std::time::{Duration, SystemTime};
 
 use crate::prelude::*;
 
+pub mod errors;
 pub mod production;
 
 pub trait VerificationPredicates {
@@ -9,46 +10,46 @@ pub trait VerificationPredicates {
         &self,
         signed_header: &SignedHeader,
         validators: &ValidatorSet,
-    ) -> Result<(), Error>;
+    ) -> Result<(), VerificationError>;
 
     fn next_validators_match(
         &self,
         signed_header: &SignedHeader,
         validators: &ValidatorSet,
-    ) -> Result<(), Error>;
+    ) -> Result<(), VerificationError>;
 
     fn header_matches_commit(
         &self,
         header: &Header,
         commit: &Commit,
         header_hasher: &dyn HeaderHasher,
-    ) -> Result<(), Error>;
+    ) -> Result<(), VerificationError>;
 
     fn valid_commit(
         &self,
         commit: &Commit,
         validators: &ValidatorSet,
         validator: &dyn CommitValidator,
-    ) -> Result<(), Error>;
+    ) -> Result<(), VerificationError>;
 
     fn is_within_trust_period(
         &self,
         header: &Header,
         trusting_period: Duration,
         now: SystemTime,
-    ) -> Result<(), Error>;
+    ) -> Result<(), VerificationError>;
 
     fn is_monotonic_bft_time(
         &self,
         untrusted_header: &Header,
         trusted_header: &Header,
-    ) -> Result<(), Error>;
+    ) -> Result<(), VerificationError>;
 
     fn is_monotonic_height(
         &self,
         untrusted_header: &Header,
         trusted_header: &Header,
-    ) -> Result<(), Error>;
+    ) -> Result<(), VerificationError>;
 
     fn has_sufficient_voting_power(
         &self,
@@ -56,7 +57,7 @@ pub trait VerificationPredicates {
         validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
         calculator: &dyn VotingPowerCalculator,
-    ) -> Result<(), Error>;
+    ) -> Result<(), VerificationError>;
 
     fn has_sufficient_validators_overlap(
         &self,
@@ -64,7 +65,7 @@ pub trait VerificationPredicates {
         trusted_validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
         calculator: &dyn VotingPowerCalculator,
-    ) -> Result<(), Error>;
+    ) -> Result<(), VerificationError>;
 
     fn has_sufficient_signers_overlap(
         &self,
@@ -72,13 +73,13 @@ pub trait VerificationPredicates {
         untrusted_validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
         calculator: &dyn VotingPowerCalculator,
-    ) -> Result<(), Error>;
+    ) -> Result<(), VerificationError>;
 
     fn valid_next_validator_set(
         &self,
         untrusted_sh: &SignedHeader,
         untrusted_next_vals: &ValidatorSet,
-    ) -> Result<(), Error>;
+    ) -> Result<(), VerificationError>;
 
     #[allow(clippy::too_many_arguments, clippy::comparison_chain)]
     fn verify_light_block(
@@ -91,7 +92,7 @@ pub trait VerificationPredicates {
         trust_threshold: &TrustThreshold,
         trusting_period: Duration,
         now: SystemTime,
-    ) -> Result<(), Error> {
+    ) -> Result<(), VerificationError> {
         let untrusted_sh = &light_block.signed_header;
         let untrusted_vals = &light_block.validator_set;
         let untrusted_next_vals = &light_block.next_validator_set;
