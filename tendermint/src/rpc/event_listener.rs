@@ -66,7 +66,7 @@ impl EventListener {
 
 //TODO more event types
 /// The Event enum is typed events emmitted by the Websockets
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Event {
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
     JsonRPCTransctionResult {
@@ -87,14 +87,14 @@ pub enum Event {
 }
 
 /// Standard JSON RPC Wrapper
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JSONRPC {
     jsonrpc: String,
     id: String,
     result: RPCResult,
 }
 /// JSON RPC Result Type
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct RPCResult {
     query: String,
     data: Data,
@@ -102,20 +102,20 @@ struct RPCResult {
 }
 
 /// TX data
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Data {
     #[serde(rename = "type")]
     data_type: String,
     value: TxValue,
 }
 /// TX value
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct TxValue {
     #[serde(rename = "TxResult")]
     tx_result: TxResult,
 }
 /// Tx Result
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct TxResult {
     height: String,
     index: i64,
@@ -123,7 +123,7 @@ struct TxResult {
     result: TxResultResult,
 }
 /// TX Results Results
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct TxResultResult {
     log: String,
     gas_wanted: String,
@@ -132,14 +132,14 @@ struct TxResultResult {
 }
 
 /// Tx Events
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct TxEvent {
     #[serde(rename = "type")]
     event_type: String,
     attributes: Vec<Attribute>,
 }
 /// Event Attributes
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Attribute {
     key: String,
     value: String,
