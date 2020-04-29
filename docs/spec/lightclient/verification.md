@@ -379,14 +379,12 @@ type LightBlock struct {
   >	with detector. We should decide what it contains: e.g., (i) set of headers,
   > (ii) set of TrustedState (iii) set of pairs: Trustedstate, address of
   > full node from which the lightlient downloaded the header
-- *trustedHeader*: the LightBlock verification starts from
+- *untrustedStore*: stores light blocks
+   that have been downloaded and that failed
+   verification, but may still be OK. Initially empty
 - *primary*: peer address
 - *targetHeight*: they height of the needed header
 
-#### **[LCV-A-INIT]**:
-- *trustedHeader* is from the blockchain
-
-- *targetHeight > trustedHeader.height*
 
 ### Configuration Parameters
 
@@ -397,22 +395,12 @@ type LightBlock struct {
 
 ### Variables
 
-- *currentHeight*: initially *trustedHeader.Height*
+
 - *nextHeight*: initially *targetHeight*
   > *nextHeight* should be thought of the "height of the next header we need
   > to download and verify"
-- *untrustedStore*: stores light blocks
-   that have been downloaded and that failed
-   verification, but may still be OK. Initially empty
-- *Error*: error information. Initially nil.
 
-- *headerToVerify*: a light block. Initially nil  
-  **TODO:** decide whether passing of information should be done via
-  shared variables  
-  > used to hand the header to bisection. Might be a parameter
-  > currently written by IO (or copied if a candidate is already 
-  > in *untrustedStore*
-
+- *headerToVerify*: a light block. Initially nil
 
 
 ### Auxiliary Functions
@@ -421,9 +409,17 @@ type LightBlock struct {
 - *refHeader*: is the header from *trustedStore* with the maximal
   height
   
-  
- 
- ### Messages
+- *currentHeight*: *refHeader.Header.Height*
+
+
+### Assumptions
+
+#### **[LCV-A-INIT]**:
+- *trustedHeader* is from the blockchain
+
+- *targetHeight > currentHeight*
+
+### Messages
 
 **TODO:** 
  
@@ -490,22 +486,16 @@ func demuxer (trustedStore LightBlock[],
 			  targetHeight int64) 
 			  (LightBlock[], LightBlock[], Result) {
 
-  currentHeight := refHeader.Header.Height;
   nextHeight := targetHeight;
   while currentHeight < targetHeight {
     // **TODO:** we could check whether a header h of height nextHeight
     // is in untrustedStore
 	// if yes set header-To-Verify = h otherwise do IO
-    headerToVerify = IO (primary, nextHeight);
+    headerToVerify = IO(primary, nextHeight);
     result = Verify(headerToVerify, refHeader);
-    if result == OK || result == CANNOT_VERIFY {
-      trustedStore, untrustedStore, currentHeight, nextHeight =
+    trustedStore, untrustedStore, nextHeight =
    	    Scheduler(trustedStore, untrustedSture, headerToVerif,
-                  currentHeight, nextHeight, Result);
-    } 
-    else {
-      return (trustedStore, untrustedStore, result)
-    }
+                  nextHeight, Result);
   }
   
   return (trustedStore, untrustedStore, SUCCESS)
@@ -619,22 +609,21 @@ func Verify(untrustedLB LightBlock,
 func Scheduler (trustedStore LightBlock[], 
                 untrustedStore LightBlock[], 
 				checkedHeader LightBlock,
-                currentHeight int64,
                 nextHeight int64
 				verif-result Result)
 				(LightBlock[], LightBlock[], int64, int64) {
     if verif-result == OK { 
 	  trustedStore.add(checkedHeader)
 	  // **TODO:** reset headerToVerify to nil?
-      currentHeight = nextHeight
 	  nextHeight = targetHeight
     } else if verif-result = CANNOT_VERIFY {
 	  untrustedStore.add(checkedHeader)
+	  // as trustedStore does not change, currentHeight does not change
       compute pivot // (currentHeight + nextHeight) / 2
       nextHeight = pivot
     }
   }
-  return (trustedStore, untrustedStore, currentHeight, nextHeight)
+  return (trustedStore, untrustedStore, nextHeight)
 }
 ```
 - Expected precondition
@@ -642,7 +631,7 @@ func Scheduler (trustedStore LightBlock[],
 - Expected postcondition
   - *nextHeight <= targetHeight*
   - *nextHeight > currentHeight*
-  - height of *refHeader* is *currentHeight*
+  - *checkedHeader* is in *trustedStore* or *untrustedStore*
 - Error conditions 
   - none
 	
