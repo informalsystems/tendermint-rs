@@ -472,19 +472,31 @@ func Validators(addr Address, height int64) (ValidatorSet, error)
 
 ### Outline
 
-The protocols is described in terms of the following functions.
+The `demuxer` is the main function and uses the following functions.
+- `IO` is called to download the next light block
+- `Verify` checks whether a new header can
+  be trusted. 
+- `Scheduler` then updates the heights and stores. By updating the
+  heights it drives bisection.
+  
+In the description of `demuxer` we do not deal with error handling. If
+any of the above function returns an error, demuxer just passes the
+error on.
 
 ```go
 func demuxer (trustedStore LightBlock[], 
               untrustedStore LightBlock[], 
-			  addr Address, 
+			  primary Address, 
 			  targetHeight int64) 
 			  (LightBlock[], LightBlock[], Result) {
 
   currentHeight := refHeader.Header.Height;
   nextHeight := targetHeight;
   while currentHeight < targetHeight {
-    headerToVerify = IO (addr, nextHeight);
+    // **TODO:** we could check whether a header h of height nextHeight
+    // is in untrustedStore
+	// if yes set header-To-Verify = h otherwise do IO
+    headerToVerify = IO (primary, nextHeight);
     result = Verify(headerToVerify, refHeader);
     if result == OK || result == CANNOT_VERIFY {
       trustedStore, untrustedStore, currentHeight, nextHeight =
@@ -499,18 +511,22 @@ func demuxer (trustedStore LightBlock[],
   return (trustedStore, untrustedStore, SUCCESS)
 }
 ```
-
-
-- `IO` is called to download the next light block
-- `Verify` checks whether a new header can
-  be trusted. 
-- `Scheduler` then updates the heights and stores. By updating the
-  heights it drives bisection.
+- Expected precondition
+   - *trustedStore* contains a LightBlock within the *trustingPeriod*
+   - *targetHeight* is greater than the height of all the LightBlocks
+     in *trustedStore*
+- Expected postcondition: 
+   - *trustedStore* contains a LightBlock that corresponds to a block
+     of the blockchain of height *targetHeight* (that is, the
+     LightBlock has been added to *trustedStore*
+- Error conditions
+   - if the precondition is violated
+   - if `IO` or `Verify` or `Scheduler` report an error
   
 
 
 
-### Details
+### Details of the Functions
 
 
 
@@ -522,28 +538,31 @@ func IO (addr Address, ht int64) (LightBlock)
      RPCs `Commit` and `Validators` 
    - The only function that makes external calls!
    - This function make externals RPC calls to the full node; 
-      - `Validators(primary,ht)`
-	  - `Validators(primary,ht+1)` 
-	  - `Commit (primary,ht)`
+      - `Validators(addr, ht)`
+	  - `Validators(addr, ht + 1)` 
+	  - `Commit (addr, ht)`
    
 - Expected precondition
   - *nextheight > refHeader.Header.Height*
 - Expected postcondition: 
-  - If *n* is correct, it returns a light block *lb*:
+  - It returns a light block *lb* with 
+      - *lb.Provider = addr*
+  - *lb* satisfies to following soundness constraints
+	  - *lb.Header.Time < now + clockDrift*
+	  - *lb.Validators = hash(lb.Header.Validators)*
+      - *lb.NextValidators = hash(lb.Header.NextValidators)*
+  - If *n* is correct:
     - *lb.Header* is a header consistent with
       the blockchain
     - *lb.Validators* is the validator set of the
       blockchain at height *nextheight*
     - *lb.NextValidators* is the validator set of the
       blockchain at height *nextheight + 1*
-    - *lb.Header.Time < now + clockDrift*
-  - If *n* is faulty, returns arbitrary 
-  - [LCV-INV-VAL] (if *n* is faulty or not)
+  - If *n* is faulty, *lb.Header* and *lb.Validators* and
+    *lb.NextValidators* are arbitrary  [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
 - Error conditions
   - precondition violated
-  - If the field time of the returned signed header is greater than or
-    equal to `now + clockDrift`, then set *error = InvalidHeaderTime*
-    and **terminate with failure**.
+  - downloaded light block does not satisfy the soundness constraits.
   - If *n* is faulty
 
 ---
@@ -551,47 +570,47 @@ func IO (addr Address, ht int64) (LightBlock)
 
 
 ```go
-func Verify(untrustedVh LightBlock,
-                  trustedVh LightBlock) (result)
+func Verify(untrustedLB LightBlock,
+                  trustedLB LightBlock) (result)
 ```
 
 - Expected precondition:
-   - trustedVh.signedHeader.Commit is a commit is for the header 
-     trustedVh.signedHeader.Header, i.e. it contains
+   - trustedLB..Commit is a commit is for the header 
+     trustedLB.Header, i.e. it contains
      the correct hash of the header
-   - the `Height` and `Time` of `trustedVh` are smaller than the Height and 
-  `Time` of `untrustedVh`, respectively
-   - the *untrustedVH.SignedHeader* is well-formed (passes the tests from
+   - the `Height` and `Time` of `trustedLB` are smaller than the Height and 
+  `Time` of `untrustedLB`, respectively
+   - the *untrustedLB.Header* is well-formed (passes the tests from
      [[block]]), and in particular
-      - if the untrusted header `unstrustedVh` is the immediate 
-	  successor  of  `trustedVh`, then it holds that
-	      - *trustedVh.signedHeader.Header.NextValidators = 
-		  untrustedVh.signedHeader.Header.Validators*, and
+      - if the untrusted header `unstrustedLB.Header` is the immediate 
+	  successor  of  `trustedLB.Header`, then it holds that
+	      - *trustedLB.Header.NextValidators = 
+		  untrustedLB.Header.Validators*, and
 		  moreover, 
-		  - *untrustedVh.signedHeader.Header.Commit* 
+		  - *untrustedLB.Header.Commit* 
 		     - contains signatures by more than two-thirds of the validators 
-		     - contains no signature from nodes that are not in *trustedVh.signedHeader.Header.NextValidators*
+		     - contains no signature from nodes that are not in *trustedLB.Header.NextValidators*
 - Expected postcondition: 
     - Returns `OK`:
-        - if *untrustedVh* is the immediate successor of *trustedVh*,
+        - if *untrustedLB* is the immediate successor of *trustedLB*,
           or otherwise,
         - if
 		   -  signatures of a set of
              validators that have more than *max(1/3,trustThreshold)* of
              voting power in
-             *trustedVh.signedHeader.Header.NextValidators*
-			 is contained in *untrustedVh.SignedHeader.Commit*
+             *trustedLB.Nextvalidators*
+			 is contained in *untrustedLB.Commit*
            - (that is, header passes the tests [**[TMBC-VAL-CONTAINS-CORR]**][TMBC-VAL-CONTAINS-CORR-link]  and [**[TMBC-VAL-COMMIT]**][TMBC-VAL-COMMIT-link])
-	- Returns `CANNOT_VERIFY` 
-        -  *untrustedVh* is *not* the immediate successor of
-           *trustedVh*
+	- Returns `CANNOT_VERIFY` if:
+        -  *untrustedLB* is *not* the immediate successor of
+           *trustedLB*
 		   and the  *max(1/3,trustThreshold)* threshold is not reached
         - (that is, if
 	     [**[TMBC-VAL-CONTAINS-CORR]**][TMBC-VAL-CONTAINS-CORR-link] 
 	     fails and header is does not violate the soundness
          checks [[block]]).
 - Error condition: 
-   - if precondition violated it returns a different error code
+   - if precondition violated 
 
 ---
 
@@ -602,14 +621,14 @@ func Scheduler (trustedStore LightBlock[],
 				checkedHeader LightBlock,
                 currentHeight int64,
                 nextHeight int64
-				verifresult Result)
+				verif-result Result)
 				(LightBlock[], LightBlock[], int64, int64) {
-    if verifresult == OK { 
+    if verif-result == OK { 
 	  trustedStore.add(checkedHeader)
 	  // **TODO:** reset headerToVerify to nil?
       currentHeight = nextHeight
 	  nextHeight = targetHeight
-    } else if verifresult = CANNOT_VERIFY{
+    } else if verif-result = CANNOT_VERIFY {
 	  untrustedStore.add(checkedHeader)
       compute pivot // (currentHeight + nextHeight) / 2
       nextHeight = pivot
@@ -619,16 +638,13 @@ func Scheduler (trustedStore LightBlock[],
 }
 ```
 - Expected precondition
-  - height of *headerToVerify* is *nextHeight*
-  - height of *trustedHeader* is *currentHeight*
+  - height of *checkedHeader* is *nextHeight*
 - Expected postcondition
   - *nextHeight <= targetHeight*
   - *nextHeight > currentHeight*
-  - height of *trustedHeader* is *currentHeight*
+  - height of *refHeader* is *currentHeight*
 - Error conditions 
-  - IF `VerifySingle` returns a error code *code* different from OK or
-  CANNOT_VERIFY then set *error = code*
-    and **terminate with failure**.
+  - none
 	
 > **TODO:** I encoded a bisection which is the most simple to
 > describe. With the current variables, we could also try to verify all
@@ -646,12 +662,8 @@ func Scheduler (trustedStore LightBlock[],
 
 
 
-### Algorithm Invariants
 
-### **[LCV-INV-VAL]**
-At all times
-- *headerToVerify.Validators = hash(headerToVerify.signedHeader.Header.Validators)*
-- *headerToVerify.NextValidators = hash(headerToVerify.signedHeader.Header.NextValidators)*
+
 
 
 
