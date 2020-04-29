@@ -1,3 +1,16 @@
+## [Pending next release]
+
+RPC changes:
+- Tendermint-Go v0.33 compatibility - issue #184
+  - `abci_info`, `abci_query`, `block_results`, `genesis` structs
+  - serialization/deserialization fixes
+  - Updated/fixed integration tests
+
+CI changes: - issue #120
+- Moved to GitHub Actions
+- Updated crates.io badges
+- Enabled integration tests in CI with Tendermint-Go node service
+
 ## [0.13.0] (2020-04-20)
 
 Dependencies:
