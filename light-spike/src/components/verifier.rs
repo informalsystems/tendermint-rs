@@ -25,14 +25,30 @@ pub enum VerifierOutput {
 
 pub type VerifierResult = Result<VerifierOutput, VerifierError>;
 
-pub struct Verifier {
+pub trait Verifier {
+    fn process(&self, input: VerifierInput) -> VerifierResult;
+}
+
+pub struct RealVerifier {
     predicates: Box<dyn VerificationPredicates>,
     voting_power_calculator: Box<dyn VotingPowerCalculator>,
     commit_validator: Box<dyn CommitValidator>,
     header_hasher: Box<dyn HeaderHasher>,
 }
 
-impl Verifier {
+impl Verifier for RealVerifier {
+    fn process(&self, input: VerifierInput) -> VerifierResult {
+        match input {
+            VerifierInput::VerifyLightBlock {
+                trusted_state,
+                light_block,
+                options,
+            } => self.verify_light_block(light_block, trusted_state, options),
+        }
+    }
+}
+
+impl RealVerifier {
     pub fn new(
         predicates: impl VerificationPredicates + 'static,
         voting_power_calculator: impl VotingPowerCalculator + 'static,
@@ -44,16 +60,6 @@ impl Verifier {
             voting_power_calculator: Box::new(voting_power_calculator),
             commit_validator: Box::new(commit_validator),
             header_hasher: Box::new(header_hasher),
-        }
-    }
-
-    pub fn process(&self, input: VerifierInput) -> VerifierResult {
-        match input {
-            VerifierInput::VerifyLightBlock {
-                trusted_state,
-                light_block,
-                options,
-            } => self.verify_light_block(light_block, trusted_state, options),
         }
     }
 

@@ -1,4 +1,3 @@
-use light_spike::components::scheduler;
 use light_spike::prelude::*;
 
 pub fn main() {
@@ -10,13 +9,14 @@ pub fn main() {
         trusted_store_writer,
     };
 
+    let scheduler = RealScheduler;
+
     let predicates = light_spike::predicates::production::ProductionPredicates;
     let voting_power_calculator: Box<dyn VotingPowerCalculator> = todo(());
     let commit_validator: Box<dyn CommitValidator> = todo(());
     let header_hasher: Box<dyn HeaderHasher> = todo(());
 
-    let scheduler = scheduler::handler(scheduler::process);
-    let verifier = Verifier::new(
+    let verifier = RealVerifier::new(
         predicates,
         voting_power_calculator,
         commit_validator,
@@ -24,9 +24,10 @@ pub fn main() {
     );
 
     let header_hasher: Box<dyn HeaderHasher> = todo(());
-    let fork_detector = ForkDetector::new(header_hasher);
+    let fork_detector = RealForkDetector::new(header_hasher);
 
-    let io = Io::new(todo(()));
+    let rpc_client = todo(());
+    let io = RealIo::new(rpc_client);
 
     let demuxer = Demuxer::new(state, scheduler, verifier, fork_detector, io);
     todo(demuxer)

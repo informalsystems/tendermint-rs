@@ -1,10 +1,18 @@
-use std::{future::Future, pin::Pin};
-
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use super::verifier::VerifierError;
 use crate::prelude::*;
+
+#[async_trait::async_trait(?Send)]
+pub trait Scheduler {
+    async fn process(
+        &self,
+        trusted_store: TSReader,
+        input: SchedulerInput,
+        co: Co<SchedulerRequest, SchedulerResponse>,
+    ) -> SchedulerResult;
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SchedulerInput {
@@ -54,23 +62,29 @@ pub enum SchedulerResponse {
 
 pub type SchedulerResult = Result<SchedulerOutput, SchedulerError>;
 
-pub async fn process(
-    trusted_store: TSReader,
-    input: SchedulerInput,
-    co: Co<SchedulerRequest, SchedulerResponse>,
-) -> SchedulerResult {
-    match input {
-        SchedulerInput::VerifyHeight {
-            height,
-            trusted_state,
-            options,
-        } => verify_height(height, trusted_state, options, trusted_store, co).await,
+pub struct RealScheduler;
 
-        SchedulerInput::VerifyLightBlock {
-            light_block,
-            trusted_state,
-            options,
-        } => verify_light_block(light_block, trusted_state, options, trusted_store, co).await,
+#[async_trait::async_trait(?Send)]
+impl Scheduler for RealScheduler {
+    async fn process(
+        &self,
+        trusted_store: TSReader,
+        input: SchedulerInput,
+        co: Co<SchedulerRequest, SchedulerResponse>,
+    ) -> SchedulerResult {
+        match input {
+            SchedulerInput::VerifyHeight {
+                height,
+                trusted_state,
+                options,
+            } => verify_height(height, trusted_state, options, trusted_store, co).await,
+
+            SchedulerInput::VerifyLightBlock {
+                light_block,
+                trusted_state,
+                options,
+            } => verify_light_block(light_block, trusted_state, options, trusted_store, co).await,
+        }
     }
 }
 
@@ -180,20 +194,4 @@ pub async fn do_bisection(
 
     let trusted_states = valid_light_blocks.into_iter().map(Into::into).collect();
     Ok(SchedulerOutput::TrustedStates(trusted_states))
-}
-
-pub type Scheduler = Box<
-    dyn Fn(
-        TSReader,
-        SchedulerInput,
-        Co<SchedulerRequest, SchedulerResponse>,
-    ) -> Pin<Box<dyn Future<Output = SchedulerResult>>>,
->;
-
-pub fn handler<F0, F>(f: F0) -> Scheduler
-where
-    F0: Fn(TSReader, SchedulerInput, Co<SchedulerRequest, SchedulerResponse>) -> F + 'static,
-    F: Future<Output = SchedulerResult> + 'static,
-{
-    Box::new(move |s, i, c| Box::pin(f(s, i, c)))
 }

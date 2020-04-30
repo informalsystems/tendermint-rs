@@ -24,19 +24,25 @@ pub enum IoError {
 
 pub type IoResult = Result<IoOutput, IoError>;
 
-pub struct Io {
+pub trait Io {
+    fn process(&self, input: IoInput) -> IoResult;
+}
+
+pub struct RealIo {
     rpc_client: rpc::Client,
 }
 
-impl Io {
-    pub fn new(rpc_client: rpc::Client) -> Self {
-        Self { rpc_client }
-    }
-
-    pub fn process(&self, input: IoInput) -> IoResult {
+impl Io for RealIo {
+    fn process(&self, input: IoInput) -> IoResult {
         match input {
             IoInput::FetchLightBlock(height) => self.fetch_light_block(height),
         }
+    }
+}
+
+impl RealIo {
+    pub fn new(rpc_client: rpc::Client) -> Self {
+        Self { rpc_client }
     }
 
     pub fn fetch_light_block(&self, height: Height) -> IoResult {

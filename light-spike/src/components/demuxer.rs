@@ -18,31 +18,31 @@ pub enum DemuxerError {
 
 pub struct Demuxer {
     state: State,
-    scheduler: Scheduler,
-    verifier: Verifier,
-    fork_detector: ForkDetector,
-    io: Io,
+    scheduler: Box<dyn Scheduler>,
+    verifier: Box<dyn Verifier>,
+    fork_detector: Box<dyn ForkDetector>,
+    io: Box<dyn Io>,
 }
 
 impl Demuxer {
     pub fn new(
         state: State,
-        scheduler: Scheduler,
-        verifier: Verifier,
-        fork_detector: ForkDetector,
-        io: Io,
+        scheduler: impl Scheduler + 'static,
+        verifier: impl Verifier + 'static,
+        fork_detector: impl ForkDetector + 'static,
+        io: impl Io + 'static,
     ) -> Self {
         Self {
             state,
-            scheduler,
-            verifier,
-            fork_detector,
-            io,
+            scheduler: Box::new(scheduler),
+            verifier: Box::new(verifier),
+            fork_detector: Box::new(fork_detector),
+            io: Box::new(io),
         }
     }
 
     pub fn verify_height(
-        &mut self,
+        &self,
         height: Height,
         trusted_state: TrustedState,
         options: VerificationOptions,
@@ -57,14 +57,14 @@ impl Demuxer {
 
         match result {
             SchedulerOutput::TrustedStates(trusted_states) => {
-                self.state.add_trusted_states(trusted_states.clone());
+                // self.state.add_trusted_states(trusted_states.clone());
                 Ok(trusted_states)
             }
         }
     }
 
     pub fn verify_light_block(
-        &mut self,
+        &self,
         light_block: LightBlock,
         trusted_state: TrustedState,
         options: VerificationOptions,
@@ -79,14 +79,14 @@ impl Demuxer {
 
         match result {
             SchedulerOutput::TrustedStates(trusted_states) => {
-                self.state.add_trusted_states(trusted_states.clone());
+                // self.state.add_trusted_states(trusted_states.clone());
                 Ok(trusted_states)
             }
         }
     }
 
     pub fn validate_light_block(
-        &mut self,
+        &self,
         light_block: LightBlock,
         trusted_state: TrustedState,
         options: VerificationOptions,
@@ -104,13 +104,13 @@ impl Demuxer {
 
         match result {
             VerifierOutput::ValidLightBlock(valid_light_block) => {
-                self.state.add_valid_light_block(valid_light_block.clone());
+                // self.state.add_valid_light_block(valid_light_block.clone());
                 Ok(valid_light_block)
             }
         }
     }
 
-    pub fn detect_forks(&mut self) -> Result<(), DemuxerError> {
+    pub fn detect_forks(&self) -> Result<(), DemuxerError> {
         let light_blocks = self.state.trusted_store_reader.all();
         let input = ForkDetectorInput::Detect(light_blocks);
 
@@ -124,23 +124,20 @@ impl Demuxer {
         }
     }
 
-    pub fn fetch_light_block(&mut self, height: Height) -> Result<LightBlock, DemuxerError> {
+    pub fn fetch_light_block(&self, height: Height) -> Result<LightBlock, DemuxerError> {
         let input = IoInput::FetchLightBlock(height);
 
         let result = self.io.process(input).map_err(|e| DemuxerError::Io(e))?;
 
         match result {
             IoOutput::FetchedLightBlock(lb) => {
-                self.state.add_fetched_light_block(lb.clone());
+                // self.state.add_fetched_light_block(lb.clone());
                 Ok(lb)
             }
         }
     }
 
-    fn handle_request(
-        &mut self,
-        request: SchedulerRequest,
-    ) -> Result<SchedulerResponse, DemuxerError> {
+    fn handle_request(&self, request: SchedulerRequest) -> Result<SchedulerResponse, DemuxerError> {
         match request {
             SchedulerRequest::GetLightBlock(height) => self
                 .fetch_light_block(height)
@@ -168,13 +165,13 @@ impl Demuxer {
         }
     }
 
-    fn run_scheduler(&mut self, input: SchedulerInput) -> Result<SchedulerOutput, DemuxerError> {
+    fn run_scheduler(&self, input: SchedulerInput) -> Result<SchedulerOutput, DemuxerError> {
         let scheduler = Gen::new(|co| {
-            let handler = &self.scheduler;
-            handler(self.state.trusted_store_reader(), input, co)
+            self.scheduler
+                .process(self.state.trusted_store_reader(), input, co)
         });
 
-        let result = drain(scheduler, SchedulerResponse::Init, move |req| {
+        let result = drain(scheduler, SchedulerResponse::Init, |req| {
             self.handle_request(req)
         })?;
 

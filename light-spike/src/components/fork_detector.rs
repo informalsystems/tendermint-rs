@@ -21,20 +21,26 @@ pub enum ForkDetectorOutput {
 
 pub type ForkDetectorResult = Result<ForkDetectorOutput, ForkDetectorError>;
 
-pub struct ForkDetector {
+pub trait ForkDetector {
+    fn process(&self, input: ForkDetectorInput) -> ForkDetectorResult;
+}
+
+pub struct RealForkDetector {
     header_hasher: Box<dyn HeaderHasher>,
 }
 
-impl ForkDetector {
+impl ForkDetector for RealForkDetector {
+    fn process(&self, input: ForkDetectorInput) -> ForkDetectorResult {
+        match input {
+            ForkDetectorInput::Detect(light_blocks) => self.detect(light_blocks),
+        }
+    }
+}
+
+impl RealForkDetector {
     pub fn new(header_hasher: impl HeaderHasher + 'static) -> Self {
         Self {
             header_hasher: Box::new(header_hasher),
-        }
-    }
-
-    pub fn process(&self, input: ForkDetectorInput) -> ForkDetectorResult {
-        match input {
-            ForkDetectorInput::Detect(light_blocks) => self.detect(light_blocks),
         }
     }
 
