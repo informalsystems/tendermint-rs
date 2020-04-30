@@ -1,10 +1,16 @@
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
 use super::{io::*, scheduler::*, verifier::*};
 use crate::prelude::*;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Error, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DemuxerError {
+    #[error("scheduler error")]
     Scheduler(SchedulerError),
+    #[error("verifier error")]
     Verifier(VerifierError),
+    #[error("I/O error")]
     Io(IoError),
 }
 

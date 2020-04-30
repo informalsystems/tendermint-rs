@@ -84,7 +84,8 @@ pub type TrustedState = LightBlock;
 //     }
 // }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Display, PartialEq, Eq, Serialize, Deserialize)]
+#[display(fmt = "{:?}", self)]
 pub struct LightBlock {
     pub height: Height,
     pub signed_header: SignedHeader,

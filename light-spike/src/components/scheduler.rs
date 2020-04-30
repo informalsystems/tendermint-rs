@@ -1,8 +1,12 @@
 use std::{future::Future, pin::Pin};
 
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
 use super::verifier::VerifierError;
 use crate::prelude::*;
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SchedulerInput {
     VerifyHeight {
         height: Height,
@@ -16,12 +20,14 @@ pub enum SchedulerInput {
     },
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SchedulerOutput {
     TrustedStates(Vec<TrustedState>),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Error, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SchedulerError {
+    #[error("invalid light block {0} because: {1}")]
     InvalidLightBlock(LightBlock, VerifierError),
 }
 

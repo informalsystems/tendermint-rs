@@ -8,7 +8,6 @@
 
 pub mod components;
 pub mod errors;
-pub mod event;
 pub mod macros;
 pub mod operations;
 pub mod predicates;

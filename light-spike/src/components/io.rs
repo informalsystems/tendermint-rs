@@ -6,10 +6,12 @@ use thiserror::Error;
 
 use crate::prelude::*;
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum IoInput {
     FetchLightBlock(Height),
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum IoOutput {
     FetchedLightBlock(LightBlock),
 }

@@ -18,8 +18,6 @@ pub enum VerifierInput {
     },
 }
 
-impl_event!(VerifierInput);
-
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum VerifierOutput {
     ValidLightBlock(LightBlock),
