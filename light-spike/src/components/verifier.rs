@@ -1,13 +1,6 @@
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::prelude::*;
-
-#[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
-pub enum VerifierError {
-    #[error("invalid light block")]
-    InvalidLightBlock(#[from] VerificationError),
-}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum VerifierInput {
@@ -20,13 +13,22 @@ pub enum VerifierInput {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum VerifierOutput {
-    ValidLightBlock(LightBlock),
+    Success,
+    NotEnoughTrust,
+    Invalid(VerificationError),
 }
 
-pub type VerifierResult = Result<VerifierOutput, VerifierError>;
-
 pub trait Verifier {
-    fn process(&self, input: VerifierInput) -> VerifierResult;
+    fn process(&self, input: VerifierInput) -> VerifierOutput;
+}
+
+impl<F> Verifier for F
+where
+    F: Fn(VerifierInput) -> VerifierOutput,
+{
+    fn process(&self, input: VerifierInput) -> VerifierOutput {
+        self(input)
+    }
 }
 
 pub struct RealVerifier {
@@ -37,7 +39,7 @@ pub struct RealVerifier {
 }
 
 impl Verifier for RealVerifier {
-    fn process(&self, input: VerifierInput) -> VerifierResult {
+    fn process(&self, input: VerifierInput) -> VerifierOutput {
         match input {
             VerifierInput::VerifyLightBlock {
                 trusted_state,
@@ -68,18 +70,23 @@ impl RealVerifier {
         light_block: LightBlock,
         trusted_state: TrustedState,
         options: VerificationOptions,
-    ) -> Result<VerifierOutput, VerifierError> {
-        self.predicates.verify_light_block(
+    ) -> VerifierOutput {
+        let result = crate::predicates::verify_light_block(
+            &*self.predicates,
             &self.voting_power_calculator,
             &self.commit_validator,
             &self.header_hasher,
             &trusted_state,
             &light_block,
             options,
-        )?;
+        );
 
-        // FIXME: Do we actually need to distinguish between LightBlock and TrustedState?
-        let new_trusted_state = light_block.into();
-        Ok(VerifierOutput::ValidLightBlock(new_trusted_state))
+        match result {
+            Ok(()) => VerifierOutput::Success,
+            Err(VerificationError::InsufficientVotingPower { .. }) => {
+                VerifierOutput::NotEnoughTrust
+            }
+            Err(e) => VerifierOutput::Invalid(e),
+        }
     }
 }

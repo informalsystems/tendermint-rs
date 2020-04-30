@@ -28,6 +28,15 @@ pub trait Io {
     fn process(&self, input: IoInput) -> IoResult;
 }
 
+impl<F> Io for F
+where
+    F: Fn(IoInput) -> IoResult,
+{
+    fn process(&self, input: IoInput) -> IoResult {
+        self(input)
+    }
+}
+
 pub struct RealIo {
     rpc_client: rpc::Client,
 }

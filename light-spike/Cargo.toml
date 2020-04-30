@@ -14,10 +14,7 @@ derive_more = "0.99.5"
 serde = "1.0.106"
 serde_derive = "1.0.106"
 thiserror = "1.0.15"
-typetag = "0.1.4"
-genawaiter = "0.99.1"
 futures = "0.3.4"
-async-trait = "0.1.30"
 
 [dev-dependencies]
 serde_json = "1.0.51"

@@ -6,12 +6,6 @@ use crate::prelude::*;
 
 #[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 pub enum DemuxerError {
-    #[error("scheduler error")]
-    Scheduler(SchedulerError),
-    #[error("verifier error")]
-    Verifier(VerifierError),
-    #[error("fork detector")]
-    ForkDetector(ForkDetectorError),
     #[error("I/O error")]
     Io(IoError),
 }
@@ -41,140 +35,82 @@ impl Demuxer {
         }
     }
 
-    pub fn verify_height(
-        &self,
-        height: Height,
-        trusted_state: TrustedState,
-        options: VerificationOptions,
-    ) -> Result<Vec<LightBlock>, DemuxerError> {
-        let input = SchedulerInput::VerifyHeight {
-            height,
-            trusted_state,
-            options,
-        };
+    pub fn run(&mut self) {
+        // self.verify();
+        // self.detect_forks();
+    }
 
-        let result = self.run_scheduler(input)?;
+    pub fn verify(&mut self, mut light_block: LightBlock, options: VerificationOptions) {
+        loop {
+            let trusted_state = self.state.trusted_store_reader.latest().unwrap(); // FIXME
+            let verif_result = self.verify_light_block(&light_block, &trusted_state, &options);
 
-        match result {
-            SchedulerOutput::TrustedStates(trusted_states) => {
-                // self.state.add_trusted_states(trusted_states.clone());
-                Ok(trusted_states)
+            if let VerifierOutput::Success = verif_result {
+                self.state.add_trusted_state(light_block.clone());
+            }
+
+            let schedule = self.schedule(&light_block, &trusted_state, verif_result);
+
+            match schedule {
+                SchedulerOutput::Done => {
+                    // Done
+                }
+                SchedulerOutput::NextHeight(next_height) => {
+                    light_block = self.fetch_light_block(next_height).unwrap() // FIXME
+                }
+                SchedulerOutput::Abort => todo!(),
             }
         }
     }
 
     pub fn verify_light_block(
         &self,
-        light_block: LightBlock,
-        trusted_state: TrustedState,
-        options: VerificationOptions,
-    ) -> Result<Vec<LightBlock>, DemuxerError> {
-        let input = SchedulerInput::VerifyLightBlock {
-            light_block,
-            trusted_state,
-            options,
+        light_block: &LightBlock,
+        trusted_state: &TrustedState,
+        options: &VerificationOptions,
+    ) -> VerifierOutput {
+        let input = VerifierInput::VerifyLightBlock {
+            light_block: light_block.clone(),
+            trusted_state: trusted_state.clone(),
+            options: options.clone(),
         };
 
-        let result = self.run_scheduler(input)?;
-
-        match result {
-            SchedulerOutput::TrustedStates(trusted_states) => {
-                // self.state.add_trusted_states(trusted_states.clone());
-                Ok(trusted_states)
-            }
-        }
+        self.verifier.process(input)
     }
 
-    pub fn validate_light_block(
+    pub fn schedule(
         &self,
-        light_block: LightBlock,
-        trusted_state: TrustedState,
-        options: VerificationOptions,
-    ) -> Result<LightBlock, DemuxerError> {
-        let input = VerifierInput::VerifyLightBlock {
-            light_block,
-            trusted_state,
-            options,
+        light_block: &LightBlock,
+        trusted_state: &TrustedState,
+        verifier_result: VerifierOutput,
+    ) -> SchedulerOutput {
+        let input = SchedulerInput::Schedule {
+            light_block: light_block.clone(),
+            trusted_state: trusted_state.clone(),
+            verifier_result,
         };
 
-        let result = self
-            .verifier
-            .process(input)
-            .map_err(|e| DemuxerError::Verifier(e))?;
-
-        match result {
-            VerifierOutput::ValidLightBlock(valid_light_block) => {
-                // self.state.add_valid_light_block(valid_light_block.clone());
-                Ok(valid_light_block)
-            }
-        }
+        self.scheduler.process(input)
     }
 
     pub fn detect_forks(&self) -> Result<(), DemuxerError> {
         let light_blocks = self.state.trusted_store_reader.all();
         let input = ForkDetectorInput::Detect(light_blocks);
 
-        let result = self
-            .fork_detector
-            .process(input)
-            .map_err(DemuxerError::ForkDetector)?;
+        let result = self.fork_detector.process(input);
 
         match result {
             ForkDetectorOutput::NotDetected => Ok(()),
+            ForkDetectorOutput::Detected(_, _) => Ok(()), // TODO
         }
     }
 
     pub fn fetch_light_block(&self, height: Height) -> Result<LightBlock, DemuxerError> {
         let input = IoInput::FetchLightBlock(height);
-
         let result = self.io.process(input).map_err(|e| DemuxerError::Io(e))?;
 
         match result {
-            IoOutput::FetchedLightBlock(lb) => {
-                // self.state.add_fetched_light_block(lb.clone());
-                Ok(lb)
-            }
+            IoOutput::FetchedLightBlock(light_block) => Ok(light_block),
         }
-    }
-
-    fn handle_request(&self, request: SchedulerRequest) -> Result<SchedulerResponse, DemuxerError> {
-        match request {
-            SchedulerRequest::GetLightBlock(height) => self
-                .fetch_light_block(height)
-                .map(|lb| SchedulerResponse::LightBlock(lb)),
-
-            SchedulerRequest::VerifyLightBlock {
-                light_block,
-                trusted_state,
-                options,
-            } => match self.verify_light_block(light_block, trusted_state, options) {
-                Ok(ts) => Ok(SchedulerResponse::Verified(Ok(ts))),
-                Err(DemuxerError::Verifier(err)) => Ok(SchedulerResponse::Verified(Err(err))),
-                Err(err) => Err(err),
-            },
-
-            SchedulerRequest::ValidateLightBlock {
-                light_block,
-                trusted_state,
-                options,
-            } => match self.validate_light_block(light_block, trusted_state, options) {
-                Ok(ts) => Ok(SchedulerResponse::Validated(Ok(ts))),
-                Err(DemuxerError::Verifier(err)) => Ok(SchedulerResponse::Validated(Err(err))),
-                Err(err) => Err(err),
-            },
-        }
-    }
-
-    fn run_scheduler(&self, input: SchedulerInput) -> Result<SchedulerOutput, DemuxerError> {
-        let scheduler = Gen::new(|co| {
-            self.scheduler
-                .process(self.state.trusted_store_reader(), input, co)
-        });
-
-        let result = drain(scheduler, SchedulerResponse::Init, |req| {
-            self.handle_request(req)
-        })?;
-
-        result.map_err(|e| DemuxerError::Scheduler(e))
     }
 }

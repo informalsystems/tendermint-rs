@@ -66,24 +66,7 @@ impl From<tendermint::block::signed_header::SignedHeader> for SignedHeader {
     }
 }
 
-// FIXME: Do we actually need to distinguish between LightBlock and TrustedState?
 pub type TrustedState = LightBlock;
-
-// #[derive(Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
-// #[display(fmt = "{:?}", self)]
-// pub struct TrustedState {
-//     pub header: Header,
-//     pub validators: ValidatorSet,
-// }
-
-// impl From<LightBlock> for TrustedState {
-//     fn from(light_block: LightBlock) -> Self {
-//         Self {
-//             header: light_block.signed_header.header,
-//             validators: light_block.validator_set,
-//         }
-//     }
-// }
 
 #[derive(Clone, Debug, Display, PartialEq, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]

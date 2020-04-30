@@ -1,13 +1,6 @@
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::prelude::*;
-
-#[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
-pub enum ForkDetectorError {
-    #[error("conflicting blocks: {0} and {1}")]
-    ConflictingBlocks(LightBlock, LightBlock),
-}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ForkDetectorInput {
@@ -16,13 +9,12 @@ pub enum ForkDetectorInput {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ForkDetectorOutput {
+    Detected(LightBlock, LightBlock),
     NotDetected,
 }
 
-pub type ForkDetectorResult = Result<ForkDetectorOutput, ForkDetectorError>;
-
 pub trait ForkDetector {
-    fn process(&self, input: ForkDetectorInput) -> ForkDetectorResult;
+    fn process(&self, input: ForkDetectorInput) -> ForkDetectorOutput;
 }
 
 pub struct RealForkDetector {
@@ -30,7 +22,7 @@ pub struct RealForkDetector {
 }
 
 impl ForkDetector for RealForkDetector {
-    fn process(&self, input: ForkDetectorInput) -> ForkDetectorResult {
+    fn process(&self, input: ForkDetectorInput) -> ForkDetectorOutput {
         match input {
             ForkDetectorInput::Detect(light_blocks) => self.detect(light_blocks),
         }
@@ -44,9 +36,9 @@ impl RealForkDetector {
         }
     }
 
-    pub fn detect(&self, mut light_blocks: Vec<LightBlock>) -> ForkDetectorResult {
+    pub fn detect(&self, mut light_blocks: Vec<LightBlock>) -> ForkDetectorOutput {
         if light_blocks.is_empty() {
-            return Ok(ForkDetectorOutput::NotDetected);
+            return ForkDetectorOutput::NotDetected;
         }
 
         let first_block = light_blocks.pop().unwrap(); // Safety: checked above that not empty.
@@ -56,13 +48,10 @@ impl RealForkDetector {
             let hash = self.header_hasher.hash(light_block.header());
 
             if first_hash != hash {
-                return Err(ForkDetectorError::ConflictingBlocks(
-                    first_block,
-                    light_block,
-                ));
+                return ForkDetectorOutput::Detected(first_block, light_block);
             }
         }
 
-        Ok(ForkDetectorOutput::NotDetected)
+        ForkDetectorOutput::NotDetected
     }
 }

@@ -1,15 +1,16 @@
+use light_spike::components::scheduler;
 use light_spike::prelude::*;
 
 pub fn main() {
-    let store = TrustedStore::new();
-    let (trusted_store_reader, trusted_store_writer) = store.split();
+    let (trusted_store_reader, trusted_store_writer) = Store::new().split();
+    let (untrusted_store_reader, untrusted_store_writer) = Store::new().split();
 
     let state = State {
         trusted_store_reader,
         trusted_store_writer,
+        untrusted_store_reader,
+        untrusted_store_writer,
     };
-
-    let scheduler = RealScheduler;
 
     let predicates = light_spike::predicates::production::ProductionPredicates;
     let voting_power_calculator: Box<dyn VotingPowerCalculator> = todo(());
@@ -29,7 +30,7 @@ pub fn main() {
     let rpc_client = todo(());
     let io = RealIo::new(rpc_client);
 
-    let demuxer = Demuxer::new(state, scheduler, verifier, fork_detector, io);
+    let demuxer = Demuxer::new(state, scheduler::schedule, verifier, fork_detector, io);
     todo(demuxer)
 }
 
