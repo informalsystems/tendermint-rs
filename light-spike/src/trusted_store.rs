@@ -34,6 +34,10 @@ impl TrustedStore {
     pub fn add(&mut self, trusted_state: TrustedState) {
         self.store.insert(trusted_state.height, trusted_state);
     }
+
+    pub fn all(&self) -> Vec<&TrustedState> {
+        self.store.values().collect()
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -44,6 +48,16 @@ pub struct TSReader {
 impl TSReader {
     pub fn get(&self, height: Height) -> Option<TrustedState> {
         self.ts.read().unwrap().get(height).cloned()
+    }
+
+    pub fn all(&self) -> Vec<TrustedState> {
+        self.ts
+            .read()
+            .unwrap()
+            .all()
+            .into_iter()
+            .map(Clone::clone)
+            .collect()
     }
 }
 

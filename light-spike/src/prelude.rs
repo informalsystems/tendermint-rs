@@ -1,4 +1,5 @@
 pub use crate::components::demuxer::*;
+pub use crate::components::fork_detector::*;
 pub use crate::components::io::*;
 pub use crate::components::scheduler::*;
 pub use crate::components::state::*;
@@ -18,4 +19,3 @@ pub use genawaiter::{
     rc::{Co, Gen},
     GeneratorState,
 };
-

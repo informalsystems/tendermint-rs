@@ -10,6 +10,8 @@ pub enum DemuxerError {
     Scheduler(SchedulerError),
     #[error("verifier error")]
     Verifier(VerifierError),
+    #[error("fork detector")]
+    ForkDetector(ForkDetectorError),
     #[error("I/O error")]
     Io(IoError),
 }
@@ -18,15 +20,23 @@ pub struct Demuxer {
     state: State,
     scheduler: Scheduler,
     verifier: Verifier,
+    fork_detector: ForkDetector,
     io: Io,
 }
 
 impl Demuxer {
-    pub fn new(state: State, scheduler: Scheduler, verifier: Verifier, io: Io) -> Self {
+    pub fn new(
+        state: State,
+        scheduler: Scheduler,
+        verifier: Verifier,
+        fork_detector: ForkDetector,
+        io: Io,
+    ) -> Self {
         Self {
             state,
             scheduler,
             verifier,
+            fork_detector,
             io,
         }
     }
@@ -97,6 +107,20 @@ impl Demuxer {
                 self.state.add_valid_light_block(valid_light_block.clone());
                 Ok(valid_light_block)
             }
+        }
+    }
+
+    pub fn detect_forks(&mut self) -> Result<(), DemuxerError> {
+        let light_blocks = self.state.trusted_store_reader.all();
+        let input = ForkDetectorInput::Detect(light_blocks);
+
+        let result = self
+            .fork_detector
+            .process(input)
+            .map_err(DemuxerError::ForkDetector)?;
+
+        match result {
+            ForkDetectorOutput::NotDetected => Ok(()),
         }
     }
 
