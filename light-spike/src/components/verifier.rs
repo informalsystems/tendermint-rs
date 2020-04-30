@@ -3,13 +3,13 @@ use thiserror::Error;
 
 use crate::prelude::*;
 
-#[derive(Clone, Debug, Error, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 pub enum VerifierError {
     #[error("invalid light block")]
     InvalidLightBlock(#[from] VerificationError),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum VerifierInput {
     VerifyLightBlock {
         trusted_state: TrustedState,
@@ -18,7 +18,7 @@ pub enum VerifierInput {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum VerifierOutput {
     ValidLightBlock(LightBlock),
 }

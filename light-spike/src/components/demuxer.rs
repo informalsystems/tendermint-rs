@@ -4,7 +4,7 @@ use thiserror::Error;
 use super::{io::*, scheduler::*, verifier::*};
 use crate::prelude::*;
 
-#[derive(Clone, Debug, Error, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 pub enum DemuxerError {
     #[error("scheduler error")]
     Scheduler(SchedulerError),

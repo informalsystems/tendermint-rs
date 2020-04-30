@@ -6,17 +6,17 @@ use thiserror::Error;
 
 use crate::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum IoInput {
     FetchLightBlock(Height),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum IoOutput {
     FetchedLightBlock(LightBlock),
 }
 
-#[derive(Clone, Debug, Error, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 pub enum IoError {
     #[error(transparent)]
     IoError(#[from] rpc::Error),

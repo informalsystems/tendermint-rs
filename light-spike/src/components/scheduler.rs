@@ -14,7 +14,7 @@ pub trait Scheduler {
     ) -> SchedulerResult;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum SchedulerInput {
     VerifyHeight {
         height: Height,
@@ -28,12 +28,12 @@ pub enum SchedulerInput {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum SchedulerOutput {
     TrustedStates(Vec<TrustedState>),
 }
 
-#[derive(Clone, Debug, Error, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 pub enum SchedulerError {
     #[error("invalid light block {0} because: {1}")]
     InvalidLightBlock(LightBlock, VerifierError),

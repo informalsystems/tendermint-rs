@@ -7,7 +7,7 @@ pub use tendermint::lite::types::Height;
 
 use crate::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct VerificationOptions {
     pub trust_threshold: TrustThreshold,
@@ -15,7 +15,7 @@ pub struct VerificationOptions {
     pub now: SystemTime,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct Header {
     pub height: Height,
@@ -25,7 +25,7 @@ pub struct Header {
     pub hash: Hash, // TODO: What if we don't have this
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct ValidatorSet {
     pub hash: Hash,
@@ -37,20 +37,21 @@ impl From<std::vec::Vec<tendermint::validator::Info>> for ValidatorSet {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct Commit {
     pub header_hash: Hash,
+    pub commit: tendermint::block::Commit,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct TrustThreshold {
     pub numerator: u64,
     pub denominator: u64,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct SignedHeader {
     pub header: Header,
@@ -68,7 +69,7 @@ impl From<tendermint::block::signed_header::SignedHeader> for SignedHeader {
 // FIXME: Do we actually need to distinguish between LightBlock and TrustedState?
 pub type TrustedState = LightBlock;
 
-// #[derive(Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
+// #[derive(Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 // #[display(fmt = "{:?}", self)]
 // pub struct TrustedState {
 //     pub header: Header,
@@ -84,7 +85,7 @@ pub type TrustedState = LightBlock;
 //     }
 // }
 
-#[derive(Clone, Debug, Display, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Display, PartialEq, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct LightBlock {
     pub height: Height,

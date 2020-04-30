@@ -3,18 +3,18 @@ use thiserror::Error;
 
 use crate::prelude::*;
 
-#[derive(Clone, Debug, Error, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 pub enum ForkDetectorError {
     #[error("conflicting blocks: {0} and {1}")]
     ConflictingBlocks(LightBlock, LightBlock),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ForkDetectorInput {
     Detect(Vec<LightBlock>),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ForkDetectorOutput {
     NotDetected,
 }

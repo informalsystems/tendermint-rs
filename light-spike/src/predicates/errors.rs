@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::prelude::*;
 
-#[derive(Debug, Clone, Error, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Error, PartialEq, Serialize, Deserialize)]
 pub enum VerificationError {
     #[error("header from the future: header_time={header_time:?} now={now:?}")]
     HeaderFromTheFuture {
