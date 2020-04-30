@@ -92,11 +92,15 @@ pub trait VerificationPredicates {
         options: VerificationOptions,
     ) -> Result<(), VerificationError> {
         let untrusted_sh = &light_block.signed_header;
-        let untrusted_vals = &light_block.validator_set;
-        let untrusted_next_vals = &light_block.next_validator_set;
+        let untrusted_vals = &light_block.validators;
+        let untrusted_next_vals = &light_block.next_validators;
 
         // Ensure the latest trusted header hasn't expired
-        self.is_within_trust_period(&trusted_state.header, options.trusting_period, options.now)?;
+        self.is_within_trust_period(
+            &trusted_state.header(),
+            options.trusting_period,
+            options.now,
+        )?;
 
         // Ensure the header validator hashes match the given validators
         self.validator_sets_match(&untrusted_sh, &untrusted_vals)?;
@@ -114,11 +118,11 @@ pub trait VerificationPredicates {
             commit_validator,
         )?;
 
-        self.is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.header)?;
+        self.is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.header())?;
 
-        if untrusted_sh.header.height == trusted_state.header.height {
+        if untrusted_sh.header.height == trusted_state.header().height {
             self.valid_next_validator_set(&untrusted_sh, &untrusted_next_vals)?;
-        } else if untrusted_sh.header.height > trusted_state.header.height {
+        } else if untrusted_sh.header.height > trusted_state.header().height {
             self.has_sufficient_voting_power(
                 &untrusted_sh.commit,
                 &untrusted_sh.validators,
@@ -127,7 +131,7 @@ pub trait VerificationPredicates {
             )?;
         } else {
             // This check will always fail since trusted_state.header < untrusted_sh.header
-            self.is_monotonic_height(&trusted_state.header, &untrusted_sh.header)?;
+            self.is_monotonic_height(&trusted_state.header(), &untrusted_sh.header)?;
             unreachable!();
         }
 

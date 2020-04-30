@@ -9,8 +9,6 @@ pub enum VerifierError {
     InvalidLightBlock(#[from] VerificationError),
 }
 
-impl_event!(VerifierError);
-
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum VerifierInput {
     VerifyLightBlock {
@@ -24,10 +22,10 @@ impl_event!(VerifierInput);
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum VerifierOutput {
-    ValidLightBlock(TrustedState),
+    ValidLightBlock(LightBlock),
 }
 
-impl_event!(VerifierOutput);
+pub type VerifierResult = Result<VerifierOutput, VerifierError>;
 
 pub struct Verifier {
     predicates: Box<dyn VerificationPredicates>,
@@ -51,10 +49,20 @@ impl Verifier {
         }
     }
 
+    pub fn process(&self, input: VerifierInput) -> VerifierResult {
+        match input {
+            VerifierInput::VerifyLightBlock {
+                trusted_state,
+                light_block,
+                options,
+            } => self.verify_light_block(light_block, trusted_state, options),
+        }
+    }
+
     pub fn verify_light_block(
         &self,
-        trusted_state: TrustedState,
         light_block: LightBlock,
+        trusted_state: TrustedState,
         options: VerificationOptions,
     ) -> Result<VerifierOutput, VerifierError> {
         self.predicates.verify_light_block(
@@ -66,11 +74,8 @@ impl Verifier {
             options,
         )?;
 
-        let new_trusted_state = TrustedState {
-            header: light_block.signed_header.header,
-            validators: light_block.validator_set,
-        };
-
+        // FIXME: Do we actually need to distinguish between LightBlock and TrustedState?
+        let new_trusted_state = light_block.into();
         Ok(VerifierOutput::ValidLightBlock(new_trusted_state))
     }
 }

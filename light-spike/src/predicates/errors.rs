@@ -57,4 +57,12 @@ impl VerificationError {
     pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
         Context::new(self, Some(source.into()))
     }
+
+    pub fn not_enough_trust(&self) -> bool {
+        if let Self::InsufficientVotingPower { .. } = self {
+            true
+        } else {
+            false
+        }
+    }
 }

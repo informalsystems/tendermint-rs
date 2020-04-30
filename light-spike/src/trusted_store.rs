@@ -32,8 +32,7 @@ impl TrustedStore {
     }
 
     pub fn add(&mut self, trusted_state: TrustedState) {
-        self.store
-            .insert(trusted_state.header.height, trusted_state);
+        self.store.insert(trusted_state.height, trusted_state);
     }
 }
 

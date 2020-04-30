@@ -9,12 +9,13 @@
 pub mod components;
 pub mod errors;
 pub mod event;
+pub mod macros;
 pub mod operations;
 pub mod predicates;
 pub mod prelude;
-pub mod trace;
 pub mod trusted_store;
 pub mod types;
+pub mod utils;
 
 #[cfg(test)]
 mod tests {

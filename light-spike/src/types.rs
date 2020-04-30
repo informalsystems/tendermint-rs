@@ -5,6 +5,16 @@ use std::time::SystemTime;
 pub use tendermint::hash::Hash;
 pub use tendermint::lite::types::Height;
 
+use crate::prelude::*;
+
+#[derive(Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
+#[display(fmt = "{:?}", self)]
+pub struct VerificationOptions {
+    pub trust_threshold: TrustThreshold,
+    pub trusting_period: Duration,
+    pub now: SystemTime,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct Header {
@@ -55,17 +65,35 @@ impl From<tendermint::block::signed_header::SignedHeader> for SignedHeader {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
-#[display(fmt = "{:?}", self)]
-pub struct TrustedState {
-    pub header: Header,
-    pub validators: ValidatorSet,
-}
+// FIXME: Do we actually need to distinguish between LightBlock and TrustedState?
+pub type TrustedState = LightBlock;
+
+// #[derive(Clone, Debug, PartialEq, Eq, Display, Serialize, Deserialize)]
+// #[display(fmt = "{:?}", self)]
+// pub struct TrustedState {
+//     pub header: Header,
+//     pub validators: ValidatorSet,
+// }
+
+// impl From<LightBlock> for TrustedState {
+//     fn from(light_block: LightBlock) -> Self {
+//         Self {
+//             header: light_block.signed_header.header,
+//             validators: light_block.validator_set,
+//         }
+//     }
+// }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LightBlock {
     pub height: Height,
     pub signed_header: SignedHeader,
-    pub validator_set: ValidatorSet,
-    pub next_validator_set: ValidatorSet,
+    pub validators: ValidatorSet,
+    pub next_validators: ValidatorSet,
+}
+
+impl LightBlock {
+    pub fn header(&self) -> &Header {
+        &self.signed_header.header
+    }
 }
