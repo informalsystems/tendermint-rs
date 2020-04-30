@@ -589,13 +589,14 @@ func Verify(untrustedLB LightBlock, trustedLB LightBlock) (result)
         - if *untrustedLB* is the immediate successor of *trustedLB*,
           or otherwise,
         - if
-		   -  signatures of a set of
-             validators that have more than *max(1/3,trustThreshold)* of
-             voting power in
-             *trustedLB.Nextvalidators*
-			 is contained in *untrustedLB.Commit* (that is, header passes the tests [**[TMBC-VAL-CONTAINS-CORR]**][TMBC-VAL-CONTAINS-CORR-link]  and [**[TMBC-VAL-COMMIT]**][TMBC-VAL-COMMIT-link])
-	- Returns `CANNOT_VERIFY` if:
-        -  *untrustedLB* is *not* the immediate successor of
+		   - signatures of a set of validators that have more than
+             *max(1/3,trustThreshold)* of voting power in
+             *trustedLB.Nextvalidators* is contained in
+             *untrustedLB.Commit* (that is, header passes the tests
+             [**[TMBC-VAL-CONTAINS-CORR]**][TMBC-VAL-CONTAINS-CORR-link]
+             and [**[TMBC-VAL-COMMIT]**][TMBC-VAL-COMMIT-link])
+    - Returns `CANNOT_VERIFY` if:
+         - *untrustedLB* is *not* the immediate successor of
            *trustedLB*
 		   and the  *max(1/3,trustThreshold)* threshold is not reached
            (that is, if
