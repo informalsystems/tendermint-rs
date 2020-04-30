@@ -153,12 +153,15 @@ impl JSONRPC {
         action_query: &str,
     ) -> Result<std::collections::HashMap<String, Vec<String>>, &'static str> {
         let events = &self.result.events;
-        if events["message.module"].contains(&module_query.to_owned())
-            && events["message.action"].contains(&action_query.to_owned())
-        {
-            Ok(events.clone())
-        } else {
-            Err("Incorrect Event Type")
+        if let Some(message_module) = events.get("message_module"){
+           if let Some(message_action) = events.get("message.action"){
+            if message_module.contains(&module_query.to_owned()) && message_action.contains(&action_query.to_owned()) {
+                return Ok(events.clone());
+            }
+            }
         }
+
+        return Err("Incorrect Event Type");
+        
     }
 }
