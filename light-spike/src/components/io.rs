@@ -6,6 +6,8 @@ use thiserror::Error;
 
 use crate::prelude::*;
 
+pub const LATEST_HEIGHT: Height = 0;
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum IoInput {
     FetchLightBlock(Height),
