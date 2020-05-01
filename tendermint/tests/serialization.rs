@@ -118,3 +118,36 @@ fn deserialize_vec_from_string() {
     assert_eq!(result.mybase64bytes, "MyString decoded.".as_bytes());
     assert_eq!(result.stringifiedbytes, "hello".as_bytes());
 }
+
+#[test]
+fn serialize_emptyvec_into_emptystring() {
+    let outgoing = BytesTests {
+        myhexbytes: vec![],
+        mybase64bytes: vec![],
+        stringifiedbytes: vec![],
+    };
+
+    let result: String = serde_json::to_string(&outgoing).unwrap();
+
+    assert_eq!(
+        result,
+        r#"{"myhexbytes":"","mybase64bytes":"","stringifiedbytes":""}"#
+    );
+}
+
+#[test]
+fn deserialize_emptyvec_from_null() {
+    let incoming = r#"
+    {
+      "myhexbytes": null,
+      "mybase64bytes": null,
+      "stringifiedbytes": null
+    }
+    "#;
+
+    let result: BytesTests = serde_json::from_str(&incoming).unwrap();
+
+    assert_eq!(result.myhexbytes, Vec::<u8>::new());
+    assert_eq!(result.mybase64bytes, Vec::<u8>::new());
+    assert_eq!(result.stringifiedbytes, Vec::<u8>::new());
+}
