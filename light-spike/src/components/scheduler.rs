@@ -18,7 +18,7 @@ where
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum SchedulerInput {
     Schedule {
-        light_block: LightBlock,
+        checked_header: LightBlock,
         trusted_state: TrustedState,
         verifier_result: VerifierOutput,
     },
@@ -34,22 +34,22 @@ pub enum SchedulerOutput {
 pub fn schedule(input: SchedulerInput) -> SchedulerOutput {
     match input {
         SchedulerInput::Schedule {
-            light_block,
+            checked_header,
             trusted_state,
             verifier_result,
         } => match verifier_result {
             VerifierOutput::Success => SchedulerOutput::Done,
             VerifierOutput::NotEnoughTrust => {
-                SchedulerOutput::NextHeight(compute_pivot_height(&light_block, &trusted_state))
+                SchedulerOutput::NextHeight(compute_pivot_height(&checked_header, &trusted_state))
             }
             VerifierOutput::Invalid(_) => SchedulerOutput::Abort,
         },
     }
 }
 
-fn compute_pivot_height(light_block: &LightBlock, trusted_state: &TrustedState) -> Height {
+fn compute_pivot_height(checked_header: &LightBlock, trusted_state: &TrustedState) -> Height {
     let trusted_height = trusted_state.height;
-    let untrusted_height = light_block.height;
+    let untrusted_height = checked_header.height;
 
     assert!(trusted_height < untrusted_height);
 

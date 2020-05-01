@@ -74,7 +74,9 @@ impl Demuxer {
             let verif_result = self.verify_light_block(&light_block, &trusted_state, &self.options);
 
             if let VerifierOutput::Success = verif_result {
-                self.state.add_trusted_state(light_block.clone());
+                self.state.trusted_store_writer.add(light_block.clone());
+            } else {
+                self.state.untrusted_store_writer.add(light_block.clone());
             }
 
             let schedule = self.schedule(&light_block, &trusted_state, verif_result);
@@ -83,6 +85,14 @@ impl Demuxer {
                 SchedulerOutput::Done => break,
                 SchedulerOutput::Abort => return,
                 SchedulerOutput::NextHeight(next_height) => {
+                    postcondition!(contracts::schedule::postcondition(
+                        &light_block,
+                        target_height,
+                        next_height,
+                        &self.state.trusted_store_reader,
+                        &self.state.untrusted_store_reader
+                    ));
+
                     light_block = match self.fetch_light_block(next_height) {
                         Ok(light_block) => light_block,
                         Err(_) => return, // couldn't fetch next block, abort.
@@ -116,12 +126,12 @@ impl Demuxer {
 
     pub fn schedule(
         &self,
-        light_block: &LightBlock,
+        checked_header: &LightBlock,
         trusted_state: &TrustedState,
         verifier_result: VerifierOutput,
     ) -> SchedulerOutput {
         let input = SchedulerInput::Schedule {
-            light_block: light_block.clone(),
+            checked_header: checked_header.clone(),
             trusted_state: trusted_state.clone(),
             verifier_result,
         };
@@ -192,6 +202,26 @@ pub mod contracts {
             let expires_at = header_time + trusting_period;
 
             header_time < now && expires_at > now && header_time <= now
+        }
+    }
+
+    pub mod schedule {
+        use crate::prelude::*;
+
+        pub fn postcondition(
+            checked_header: &LightBlock,
+            target_height: Height,
+            next_height: Height,
+            trusted_store: &StoreReader<Trusted>,
+            untrusted_store: &StoreReader<Untrusted>,
+        ) -> bool {
+            let current_height = checked_header.height;
+
+            next_height <= target_height
+                && (next_height > current_height
+                    || next_height == current_height && current_height == target_height)
+                && (trusted_store.get(current_height).as_ref() == Some(checked_header)
+                    || untrusted_store.get(current_height).as_ref() == Some(checked_header))
         }
     }
 }

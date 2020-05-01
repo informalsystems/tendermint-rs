@@ -12,6 +12,15 @@ pub fn main() {
         untrusted_store_writer,
     };
 
+    let options = VerificationOptions {
+        trust_threshold: TrustThreshold {
+            numerator: 1,
+            denominator: 3,
+        },
+        trusting_period: Duration::from_secs(3600),
+        now: SystemTime::now(),
+    };
+
     let predicates = light_spike::predicates::production::ProductionPredicates;
     let voting_power_calculator: Box<dyn VotingPowerCalculator> = todo(());
     let commit_validator: Box<dyn CommitValidator> = todo(());
@@ -30,7 +39,15 @@ pub fn main() {
     let rpc_client = todo(());
     let io = RealIo::new(rpc_client);
 
-    let demuxer = Demuxer::new(state, scheduler::schedule, verifier, fork_detector, io);
+    let demuxer = Demuxer::new(
+        state,
+        options,
+        scheduler::schedule,
+        verifier,
+        fork_detector,
+        io,
+    );
+
     todo(demuxer)
 }
 
