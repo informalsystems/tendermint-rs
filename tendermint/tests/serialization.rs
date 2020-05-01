@@ -87,7 +87,7 @@ fn deserialize_duration_from_string() {
 }
 
 #[test]
-fn serialize_vec_into_hexstring() {
+fn serialize_vec_into_string() {
     let outgoing = BytesTests {
         myhexbytes: vec![00, 255, 32],
         mybase64bytes: "MyString encoded.".as_bytes().to_vec(),
@@ -103,7 +103,7 @@ fn serialize_vec_into_hexstring() {
 }
 
 #[test]
-fn deserialize_vec_from_hexstring() {
+fn deserialize_vec_from_string() {
     let incoming = r#"
     {
       "myhexbytes": "412042FF00",
@@ -116,4 +116,5 @@ fn deserialize_vec_from_hexstring() {
 
     assert_eq!(result.myhexbytes, vec![65, 32, 66, 255, 0]);
     assert_eq!(result.mybase64bytes, "MyString decoded.".as_bytes());
+    assert_eq!(result.stringifiedbytes, "hello".as_bytes());
 }
