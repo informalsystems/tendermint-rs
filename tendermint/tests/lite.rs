@@ -1,7 +1,6 @@
 use anomaly::fail;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::{fs, path::PathBuf};
@@ -167,6 +166,7 @@ fn run_test_cases(cases: TestCases) {
         let trusted_next_vals = tc.initial.clone().next_validator_set;
         let mut latest_trusted =
             Trusted::new(tc.initial.signed_header.clone().into(), trusted_next_vals);
+        check_symmetric_encoding(&latest_trusted);
 
         let expects_err = match &tc.expected_output {
             Some(eo) => eo.eq("error"),
@@ -203,6 +203,7 @@ fn run_test_cases(cases: TestCases) {
                     assert!(!expects_err);
 
                     latest_trusted = new_state.clone();
+                    check_symmetric_encoding(&latest_trusted);
                 }
                 Err(_) => {
                     assert!(expects_err);
@@ -210,6 +211,10 @@ fn run_test_cases(cases: TestCases) {
             }
         }
     }
+}
+
+fn check_symmetric_encoding<T: Serialize + for<'a> Deserialize<'a>>(value: &T) {
+    serde_json::from_str::<T>(&serde_json::to_string(value).unwrap()).expect("encoded can be decode again");
 }
 
 // Link to the commit where the happy_path.json was created:

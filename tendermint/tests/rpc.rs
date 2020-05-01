@@ -59,6 +59,12 @@ mod endpoints {
             endpoint::block::Response::from_string(&read_json_fixture("block_with_evidences"))
                 .unwrap();
 
+        // test the symmetricity
+        serde_json::from_str::<endpoint::block::Response>(
+            &serde_json::to_string(&response).unwrap(),
+        )
+        .expect("encoded can be decode again");
+
         let tendermint::Block { evidence, .. } = response.block;
         let evidence = evidence.iter().next().unwrap();
         match evidence {
@@ -88,6 +94,12 @@ mod endpoints {
         let response =
             endpoint::block::Response::from_string(&read_json_fixture("first_block")).unwrap();
 
+        // test the symmetricity
+        serde_json::from_str::<endpoint::block::Response>(
+            &serde_json::to_string(&response).unwrap(),
+        )
+        .expect("encoded can be decode again");
+
         let tendermint::Block {
             header,
             data,
@@ -109,6 +121,7 @@ mod endpoints {
         let response =
             endpoint::block_results::Response::from_string(&read_json_fixture("block_results"))
                 .unwrap();
+
         assert_eq!(response.height.value(), 1814);
 
         let validator_updates = response.validator_updates;
