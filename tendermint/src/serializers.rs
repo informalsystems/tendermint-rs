@@ -1,5 +1,9 @@
 //! Serde serializers
 //!
+//! Serializers and deserializers for a transparent developer experience.
+//!
+//! All serializers are presented in a serializers::<Rust_type_name>::<JSON_representation_name> format.
+//!
 //! This example shows how to serialize Vec<u8> into different types of strings:
 //! #[derive(Serialize, Deserialize)]
 //! struct ByteTypes {
