@@ -75,9 +75,8 @@ impl Demuxer {
     }
 
     pub fn verify(&mut self) -> Result<(), Error> {
-        let trusted_state = match self.state.trusted_store_reader.latest() {
-            Some(trusted_state) => trusted_state,
-            None => bail!(ErrorKind::NoInitialTrustedState),
+        if self.state.trusted_store_reader.latest().is_none() {
+            bail!(ErrorKind::NoInitialTrustedState)
         };
 
         let target_block = match self.fetch_light_block(LATEST_HEIGHT) {
@@ -86,16 +85,13 @@ impl Demuxer {
         };
 
         if !self.is_trusted(&target_block) {
-            self.verify_loop(trusted_state, target_block);
+            self.verify_loop(target_block.height);
         }
 
         Ok(())
     }
 
-    fn verify_loop(&mut self, trusted_state: LightBlock, target_block: LightBlock) {
-        let target_height = target_block.height;
-        dbg!(target_height);
-
+    fn verify_loop(&mut self, target_height: Height) {
         let options = self.options.set_now(self.clock.now());
 
         precondition!(
@@ -113,40 +109,51 @@ impl Demuxer {
             )
         );
 
-        let mut light_block = target_block;
+        let mut next_height = target_height;
+        let mut trusted_state = self.state.trusted_store_reader.latest().unwrap();
 
-        loop {
-            let verif_result = self.verify_light_block(&light_block, &trusted_state, &options);
+        while trusted_state.height < target_height {
+            trusted_state = self.state.trusted_store_reader.latest().unwrap();
 
-            if let &VerifierOutput::Success = &verif_result {
-                self.state.trusted_store_writer.add(light_block.clone());
+            dbg!(target_height);
+            dbg!(trusted_state.height);
+            dbg!(next_height);
+
+            let current_block = match self.fetch_light_block(next_height) {
+                Ok(current_block) => current_block,
+                Err(_) => return,
+            };
+
+            let verif_result = self.verify_light_block(&current_block, &trusted_state, &options);
+            dbg!(&verif_result);
+
+            if let VerifierOutput::Success = verif_result {
+                self.state.trusted_store_writer.add(current_block.clone());
             } else {
-                dbg!(&verif_result);
-                self.state.untrusted_store_writer.add(light_block.clone());
+                self.state.untrusted_store_writer.add(current_block.clone());
             }
 
-            let schedule = self.schedule(&light_block, &trusted_state, verif_result);
+            let schedule = self.schedule(&current_block, &trusted_state, verif_result);
+            dbg!(&schedule);
 
             match schedule {
-                SchedulerOutput::Done => break,
+                SchedulerOutput::Done => continue,
                 SchedulerOutput::Abort => return,
-                SchedulerOutput::NextHeight(next_height) => {
+                SchedulerOutput::NextHeight(height) if height <= trusted_state.height => {
+                    return;
+                }
+                SchedulerOutput::NextHeight(height) => {
                     postcondition!(contracts::schedule::postcondition(
                         &trusted_state,
                         target_height,
-                        next_height,
+                        height,
                         &self.state.trusted_store_reader,
                         &self.state.untrusted_store_reader
                     ));
 
-                    light_block = match self.fetch_light_block(next_height) {
-                        Ok(light_block) => light_block,
-                        Err(_) => return, // couldn't fetch next block, abort.
-                    }
+                    next_height = height;
                 }
             }
-
-            eprintln!();
         }
 
         postcondition!(
@@ -266,10 +273,6 @@ pub mod contracts {
             untrusted_store: &StoreReader<Untrusted>,
         ) -> bool {
             let current_height = trusted_state.height;
-
-            dbg!(current_height);
-            dbg!(target_height);
-            dbg!(next_height);
 
             (next_height <= target_height)
                 && ((next_height > current_height)

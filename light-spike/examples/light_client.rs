@@ -1,4 +1,5 @@
 use light_spike::components::scheduler;
+use light_spike::predicates::production::ProductionPredicates;
 use light_spike::prelude::*;
 
 pub fn main() {
@@ -30,7 +31,7 @@ pub fn main() {
         now: SystemTime::now(),
     };
 
-    let predicates = light_spike::predicates::production::ProductionPredicates;
+    let predicates = MockPredicates;
     let voting_power_calculator = MockVotingPower;
     let commit_validator = MockCommitValidator;
     let header_hasher = MockHeaderHasher;
@@ -75,6 +76,11 @@ impl CommitValidator for MockCommitValidator {
         _commit: &Commit,
         _validators: &ValidatorSet,
     ) -> Result<(), anomaly::BoxError> {
+        // let first_byte = commit.header_hash.as_bytes()[0];
+        // if first_byte < 90 {
+        //     return Err("invalid commit".into());
+        // }
+
         Ok(())
     }
 }
@@ -87,5 +93,131 @@ impl VotingPowerCalculator for MockVotingPower {
     }
     fn voting_power_in(&self, _commit: &Commit, _validators: &ValidatorSet) -> u64 {
         4
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct MockPredicates;
+
+impl VerificationPredicates for MockPredicates {
+    fn validator_sets_match(
+        &self,
+        signed_header: &SignedHeader,
+        validators: &ValidatorSet,
+    ) -> Result<(), VerificationError> {
+        ProductionPredicates.validator_sets_match(signed_header, validators)
+    }
+
+    fn next_validators_match(
+        &self,
+        signed_header: &SignedHeader,
+        validators: &ValidatorSet,
+    ) -> Result<(), VerificationError> {
+        ProductionPredicates.next_validators_match(signed_header, validators)
+    }
+
+    fn header_matches_commit(
+        &self,
+        header: &Header,
+        commit: &Commit,
+        header_hasher: &dyn HeaderHasher,
+    ) -> Result<(), VerificationError> {
+        ProductionPredicates.header_matches_commit(header, commit, header_hasher)
+    }
+
+    fn valid_commit(
+        &self,
+        commit: &Commit,
+        validators: &ValidatorSet,
+        validator: &dyn CommitValidator,
+    ) -> Result<(), VerificationError> {
+        ProductionPredicates.valid_commit(commit, validators, validator)
+    }
+
+    fn is_within_trust_period(
+        &self,
+        header: &Header,
+        trusting_period: Duration,
+        now: SystemTime,
+    ) -> Result<(), VerificationError> {
+        ProductionPredicates.is_within_trust_period(header, trusting_period, now)
+    }
+
+    fn is_monotonic_bft_time(
+        &self,
+        untrusted_header: &Header,
+        trusted_header: &Header,
+    ) -> Result<(), VerificationError> {
+        ProductionPredicates.is_monotonic_bft_time(untrusted_header, trusted_header)
+    }
+
+    fn is_monotonic_height(
+        &self,
+        untrusted_header: &Header,
+        trusted_header: &Header,
+    ) -> Result<(), VerificationError> {
+        ProductionPredicates.is_monotonic_height(untrusted_header, trusted_header)
+    }
+
+    fn has_sufficient_voting_power(
+        &self,
+        commit: &Commit,
+        validators: &ValidatorSet,
+        trust_threshold: &TrustThreshold,
+        calculator: &dyn VotingPowerCalculator,
+    ) -> Result<(), VerificationError> {
+        let first_byte = commit.header_hash.as_bytes()[0];
+
+        if first_byte > 140 {
+            return Err(VerificationError::InsufficientVotingPower {
+                total_power: 0,
+                voting_power: 0,
+            });
+        }
+
+        ProductionPredicates.has_sufficient_voting_power(
+            commit,
+            validators,
+            trust_threshold,
+            calculator,
+        )
+    }
+
+    fn has_sufficient_validators_overlap(
+        &self,
+        untrusted_commit: &Commit,
+        trusted_validators: &ValidatorSet,
+        trust_threshold: &TrustThreshold,
+        calculator: &dyn VotingPowerCalculator,
+    ) -> Result<(), VerificationError> {
+        ProductionPredicates.has_sufficient_validators_overlap(
+            untrusted_commit,
+            trusted_validators,
+            trust_threshold,
+            calculator,
+        )
+    }
+
+    fn has_sufficient_signers_overlap(
+        &self,
+        untrusted_commit: &Commit,
+        untrusted_validators: &ValidatorSet,
+        trust_threshold: &TrustThreshold,
+        calculator: &dyn VotingPowerCalculator,
+    ) -> Result<(), VerificationError> {
+        ProductionPredicates.has_sufficient_signers_overlap(
+            untrusted_commit,
+            untrusted_validators,
+            trust_threshold,
+            calculator,
+        )
+    }
+
+    fn valid_next_validator_set(
+        &self,
+        untrusted_sh: &SignedHeader,
+        untrusted_next_vals: &ValidatorSet,
+    ) -> Result<(), VerificationError> {
+        ProductionPredicates.valid_next_validator_set(untrusted_sh, untrusted_next_vals)
     }
 }

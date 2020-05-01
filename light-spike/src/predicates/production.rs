@@ -1,4 +1,3 @@
-use super::VerificationPredicates;
 use crate::prelude::*;
 
 #[derive(Copy, Clone, Debug)]

@@ -39,10 +39,11 @@ pub fn schedule(input: SchedulerInput) -> SchedulerOutput {
             verifier_result,
         } => match verifier_result {
             VerifierOutput::Success => SchedulerOutput::Done,
-            VerifierOutput::NotEnoughTrust => {
-                SchedulerOutput::NextHeight(compute_pivot_height(&checked_header, &trusted_state))
-            }
             VerifierOutput::Invalid(_) => SchedulerOutput::Abort,
+            VerifierOutput::NotEnoughTrust => {
+                let pivot_height = compute_pivot_height(&checked_header, &trusted_state);
+                SchedulerOutput::NextHeight(pivot_height)
+            }
         },
     }
 }
