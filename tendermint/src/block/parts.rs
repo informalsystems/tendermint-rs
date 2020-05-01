@@ -10,10 +10,7 @@ use {
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Header {
     /// Number of parts in this block
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(with = "serializers::primitives::string")]
     pub total: u64,
 
     /// Hash of the parts set header,

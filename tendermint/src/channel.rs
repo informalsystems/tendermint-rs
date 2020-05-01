@@ -15,35 +15,19 @@ pub struct Channel {
     pub id: Id,
 
     /// Capacity of the send queue
-    #[serde(
-        rename = "SendQueueCapacity",
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(rename = "SendQueueCapacity", with = "serializers::primitives::string")]
     pub send_queue_capacity: u64,
 
     /// Size of the send queue
-    #[serde(
-        rename = "SendQueueSize",
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(rename = "SendQueueSize", with = "serializers::primitives::string")]
     pub send_queue_size: u64,
 
     /// Priority value
-    #[serde(
-        rename = "Priority",
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(rename = "Priority", with = "serializers::primitives::string")]
     pub priority: u64,
 
     /// Amount of data recently sent
-    #[serde(
-        rename = "RecentlySent",
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(rename = "RecentlySent", with = "serializers::primitives::string")]
     pub recently_sent: u64,
 }
 

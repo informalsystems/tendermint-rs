@@ -25,10 +25,7 @@ pub struct Vote {
     pub height: block::Height,
 
     /// Round
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(with = "serializers::primitives::string")]
     pub round: u64,
 
     /// Block ID
@@ -42,10 +39,7 @@ pub struct Vote {
     pub validator_address: account::Id,
 
     /// Validator index
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(with = "serializers::primitives::string")]
     pub validator_index: u64,
 
     /// Signature
