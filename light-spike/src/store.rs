@@ -1,5 +1,7 @@
+// TODO: Replace this in-memory store with a proper `sled` based implementation
+
 use std::{
-    collections::HashMap,
+    collections::BTreeMap,
     marker::PhantomData,
     sync::{Arc, RwLock},
 };
@@ -14,14 +16,14 @@ pub struct Untrusted;
 
 #[derive(Debug, Default)]
 pub struct Store<T> {
-    store: HashMap<Height, LightBlock>,
+    store: BTreeMap<Height, LightBlock>,
     marker: PhantomData<T>,
 }
 
 impl<T> Store<T> {
     pub fn new() -> Self {
         Self {
-            store: HashMap::new(),
+            store: BTreeMap::new(),
             marker: PhantomData,
         }
     }
@@ -52,8 +54,12 @@ impl<T> Store<T> {
         self.store.values().collect()
     }
 
+    pub fn latest_height(&self) -> Option<Height> {
+        self.store.keys().last().copied()
+    }
+
     pub fn latest(&self) -> Option<&LightBlock> {
-        todo!()
+        self.latest_height().and_then(|h| self.get(h))
     }
 }
 
@@ -65,6 +71,10 @@ pub struct StoreReader<T> {
 impl<T> StoreReader<T> {
     pub fn get(&self, height: Height) -> Option<LightBlock> {
         self.store.read().unwrap().get(height).cloned()
+    }
+
+    pub fn latest_height(&self) -> Option<Height> {
+        self.store.read().unwrap().latest_height()
     }
 
     pub fn latest(&self) -> Option<LightBlock> {
@@ -88,10 +98,6 @@ pub struct StoreReadWriter<T> {
 }
 
 impl<T> StoreReadWriter<T> {
-    pub fn get(&self, height: Height) -> Option<LightBlock> {
-        self.store.read().unwrap().get(height).cloned()
-    }
-
     pub fn add(&mut self, light_block: LightBlock) {
         let mut store = self.store.write().unwrap();
         store.add(light_block);
