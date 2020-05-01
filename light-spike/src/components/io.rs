@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use tendermint::{block, rpc};
 use thiserror::Error;
 
+use tendermint::{block::signed_header::SignedHeader as TMSignedHeader, lite::types::Height};
+
 use crate::prelude::*;
 
 pub const LATEST_HEIGHT: Height = 0;
@@ -58,20 +60,11 @@ impl RealIo {
 
     pub fn fetch_light_block(&self, height: Height) -> IoResult {
         let signed_header = self.fetch_signed_header(height)?;
-        let validators = self.fetch_validator_set(height)?;
-        let next_validators = self.fetch_validator_set(height + 1)?;
-
-        let light_block = LightBlock {
-            height,
-            signed_header,
-            validators,
-            next_validators,
-        };
-
+        let light_block = signed_header.into();
         Ok(IoOutput::FetchedLightBlock(light_block))
     }
 
-    fn fetch_signed_header(&self, h: Height) -> Result<SignedHeader, IoError> {
+    fn fetch_signed_header(&self, h: Height) -> Result<TMSignedHeader, IoError> {
         let height: block::Height = h.into();
 
         let res = block_on(async {
@@ -82,17 +75,17 @@ impl RealIo {
         });
 
         match res {
-            Ok(response) => Ok(response.signed_header.into()),
+            Ok(response) => Ok(response.signed_header),
             Err(err) => Err(IoError::IoError(err)),
         }
     }
 
-    fn fetch_validator_set(&self, height: Height) -> Result<ValidatorSet, IoError> {
-        let res = block_on(self.rpc_client.validators(height));
+    // fn fetch_validator_set(&self, height: Height) -> Result<TMValidatorSet, IoError> {
+    //     let res = block_on(self.rpc_client.validators(height));
 
-        match res {
-            Ok(response) => Ok(response.validators.into()),
-            Err(err) => Err(IoError::IoError(err)),
-        }
-    }
+    //     match res {
+    //         Ok(response) => Ok(TMValidatorSet::new(response.validators)),
+    //         Err(err) => Err(IoError::IoError(err)),
+    //     }
+    // }
 }

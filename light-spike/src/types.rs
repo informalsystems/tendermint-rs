@@ -3,7 +3,9 @@ use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 
 pub use tendermint::hash::Hash;
-pub use tendermint::lite::types::Height;
+pub use tendermint::lite::Height;
+
+use tendermint::{block::signed_header::SignedHeader as TMSignedHeader, lite::Header as _};
 
 use crate::prelude::*;
 
@@ -60,9 +62,27 @@ pub struct SignedHeader {
     pub validators_hash: Hash,
 }
 
-impl From<tendermint::block::signed_header::SignedHeader> for SignedHeader {
-    fn from(_sh: tendermint::block::signed_header::SignedHeader) -> Self {
-        todo!()
+impl From<TMSignedHeader> for SignedHeader {
+    fn from(sh: TMSignedHeader) -> Self {
+        let validators = ValidatorSet {
+            hash: sh.header.validators_hash(),
+        };
+
+        Self {
+            header: Header {
+                height: sh.header.height().into(),
+                bft_time: sh.header.bft_time().to_system_time().unwrap(),
+                validators_hash: sh.header.validators_hash(),
+                next_validators_hash: sh.header.next_validators_hash(),
+                hash: sh.header.hash(),
+            },
+            commit: Commit {
+                header_hash: sh.header.hash(),
+                commit: sh.commit,
+            },
+            validators: validators.clone(),
+            validators_hash: validators.hash,
+        }
     }
 }
 
@@ -80,5 +100,28 @@ pub struct LightBlock {
 impl LightBlock {
     pub fn header(&self) -> &Header {
         &self.signed_header.header
+    }
+}
+
+impl From<tendermint::block::signed_header::SignedHeader> for LightBlock {
+    fn from(sh: tendermint::block::signed_header::SignedHeader) -> Self {
+        let height = sh.header.height.into();
+
+        let validators = ValidatorSet {
+            hash: sh.header.validators_hash(),
+        };
+
+        let next_validators = ValidatorSet {
+            hash: sh.header.next_validators_hash(),
+        };
+
+        let signed_header = sh.into();
+
+        Self {
+            height,
+            signed_header,
+            validators,
+            next_validators,
+        }
     }
 }
