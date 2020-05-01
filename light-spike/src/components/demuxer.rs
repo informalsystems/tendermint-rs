@@ -1,9 +1,21 @@
 use super::{io::*, scheduler::*, verifier::*};
 use crate::prelude::*;
 
+pub trait Clock {
+    fn now(&self) -> SystemTime;
+}
+
+pub struct SystemClock;
+impl Clock for SystemClock {
+    fn now(&self) -> SystemTime {
+        SystemTime::now()
+    }
+}
+
 pub struct Demuxer {
     state: State,
     options: VerificationOptions,
+    clock: Box<dyn Clock>,
     scheduler: Box<dyn Scheduler>,
     verifier: Box<dyn Verifier>,
     fork_detector: Box<dyn ForkDetector>,
@@ -14,6 +26,7 @@ impl Demuxer {
     pub fn new(
         state: State,
         options: VerificationOptions,
+        clock: impl Clock + 'static,
         scheduler: impl Scheduler + 'static,
         verifier: impl Verifier + 'static,
         fork_detector: impl ForkDetector + 'static,
@@ -22,6 +35,7 @@ impl Demuxer {
         Self {
             state,
             options,
+            clock: Box::new(clock),
             scheduler: Box::new(scheduler),
             verifier: Box::new(verifier),
             fork_detector: Box::new(fork_detector),
@@ -31,33 +45,64 @@ impl Demuxer {
 
     pub fn run(&mut self) {
         loop {
-            self.verify();
-            self.detect_forks();
+            if let Err(e) = self.verify() {
+                eprintln!("verification error: {}", e);
+                color_backtrace::print_backtrace(
+                    e.backtrace().unwrap(),
+                    &mut color_backtrace::Settings::new(),
+                )
+                .unwrap();
+            }
+
+            dbg!(&self.state.trusted_store_reader.latest_height());
+
+            if let Err(e) = self.detect_forks() {
+                eprintln!("fork detection error: {}", e);
+                color_backtrace::print_backtrace(
+                    e.backtrace().unwrap(),
+                    &mut color_backtrace::Settings::new(),
+                )
+                .unwrap();
+            }
+
+            std::thread::sleep(Duration::from_secs(1));
         }
     }
 
-    pub fn verify(&mut self) {
+    fn is_trusted(&self, light_block: &LightBlock) -> bool {
+        let in_store = self.state.trusted_store_reader.get(light_block.height);
+        in_store.as_ref() == Some(light_block)
+    }
+
+    pub fn verify(&mut self) -> Result<(), Error> {
         let trusted_state = match self.state.trusted_store_reader.latest() {
             Some(trusted_state) => trusted_state,
-            None => return, // No trusted state to start from, abort.
+            None => bail!(ErrorKind::NoInitialTrustedState),
         };
 
         let target_block = match self.fetch_light_block(LATEST_HEIGHT) {
             Ok(last_block) => last_block,
-            Err(_) => return, // No block to sync up to, abort. TODO: Deal with error
+            Err(io_error) => bail!(ErrorKind::Io(io_error)),
         };
 
-        self.verify_loop(trusted_state, target_block);
+        if !self.is_trusted(&target_block) {
+            self.verify_loop(trusted_state, target_block);
+        }
+
+        Ok(())
     }
 
     fn verify_loop(&mut self, trusted_state: LightBlock, target_block: LightBlock) {
         let target_height = target_block.height;
+        dbg!(target_height);
+
+        let options = self.options.set_now(self.clock.now());
 
         precondition!(
             contracts::verify::trusted_state_contains_block_within_trusting_period(
                 &self.state.trusted_store_reader,
                 self.options.trusting_period,
-                self.options.now
+                options.now
             )
         );
 
@@ -71,11 +116,12 @@ impl Demuxer {
         let mut light_block = target_block;
 
         loop {
-            let verif_result = self.verify_light_block(&light_block, &trusted_state, &self.options);
+            let verif_result = self.verify_light_block(&light_block, &trusted_state, &options);
 
-            if let VerifierOutput::Success = verif_result {
+            if let &VerifierOutput::Success = &verif_result {
                 self.state.trusted_store_writer.add(light_block.clone());
             } else {
+                dbg!(&verif_result);
                 self.state.untrusted_store_writer.add(light_block.clone());
             }
 
@@ -86,7 +132,7 @@ impl Demuxer {
                 SchedulerOutput::Abort => return,
                 SchedulerOutput::NextHeight(next_height) => {
                     postcondition!(contracts::schedule::postcondition(
-                        &light_block,
+                        &trusted_state,
                         target_height,
                         next_height,
                         &self.state.trusted_store_reader,
@@ -99,6 +145,8 @@ impl Demuxer {
                     }
                 }
             }
+
+            eprintln!();
         }
 
         postcondition!(
@@ -139,7 +187,7 @@ impl Demuxer {
         self.scheduler.process(input)
     }
 
-    pub fn detect_forks(&self) {
+    pub fn detect_forks(&self) -> Result<(), Error> {
         let light_blocks = self.state.trusted_store_reader.all();
         let input = ForkDetectorInput::Detect(light_blocks);
 
@@ -149,6 +197,8 @@ impl Demuxer {
             ForkDetectorOutput::NotDetected => (),    // TODO
             ForkDetectorOutput::Detected(_, _) => (), // TODO
         }
+
+        Ok(())
     }
 
     pub fn fetch_light_block(&self, height: Height) -> Result<LightBlock, IoError> {
@@ -209,19 +259,23 @@ pub mod contracts {
         use crate::prelude::*;
 
         pub fn postcondition(
-            checked_header: &LightBlock,
+            trusted_state: &LightBlock,
             target_height: Height,
             next_height: Height,
             trusted_store: &StoreReader<Trusted>,
             untrusted_store: &StoreReader<Untrusted>,
         ) -> bool {
-            let current_height = checked_header.height;
+            let current_height = trusted_state.height;
 
-            next_height <= target_height
-                && (next_height > current_height
-                    || next_height == current_height && current_height == target_height)
-                && (trusted_store.get(current_height).as_ref() == Some(checked_header)
-                    || untrusted_store.get(current_height).as_ref() == Some(checked_header))
+            dbg!(current_height);
+            dbg!(target_height);
+            dbg!(next_height);
+
+            (next_height <= target_height)
+                && ((next_height > current_height)
+                    || (next_height == current_height && current_height == target_height))
+                && ((trusted_store.get(current_height).as_ref() == Some(trusted_state))
+                    || (untrusted_store.get(current_height).as_ref() == Some(trusted_state)))
         }
     }
 }

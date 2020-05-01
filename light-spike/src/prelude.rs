@@ -11,4 +11,4 @@ pub use crate::predicates::errors::*;
 pub use crate::predicates::VerificationPredicates;
 pub use crate::store::*;
 pub use crate::types::*;
-pub use crate::{ensure, postcondition, precondition};
+pub use crate::{bail, ensure, postcondition, precondition};

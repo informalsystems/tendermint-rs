@@ -1,5 +1,3 @@
-use futures::executor::block_on;
-
 use serde::{Deserialize, Serialize};
 use tendermint::{block, rpc};
 use thiserror::Error;
@@ -88,4 +86,13 @@ impl RealIo {
     //         Err(err) => Err(IoError::IoError(err)),
     //     }
     // }
+}
+
+fn block_on<F: std::future::Future>(f: F) -> F::Output {
+    tokio::runtime::Builder::new()
+        .basic_scheduler()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(f)
 }

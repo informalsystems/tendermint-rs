@@ -17,6 +17,15 @@ pub struct VerificationOptions {
     pub now: SystemTime,
 }
 
+impl VerificationOptions {
+    pub fn set_now(&self, now: SystemTime) -> Self {
+        Self {
+            now,
+            ..self.clone()
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct Header {

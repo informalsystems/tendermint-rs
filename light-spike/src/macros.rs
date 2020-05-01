@@ -1,3 +1,9 @@
+#[macro_export]
+macro_rules! bail {
+    ($kind:expr) => {
+        return Err($kind.into());
+    };
+}
 /// Ensure a condition holds, returning an error if it doesn't (ala `assert`)
 #[macro_export]
 macro_rules! ensure {
