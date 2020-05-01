@@ -42,12 +42,33 @@ impl Demuxer {
             None => return, // No trusted state to start from, abort.
         };
 
-        let last_block = match self.fetch_light_block(LATEST_HEIGHT) {
+        let target_block = match self.fetch_light_block(LATEST_HEIGHT) {
             Ok(last_block) => last_block,
             Err(_) => return, // No block to sync up to, abort. TODO: Deal with error
         };
 
-        let mut light_block = last_block;
+        self.verify_loop(trusted_state, target_block);
+    }
+
+    fn verify_loop(&mut self, trusted_state: LightBlock, target_block: LightBlock) {
+        let target_height = target_block.height;
+
+        precondition!(
+            contracts::verify::trusted_state_contains_block_within_trusting_period(
+                &self.state.trusted_store_reader,
+                self.options.trusting_period,
+                self.options.now
+            )
+        );
+
+        precondition!(
+            contracts::verify::target_height_greater_than_all_blocks_in_trusted_store(
+                target_height,
+                &self.state.trusted_store_reader,
+            )
+        );
+
+        let mut light_block = target_block;
 
         loop {
             let verif_result = self.verify_light_block(&light_block, &trusted_state, &self.options);
@@ -59,8 +80,8 @@ impl Demuxer {
             let schedule = self.schedule(&light_block, &trusted_state, verif_result);
 
             match schedule {
-                SchedulerOutput::Done => (),
-                SchedulerOutput::Abort => (),
+                SchedulerOutput::Done => break,
+                SchedulerOutput::Abort => return,
                 SchedulerOutput::NextHeight(next_height) => {
                     light_block = match self.fetch_light_block(next_height) {
                         Ok(light_block) => light_block,
@@ -69,6 +90,13 @@ impl Demuxer {
                 }
             }
         }
+
+        postcondition!(
+            contracts::verify::trusted_store_contains_block_at_target_height(
+                target_height,
+                &self.state.trusted_store_reader,
+            )
+        );
     }
 
     pub fn verify_light_block(
@@ -119,6 +147,51 @@ impl Demuxer {
 
         match result {
             IoOutput::FetchedLightBlock(light_block) => Ok(light_block),
+        }
+    }
+}
+
+pub mod contracts {
+    pub mod verify {
+        use crate::prelude::*;
+
+        pub fn trusted_state_contains_block_within_trusting_period(
+            trusted_store: &StoreReader<Trusted>,
+            trusting_period: Duration,
+            now: SystemTime,
+        ) -> bool {
+            trusted_store
+                .all()
+                .iter()
+                .any(|lb| is_within_trust_period(lb, trusting_period, now))
+        }
+
+        pub fn target_height_greater_than_all_blocks_in_trusted_store(
+            target_height: Height,
+            trusted_store: &StoreReader<Trusted>,
+        ) -> bool {
+            trusted_store
+                .all()
+                .iter()
+                .all(|lb| lb.height < target_height)
+        }
+
+        pub fn trusted_store_contains_block_at_target_height(
+            target_height: Height,
+            trusted_store: &StoreReader<Trusted>,
+        ) -> bool {
+            trusted_store.get(target_height).is_some()
+        }
+
+        fn is_within_trust_period(
+            light_block: &LightBlock,
+            trusting_period: Duration,
+            now: SystemTime,
+        ) -> bool {
+            let header_time = light_block.header().bft_time;
+            let expires_at = header_time + trusting_period;
+
+            header_time < now && expires_at > now && header_time <= now
         }
     }
 }
