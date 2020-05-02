@@ -110,23 +110,21 @@ impl<'de> Deserialize<'de> for CommitSig {
                 match incoming.block_id_flag {
                     // BlockIDFlagAbsent
                     1 => {
-                        if incoming.timestamp.is_some() {
-                            Err(A::Error::custom(format!(
+                       if incoming.timestamp.is_some() {
+                            return Err(A::Error::custom(format!(
                                 "timestamp is present for BlockIDFlagAbsent CommitSig {}",
                                 incoming.timestamp.unwrap()
-                            )))
-                        } else {
-                            if incoming.signature.is_some() {
-                                Err(A::Error::custom(format!(
-                                    "signature is present for BlockIDFlagAbsent CommitSig {:?}",
-                                    incoming.signature.unwrap()
-                                )))
-                            } else {
-                                Ok(CommitSig::BlockIDFlagAbsent {
-                                    validator_address: incoming.validator_address,
-                                })
-                            }
+                            )));
                         }
+                        if incoming.signature.is_some() {
+                            return Err(A::Error::custom(format!(
+                                "signature is present for BlockIDFlagAbsent CommitSig {:?}",
+                                incoming.signature.unwrap()
+                            )));
+                        }
+                        Ok(CommitSig::BlockIDFlagAbsent {
+                            validator_address: incoming.validator_address,
+                        })
                     }
                     // BlockIDFlagCommit
                     2 => {
