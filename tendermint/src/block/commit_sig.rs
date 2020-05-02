@@ -110,7 +110,7 @@ impl<'de> Deserialize<'de> for CommitSig {
                 match incoming.block_id_flag {
                     // BlockIDFlagAbsent
                     1 => {
-                       if incoming.timestamp.is_some() {
+                        if incoming.timestamp.is_some() {
                             return Err(A::Error::custom(format!(
                                 "timestamp is present for BlockIDFlagAbsent CommitSig {}",
                                 incoming.timestamp.unwrap()
