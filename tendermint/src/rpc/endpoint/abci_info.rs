@@ -3,7 +3,6 @@
 use crate::serializers;
 use crate::{block, rpc};
 use serde::{Deserialize, Serialize};
-use serde_bytes;
 
 /// Request ABCI information from a node
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

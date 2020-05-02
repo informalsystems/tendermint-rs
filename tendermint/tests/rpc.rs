@@ -53,6 +53,19 @@ mod endpoints {
         assert_eq!(last_commit.unwrap().signatures.len(), 1);
     }
 
+    #[test]
+    fn block_with_evidences() {
+        let response =
+            endpoint::block::Response::from_string(&read_json_fixture("block_with_evidences"))
+                .unwrap();
+
+        let tendermint::Block { evidence, .. } = response.block;
+        let evidence = evidence.iter().next().unwrap();
+        match evidence {
+            tendermint::evidence::Evidence::DuplicateVote(_) => {}
+        }
+    }
+
     // TODO: Update this test and its json file
     // #[test]
     // fn block_empty_block_id() {
