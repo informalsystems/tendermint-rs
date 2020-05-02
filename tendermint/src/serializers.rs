@@ -36,8 +36,7 @@
 //! * Any type that has the "FromStr" trait can be serialized into a string with serializers::primitives::string.
 //! * serializers::bytes::* deserializes a null value into an empty vec![].
 
-use crate::account::{Id, LENGTH};
-use crate::{block, Hash, Signature};
+use crate::{block, Hash};
 use serde::{de::Error as _, Deserialize, Deserializer};
 use std::str::FromStr;
 
@@ -247,9 +246,10 @@ pub mod bytes {
     }
 }
 
-// Todo: Refactor the "Option"-based serializers below.
-//  Most of them are not needed if the structs are defined well (with enums).
+// Todo: Continue refactoring the "Option"-based serializers below.
+//  Most of them are not needed if the structs are defined well.
 
+/// Deserialize Option<Hash>
 pub(crate) fn parse_non_empty_hash<'de, D>(deserializer: D) -> Result<Option<Hash>, D::Error>
 where
     D: Deserializer<'de>,
@@ -263,7 +263,7 @@ where
     }
 }
 
-/// Parse empty block id as None.
+/// Deserialize Option<block::Id>
 pub(crate) fn parse_non_empty_block_id<'de, D>(
     deserializer: D,
 ) -> Result<Option<block::Id>, D::Error>
@@ -299,35 +299,4 @@ where
             },
         }))
     }
-}
-
-pub(crate) fn parse_non_empty_id<'de, D>(deserializer: D) -> Result<Option<Id>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    if s.is_empty() {
-        Ok(None)
-    } else {
-        // TODO: how can we avoid rewriting code here?
-        match Id::from_str(&s).map_err(|_| {
-            D::Error::custom(format!(
-                "expected {}-character hex string, got {:?}",
-                LENGTH * 2,
-                s
-            ))
-        }) {
-            Ok(id) => Ok(Option::from(id)),
-            Err(_) => Ok(None),
-        }
-    }
-}
-
-pub(crate) fn parse_non_empty_signature<'de, D>(
-    deserializer: D,
-) -> Result<Option<Signature>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Deserialize::deserialize(deserializer).map(|x: Option<_>| x.unwrap_or(None))
 }
