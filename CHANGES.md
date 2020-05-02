@@ -1,8 +1,9 @@
 ## Pending
 
 Serialization:
-- [#248] Refactor serializers library to use modules and give a nicer annotation to structs.
+- [#247] Refactor serializers library to use modules and give a nicer annotation to structs.
 -        Implemented deserialization of null value for Vec<u8>
+-        [#246] CommitSig enum implemented
 
 ## [0.13.0] (2020-04-20)
 
