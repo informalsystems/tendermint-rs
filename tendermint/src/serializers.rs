@@ -23,7 +23,6 @@
 //!
 //! }
 //! ```
-//! Note: null values will be deserialized into vec![].
 //!
 //! Available serializers:
 //! i64                  <-> string:               #[serde(with="serializers::primitives::string")]
@@ -33,8 +32,9 @@
 //! Vec<u8>              <-> Base64String:         #[serde(with="serializers::bytes::base64string")]
 //! Vec<u8>              <-> String:               #[serde(with="serializers::bytes::string")]
 //!
-//! Any type that has the "FromStr" trait can be serialized into a string with serializers::primitives::string.
-//!
+//! Notes:
+//! * Any type that has the "FromStr" trait can be serialized into a string with serializers::primitives::string.
+//! * serializers::bytes::* deserializes a null value into an empty vec![].
 
 use crate::account::{Id, LENGTH};
 use crate::{block, Hash, Signature};
