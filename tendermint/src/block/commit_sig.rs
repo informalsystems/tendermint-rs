@@ -1,78 +1,182 @@
 //! CommitSig within Commit
 
-use crate::serializers;
 use crate::{account, Signature, Time};
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-
-/// BlockIDFlag is used to indicate the validator has voted either for nil, a particular BlockID or was absent.
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum BlockIDFlag {
-    /// BlockIDFlagAbsent - no vote was received from a validator.
-    BlockIDFlagAbsent = 1,
-    /// BlockIDFlagCommit - voted for the Commit.BlockID.
-    BlockIDFlagCommit = 2,
-    /// BlockIDFlagNil - voted for nil.
-    BlockIDFlagNil = 3,
-}
-
-impl BlockIDFlag {
-    /// Deserialize this type from a byte
-    pub fn from_u8(byte: u8) -> Option<BlockIDFlag> {
-        match byte {
-            1 => Some(BlockIDFlag::BlockIDFlagAbsent),
-            2 => Some(BlockIDFlag::BlockIDFlagCommit),
-            3 => Some(BlockIDFlag::BlockIDFlagNil),
-            _ => None,
-        }
-    }
-
-    /// Serialize this type as a byte
-    pub fn to_u8(self) -> u8 {
-        self as u8
-    }
-
-    /// Serialize this type as a 32-bit unsigned integer
-    pub fn to_u32(self) -> u32 {
-        self as u32
-    }
-}
-
-impl Serialize for BlockIDFlag {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.to_u8().serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for BlockIDFlag {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let byte = u8::deserialize(deserializer)?;
-        BlockIDFlag::from_u8(byte)
-            .ok_or_else(|| D::Error::custom(format!("invalid block ID flag: {}", byte)))
-    }
-}
+use serde::de::{self, Error, MapAccess, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt;
 
 /// CommitSig represents a signature of a validator.
 /// It's a part of the Commit and can be used to reconstruct the vote set given the validator set.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct CommitSig {
-    /// Block ID FLag
-    pub block_id_flag: BlockIDFlag,
-
-    /// Validator address
-    #[serde(deserialize_with = "serializers::parse_non_empty_id")]
-    pub validator_address: Option<account::Id>,
-
-    /// Timestamp
-    pub timestamp: Time,
-
-    /// Signature
-    #[serde(deserialize_with = "serializers::parse_non_empty_signature")]
-    pub signature: Option<Signature>,
+#[derive(Clone, Debug, PartialEq)]
+pub enum CommitSig {
+    /// no vote was received from a validator.
+    BlockIDFlagAbsent {
+        /// Validator address
+        validator_address: account::Id,
+    },
+    /// voted for the Commit.BlockID.
+    BlockIDFlagCommit {
+        /// Validator address
+        validator_address: account::Id,
+        /// Timestamp of vote
+        timestamp: Time,
+        /// Signature of vote
+        signature: Signature,
+    },
+    /// voted for nil.
+    BlockIDFlagNil {
+        /// Validator address
+        validator_address: account::Id,
+        /// Timestamp of vote
+        timestamp: Time,
+        /// Signature of vote
+        signature: Signature,
+    },
 }
 
+/// CommitSig implementation
 impl CommitSig {
-    /// Checks if a validator's vote is absent
-    pub fn is_absent(&self) -> bool {
-        self.block_id_flag == BlockIDFlag::BlockIDFlagAbsent
+    /// Helper: Extract validator address, since it's always present (according to ADR-025)
+    pub fn validator_address(&self) -> &account::Id {
+        match &self {
+            CommitSig::BlockIDFlagAbsent { validator_address } => validator_address,
+            CommitSig::BlockIDFlagCommit {
+                validator_address, ..
+            } => validator_address,
+            CommitSig::BlockIDFlagNil {
+                validator_address, ..
+            } => validator_address,
+        }
+    }
+}
+
+impl Serialize for CommitSig {
+    fn serialize<S>(
+        &self,
+        _serializer: S,
+    ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        unimplemented!("CommitSig serialization is not implemented yet")
+    }
+}
+
+impl<'de> Deserialize<'de> for CommitSig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct CommitSigVisitor;
+
+        impl<'de> Visitor<'de> for CommitSigVisitor {
+            type Value = CommitSig;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("CommitSig")
+            }
+
+            /// Deserialize map Visitor implementation
+            // Implements decision: https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-025-commit.md#decision
+            fn visit_map<A>(self, map: A) -> Result<Self::Value, <A as MapAccess<'de>>::Error>
+            where
+                A: MapAccess<'de>,
+            {
+                // Instead of manually deserializing the whole struct (cumbersome), we use annotations
+                fn option_signature<'de, D>(deserializer: D) -> Result<Option<Signature>, D::Error>
+                where
+                    D: Deserializer<'de>,
+                {
+                    Deserialize::deserialize(deserializer).map(|x: Option<_>| x.unwrap_or(None))
+                }
+                #[derive(Deserialize)]
+                struct CommitSigSpec {
+                    block_id_flag: u8,
+                    validator_address: account::Id,
+                    #[serde(default)]
+                    timestamp: Option<Time>,
+                    #[serde(default, deserialize_with = "option_signature")]
+                    signature: Option<Signature>,
+                }
+
+                // `MapAccessDeserializer` is a wrapper that turns a `MapAccess`
+                // into a `Deserializer`, allowing it to be used as the input to T's
+                // `Deserialize` implementation. T then deserializes itself using
+                // the entries from the map visitor.
+                let incoming =
+                    CommitSigSpec::deserialize(de::value::MapAccessDeserializer::new(map))?;
+
+                // Validate CommitSig (strict)
+                match incoming.block_id_flag {
+                    // BlockIDFlagAbsent
+                    1 => {
+                        if incoming.timestamp.is_some() {
+                            Err(A::Error::custom(format!(
+                                "timestamp is present for BlockIDFlagAbsent CommitSig {}",
+                                incoming.timestamp.unwrap()
+                            )))
+                        } else {
+                            if incoming.signature.is_some() {
+                                Err(A::Error::custom(format!(
+                                    "signature is present for BlockIDFlagAbsent CommitSig {:?}",
+                                    incoming.signature.unwrap()
+                                )))
+                            } else {
+                                Ok(CommitSig::BlockIDFlagAbsent {
+                                    validator_address: incoming.validator_address,
+                                })
+                            }
+                        }
+                    }
+                    // BlockIDFlagCommit
+                    2 => {
+                        if incoming.timestamp.is_none() {
+                            Err(A::Error::custom(
+                                "timestamp is null for BlockIDFlagCommit CommitSig",
+                            ))
+                        } else {
+                            if incoming.signature.is_none() {
+                                Err(A::Error::custom(
+                                    "signature is null for BlockIDFlagCommit CommitSig",
+                                ))
+                            } else {
+                                Ok(CommitSig::BlockIDFlagCommit {
+                                    validator_address: incoming.validator_address,
+                                    timestamp: incoming.timestamp.unwrap(),
+                                    signature: incoming.signature.unwrap(),
+                                })
+                            }
+                        }
+                    }
+                    // BlockIDFlagNil
+                    3 => {
+                        if incoming.timestamp.is_none() {
+                            Err(A::Error::custom(
+                                "timestamp is null for BlockIDFlagNil CommitSig",
+                            ))
+                        } else {
+                            if incoming.signature.is_none() {
+                                Err(A::Error::custom(
+                                    "signature is null for BlockIDFlagNil CommitSig",
+                                ))
+                            } else {
+                                Ok(CommitSig::BlockIDFlagNil {
+                                    validator_address: incoming.validator_address,
+                                    timestamp: incoming.timestamp.unwrap(),
+                                    signature: incoming.signature.unwrap(),
+                                })
+                            }
+                        }
+                    }
+                    // Error: unknown CommitSig type
+                    e => Err(A::Error::custom(format!(
+                        "unknown BlockIdFlag value in CommitSig {}",
+                        e
+                    ))),
+                }
+            }
+        }
+
+        deserializer.deserialize_map(CommitSigVisitor)
     }
 }
