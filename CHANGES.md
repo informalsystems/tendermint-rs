@@ -1,3 +1,8 @@
+## Pending
+
+- Serialization refactor [#247]
+- CommitSig enum implemented [#246][#247]
+
 ## [0.13.0] (2020-04-20)
 
 Dependencies:
