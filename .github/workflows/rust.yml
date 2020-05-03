@@ -38,7 +38,7 @@ jobs:
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features --message-format=human
+          args: --all-features
 
   test-stable:
     runs-on: ubuntu-latest
