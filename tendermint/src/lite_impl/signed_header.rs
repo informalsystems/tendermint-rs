@@ -112,8 +112,8 @@ fn non_absent_votes(commit: &block::Commit) -> Vec<vote::Vote> {
             height: commit.height,
             round: commit.round,
             block_id: Option::from(commit.block_id.clone()),
-            timestamp: extracted_timestamp.clone(),
-            validator_address: extracted_validator_address.clone(),
+            timestamp: *extracted_timestamp,
+            validator_address: *extracted_validator_address,
             validator_index: u64::try_from(i)
                 .expect("usize to u64 conversion failed for validator index"),
             signature: extracted_signature.clone(),

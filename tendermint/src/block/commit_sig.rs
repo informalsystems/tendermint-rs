@@ -132,18 +132,16 @@ impl<'de> Deserialize<'de> for CommitSig {
                             Err(A::Error::custom(
                                 "timestamp is null for BlockIDFlagCommit CommitSig",
                             ))
+                        } else if incoming.signature.is_none() {
+                            Err(A::Error::custom(
+                                "signature is null for BlockIDFlagCommit CommitSig",
+                            ))
                         } else {
-                            if incoming.signature.is_none() {
-                                Err(A::Error::custom(
-                                    "signature is null for BlockIDFlagCommit CommitSig",
-                                ))
-                            } else {
-                                Ok(CommitSig::BlockIDFlagCommit {
-                                    validator_address: incoming.validator_address,
-                                    timestamp: incoming.timestamp.unwrap(),
-                                    signature: incoming.signature.unwrap(),
-                                })
-                            }
+                            Ok(CommitSig::BlockIDFlagCommit {
+                                validator_address: incoming.validator_address,
+                                timestamp: incoming.timestamp.unwrap(),
+                                signature: incoming.signature.unwrap(),
+                            })
                         }
                     }
                     // BlockIDFlagNil
@@ -152,18 +150,16 @@ impl<'de> Deserialize<'de> for CommitSig {
                             Err(A::Error::custom(
                                 "timestamp is null for BlockIDFlagNil CommitSig",
                             ))
+                        } else if incoming.signature.is_none() {
+                            Err(A::Error::custom(
+                                "signature is null for BlockIDFlagNil CommitSig",
+                            ))
                         } else {
-                            if incoming.signature.is_none() {
-                                Err(A::Error::custom(
-                                    "signature is null for BlockIDFlagNil CommitSig",
-                                ))
-                            } else {
-                                Ok(CommitSig::BlockIDFlagNil {
-                                    validator_address: incoming.validator_address,
-                                    timestamp: incoming.timestamp.unwrap(),
-                                    signature: incoming.signature.unwrap(),
-                                })
-                            }
+                            Ok(CommitSig::BlockIDFlagNil {
+                                validator_address: incoming.validator_address,
+                                timestamp: incoming.timestamp.unwrap(),
+                                signature: incoming.signature.unwrap(),
+                            })
                         }
                     }
                     // Error: unknown CommitSig type
