@@ -2,13 +2,13 @@ use super::{io::*, scheduler::*, verifier::*};
 use crate::prelude::*;
 
 pub trait Clock {
-    fn now(&self) -> SystemTime;
+    fn now(&self) -> Time;
 }
 
 pub struct SystemClock;
 impl Clock for SystemClock {
-    fn now(&self) -> SystemTime {
-        SystemTime::now()
+    fn now(&self) -> Time {
+        Time::now()
     }
 }
 
@@ -225,7 +225,7 @@ pub mod contracts {
         pub fn trusted_state_contains_block_within_trusting_period(
             trusted_store: &StoreReader<Trusted>,
             trusting_period: Duration,
-            now: SystemTime,
+            now: Time,
         ) -> bool {
             trusted_store
                 .all()
@@ -253,7 +253,7 @@ pub mod contracts {
         fn is_within_trust_period(
             light_block: &LightBlock,
             trusting_period: Duration,
-            now: SystemTime,
+            now: Time,
         ) -> bool {
             let header_time = light_block.header().bft_time;
             let expires_at = header_time + trusting_period;

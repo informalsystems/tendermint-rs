@@ -1,24 +1,26 @@
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
-use std::time::SystemTime;
 
-pub use tendermint::hash::Hash;
-pub use tendermint::lite::Height;
-
-use tendermint::{block::signed_header::SignedHeader as TMSignedHeader, lite::Header as _};
+use tendermint::{
+    account::Id as AccountId, block::header::Version as HeaderVersion,
+    block::signed_header::SignedHeader as TMSignedHeader, block::Id as BlockId,
+    chain::Id as ChainId, lite::Header as _, Time,
+};
 
 use crate::prelude::*;
+
+pub use tendermint::{hash::Hash, lite::Height};
 
 #[derive(Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct VerificationOptions {
     pub trust_threshold: TrustThreshold,
     pub trusting_period: Duration,
-    pub now: SystemTime,
+    pub now: Time,
 }
 
 impl VerificationOptions {
-    pub fn set_now(&self, now: SystemTime) -> Self {
+    pub fn set_now(&self, now: Time) -> Self {
         Self {
             now,
             ..self.clone()
@@ -29,11 +31,20 @@ impl VerificationOptions {
 #[derive(Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct Header {
+    pub version: HeaderVersion,
+    pub chain_id: ChainId,
     pub height: Height,
-    pub bft_time: SystemTime,
+    pub bft_time: Time,
     pub validators_hash: Hash,
     pub next_validators_hash: Hash,
-    pub hash: Hash, // TODO: What if we don't have this
+    pub proposer_address: AccountId,
+    pub evidence_hash: Option<Hash>,
+    pub last_results_hash: Option<Hash>,
+    pub last_block_id: Option<BlockId>,
+    pub last_commit_hash: Option<Hash>,
+    pub data_hash: Option<Hash>,
+    pub consensus_hash: Hash,
+    pub app_hash: Vec<u8>,
 }
 
 #[derive(Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
@@ -80,13 +91,22 @@ impl From<TMSignedHeader> for SignedHeader {
         Self {
             header: Header {
                 height: sh.header.height().into(),
-                bft_time: sh.header.bft_time().to_system_time().unwrap(),
+                bft_time: sh.header.bft_time(),
                 validators_hash: sh.header.validators_hash(),
                 next_validators_hash: sh.header.next_validators_hash(),
-                hash: sh.header.hash(),
+                version: sh.header.version,
+                chain_id: sh.header.chain_id,
+                proposer_address: sh.header.proposer_address,
+                evidence_hash: sh.header.evidence_hash,
+                last_results_hash: sh.header.last_results_hash,
+                last_block_id: sh.header.last_block_id,
+                last_commit_hash: sh.header.last_commit_hash,
+                data_hash: sh.header.data_hash,
+                consensus_hash: sh.header.consensus_hash,
+                app_hash: sh.header.app_hash,
             },
             commit: Commit {
-                header_hash: sh.header.hash(),
+                header_hash: sh.commit.block_id.hash,
                 commit: sh.commit,
             },
             validators: validators.clone(),

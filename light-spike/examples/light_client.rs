@@ -28,7 +28,7 @@ pub fn main() {
             denominator: 3,
         },
         trusting_period: Duration::from_secs(36000),
-        now: SystemTime::now(),
+        now: Time::now(),
     };
 
     let predicates = MockPredicates;
@@ -138,7 +138,7 @@ impl VerificationPredicates for MockPredicates {
         &self,
         header: &Header,
         trusting_period: Duration,
-        now: SystemTime,
+        now: Time,
     ) -> Result<(), VerificationError> {
         ProductionPredicates.is_within_trust_period(header, trusting_period, now)
     }

@@ -1,4 +1,6 @@
-pub use std::time::{Duration, SystemTime};
+pub use std::time::Duration;
+
+pub use tendermint::time::Time;
 
 pub use crate::components::demuxer::*;
 pub use crate::components::fork_detector::*;

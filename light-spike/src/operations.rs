@@ -3,6 +3,9 @@
 use crate::prelude::*;
 use anomaly::BoxError;
 
+pub mod header_hasher;
+pub use self::header_hasher::*;
+
 pub trait VotingPowerCalculator {
     fn total_power_of(&self, validators: &ValidatorSet) -> u64;
     fn voting_power_in(&self, commit: &Commit, validators: &ValidatorSet) -> u64;
@@ -41,21 +44,5 @@ impl<T: CommitValidator> CommitValidator for &T {
 impl CommitValidator for Box<dyn CommitValidator> {
     fn validate(&self, commit: &Commit, validators: &ValidatorSet) -> Result<(), BoxError> {
         self.as_ref().validate(commit, validators)
-    }
-}
-
-pub trait HeaderHasher {
-    fn hash(&self, header: &Header) -> Hash; // Or Error?
-}
-
-impl<T: HeaderHasher> HeaderHasher for &T {
-    fn hash(&self, header: &Header) -> Hash {
-        (*self).hash(header)
-    }
-}
-
-impl HeaderHasher for Box<dyn HeaderHasher> {
-    fn hash(&self, header: &Header) -> Hash {
-        self.as_ref().hash(header)
     }
 }

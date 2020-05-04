@@ -1,5 +1,3 @@
-use std::time::SystemTime;
-
 use anomaly::{BoxError, Context};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -8,11 +6,8 @@ use crate::prelude::*;
 
 #[derive(Debug, Clone, Error, PartialEq, Serialize, Deserialize)]
 pub enum VerificationError {
-    #[error("header from the future: header_time={header_time:?} now={now:?}")]
-    HeaderFromTheFuture {
-        header_time: SystemTime,
-        now: SystemTime,
-    },
+    #[error("header from the future: header_time={header_time} now={now}")]
+    HeaderFromTheFuture { header_time: Time, now: Time },
     #[error("implementation specific")]
     ImplementationSpecific,
     #[error(
@@ -42,13 +37,13 @@ pub enum VerificationError {
     },
     #[error("non increasing height: got={got} expected={expected}")]
     NonIncreasingHeight { got: Height, expected: Height },
-    #[error("non monotonic BFT time: header_bft_time={header_bft_time:?} trusted_header_bft_time={trusted_header_bft_time:?}")]
+    #[error("non monotonic BFT time: header_bft_time={header_bft_time} trusted_header_bft_time={trusted_header_bft_time}")]
     NonMonotonicBftTime {
-        header_bft_time: SystemTime,
-        trusted_header_bft_time: SystemTime,
+        header_bft_time: Time,
+        trusted_header_bft_time: Time,
     },
-    #[error("not withing trust period: at={at:?} now={now:?}")]
-    NotWithinTrustPeriod { at: SystemTime, now: SystemTime },
+    #[error("not withing trust period: at={at} now={now}")]
+    NotWithinTrustPeriod { at: Time, now: Time },
 }
 
 impl VerificationError {

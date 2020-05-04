@@ -1,5 +1,3 @@
-use std::time::{Duration, SystemTime};
-
 use crate::prelude::*;
 
 pub mod errors;
@@ -36,7 +34,7 @@ pub trait VerificationPredicates {
         &self,
         header: &Header,
         trusting_period: Duration,
-        now: SystemTime,
+        now: Time,
     ) -> Result<(), VerificationError>;
 
     fn is_monotonic_bft_time(
