@@ -20,9 +20,7 @@ where
 }
 
 /// Deserialize Option<block::Id>
-pub fn parse_non_empty_block_id<'de, D>(
-    deserializer: D,
-) -> Result<Option<block::Id>, D::Error>
+pub fn parse_non_empty_block_id<'de, D>(deserializer: D) -> Result<Option<block::Id>, D::Error>
 where
     D: Deserializer<'de>,
 {
