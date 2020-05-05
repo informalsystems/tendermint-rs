@@ -558,7 +558,7 @@ func demuxer (trustedStore LightBlock[],
     - successful termination depends on the age of the *refHeader*
       (for instance, initially on the age of  *trustedHeader*) and the
       changes of the validator sets on the blockchain.
-	  We will give some examples [below](#liveness-estimations).
+	  We will give some examples [below](#liveness-scenarios).
 - If *primary* is faulty,
     - it either provides headers that pass all the tests, and we
       return with the header 
@@ -695,22 +695,76 @@ func Scheduler (trustedStore LightBlock[],
 
 
 
-### Liveness Estimations
+### Liveness Scenarios
 
 Let *startHeader* be *refHeader* when core verification is called
-(*trustedHeader*) and *startTime* be the time core verification is invoked.
+(*trustedHeader*) and *startTime* be the time core verification is
+invoked.
+
+In order to ensure liveness, *trustedStore* always needs to contain a
+header whose time is within the trusting period. To ensure this, core
+verification needs to add new headers to *trustedStore*, before all
+headers in *trustedStore* expire.
+
+#### Many changes in validator set
+
+Assume the case where the validator set changes completely in each
+block. Then the bisection method in this specification needs to
+sequentially all headers. That is, for
+
+- *W = log_2 (targetHeight - startHeader.Height)*,
+
+*W* headers need to be downloaded and checked before the
+header of height *startHeader.Height + 1* is added to *trustedStore*.
+
+- Let *Comp*
+  be the local computation time needed to check headers and signatures
+  for one header.
+- Then we need in the worst case *Comp + 2 Delta* to download and
+  check one header.
+- Then the first time a header could be added to *trustedStore* is
+  startTime + W * (Comp + 2 Delta)
+- [TP] However, it can only be added if we still have a header in
+  *trustedStore*, 
+  which is not
+  expired, that is only the case if
+    - startHeader.Time > startTime + WCG * (Comp + 2 Delta) -
+      trustingPeriod, 
+	- that is, if core verification is started at  
+	  startTime < startHeader.Time + trustingPeriod -  WCG * (Comp + 2 Delta) 
+
+- one may then do an inductive argument from this point on. (To be
+  precise we have to account for the headers that are already
+  downloaded, but they are checked against the new *refHeader*)).
+
+> We observe that
+> the worst case time it needs to verify the header of height
+> *targetHeight* depends mainly on how frequent the validator set on the
+> blockchain changes. The core verification terminates successful
+> crucially depends on the check [TP], that is, that the headers in
+> *trustedStore* do not expire in the time needed to download more
+> headers, which depends on the creation time of the headers in
+> *trustedStore*. That is, termination of core verification is highly
+> depending on the data stored in the blockchain.
+
+
+> The current light client core verification protocol exploits that, in
+> practice, changes in the validator set are rare. For instance,
+> consider the following scenario.
+
+
+
 
 #### No change in validator set
 
 If on the blockchain the validator set of the block at height
-*targetHeight* is equal to *start.NextValidators*:
+*targetHeight* is equal to *startHeader.NextValidators*:
 - there is one round trip in `IO` to download the header of height
-  *targetHeight*
+  *targetHeight*, and *Comp* to check it.
 - as the validator sets are equal, `Verify` returns `OK`, if
-  *start.Header.Time > now - trustingPeriod*.
+  *startHeader.Time > now - trustingPeriod*.
 - that is, if *startTime < startHeader.Header.Time + trustingPeriod -
-  2 Delta - Comp*, core verification terminates successfully if *Comp*
-  is the local computation time needed to check headers and signatures.
+  2 Delta - Comp*, then core verification terminates successfully
 
 
 
