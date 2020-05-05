@@ -154,9 +154,20 @@ impl JSONRPC {
         let events = &self.result.events;
         if let Some(message_action) = events.get("message.action") {
             if message_action.contains(&action_query.to_owned()) {
-                return Ok(events.clone());
+                let mut event_map = events.clone();
+
+                for event in &self.result.data.value.tx_result.result.events {
+                    for attribute in &event.attributes {
+                        event_map
+                            .entry(format!("{}.{}", event.event_type, attribute.key))
+                            .and_modify(|e| e.append(&mut vec![attribute.value.clone()]))
+                            .or_insert_with(||vec![attribute.value.clone()]);
+                    }
+                }
+
+                return Ok(event_map);
             }
         }
-    Err("Incorrect Event Type")
+        Err("Incorrect Event Type")
     }
 }
