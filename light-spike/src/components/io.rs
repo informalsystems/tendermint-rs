@@ -2,20 +2,22 @@ use serde::{Deserialize, Serialize};
 use tendermint::{block, rpc};
 use thiserror::Error;
 
-use tendermint::{block::signed_header::SignedHeader as TMSignedHeader, lite::types::Height};
+use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
+// use tendermint::lite::types::Height as _;
 
 use crate::prelude::*;
+use std::collections::HashMap;
 
 pub const LATEST_HEIGHT: Height = 0;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum IoInput {
-    FetchLightBlock(Height),
+    FetchLightBlock { peer: Peer, height: Height },
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum IoOutput {
-    FetchedLightBlock(LightBlock),
+    FetchedLightBlock { from: Peer, light_block: LightBlock },
 }
 
 #[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
@@ -27,48 +29,59 @@ pub enum IoError {
 pub type IoResult = Result<IoOutput, IoError>;
 
 pub trait Io {
-    fn process(&self, input: IoInput) -> IoResult;
+    fn process(&mut self, input: IoInput) -> IoResult;
 }
 
 impl<F> Io for F
 where
-    F: Fn(IoInput) -> IoResult,
+    F: FnMut(IoInput) -> IoResult,
 {
-    fn process(&self, input: IoInput) -> IoResult {
+    fn process(&mut self, input: IoInput) -> IoResult {
         self(input)
     }
 }
 
 pub struct RealIo {
-    rpc_client: rpc::Client,
+    rpc_clients: HashMap<Peer, rpc::Client>,
 }
 
 impl Io for RealIo {
-    fn process(&self, input: IoInput) -> IoResult {
+    fn process(&mut self, input: IoInput) -> IoResult {
         match input {
-            IoInput::FetchLightBlock(height) => self.fetch_light_block(height),
+            IoInput::FetchLightBlock { peer, height } => self.fetch_light_block(peer, height),
         }
     }
 }
 
 impl RealIo {
-    pub fn new(rpc_client: rpc::Client) -> Self {
-        Self { rpc_client }
+    pub fn new() -> Self {
+        Self {
+            rpc_clients: HashMap::new(),
+        }
     }
 
-    pub fn fetch_light_block(&self, height: Height) -> IoResult {
-        let signed_header = self.fetch_signed_header(height)?;
+    pub fn fetch_light_block(&mut self, peer: Peer, height: Height) -> IoResult {
+        let signed_header = self.fetch_signed_header(peer.clone(), height)?;
         let light_block = signed_header.into();
-        Ok(IoOutput::FetchedLightBlock(light_block))
+
+        Ok(IoOutput::FetchedLightBlock {
+            from: peer,
+            light_block,
+        })
     }
 
-    fn fetch_signed_header(&self, h: Height) -> Result<TMSignedHeader, IoError> {
-        let height: block::Height = h.into();
+    fn fetch_signed_header(
+        &mut self,
+        peer: Peer,
+        height: Height,
+    ) -> Result<TMSignedHeader, IoError> {
+        let height: block::Height = height.into();
+        let rpc_client = self.rpc_client_for(peer);
 
         let res = block_on(async {
             match height.value() {
-                0 => self.rpc_client.latest_commit().await,
-                _ => self.rpc_client.commit(height).await,
+                0 => rpc_client.latest_commit().await,
+                _ => rpc_client.commit(height).await,
             }
         });
 
@@ -76,6 +89,12 @@ impl RealIo {
             Ok(response) => Ok(response.signed_header),
             Err(err) => Err(IoError::IoError(err)),
         }
+    }
+
+    fn rpc_client_for(&mut self, peer: Peer) -> &mut rpc::Client {
+        self.rpc_clients
+            .entry(peer.clone())
+            .or_insert_with(|| rpc::Client::new(peer))
     }
 
     // fn fetch_validator_set(&self, height: Height) -> Result<TMValidatorSet, IoError> {

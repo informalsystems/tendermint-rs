@@ -68,7 +68,8 @@ impl Demuxer {
             bail!(ErrorKind::NoInitialTrustedState)
         };
 
-        let target_block = match self.fetch_light_block(LATEST_HEIGHT) {
+        let primary = self.state.peers.primary.clone();
+        let target_block = match self.fetch_light_block(primary, LATEST_HEIGHT) {
             Ok(last_block) => last_block,
             Err(io_error) => bail!(ErrorKind::Io(io_error)),
         };
@@ -108,7 +109,8 @@ impl Demuxer {
             dbg!(trusted_state.height);
             dbg!(next_height);
 
-            let current_block = match self.fetch_light_block(next_height) {
+            let primary = self.state.peers.primary.clone();
+            let current_block = match self.fetch_light_block(primary, next_height) {
                 Ok(current_block) => current_block,
                 Err(_) => return Ok(()),
             };
@@ -201,13 +203,16 @@ impl Demuxer {
         Ok(())
     }
 
-    pub fn fetch_light_block(&self, height: Height) -> Result<LightBlock, IoError> {
-        let input = IoInput::FetchLightBlock(height);
+    pub fn fetch_light_block(&mut self, peer: Peer, height: Height) -> Result<LightBlock, IoError> {
+        let input = IoInput::FetchLightBlock { peer, height };
         let result = self.io.process(input)?;
 
         match result {
-            IoOutput::FetchedLightBlock(light_block) => Ok(light_block),
+            // TODO: Check that from and peer match, or just remove `from` from the response?
+            IoOutput::FetchedLightBlock {
+                from: _,
+                light_block,
+            } => Ok(light_block),
         }
     }
 }
-

@@ -8,18 +8,27 @@ pub fn main() {
     let (trusted_store_reader, mut trusted_store_writer) = Store::new().split();
     let (untrusted_store_reader, untrusted_store_writer) = Store::new().split();
 
-    let rpc_client = tendermint::rpc::Client::new("tcp://127.0.0.1:26657".parse().unwrap());
-    let io = RealIo::new(rpc_client);
+    let primary: Peer = "tcp://127.0.0.1:26657".parse().unwrap();
+    let mut io = RealIo::new();
 
-    let IoOutput::FetchedLightBlock(trusted_state) = io.fetch_light_block(1520).unwrap();
+    let IoOutput::FetchedLightBlock {
+        light_block: trusted_state,
+        ..
+    } = io.fetch_light_block(primary.clone(), 1520).unwrap();
+
     trusted_store_writer.add(trusted_state);
 
+    let peers = Peers {
+        primary,
+        witnesses: Vec::new(),
+    };
+
     let state = State {
+        peers,
         trusted_store_reader,
         trusted_store_writer,
         untrusted_store_reader,
         untrusted_store_writer,
-        errors: vec![],
     };
 
     let options = VerificationOptions {
@@ -57,14 +66,14 @@ pub fn main() {
         io,
     );
 
-    demuxer.run();
+    demuxer.run().unwrap();
 }
 
 #[derive(Copy, Clone)]
 struct MockHeaderHasher;
 impl HeaderHasher for MockHeaderHasher {
     fn hash(&self, header: &Header) -> Hash {
-        header.hash
+        header.consensus_hash // FIXME: wrong hash
     }
 }
 

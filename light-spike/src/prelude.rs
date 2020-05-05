@@ -2,6 +2,8 @@ pub use std::time::Duration;
 
 pub use tendermint::time::Time;
 
+pub type Peer = tendermint::net::Address;
+
 pub use crate::{
     bail,
     components::{
