@@ -368,6 +368,7 @@ In the case the primary is correct, and there is a recent header in *State*, the
 
 ### Data Types
 
+The core data structure of the protocol is the LightBlock.
 ```go
 type LightBlock struct {
 	Header          Header
@@ -378,15 +379,48 @@ type LightBlock struct {
 }
 ```	
 
+LightBlocks are stored in struture which stores all LightBlock from
+initialization or received from peers.
 
+```go
+type LightStore struct {
+	...
+}
 
+```
+
+Each LightBlock is in one of the following states:
+```go
+type VerifiedState int
+
+const (
+	StateUnverified = iota + 1
+	StateVerified
+	StateFailed
+)
+```
+
+The LightStore exposes the following functions to query stored LightBlocks.
+
+Fetch a LightBlock at a given height or false in the second argument if
+the LightStore does not contain the specified lightblock.
+```go
+func (ls LightStore) Get(height Height) (LightBlock, bool) 
+```
+
+A function to fetch the heighest verified light block:
+```go
+func (ls LightStore) LatestVerified() LightBlock
+```
+
+A function to update the LightBlock stored with the given verifiedState.
+```go
+func (ls LightStore) Update(lightBlock LightBlock, verfiedState VerifiedState)
+```
 
 ### Inputs
-- *trustedStore*: stores light blocks that have been downloaded and that
-    passed verification. Initially it contains *trustedHeader*.
-- *untrustedStore*: stores light blocks
-   that have been downloaded and that failed
-   verification, but may still be OK. Initially empty
+- *lightStore*: stores light blocks that have been downloaded and that
+    passed verification. Initially it contains *trustedLightBlock*.
 - *primary*: peer address
 - *targetHeight*: they height of the needed header
 
@@ -430,7 +464,9 @@ type LightBlock struct {
  
 ### Remote Functions
   ```go
-func Commit(addr Address, height int64) (SignedHeader, error)
+func FetchLightBlock(addr Address, height Height) LightBlock {
+	...
+}
 ```
 - Implementation remark
    - RPC to peer with Address *addr*
@@ -449,85 +485,78 @@ func Commit(addr Address, height int64) (SignedHeader, error)
 ---
 
 
- ```go
-func Validators(addr Address, height int64) (ValidatorSet, error)
-```
-- Implementation remark
-   - RPC to peer with Address *addr*
-   - Request message: **TODO**
-   - Response message: **TODO**
-- Expected precodnition
-  - `height` is less than or equal to height of the peer
-- Expected postcondition
-  - if *addr* is correct: Returns the validator set of height `height`
-  from the blockchain
-  - if *addr* is faulty: Returns a validator set with arbitrary content
-- Error condition
-   * if *n* is correct: precondition violated **TODO:** mention message
-   * if *n* is faulty: arbitrary error
-
----
-
-
 ## Core Verification
 
 ### Outline
 
-The `demuxer` is the main function and uses the following functions.
-- `IO` is called to download the next light block
-- `Verify` checks whether a new header can
-  be trusted. 
-- `Scheduler` decides which header to download next (by setting
-  *nextHeight) and possible storing a newly trusted header in
-  *trustedStore*. By updating the heights it implements a bisection.
-  
-In the following description of `demuxer` we do not deal with error
-handling. If any of the above function returns an error, demuxer just
+The `VerifyToTarget` is the main function and uses the following functions.
+- `FetchLightBlock` is called to download the next light block
+- `ValidLightBlock` checks whether header is valid. 
+- `SufficientVotingPower` checks if a new lightBlock should be trusted
+  based on a previously verified lightBlock.
+
+In the following description of `VerifyToTarget` we do not deal with error
+handling. If any of the above function returns an error, VerifyToTarget just
 passes the error on.
 
 ```go
-func demuxer (trustedStore LightBlock[], 
-              untrustedStore LightBlock[], 
-			  primary Address, 
-			  targetHeight int64) 
-			  (LightBlock[], LightBlock[], Result) {
+type Result int
+const (
+	ResultSuccess = iota + 1
+	ResultFailure
+)
 
-  nextHeight := targetHeight;
-  while currentHeight < targetHeight {
-    // **TODO:** we could check whether a header h of height nextHeight
-    // is in untrustedStore
-	// if yes, set header-To-Verify = h otherwise do IO
-    headerToVerify = IO(primary, nextHeight);
-    result = Verify(headerToVerify, refHeader);
-    trustedStore, untrustedStore, nextHeight =
-   	    Scheduler(trustedStore, untrustedSture, headerToVerif,
-                  nextHeight, result);
-  }
-  
-  return (trustedStore, untrustedStore, SUCCESS)
+func VerifyToTarget(primary Address, lightStore LightStore, targetHeight Height) Result {
+	latestVerified := lightStore.Latest(StateVerified)
+
+	currentHeight := targetHeight
+	for latestVerified.height < targetHeight {
+		current, found := lightStore.Get(currentHeight)
+		if !found {
+			current = FetchLightBlock(primary, currentHeight)
+		}
+
+		if !validLightBlock(current) {
+			return ResultFailure
+		}
+
+		lightStore.Update(current, StateUnverified)
+
+		if SufficientVotingPower(latestVerified, current) {
+			lightStore.Update(current, StateVerified)
+			if currentHeight == targetHeight {
+				return ResultSuccess
+			} else {
+				// Attempt to move towards target height
+				currentHeight = targetHeight
+			}
+		} else {
+			// Insiffucient trust: bisect
+			currentHeight = (latestVerified.height + currentHeight) / 2
+		}
+	}
 }
 ```
+
 - Expected precondition
-   - *trustedStore* contains a LightBlock within the *trustingPeriod*
+   - *lightStore* contains a LightBlock within the *trustingPeriod*
    - *targetHeight* is greater than the height of all the LightBlocks
-     in *trustedStore*
+     in *lightStore*
 - Expected postcondition: 
-   - *trustedStore* contains a LightBlock that corresponds to a block
+   - *lightStore* contains a LightBlock that corresponds to a block
      of the blockchain of height *targetHeight* (that is, the
-     LightBlock has been added to *trustedStore*)
+     LightBlock has been added to *lightStore*)
 - Error conditions
    - if the precondition is violated
-   - if `IO` or `Verify` or `Scheduler` report an error
+   - if `validLightBlock` returns false
   
-
 
 
 ### Details of the Functions
 
 
-
 ```go
-func IO (addr Address, ht int64) (LightBlock)
+func FetchLightBlock(peer Address, height Height) LightBlock
 ```
 -  Implementation remark
    - Used to communicate with a full node *n* at address *addr* via 
@@ -563,10 +592,15 @@ func IO (addr Address, ht int64) (LightBlock)
 ---
 
 
+```go
+func sufficientVotingPower(tursted LightBlock, untrusted LightBlock) bool
+```
+TODO
 
 ```go
-func Verify(untrustedLB LightBlock, trustedLB LightBlock) (result)
+func validLightBlock(lightBlock LightBlock) bool 
 ```
+TODO
 
 - Expected precondition:
    - trustedLB.Commit is a commit is for the header 
@@ -606,44 +640,6 @@ func Verify(untrustedLB LightBlock, trustedLB LightBlock) (result)
 - Error condition: 
    - if precondition violated 
 
----
-
-
-```go
-func Scheduler (trustedStore LightBlock[], 
-                untrustedStore LightBlock[], 
-				checkedHeader LightBlock,
-                nextHeight int64
-				verif-result Result)
-				(LightBlock[], LightBlock[], int64, int64) {
-    if verif-result == OK { 
-	  trustedStore.add(checkedHeader)
-	  // **TODO:** reset headerToVerify to nil?
-	  nextHeight = targetHeight
-    } else if verif-result = CANNOT_VERIFY {
-	  untrustedStore.add(checkedHeader)
-	  // as trustedStore does not change, currentHeight does not change
-      compute pivot // (currentHeight + nextHeight) / 2
-      nextHeight = pivot
-    }
-  }
-  return (trustedStore, untrustedStore, nextHeight)
-}
-```
-- Expected precondition
-  - height of *checkedHeader* is *nextHeight*
-- Expected postcondition
-  - *nextHeight <= targetHeight*
-  - *nextHeight > currentHeight* OR *nextHeight = currentHeight = targetHeight*
-  - *checkedHeader* is in *trustedStore* or *untrustedStore*
-- Error conditions 
-  - none
-	
-> **TODO:** I encoded a bisection which is the most simple to
-> describe. With the current variables, we could also try to verify all
-> headers in *untrustedStore* which uses more of the already
-> downloaded headers.	
-	
 ---
 
 
