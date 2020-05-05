@@ -5,12 +5,16 @@
  )]
 
 pub mod components;
+pub mod errors;
 pub mod macros;
 pub mod operations;
 pub mod predicates;
 pub mod prelude;
 pub mod store;
 pub mod types;
+
+#[derive(Copy, Clone, Debug)]
+pub enum Never {}
 
 #[cfg(test)]
 mod tests {

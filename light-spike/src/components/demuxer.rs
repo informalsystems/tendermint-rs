@@ -1,4 +1,4 @@
-use super::{io::*, scheduler::*, verifier::*};
+use super::{contracts, io::*, scheduler::*, verifier::*};
 use crate::prelude::*;
 
 pub trait Clock {
@@ -43,7 +43,7 @@ impl Demuxer {
         }
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<Never, Error> {
         loop {
             if let Err(e) = self.verify() {
                 eprintln!("verification error: {}", e);
@@ -85,13 +85,13 @@ impl Demuxer {
         };
 
         if !self.is_trusted(&target_block) {
-            self.verify_loop(target_block.height);
+            self.verify_loop(target_block.height)?;
         }
 
         Ok(())
     }
 
-    fn verify_loop(&mut self, target_height: Height) {
+    fn verify_loop(&mut self, target_height: Height) -> Result<(), Error> {
         let options = self.options.set_now(self.clock.now());
 
         precondition!(
@@ -121,7 +121,7 @@ impl Demuxer {
 
             let current_block = match self.fetch_light_block(next_height) {
                 Ok(current_block) => current_block,
-                Err(_) => return,
+                Err(_) => return Ok(()),
             };
 
             let verif_result = self.verify_light_block(&current_block, &trusted_state, &options);
@@ -138,9 +138,11 @@ impl Demuxer {
 
             match schedule {
                 SchedulerOutput::Done => continue,
-                SchedulerOutput::Abort => return,
+                SchedulerOutput::InvalidLightBlock(e) => {
+                    bail!(ErrorKind::InvalidLightBlock(e));
+                }
                 SchedulerOutput::NextHeight(height) if height <= trusted_state.height => {
-                    return;
+                    bail!(ErrorKind::BisectionFailed(target_height, height));
                 }
                 SchedulerOutput::NextHeight(height) => {
                     postcondition!(contracts::schedule::postcondition(
@@ -162,6 +164,8 @@ impl Demuxer {
                 &self.state.trusted_store_reader,
             )
         );
+
+        Ok(())
     }
 
     pub fn verify_light_block(
@@ -218,67 +222,3 @@ impl Demuxer {
     }
 }
 
-pub mod contracts {
-    pub mod verify {
-        use crate::prelude::*;
-
-        pub fn trusted_state_contains_block_within_trusting_period(
-            trusted_store: &StoreReader<Trusted>,
-            trusting_period: Duration,
-            now: Time,
-        ) -> bool {
-            trusted_store
-                .all()
-                .iter()
-                .any(|lb| is_within_trust_period(lb, trusting_period, now))
-        }
-
-        pub fn target_height_greater_than_all_blocks_in_trusted_store(
-            target_height: Height,
-            trusted_store: &StoreReader<Trusted>,
-        ) -> bool {
-            trusted_store
-                .all()
-                .iter()
-                .all(|lb| lb.height < target_height)
-        }
-
-        pub fn trusted_store_contains_block_at_target_height(
-            target_height: Height,
-            trusted_store: &StoreReader<Trusted>,
-        ) -> bool {
-            trusted_store.get(target_height).is_some()
-        }
-
-        fn is_within_trust_period(
-            light_block: &LightBlock,
-            trusting_period: Duration,
-            now: Time,
-        ) -> bool {
-            let header_time = light_block.header().bft_time;
-            let expires_at = header_time + trusting_period;
-
-            header_time < now && expires_at > now && header_time <= now
-        }
-    }
-
-    pub mod schedule {
-        use crate::prelude::*;
-
-        pub fn postcondition(
-            trusted_state: &LightBlock,
-            target_height: Height,
-            next_height: Height,
-            trusted_store: &StoreReader<Trusted>,
-            untrusted_store: &StoreReader<Untrusted>,
-        ) -> bool {
-            let current_height = trusted_state.height;
-
-            (next_height <= target_height)
-                && ((next_height > current_height)
-                    || (next_height == current_height && current_height == target_height))
-                && ((trusted_store.get(current_height).as_ref() == Some(trusted_state))
-                    || (untrusted_store.get(current_height).as_ref() == Some(trusted_state)))
-        }
-    }
-}

@@ -1,3 +1,4 @@
+pub mod contracts;
 pub mod demuxer;
 pub mod fork_detector;
 pub mod io;
