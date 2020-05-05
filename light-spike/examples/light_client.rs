@@ -2,6 +2,8 @@ use light_spike::components::scheduler;
 use light_spike::predicates::production::ProductionPredicates;
 use light_spike::prelude::*;
 
+use std::collections::HashMap;
+
 pub fn main() {
     color_backtrace::install();
 
@@ -29,6 +31,7 @@ pub fn main() {
         trusted_store_writer,
         untrusted_store_reader,
         untrusted_store_writer,
+        verification_trace: HashMap::new(),
     };
 
     let options = VerificationOptions {

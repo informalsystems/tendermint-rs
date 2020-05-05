@@ -127,6 +127,8 @@ impl Demuxer {
                 self.state.untrusted_store_writer.add(current_block.clone());
             }
 
+            self.state.trace_block(target_height, current_block.height);
+
             let schedule = self.schedule(&current_block, &trusted_state, verif_result);
             dbg!(&schedule);
 
