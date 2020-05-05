@@ -4,6 +4,7 @@ macro_rules! bail {
         return Err($kind.into());
     };
 }
+
 /// Ensure a condition holds, returning an error if it doesn't (ala `assert`)
 #[macro_export]
 macro_rules! ensure {

@@ -1,17 +1,6 @@
 use super::{contracts, io::*, scheduler::*, verifier::*};
 use crate::prelude::*;
 
-pub trait Clock {
-    fn now(&self) -> Time;
-}
-
-pub struct SystemClock;
-impl Clock for SystemClock {
-    fn now(&self) -> Time {
-        Time::now()
-    }
-}
-
 pub struct Demuxer {
     state: State,
     options: VerificationOptions,
