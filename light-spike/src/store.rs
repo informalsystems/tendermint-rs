@@ -28,14 +28,14 @@ impl<T> Store<T> {
         }
     }
 
-    pub fn split(self) -> (StoreReader<T>, StoreReadWriter<T>) {
+    pub fn split(self) -> (StoreReader<T>, StoreWriter<T>) {
         let store = Arc::new(RwLock::new(self));
 
         let reader = StoreReader {
             store: store.clone(),
         };
 
-        let writer = StoreReadWriter { store };
+        let writer = StoreWriter { store };
 
         (reader, writer)
     }
@@ -93,11 +93,11 @@ impl<T> StoreReader<T> {
 }
 
 #[derive(Debug)]
-pub struct StoreReadWriter<T> {
+pub struct StoreWriter<T> {
     store: Arc<RwLock<Store<T>>>,
 }
 
-impl<T> StoreReadWriter<T> {
+impl<T> StoreWriter<T> {
     pub fn add(&mut self, light_block: LightBlock) {
         let mut store = self.store.write().unwrap();
         store.add(light_block);

@@ -10,7 +10,7 @@ pub struct Peers {
 pub struct State {
     pub peers: Peers,
     pub trusted_store_reader: StoreReader<Trusted>,
-    pub trusted_store_writer: StoreReadWriter<Trusted>,
+    pub trusted_store_writer: StoreWriter<Trusted>,
     pub untrusted_store_reader: StoreReader<Untrusted>,
-    pub untrusted_store_writer: StoreReadWriter<Untrusted>,
+    pub untrusted_store_writer: StoreWriter<Untrusted>,
 }

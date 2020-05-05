@@ -1,4 +1,4 @@
-use super::{contracts, io::*, scheduler::*, verifier::*};
+use crate::components::{contracts, io::*, scheduler::*, verifier::*};
 use crate::prelude::*;
 
 pub struct Demuxer {
@@ -75,15 +75,16 @@ impl Demuxer {
         };
 
         if !self.is_trusted(&target_block) {
-            self.verify_loop(target_block.height)?;
+            self.sync_to(target_block.height)?;
         }
 
         Ok(())
     }
 
-    fn verify_loop(&mut self, target_height: Height) -> Result<(), Error> {
-        let options = self.options.set_now(self.clock.now());
+    fn sync_to(&mut self, target_height: Height) -> Result<(), Error> {
+        let options = self.options.with_now(self.clock.now());
 
+        // TODO: Check this ahead of time
         precondition!(
             contracts::verify::trusted_state_contains_block_within_trusting_period(
                 &self.state.trusted_store_reader,
@@ -92,6 +93,8 @@ impl Demuxer {
             )
         );
 
+        // TODO: This might now be a good precondition if we need to verify intermediate blocks,
+        //       eg. for the relayer.
         precondition!(
             contracts::verify::target_height_greater_than_all_blocks_in_trusted_store(
                 target_height,

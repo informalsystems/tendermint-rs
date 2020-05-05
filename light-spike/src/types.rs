@@ -20,7 +20,7 @@ pub struct VerificationOptions {
 }
 
 impl VerificationOptions {
-    pub fn set_now(&self, now: Time) -> Self {
+    pub fn with_now(&self, now: Time) -> Self {
         Self {
             now,
             ..self.clone()
