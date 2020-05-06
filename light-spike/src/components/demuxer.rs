@@ -32,9 +32,11 @@ impl Demuxer {
         }
     }
 
+    // FIXME: This should probably be extracted somewhere else,
+    //        or just left up to the users of the module.
     pub fn run(&mut self) -> Result<Never, Error> {
         loop {
-            if let Err(e) = self.verify() {
+            if let Err(e) = self.sync_to_latest() {
                 eprintln!("verification error: {}", e);
                 color_backtrace::print_backtrace(
                     e.backtrace().unwrap(),
@@ -54,6 +56,7 @@ impl Demuxer {
                 .unwrap();
             }
 
+            // FIXME: Debug only, should be left up to users of the module.
             std::thread::sleep(Duration::from_secs(1));
         }
     }
@@ -63,7 +66,7 @@ impl Demuxer {
         in_store.as_ref() == Some(light_block)
     }
 
-    pub fn verify(&mut self) -> Result<(), Error> {
+    pub fn sync_to_latest(&mut self) -> Result<(), Error> {
         if self.state.trusted_store_reader.latest().is_none() {
             bail!(ErrorKind::NoInitialTrustedState)
         };
@@ -75,13 +78,13 @@ impl Demuxer {
         };
 
         if !self.is_trusted(&target_block) {
-            self.sync_to(target_block.height)?;
+            self.verify_to_target(target_block.height)?;
         }
 
         Ok(())
     }
 
-    fn sync_to(&mut self, target_height: Height) -> Result<(), Error> {
+    fn verify_to_target(&mut self, target_height: Height) -> Result<(), Error> {
         let options = self.options.with_now(self.clock.now());
 
         // TODO: Check this ahead of time
@@ -93,8 +96,8 @@ impl Demuxer {
             )
         );
 
-        // TODO: This might now be a good precondition if we need to verify intermediate blocks,
-        //       eg. for the relayer.
+        // TODO: This might now be a good precondition if we need to verify
+        //       intermediate blocks, eg. for the relayer.
         precondition!(
             contracts::verify::target_height_greater_than_all_blocks_in_trusted_store(
                 target_height,

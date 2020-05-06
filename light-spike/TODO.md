@@ -1,1 +1,0 @@
-- Split NotEnoughTrust into its own predicate
