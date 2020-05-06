@@ -124,16 +124,15 @@ pub struct LightBlock {
     pub signed_header: SignedHeader,
     pub validators: ValidatorSet,
     pub next_validators: ValidatorSet,
+    pub provider: Peer,
 }
 
 impl LightBlock {
     pub fn header(&self) -> &Header {
         &self.signed_header.header
     }
-}
 
-impl From<tendermint::block::signed_header::SignedHeader> for LightBlock {
-    fn from(sh: tendermint::block::signed_header::SignedHeader) -> Self {
+    pub fn from_signed_header(sh: TMSignedHeader, provider: Peer) -> LightBlock {
         let height = sh.header.height.into();
 
         let validators = ValidatorSet {
@@ -151,6 +150,7 @@ impl From<tendermint::block::signed_header::SignedHeader> for LightBlock {
             signed_header,
             validators,
             next_validators,
+            provider,
         }
     }
 }

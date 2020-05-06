@@ -225,11 +225,7 @@ impl Demuxer {
         let result = self.io.process(input)?;
 
         match result {
-            // TODO: Check that from and peer match, or just remove `from` from the response?
-            IoOutput::FetchedLightBlock {
-                from: _,
-                light_block,
-            } => Ok(light_block),
+            IoOutput::FetchedLightBlock(light_block) => Ok(light_block),
         }
     }
 }

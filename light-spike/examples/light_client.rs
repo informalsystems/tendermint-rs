@@ -13,10 +13,8 @@ pub fn main() {
     let primary: Peer = "tcp://127.0.0.1:26657".parse().unwrap();
     let mut io = RealIo::new();
 
-    let IoOutput::FetchedLightBlock {
-        light_block: trusted_state,
-        ..
-    } = io.fetch_light_block(primary.clone(), 1520).unwrap();
+    let IoOutput::FetchedLightBlock(trusted_state) =
+        io.fetch_light_block(primary.clone(), 1520).unwrap();
 
     trusted_store_writer.add(trusted_state);
 

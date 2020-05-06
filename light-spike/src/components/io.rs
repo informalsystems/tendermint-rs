@@ -17,7 +17,7 @@ pub enum IoInput {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum IoOutput {
-    FetchedLightBlock { from: Peer, light_block: LightBlock },
+    FetchedLightBlock(LightBlock),
 }
 
 #[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
@@ -62,12 +62,9 @@ impl RealIo {
 
     pub fn fetch_light_block(&mut self, peer: Peer, height: Height) -> IoResult {
         let signed_header = self.fetch_signed_header(peer.clone(), height)?;
-        let light_block = signed_header.into();
+        let light_block = LightBlock::from_signed_header(signed_header, peer);
 
-        Ok(IoOutput::FetchedLightBlock {
-            from: peer,
-            light_block,
-        })
+        Ok(IoOutput::FetchedLightBlock(light_block))
     }
 
     fn fetch_signed_header(
