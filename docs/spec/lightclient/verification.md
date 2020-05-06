@@ -514,13 +514,14 @@ handling. If any of the above function returns an error, VerifyToTarget just
 passes the error on.
 
 ```go
-func VerifyToTarget(primary PeerID, lightStore LightStore,
-	targetHeight Height) (LightStore, Result) {
+func VerifyToTarget(primary PeerID, lightStore LightStore, 
+                    targetHeight Height) (LightStore, Result) {
 	
 	nextHeight := targetHeight
 
 	for lightStore.LatestVerified.height < targetHeight {
-        // get next LightBlock for verification
+	
+        // Get next LightBlock for verification
         current, found := lightStore.Get(nextHeight)
 		if !found {
 			current = FetchLightBlock(primary, nextHeight)
@@ -535,13 +536,13 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
 			lightStore.Update(current, StateVerified)
 		}
 		else if verdict == CANNOT_VERIFY {
-		// do nothing
+		    // do nothing
 		}	
-		else {
+		else { 
 		    // verdict == INVALID 
 			lightStore.Update(current, StateFailed)
 			// possibly remove all LightBlocks from primary
-			return (lightStore,ResultFailure)
+			return (lightStore, ResultFailure)
 		} 
 		nextHeight = Pivot(lightStore, nextHeight, targetHeight)
 	}
