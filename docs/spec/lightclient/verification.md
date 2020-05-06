@@ -520,13 +520,17 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
 	nextHeight := targetHeight
 
 	for lightStore.LatestVerified.height < targetHeight {
-		current, found := lightStore.Get(nextHeight)
+        // get next LightBlock for verification
+        current, found := lightStore.Get(nextHeight)
 		if !found {
 			current = FetchLightBlock(primary, nextHeight)
 			lightStore.Update(current, StateUnverified)
 		}
 
-	    verdict = ValidAndVerified(lightStore.LatestVerified, current)
+        // Verify
+        verdict = ValidAndVerified(lightStore.LatestVerified, current)
+		
+		// Decide whether/how to continue
 		if verdict == OK {
 			lightStore.Update(current, StateVerified)
 		}
@@ -534,7 +538,7 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
 		// do nothing
 		}	
 		else {
-		    // vv_verdict == INVALID 
+		    // verdict == INVALID 
 			lightStore.Update(current, StateFailed)
 			// possibly remove all LightBlocks from primary
 			return (lightStore,ResultFailure)
