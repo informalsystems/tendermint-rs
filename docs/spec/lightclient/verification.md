@@ -411,7 +411,7 @@ func (ls LightStore) Get(height Height) (LightBlock, bool)
 
 
 ```go
-func (ls LightStore) HighestVerified() LightBlock
+func (ls LightStore) LatestVerified() LightBlock
 ```
 - Expected postcondition
    - returns the heighest verified light block:`
@@ -514,21 +514,19 @@ handling. If any of the above function returns an error, VerifyToTarget just
 passes the error on.
 
 ```go
-func VerifyToTarget(primary Address, lightStore LightStore,
+func VerifyToTarget(primary PeerID, lightStore LightStore,
 	targetHeight Height) (LightStore, Result) {
 	
-	latestVerified := lightStore.LatestVerified(StateVerified)
 	nextHeight := targetHeight
 
-	for latestVerified.height < targetHeight {
+	for lightStore.LatestVerified.height < targetHeight {
 		current, found := lightStore.Get(nextHeight)
 		if !found {
 			current = FetchLightBlock(primary, nextHeight)
 			lightStore.Update(current, StateUnverified)
 		}
 
-	    latestVerified := lightStore.LatestVerified(StateVerified)
-	    verdict = ValidAndVerified(latestVerified, current)
+	    verdict = ValidAndVerified(lightStore.LatestVerified, current)
 		if verdict == OK {
 			lightStore.Update(current, StateVerified)
 		}
@@ -538,7 +536,7 @@ func VerifyToTarget(primary Address, lightStore LightStore,
 		else {
 		    // vv_verdict == INVALID 
 			lightStore.Update(current, StateFailed)
-			// possible remove all LightBlocks from primary
+			// possibly remove all LightBlocks from primary
 			return (lightStore,ResultFailure)
 		} 
 		nextHeight = Pivot(lightStore, nextHeight, targetHeight)
