@@ -80,10 +80,8 @@ pub trait VerificationPredicates {
     ) -> Result<(), VerificationError>;
 }
 
-// #[allow(clippy::too_many_arguments, clippy::comparison_chain)]
 pub fn validate_light_block(
     vp: &dyn VerificationPredicates,
-    voting_power_calculator: &dyn VotingPowerCalculator,
     commit_validator: &dyn CommitValidator,
     header_hasher: &dyn HeaderHasher,
     trusted_state: &TrustedState,
@@ -125,8 +123,18 @@ pub fn validate_light_block(
         vp.is_monotonic_height(&trusted_state.header(), &untrusted_sh.header)?;
     }
 
-    // All validation passed successfully.
-    // Verify the validators correctly committed the block.
+    Ok(())
+}
+
+pub fn verify_overlap(
+    vp: &dyn VerificationPredicates,
+    voting_power_calculator: &dyn VotingPowerCalculator,
+    trusted_state: &TrustedState,
+    light_block: &LightBlock,
+    options: VerificationOptions,
+) -> Result<(), VerificationError> {
+    let untrusted_sh = &light_block.signed_header;
+    let untrusted_vals = &light_block.validators;
 
     vp.has_sufficient_validators_overlap(
         &untrusted_sh.commit,

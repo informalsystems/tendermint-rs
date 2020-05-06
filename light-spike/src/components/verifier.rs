@@ -9,6 +9,11 @@ pub enum VerifierInput {
         light_block: LightBlock,
         options: VerificationOptions,
     },
+    VerifyOverlap {
+        trusted_state: TrustedState,
+        light_block: LightBlock,
+        options: VerificationOptions,
+    },
     HasSufficientVotingPower {
         light_block: LightBlock,
         options: VerificationOptions,
@@ -50,6 +55,11 @@ impl Verifier for RealVerifier {
                 light_block,
                 options,
             } => self.validate_light_block(light_block, trusted_state, options),
+            VerifierInput::VerifyOverlap {
+                trusted_state,
+                light_block,
+                options,
+            } => self.verify_overlap(light_block, trusted_state, options),
             VerifierInput::HasSufficientVotingPower {
                 light_block,
                 options,
@@ -81,9 +91,28 @@ impl RealVerifier {
     ) -> VerifierOutput {
         let result = crate::predicates::validate_light_block(
             &*self.predicates,
-            &self.voting_power_calculator,
             &self.commit_validator,
             &self.header_hasher,
+            &trusted_state,
+            &light_block,
+            options,
+        );
+
+        match result {
+            Ok(()) => VerifierOutput::Success,
+            Err(e) => VerifierOutput::Invalid(e),
+        }
+    }
+
+    pub fn verify_overlap(
+        &self,
+        light_block: LightBlock,
+        trusted_state: TrustedState,
+        options: VerificationOptions,
+    ) -> VerifierOutput {
+        let result = crate::predicates::verify_overlap(
+            &*self.predicates,
+            &self.voting_power_calculator,
             &trusted_state,
             &light_block,
             options,

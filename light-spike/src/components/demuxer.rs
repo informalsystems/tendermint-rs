@@ -183,6 +183,17 @@ impl Demuxer {
             return validation_output;
         }
 
+        let input = VerifierInput::VerifyOverlap {
+            light_block: light_block.clone(),
+            trusted_state: trusted_state.clone(),
+            options: options.clone(),
+        };
+
+        let validation_output = self.verifier.process(input);
+        if let VerifierOutput::Invalid(_) = validation_output {
+            return validation_output;
+        }
+
         let input = VerifierInput::HasSufficientVotingPower {
             light_block: light_block.clone(),
             options: options.clone(),
