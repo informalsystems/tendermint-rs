@@ -379,7 +379,7 @@ type LightBlock struct {
 }
 ```	
 
-LightBlocks are stored in struture which stores all LightBlock from
+LightBlocks are stored in a structure which stores all LightBlock from
 initialization or received from peers.
 
 ```go
@@ -402,26 +402,32 @@ const (
 
 The LightStore exposes the following functions to query stored LightBlocks.
 
-Fetch a LightBlock at a given height or false in the second argument if
-the LightStore does not contain the specified lightblock.
 ```go
 func (ls LightStore) Get(height Height) (LightBlock, bool) 
 ```
+- Expected postcondition
+  - returns a LightBlock at a given height or false in the second argument if
+    the LightStore does not contain the specified LightBlock.
 
-A function to fetch the heighest verified light block:
+
 ```go
-func (ls LightStore) LatestVerified() LightBlock
+func (ls LightStore) HighestVerified() LightBlock
 ```
+- Expected postcondition
+   - returns the heighest verified light block:`
 
-A function to update the LightBlock stored with the given verifiedState.
+
 ```go
 func (ls LightStore) Update(lightBlock LightBlock, verfiedState VerifiedState)
 ```
+- Expected postcondition
+   - The state of the LightBlock is set to *verifiedState*.
+
 
 ### Inputs
 - *lightStore*: stores light blocks that have been downloaded and that
     passed verification. Initially it contains *trustedLightBlock*.
-- *primary*: peer address
+- *primary*: peerID
 - *targetHeight*: they height of the needed header
 
 
@@ -474,20 +480,18 @@ It is always the case that *refHeader.Header.Time > now - trustingPeriod*.
  
 ### Remote Functions
   ```go
-func FetchLightBlock(addr Address, height Height) LightBlock {
-	...
-}
+func FetchLightBlock(node PeerID, height Height) LightBlock
 ```
 - Implementation remark
-   - RPC to peer with Address *addr*
+   - RPC to peer at *PeerID*
    - Request message: **TODO**
    - Response message: **TODO**
 - Expected precodnition
   - `height` is less than or equal to height of the peer
 - Expected postcondition
-  - if *addr* is correct: Returns the signed header of height `height`
-  from the blockchain
-  - if *addr* is faulty: Returns a signed header with arbitrary content
+  - if *node* is correct: Returns the LightBlock of height `height`
+  that is consistent with the blockchain
+  - if *node* is faulty: Returns a LightBlock with arbitrary content
 - Error condition
    * if *n* is correct: precondition violated **TODO:** mention message
    * if *n* is faulty: arbitrary error
@@ -510,41 +514,36 @@ handling. If any of the above function returns an error, VerifyToTarget just
 passes the error on.
 
 ```go
-type Result int
-const (
-	ResultSuccess = iota + 1
-	ResultFailure
-)
+func VerifyToTarget(primary Address, lightStore LightStore,
+	targetHeight Height) (LightStore, Result) {
+	
+	latestVerified := lightStore.LatestVerified(StateVerified)
+	nextHeight := targetHeight
 
-func VerifyToTarget(primary Address, lightStore LightStore, targetHeight Height) Result {
-	latestVerified := lightStore.Latest(StateVerified)
-
-	currentHeight := targetHeight
 	for latestVerified.height < targetHeight {
-		current, found := lightStore.Get(currentHeight)
+		current, found := lightStore.Get(nextHeight)
 		if !found {
-			current = FetchLightBlock(primary, currentHeight)
+			current = FetchLightBlock(primary, nextHeight)
+			lightStore.Update(current, StateUnverified)
 		}
 
-		if !validLightBlock(current) {
-			return ResultFailure
-		}
-
-		lightStore.Update(current, StateUnverified)
-
-		if SufficientVotingPower(latestVerified, current) {
+	    latestVerified := lightStore.LatestVerified(StateVerified)
+	    verdict = ValidAndVerified(latestVerified, current)
+		if verdict == OK {
 			lightStore.Update(current, StateVerified)
-			if currentHeight == targetHeight {
-				return ResultSuccess
-			} else {
-				// Attempt to move towards target height
-				currentHeight = targetHeight
-			}
-		} else {
-			// Insiffucient trust: bisect
-			currentHeight = (latestVerified.height + currentHeight) / 2
 		}
+		else if verdict == CANNOT_VERIFY {
+		// do nothing
+		}	
+		else {
+		    // vv_verdict == INVALID 
+			lightStore.Update(current, StateFailed)
+			// possible remove all LightBlocks from primary
+			return (lightStore,ResultFailure)
+		} 
+		nextHeight = Pivot(lightStore, nextHeight, targetHeight)
 	}
+	return (lightStore, ResultSuccess)
 }
 ```
 
