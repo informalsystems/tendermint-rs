@@ -80,8 +80,8 @@ pub trait VerificationPredicates {
     ) -> Result<(), VerificationError>;
 }
 
-#[allow(clippy::too_many_arguments, clippy::comparison_chain)]
-pub fn verify_light_block(
+// #[allow(clippy::too_many_arguments, clippy::comparison_chain)]
+pub fn validate_light_block(
     vp: &dyn VerificationPredicates,
     voting_power_calculator: &dyn VotingPowerCalculator,
     commit_validator: &dyn CommitValidator,
@@ -121,17 +121,8 @@ pub fn verify_light_block(
 
     if untrusted_sh.header.height == trusted_state.header().height {
         vp.valid_next_validator_set(&untrusted_sh, &untrusted_next_vals)?;
-    } else if untrusted_sh.header.height > trusted_state.header().height {
-        vp.has_sufficient_voting_power(
-            &untrusted_sh.commit,
-            &untrusted_sh.validators,
-            &options.trust_threshold,
-            voting_power_calculator,
-        )?;
     } else {
-        // This check will always fail since trusted_state.header < untrusted_sh.header
         vp.is_monotonic_height(&trusted_state.header(), &untrusted_sh.header)?;
-        unreachable!();
     }
 
     // All validation passed successfully.
@@ -152,4 +143,20 @@ pub fn verify_light_block(
     )?;
 
     Ok(())
+}
+
+pub fn has_sufficient_voting_power(
+    vp: &dyn VerificationPredicates,
+    voting_power_calculator: &dyn VotingPowerCalculator,
+    light_block: &LightBlock,
+    options: VerificationOptions,
+) -> Result<(), VerificationError> {
+    let untrusted_sh = &light_block.signed_header;
+
+    vp.has_sufficient_voting_power(
+        &untrusted_sh.commit,
+        &untrusted_sh.validators,
+        &options.trust_threshold,
+        voting_power_calculator,
+    )
 }

@@ -118,10 +118,12 @@ impl Demuxer {
                 Err(_) => return Ok(()),
             };
 
-            let verif_result = self.verify_light_block(&current_block, &trusted_state, &options);
-            dbg!(&verif_result);
+            let verification_result =
+                self.verify_light_block(&current_block, &trusted_state, &options);
 
-            if let VerifierOutput::Success = verif_result {
+            dbg!(&verification_result);
+
+            if let VerifierOutput::Success = verification_result {
                 self.state.trusted_store_writer.add(current_block.clone());
             } else {
                 self.state.untrusted_store_writer.add(current_block.clone());
@@ -129,7 +131,7 @@ impl Demuxer {
 
             self.state.trace_block(target_height, current_block.height);
 
-            let schedule = self.schedule(&current_block, &trusted_state, verif_result);
+            let schedule = self.schedule(&current_block, &trusted_state, verification_result);
             dbg!(&schedule);
 
             match schedule {
@@ -170,9 +172,19 @@ impl Demuxer {
         trusted_state: &TrustedState,
         options: &VerificationOptions,
     ) -> VerifierOutput {
-        let input = VerifierInput::VerifyLightBlock {
+        let input = VerifierInput::ValidateLightBlock {
             light_block: light_block.clone(),
             trusted_state: trusted_state.clone(),
+            options: options.clone(),
+        };
+
+        let validation_output = self.verifier.process(input);
+        if let VerifierOutput::Invalid(_) = validation_output {
+            return validation_output;
+        }
+
+        let input = VerifierInput::HasSufficientVotingPower {
+            light_block: light_block.clone(),
             options: options.clone(),
         };
 

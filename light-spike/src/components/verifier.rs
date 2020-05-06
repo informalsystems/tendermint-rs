@@ -4,8 +4,12 @@ use crate::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum VerifierInput {
-    VerifyLightBlock {
+    ValidateLightBlock {
         trusted_state: TrustedState,
+        light_block: LightBlock,
+        options: VerificationOptions,
+    },
+    HasSufficientVotingPower {
         light_block: LightBlock,
         options: VerificationOptions,
     },
@@ -41,11 +45,15 @@ pub struct RealVerifier {
 impl Verifier for RealVerifier {
     fn process(&self, input: VerifierInput) -> VerifierOutput {
         match input {
-            VerifierInput::VerifyLightBlock {
+            VerifierInput::ValidateLightBlock {
                 trusted_state,
                 light_block,
                 options,
-            } => self.verify_light_block(light_block, trusted_state, options),
+            } => self.validate_light_block(light_block, trusted_state, options),
+            VerifierInput::HasSufficientVotingPower {
+                light_block,
+                options,
+            } => self.has_sufficient_voting_power(light_block, options),
         }
     }
 }
@@ -65,13 +73,13 @@ impl RealVerifier {
         }
     }
 
-    pub fn verify_light_block(
+    pub fn validate_light_block(
         &self,
         light_block: LightBlock,
         trusted_state: TrustedState,
         options: VerificationOptions,
     ) -> VerifierOutput {
-        let result = crate::predicates::verify_light_block(
+        let result = crate::predicates::validate_light_block(
             &*self.predicates,
             &self.voting_power_calculator,
             &self.commit_validator,
@@ -83,10 +91,25 @@ impl RealVerifier {
 
         match result {
             Ok(()) => VerifierOutput::Success,
-            Err(VerificationError::InsufficientVotingPower { .. }) => {
-                VerifierOutput::NotEnoughTrust
-            }
             Err(e) => VerifierOutput::Invalid(e),
+        }
+    }
+
+    pub fn has_sufficient_voting_power(
+        &self,
+        light_block: LightBlock,
+        options: VerificationOptions,
+    ) -> VerifierOutput {
+        let result = crate::predicates::has_sufficient_voting_power(
+            &*self.predicates,
+            &self.voting_power_calculator,
+            &light_block,
+            options,
+        );
+
+        match result {
+            Ok(()) => VerifierOutput::Success,
+            Err(_) => VerifierOutput::NotEnoughTrust,
         }
     }
 }
