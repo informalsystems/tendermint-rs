@@ -1,3 +1,8 @@
+## Pending
+
+Serialization:
+- [#248] Refactor serializers library to use modules and give a nicer annotation to structs.
+
 ## [0.13.0] (2020-04-20)
 
 Dependencies:
