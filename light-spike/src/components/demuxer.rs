@@ -108,18 +108,22 @@ impl Demuxer {
         let mut next_height = target_height;
 
         for trusted_state in self.state.trusted_store_reader.highest_iter() {
-            if trusted_state.height >= target_height {
-                break;
-            }
-
             dbg!(target_height);
             dbg!(trusted_state.height);
             dbg!(next_height);
 
+            if trusted_state.height >= target_height {
+                return Ok(());
+            }
+
+            if next_height == trusted_state.height {
+                return Ok(());
+            }
+
             let primary = self.state.peers.primary.clone();
             let current_block = match self.fetch_light_block(primary, next_height) {
                 Ok(current_block) => current_block,
-                Err(_) => return Ok(()),
+                Err(e) => bail!(ErrorKind::Io(e)),
             };
 
             let verdict = self.verify_light_block(&current_block, &trusted_state, &options);
