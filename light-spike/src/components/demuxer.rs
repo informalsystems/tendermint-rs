@@ -125,15 +125,15 @@ impl Demuxer {
             dbg!(&verdict);
 
             match verdict {
-                VerifierOutput::Success => {
+                Verdict::Success => {
                     self.state.trusted_store_writer.add(current_block.clone());
                     continue;
                 }
-                VerifierOutput::Invalid(e) => {
+                Verdict::Invalid(e) => {
                     self.state.untrusted_store_writer.add(current_block.clone());
                     bail!(ErrorKind::InvalidLightBlock(e))
                 }
-                VerifierOutput::NotEnoughTrust => {
+                Verdict::NotEnoughTrust => {
                     self.state.untrusted_store_writer.add(current_block.clone());
                     self.state.trace_block(target_height, current_block.height);
 
@@ -172,35 +172,25 @@ impl Demuxer {
         light_block: &LightBlock,
         trusted_state: &TrustedState,
         options: &VerificationOptions,
-    ) -> VerifierOutput {
-        let input = VerifierInput::ValidateLightBlock {
-            light_block: light_block.clone(),
-            trusted_state: trusted_state.clone(),
-            options: options.clone(),
-        };
+    ) -> Verdict {
+        let verdict = self
+            .verifier
+            .validate_light_block(light_block, trusted_state, options);
 
-        let validation_output = self.verifier.process(input);
-        if let VerifierOutput::Invalid(_) = validation_output {
-            return validation_output;
+        if let Verdict::Invalid(_) = verdict {
+            return verdict;
         }
 
-        let input = VerifierInput::VerifyOverlap {
-            light_block: light_block.clone(),
-            trusted_state: trusted_state.clone(),
-            options: options.clone(),
-        };
+        let verdict = self
+            .verifier
+            .verify_overlap(light_block, trusted_state, options);
 
-        let validation_output = self.verifier.process(input);
-        if let VerifierOutput::Invalid(_) = validation_output {
-            return validation_output;
+        if let Verdict::Invalid(_) = verdict {
+            return verdict;
         }
 
-        let input = VerifierInput::HasSufficientVotingPower {
-            light_block: light_block.clone(),
-            options: options.clone(),
-        };
-
-        self.verifier.process(input)
+        self.verifier
+            .has_sufficient_voting_power(light_block, options)
     }
 
     pub fn schedule(&self, light_block: &LightBlock, trusted_state: &TrustedState) -> Height {

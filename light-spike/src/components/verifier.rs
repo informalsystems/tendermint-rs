@@ -3,41 +3,32 @@ use serde::{Deserialize, Serialize};
 use crate::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum VerifierInput {
-    ValidateLightBlock {
-        trusted_state: TrustedState,
-        light_block: LightBlock,
-        options: VerificationOptions,
-    },
-    VerifyOverlap {
-        trusted_state: TrustedState,
-        light_block: LightBlock,
-        options: VerificationOptions,
-    },
-    HasSufficientVotingPower {
-        light_block: LightBlock,
-        options: VerificationOptions,
-    },
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum VerifierOutput {
+pub enum Verdict {
     Success,
     NotEnoughTrust,
     Invalid(VerificationError),
 }
 
 pub trait Verifier {
-    fn process(&self, input: VerifierInput) -> VerifierOutput;
-}
+    fn validate_light_block(
+        &self,
+        light_block: &LightBlock,
+        trusted_state: &TrustedState,
+        options: &VerificationOptions,
+    ) -> Verdict;
 
-impl<F> Verifier for F
-where
-    F: Fn(VerifierInput) -> VerifierOutput,
-{
-    fn process(&self, input: VerifierInput) -> VerifierOutput {
-        self(input)
-    }
+    fn verify_overlap(
+        &self,
+        light_block: &LightBlock,
+        trusted_state: &TrustedState,
+        options: &VerificationOptions,
+    ) -> Verdict;
+
+    fn has_sufficient_voting_power(
+        &self,
+        light_block: &LightBlock,
+        options: &VerificationOptions,
+    ) -> Verdict;
 }
 
 pub struct RealVerifier {
@@ -45,27 +36,6 @@ pub struct RealVerifier {
     voting_power_calculator: Box<dyn VotingPowerCalculator>,
     commit_validator: Box<dyn CommitValidator>,
     header_hasher: Box<dyn HeaderHasher>,
-}
-
-impl Verifier for RealVerifier {
-    fn process(&self, input: VerifierInput) -> VerifierOutput {
-        match input {
-            VerifierInput::ValidateLightBlock {
-                trusted_state,
-                light_block,
-                options,
-            } => self.validate_light_block(light_block, trusted_state, options),
-            VerifierInput::VerifyOverlap {
-                trusted_state,
-                light_block,
-                options,
-            } => self.verify_overlap(light_block, trusted_state, options),
-            VerifierInput::HasSufficientVotingPower {
-                light_block,
-                options,
-            } => self.has_sufficient_voting_power(light_block, options),
-        }
-    }
 }
 
 impl RealVerifier {
@@ -82,13 +52,15 @@ impl RealVerifier {
             header_hasher: Box::new(header_hasher),
         }
     }
+}
 
-    pub fn validate_light_block(
+impl Verifier for RealVerifier {
+    fn validate_light_block(
         &self,
-        light_block: LightBlock,
-        trusted_state: TrustedState,
-        options: VerificationOptions,
-    ) -> VerifierOutput {
+        light_block: &LightBlock,
+        trusted_state: &TrustedState,
+        options: &VerificationOptions,
+    ) -> Verdict {
         let result = crate::predicates::validate_light_block(
             &*self.predicates,
             &self.commit_validator,
@@ -99,17 +71,17 @@ impl RealVerifier {
         );
 
         match result {
-            Ok(()) => VerifierOutput::Success,
-            Err(e) => VerifierOutput::Invalid(e),
+            Ok(()) => Verdict::Success,
+            Err(e) => Verdict::Invalid(e),
         }
     }
 
-    pub fn verify_overlap(
+    fn verify_overlap(
         &self,
-        light_block: LightBlock,
-        trusted_state: TrustedState,
-        options: VerificationOptions,
-    ) -> VerifierOutput {
+        light_block: &LightBlock,
+        trusted_state: &TrustedState,
+        options: &VerificationOptions,
+    ) -> Verdict {
         let result = crate::predicates::verify_overlap(
             &*self.predicates,
             &self.voting_power_calculator,
@@ -119,16 +91,16 @@ impl RealVerifier {
         );
 
         match result {
-            Ok(()) => VerifierOutput::Success,
-            Err(e) => VerifierOutput::Invalid(e),
+            Ok(()) => Verdict::Success,
+            Err(e) => Verdict::Invalid(e),
         }
     }
 
-    pub fn has_sufficient_voting_power(
+    fn has_sufficient_voting_power(
         &self,
-        light_block: LightBlock,
-        options: VerificationOptions,
-    ) -> VerifierOutput {
+        light_block: &LightBlock,
+        options: &VerificationOptions,
+    ) -> Verdict {
         let result = crate::predicates::has_sufficient_voting_power(
             &*self.predicates,
             &self.voting_power_calculator,
@@ -137,8 +109,8 @@ impl RealVerifier {
         );
 
         match result {
-            Ok(()) => VerifierOutput::Success,
-            Err(_) => VerifierOutput::NotEnoughTrust,
+            Ok(()) => Verdict::Success,
+            Err(_) => Verdict::NotEnoughTrust,
         }
     }
 }

@@ -86,7 +86,7 @@ pub fn validate_light_block(
     header_hasher: &dyn HeaderHasher,
     trusted_state: &TrustedState,
     light_block: &LightBlock,
-    options: VerificationOptions,
+    options: &VerificationOptions,
 ) -> Result<(), VerificationError> {
     let untrusted_sh = &light_block.signed_header;
     let untrusted_vals = &light_block.validators;
@@ -127,7 +127,7 @@ pub fn verify_overlap(
     voting_power_calculator: &dyn VotingPowerCalculator,
     trusted_state: &TrustedState,
     light_block: &LightBlock,
-    options: VerificationOptions,
+    options: &VerificationOptions,
 ) -> Result<(), VerificationError> {
     let untrusted_sh = &light_block.signed_header;
     let untrusted_vals = &light_block.validators;
@@ -153,7 +153,7 @@ pub fn has_sufficient_voting_power(
     vp: &dyn VerificationPredicates,
     voting_power_calculator: &dyn VotingPowerCalculator,
     light_block: &LightBlock,
-    options: VerificationOptions,
+    options: &VerificationOptions,
 ) -> Result<(), VerificationError> {
     let untrusted_sh = &light_block.signed_header;
     let untrusted_vals = &light_block.validators;
