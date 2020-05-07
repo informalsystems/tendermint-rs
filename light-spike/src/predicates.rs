@@ -116,7 +116,7 @@ pub fn validate_light_block(
     if untrusted_sh.header.height == trusted_state.header().height {
         vp.valid_next_validator_set(&untrusted_sh, &untrusted_next_vals)?;
     } else {
-        vp.is_monotonic_height(&trusted_state.header(), &untrusted_sh.header)?;
+        vp.is_monotonic_height(&untrusted_sh.header, &trusted_state.header())?;
     }
 
     Ok(())
