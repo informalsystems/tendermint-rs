@@ -36,6 +36,8 @@ pub struct RealIo {
 impl Io for RealIo {
     fn fetch_light_block(&mut self, peer: Peer, height: Height) -> Result<LightBlock, IoError> {
         let signed_header = self.fetch_signed_header(&peer, height)?;
+        let height = signed_header.header.height.into();
+
         let validator_set = self.fetch_validator_set(&peer, height)?;
         let next_validator_set = self.fetch_validator_set(&peer, height + 1)?;
 
