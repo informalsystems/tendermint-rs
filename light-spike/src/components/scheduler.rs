@@ -1,48 +1,21 @@
-use serde::{Deserialize, Serialize};
-
 use crate::prelude::*;
 
 pub trait Scheduler {
-    fn process(&self, input: SchedulerInput) -> SchedulerOutput;
+    fn schedule(&self, light_block: &LightBlock, trusted_state: &TrustedState) -> Height;
 }
 
 impl<F> Scheduler for F
 where
-    F: Fn(SchedulerInput) -> SchedulerOutput,
+    F: Fn(&LightBlock, &TrustedState) -> Height,
 {
-    fn process(&self, input: SchedulerInput) -> SchedulerOutput {
-        self(input)
+    fn schedule(&self, light_block: &LightBlock, trusted_state: &TrustedState) -> Height {
+        self(light_block, trusted_state)
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum SchedulerInput {
-    Schedule {
-        checked_header: LightBlock,
-        trusted_state: TrustedState,
-    },
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum SchedulerOutput {
-    NextHeight(Height),
-}
-
-pub fn schedule(input: SchedulerInput) -> SchedulerOutput {
-    match input {
-        SchedulerInput::Schedule {
-            checked_header,
-            trusted_state,
-        } => {
-            let pivot_height = compute_pivot_height(&checked_header, &trusted_state);
-            SchedulerOutput::NextHeight(pivot_height)
-        }
-    }
-}
-
-fn compute_pivot_height(checked_header: &LightBlock, trusted_state: &TrustedState) -> Height {
+pub fn schedule(light_block: &LightBlock, trusted_state: &TrustedState) -> Height {
     let trusted_height = trusted_state.height;
-    let untrusted_height = checked_header.height;
+    let untrusted_height = light_block.height;
 
     assert!(trusted_height < untrusted_height);
 

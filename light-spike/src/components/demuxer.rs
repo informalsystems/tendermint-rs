@@ -137,10 +137,8 @@ impl Demuxer {
                     self.state.untrusted_store_writer.add(current_block.clone());
                     self.state.trace_block(target_height, current_block.height);
 
-                    let schedule = self.schedule(&current_block, &trusted_state);
-                    dbg!(&schedule);
-
-                    let SchedulerOutput::NextHeight(scheduled_height) = schedule;
+                    let scheduled_height = self.schedule(&current_block, &trusted_state);
+                    dbg!(&scheduled_height);
 
                     if scheduled_height <= trusted_state.height {
                         bail!(ErrorKind::BisectionFailed(target_height, scheduled_height));
@@ -205,17 +203,8 @@ impl Demuxer {
         self.verifier.process(input)
     }
 
-    pub fn schedule(
-        &self,
-        checked_header: &LightBlock,
-        trusted_state: &TrustedState,
-    ) -> SchedulerOutput {
-        let input = SchedulerInput::Schedule {
-            checked_header: checked_header.clone(),
-            trusted_state: trusted_state.clone(),
-        };
-
-        self.scheduler.process(input)
+    pub fn schedule(&self, light_block: &LightBlock, trusted_state: &TrustedState) -> Height {
+        self.scheduler.schedule(light_block, trusted_state)
     }
 
     pub fn detect_forks(&self) -> Result<(), Error> {
