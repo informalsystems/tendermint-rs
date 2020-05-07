@@ -2,6 +2,7 @@
 
 Serialization:
 - [#248] Refactor serializers library to use modules and give a nicer annotation to structs.
+-        Implemented deserialization of null value for Vec<u8>
 
 ## [0.13.0] (2020-04-20)
 
