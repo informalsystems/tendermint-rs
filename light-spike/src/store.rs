@@ -73,11 +73,11 @@ impl<T> StoreReader<T> {
         self.store.read().unwrap().get(height).cloned()
     }
 
-    pub fn latest_height(&self) -> Option<Height> {
+    pub fn highest_height(&self) -> Option<Height> {
         self.store.read().unwrap().latest_height()
     }
 
-    pub fn latest(&self) -> Option<LightBlock> {
+    pub fn highest(&self) -> Option<LightBlock> {
         self.store.read().unwrap().latest().cloned()
     }
 

@@ -36,7 +36,7 @@ impl Demuxer {
     //        or just left up to the users of the module.
     pub fn run(&mut self) -> Result<Never, Error> {
         loop {
-            if let Err(e) = self.sync_to_latest() {
+            if let Err(e) = self.sync_to_highest() {
                 eprintln!("verification error: {}", e);
                 color_backtrace::print_backtrace(
                     e.backtrace().unwrap(),
@@ -45,7 +45,7 @@ impl Demuxer {
                 .unwrap();
             }
 
-            dbg!(&self.state.trusted_store_reader.latest_height());
+            dbg!(&self.state.trusted_store_reader.highest_height());
 
             if let Err(e) = self.detect_forks() {
                 eprintln!("fork detection error: {}", e);
@@ -66,8 +66,8 @@ impl Demuxer {
         in_store.as_ref() == Some(light_block)
     }
 
-    pub fn sync_to_latest(&mut self) -> Result<(), Error> {
-        if self.state.trusted_store_reader.latest().is_none() {
+    pub fn sync_to_highest(&mut self) -> Result<(), Error> {
+        if self.state.trusted_store_reader.highest().is_none() {
             bail!(ErrorKind::NoInitialTrustedState)
         };
 
@@ -106,10 +106,10 @@ impl Demuxer {
         );
 
         let mut next_height = target_height;
-        let mut trusted_state = self.state.trusted_store_reader.latest().unwrap();
+        let mut trusted_state = self.state.trusted_store_reader.highest().unwrap();
 
         while trusted_state.height < target_height {
-            trusted_state = self.state.trusted_store_reader.latest().unwrap();
+            trusted_state = self.state.trusted_store_reader.highest().unwrap();
 
             dbg!(target_height);
             dbg!(trusted_state.height);
@@ -122,7 +122,6 @@ impl Demuxer {
             };
 
             let verdict = self.verify_light_block(&current_block, &trusted_state, &options);
-
             dbg!(&verdict);
 
             match verdict {
