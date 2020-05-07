@@ -1,3 +1,7 @@
+# Pending
+
+- [#249] Updated abci_info test to 0.17.0
+
 ## [0.13.0] (2020-04-20)
 
 Dependencies:
