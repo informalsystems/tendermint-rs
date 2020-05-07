@@ -514,39 +514,39 @@ handling. If any of the above function returns an error, VerifyToTarget just
 passes the error on.
 
 ```go
-func VerifyToTarget(primary PeerID, lightStore LightStore, 
+func VerifyToTarget(primary PeerID, lightStore LightStore,
                     targetHeight Height) (LightStore, Result) {
-	
-	nextHeight := targetHeight
 
-	for lightStore.LatestVerified.height < targetHeight {
-	
+    nextHeight := targetHeight
+
+    for lightStore.LatestVerified.height < targetHeight {
+    
         // Get next LightBlock for verification
         current, found := lightStore.Get(nextHeight)
-		if !found {
-			current = FetchLightBlock(primary, nextHeight)
-			lightStore.Update(current, StateUnverified)
-		}
+        if !found {
+            current = FetchLightBlock(primary, nextHeight)
+            lightStore.Update(current, StateUnverified)
+        }
 
         // Verify
         verdict = ValidAndVerified(lightStore.LatestVerified, current)
-		
-		// Decide whether/how to continue
-		if verdict == OK {
-			lightStore.Update(current, StateVerified)
-		}
-		else if verdict == CANNOT_VERIFY {
-		    // do nothing
-		}	
-		else { 
-		    // verdict == INVALID 
-			lightStore.Update(current, StateFailed)
-			// possibly remove all LightBlocks from primary
-			return (lightStore, ResultFailure)
-		} 
-		nextHeight = Pivot(lightStore, nextHeight, targetHeight)
-	}
-	return (lightStore, ResultSuccess)
+        
+        // Decide whether/how to continue
+        if verdict == OK {
+            lightStore.Update(current, StateVerified)
+        }
+        else if verdict == CANNOT_VERIFY {
+            // do nothing
+        }    
+        else { 
+            // verdict == INVALID 
+            lightStore.Update(current, StateFailed)
+            // possibly remove all LightBlocks from primary
+            return (lightStore, ResultFailure)
+        } 
+        nextHeight = Pivot(lightStore, nextHeight, targetHeight)
+    }
+    return (lightStore, ResultSuccess)
 }
 ```
 
