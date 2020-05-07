@@ -3,30 +3,17 @@ use serde::{Deserialize, Serialize};
 use crate::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum ForkDetectorInput {
-    Detect(Vec<LightBlock>),
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum ForkDetectorOutput {
+pub enum ForkDetection {
     Detected(LightBlock, LightBlock),
     NotDetected,
 }
 
 pub trait ForkDetector {
-    fn process(&self, input: ForkDetectorInput) -> ForkDetectorOutput;
+    fn detect(&self, light_blocks: Vec<LightBlock>) -> ForkDetection;
 }
 
 pub struct RealForkDetector {
     header_hasher: Box<dyn HeaderHasher>,
-}
-
-impl ForkDetector for RealForkDetector {
-    fn process(&self, input: ForkDetectorInput) -> ForkDetectorOutput {
-        match input {
-            ForkDetectorInput::Detect(light_blocks) => self.detect(light_blocks),
-        }
-    }
 }
 
 impl RealForkDetector {
@@ -35,10 +22,12 @@ impl RealForkDetector {
             header_hasher: Box::new(header_hasher),
         }
     }
+}
 
-    pub fn detect(&self, mut light_blocks: Vec<LightBlock>) -> ForkDetectorOutput {
+impl ForkDetector for RealForkDetector {
+    fn detect(&self, mut light_blocks: Vec<LightBlock>) -> ForkDetection {
         if light_blocks.is_empty() {
-            return ForkDetectorOutput::NotDetected;
+            return ForkDetection::NotDetected;
         }
 
         let first_block = light_blocks.pop().unwrap(); // Safety: checked above that not empty.
@@ -48,10 +37,10 @@ impl RealForkDetector {
             let hash = self.header_hasher.hash(light_block.header());
 
             if first_hash != hash {
-                return ForkDetectorOutput::Detected(first_block, light_block);
+                return ForkDetection::Detected(first_block, light_block);
             }
         }
 
-        ForkDetectorOutput::NotDetected
+        ForkDetection::NotDetected
     }
 }

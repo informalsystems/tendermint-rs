@@ -199,13 +199,11 @@ impl Demuxer {
 
     pub fn detect_forks(&self) -> Result<(), Error> {
         let light_blocks = self.state.trusted_store_reader.all();
-        let input = ForkDetectorInput::Detect(light_blocks);
-
-        let result = self.fork_detector.process(input);
+        let result = self.fork_detector.detect(light_blocks);
 
         match result {
-            ForkDetectorOutput::NotDetected => (),    // TODO
-            ForkDetectorOutput::Detected(_, _) => (), // TODO
+            ForkDetection::NotDetected => (),    // TODO
+            ForkDetection::Detected(_, _) => (), // TODO
         }
 
         Ok(())
