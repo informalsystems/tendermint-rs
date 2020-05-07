@@ -20,16 +20,18 @@ pub struct State {
 
 impl State {
     pub fn trace_block(&mut self, target_height: Height, height: Height) {
-        precondition!(height < target_height);
+        precondition!(height <= target_height);
 
-        self.verification_trace
-            .entry(target_height)
-            .or_insert_with(|| Vec::new())
-            .push(height);
+        if height < target_height {
+            self.verification_trace
+                .entry(target_height)
+                .or_insert_with(|| Vec::new())
+                .push(height);
+        }
 
         postcondition!(self
             .verification_trace
             .get(&target_height)
-            .map_or(false, |trace| { trace.iter().all(|h| h < &target_height) }))
+            .map_or(true, |trace| { trace.iter().all(|h| h < &target_height) }))
     }
 }
