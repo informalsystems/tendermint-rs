@@ -121,40 +121,41 @@ impl Demuxer {
                 Err(_) => return Ok(()),
             };
 
-            let verification_result =
-                self.verify_light_block(&current_block, &trusted_state, &options);
+            let verdict = self.verify_light_block(&current_block, &trusted_state, &options);
 
-            dbg!(&verification_result);
+            dbg!(&verdict);
 
-            if let VerifierOutput::Success = verification_result {
-                self.state.trusted_store_writer.add(current_block.clone());
-            } else {
-                self.state.untrusted_store_writer.add(current_block.clone());
-            }
-
-            self.state.trace_block(target_height, current_block.height);
-
-            let schedule = self.schedule(&current_block, &trusted_state, verification_result);
-            dbg!(&schedule);
-
-            match schedule {
-                SchedulerOutput::Done => continue,
-                SchedulerOutput::InvalidLightBlock(e) => {
-                    bail!(ErrorKind::InvalidLightBlock(e));
+            match verdict {
+                VerifierOutput::Success => {
+                    self.state.trusted_store_writer.add(current_block.clone());
+                    continue;
                 }
-                SchedulerOutput::NextHeight(height) if height <= trusted_state.height => {
-                    bail!(ErrorKind::BisectionFailed(target_height, height));
+                VerifierOutput::Invalid(e) => {
+                    self.state.untrusted_store_writer.add(current_block.clone());
+                    bail!(ErrorKind::InvalidLightBlock(e))
                 }
-                SchedulerOutput::NextHeight(height) => {
+                VerifierOutput::NotEnoughTrust => {
+                    self.state.untrusted_store_writer.add(current_block.clone());
+                    self.state.trace_block(target_height, current_block.height);
+
+                    let schedule = self.schedule(&current_block, &trusted_state);
+                    dbg!(&schedule);
+
+                    let SchedulerOutput::NextHeight(scheduled_height) = schedule;
+
+                    if scheduled_height <= trusted_state.height {
+                        bail!(ErrorKind::BisectionFailed(target_height, scheduled_height));
+                    }
+
                     postcondition!(contracts::schedule::postcondition(
                         &trusted_state,
                         target_height,
-                        height,
+                        scheduled_height,
                         &self.state.trusted_store_reader,
                         &self.state.untrusted_store_reader
                     ));
 
-                    next_height = height;
+                    next_height = scheduled_height;
                 }
             }
         }
@@ -209,12 +210,10 @@ impl Demuxer {
         &self,
         checked_header: &LightBlock,
         trusted_state: &TrustedState,
-        verifier_result: VerifierOutput,
     ) -> SchedulerOutput {
         let input = SchedulerInput::Schedule {
             checked_header: checked_header.clone(),
             trusted_state: trusted_state.clone(),
-            verifier_result,
         };
 
         self.scheduler.process(input)

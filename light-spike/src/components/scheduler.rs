@@ -20,14 +20,11 @@ pub enum SchedulerInput {
     Schedule {
         checked_header: LightBlock,
         trusted_state: TrustedState,
-        verifier_result: VerifierOutput,
     },
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum SchedulerOutput {
-    Done,
-    InvalidLightBlock(VerificationError),
     NextHeight(Height),
 }
 
@@ -36,15 +33,10 @@ pub fn schedule(input: SchedulerInput) -> SchedulerOutput {
         SchedulerInput::Schedule {
             checked_header,
             trusted_state,
-            verifier_result,
-        } => match verifier_result {
-            VerifierOutput::Success => SchedulerOutput::Done,
-            VerifierOutput::Invalid(e) => SchedulerOutput::InvalidLightBlock(e),
-            VerifierOutput::NotEnoughTrust => {
-                let pivot_height = compute_pivot_height(&checked_header, &trusted_state);
-                SchedulerOutput::NextHeight(pivot_height)
-            }
-        },
+        } => {
+            let pivot_height = compute_pivot_height(&checked_header, &trusted_state);
+            SchedulerOutput::NextHeight(pivot_height)
+        }
     }
 }
 
