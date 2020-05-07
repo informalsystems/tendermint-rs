@@ -10,34 +10,22 @@ use std::collections::HashMap;
 
 pub const LATEST_HEIGHT: Height = 0;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum IoInput {
-    FetchLightBlock { peer: Peer, height: Height },
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum IoOutput {
-    FetchedLightBlock(LightBlock),
-}
-
 #[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 pub enum IoError {
     #[error(transparent)]
     IoError(#[from] rpc::Error),
 }
 
-pub type IoResult = Result<IoOutput, IoError>;
-
 pub trait Io {
-    fn process(&mut self, input: IoInput) -> IoResult;
+    fn fetch_light_block(&mut self, peer: Peer, height: Height) -> Result<LightBlock, IoError>;
 }
 
 impl<F> Io for F
 where
-    F: FnMut(IoInput) -> IoResult,
+    F: FnMut(Peer, Height) -> Result<LightBlock, IoError>,
 {
-    fn process(&mut self, input: IoInput) -> IoResult {
-        self(input)
+    fn fetch_light_block(&mut self, peer: Peer, height: Height) -> Result<LightBlock, IoError> {
+        self(peer, height)
     }
 }
 
@@ -46,10 +34,14 @@ pub struct RealIo {
 }
 
 impl Io for RealIo {
-    fn process(&mut self, input: IoInput) -> IoResult {
-        match input {
-            IoInput::FetchLightBlock { peer, height } => self.fetch_light_block(peer, height),
-        }
+    fn fetch_light_block(&mut self, peer: Peer, height: Height) -> Result<LightBlock, IoError> {
+        let signed_header = self.fetch_signed_header(&peer, height)?;
+        let validator_set = self.fetch_validator_set(&peer, height)?;
+        let next_validator_set = self.fetch_validator_set(&peer, height + 1)?;
+
+        let light_block = LightBlock::new(signed_header, validator_set, next_validator_set, peer);
+
+        Ok(light_block)
     }
 }
 
@@ -60,19 +52,9 @@ impl RealIo {
         }
     }
 
-    pub fn fetch_light_block(&mut self, peer: Peer, height: Height) -> IoResult {
-        let signed_header = self.fetch_signed_header(peer.clone(), height)?;
-        let validator_set = self.fetch_validator_set(peer.clone(), height)?;
-        let next_validator_set = self.fetch_validator_set(peer.clone(), height + 1)?;
-
-        let light_block = LightBlock::new(signed_header, validator_set, next_validator_set, peer);
-
-        Ok(IoOutput::FetchedLightBlock(light_block))
-    }
-
     fn fetch_signed_header(
         &mut self,
-        peer: Peer,
+        peer: &Peer,
         height: Height,
     ) -> Result<TMSignedHeader, IoError> {
         let height: block::Height = height.into();
@@ -93,7 +75,7 @@ impl RealIo {
 
     fn fetch_validator_set(
         &mut self,
-        peer: Peer,
+        peer: &Peer,
         height: Height,
     ) -> Result<TMValidatorSet, IoError> {
         let res = block_on(self.rpc_client_for(peer).validators(height));
@@ -104,10 +86,10 @@ impl RealIo {
         }
     }
 
-    fn rpc_client_for(&mut self, peer: Peer) -> &mut rpc::Client {
+    fn rpc_client_for(&mut self, peer: &Peer) -> &mut rpc::Client {
         self.rpc_clients
-            .entry(peer.clone())
-            .or_insert_with(|| rpc::Client::new(peer))
+            .entry(peer.to_owned())
+            .or_insert_with(|| rpc::Client::new(peer.to_owned()))
     }
 }
 

@@ -210,11 +210,6 @@ impl Demuxer {
     }
 
     pub fn fetch_light_block(&mut self, peer: Peer, height: Height) -> Result<LightBlock, IoError> {
-        let input = IoInput::FetchLightBlock { peer, height };
-        let result = self.io.process(input)?;
-
-        match result {
-            IoOutput::FetchedLightBlock(light_block) => Ok(light_block),
-        }
+        self.io.fetch_light_block(peer, height)
     }
 }
