@@ -109,8 +109,6 @@ impl Demuxer {
         let mut trusted_state = self.state.trusted_store_reader.highest().unwrap();
 
         while trusted_state.height < target_height {
-            trusted_state = self.state.trusted_store_reader.highest().unwrap();
-
             dbg!(target_height);
             dbg!(trusted_state.height);
             dbg!(next_height);
@@ -126,11 +124,12 @@ impl Demuxer {
 
             match verdict {
                 Verdict::Success => {
-                    self.state.trusted_store_writer.add(current_block.clone());
+                    self.state.trusted_store_writer.add(current_block);
+                    trusted_state = self.state.trusted_store_reader.highest().unwrap();
                     continue;
                 }
                 Verdict::Invalid(e) => {
-                    self.state.untrusted_store_writer.add(current_block.clone());
+                    self.state.untrusted_store_writer.add(current_block);
                     bail!(ErrorKind::InvalidLightBlock(e))
                 }
                 Verdict::NotEnoughTrust => {
@@ -153,6 +152,7 @@ impl Demuxer {
                     ));
 
                     next_height = scheduled_height;
+                    trusted_state = self.state.trusted_store_reader.highest().unwrap();
                 }
             }
         }

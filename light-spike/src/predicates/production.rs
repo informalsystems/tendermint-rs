@@ -180,7 +180,6 @@ impl VerificationPredicates for ProductionPredicates {
                 total_power,
                 signed_power,
             }
-            .into()
         })
     }
 
@@ -207,7 +206,6 @@ impl VerificationPredicates for ProductionPredicates {
                 total_power,
                 signed_power,
             }
-            .into()
         })
     }
 
