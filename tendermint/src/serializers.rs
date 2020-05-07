@@ -5,6 +5,10 @@
 //! All serializers are presented in a serializers::<Rust_type_name>::<JSON_representation_name> format.
 //!
 //! This example shows how to serialize Vec<u8> into different types of strings:
+//! ```
+//! use serde::{Serialize, Deserialize};
+//! use tendermint::serializers;
+//!
 //! #[derive(Serialize, Deserialize)]
 //! struct ByteTypes {
 //!
@@ -18,6 +22,7 @@
 //!     bytes: Vec<u8>,
 //!
 //! }
+//! ```
 //!
 //! Available serializers:
 //! i64                  <-> string:               #[serde(with="serializers::primitives::string")]
