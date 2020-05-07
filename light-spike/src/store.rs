@@ -69,6 +69,10 @@ pub struct StoreReader<T> {
 }
 
 impl<T> StoreReader<T> {
+    pub fn new(store: Arc<RwLock<Store<T>>>) -> Self {
+        Self { store }
+    }
+
     pub fn get(&self, height: Height) -> Option<LightBlock> {
         self.store.read().unwrap().get(height).cloned()
     }
@@ -89,6 +93,30 @@ impl<T> StoreReader<T> {
             .into_iter()
             .cloned()
             .collect()
+    }
+
+    pub fn highest_iter(&self) -> HighestStateIter<T> {
+        HighestStateIter::new(self.store.clone())
+    }
+}
+
+pub struct HighestStateIter<T> {
+    store_reader: StoreReader<T>,
+}
+
+impl<T> HighestStateIter<T> {
+    pub fn new(store: Arc<RwLock<Store<T>>>) -> Self {
+        Self {
+            store_reader: StoreReader::new(store),
+        }
+    }
+}
+
+impl<T> Iterator for HighestStateIter<T> {
+    type Item = LightBlock;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.store_reader.highest()
     }
 }
 
