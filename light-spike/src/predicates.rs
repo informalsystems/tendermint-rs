@@ -19,7 +19,7 @@ pub trait VerificationPredicates {
     fn header_matches_commit(
         &self,
         header: &Header,
-        commit: &Commit,
+        signed_header: &SignedHeader,
         header_hasher: &dyn HeaderHasher,
     ) -> Result<(), VerificationError>;
 
@@ -51,7 +51,7 @@ pub trait VerificationPredicates {
 
     fn has_sufficient_voting_power(
         &self,
-        commit: &Commit,
+        signed_header: &SignedHeader,
         validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
         calculator: &dyn VotingPowerCalculator,
@@ -59,7 +59,7 @@ pub trait VerificationPredicates {
 
     fn has_sufficient_validators_overlap(
         &self,
-        untrusted_commit: &Commit,
+        untrusted_sh: &SignedHeader,
         trusted_validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
         calculator: &dyn VotingPowerCalculator,
@@ -67,7 +67,7 @@ pub trait VerificationPredicates {
 
     fn has_sufficient_signers_overlap(
         &self,
-        untrusted_commit: &Commit,
+        untrusted_sh: &SignedHeader,
         untrusted_validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
         calculator: &dyn VotingPowerCalculator,
@@ -106,14 +106,10 @@ pub fn validate_light_block(
     vp.next_validators_match(&untrusted_sh, &untrusted_next_vals)?;
 
     // Ensure the header matches the commit
-    vp.header_matches_commit(&untrusted_sh.header, &untrusted_sh.commit, header_hasher)?;
+    vp.header_matches_commit(&untrusted_sh.header, &untrusted_sh, header_hasher)?;
 
     // Additional implementation specific validation
-    vp.valid_commit(
-        &untrusted_sh.commit,
-        &untrusted_sh.validators,
-        commit_validator,
-    )?;
+    vp.valid_commit(&untrusted_sh.commit, &untrusted_vals, commit_validator)?;
 
     vp.is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.header())?;
 
@@ -137,14 +133,14 @@ pub fn verify_overlap(
     let untrusted_vals = &light_block.validators;
 
     vp.has_sufficient_validators_overlap(
-        &untrusted_sh.commit,
+        &untrusted_sh,
         &trusted_state.validators,
         &options.trust_threshold,
         voting_power_calculator,
     )?;
 
     vp.has_sufficient_signers_overlap(
-        &untrusted_sh.commit,
+        &untrusted_sh,
         &untrusted_vals,
         &options.trust_threshold,
         voting_power_calculator,
@@ -160,10 +156,11 @@ pub fn has_sufficient_voting_power(
     options: VerificationOptions,
 ) -> Result<(), VerificationError> {
     let untrusted_sh = &light_block.signed_header;
+    let untrusted_vals = &light_block.validators;
 
     vp.has_sufficient_voting_power(
-        &untrusted_sh.commit,
-        &untrusted_sh.validators,
+        &untrusted_sh,
+        &untrusted_vals,
         &options.trust_threshold,
         voting_power_calculator,
     )

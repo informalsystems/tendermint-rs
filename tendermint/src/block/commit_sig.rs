@@ -1,7 +1,10 @@
 //! CommitSig within Commit
 
+use crate::lite::error::{Error, Kind};
+use crate::lite::ValidatorSet;
 use crate::serializers;
-use crate::{account, Signature, Time};
+use crate::{account, validator, Signature, Time};
+use anomaly::fail;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 /// BlockIDFlag is used to indicate the validator has voted either for nil, a particular BlockID or was absent.
@@ -74,5 +77,62 @@ impl CommitSig {
     /// Checks if a validator's vote is absent
     pub fn is_absent(&self) -> bool {
         self.block_id_flag == BlockIDFlag::BlockIDFlagAbsent
+    }
+
+    /// Validate votes
+    pub fn validate(&self, vals: &validator::Set) -> Result<(), Error> {
+        match self.block_id_flag {
+            BlockIDFlag::BlockIDFlagAbsent => {
+                if self.validator_address.is_some() {
+                    fail!(
+                        Kind::ImplementationSpecific,
+                        "validator address is present for absent CommitSig {:#?}",
+                        self
+                    );
+                }
+                if self.signature.is_some() {
+                    fail!(
+                        Kind::ImplementationSpecific,
+                        "signature is present for absent CommitSig {:#?}",
+                        self
+                    );
+                }
+                // TODO: deal with Time
+                // see https://github.com/informalsystems/tendermint-rs/pull/196#discussion_r401027989
+            }
+            BlockIDFlag::BlockIDFlagCommit | BlockIDFlag::BlockIDFlagNil => {
+                if self.validator_address.is_none() {
+                    fail!(
+                        Kind::ImplementationSpecific,
+                        "missing validator address for non-absent CommitSig {:#?}",
+                        self
+                    );
+                }
+                if self.signature.is_none() {
+                    fail!(
+                        Kind::ImplementationSpecific,
+                        "missing signature for non-absent CommitSig {:#?}",
+                        self
+                    );
+                }
+                // TODO: this last check is only necessary if we do full verification (2/3) but the
+                // above checks should actually happen always (even if we skip forward)
+                //
+                // returns ImplementationSpecific error if it detects a signer
+                // that is not present in the validator set:
+                if let Some(val_addr) = self.validator_address {
+                    if vals.validator(val_addr) == None {
+                        fail!(
+                            Kind::ImplementationSpecific,
+                            "Found a faulty signer ({}) not present in the validator set ({})",
+                            val_addr,
+                            vals.hash()
+                        );
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 }

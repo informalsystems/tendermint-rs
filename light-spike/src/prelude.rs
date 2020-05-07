@@ -1,4 +1,4 @@
-pub use std::time::Duration;
+pub use std::time::{Duration, SystemTime};
 
 pub use tendermint::time::Time;
 

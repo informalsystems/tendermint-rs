@@ -39,8 +39,8 @@ fn amino_hash(header: &Header) -> Hash {
         &header.version,
     )));
     fields_bytes.push(bytes_enc(header.chain_id.as_bytes()));
-    fields_bytes.push(encode_varint(header.height));
-    fields_bytes.push(AminoMessage::bytes_vec(&TimeMsg::from(header.bft_time)));
+    fields_bytes.push(encode_varint(header.height.into()));
+    fields_bytes.push(AminoMessage::bytes_vec(&TimeMsg::from(header.time)));
     fields_bytes.push(
         header
             .last_block_id

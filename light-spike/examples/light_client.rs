@@ -1,3 +1,5 @@
+use anomaly::BoxError;
+
 use light_spike::components::scheduler;
 use light_spike::predicates::production::ProductionPredicates;
 use light_spike::prelude::*;
@@ -101,8 +103,12 @@ impl VotingPowerCalculator for MockVotingPower {
     fn total_power_of(&self, _validators: &ValidatorSet) -> u64 {
         8
     }
-    fn voting_power_in(&self, _commit: &Commit, _validators: &ValidatorSet) -> u64 {
-        4
+    fn voting_power_in(
+        &self,
+        _sh: &SignedHeader,
+        _validators: &ValidatorSet,
+    ) -> Result<u64, BoxError> {
+        Ok(4)
     }
 }
 
@@ -129,10 +135,10 @@ impl VerificationPredicates for MockPredicates {
     fn header_matches_commit(
         &self,
         header: &Header,
-        commit: &Commit,
+        signed_header: &SignedHeader,
         header_hasher: &dyn HeaderHasher,
     ) -> Result<(), VerificationError> {
-        ProductionPredicates.header_matches_commit(header, commit, header_hasher)
+        ProductionPredicates.header_matches_commit(header, signed_header, header_hasher)
     }
 
     fn valid_commit(
@@ -171,22 +177,24 @@ impl VerificationPredicates for MockPredicates {
 
     fn has_sufficient_voting_power(
         &self,
-        commit: &Commit,
+        signed_header: &SignedHeader,
         validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
         calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), VerificationError> {
-        let first_byte = commit.header_hash.as_bytes()[0];
+        use tendermint::lite::types::Commit;
+
+        let first_byte = signed_header.header_hash().as_bytes()[0];
 
         if first_byte > 140 {
             return Err(VerificationError::InsufficientVotingPower {
                 total_power: 0,
-                voting_power: 0,
+                voting_power: Some(0),
             });
         }
 
         ProductionPredicates.has_sufficient_voting_power(
-            commit,
+            signed_header,
             validators,
             trust_threshold,
             calculator,
@@ -195,13 +203,13 @@ impl VerificationPredicates for MockPredicates {
 
     fn has_sufficient_validators_overlap(
         &self,
-        untrusted_commit: &Commit,
+        untrusted_sh: &SignedHeader,
         trusted_validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
         calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), VerificationError> {
         ProductionPredicates.has_sufficient_validators_overlap(
-            untrusted_commit,
+            untrusted_sh,
             trusted_validators,
             trust_threshold,
             calculator,
@@ -210,13 +218,13 @@ impl VerificationPredicates for MockPredicates {
 
     fn has_sufficient_signers_overlap(
         &self,
-        untrusted_commit: &Commit,
+        untrusted_sh: &SignedHeader,
         untrusted_validators: &ValidatorSet,
         trust_threshold: &TrustThreshold,
         calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), VerificationError> {
         ProductionPredicates.has_sufficient_signers_overlap(
-            untrusted_commit,
+            untrusted_sh,
             untrusted_validators,
             trust_threshold,
             calculator,

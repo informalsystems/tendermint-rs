@@ -3,7 +3,7 @@ use tendermint::{block, rpc};
 use thiserror::Error;
 
 use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
-// use tendermint::lite::types::Height as _;
+use tendermint::validator::Set as TMValidatorSet;
 
 use crate::prelude::*;
 use std::collections::HashMap;
@@ -62,7 +62,10 @@ impl RealIo {
 
     pub fn fetch_light_block(&mut self, peer: Peer, height: Height) -> IoResult {
         let signed_header = self.fetch_signed_header(peer.clone(), height)?;
-        let light_block = LightBlock::from_signed_header(signed_header, peer);
+        let validator_set = self.fetch_validator_set(peer.clone(), height)?;
+        let next_validator_set = self.fetch_validator_set(peer.clone(), height + 1)?;
+
+        let light_block = LightBlock::new(signed_header, validator_set, next_validator_set, peer);
 
         Ok(IoOutput::FetchedLightBlock(light_block))
     }
@@ -88,20 +91,24 @@ impl RealIo {
         }
     }
 
+    fn fetch_validator_set(
+        &mut self,
+        peer: Peer,
+        height: Height,
+    ) -> Result<TMValidatorSet, IoError> {
+        let res = block_on(self.rpc_client_for(peer).validators(height));
+
+        match res {
+            Ok(response) => Ok(TMValidatorSet::new(response.validators)),
+            Err(err) => Err(IoError::IoError(err)),
+        }
+    }
+
     fn rpc_client_for(&mut self, peer: Peer) -> &mut rpc::Client {
         self.rpc_clients
             .entry(peer.clone())
             .or_insert_with(|| rpc::Client::new(peer))
     }
-
-    // fn fetch_validator_set(&self, height: Height) -> Result<TMValidatorSet, IoError> {
-    //     let res = block_on(self.rpc_client.validators(height));
-
-    //     match res {
-    //         Ok(response) => Ok(TMValidatorSet::new(response.validators)),
-    //         Err(err) => Err(IoError::IoError(err)),
-    //     }
-    // }
 }
 
 fn block_on<F: std::future::Future>(f: F) -> F::Output {

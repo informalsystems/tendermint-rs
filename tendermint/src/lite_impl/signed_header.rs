@@ -1,9 +1,8 @@
 //! [`lite::SignedHeader`] implementation for [`block::signed_header::SignedHeader`].
 
 use crate::lite::error::{Error, Kind};
-use crate::lite::ValidatorSet;
 use crate::validator::Set;
-use crate::{block, block::BlockIDFlag, hash, lite, vote};
+use crate::{block, hash, lite, vote};
 use anomaly::fail;
 use std::convert::TryFrom;
 
@@ -96,69 +95,10 @@ fn non_absent_votes(commit: &block::Commit) -> Vec<vote::Vote> {
     votes
 }
 
-// TODO: consider moving this into commit_sig.rs instead and making it pub
-impl block::commit_sig::CommitSig {
-    fn validate(&self, vals: &Set) -> Result<(), Error> {
-        match self.block_id_flag {
-            BlockIDFlag::BlockIDFlagAbsent => {
-                if self.validator_address.is_some() {
-                    fail!(
-                        Kind::ImplementationSpecific,
-                        "validator address is present for absent CommitSig {:#?}",
-                        self
-                    );
-                }
-                if self.signature.is_some() {
-                    fail!(
-                        Kind::ImplementationSpecific,
-                        "signature is present for absent CommitSig {:#?}",
-                        self
-                    );
-                }
-                // TODO: deal with Time
-                // see https://github.com/informalsystems/tendermint-rs/pull/196#discussion_r401027989
-            }
-            BlockIDFlag::BlockIDFlagCommit | BlockIDFlag::BlockIDFlagNil => {
-                if self.validator_address.is_none() {
-                    fail!(
-                        Kind::ImplementationSpecific,
-                        "missing validator address for non-absent CommitSig {:#?}",
-                        self
-                    );
-                }
-                if self.signature.is_none() {
-                    fail!(
-                        Kind::ImplementationSpecific,
-                        "missing signature for non-absent CommitSig {:#?}",
-                        self
-                    );
-                }
-                // TODO: this last check is only necessary if we do full verification (2/3) but the
-                // above checks should actually happen always (even if we skip forward)
-                //
-                // returns ImplementationSpecific error if it detects a signer
-                // that is not present in the validator set:
-                if let Some(val_addr) = self.validator_address {
-                    if vals.validator(val_addr) == None {
-                        fail!(
-                            Kind::ImplementationSpecific,
-                            "Found a faulty signer ({}) not present in the validator set ({})",
-                            val_addr,
-                            vals.hash()
-                        );
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
-}
-
 impl block::signed_header::SignedHeader {
     /// This is a private helper method to iterate over the underlying
     /// votes to compute the voting power (see `voting_power_in` below).
-    fn signed_votes(&self) -> Vec<vote::SignedVote> {
+    pub fn signed_votes(&self) -> Vec<vote::SignedVote> {
         let chain_id = self.header.chain_id.to_string();
         let mut votes = non_absent_votes(&self.commit);
         votes
