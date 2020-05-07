@@ -4,9 +4,9 @@ use tendermint::lite::types::Commit as _;
 use tendermint::lite::ValidatorSet as _;
 
 #[derive(Copy, Clone, Debug)]
-pub struct ProductionPredicates;
+pub struct ProdPredicates;
 
-impl VerificationPredicates for ProductionPredicates {
+impl VerificationPredicates for ProdPredicates {
     fn validator_sets_match(
         &self,
         signed_header: &SignedHeader,
