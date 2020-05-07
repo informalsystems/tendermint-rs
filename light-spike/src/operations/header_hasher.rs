@@ -20,6 +20,7 @@ impl HeaderHasher for Box<dyn HeaderHasher> {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
 pub struct ProdHeaderHasher;
 
 impl HeaderHasher for ProdHeaderHasher {

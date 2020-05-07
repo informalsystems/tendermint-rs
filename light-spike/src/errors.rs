@@ -8,7 +8,7 @@ pub type Error = anomaly::Error<ErrorKind>;
 
 #[derive(Debug, Clone, Error, PartialEq, Serialize, Deserialize)]
 pub enum ErrorKind {
-    #[error("I/O error")]
+    #[error("I/O error: {0}")]
     Io(#[from] IoError),
 
     #[error("no initial trusted state")]
