@@ -34,8 +34,8 @@ struct BytesTests {
 #[test]
 fn serialize_integer_into_string() {
     let outgoing = IntegerTests {
-        unsigned: 9007199254740995,
-        signed: -9007199254740997,
+        unsigned: 9_007_199_254_740_995,
+        signed: -9_007_199_254_740_997,
     };
 
     let result: String = serde_json::to_string(&outgoing).unwrap();
@@ -57,8 +57,8 @@ fn deserialize_integer_from_string() {
 
     let result: IntegerTests = serde_json::from_str(&incoming).unwrap();
 
-    assert_eq!(result.unsigned, 9007199254740992);
-    assert_eq!(result.signed, -9007199254740994);
+    assert_eq!(result.unsigned, 9_007_199_254_740_992);
+    assert_eq!(result.signed, -9_007_199_254_740_994);
 }
 
 #[test]
@@ -83,14 +83,14 @@ fn deserialize_duration_from_string() {
     let result: DurationTests = serde_json::from_str(&incoming).unwrap();
 
     assert_eq!(result.duration.as_secs(), 15);
-    assert_eq!(result.duration.as_nanos(), 15000000001);
+    assert_eq!(result.duration.as_nanos(), 15_000_000_001);
 }
 
 #[test]
 fn serialize_vec_into_string() {
     let outgoing = BytesTests {
         myhexbytes: vec![00, 255, 32],
-        mybase64bytes: "MyString encoded.".as_bytes().to_vec(),
+        mybase64bytes: b"MyString encoded.".to_vec(),
         stringifiedbytes: vec![65, 66, 67],
     };
 
@@ -115,6 +115,6 @@ fn deserialize_vec_from_string() {
     let result: BytesTests = serde_json::from_str(&incoming).unwrap();
 
     assert_eq!(result.myhexbytes, vec![65, 32, 66, 255, 0]);
-    assert_eq!(result.mybase64bytes, "MyString decoded.".as_bytes());
-    assert_eq!(result.stringifiedbytes, "hello".as_bytes());
+    assert_eq!(result.mybase64bytes, b"MyString decoded.");
+    assert_eq!(result.stringifiedbytes, b"hello");
 }
