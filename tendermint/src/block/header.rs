@@ -67,11 +67,11 @@ pub struct Header {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Version {
     /// Block version
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     pub block: u64,
 
     /// App version
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     pub app: u64,
 }
 

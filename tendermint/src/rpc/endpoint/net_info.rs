@@ -30,7 +30,7 @@ pub struct Response {
     pub listeners: Vec<Listener>,
 
     /// Number of connected peers
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     pub n_peers: u64,
 
     /// Peer information
@@ -69,7 +69,7 @@ pub struct PeerInfo {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ConnectionStatus {
     /// Duration of this connection
-    #[serde(rename = "Duration", with = "serializers::timeduration::string")]
+    #[serde(rename = "Duration", with = "serializers::time_duration")]
     pub duration: Duration,
 
     /// Send monitor
@@ -97,43 +97,43 @@ pub struct Monitor {
     pub start: Time,
 
     /// Duration of this monitor
-    #[serde(rename = "Duration", with = "serializers::timeduration::string")]
+    #[serde(rename = "Duration", with = "serializers::time_duration")]
     pub duration: Duration,
 
     /// Idle duration for this monitor
-    #[serde(rename = "Idle", with = "serializers::timeduration::string")]
+    #[serde(rename = "Idle", with = "serializers::time_duration")]
     pub idle: Duration,
 
     /// Bytes
-    #[serde(rename = "Bytes", with = "serializers::primitives::string")]
+    #[serde(rename = "Bytes", with = "serializers::from_str")]
     bytes: u64,
 
     /// Samples
-    #[serde(rename = "Samples", with = "serializers::primitives::string")]
+    #[serde(rename = "Samples", with = "serializers::from_str")]
     samples: u64,
 
     /// Instant rate
-    #[serde(rename = "InstRate", with = "serializers::primitives::string")]
+    #[serde(rename = "InstRate", with = "serializers::from_str")]
     inst_rate: u64,
 
     /// Current rate
-    #[serde(rename = "CurRate", with = "serializers::primitives::string")]
+    #[serde(rename = "CurRate", with = "serializers::from_str")]
     cur_rate: u64,
 
     /// Average rate
-    #[serde(rename = "AvgRate", with = "serializers::primitives::string")]
+    #[serde(rename = "AvgRate", with = "serializers::from_str")]
     avg_rate: u64,
 
     /// Peak rate
-    #[serde(rename = "PeakRate", with = "serializers::primitives::string")]
+    #[serde(rename = "PeakRate", with = "serializers::from_str")]
     peak_rate: u64,
 
     /// Bytes remaining
-    #[serde(rename = "BytesRem", with = "serializers::primitives::string")]
+    #[serde(rename = "BytesRem", with = "serializers::from_str")]
     bytes_rem: u64,
 
     /// Time remaining
-    #[serde(rename = "TimeRem", with = "serializers::primitives::string")]
+    #[serde(rename = "TimeRem", with = "serializers::from_str")]
     time_rem: u64,
 
     /// Progress

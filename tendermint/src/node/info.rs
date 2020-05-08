@@ -36,15 +36,15 @@ pub struct Info {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct ProtocolVersionInfo {
     /// P2P protocol version
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     pub p2p: u64,
 
     /// Block version
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     pub block: u64,
 
     /// App version
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     pub app: u64,
 }
 

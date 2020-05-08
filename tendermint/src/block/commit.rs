@@ -17,7 +17,7 @@ pub struct Commit {
     pub height: Height,
 
     /// Round
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     pub round: u64,
 
     /// Block ID

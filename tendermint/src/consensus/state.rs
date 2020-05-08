@@ -18,7 +18,7 @@ pub struct State {
     pub height: block::Height,
 
     /// Current consensus round
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     pub round: i64,
 
     /// Current consensus step
