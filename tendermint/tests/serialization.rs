@@ -6,16 +6,16 @@ use tendermint::serializers;
 
 #[derive(Serialize, Deserialize)]
 struct IntegerTests {
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     unsigned: u64,
 
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     signed: i64,
 }
 
 #[derive(Serialize, Deserialize)]
 struct DurationTests {
-    #[serde(with = "serializers::timeduration::string")]
+    #[serde(with = "serializers::time_duration")]
     duration: Duration,
 }
 

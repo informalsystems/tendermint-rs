@@ -90,9 +90,9 @@ pub trait TrustThreshold: Copy + Clone + Debug + Serialize + DeserializeOwned {
 /// [`TrustThreshold`] which can be passed into all relevant methods.
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TrustThresholdFraction {
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     numerator: u64,
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     denominator: u64,
 }
 

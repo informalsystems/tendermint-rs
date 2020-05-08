@@ -72,7 +72,7 @@ pub struct AbciQuery {
     pub info: String,
 
     /// Index
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     pub index: i64,
 
     /// Key

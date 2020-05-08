@@ -25,9 +25,9 @@
 //! ```
 //!
 //! Available serializers:
-//! i64                  <-> string:               #[serde(with="serializers::primitives::string")]
-//! u64                  <-> string:               #[serde(with="serializers::primitives::string")]
-//! std::time::Dureation <-> nanoseconds as string #[serde(with="serializers::timeduration::string")]
+//! i64                  <-> string:               #[serde(with="serializers::from_str")]
+//! u64                  <-> string:               #[serde(with="serializers::from_str")]
+//! std::time::Dureation <-> nanoseconds as string #[serde(with="serializers::time_duration")]
 //! Vec<u8>              <-> HexString:            #[serde(with="serializers::bytes::hexstring")]
 //! Vec<u8>              <-> Base64String:         #[serde(with="serializers::bytes::base64string")]
 //! Vec<u8>              <-> String:               #[serde(with="serializers::bytes::string")]
@@ -40,63 +40,57 @@ use crate::{block, Hash, Signature};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::str::FromStr;
 
-/// Serialize/deserialize primitive types (i64, u64, etc)
-pub mod primitives {
+/// Serialize and deserialize any `T` that implements [[std::str::FromStr]]
+/// and [[std::fmt::Display]] from or into string. Note this be used for
+/// all primitive data types (e.g. .
+pub mod from_str {
+    use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
-    /// Serialize into string, deserialize from string
-    pub mod string {
-        use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+    /// Deserialize string into T
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: std::str::FromStr,
+        <T as std::str::FromStr>::Err: std::fmt::Display,
+    {
+        String::deserialize(deserializer)?
+            .parse::<T>()
+            .map_err(|e| D::Error::custom(format!("{}", e)))
+    }
 
-        /// Deserialize string into T
-        pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
-        where
-            D: Deserializer<'de>,
-            T: std::str::FromStr,
-            <T as std::str::FromStr>::Err: std::fmt::Display,
-        {
-            String::deserialize(deserializer)?
-                .parse::<T>()
-                .map_err(|e| D::Error::custom(format!("{}", e)))
-        }
-
-        /// Serialize from T into string
-        pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-            T: std::fmt::Display,
-        {
-            format!("{}", value).serialize(serializer)
-        }
+    /// Serialize from T into string
+    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: std::fmt::Display,
+    {
+        format!("{}", value).serialize(serializer)
     }
 }
 
-/// Serialize/deserialize std::time::Duration type
-pub mod timeduration {
+/// Serialize/deserialize std::time::Duration type from and into string:
+pub mod time_duration {
+    use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+    use std::time::Duration;
 
-    /// Serialize into string, deserialize from string
-    pub mod string {
-        use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-        use std::time::Duration;
+    /// Deserialize string into Duration
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = String::deserialize(deserializer)?
+            .parse::<u64>()
+            .map_err(|e| D::Error::custom(format!("{}", e)))?;
 
-        /// Deserialize string into Duration
-        pub fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            let value = String::deserialize(deserializer)?
-                .parse::<u64>()
-                .map_err(|e| D::Error::custom(format!("{}", e)))?;
+        Ok(Duration::from_nanos(value))
+    }
 
-            Ok(Duration::from_nanos(value))
-        }
-
-        /// Serialize from Duration into string
-        pub fn serialize<S>(value: &Duration, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-        {
-            format!("{}", value.as_nanos()).serialize(serializer)
-        }
+    /// Serialize from Duration into string
+    pub fn serialize<S>(value: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        format!("{}", value.as_nanos()).serialize(serializer)
     }
 }
 
@@ -245,7 +239,7 @@ where
 {
     #[derive(Deserialize)]
     struct Parts {
-        #[serde(with = "primitives::string")]
+        #[serde(with = "from_str")]
         total: u64,
         hash: String,
     }

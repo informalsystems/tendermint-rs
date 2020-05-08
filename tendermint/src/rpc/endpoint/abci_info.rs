@@ -36,7 +36,7 @@ pub struct AbciInfo {
     pub version: String,
 
     /// App version
-    #[serde(with = "serializers::primitives::string")]
+    #[serde(with = "serializers::from_str")]
     pub app_version: u64,
 
     /// Last block height
