@@ -1,10 +1,10 @@
 ## Pending
 
 Testing:
-- [#249] Updated abci_info test to 0.17.0
+- Updated abci_info test to 0.17.0 ([#249])
 
 Serialization:
-- [#248] Refactor serializers library to use modules and give a nicer annotation to structs.
+- Refactor serializers library to use modules and give a nicer annotation to structs. ([#248])
 
 ## [0.13.0] (2020-04-20)
 
