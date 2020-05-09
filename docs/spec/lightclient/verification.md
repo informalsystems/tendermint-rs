@@ -514,10 +514,12 @@ func FetchLightBlock(peer PeerID, height Height) LightBlock
 ### Outline
 
 The `VerifyToTarget` is the main function and uses the following functions.
-- `FetchLightBlock` is called to download the next light block
-- `ValidLightBlock` checks whether header is valid. 
-- `SufficientVotingPower` checks if a new lightBlock should be trusted
+- `FetchLightBlock` is called to download the next light block. It is
+  the only function that communicates with other nodes
+- `ValidAndVerified` checks whether header is valid and checks if a
+  new lightBlock should be trusted
   based on a previously verified lightBlock.
+- `Pivot` decides which height to try to verify next
 
 In the following description of `VerifyToTarget` we do not deal with error
 handling. If any of the above function returns an error, VerifyToTarget just
@@ -547,9 +549,13 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
         }
         else if verdict == CANNOT_VERIFY {
             // do nothing
+			// the light block current passed validation, but the validator
+            // set is too different to verify it. We keep the state of
+			// current at StateUnverified. For a later iteration, Pivot
+			// might decide to try verification of that light block again.
         }    
         else { 
-            // verdict == INVALID 
+            // verdict is some error code
             lightStore.Update(current, StateFailed)
             // possibly remove all LightBlocks from primary
             return (lightStore, ResultFailure)
@@ -618,7 +624,7 @@ have the state *StateVerified*.
 
 
 ```go
-func ValidAndVerified(trusted LightBlock, untrusted LightBlock) bool
+func ValidAndVerified(trusted LightBlock, untrusted LightBlock) Result
 ```
 - Expected precondition
   - none
