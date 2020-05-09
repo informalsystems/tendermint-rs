@@ -30,10 +30,7 @@ pub struct Response {
     pub listeners: Vec<Listener>,
 
     /// Number of connected peers
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(with = "serializers::from_str")]
     pub n_peers: u64,
 
     /// Peer information
@@ -72,11 +69,7 @@ pub struct PeerInfo {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ConnectionStatus {
     /// Duration of this connection
-    #[serde(
-        rename = "Duration",
-        serialize_with = "serializers::serialize_duration",
-        deserialize_with = "serializers::parse_duration"
-    )]
+    #[serde(rename = "Duration", with = "serializers::time_duration")]
     pub duration: Duration,
 
     /// Send monitor
@@ -104,83 +97,43 @@ pub struct Monitor {
     pub start: Time,
 
     /// Duration of this monitor
-    #[serde(
-        rename = "Duration",
-        serialize_with = "serializers::serialize_duration",
-        deserialize_with = "serializers::parse_duration"
-    )]
+    #[serde(rename = "Duration", with = "serializers::time_duration")]
     pub duration: Duration,
 
     /// Idle duration for this monitor
-    #[serde(
-        rename = "Idle",
-        serialize_with = "serializers::serialize_duration",
-        deserialize_with = "serializers::parse_duration"
-    )]
+    #[serde(rename = "Idle", with = "serializers::time_duration")]
     pub idle: Duration,
 
     /// Bytes
-    #[serde(
-        rename = "Bytes",
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(rename = "Bytes", with = "serializers::from_str")]
     bytes: u64,
 
     /// Samples
-    #[serde(
-        rename = "Samples",
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(rename = "Samples", with = "serializers::from_str")]
     samples: u64,
 
     /// Instant rate
-    #[serde(
-        rename = "InstRate",
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(rename = "InstRate", with = "serializers::from_str")]
     inst_rate: u64,
 
     /// Current rate
-    #[serde(
-        rename = "CurRate",
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(rename = "CurRate", with = "serializers::from_str")]
     cur_rate: u64,
 
     /// Average rate
-    #[serde(
-        rename = "AvgRate",
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(rename = "AvgRate", with = "serializers::from_str")]
     avg_rate: u64,
 
     /// Peak rate
-    #[serde(
-        rename = "PeakRate",
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(rename = "PeakRate", with = "serializers::from_str")]
     peak_rate: u64,
 
     /// Bytes remaining
-    #[serde(
-        rename = "BytesRem",
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(rename = "BytesRem", with = "serializers::from_str")]
     bytes_rem: u64,
 
     /// Time remaining
-    #[serde(
-        rename = "TimeRem",
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(rename = "TimeRem", with = "serializers::from_str")]
     time_rem: u64,
 
     /// Progress

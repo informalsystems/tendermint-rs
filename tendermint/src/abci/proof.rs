@@ -19,18 +19,10 @@ pub struct ProofOp {
     #[serde(alias = "type")]
     pub field_type: String,
     /// Key of the ProofOp
-    #[serde(
-        default,
-        serialize_with = "serializers::serialize_base64",
-        deserialize_with = "serializers::parse_base64"
-    )]
+    #[serde(default, with = "serializers::bytes::base64string")]
     pub key: Vec<u8>,
     /// Actual data
-    #[serde(
-        default,
-        serialize_with = "serializers::serialize_base64",
-        deserialize_with = "serializers::parse_base64"
-    )]
+    #[serde(default, with = "serializers::bytes::base64string")]
     pub data: Vec<u8>,
 }
 
