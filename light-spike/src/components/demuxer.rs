@@ -45,7 +45,7 @@ impl Demuxer {
                 .unwrap();
             }
 
-            dbg!(&self.state.trusted_store_reader.highest_height());
+            // dbg!(&self.state.trusted_store_reader.highest_height());
 
             if let Err(e) = self.detect_forks() {
                 eprintln!("fork detection error: {}", e);
@@ -77,40 +77,38 @@ impl Demuxer {
             Err(io_error) => bail!(ErrorKind::Io(io_error)),
         };
 
-        if !self.is_trusted(&target_block) {
-            self.verify_to_target(target_block.height())?;
-        }
-
-        Ok(())
+        self.verify_to_target(target_block.height())
     }
 
-    fn verify_to_target(&mut self, target_height: Height) -> Result<(), Error> {
+    pub fn verify_to_target(&mut self, target_height: Height) -> Result<(), Error> {
+        if self.state.trusted_store_reader.highest().is_none() {
+            bail!(ErrorKind::NoInitialTrustedState)
+        };
+
         let options = self.options.with_now(self.clock.now());
 
-        // TODO: Check this ahead of time
-        precondition!(
-            contracts::verify::trusted_state_contains_block_within_trusting_period(
-                &self.state.trusted_store_reader,
-                self.options.trusting_period,
-                options.now
-            )
-        );
+        // precondition!(
+        //     contracts::verify::trusted_state_contains_block_within_trusting_period(
+        //         &self.state.trusted_store_reader,
+        //         self.options.trusting_period,
+        //         options.now
+        //     )
+        // );
 
-        // TODO: This might now be a good precondition if we need to verify
-        //       intermediate blocks, eg. for the relayer.
-        precondition!(
-            contracts::verify::target_height_greater_than_all_blocks_in_trusted_store(
-                target_height,
-                &self.state.trusted_store_reader,
-            )
-        );
+        // TODO: This might not be a good precondition if we need to verify intermediate blocks, eg. for the relayer.
+        // precondition!(
+        //     contracts::verify::target_height_greater_than_all_blocks_in_trusted_store(
+        //         target_height,
+        //         &self.state.trusted_store_reader,
+        //     )
+        // );
 
         let mut next_height = target_height;
 
         for trusted_state in self.state.trusted_store_reader.highest_iter() {
-            dbg!(target_height);
-            dbg!(trusted_state.height());
-            dbg!(next_height);
+            // dbg!(target_height);
+            // dbg!(trusted_state.height());
+            // dbg!(next_height);
 
             if trusted_state.height() >= target_height {
                 return Ok(());
@@ -127,7 +125,7 @@ impl Demuxer {
             };
 
             let verdict = self.verify_light_block(&current_block, &trusted_state, &options);
-            dbg!(&verdict);
+            // dbg!(&verdict);
 
             match verdict {
                 Verdict::Success => {
@@ -171,6 +169,18 @@ impl Demuxer {
         );
 
         Ok(())
+    }
+
+    pub fn get_trace(&self, target_height: Height) -> Vec<LightBlock> {
+        // precondition!(self.state.verification_trace.contains_key(&target_height));
+
+        self.state
+            .verification_trace
+            .get(&target_height)
+            .unwrap_or(&vec![])
+            .iter()
+            .flat_map(|h| self.state.trusted_store_reader.get(*h))
+            .collect()
     }
 
     pub fn verify_light_block(

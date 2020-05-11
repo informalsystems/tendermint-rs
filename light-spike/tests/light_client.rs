@@ -1,10 +1,14 @@
 use light_spike::prelude::*;
 
 use serde::Deserialize;
+use std::collections::HashMap;
+use std::convert::TryInto;
 use std::fs;
 use std::path::PathBuf;
 
+use tendermint::block::Height as HeightStr;
 use tendermint::evidence::Duration as DurationStr;
+use tendermint::rpc;
 
 #[derive(Deserialize, Clone, Debug)]
 struct TestCases {
@@ -33,7 +37,7 @@ struct TestBisection {
     description: String,
     trust_options: TrustOptions,
     primary: Provider,
-    height_to_verify: Height,
+    height_to_verify: HeightStr,
     now: Time,
     expected_output: Option<String>,
     expected_num_of_bisections: i32,
@@ -47,8 +51,8 @@ struct Provider {
 
 #[derive(Deserialize, Clone, Debug)]
 struct TrustOptions {
-    period: Duration,
-    height: Height,
+    period: DurationStr,
+    height: HeightStr,
     hash: Hash,
     trust_level: TrustThreshold,
 }
@@ -152,10 +156,7 @@ fn run_test_cases(cases: TestCases) {
                     latest_trusted =
                         Trusted::new(new_state.signed_header, new_state.next_validators);
                 }
-                Err(verdict) => {
-                    if !expects_err {
-                        dbg!(verdict);
-                    }
+                Err(_) => {
                     assert!(expects_err);
                 }
             }
@@ -196,4 +197,182 @@ fn single_skip_commit_tests_verify() {
     let cases: TestCases =
         serde_json::from_str(&read_json_fixture("single_step_skipping/commit_tests")).unwrap();
     run_test_cases(cases);
+}
+
+#[derive(Clone)]
+struct MockIo {
+    chain_id: String,
+    light_blocks: HashMap<Height, LightBlock>,
+}
+
+impl MockIo {
+    fn new(chain_id: String, light_blocks: Vec<LightBlock>) -> Self {
+        let light_blocks = light_blocks
+            .into_iter()
+            .map(|lb| (lb.height(), lb))
+            .collect();
+
+        Self {
+            chain_id,
+            light_blocks,
+        }
+    }
+}
+
+impl Io for MockIo {
+    fn fetch_light_block(&mut self, _peer: Peer, height: Height) -> Result<LightBlock, IoError> {
+        self.light_blocks
+            .get(&height)
+            .cloned()
+            .ok_or(rpc::Error::new((-32600).into(), None).into())
+    }
+}
+
+struct MockClock {
+    now: Time,
+}
+
+impl Clock for MockClock {
+    fn now(&self) -> Time {
+        self.now
+    }
+}
+
+fn verify_bisection(
+    untrusted_height: Height,
+    demuxer: &mut Demuxer,
+) -> Result<Vec<LightBlock>, Error> {
+    demuxer
+        .verify_to_target(untrusted_height)
+        .map(|()| demuxer.get_trace(untrusted_height))
+}
+
+fn run_bisection_test(case: TestBisection) {
+    println!("{}", case.description);
+
+    let primary: Peer = "tcp://localhost:1337".parse().unwrap();
+
+    let untrusted_height = case.height_to_verify.try_into().unwrap();
+    let trust_threshold = case.trust_options.trust_level;
+    let trusting_period = case.trust_options.period;
+    let now = case.now;
+
+    let clock = MockClock { now };
+    let scheduler = light_spike::components::scheduler::schedule;
+    let fork_detector = RealForkDetector::new(ProdHeaderHasher);
+
+    let options = VerificationOptions {
+        trust_threshold,
+        trusting_period: trusting_period.into(),
+        now,
+    };
+
+    let expects_err = match &case.expected_output {
+        Some(eo) => eo.eq("error"),
+        None => false,
+    };
+
+    let expected_num_of_bisections = case.expected_num_of_bisections;
+
+    let provider = case.primary;
+    let mut io = MockIo::new(provider.chain_id, provider.lite_blocks);
+
+    let trusted_height = case.trust_options.height.try_into().unwrap();
+    let trusted_state = io
+        .fetch_light_block(primary.clone(), trusted_height)
+        .expect("could not 'request' light block");
+
+    let (trusted_store_reader, mut trusted_store_writer) = Store::new().split();
+    let (untrusted_store_reader, untrusted_store_writer) = Store::new().split();
+
+    trusted_store_writer.add(trusted_state);
+
+    let state = State {
+        peers: Peers {
+            primary: primary.clone(),
+            witnesses: vec![],
+        },
+        trusted_store_reader,
+        trusted_store_writer,
+        untrusted_store_reader,
+        untrusted_store_writer,
+        verification_trace: HashMap::new(),
+    };
+
+    let verifier = ProdVerifier::new(
+        ProdPredicates,
+        ProdVotingPowerCalculator,
+        ProdCommitValidator,
+        ProdHeaderHasher,
+    );
+
+    let mut demuxer = Demuxer::new(
+        state,
+        options,
+        clock,
+        scheduler,
+        verifier,
+        fork_detector,
+        io.clone(),
+    );
+
+    match verify_bisection(untrusted_height, &mut demuxer) {
+        Ok(new_states) => {
+            let untrusted_light_block = io
+                .fetch_light_block(primary.clone(), untrusted_height)
+                .expect("header at untrusted height not found");
+
+            let expected_state = untrusted_light_block;
+            assert_eq!(new_states[new_states.len() - 1], expected_state);
+            assert_eq!(new_states.len() as i32, expected_num_of_bisections);
+            assert!(!expects_err);
+        }
+        Err(e) => {
+            if !expects_err {
+                dbg!(e);
+            }
+            assert!(expects_err);
+        }
+    }
+}
+
+#[test]
+fn bisection_happy_path() {
+    let case: TestBisection =
+        serde_json::from_str(&read_json_fixture("many_header_bisection/happy_path")).unwrap();
+    run_bisection_test(case);
+}
+
+#[test]
+fn bisection_header_out_of_trusting_period() {
+    let case: TestBisection = serde_json::from_str(&read_json_fixture(
+        "many_header_bisection/header_out_of_trusting_period",
+    ))
+    .unwrap();
+    run_bisection_test(case);
+}
+
+#[test]
+fn bisection_invalid_validator_set() {
+    let case: TestBisection = serde_json::from_str(&read_json_fixture(
+        "many_header_bisection/invalid_validator_set",
+    ))
+    .unwrap();
+    run_bisection_test(case);
+}
+
+#[test]
+fn bisection_not_enough_commits() {
+    let case: TestBisection = serde_json::from_str(&read_json_fixture(
+        "many_header_bisection/not_enough_commits",
+    ))
+    .unwrap();
+    run_bisection_test(case);
+}
+
+#[test]
+fn bisection_worst_case() {
+    let case: TestBisection =
+        serde_json::from_str(&read_json_fixture("many_header_bisection/worst_case")).unwrap();
+    run_bisection_test(case);
 }

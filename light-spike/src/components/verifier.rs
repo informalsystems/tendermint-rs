@@ -13,8 +13,7 @@ impl Verdict {
     pub fn ok(self) -> Result<(), Self> {
         match self {
             Self::Success => Ok(()),
-            Self::NotEnoughTrust => Err(self),
-            Self::Invalid(_) => Err(self),
+            _ => Err(self),
         }
     }
 }
