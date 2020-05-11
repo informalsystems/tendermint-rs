@@ -31,10 +31,10 @@ impl ForkDetector for RealForkDetector {
         }
 
         let first_block = light_blocks.pop().unwrap(); // Safety: checked above that not empty.
-        let first_hash = self.header_hasher.hash(first_block.header());
+        let first_hash = self.header_hasher.hash(&first_block.signed_header.header);
 
         for light_block in light_blocks {
-            let hash = self.header_hasher.hash(light_block.header());
+            let hash = self.header_hasher.hash(&light_block.signed_header.header);
 
             if first_hash != hash {
                 return ForkDetection::Detected(first_block, light_block);

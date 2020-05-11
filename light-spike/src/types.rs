@@ -10,9 +10,9 @@ use tendermint::{
     Time,
 };
 
-use crate::prelude::*;
+pub use tendermint::{hash::Hash, lite::Height};
 
-pub use tendermint::{hash::Hash, lite::Height, validator};
+use crate::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
@@ -31,18 +31,18 @@ impl VerificationOptions {
     }
 }
 
-pub type Header = TMHeader;
-
-pub type ValidatorSet = validator::Set;
-
-pub type Commit = TMCommit;
-
 #[derive(Copy, Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct TrustThreshold {
     pub numerator: u64,
     pub denominator: u64,
 }
+
+pub type Header = TMHeader;
+
+pub type ValidatorSet = TMValidatorSet;
+
+pub type Commit = TMCommit;
 
 pub type SignedHeader = TMSignedHeader;
 
@@ -60,9 +60,9 @@ pub struct LightBlock {
 
 impl LightBlock {
     pub fn new(
-        sh: TMSignedHeader,
-        validators: TMValidatorSet,
-        next_validators: TMValidatorSet,
+        sh: SignedHeader,
+        validators: ValidatorSet,
+        next_validators: ValidatorSet,
         provider: Peer,
     ) -> LightBlock {
         let height = sh.header.height.into();
@@ -76,9 +76,5 @@ impl LightBlock {
             next_validators,
             provider,
         }
-    }
-
-    pub fn header(&self) -> &Header {
-        &self.signed_header.header
     }
 }

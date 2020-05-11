@@ -94,7 +94,7 @@ pub fn validate_light_block(
 
     // Ensure the latest trusted header hasn't expired
     vp.is_within_trust_period(
-        &trusted_state.header(),
+        &trusted_state.signed_header.header,
         options.trusting_period,
         options.now,
     )?;
@@ -111,12 +111,12 @@ pub fn validate_light_block(
     // Additional implementation specific validation
     vp.valid_commit(&untrusted_sh.commit, &untrusted_vals, commit_validator)?;
 
-    vp.is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.header())?;
+    vp.is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.signed_header.header)?;
 
-    if untrusted_sh.header.height == trusted_state.header().height {
+    if untrusted_sh.header.height == trusted_state.signed_header.header.height {
         vp.valid_next_validator_set(&untrusted_sh, &untrusted_next_vals)?;
     } else {
-        vp.is_monotonic_height(&untrusted_sh.header, &trusted_state.header())?;
+        vp.is_monotonic_height(&untrusted_sh.header, &trusted_state.signed_header.header)?;
     }
 
     Ok(())
