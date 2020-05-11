@@ -7,32 +7,25 @@ use tendermint::lite::ValidatorSet as _;
 pub struct ProdPredicates;
 
 impl VerificationPredicates for ProdPredicates {
-    fn validator_sets_match(
-        &self,
-        signed_header: &SignedHeader,
-        validators: &ValidatorSet,
-    ) -> Result<(), VerificationError> {
+    fn validator_sets_match(&self, light_block: &LightBlock) -> Result<(), VerificationError> {
         ensure!(
-            signed_header.header.validators_hash == validators.hash(),
+            light_block.signed_header.header.validators_hash == light_block.validators.hash(),
             VerificationError::InvalidValidatorSet {
-                header_validators_hash: signed_header.header.validators_hash,
-                validators_hash: validators.hash(),
+                header_validators_hash: light_block.signed_header.header.validators_hash,
+                validators_hash: light_block.validators.hash(),
             }
         );
 
         Ok(())
     }
 
-    fn next_validators_match(
-        &self,
-        signed_header: &SignedHeader,
-        validators: &ValidatorSet,
-    ) -> Result<(), VerificationError> {
+    fn next_validators_match(&self, light_block: &LightBlock) -> Result<(), VerificationError> {
         ensure!(
-            signed_header.header.validators_hash == validators.hash(),
+            light_block.signed_header.header.next_validators_hash
+                == light_block.next_validators.hash(),
             VerificationError::InvalidNextValidatorSet {
-                header_next_validators_hash: signed_header.header.validators_hash,
-                next_validators_hash: validators.hash(),
+                header_next_validators_hash: light_block.signed_header.header.next_validators_hash,
+                next_validators_hash: light_block.next_validators.hash(),
             }
         );
 
@@ -41,11 +34,10 @@ impl VerificationPredicates for ProdPredicates {
 
     fn header_matches_commit(
         &self,
-        header: &Header,
         signed_header: &SignedHeader,
         header_hasher: &dyn HeaderHasher,
     ) -> Result<(), VerificationError> {
-        let header_hash = header_hasher.hash(header);
+        let header_hash = header_hasher.hash(&signed_header.header);
 
         ensure!(
             header_hash == signed_header.header_hash(),
@@ -211,14 +203,15 @@ impl VerificationPredicates for ProdPredicates {
 
     fn valid_next_validator_set(
         &self,
-        untrusted_sh: &SignedHeader,
-        untrusted_next_vals: &ValidatorSet,
+        light_block: &LightBlock,
+        trusted_state: &TrustedState,
     ) -> Result<(), VerificationError> {
         ensure!(
-            untrusted_sh.header.next_validators_hash == untrusted_next_vals.hash(),
+            light_block.signed_header.header.validators_hash
+                == trusted_state.signed_header.header.next_validators_hash,
             VerificationError::InvalidNextValidatorSet {
-                header_next_validators_hash: untrusted_next_vals.hash(),
-                next_validators_hash: untrusted_next_vals.hash(),
+                header_next_validators_hash: light_block.signed_header.header.validators_hash,
+                next_validators_hash: trusted_state.signed_header.header.next_validators_hash,
             }
         );
 

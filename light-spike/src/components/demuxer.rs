@@ -36,7 +36,7 @@ impl Demuxer {
     //        or just left up to the users of the module.
     pub fn run(&mut self) -> Result<Never, Error> {
         loop {
-            if let Err(e) = self.sync_to_highest() {
+            if let Err(e) = self.verify_to_highest() {
                 eprintln!("verification error: {}", e);
                 color_backtrace::print_backtrace(
                     e.backtrace().unwrap(),
@@ -61,12 +61,12 @@ impl Demuxer {
         }
     }
 
-    fn is_trusted(&self, light_block: &LightBlock) -> bool {
-        let in_store = self.state.trusted_store_reader.get(light_block.height);
+    pub fn is_trusted(&self, light_block: &LightBlock) -> bool {
+        let in_store = self.state.trusted_store_reader.get(light_block.height());
         in_store.as_ref() == Some(light_block)
     }
 
-    pub fn sync_to_highest(&mut self) -> Result<(), Error> {
+    pub fn verify_to_highest(&mut self) -> Result<(), Error> {
         if self.state.trusted_store_reader.highest().is_none() {
             bail!(ErrorKind::NoInitialTrustedState)
         };
@@ -78,7 +78,7 @@ impl Demuxer {
         };
 
         if !self.is_trusted(&target_block) {
-            self.verify_to_target(target_block.height)?;
+            self.verify_to_target(target_block.height())?;
         }
 
         Ok(())
@@ -109,14 +109,14 @@ impl Demuxer {
 
         for trusted_state in self.state.trusted_store_reader.highest_iter() {
             dbg!(target_height);
-            dbg!(trusted_state.height);
+            dbg!(trusted_state.height());
             dbg!(next_height);
 
-            if trusted_state.height >= target_height {
+            if trusted_state.height() >= target_height {
                 return Ok(());
             }
 
-            if next_height == trusted_state.height {
+            if next_height == trusted_state.height() {
                 return Ok(());
             }
 
@@ -140,12 +140,13 @@ impl Demuxer {
                 }
                 Verdict::NotEnoughTrust => {
                     self.state.untrusted_store_writer.add(current_block.clone());
-                    self.state.trace_block(target_height, current_block.height);
+                    self.state
+                        .trace_block(target_height, current_block.height());
 
                     let scheduled_height = self.schedule(&current_block, &trusted_state);
                     dbg!(&scheduled_height);
 
-                    if scheduled_height <= trusted_state.height {
+                    if scheduled_height <= trusted_state.height() {
                         bail!(ErrorKind::BisectionFailed(target_height, scheduled_height));
                     }
 

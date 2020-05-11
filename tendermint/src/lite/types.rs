@@ -94,12 +94,12 @@ pub struct TrustThresholdFraction {
         serialize_with = "serializers::serialize_u64",
         deserialize_with = "serializers::parse_u64"
     )]
-    numerator: u64,
+    pub numerator: u64,
     #[serde(
         serialize_with = "serializers::serialize_u64",
         deserialize_with = "serializers::parse_u64"
     )]
-    denominator: u64,
+    pub denominator: u64,
 }
 
 impl TrustThresholdFraction {

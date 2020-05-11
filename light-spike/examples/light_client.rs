@@ -45,7 +45,7 @@ pub fn main() {
     let commit_validator = ProdCommitValidator;
     let header_hasher = ProdHeaderHasher;
 
-    let verifier = RealVerifier::new(
+    let verifier = ProdVerifier::new(
         predicates,
         voting_power_calculator,
         commit_validator,

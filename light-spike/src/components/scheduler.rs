@@ -14,8 +14,8 @@ where
 }
 
 pub fn schedule(light_block: &LightBlock, trusted_state: &TrustedState) -> Height {
-    let trusted_height = trusted_state.height;
-    let untrusted_height = light_block.height;
+    let trusted_height = trusted_state.height();
+    let untrusted_height = light_block.height();
 
     assert!(trusted_height < untrusted_height);
 

@@ -47,7 +47,7 @@ impl<T> Store<T> {
     }
 
     pub fn add(&mut self, light_block: LightBlock) {
-        self.store.insert(light_block.height, light_block);
+        self.store.insert(light_block.height(), light_block);
     }
 
     pub fn all(&self) -> Vec<&LightBlock> {

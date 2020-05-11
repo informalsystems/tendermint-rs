@@ -9,6 +9,16 @@ pub enum Verdict {
     Invalid(VerificationError),
 }
 
+impl Verdict {
+    pub fn ok(self) -> Result<(), Self> {
+        match self {
+            Self::Success => Ok(()),
+            Self::NotEnoughTrust => Err(self),
+            Self::Invalid(_) => Err(self),
+        }
+    }
+}
+
 pub trait Verifier {
     fn validate_light_block(
         &self,
@@ -31,14 +41,14 @@ pub trait Verifier {
     ) -> Verdict;
 }
 
-pub struct RealVerifier {
+pub struct ProdVerifier {
     predicates: Box<dyn VerificationPredicates>,
     voting_power_calculator: Box<dyn VotingPowerCalculator>,
     commit_validator: Box<dyn CommitValidator>,
     header_hasher: Box<dyn HeaderHasher>,
 }
 
-impl RealVerifier {
+impl ProdVerifier {
     pub fn new(
         predicates: impl VerificationPredicates + 'static,
         voting_power_calculator: impl VotingPowerCalculator + 'static,
@@ -54,7 +64,7 @@ impl RealVerifier {
     }
 }
 
-impl Verifier for RealVerifier {
+impl Verifier for ProdVerifier {
     fn validate_light_block(
         &self,
         light_block: &LightBlock,

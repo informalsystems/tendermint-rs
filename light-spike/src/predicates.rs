@@ -4,21 +4,12 @@ pub mod errors;
 pub mod production;
 
 pub trait VerificationPredicates {
-    fn validator_sets_match(
-        &self,
-        signed_header: &SignedHeader,
-        validators: &ValidatorSet,
-    ) -> Result<(), VerificationError>;
+    fn validator_sets_match(&self, light_block: &LightBlock) -> Result<(), VerificationError>;
 
-    fn next_validators_match(
-        &self,
-        signed_header: &SignedHeader,
-        validators: &ValidatorSet,
-    ) -> Result<(), VerificationError>;
+    fn next_validators_match(&self, light_block: &LightBlock) -> Result<(), VerificationError>;
 
     fn header_matches_commit(
         &self,
-        header: &Header,
         signed_header: &SignedHeader,
         header_hasher: &dyn HeaderHasher,
     ) -> Result<(), VerificationError>;
@@ -75,8 +66,8 @@ pub trait VerificationPredicates {
 
     fn valid_next_validator_set(
         &self,
-        untrusted_sh: &SignedHeader,
-        untrusted_next_vals: &ValidatorSet,
+        light_block: &LightBlock,
+        trusted_state: &TrustedState,
     ) -> Result<(), VerificationError>;
 }
 
@@ -88,10 +79,6 @@ pub fn validate_light_block(
     light_block: &LightBlock,
     options: &VerificationOptions,
 ) -> Result<(), VerificationError> {
-    let untrusted_sh = &light_block.signed_header;
-    let untrusted_vals = &light_block.validators;
-    let untrusted_next_vals = &light_block.next_validators;
-
     // Ensure the latest trusted header hasn't expired
     vp.is_within_trust_period(
         &trusted_state.signed_header.header,
@@ -100,23 +87,38 @@ pub fn validate_light_block(
     )?;
 
     // Ensure the header validator hashes match the given validators
-    vp.validator_sets_match(&untrusted_sh, &untrusted_vals)?;
+    vp.validator_sets_match(&light_block)?;
 
     // Ensure the header next validator hashes match the given next validators
-    vp.next_validators_match(&untrusted_sh, &untrusted_next_vals)?;
+    vp.next_validators_match(&light_block)?;
 
     // Ensure the header matches the commit
-    vp.header_matches_commit(&untrusted_sh.header, &untrusted_sh, header_hasher)?;
+    vp.header_matches_commit(&light_block.signed_header, header_hasher)?;
 
     // Additional implementation specific validation
-    vp.valid_commit(&untrusted_sh.commit, &untrusted_vals, commit_validator)?;
+    vp.valid_commit(
+        &light_block.signed_header.commit,
+        &light_block.validators,
+        commit_validator,
+    )?;
 
-    vp.is_monotonic_bft_time(&untrusted_sh.header, &trusted_state.signed_header.header)?;
+    vp.is_monotonic_bft_time(
+        &light_block.signed_header.header,
+        &trusted_state.signed_header.header,
+    )?;
 
-    if untrusted_sh.header.height == trusted_state.signed_header.header.height {
-        vp.valid_next_validator_set(&untrusted_sh, &untrusted_next_vals)?;
+    let trusted_state_next_height = trusted_state
+        .height()
+        .checked_add(1)
+        .expect("height overflow");
+
+    if light_block.height() == trusted_state_next_height {
+        vp.valid_next_validator_set(&light_block, trusted_state)?;
     } else {
-        vp.is_monotonic_height(&untrusted_sh.header, &trusted_state.signed_header.header)?;
+        vp.is_monotonic_height(
+            &light_block.signed_header.header,
+            &trusted_state.signed_header.header,
+        )?;
     }
 
     Ok(())

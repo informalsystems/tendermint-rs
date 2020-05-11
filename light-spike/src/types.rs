@@ -6,6 +6,7 @@ use tendermint::{
         header::Header as TMHeader, signed_header::SignedHeader as TMSignedHeader,
         Commit as TMCommit,
     },
+    lite::TrustThresholdFraction,
     validator::Set as TMValidatorSet,
     Time,
 };
@@ -31,12 +32,7 @@ impl VerificationOptions {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
-#[display(fmt = "{:?}", self)]
-pub struct TrustThreshold {
-    pub numerator: u64,
-    pub denominator: u64,
-}
+pub type TrustThreshold = TrustThresholdFraction;
 
 pub type Header = TMHeader;
 
@@ -48,13 +44,20 @@ pub type SignedHeader = TMSignedHeader;
 
 pub type TrustedState = LightBlock;
 
+fn primary() -> Peer {
+    "tcp://localhost:1337".parse().unwrap()
+}
+
 #[derive(Clone, Debug, Display, PartialEq, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct LightBlock {
-    pub height: Height,
+    // pub height: Height,
     pub signed_header: SignedHeader,
+    #[serde(rename = "validator_set")]
     pub validators: ValidatorSet,
+    #[serde(rename = "next_validator_set")]
     pub next_validators: ValidatorSet,
+    #[serde(default = "primary")]
     pub provider: Peer,
 }
 
@@ -65,16 +68,17 @@ impl LightBlock {
         next_validators: ValidatorSet,
         provider: Peer,
     ) -> LightBlock {
-        let height = sh.header.height.into();
-
-        let signed_header = sh.into();
-
+        // let height = sh.header.height.into();
         Self {
-            height,
-            signed_header,
+            // height,
+            signed_header: sh.into(),
             validators,
             next_validators,
             provider,
         }
+    }
+
+    pub fn height(&self) -> Height {
+        self.signed_header.header.height.into()
     }
 }

@@ -19,7 +19,7 @@ pub mod verify {
         trusted_store
             .all()
             .iter()
-            .all(|lb| lb.height < target_height)
+            .all(|lb| lb.height() < target_height)
     }
 
     pub fn trusted_store_contains_block_at_target_height(
@@ -51,7 +51,7 @@ pub mod schedule {
         trusted_store: &StoreReader<Trusted>,
         untrusted_store: &StoreReader<Untrusted>,
     ) -> bool {
-        let current_height = trusted_state.height;
+        let current_height = trusted_state.height();
 
         (next_height <= target_height)
             && ((next_height > current_height)

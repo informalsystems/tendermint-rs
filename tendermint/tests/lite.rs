@@ -204,7 +204,8 @@ fn run_test_cases(cases: TestCases) {
 
                     latest_trusted = new_state.clone();
                 }
-                Err(_) => {
+                Err(e) => {
+                    dbg!(e);
                     assert!(expects_err);
                 }
             }
