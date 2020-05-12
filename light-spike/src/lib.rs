@@ -13,13 +13,8 @@ pub mod prelude;
 pub mod store;
 pub mod types;
 
+#[doc(hidden)]
+pub mod tests;
+
 #[derive(Copy, Clone, Debug)]
 pub enum Never {}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}

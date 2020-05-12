@@ -1,76 +1,12 @@
 use light_spike::prelude::*;
+use light_spike::tests::{Trusted, *};
 
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fs;
 use std::path::PathBuf;
 
-use tendermint::block::Height as HeightStr;
-use tendermint::evidence::Duration as DurationStr;
 use tendermint::rpc;
-
-#[derive(Deserialize, Clone, Debug)]
-struct TestCases {
-    batch_name: String,
-    test_cases: Vec<TestCase>,
-}
-
-#[derive(Deserialize, Clone, Debug)]
-struct TestCase {
-    description: String,
-    initial: Initial,
-    input: Vec<LightBlock>,
-    expected_output: Option<String>,
-}
-
-#[derive(Deserialize, Clone, Debug)]
-struct Initial {
-    signed_header: SignedHeader,
-    next_validator_set: ValidatorSet,
-    trusting_period: DurationStr,
-    now: Time,
-}
-
-#[derive(Deserialize, Clone, Debug)]
-struct TestBisection {
-    description: String,
-    trust_options: TrustOptions,
-    primary: Provider,
-    height_to_verify: HeightStr,
-    now: Time,
-    expected_output: Option<String>,
-    expected_num_of_bisections: i32,
-}
-
-#[derive(Deserialize, Clone, Debug)]
-struct Provider {
-    chain_id: String,
-    lite_blocks: Vec<LightBlock>,
-}
-
-#[derive(Deserialize, Clone, Debug)]
-struct TrustOptions {
-    period: DurationStr,
-    height: HeightStr,
-    hash: Hash,
-    trust_level: TrustThreshold,
-}
-
-#[derive(Deserialize, Clone, Debug)]
-struct Trusted {
-    signed_header: SignedHeader,
-    next_validators: ValidatorSet,
-}
-
-impl Trusted {
-    fn new(signed_header: SignedHeader, next_validators: ValidatorSet) -> Self {
-        Self {
-            signed_header,
-            next_validators,
-        }
-    }
-}
 
 // Link to the commit that generated below JSON test files:
 // https://github.com/Shivani912/tendermint/commit/e02f8fd54a278f0192353e54b84a027c8fe31c1e
