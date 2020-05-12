@@ -781,37 +781,40 @@ func Pivot(lightStore, nextHeight, targetHeight) Height
 ## Liveness Scenarios
 
 
-**TODO: update**
 
-Let *startHeader* be *refHeader* when core verification is called
-(*trustedHeader*) and *startTime* be the time core verification is
-invoked.
+Let *startHeader* be *LightStore.LatestVerified* when core
+verification is called (*trustedHeader*) and *startTime* be the time
+core verification is invoked.
 
-In order to ensure liveness, *trustedStore* always needs to contain a
-header whose time is within the trusting period. To ensure this, core
-verification needs to add new headers to *trustedStore*, before all
-headers in *trustedStore* expire.
+In order to ensure liveness, *LightStore* always needs to contain a
+verified (or initially trusted) header whose time is within the
+trusting period. To ensure this, core verification needs to add new
+headers to *LightStore* and verify them, before all headers in
+*LightStore* expire.
 
 #### Many changes in validator set
 
-Assume the case where the validator set changes completely in each
-block. Then the bisection method in this specification needs to
-sequentially all headers. That is, for
+ Let's consider `Pivot` implements
+ bisection, that is, it halves the distance.
+ Assume the case where the validator set changes completely in each
+block. Then the 
+ method in this specification needs to
+sequentially verify all headers. That is, for
 
 - *W = log_2 (targetHeight - startHeader.Height)*,
 
 *W* headers need to be downloaded and checked before the
-header of height *startHeader.Height + 1* is added to *trustedStore*.
+header of height *startHeader.Height + 1* is added to *LightStore*.
 
 - Let *Comp*
   be the local computation time needed to check headers and signatures
   for one header.
 - Then we need in the worst case *Comp + 2 Delta* to download and
   check one header.
-- Then the first time a header could be added to *trustedStore* is
+- Then the first time a verified header could be added to *LightStore* is
   startTime + W * (Comp + 2 Delta)
 - [TP] However, it can only be added if we still have a header in
-  *trustedStore*, 
+  *LightStore*, 
   which is not
   expired, that is only the case if
     - startHeader.Time > startTime + WCG * (Comp + 2 Delta) -
@@ -819,18 +822,19 @@ header of height *startHeader.Height + 1* is added to *trustedStore*.
 	- that is, if core verification is started at  
 	  startTime < startHeader.Time + trustingPeriod -  WCG * (Comp + 2 Delta) 
 
-- one may then do an inductive argument from this point on. (To be
-  precise we have to account for the headers that are already
-  downloaded, but they are checked against the new *refHeader*)).
+- one may then do an inductive argument from this point on, depending
+  on the implementation of `Pivot`. We may have to account for the 
+  headers that are already
+  downloaded, but they are checked against the new *LightStore.LatestVerified*.
 
 > We observe that
 > the worst case time it needs to verify the header of height
 > *targetHeight* depends mainly on how frequent the validator set on the
-> blockchain changes. The core verification terminates successful
+> blockchain changes. That core verification terminates successfully
 > crucially depends on the check [TP], that is, that the headers in
-> *trustedStore* do not expire in the time needed to download more
+> *LightStore* do not expire in the time needed to download more
 > headers, which depends on the creation time of the headers in
-> *trustedStore*. That is, termination of core verification is highly
+> *LightStore*. That is, termination of core verification is highly
 > depending on the data stored in the blockchain.
 
 
@@ -845,7 +849,9 @@ header of height *startHeader.Height + 1* is added to *trustedStore*.
 
 If on the blockchain the validator set of the block at height
 *targetHeight* is equal to *startHeader.NextValidators*:
-- there is one round trip in `IO` to download the header of height
+- there is one round trip in `FetchLightBlock` to download the light
+ block
+ of height
   *targetHeight*, and *Comp* to check it.
 - as the validator sets are equal, `Verify` returns `OK`, if
   *startHeader.Time > now - trustingPeriod*.
