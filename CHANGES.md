@@ -7,6 +7,17 @@ Serialization:
 - Refactor serializers library to use modules and give a nicer annotation to structs. ([#247](https://github.com/informalsystems/tendermint-rs/issues/247))
 - Added nullable Vec<u8> serialization ([#247](https://github.com/informalsystems/tendermint-rs/issues/247))
 
+RPC:
+- Tendermint-Go v0.33 compatibility ([#184](https://github.com/informalsystems/tendermint-rs/issues/184))
+  - `abci_info`, `abci_query`, `block_results`, `genesis` structs
+  - serialization/deserialization fixes
+  - Updated/fixed integration tests
+
+CI: ([#120](https://github.com/informalsystems/tendermint-rs/issues/120))
+- Moved to GitHub Actions
+- Updated crates.io badges
+- Enabled integration tests in CI with Tendermint-Go node service
+
 ## [0.13.0] (2020-04-20)
 
 Dependencies:
