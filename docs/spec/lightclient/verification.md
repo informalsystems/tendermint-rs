@@ -757,12 +757,13 @@ func Pivot(lightStore, nextHeight, targetHeight) Height
 
 > Case i. captures the case where the light block at height
 > *nextHeight* has been verified, and we can choose a height closer to
-> the *targetHeight*. In Case iii. is a special case when we have
-> verified the *targetHeight*. In Case ii. the header of *nextHeight*
-> could not be verified, and we need to pick a smaller height. As we
+> the *targetHeight*. As we
 > get the *lightStore* as parameter, the choice of the next height can
 > depend on the *lightStore*, e.g., we can pick a height for which we
-> have already downloaded a light block.
+> have already downloaded a light block. 
+> In Case iii. is a special case when we have
+> verified the *targetHeight*. In Case ii. the header of *nextHeight*
+> could not be verified, and we need to pick a smaller height. 
 
 
 ## Liveness Scenarios
