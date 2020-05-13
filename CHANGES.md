@@ -1,12 +1,19 @@
-## [Pending next release]
+## Pending
 
-RPC changes:
-- Tendermint-Go v0.33 compatibility - issue #184
+Testing:
+- Updated abci_info test to 0.17.0 ([#249](https://github.com/informalsystems/tendermint-rs/issues/249))
+
+Serialization:
+- Refactor serializers library to use modules and give a nicer annotation to structs. ([#247](https://github.com/informalsystems/tendermint-rs/issues/247))
+- Added nullable Vec<u8> serialization ([#247](https://github.com/informalsystems/tendermint-rs/issues/247))
+
+RPC:
+- Tendermint-Go v0.33 compatibility ([#184](https://github.com/informalsystems/tendermint-rs/issues/184))
   - `abci_info`, `abci_query`, `block_results`, `genesis` structs
   - serialization/deserialization fixes
   - Updated/fixed integration tests
 
-CI changes: - issue #120
+CI: ([#120](https://github.com/informalsystems/tendermint-rs/issues/120))
 - Moved to GitHub Actions
 - Updated crates.io badges
 - Enabled integration tests in CI with Tendermint-Go node service
