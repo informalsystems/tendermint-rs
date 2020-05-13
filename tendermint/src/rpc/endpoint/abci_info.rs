@@ -3,7 +3,6 @@
 use crate::serializers;
 use crate::{block, rpc};
 use serde::{Deserialize, Serialize};
-use serde_bytes;
 
 /// Request ABCI information from a node
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -37,10 +36,7 @@ pub struct AbciInfo {
     pub version: String,
 
     /// App version
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(with = "serializers::from_str")]
     pub app_version: u64,
 
     /// Last block height
