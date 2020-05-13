@@ -643,42 +643,6 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
    - if [**[LCV-INV-TP]**](#LCV-INV-TP) is violated
   
 
-### Solving the distributed specification
-
-*trustedStore* is implemented by the light blocks in lightStore that
-have the state *StateVerified*.
-
-**TODO: check**
-#### Argument for [**[LCV-DIST-SAFE]**](#lcv-dist-safe):
-
-- `ValidAndVerified` implements the soundness checks and the checks 
-  [**[TMBC-VAL-CONTAINS-CORR]**][TMBC-VAL-CONTAINS-CORR-link] and 
-  [**[TMBC-VAL-COMMIT]**][TMBC-VAL-COMMIT-link] under
-  the assumption [**[TMBC-FM-2THIRDS]**][TMBC-FM-2THIRDS-link]
-- Only if `Verify` returns with `OK`, the state of a light block is
-  set to  *StateVerified*.
-
-
-#### Argument for [**[LCV-DIST-LIFE]**](#lcv-dist-life):
-
-- If *primary* is correct, 
-    - `FetchLightBlock` will always return a light block consistent
-      with the blockchain
-    - `ValidAndVerified` either verify the header using the trusting
-      period or falls back to sequential
-      verification
-    - If [**[LCV-INV-TP]**](#LCV-INV-TP) holds, eventually every
-	  header will be verified and core verification **terminates successfully**.
-    - successful termination depends on the age of *lightStore.LatestVerified*
-      (for instance, initially on the age of  *trustedHeader*) and the
-      changes of the validator sets on the blockchain.
-	  We will give some examples [below](#liveness-scenarios).
-- If *primary* is faulty,
-    - it either provides headers that pass all the tests, and we
-      return with the header 
-	- it provides one header that fails a test, core verification
-      **terminates with failure**.
-
 
 ### Details of the Functions
 
@@ -766,9 +730,49 @@ func Pivot(lightStore, nextHeight, targetHeight) Height
 > could not be verified, and we need to pick a smaller height. 
 
 
+### Solving the distributed specification
+
+*trustedStore* is implemented by the light blocks in lightStore that
+have the state *StateVerified*.
+
+**TODO: check**
+#### Argument for [**[LCV-DIST-SAFE]**](#lcv-dist-safe):
+
+- `ValidAndVerified` implements the soundness checks and the checks 
+  [**[TMBC-VAL-CONTAINS-CORR]**][TMBC-VAL-CONTAINS-CORR-link] and 
+  [**[TMBC-VAL-COMMIT]**][TMBC-VAL-COMMIT-link] under
+  the assumption [**[TMBC-FM-2THIRDS]**][TMBC-FM-2THIRDS-link]
+- Only if `ValidAndVerified` returns with `OK`, the state of a light block is
+  set to *StateVerified*.
+
+
+#### Argument for [**[LCV-DIST-LIFE]**](#lcv-dist-life):
+
+- If *primary* is correct, 
+    - `FetchLightBlock` will always return a light block consistent
+      with the blockchain
+    - `ValidAndVerified` either verify the header using the trusting
+      period or falls back to sequential
+      verification
+    - If [**[LCV-INV-TP]**](#LCV-INV-TP) holds, eventually every
+	  header will be verified and core verification **terminates successfully**.
+    - successful termination depends on the age of *lightStore.LatestVerified*
+      (for instance, initially on the age of  *trustedHeader*) and the
+      changes of the validator sets on the blockchain.
+	  We will give some examples [below](#liveness-scenarios).
+- If *primary* is faulty,
+    - it either provides headers that pass all the tests, and we
+      return with the header 
+	- it provides one header that fails a test, core verification
+      **terminates with failure**.
+
+
+
 ## Liveness Scenarios
 
-
+The liveness argument above assumes [**[LCV-INV-TP]**](#LCV-INV-TP)
+which requires that there is a header that does not expire before the
+target height is reached. Here we discuss scenarios to ensure this.
 
 Let *startHeader* be *LightStore.LatestVerified* when core
 verification is called (*trustedHeader*) and *startTime* be the time
