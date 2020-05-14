@@ -2,7 +2,7 @@
 //!
 //! Serializers and deserializers for a transparent developer experience.
 //!
-//! All serializers are presented in a serializers::<Rust_type_name>::<JSON_representation_name> format.
+//! All serializers are presented in a serializers::<Rust_nickname>::<JSON_representation_name> format.
 //!
 //! This example shows how to serialize Vec<u8> into different types of strings:
 //! ```
@@ -27,17 +27,18 @@
 //! Available serializers:
 //! i64                  <-> string:               #[serde(with="serializers::from_str")]
 //! u64                  <-> string:               #[serde(with="serializers::from_str")]
-//! std::time::Dureation <-> nanoseconds as string #[serde(with="serializers::time_duration")]
+//! std::time::Duration  <-> nanoseconds as string #[serde(with="serializers::time_duration")]
 //! Vec<u8>              <-> HexString:            #[serde(with="serializers::bytes::hexstring")]
 //! Vec<u8>              <-> Base64String:         #[serde(with="serializers::bytes::base64string")]
 //! Vec<u8>              <-> String:               #[serde(with="serializers::bytes::string")]
 //!
-//! Any type that has the "FromStr" trait can be serialized into a string with serializers::primitives::string.
-//!
+//! Notes:
+//! * Any type that has the "FromStr" trait can be serialized into a string with serializers::primitives::string.
+//! * serializers::bytes::* deserializes a null value into an empty vec![].
 
 use crate::account::{Id, LENGTH};
 use crate::{block, Hash, Signature};
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::Error as _, Deserialize, Deserializer};
 use std::str::FromStr;
 
 /// Serialize and deserialize any `T` that implements [[std::str::FromStr]]
@@ -96,12 +97,9 @@ pub mod time_duration {
 
 /// Serialize/deserialize bytes (Vec<u8>) type
 pub mod bytes {
-
     /// Serialize into hexstring, deserialize from hexstring
     pub mod hexstring {
-        use serde::{
-            de::Error as deError, ser::Error as serError, Deserialize, Deserializer, Serializer,
-        };
+        use serde::{Deserialize, Deserializer, Serializer};
         use subtle_encoding::hex;
 
         /// Deserialize hexstring into Vec<u8>
@@ -109,11 +107,10 @@ pub mod bytes {
         where
             D: Deserializer<'de>,
         {
-            let string = String::deserialize(deserializer)?;
-
+            let string = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
             hex::decode_upper(&string)
                 .or_else(|_| hex::decode(&string))
-                .map_err(deError::custom)
+                .map_err(serde::de::Error::custom)
         }
 
         /// Serialize from T into hexstring
@@ -123,16 +120,14 @@ pub mod bytes {
             T: AsRef<[u8]>,
         {
             let hex_bytes = hex::encode(value.as_ref());
-            let hex_string = String::from_utf8(hex_bytes).map_err(serError::custom)?;
+            let hex_string = String::from_utf8(hex_bytes).map_err(serde::ser::Error::custom)?;
             serializer.serialize_str(&hex_string)
         }
     }
 
     /// Serialize into base64string, deserialize from base64string
     pub mod base64string {
-        use serde::{
-            de::Error as deError, ser::Error as serError, Deserialize, Deserializer, Serializer,
-        };
+        use serde::{Deserialize, Deserializer, Serializer};
         use subtle_encoding::base64;
 
         /// Deserialize base64string into Vec<u8>
@@ -140,9 +135,8 @@ pub mod bytes {
         where
             D: Deserializer<'de>,
         {
-            let string = String::deserialize(deserializer)?;
-
-            base64::decode(&string).map_err(deError::custom)
+            let string = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+            base64::decode(&string).map_err(serde::de::Error::custom)
         }
 
         /// Serialize from T into base64string
@@ -152,25 +146,23 @@ pub mod bytes {
             T: AsRef<[u8]>,
         {
             let base64_bytes = base64::encode(value.as_ref());
-            let base64_string = String::from_utf8(base64_bytes).map_err(serError::custom)?;
+            let base64_string =
+                String::from_utf8(base64_bytes).map_err(serde::ser::Error::custom)?;
             serializer.serialize_str(&base64_string)
         }
     }
 
     /// Serialize into string, deserialize from string
     pub mod string {
-        use serde::{
-            de::Error as _, ser::Error as serError, Deserialize, Deserializer, Serializer,
-        };
+        use serde::{ser::Error, Deserialize, Deserializer, Serializer};
 
         /// Deserialize string into Vec<u8>
         pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
         where
             D: Deserializer<'de>,
         {
-            String::deserialize(deserializer)
-                .map(|m| m.as_bytes().to_vec())
-                .map_err(|e| D::Error::custom(format!("{}", e)))
+            let string = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+            Ok(string.as_bytes().to_vec())
         }
 
         /// Serialize from T into string
@@ -179,7 +171,7 @@ pub mod bytes {
             S: Serializer,
             T: AsRef<[u8]>,
         {
-            let string = String::from_utf8(value.as_ref().to_vec()).map_err(serError::custom)?;
+            let string = String::from_utf8(value.as_ref().to_vec()).map_err(Error::custom)?;
             serializer.serialize_str(&string)
         }
     }
@@ -199,35 +191,6 @@ where
             Hash::from_str(&s).map_err(|err| D::Error::custom(format!("{}", err)))?,
         )),
     }
-}
-
-#[allow(dead_code)]
-pub(crate) fn serialize_option_base64<S>(
-    maybe_bytes: &Option<Vec<u8>>,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    #[derive(Serialize)]
-    struct Wrapper<'a>(#[serde(with = "bytes::base64string")] &'a Vec<u8>);
-
-    match maybe_bytes {
-        Some(bytes) => Wrapper(bytes).serialize(serializer),
-        None => maybe_bytes.serialize(serializer),
-    }
-}
-
-#[allow(dead_code)]
-pub(crate) fn parse_option_base64<'de, D>(deserializer: D) -> Result<Option<Vec<u8>>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    struct Wrapper(#[serde(with = "bytes::base64string")] Vec<u8>);
-
-    let v = Option::deserialize(deserializer)?;
-    Ok(v.map(|Wrapper(a)| a))
 }
 
 /// Parse empty block id as None.

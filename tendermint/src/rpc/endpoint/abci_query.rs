@@ -79,13 +79,9 @@ pub struct AbciQuery {
     #[serde(default, with = "serializers::bytes::base64string")]
     pub key: Vec<u8>,
 
-    /// Value (might be explicit null)
-    #[serde(
-        default,
-        serialize_with = "serializers::serialize_option_base64",
-        deserialize_with = "serializers::parse_option_base64"
-    )]
-    pub value: Option<Vec<u8>>,
+    /// Value
+    #[serde(default, with = "serializers::bytes::base64string")]
+    pub value: Vec<u8>,
 
     /// Proof (might be explicit null)
     pub proof: Option<Proof>,
