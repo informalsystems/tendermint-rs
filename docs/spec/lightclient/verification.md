@@ -148,10 +148,8 @@ message contains the following fields
 
 
 #### **[TMBC-COMMIT]**:
-A commit is a set of votes.
+A commit is a set of `precommit` message.
 
-**TODO:** clarify whether `prevote` or `precommit` are equivalent in
-the Commit.
 
 ## Tendermint Failure Model
 
