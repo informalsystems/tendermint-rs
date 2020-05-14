@@ -99,7 +99,6 @@ pub mod time_duration {
 pub mod bytes {
     /// Serialize into hexstring, deserialize from hexstring
     pub mod hexstring {
-        use serde;
         use serde::{Deserialize, Deserializer, Serializer};
         use subtle_encoding::hex;
 
