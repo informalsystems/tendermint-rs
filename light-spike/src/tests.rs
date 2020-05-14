@@ -35,7 +35,7 @@ pub struct TestBisection {
     pub height_to_verify: HeightStr,
     pub now: Time,
     pub expected_output: Option<String>,
-    pub expected_num_of_bisections: i32,
+    pub expected_num_of_bisections: usize,
 }
 
 #[derive(Deserialize, Clone, Debug)]

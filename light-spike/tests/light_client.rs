@@ -18,7 +18,7 @@ fn read_json_fixture(name: &str) -> String {
 
 fn verify_single(
     trusted_state: Trusted,
-    input: &LightBlock,
+    input: LightBlock,
     trust_threshold: TrustThreshold,
     trusting_period: Duration,
     now: SystemTime,
@@ -44,17 +44,15 @@ fn verify_single(
         now: now.into(),
     };
 
-    verifier
-        .validate_light_block(input, &trusted_state, &options)
-        .ok()?;
+    let result = verifier
+        .validate_light_block(&input, &trusted_state, &options)
+        .and_then(|| verifier.verify_overlap(&input, &trusted_state, &options))
+        .and_then(|| verifier.has_sufficient_voting_power(&input, &options));
 
-    verifier
-        .verify_overlap(input, &trusted_state, &options)
-        .ok()?;
-
-    verifier.has_sufficient_voting_power(input, &options).ok()?;
-
-    Ok(input.clone())
+    match result {
+        Verdict::Success => Ok(input),
+        error => Err(error),
+    }
 }
 
 fn run_test_cases(cases: TestCases) {
@@ -78,7 +76,7 @@ fn run_test_cases(cases: TestCases) {
 
             match verify_single(
                 latest_trusted.clone(),
-                input,
+                input.clone(),
                 TrustThreshold::default(),
                 trusting_period.into(),
                 now,
@@ -86,6 +84,7 @@ fn run_test_cases(cases: TestCases) {
                 Ok(new_state) => {
                     let expected_state = input;
 
+                    assert_eq!(new_state.height(), expected_state.height());
                     assert_eq!(&new_state, expected_state);
                     assert!(!expects_err);
 
@@ -258,9 +257,11 @@ fn run_bisection_test(case: TestBisection) {
                 .fetch_light_block(primary.clone(), untrusted_height)
                 .expect("header at untrusted height not found");
 
+            assert_eq!(new_states.len(), expected_num_of_bisections);
+
             let expected_state = untrusted_light_block;
-            assert_eq!(new_states[new_states.len() - 1], expected_state);
-            assert_eq!(new_states.len() as i32, expected_num_of_bisections);
+            assert_eq!(new_states[0].height(), expected_state.height());
+            assert_eq!(new_states[0], expected_state);
             assert!(!expects_err);
         }
         Err(e) => {

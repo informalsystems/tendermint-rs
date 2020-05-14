@@ -11,22 +11,13 @@ pub enum VerificationError {
     #[error("implementation specific: {0}")]
     ImplementationSpecific(String),
     #[error(
-        "insufficient validators overlap: total_power={total_power} signed_power={signed_power:?}"
+        "insufficient validators overlap: total_power={total_power} signed_power={signed_power}"
     )]
-    InsufficientValidatorsOverlap {
-        total_power: u64,
-        signed_power: Option<u64>,
-    },
-    #[error("insufficient voting power: total_power={total_power} voting_power={voting_power:?}")]
-    InsufficientVotingPower {
-        total_power: u64,
-        voting_power: Option<u64>,
-    },
-    #[error("invalid commit power: total_power={total_power} signed_power={signed_power:?}")]
-    InsufficientCommitPower {
-        total_power: u64,
-        signed_power: Option<u64>,
-    },
+    InsufficientValidatorsOverlap { total_power: u64, signed_power: u64 },
+    #[error("insufficient voting power: total_power={total_power} voting_power={voting_power}")]
+    InsufficientVotingPower { total_power: u64, voting_power: u64 },
+    #[error("invalid commit power: total_power={total_power} signed_power={signed_power}")]
+    InsufficientCommitPower { total_power: u64, signed_power: u64 },
     #[error("invalid commit: {0}")]
     InvalidCommit(String),
     #[error("invalid commit value: header_hash={header_hash} commit_hash={commit_hash}")]
@@ -63,7 +54,7 @@ impl VerificationError {
     }
 
     pub fn not_enough_trust(&self) -> bool {
-        if let Self::InsufficientVotingPower { .. } = self {
+        if let Self::InsufficientValidatorsOverlap { .. } = self {
             true
         } else {
             false

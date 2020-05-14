@@ -45,18 +45,18 @@ pub mod schedule {
     use crate::prelude::*;
 
     pub fn postcondition(
-        trusted_state: &LightBlock,
         target_height: Height,
         next_height: Height,
         trusted_store: &StoreReader<Trusted>,
         untrusted_store: &StoreReader<Untrusted>,
     ) -> bool {
+        let trusted_state = trusted_store.highest().unwrap();
         let current_height = trusted_state.height();
 
         (next_height <= target_height)
             && ((next_height > current_height)
                 || (next_height == current_height && current_height == target_height))
-            && ((trusted_store.get(current_height).as_ref() == Some(trusted_state))
-                || (untrusted_store.get(current_height).as_ref() == Some(trusted_state)))
+            && ((trusted_store.get(current_height).as_ref() == Some(&trusted_state))
+                || (untrusted_store.get(current_height).as_ref() == Some(&trusted_state)))
     }
 }

@@ -50,6 +50,16 @@ impl<T> Store<T> {
         self.store.insert(light_block.height(), light_block);
     }
 
+    pub fn remove(&mut self, light_block: &LightBlock) {
+        use std::collections::btree_map::Entry;
+
+        if let Entry::Occupied(o) = self.store.entry(light_block.height()) {
+            if o.get() == light_block {
+                o.remove();
+            }
+        }
+    }
+
     pub fn all(&self) -> Vec<&LightBlock> {
         self.store.values().collect()
     }
@@ -129,5 +139,10 @@ impl<T> StoreWriter<T> {
     pub fn add(&mut self, light_block: LightBlock) {
         let mut store = self.store.write().unwrap();
         store.add(light_block);
+    }
+
+    pub fn remove(&mut self, light_block: &LightBlock) {
+        let mut store = self.store.write().unwrap();
+        store.remove(light_block);
     }
 }

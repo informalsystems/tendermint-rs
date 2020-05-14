@@ -1,19 +1,27 @@
-use serde::{Deserialize, Serialize};
-
 use crate::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug)]
 pub enum Verdict {
     Success,
-    NotEnoughTrust,
+    NotEnoughTrust(VerificationError),
     Invalid(VerificationError),
 }
 
 impl Verdict {
-    pub fn ok(self) -> Result<(), Self> {
+    pub fn and_then(self, other: impl Fn() -> Verdict) -> Self {
         match self {
-            Self::Success => Ok(()),
-            _ => Err(self),
+            Verdict::Success => other(),
+            _ => self,
+        }
+    }
+}
+
+impl From<Result<(), VerificationError>> for Verdict {
+    fn from(result: Result<(), VerificationError>) -> Self {
+        match result {
+            Ok(()) => Self::Success,
+            Err(e) if e.not_enough_trust() => Self::NotEnoughTrust(e),
+            Err(e) => Self::Invalid(e),
         }
     }
 }
@@ -79,10 +87,7 @@ impl Verifier for ProdVerifier {
             options,
         );
 
-        match result {
-            Ok(()) => Verdict::Success,
-            Err(e) => Verdict::Invalid(e),
-        }
+        result.into()
     }
 
     fn verify_overlap(
@@ -99,10 +104,7 @@ impl Verifier for ProdVerifier {
             options,
         );
 
-        match result {
-            Ok(()) => Verdict::Success,
-            Err(e) => Verdict::Invalid(e),
-        }
+        result.into()
     }
 
     fn has_sufficient_voting_power(
@@ -117,9 +119,6 @@ impl Verifier for ProdVerifier {
             options,
         );
 
-        match result {
-            Ok(()) => Verdict::Success,
-            Err(_) => Verdict::NotEnoughTrust,
-        }
+        result.into()
     }
 }

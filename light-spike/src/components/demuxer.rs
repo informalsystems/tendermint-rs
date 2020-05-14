@@ -45,8 +45,6 @@ impl Demuxer {
                 .unwrap();
             }
 
-            // dbg!(&self.state.trusted_store_reader.highest_height());
-
             if let Err(e) = self.detect_forks() {
                 eprintln!("fork detection error: {}", e);
                 color_backtrace::print_backtrace(
@@ -72,7 +70,7 @@ impl Demuxer {
         };
 
         let primary = self.state.peers.primary.clone();
-        let target_block = match self.fetch_light_block(primary, LATEST_HEIGHT) {
+        let target_block = match self.io.fetch_light_block(primary, LATEST_HEIGHT) {
             Ok(last_block) => last_block,
             Err(io_error) => bail!(ErrorKind::Io(io_error)),
         };
@@ -87,41 +85,30 @@ impl Demuxer {
 
         let options = self.options.with_now(self.clock.now());
 
-        // precondition!(
-        //     contracts::verify::trusted_state_contains_block_within_trusting_period(
-        //         &self.state.trusted_store_reader,
-        //         self.options.trusting_period,
-        //         options.now
-        //     )
-        // );
-
-        // TODO: This might not be a good precondition if we need to verify intermediate blocks, eg. for the relayer.
-        // precondition!(
-        //     contracts::verify::target_height_greater_than_all_blocks_in_trusted_store(
-        //         target_height,
-        //         &self.state.trusted_store_reader,
-        //     )
-        // );
-
-        let mut next_height = target_height;
+        let mut current_height = target_height;
 
         for trusted_state in self.state.trusted_store_reader.highest_iter() {
-            // dbg!(target_height);
-            // dbg!(trusted_state.height());
-            // dbg!(next_height);
+            // dbg!(target_height, current_height, trusted_state.height());
 
-            if trusted_state.height() >= target_height {
+            self.state.trace_block(target_height, current_height);
+
+            if target_height <= trusted_state.height() {
                 return Ok(());
             }
 
-            if next_height == trusted_state.height() {
-                return Ok(());
-            }
-
-            let primary = self.state.peers.primary.clone();
-            let current_block = match self.fetch_light_block(primary, next_height) {
-                Ok(current_block) => current_block,
-                Err(e) => bail!(ErrorKind::Io(e)),
+            let current_block = self.state.trusted_store_reader.get(current_height);
+            let current_block = match current_block {
+                Some(current_block) => current_block,
+                None => {
+                    let primary = self.state.peers.primary.clone();
+                    match self.io.fetch_light_block(primary, current_height) {
+                        Ok(current_block) => {
+                            self.state.untrusted_store_writer.add(current_block.clone());
+                            current_block
+                        }
+                        Err(e) => bail!(ErrorKind::Io(e)),
+                    }
+                }
             };
 
             let verdict = self.verify_light_block(&current_block, &trusted_state, &options);
@@ -129,36 +116,40 @@ impl Demuxer {
 
             match verdict {
                 Verdict::Success => {
-                    self.state.trusted_store_writer.add(current_block);
-                    continue;
+                    // TODO: Refactor as a single method call
+                    self.state.untrusted_store_writer.remove(&current_block);
+                    self.state.trusted_store_writer.add(current_block.clone());
                 }
                 Verdict::Invalid(e) => {
-                    self.state.untrusted_store_writer.add(current_block);
+                    // TODO: Refactor as a single method call
+                    self.state.trusted_store_writer.remove(&current_block);
+                    self.state.untrusted_store_writer.add(current_block.clone());
+
                     bail!(ErrorKind::InvalidLightBlock(e))
                 }
-                Verdict::NotEnoughTrust => {
+                Verdict::NotEnoughTrust(_) => {
+                    // TODO: Refactor as a single method call
+                    self.state.trusted_store_writer.remove(&current_block);
                     self.state.untrusted_store_writer.add(current_block.clone());
-                    self.state
-                        .trace_block(target_height, current_block.height());
-
-                    let scheduled_height = self.schedule(&current_block, &trusted_state);
-                    dbg!(&scheduled_height);
-
-                    if scheduled_height <= trusted_state.height() {
-                        bail!(ErrorKind::BisectionFailed(target_height, scheduled_height));
-                    }
-
-                    postcondition!(contracts::schedule::postcondition(
-                        &trusted_state,
-                        target_height,
-                        scheduled_height,
-                        &self.state.trusted_store_reader,
-                        &self.state.untrusted_store_reader
-                    ));
-
-                    next_height = scheduled_height;
                 }
             }
+
+            let scheduled_height = self.scheduler.schedule(
+                &self.state.trusted_store_reader,
+                current_height,
+                target_height,
+            );
+
+            // dbg!(scheduled_height);
+
+            postcondition!(contracts::schedule::postcondition(
+                target_height,
+                scheduled_height,
+                &self.state.trusted_store_reader,
+                &self.state.untrusted_store_reader
+            ));
+
+            current_height = scheduled_height;
         }
 
         postcondition!(
@@ -172,15 +163,7 @@ impl Demuxer {
     }
 
     pub fn get_trace(&self, target_height: Height) -> Vec<LightBlock> {
-        // precondition!(self.state.verification_trace.contains_key(&target_height));
-
-        self.state
-            .verification_trace
-            .get(&target_height)
-            .unwrap_or(&vec![])
-            .iter()
-            .flat_map(|h| self.state.trusted_store_reader.get(*h))
-            .collect()
+        self.state.get_trace(target_height)
     }
 
     pub fn verify_light_block(
@@ -189,28 +172,16 @@ impl Demuxer {
         trusted_state: &TrustedState,
         options: &VerificationOptions,
     ) -> Verdict {
-        let verdict = self
-            .verifier
-            .validate_light_block(light_block, trusted_state, options);
-
-        if let Verdict::Invalid(_) = verdict {
-            return verdict;
-        }
-
-        let verdict = self
-            .verifier
-            .verify_overlap(light_block, trusted_state, options);
-
-        if let Verdict::Invalid(_) = verdict {
-            return verdict;
-        }
-
         self.verifier
-            .has_sufficient_voting_power(light_block, options)
-    }
-
-    pub fn schedule(&self, light_block: &LightBlock, trusted_state: &TrustedState) -> Height {
-        self.scheduler.schedule(light_block, trusted_state)
+            .validate_light_block(light_block, trusted_state, options)
+            .and_then(|| {
+                self.verifier
+                    .verify_overlap(light_block, trusted_state, options)
+            })
+            .and_then(|| {
+                self.verifier
+                    .has_sufficient_voting_power(light_block, options)
+            })
     }
 
     pub fn detect_forks(&self) -> Result<(), Error> {
@@ -223,9 +194,5 @@ impl Demuxer {
         }
 
         Ok(())
-    }
-
-    pub fn fetch_light_block(&mut self, peer: Peer, height: Height) -> Result<LightBlock, IoError> {
-        self.io.fetch_light_block(peer, height)
     }
 }

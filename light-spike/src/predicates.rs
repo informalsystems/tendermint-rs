@@ -60,7 +60,6 @@ pub trait VerificationPredicates {
         &self,
         untrusted_sh: &SignedHeader,
         untrusted_validators: &ValidatorSet,
-        trust_threshold: &TrustThreshold,
         calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), VerificationError>;
 
@@ -141,12 +140,7 @@ pub fn verify_overlap(
         voting_power_calculator,
     )?;
 
-    vp.has_sufficient_signers_overlap(
-        &untrusted_sh,
-        &untrusted_vals,
-        &options.trust_threshold,
-        voting_power_calculator,
-    )?;
+    vp.has_sufficient_signers_overlap(&untrusted_sh, &untrusted_vals, voting_power_calculator)?;
 
     Ok(())
 }
