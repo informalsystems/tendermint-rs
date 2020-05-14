@@ -128,7 +128,7 @@ pub mod bytes {
 
     /// Serialize into base64string, deserialize from base64string
     pub mod base64string {
-        use serde::{Deserializer, Serializer, Deserialize};
+        use serde::{Deserialize, Deserializer, Serializer};
         use subtle_encoding::base64;
 
         /// Deserialize base64string into Vec<u8>
@@ -136,7 +136,7 @@ pub mod bytes {
         where
             D: Deserializer<'de>,
         {
-            let string =  Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+            let string = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
             base64::decode(&string).map_err(serde::de::Error::custom)
         }
 
@@ -155,14 +155,14 @@ pub mod bytes {
 
     /// Serialize into string, deserialize from string
     pub mod string {
-        use serde::{ser::Error, Deserializer, Serializer, Deserialize};
+        use serde::{ser::Error, Deserialize, Deserializer, Serializer};
 
         /// Deserialize string into Vec<u8>
         pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
         where
             D: Deserializer<'de>,
         {
-            let string =  Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+            let string = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
             Ok(string.as_bytes().to_vec())
         }
 
