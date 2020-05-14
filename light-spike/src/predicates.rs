@@ -135,7 +135,7 @@ pub fn verify_overlap(
 
     vp.has_sufficient_validators_overlap(
         &untrusted_sh,
-        &trusted_state.validators,
+        &trusted_state.next_validators,
         &options.trust_threshold,
         voting_power_calculator,
     )?;
