@@ -1,7 +1,6 @@
 use anomaly::fail;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::{fs, path::PathBuf};
@@ -250,11 +249,11 @@ fn run_single_step_tests(dir: &str) {
 }
 
 fn read_bisection_test_case(file_path: &str) -> TestBisection {
-    serde_json::from_str(read_json_fixture(file_path).borrow()).unwrap()
+    serde_json::from_str(read_json_fixture(file_path).as_str()).unwrap()
 }
 
 fn read_test_case(file_path: &str) -> TestCase {
-    serde_json::from_str(read_json_fixture(file_path).borrow()).unwrap()
+    serde_json::from_str(read_json_fixture(file_path).as_str()).unwrap()
 }
 
 async fn run_bisection_test(case: TestBisection) {
