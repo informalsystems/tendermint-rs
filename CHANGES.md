@@ -4,7 +4,7 @@ Testing:
 - Updated abci_info test to 0.17.0 ([#249](https://github.com/informalsystems/tendermint-rs/issues/249))
 
 Serialization:
-- Refactor serializers library to use modules and give a nicer annotation to structs. ([#247](https://github.com/informalsystems/tendermint-rs/issues/247))
+- Refactor serializers library to use modules, give a nicer annotation to structs and separated into its own folder. ([#247](https://github.com/informalsystems/tendermint-rs/issues/247))
 - Added nullable Vec<u8> serialization ([#247](https://github.com/informalsystems/tendermint-rs/issues/247))
 
 RPC:
