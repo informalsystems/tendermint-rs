@@ -164,49 +164,53 @@ type Trusted = lite::TrustedState<SignedHeader, Header>;
 
 fn run_test_cases(cases: TestCases) {
     for (_, tc) in cases.test_cases.iter().enumerate() {
-        let trusted_next_vals = tc.initial.clone().next_validator_set;
-        let mut latest_trusted =
-            Trusted::new(tc.initial.signed_header.clone().into(), trusted_next_vals);
+        run_test_case(&tc)
+    }
+}
 
-        let expects_err = match &tc.expected_output {
-            Some(eo) => eo.eq("error"),
-            None => false,
-        };
+fn run_test_case(tc: &&TestCase) {
+    let trusted_next_vals = tc.initial.clone().next_validator_set;
+    let mut latest_trusted =
+        Trusted::new(tc.initial.signed_header.clone().into(), trusted_next_vals);
 
-        let trusting_period: std::time::Duration = tc.initial.clone().trusting_period.into();
-        let tm_now = tc.initial.now;
-        let now = tm_now.to_system_time().unwrap();
+    let expects_err = match &tc.expected_output {
+        Some(eo) => eo.eq("error"),
+        None => false,
+    };
 
-        for (i, input) in tc.input.iter().enumerate() {
-            println!("i: {}, {}", i, tc.description);
+    let trusting_period: std::time::Duration = tc.initial.clone().trusting_period.into();
+    let tm_now = tc.initial.now;
+    let now = tm_now.to_system_time().unwrap();
 
-            let untrusted_signed_header = &input.signed_header;
-            let untrusted_vals = &input.validator_set;
-            let untrusted_next_vals = &input.next_validator_set;
+    for (i, input) in tc.input.iter().enumerate() {
+        println!("i: {}, {}", i, tc.description);
 
-            match lite::verify_single(
-                latest_trusted.clone(),
-                &untrusted_signed_header.into(),
-                untrusted_vals,
-                untrusted_next_vals,
-                TrustThresholdFraction::default(),
-                trusting_period,
-                now,
-            ) {
-                Ok(new_state) => {
-                    let expected_state = TrustedState::new(
-                        untrusted_signed_header.clone().into(),
-                        untrusted_next_vals.clone(),
-                    );
+        let untrusted_signed_header = &input.signed_header;
+        let untrusted_vals = &input.validator_set;
+        let untrusted_next_vals = &input.next_validator_set;
 
-                    assert_eq!(new_state, expected_state);
-                    assert!(!expects_err);
+        match lite::verify_single(
+            latest_trusted.clone(),
+            &untrusted_signed_header.into(),
+            untrusted_vals,
+            untrusted_next_vals,
+            TrustThresholdFraction::default(),
+            trusting_period,
+            now,
+        ) {
+            Ok(new_state) => {
+                let expected_state = TrustedState::new(
+                    untrusted_signed_header.clone().into(),
+                    untrusted_next_vals.clone(),
+                );
 
-                    latest_trusted = new_state.clone();
-                }
-                Err(_) => {
-                    assert!(expects_err);
-                }
+                assert_eq!(new_state, expected_state);
+                assert!(!expects_err);
+
+                latest_trusted = new_state.clone();
+            }
+            Err(_) => {
+                assert!(expects_err);
             }
         }
     }
