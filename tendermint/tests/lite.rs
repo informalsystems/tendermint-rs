@@ -121,56 +121,11 @@ impl MockRequester {
 // Link to the commit that generated below JSON test files:
 // https://github.com/Shivani912/tendermint/commit/e02f8fd54a278f0192353e54b84a027c8fe31c1e
 const TEST_FILES_PATH: &str = "./tests/support/lite/";
-fn read_json_fixture(name: &str) -> String {
-    fs::read_to_string(PathBuf::from(TEST_FILES_PATH).join(name.to_owned() + ".json")).unwrap()
-}
-
-fn read_json_fixture2(file_path: &str) -> String {
+fn read_json_fixture(file_path: &str) -> String {
     fs::read_to_string(PathBuf::from(file_path)).unwrap()
 }
 
-#[test]
-fn val_set_tests_verify() {
-    let cases: TestCases =
-        serde_json::from_str(&read_json_fixture("single_step_sequential/val_set_tests")).unwrap();
-    run_test_cases(cases);
-}
-
-#[test]
-fn commit_tests_verify() {
-    let cases: TestCases =
-        serde_json::from_str(&read_json_fixture("single_step_sequential/commit_tests")).unwrap();
-    run_test_cases(cases);
-}
-
-#[test]
-fn header_tests_verify() {
-    let cases: TestCases =
-        serde_json::from_str(&read_json_fixture("single_step_sequential/header_tests")).unwrap();
-    run_test_cases(cases);
-}
-
-#[test]
-fn single_skip_val_set_tests_verify() {
-    let cases: TestCases =
-        serde_json::from_str(&read_json_fixture("single_step_skipping/val_set_tests")).unwrap();
-    run_test_cases(cases);
-}
-
-#[test]
-fn single_skip_commit_tests_verify() {
-    let cases: TestCases =
-        serde_json::from_str(&read_json_fixture("single_step_skipping/commit_tests")).unwrap();
-    run_test_cases(cases);
-}
-
 type Trusted = lite::TrustedState<SignedHeader, Header>;
-
-fn run_test_cases(cases: TestCases) {
-    for (_, tc) in cases.test_cases.iter().enumerate() {
-        run_test_case(tc)
-    }
-}
 
 fn run_test_case(tc: &TestCase) {
     let trusted_next_vals = tc.initial.clone().next_validator_set;
@@ -220,12 +175,37 @@ fn run_test_case(tc: &TestCase) {
     }
 }
 #[tokio::test]
-async fn bisection_tests() {
+async fn bisection() {
     // TODO: re-enable multi-peer tests as soon as the light client can handle these:
     // let dir = "bisection/multi_peer";
     // run_bisection_tests(dir).await;
+
     let dir = "bisection/single_peer";
     run_bisection_tests(dir).await;
+}
+
+#[test]
+fn single_step_sequential() {
+    let dirs = [
+        "single_step/sequential/commit",
+        "single_step/sequential/header",
+        "single_step/sequential/validator_set",
+    ];
+    for dir in &dirs {
+        run_single_step_tests(dir);
+    }
+}
+
+#[test]
+fn single_step_skipping() {
+    let dirs = [
+        "single_step/skipping/commit",
+        "single_step/skipping/header",
+        "single_step/skipping/validator_set",
+    ];
+    for dir in &dirs {
+        run_single_step_tests(dir);
+    }
 }
 
 async fn run_bisection_tests(dir: &str) {
@@ -234,11 +214,36 @@ async fn run_bisection_tests(dir: &str) {
     for file_path in paths {
         let dir_entry = file_path.unwrap();
         let fp_str = format!("{}", dir_entry.path().display());
-        println!("Running file: {:?}", fp_str);
-        let case: TestBisection =
-            serde_json::from_str(read_json_fixture2(&fp_str).borrow()).unwrap();
+        println!(
+            "Running light client against bisection test-file:\n {:?}",
+            fp_str
+        );
+        let case: TestBisection = read_bisection_test_case(&fp_str);
         run_bisection_test(case).await;
     }
+}
+
+fn run_single_step_tests(dir: &str) {
+    let paths = fs::read_dir(PathBuf::from(TEST_FILES_PATH).join(dir)).unwrap();
+
+    for file_path in paths {
+        let dir_entry = file_path.unwrap();
+        let fp_str = format!("{}", dir_entry.path().display());
+        println!(
+            "Running light client against 'single-step' test-file:\n {:?}",
+            fp_str
+        );
+        let case: TestCase = read_test_case(&fp_str);
+        run_test_case(&case);
+    }
+}
+
+fn read_bisection_test_case(file_path: &str) -> TestBisection {
+    serde_json::from_str(read_json_fixture(file_path).borrow()).unwrap()
+}
+
+fn read_test_case(file_path: &str) -> TestCase {
+    serde_json::from_str(read_json_fixture(file_path).borrow()).unwrap()
 }
 
 async fn run_bisection_test(case: TestBisection) {
