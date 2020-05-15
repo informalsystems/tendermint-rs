@@ -7,15 +7,12 @@ use std::collections::HashMap;
 pub fn main() {
     color_backtrace::install();
 
-    let (trusted_store_reader, mut trusted_store_writer) = Store::new().split();
-    let (untrusted_store_reader, untrusted_store_writer) = Store::new().split();
-
     let primary: Peer = "tcp://127.0.0.1:26657".parse().unwrap();
     let mut io = RealIo::new();
-
     let trusted_state = io.fetch_light_block(primary.clone(), 9977).unwrap();
 
-    trusted_store_writer.add(trusted_state);
+    let mut light_store = MemoryStore::new();
+    light_store.insert_verified(trusted_state);
 
     let peers = Peers {
         primary,
@@ -24,10 +21,7 @@ pub fn main() {
 
     let state = State {
         peers,
-        trusted_store_reader,
-        trusted_store_writer,
-        untrusted_store_reader,
-        untrusted_store_writer,
+        light_store: Box::new(light_store),
         verification_trace: HashMap::new(),
     };
 
@@ -56,7 +50,7 @@ pub fn main() {
     let scheduler = scheduler::schedule;
     let fork_detector = RealForkDetector::new(header_hasher);
 
-    let mut demuxer = Demuxer::new(
+    let _demuxer = Demuxer::new(
         state,
         options,
         clock,
@@ -66,6 +60,6 @@ pub fn main() {
         io,
     );
 
-    demuxer.run().unwrap();
+    todo!()
 }
 

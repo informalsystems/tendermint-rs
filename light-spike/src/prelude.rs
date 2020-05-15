@@ -1,19 +1,17 @@
 pub use std::time::{Duration, SystemTime};
 
-pub use tendermint::time::Time;
+pub use ::contracts::*;
+pub use ::tendermint::time::Time;
 
-pub type Peer = tendermint::net::Address;
-
+pub use crate::{bail, ensure};
 pub use crate::{
-    bail,
     components::{
         clock::*, demuxer::*, fork_detector::*, io::*, scheduler::*, state::*, verifier::*,
     },
-    ensure,
     errors::*,
     operations::*,
-    postcondition, precondition,
     predicates::{errors::*, production::ProdPredicates, VerificationPredicates},
+    store::memory::*,
     store::*,
     types::*,
     Never,

@@ -32,40 +32,13 @@ impl Demuxer {
         }
     }
 
-    // FIXME: This should probably be extracted somewhere else,
-    //        or just left up to the users of the module.
-    pub fn run(&mut self) -> Result<Never, Error> {
-        loop {
-            if let Err(e) = self.verify_to_highest() {
-                eprintln!("verification error: {}", e);
-                color_backtrace::print_backtrace(
-                    e.backtrace().unwrap(),
-                    &mut color_backtrace::Settings::new(),
-                )
-                .unwrap();
-            }
-
-            if let Err(e) = self.detect_forks() {
-                eprintln!("fork detection error: {}", e);
-                color_backtrace::print_backtrace(
-                    e.backtrace().unwrap(),
-                    &mut color_backtrace::Settings::new(),
-                )
-                .unwrap();
-            }
-
-            // FIXME: Debug only, should be left up to users of the module.
-            std::thread::sleep(Duration::from_secs(1));
-        }
-    }
-
     pub fn is_trusted(&self, light_block: &LightBlock) -> bool {
-        let in_store = self.state.trusted_store_reader.get(light_block.height());
+        let in_store = self.state.light_store.get_verified(light_block.height());
         in_store.as_ref() == Some(light_block)
     }
 
     pub fn verify_to_highest(&mut self) -> Result<(), Error> {
-        if self.state.trusted_store_reader.highest().is_none() {
+        if self.state.light_store.latest_verified().is_none() {
             bail!(ErrorKind::NoInitialTrustedState)
         };
 
@@ -78,8 +51,15 @@ impl Demuxer {
         self.verify_to_target(target_block.height())
     }
 
+    #[post(
+        ret.is_ok() ==> contracts::trusted_store_contains_block_at_target_height(
+            self.state.light_store.as_ref(),
+            target_height,
+        )
+    )]
     pub fn verify_to_target(&mut self, target_height: Height) -> Result<(), Error> {
-        if self.state.trusted_store_reader.highest().is_none() {
+        // TODO: Should this be a precondition?
+        if self.state.light_store.latest_verified().is_none() {
             bail!(ErrorKind::NoInitialTrustedState)
         };
 
@@ -87,7 +67,10 @@ impl Demuxer {
 
         let mut current_height = target_height;
 
-        for trusted_state in self.state.trusted_store_reader.highest_iter() {
+        // TODO: Add invariant and measure
+        loop {
+            let trusted_state = self.state.light_store.latest_verified().unwrap(); // SAFETY: Checked above
+
             // dbg!(target_height, current_height, trusted_state.height());
 
             self.state.trace_block(target_height, current_height);
@@ -96,14 +79,22 @@ impl Demuxer {
                 return Ok(());
             }
 
-            let current_block = self.state.trusted_store_reader.get(current_height);
+            let current_block = self
+                .state
+                .light_store
+                .get_verified(current_height)
+                .or_else(|| self.state.light_store.get_unverified(current_height));
+
             let current_block = match current_block {
                 Some(current_block) => current_block,
                 None => {
                     let primary = self.state.peers.primary.clone();
                     match self.io.fetch_light_block(primary, current_height) {
                         Ok(current_block) => {
-                            self.state.untrusted_store_writer.add(current_block.clone());
+                            self.state
+                                .light_store
+                                .insert_unverified(current_block.clone());
+
                             current_block
                         }
                         Err(e) => bail!(ErrorKind::Io(e)),
@@ -116,50 +107,27 @@ impl Demuxer {
 
             match verdict {
                 Verdict::Success => {
-                    // TODO: Refactor as a single method call
-                    self.state.untrusted_store_writer.remove(&current_block);
-                    self.state.trusted_store_writer.add(current_block.clone());
+                    self.state.light_store.insert_verified(current_block);
                 }
                 Verdict::Invalid(e) => {
-                    // TODO: Refactor as a single method call
-                    self.state.trusted_store_writer.remove(&current_block);
-                    self.state.untrusted_store_writer.add(current_block.clone());
-
+                    self.state.light_store.insert_failed(current_block);
                     bail!(ErrorKind::InvalidLightBlock(e))
                 }
                 Verdict::NotEnoughTrust(_) => {
-                    // TODO: Refactor as a single method call
-                    self.state.trusted_store_writer.remove(&current_block);
-                    self.state.untrusted_store_writer.add(current_block.clone());
+                    self.state.light_store.insert_unverified(current_block);
                 }
             }
 
             let scheduled_height = self.scheduler.schedule(
-                &self.state.trusted_store_reader,
+                self.state.light_store.as_ref(),
                 current_height,
                 target_height,
             );
 
             // dbg!(scheduled_height);
 
-            postcondition!(contracts::schedule::postcondition(
-                target_height,
-                scheduled_height,
-                &self.state.trusted_store_reader,
-                &self.state.untrusted_store_reader
-            ));
-
             current_height = scheduled_height;
         }
-
-        postcondition!(
-            contracts::verify::trusted_store_contains_block_at_target_height(
-                target_height,
-                &self.state.trusted_store_reader,
-            )
-        );
-
-        Ok(())
     }
 
     pub fn get_trace(&self, target_height: Height) -> Vec<LightBlock> {
@@ -185,7 +153,7 @@ impl Demuxer {
     }
 
     pub fn detect_forks(&self) -> Result<(), Error> {
-        let light_blocks = self.state.trusted_store_reader.all();
+        let light_blocks = self.state.light_store.all_verified();
         let result = self.fork_detector.detect(light_blocks);
 
         match result {

@@ -217,20 +217,15 @@ fn run_bisection_test(case: TestBisection) {
         .fetch_light_block(primary.clone(), trusted_height)
         .expect("could not 'request' light block");
 
-    let (trusted_store_reader, mut trusted_store_writer) = Store::new().split();
-    let (untrusted_store_reader, untrusted_store_writer) = Store::new().split();
-
-    trusted_store_writer.add(trusted_state);
+    let mut light_store = MemoryStore::new();
+    light_store.insert_verified(trusted_state);
 
     let state = State {
         peers: Peers {
             primary: primary.clone(),
             witnesses: vec![],
         },
-        trusted_store_reader,
-        trusted_store_writer,
-        untrusted_store_reader,
-        untrusted_store_writer,
+        light_store: Box::new(light_store),
         verification_trace: HashMap::new(),
     };
 

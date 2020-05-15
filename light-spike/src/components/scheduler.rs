@@ -1,55 +1,75 @@
 use crate::prelude::*;
 
+#[contract_trait]
 pub trait Scheduler {
+    #[pre(light_store.latest_verified().is_some())]
+    #[post(valid_schedule(ret, target_height, next_height, light_store))]
     fn schedule(
         &self,
-        trusted_store: &StoreReader<Trusted>,
+        light_store: &dyn LightStore,
         next_height: Height,
         target_height: Height,
     ) -> Height;
 }
 
+#[contract_trait]
 impl<F> Scheduler for F
 where
-    F: Fn(&StoreReader<Trusted>, Height, Height) -> Height,
+    F: Fn(&dyn LightStore, Height, Height) -> Height,
 {
     fn schedule(
         &self,
-        trusted_store: &StoreReader<Trusted>,
+        light_store: &dyn LightStore,
         next_height: Height,
         target_height: Height,
     ) -> Height {
-        self(trusted_store, next_height, target_height)
+        self(light_store, next_height, target_height)
     }
 }
 
+#[pre(light_store.latest_verified().is_some())]
+#[post(valid_schedule(ret, target_height, next_height, light_store))]
 pub fn schedule(
-    trusted_store: &StoreReader<Trusted>,
+    light_store: &dyn LightStore,
     next_height: Height,
     target_height: Height,
 ) -> Height {
-    precondition!(trusted_store.highest_height().is_some());
-
-    let latest_trusted_height = trusted_store.highest_height().unwrap();
-
-    if latest_trusted_height < next_height && latest_trusted_height < target_height {
-        return middle_point(latest_trusted_height, next_height);
-    }
+    let latest_trusted_height = light_store.latest_verified().map(|lb| lb.height()).unwrap();
 
     if latest_trusted_height == next_height && latest_trusted_height < target_height {
-        return target_height;
+        target_height
+    } else if latest_trusted_height < next_height && latest_trusted_height < target_height {
+        midpoint(latest_trusted_height, next_height)
+    } else if latest_trusted_height == target_height {
+        target_height
+    } else {
+        midpoint(next_height, target_height)
     }
-
-    if latest_trusted_height == target_height {
-        return target_height;
-    }
-
-    middle_point(next_height, target_height)
 }
 
-fn middle_point(low: Height, high: Height) -> Height {
-    precondition!(low < high);
+fn valid_schedule(
+    scheduled_height: Height,
+    target_height: Height,
+    next_height: Height,
+    light_store: &dyn LightStore,
+) -> bool {
+    let latest_trusted_height = light_store.latest_verified().map(|lb| lb.height()).unwrap();
+
+    if latest_trusted_height == next_height && latest_trusted_height < target_height {
+        next_height < scheduled_height && scheduled_height <= target_height
+    } else if latest_trusted_height < next_height && latest_trusted_height < target_height {
+        latest_trusted_height < scheduled_height && scheduled_height < next_height
+    } else if latest_trusted_height == target_height {
+        scheduled_height == target_height
+    } else {
+        true
+    }
+}
+
+#[pre(low < high)]
+#[post(low < ret && ret <= high)]
+fn midpoint(low: Height, high: Height) -> Height {
     let result = low + (high + 1 - low) / 2;
-    postcondition!(low < result && result <= high);
     result
 }
+

@@ -32,6 +32,8 @@ impl VerificationOptions {
     }
 }
 
+pub type Peer = tendermint::net::Address;
+
 pub type TrustThreshold = TrustThresholdFraction;
 
 pub type Header = TMHeader;
