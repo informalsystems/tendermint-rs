@@ -27,6 +27,17 @@ impl From<Result<(), VerificationError>> for Verdict {
 }
 
 pub trait Verifier {
+    fn verify(
+        &self,
+        light_block: &LightBlock,
+        trusted_state: &TrustedState,
+        options: &VerificationOptions,
+    ) -> Verdict {
+        self.validate_light_block(light_block, trusted_state, options)
+            .and_then(|| self.verify_overlap(light_block, trusted_state, options))
+            .and_then(|| self.has_sufficient_voting_power(light_block, options))
+    }
+
     fn validate_light_block(
         &self,
         light_block: &LightBlock,

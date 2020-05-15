@@ -32,11 +32,6 @@ impl Demuxer {
         }
     }
 
-    pub fn is_trusted(&self, light_block: &LightBlock) -> bool {
-        let in_store = self.state.light_store.get_verified(light_block.height());
-        in_store.as_ref() == Some(light_block)
-    }
-
     pub fn verify_to_highest(&mut self) -> Result<(), Error> {
         if self.state.light_store.latest_verified().is_none() {
             bail!(ErrorKind::NoInitialTrustedState)
@@ -102,7 +97,7 @@ impl Demuxer {
                 }
             };
 
-            let verdict = self.verify_light_block(&current_block, &trusted_state, &options);
+            let verdict = self.verifier.verify(&current_block, &trusted_state, &options);
             // dbg!(&verdict);
 
             match verdict {
@@ -132,24 +127,6 @@ impl Demuxer {
 
     pub fn get_trace(&self, target_height: Height) -> Vec<LightBlock> {
         self.state.get_trace(target_height)
-    }
-
-    pub fn verify_light_block(
-        &self,
-        light_block: &LightBlock,
-        trusted_state: &TrustedState,
-        options: &VerificationOptions,
-    ) -> Verdict {
-        self.verifier
-            .validate_light_block(light_block, trusted_state, options)
-            .and_then(|| {
-                self.verifier
-                    .verify_overlap(light_block, trusted_state, options)
-            })
-            .and_then(|| {
-                self.verifier
-                    .has_sufficient_voting_power(light_block, options)
-            })
     }
 
     pub fn detect_forks(&self) -> Result<(), Error> {
