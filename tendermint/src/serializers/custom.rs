@@ -23,7 +23,9 @@ where
 }
 
 /// Parse empty block id as None.
-pub(crate) fn parse_non_empty_block_id<'de, D>(deserializer: D) -> Result<Option<block::Id>, D::Error>
+pub(crate) fn parse_non_empty_block_id<'de, D>(
+    deserializer: D,
+) -> Result<Option<block::Id>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -82,7 +84,9 @@ where
 }
 
 /// Option<Signature> deserialization
-pub(crate) fn parse_non_empty_signature<'de, D>(deserializer: D) -> Result<Option<Signature>, D::Error>
+pub(crate) fn parse_non_empty_signature<'de, D>(
+    deserializer: D,
+) -> Result<Option<Signature>, D::Error>
 where
     D: Deserializer<'de>,
 {

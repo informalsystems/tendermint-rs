@@ -56,9 +56,10 @@ pub(crate) mod base64string {
 
 /// Serialize into string, deserialize from string
 pub(crate) mod string {
-    use serde::{ser::Error, Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer};
 
     /// Deserialize string into Vec<u8>
+    #[allow(dead_code)]
     pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
@@ -68,12 +69,14 @@ pub(crate) mod string {
     }
 
     /// Serialize from T into string
+    #[allow(dead_code)]
     pub(crate) fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
         T: AsRef<[u8]>,
     {
-        let string = String::from_utf8(value.as_ref().to_vec()).map_err(Error::custom)?;
+        let string =
+            String::from_utf8(value.as_ref().to_vec()).map_err(serde::ser::Error::custom)?;
         serializer.serialize_str(&string)
     }
 }
