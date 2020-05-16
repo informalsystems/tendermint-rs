@@ -6,6 +6,7 @@ Testing:
 Serialization:
 - Refactor serializers library to use modules, give a nicer annotation to structs and separated into its own folder. ([#247](https://github.com/informalsystems/tendermint-rs/issues/247))
 - Added nullable Vec<u8> serialization ([#247](https://github.com/informalsystems/tendermint-rs/issues/247))
+- Moved/created tests for serialization in the same library ([#263](https://github.com/informalsystems/tendermint-rs/issues/263))
 
 RPC:
 - Tendermint-Go v0.33 compatibility ([#184](https://github.com/informalsystems/tendermint-rs/issues/184))
