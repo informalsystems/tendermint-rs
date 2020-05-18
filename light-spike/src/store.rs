@@ -28,6 +28,7 @@ impl StoreEntry {
 
 pub trait LightStore: std::fmt::Debug {
     fn get(&self, height: Height, status: VerifiedStatus) -> Option<LightBlock>;
+    fn update(&mut self, light_block: LightBlock, status: VerifiedStatus);
     fn insert(&mut self, light_block: LightBlock, status: VerifiedStatus);
     fn remove(&mut self, height: Height, status: VerifiedStatus);
     fn latest(&self, status: VerifiedStatus) -> Option<LightBlock>;

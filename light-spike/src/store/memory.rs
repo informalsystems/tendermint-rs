@@ -33,9 +33,13 @@ impl LightStore for MemoryStore {
     fn remove(&mut self, height: Height, status: VerifiedStatus) {
         if let Occupied(e) = self.store.entry(height) {
             if e.get().status == status {
-                e.remove();
+                e.remove_entry();
             }
         }
+    }
+
+    fn update(&mut self, light_block: LightBlock, status: VerifiedStatus) {
+        self.insert(light_block, status);
     }
 
     fn latest(&self, status: VerifiedStatus) -> Option<LightBlock> {

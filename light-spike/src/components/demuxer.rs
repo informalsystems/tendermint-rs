@@ -124,18 +124,19 @@ impl Demuxer {
                 Verdict::Success => {
                     self.state
                         .light_store
-                        .insert(current_block, VerifiedStatus::Verified);
+                        .update(current_block, VerifiedStatus::Verified);
                 }
                 Verdict::Invalid(e) => {
                     self.state
                         .light_store
-                        .insert(current_block, VerifiedStatus::Failed);
+                        .update(current_block, VerifiedStatus::Failed);
+
                     bail!(ErrorKind::InvalidLightBlock(e))
                 }
                 Verdict::NotEnoughTrust(_) => {
                     self.state
                         .light_store
-                        .insert(current_block, VerifiedStatus::Unverified);
+                        .update(current_block, VerifiedStatus::Unverified);
                 }
             }
 
