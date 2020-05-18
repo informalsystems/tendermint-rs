@@ -1,12 +1,12 @@
 //! Serialize/deserialize bytes (Vec<u8>) type
 
 /// Serialize into hexstring, deserialize from hexstring
-pub mod hexstring {
+pub(crate) mod hexstring {
     use serde::{Deserialize, Deserializer, Serializer};
     use subtle_encoding::hex;
 
     /// Deserialize hexstring into Vec<u8>
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -17,7 +17,7 @@ pub mod hexstring {
     }
 
     /// Serialize from T into hexstring
-    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    pub(crate) fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
         T: AsRef<[u8]>,
@@ -29,12 +29,12 @@ pub mod hexstring {
 }
 
 /// Serialize into base64string, deserialize from base64string
-pub mod base64string {
+pub(crate) mod base64string {
     use serde::{Deserialize, Deserializer, Serializer};
     use subtle_encoding::base64;
 
     /// Deserialize base64string into Vec<u8>
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -43,7 +43,7 @@ pub mod base64string {
     }
 
     /// Serialize from T into base64string
-    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    pub(crate) fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
         T: AsRef<[u8]>,
@@ -55,11 +55,12 @@ pub mod base64string {
 }
 
 /// Serialize into string, deserialize from string
-pub mod string {
-    use serde::{ser::Error, Deserialize, Deserializer, Serializer};
+pub(crate) mod string {
+    use serde::{Deserialize, Deserializer, Serializer};
 
     /// Deserialize string into Vec<u8>
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    #[allow(dead_code)]
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -68,12 +69,14 @@ pub mod string {
     }
 
     /// Serialize from T into string
-    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    #[allow(dead_code)]
+    pub(crate) fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
         T: AsRef<[u8]>,
     {
-        let string = String::from_utf8(value.as_ref().to_vec()).map_err(Error::custom)?;
+        let string =
+            String::from_utf8(value.as_ref().to_vec()).map_err(serde::ser::Error::custom)?;
         serializer.serialize_str(&string)
     }
 }

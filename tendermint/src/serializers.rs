@@ -5,9 +5,9 @@
 //! All serializers are presented in a serializers::<Rust_nickname>::<JSON_representation_name> format.
 //!
 //! This example shows how to serialize Vec<u8> into different types of strings:
-//! ```
+//! ```ignore
 //! use serde::{Serialize, Deserialize};
-//! use tendermint::serializers;
+//! use serializers;
 //!
 //! #[derive(Serialize, Deserialize)]
 //! struct ByteTypes {
@@ -36,12 +36,15 @@
 //! * Any type that has the "FromStr" trait can be serialized into a string with serializers::primitives::string.
 //! * serializers::bytes::* deserializes a null value into an empty vec![].
 
-pub mod bytes;
-pub mod from_str;
-pub mod time_duration;
+pub(crate) mod bytes;
+pub(crate) mod from_str;
+pub(crate) mod time_duration;
+
+#[cfg(test)]
+mod tests;
 
 mod custom;
-pub use custom::parse_non_empty_block_id;
-pub use custom::parse_non_empty_hash;
-pub use custom::parse_non_empty_id;
-pub use custom::parse_non_empty_signature;
+pub(crate) use custom::parse_non_empty_block_id;
+pub(crate) use custom::parse_non_empty_hash;
+pub(crate) use custom::parse_non_empty_id;
+pub(crate) use custom::parse_non_empty_signature;

@@ -2,32 +2,31 @@
 
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use tendermint::serializers;
 
 #[derive(Serialize, Deserialize)]
 struct IntegerTests {
-    #[serde(with = "serializers::from_str")]
+    #[serde(with = "super::from_str")]
     unsigned: u64,
 
-    #[serde(with = "serializers::from_str")]
+    #[serde(with = "super::from_str")]
     signed: i64,
 }
 
 #[derive(Serialize, Deserialize)]
 struct DurationTests {
-    #[serde(with = "serializers::time_duration")]
+    #[serde(with = "super::time_duration")]
     duration: Duration,
 }
 
 #[derive(Serialize, Deserialize)]
 struct BytesTests {
-    #[serde(with = "serializers::bytes::hexstring")]
+    #[serde(with = "super::bytes::hexstring")]
     myhexbytes: Vec<u8>,
 
-    #[serde(with = "serializers::bytes::base64string")]
+    #[serde(with = "super::bytes::base64string")]
     mybase64bytes: Vec<u8>,
 
-    #[serde(with = "serializers::bytes::string")]
+    #[serde(with = "super::bytes::string")]
     stringifiedbytes: Vec<u8>,
 }
 
@@ -49,11 +48,11 @@ fn serialize_integer_into_string() {
 #[test]
 fn deserialize_integer_from_string() {
     let incoming = r#"
-    {
-      "unsigned": "9007199254740992",
-      "signed": "-9007199254740994"
-    }
-    "#;
+{
+  "unsigned": "9007199254740992",
+  "signed": "-9007199254740994"
+}
+"#;
 
     let result: IntegerTests = serde_json::from_str(&incoming).unwrap();
 
@@ -75,10 +74,10 @@ fn serialize_duration_into_string() {
 #[test]
 fn deserialize_duration_from_string() {
     let incoming = r#"
-    {
-      "duration": "15000000001"
-    }
-    "#;
+{
+  "duration": "15000000001"
+}
+"#;
 
     let result: DurationTests = serde_json::from_str(&incoming).unwrap();
 
@@ -105,12 +104,12 @@ fn serialize_vec_into_string() {
 #[test]
 fn deserialize_vec_from_string() {
     let incoming = r#"
-    {
-      "myhexbytes": "412042FF00",
-      "mybase64bytes": "TXlTdHJpbmcgZGVjb2RlZC4=",
-      "stringifiedbytes": "hello"
-    }
-    "#;
+{
+  "myhexbytes": "412042FF00",
+  "mybase64bytes": "TXlTdHJpbmcgZGVjb2RlZC4=",
+  "stringifiedbytes": "hello"
+}
+"#;
 
     let result: BytesTests = serde_json::from_str(&incoming).unwrap();
 
@@ -138,12 +137,12 @@ fn serialize_emptyvec_into_emptystring() {
 #[test]
 fn deserialize_emptyvec_from_null() {
     let incoming = r#"
-    {
-      "myhexbytes": null,
-      "mybase64bytes": null,
-      "stringifiedbytes": null
-    }
-    "#;
+{
+  "myhexbytes": null,
+  "mybase64bytes": null,
+  "stringifiedbytes": null
+}
+"#;
 
     let result: BytesTests = serde_json::from_str(&incoming).unwrap();
 

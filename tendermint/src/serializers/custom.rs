@@ -9,7 +9,7 @@ use std::str::FromStr;
 //  Most of them are not needed if the structs are defined well (with enums).
 
 /// Option<Hash> deserialization
-pub fn parse_non_empty_hash<'de, D>(deserializer: D) -> Result<Option<Hash>, D::Error>
+pub(crate) fn parse_non_empty_hash<'de, D>(deserializer: D) -> Result<Option<Hash>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -23,7 +23,9 @@ where
 }
 
 /// Parse empty block id as None.
-pub fn parse_non_empty_block_id<'de, D>(deserializer: D) -> Result<Option<block::Id>, D::Error>
+pub(crate) fn parse_non_empty_block_id<'de, D>(
+    deserializer: D,
+) -> Result<Option<block::Id>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -59,7 +61,7 @@ where
 }
 
 /// Option<Id> deserialization
-pub fn parse_non_empty_id<'de, D>(deserializer: D) -> Result<Option<Id>, D::Error>
+pub(crate) fn parse_non_empty_id<'de, D>(deserializer: D) -> Result<Option<Id>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -82,7 +84,9 @@ where
 }
 
 /// Option<Signature> deserialization
-pub fn parse_non_empty_signature<'de, D>(deserializer: D) -> Result<Option<Signature>, D::Error>
+pub(crate) fn parse_non_empty_signature<'de, D>(
+    deserializer: D,
+) -> Result<Option<Signature>, D::Error>
 where
     D: Deserializer<'de>,
 {
