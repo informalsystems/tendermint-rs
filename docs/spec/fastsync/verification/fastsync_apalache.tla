@@ -108,6 +108,9 @@ HeightsPlus == 1..MAX_HEIGHT+1
 \* a special value for an undefined height
 NilHeight == 0
 
+\* the height of the genesis block
+GenesisHeight == 1
+
 \* the set of all peer ids the node can receive a message from
 AllPeerIds == CORRECT \union FAULTY
 
@@ -216,14 +219,16 @@ InitNode ==
      \E pIds \in SUBSET AllPeerIds:                   \* set of peers node established initial connections with
         /\ pIds /= AsPidSet({}) \* apalache better checks non-emptiness than subtracts from SUBSET
         /\ blockPool = AsBlockPool([
-                height |-> 1,
+                height |-> GenesisHeight + 1,       \* the genesis block is at height 1
+                syncHeight |-> GenesisHeight + 1,   \* and we are synchronized to it
                 peerIds |-> pIds,
                 peerHeights |-> [p \in AllPeerIds |-> NilHeight],     \* no peer height is known
-                blockStore |-> [h \in Heights |-> NilBlock],
+                blockStore |->
+                    [h \in Heights |->
+                      IF h > GenesisHeight THEN NilBlock ELSE CorrectBlock(1)],
                 receivedBlocks |-> [h \in Heights |-> NilPeer],
                 pendingBlocks |-> [h \in Heights |-> NilPeer],
-                syncedBlocks |-> -1,
-                syncHeight |-> 1
+                syncedBlocks |-> -1
            ])
        /\ state = "running"
 
@@ -402,12 +407,16 @@ ExecuteBlocks(bPool) ==
     LET block1 == bStore[bPool.height] IN
     LET block2 == bStore[bPool.height+1] IN
 
-    IF block1 = NilBlock \/ block2 = NilBlock \* we don't have two next consecutive blocks
-    THEN bPool
-    ELSE IF bPool.height > 1 /\ ~VerifyCommit(block1, block2.lastCommit)
-         THEN RemovePeers({bPool.receivedBlocks[block1.height], bPool.receivedBlocks[block2.height]}, bPool)
-         ELSE  \* all good, execute block at position height
-            [bPool EXCEPT !.height = bPool.height + 1]
+    IF block1 = NilBlock \/ block2 = NilBlock
+    THEN bPool  \* we don't have two next consecutive blocks
+    ELSE IF bPool.height = GenesisHeight + 1 /\ ~VerifyCommit(bStore[GenesisHeight], block1.lastCommit)
+         THEN \* corner case: the block right after genesis is corrupted, evict it
+              RemovePeers({bPool.receivedBlocks[GenesisHeight + 1]}, bPool)
+         ELSE IF ~VerifyCommit(block1, block2.lastCommit)  
+              THEN \* remove the peers of block1 and block2, as they are considered faulty
+              RemovePeers({bPool.receivedBlocks[block1.height], bPool.receivedBlocks[block2.height]}, bPool)
+              ELSE  \* all good, execute block at position height
+                [bPool EXCEPT !.height = bPool.height + 1]
 
 
 \* Defines logic for pruning peers.
@@ -654,7 +663,7 @@ FlipTurn ==
 \* Compute max peer height. Used as a helper operator in properties.
 MaxCorrectPeerHeight(bPool) ==
     LET correctPeers == {p \in bPool.peerIds: p \in CORRECT} IN
-    IF correctPeers = {}
+    IF correctPeers = AsPidSet({})
     THEN 0 \* no peers, just return 0
     ELSE LET Hts == {bPool.peerHeights[p] : p \in correctPeers} IN
             CHOOSE max \in Hts: \A h \in Hts: h <= max
@@ -695,6 +704,11 @@ Correctness2 ==
         \/ p \notin blockPool.peerIds
         \/ [] (state = "finished" => blockPool.height >= blockPool.peerHeights[p] - 1)
 
+Correctness2AsInv ==
+   \A p \in CORRECT:
+        \/ p \notin blockPool.peerIds
+        \/ (state = "finished" => blockPool.height >= blockPool.peerHeights[p] - 1)
+
 Correctness3 ==
    \A p \in CORRECT:
         \/ p \notin blockPool.peerIds
@@ -715,11 +729,30 @@ Correctness3AsInv ==
 \* a few simple properties that trigger counterexamples
 
 \* Shows execution in which peer set is empty
-PeerSetIsNeverEmpty == blockPool.peerIds /= {}
+PeerSetIsNeverEmpty == blockPool.peerIds /= AsPidSet({})
 
 \* Shows execution in which state = "finished" and MaxPeerHeight is not equal to 1
 StateNotFinished ==
     state /= "finished" \/ MaxPeerHeight(blockPool) = 1
+
+\* A false expectation that the protocol only finishes with the blocks
+\* from the processes that had not been suspected in being faulty
+SyncFromCorrectInv ==
+    \/ state /= "finished"
+    \/ \A h \in 1..blockPool.height:
+        blockPool.receivedBlocks[h] \in blockPool.peerIds \union {NilPeer}
+
+\* All synchronized blocks are well-formed and have sufficiently many votes
+CorrectBlocksInv ==
+    \/ state /= "finished"
+    \/ \A h \in 1..(blockPool.height - 1):
+        LET block == blockPool.blockStore[h] IN
+        block.wellFormed /\ block.lastCommit.enoughVotingPower
+
+\* A false expectation that a correct process is never removed from the set of peer ids.
+\* A correct process may reply too late and then gets evicted.
+CorrectNeverSuspectedInv ==
+    CORRECT \subseteq blockPool.peerIds
 
 BlockPoolInvariant ==
     \A h \in Heights:
@@ -735,6 +768,6 @@ BlockPoolInvariant ==
 
 \*=============================================================================
 \* Modification History
-\* Last modified Fri May 15 15:38:28 CEST 2020 by igor
+\* Last modified Mon May 18 16:08:46 CEST 2020 by igor
 \* Last modified Thu Apr 16 16:57:22 CEST 2020 by zarkomilosevic
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic
