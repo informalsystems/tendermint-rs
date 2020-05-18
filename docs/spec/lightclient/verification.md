@@ -399,12 +399,13 @@ The *Verifier* solves the invariant of the sequential part
 
 In the case the primary is correct, and there is a recent header in *LightStore*, the verifier satisfies the liveness requirements.
 
-/\ "correct primary"  
-/\ always \E verified header in LightStore. header.Time > now - *trustingPeriod*  
-/\ [**[LCV-A-Comm]**](#lcv-a-comm) /\
-       [**[TMBC-CorrFull]**][TMBC-CorrFull-link] /\
-       [**[LCV-DIST-LIVE]**](#lcv-vc-live)  
-       => [**[LCV-SEQ-LIVE]**](#lcv-seq-live)
+⋀ *primary is correct*  
+⋀ always ∃ verified header in LightStore. *header.Time* > *now* - *trustingPeriod*  
+⋀ [**[LCV-A-Comm]**](#lcv-a-comm) ⋀ (
+       ( [**[TMBC-CorrFull]**][TMBC-CorrFull-link] ⋀
+         [**[LCV-DIST-LIVE]**](#lcv-vc-live) )
+       ⟹ [**[LCV-SEQ-LIVE]**](#lcv-seq-live)
+)
 
 
 # Part IV - Light Client Verification Protocol
