@@ -66,13 +66,13 @@ pub struct LightBlock {
 
 impl LightBlock {
     pub fn new(
-        sh: SignedHeader,
+        signed_header: SignedHeader,
         validators: ValidatorSet,
         next_validators: ValidatorSet,
         provider: PeerId,
     ) -> LightBlock {
         Self {
-            signed_header: sh.into(),
+            signed_header,
             validators,
             next_validators,
             provider,

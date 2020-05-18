@@ -42,8 +42,8 @@ impl Demuxer {
             bail!(ErrorKind::NoInitialTrustedState)
         };
 
-        let primary = self.state.peers.primary.clone();
-        let target_block = match self.io.fetch_light_block(primary, LATEST_HEIGHT) {
+        let peer = self.state.peers.primary;
+        let target_block = match self.io.fetch_light_block(peer, LATEST_HEIGHT) {
             Ok(last_block) => last_block,
             Err(io_error) => bail!(ErrorKind::Io(io_error)),
         };
@@ -101,8 +101,8 @@ impl Demuxer {
             let current_block = match current_block {
                 Some(current_block) => current_block,
                 None => {
-                    let primary = self.state.peers.primary.clone();
-                    match self.io.fetch_light_block(primary, current_height) {
+                    let peer = self.state.peers.primary;
+                    match self.io.fetch_light_block(peer, current_height) {
                         Ok(current_block) => {
                             self.state
                                 .light_store

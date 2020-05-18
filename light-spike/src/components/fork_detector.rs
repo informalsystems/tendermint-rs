@@ -4,7 +4,9 @@ use crate::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ForkDetection {
-    Detected(LightBlock, LightBlock),
+    // NOTE: We box the fields to reduce the overall size of the enum.
+    //       See https://rust-lang.github.io/rust-clippy/master/index.html#large_enum_variant
+    Detected(Box<LightBlock>, Box<LightBlock>),
     NotDetected,
 }
 
@@ -37,7 +39,7 @@ impl ForkDetector for RealForkDetector {
             let hash = self.header_hasher.hash(&light_block.signed_header.header);
 
             if first_hash != hash {
-                return ForkDetection::Detected(first_block, light_block);
+                return ForkDetection::Detected(Box::new(first_block), Box::new(light_block));
             }
         }
 

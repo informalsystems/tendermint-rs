@@ -75,7 +75,6 @@ fn valid_schedule(
 #[pre(low < high)]
 #[post(low < ret && ret <= high)]
 fn midpoint(low: Height, high: Height) -> Height {
-    let result = low + (high + 1 - low) / 2;
-    result
+    low + (high + 1 - low) / 2
 }
 

@@ -20,7 +20,7 @@ impl State {
     pub fn trace_block(&mut self, target_height: Height, height: Height) {
         self.verification_trace
             .entry(target_height)
-            .or_insert_with(|| HashSet::new())
+            .or_insert_with(HashSet::new)
             .insert(height);
     }
 

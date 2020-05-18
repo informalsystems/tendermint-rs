@@ -3,7 +3,7 @@ use crate::prelude::*;
 use std::collections::btree_map::Entry::*;
 use std::collections::BTreeMap;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct MemoryStore {
     store: BTreeMap<Height, StoreEntry>,
 }

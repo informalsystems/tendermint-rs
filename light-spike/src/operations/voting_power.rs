@@ -54,7 +54,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
     ) -> Result<u64, BoxError> {
         // NOTE: We don't know the validators that committed this block,
         //       so we have to check for each vote if its validator is already known.
-        let mut signed_power = 0u64;
+        let mut signed_power = 0_u64;
 
         for vote in &signed_header.signed_votes() {
             // Only count if this vote is from a known validator.
