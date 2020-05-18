@@ -54,7 +54,7 @@ pub fn main() {
     let scheduler = scheduler::schedule;
     let fork_detector = RealForkDetector::new(header_hasher);
 
-    let _demuxer = Demuxer::new(
+    let _demuxer = LightClient::new(
         state,
         options,
         clock,

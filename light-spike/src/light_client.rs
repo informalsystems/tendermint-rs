@@ -1,7 +1,8 @@
-use crate::components::{contracts, io::*, scheduler::*, verifier::*};
+use crate::components::{io::*, scheduler::*, verifier::*};
+use crate::contracts::*;
 use crate::prelude::*;
 
-pub struct Demuxer {
+pub struct LightClient {
     state: State,
     options: VerificationOptions,
     clock: Box<dyn Clock>,
@@ -11,7 +12,7 @@ pub struct Demuxer {
     io: Box<dyn Io>,
 }
 
-impl Demuxer {
+impl LightClient {
     pub fn new(
         state: State,
         options: VerificationOptions,
@@ -48,7 +49,7 @@ impl Demuxer {
     }
 
     #[post(
-        ret.is_ok() ==> contracts::trusted_store_contains_block_at_target_height(
+        ret.is_ok() ==> trusted_store_contains_block_at_target_height(
             self.state.light_store.as_ref(),
             target_height,
         )

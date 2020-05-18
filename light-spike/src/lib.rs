@@ -5,16 +5,16 @@
  )]
 
 pub mod components;
+pub mod contracts;
 pub mod errors;
+pub mod light_client;
 pub mod macros;
 pub mod operations;
 pub mod predicates;
 pub mod prelude;
+pub mod state;
 pub mod store;
 pub mod types;
 
 #[doc(hidden)]
 pub mod tests;
-
-#[derive(Copy, Clone, Debug)]
-pub enum Never {}
