@@ -33,7 +33,12 @@ impl Demuxer {
     }
 
     pub fn verify_to_highest(&mut self) -> Result<(), Error> {
-        if self.state.light_store.latest_verified().is_none() {
+        if self
+            .state
+            .light_store
+            .latest(VerifiedStatus::Verified)
+            .is_none()
+        {
             bail!(ErrorKind::NoInitialTrustedState)
         };
 
@@ -54,7 +59,12 @@ impl Demuxer {
     )]
     pub fn verify_to_target(&mut self, target_height: Height) -> Result<(), Error> {
         // TODO: Should this be a precondition?
-        if self.state.light_store.latest_verified().is_none() {
+        if self
+            .state
+            .light_store
+            .latest(VerifiedStatus::Verified)
+            .is_none()
+        {
             bail!(ErrorKind::NoInitialTrustedState)
         };
 
@@ -64,7 +74,11 @@ impl Demuxer {
 
         // TODO: Add invariant and measure
         loop {
-            let trusted_state = self.state.light_store.latest_verified().unwrap(); // SAFETY: Checked above
+            let trusted_state = self
+                .state
+                .light_store
+                .latest(VerifiedStatus::Verified)
+                .unwrap(); // SAFETY: Checked above
 
             // dbg!(target_height, current_height, trusted_state.height());
 
@@ -77,8 +91,12 @@ impl Demuxer {
             let current_block = self
                 .state
                 .light_store
-                .get_verified(current_height)
-                .or_else(|| self.state.light_store.get_unverified(current_height));
+                .get(current_height, VerifiedStatus::Verified)
+                .or_else(|| {
+                    self.state
+                        .light_store
+                        .get(current_height, VerifiedStatus::Unverified)
+                });
 
             let current_block = match current_block {
                 Some(current_block) => current_block,
@@ -88,7 +106,7 @@ impl Demuxer {
                         Ok(current_block) => {
                             self.state
                                 .light_store
-                                .insert_unverified(current_block.clone());
+                                .insert(current_block.clone(), VerifiedStatus::Unverified);
 
                             current_block
                         }
@@ -97,19 +115,27 @@ impl Demuxer {
                 }
             };
 
-            let verdict = self.verifier.verify(&current_block, &trusted_state, &options);
+            let verdict = self
+                .verifier
+                .verify(&current_block, &trusted_state, &options);
             // dbg!(&verdict);
 
             match verdict {
                 Verdict::Success => {
-                    self.state.light_store.insert_verified(current_block);
+                    self.state
+                        .light_store
+                        .insert(current_block, VerifiedStatus::Verified);
                 }
                 Verdict::Invalid(e) => {
-                    self.state.light_store.insert_failed(current_block);
+                    self.state
+                        .light_store
+                        .insert(current_block, VerifiedStatus::Failed);
                     bail!(ErrorKind::InvalidLightBlock(e))
                 }
                 Verdict::NotEnoughTrust(_) => {
-                    self.state.light_store.insert_unverified(current_block);
+                    self.state
+                        .light_store
+                        .insert(current_block, VerifiedStatus::Unverified);
                 }
             }
 
@@ -130,7 +156,7 @@ impl Demuxer {
     }
 
     pub fn detect_forks(&self) -> Result<(), Error> {
-        let light_blocks = self.state.light_store.all_verified();
+        let light_blocks = self.state.light_store.all(VerifiedStatus::Verified);
         let result = self.fork_detector.detect(light_blocks);
 
         match result {

@@ -218,7 +218,7 @@ fn run_bisection_test(case: TestBisection) {
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
-    light_store.insert_verified(trusted_state);
+    light_store.insert(trusted_state, VerifiedStatus::Verified);
 
     let state = State {
         peers: Peers {

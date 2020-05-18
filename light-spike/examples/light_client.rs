@@ -12,7 +12,7 @@ pub fn main() {
     let trusted_state = io.fetch_light_block(primary.clone(), 9977).unwrap();
 
     let mut light_store = MemoryStore::new();
-    light_store.insert_verified(trusted_state);
+    light_store.insert(trusted_state, VerifiedStatus::Verified);
 
     let peers = Peers {
         primary,

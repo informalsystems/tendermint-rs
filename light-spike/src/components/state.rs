@@ -31,7 +31,7 @@ impl State {
             .get(&target_height)
             .unwrap_or(&HashSet::new())
             .iter()
-            .flat_map(|h| self.light_store.get_verified(*h))
+            .flat_map(|h| self.light_store.get(*h, VerifiedStatus::Verified))
             .collect::<Vec<_>>();
 
         trace.sort_by_key(|lb| lb.height());

@@ -27,24 +27,10 @@ impl StoreEntry {
 }
 
 pub trait LightStore: std::fmt::Debug {
-    fn get_any(&self, height: Height) -> Option<LightBlock>;
-
-    fn get_verified(&self, height: Height) -> Option<LightBlock>;
-    fn insert_verified(&mut self, light_block: LightBlock);
-    fn remove_verified(&mut self, height: Height);
-    fn latest_verified(&self) -> Option<LightBlock>;
-    fn all_verified(&self) -> Vec<LightBlock>;
-
-    fn get_unverified(&self, height: Height) -> Option<LightBlock>;
-    fn insert_unverified(&mut self, light_block: LightBlock);
-    fn remove_unverified(&mut self, height: Height);
-    fn latest_unverified(&self) -> Option<LightBlock>;
-    fn all_unverified(&self) -> Vec<LightBlock>;
-
-    fn get_failed(&self, height: Height) -> Option<LightBlock>;
-    fn insert_failed(&mut self, light_block: LightBlock);
-    fn remove_failed(&mut self, height: Height);
-    fn latest_failed(&self) -> Option<LightBlock>;
-    fn all_failed(&self) -> Vec<LightBlock>;
+    fn get(&self, height: Height, status: VerifiedStatus) -> Option<LightBlock>;
+    fn insert(&mut self, light_block: LightBlock, status: VerifiedStatus);
+    fn remove(&mut self, height: Height, status: VerifiedStatus);
+    fn latest(&self, status: VerifiedStatus) -> Option<LightBlock>;
+    fn all(&self, status: VerifiedStatus) -> Vec<LightBlock>;
 }
 

@@ -6,7 +6,7 @@ pub fn trusted_state_contains_block_within_trusting_period(
     now: Time,
 ) -> bool {
     light_store
-        .all_verified()
+        .all(VerifiedStatus::Verified)
         .iter()
         .any(|lb| is_within_trust_period(lb, trusting_period, now))
 }
@@ -16,7 +16,7 @@ pub fn target_height_greater_than_all_blocks_in_trusted_store(
     target_height: Height,
 ) -> bool {
     light_store
-        .all_verified()
+        .all(VerifiedStatus::Verified)
         .iter()
         .all(|lb| lb.height() < target_height)
 }
@@ -25,15 +25,9 @@ pub fn trusted_store_contains_block_at_target_height(
     light_store: &dyn LightStore,
     target_height: Height,
 ) -> bool {
-    dbg!(
-        target_height,
-        light_store
-            .all_verified()
-            .into_iter()
-            .map(|lb| lb.height())
-            .collect::<Vec<_>>()
-    );
-    light_store.get_verified(target_height).is_some()
+    light_store
+        .get(target_height, VerifiedStatus::Verified)
+        .is_some()
 }
 
 pub fn is_within_trust_period(

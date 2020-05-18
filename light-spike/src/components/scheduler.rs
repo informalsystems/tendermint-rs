@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 #[contract_trait]
 pub trait Scheduler {
-    #[pre(light_store.latest_verified().is_some())]
+    #[pre(light_store.latest(VerifiedStatus::Verified).is_some())]
     #[post(valid_schedule(ret, target_height, next_height, light_store))]
     fn schedule(
         &self,
@@ -27,14 +27,17 @@ where
     }
 }
 
-#[pre(light_store.latest_verified().is_some())]
+#[pre(light_store.latest(VerifiedStatus::Verified).is_some())]
 #[post(valid_schedule(ret, target_height, next_height, light_store))]
 pub fn schedule(
     light_store: &dyn LightStore,
     next_height: Height,
     target_height: Height,
 ) -> Height {
-    let latest_trusted_height = light_store.latest_verified().map(|lb| lb.height()).unwrap();
+    let latest_trusted_height = light_store
+        .latest(VerifiedStatus::Verified)
+        .map(|lb| lb.height())
+        .unwrap();
 
     if latest_trusted_height == next_height && latest_trusted_height < target_height {
         target_height
@@ -53,7 +56,10 @@ fn valid_schedule(
     next_height: Height,
     light_store: &dyn LightStore,
 ) -> bool {
-    let latest_trusted_height = light_store.latest_verified().map(|lb| lb.height()).unwrap();
+    let latest_trusted_height = light_store
+        .latest(VerifiedStatus::Verified)
+        .map(|lb| lb.height())
+        .unwrap();
 
     if latest_trusted_height == next_height && latest_trusted_height < target_height {
         next_height < scheduled_height && scheduled_height <= target_height
