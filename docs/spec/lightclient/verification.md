@@ -483,7 +483,7 @@ func (ls LightStore) Get(height Height) (LightBlock, bool)
 func (ls LightStore) LatestVerified() LightBlock
 ```
 - Expected postcondition
-   - returns the heighest verified light block:`
+   - returns the highest verified light block.
 
 
 ```go
