@@ -1,10 +1,27 @@
+use derive_more::Display;
+use serde::{Deserialize, Serialize};
+
 use crate::components::{io::*, scheduler::*, verifier::*};
 use crate::contracts::*;
 use crate::prelude::*;
 
+#[derive(Copy, Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
+#[display(fmt = "{:?}", self)]
+pub struct Options {
+    pub trust_threshold: TrustThreshold,
+    pub trusting_period: Duration,
+    pub now: Time,
+}
+
+impl Options {
+    pub fn with_now(self, now: Time) -> Self {
+        Self { now, ..self }
+    }
+}
+
 pub struct LightClient {
     state: State,
-    options: VerificationOptions,
+    options: Options,
     clock: Box<dyn Clock>,
     scheduler: Box<dyn Scheduler>,
     verifier: Box<dyn Verifier>,
@@ -15,7 +32,7 @@ pub struct LightClient {
 impl LightClient {
     pub fn new(
         state: State,
-        options: VerificationOptions,
+        options: Options,
         clock: impl Clock + 'static,
         scheduler: impl Scheduler + 'static,
         verifier: impl Verifier + 'static,

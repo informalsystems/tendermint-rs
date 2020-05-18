@@ -1,7 +1,6 @@
 pub use std::time::{Duration, SystemTime};
 
 pub use ::contracts::*;
-pub use ::tendermint::time::Time;
 
 pub use crate::{bail, ensure};
 pub use crate::{

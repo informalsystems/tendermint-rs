@@ -31,7 +31,7 @@ pub trait Verifier {
         &self,
         light_block: &LightBlock,
         trusted_state: &TrustedState,
-        options: &VerificationOptions,
+        options: &Options,
     ) -> Verdict {
         self.validate_light_block(light_block, trusted_state, options)
             .and_then(|| self.verify_overlap(light_block, trusted_state, options))
@@ -42,21 +42,17 @@ pub trait Verifier {
         &self,
         light_block: &LightBlock,
         trusted_state: &TrustedState,
-        options: &VerificationOptions,
+        options: &Options,
     ) -> Verdict;
 
     fn verify_overlap(
         &self,
         light_block: &LightBlock,
         trusted_state: &TrustedState,
-        options: &VerificationOptions,
+        options: &Options,
     ) -> Verdict;
 
-    fn has_sufficient_voting_power(
-        &self,
-        light_block: &LightBlock,
-        options: &VerificationOptions,
-    ) -> Verdict;
+    fn has_sufficient_voting_power(&self, light_block: &LightBlock, options: &Options) -> Verdict;
 }
 
 pub struct ProdVerifier {
@@ -87,7 +83,7 @@ impl Verifier for ProdVerifier {
         &self,
         light_block: &LightBlock,
         trusted_state: &TrustedState,
-        options: &VerificationOptions,
+        options: &Options,
     ) -> Verdict {
         let result = crate::predicates::validate_light_block(
             &*self.predicates,
@@ -105,7 +101,7 @@ impl Verifier for ProdVerifier {
         &self,
         light_block: &LightBlock,
         trusted_state: &TrustedState,
-        options: &VerificationOptions,
+        options: &Options,
     ) -> Verdict {
         let result = crate::predicates::verify_overlap(
             &*self.predicates,
@@ -118,11 +114,7 @@ impl Verifier for ProdVerifier {
         result.into()
     }
 
-    fn has_sufficient_voting_power(
-        &self,
-        light_block: &LightBlock,
-        options: &VerificationOptions,
-    ) -> Verdict {
+    fn has_sufficient_voting_power(&self, light_block: &LightBlock, options: &Options) -> Verdict {
         let result = crate::predicates::has_sufficient_voting_power(
             &*self.predicates,
             &self.voting_power_calculator,

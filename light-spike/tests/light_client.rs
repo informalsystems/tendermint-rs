@@ -39,7 +39,7 @@ fn verify_single(
         PEER_ID.parse().unwrap(),
     );
 
-    let options = VerificationOptions {
+    let options = Options {
         trust_threshold,
         trusting_period,
         now: now.into(),
@@ -197,7 +197,7 @@ fn run_bisection_test(case: TestBisection) {
     let scheduler = light_spike::components::scheduler::schedule;
     let fork_detector = RealForkDetector::new(ProdHeaderHasher);
 
-    let options = VerificationOptions {
+    let options = Options {
         trust_threshold,
         trusting_period: trusting_period.into(),
         now,

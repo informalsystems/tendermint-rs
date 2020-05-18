@@ -29,7 +29,7 @@ pub fn main() {
         verification_trace: HashMap::new(),
     };
 
-    let options = VerificationOptions {
+    let options = Options {
         trust_threshold: TrustThreshold {
             numerator: 1,
             denominator: 3,

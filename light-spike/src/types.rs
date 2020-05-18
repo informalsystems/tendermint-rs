@@ -8,29 +8,9 @@ use tendermint::{
     },
     lite::TrustThresholdFraction,
     validator::Set as TMValidatorSet,
-    Time,
 };
 
-pub use tendermint::{hash::Hash, lite::Height};
-
-use crate::prelude::*;
-
-#[derive(Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
-#[display(fmt = "{:?}", self)]
-pub struct VerificationOptions {
-    pub trust_threshold: TrustThreshold,
-    pub trusting_period: Duration,
-    pub now: Time,
-}
-
-impl VerificationOptions {
-    pub fn with_now(&self, now: Time) -> Self {
-        Self {
-            now,
-            ..self.clone()
-        }
-    }
-}
+pub use tendermint::{hash::Hash, lite::Height, time::Time};
 
 pub type PeerId = tendermint::node::Id;
 
