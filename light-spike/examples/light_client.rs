@@ -7,8 +7,12 @@ use std::collections::HashMap;
 pub fn main() {
     color_backtrace::install();
 
-    let primary: Peer = "tcp://127.0.0.1:26657".parse().unwrap();
-    let mut io = RealIo::new();
+    let primary_addr: tendermint::net::Address = "tcp://127.0.0.1:26657".parse().unwrap();
+    let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
+    let mut peer_map = HashMap::new();
+    peer_map.insert(primary, primary_addr);
+
+    let mut io = RealIo::new(peer_map);
     let trusted_state = io.fetch_light_block(primary.clone(), 9977).unwrap();
 
     let mut light_store = MemoryStore::new();

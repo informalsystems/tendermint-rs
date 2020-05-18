@@ -4,8 +4,8 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 pub struct Peers {
-    pub primary: Peer,
-    pub witnesses: Vec<Peer>,
+    pub primary: PeerId,
+    pub witnesses: Vec<PeerId>,
 }
 
 #[derive(Debug)]

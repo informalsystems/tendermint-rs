@@ -8,6 +8,8 @@ use std::path::PathBuf;
 
 use tendermint::rpc;
 
+const PEER_ID: &str = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE";
+
 // Link to the commit that generated below JSON test files:
 // https://github.com/Shivani912/tendermint/commit/e02f8fd54a278f0192353e54b84a027c8fe31c1e
 const TEST_FILES_PATH: &str = "./tests/support/";
@@ -30,12 +32,11 @@ fn verify_single(
         ProdHeaderHasher,
     );
 
-    let provider = "tcp://localhost:1337".parse().unwrap();
     let trusted_state = LightBlock::new(
         trusted_state.signed_header,
         trusted_state.next_validators.clone(),
         trusted_state.next_validators,
-        provider,
+        PEER_ID.parse().unwrap(),
     );
 
     let options = VerificationOptions {
@@ -155,7 +156,7 @@ impl MockIo {
 }
 
 impl Io for MockIo {
-    fn fetch_light_block(&mut self, _peer: Peer, height: Height) -> Result<LightBlock, IoError> {
+    fn fetch_light_block(&mut self, _peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
         self.light_blocks
             .get(&height)
             .cloned()
@@ -185,7 +186,7 @@ fn verify_bisection(
 fn run_bisection_test(case: TestBisection) {
     println!("{}", case.description);
 
-    let primary: Peer = "tcp://localhost:1337".parse().unwrap();
+    let primary: PeerId = PEER_ID.parse().unwrap();
 
     let untrusted_height = case.height_to_verify.try_into().unwrap();
     let trust_threshold = case.trust_options.trust_level;

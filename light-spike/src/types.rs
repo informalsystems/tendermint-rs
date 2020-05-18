@@ -32,7 +32,7 @@ impl VerificationOptions {
     }
 }
 
-pub type Peer = tendermint::net::Address;
+pub type PeerId = tendermint::node::Id;
 
 pub type TrustThreshold = TrustThresholdFraction;
 
@@ -46,21 +46,22 @@ pub type SignedHeader = TMSignedHeader;
 
 pub type TrustedState = LightBlock;
 
-fn primary() -> Peer {
-    "tcp://localhost:1337".parse().unwrap()
+// FIXME: Remove when conformance tests are adapted to include provider
+fn primary() -> PeerId {
+    "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap()
 }
 
 #[derive(Clone, Debug, Display, PartialEq, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct LightBlock {
-    // pub height: Height,
     pub signed_header: SignedHeader,
     #[serde(rename = "validator_set")]
     pub validators: ValidatorSet,
     #[serde(rename = "next_validator_set")]
     pub next_validators: ValidatorSet,
+    // FIXME: Remove annotation when conformance tests are adapted to include provider
     #[serde(default = "primary")]
-    pub provider: Peer,
+    pub provider: PeerId,
 }
 
 impl LightBlock {
@@ -68,11 +69,9 @@ impl LightBlock {
         sh: SignedHeader,
         validators: ValidatorSet,
         next_validators: ValidatorSet,
-        provider: Peer,
+        provider: PeerId,
     ) -> LightBlock {
-        // let height = sh.header.height.into();
         Self {
-            // height,
             signed_header: sh.into(),
             validators,
             next_validators,
