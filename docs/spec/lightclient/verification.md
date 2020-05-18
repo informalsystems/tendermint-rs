@@ -498,7 +498,7 @@ func (ls LightStore) Update(lightBlock LightBlock, verfiedState VerifiedState)
     passed verification. Initially it contains a light block with
 	*trustedHeader*.
 - *primary*: peerID
-- *targetHeight*: they height of the needed header
+- *targetHeight*: the height of the needed header
 
 
 ### Configuration Parameters
