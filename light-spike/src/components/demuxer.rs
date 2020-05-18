@@ -33,12 +33,8 @@ impl Demuxer {
     }
 
     pub fn verify_to_highest(&mut self) -> Result<(), Error> {
-        if self
-            .state
-            .light_store
-            .latest(VerifiedStatus::Verified)
-            .is_none()
-        {
+        let latest_verified = self.state.light_store.latest(VerifiedStatus::Verified);
+        if latest_verified.is_none() {
             bail!(ErrorKind::NoInitialTrustedState)
         };
 
@@ -58,13 +54,8 @@ impl Demuxer {
         )
     )]
     pub fn verify_to_target(&mut self, target_height: Height) -> Result<(), Error> {
-        // TODO: Should this be a precondition?
-        if self
-            .state
-            .light_store
-            .latest(VerifiedStatus::Verified)
-            .is_none()
-        {
+        let latest_verified = self.state.light_store.latest(VerifiedStatus::Verified);
+        if latest_verified.is_none() {
             bail!(ErrorKind::NoInitialTrustedState)
         };
 
@@ -80,45 +71,17 @@ impl Demuxer {
                 .latest(VerifiedStatus::Verified)
                 .unwrap(); // SAFETY: Checked above
 
-            // dbg!(target_height, current_height, trusted_state.height());
-
             self.state.trace_block(target_height, current_height);
 
             if target_height <= trusted_state.height() {
                 return Ok(());
             }
 
-            let current_block = self
-                .state
-                .light_store
-                .get(current_height, VerifiedStatus::Verified)
-                .or_else(|| {
-                    self.state
-                        .light_store
-                        .get(current_height, VerifiedStatus::Unverified)
-                });
-
-            let current_block = match current_block {
-                Some(current_block) => current_block,
-                None => {
-                    let peer = self.state.peers.primary;
-                    match self.io.fetch_light_block(peer, current_height) {
-                        Ok(current_block) => {
-                            self.state
-                                .light_store
-                                .insert(current_block.clone(), VerifiedStatus::Unverified);
-
-                            current_block
-                        }
-                        Err(e) => bail!(ErrorKind::Io(e)),
-                    }
-                }
-            };
+            let current_block = self.get_or_fetch_block(current_height)?;
 
             let verdict = self
                 .verifier
                 .verify(&current_block, &trusted_state, &options);
-            // dbg!(&verdict);
 
             match verdict {
                 Verdict::Success => {
@@ -146,10 +109,36 @@ impl Demuxer {
                 target_height,
             );
 
-            // dbg!(scheduled_height);
-
             current_height = scheduled_height;
         }
+    }
+
+    fn get_or_fetch_block(&mut self, current_height: Height) -> Result<LightBlock, Error> {
+        let current_block = self
+            .state
+            .light_store
+            .get(current_height, VerifiedStatus::Verified)
+            .or_else(|| {
+                self.state
+                    .light_store
+                    .get(current_height, VerifiedStatus::Unverified)
+            });
+
+        if let Some(current_block) = current_block {
+            return Ok(current_block);
+        }
+
+        let peer = self.state.peers.primary;
+        self.io
+            .fetch_light_block(peer, current_height)
+            .map(|current_block| {
+                self.state
+                    .light_store
+                    .insert(current_block.clone(), VerifiedStatus::Unverified);
+
+                current_block
+            })
+            .map_err(|e| ErrorKind::Io(e).into())
     }
 
     pub fn get_trace(&self, target_height: Height) -> Vec<LightBlock> {
