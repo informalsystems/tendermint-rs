@@ -19,7 +19,7 @@ LCT == [blockId |-> Int, commiters |-> VST]
 
 \* Block type.
 \* A block contains its height, validator set, next validator set, and last commit
-BT == [hash |-> Int, wellFormed |-> BOOLEAN,
+BT == [height |-> Int, hash |-> Int, wellFormed |-> BOOLEAN,
        VS |-> VST, NextVS |-> VST, lastCommit |-> LCT]
 
 SeqOfBT(s) == s <: Seq(BT)
@@ -51,7 +51,7 @@ Commits == [blockId: BlockIds, commiters: VALIDATOR_SETS]
 
 \* the set of all possible blocks, not necessarily valid ones
 Blocks ==
-  [hash: Heights, wellFormed: BOOLEAN,
+  [height: Heights, hash: Heights, wellFormed: BOOLEAN,
    VS: VALIDATOR_SETS, NextVS: VALIDATOR_SETS, lastCommit: Commits]
 
 \* Initially, the blockchain contains one trusted block
@@ -60,7 +60,7 @@ ChainInit ==
         \* the last commit in the trusted block is somewhat weird
         LET lastCommit == [blockId |-> 0, commiters |-> vs] IN 
         chain = SeqOfBT(<<
-                    [hash |-> 1, wellFormed |-> TRUE,
+                    [height |-> 1, hash |-> 1, wellFormed |-> TRUE,
                      VS |-> vs, NextVS |-> vs, lastCommit |-> lastCommit
                 ]>>)
 
@@ -69,7 +69,8 @@ AdvanceChain ==
   \E NextVS \in VALIDATOR_SETS:
     LET last == chain[Len(chain)]
         lastCommit == [blockId |-> last.hash, commiters |-> last.VS]
-        newBlock == [hash |-> last.hash + 1,
+        newBlock == [height |-> last.height + 1,
+                     hash |-> last.hash + 1,
                      VS |-> last.NextVS,
                      NextVS |-> NextVS,
                      lastCommit |-> lastCommit,

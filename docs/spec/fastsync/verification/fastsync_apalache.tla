@@ -100,7 +100,8 @@ NilCommit == [blockId |-> 0, commiters |-> NIL_VS]
 CorrectBlock(h) == chain[h]
 
 NilBlock ==
-    [hash |-> 0, wellFormed |-> FALSE, lastCommit |-> NilCommit, VS |-> NIL_VS, NextVS |-> NIL_VS]
+    [height |-> 0, hash |-> 0, wellFormed |-> FALSE,
+     lastCommit |-> NilCommit, VS |-> NIL_VS, NextVS |-> NIL_VS]
 
 \* a special value for an undefined peer
 NilPeer == "Nil" \* we have changed it to STRING for apalache efficiency
@@ -281,7 +282,7 @@ Returns new block pool.
 See https://github.com/tendermint/tendermint/blob/dac030d6daf4d3e066d84275911128856838af4e/blockchain/v2/scheduler.go#L522
 *)
 HandleBlockResponse(msg, bPool) ==
-    LET h == msg.height IN
+    LET h == msg.block.height IN
 
     IF /\ msg.peerId \in bPool.peerIds
        /\ bPool.blockStore[h] = NilBlock
@@ -695,27 +696,27 @@ TypeOK ==
            ]
 
 \* TODO: align with the English spec. Add reference to it
-Correctness1 == state = "finished" =>
+Sync1 == state = "finished" =>
     blockPool.height >= MaxCorrectPeerHeight(blockPool)
 
 \* TODO: align with the English spec. Add reference to it
-Correctness2 ==
+Sync2 ==
    \A p \in CORRECT:
         \/ p \notin blockPool.peerIds
         \/ [] (state = "finished" => blockPool.height >= blockPool.peerHeights[p] - 1)
 
-Correctness2AsInv ==
+Sync2AsInv ==
    \A p \in CORRECT:
         \/ p \notin blockPool.peerIds
         \/ (state = "finished" => blockPool.height >= blockPool.peerHeights[p] - 1)
 
-Correctness3 ==
+Sync3 ==
    \A p \in CORRECT:
         \/ p \notin blockPool.peerIds
         \/ blockPool.syncedBlocks <= 0 \* timeout
         \/ [] (state = "finished" => blockPool.height >= blockPool.peerHeights[p] - 1)
 
-Correctness3AsInv ==
+Sync3AsInv ==
    \A p \in CORRECT:
         \/ p \notin blockPool.peerIds
         \/ blockPool.syncedBlocks <= 0 \* timeout
@@ -767,6 +768,6 @@ BlockPoolInvariant ==
 
 \*=============================================================================
 \* Modification History
-\* Last modified Tue May 19 20:21:15 CEST 2020 by igor
+\* Last modified Tue May 19 21:29:52 CEST 2020 by igor
 \* Last modified Thu Apr 16 16:57:22 CEST 2020 by zarkomilosevic
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic
