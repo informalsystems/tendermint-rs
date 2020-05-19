@@ -3,6 +3,21 @@ use crate::prelude::*;
 use std::collections::btree_map::Entry::*;
 use std::collections::BTreeMap;
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct StoreEntry {
+    light_block: LightBlock,
+    status: VerifiedStatus,
+}
+
+impl StoreEntry {
+    pub fn new(light_block: LightBlock, status: VerifiedStatus) -> Self {
+        Self {
+            light_block,
+            status,
+        }
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct MemoryStore {
     store: BTreeMap<Height, StoreEntry>,
@@ -50,11 +65,14 @@ impl LightStore for MemoryStore {
             .map(|(_, e)| e.light_block.clone())
     }
 
-    fn all(&self, status: VerifiedStatus) -> Vec<LightBlock> {
-        self.store
+    fn all(&self, status: VerifiedStatus) -> Box<dyn Iterator<Item = LightBlock>> {
+        let light_blocks: Vec<_> = self
+            .store
             .iter()
             .filter(|(_, e)| e.status == status)
             .map(|(_, e)| e.light_block.clone())
-            .collect()
+            .collect();
+
+        Box::new(light_blocks.into_iter())
     }
 }

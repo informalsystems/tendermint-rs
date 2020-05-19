@@ -7,8 +7,7 @@ pub fn trusted_state_contains_block_within_trusting_period(
 ) -> bool {
     light_store
         .all(VerifiedStatus::Verified)
-        .iter()
-        .any(|lb| is_within_trust_period(lb, trusting_period, now))
+        .any(|lb| is_within_trust_period(&lb, trusting_period, now))
 }
 
 pub fn target_height_greater_than_all_blocks_in_trusted_store(
@@ -17,7 +16,6 @@ pub fn target_height_greater_than_all_blocks_in_trusted_store(
 ) -> bool {
     light_store
         .all(VerifiedStatus::Verified)
-        .iter()
         .all(|lb| lb.height() < target_height)
 }
 

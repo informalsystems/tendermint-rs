@@ -164,7 +164,12 @@ impl LightClient {
     }
 
     pub fn detect_forks(&self) -> Result<(), Error> {
-        let light_blocks = self.state.light_store.all(VerifiedStatus::Verified);
+        let light_blocks = self
+            .state
+            .light_store
+            .all(VerifiedStatus::Verified)
+            .collect();
+
         let result = self.fork_detector.detect(light_blocks);
 
         match result {

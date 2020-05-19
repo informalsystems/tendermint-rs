@@ -11,6 +11,9 @@ pub enum ErrorKind {
     #[error("I/O error: {0}")]
     Io(#[from] IoError),
 
+    #[error("store error")]
+    Store,
+
     #[error("no initial trusted state")]
     NoInitialTrustedState,
 

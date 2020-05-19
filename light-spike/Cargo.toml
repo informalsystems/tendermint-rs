@@ -19,6 +19,8 @@ color-backtrace = "0.3.0"
 tokio = "0.2.20"
 prost-amino = "0.5.0"
 contracts = "0.4.0"
+sled = "0.31.0"
+serde_cbor = "0.11.1"
 
 [dev-dependencies]
 serde_json = "1.0.51"

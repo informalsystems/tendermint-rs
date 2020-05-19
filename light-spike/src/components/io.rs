@@ -29,12 +29,12 @@ where
     }
 }
 
-pub struct RealIo {
+pub struct ProdIo {
     rpc_clients: HashMap<PeerId, rpc::Client>,
     peer_map: HashMap<PeerId, tendermint::net::Address>,
 }
 
-impl Io for RealIo {
+impl Io for ProdIo {
     fn fetch_light_block(&mut self, peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
         let signed_header = self.fetch_signed_header(&peer, height)?;
         let height = signed_header.header.height.into();
@@ -48,7 +48,7 @@ impl Io for RealIo {
     }
 }
 
-impl RealIo {
+impl ProdIo {
     pub fn new(peer_map: HashMap<PeerId, tendermint::net::Address>) -> Self {
         Self {
             rpc_clients: HashMap::new(),
