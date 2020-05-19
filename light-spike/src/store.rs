@@ -20,4 +20,3 @@ pub trait LightStore: std::fmt::Debug {
     fn latest(&self, status: VerifiedStatus) -> Option<LightBlock>;
     fn all(&self, status: VerifiedStatus) -> Box<dyn Iterator<Item = LightBlock>>;
 }
-

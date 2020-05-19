@@ -77,4 +77,3 @@ fn valid_schedule(
 fn midpoint(low: Height, high: Height) -> Height {
     low + (high + 1 - low) / 2
 }
-
