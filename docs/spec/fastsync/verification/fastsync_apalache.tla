@@ -55,40 +55,10 @@ that node does not know initially the peer heights.
 
 EXTENDS Integers, FiniteSets, Sequences
 
-(* Type definitions for Apalache *)
-a <: b == a \* type annotation
 
-PIDT == STRING   \* type of process ids
-AsPidSet(a) == a <: {PIDT}
-
-\* LastCommit type
-LCT == [blockId |-> Int, enoughVotingPower |-> BOOLEAN]
-
-\* Block type
-BT == [height |-> Int, lastCommit |-> LCT, wellFormed |-> BOOLEAN]
-
-\* ControlMessage type
-CMT == [type |-> STRING, peerId |-> PIDT] \* type of control messages
-
-\* InMsg type
-IMT == [type |-> STRING, peerId |-> PIDT, height |-> Int, block |-> BT]
-AsInMsg(m) == m <: IMT
-AsInMsgSet(S) == S <: {IMT}
-
-\* OutMsg type
-OMT == [type |-> STRING, peerId |-> PIDT, height |-> Int]
-AsOutMsg(m) == m <: OMT
-AsOutMsgSet(S) == S <: {OMT}
-
-BPT == [height |-> Int, peerIds |-> {PIDT}, peerHeights |-> [PIDT -> Int],
-        blockStore |-> [Int -> BT], receivedBlocks |-> [Int -> PIDT],
-        pendingBlocks |-> [Int -> PIDT], syncedBlocks |-> Int, syncHeight |-> Int]
-
-AsBlockPool(bp) == bp <: BPT        
-
-(* End of type definitions *)
-
-CONSTANTS MAX_HEIGHT,
+CONSTANTS MAX_HEIGHT,                \* the maximal height of blockchain
+          VALIDATOR_SETS,            \* abstract set of validators
+          NIL_VS,                     \* a nil validator set
           CORRECT,                   \* set of correct peers
           FAULTY,                    \* set of faulty peers
           TARGET_PENDING,            \* maximum number of pending requests + downloaded blocks that are not yet processed
@@ -98,9 +68,11 @@ ASSUME CORRECT \intersect FAULTY = {}
 ASSUME TARGET_PENDING > 0
 ASSUME PEER_MAX_REQUESTS > 0
 
-
-\* the set of potential heights
-Heights == 1..MAX_HEIGHT
+\* the blockchain, see Tinychain
+VARIABLE chain
+  
+\* introduce tiny chain as the source of blocks for the correct nodes
+INSTANCE Tinychain
 
 \* simplifies execute blocks logic. Used only in block store.
 HeightsPlus == 1..MAX_HEIGHT+1
@@ -114,27 +86,21 @@ GenesisHeight == 1
 \* the set of all peer ids the node can receive a message from
 AllPeerIds == CORRECT \union FAULTY
 
-\* the set of potential blocks ids. For simplification, correct blocks are equal to block height.
-BlockIds == Heights \union {NilHeight}
-
-LastCommits == [blockId: BlockIds, enoughVotingPower: BOOLEAN]
-
 \* Correct last commit have enough voting power, i.e., +2/3 of the voting power of
 \* the corresponding validator set (enoughVotingPower = TRUE) that signs blockId.
 \* BlockId defines correct previous block (in the implementation it is the hash of the block).
 \* For simplicity, we model blockId as the height of the previous block.
-CorrectLastCommit(h) == [blockId |-> h-1, enoughVotingPower |-> TRUE]
+CorrectLastCommit(h) == chain[h].lastCommit
 
-NilCommit == [blockId |-> 0, enoughVotingPower |-> TRUE]
-
-Blocks == [height: Heights, lastCommit: LastCommits, wellFormed: BOOLEAN]
+NilCommit == [blockId |-> 0, commiters |-> NIL_VS]
 
 \*BlocksWithNil == [height: Heights, lastCommit: LastCommits, wellFormed: BOOLEAN]
 
-\* correct node will create always valid blocks, i.e., wellFormed = true and lastCommit is correct.
-CorrectBlock(h) == [height |-> h, lastCommit |-> CorrectLastCommit(h), wellFormed |-> TRUE]
+\* correct node always supplies the blocks from the blockchain
+CorrectBlock(h) == chain[h]
 
-NilBlock == [height |-> 0, lastCommit |-> NilCommit, wellFormed |-> TRUE]
+NilBlock ==
+    [hash |-> 0, wellFormed |-> FALSE, lastCommit |-> NilCommit, VS |-> NIL_VS, NextVS |-> NIL_VS]
 
 \* a special value for an undefined peer
 NilPeer == "Nil" \* we have changed it to STRING for apalache efficiency
@@ -172,10 +138,9 @@ VARIABLES
   ]
   *)
   peersState
-  
 
  \* the variables for the network and scheduler
- VARIABLES
+VARIABLES
   turn,                                     \* who is taking the turn: "Peers" or "Node"
   inMsg,                                    \* a node receives message by this variable
   outMsg                                    \* a node sends a message by this variable
@@ -183,6 +148,29 @@ VARIABLES
 
 (* the variables of the node *)
 nvars == <<state, blockPool>>
+
+(* Type definitions for Apalache *)
+PIDT == STRING   \* type of process ids
+AsPidSet(a) == a <: {PIDT}
+
+\* ControlMessage type
+CMT == [type |-> STRING, peerId |-> PIDT] \* type of control messages
+
+\* InMsg type
+IMT == [type |-> STRING, peerId |-> PIDT, height |-> Int, block |-> BT]
+AsInMsg(m) == m <: IMT
+AsInMsgSet(S) == S <: {IMT}
+
+\* OutMsg type
+OMT == [type |-> STRING, peerId |-> PIDT, height |-> Int]
+AsOutMsg(m) == m <: OMT
+AsOutMsgSet(S) == S <: {OMT}
+
+BPT == [height |-> Int, peerIds |-> {PIDT}, peerHeights |-> [PIDT -> Int],
+        blockStore |-> [Int -> BT], receivedBlocks |-> [Int -> PIDT],
+        pendingBlocks |-> [Int -> PIDT], syncedBlocks |-> Int, syncHeight |-> Int]
+
+AsBlockPool(bp) == bp <: BPT
 
 \* Control messages
 ControlMsgs ==
@@ -225,7 +213,7 @@ InitNode ==
                 peerHeights |-> [p \in AllPeerIds |-> NilHeight],     \* no peer height is known
                 blockStore |->
                     [h \in Heights |->
-                      IF h > GenesisHeight THEN NilBlock ELSE CorrectBlock(1)],
+                      IF h > GenesisHeight THEN NilBlock ELSE chain[1]],
                 receivedBlocks |-> [h \in Heights |-> NilPeer],
                 pendingBlocks |-> [h \in Heights |-> NilPeer],
                 syncedBlocks |-> -1
@@ -293,7 +281,7 @@ Returns new block pool.
 See https://github.com/tendermint/tendermint/blob/dac030d6daf4d3e066d84275911128856838af4e/blockchain/v2/scheduler.go#L522
 *)
 HandleBlockResponse(msg, bPool) ==
-    LET h == msg.block.height IN
+    LET h == msg.height IN
 
     IF /\ msg.peerId \in bPool.peerIds
        /\ bPool.blockStore[h] = NilBlock
@@ -395,26 +383,27 @@ ComputeNextState(bPool) ==
 (* Verify if commit is for the given block id and if commit has enough voting power.
    See https://github.com/tendermint/tendermint/blob/61057a8b0af2beadee106e47c4616b279e83c920/blockchain/v2/processor_context.go#L12 *)
 VerifyCommit(block, lastCommit) ==
-    /\ lastCommit.enoughVotingPower
-    /\ lastCommit.blockId = block.height
-
+    PossibleCommit(block, lastCommit)
 
 (* Tries to execute next block in the pool, i.e., defines block validation logic.
    Returns new block pool (peers that has send invalid blocks are removed).
    See https://github.com/tendermint/tendermint/blob/dac030d6daf4d3e066d84275911128856838af4e/blockchain/v2/processor.go#L135 *)
 ExecuteBlocks(bPool) ==
     LET bStore == bPool.blockStore IN
+    LET block0 == bStore[bPool.height - 1] IN
     LET block1 == bStore[bPool.height] IN
     LET block2 == bStore[bPool.height+1] IN
 
     IF block1 = NilBlock \/ block2 = NilBlock
     THEN bPool  \* we don't have two next consecutive blocks
-    ELSE IF bPool.height = GenesisHeight + 1 /\ ~VerifyCommit(bStore[GenesisHeight], block1.lastCommit)
-         THEN \* corner case: the block right after genesis is corrupted, evict it
-              RemovePeers({bPool.receivedBlocks[GenesisHeight + 1]}, bPool)
+    ELSE IF ~IsMatchingValidators(block1, block0.NextVS) \* the implementation stores NextVS in its state, not using block0
+            \* \/ ~VerifyCommit(block0, block1.lastCommit)  \* WE NEED THIS AT LEAST FOR THE TRUSTED BLOCK 
+         THEN \* the block does not have the expected validator set
+              RemovePeers({bPool.receivedBlocks[bPool.height]}, bPool)
          ELSE IF ~VerifyCommit(block1, block2.lastCommit)  
+                \*\/ ~IsMatchingValidators(block2, block1.NextVS) \* we need this check too
               THEN \* remove the peers of block1 and block2, as they are considered faulty
-              RemovePeers({bPool.receivedBlocks[block1.height], bPool.receivedBlocks[block2.height]}, bPool)
+              RemovePeers({bPool.receivedBlocks[bPool.height], bPool.receivedBlocks[bPool.height + 1]}, bPool)
               ELSE  \* all good, execute block at position height
                 [bPool EXCEPT !.height = bPool.height + 1]
 
@@ -556,12 +545,11 @@ CreateBlockResponse(msg, pState, arbitraryBlock) ==
         ] IN
     [msg |-> m, peers |-> npState]
 
-GrowBlockchain(pState) ==
+GrowPeerHeight(pState) ==
     \E p \in CORRECT:
-        /\ pState.peerHeights[p] < MAX_HEIGHT
+        /\ pState.peerHeights[p] < Len(chain)
         /\ peersState' = [pState EXCEPT !.peerHeights[p] = @ + 1]
         /\ inMsg' = AsInMsg(NoMsg)
-
 
 SendStatusResponseMessage(pState) ==
     /\ \E arbitraryHeight \in Heights:
@@ -591,12 +579,19 @@ SendControlMessage ==
     \/ SendRemovePeerMessage
     \/ SendSyncTimeoutMessage
 
+\* An extremely important property of block hashes (blockId):
+\* If a commit is correct, then the previous block in the block store must be also correct.
+\* The same applies to the other direction.
+UnforgeableBlockId(height, block) ==
+    block.hash = chain[height].hash => block = chain[height]
+
 
 SendBlockResponseMessage(pState) ==
     \/  /\ pState.blocksRequested /= AsOutMsgSet({})
         /\ \E msg \in pState.blocksRequested:
              \E block \in Blocks:
                 LET msgAndPeers == CreateBlockResponse(msg, pState, block) IN
+                 /\ UnforgeableBlockId(msg.height, block)
                  /\ peersState' = msgAndPeers.peers
                  /\ inMsg' = msgAndPeers.msg
 
@@ -604,7 +599,7 @@ SendBlockResponseMessage(pState) ==
     \/  /\ peersState' = pState
         /\ inMsg' \in AsInMsgSet([type: {"blockResponse"}, peerId: FAULTY, block: Blocks])
         
- SendNoBlockResponseMessage(pState) == 
+SendNoBlockResponseMessage(pState) == 
     /\ peersState' = pState
     /\ inMsg' \in AsInMsgSet([type: {"noBlockResponse"}, peerId: FAULTY, height: Heights])
         
@@ -617,7 +612,7 @@ SendResponseMessage(pState) ==
 
 NextEnvStep(pState) ==
     \/  SendResponseMessage(pState)
-    \/  GrowBlockchain(pState)
+    \/  GrowPeerHeight(pState)
     \/  SendControlMessage
 
 
@@ -626,12 +621,13 @@ NextEnvStep(pState) ==
 NextPeers ==
     LET pState == HandleRequest(outMsg, peersState) IN
 
-    \/  /\ outMsg' = AsOutMsg(NoMsg)
-        /\ NextEnvStep(pState)
+    /\ outMsg' = AsOutMsg(NoMsg)
+    /\ NextEnvStep(pState)
 
 
 \* the composition of the node, the peers, the network and scheduler
 Init ==
+    /\ ChainInit   \* init the blockchain
     /\ InitNode
     /\ InitPeers
     /\ turn = "Peers"
@@ -639,15 +635,19 @@ Init ==
     /\ outMsg = AsOutMsg([type |-> "statusRequest"])
 
 Next ==
-    IF turn = "Peers"
-    THEN
-        /\ NextPeers
-        /\ turn' = "Node"
-        /\ UNCHANGED nvars
-    ELSE
-        /\ NextNode
-        /\ turn' = "Peers"
-        /\ UNCHANGED peersState
+  IF Len(chain) < MAX_HEIGHT
+  \* fast-forward the blockchain to MAX_HEIGHT
+  THEN ChainNext /\ UNCHANGED <<turn, nvars, peersState, inMsg, outMsg>>
+  \* run fastsync
+  ELSE IF turn = "Peers"
+       THEN
+            /\ NextPeers
+            /\ turn' = "Node"
+            /\ UNCHANGED <<nvars, chain>>
+       ELSE
+            /\ NextNode
+            /\ turn' = "Peers"
+            /\ UNCHANGED <<peersState, chain>>
 
 
 
@@ -742,12 +742,11 @@ SyncFromCorrectInv ==
     \/ \A h \in 1..blockPool.height:
         blockPool.receivedBlocks[h] \in blockPool.peerIds \union {NilPeer}
 
-\* All synchronized blocks are well-formed and have sufficiently many votes
+\* All synchronized blocks are exactly like in the blockchain
 CorrectBlocksInv ==
     \/ state /= "finished"
     \/ \A h \in 1..(blockPool.height - 1):
-        LET block == blockPool.blockStore[h] IN
-        block.wellFormed /\ block.lastCommit.enoughVotingPower
+        blockPool.blockStore[h] = chain[h]
 
 \* A false expectation that a correct process is never removed from the set of peer ids.
 \* A correct process may reply too late and then gets evicted.
@@ -768,6 +767,6 @@ BlockPoolInvariant ==
 
 \*=============================================================================
 \* Modification History
-\* Last modified Mon May 18 16:08:46 CEST 2020 by igor
+\* Last modified Tue May 19 20:21:15 CEST 2020 by igor
 \* Last modified Thu Apr 16 16:57:22 CEST 2020 by zarkomilosevic
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic
