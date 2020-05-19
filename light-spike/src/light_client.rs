@@ -1,5 +1,6 @@
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
+use contracts::*;
 
 use crate::components::{io::*, scheduler::*, verifier::*};
 use crate::contracts::*;

@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use contracts::*;
 
 #[contract_trait]
 pub trait Scheduler {
