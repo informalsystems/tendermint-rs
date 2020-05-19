@@ -12,6 +12,18 @@ pub enum VerifiedStatus {
     Failed,
 }
 
+impl VerifiedStatus {
+    pub fn iter() -> &'static [VerifiedStatus] {
+        static ALL: &[VerifiedStatus] = &[
+            VerifiedStatus::Unverified,
+            VerifiedStatus::Verified,
+            VerifiedStatus::Failed,
+        ];
+
+        ALL
+    }
+}
+
 pub trait LightStore: std::fmt::Debug {
     fn get(&self, height: Height, status: VerifiedStatus) -> Option<LightBlock>;
     fn update(&mut self, light_block: LightBlock, status: VerifiedStatus);

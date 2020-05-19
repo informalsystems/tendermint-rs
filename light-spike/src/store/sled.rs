@@ -43,9 +43,15 @@ impl LightStore for SledStore {
     }
 
     fn update(&mut self, light_block: LightBlock, status: VerifiedStatus) {
-        self.db(status)
-            .insert(&self.db, &light_block.height(), &light_block)
-            .ok();
+        let height = &light_block.height();
+
+        for other in VerifiedStatus::iter() {
+            if status != *other {
+                self.db(*other).remove(&self.db, height).ok();
+            }
+        }
+
+        self.db(status).insert(&self.db, height, &light_block).ok();
     }
 
     fn insert(&mut self, light_block: LightBlock, status: VerifiedStatus) {
