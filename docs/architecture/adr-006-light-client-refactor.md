@@ -3,6 +3,7 @@
 ## Changelog
 - 2020-03-15: Initial draft
 - 2020-03-23: New decomposition
+- 2020-05-18: Concurrency
 
 ## Context
 
@@ -13,8 +14,7 @@ protocol for the light client is described in
 while the rust implementation is described in
 [ADR-002](adr-002-light-client-adr-index.md). This ADR outlines the
 next iteration of the light client implementation in rust in which
-multiple modules (Peer Exchange, Requester, Verifier, etc.) operate
-concurrently.
+outlines the runtime and concurrency concerns.
 
 The basis for this work comes from the learnings of the [Reactor
 Experiments](https://github.com/informalsystems/reactor-experiments) as
@@ -29,65 +29,58 @@ Refactor](https://github.com/tendermint/tendermint/blob/master/docs/architecture
 
 ## Decision
 
-Model the Scheduler ,Verifier, Detector and IO as separate
-independently verifiable components. Communication between components is
-done by a demuxer component which ownes state and dispatches events
-between business logic executing components. Business logic is executed
-as a synchronous deterministic function. The composition of components
-can also be executed as a deterministic function.
+The LightClient will be refactored into a LightClient Instance and
+LightClient Manager. Multiple Instance of the LightClient will be
+spawned within the same process and managed by a LightClient Manager.
+The Manager will multiplex the output of the instances into an internal
+event loop. That event loop will be responsible for:
 
-![Decomposition Diagram](assets/light-client-decomposition.png)
+* Maintaining active set of peers and instances
+* Routing events instances to and from relayer
+* Accumulating LightBlocks for fork detection
+* Publishing evidence to peers
 
-### State
-The light client maintains state about commit/header/validators abbreviated as LightBlocks. It also has state pertaining to peers and evidence.
+Each lightClient Instance will be configured to perform the light client
+protocol against a single peer. The Instance will be decomposed into
+IO independently verifiable components for:
 
-![State Diagram](assets/light-client-state.png)
+    * IO: Fetching LightBlocks from the peer
+    * Verifier: Verifying a LightBlock based on a TrustedState
+    * Scheduler: Schedule the next block based on the last TrustedState
 
-### Verification Flow
-The flow of events and mutations on state necessary for verification.
-
-![State Diagram](assets/light-client-verification-flow.png)
-
-### Detection Flow
-The flow of events and mutations on state necessary for fork detection.
-
-![State Diagram](assets/light-client-detection-flow.png)
-
-### Events & State
-There has been a notable change in thinking here. The previous version
-of this ADR was built on the tenet of `communicate through events and
-not through state`. The motivation being to serialize mutations
-to state using event loops for deterministic simulation. The problem
-with this approach is that it required components to replicate state.
-For instance if the detector and the verifier both needed a store of
-light blocks, we would need to:
-
-* Replicate that state in memory
-* Produce flows of events to populate both representations
-* Deal with inconsistencies between representations.
-
-The new approach shares state by `lending` read only access to state
-for duration of the synchronous and deterministic execution of the sub
-component (ie. verifier, detector). The result of the execution is an
-event which then the owner can use to mutate the state accordingly.
-This way state mutation are serialized (deterministic) even if they are
-temporarily shared by separate components.
+Each components provides synchronous functions which can be
+mocked out for testing complex scenarios. The Instance stores LightBlocks
+it's received from it's configured peer in either Verified or Unverified
+state.
 
 ### Concurrency
 
-No concurrency for now. We have some ideas of how to handle concurrency
-within this architecture that will be handled a separate ADR.
+Concurrency is handled at the instance level. The LightClient manager
+spawns multiple instance which run in parallel. If an instance should
+fail (due to verification error or fault detection), the Manager can
+replace them.
+
+### Communication
+Right now:
+    * The relayer drives "update to height"
+        * This can be an event input which the manager routes to the
+          instances
+    * The relayer needs to know when the header is available?
+        * Should it block or should it simply wait for some kind of
+          event
+    * Should the relayer be modeled as an event loop
 
 ## Status
 
-Proposed
+Development underway: 
+* [LightClientt Instance](https://github.com/informalsystems/tendermint-rs/pull/237)
 
 ## Consequences
 
 ### Positive
 - Better Isolation of Concerns
 - Deterministic Testing of the composition of components.
-- No async functions
+- Clear and easy to specify/verify concurrency model
 
 ### Negative
 
