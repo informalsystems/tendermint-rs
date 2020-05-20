@@ -85,16 +85,15 @@ impl Verifier for ProdVerifier {
         trusted_state: &TrustedState,
         options: &Options,
     ) -> Verdict {
-        let result = crate::predicates::validate_light_block(
+        crate::predicates::validate_light_block(
             &*self.predicates,
             &self.commit_validator,
             &self.header_hasher,
             &trusted_state,
             &light_block,
             options,
-        );
-
-        result.into()
+        )
+        .into()
     }
 
     fn verify_overlap(
@@ -103,25 +102,23 @@ impl Verifier for ProdVerifier {
         trusted_state: &TrustedState,
         options: &Options,
     ) -> Verdict {
-        let result = crate::predicates::verify_overlap(
+        crate::predicates::verify_overlap(
             &*self.predicates,
             &self.voting_power_calculator,
             &trusted_state,
             &light_block,
             options,
-        );
-
-        result.into()
+        )
+        .into()
     }
 
     fn has_sufficient_voting_power(&self, light_block: &LightBlock, options: &Options) -> Verdict {
-        let result = crate::predicates::has_sufficient_voting_power(
+        crate::predicates::has_sufficient_voting_power(
             &*self.predicates,
             &self.voting_power_calculator,
             &light_block,
             options,
-        );
-
-        result.into()
+        )
+        .into()
     }
 }

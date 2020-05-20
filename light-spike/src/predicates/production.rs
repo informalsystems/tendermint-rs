@@ -1,6 +1,5 @@
 use crate::prelude::*;
 
-use tendermint::lite::types::Commit as _;
 use tendermint::lite::ValidatorSet as _;
 
 #[derive(Copy, Clone, Debug)]
@@ -40,10 +39,10 @@ impl VerificationPredicates for ProdPredicates {
         let header_hash = header_hasher.hash(&signed_header.header);
 
         ensure!(
-            header_hash == signed_header.header_hash(),
+            header_hash == signed_header.commit.block_id.hash,
             VerificationError::InvalidCommitValue {
                 header_hash,
-                commit_hash: signed_header.header_hash(),
+                commit_hash: signed_header.commit.block_id.hash,
             }
         );
 
