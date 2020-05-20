@@ -1,6 +1,6 @@
+use contracts::*;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
-use contracts::*;
 
 use crate::components::{io::*, scheduler::*, verifier::*};
 use crate::contracts::*;
@@ -51,7 +51,7 @@ impl LightClient {
         }
     }
 
-    pub fn verify_to_highest(&mut self) -> Result<(), Error> {
+    pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
         let latest_verified = self.state.light_store.latest(VerifiedStatus::Verified);
         if latest_verified.is_none() {
             bail!(ErrorKind::NoInitialTrustedState)
@@ -72,7 +72,7 @@ impl LightClient {
             target_height,
         )
     )]
-    pub fn verify_to_target(&mut self, target_height: Height) -> Result<(), Error> {
+    pub fn verify_to_target(&mut self, target_height: Height) -> Result<LightBlock, Error> {
         let latest_verified = self.state.light_store.latest(VerifiedStatus::Verified);
         if latest_verified.is_none() {
             bail!(ErrorKind::NoInitialTrustedState)
@@ -93,7 +93,7 @@ impl LightClient {
             self.state.trace_block(target_height, current_height);
 
             if target_height <= trusted_state.height() {
-                return Ok(());
+                return Ok(trusted_state);
             }
 
             let current_block = self.get_or_fetch_block(current_height)?;

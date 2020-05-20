@@ -20,7 +20,7 @@ pub enum ErrorKind {
     #[error("bisection for target at height {0} failed when reached trusted state at height {1}")]
     BisectionFailed(Height, Height),
 
-    #[error("invalid light block")]
+    #[error("invalid light block: {0}")]
     InvalidLightBlock(#[source] VerificationError),
 }
 
