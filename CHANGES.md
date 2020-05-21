@@ -1,5 +1,10 @@
 ## Pending
 
+CommitSig:
+- Refactored CommitSig into a more Rust-friendly enum. ([#197](https://github.com/informalsystems/tendermint-rs/issues/197))
+- Added CommitSig compatibility code to Absent vote [#260](https://github.com/informalsystems/tendermint-rs/issues/260)
+- Added CommitSig timestamp zero-check compatibility code [#259](https://github.com/informalsystems/tendermint-rs/issues/259)
+
 Testing:
 - Updated abci_info test to 0.17.0 ([#249](https://github.com/informalsystems/tendermint-rs/issues/249))
 

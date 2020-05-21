@@ -1,9 +1,10 @@
 //! [`lite::SignedHeader`] implementation for [`block::signed_header::SignedHeader`].
 
+use crate::block::CommitSig;
 use crate::lite::error::{Error, Kind};
 use crate::lite::ValidatorSet;
 use crate::validator::Set;
-use crate::{block, block::BlockIDFlag, hash, lite, vote};
+use crate::{block, hash, lite, vote};
 use anomaly::fail;
 use std::convert::TryFrom;
 
@@ -59,8 +60,37 @@ impl lite::Commit for block::signed_header::SignedHeader {
             );
         }
 
+        // TODO: this last check is only necessary if we do full verification (2/3)
+        // Todo: @melekes asked why the above is a TODO, find out and resolve it or open an issue
+        // returns ImplementationSpecific error if it detects a signer
+        // that is not present in the validator set:
         for commit_sig in self.commit.signatures.iter() {
-            commit_sig.validate(vals)?;
+            let extracted_validator_address;
+            match commit_sig {
+                // <<< Compatibility code for https://github.com/informalsystems/tendermint-rs/issues/260
+                CommitSig::BlockIDFlagAbsent => continue,
+                // === Real code after compatibility issue is resolved
+                /*
+                CommitSig::BlockIDFlagAbsent => {
+                    validator_address, ..
+                } => extracted_validator_address = validator_address,
+                */
+                // >>> end of real code
+                CommitSig::BlockIDFlagCommit {
+                    validator_address, ..
+                } => extracted_validator_address = validator_address,
+                CommitSig::BlockIDFlagNil {
+                    validator_address, ..
+                } => extracted_validator_address = validator_address,
+            }
+            if vals.validator(*extracted_validator_address) == None {
+                fail!(
+                    Kind::ImplementationSpecific,
+                    "Found a faulty signer ({}) not present in the validator set ({})",
+                    extracted_validator_address,
+                    vals.hash()
+                );
+            }
         }
 
         Ok(())
@@ -72,87 +102,43 @@ impl lite::Commit for block::signed_header::SignedHeader {
 fn non_absent_votes(commit: &block::Commit) -> Vec<vote::Vote> {
     let mut votes: Vec<vote::Vote> = Default::default();
     for (i, commit_sig) in commit.signatures.iter().enumerate() {
-        if commit_sig.is_absent() {
-            continue;
-        }
-
-        if let Some(val_addr) = commit_sig.validator_address {
-            if let Some(sig) = commit_sig.signature.clone() {
-                let vote = vote::Vote {
-                    vote_type: vote::Type::Precommit,
-                    height: commit.height,
-                    round: commit.round,
-                    block_id: Option::from(commit.block_id.clone()),
-                    timestamp: commit_sig.timestamp,
-                    validator_address: val_addr,
-                    validator_index: u64::try_from(i)
-                        .expect("usize to u64 conversion failed for validator index"),
-                    signature: sig,
-                };
-                votes.push(vote);
+        let extracted_validator_address;
+        let extracted_timestamp;
+        let extracted_signature;
+        match commit_sig {
+            CommitSig::BlockIDFlagAbsent { .. } => continue,
+            CommitSig::BlockIDFlagCommit {
+                validator_address,
+                timestamp,
+                signature,
+            } => {
+                extracted_validator_address = validator_address;
+                extracted_timestamp = timestamp;
+                extracted_signature = signature;
+            }
+            CommitSig::BlockIDFlagNil {
+                validator_address,
+                timestamp,
+                signature,
+            } => {
+                extracted_validator_address = validator_address;
+                extracted_timestamp = timestamp;
+                extracted_signature = signature;
             }
         }
+        votes.push(vote::Vote {
+            vote_type: vote::Type::Precommit,
+            height: commit.height,
+            round: commit.round,
+            block_id: Option::from(commit.block_id.clone()),
+            timestamp: *extracted_timestamp,
+            validator_address: *extracted_validator_address,
+            validator_index: u64::try_from(i)
+                .expect("usize to u64 conversion failed for validator index"),
+            signature: extracted_signature.clone(),
+        })
     }
     votes
-}
-
-// TODO: consider moving this into commit_sig.rs instead and making it pub
-impl block::commit_sig::CommitSig {
-    fn validate(&self, vals: &Set) -> Result<(), Error> {
-        match self.block_id_flag {
-            BlockIDFlag::BlockIDFlagAbsent => {
-                if self.validator_address.is_some() {
-                    fail!(
-                        Kind::ImplementationSpecific,
-                        "validator address is present for absent CommitSig {:#?}",
-                        self
-                    );
-                }
-                if self.signature.is_some() {
-                    fail!(
-                        Kind::ImplementationSpecific,
-                        "signature is present for absent CommitSig {:#?}",
-                        self
-                    );
-                }
-                // TODO: deal with Time
-                // see https://github.com/informalsystems/tendermint-rs/pull/196#discussion_r401027989
-            }
-            BlockIDFlag::BlockIDFlagCommit | BlockIDFlag::BlockIDFlagNil => {
-                if self.validator_address.is_none() {
-                    fail!(
-                        Kind::ImplementationSpecific,
-                        "missing validator address for non-absent CommitSig {:#?}",
-                        self
-                    );
-                }
-                if self.signature.is_none() {
-                    fail!(
-                        Kind::ImplementationSpecific,
-                        "missing signature for non-absent CommitSig {:#?}",
-                        self
-                    );
-                }
-                // TODO: this last check is only necessary if we do full verification (2/3) but the
-                // above checks should actually happen always (even if we skip forward)
-                //
-                // returns ImplementationSpecific error if it detects a signer
-                // that is not present in the validator set:
-                if let Some(val_addr) = self.validator_address {
-                    if vals.validator(val_addr) == None {
-                        fail!(
-                            Kind::ImplementationSpecific,
-                            "Found a faulty signer ({}) not present in the validator set ({})",
-                            val_addr,
-                            vals.hash()
-                        );
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
 }
 
 impl block::signed_header::SignedHeader {
