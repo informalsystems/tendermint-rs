@@ -206,6 +206,7 @@ OutMsgs ==
 
 InitNode ==
      \E pIds \in SUBSET AllPeerIds:                   \* set of peers node established initial connections with
+        /\ pIds \subseteq CORRECT
         /\ pIds /= AsPidSet({}) \* apalache better checks non-emptiness than subtracts from SUBSET
         /\ blockPool = AsBlockPool([
                 height |-> GenesisHeight + 1,       \* the genesis block is at height 1
@@ -398,7 +399,7 @@ ExecuteBlocks(bPool) ==
     IF block1 = NilBlock \/ block2 = NilBlock
     THEN bPool  \* we don't have two next consecutive blocks
     ELSE IF ~IsMatchingValidators(block1, block0.NextVS) \* the implementation stores NextVS in its state, not using block0
-            \* \/ ~VerifyCommit(block0, block1.lastCommit)  \* WE NEED THIS AT LEAST FOR THE TRUSTED BLOCK 
+            \/ ~VerifyCommit(block0, block1.lastCommit)  \* WE NEED THIS AT LEAST FOR THE TRUSTED BLOCK 
          THEN \* the block does not have the expected validator set
               RemovePeers({bPool.receivedBlocks[bPool.height]}, bPool)
          ELSE IF ~VerifyCommit(block1, block2.lastCommit)  
@@ -586,19 +587,34 @@ SendControlMessage ==
 UnforgeableBlockId(height, block) ==
     block.hash = chain[height].hash => block = chain[height]
 
+\* a faulty peer cannot forge the validators signatures and thus cannot produce a fork
+NoFork(height, block) ==
+    LET refBlock == chain[height] IN
+    block.hash /= refBlock.hash => block.VS /= refBlock.VS
+
+\* can be block produced by a faulty peer
+IsBlockByFaulty(height, block) ==
+    /\ block.height = height
+    /\ UnforgeableBlockId(height, block)
+    /\ NoFork(height, block)
 
 SendBlockResponseMessage(pState) ==
+    \* a response to a requested block: either by a correct, or by a faulty peer
     \/  /\ pState.blocksRequested /= AsOutMsgSet({})
         /\ \E msg \in pState.blocksRequested:
              \E block \in Blocks:
-                LET msgAndPeers == CreateBlockResponse(msg, pState, block) IN
-                 /\ UnforgeableBlockId(msg.height, block)
-                 /\ peersState' = msgAndPeers.peers
-                 /\ inMsg' = msgAndPeers.msg
+                 /\ IsBlockByFaulty(msg.height, block)
+                 /\ LET msgAndPeers == CreateBlockResponse(msg, pState, block) IN
+                    /\ peersState' = msgAndPeers.peers
+                    /\ inMsg' = msgAndPeers.msg
 
-
-    \/  /\ peersState' = pState
-        /\ inMsg' \in AsInMsgSet([type: {"blockResponse"}, peerId: FAULTY, block: Blocks])
+    \* a faulty peer can always send an unsolicited block
+    \/ \E peerId \in FAULTY:
+         \E block \in Blocks:
+           /\ IsBlockByFaulty(block.height, block)
+           /\ peersState' = pState
+           /\ inMsg' = AsInMsg([type |-> "blockResponse",
+                                peerId |-> peerId, block |-> block])
         
 SendNoBlockResponseMessage(pState) == 
     /\ peersState' = pState
@@ -768,6 +784,6 @@ BlockPoolInvariant ==
 
 \*=============================================================================
 \* Modification History
-\* Last modified Tue May 19 21:29:52 CEST 2020 by igor
+\* Last modified Wed May 20 10:42:38 CEST 2020 by igor
 \* Last modified Thu Apr 16 16:57:22 CEST 2020 by zarkomilosevic
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic
