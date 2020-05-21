@@ -52,7 +52,9 @@ impl TryFrom<RawCommitSig> for CommitSig {
             BlockIDFlag::BlockIDFlagAbsent => {
                 if value.timestamp.is_some() {
                     // <<< Compatibility code for https://github.com/informalsystems/tendermint-rs/issues/259
-                    if value.timestamp.unwrap() != Time::parse_from_rfc3339("0001-01-01T00:00:00Z").unwrap() {
+                    if value.timestamp.unwrap()
+                        != Time::parse_from_rfc3339("0001-01-01T00:00:00Z").unwrap()
+                    {
                         return Err("timestamp is present for BlockIDFlagAbsent CommitSig");
                     }
                     // === Real code after compatibility issue is resolved

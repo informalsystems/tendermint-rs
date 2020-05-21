@@ -1,9 +1,9 @@
 //! RawCommitSig type for deserialization
 use crate::{account, Signature, Time};
+use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::str::FromStr;
-use serde::de::Error;
 
 // Implements decision: https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-025-commit.md#decision
 
@@ -58,7 +58,7 @@ where
         Ok(None)
     } else {
         account::Id::from_str(&string)
-            .map(|r| Some(r))
+            .map(Some)
             .map_err(|e| D::Error::custom(format!("{}", e)))
     }
 }
