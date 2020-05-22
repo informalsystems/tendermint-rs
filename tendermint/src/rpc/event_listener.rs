@@ -11,7 +11,8 @@ use serde::{Deserialize, Serialize};
 
 use tokio::net::TcpStream;
 
-/// Event Listener over webocket. https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
+/// Event Listener over websocket.
+/// See: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
 pub struct EventListener {
     socket: async_tungstenite::WebSocketStream<TokioAdapter<TcpStream>>,
 }
