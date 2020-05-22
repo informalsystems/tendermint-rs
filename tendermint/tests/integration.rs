@@ -153,21 +153,22 @@ mod rpc {
         )
         .await
         .unwrap();
-        let _ = client.subscribe(&"tm.event='Tx'".to_owned()).await.unwrap();
-        // let _ = client.subscribe(&"tm.event='NewBlock'".to_owned()).await.unwrap();
+        client.subscribe(&"tm.event='Tx'".to_owned()).await.unwrap();
+        // client.subscribe(&"tm.event='NewBlock'".to_owned()).await.unwrap();
 
         // Collect and throw away the response to subscribe
         let _ = client.get_event().await.unwrap();
 
-        // Loop here is helpful when debuging parsing of JSON events
+        // Loop here is helpful when debugging parsing of JSON events
         // loop{
         let resp = client.get_event().await.unwrap();
         dbg!(&resp);
         // }
         match resp {
-            Event::GenericStringEvent { data: _ } => assert!(false),
-            Event::GenericJSONEvent { data: _ } => assert!(true),
-            Event::JsonRPCTransactionResult { data: _ } => assert!(true),
+            Event::GenericStringEvent { data: _ } => panic!(
+                "Expected GenericJSONEvent or JsonRPCTransactionResult, but got GenericStringEvent"
+            ),
+            Event::GenericJSONEvent { data: _ } | Event::JsonRPCTransactionResult { data: _ } => (),
         }
     }
 }
