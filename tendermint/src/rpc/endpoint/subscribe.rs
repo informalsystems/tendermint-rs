@@ -35,7 +35,7 @@ impl rpc::Response for Response {
         Ok(Response {})
     }
 
-    /// We throw away responses in `subscribe` so swallow errors from the `io::Reader` and provide
+    /// We throw away responses in `subscribe` to swallow errors from the `io::Reader` and provide
     /// the Response
     fn from_reader(_reader: impl Read) -> Result<Self, rpc::Error> {
         Ok(Response {})

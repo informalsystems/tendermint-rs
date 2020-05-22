@@ -44,7 +44,7 @@ impl EventListener {
         Ok(())
     }
 
-    /// Subscribe to the Events Websocket with a query string for example "tm.event = 'NewBlock'"
+    /// Get the next event from the websocket
     pub async fn get_event(&mut self) -> Result<Event, RPCError> {
         let msg = self
             .socket
@@ -53,7 +53,10 @@ impl EventListener {
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
 
         match serde_json::from_str::<JSONRPC>(&msg.to_string()) {
-            Ok(data) => Ok(Event::JsonRPCTransctionResult { data }),
+            Ok(data) => Ok(Event::JsonRPCTransactionResult {
+                data: Box::new(data),
+            }),
+
             Err(_) => match msg.to_string().parse::<serde_json::Value>() {
                 Ok(data) => Ok(Event::GenericJSONEvent { data }),
                 Err(_) => Ok(Event::GenericStringEvent {
@@ -65,13 +68,13 @@ impl EventListener {
 }
 
 //TODO more event types
-/// The Event enum is typed events emmitted by the Websockets
+/// The Event enum is typed events emitted by the Websockets
 #[derive(Debug, Clone)]
 pub enum Event {
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
-    JsonRPCTransctionResult {
+    JsonRPCTransactionResult {
         /// the tx result data
-        data: JSONRPC,
+        data: Box<JSONRPC>,
     },
 
     ///Generic event containing json data
