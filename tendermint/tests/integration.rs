@@ -35,7 +35,7 @@ mod rpc {
     async fn abci_info() {
         let abci_info = localhost_rpc_client().abci_info().await.unwrap();
 
-        assert_eq!(&abci_info.version, "0.16.1");
+        assert_eq!(&abci_info.version, "0.17.0");
         assert_eq!(abci_info.app_version, 1u64);
         // the kvstore app's reply will contain "{\"size\":0}" as data right from the start
         assert_eq!(&abci_info.data, "{\"size\":0}");
@@ -59,7 +59,7 @@ mod rpc {
         assert_eq!(abci_query.index, 0);
         assert_eq!(&abci_query.key, &Vec::<u8>::new());
         assert!(&abci_query.key.is_empty());
-        assert!(abci_query.value.is_none());
+        assert_eq!(abci_query.value, Vec::<u8>::new());
         assert!(abci_query.proof.is_none());
         assert!(abci_query.height.value() > 0);
         assert_eq!(abci_query.codespace, String::new());

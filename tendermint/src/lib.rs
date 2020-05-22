@@ -13,10 +13,7 @@
     unused_qualifications
 )]
 #![forbid(unsafe_code)]
-#![doc(
-    html_logo_url = "https://raw.githubusercontent.com/tendermint/kms/master/img/tendermint.png",
-    html_root_url = "https://docs.rs/tendermint/0.13.0"
-)]
+#![doc(html_root_url = "https://docs.rs/tendermint/0.13.0")]
 
 #[macro_use]
 pub mod error;
@@ -42,7 +39,7 @@ pub mod node;
 pub mod private_key;
 pub mod public_key;
 pub mod rpc;
-mod serializers;
+pub mod serializers;
 pub mod signature;
 pub mod time;
 mod timeout;

@@ -2,9 +2,8 @@
 
 use std::slice;
 use {
-    crate::serializers,
-    serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
-    subtle_encoding::base64,
+    crate::{serializers, PublicKey, Vote},
+    serde::{Deserialize, Serialize},
 };
 
 /// Evidence of malfeasance by validators (i.e. signing conflicting votes).
@@ -12,40 +11,23 @@ use {
 /// evidence: `DuplicateVoteEvidence`.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#evidence>
-#[derive(Clone, Debug)]
-pub struct Evidence(Vec<u8>);
-
-impl Evidence {
-    /// Create a new raw evidence value from a byte vector
-    pub fn new<V>(into_vec: V) -> Evidence
-    where
-        V: Into<Vec<u8>>,
-    {
-        // TODO(tarcieri): parse/validate evidence contents from amino messages
-        Evidence(into_vec.into())
-    }
-
-    /// Serialize this evidence as an Amino message bytestring
-    pub fn to_amino_bytes(&self) -> Vec<u8> {
-        self.0.clone()
-    }
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", content = "value")]
+pub enum Evidence {
+    /// Duplicate vote evidence
+    #[serde(rename = "tendermint/DuplicateVoteEvidence")]
+    DuplicateVote(DuplicateVoteEvidence),
 }
 
-impl<'de> Deserialize<'de> for Evidence {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
-            .map_err(|e| D::Error::custom(format!("{}", e)))?;
-
-        Ok(Evidence::new(bytes))
-    }
-}
-
-impl Serialize for Evidence {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        String::from_utf8(base64::encode(self.to_amino_bytes()))
-            .unwrap()
-            .serialize(serializer)
-    }
+/// Duplicate vote evidence
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DuplicateVoteEvidence {
+    #[serde(rename = "PubKey")]
+    pub_key: PublicKey,
+    #[serde(rename = "VoteA")]
+    vote_a: Vote,
+    #[serde(rename = "VoteB")]
+    vote_b: Vote,
 }
 
 /// Evidence data is a wrapper for a list of `Evidence`.
@@ -88,10 +70,7 @@ impl AsRef<[Evidence]> for Data {
 #[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct Params {
     /// Maximum allowed age for evidence to be collected
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(with = "serializers::from_str")]
     pub max_age_num_blocks: u64,
 
     /// Max age duration
@@ -102,13 +81,7 @@ pub struct Params {
 /// essentially, to keep the usages look cleaner
 /// i.e. you can avoid using serde annotations everywhere
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-pub struct Duration(
-    #[serde(
-        serialize_with = "serializers::serialize_duration",
-        deserialize_with = "serializers::parse_duration"
-    )]
-    std::time::Duration,
-);
+pub struct Duration(#[serde(with = "serializers::time_duration")] std::time::Duration);
 
 impl From<Duration> for std::time::Duration {
     fn from(d: Duration) -> std::time::Duration {
