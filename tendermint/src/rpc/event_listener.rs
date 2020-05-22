@@ -158,6 +158,6 @@ impl JSONRPC {
             }
         }
 
-        return Err("Incorrect Event Type");
+        Err("Incorrect Event Type")
     }
 }
