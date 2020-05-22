@@ -162,12 +162,12 @@ mod rpc {
         // Loop here is helpful when debuging parsing of JSON events
         // loop{
         let resp = client.get_event().await.unwrap();
-        debug!(&resp);
+        dbg!(&resp);
         // }
         match resp {
             Event::GenericStringEvent { data: _ } => assert!(false),
             Event::GenericJSONEvent { data: _ } => assert!(true),
-            Event::JsonRPCTransctionResult { data: _ } => assert!(true),
+            Event::JsonRPCTransactionResult { data: _ } => assert!(true),
         }
     }
 }
