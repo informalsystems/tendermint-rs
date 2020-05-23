@@ -11,8 +11,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use tokio::net::TcpStream;
-/// There are only two valid queries to the websocket. A query that subscribes to all transactions and a query that susbscribes to all blocks.
-pub enum EventSubscription{
+/// There are only two valid queries to the websocket. A query that subscribes to all transactions
+/// and a query that susbscribes to all blocks.
+pub enum EventSubscription {
     /// Subscribe to all transactions
     TransactionSubscription,
     ///Subscribe to all blocks
@@ -21,15 +22,13 @@ pub enum EventSubscription{
 
 impl EventSubscription {
     ///Convert the query enum to a string
-    pub fn as_str(&self)->&str {
+    pub fn as_str(&self) -> &str {
         match self {
-            EventSubscription::TransactionSubscription =>"tm.event='Tx'",
-            EventSubscription::BlockSubscription =>"tm.event='NewBlock'",
+            EventSubscription::TransactionSubscription => "tm.event='Tx'",
+            EventSubscription::BlockSubscription => "tm.event='NewBlock'",
         }
     }
 }
-
-
 
 /// Event Listener over webocket. https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
 pub struct EventListener {
@@ -71,45 +70,41 @@ impl EventListener {
             .next()
             .await
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
-        match serde_json::from_str::<JSONRpcTxResult>(&msg.to_string()) {
-            Ok(data) => Ok(Event::JsonRPCTransactionResult { data }),
-            Err(_) => match serde_json::from_str::<JSONRpcBlockResult>(&msg.to_string()) {
-                Ok(data) => Ok(Event::JsonRPCBlockResult { data }),
-                Err(_) => match  serde_json::from_str::<serde_json::Value>(&msg.to_string()) {
-                    Ok(data) => Ok(Event::GenericJSONEvent{data}),
-                    Err(_) => Ok(Event::GenericStringEvent {
-                        data: msg.to_string(),
-                    }),
-                }
+        match serde_json::from_str::<JSONRpcBlockResult>(&msg.to_string()) {
+            Ok(data) => Ok(Event::JsonRPCBlockResult(data)),
+            Err(_) => match serde_json::from_str::<JSONRpcTxResult>(&msg.to_string()) {
+                Ok(data) => Ok(Event::JsonRPCTransactionResult(data)),
+                Err(_) => match serde_json::from_str::<serde_json::Value>(&msg.to_string()) {
+                    Ok(data) => Ok(Event::GenericJSONEvent(data)),
+                    Err(_) => Ok(Event::GenericStringEvent(msg.to_string())),
+                },
             },
-        }  }
         }
+    }
+}
 //TODO more event types
 /// The Event enum is typed events emmitted by the Websockets
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Event {
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
-    JsonRPCBlockResult {
-        /// the tx result data
-        data: JSONRpcBlockResult,
-    },
+    JsonRPCBlockResult(JSONRpcBlockResult),
 
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
-    JsonRPCTransactionResult {
+    JsonRPCTransactionResult(
         /// the tx result data
-        data: JSONRpcTxResult,
-    },
+        JSONRpcTxResult,
+    ),
 
     ///Generic event containing json data
-    GenericJSONEvent {
+    GenericJSONEvent(
         /// generic event json data
-        data: serde_json::Value,
-    },
+        serde_json::Value,
+    ),
     ///Generic String Event
-    GenericStringEvent {
+    GenericStringEvent(
         /// generic string data
-        data: String,
-    },
+        String,
+    ),
 }
 
 /// Standard JSON RPC Wrapper
@@ -178,7 +173,7 @@ pub struct JSONRpcBlockResult {
     id: String,
     result: BlockResult,
 }
-/// Block Results 
+/// Block Results
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BlockResult {
     query: String,
@@ -212,7 +207,7 @@ pub struct Block {
 pub struct BlockData {
     txs: Option<serde_json::Value>,
 }
-///Tendermint evidence 
+///Tendermint evidence
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Evidence {
     evidence: Option<serde_json::Value>,
@@ -279,8 +274,6 @@ pub struct ResultBeginBlock {
 pub struct ResultEndBlock {
     validator_updates: Vec<Option<serde_json::Value>>,
 }
-
-
 
 impl JSONRpcTxResult {
     /// Extract events from TXEvent if event matches are type query

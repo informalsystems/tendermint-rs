@@ -168,12 +168,14 @@ mod rpc {
         dbg!(&resp);
         // }
         match resp {
-            Event::GenericStringEvent { data: _ } => panic!(
-                "Expected GenericJSONEvent or JsonRPCTransactionResult, but got GenericStringEvent"
+            Event::GenericStringEvent(_ ) => panic!(
+                "Expected JsonRPCBlockResult or JsonRPCTransactionResult, but got GenericStringEvent"
             ),
-            Event::GenericJSONEvent { data: _ } => assert!(true),
-            Event::JsonRPCTransactionResult { data: _ } => assert!(true),
-            Event::JsonRPCBlockResult { data: _ } => assert!(true),
+            Event::GenericJSONEvent (_) => panic!(
+                "Expected JsonRPCBlockResult or JsonRPCTransactionResult, but got GenericStringEvent"
+            ),
+            Event::JsonRPCTransactionResult ( _ ) => assert!(true),
+            Event::JsonRPCBlockResult ( _ ) => assert!(true),
         }
     }
 }
