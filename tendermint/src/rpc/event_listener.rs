@@ -77,7 +77,7 @@ impl EventListener {
         match serde_json::from_str::<JsonRPCBlockResult>(&msg.to_string()) {
             Ok(data) => {
                 if let Some(data) = data.0.result {
-                    Ok(Event::JsonRPCBlockResult(data))
+                    Ok(Event::JsonRPCBlockResult(Box::new(data)))
                 } else {
                     // The Websocket should never send an empty block
                     panic!("Websocket sent us an empty block")
@@ -106,7 +106,7 @@ pub enum Event {
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
     JsonRPCBlockResult(
         /// The Block Result
-        RPCBlockResult,
+        Box<RPCBlockResult>,
     ),
 
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
