@@ -1,17 +1,16 @@
 //! Tendermint Websocket event listener client
 
 use crate::{
+    block::{Commit, Header},
     net,
     rpc::response::Wrapper,
     rpc::Request,
     rpc::{endpoint::subscribe, Error as RPCError},
-    block::{Header,Commit},
 };
 use async_tungstenite::{tokio::connect_async, tokio::TokioAdapter, tungstenite::Message};
 use futures::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
 
 use tokio::net::TcpStream;
 /// There are only two valid queries to the websocket. A query that subscribes to all transactions
@@ -207,7 +206,6 @@ pub struct BlockData {
 pub struct Evidence {
     evidence: Option<serde_json::Value>,
 }
-
 
 /// Block Parts
 #[derive(Serialize, Deserialize, Debug, Clone)]
