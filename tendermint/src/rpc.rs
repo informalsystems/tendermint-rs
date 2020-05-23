@@ -5,6 +5,7 @@
 mod client;
 pub mod endpoint;
 pub mod error;
+pub mod event_listener;
 mod id;
 mod method;
 pub mod request;

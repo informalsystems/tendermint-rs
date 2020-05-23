@@ -123,7 +123,7 @@ impl config::Override<LightNodeConfig> for StartCmd {
  * trusted state and store it in the store ...
  * TODO: this should take traits ... but how to deal with the State ?
  * TODO: better name ?
-*/
+ */
 async fn subjective_init(
     height: Height,
     vals_hash: Hash,
