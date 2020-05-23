@@ -11,6 +11,7 @@ use async_tungstenite::{tokio::connect_async, tokio::TokioAdapter, tungstenite::
 use futures::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::error::Error as stdError;
 
 use tokio::net::TcpStream;
 /// There are only two valid queries to the websocket. A query that subscribes to all transactions
@@ -231,7 +232,7 @@ impl JsonRPCTransactionResult {
     pub fn extract_events(
         &self,
         action_query: &str,
-    ) -> Result<HashMap<String, Vec<String>>, &'static str> {
+    ) -> Result<HashMap<String, Vec<String>>, Box<dyn stdError>> {
         match &self.0.result {
             Some(ref result) => {
                 if let Some(message_action) = result.events.get("message.action") {
@@ -239,10 +240,10 @@ impl JsonRPCTransactionResult {
                         return Ok(result.events.clone());
                     }
                 }
-                Err("Incorrect Event Type")
+                Err("Incorrect Event Type".into())
             }
 
-            None => Err("No result data found"),
+            None => Err("No result data found".into()),
         }
     }
 }
