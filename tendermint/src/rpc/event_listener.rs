@@ -209,7 +209,7 @@ struct BlockResultData {
 ///Block Value
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct BlockValue {
-    block: Block,
+    block: Option<Block>,
     result_begin_block: Option<ResultBeginBlock>,
     result_end_block: Option<ResultEndBlock>,
 }
