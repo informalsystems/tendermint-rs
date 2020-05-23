@@ -69,28 +69,14 @@ impl EventListener {
     }
 
     /// Get the next event from the websocket
-    pub async fn get_event(&mut self) -> Result<TMEventData, RPCError> {
+    pub async fn get_event(&mut self) -> Result<TMEventData, Box<dyn stdError>> {
         let msg = self
             .socket
             .next()
             .await
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
-        match serde_json::from_str::<JsonRPCBlockResult>(&msg.to_string()) {
-            Ok(data) => {
-                let block_result = data.into_result()?;
-                Ok(TMEventData::JsonRPCBlockResult(Box::new(block_result)))
-            }
-            Err(_) => match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
-                Ok(data) => {
-                    let tx_result = data.into_result()?;
-                    Ok(TMEventData::JsonRPCTransactionResult(Box::new(tx_result)))
-                }
-                Err(_) => match serde_json::from_str::<serde_json::Value>(&msg.to_string()) {
-                    Ok(json_value) => Ok(TMEventData::GenericJSONEvent(json_value)),
-                    Err(_) => Ok(TMEventData::GenericStringEvent(msg.to_string())),
-                },
-            },
-        }
+        let res_event = serde_json::from_str::<ResultEvent>(&msg.to_string())?;
+        Ok(res_event.data)
     }
 }
 
@@ -120,6 +106,8 @@ pub enum TMEventData {
     ),
 }
 
+/// Event data from a subscription
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResultEvent {
     query: String,
     data: TMEventData,

@@ -173,9 +173,6 @@ mod rpc {
             // we receive a GenericJSONEvent when ran against vanilla tendermint
             // integration tests.
             TMEventData::GenericJSONEvent (v ) => {dbg!("got a GenericJSONEvent: {:?}", v); ()},
-            TMEventData::GenericStringEvent(_ ) => panic!(
-                "Expected JsonRPCBlockResult or JsonRPCTransactionResult, but got GenericStringEvent"
-            ),
         }
     }
 }
