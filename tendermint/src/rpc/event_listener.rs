@@ -217,7 +217,7 @@ struct BlockValue {
 /// Begin Block Events
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResultBeginBlock {
-    events: Otion<Vec<TmEvent>>,
+    events: Option<Vec<TmEvent>>,
 }
 ///End Block Events
 #[derive(Serialize, Deserialize, Debug, Clone)]
