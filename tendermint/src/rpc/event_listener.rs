@@ -1,7 +1,7 @@
 //! Tendermint Websocket event listener client
 
 use crate::{
-    block::{Commit, Header},
+    block::Block,
     net,
     rpc::response::Wrapper,
     rpc::Request,
@@ -11,6 +11,7 @@ use async_tungstenite::{tokio::connect_async, tokio::TokioAdapter, tungstenite::
 use futures::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::error::Error as stdError;
 
 use tokio::net::TcpStream;
 /// There are only two valid queries to the websocket. A query that subscribes to all transactions
@@ -32,7 +33,8 @@ impl EventSubscription {
     }
 }
 
-/// Event Listener over webocket. https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
+/// Event Listener over websocket.
+/// See: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
 pub struct EventListener {
     socket: async_tungstenite::WebSocketStream<TokioAdapter<TcpStream>>,
 }
@@ -205,26 +207,8 @@ struct BlockValue {
     result_begin_block: ResultBeginBlock,
     result_end_block: ResultEndBlock,
 }
-/// Block
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct Block {
-    header: Header,
-    data: BlockData,
-    evidence: Evidence,
-    last_commit: Commit,
-}
-///Block Txs
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct BlockData {
-    txs: Option<serde_json::Value>,
-}
-///Tendermint evidence
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct Evidence {
-    evidence: Option<serde_json::Value>,
-}
 
-/// Begin Blocke Envts
+/// Begin Block Events
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResultBeginBlock {
     events: Vec<TmEvent>,
@@ -240,7 +224,7 @@ impl JsonRPCTransactionResult {
     pub fn extract_events(
         &self,
         action_query: &str,
-    ) -> Result<HashMap<String, Vec<String>>, &'static str> {
+    ) -> Result<HashMap<String, Vec<String>>, Box<dyn stdError>> {
         match &self.0.result {
             Some(ref result) => {
                 if let Some(message_action) = result.events.get("message.action") {
@@ -248,10 +232,10 @@ impl JsonRPCTransactionResult {
                         return Ok(result.events.clone());
                     }
                 }
-                Err("Incorrect Event Type")
+                Err("Incorrect Event Type".into())
             }
 
-            None => Err("No result data found"),
+            None => Err("No result data found".into()),
         }
     }
 }
