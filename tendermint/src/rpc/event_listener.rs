@@ -73,9 +73,23 @@ impl EventListener {
             .await
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
         match serde_json::from_str::<JsonRPCBlockResult>(&msg.to_string()) {
-            Ok(data) => Ok(Event::JsonRPCBlockResult(data)),
+            Ok(data) => {
+                if let Some(data) = data.0.result {
+                    return Ok(Event::JsonRPCBlockResult(data));
+                } else {
+                    // The Websocket should never send an empty block
+                    panic!("Websocket sent us an empty block")
+                }
+            }
             Err(_) => match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
-                Ok(data) => Ok(Event::JsonRPCTransactionResult(data)),
+                Ok(data) => {
+                    if let Some(data) = data.0.result {
+                        return Ok(Event::JsonRPCTransactionResult(data));
+                    } else {
+                        // The Websocket should never send an empty transaction
+                        panic!("Websocket sent us an empty transaction")
+                    }
+                }
                 Err(_) => match serde_json::from_str::<serde_json::Value>(&msg.to_string()) {
                     Ok(data) => Ok(Event::GenericJSONEvent(data)),
                     Err(_) => Ok(Event::GenericStringEvent(msg.to_string())),
@@ -88,12 +102,15 @@ impl EventListener {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Event {
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
-    JsonRPCBlockResult(JsonRPCBlockResult),
+    JsonRPCBlockResult(
+        /// The Block Result
+        RPCBlockResult,
+    ),
 
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
     JsonRPCTransactionResult(
         /// the tx result data
-        JsonRPCTransactionResult,
+        RPCTxResult,
     ),
 
     ///Generic event containing json data
@@ -117,7 +134,7 @@ pub struct JsonRPCBlockResult(Wrapper<RPCBlockResult>);
 
 /// JSON RPC Result Type
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct RPCTxResult {
+pub struct RPCTxResult {
     query: String,
     data: Data,
     events: HashMap<String, Vec<String>>,
@@ -176,21 +193,21 @@ pub struct RPCBlockResult {
 }
 /// Block Results data
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct BlockResultData {
+struct BlockResultData {
     #[serde(rename = "type")]
     data_type: String,
     value: BlockValue,
 }
 ///Block Value
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct BlockValue {
+struct BlockValue {
     block: Block,
     result_begin_block: ResultBeginBlock,
     result_end_block: ResultEndBlock,
 }
 /// Block
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Block {
+struct Block {
     header: Header,
     data: BlockData,
     evidence: Evidence,
@@ -198,20 +215,13 @@ pub struct Block {
 }
 ///Block Txs
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct BlockData {
+struct BlockData {
     txs: Option<serde_json::Value>,
 }
 ///Tendermint evidence
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Evidence {
+struct Evidence {
     evidence: Option<serde_json::Value>,
-}
-
-/// Block Parts
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Parts {
-    total: String,
-    hash: String,
 }
 
 /// Begin Blocke Envts
