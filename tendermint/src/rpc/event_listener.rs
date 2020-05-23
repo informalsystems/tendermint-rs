@@ -77,7 +77,7 @@ impl EventListener {
         match serde_json::from_str::<JsonRPCBlockResult>(&msg.to_string()) {
             Ok(data) => {
                 if let Some(data) = data.0.result {
-                    return Ok(Event::JsonRPCBlockResult(data));
+                    Ok(Event::JsonRPCBlockResult(data))
                 } else {
                     // The Websocket should never send an empty block
                     panic!("Websocket sent us an empty block")
@@ -86,7 +86,7 @@ impl EventListener {
             Err(_) => match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
                 Ok(data) => {
                     if let Some(data) = data.0.result {
-                        return Ok(Event::JsonRPCTransactionResult(data));
+                        Ok(Event::JsonRPCTransactionResult(data))
                     } else {
                         // The Websocket should never send an empty transaction
                         panic!("Websocket sent us an empty transaction")
