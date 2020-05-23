@@ -3,6 +3,7 @@
 use crate::{
     block::Block,
     net,
+    rpc::response,
     rpc::response::Wrapper,
     rpc::Request,
     rpc::{endpoint::subscribe, Error as RPCError},
@@ -76,21 +77,13 @@ impl EventListener {
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
         match serde_json::from_str::<JsonRPCBlockResult>(&msg.to_string()) {
             Ok(data) => {
-                if let Some(block_result) = data.0.result {
-                    Ok(Event::JsonRPCBlockResult(Box::new(block_result)))
-                } else {
-                    // The Websocket should never send an empty block
-                    panic!("Websocket sent us an empty block")
-                }
+                let block_result = data.0.into_result()?;
+                Ok(Event::JsonRPCBlockResult(Box::new(block_result)))
             }
             Err(_) => match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
                 Ok(data) => {
-                    if let Some(tx_result) = data.0.result {
-                        Ok(Event::JsonRPCTransactionResult(Box::new(tx_result)))
-                    } else {
-                        // The Websocket should never send an empty transaction
-                        panic!("Websocket sent us an empty transaction")
-                    }
+                    let tx_result = data.0.into_result()?;
+                    Ok(Event::JsonRPCTransactionResult(Box::new(tx_result)))
                 }
                 Err(_) => match serde_json::from_str::<serde_json::Value>(&msg.to_string()) {
                     Ok(json_value) => Ok(Event::GenericJSONEvent(json_value)),
@@ -130,6 +123,7 @@ pub enum Event {
 /// Websocket result for Processed Transactions
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsonRPCTransactionResult(Wrapper<RPCTxResult>);
+
 /// Websocket result for Processed Block
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsonRPCBlockResult(Wrapper<RPCBlockResult>);
@@ -141,6 +135,7 @@ pub struct RPCTxResult {
     data: Data,
     events: HashMap<String, Vec<String>>,
 }
+impl response::Response for RPCTxResult {}
 
 /// TX data
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -149,12 +144,14 @@ struct Data {
     data_type: String,
     value: TxValue,
 }
+
 /// TX value
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct TxValue {
     #[serde(rename = "TxResult")]
     tx_result: TxResult,
 }
+
 /// Tx Result
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct TxResult {
@@ -163,6 +160,7 @@ struct TxResult {
     tx: String,
     result: TxResultResult,
 }
+
 /// TX Results Results
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct TxResultResult {
@@ -171,6 +169,7 @@ struct TxResultResult {
     gas_used: String,
     events: Vec<TmEvent>,
 }
+impl response::Response for TxResultResult {}
 
 /// Tendermint ABCI Events
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -193,6 +192,8 @@ pub struct RPCBlockResult {
     data: BlockResultData,
     events: HashMap<String, Vec<String>>,
 }
+impl response::Response for RPCBlockResult {}
+
 /// Block Results data
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct BlockResultData {
@@ -200,6 +201,7 @@ struct BlockResultData {
     data_type: String,
     value: BlockValue,
 }
+
 ///Block Value
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct BlockValue {

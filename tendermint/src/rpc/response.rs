@@ -24,13 +24,13 @@ pub trait Response: Serialize + DeserializeOwned + Sized {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub(crate) struct Wrapper<R> {
     /// JSONRPC version
-    pub jsonrpc: Version,
+    jsonrpc: Version,
 
     /// Identifier included in request
-    pub id: Id,
+    id: Id,
 
     /// Results of request (if successful)
-    pub result: Option<R>,
+    result: Option<R>,
 
     /// Error message if unsuccessful
     error: Option<Error>,
