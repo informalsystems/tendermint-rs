@@ -130,6 +130,10 @@ pub enum Code {
     #[error("HTTP error")]
     HttpError,
 
+    /// Low-level Websocket error
+    #[error("Websocket Error")]
+    WebSocketError,
+
     /// Parse error i.e. invalid JSON (-32700)
     #[error("Parse error. Invalid JSON")]
     ParseError,
@@ -154,10 +158,6 @@ pub enum Code {
     #[error("Server error")]
     ServerError,
 
-    /// Websocket error
-    #[error("Websocket Error")]
-    WebSocketError,
-
     /// Other error types
     #[error("Error (code: {})", 0)]
     Other(i32),
@@ -174,6 +174,7 @@ impl From<i32> for Code {
     fn from(value: i32) -> Code {
         match value {
             0 => Code::HttpError,
+            1 => Code::WebSocketError,
             -32700 => Code::ParseError,
             -32600 => Code::InvalidRequest,
             -32601 => Code::MethodNotFound,
@@ -189,13 +190,13 @@ impl From<Code> for i32 {
     fn from(code: Code) -> i32 {
         match code {
             Code::HttpError => 0,
+            Code::WebSocketError => 1,
             Code::ParseError => -32700,
             Code::InvalidRequest => -32600,
             Code::MethodNotFound => -32601,
             Code::InvalidParams => -32602,
             Code::InternalError => -32603,
             Code::ServerError => -32000,
-            Code::WebSocketError => 0,
             Code::Other(other) => other,
         }
     }
