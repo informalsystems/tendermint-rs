@@ -80,16 +80,19 @@ impl EventListener {
                 let block_result = data.0.into_result()?;
                 Ok(Event::JsonRPCBlockResult(Box::new(block_result)))
             }
-            Err(_) => match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
-                Ok(data) => {
-                    let tx_result = data.0.into_result()?;
-                    Ok(Event::JsonRPCTransactionResult(Box::new(tx_result)))
+            Err(e) => {
+                dbg!(e);
+                match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
+                    Ok(data) => {
+                        let tx_result = data.0.into_result()?;
+                        Ok(Event::JsonRPCTransactionResult(Box::new(tx_result)))
+                    }
+                    Err(_) => match serde_json::from_str::<serde_json::Value>(&msg.to_string()) {
+                        Ok(json_value) => Ok(Event::GenericJSONEvent(json_value)),
+                        Err(_) => Ok(Event::GenericStringEvent(msg.to_string())),
+                    },
                 }
-                Err(_) => match serde_json::from_str::<serde_json::Value>(&msg.to_string()) {
-                    Ok(json_value) => Ok(Event::GenericJSONEvent(json_value)),
-                    Err(_) => Ok(Event::GenericStringEvent(msg.to_string())),
-                },
-            },
+            }
         }
     }
 }
