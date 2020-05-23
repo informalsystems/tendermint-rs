@@ -57,7 +57,7 @@ impl EventListener {
             connect_async(&format!("ws://{}:{}/websocket", host, port)).await?;
         Ok(EventListener { socket: ws_stream })
     }
-    //TODO Have a query type instead of a string
+
     /// Subscribe to event query stream over the websocket
     pub async fn subscribe(&mut self, query: EventSubscription) -> Result<(), RPCError> {
         self.socket
