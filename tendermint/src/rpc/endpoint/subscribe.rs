@@ -31,7 +31,7 @@ pub struct Response {}
 
 /// Subcribe is weird RPC endpoint. It's only meaningful at websocket response and there isn't a
 /// synchronous reponse offered. It there is an error it's asynchronous and we don't try and stich
-/// the async response backer together with the Request. We just throw away responses.
+/// the async response back together with the request.
 impl rpc::Response for Response {
     /// We throw away response data JSON string so swallow errors and return the empty Response
     fn from_string(_response: impl AsRef<[u8]>) -> Result<Self, rpc::Error> {
