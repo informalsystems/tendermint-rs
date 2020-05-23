@@ -75,8 +75,10 @@ impl EventListener {
             .next()
             .await
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
-        let res_event = serde_json::from_str::<ResultEvent>(&msg.to_string())?;
-        Ok(res_event.data)
+        let result_event =
+            serde_json::from_str::<WrappedResultEvent>(&msg.to_string())?.into_result()?;
+
+        Ok(result_event.data)
     }
 }
 
@@ -86,18 +88,16 @@ impl EventListener {
 // decodeable via fallthrough variants (GenericJSONEvent).
 /// The Event enum is typed events emitted by the Websockets
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type", content = "value")]
+#[allow(clippy::large_enum_variant)]
 pub enum TMEventData {
-    /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
-    JsonRPCBlockResult(
-        /// The Block Result
-        Box<RPCBlockResult>,
-    ),
+    /// EventDataNewBlock is returned upon subscribing to "tm.event='NewBlock'"
+    #[serde(alias = "tendermint/event/NewBlock")]
+    EventDataNewBlock(EventDataNewBlock),
 
-    /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
-    JsonRPCTransactionResult(
-        /// the tx result data
-        Box<RPCTxResult>,
-    ),
+    /// EventDataTx is returned upon subscribing to "tm.event='Tx'"
+    #[serde(alias = "tendermint/event/Tx")]
+    EventDataTx(EventDataTx),
 
     ///Generic event containing json data
     GenericJSONEvent(
@@ -113,40 +113,21 @@ pub struct ResultEvent {
     data: TMEventData,
     events: HashMap<String, Vec<String>>,
 }
+impl response::Response for ResultEvent {}
 
-/// Websocket result for Processed Transactions
-pub type JsonRPCTransactionResult = Wrapper<RPCTxResult>;
-
-/// Websocket result for Processed Block
-pub type JsonRPCBlockResult = Wrapper<RPCBlockResult>;
-
-/// JSON RPC Result Type
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct RPCTxResult {
-    query: String,
-    data: Data,
-    events: HashMap<String, Vec<String>>,
-}
-impl response::Response for RPCTxResult {}
-
-/// TX data
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct Data {
-    #[serde(rename = "type")]
-    data_type: String,
-    value: TxValue,
-}
+/// JSONRPC wrapped ResultEvent
+pub type WrappedResultEvent = Wrapper<ResultEvent>;
 
 /// TX value
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct TxValue {
+pub struct EventDataTx {
     #[serde(rename = "TxResult")]
     tx_result: TxResult,
 }
 
 /// Tx Result
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct TxResult {
+pub struct TxResult {
     height: String,
     index: i64,
     tx: String,
@@ -155,7 +136,7 @@ struct TxResult {
 
 /// TX Results Results
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct TxResultResult {
+pub struct TxResultResult {
     log: String,
     gas_wanted: String,
     gas_used: String,
@@ -165,14 +146,14 @@ impl response::Response for TxResultResult {}
 
 /// Tendermint ABCI Events
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct TmEvent {
+pub struct TmEvent {
     #[serde(rename = "type")]
     event_type: String,
     attributes: Vec<Attribute>,
 }
 /// Event Attributes
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct Attribute {
+pub struct Attribute {
     key: String,
     value: String,
 }
@@ -191,13 +172,16 @@ impl response::Response for RPCBlockResult {}
 struct BlockResultData {
     #[serde(rename = "type")]
     data_type: String,
-    value: BlockValue,
+    value: EventDataNewBlock,
 }
 
 ///Block Value
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct BlockValue {
+pub struct EventDataNewBlock {
     block: Option<Block>,
+
+    // TODO these should be the same as abci::responses::BeginBlock
+    // and abci::responses::EndBlock
     result_begin_block: Option<ResultBeginBlock>,
     result_end_block: Option<ResultEndBlock>,
 }
@@ -211,19 +195,4 @@ pub struct ResultBeginBlock {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResultEndBlock {
     validator_updates: Vec<Option<serde_json::Value>>,
-}
-
-impl RPCTxResult {
-    /// Extract events from TXEvent if event matches are type query
-    pub fn extract_events(
-        &self,
-        action_query: &str,
-    ) -> Result<HashMap<String, Vec<String>>, Box<dyn stdError>> {
-        if let Some(message_action) = self.events.get("message.action") {
-            if message_action.contains(&action_query.to_owned()) {
-                return Ok(self.events.clone());
-            }
-        }
-        Err("Incorrect Event Type".into())
-    }
 }

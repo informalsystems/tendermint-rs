@@ -168,11 +168,15 @@ mod rpc {
         dbg!(&resp);
         // }
         match resp {
-            TMEventData::JsonRPCTransactionResult (_ ) | TMEventData::JsonRPCBlockResult (_ ) => (),
-            // TODO: while in gaia we seem to receive JsonRPCBlockResult as expected,
-            // we receive a GenericJSONEvent when ran against vanilla tendermint
-            // integration tests.
-            TMEventData::GenericJSONEvent (v ) => {dbg!("got a GenericJSONEvent: {:?}", v); ()},
+            TMEventData::EventDataNewBlock(nb) => {
+                dbg!("got EventDataNewBlock: {:?}", nb);
+            }
+            TMEventData::EventDataTx(tx) => {
+                dbg!("got EventDataTx: {:?}", tx);
+            }
+            TMEventData::GenericJSONEvent(v) => {
+                panic!("got a GenericJSONEvent: {:?}", v);
+            }
         }
     }
 }
