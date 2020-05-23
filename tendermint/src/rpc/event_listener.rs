@@ -194,7 +194,7 @@ struct Attribute {
 pub struct RPCBlockResult {
     query: String,
     data: BlockResultData,
-    events: HashMap<String, Vec<String>>,
+    events: Option<HashMap<String, Vec<String>>>,
 }
 impl response::Response for RPCBlockResult {}
 
@@ -217,7 +217,7 @@ struct BlockValue {
 /// Begin Block Events
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResultBeginBlock {
-    events: Vec<TmEvent>,
+    events: Otion<Vec<TmEvent>>,
 }
 ///End Block Events
 #[derive(Serialize, Deserialize, Debug, Clone)]
