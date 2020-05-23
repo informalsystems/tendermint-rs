@@ -81,7 +81,10 @@ impl EventListener {
                 Ok(Event::JsonRPCBlockResult(Box::new(block_result)))
             }
             Err(e) => {
+                dbg!("Error:");
                 dbg!(e);
+                dbg!("msg:");
+                dbg!(&msg.to_string());
                 match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
                     Ok(data) => {
                         let tx_result = data.0.into_result()?;
