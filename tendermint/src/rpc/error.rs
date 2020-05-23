@@ -123,7 +123,7 @@ impl From<WSError> for Error {
 /// Tendermint RPC error codes.
 ///
 /// See `func RPC*Error()` definitions in:
-/// <https://github.com/tendermint/tendermint/blob/master/rpc/lib/types/types.go>
+/// <https://github.com/tendermint/tendermint/blob/master/rpc/jsonrpc/types/types.go>
 #[derive(Copy, Clone, Debug, Eq, Error, Hash, PartialEq, PartialOrd, Ord)]
 pub enum Code {
     /// Low-level HTTP error
