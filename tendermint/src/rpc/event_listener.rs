@@ -64,7 +64,7 @@ impl EventListener {
         Ok(())
     }
 
-    /// Subscribe to the Events Websocket with a query string for example "tm.event = 'NewBlock'"
+    /// Get the next event from the websocket
     pub async fn get_event(&mut self) -> Result<Event, RPCError> {
         let msg = self
             .socket
