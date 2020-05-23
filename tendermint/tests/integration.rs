@@ -153,7 +153,7 @@ mod rpc {
         )
         .await
         .unwrap();
-        let _ = client.subscribe(&"tm.event='Tx'".to_owned()).await.unwrap();
+        let _ = client.subscribe(tendermint::rpc::event_listener::EventSubscription::BlockSubscription).await.unwrap();
         // let _ = client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
 
         // Collect and throw away the response to subscribe
@@ -165,9 +165,10 @@ mod rpc {
         dbg!(&resp);
         // }
         match resp {
-            Event::GenericStringEvent { data: _ } => assert!(false),
-            Event::GenericJSONEvent { data: _ } => assert!(true),
-            Event::JsonRPCTransctionResult { data: _ } => assert!(true),
+            Event::GenericStringEvent{data:_} => assert!(false),
+            Event::GenericJSONEvent {data:_} => assert!(true),
+            Event::JsonRPCTransactionResult{data:_} => assert!(true),
+            Event::JsonRPCBlockResult{data:_}=> assert!(true),
         }
     }
 }
