@@ -219,23 +219,17 @@ pub struct ResultEndBlock {
     validator_updates: Vec<Option<serde_json::Value>>,
 }
 
-impl JsonRPCTransactionResult {
+impl RPCTxResult {
     /// Extract events from TXEvent if event matches are type query
     pub fn extract_events(
         &self,
         action_query: &str,
     ) -> Result<HashMap<String, Vec<String>>, Box<dyn stdError>> {
-        match &self.0.result {
-            Some(ref result) => {
-                if let Some(message_action) = result.events.get("message.action") {
-                    if message_action.contains(&action_query.to_owned()) {
-                        return Ok(result.events.clone());
-                    }
-                }
-                Err("Incorrect Event Type".into())
+        if let Some(message_action) = self.events.get("message.action") {
+            if message_action.contains(&action_query.to_owned()) {
+                return Ok(self.events.clone());
             }
-
-            None => Err("No result data found".into()),
         }
+        Err("Incorrect Event Type".into())
     }
 }
