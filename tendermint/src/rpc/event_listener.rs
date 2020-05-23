@@ -210,8 +210,8 @@ struct BlockResultData {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct BlockValue {
     block: Block,
-    result_begin_block: ResultBeginBlock,
-    result_end_block: ResultEndBlock,
+    result_begin_block: Option<ResultBeginBlock>,
+    result_end_block: Option<ResultEndBlock>,
 }
 
 /// Begin Block Events
