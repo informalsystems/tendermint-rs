@@ -86,7 +86,7 @@ impl EventListener {
             Err(_) => match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
                 Ok(data) => {
                     if let Some(data) = data.0.result {
-                        Ok(Event::JsonRPCTransactionResult(data))
+                        Ok(Event::JsonRPCTransactionResult(Box::new(data)))
                     } else {
                         // The Websocket should never send an empty transaction
                         panic!("Websocket sent us an empty transaction")
@@ -112,7 +112,7 @@ pub enum Event {
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
     JsonRPCTransactionResult(
         /// the tx result data
-        RPCTxResult,
+        Box<RPCTxResult>,
     ),
 
     ///Generic event containing json data
