@@ -77,7 +77,7 @@ impl EventListener {
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
         match serde_json::from_str::<JsonRPCBlockResult>(&msg.to_string()) {
             Ok(data) => {
-                let block_result = data.0.into_result()?;
+                let block_result = data.into_result()?;
                 Ok(Event::JsonRPCBlockResult(Box::new(block_result)))
             }
             Err(e) => {
@@ -87,7 +87,7 @@ impl EventListener {
                 dbg!(&msg.to_string());
                 match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
                     Ok(data) => {
-                        let tx_result = data.0.into_result()?;
+                        let tx_result = data.into_result()?;
                         Ok(Event::JsonRPCTransactionResult(Box::new(tx_result)))
                     }
                     Err(_) => match serde_json::from_str::<serde_json::Value>(&msg.to_string()) {
@@ -127,12 +127,10 @@ pub enum Event {
 }
 
 /// Websocket result for Processed Transactions
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JsonRPCTransactionResult(Wrapper<RPCTxResult>);
+pub type JsonRPCTransactionResult = Wrapper<RPCTxResult>;
 
 /// Websocket result for Processed Block
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JsonRPCBlockResult(Wrapper<RPCBlockResult>);
+pub type JsonRPCBlockResult = Wrapper<RPCBlockResult>;
 
 /// JSON RPC Result Type
 #[derive(Serialize, Deserialize, Debug, Clone)]

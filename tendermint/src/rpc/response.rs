@@ -22,7 +22,7 @@ pub trait Response: Serialize + DeserializeOwned + Sized {
 
 /// JSONRPC response wrapper (i.e. message envelope)
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub(crate) struct Wrapper<R> {
+pub struct Wrapper<R> {
     /// JSONRPC version
     jsonrpc: Version,
 
