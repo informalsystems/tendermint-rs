@@ -21,16 +21,16 @@ pub trait Response: Serialize + DeserializeOwned + Sized {
 }
 
 /// JSONRPC response wrapper (i.e. message envelope)
-#[derive(Debug, Deserialize, Serialize)]
-struct Wrapper<R> {
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub(crate) struct Wrapper<R> {
     /// JSONRPC version
-    jsonrpc: Version,
+    pub jsonrpc: Version,
 
     /// Identifier included in request
-    id: Id,
+    pub id: Id,
 
     /// Results of request (if successful)
-    result: Option<R>,
+    pub result: Option<R>,
 
     /// Error message if unsuccessful
     error: Option<Error>,

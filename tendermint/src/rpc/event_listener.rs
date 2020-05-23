@@ -2,6 +2,7 @@
 
 use crate::{
     net,
+    rpc::response::Wrapper,
     rpc::Request,
     rpc::{endpoint::subscribe, Error as RPCError},
 };
@@ -70,9 +71,9 @@ impl EventListener {
             .next()
             .await
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
-        match serde_json::from_str::<JSONRpcBlockResult>(&msg.to_string()) {
+        match serde_json::from_str::<JsonRPCBlockResult>(&msg.to_string()) {
             Ok(data) => Ok(Event::JsonRPCBlockResult(data)),
-            Err(_) => match serde_json::from_str::<JSONRpcTxResult>(&msg.to_string()) {
+            Err(_) => match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
                 Ok(data) => Ok(Event::JsonRPCTransactionResult(data)),
                 Err(_) => match serde_json::from_str::<serde_json::Value>(&msg.to_string()) {
                     Ok(data) => Ok(Event::GenericJSONEvent(data)),
@@ -86,12 +87,12 @@ impl EventListener {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Event {
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
-    JsonRPCBlockResult(JSONRpcBlockResult),
+    JsonRPCBlockResult(JsonRPCBlockResult),
 
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
     JsonRPCTransactionResult(
         /// the tx result data
-        JSONRpcTxResult,
+        JsonRPCTransactionResult,
     ),
 
     ///Generic event containing json data
@@ -106,16 +107,16 @@ pub enum Event {
     ),
 }
 
-/// Standard JSON RPC Wrapper
+/// Websocket result for Processed Transactions
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JSONRpcTxResult {
-    jsonrpc: String,
-    id: String,
-    result: RPCResult,
-}
+pub struct JsonRPCTransactionResult(Wrapper<RPCTxResult>);
+/// Websocket result for Processed Block
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct JsonRPCBlockResult(Wrapper<RPCBlockResult>);
+
 /// JSON RPC Result Type
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct RPCResult {
+struct RPCTxResult {
     query: String,
     data: Data,
     events: HashMap<String, Vec<String>>,
@@ -165,16 +166,9 @@ struct Attribute {
     value: String,
 }
 
-///Block Results JSON PRC response
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JSONRpcBlockResult {
-    jsonrpc: String,
-    id: String,
-    result: BlockResult,
-}
 /// Block Results
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct BlockResult {
+pub struct RPCBlockResult {
     query: String,
     data: BlockResultData,
     events: HashMap<String, Vec<String>>,
@@ -274,19 +268,23 @@ pub struct ResultEndBlock {
     validator_updates: Vec<Option<serde_json::Value>>,
 }
 
-impl JSONRpcTxResult {
+impl JsonRPCTransactionResult {
     /// Extract events from TXEvent if event matches are type query
     pub fn extract_events(
         &self,
         action_query: &str,
     ) -> Result<HashMap<String, Vec<String>>, &'static str> {
-        let events = &self.result.events;
-        if let Some(message_action) = events.get("message.action") {
-            if message_action.contains(&action_query.to_owned()) {
-                return Ok(events.clone());
+        match &self.0.result {
+            Some(ref result) => {
+                if let Some(message_action) = result.events.get("message.action") {
+                    if message_action.contains(&action_query.to_owned()) {
+                        return Ok(result.events.clone());
+                    }
+                }
+                Err("Incorrect Event Type")
             }
-        }
 
-        Err("Incorrect Event Type")
+            None => Err("No result data found"),
+        }
     }
 }
