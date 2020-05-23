@@ -172,7 +172,7 @@ mod rpc {
                 "Expected JsonRPCBlockResult or JsonRPCTransactionResult, but got GenericStringEvent"
             ),
             Event::GenericJSONEvent (_) => panic!(
-                "Expected JsonRPCBlockResult or JsonRPCTransactionResult, but got GenericStringEvent"
+                "Expected JsonRPCBlockResult or JsonRPCTransactionResult, but got GenericJSONEvent"
             ),
             Event::JsonRPCTransactionResult ( _ ) | Event::JsonRPCBlockResult ( _ ) => (),
         }
