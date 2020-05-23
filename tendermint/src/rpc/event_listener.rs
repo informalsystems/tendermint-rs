@@ -76,8 +76,8 @@ impl EventListener {
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
         match serde_json::from_str::<JsonRPCBlockResult>(&msg.to_string()) {
             Ok(data) => {
-                if let Some(data) = data.0.result {
-                    Ok(Event::JsonRPCBlockResult(Box::new(data)))
+                if let Some(block_result) = data.0.result {
+                    Ok(Event::JsonRPCBlockResult(Box::new(block_result)))
                 } else {
                     // The Websocket should never send an empty block
                     panic!("Websocket sent us an empty block")
@@ -85,15 +85,15 @@ impl EventListener {
             }
             Err(_) => match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
                 Ok(data) => {
-                    if let Some(data) = data.0.result {
-                        Ok(Event::JsonRPCTransactionResult(Box::new(data)))
+                    if let Some(tx_result) = data.0.result {
+                        Ok(Event::JsonRPCTransactionResult(Box::new(tx_result)))
                     } else {
                         // The Websocket should never send an empty transaction
                         panic!("Websocket sent us an empty transaction")
                     }
                 }
                 Err(_) => match serde_json::from_str::<serde_json::Value>(&msg.to_string()) {
-                    Ok(data) => Ok(Event::GenericJSONEvent(data)),
+                    Ok(json_value) => Ok(Event::GenericJSONEvent(json_value)),
                     Err(_) => Ok(Event::GenericStringEvent(msg.to_string())),
                 },
             },
