@@ -1,7 +1,7 @@
 //! Tendermint Websocket event listener client
 
 use crate::{
-    block::{Commit, Header},
+    block::Block,
     net,
     rpc::response,
     rpc::response::Wrapper,
@@ -212,31 +212,6 @@ struct BlockValue {
     block: Block,
     result_begin_block: ResultBeginBlock,
     result_end_block: ResultEndBlock,
-}
-/// Block
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Block {
-    header: Header,
-    data: BlockData,
-    evidence: Evidence,
-    last_commit: Commit,
-}
-///Block Txs
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct BlockData {
-    txs: Option<serde_json::Value>,
-}
-///Tendermint evidence
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Evidence {
-    evidence: Option<serde_json::Value>,
-}
-
-/// Block Parts
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Parts {
-    total: String,
-    hash: String,
 }
 
 /// Begin Block Events
