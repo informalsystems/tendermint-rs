@@ -243,7 +243,7 @@ impl JsonRPCTransactionResult {
                 Err("Incorrect Event Type".into())
             }
 
-            None => Err("No result dcaata found".into()),
+            None => Err("No result data found".into()),
         }
     }
 }
