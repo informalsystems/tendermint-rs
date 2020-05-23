@@ -1,15 +1,36 @@
 //! Tendermint Websocket event listener client
 
 use crate::{
+    block::{Commit, Header},
     net,
+    rpc::response::Wrapper,
     rpc::Request,
     rpc::{endpoint::subscribe, Error as RPCError},
 };
 use async_tungstenite::{tokio::connect_async, tokio::TokioAdapter, tungstenite::Message};
 use futures::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use tokio::net::TcpStream;
+/// There are only two valid queries to the websocket. A query that subscribes to all transactions
+/// and a query that susbscribes to all blocks.
+pub enum EventSubscription {
+    /// Subscribe to all transactions
+    TransactionSubscription,
+    ///Subscribe to all blocks
+    BlockSubscription,
+}
+
+impl EventSubscription {
+    ///Convert the query enum to a string
+    pub fn as_str(&self) -> &str {
+        match self {
+            EventSubscription::TransactionSubscription => "tm.event='Tx'",
+            EventSubscription::BlockSubscription => "tm.event='NewBlock'",
+        }
+    }
+}
 
 /// Event Listener over websocket.
 /// See: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
@@ -36,10 +57,10 @@ impl EventListener {
     }
     //TODO Have a query type instead of a string
     /// Subscribe to event query stream over the websocket
-    pub async fn subscribe(&mut self, query: &str) -> Result<(), RPCError> {
+    pub async fn subscribe(&mut self, query: EventSubscription) -> Result<(), RPCError> {
         self.socket
             .send(Message::text(
-                subscribe::Request::new(query.to_owned()).into_json(),
+                subscribe::Request::new(query.as_str().to_owned()).into_json(),
             ))
             .await?;
         Ok(())
@@ -52,57 +73,55 @@ impl EventListener {
             .next()
             .await
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
-
-        match serde_json::from_str::<JSONRPC>(&msg.to_string()) {
-            Ok(data) => Ok(Event::JsonRPCTransactionResult {
-                data: Box::new(data),
-            }),
-
-            Err(_) => match msg.to_string().parse::<serde_json::Value>() {
-                Ok(data) => Ok(Event::GenericJSONEvent { data }),
-                Err(_) => Ok(Event::GenericStringEvent {
-                    data: msg.to_string(),
-                }),
+        match serde_json::from_str::<JsonRPCBlockResult>(&msg.to_string()) {
+            Ok(data) => Ok(Event::JsonRPCBlockResult(data)),
+            Err(_) => match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
+                Ok(data) => Ok(Event::JsonRPCTransactionResult(data)),
+                Err(_) => match serde_json::from_str::<serde_json::Value>(&msg.to_string()) {
+                    Ok(data) => Ok(Event::GenericJSONEvent(data)),
+                    Err(_) => Ok(Event::GenericStringEvent(msg.to_string())),
+                },
             },
         }
     }
 }
-
-//TODO more event types
-/// The Event enum is typed events emitted by the Websockets
-#[derive(Debug, Clone)]
+/// The Event enum is typed events emmitted by the Websockets
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Event {
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
-    JsonRPCTransactionResult {
+    JsonRPCBlockResult(JsonRPCBlockResult),
+
+    /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
+    JsonRPCTransactionResult(
         /// the tx result data
-        data: Box<JSONRPC>,
-    },
+        JsonRPCTransactionResult,
+    ),
 
     ///Generic event containing json data
-    GenericJSONEvent {
+    GenericJSONEvent(
         /// generic event json data
-        data: serde_json::Value,
-    },
+        serde_json::Value,
+    ),
     ///Generic String Event
-    GenericStringEvent {
+    GenericStringEvent(
         /// generic string data
-        data: String,
-    },
+        String,
+    ),
 }
 
-/// Standard JSON RPC Wrapper
+/// Websocket result for Processed Transactions
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JSONRPC {
-    jsonrpc: String,
-    id: String,
-    result: RPCResult,
-}
+pub struct JsonRPCTransactionResult(Wrapper<RPCTxResult>);
+/// Websocket result for Processed Block
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct JsonRPCBlockResult(Wrapper<RPCBlockResult>);
+
 /// JSON RPC Result Type
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct RPCResult {
+struct RPCTxResult {
     query: String,
     data: Data,
-    events: std::collections::HashMap<String, Vec<String>>,
+    events: HashMap<String, Vec<String>>,
 }
 
 /// TX data
@@ -132,12 +151,12 @@ struct TxResultResult {
     log: String,
     gas_wanted: String,
     gas_used: String,
-    events: Vec<TxEvent>,
+    events: Vec<TmEvent>,
 }
 
-/// Tx Events
+/// Tendermint ABCI Events
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct TxEvent {
+struct TmEvent {
     #[serde(rename = "type")]
     event_type: String,
     attributes: Vec<Attribute>,
@@ -149,19 +168,81 @@ struct Attribute {
     value: String,
 }
 
-impl JSONRPC {
+/// Block Results
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RPCBlockResult {
+    query: String,
+    data: BlockResultData,
+    events: HashMap<String, Vec<String>>,
+}
+/// Block Results data
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BlockResultData {
+    #[serde(rename = "type")]
+    data_type: String,
+    value: BlockValue,
+}
+///Block Value
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BlockValue {
+    block: Block,
+    result_begin_block: ResultBeginBlock,
+    result_end_block: ResultEndBlock,
+}
+/// Block
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Block {
+    header: Header,
+    data: BlockData,
+    evidence: Evidence,
+    last_commit: Commit,
+}
+///Block Txs
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BlockData {
+    txs: Option<serde_json::Value>,
+}
+///Tendermint evidence
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Evidence {
+    evidence: Option<serde_json::Value>,
+}
+
+/// Block Parts
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Parts {
+    total: String,
+    hash: String,
+}
+
+/// Begin Blocke Envts
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ResultBeginBlock {
+    events: Vec<TmEvent>,
+}
+///End Block Events
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ResultEndBlock {
+    validator_updates: Vec<Option<serde_json::Value>>,
+}
+
+impl JsonRPCTransactionResult {
     /// Extract events from TXEvent if event matches are type query
     pub fn extract_events(
         &self,
         action_query: &str,
-    ) -> Result<std::collections::HashMap<String, Vec<String>>, &'static str> {
-        let events = &self.result.events;
-        if let Some(message_action) = events.get("message.action") {
-            if message_action.contains(&action_query.to_owned()) {
-                return Ok(events.clone());
+    ) -> Result<HashMap<String, Vec<String>>, &'static str> {
+        match &self.0.result {
+            Some(ref result) => {
+                if let Some(message_action) = result.events.get("message.action") {
+                    if message_action.contains(&action_query.to_owned()) {
+                        return Ok(result.events.clone());
+                    }
+                }
+                Err("Incorrect Event Type")
             }
-        }
 
-        Err("Incorrect Event Type")
+            None => Err("No result data found"),
+        }
     }
 }
