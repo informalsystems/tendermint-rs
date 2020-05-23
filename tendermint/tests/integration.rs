@@ -12,7 +12,7 @@ mod rpc {
     use std::cmp::min;
     use tendermint::abci::Code;
     use tendermint::abci::Log;
-    use tendermint::rpc::event_listener::Event;
+    use tendermint::rpc::event_listener::TMEventData;
     use tendermint::rpc::Client;
 
     /// Get the address of the local node
@@ -168,12 +168,12 @@ mod rpc {
         dbg!(&resp);
         // }
         match resp {
-            Event::JsonRPCTransactionResult ( _ ) | Event::JsonRPCBlockResult ( _ ) => (),
+            TMEventData::JsonRPCTransactionResult (_ ) | TMEventData::JsonRPCBlockResult (_ ) => (),
             // TODO: while in gaia we seem to receive JsonRPCBlockResult as expected,
             // we receive a GenericJSONEvent when ran against vanilla tendermint
             // integration tests.
-            Event::GenericJSONEvent ( v ) => {dbg!("got a GenericJSONEvent: {:?}", v); ()},
-            Event::GenericStringEvent( _ ) => panic!(
+            TMEventData::GenericJSONEvent (v ) => {dbg!("got a GenericJSONEvent: {:?}", v); ()},
+            TMEventData::GenericStringEvent(_ ) => panic!(
                 "Expected JsonRPCBlockResult or JsonRPCTransactionResult, but got GenericStringEvent"
             ),
         }

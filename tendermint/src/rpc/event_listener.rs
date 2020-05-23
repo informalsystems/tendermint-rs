@@ -69,7 +69,7 @@ impl EventListener {
     }
 
     /// Get the next event from the websocket
-    pub async fn get_event(&mut self) -> Result<Event, RPCError> {
+    pub async fn get_event(&mut self) -> Result<TMEventData, RPCError> {
         let msg = self
             .socket
             .next()
@@ -78,24 +78,29 @@ impl EventListener {
         match serde_json::from_str::<JsonRPCBlockResult>(&msg.to_string()) {
             Ok(data) => {
                 let block_result = data.into_result()?;
-                Ok(Event::JsonRPCBlockResult(Box::new(block_result)))
+                Ok(TMEventData::JsonRPCBlockResult(Box::new(block_result)))
             }
             Err(_) => match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
                 Ok(data) => {
                     let tx_result = data.into_result()?;
-                    Ok(Event::JsonRPCTransactionResult(Box::new(tx_result)))
+                    Ok(TMEventData::JsonRPCTransactionResult(Box::new(tx_result)))
                 }
                 Err(_) => match serde_json::from_str::<serde_json::Value>(&msg.to_string()) {
-                    Ok(json_value) => Ok(Event::GenericJSONEvent(json_value)),
-                    Err(_) => Ok(Event::GenericStringEvent(msg.to_string())),
+                    Ok(json_value) => Ok(TMEventData::GenericJSONEvent(json_value)),
+                    Err(_) => Ok(TMEventData::GenericStringEvent(msg.to_string())),
                 },
             },
         }
     }
 }
-/// The Event enum is typed events emmitted by the Websockets
+
+// TODO: (later) this should live somewhere else; these events are also
+// published byte the event bus independent from RPC.
+// We leave it here for now because unsupported types are still
+// decodeable via fallthrough variants (GenericJSONEvent).
+/// The Event enum is typed events emitted by the Websockets
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Event {
+pub enum TMEventData {
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
     JsonRPCBlockResult(
         /// The Block Result
@@ -113,11 +118,12 @@ pub enum Event {
         /// generic event json data
         serde_json::Value,
     ),
-    ///Generic String Event
-    GenericStringEvent(
-        /// generic string data
-        String,
-    ),
+}
+
+pub struct ResultEvent {
+    query: String,
+    data: TMEventData,
+    events: HashMap<String, Vec<String>>,
 }
 
 /// Websocket result for Processed Transactions
