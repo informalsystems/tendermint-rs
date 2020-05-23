@@ -153,14 +153,14 @@ mod rpc {
         )
         .await
         .unwrap();
-        let _ = client
+        client
             .subscribe(tendermint::rpc::event_listener::EventSubscription::BlockSubscription)
             .await
             .unwrap();
-        // let _ = client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
+        // client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
 
         // Collect and throw away the response to subscribe
-        let _ = client.get_event().await.unwrap();
+        client.get_event().await.unwrap();
 
         // Loop here is helpful when debugging parsing of JSON events
         // loop{
@@ -174,8 +174,7 @@ mod rpc {
             Event::GenericJSONEvent (_) => panic!(
                 "Expected JsonRPCBlockResult or JsonRPCTransactionResult, but got GenericStringEvent"
             ),
-            Event::JsonRPCTransactionResult ( _ ) => assert!(true),
-            Event::JsonRPCBlockResult ( _ ) => assert!(true),
+            Event::JsonRPCTransactionResult ( _ ) | Event::JsonRPCBlockResult ( _ ) => (),
         }
     }
 }

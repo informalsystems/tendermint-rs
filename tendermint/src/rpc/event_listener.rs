@@ -75,9 +75,9 @@ impl EventListener {
             .await
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
         match serde_json::from_str::<JsonRPCBlockResult>(&msg.to_string()) {
-            Ok(data) => Ok(Event::JsonRPCBlockResult(data)),
+            Ok(data) => Ok(Event::JsonRPCBlockResult(Box::new(data))),
             Err(_) => match serde_json::from_str::<JsonRPCTransactionResult>(&msg.to_string()) {
-                Ok(data) => Ok(Event::JsonRPCTransactionResult(data)),
+                Ok(data) => Ok(Event::JsonRPCTransactionResult(Box::new(data))),
                 Err(_) => match serde_json::from_str::<serde_json::Value>(&msg.to_string()) {
                     Ok(data) => Ok(Event::GenericJSONEvent(data)),
                     Err(_) => Ok(Event::GenericStringEvent(msg.to_string())),
@@ -90,12 +90,12 @@ impl EventListener {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Event {
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
-    JsonRPCBlockResult(JsonRPCBlockResult),
+    JsonRPCBlockResult(Box<JsonRPCBlockResult>),
 
     /// The result of the ABCI app processing a transaction, serialized as JSON RPC response
     JsonRPCTransactionResult(
         /// the tx result data
-        JsonRPCTransactionResult,
+        Box<JsonRPCTransactionResult>,
     ),
 
     ///Generic event containing json data
@@ -243,7 +243,7 @@ impl JsonRPCTransactionResult {
                 Err("Incorrect Event Type".into())
             }
 
-            None => Err("No result data found".into()),
+            None => Err("No result dcaata found".into()),
         }
     }
 }
