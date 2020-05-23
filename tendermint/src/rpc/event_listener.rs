@@ -5,11 +5,13 @@ use crate::{
     rpc::response::Wrapper,
     rpc::Request,
     rpc::{endpoint::subscribe, Error as RPCError},
+    block::{Header,Commit},
 };
 use async_tungstenite::{tokio::connect_async, tokio::TokioAdapter, tungstenite::Message};
 use futures::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
 
 use tokio::net::TcpStream;
 /// There are only two valid queries to the websocket. A query that subscribes to all transactions
@@ -193,7 +195,7 @@ pub struct Block {
     header: Header,
     data: BlockData,
     evidence: Evidence,
-    last_commit: LastCommit,
+    last_commit: Commit,
 }
 ///Block Txs
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -205,58 +207,15 @@ pub struct BlockData {
 pub struct Evidence {
     evidence: Option<serde_json::Value>,
 }
-/// Header
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Header {
-    version: Version,
-    chain_id: String,
-    height: String,
-    time: String,
-    last_block_id: BlockId,
-    last_commit_hash: String,
-    data_hash: String,
-    validators_hash: String,
-    next_validators_hash: String,
-    consensus_hash: String,
-    app_hash: String,
-    last_results_hash: String,
-    evidence_hash: String,
-    proposer_address: String,
-}
-///Block ID
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct BlockId {
-    hash: String,
-    parts: Parts,
-}
+
+
 /// Block Parts
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Parts {
     total: String,
     hash: String,
 }
-///Block version
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Version {
-    block: String,
-    app: String,
-}
-///Perevious Commit
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct LastCommit {
-    height: String,
-    round: String,
-    block_id: BlockId,
-    signatures: Vec<Signature>,
-}
-///Signatures
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Signature {
-    block_id_flag: i64,
-    validator_address: String,
-    timestamp: String,
-    signature: String,
-}
+
 /// Begin Blocke Envts
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResultBeginBlock {
