@@ -82,7 +82,6 @@ impl EventListener {
         }
     }
 }
-//TODO more event types
 /// The Event enum is typed events emmitted by the Websockets
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Event {
