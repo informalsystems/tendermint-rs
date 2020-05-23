@@ -35,7 +35,7 @@ impl EventSubscription {
 }
 
 /// Event Listener over websocket.
-/// See: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
+/// See: <https://docs.tendermint.com/master/rpc/#/Websocket/subscribe>
 pub struct EventListener {
     socket: async_tungstenite::WebSocketStream<TokioAdapter<TcpStream>>,
 }
