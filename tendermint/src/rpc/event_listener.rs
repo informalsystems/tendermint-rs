@@ -69,7 +69,7 @@ impl EventListener {
     }
 
     /// Get the next event from the websocket
-    pub async fn get_event(&mut self) -> Result<TMEventData, Box<dyn stdError>> {
+    pub async fn get_event(&mut self) -> Result<Option<TMEventData>, Box<dyn stdError>> {
         let msg = self
             .socket
             .next()
@@ -111,9 +111,9 @@ pub enum TMEventData {
 /// Event data from a subscription
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResultEvent {
-    query: String,
-    data: TMEventData,
-    events: HashMap<String, Vec<String>>,
+    query: Option<String>,
+    data: Option<TMEventData>,
+    events: Option<HashMap<String, Vec<String>>>,
 }
 impl response::Response for ResultEvent {}
 

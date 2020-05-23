@@ -160,11 +160,12 @@ mod rpc {
         // client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
 
         // Collect and throw away the response to subscribe
-        client.get_event().await.unwrap();
+        let empty = client.get_event().await.unwrap();
+        assert!(empty.is_none());
 
         // Loop here is helpful when debugging parsing of JSON events
         // loop{
-        let resp = client.get_event().await.unwrap();
+        let resp = client.get_event().await.unwrap().unwrap();
         dbg!(&resp);
         // }
         match resp {
