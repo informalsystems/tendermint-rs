@@ -187,5 +187,5 @@ pub struct ResultBeginBlock {
 ///End Block Events
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResultEndBlock {
-    validator_updates: Vec<Option<serde_json::Value>>,
+    validator_updates: Option<Vec<Option<serde_json::Value>>>,
 }
