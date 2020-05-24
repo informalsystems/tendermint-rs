@@ -65,6 +65,8 @@ impl EventListener {
                 subscribe::Request::new(query.as_str().to_owned()).into_json(),
             ))
             .await?;
+        // TODO(ismail): this works if subscriptions are fired sequentially and no event or
+        // ping message gets in the way:
         // Wait for an empty response on subscribe
         let msg = self
             .socket
@@ -90,11 +92,11 @@ impl EventListener {
     }
 }
 
-// TODO: (later) this should live somewhere else; these events are also
-// published byte the event bus independent from RPC.
+// TODO(ismail): this should live somewhere else; these events are also
+// published by the event bus independent from RPC.
 // We leave it here for now because unsupported types are still
 // decodeable via fallthrough variants (GenericJSONEvent).
-/// The Event enum is typed events emitted by the Websockets
+/// The Event enum is typed events emitted by the Websockets.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type", content = "value")]
 #[allow(clippy::large_enum_variant)]
@@ -107,7 +109,7 @@ pub enum TMEventData {
     #[serde(alias = "tendermint/event/Tx")]
     EventDataTx(EventDataTx),
 
-    ///Generic event containing json data
+    /// Generic event containing json data
     GenericJSONEvent(
         /// generic event json data
         serde_json::Value,
@@ -171,7 +173,7 @@ pub struct Attribute {
 pub struct EventDataNewBlock {
     block: Option<Block>,
 
-    // TODO these should be the same as abci::responses::BeginBlock
+    // TODO(ismail): these should be the same as abci::responses::BeginBlock
     // and abci::responses::EndBlock
     result_begin_block: Option<ResultBeginBlock>,
     result_end_block: Option<ResultEndBlock>,
