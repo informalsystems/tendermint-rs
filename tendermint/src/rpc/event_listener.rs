@@ -168,23 +168,6 @@ pub struct Attribute {
     value: String,
 }
 
-/// Block Results
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct RPCBlockResult {
-    query: String,
-    data: BlockResultData,
-    events: HashMap<String, Vec<String>>,
-}
-impl response::Response for RPCBlockResult {}
-
-/// Block Results data
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct BlockResultData {
-    #[serde(rename = "type")]
-    data_type: String,
-    value: EventDataNewBlock,
-}
-
 ///Block Value
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EventDataNewBlock {
