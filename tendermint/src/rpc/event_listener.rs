@@ -182,7 +182,7 @@ pub struct EventDataNewBlock {
 /// Begin Block Events
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResultBeginBlock {
-    events: Vec<TmEvent>,
+    events: Option<Vec<TmEvent>>,
 }
 ///End Block Events
 #[derive(Serialize, Deserialize, Debug, Clone)]
