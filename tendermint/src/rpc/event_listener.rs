@@ -79,7 +79,7 @@ impl EventListener {
     }
 
     /// Get the next event from the websocket
-    pub async fn get_event(&mut self) -> Result<Option<TMEventData>, Box<dyn stdError>> {
+    pub async fn get_event(&mut self) -> Result<ResultEvent, Box<dyn stdError>> {
         let msg = self
             .socket
             .next()
@@ -88,7 +88,7 @@ impl EventListener {
         let result_event =
             serde_json::from_str::<WrappedResultEvent>(&msg.to_string())?.into_result()?;
 
-        Ok(result_event.data)
+        Ok(result_event)
     }
 }
 
@@ -119,9 +119,12 @@ pub enum TMEventData {
 /// Event data from a subscription
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResultEvent {
-    query: Option<String>,
-    data: Option<TMEventData>,
-    events: Option<HashMap<String, Vec<String>>>,
+    /// Query for this result
+    pub query: String,
+    /// Tendermint EventData
+    pub data: TMEventData,
+    /// Event type and event attributes map
+    pub events: Option<HashMap<String, Vec<String>>>,
 }
 impl response::Response for ResultEvent {}
 
