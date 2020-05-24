@@ -59,12 +59,19 @@ impl EventListener {
     }
 
     /// Subscribe to event query stream over the websocket
-    pub async fn subscribe(&mut self, query: EventSubscription) -> Result<(), RPCError> {
+    pub async fn subscribe(&mut self, query: EventSubscription) -> Result<(), Box<dyn stdError>> {
         self.socket
             .send(Message::text(
                 subscribe::Request::new(query.as_str().to_owned()).into_json(),
             ))
             .await?;
+        // Wait for an empty response on subscribe
+        let msg = self
+            .socket
+            .next()
+            .await.ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
+        serde_json::from_str::<Wrapper<subscribe::Response>>(&msg.to_string())?.into_result()?;
+
         Ok(())
     }
 

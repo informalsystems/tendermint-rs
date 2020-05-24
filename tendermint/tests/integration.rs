@@ -159,11 +159,6 @@ mod rpc {
             .unwrap();
         // client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
 
-        // TODO: this is wrong: we should wait for a response on subscription
-        // instead of misusing get_event for confirming we successfully subscribed:
-        // Collect and throw away the response to subscribe
-        let empty = client.get_event().await.unwrap();
-        assert!(empty.is_none());
 
         // Loop here is helpful when debugging parsing of JSON events
         // loop{
