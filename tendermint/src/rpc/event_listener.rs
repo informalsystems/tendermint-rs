@@ -14,7 +14,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error as stdError;
 
+use crate::rpc::error::Code;
 use tokio::net::TcpStream;
+
 /// There are only two valid queries to the websocket. A query that subscribes to all transactions
 /// and a query that susbscribes to all blocks.
 pub enum EventSubscription {
@@ -91,14 +93,19 @@ impl EventListener {
             return Ok(Some(result_event.into_result()?));
         }
         dbg!("We did not receive a valid JSONRPC wrapped ResultEvent!");
-        if let Ok(_) = serde_json::from_str::<String>(&msg.to_string()) {
+        if serde_json::from_str::<String>(&msg.to_string()).is_ok() {
             // FIXME(ismail): Until this is a proper websocket client
             // (or the endpoint moved to grpc in tendermint), we accept whatever was read here
             // dbg! it out and return None below.
             dbg!("Instead of JSONRPC wrapped ResultEvent, we got:");
             dbg!(&msg.to_string());
+            return Ok(None);
         }
-        Ok(None)
+
+        Err(RPCError::new(
+            Code::Other(-1),
+            Some("received neither event nor generic string message".to_string()),
+        ))
     }
 }
 
