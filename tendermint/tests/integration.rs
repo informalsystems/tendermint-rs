@@ -161,9 +161,10 @@ mod rpc {
 
         // Loop here is helpful when debugging parsing of JSON events
         // loop{
-        let result_event = client.get_event().await.unwrap();
-        dbg!(&result_event);
+        let maybe_result_event = client.get_event().await.unwrap();
+        dbg!(&maybe_result_event);
         // }
+        let result_event = maybe_result_event.expect("unexpected msg read");
         match result_event.data {
             TMEventData::EventDataNewBlock(nb) => {
                 dbg!("got EventDataNewBlock: {:?}", nb);

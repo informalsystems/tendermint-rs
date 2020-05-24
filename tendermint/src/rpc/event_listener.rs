@@ -79,16 +79,26 @@ impl EventListener {
     }
 
     /// Get the next event from the websocket
-    pub async fn get_event(&mut self) -> Result<ResultEvent, Box<dyn stdError>> {
+    pub async fn get_event(&mut self) -> Result<Option<ResultEvent>, RPCError> {
         let msg = self
             .socket
             .next()
             .await
             .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
-        let result_event =
-            serde_json::from_str::<WrappedResultEvent>(&msg.to_string())?.into_result()?;
 
-        Ok(result_event)
+        if let Ok(result_event) = serde_json::from_str::<WrappedResultEvent>(&msg.to_string()) {
+            // if we get an rpc error here, we will bubble it up:
+            return Ok(Some(result_event.into_result()?));
+        }
+        dbg!("We did not receive a valid JSONRPC wrapped ResultEvent!");
+        if let Ok(_) = serde_json::from_str::<String>(&msg.to_string()) {
+            // FIXME(ismail): Until this is a proper websocket client
+            // (or the endpoint moved to grpc in tendermint), we accept whatever was read here
+            // dbg! it out and return None below.
+            dbg!("Instead of JSONRPC wrapped ResultEvent, we got:");
+            dbg!(&msg.to_string());
+        }
+        Ok(None)
     }
 }
 
