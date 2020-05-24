@@ -69,7 +69,8 @@ impl EventListener {
         let msg = self
             .socket
             .next()
-            .await.ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
+            .await
+            .ok_or_else(|| RPCError::websocket_error("web socket closed"))??;
         serde_json::from_str::<Wrapper<subscribe::Response>>(&msg.to_string())?.into_result()?;
 
         Ok(())

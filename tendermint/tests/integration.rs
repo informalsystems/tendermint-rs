@@ -159,7 +159,6 @@ mod rpc {
             .unwrap();
         // client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
 
-
         // Loop here is helpful when debugging parsing of JSON events
         // loop{
         let resp = client.get_event().await.unwrap().unwrap();
