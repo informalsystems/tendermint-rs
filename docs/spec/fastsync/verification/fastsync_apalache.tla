@@ -58,7 +58,7 @@ EXTENDS Integers, FiniteSets, Sequences
 
 CONSTANTS MAX_HEIGHT,                \* the maximal height of blockchain
           VALIDATOR_SETS,            \* abstract set of validators
-          NIL_VS,                     \* a nil validator set
+          NIL_VS,                    \* a nil validator set
           CORRECT,                   \* set of correct peers
           FAULTY,                    \* set of faulty peers
           TARGET_PENDING,            \* maximum number of pending requests + downloaded blocks that are not yet processed
@@ -584,11 +584,10 @@ SendControlMessage ==
 
 \* An extremely important property of block hashes (blockId):
 \* If a commit is correct, then the previous block in the block store must be also correct.
-\* The same applies to the other direction.
 UnforgeableBlockId(height, block) ==
     block.hashEqRef => block = chain[height]
 
-\* a faulty peer cannot forge the validators signatures and thus cannot produce a fork
+\* A faulty peer cannot forge the validators signatures and thus cannot produce a fork.
 NoFork(height, block) ==
     LET refBlock == chain[height] IN
     ~block.hashEqRef => block.VS /= refBlock.VS
@@ -707,8 +706,12 @@ TypeOK ==
            ]
 
 \* TODO: align with the English spec. Add reference to it
-Sync1 == state = "finished" =>
-    blockPool.height >= MaxCorrectPeerHeight(blockPool)
+Sync1 == 
+    [](state = "finished" =>
+        blockPool.height >= MaxCorrectPeerHeight(blockPool))
+
+Sync1AsInv ==
+    state = "finished" => blockPool.height >= MaxCorrectPeerHeight(blockPool)
 
 \* TODO: align with the English spec. Add reference to it
 Sync2 ==
@@ -736,7 +739,7 @@ Sync3AsInv ==
 \* TODO: align with the English spec. Add reference to it
 \* FIXME: uncomment when the Apalache issue is fixed:
 \* https://github.com/konnov/apalache/issues/145
-\*Termination == WF_turn(FlipTurn) => <>(state = "finished")
+Termination == WF_turn(FlipTurn) => <>(state = "finished")
 
 \* a few simple properties that trigger counterexamples
 
@@ -779,6 +782,6 @@ BlockPoolInvariant ==
 
 \*=============================================================================
 \* Modification History
-\* Last modified Wed May 20 10:42:38 CEST 2020 by igor
+\* Last modified Mon May 25 19:48:46 CEST 2020 by igor
 \* Last modified Thu Apr 16 16:57:22 CEST 2020 by zarkomilosevic
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic

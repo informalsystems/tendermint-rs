@@ -51,13 +51,15 @@ Blocks ==
 \* Does the chain contain a sound sequence of blocks that could be produced by
 \* a 2/3 of faulty validators. This operator can be used to initialise the chain!
 IsCorrectChain(chain) ==
-    /\ chain \in [1..MAX_HEIGHT -> Blocks]
+    \* restrict the structure of the blocks, to decrease the TLC search space
+    LET OkCommits == [blockIdEqRef: {TRUE}, committers: VALIDATOR_SETS]
+        OkBlocks == [height: Heights, hashEqRef: {TRUE}, wellFormed: {TRUE},
+                     VS: VALIDATOR_SETS, NextVS: VALIDATOR_SETS, lastCommit: OkCommits]
+    IN
+    /\ chain \in [1..MAX_HEIGHT -> OkBlocks]
     /\ \A h \in 1..MAX_HEIGHT:
         LET b == chain[h] IN
         /\ b.height = h     \* the height is correct
-        /\ b.wellFormed     \* the block structure is OK
-        /\ b.hashEqRef      \* the hash equals to that of the reference block (itself!)
-        /\ b.lastCommit.blockIdEqRef    \* the hash in the last commit is OK
         /\ h > 1 =>
              LET p == chain[h - 1] IN
              /\ b.VS = p.NextVS     \* the validators propagate from the previous block
