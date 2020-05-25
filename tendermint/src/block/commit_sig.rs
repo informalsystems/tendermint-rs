@@ -45,7 +45,6 @@ pub enum CommitSig {
 impl TryFrom<RawCommitSig> for CommitSig {
     type Error = &'static str;
 
-    // Todo: @melekes asked: where's validator_address validation?
     fn try_from(value: RawCommitSig) -> Result<Self, Self::Error> {
         // Validate CommitSig (strict)
         match value.block_id_flag {
