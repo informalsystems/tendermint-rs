@@ -176,11 +176,11 @@ impl Clock for MockClock {
 
 fn verify_bisection(
     untrusted_height: Height,
-    demuxer: &mut LightClient,
+    light_client: &mut LightClient,
 ) -> Result<Vec<LightBlock>, Error> {
-    demuxer
+    light_client
         .verify_to_target(untrusted_height)
-        .map(|()| demuxer.get_trace(untrusted_height))
+        .map(|_| light_client.get_trace(untrusted_height))
 }
 
 fn run_bisection_test(case: TestBisection) {
@@ -237,7 +237,7 @@ fn run_bisection_test(case: TestBisection) {
         ProdHeaderHasher,
     );
 
-    let mut demuxer = LightClient::new(
+    let mut light_client = LightClient::new(
         state,
         options,
         clock,
@@ -247,7 +247,7 @@ fn run_bisection_test(case: TestBisection) {
         io.clone(),
     );
 
-    match verify_bisection(untrusted_height, &mut demuxer) {
+    match verify_bisection(untrusted_height, &mut light_client) {
         Ok(new_states) => {
             let untrusted_light_block = io
                 .fetch_light_block(primary.clone(), untrusted_height)
