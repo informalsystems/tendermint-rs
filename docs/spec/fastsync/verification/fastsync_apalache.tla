@@ -564,17 +564,14 @@ SendStatusResponseMessage(pState) ==
 
 SendAddPeerMessage ==
    \E peer \in AllPeerIds:
-     /\ inMsg' = AsInMsg([type |-> "addPeer", peerId |-> peer])
-     /\ UNCHANGED peersState
+     inMsg' = AsInMsg([type |-> "addPeer", peerId |-> peer])
 
 SendRemovePeerMessage ==
    \E peer \in AllPeerIds:
-     /\ inMsg' = AsInMsg([type |-> "removePeer", peerId |-> peer])
-     /\ UNCHANGED peersState
+     inMsg' = AsInMsg([type |-> "removePeer", peerId |-> peer])
 
 SendSyncTimeoutMessage ==
-    /\ inMsg' = AsInMsg([type |-> "syncTimeout"])
-    /\ UNCHANGED peersState
+     inMsg' = AsInMsg([type |-> "syncTimeout"])
 
 
 SendControlMessage ==
@@ -630,7 +627,7 @@ SendResponseMessage(pState) ==
 NextEnvStep(pState) ==
     \/  SendResponseMessage(pState)
     \/  GrowPeerHeight(pState)
-    \/  SendControlMessage
+    \/  SendControlMessage /\ peersState' = pState
 
 
 \* Peers consume a message and update it's local state. It then makes a single step, i.e., it sends at most single message.
@@ -737,9 +734,13 @@ Sync3AsInv ==
         \/ (state = "finished" => blockPool.height >= blockPool.peerHeights[p] - 1)
 
 \* TODO: align with the English spec. Add reference to it
-\* FIXME: uncomment when the Apalache issue is fixed:
-\* https://github.com/konnov/apalache/issues/145
+\* This property is violated, as we do not track precisely timeouts
 Termination == WF_turn(FlipTurn) => <>(state = "finished")
+
+\* This property holds true
+Termination2 == (WF_turn(FlipTurn)
+                    /\ <>[](inMsg.type \notin {"statusResponse", "addPeer", "removePeer"}))
+                    => <>(state = "finished")
 
 \* a few simple properties that trigger counterexamples
 
@@ -782,6 +783,6 @@ BlockPoolInvariant ==
 
 \*=============================================================================
 \* Modification History
-\* Last modified Mon May 25 19:48:46 CEST 2020 by igor
+\* Last modified Mon May 25 21:03:53 CEST 2020 by igor
 \* Last modified Thu Apr 16 16:57:22 CEST 2020 by zarkomilosevic
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic
