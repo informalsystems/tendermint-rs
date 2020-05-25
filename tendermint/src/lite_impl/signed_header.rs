@@ -61,7 +61,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
         }
 
         // TODO: this last check is only necessary if we do full verification (2/3)
-        // Todo: @melekes asked why the above is a TODO, find out and resolve it or open an issue
+        // https://github.com/informalsystems/tendermint-rs/issues/281
         // returns ImplementationSpecific error if it detects a signer
         // that is not present in the validator set:
         for commit_sig in self.commit.signatures.iter() {
