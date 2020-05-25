@@ -2,7 +2,8 @@
 //!
 //! Serializers and deserializers for a transparent developer experience.
 //!
-//! All serializers are presented in a serializers::<Rust_nickname>::<JSON_representation_name> format.
+//! All serializers are presented in a serializers::<Rust_nickname>::<JSON_representation_name>
+//! format.
 //!
 //! This example shows how to serialize Vec<u8> into different types of strings:
 //! ```ignore
@@ -33,7 +34,8 @@
 //! Vec<u8>              <-> String:               #[serde(with="serializers::bytes::string")]
 //!
 //! Notes:
-//! * Any type that has the "FromStr" trait can be serialized into a string with serializers::primitives::string.
+//! * Any type that has the "FromStr" trait can be serialized into a string with
+//!   serializers::primitives::string.
 //! * serializers::bytes::* deserializes a null value into an empty vec![].
 
 pub(crate) mod bytes;

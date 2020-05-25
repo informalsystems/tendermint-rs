@@ -4,7 +4,7 @@ use crate::{
     abci::{self, Transaction},
     block::Height,
     net,
-    rpc::{self, endpoint::*, Error, Response},
+    rpc::{endpoint::*, Error, Request, Response},
     Genesis,
 };
 use bytes::buf::ext::BufExt;
@@ -153,7 +153,7 @@ impl Client {
     /// Perform a request against the RPC endpoint
     pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
-        R: rpc::Request,
+        R: Request,
     {
         let request_body = request.into_json();
 
@@ -182,7 +182,6 @@ impl Client {
                     .unwrap(),
             );
         }
-
         let http_client = hyper::Client::builder().build_http();
         let response = http_client.request(request).await?;
         let response_body = hyper::body::aggregate(response.into_body()).await?;
