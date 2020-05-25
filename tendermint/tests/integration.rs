@@ -12,6 +12,7 @@ mod rpc {
     use std::cmp::min;
     use tendermint::abci::Code;
     use tendermint::abci::Log;
+    use tendermint::rpc::event_listener::Event;
     use tendermint::rpc::Client;
 
     /// Get the address of the local node
@@ -34,7 +35,7 @@ mod rpc {
     async fn abci_info() {
         let abci_info = localhost_rpc_client().abci_info().await.unwrap();
 
-        assert_eq!(&abci_info.version, "0.16.2");
+        assert_eq!(&abci_info.version, "0.17.0");
         assert_eq!(abci_info.app_version, 1u64);
         // the kvstore app's reply will contain "{\"size\":0}" as data right from the start
         assert_eq!(&abci_info.data, "{\"size\":0}");
@@ -58,7 +59,7 @@ mod rpc {
         assert_eq!(abci_query.index, 0);
         assert_eq!(&abci_query.key, &Vec::<u8>::new());
         assert!(&abci_query.key.is_empty());
-        assert!(abci_query.value.is_none());
+        assert_eq!(abci_query.value, Vec::<u8>::new());
         assert!(abci_query.proof.is_none());
         assert!(abci_query.height.value() > 0);
         assert_eq!(abci_query.codespace, String::new());
@@ -142,5 +143,39 @@ mod rpc {
 
         // For lack of better things to test
         assert_eq!(status.validator_info.voting_power.value(), 10);
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn event_subscription() {
+        let mut client = tendermint::rpc::event_listener::EventListener::connect(
+            "tcp://127.0.0.1:26657".parse().unwrap(),
+        )
+        .await
+        .unwrap();
+        client
+            .subscribe(tendermint::rpc::event_listener::EventSubscription::BlockSubscription)
+            .await
+            .unwrap();
+        // client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
+
+        // Collect and throw away the response to subscribe
+        client.get_event().await.unwrap();
+
+        // Loop here is helpful when debugging parsing of JSON events
+        // loop{
+        let resp = client.get_event().await.unwrap();
+        dbg!(&resp);
+        // }
+        match resp {
+            Event::JsonRPCTransactionResult ( _ ) | Event::JsonRPCBlockResult ( _ ) => (),
+            // TODO: while in gaia we seem to receive JsonRPCBlockResult as expected,
+            // we receive a GenericJSONEvent when ran against vanilla tendermint
+            // integration tests.
+            Event::GenericJSONEvent ( v ) => {dbg!("got a GenericJSONEvent: {:?}", v); ()},
+            Event::GenericStringEvent( _ ) => panic!(
+                "Expected JsonRPCBlockResult or JsonRPCTransactionResult, but got GenericStringEvent"
+            ),
+        }
     }
 }

@@ -1,5 +1,6 @@
 //! JSONRPC error types
 
+use async_tungstenite::tungstenite::Error as WSError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Display};
 use thiserror::Error;
@@ -42,6 +43,11 @@ impl Error {
     /// Create a new invalid parameter error
     pub fn invalid_params(data: &str) -> Error {
         Error::new(Code::InvalidParams, Some(data.to_string()))
+    }
+
+    /// Create a new websocket error
+    pub fn websocket_error(cause: impl Into<String>) -> Error {
+        Error::new(Code::WebSocketError, Some(cause.into()))
     }
 
     /// Create a new method-not-found error
@@ -108,15 +114,25 @@ impl From<hyper::Error> for Error {
     }
 }
 
+impl From<WSError> for Error {
+    fn from(websocket_error: WSError) -> Error {
+        Error::websocket_error(websocket_error.to_string())
+    }
+}
+
 /// Tendermint RPC error codes.
 ///
 /// See `func RPC*Error()` definitions in:
-/// <https://github.com/tendermint/tendermint/blob/master/rpc/lib/types/types.go>
+/// <https://github.com/tendermint/tendermint/blob/master/rpc/jsonrpc/types/types.go>
 #[derive(Copy, Clone, Debug, Eq, Error, Hash, PartialEq, PartialOrd, Ord)]
 pub enum Code {
     /// Low-level HTTP error
     #[error("HTTP error")]
     HttpError,
+
+    /// Low-level Websocket error
+    #[error("Websocket Error")]
+    WebSocketError,
 
     /// Parse error i.e. invalid JSON (-32700)
     #[error("Parse error. Invalid JSON")]
@@ -158,6 +174,7 @@ impl From<i32> for Code {
     fn from(value: i32) -> Code {
         match value {
             0 => Code::HttpError,
+            1 => Code::WebSocketError,
             -32700 => Code::ParseError,
             -32600 => Code::InvalidRequest,
             -32601 => Code::MethodNotFound,
@@ -173,6 +190,7 @@ impl From<Code> for i32 {
     fn from(code: Code) -> i32 {
         match code {
             Code::HttpError => 0,
+            Code::WebSocketError => 1,
             Code::ParseError => -32700,
             Code::InvalidRequest => -32600,
             Code::MethodNotFound => -32601,

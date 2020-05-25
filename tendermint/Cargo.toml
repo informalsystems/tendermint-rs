@@ -56,8 +56,9 @@ thiserror = "1"
 toml = { version = "0.5" }
 uuid = { version = "0.8", default-features = false }
 zeroize = { version = "1.1", features = ["zeroize_derive"] }
+async-tungstenite = {version="0.4", features = ["tokio-runtime"]}
+tokio = { version = "0.2", features = ["macros"] }
 ripemd160 = "0.8"
 
 [dev-dependencies]
 serde_json = "1"
-tokio = { version = "0.2", features = ["macros"] }

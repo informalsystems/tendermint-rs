@@ -7,7 +7,8 @@ use crate::{account, validator, Signature, Time};
 use anomaly::fail;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
-/// BlockIDFlag is used to indicate the validator has voted either for nil, a particular BlockID or was absent.
+/// BlockIDFlag is used to indicate the validator has voted either for nil, a particular BlockID or
+/// was absent.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum BlockIDFlag {
     /// BlockIDFlagAbsent - no vote was received from a validator.

@@ -45,10 +45,7 @@ pub struct Header {
     pub consensus_hash: Hash,
 
     /// State after txs from the previous block
-    #[serde(
-        serialize_with = "serializers::serialize_hex",
-        deserialize_with = "serializers::parse_hex"
-    )]
+    #[serde(with = "serializers::bytes::hexstring")]
     pub app_hash: Vec<u8>,
 
     /// Root hash of all results from the txs from the previous block
@@ -70,17 +67,11 @@ pub struct Header {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Version {
     /// Block version
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(with = "serializers::from_str")]
     pub block: u64,
 
     /// App version
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(with = "serializers::from_str")]
     pub app: u64,
 }
 

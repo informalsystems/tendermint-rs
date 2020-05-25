@@ -49,10 +49,7 @@ where
     #[derive(Deserialize)]
     struct TmpCommit {
         pub height: Height,
-        #[serde(
-            serialize_with = "serializers::serialize_u64",
-            deserialize_with = "serializers::parse_u64"
-        )]
+        #[serde(with = "serializers::from_str")]
         pub round: u64,
         #[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
         pub block_id: Option<Id>,

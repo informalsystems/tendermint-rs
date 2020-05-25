@@ -70,10 +70,7 @@ impl AsRef<[Evidence]> for Data {
 #[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct Params {
     /// Maximum allowed age for evidence to be collected
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
+    #[serde(with = "serializers::from_str")]
     pub max_age_num_blocks: u64,
 
     /// Max age duration
@@ -84,13 +81,7 @@ pub struct Params {
 /// essentially, to keep the usages look cleaner
 /// i.e. you can avoid using serde annotations everywhere
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-pub struct Duration(
-    #[serde(
-        serialize_with = "serializers::serialize_duration",
-        deserialize_with = "serializers::parse_duration"
-    )]
-    std::time::Duration,
-);
+pub struct Duration(#[serde(with = "serializers::time_duration")] std::time::Duration);
 
 impl From<Duration> for std::time::Duration {
     fn from(d: Duration) -> std::time::Duration {
