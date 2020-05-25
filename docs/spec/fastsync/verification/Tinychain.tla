@@ -3,7 +3,7 @@
    the relation between validator sets, next validator sets, and last commits.
  *)
 
-EXTENDS Sequences, Integers
+EXTENDS Integers
 
 \* type annotation
 a <: b == a
@@ -12,18 +12,19 @@ a <: b == a
 VST == STRING
 
 \* LastCommit type.
-\* It contains the id of the committed block
-\* and the set of the validators who have committed the block.
-\* In the implementation, blockId is the hash of the previous block, which cannot be forged
-LCT == [blockId |-> Int, commiters |-> VST]
+\* It contains:
+\* 1) the flag of whether the block id equals to the hash of the previous block, and
+\* 2) the set of the validators who have committed the block.
+\* In the implementation, blockId is the hash of the previous block, which cannot be forged.
+\* We abstract block id into whether it equals to the hash of the previous block or not.
+LCT == [blockIdEqRef |-> BOOLEAN, committers |-> VST]
 
 \* Block type.
-\* A block contains its height, validator set, next validator set, and last commit
-BT == [height |-> Int, hash |-> Int, wellFormed |-> BOOLEAN,
+\* A block contains its height, validator set, next validator set, and last commit.
+\* Moreover, it contains the flag that tells us whether the block equals to the one
+\* on the reference chain (this is an abstraction of hash).
+BT == [height |-> Int, hashEqRef |-> BOOLEAN, wellFormed |-> BOOLEAN,
        VS |-> VST, NextVS |-> VST, lastCommit |-> LCT]
-
-SeqOfBT(s) == s <: Seq(BT)
-
 
 CONSTANTS
     (*
@@ -36,54 +37,34 @@ CONSTANTS
     NIL_VS,
     (* The maximal height, up to which the blockchain may grow *)
     MAX_HEIGHT
-
-VARIABLES
-    (* The blockchain as a sequence of blocks *)
-    chain
     
 Heights == 1..MAX_HEIGHT    
 
-\* the set of block identifiers, simply the heights extended with 0
-BlockIds == 0..MAX_HEIGHT
-
 \* the set of all possible commits
-Commits == [blockId: BlockIds, commiters: VALIDATOR_SETS]
+Commits == [blockIdEqRef: BOOLEAN, committers: VALIDATOR_SETS]
 
 \* the set of all possible blocks, not necessarily valid ones
 Blocks ==
-  [height: Heights, hash: Heights, wellFormed: BOOLEAN,
+  [height: Heights, hashEqRef: BOOLEAN, wellFormed: BOOLEAN,
    VS: VALIDATOR_SETS, NextVS: VALIDATOR_SETS, lastCommit: Commits]
 
-\* Initially, the blockchain contains one trusted block
-ChainInit ==
-    \E vs \in VALIDATOR_SETS:
-        \* the last commit in the trusted block is somewhat weird
-        LET lastCommit == [blockId |-> 0, commiters |-> vs] IN 
-        chain = SeqOfBT(<<
-                    [height |-> 1, hash |-> 1, wellFormed |-> TRUE,
-                     VS |-> vs, NextVS |-> vs, lastCommit |-> lastCommit
-                ]>>)
-
-\* Add one more block to the blockchain
-AdvanceChain ==                
-  \E NextVS \in VALIDATOR_SETS:
-    LET last == chain[Len(chain)]
-        lastCommit == [blockId |-> last.hash, commiters |-> last.VS]
-        newBlock == [height |-> last.height + 1,
-                     hash |-> last.hash + 1,
-                     VS |-> last.NextVS,
-                     NextVS |-> NextVS,
-                     lastCommit |-> lastCommit,
-                     wellFormed |-> TRUE]
-    IN
-    chain' = Append(chain, newBlock)
-
-\* The blockchain may grow up to the maximum and then stutter
-ChainNext ==
-    \/ Len(chain) < MAX_HEIGHT /\ AdvanceChain
-    \/ Len(chain) >= MAX_HEIGHT /\ UNCHANGED chain
+\* Does the chain contain a sound sequence of blocks that could be produced by
+\* a 2/3 of faulty validators. This operator can be used to initialise the chain!
+IsCorrectChain(chain) ==
+    /\ chain \in [1..MAX_HEIGHT -> Blocks]
+    /\ \A h \in 1..MAX_HEIGHT:
+        LET b == chain[h] IN
+        /\ b.height = h     \* the height is correct
+        /\ b.wellFormed     \* the block structure is OK
+        /\ b.hashEqRef      \* the hash equals to that of the reference block (itself!)
+        /\ b.lastCommit.blockIdEqRef    \* the hash in the last commit is OK
+        /\ h > 1 =>
+             LET p == chain[h - 1] IN
+             /\ b.VS = p.NextVS     \* the validators propagate from the previous block
+             /\ b.lastCommit.committers = p.VS  \* and they are the committers
     
-\* The basic properties of blocks in the blockchain:
+
+\* The basic properties of blocks on the blockchain:
 \* They should pass the validity check and they may verify the next block.    
 
 \* Does the block pass the consistency check against the next validators of the previous block
@@ -95,22 +76,21 @@ IsMatchingValidators(block, nextVS) ==
 \* Does the block verify the commit (of the next block)
 PossibleCommit(block, commit) ==
     \* the commits are signed by the block validators
-    /\ commit.commiters = block.VS
-    \* the block id in the commit matches the block hash
-    \* (the implementation has more extensive tests)
-    /\ commit.blockId = block.hash
-
+    /\ commit.committers = block.VS
+    \* The block id in the commit matches the block hash (abstract comparison).
+    \* (The implementation has extensive tests for that.)
+    /\ commit.blockIdEqRef = block.hashEqRef
 
 \* Basic invariants
 
 \* every block has the validator set that is chosen by its predecessor
-ValidBlockInv ==
-    \A h \in 2..Len(chain):
+ValidBlockInv(chain) ==
+    \A h \in 2..MAX_HEIGHT:
         IsMatchingValidators(chain[h], chain[h - 1].NextVS)
 
 \* last commit of every block is signed by the validators of the predecessor     
-VerifiedBlockInv ==
-    \A h \in 2..Len(chain):
+VerifiedBlockInv(chain) ==
+    \A h \in 2..MAX_HEIGHT:
         PossibleCommit(chain[h - 1], chain[h].lastCommit)
 
 ==================================================================================

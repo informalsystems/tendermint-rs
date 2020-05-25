@@ -89,10 +89,11 @@ AllPeerIds == CORRECT \union FAULTY
 \* Correct last commit have enough voting power, i.e., +2/3 of the voting power of
 \* the corresponding validator set (enoughVotingPower = TRUE) that signs blockId.
 \* BlockId defines correct previous block (in the implementation it is the hash of the block).
-\* For simplicity, we model blockId as the height of the previous block.
+\* Instead of blockId, we encode blockIdEqRef, which is true, if the block id is equal
+\* to the hash of the previous block, see Tinychain.
 CorrectLastCommit(h) == chain[h].lastCommit
 
-NilCommit == [blockId |-> 0, commiters |-> NIL_VS]
+NilCommit == [blockIdEqRef |-> FALSE, committers |-> NIL_VS]
 
 \*BlocksWithNil == [height: Heights, lastCommit: LastCommits, wellFormed: BOOLEAN]
 
@@ -100,7 +101,7 @@ NilCommit == [blockId |-> 0, commiters |-> NIL_VS]
 CorrectBlock(h) == chain[h]
 
 NilBlock ==
-    [height |-> 0, hash |-> 0, wellFormed |-> FALSE,
+    [height |-> 0, hashEqRef |-> FALSE, wellFormed |-> FALSE,
      lastCommit |-> NilCommit, VS |-> NIL_VS, NextVS |-> NIL_VS]
 
 \* a special value for an undefined peer
@@ -549,7 +550,7 @@ CreateBlockResponse(msg, pState, arbitraryBlock) ==
 
 GrowPeerHeight(pState) ==
     \E p \in CORRECT:
-        /\ pState.peerHeights[p] < Len(chain)
+        /\ pState.peerHeights[p] < MAX_HEIGHT
         /\ peersState' = [pState EXCEPT !.peerHeights[p] = @ + 1]
         /\ inMsg' = AsInMsg(NoMsg)
 
@@ -585,12 +586,12 @@ SendControlMessage ==
 \* If a commit is correct, then the previous block in the block store must be also correct.
 \* The same applies to the other direction.
 UnforgeableBlockId(height, block) ==
-    block.hash = chain[height].hash => block = chain[height]
+    block.hashEqRef => block = chain[height]
 
 \* a faulty peer cannot forge the validators signatures and thus cannot produce a fork
 NoFork(height, block) ==
     LET refBlock == chain[height] IN
-    block.hash /= refBlock.hash => block.VS /= refBlock.VS
+    ~block.hashEqRef => block.VS /= refBlock.VS
 
 \* can be block produced by a faulty peer
 IsBlockByFaulty(height, block) ==
@@ -644,7 +645,7 @@ NextPeers ==
 
 \* the composition of the node, the peers, the network and scheduler
 Init ==
-    /\ ChainInit   \* init the blockchain
+    /\ IsCorrectChain(chain)   \* initialize the blockchain
     /\ InitNode
     /\ InitPeers
     /\ turn = "Peers"
@@ -652,29 +653,23 @@ Init ==
     /\ outMsg = AsOutMsg([type |-> "statusRequest"])
 
 Next ==
-  IF Len(chain) < MAX_HEIGHT
-  \* fast-forward the blockchain to MAX_HEIGHT
-  THEN ChainNext /\ UNCHANGED <<turn, nvars, peersState, inMsg, outMsg>>
-  \* run fastsync
-  ELSE IF turn = "Peers"
-       THEN
-            /\ NextPeers
-            /\ turn' = "Node"
-            /\ UNCHANGED <<nvars, chain>>
-       ELSE
-            /\ NextNode
-            /\ turn' = "Peers"
-            /\ UNCHANGED <<peersState, chain>>
-
+  IF turn = "Peers"
+  THEN
+    /\ NextPeers
+    /\ turn' = "Node"
+    /\ UNCHANGED <<nvars, chain>>
+  ELSE
+    /\ NextNode
+    /\ turn' = "Peers"
+    /\ UNCHANGED <<peersState, chain>>
 
 
 FlipTurn ==
- turn' = (
+ turn' =
   IF turn = "Peers" THEN
    "Node"
   ELSE
    "Peers"
- )
 
 
 \* Compute max peer height. Used as a helper operator in properties.
