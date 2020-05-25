@@ -378,7 +378,8 @@ Shared data of the light client
 
 **TODO:** Replace State everywhere by LightStore
 
-
+**TODO:** in verification: LatestVerified should return either latest
+verified or latest trusted.
 
 The problem is solved by calling  the function `ForkDetector` with
 a header *hd* that has
@@ -391,14 +392,15 @@ trusted state to increase the likelihood of detecting a fork.
 func ForkDetector(ls LightStore)  {
 	for i, s range Secondaries {
 		sh := FetchLightBlock(s,LightStore.LatestVerified().Height)
-		if hd == sh {
+		if LightStore.LatestVerified() == sh {
 				// header matches. we do nothing
 	    }
 		else {
 			    // [LCD-REQ-REP]
 			    // header does not match. there is a situation.
 				// we try to verify sh by querying s
-				auxLS := LightStore.LatestTrusted() , sh
+				auxLS.Update(LightStore.LatestTrusted(),StateVerified);
+				auxLS.Update(sh,StateUnverified);
 				result := VerifyToTarget(s, auxLS, LightStore.LatestVerified().Height)
 				if result = (rls,ResultSuccess) {
 				    // we verified header sh which is conflicting to hd
@@ -432,7 +434,7 @@ func ForkDetector(ls LightStore)  {
 	return (lightStore)
 }
 
-
+**TODO:** check!
 ```
 - Comments
     - Correctness is based on that *hd* has been verified by verification.
@@ -452,6 +454,8 @@ func ForkDetector(ls LightStore)  {
 
 
 ## Correctness arguments
+
+**TODO:** update
 
 > Proof sketches of why we believe the solution satisfies the problem statement.
 Possibly giving inductive invariants that can be used to prove the specifications
