@@ -36,4 +36,3 @@ pub fn is_within_trust_period(
 //         .all(VerifiedStatus::Verified)
 //         .all(|lb| lb.height() < target_height)
 // }
-
