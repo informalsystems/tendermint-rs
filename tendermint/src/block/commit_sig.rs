@@ -77,7 +77,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
             }
             BlockIDFlag::BlockIDFlagCommit => {
                 if value.timestamp.is_none() {
-                    Err("timestamp is null for BlockIDFlagCommit CommitSig")
+                    Err("timestamp is missing for BlockIDFlagCommit CommitSig")
                 } else if value.signature.is_none() {
                     Err("signature is null for BlockIDFlagCommit CommitSig")
                 } else {
