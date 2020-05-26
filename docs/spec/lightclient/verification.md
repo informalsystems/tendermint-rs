@@ -465,8 +465,12 @@ const (
 	StateUnverified = iota + 1
 	StateVerified
 	StateFailed
+	StateTrusted
 )
 ```
+
+> Only the detector module sets a lightBlock state to `StateTrusted`
+> and only if it was `StateVerified` before. 
 
 The LightStore exposes the following functions to query stored LightBlocks.
 
@@ -482,7 +486,8 @@ func (ls LightStore) Get(height Height) (LightBlock, bool)
 func (ls LightStore) LatestVerified() LightBlock
 ```
 - Expected postcondition
-   - returns the heighest verified light block:`
+   - returns the highest light block whose state is `StateVerified`
+     or `StateTrusted`
 
 
 ```go
@@ -490,6 +495,17 @@ func (ls LightStore) Update(lightBlock LightBlock, verfiedState VerifiedState)
 ```
 - Expected postcondition
    - The state of the LightBlock is set to *verifiedState*.
+
+> The following function is used only in the detector specification
+> listed here for completeness.
+
+```go 
+func (ls LightStore) LatestTrusted() LightBlock
+```
+- Expected postcondition
+   - returns the highest light block that has been verified and
+     checked by the detector.
+ 
 
 
 ### Inputs

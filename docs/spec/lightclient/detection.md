@@ -69,21 +69,13 @@ things should be done, rather than what should be done. However, they
 do not constitute temporal logic verification conditions. For those,
 see [LCD-VC-*] below.
 
-**TODO** add to verification spec
-```go func (ls LightStore) LatestTrusted() LightBlock```
-
-- Expected postcondition
-   - returns the highest verified light block.
-   
 
 #### **[LCD-IP-STATE]**
 
-**TODO** LightStore. with LightBlock in one of the state "StateUnverified" 
-	"StateVerified"
-	"StateFailed"
-"StateTrusted"
+The detector works on a LightStore that contains LightBlocks in one of 
+the state `StateUnverified, ` StateVerified`, `StateFailed`, or
+`StateTrusted`.
 
-**TODO** add "StateTrusted" to verification spec
 
 #### **[LCD-IP-Q]**
 
@@ -95,23 +87,30 @@ Whenever the light client verifier `VerifyToTarget` returns with
 
 #### **[LCD-IP-RespOK]**
 
-If a header *h'*, returned by the secondary *s*, is
-equal to *h* the  detector does nothing.
+If for each  secondary *s*, the returned 
+ header *h'* is
+equal to *LightStore.LatestVerified()* the detector sets
+`LightStore.Update(LightStore.LatestVerified,StateTrusted)` and
+terminates successfully.
 
+**TODO:** shall we set all predecessors also to `StateTrusted`?
 
 #### **[LCD-IP-RespBad]**
 
-Otherwise, that is, if *h'* returned by *s* is
-different from *h*, the  detector has to analyze the situation. If the  detector
-can prove a fork starting from *LightStore.LatestTrusted().Height*
-on the main chain by performing the bisection protocol with *s*, it stops the
-light client and submits evidence.
+Otherwise, that is, if *h'* returned by *s* is different from
+**LightStore.LatestVerified()*, the detector has to analyze the
+situation. If the detector can prove a fork starting from
+*LightStore.LatestTrusted().Height* on the main chain by performing
+the bisection protocol with *s*, it stops the light client and submits
+evidence.
+
 
 
 #### **[LCD-IP-PEERSET]**
 
 Whenever the  detector observes misbehavior of a full node from
-the set of Secondaries it should be replaced by a fresh full node. (A full node
+the set of Secondaries it should be replaced by a fresh full node. 
+(A full node
 that has not been primary or secondary before).
 
 
@@ -152,55 +151,61 @@ reliable and bounded in time.
 ## Problem statement
 
 The  detector gets as input a Lightstore with
-*h = lightStore.LatestVerified().Height* and
-queries the secondaries for  headers at height *h*. Eventually, the 
+*h-target = lightStore.LatestVerified().Height* and
+*h-trust=lightStore.LatestTrusted().Height*. It
+queries the secondaries for  headers at height *h-target*. Eventually, the 
 detector should
 decide
-  - whether to report evidence for height *h*
-  - whether to stop operation at height *h*
+  - whether to report evidence for *h-target*
+  - whether to stop operation (panic) at height *h-target*
   - whether to perform
     `LightStore.Update(lightStore.LatestVerified(),StateTrusted` and
 	return the LightStore.
 
 The  detector should satisfy the following temporal formulas
 
+
 #### **[LCD-VC-INV]**
 
-If there is no fork at height *h*, and the primary
+If there is no fork at height *h-target*, and the primary
 and the secondaries are correct, then the  detector should
-never output evidence for height *h* and should not stop at height *h*.
+never output evidence for height *h-target* and should not stop at
+height *h-target*. 
 
 
 #### **[LCD-VC-INV-DONT-STOP]**
 
-If there is no fork at height *h*, and
+If there is no fork at height *h-target*, and
  the primary is correct, then the detector should never stop
- at height *h*.
+ at height *h-target*.
 
 
-#### **[LCD-VC-LIFE-DONT-STOP]**
+#### **[LCD-VC-LIVE-DONT-STOP]**
 
-If there is no fork at height *h*, and
- the primary is correct, then the  detector should eventually
- decide to not stop and to not report evidence
- at height *h*. It should perform
+If there is no fork at height *h-target*, and
+ the primary is correct, then the detector should eventually
+ perform
     `LightStore.Update(lightStore.LatestVerified(),StateTrusted)` and
 	return the LightStore.
 
 
-#### **[LCD-VC-LIFE-FORK]**
+**TODO:** be precise about what a fork is. I guess we need a signature
+by one correct validator.
 
-If there is a fork (two correct full nodes decided on different blocks for the same height), and
-- the light client needs to obtain a header of a height *h* that is
- affected,
- and
-- there are two correct full nodes *i* and *j* that are
+#### **[LCD-VC-LIVE-FORK]**
+
+If there is a fork at height *h*, with *h-trust < h <= h-target*,
+(two correct full nodes decided on different blocks for the same height), and
+ there are two correct full nodes *i* and *j* that are
     - on different branches, and
     - primary or secondary,
 
 then the  detector eventually outputs evidence for height *h*.
 
-**TODO** initializationheight < fork < h
+**TODO:** We can weaken the above to "the (not-necessarily) primary is on
+branch A and a correct secondary is on branch B". I prefer the above
+as it is slightly less operational.
+
 
 #### **[LCD-REQ-REP]**
 
@@ -222,14 +227,9 @@ If the primary reports header *h* and a secondary reports header *h'*,
 	-  a set *FullNodes*.
 - A set *FaultyNodes* of nodes that the light client suspects of being faulty; it is initially empty
 
-**TODO:** Lightstore
-- *State*  is a set of pairs *(fn,h)* where header *h* has been
-received (and possibly verified with) full node *fn*.
+- *Lightstore* as defined in the [verification specification][verification].
 
-**TODO:** update to new verification spec
-- The verifier communicates with the primary [[verification]]. Whenever the verifier successfully verifies a header *h* from the primary *p*, it stores
- *(p,h)*
- in *State*.
+
 
 
 #### **[LCD-INV-NODES]:**
@@ -248,51 +248,21 @@ and the following transition invariant
 ### Inter Process Communication
 
 
-**TODO: Fetchblock**
-For the purpose of this light client specification, we assume that the
-     Tendermint Full Node exposes the following functions over
-     Tendermint RPC:
-
-
 ```go
-func Commit(addr Address, height int64) (SignedHeader, error)
+func FetchLightBlock(peer PeerID, height Height) LightBlock
 ```
-
-- Implementation remark
-   - RPC to full node *n* at address *addr*
-- Expected precodnition
-  - header of `height` exists on blockchain
-- Expected postcondition
-  - if *n* is correct: Returns a sound signed header of height `height`
-  from the blockchain if communication is timely (no timeout)
-  - if *n* is faulty: Returns a signed header with arbitrary content
-    (possibly the header is sound despite *n* being faulty)
-- Error condition
-   * if *n* is correct: precondition violated or timeout
-   * if *n* is faulty: arbitrary error
-
-**TODO:** add synchronous Delta assumption
-
-----
+See the [verification specification][verification] for details.
 
 ### Auxiliary Functions (Local)
-
-
-**TODO:** remove. use should be replaced with `LightStore.Update`
-```go
-Add_to_state(addr Address, sh SignedHeader)
-```
-- Expected postcondition
-   - The pair *(addr,sh)* is added to *State*
-
 
 
 ```go
 still_punishable(sh SignedHeader) (Boolean)
 ```
-- Implementation Remark: it might make sense to check whether the unbonding period is
+- Implementation Remark: it might make sense to check whether 
+the unbonding period is
   still running although the trusting period is over
-  TODO: fix the period that should be checked. Something between
+  **TODO:** fix the period that should be checked. Something between
   trusting period and unbonding period?
 - Expected postcondition
     - returns true if misbehavior related to *sh* can still be
@@ -314,7 +284,7 @@ Replace_Secondary(addr Address)
 ```go
 Report_and_Stop(sh)
 ```
-**TODO:** check
+**TODO:** update, replace *State* by LightStore
 - Implementation Remark:
     - This function communicates the existence of a fork to the outside
 	- It creates the evidence from its local information:
@@ -328,44 +298,14 @@ Report_and_Stop(sh)
     - It "terminates everything". TODO: should this be described in a nicer
   control flow? How should this be escalated to the whole light client?
 
-**TODO: replace with reference to `VerifyToTarget`
+
 #### From the verifier
 ```go
-VerifyHeaderAtHeight (untrustedHeight int64,
-                          trustedState TrustedState,
-			              addr Address) (TrustedState, error)
+func VerifyToTarget(primary PeerID, lightStore LightStore,
+                    targetHeight Height) (LightStore, Result)
 ```
-- Implementation remark
-  - signature deviates from current verification spec, which is
-    written with having bisection with the primary in mind. However,
-    we also need bisection with secondaries, so that we added the
-    Address `addr` of the full node the light client should do
-    bisection with. Also we changed the return values slightly, as we are
-    concurrently working on a more verification-oriented (verification
-    as in "model checking") light client verification spec
-    (verification 
-	as in [[verification]]).
-  - *startTime* and *endTime* are the local system time right after
-  invocation of `VerifyHeaderAtHeight` and right before the function returns, respectively.
-- Expected precondition
-  - The field `Time` of the signed header of `trustedState` is within *trustingPeriod* from *startTime*
-- Expected postcondition: 
-    - Returns `(trustedState, OK)` under [**[FN-LuckyCase]**](FN-LuckyCase-link), 
-  if the signed header of `trustedState`:
-    - is the header at height `untrustedHeight` of the blockchain, and 
-    - was generated within *trustingPeriod* from *endTime*
-    - corresponds to`return (trustedState,
-      nil)` in current verification spec.
-- Returns `(trustedState, EXPIRED)` under [**[FN-LuckyCase]**](FN-LuckyCase-link), if
-  the signed header of `trustedState`:
-    - is the header at height `untrustedHeight` of the blockchain, and 
-    - was generated after *endTime - trustingPeriod* 
-	- corresponds to `return (trustedState,
-      ErrHeaderNotWithinTrustedPeriod)` in current verification spec.
-- Error conditions
-  - precondition violated 
-  - [**[FN-LuckyCase]**](FN-LuckyCase-link) does not hold
-  - [**[FN-ManifestFaulty]**](FN-ManifestFaulty-link) holds
+See the [verification specification][verification] for details.
+
 
 
 ## Solution
@@ -376,10 +316,8 @@ Shared data of the light client
 - primary
 - LightStore
 
-**TODO:** Replace State everywhere by LightStore
 
-**TODO:** in verification: LatestVerified should return either latest
-verified or latest trusted.
+
 
 The problem is solved by calling  the function `ForkDetector` with
 a header *hd* that has
