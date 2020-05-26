@@ -3,14 +3,15 @@ use crate::prelude::*;
 use std::collections::btree_map::Entry::*;
 use std::collections::BTreeMap;
 
+/// Internal entry for the memory store
 #[derive(Clone, Debug, PartialEq)]
-pub struct StoreEntry {
+struct StoreEntry {
     light_block: LightBlock,
     status: VerifiedStatus,
 }
 
 impl StoreEntry {
-    pub fn new(light_block: LightBlock, status: VerifiedStatus) -> Self {
+    fn new(light_block: LightBlock, status: VerifiedStatus) -> Self {
         Self {
             light_block,
             status,
@@ -18,6 +19,7 @@ impl StoreEntry {
     }
 }
 
+/// Transient in-memory store.
 #[derive(Debug, Default)]
 pub struct MemoryStore {
     store: BTreeMap<Height, StoreEntry>,

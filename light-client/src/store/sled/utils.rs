@@ -1,16 +1,23 @@
+//! This modules provides type-safe interfaces over the `sled` API,
+//! by taking care of (de)serializing keys and values with the
+//! CBOR binary encoding.
+
 use serde::{de::DeserializeOwned, Serialize};
 use std::marker::PhantomData;
 
 use crate::errors::{Error, ErrorKind};
 
+/// Provides a view over the database for storing a single value at the given prefix.
 pub fn single<V>(prefix: impl Into<Vec<u8>>) -> SingleDb<V> {
     SingleDb::new(prefix)
 }
 
+/// Provides a view over the database for storing key/value pairs at the given prefix.
 pub fn key_value<K, V>(prefix: impl Into<Vec<u8>>) -> KeyValueDb<K, V> {
     KeyValueDb::new(prefix)
 }
 
+/// Provides a view over the database for storing a single value at the given prefix.
 pub struct SingleDb<V>(KeyValueDb<(), V>);
 
 impl<V> SingleDb<V> {
@@ -32,6 +39,7 @@ where
     }
 }
 
+/// Provides a view over the database for storing key/value pairs at the given prefix.
 #[derive(Clone, Debug)]
 pub struct KeyValueDb<K, V> {
     prefix: Vec<u8>,

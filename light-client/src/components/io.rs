@@ -1,3 +1,4 @@
+use contracts::pre;
 use serde::{Deserialize, Serialize};
 use tendermint::{block, rpc};
 use thiserror::Error;
@@ -12,14 +13,21 @@ pub const LATEST_HEIGHT: Height = 0;
 
 #[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 pub enum IoError {
+    /// Wrapper for a `tendermint::rpc::Error`.
     #[error(transparent)]
     IoError(#[from] rpc::Error),
 }
 
+/// Interface for fetching light blocks from a full node, typically via the RPC client.
+// TODO: Enable contracts on the trait once the provider field is available.
+// #[contract_trait]
 pub trait Io {
+    /// Fetch a light block at the given height from the peer with the given peer ID.
+    // #[post(ret.map(|lb| lb.provider == peer).unwrap_or(true))]
     fn fetch_light_block(&mut self, peer: PeerId, height: Height) -> Result<LightBlock, IoError>;
 }
 
+// #[contract_trait]
 impl<F> Io for F
 where
     F: FnMut(PeerId, Height) -> Result<LightBlock, IoError>,
@@ -29,18 +37,21 @@ where
     }
 }
 
+/// Production implementation of the Io component, which fetches
+/// light blocks from full nodes via RPC.
 pub struct ProdIo {
     rpc_clients: HashMap<PeerId, rpc::Client>,
     peer_map: HashMap<PeerId, tendermint::net::Address>,
 }
 
+// #[contract_trait]
 impl Io for ProdIo {
     fn fetch_light_block(&mut self, peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
-        let signed_header = self.fetch_signed_header(&peer, height)?;
+        let signed_header = self.fetch_signed_header(peer, height)?;
         let height = signed_header.header.height.into();
 
-        let validator_set = self.fetch_validator_set(&peer, height)?;
-        let next_validator_set = self.fetch_validator_set(&peer, height + 1)?;
+        let validator_set = self.fetch_validator_set(peer, height)?;
+        let next_validator_set = self.fetch_validator_set(peer, height + 1)?;
 
         let light_block = LightBlock::new(
             signed_header,
@@ -54,6 +65,9 @@ impl Io for ProdIo {
 }
 
 impl ProdIo {
+    /// Constructs a new ProdIo component.
+    ///
+    /// A peer map which maps peer IDS to their network address must be supplied.
     pub fn new(peer_map: HashMap<PeerId, tendermint::net::Address>) -> Self {
         Self {
             rpc_clients: HashMap::new(),
@@ -61,10 +75,10 @@ impl ProdIo {
         }
     }
 
-    // #[pre(self.peer_map.contains_key(peer))]
+    #[pre(self.peer_map.contains_key(&peer))]
     fn fetch_signed_header(
         &mut self,
-        peer: &PeerId,
+        peer: PeerId,
         height: Height,
     ) -> Result<TMSignedHeader, IoError> {
         let height: block::Height = height.into();
@@ -83,10 +97,10 @@ impl ProdIo {
         }
     }
 
-    // #[pre(self.peer_map.contains_key(peer))]
+    #[pre(self.peer_map.contains_key(&peer))]
     fn fetch_validator_set(
         &mut self,
-        peer: &PeerId,
+        peer: PeerId,
         height: Height,
     ) -> Result<TMValidatorSet, IoError> {
         let res = block_on(self.rpc_client_for(peer).validators(height));
@@ -97,11 +111,12 @@ impl ProdIo {
         }
     }
 
-    // #[pre(self.peer_map.contains_key(peer))]
-    fn rpc_client_for(&mut self, peer: &PeerId) -> &mut rpc::Client {
-        let peer_addr = self.peer_map.get(peer).unwrap().to_owned();
+    // FIXME: Cannot enable precondition because of "autoref lifetime" issue
+    // #[pre(self.peer_map.contains_key(&peer))]
+    fn rpc_client_for(&mut self, peer: PeerId) -> &mut rpc::Client {
+        let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
         self.rpc_clients
-            .entry(peer.to_owned())
+            .entry(peer)
             .or_insert_with(|| rpc::Client::new(peer_addr))
     }
 }
