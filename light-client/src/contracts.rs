@@ -34,7 +34,5 @@ pub fn is_within_trust_period(
     now: Time,
 ) -> bool {
     let header_time = light_block.signed_header.header.time;
-    let expires_at = header_time + trusting_period;
-
-    header_time < now && expires_at > now && header_time <= now
+    header_time > now - trusting_period
 }
