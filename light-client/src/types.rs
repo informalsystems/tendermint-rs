@@ -26,11 +26,6 @@ pub type SignedHeader = TMSignedHeader;
 
 pub type TrustedState = LightBlock;
 
-// FIXME: Remove when conformance tests are adapted to include provider
-fn primary() -> PeerId {
-    "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap()
-}
-
 #[derive(Clone, Debug, Display, PartialEq, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct LightBlock {
@@ -39,9 +34,8 @@ pub struct LightBlock {
     pub validators: ValidatorSet,
     #[serde(rename = "next_validator_set")]
     pub next_validators: ValidatorSet,
-    // FIXME: Remove annotation when conformance tests are adapted to include provider
-    #[serde(default = "primary")]
-    pub provider: PeerId,
+    // FIXME: Uncomment when conformance tests are adapted to include provider
+    // pub provider: PeerId,
 }
 
 impl LightBlock {
@@ -49,13 +43,13 @@ impl LightBlock {
         signed_header: SignedHeader,
         validators: ValidatorSet,
         next_validators: ValidatorSet,
-        provider: PeerId,
+        // provider: PeerId,
     ) -> LightBlock {
         Self {
             signed_header,
             validators,
             next_validators,
-            provider,
+            // provider,
         }
     }
 

@@ -36,7 +36,7 @@ fn verify_single(
         trusted_state.signed_header,
         trusted_state.next_validators.clone(),
         trusted_state.next_validators,
-        PEER_ID.parse().unwrap(),
+        // PEER_ID.parse().unwrap(),
     );
 
     let options = Options {
