@@ -79,7 +79,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 if value.timestamp.is_none() {
                     Err("timestamp is missing for BlockIDFlagCommit CommitSig")
                 } else if value.signature.is_none() {
-                    Err("signature is null for BlockIDFlagCommit CommitSig")
+                    Err("signature is missing for BlockIDFlagCommit CommitSig")
                 } else {
                     Ok(CommitSig::BlockIDFlagCommit {
                         // <<< Compatibility code for https://github.com/informalsystems/tendermint-rs/issues/260
@@ -96,9 +96,9 @@ impl TryFrom<RawCommitSig> for CommitSig {
             }
             BlockIDFlag::BlockIDFlagNil => {
                 if value.timestamp.is_none() {
-                    Err("timestamp is null for BlockIDFlagNil CommitSig")
+                    Err("timestamp is missing for BlockIDFlagNil CommitSig")
                 } else if value.signature.is_none() {
-                    Err("signature is null for BlockIDFlagNil CommitSig")
+                    Err("signature is missing for BlockIDFlagNil CommitSig")
                 } else {
                     Ok(CommitSig::BlockIDFlagNil {
                         // <<< Compatibility code for https://github.com/informalsystems/tendermint-rs/issues/260
