@@ -6,7 +6,7 @@ pub use crate::{
     errors::*,
     light_client::*,
     operations::*,
-    predicates::{errors::*, production::*, VerificationPredicates},
+    predicates::{errors::*, ProdPredicates, VerificationPredicates},
     state::*,
     store::{memory::*, sled::*, LightStore, VerifiedStatus},
     types::*,
