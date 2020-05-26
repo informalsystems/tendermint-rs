@@ -1,5 +1,5 @@
 use gumdrop::Options;
-use light_spike::prelude::Height;
+use light_client::prelude::Height;
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -58,8 +58,8 @@ fn main() {
 }
 
 fn sync_cmd(opts: SyncOpts) {
-    use light_spike::components::scheduler;
-    use light_spike::prelude::*;
+    use light_client::components::scheduler;
+    use light_client::prelude::*;
 
     let primary_addr = opts.address;
     let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();

@@ -3,5 +3,5 @@
 members = [
     "tendermint",
     "light-node",
-    "light-spike",
+    "light-client",
 ]

@@ -1,5 +1,5 @@
-use light_spike::prelude::*;
-use light_spike::tests::{Trusted, *};
+use light_client::prelude::*;
+use light_client::tests::{Trusted, *};
 
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -156,7 +156,7 @@ fn run_bisection_test(tc: TestBisection) {
     let now = tc.now;
 
     let clock = MockClock { now };
-    let scheduler = light_spike::components::scheduler::schedule;
+    let scheduler = light_client::components::scheduler::schedule;
     let fork_detector = RealForkDetector::new(ProdHeaderHasher);
 
     let options = Options {
