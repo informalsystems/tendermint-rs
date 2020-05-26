@@ -25,14 +25,9 @@ pub struct RawCommitSig {
     /// indicate which BlockID the signature is for
     pub block_id_flag: BlockIDFlag,
     /// Validator Address
-    // <<< Compatibility code for https://github.com/informalsystems/tendermint-rs/issues/260
+    // Todo: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
     #[serde(default, deserialize_with = "emptystring_or_accountid")]
     pub validator_address: Option<account::Id>,
-    // === Real code after compatibility issue is resolved
-    /*
-    pub validator_address: account::Id,
-    */
-    // >>> end of real code
     /// Timestamp
     #[serde(default)]
     pub timestamp: Option<Time>,
@@ -48,7 +43,7 @@ where
     Deserialize::deserialize(deserializer).map(|x: Option<_>| x.unwrap_or(None))
 }
 
-// <<< Compatibility code for https://github.com/informalsystems/tendermint-rs/issues/260
+// Todo: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
 fn emptystring_or_accountid<'de, D>(deserializer: D) -> Result<Option<account::Id>, D::Error>
 where
     D: Deserializer<'de>,
@@ -62,5 +57,3 @@ where
             .map_err(|e| D::Error::custom(format!("{}", e)))
     }
 }
-// === Real code after compatibility issue is resolved
-// >>> end of real code

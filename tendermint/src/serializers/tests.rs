@@ -160,7 +160,7 @@ fn deserialize_emptyvec_from_null() {
     assert_eq!(result.stringifiedbytes, Vec::<u8>::new());
 }
 
-// <<< Compatibility code for https://github.com/informalsystems/tendermint-rs/issues/260
+// Todo: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
 #[test]
 fn deserialize_commit_sig_absent_vote() {
     let incoming = r#"
@@ -177,32 +177,6 @@ fn deserialize_commit_sig_absent_vote() {
         panic!(format!("expected BlockIDFlagAbsent, received {:?}", result));
     }
 }
-// === Real code after compatibility issue is resolved
-/*
-#[test]
-fn deserialize_commit_sig_absent_vote() {
-    let incoming = r#"
-    {
-        "block_id_flag": 1,
-        "validator_address": "4142434445464748494A4B4C4D4E4F5051525354"
-    }
-    "#;
-
-    let result: CommitSig = serde_json::from_str(&incoming).unwrap();
-
-    if let CommitSig::BlockIDFlagAbsent { validator_address } = result {
-        assert_eq!(
-            validator_address,
-            Id::new([
-                65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84
-            ])
-        );
-    } else {
-        panic!(format!("expected BlockIDFlagAbsent, received {:?}", result));
-    }
-}
-*/
-// >>> end of real code
 
 #[test]
 fn deserialize_commit_sig_commit_vote() {

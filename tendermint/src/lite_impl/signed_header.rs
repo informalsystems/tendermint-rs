@@ -67,15 +67,8 @@ impl lite::Commit for block::signed_header::SignedHeader {
         for commit_sig in self.commit.signatures.iter() {
             let extracted_validator_address;
             match commit_sig {
-                // <<< Compatibility code for https://github.com/informalsystems/tendermint-rs/issues/260
+                // Todo: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
                 CommitSig::BlockIDFlagAbsent => continue,
-                // === Real code after compatibility issue is resolved
-                /*
-                CommitSig::BlockIDFlagAbsent => {
-                    validator_address, ..
-                } => extracted_validator_address = validator_address,
-                */
-                // >>> end of real code
                 CommitSig::BlockIDFlagCommit {
                     validator_address, ..
                 } => extracted_validator_address = validator_address,
