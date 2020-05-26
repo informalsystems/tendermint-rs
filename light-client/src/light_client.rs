@@ -73,22 +73,24 @@ impl LightClient {
         )
     )]
     pub fn verify_to_target(&mut self, target_height: Height) -> Result<LightBlock, Error> {
-        let latest_verified = self.state.light_store.latest(VerifiedStatus::Verified);
-        if latest_verified.is_none() {
-            bail!(ErrorKind::NoInitialTrustedState)
-        };
-
         let options = self.options.with_now(self.clock.now());
 
         let mut current_height = target_height;
 
-        // TODO: Add invariant and measure
         loop {
             let trusted_state = self
                 .state
                 .light_store
                 .latest(VerifiedStatus::Verified)
-                .unwrap(); // SAFETY: Checked above
+                .ok_or_else(|| ErrorKind::NoInitialTrustedState)?;
+
+            // Check invariant [LCV-INV-TP.1]
+            if !is_within_trust_period(&trusted_state, options.trusting_period, options.now) {
+                bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
+                    trusted_state,
+                    options,
+                });
+            }
 
             self.state.trace_block(target_height, current_height);
 

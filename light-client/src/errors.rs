@@ -17,6 +17,12 @@ pub enum ErrorKind {
     #[error("no initial trusted state")]
     NoInitialTrustedState,
 
+    #[error("latest trusted state outside of trusting period")]
+    TrustedStateOutsideTrustingPeriod {
+        trusted_state: TrustedState,
+        options: Options,
+    },
+
     #[error("bisection for target at height {0} failed when reached trusted state at height {1}")]
     BisectionFailed(Height, Height),
 
