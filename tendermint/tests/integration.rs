@@ -12,7 +12,7 @@ mod rpc {
     use std::cmp::min;
     use tendermint::abci::Code;
     use tendermint::abci::Log;
-    use tendermint::rpc::event_listener::Event;
+    use tendermint::rpc::event_listener::TMEventData;
     use tendermint::rpc::Client;
 
     /// Get the address of the local node
@@ -159,23 +159,22 @@ mod rpc {
             .unwrap();
         // client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
 
-        // Collect and throw away the response to subscribe
-        client.get_event().await.unwrap();
-
         // Loop here is helpful when debugging parsing of JSON events
         // loop{
-        let resp = client.get_event().await.unwrap();
-        dbg!(&resp);
+        let maybe_result_event = client.get_event().await.unwrap();
+        dbg!(&maybe_result_event);
         // }
-        match resp {
-            Event::JsonRPCTransactionResult ( _ ) | Event::JsonRPCBlockResult ( _ ) => (),
-            // TODO: while in gaia we seem to receive JsonRPCBlockResult as expected,
-            // we receive a GenericJSONEvent when ran against vanilla tendermint
-            // integration tests.
-            Event::GenericJSONEvent ( v ) => {dbg!("got a GenericJSONEvent: {:?}", v); ()},
-            Event::GenericStringEvent( _ ) => panic!(
-                "Expected JsonRPCBlockResult or JsonRPCTransactionResult, but got GenericStringEvent"
-            ),
+        let result_event = maybe_result_event.expect("unexpected msg read");
+        match result_event.data {
+            TMEventData::EventDataNewBlock(nb) => {
+                dbg!("got EventDataNewBlock: {:?}", nb);
+            }
+            TMEventData::EventDataTx(tx) => {
+                dbg!("got EventDataTx: {:?}", tx);
+            }
+            TMEventData::GenericJSONEvent(v) => {
+                panic!("got a GenericJSONEvent: {:?}", v);
+            }
         }
     }
 }

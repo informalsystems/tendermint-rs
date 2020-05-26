@@ -1,7 +1,6 @@
 //! Custom, legacy serializers
 
-use crate::account::{Id, LENGTH};
-use crate::{block, Hash, Signature};
+use crate::{block, Hash};
 use serde::{de::Error as _, Deserialize, Deserializer};
 use std::str::FromStr;
 
@@ -58,37 +57,4 @@ where
             },
         }))
     }
-}
-
-/// Option<Id> deserialization
-pub(crate) fn parse_non_empty_id<'de, D>(deserializer: D) -> Result<Option<Id>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    if s.is_empty() {
-        Ok(None)
-    } else {
-        // TODO: how can we avoid rewriting code here?
-        match Id::from_str(&s).map_err(|_| {
-            D::Error::custom(format!(
-                "expected {}-character hex string, got {:?}",
-                LENGTH * 2,
-                s
-            ))
-        }) {
-            Ok(id) => Ok(Option::from(id)),
-            Err(_) => Ok(None),
-        }
-    }
-}
-
-/// Option<Signature> deserialization
-pub(crate) fn parse_non_empty_signature<'de, D>(
-    deserializer: D,
-) -> Result<Option<Signature>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Deserialize::deserialize(deserializer).map(|x: Option<_>| x.unwrap_or(None))
 }

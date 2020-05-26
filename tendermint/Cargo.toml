@@ -45,6 +45,7 @@ prost-amino-derive = "0.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 serde_bytes = "0.11"
+serde_repr = "0.1"
 sha2 = { version = "0.8", default-features = false }
 signatory = { version = "0.19", features = ["ed25519", "ecdsa"] }
 signatory-dalek = "0.19"
@@ -56,7 +57,7 @@ thiserror = "1"
 toml = { version = "0.5" }
 uuid = { version = "0.8", default-features = false }
 zeroize = { version = "1.1", features = ["zeroize_derive"] }
-async-tungstenite = {version="0.4", features = ["tokio-runtime"]}
+async-tungstenite = {version="0.5", features = ["tokio-runtime"]}
 tokio = { version = "0.2", features = ["macros"] }
 ripemd160 = "0.8"
 

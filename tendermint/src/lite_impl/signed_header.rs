@@ -1,6 +1,8 @@
 //! [`lite::SignedHeader`] implementation for [`block::signed_header::SignedHeader`].
 
+use crate::block::CommitSig;
 use crate::lite::error::{Error, Kind};
+use crate::lite::types::ValidatorSet as _;
 use crate::validator::Set;
 use crate::{block, hash, lite, vote};
 use anomaly::fail;
@@ -58,8 +60,30 @@ impl lite::Commit for block::signed_header::SignedHeader {
             );
         }
 
+        // TODO: this last check is only necessary if we do full verification (2/3)
+        // https://github.com/informalsystems/tendermint-rs/issues/281
+        // returns ImplementationSpecific error if it detects a signer
+        // that is not present in the validator set:
         for commit_sig in self.commit.signatures.iter() {
-            commit_sig.validate(vals)?;
+            let extracted_validator_address;
+            match commit_sig {
+                // Todo: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
+                CommitSig::BlockIDFlagAbsent => continue,
+                CommitSig::BlockIDFlagCommit {
+                    validator_address, ..
+                } => extracted_validator_address = validator_address,
+                CommitSig::BlockIDFlagNil {
+                    validator_address, ..
+                } => extracted_validator_address = validator_address,
+            }
+            if vals.validator(*extracted_validator_address) == None {
+                fail!(
+                    Kind::ImplementationSpecific,
+                    "Found a faulty signer ({}) not present in the validator set ({})",
+                    extracted_validator_address,
+                    vals.hash()
+                );
+            }
         }
 
         Ok(())
@@ -71,26 +95,41 @@ impl lite::Commit for block::signed_header::SignedHeader {
 fn non_absent_votes(commit: &block::Commit) -> Vec<vote::Vote> {
     let mut votes: Vec<vote::Vote> = Default::default();
     for (i, commit_sig) in commit.signatures.iter().enumerate() {
-        if commit_sig.is_absent() {
-            continue;
-        }
-
-        if let Some(val_addr) = commit_sig.validator_address {
-            if let Some(sig) = commit_sig.signature.clone() {
-                let vote = vote::Vote {
-                    vote_type: vote::Type::Precommit,
-                    height: commit.height,
-                    round: commit.round,
-                    block_id: Option::from(commit.block_id.clone()),
-                    timestamp: commit_sig.timestamp,
-                    validator_address: val_addr,
-                    validator_index: u64::try_from(i)
-                        .expect("usize to u64 conversion failed for validator index"),
-                    signature: sig,
-                };
-                votes.push(vote);
+        let extracted_validator_address;
+        let extracted_timestamp;
+        let extracted_signature;
+        match commit_sig {
+            CommitSig::BlockIDFlagAbsent { .. } => continue,
+            CommitSig::BlockIDFlagCommit {
+                validator_address,
+                timestamp,
+                signature,
+            } => {
+                extracted_validator_address = validator_address;
+                extracted_timestamp = timestamp;
+                extracted_signature = signature;
+            }
+            CommitSig::BlockIDFlagNil {
+                validator_address,
+                timestamp,
+                signature,
+            } => {
+                extracted_validator_address = validator_address;
+                extracted_timestamp = timestamp;
+                extracted_signature = signature;
             }
         }
+        votes.push(vote::Vote {
+            vote_type: vote::Type::Precommit,
+            height: commit.height,
+            round: commit.round,
+            block_id: Option::from(commit.block_id.clone()),
+            timestamp: *extracted_timestamp,
+            validator_address: *extracted_validator_address,
+            validator_index: u64::try_from(i)
+                .expect("usize to u64 conversion failed for validator index"),
+            signature: extracted_signature.clone(),
+        })
     }
     votes
 }

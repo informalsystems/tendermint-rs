@@ -55,13 +55,13 @@ pub trait VerificationPredicates {
 
     fn valid_commit(
         &self,
-        commit: &Commit,
+        signed_header: &SignedHeader,
         validators: &ValidatorSet,
         validator: &dyn CommitValidator,
     ) -> Result<(), VerificationError> {
         // FIXME: Do not discard underlying error
         validator
-            .validate(commit, validators)
+            .validate(signed_header, validators)
             .map_err(|e| VerificationError::InvalidCommit(e.to_string()))?;
 
         Ok(())
@@ -242,7 +242,7 @@ pub fn validate_light_block(
 
     // Additional implementation specific validation
     vp.valid_commit(
-        &light_block.signed_header.commit,
+        &light_block.signed_header,
         &light_block.validators,
         commit_validator,
     )?;
