@@ -190,7 +190,7 @@ If there is no fork at height *h-target*, and
 
 
 **TODO:** be precise about what a fork is. I guess we need a signature
-by one correct validator.
+by one correct validator. I guess now that we need two commits with >2/3
 
 #### **[LCD-VC-LIVE-FORK]**
 
@@ -202,9 +202,9 @@ If there is a fork at height *h*, with *h-trust < h <= h-target*,
 
 then the  detector eventually outputs evidence for height *h*.
 
-**TODO:** We can weaken the above to "the (not-necessarily) primary is on
-branch A and a correct secondary is on branch B". I prefer the above
-as it is slightly less operational.
+**TODO:** We can weaken the above to "the (not-necessarily correct)
+primary provided branch A, and a correct secondary is on branch B". I
+prefer the above as it is slightly less operational.
 
 
 #### **[LCD-REQ-REP]**
@@ -282,20 +282,18 @@ Replace_Secondary(addr Address)
     - if precondition is violated
 
 ```go
-Report_and_Stop(sh)
+Report_and_Stop(ls LightStore, sh LightBlock)
 ```
-**TODO:** update, replace *State* by LightStore
 - Implementation Remark:
     - This function communicates the existence of a fork to the outside
 	- It creates the evidence from its local information:
 	     - all headers of height *sh.height*
-		   - possibly all the other pairs *(f,h)* from *State* from full
-		     nodes *f* that where used to find the fork (the primary,
-		     all involved secondaries)
+		   - possibly all the light blocks from LightStore with height
+		     at least *h-trust*.
 	- It submits this evidence
 	- It flags the light client to stop
 - Expected Postcondition
-    - It "terminates everything". TODO: should this be described in a nicer
+    - It "terminates everything". **TODO:** should this be described in a nicer
   control flow? How should this be escalated to the whole light client?
 
 
