@@ -42,11 +42,13 @@ pub(crate) mod bytes;
 pub(crate) mod from_str;
 pub(crate) mod time_duration;
 
+mod raw_commit_sig;
+pub(crate) use raw_commit_sig::BlockIDFlag;
+pub(crate) use raw_commit_sig::RawCommitSig;
+
 #[cfg(test)]
 mod tests;
 
 mod custom;
 pub(crate) use custom::parse_non_empty_block_id;
 pub(crate) use custom::parse_non_empty_hash;
-pub(crate) use custom::parse_non_empty_id;
-pub(crate) use custom::parse_non_empty_signature;
