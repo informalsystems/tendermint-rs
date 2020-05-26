@@ -81,7 +81,7 @@ HeightsPlus == 1..MAX_HEIGHT+1
 NilHeight == 0
 
 \* the height of the genesis block
-GenesisHeight == 1
+TrustedHeight == 1
 
 \* the set of all peer ids the node can receive a message from
 AllPeerIds == CORRECT \union FAULTY
@@ -176,31 +176,31 @@ AsBlockPool(bp) == bp <: BPT
 
 \* Control messages
 ControlMsgs ==
-    [type: {"addPeer"}, peerId: AllPeerIds]
+    AsInMsgSet([type: {"addPeer"}, peerId: AllPeerIds])
         \union
-    [type: {"removePeer"}, peerId: AllPeerIds]
+    AsInMsgSet([type: {"removePeer"}, peerId: AllPeerIds])
         \union
-    [type: {"syncTimeout"}]
+    AsInMsgSet([type: {"syncTimeout"}])
 
 \* All messages (and events) received by a node
 InMsgs ==
-    {NoMsg}
+    AsInMsgSet({NoMsg})
         \union
-    [type: {"blockResponse"}, peerId: AllPeerIds, block: Blocks]
+    AsInMsgSet([type: {"blockResponse"}, peerId: AllPeerIds, block: Blocks])
         \union
-    [type: {"noBlockResponse"}, peerId: AllPeerIds, height: Heights]
+    AsInMsgSet([type: {"noBlockResponse"}, peerId: AllPeerIds, height: Heights])
         \union    
-    [type: {"statusResponse"}, peerId: AllPeerIds, height: Heights]
+    AsInMsgSet([type: {"statusResponse"}, peerId: AllPeerIds, height: Heights])
         \union
     ControlMsgs
 
 \* Messages sent by a node and received by peers (environment in our case)
 OutMsgs ==
-    {NoMsg}
+    AsOutMsgSet({NoMsg})
         \union
-    [type: {"statusRequest"}]           \* StatusRequest is broadcast to the set of connected peers.
+    AsOutMsgSet([type: {"statusRequest"}]) \* StatusRequest is broadcast to the set of connected peers.
         \union
-    [type: {"blockRequest"}, peerId: AllPeerIds, height: Heights]
+    AsOutMsgSet([type: {"blockRequest"}, peerId: AllPeerIds, height: Heights])
 
 
 (********************************** NODE ***********************************)
@@ -210,13 +210,13 @@ InitNode ==
         /\ pIds \subseteq CORRECT
         /\ pIds /= AsPidSet({}) \* apalache better checks non-emptiness than subtracts from SUBSET
         /\ blockPool = AsBlockPool([
-                height |-> GenesisHeight + 1,       \* the genesis block is at height 1
-                syncHeight |-> GenesisHeight + 1,   \* and we are synchronized to it
+                height |-> TrustedHeight + 1,       \* the genesis block is at height 1
+                syncHeight |-> TrustedHeight + 1,   \* and we are synchronized to it
                 peerIds |-> pIds,
                 peerHeights |-> [p \in AllPeerIds |-> NilHeight],     \* no peer height is known
                 blockStore |->
                     [h \in Heights |->
-                      IF h > GenesisHeight THEN NilBlock ELSE chain[1]],
+                      IF h > TrustedHeight THEN NilBlock ELSE chain[1]],
                 receivedBlocks |-> [h \in Heights |-> NilPeer],
                 pendingBlocks |-> [h \in Heights |-> NilPeer],
                 syncedBlocks |-> -1
@@ -690,7 +690,6 @@ TypeOK ==
                [type: {"blockRequest"}, peerId: AllPeerIds, height: Heights]
 
         ]
-
     /\ blockPool \in [
                 height: Heights,
                 peerIds: SUBSET AllPeerIds,
@@ -701,6 +700,16 @@ TypeOK ==
                 syncedBlocks: Heights \union {NilHeight, -1},
                 syncHeight: Heights
            ]
+
+    (*
+    \* the constraints that would be better handled by apalache?
+    /\ \E PH \in [AllPeerIds -> Heights \union {NilHeight}]:
+         \E BR \in SUBSET [type: {"blockRequest"}, peerId: AllPeerIds, height: Heights]:
+           \E sr \in BOOLEAN:
+             peersState = [ peerHeights |-> PH,
+                            statusRequested |-> sr,
+                            blocksRequested |-> BR ]
+     *)
 
 \* TODO: align with the English spec. Add reference to it
 Sync1 == 
