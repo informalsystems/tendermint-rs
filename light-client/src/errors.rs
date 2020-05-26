@@ -19,7 +19,7 @@ pub enum ErrorKind {
 
     #[error("latest trusted state outside of trusting period")]
     TrustedStateOutsideTrustingPeriod {
-        trusted_state: TrustedState,
+        trusted_state: Box<TrustedState>,
         options: Options,
     },
 

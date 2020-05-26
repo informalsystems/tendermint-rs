@@ -137,7 +137,7 @@ impl LightClient {
             // Check invariant [LCV-INV-TP.1]
             if !is_within_trust_period(&trusted_state, options.trusting_period, options.now) {
                 bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
-                    trusted_state,
+                    trusted_state: Box::new(trusted_state),
                     options,
                 });
             }
