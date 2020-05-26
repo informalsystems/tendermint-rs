@@ -12,7 +12,7 @@ use std::convert::TryFrom;
 #[serde(try_from = "RawCommitSig")]
 pub enum CommitSig {
     /// no vote was received from a validator.
-// Todo: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
+    // Todo: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
     BlockIDFlagAbsent,
     /// voted for the Commit.BlockID.
     BlockIDFlagCommit {
