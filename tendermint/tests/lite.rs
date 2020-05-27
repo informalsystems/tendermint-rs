@@ -237,7 +237,7 @@ fn run_single_step_tests(dir: &str) {
             .any(|failing_case| fp_str.ends_with(failing_case))
         {
             println!("Skipping JSON test: {}", fp_str);
-            return;
+            continue;
         }
         println!(
             "Running light client against 'single-step' test-file:\n {}",
