@@ -584,12 +584,13 @@ SendControlMessage ==
 UnforgeableBlockId(height, block) ==
     block.hashEqRef => block = chain[height]
 
-\* A faulty peer cannot forge the validators signatures and thus cannot produce a fork.
+\* A faulty peer cannot forge enough of the validators signatures.
+\* A more precise rule should have checked that the commiters have over 2/3 of the VS's voting power.
 NoFork(height, block) ==
-    LET refBlock == chain[height] IN
-    ~block.hashEqRef => block.VS /= refBlock.VS
+    (height > 1 /\ block.lastCommit.committers = chain[height - 1].VS)
+        => block.lastCommit.blockIdEqRef
 
-\* can be block produced by a faulty peer
+\* Can be block produced by a faulty peer
 IsBlockByFaulty(height, block) ==
     /\ block.height = height
     /\ UnforgeableBlockId(height, block)
@@ -792,6 +793,6 @@ BlockPoolInvariant ==
 
 \*=============================================================================
 \* Modification History
-\* Last modified Mon May 25 21:03:53 CEST 2020 by igor
+\* Last modified Wed May 27 19:15:23 CEST 2020 by igor
 \* Last modified Thu Apr 16 16:57:22 CEST 2020 by zarkomilosevic
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic
