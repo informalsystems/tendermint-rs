@@ -131,7 +131,7 @@ the assumptions that correct full nodes reliably talk to the
 detector.
 
 
-**Assumptions**
+### Assumptions
 
 #### **[LCD-A-CorrFull]**
 
@@ -147,8 +147,42 @@ cases where primary and/or secondaries are faulty.
 Communication between the  detector and a correct full node is 
 reliable and bounded in time.
 
+### Forks
+
+**TODO:** formalize the following
+
+- The chain induces a sequence of NextV_i sets.
+- Tendermint security model imposes correctness of >2/3 of each NextV_i
+  for [Time_i, Time_i + trustingPeriod]
+  
+- If this assumption holds, consensus ensures, that for each height, 
+  there exists at most one block that is "properly signed"
+
+Define "is supported" as containing >1/3 of the voting power of some
+validator set
+
+Define "is signed" as containing >2/3 of the voting power of the
+"current" validator set
+
+- At time t, let N be the set of NextV sets that are still within
+  trustingperiod: there does not exists two different blocks and 
+  their commits A
+  and B with the same
+  height, such that A "is supported" by a set in N, and B "is
+  supported" by a set in N. Then (A,B) is called a "light fork"
+  
+- if two headers A and B both have height h, and there is a block at
+  height h-1 such that its validator set signed A and B, we call it a
+  fork on the main chain, or fork.
+  
+- a block that is not supported is called bogus
+
+
+
 
 ## Problem statement
+
+
 
 The  detector gets as input a Lightstore with
 *h-target = lightStore.LatestVerified().Height* and
