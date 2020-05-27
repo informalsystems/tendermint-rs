@@ -71,23 +71,23 @@ pub trait VerificationPredicates {
         &self,
         header: &Header,
         trusting_period: Duration,
+        clock_drift: Duration,
         now: Time,
     ) -> Result<(), VerificationError> {
-        let expires_at = header.time + trusting_period;
-
         ensure!(
-            header.time < now && expires_at > now,
-            VerificationError::NotWithinTrustPeriod {
-                at: expires_at,
-                now,
-            }
-        );
-
-        ensure!(
-            header.time <= now,
+            header.time < now + clock_drift,
             VerificationError::HeaderFromTheFuture {
                 header_time: header.time,
                 now
+            }
+        );
+
+        let expires_at = header.time + trusting_period;
+        ensure!(
+            expires_at > now,
+            VerificationError::NotWithinTrustPeriod {
+                at: expires_at,
+                now,
             }
         );
 
@@ -228,6 +228,7 @@ pub fn validate_light_block(
     vp.is_within_trust_period(
         &trusted_state.signed_header.header,
         options.trusting_period,
+        options.clock_drift,
         options.now,
     )?;
 

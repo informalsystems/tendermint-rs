@@ -18,6 +18,8 @@ pub struct Options {
     pub trust_threshold: TrustThreshold,
     /// The trusting period
     pub trusting_period: Duration,
+    /// Correction parameter dealing with only approximately synchronized clocks.
+    pub clock_drift: Duration,
     /// The current time
     pub now: Time,
 }

@@ -102,6 +102,7 @@ fn sync_cmd(opts: SyncOpts) {
             denominator: 3,
         },
         trusting_period: Duration::from_secs(36000),
+        clock_drift: Duration::from_secs(1),
         now: Time::now(),
     };
 

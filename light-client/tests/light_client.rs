@@ -21,6 +21,7 @@ fn verify_single(
     input: LightBlock,
     trust_threshold: TrustThreshold,
     trusting_period: Duration,
+    clock_drift: Duration,
     now: SystemTime,
 ) -> Result<LightBlock, Verdict> {
     let verifier = ProdVerifier::new(
@@ -40,6 +41,7 @@ fn verify_single(
     let options = Options {
         trust_threshold,
         trusting_period,
+        clock_drift,
         now: now.into(),
     };
 
@@ -65,6 +67,9 @@ fn run_test_case(tc: TestCase<LightBlock>) {
         None => false,
     };
 
+    // FIXME: What should this be, and where should it be configured?
+    let clock_drift = Duration::from_secs(1);
+
     let trusting_period: Duration = tc.initial.trusting_period.into();
     let tm_now = tc.initial.now;
     let now = tm_now.to_system_time().unwrap();
@@ -77,6 +82,7 @@ fn run_test_case(tc: TestCase<LightBlock>) {
             input.clone(),
             TrustThreshold::default(),
             trusting_period.into(),
+            clock_drift,
             now,
         ) {
             Ok(new_state) => {
@@ -152,6 +158,9 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     let trusting_period = tc.trust_options.period;
     let now = tc.now;
 
+    // FIXME: What should this be, and where should it be configured?
+    let clock_drift = Duration::from_secs(1);
+
     let clock = MockClock { now };
     let scheduler = light_client::components::scheduler::schedule;
     let fork_detector = RealForkDetector::new(ProdHeaderHasher);
@@ -159,6 +168,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     let options = Options {
         trust_threshold,
         trusting_period: trusting_period.into(),
+        clock_drift,
         now,
     };
 
