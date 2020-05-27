@@ -8,8 +8,6 @@ use std::path::{Path, PathBuf};
 
 use tendermint::rpc;
 
-const PEER_ID: &str = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE";
-
 // Link to the commit that generated below JSON test files:
 // https://github.com/Shivani912/tendermint/commit/e02f8fd54a278f0192353e54b84a027c8fe31c1e
 const TEST_FILES_PATH: &str = "./tests/support/";
@@ -36,7 +34,7 @@ fn verify_single(
         trusted_state.signed_header,
         trusted_state.next_validators.clone(),
         trusted_state.next_validators,
-        // PEER_ID.parse().unwrap(),
+        default_peer_id(),
     );
 
     let options = Options {
@@ -56,7 +54,7 @@ fn verify_single(
     }
 }
 
-fn run_test_case(tc: TestCase) {
+fn run_test_case(tc: TestCase<LightBlock>) {
     let mut latest_trusted = Trusted::new(
         tc.initial.signed_header.clone(),
         tc.initial.next_validator_set.clone(),
@@ -145,11 +143,10 @@ fn verify_bisection(
         .map(|_| light_client.get_trace(untrusted_height))
 }
 
-fn run_bisection_test(tc: TestBisection) {
+fn run_bisection_test(tc: TestBisection<LightBlock>) {
     println!("  - {}", tc.description);
 
-    let primary: PeerId = PEER_ID.parse().unwrap();
-
+    let primary = default_peer_id();
     let untrusted_height = tc.height_to_verify.try_into().unwrap();
     let trust_threshold = tc.trust_options.trust_level;
     let trusting_period = tc.trust_options.period;
@@ -275,12 +272,16 @@ fn run_bisection_tests(dir: &str) {
     }
 }
 
-fn read_test_case(file_path: &str) -> TestCase {
-    serde_json::from_str(read_json_fixture(file_path).as_str()).unwrap()
+fn read_test_case(file_path: &str) -> TestCase<LightBlock> {
+    let tc: TestCase<AnonLightBlock> =
+        serde_json::from_str(read_json_fixture(file_path).as_str()).unwrap();
+    tc.into()
 }
 
-fn read_bisection_test_case(file_path: &str) -> TestBisection {
-    serde_json::from_str(read_json_fixture(file_path).as_str()).unwrap()
+fn read_bisection_test_case(file_path: &str) -> TestBisection<LightBlock> {
+    let tc: TestBisection<AnonLightBlock> =
+        serde_json::from_str(read_json_fixture(file_path).as_str()).unwrap();
+    tc.into()
 }
 
 #[test]

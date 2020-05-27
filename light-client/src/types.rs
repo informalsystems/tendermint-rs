@@ -51,9 +51,8 @@ pub struct LightBlock {
     /// Validator set at the next block height
     #[serde(rename = "next_validator_set")]
     pub next_validators: ValidatorSet,
-    // FIXME: Uncomment when conformance tests are adapted to include provider
-    // /// The peer ID of the node that provided this block
-    // pub provider: PeerId,
+    /// The peer ID of the node that provided this block
+    pub provider: PeerId,
 }
 
 impl LightBlock {
@@ -62,13 +61,13 @@ impl LightBlock {
         signed_header: SignedHeader,
         validators: ValidatorSet,
         next_validators: ValidatorSet,
-        // provider: PeerId,
+        provider: PeerId,
     ) -> LightBlock {
         Self {
             signed_header,
             validators,
             next_validators,
-            // provider,
+            provider,
         }
     }
 

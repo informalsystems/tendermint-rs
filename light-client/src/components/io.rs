@@ -53,12 +53,7 @@ impl Io for ProdIo {
         let validator_set = self.fetch_validator_set(peer, height)?;
         let next_validator_set = self.fetch_validator_set(peer, height + 1)?;
 
-        let light_block = LightBlock::new(
-            signed_header,
-            validator_set,
-            next_validator_set,
-            // peer
-        );
+        let light_block = LightBlock::new(signed_header, validator_set, next_validator_set, peer);
 
         Ok(light_block)
     }
