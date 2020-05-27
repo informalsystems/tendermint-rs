@@ -1,12 +1,15 @@
 //! Timestamps used by Tendermint blockchains
 
 use crate::error::{Error, Kind};
+
 use chrono::{DateTime, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
+use tai64::TAI64N;
+
 use std::fmt;
+use std::ops::{Add, Sub};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tai64::TAI64N;
 
 /// Tendermint timestamps
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#time>
@@ -97,6 +100,24 @@ impl From<TAI64N> for Time {
 impl From<Time> for TAI64N {
     fn from(t: Time) -> TAI64N {
         TAI64N::from_datetime_utc(&t.0)
+    }
+}
+
+impl Add<Duration> for Time {
+    type Output = Self;
+
+    fn add(self, rhs: Duration) -> Self::Output {
+        let st: SystemTime = self.into();
+        (st + rhs).into()
+    }
+}
+
+impl Sub<Duration> for Time {
+    type Output = Self;
+
+    fn sub(self, rhs: Duration) -> Self::Output {
+        let st: SystemTime = self.into();
+        (st - rhs).into()
     }
 }
 

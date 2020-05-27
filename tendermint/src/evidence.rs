@@ -80,7 +80,7 @@ pub struct Params {
 /// Duration is a wrapper around std::time::Duration
 /// essentially, to keep the usages look cleaner
 /// i.e. you can avoid using serde annotations everywhere
-#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct Duration(#[serde(with = "serializers::time_duration")] std::time::Duration);
 
 impl From<Duration> for std::time::Duration {

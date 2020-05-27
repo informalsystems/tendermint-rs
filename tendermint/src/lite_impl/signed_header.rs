@@ -2,7 +2,7 @@
 
 use crate::block::CommitSig;
 use crate::lite::error::{Error, Kind};
-use crate::lite::ValidatorSet;
+use crate::lite::types::ValidatorSet as _;
 use crate::validator::Set;
 use crate::{block, hash, lite, vote};
 use anomaly::fail;
@@ -137,7 +137,7 @@ fn non_absent_votes(commit: &block::Commit) -> Vec<vote::Vote> {
 impl block::signed_header::SignedHeader {
     /// This is a private helper method to iterate over the underlying
     /// votes to compute the voting power (see `voting_power_in` below).
-    fn signed_votes(&self) -> Vec<vote::SignedVote> {
+    pub fn signed_votes(&self) -> Vec<vote::SignedVote> {
         let chain_id = self.header.chain_id.to_string();
         let mut votes = non_absent_votes(&self.commit);
         votes
