@@ -164,18 +164,17 @@ validator set
 Define "is signed" as containing >2/3 of the voting power of the
 "current" validator set
 
-- At time t, let N be the set of NextV sets that are still within
-  trustingperiod: there does not exists two different blocks and 
-  their commits A
-  and B with the same
-  height, such that A "is supported" by a set in N, and B "is
-  supported" by a set in N. Then (A,B) is called a "light fork"
-  
+- if two distinct headers A and B both have height h, and A and B are supported
+  by two validator sets within the trusting period, we call it a
+  light fork.
+ 
 - if two headers A and B both have height h, and there is a block at
-  height h-1 such that its validator set signed A and B, we call it a
-  fork on the main chain, or fork.
+  height h-1 within the trusting period such that its validator set
+  signed A and B, we call it a fork on the main chain, or fork.
   
-- a block that is not supported is called bogus
+  
+- a block that is not supported is called bogus (it can be generated
+  just by faulty nodes within the tendermint security model)
 
 
 
