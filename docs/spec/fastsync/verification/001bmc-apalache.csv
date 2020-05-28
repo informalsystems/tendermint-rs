@@ -2,6 +2,6 @@ no,filename,tool,timeout,init,inv,next,args
 1,MC_1_1_4.tla,apalache,1h,,Sync1AsInv,,--length=20
 2,MC_1_1_4.tla,apalache,1h,,Sync2AsInv,,--length=20
 3,MC_1_1_4.tla,apalache,4h,,Sync3AsInv,,--length=20
-6,MC_1_1_4.tla,apalache,8h,,CorrectBlocksInv,,--length=20
+6,MC_1_1_4.tla,apalache,8h,,CorrectBlocksInv,,--length=16
 7,MC_1_1_4.tla,apalache,1h,,SyncFromCorrectInv,,--length=20
 8,MC_1_1_4.tla,apalache,1h,,CorrectNeverSuspectedInv,,--length=20
