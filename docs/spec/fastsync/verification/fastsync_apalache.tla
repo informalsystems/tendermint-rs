@@ -748,9 +748,10 @@ Sync3AsInv ==
 Termination == WF_turn(FlipTurn) => <>(state = "finished")
 
 \* This property holds true
-Termination2 == (WF_turn(FlipTurn)
-                    /\ <>[](inMsg.type \notin {"statusResponse", "addPeer", "removePeer"}))
-                    => <>(state = "finished")
+Termination2 ==
+  (WF_turn(FlipTurn)
+    /\ <>[](inMsg.type \notin {"statusResponse", "addPeer", "removePeer"}))
+      => <>(state = "finished")
 
 \* a few simple properties that trigger counterexamples
 
@@ -793,6 +794,6 @@ BlockPoolInvariant ==
 
 \*=============================================================================
 \* Modification History
-\* Last modified Wed May 27 19:15:23 CEST 2020 by igor
+\* Last modified Thu May 28 10:55:04 CEST 2020 by igor
 \* Last modified Thu Apr 16 16:57:22 CEST 2020 by zarkomilosevic
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic
