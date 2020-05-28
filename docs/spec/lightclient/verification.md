@@ -217,6 +217,7 @@ For a block *b*, each element *pc* of *PossibleCommit(b)* satisfies:
   - the sum of the voting powers in *pc* is greater than 2/3
   *TotalVotingPower(b.Validators)*
 
+
 > The following property comes from the validity of the [consensus][arXiv]: A
 > correct validator node only sends `prevote` or `precommit`, if
 > `BlockID` of the new (to-be-decided) block is equal to the hash of
@@ -542,7 +543,7 @@ func (ls LightStore) LatestTrusted() LightBlock
 ### Invariants
 
 #### **[LCV-INV-TP]**:
-It is always the case that *LightStore.LatestVerified.Header.Time > now - trustingPeriod*.
+It is always the case that *LightStore.LatestTrusted.Header.Time > now - trustingPeriod*.
 
 > If the invariant is violated, the light client does not have a
 > header it can trust. A trusted header must be obtained externally, 

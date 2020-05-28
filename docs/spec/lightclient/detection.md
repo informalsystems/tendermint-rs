@@ -115,6 +115,39 @@ that has not been primary or secondary before).
 
 
 
+## Tendermint Consensus and Forks
+
+
+
+**TODO:** formalize the following
+
+- The chain induces a sequence of NextV_i sets.
+- Tendermint security model imposes correctness of >2/3 of each NextV_i
+  for [Time_i, Time_i + trustingPeriod]
+  
+- If this assumption holds, consensus ensures, that for each height, 
+  there exists at most one block that is "properly signed"
+
+Define "is supported" as containing >1/3 of the voting power of some
+validator set
+
+Define "is signed" as containing >2/3 of the voting power of the
+"current" validator set
+
+- if two distinct headers A and B both have height h, and A and B are supported
+  by two validator sets within the trusting period, we call it a
+  light fork.
+ 
+- if two headers A and B both have height h, and there is a block at
+  height h-1 within the trusting period such that its validator set
+  signed A and B, we call it a fork on the main chain, or fork.
+  
+  
+- a block that is not supported is called bogus (it can be generated
+  just by faulty nodes within the tendermint security model)
+
+
+
 ## Assumptions/Incentives/Environment
 
 It is not in the interest of faulty full nodes to talk to the 
@@ -146,35 +179,6 @@ cases where primary and/or secondaries are faulty.
 
 Communication between the  detector and a correct full node is 
 reliable and bounded in time.
-
-### Forks
-
-**TODO:** formalize the following
-
-- The chain induces a sequence of NextV_i sets.
-- Tendermint security model imposes correctness of >2/3 of each NextV_i
-  for [Time_i, Time_i + trustingPeriod]
-  
-- If this assumption holds, consensus ensures, that for each height, 
-  there exists at most one block that is "properly signed"
-
-Define "is supported" as containing >1/3 of the voting power of some
-validator set
-
-Define "is signed" as containing >2/3 of the voting power of the
-"current" validator set
-
-- if two distinct headers A and B both have height h, and A and B are supported
-  by two validator sets within the trusting period, we call it a
-  light fork.
- 
-- if two headers A and B both have height h, and there is a block at
-  height h-1 within the trusting period such that its validator set
-  signed A and B, we call it a fork on the main chain, or fork.
-  
-  
-- a block that is not supported is called bogus (it can be generated
-  just by faulty nodes within the tendermint security model)
 
 
 
@@ -356,51 +360,45 @@ just been verified by the verifier as a parameter. *trustedState*
 should be "a possibly old"
 trusted state to increase the likelihood of detecting a fork.
 
+**TODO:** I changed the return value to be the discovered forks as in
+the Rust sketch. Make sure it is consistent everywhere.
 
 ```go
 func ForkDetector(ls LightStore)  {
+    Forks.Init // initialize a container in which we collect forks
 	for i, s range Secondaries {
 		sh := FetchLightBlock(s,LightStore.LatestVerified().Height)
-		if LightStore.LatestVerified() == sh {
+		// as the check below only needs the header it is sufficient
+		// to download the header rather than the LighBlock
+		if LightStore.LatestVerified().Header == sh.Header {
 				// header matches. we do nothing
 	    }
 		else {
 			    // [LCD-REQ-REP]
 			    // header does not match. there is a situation.
 				// we try to verify sh by querying s
+				auxLS.Init
 				auxLS.Update(LightStore.LatestTrusted(),StateVerified);
 				auxLS.Update(sh,StateUnverified);
 				result := VerifyToTarget(s, auxLS, LightStore.LatestVerified().Height)
-				if result = (rls,ResultSuccess) {
+				if result = (_,ResultSuccess) || (_,EXPIRED) {
 				    // we verified header sh which is conflicting to hd
-					// there is a fork on the main blockchain. -> call panic
-					// with all the evidence
-					Report_and_Stop(LightStore,sh)
-				}
-				else if result = (sh,EXPIRED) {
-				    // we verified header sh which is conflicting to hd
-					// there is a fork on the main
-					// blockchain but trusting period expired. -> if still
-					// within unbonding period do panic
-					if still_punishable(sh) {
-						Report_and_Stop(sh)
-					}
-					else {
-						//**TODO:** exit lightclient: we are outside
-				trustingPeriod. 
-					}
+					// there is a fork on the main blockchain.
+                    // If return code was EXPIRED it might be too late
+			    	// to punish, we still report it.
+					Forks.Add(sh)
 				}
 				else {
 					// s might be faulty or unreachable
 					Replace_peer(s)
-					// after this Secondaries might be updated: TODO:
-					// decide whether this should imply one more
-					// loop iteration
+					// If a new node is added to secondaries, this
+					// should not imply an additional loop iteration.
+					// We assume one of the secondaries is correct.
 				}
 			}
 	}
 	LightStore.Update(lightStore.LatestVerified(),StateTrusted)
-	return (lightStore)
+	return (Forks,OK)
 }
 
 **TODO:** check!
