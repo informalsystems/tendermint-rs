@@ -81,37 +81,22 @@ the state `StateUnverified, ` StateVerified`, `StateFailed`, or
 
 Whenever the light client verifier `VerifyToTarget` returns with
 `(lightStore, ResultSuccess)`, the
- detector should query the secondaries by calling `Commit` for height
- *LightStore.LatestVerified().Height* remotely.
-
-
-#### **[LCD-IP-RespOK]**
-
-If for each  secondary *s*, the returned 
- header *h'* is
-equal to *LightStore.LatestVerified()* the detector sets
-`LightStore.Update(LightStore.LatestVerified,StateTrusted)` and
-terminates successfully.
-
-**TODO:** shall we set all predecessors also to `StateTrusted`?
-
-#### **[LCD-IP-RespBad]**
-
-Otherwise, that is, if *h'* returned by *s* is different from
-**LightStore.LatestVerified()*, the detector has to analyze the
-situation. If the detector can prove a fork starting from
-*LightStore.LatestTrusted().Height* on the main chain by performing
-the bisection protocol with *s*, it stops the light client and submits
-evidence.
-
+ detector should query the secondaries by calling `FetchLightBlock` for height
+ *LightStore.LatestVerified().Height* remotely.  
+Then, 
+the detector returns the set of all headers $h'$ downloaded from
+secondaries that satisfy
+ - *h'* is different from *LightStore.LatestVerified()*
+ - *h'* is a (light) fork
 
 
 #### **[LCD-IP-PEERSET]**
 
-Whenever the  detector observes misbehavior of a full node from
-the set of Secondaries it should be replaced by a fresh full node. 
-(A full node
-that has not been primary or secondary before).
+Whenever the detector observes misbehavior of a full node from the set
+of Secondaries it should be replaced by a fresh full node.  (A full
+node that has not been primary or secondary before). This includes in
+particular the case where *h'* is different from
+*LightStore.LatestVerified()* but h' is not a fork.
 
 
 
@@ -190,46 +175,22 @@ reliable and bounded in time.
 The  detector gets as input a Lightstore with
 *h-target = lightStore.LatestVerified().Height* and
 *h-trust=lightStore.LatestTrusted().Height*. It
-queries the secondaries for  headers at height *h-target*. Eventually, the 
-detector should
-decide
-  - whether to report evidence for *h-target*
-  - whether to stop operation (panic) at height *h-target*
-  - whether to perform
-    `LightStore.Update(lightStore.LatestVerified(),StateTrusted` and
-	return the LightStore.
+queries the secondaries for  headers at height *h-target*. The 
+detector should return a set Forks.
 
 The  detector should satisfy the following temporal formulas
 
 
-#### **[LCD-VC-INV]**
+#### **[LCD-DIST-INV]**
 
-If there is no fork at height *h-target*, and the primary
-and the secondaries are correct, then the  detector should
-never output evidence for height *h-target* and should not stop at
-height *h-target*. 
-
-
-#### **[LCD-VC-INV-DONT-STOP]**
-
-If there is no fork at height *h-target*, and
- the primary is correct, then the detector should never stop
- at height *h-target*.
-
-
-#### **[LCD-VC-LIVE-DONT-STOP]**
-
-If there is no fork at height *h-target*, and
- the primary is correct, then the detector should eventually
- perform
-    `LightStore.Update(lightStore.LatestVerified(),StateTrusted)` and
-	return the LightStore.
+If there is no fork at height *h-target*, then the detector should
+return the empty set.
 
 
 **TODO:** be precise about what a fork is. I guess we need a signature
 by one correct validator. I guess now that we need two commits with >2/3
 
-#### **[LCD-VC-LIVE-FORK]**
+#### **[LCD-DIST-LIVE-FORK]**
 
 If there is a fork at height *h*, with *h-trust < h <= h-target*,
 (two correct full nodes decided on different blocks for the same height), and
@@ -246,7 +207,8 @@ prefer the above as it is slightly less operational.
 
 #### **[LCD-REQ-REP]**
 
-If the  detector observes two conflicting headers for height *h*, it should try to verify both. If both are verified it should report evidence.
+If the  detector observes two conflicting headers for height *h*, 
+it should try to verify both. If both are verified it should report evidence.
 
 If the primary reports header *h* and a secondary reports header *h'*,
      and if *h'* can be verified based on common root of trust, then
