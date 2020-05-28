@@ -28,6 +28,12 @@ pub enum ErrorKind {
 
     #[error("invalid light block: {0}")]
     InvalidLightBlock(#[source] VerificationError),
+
+    #[error("fork detected")]
+    ForkDetected,
+
+    #[error("no witnesses left or all of them are down")]
+    NoWitnesses,
 }
 
 impl ErrorKind {

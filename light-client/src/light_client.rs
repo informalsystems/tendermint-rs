@@ -113,6 +113,7 @@ impl LightClient {
     /// - If the core verification loop invariant is violated [LCV-INV-TP.1]
     /// - If verification of a light block fails
     /// - If it cannot fetch a block from the blockchain
+    /// - If no witnesses respond with a block
     #[post(
         ret.is_ok() ==> trusted_store_contains_block_at_target_height(
             self.state.light_store.as_ref(),
@@ -162,10 +163,18 @@ impl LightClient {
 
             match verdict {
                 Verdict::Success => {
-                    // Verification succeeded, add the block to the light store with `verified` status
-                    self.state
-                        .light_store
-                        .update(current_block, VerifiedStatus::Verified);
+                    // Verification succeeded, check witnesses have the same block
+                    match self.detect_forks(&current_block) {
+                        Err(e) => return Err(e),
+                        Ok(ForkDetection::NotDetected) =>
+                            // Fork not detected, mark block as verified
+                            self.state
+                                .light_store
+                                .update(current_block, VerifiedStatus::Verified),
+                        Ok(ForkDetection::Detected(_)) =>
+                            // Fork detected, bail out
+                            bail!(ErrorKind::ForkDetected)
+                    }
                 }
                 Verdict::Invalid(e) => {
                     // Verification failed, add the block to the light store with `failed` status, and abort.
@@ -195,22 +204,32 @@ impl LightClient {
         }
     }
 
-    /// TODO
-    pub fn detect_forks(&self) -> Result<(), Error> {
-        let light_blocks = self
-            .state
-            .light_store
-            .all(VerifiedStatus::Verified)
-            .collect();
-
-        let result = self.fork_detector.detect(light_blocks);
-
-        match result {
-            ForkDetection::NotDetected => (),    // TODO
-            ForkDetection::Detected(_, _) => (), // TODO
+    /// Check witnesses have the same block.
+    ///
+    /// ## Error conditions
+    /// - If no witnesses respond with a block
+    pub fn detect_forks(&mut self, current_block: &LightBlock) -> Result<ForkDetection, Error> {
+        if self.state.peers.witnesses.is_empty() {
+            return Err(ErrorKind::NoWitnesses.into());
         }
 
-        Ok(())
+        let witnesses = &self.state.peers.witnesses.clone();
+        let light_blocks: Vec<LightBlock> = witnesses
+            .iter()
+            .filter_map(|witness| self.io.fetch_light_block(*witness, current_block.height()).ok())
+            .collect();
+
+        // If all witnesses error, return the first one
+        if light_blocks.is_empty() {
+            // TODO
+            return Err(ErrorKind::NoWitnesses.into());
+        }
+
+        let result = self.fork_detector.detect(current_block, light_blocks);
+        if let ForkDetection::Detected(_) = result {
+            // TODO: submit evidence
+        }
+        Ok(result)
     }
 
     /// Get the verification trace for the block at target_height.
