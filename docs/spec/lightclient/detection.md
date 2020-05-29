@@ -59,48 +59,8 @@ a new header, the light client first does [verification](verification)
 with the primary, and then cross-checks the header with the
 secondaries using this specification.
 
-### Informal Problem statement
 
-> We put tags to informal problem statements as there is no sequential
-> secification.
-
-The following requirements are operational in that they describe how
-things should be done, rather than what should be done. However, they
-do not constitute temporal logic verification conditions. For those,
-see [LCD-VC-*] below.
-
-
-#### **[LCD-IP-STATE]**
-
-The detector works on a LightStore that contains LightBlocks in one of 
-the state `StateUnverified, ` StateVerified`, `StateFailed`, or
-`StateTrusted`.
-
-
-#### **[LCD-IP-Q]**
-
-Whenever the light client verifier `VerifyToTarget` returns with
-`(lightStore, ResultSuccess)`, the
- detector should query the secondaries by calling `FetchLightBlock` for height
- *LightStore.LatestVerified().Height* remotely.  
-Then, 
-the detector returns the set of all headers $h'$ downloaded from
-secondaries that satisfy
- - *h'* is different from *LightStore.LatestVerified()*
- - *h'* is a (light) fork
-
-
-#### **[LCD-IP-PEERSET]**
-
-Whenever the detector observes misbehavior of a full node from the set
-of Secondaries it should be replaced by a fresh full node.  (A full
-node that has not been primary or secondary before). This includes in
-particular the case where *h'* is different from
-*LightStore.LatestVerified()* but h' is not a fork.
-
-
-
-## Tendermint Consensus and Forks
+### Tendermint Consensus and Forks
 
 
 
@@ -110,7 +70,7 @@ particular the case where *h'* is different from
 - Tendermint security model imposes correctness of >2/3 of each NextV_i
   for [Time_i, Time_i + trustingPeriod]
   
-- If this assumption holds, consensus ensures, that for each height, 
+- If this assumption holds, consensus ensures that for each height, 
   there exists at most one block that is "properly signed"
 
 Define "is supported" as containing >1/3 of the voting power of some
@@ -130,6 +90,48 @@ Define "is signed" as containing >2/3 of the voting power of the
   
 - a block that is not supported is called bogus (it can be generated
   just by faulty nodes within the tendermint security model)
+
+
+### Informal Problem statement
+
+> We put tags to informal problem statements as there is no sequential
+> secification.
+
+The following requirements are operational in that they describe how
+things should be done, rather than what should be done. However, they
+do not constitute temporal logic verification conditions. For those,
+see [LCD-DIST-*] below.
+
+
+#### **[LCD-IP-STATE]**
+
+The detector works on a LightStore that contains LightBlocks in one of 
+the state `StateUnverified`, ` StateVerified`, `StateFailed`, or
+`StateTrusted`.
+
+
+#### **[LCD-IP-Q]**
+
+Whenever the light client verifier performs `VerifyToTarget` with the
+primary and returns with
+`(lightStore, ResultSuccess)`, the
+ detector should query the secondaries by calling `FetchLightBlock` for height
+ *LightStore.LatestVerified().Height* remotely.  
+Then, 
+the detector returns the set of all headers $h'$ downloaded from
+secondaries that satisfy
+ - *h'* is different from *LightStore.LatestVerified()*
+ - *h'* is a (light) fork
+
+
+#### **[LCD-IP-PEERSET]**
+
+Whenever the detector observes misbehavior of a full node from the set
+of Secondaries it should be replaced by a fresh full node.  (A full
+node that has not been primary or secondary before). This includes in
+particular the case where *h'* is different from
+*LightStore.LatestVerified()* but h' is not a fork.
+
 
 
 
@@ -157,28 +159,36 @@ At all times there is at least one correct full
 node among the primary and the secondary.
 
 **Remark:** Check whether [LCD-A-CorrFull] is not needed in the end because
-the verification conditions [LCD-VC-*] have preconditions on specific
+the verification conditions [LCD-DIST-*] have preconditions on specific
 cases where primary and/or secondaries are faulty.
 
 #### **[LCD-A-RelComm]**
 
 Communication between the  detector and a correct full node is 
-reliable and bounded in time.
+reliable and bounded in time. Reliable communication means that
+messages are not lost, not duplicated, and eventually delivered. There
+is a (known) end-to-end delay *Delta*, such that if a message is sent
+at time *t* then it is received and processes by time *t + Delta*.
+This implies that we need a timeout of at least *2 Delta* for remote
+procedure calls to ensure that the response of a correct peer arrives
+before the timeout expires.
 
 
 
 
-## Problem statement
+## (Distributed) Problem statement
 
+> As the fork detector from the beginning is there to reduce the
+> impact of faulty nodes, and faulty nodes imply that there is a
+> distributed system, there is no sequential specification.
 
-
-The  detector gets as input a Lightstore with
-*h-target = lightStore.LatestVerified().Height* and
-*h-trust=lightStore.LatestTrusted().Height*. It
-queries the secondaries for  headers at height *h-target*. The 
-detector should return a set Forks.
-
-The  detector should satisfy the following temporal formulas
+The  detector gets as input a lightstore *lightStore*.
+Let *h-target = lightStore.LatestVerified().Height* and
+     *h-trust=lightStore.LatestTrusted().Height* (see
+     [LCV-DATA-LIGHTSTORE]).
+It queries the secondaries for  headers at height *h-target*.
+The  detector returns a set *Forks*, and should satisfy the following
+     temporal formulas 
 
 
 #### **[LCD-DIST-INV]**
@@ -187,35 +197,30 @@ If there is no fork at height *h-target*, then the detector should
 return the empty set.
 
 
-**TODO:** be precise about what a fork is. I guess we need a signature
-by one correct validator. I guess now that we need two commits with >2/3
+**TODO:** be precise about what a fork is. 
 
 #### **[LCD-DIST-LIVE-FORK]**
 
-If there is a fork at height *h*, with *h-trust < h <= h-target*,
-(two correct full nodes decided on different blocks for the same height), and
- there are two correct full nodes *i* and *j* that are
-    - on different branches, and
-    - primary or secondary,
+If there is a fork at height *h*, with *h-trust < h <= h-target*, and
+there are two correct full nodes *i* and *j* that are
+  - on different branches, and
+  - primary or secondary,
 
-then the  detector eventually outputs evidence for height *h*.
+then the  detector eventually outputs the fork.
 
 **TODO:** We can weaken the above to "the (not-necessarily correct)
 primary provided branch A, and a correct secondary is on branch B". I
 prefer the above as it is slightly less operational.
 
 
-#### **[LCD-REQ-REP]**
-
-If the  detector observes two conflicting headers for height *h*, 
-it should try to verify both. If both are verified it should report evidence.
-
-If the primary reports header *h* and a secondary reports header *h'*,
-     and if *h'* can be verified based on common root of trust, then
-     evidence should be generated; 
-
-*Remark:* By verifying we mean calling `VerifyToTarget` from the
-[[verification]] specification.
+> #### **[LCD-REQ-REP]**
+> If the  detector observes two conflicting headers for height *h*, 
+> it should try to verify both. If both are verified it should report evidence.
+> If the primary reports header *h* and a secondary reports header *h'*,
+>     and if *h'* can be verified based on common root of trust, then
+>     evidence should be generated; 
+> By verifying we mean calling `VerifyToTarget` from the
+> [[verification]] specification.
 
 ## Definitions
 
@@ -256,20 +261,6 @@ See the [verification specification][verification] for details.
 
 
 ```go
-still_punishable(sh SignedHeader) (Boolean)
-```
-- Implementation Remark: it might make sense to check whether 
-the unbonding period is
-  still running although the trusting period is over
-  **TODO:** fix the period that should be checked. Something between
-  trusting period and unbonding period?
-- Expected postcondition
-    - returns true if misbehavior related to *sh* can still be
-      punished. Can be approximated by *sh.bfttime + unbondingperiod > now*
-
-
-
-```go
 Replace_Secondary(addr Address)
 ```
 - Expected precondition
@@ -280,23 +271,9 @@ Replace_Secondary(addr Address)
 - Error condition
     - if precondition is violated
 
-```go
-Report_and_Stop(ls LightStore, sh LightBlock)
-```
-- Implementation Remark:
-    - This function communicates the existence of a fork to the outside
-	- It creates the evidence from its local information:
-	     - all headers of height *sh.height*
-		   - possibly all the light blocks from LightStore with height
-		     at least *h-trust*.
-	- It submits this evidence
-	- It flags the light client to stop
-- Expected Postcondition
-    - It "terminates everything". **TODO:** should this be described in a nicer
-  control flow? How should this be escalated to the whole light client?
 
 
-#### From the verifier
+### From the verifier
 ```go
 func VerifyToTarget(primary PeerID, lightStore LightStore,
                     targetHeight Height) (LightStore, Result)
@@ -317,28 +294,26 @@ Shared data of the light client
 
 
 The problem is solved by calling  the function `ForkDetector` with
-a header *hd* that has
-just been verified by the verifier as a parameter. *trustedState*
-should be "a possibly old"
-trusted state to increase the likelihood of detecting a fork.
+a lightstore that contains a light block that has
+just been verified by the verifier. 
 
-**TODO:** I changed the return value to be the discovered forks as in
-the Rust sketch. Make sure it is consistent everywhere.
 
 ```go
 func ForkDetector(ls LightStore)  {
     Forks.Init // initialize a container in which we collect forks
 	for i, s range Secondaries {
 		sh := FetchLightBlock(s,LightStore.LatestVerified().Height)
-		// as the check below only needs the header it is sufficient
+		// as the check below only needs the header, it is sufficient
 		// to download the header rather than the LighBlock
 		if LightStore.LatestVerified().Header == sh.Header {
-				// header matches. we do nothing
+				// header matches. we do nothing.
 	    }
 		else {
 			    // [LCD-REQ-REP]
 			    // header does not match. there is a situation.
 				// we try to verify sh by querying s
+				// we set up an auxiliary lightstore with the highest
+			    // trusted lightblock and the lightblock we want to verify
 				auxLS.Init
 				auxLS.Update(LightStore.LatestTrusted(),StateVerified);
 				auxLS.Update(sh,StateUnverified);
@@ -359,59 +334,35 @@ func ForkDetector(ls LightStore)  {
 				}
 			}
 	}
-	LightStore.Update(lightStore.LatestVerified(),StateTrusted)
 	return (Forks,OK)
 }
-
-**TODO:** check!
 ```
-- Comments
-    - Correctness is based on that *hd* has been verified by verification.
+
 - Expected precondition
-    - trustedState within trustingperiod
 	- Secondaries initialized and non-empty
 - Expected postcondition
-    - satisfies [LCD-VC-INV], [LCD-VC-INV-DONT-STOP],
-	[LCD-VC-LIFE-FORK] for height *hd.height*.
-	- TODO: perhaps add return values: returns false under the preconditions of [LCD-VC-INV], [LCD-VC-INV-DONT-STOP]
-	-  TODO: perhaps add return values: returns true otherwise
+    - satisfies [LCD-DIST-INV], [LCD-DIST-LIFE-FORK]
 	- removes faulty secondary if it reports wrong header
 - Error condition
     - fails if precondition is violated
+	- fails if [LCV-INV-TP] is violated (no trusted header within
+      trusting period
 
 
 
 
 ## Correctness arguments
 
-**TODO:** update
 
-> Proof sketches of why we believe the solution satisfies the problem statement.
-Possibly giving inductive invariants that can be used to prove the specifications
-of the problem statement
 
-#### Argument for [LCD-VC-INV]
+#### Argument for [LCD-DIST-INV]
 
-- In this case, `Commit` will always return the header from the blockchain
-- hd == sh will always be true. `ForkDetector` does nothing
+**TODO**
 
-#### Argument for [LCD-VC-INV-DONT-STOP]
 
-- In this case, *hd* is the one from the blockchain
-- As there is no fork, no faulty secondary can create a sequence of
-  headers that convince the  detector.
+#### Argument for [LCD-DIST-LIFE-FORK]
+**TODO**
 
-  TODO: the last point requires pointers to blockchain invariants, and
-  that if there is not fork, no sequence of proof can be generated
-
-#### Argument for [LCD-VC-LIVE-DONT-STOP]
-
-TODO
-
-#### Argument for [LCD-VC-LIFE-FORK]
-
-Can be proven under the assumption that TrustedState is choosen before
-the fork happened.
 
 
 

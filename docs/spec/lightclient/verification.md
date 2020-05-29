@@ -448,6 +448,9 @@ type LightBlock struct {
 }
 ```	
 
+#### **[LCV-DATA-LIGHTSTORE]**:
+
+
 LightBlocks are stored in a structure which stores all LightBlock from
 initialization or received from peers.
 
@@ -457,6 +460,7 @@ type LightStore struct {
 }
 
 ```
+
 
 Each LightBlock is in one of the following states:
 ```go
