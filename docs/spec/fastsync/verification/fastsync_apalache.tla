@@ -712,7 +712,7 @@ TypeOK ==
                             blocksRequested |-> BR ]
      *)
 
-\* TODO: align with the English spec. Add reference to it
+(* Incorrect synchronization: The last block may be never received *) 
 Sync1 == 
     [](state = "finished" =>
         blockPool.height >= MaxCorrectPeerHeight(blockPool))
@@ -720,7 +720,7 @@ Sync1 ==
 Sync1AsInv ==
     state = "finished" => blockPool.height >= MaxCorrectPeerHeight(blockPool)
 
-\* TODO: align with the English spec. Add reference to it
+(* Incorrect synchronization, as there may be a timeout *)
 Sync2 ==
    \A p \in CORRECT:
         \/ p \notin blockPool.peerIds
@@ -731,6 +731,7 @@ Sync2AsInv ==
         \/ p \notin blockPool.peerIds
         \/ (state = "finished" => blockPool.height >= blockPool.peerHeights[p] - 1)
 
+(* Correct synchronization *)
 Sync3 ==
    \A p \in CORRECT:
         \/ p \notin blockPool.peerIds
@@ -743,41 +744,43 @@ Sync3AsInv ==
         \/ blockPool.syncedBlocks <= 0 \* timeout
         \/ (state = "finished" => blockPool.height >= blockPool.peerHeights[p] - 1)
 
+(* Naive termination *)
 \* This property is violated, as the faulty peers may produce infinitely many responses
-Termination == WF_turn(FlipTurn) => <>(state = "finished")
+Termination ==
+    WF_turn(FlipTurn) => <>(state = "finished")
 
-\* The only provable termination is by timeout:
-\* If eventually there is a timeout, then the protocol terminates
+(* Termination by timeout: the protocol terminates, if there is a timeout *)
+\* the precondition: fair flip turn and eventual timeout when no new blocks were synchronized
 TerminationByTOPre ==
   /\ WF_turn(FlipTurn)
-  /\ <>(inMsg.type = "syncTimeout"
-            /\ blockPool.height <= blockPool.syncHeight)
+  /\ <>(inMsg.type = "syncTimeout" /\ blockPool.height <= blockPool.syncHeight)
 
 TerminationByTO ==
   TerminationByTOPre => <>(state = "finished")
 
-\* The termination property when we only have correct peers
+(* The termination property when we only have correct peers *)
+\* as correct peers may spam the node with addPeer, removePeer, and statusResponse,
+\* we have to enforce eventual response (there are no queues in our spec)
 CorrBlockResponse ==
   \A h \in Heights:
     [](outMsg.type = "blockRequest" /\ outMsg.height = h
             => <>(inMsg.type = "blockResponse" /\ inMsg.block.height = h))
 
+\* a precondition for termination in presence of only correct processes
 TerminationCorrPre ==
     /\ FAULTY = AsPidSet({})
     /\ WF_turn(FlipTurn)
     /\ CorrBlockResponse
-    
+
+\* termination when there are only correct processes    
 TerminationCorr ==
     TerminationCorrPre => <>(state = "finished")
 
-\* a few simple properties that trigger counterexamples
-
-\* Shows execution in which peer set is empty
-PeerSetIsNeverEmpty == blockPool.peerIds /= AsPidSet({})
-
-\* Shows execution in which state = "finished" and MaxPeerHeight is not equal to 1
-StateNotFinished ==
-    state /= "finished" \/ MaxPeerHeight(blockPool) = 1
+\* All synchronized blocks (but the last one) are exactly like in the reference chain
+CorrectBlocksInv ==
+    \/ state /= "finished"
+    \/ \A h \in 1..(blockPool.height - 1):
+        blockPool.blockStore[h] = chain[h]
 
 \* A false expectation that the protocol only finishes with the blocks
 \* from the processes that had not been suspected in being faulty
@@ -785,12 +788,6 @@ SyncFromCorrectInv ==
     \/ state /= "finished"
     \/ \A h \in 1..blockPool.height:
         blockPool.receivedBlocks[h] \in blockPool.peerIds \union {NilPeer}
-
-\* All synchronized blocks are exactly like in the blockchain
-CorrectBlocksInv ==
-    \/ state /= "finished"
-    \/ \A h \in 1..(blockPool.height - 1):
-        blockPool.blockStore[h] = chain[h]
 
 \* A false expectation that a correct process is never removed from the set of peer ids.
 \* A correct process may reply too late and then gets evicted.
@@ -807,10 +804,20 @@ BlockPoolInvariant ==
           /\ blockPool.blockStore[h] /= NilBlock
           /\ blockPool.pendingBlocks[h] = NilPeer
 
+(* a few simple properties that trigger counterexamples *)
+
+\* Shows execution in which peer set is empty
+PeerSetIsNeverEmpty == blockPool.peerIds /= AsPidSet({})
+
+\* Shows execution in which state = "finished" and MaxPeerHeight is not equal to 1
+StateNotFinished ==
+    state /= "finished" \/ MaxPeerHeight(blockPool) = 1
+
+
 =============================================================================
 
 \*=============================================================================
 \* Modification History
-\* Last modified Fri May 29 19:18:37 CEST 2020 by igor
+\* Last modified Fri May 29 20:41:53 CEST 2020 by igor
 \* Last modified Thu Apr 16 16:57:22 CEST 2020 by zarkomilosevic
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic
