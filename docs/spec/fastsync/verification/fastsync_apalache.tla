@@ -743,15 +743,16 @@ Sync3AsInv ==
         \/ blockPool.syncedBlocks <= 0 \* timeout
         \/ (state = "finished" => blockPool.height >= blockPool.peerHeights[p] - 1)
 
-\* TODO: align with the English spec. Add reference to it
-\* This property is violated, as we do not track precisely timeouts
+\* This property is violated, as the faulty peers may produce infinitely many responses
 Termination == WF_turn(FlipTurn) => <>(state = "finished")
 
-\* This property holds true
-Termination2 ==
-  (WF_turn(FlipTurn)
-    /\ <>[](inMsg.type \notin {"statusResponse", "addPeer", "removePeer"}))
-      => <>(state = "finished")
+\* The only provable termination is by timeout:
+\* If eventually there is a timeout, then the protocol terminates
+TerminationByTOPre ==
+  WF_turn(FlipTurn) /\ <>(inMsg.type = "syncTimeout")
+
+TerminationByTO ==
+  TerminationByTOPre => <>(state = "finished")
 
 \* a few simple properties that trigger counterexamples
 
@@ -794,6 +795,6 @@ BlockPoolInvariant ==
 
 \*=============================================================================
 \* Modification History
-\* Last modified Thu May 28 10:55:04 CEST 2020 by igor
+\* Last modified Fri May 29 11:13:29 CEST 2020 by igor
 \* Last modified Thu Apr 16 16:57:22 CEST 2020 by zarkomilosevic
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic
