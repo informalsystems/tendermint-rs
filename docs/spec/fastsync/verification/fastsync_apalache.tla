@@ -749,10 +749,26 @@ Termination == WF_turn(FlipTurn) => <>(state = "finished")
 \* The only provable termination is by timeout:
 \* If eventually there is a timeout, then the protocol terminates
 TerminationByTOPre ==
-  WF_turn(FlipTurn) /\ <>(inMsg.type = "syncTimeout")
+  /\ WF_turn(FlipTurn)
+  /\ <>(inMsg.type = "syncTimeout"
+            /\ blockPool.height <= blockPool.syncHeight)
 
 TerminationByTO ==
   TerminationByTOPre => <>(state = "finished")
+
+\* The termination property when we only have correct peers
+CorrBlockResponse ==
+  \A h \in Heights:
+    [](outMsg.type = "blockRequest" /\ outMsg.height = h
+            => <>(inMsg.type = "blockResponse" /\ inMsg.block.height = h))
+
+TerminationCorrPre ==
+    /\ FAULTY = AsPidSet({})
+    /\ WF_turn(FlipTurn)
+    /\ CorrBlockResponse
+    
+TerminationCorr ==
+    TerminationCorrPre => <>(state = "finished")
 
 \* a few simple properties that trigger counterexamples
 
@@ -795,6 +811,6 @@ BlockPoolInvariant ==
 
 \*=============================================================================
 \* Modification History
-\* Last modified Fri May 29 11:13:29 CEST 2020 by igor
+\* Last modified Fri May 29 19:18:37 CEST 2020 by igor
 \* Last modified Thu Apr 16 16:57:22 CEST 2020 by zarkomilosevic
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic
