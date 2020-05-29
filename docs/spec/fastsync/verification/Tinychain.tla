@@ -81,7 +81,19 @@ PossibleCommit(block, commit) ==
     /\ commit.committers = block.VS
     \* The block id in the commit matches the block hash (abstract comparison).
     \* (The implementation has extensive tests for that.)
+    \* this is an abstraction of: commit.blockId = hash(block)
+    \* 
+    \* These are possible scenarios on the concrete hashes:
+    \*
+    \* scenario 1: commit.blockId = 10 /\ hash(block) = 10 /\ hash(ref) = 10
+    \* scenario 2: commit.blockId = 20 /\ hash(block) = 20 /\ block.VS /= ref.VS
+    \* scenario 3: commit.blockId = 50 /\ hash(block) = 100
+    \* scenario 4: commit.blockId = 10 /\ hash(block) = 100
+    \* scenario 5: commit.blockId = 100 /\ hash(block) = 10
     /\ commit.blockIdEqRef = block.hashEqRef
+    \* the following test would be cheating, as we do not have access to the
+    \* reference chain:
+    \* /\ commit.blockIdEqRef
 
 \* Basic invariants
 
