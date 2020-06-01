@@ -11,7 +11,7 @@ pub enum ForkDetection {
 }
 
 pub trait ForkDetector {
-    fn detect(&self, verified_block: &LightBlock, light_blocks: Vec<LightBlock>) -> ForkDetection;
+    fn detect(&self, verified_block: &LightBlock, unverified_blocks: Vec<LightBlock>) -> ForkDetection;
 }
 
 pub struct RealForkDetector {
@@ -27,16 +27,21 @@ impl RealForkDetector {
 }
 
 impl ForkDetector for RealForkDetector {
-    fn detect(&self, verified_block: &LightBlock, light_blocks: Vec<LightBlock>) -> ForkDetection {
+    fn detect(&self, verified_block: &LightBlock, unverified_blocks: Vec<LightBlock>) -> ForkDetection {
         let first_hash = self.header_hasher.hash(&verified_block.signed_header.header);
+        let mut forks = Vec::new();
 
-        for light_block in light_blocks {
-            let hash = self.header_hasher.hash(&light_block.signed_header.header);
+        for b in unverified_blocks {
+            let hash = self.header_hasher.hash(&b.signed_header.header);
 
             if first_hash != hash {
-                // TODO: use verifier to see if light_block verifies
-                return ForkDetection::Detected(vec![Box::new(light_block)]);
+                // TODO: use verifier to see if light block verifies
+                forks.push(Box::new(b))
             }
+        }
+
+        if !forks.is_empty() {
+            return ForkDetection::Detected(forks);
         }
 
         ForkDetection::NotDetected
