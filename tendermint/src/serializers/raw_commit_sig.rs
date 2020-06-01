@@ -1,7 +1,7 @@
 //! RawCommitSig type for deserialization
 use crate::{account, Signature, Time};
 use serde::de::Error;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::str::FromStr;
 
@@ -20,7 +20,7 @@ pub enum BlockIDFlag {
 }
 
 /// RawCommitSig struct for interim deserialization of JSON object
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct RawCommitSig {
     /// indicate which BlockID the signature is for
     pub block_id_flag: BlockIDFlag,
@@ -48,12 +48,15 @@ fn emptystring_or_accountid<'de, D>(deserializer: D) -> Result<Option<account::I
 where
     D: Deserializer<'de>,
 {
-    let string = String::deserialize(deserializer)?;
-    if string.is_empty() {
-        Ok(None)
+    if let Some(string) = <Option<String>>::deserialize(deserializer)? {
+        if string.is_empty() {
+            Ok(None)
+        } else {
+            account::Id::from_str(&string)
+                .map(Some)
+                .map_err(|e| D::Error::custom(format!("{}", e)))
+        }
     } else {
-        account::Id::from_str(&string)
-            .map(Some)
-            .map_err(|e| D::Error::custom(format!("{}", e)))
+        Ok(None)
     }
 }

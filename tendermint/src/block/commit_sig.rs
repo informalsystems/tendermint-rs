@@ -9,7 +9,7 @@ use std::convert::TryFrom;
 /// CommitSig represents a signature of a validator.
 /// It's a part of the Commit and can be used to reconstruct the vote set given the validator set.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(try_from = "RawCommitSig")]
+#[serde(try_from = "RawCommitSig", into = "RawCommitSig")]
 pub enum CommitSig {
     /// no vote was received from a validator.
     // Todo: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
@@ -83,6 +83,39 @@ impl TryFrom<RawCommitSig> for CommitSig {
                     })
                 }
             }
+        }
+    }
+}
+
+impl From<CommitSig> for RawCommitSig {
+    fn from(commit: CommitSig) -> RawCommitSig {
+        match commit {
+            CommitSig::BlockIDFlagAbsent => RawCommitSig {
+                block_id_flag: BlockIDFlag::BlockIDFlagAbsent,
+                validator_address: None,
+                timestamp: None,
+                signature: None,
+            },
+            CommitSig::BlockIDFlagNil {
+                validator_address,
+                timestamp,
+                signature,
+            } => RawCommitSig {
+                block_id_flag: BlockIDFlag::BlockIDFlagNil,
+                validator_address: Some(validator_address),
+                timestamp: Some(timestamp),
+                signature: Some(signature),
+            },
+            CommitSig::BlockIDFlagCommit {
+                validator_address,
+                timestamp,
+                signature,
+            } => RawCommitSig {
+                block_id_flag: BlockIDFlag::BlockIDFlagCommit,
+                validator_address: Some(validator_address),
+                timestamp: Some(timestamp),
+                signature: Some(signature),
+            },
         }
     }
 }
