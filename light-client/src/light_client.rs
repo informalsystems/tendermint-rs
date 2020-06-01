@@ -207,6 +207,7 @@ impl LightClient {
     /// Check witnesses have the same block.
     ///
     /// ## Error conditions
+    /// - If there are no witnesses
     /// - If no witnesses respond with a block
     pub fn detect_forks(&mut self, current_block: &LightBlock) -> Result<ForkDetection, Error> {
         if self.state.peers.witnesses.is_empty() {
@@ -214,15 +215,21 @@ impl LightClient {
         }
 
         let witnesses = &self.state.peers.witnesses.clone();
+        let mut last_error: Option<IoError> = None;
         let light_blocks: Vec<LightBlock> = witnesses
             .iter()
-            .filter_map(|witness| self.io.fetch_light_block(*witness, current_block.height()).ok())
+            .filter_map(|&witness| match self.io.fetch_light_block(witness, current_block.height()) {
+                Ok(block) => Some(block),
+                Err(e) => {
+                    last_error = Some(e);
+                    None
+                },
+            })
             .collect();
 
-        // If all witnesses error, return the first one
-        if light_blocks.is_empty() {
-            // TODO
-            return Err(ErrorKind::NoWitnesses.into());
+        // If all witnesses error, return the last one
+        if light_blocks.is_empty() && last_error.is_some() {
+            return Err(ErrorKind::Io(last_error.unwrap()).into());
         }
 
         let result = self.fork_detector.detect(current_block, light_blocks);
