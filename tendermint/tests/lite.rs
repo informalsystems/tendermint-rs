@@ -1,8 +1,9 @@
 use anomaly::fail;
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::TryInto;
+use std::fmt::Debug;
 use std::{fs, path::PathBuf};
 use tendermint::block::{Header, Height};
 use tendermint::lite::error::{Error, Kind};
@@ -10,6 +11,20 @@ use tendermint::lite::{Requester, TrustThresholdFraction, TrustedState};
 use tendermint::{
     block::signed_header::SignedHeader, evidence::Duration, lite, validator::Set, Hash, Time,
 };
+
+/// Test that a struct `T` can be:
+///
+/// - serialized to JSON
+/// - parsed back from the serialized JSON of the previous step
+/// - that the two parsed structs are equal according to their `PartialEq` impl
+pub fn test_serialization_roundtrip<T>(obj: &T)
+where
+    T: Debug + PartialEq + Serialize + DeserializeOwned,
+{
+    let serialized = serde_json::to_string(obj).unwrap();
+    let parsed = serde_json::from_str(&serialized).unwrap();
+    assert_eq!(obj, &parsed);
+}
 
 #[derive(Deserialize, Clone, Debug)]
 struct TestCases {
@@ -130,6 +145,7 @@ fn run_test_case(tc: &TestCase) {
     let trusted_next_vals = tc.initial.clone().next_validator_set;
     let mut latest_trusted =
         Trusted::new(tc.initial.signed_header.clone().into(), trusted_next_vals);
+    test_serialization_roundtrip(&latest_trusted);
 
     let expects_err = match &tc.expected_output {
         Some(eo) => eo.eq("error"),
@@ -166,6 +182,7 @@ fn run_test_case(tc: &TestCase) {
                 assert!(!expects_err);
 
                 latest_trusted = new_state.clone();
+                test_serialization_roundtrip(&latest_trusted);
             }
             Err(_) => {
                 assert!(expects_err);
