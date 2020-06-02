@@ -6,6 +6,7 @@ use std::convert::TryInto;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use contracts::contract_trait;
 use tendermint::rpc;
 
 // Link to the commit that generated below JSON test files:
@@ -113,6 +114,7 @@ impl MockIo {
     }
 }
 
+#[contract_trait]
 impl Io for MockIo {
     fn fetch_light_block(&mut self, _peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
         self.light_blocks
@@ -154,7 +156,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     let clock_drift = Duration::from_secs(1);
 
     let clock = MockClock { now };
-    let scheduler = light_client::components::scheduler::schedule;
+    let scheduler = light_client::components::scheduler::basic_schedule;
     let fork_detector = RealForkDetector::new(ProdHeaderHasher);
 
     let options = Options {

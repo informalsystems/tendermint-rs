@@ -106,21 +106,10 @@ fn sync_cmd(opts: SyncOpts) {
         now: Time::now(),
     };
 
-    let predicates = ProdPredicates;
-    let voting_power_calculator = ProdVotingPowerCalculator;
-    let commit_validator = ProdCommitValidator;
-    let header_hasher = ProdHeaderHasher;
-
-    let verifier = ProdVerifier::new(
-        predicates,
-        voting_power_calculator,
-        commit_validator,
-        header_hasher,
-    );
-
+    let verifier = ProdVerifier::default();
     let clock = SystemClock;
-    let scheduler = scheduler::schedule;
-    let fork_detector = RealForkDetector::new(header_hasher);
+    let scheduler = scheduler::basic_schedule;
+    let fork_detector = ProdForkDetector::default();
 
     let mut light_client = LightClient::new(
         state,
