@@ -1,5 +1,6 @@
-use light_client::prelude::*;
-use light_client::tests::{Trusted, *};
+use tendermint_light_client::components::scheduler::basic_schedule;
+use tendermint_light_client::prelude::*;
+use tendermint_light_client::tests::{Trusted, *};
 
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -156,8 +157,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     let clock_drift = Duration::from_secs(1);
 
     let clock = MockClock { now };
-    let scheduler = light_client::components::scheduler::basic_schedule;
-    let fork_detector = RealForkDetector::new(ProdHeaderHasher);
+    let fork_detector = ProdForkDetector::new(ProdHeaderHasher);
 
     let options = Options {
         trust_threshold,
@@ -197,7 +197,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
         state,
         options,
         clock,
-        scheduler,
+        basic_schedule,
         verifier,
         fork_detector,
         io.clone(),
