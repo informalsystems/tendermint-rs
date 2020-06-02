@@ -24,12 +24,7 @@ fn verify_single(
     clock_drift: Duration,
     now: SystemTime,
 ) -> Result<LightBlock, Verdict> {
-    let verifier = ProdVerifier::new(
-        ProdPredicates,
-        ProdVotingPowerCalculator,
-        ProdCommitValidator,
-        ProdHeaderHasher,
-    );
+    let verifier = ProdVerifier::default();
 
     let trusted_state = LightBlock::new(
         trusted_state.signed_header,
@@ -45,10 +40,7 @@ fn verify_single(
         now: now.into(),
     };
 
-    let result = verifier
-        .validate_light_block(&input, &trusted_state, &options)
-        .and_then(|| verifier.verify_overlap(&input, &trusted_state, &options))
-        .and_then(|| verifier.has_sufficient_voting_power(&input, &options));
+    let result = verifier.verify(&input, &trusted_state, &options);
 
     match result {
         Verdict::Success => Ok(input),
@@ -197,12 +189,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
         verification_trace: HashMap::new(),
     };
 
-    let verifier = ProdVerifier::new(
-        ProdPredicates,
-        ProdVotingPowerCalculator,
-        ProdCommitValidator,
-        ProdHeaderHasher,
-    );
+    let verifier = ProdVerifier::default();
 
     let mut light_client = LightClient::new(
         state,

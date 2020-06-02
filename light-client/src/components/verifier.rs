@@ -1,17 +1,27 @@
+use crate::predicates as preds;
 use crate::prelude::*;
 
+/// Represents the result of the verification performed by the
+/// verifier component.
 #[derive(Debug)]
 pub enum Verdict {
+    /// Verification succeeded, the block is valid.
     Success,
+    /// The minimum voting power threshold is not reached,
+    /// the block cannot be trusted yet.
     NotEnoughTrust(VerificationError),
+    /// Verification failed, the block is invalid.
     Invalid(VerificationError),
 }
 
 impl Verdict {
-    pub fn and_then(self, other: impl Fn() -> Verdict) -> Self {
+    /// Execute the `next` action only if `self` is a successful verdict.
+    /// This allows chaining computations returning a `Verdict` until
+    /// on of them is not successful.
+    pub fn and_then<A: Into<Self>>(self, next: impl Fn() -> A) -> Self {
         match self {
-            Verdict::Success => other(),
-            _ => self,
+            Verdict::Success => next().into(),
+            other => other,
         }
     }
 }
@@ -26,35 +36,29 @@ impl From<Result<(), VerificationError>> for Verdict {
     }
 }
 
+/// The verifier checks:
+///
+/// a) whether a given untrusted light block is valid, and
+/// b) whether a given untrusted light block should be trusted
+///    based on a previously verified block.
+///
+/// ## Implements
+/// - [TMBC-VAL-CONTAINS-CORR.1]
+/// - [TMBC-VAL-COMMIT.1]
 pub trait Verifier {
-    fn verify(
-        &self,
-        light_block: &LightBlock,
-        trusted_state: &TrustedState,
-        options: &Options,
-    ) -> Verdict {
-        self.validate_light_block(light_block, trusted_state, options)
-            .and_then(|| self.verify_overlap(light_block, trusted_state, options))
-            .and_then(|| self.has_sufficient_voting_power(light_block, options))
-    }
-
-    fn validate_light_block(
-        &self,
-        light_block: &LightBlock,
-        trusted_state: &TrustedState,
-        options: &Options,
-    ) -> Verdict;
-
-    fn verify_overlap(
-        &self,
-        light_block: &LightBlock,
-        trusted_state: &TrustedState,
-        options: &Options,
-    ) -> Verdict;
-
-    fn has_sufficient_voting_power(&self, light_block: &LightBlock, options: &Options) -> Verdict;
+    /// Perform the verification.
+    fn verify(&self, untrusted: &LightBlock, trusted: &LightBlock, options: &Options) -> Verdict;
 }
 
+/// Production implementation of the verifier.
+///
+/// For testing purposes, this implementation is parametrized by:
+/// - A set of predicates used to validate a light block
+/// - A voting power calculator
+/// - A commit validator
+/// - A header hasher
+///
+/// For regular use, one can summon an implementation with `ProdVerifier::default()`.
 pub struct ProdVerifier {
     predicates: Box<dyn VerificationPredicates>,
     voting_power_calculator: Box<dyn VotingPowerCalculator>,
@@ -78,47 +82,48 @@ impl ProdVerifier {
     }
 }
 
+impl Default for ProdVerifier {
+    fn default() -> Self {
+        Self::new(
+            ProdPredicates,
+            ProdVotingPowerCalculator,
+            ProdCommitValidator,
+            ProdHeaderHasher,
+        )
+    }
+}
+
 impl Verifier for ProdVerifier {
-    fn validate_light_block(
-        &self,
-        light_block: &LightBlock,
-        trusted_state: &TrustedState,
-        options: &Options,
-    ) -> Verdict {
-        crate::predicates::validate_light_block(
+    fn verify(&self, untrusted: &LightBlock, trusted: &TrustedState, options: &Options) -> Verdict {
+        let verdict: Verdict = preds::validate_light_block(
             &*self.predicates,
             &self.commit_validator,
             &self.header_hasher,
-            &trusted_state,
-            &light_block,
+            &trusted,
+            &untrusted,
             options,
         )
-        .into()
-    }
+        .into();
 
-    fn verify_overlap(
-        &self,
-        light_block: &LightBlock,
-        trusted_state: &TrustedState,
-        options: &Options,
-    ) -> Verdict {
-        crate::predicates::verify_overlap(
-            &*self.predicates,
-            &self.voting_power_calculator,
-            &trusted_state,
-            &light_block,
-            options,
-        )
-        .into()
-    }
+        let verdict = verdict.and_then(|| {
+            preds::verify_overlap(
+                &*self.predicates,
+                &self.voting_power_calculator,
+                &trusted,
+                &untrusted,
+                options,
+            )
+        });
 
-    fn has_sufficient_voting_power(&self, light_block: &LightBlock, options: &Options) -> Verdict {
-        crate::predicates::has_sufficient_voting_power(
-            &*self.predicates,
-            &self.voting_power_calculator,
-            &light_block,
-            options,
-        )
-        .into()
+        let verdict = verdict.and_then(|| {
+            preds::has_sufficient_voting_power(
+                &*self.predicates,
+                &self.voting_power_calculator,
+                &untrusted,
+                options,
+            )
+        });
+
+        verdict
     }
 }
