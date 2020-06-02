@@ -1,3 +1,5 @@
+//! Toplevel errors raised by the light client.
+
 use anomaly::{BoxError, Context};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

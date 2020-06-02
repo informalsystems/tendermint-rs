@@ -1,10 +1,13 @@
+//! Predicates for light block validation and verification.
+
 use crate::prelude::*;
 
 use tendermint::lite::ValidatorSet as _;
 
 pub mod errors;
 
-///
+/// Production predicates, using the default implementation
+/// of the `VerificationPredicates` trait.
 #[derive(Copy, Clone, Debug)]
 pub struct ProdPredicates;
 impl VerificationPredicates for ProdPredicates {}

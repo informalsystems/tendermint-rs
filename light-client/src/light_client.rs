@@ -1,3 +1,5 @@
+//! Light client implementation.
+
 use contracts::*;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
