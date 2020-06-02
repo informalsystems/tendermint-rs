@@ -14,11 +14,11 @@ pub trait ForkDetector {
     fn detect(&self, light_blocks: Vec<LightBlock>) -> ForkDetection;
 }
 
-pub struct RealForkDetector {
+pub struct ProdForkDetector {
     header_hasher: Box<dyn HeaderHasher>,
 }
 
-impl RealForkDetector {
+impl ProdForkDetector {
     pub fn new(header_hasher: impl HeaderHasher + 'static) -> Self {
         Self {
             header_hasher: Box::new(header_hasher),
@@ -26,7 +26,13 @@ impl RealForkDetector {
     }
 }
 
-impl ForkDetector for RealForkDetector {
+impl Default for ProdForkDetector {
+    fn default() -> Self {
+        Self::new(ProdHeaderHasher)
+    }
+}
+
+impl ForkDetector for ProdForkDetector {
     fn detect(&self, mut light_blocks: Vec<LightBlock>) -> ForkDetection {
         if light_blocks.is_empty() {
             return ForkDetection::NotDetected;
