@@ -631,7 +631,7 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
 - Expected postcondition: 
    - returns *lightStore* that contains a LightBlock that corresponds to a block
      of the blockchain of height *targetHeight*
-     (that is, the LightBlock has been added to *lightStore*) **[LVC-POST-LS]**
+     (that is, the LightBlock has been added to *lightStore*) **[LCV-POST-LS]**
 - Error conditions
    - if the precondition is violated
    - if `ValidAndVerified` or `FetchLightBlock` report an error
