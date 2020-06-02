@@ -1,4 +1,6 @@
-use contracts::pre;
+use std::collections::HashMap;
+
+use contracts::{contract_trait, post, pre};
 use serde::{Deserialize, Serialize};
 use tendermint::{block, rpc};
 use thiserror::Error;
@@ -7,7 +9,6 @@ use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
 use tendermint::validator::Set as TMValidatorSet;
 
 use crate::prelude::*;
-use std::collections::HashMap;
 
 pub const LATEST_HEIGHT: Height = 0;
 
@@ -19,15 +20,14 @@ pub enum IoError {
 }
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
-// TODO: Enable contracts on the trait once the provider field is available.
-// #[contract_trait]
+#[contract_trait]
 pub trait Io {
     /// Fetch a light block at the given height from the peer with the given peer ID.
-    // #[post(ret.map(|lb| lb.provider == peer).unwrap_or(true))]
+    #[post(ret.as_ref().map(|lb| lb.provider == peer).unwrap_or(true))]
     fn fetch_light_block(&mut self, peer: PeerId, height: Height) -> Result<LightBlock, IoError>;
 }
 
-// #[contract_trait]
+#[contract_trait]
 impl<F> Io for F
 where
     F: FnMut(PeerId, Height) -> Result<LightBlock, IoError>,
@@ -44,7 +44,7 @@ pub struct ProdIo {
     peer_map: HashMap<PeerId, tendermint::net::Address>,
 }
 
-// #[contract_trait]
+#[contract_trait]
 impl Io for ProdIo {
     fn fetch_light_block(&mut self, peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
         let signed_header = self.fetch_signed_header(peer, height)?;
