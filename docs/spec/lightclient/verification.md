@@ -422,7 +422,7 @@ independently:
 - `FetchLightBlock` is called to download a light block (header) of a
   given height from a peer.
 - `ValidAndVerified` is a local code that checks the header.
-- `Pivot` decides which height to try to verify next. We keep this
+- `Schedule` decides which height to try to verify next. We keep this
   underspecified as different implementations (currently in Goland and
   Rust) may implement different optimizations here. We just provide
   necessary conditions on how the height may evolve.
@@ -579,7 +579,7 @@ The `VerifyToTarget` is the main function and uses the following functions.
 - `ValidAndVerified` checks whether header is valid and checks if a
   new lightBlock should be trusted
   based on a previously verified lightBlock.
-- `Pivot` decides which height to try to verify next
+- `Schedule` decides which height to try to verify next
 
 In the following description of `VerifyToTarget` we do not deal with error
 handling. If any of the above function returns an error, VerifyToTarget just
@@ -611,7 +611,7 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
             // do nothing
 			// the light block current passed validation, but the validator
             // set is too different to verify it. We keep the state of
-			// current at StateUnverified. For a later iteration, Pivot
+			// current at StateUnverified. For a later iteration, Schedule
 			// might decide to try verification of that light block again.
         }    
         else { 
@@ -784,7 +784,7 @@ headers to *LightStore* and verify them, before all headers in
 
 #### Many changes in validator set
 
- Let's consider `Pivot` implements
+ Let's consider `Schedule` implements
  bisection, that is, it halves the distance.
  Assume the case where the validator set changes completely in each
 block. Then the 
@@ -813,7 +813,7 @@ header of height *startHeader.Height + 1* is added to *LightStore*.
 	  startTime < startHeader.Time + trustingPeriod -  WCG * (Comp + 2 Delta) 
 
 - one may then do an inductive argument from this point on, depending
-  on the implementation of `Pivot`. We may have to account for the 
+  on the implementation of `Schedule`. We may have to account for the
   headers that are already
   downloaded, but they are checked against the new *LightStore.LatestVerified*.
 
