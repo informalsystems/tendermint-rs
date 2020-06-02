@@ -546,19 +546,16 @@ func FetchLightBlock(peer PeerID, height Height) LightBlock
    - RPC to peer at *PeerID*
    - Request message: **TODO**
    - Response message: **TODO**
-- Expected precodnition
-  - `height` is less than or equal to height of the peer
-- Expected postcondition
+- Expected precondition
+  - `height` is less than or equal to height of the peer **[LCV-IO-PRE-HEIGHT]**
+- Expected postcondition:
   - if *node* is correct: 
     - Returns the LightBlock *lb* of height `height`
       that is consistent with the blockchain
-	- *lb.provider = peer* 
-    - *lb.Header* is a header consistent with
-      the blockchain
-    - *lb.Validators* is the validator set of the
-      blockchain at height *nextheight*
-    - *lb.NextValidators* is the validator set of the
-      blockchain at height *nextheight + 1*
+	- *lb.provider = peer* **[LCV-IO-POST-PROVIDER]**
+    - *lb.Header* is a header consistent with the blockchain
+    - *lb.Validators* is the validator set of the blockchain at height *nextHeight*
+    - *lb.NextValidators* is the validator set of the blockchain at height *nextHeight + 1*
   - if *node* is faulty: Returns a LightBlock with arbitrary content 
     [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
 - Error condition
@@ -620,21 +617,21 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
             // possibly remove all LightBlocks from primary
             return (lightStore, ResultFailure)
         } 
-        nextHeight = Pivot(lightStore, nextHeight, targetHeight)
+        nextHeight = Schedule(lightStore, nextHeight, targetHeight)
     }
     return (lightStore, ResultSuccess)
 }
 ```
 
 - Expected precondition
-   - *lightStore* contains a LightBlock within the *trustingPeriod*
-   - *targetHeight* is greater than the height of all the LightBlocks
-     in *lightStore*
+   - *lightStore* contains a LightBlock within the *trustingPeriod*  **[LVC-PRE-TP]**
+   - *targetHeight* is greater than the height of all the LightBlocks in *lightStore*
+     (**TODO:** This precondition might not be upheld by the relayer as it may need to
+     verify arbitrary blocks, and not only the most recent one)
 - Expected postcondition: 
-   - returns *lightStore* that contains a LightBlock that corresponds 
-     to a block
-     of the blockchain of height *targetHeight* (that is, the
-     LightBlock has been added to *lightStore*)
+   - returns *lightStore* that contains a LightBlock that corresponds to a block
+     of the blockchain of height *targetHeight*
+     (that is, the LightBlock has been added to *lightStore*) **[LVC-POST-LS]**
 - Error conditions
    - if the precondition is violated
    - if `ValidAndVerified` or `FetchLightBlock` report an error
@@ -677,10 +674,8 @@ func ValidAndVerified(trusted LightBlock, untrusted LightBlock) Result
 		     - contains no signature from nodes that are not in *trusted.Header.NextValidators*
 - Expected postcondition: 
     - Returns `OK`:
-        - if *untrusted* is the immediate successor of *trusted*,
-          or otherwise,
-        - if
-		   - signatures of a set of validators that have more than
+        - if *untrusted* is the immediate successor of *trusted*, or otherwise,
+        - if the signatures of a set of validators that have more than
              *max(1/3,trustThreshold)* of voting power in
              *trusted.Nextvalidators* is contained in
              *untrusted.Commit* (that is, header passes the tests
@@ -702,12 +697,13 @@ func ValidAndVerified(trusted LightBlock, untrusted LightBlock) Result
 
 
 ```go
-func Pivot(lightStore, nextHeight, targetHeight) Height
+func Schedule(lightStore, nextHeight, targetHeight) Height
 ```
 - Implementation remark: If picks the next height to be verified. 
   We keep the precise choice of the next header under-specified. It is
   subject to performance optimizations that do not influence the correctness
-- Expected postcondition: return *H* s.t.
+- Expected postcondition: **[LCV-SCHEDULE-POST]**
+   Return *H* s.t.
    1. if *lightStore.LatestVerified.Height = nextHeight* and
       *lightStore.LatestVerified < targetHeight* then  
 	  *nextHeight < H <= targetHeight*
@@ -717,15 +713,13 @@ func Pivot(lightStore, nextHeight, targetHeight) Height
    3. if *lightStore.LatestVerified.Height = targetHeight* then  
      *H =  targetHeight*
 
-> Case i. captures the case where the light block at height
-> *nextHeight* has been verified, and we can choose a height closer to
-> the *targetHeight*. As we
-> get the *lightStore* as parameter, the choice of the next height can
-> depend on the *lightStore*, e.g., we can pick a height for which we
-> have already downloaded a light block. 
-> In Case iii. is a special case when we have
-> verified the *targetHeight*. In Case ii. the header of *nextHeight*
-> could not be verified, and we need to pick a smaller height. 
+> Case i. captures the case where the light block at height *nextHeight*
+> has been verified, and we can choose a height closer to the *targetHeight*.
+> As we get the *lightStore* as parameter, the choice of the next height can
+> depend on the *lightStore*, e.g., we can pick a height for which we have
+> already downloaded a light block.
+> In Case ii. the header of *nextHeight* could not be verified, and we need to pick a smaller height.
+> In Case iii. is a special case when we have verified the *targetHeight*.
 
 
 ### Solving the distributed specification
