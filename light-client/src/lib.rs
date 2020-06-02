@@ -1,7 +1,13 @@
-#![deny(rust_2018_idioms, nonstandard_style)]
-#![warn(
-     unreachable_pub,
-     // missing_docs,
+#![forbid(unsafe_code)]
+#![deny(
+    // warnings,
+    // missing_docs,
+    trivial_casts,
+    trivial_numeric_casts,
+    unused_import_braces,
+    unused_qualifications,
+    rust_2018_idioms,
+    nonstandard_style,
  )]
 
 //! See the `light_client` module for the main documentation.
