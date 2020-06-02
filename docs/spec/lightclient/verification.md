@@ -624,7 +624,7 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
 ```
 
 - Expected precondition
-   - *lightStore* contains a LightBlock within the *trustingPeriod*  **[LVC-PRE-TP]**
+   - *lightStore* contains a LightBlock within the *trustingPeriod*  **[LCV-PRE-TP]**
    - *targetHeight* is greater than the height of all the LightBlocks in *lightStore*
      (**TODO:** This precondition might not be upheld by the relayer as it may need to
      verify arbitrary blocks, and not only the most recent one)
