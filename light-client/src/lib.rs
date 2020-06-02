@@ -4,7 +4,7 @@
      // missing_docs,
  )]
 
-//! See the documentation of the `LightClient` struct.
+//! See the `light_client` module for the main documentation.
 
 pub mod components;
 pub mod contracts;
