@@ -100,7 +100,7 @@ impl LightClient {
     /// - [LCV-DIST-SAFE.1]
     /// - [LCV-DIST-LIFE.1]
     /// - [LCV-PRE-TP.1]
-    /// - [LCV-POST-TP.1]
+    /// - [LCV-POST-LS.1]
     /// - [LCV-INV-TP.1]
     ///
     /// ## Precondition
@@ -108,7 +108,7 @@ impl LightClient {
     ///
     /// ## Postcondition
     /// - The light store contains a light block that corresponds
-    ///   to a block of the blockchain of height `target_height` [LCV-POST-TP.1]
+    ///   to a block of the blockchain of height `target_height` [LCV-POST-LS.1]
     ///
     /// ## Error conditions
     /// - If the precondition is violated [LVC-PRE-TP.1]

@@ -23,6 +23,9 @@ pub enum IoError {
 #[contract_trait]
 pub trait Io {
     /// Fetch a light block at the given height from the peer with the given peer ID.
+    ///
+    /// ## Postcondition
+    /// - The provider of the returned light block matches the given peer [LCV-IO-POST-PROVIDER]
     #[post(ret.as_ref().map(|lb| lb.provider == peer).unwrap_or(true))]
     fn fetch_light_block(&mut self, peer: PeerId, height: Height) -> Result<LightBlock, IoError>;
 }
