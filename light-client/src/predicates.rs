@@ -4,11 +4,17 @@ use tendermint::lite::ValidatorSet as _;
 
 pub mod errors;
 
+///
 #[derive(Copy, Clone, Debug)]
 pub struct ProdPredicates;
-
 impl VerificationPredicates for ProdPredicates {}
 
+/// Defines the various predicates used to validate and verify light blocks.
+///
+/// A default, spec abiding implementation is provided for each method.
+///
+/// This enables test implementations to only override a single method rather than
+/// have to re-define every predicate.
 pub trait VerificationPredicates {
     fn validator_sets_match(&self, light_block: &LightBlock) -> Result<(), VerificationError> {
         ensure!(
@@ -182,6 +188,7 @@ pub trait VerificationPredicates {
         untrusted_validators: &ValidatorSet,
         calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), VerificationError> {
+        // FIXME: Do not discard underlying error
         let total_power = calculator.total_power_of(untrusted_validators);
         let signed_power = calculator
             .voting_power_in(untrusted_sh, untrusted_validators)
@@ -216,73 +223,89 @@ pub trait VerificationPredicates {
     }
 }
 
+/// Validate the given light block.
+///
+/// - Ensure the latest trusted header hasn't expired
+/// - Ensure the header validator hashes match the given validators
+/// - Ensure the header next validator hashes match the given next validators
+/// - Additional implementation specific validation via `commit_validator`
+/// - Check that the untrusted block is more recent than the trusted state
+/// - If the untrusted block is the very next block after the trusted block,
+/// check that their (next) validator sets hashes match.
+/// - Otherwise, ensure that the untrusted block has a greater height than
+/// the trusted block.
 pub fn validate_light_block(
     vp: &dyn VerificationPredicates,
     commit_validator: &dyn CommitValidator,
     header_hasher: &dyn HeaderHasher,
-    trusted_state: &TrustedState,
-    light_block: &LightBlock,
+    trusted: &LightBlock,
+    untrusted: &LightBlock,
     options: &Options,
 ) -> Result<(), VerificationError> {
     // Ensure the latest trusted header hasn't expired
     vp.is_within_trust_period(
-        &trusted_state.signed_header.header,
+        &trusted.signed_header.header,
         options.trusting_period,
         options.clock_drift,
         options.now,
     )?;
 
     // Ensure the header validator hashes match the given validators
-    vp.validator_sets_match(&light_block)?;
+    vp.validator_sets_match(&untrusted)?;
 
     // Ensure the header next validator hashes match the given next validators
-    vp.next_validators_match(&light_block)?;
+    vp.next_validators_match(&untrusted)?;
 
     // Ensure the header matches the commit
-    vp.header_matches_commit(&light_block.signed_header, header_hasher)?;
+    vp.header_matches_commit(&untrusted.signed_header, header_hasher)?;
 
     // Additional implementation specific validation
     vp.valid_commit(
-        &light_block.signed_header,
-        &light_block.validators,
+        &untrusted.signed_header,
+        &untrusted.validators,
         commit_validator,
     )?;
 
+    // Check that the untrusted block is more recent than the trusted state
     vp.is_monotonic_bft_time(
-        &light_block.signed_header.header,
-        &trusted_state.signed_header.header,
+        &untrusted.signed_header.header,
+        &trusted.signed_header.header,
     )?;
 
-    let trusted_state_next_height = trusted_state
-        .height()
-        .checked_add(1)
-        .expect("height overflow");
+    let trusted_next_height = trusted.height().checked_add(1).expect("height overflow");
 
-    if light_block.height() == trusted_state_next_height {
-        vp.valid_next_validator_set(&light_block, trusted_state)?;
+    if untrusted.height() == trusted_next_height {
+        // If the untrusted block is the very next block after the trusted block,
+        // check that their (next) validator sets hashes match.
+        vp.valid_next_validator_set(&untrusted, trusted)?;
     } else {
+        // Otherwise, ensure that the untrusted block has a greater height than
+        // the trusted block.
         vp.is_monotonic_height(
-            &light_block.signed_header.header,
-            &trusted_state.signed_header.header,
+            &untrusted.signed_header.header,
+            &trusted.signed_header.header,
         )?;
     }
 
     Ok(())
 }
 
+/// Assuming the given light block is valid, verify wether it can be trusted
+/// in relation with a trusted state, by checking whether there is enough
+/// overlap in their validators sets.
 pub fn verify_overlap(
     vp: &dyn VerificationPredicates,
     voting_power_calculator: &dyn VotingPowerCalculator,
-    trusted_state: &TrustedState,
-    light_block: &LightBlock,
+    trusted: &LightBlock,
+    untrusted: &LightBlock,
     options: &Options,
 ) -> Result<(), VerificationError> {
-    let untrusted_sh = &light_block.signed_header;
-    let untrusted_vals = &light_block.validators;
+    let untrusted_sh = &untrusted.signed_header;
+    let untrusted_vals = &untrusted.validators;
 
     vp.has_sufficient_validators_overlap(
         &untrusted_sh,
-        &trusted_state.next_validators,
+        &trusted.next_validators,
         &options.trust_threshold,
         voting_power_calculator,
     )?;
@@ -292,6 +315,8 @@ pub fn verify_overlap(
     Ok(())
 }
 
+/// Assuming the given light block is valid, check whether the voting
+/// power of its validators meet the required threshold.
 pub fn has_sufficient_voting_power(
     vp: &dyn VerificationPredicates,
     voting_power_calculator: &dyn VotingPowerCalculator,

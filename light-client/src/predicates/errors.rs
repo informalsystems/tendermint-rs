@@ -4,6 +4,8 @@ use thiserror::Error;
 
 use crate::prelude::*;
 
+/// The various errors which can be raised by the verifier component,
+/// when validating or verifying a light block.
 #[derive(Debug, Clone, Error, PartialEq, Serialize, Deserialize)]
 pub enum VerificationError {
     #[error("header from the future: header_time={header_time} now={now}")]
@@ -53,6 +55,8 @@ impl VerificationError {
         Context::new(self, Some(source.into()))
     }
 
+    /// Determines whether this error means that the light block is outright invalid,
+    /// or just cannot be trusted w.r.t. the latest trusted state.
     pub fn not_enough_trust(&self) -> bool {
         if let Self::InsufficientValidatorsOverlap { .. } = self {
             true

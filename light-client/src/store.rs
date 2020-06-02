@@ -1,3 +1,8 @@
+//! Defines the interface for the light block store, as well as
+//!
+//! - a transient, in-memory implementation for testing purposes
+//! - a persistent, on-disk, sled-backed implementation for production
+
 use crate::prelude::*;
 
 use serde::{Deserialize, Serialize};

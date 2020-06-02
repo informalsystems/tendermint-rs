@@ -4,6 +4,8 @@
      // missing_docs,
  )]
 
+//! See the documentation of the `LightClient` struct.
+
 pub mod components;
 pub mod contracts;
 pub mod errors;
