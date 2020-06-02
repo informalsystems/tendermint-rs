@@ -115,6 +115,13 @@ impl LightClient {
     /// - If the core verification loop invariant is violated [LCV-INV-TP.1]
     /// - If verification of a light block fails
     /// - If it cannot fetch a block from the blockchain
+    // #[pre(
+    //     light_store_contains_block_within_trusting_period(
+    //         self.state.light_store.as_ref(),
+    //         self.options.trusting_period,
+    //         self.clock.now(),
+    //     )
+    // )]
     #[post(
         ret.is_ok() ==> trusted_store_contains_block_at_target_height(
             self.state.light_store.as_ref(),
