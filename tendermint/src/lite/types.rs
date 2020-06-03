@@ -1,7 +1,7 @@
 //! All traits that are necessary and need to be implemented to use the main
 //! verification logic in [`super::verifier`] for a light client.
 
-use std::fmt::Debug;
+use std::fmt::{self, Debug, Display};
 use std::time::SystemTime;
 
 use crate::serializers;
@@ -127,6 +127,12 @@ impl Default for TrustThresholdFraction {
     fn default() -> Self {
         Self::new(1, 3)
             .expect("initializing TrustThresholdFraction with valid fraction mustn't panic")
+    }
+}
+
+impl Display for TrustThresholdFraction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}/{}", self.numerator, self.denominator)
     }
 }
 

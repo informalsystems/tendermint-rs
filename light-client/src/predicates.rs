@@ -179,6 +179,7 @@ pub trait VerificationPredicates {
             VerificationError::InsufficientValidatorsOverlap {
                 total_power,
                 signed_power: voting_power,
+                trust_threshold: *trust_threshold,
             }
         );
 

@@ -13,9 +13,13 @@ pub enum VerificationError {
     #[error("implementation specific: {0}")]
     ImplementationSpecific(String),
     #[error(
-        "insufficient validators overlap: total_power={total_power} signed_power={signed_power}"
+        "insufficient validators overlap: total_power={total_power} signed_power={signed_power} trust_threshold={trust_threshold}"
     )]
-    InsufficientValidatorsOverlap { total_power: u64, signed_power: u64 },
+    InsufficientValidatorsOverlap {
+        total_power: u64,
+        signed_power: u64,
+        trust_threshold: TrustThreshold,
+    },
     #[error("insufficient voting power: total_power={total_power} voting_power={voting_power}")]
     InsufficientVotingPower { total_power: u64, voting_power: u64 },
     #[error("invalid commit power: total_power={total_power} signed_power={signed_power}")]
