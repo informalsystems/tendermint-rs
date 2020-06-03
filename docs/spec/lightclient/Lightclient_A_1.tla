@@ -4,7 +4,7 @@
  * https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification.md
  *) 
 
-EXTENDS Integers, Sequences
+EXTENDS Integers, Sequences, FiniteSets
 
 \* the parameters of Lite Client
 CONSTANTS
@@ -53,57 +53,65 @@ BC == INSTANCE Blockchain_A_1 WITH
 
 (************************** Lite client ************************************)
 
+(* the heights on which the light client is working *)  
+HEIGHTS == TRUSTED_HEIGHT..TARGET_HEIGHT
+
 (* the control states of the lite client *) 
 States == { "working", "finishedSuccess", "finishedFailure" }
 
 (**
- Check whether commits in a signed header are correct with respect to the given
- validator set (DOMAIN votingPower) and votingPower. Additionally, check that
- the header is still within the trusting period.
+ Check the precondition of ValidAndVerified.
+ 
+ TODO: add a traceability tag
  *)
- (*
-Verify(pVotingPower, pSignedHdr) ==
-    \* the implementation should check the hashes and other properties of the header
-    LET Validators == DOMAIN pVotingPower
-        TP == BC!PowerOfSet(pVotingPower, Validators)
-        SP == BC!PowerOfSet(pVotingPower, pSignedHdr.Commits \intersect Validators)
-    IN
-        \* the trusted header is still within the trusting period
-    /\ minTrustedHeight <= pSignedHdr.header.height
-        \* the commits are signed by the validators
-    /\ pSignedHdr.Commits \subseteq BC!VS(pSignedHdr.header)
-        \* the 2/3s rule works
-    /\ 3 * SP > 2 * TP
+ValidAndVerifiedPre(trusted, untrusted) ==
+  LET thdr == trusted.header
+      uhdr == untrusted.header
+  IN
+  /\ BC!InTrustingPeriod(thdr)
+  /\ thdr.height < uhdr.height
+  /\ thdr.height = uhdr.height + 1 =>
+     /\ thdr.NextVS = uhdr.VS
+     /\ untrusted.Commits \subseteq uhdr.VS
+     /\ LET TP == Cardinality(uhdr.VS)
+            SP == Cardinality(untrusted.Commits)
+        IN
+        3 * SP > 2 * TP     
+  (* TODO:
+  trusted.Commit is a commit is for the header trusted.Header, i.e. it contains the correct hash of the header
   *)
+  (* we cannot check these:
+  untrusted.Header.Time < now + clockDrift
+  the Time of trusted are smaller than the Time of untrusted,
+  *)
+  (* we do not have to check these:
+  untrusted.Validators = hash(untrusted.Header.Validators)
+  untrusted.NextValidators = hash(untrusted.Header.NextValidators)
+   *)
 
-(* 
- Check whether we can trust the signedHdr based on trustedHdr
- following the trusting period method.
- This operator is similar to CheckSupport in the English spec.
-   
- The parameters have the following meanings:
-   - heightToTrust is the height of the trusted header
-   - heightToVerify is the height of the header to be verified
-   - trustedHdr is the trusted header (not a signed header)
-   - signedHdr is the signed header to verify (including commits)
+(** Check that the commits in an untrusted block form 1/3 of the next validators
+    in a trusted header
  *)
- (*
-CheckSupport(pHeightToTrust, pHeightToVerify, pTrustedHdr, pSignedHdr) ==
-    IF pHeightToVerify = pHeightToTrust + 1 \* adjacent headers
-    THEN pSignedHdr.header.VP = pTrustedHdr.NextVP
-    ELSE \* the general case: check 1/3 between the headers  
-      LET TP == BC!PowerOfSet(pTrustedHdr.NextVP, BC!NextVS(pTrustedHdr))
-          SP == BC!PowerOfSet(pTrustedHdr.NextVP,
-                              pSignedHdr.Commits \intersect BC!NextVS(pTrustedHdr))
-    IN
-    3 * SP > TP
-  *)
-  
-\* Josef says we do it later
-ValidAndVerified(trusted, block) == "OK"
-  
+OneThird(trusted, untrusted) ==
+  LET TP == Cardinality(trusted.header.NextVS)
+      SP == Cardinality(untrusted.Commits \intersect trusted.header.NextVS)
+  IN
+  3 * SP > TP     
 
-HEIGHTS == TRUSTED_HEIGHT..TARGET_HEIGHT
+(**
+ Check, whether an untrusted block is valid and verifiable w.r.t. a trusted header.
+ 
+ TODO: add traceability
+ *)   
+ValidAndVerified(trusted, untrusted) ==
+    IF ~ValidAndVerifiedPre(trusted, untrusted)
+    THEN "FAILED_VERIFICATION"
+    ELSE IF ~BC!InTrustingPeriod(untrusted.header)
+    THEN "FAILED_TRUSTING_PERIOD" 
+    ELSE IF untrusted.header.height = trusted.header.height + 1
+             \/ OneThird(trusted, untrusted)
+         THEN "OK"
+         ELSE "CANNOT_VERIFY"
 
 (*
  Initial states of the light client. No requests on the stack, no headers.
@@ -116,7 +124,7 @@ LCInit ==
        IN
         /\ fetchedLightBlocks = [h \in {TRUSTED_HEIGHT} |-> trustedLightBlock]
         /\ lightBlockStatus = [h \in {TRUSTED_HEIGHT} |-> "StateVerified"]
-        /\ latestVerified = trustedBlock
+        /\ latestVerified = trustedLightBlock
         
 LightStoreGetInto(block, height) ==
     LET ref == blockchain[height]
@@ -140,7 +148,7 @@ LightStoreUpdateStates(statuses, ht, blockState) ==
         IF h = ht THEN blockState ELSE statuses[h]]      
 
 ScheduleTo(newHeight, pNextHeight, pTargetHeight, pLatestVerified) ==
-    LET ht == pLatestVerified.height IN
+    LET ht == pLatestVerified.header.height IN
     \/ /\ ht = pNextHeight
        /\ ht < pTargetHeight
        /\ pNextHeight < newHeight
@@ -154,7 +162,7 @@ ScheduleTo(newHeight, pNextHeight, pTargetHeight, pLatestVerified) ==
        /\ newHeight = pTargetHeight
     
 LightLoop ==
-    /\ latestVerified.height < TARGET_HEIGHT
+    /\ latestVerified.header.height < TARGET_HEIGHT
     /\ \E current \in BC!LightBlocks:
         /\ IF nextHeight \in DOMAIN fetchedLightBlocks
            THEN /\ LightStoreGetInto(current, nextHeight)
@@ -164,8 +172,11 @@ LightLoop ==
         /\ LET verdict == ValidAndVerified(latestVerified, current) IN
            \/ /\ verdict = "OK"
               /\ lightBlockStatus' = LightStoreUpdateStates(lightBlockStatus, nextHeight, "StateVerified")
-              /\ latestVerified' = current.header
-              /\ state' = IF latestVerified'.height < TARGET_HEIGHT THEN "working" ELSE "finishedSuccess"
+              /\ latestVerified' = current
+              /\ state' =
+                    IF latestVerified'.header.height < TARGET_HEIGHT
+                    THEN "working"
+                    ELSE "finishedSuccess"
               /\ \E newHeight \in HEIGHTS:
                  /\ ScheduleTo(newHeight, nextHeight, TARGET_HEIGHT, latestVerified')
                  /\ nextHeight' = newHeight 
@@ -181,7 +192,7 @@ LightLoop ==
               /\ UNCHANGED <<latestVerified, nextHeight>>
 
 LightFinish ==
-    /\ latestVerified.height >= TARGET_HEIGHT
+    /\ latestVerified.header.height >= TARGET_HEIGHT
     /\ state' = "finishedSuccess"
     /\ UNCHANGED <<nextHeight, fetchedLightBlocks, lightBlockStatus, latestVerified>>  
     
@@ -216,7 +227,7 @@ Next ==
 TypeOK ==
     /\ state \in States
     /\ nextHeight \in HEIGHTS
-    /\ latestVerified \in BC!BlockHeaders
+    /\ latestVerified \in BC!LightBlocks
     /\ \E HS \in SUBSET HEIGHTS:
         /\ fetchedLightBlocks \in [HS -> BC!LightBlocks]
         /\ lightBlockStatus \in [HS -> {"StateVerified", "StateUnverified"}]
@@ -336,5 +347,5 @@ Completeness ==
 *)    
 =============================================================================
 \* Modification History
-\* Last modified Wed Jun 03 10:44:19 CEST 2020 by igor
+\* Last modified Wed Jun 03 12:30:07 CEST 2020 by igor
 \* Created Wed Oct 02 16:39:42 CEST 2019 by igor

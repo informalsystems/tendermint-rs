@@ -77,6 +77,11 @@ LBT == [header |-> BT, Commits |-> {NT}]
 
 (****************************** BLOCKCHAIN ************************************)
 
+(* the header is still within the trusting period *)
+InTrustingPeriod(header) ==
+    minTrustedHeight <= header.height
+
+
 (*
  Given a function pVotingPower \in D -> Powers for some D \subseteq AllNodes
  and pNodes \subseteq D, test whether the set pNodes \subseteq AllNodes has
@@ -239,5 +244,5 @@ NeverStuckFalse2 ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Jun 03 10:06:10 CEST 2020 by igor
+\* Last modified Wed Jun 03 11:10:46 CEST 2020 by igor
 \* Created Fri Oct 11 15:45:11 CEST 2019 by igor
