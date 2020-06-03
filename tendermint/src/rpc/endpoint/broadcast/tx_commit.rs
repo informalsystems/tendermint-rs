@@ -58,7 +58,7 @@ pub struct TxResult {
     pub code: Code,
 
     /// Data
-    pub data: Data,
+    pub data: Option<Data>,
 
     /// Log
     pub log: Log,

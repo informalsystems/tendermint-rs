@@ -194,6 +194,19 @@ mod endpoints {
     }
 
     #[test]
+    fn broadcast_tx_commit_null_data() {
+        let response = endpoint::broadcast::tx_commit::Response::from_string(&read_json_fixture(
+            "broadcast_tx_commit_null_data",
+        ))
+        .unwrap();
+
+        assert_eq!(
+            &response.hash.to_string(),
+            "88D4266FD4E6338D13B845FCF289579D209C897823B9217DA3E161936F031589"
+        );
+    }
+
+    #[test]
     fn commit() {
         let response =
             endpoint::commit::Response::from_string(&read_json_fixture("commit")).unwrap();
