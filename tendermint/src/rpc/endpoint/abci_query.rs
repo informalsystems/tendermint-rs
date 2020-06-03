@@ -1,8 +1,10 @@
 //! `/abci_query` endpoint JSONRPC wrapper
 
 use crate::{
-    abci::{Code, Log, Path, Proof},
-    block, rpc, serializers,
+    abci::{Code, Log, Path},
+    block,
+    merkle::proof::Proof,
+    rpc, serializers,
 };
 use serde::{Deserialize, Serialize};
 
