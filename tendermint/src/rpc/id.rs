@@ -36,7 +36,7 @@ mod tests {
     use crate::test::test_serialization_roundtrip;
 
     #[test]
-    fn round_tripping_id() {
+    fn round_tripping_jsonrpc_id() {
         let str = r#""42""#;
         test_serialization_roundtrip::<Id>(str);
 
