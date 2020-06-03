@@ -63,7 +63,6 @@ struct TestBisection {
     height_to_verify: Height,
     now: Time,
     expected_output: Option<String>,
-    expected_num_of_bisections: i32,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -324,13 +323,6 @@ async fn run_bisection_test(case: TestBisection) {
 
             let expected_state = TrustedState::new(untrusted_signed_header, untrusted_next_vals);
             assert_eq!(new_states[new_states.len() - 1], expected_state);
-            let _expected_num_of_bisections = case.expected_num_of_bisections;
-            // TODO: number of bisections started diverting in JSON tests and Rust impl
-            // assert_eq!(
-            //     new_states.len() as i32,
-            //     expected_num_of_bisections,
-            //     "expected # bisections"
-            // );
             assert!(!expects_err);
         }
         Err(_) => {
