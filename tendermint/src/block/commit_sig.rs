@@ -41,7 +41,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
 
     fn try_from(value: RawCommitSig) -> Result<Self, Self::Error> {
         match value.block_id_flag {
-            BlockIDFlag::BlockIDFlagAbsent => {
+            BlockIDFlag::Absent => {
                 if value.timestamp.is_some()
                     && value.timestamp.unwrap()
                         != Time::parse_from_rfc3339("0001-01-01T00:00:00Z").unwrap()
@@ -53,7 +53,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 }
                 Ok(CommitSig::BlockIDFlagAbsent)
             }
-            BlockIDFlag::BlockIDFlagCommit => {
+            BlockIDFlag::Commit => {
                 if value.timestamp.is_none() {
                     Err("timestamp is missing for BlockIDFlagCommit CommitSig")
                 } else if value.signature.is_none() {
@@ -68,7 +68,7 @@ impl TryFrom<RawCommitSig> for CommitSig {
                     })
                 }
             }
-            BlockIDFlag::BlockIDFlagNil => {
+            BlockIDFlag::Nil => {
                 if value.timestamp.is_none() {
                     Err("timestamp is missing for BlockIDFlagNil CommitSig")
                 } else if value.signature.is_none() {
@@ -91,7 +91,7 @@ impl From<CommitSig> for RawCommitSig {
     fn from(commit: CommitSig) -> RawCommitSig {
         match commit {
             CommitSig::BlockIDFlagAbsent => RawCommitSig {
-                block_id_flag: BlockIDFlag::BlockIDFlagAbsent,
+                block_id_flag: BlockIDFlag::Absent,
                 validator_address: None,
                 timestamp: None,
                 signature: None,
@@ -101,7 +101,7 @@ impl From<CommitSig> for RawCommitSig {
                 timestamp,
                 signature,
             } => RawCommitSig {
-                block_id_flag: BlockIDFlag::BlockIDFlagNil,
+                block_id_flag: BlockIDFlag::Nil,
                 validator_address: Some(validator_address),
                 timestamp: Some(timestamp),
                 signature: Some(signature),
@@ -111,7 +111,7 @@ impl From<CommitSig> for RawCommitSig {
                 timestamp,
                 signature,
             } => RawCommitSig {
-                block_id_flag: BlockIDFlag::BlockIDFlagCommit,
+                block_id_flag: BlockIDFlag::Commit,
                 validator_address: Some(validator_address),
                 timestamp: Some(timestamp),
                 signature: Some(signature),

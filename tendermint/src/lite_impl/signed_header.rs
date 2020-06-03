@@ -54,7 +54,7 @@ impl lite::Commit for block::signed_header::SignedHeader {
         if self.commit.signatures.len() != vals.validators().len() {
             fail!(
                 Kind::ImplementationSpecific,
-                "pre-commit length: {} doesn't match validator length: {}",
+                "commit signatures count: {} doesn't match validators count: {}",
                 self.commit.signatures.len(),
                 vals.validators().len()
             );

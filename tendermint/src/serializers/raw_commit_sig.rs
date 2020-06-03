@@ -12,11 +12,11 @@ use std::str::FromStr;
 #[repr(u8)]
 pub enum BlockIDFlag {
     /// vote is not included in the Commit.Precommits
-    BlockIDFlagAbsent = 1,
+    Absent = 1,
     /// voted for the Commit.BlockID
-    BlockIDFlagCommit = 2,
+    Commit = 2,
     /// voted for nil
-    BlockIDFlagNil = 3,
+    Nil = 3,
 }
 
 /// RawCommitSig struct for interim deserialization of JSON object
