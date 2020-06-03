@@ -198,7 +198,7 @@ mod endpoints {
         let response = endpoint::broadcast::tx_commit::Response::from_string(&read_json_fixture(
             "broadcast_tx_commit_null_data",
         ))
-            .unwrap();
+        .unwrap();
 
         assert_eq!(
             &response.hash.to_string(),
