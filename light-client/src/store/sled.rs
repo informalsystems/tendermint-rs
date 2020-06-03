@@ -65,8 +65,7 @@ impl LightStore for SledStore {
     }
 
     fn latest(&self, status: VerifiedStatus) -> Option<LightBlock> {
-        // FIXME: This is very inefficient since it iterates over all the blocks in the store with the given status.
-        self.all(status).max_by_key(|lb| lb.height())
+        self.db(status).iter(&self.db).next_back()
     }
 
     fn all(&self, status: VerifiedStatus) -> Box<dyn Iterator<Item = LightBlock>> {
