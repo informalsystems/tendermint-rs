@@ -118,7 +118,8 @@ IsCorrectPower(pFaultyNodes, pVS) ==
     
 (* This is what we believe is the assumption about failures in Tendermint *)     
 FaultAssumption(pFaultyNodes, pMinTrustedHeight, pBlockchain) ==
-    \A h \in pMinTrustedHeight..Len(pBlockchain):
+    \A h \in Heights:
+      (pMinTrustedHeight <= h /\ h <= Len(pBlockchain)) =>
         IsCorrectPower(pFaultyNodes, pBlockchain[h].NextVS)
 
 (* Can a block be produced by a correct peer, or an authenticated Byzantine peer *)
@@ -180,7 +181,11 @@ AdvanceChain ==
   *)
 AdvanceTime ==
   /\ minTrustedHeight' \in (minTrustedHeight + 1) .. Min(height + 1, ULTIMATE_HEIGHT)
-  /\ tooManyFaults' = ~FaultAssumption(Faulty, minTrustedHeight', blockchain)
+  \* we are using IF-THEN-ELSE, otherwise Apalache may produce a spurious counterexample
+  \* https://github.com/konnov/apalache/issues/148
+  /\ IF FaultAssumption(Faulty, minTrustedHeight', blockchain)
+     THEN tooManyFaults' = FALSE
+     ELSE tooManyFaults' = TRUE 
   /\ UNCHANGED <<height, blockchain, Faulty>>
 
 (* One more process fails. As a result, the blockchain may move into the faulty zone. *)
@@ -188,7 +193,10 @@ OneMoreFault ==
   /\ \E n \in AllNodes \ Faulty:
       /\ Faulty' = Faulty \cup {n}
       /\ Faulty' /= AllNodes \* at least process remains non-faulty
-      /\ tooManyFaults' = ~FaultAssumption(Faulty', minTrustedHeight, blockchain)
+      \* we are using IF-THEN-ELSE, otherwise Apalache may produce a spurious counterexample
+      /\ IF FaultAssumption(Faulty', minTrustedHeight, blockchain)
+         THEN tooManyFaults' = FALSE
+         ELSE tooManyFaults' = TRUE 
   /\ UNCHANGED <<height, minTrustedHeight, blockchain>>
 
 (* stuttering at the end of the blockchain *)
@@ -244,5 +252,5 @@ NeverStuckFalse2 ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Jun 03 11:10:46 CEST 2020 by igor
+\* Last modified Thu Jun 04 15:52:46 CEST 2020 by igor
 \* Created Fri Oct 11 15:45:11 CEST 2019 by igor
