@@ -117,7 +117,7 @@ impl MockIo {
 
 #[contract_trait]
 impl Io for MockIo {
-    fn fetch_light_block(&mut self, _peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
+    fn fetch_light_block(&self, _peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
         self.light_blocks
             .get(&height)
             .cloned()
@@ -172,7 +172,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     };
 
     let provider = tc.primary;
-    let mut io = MockIo::new(provider.chain_id, provider.lite_blocks);
+    let io = MockIo::new(provider.chain_id, provider.lite_blocks);
 
     let trusted_height = tc.trust_options.height.try_into().unwrap();
     let trusted_state = io

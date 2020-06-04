@@ -67,7 +67,7 @@ fn sync_cmd(opts: SyncOpts) {
     let mut peer_map = HashMap::new();
     peer_map.insert(primary, primary_addr);
 
-    let mut io = ProdIo::new(peer_map);
+    let io = ProdIo::new(peer_map);
 
     let db = sled::open(opts.db_path).unwrap_or_else(|e| {
         println!("[ error ] could not open database: {}", e);

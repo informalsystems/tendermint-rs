@@ -13,3 +13,7 @@ pub use crate::{
     store::{memory::*, sled::*, LightStore, VerifiedStatus},
     types::*,
 };
+
+pub fn todo<A>() -> A {
+    unreachable!()
+}

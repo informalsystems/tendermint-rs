@@ -28,15 +28,15 @@ pub trait Io: Send + DynClone {
     /// ## Postcondition
     /// - The provider of the returned light block matches the given peer [LCV-IO-POST-PROVIDER]
     #[post(ret.as_ref().map(|lb| lb.provider == peer).unwrap_or(true))]
-    fn fetch_light_block(&mut self, peer: PeerId, height: Height) -> Result<LightBlock, IoError>;
+    fn fetch_light_block(&self, peer: PeerId, height: Height) -> Result<LightBlock, IoError>;
 }
 
 #[contract_trait]
 impl<F: Send + Clone> Io for F
 where
-    F: FnMut(PeerId, Height) -> Result<LightBlock, IoError>,
+    F: Fn(PeerId, Height) -> Result<LightBlock, IoError>,
 {
-    fn fetch_light_block(&mut self, peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
+    fn fetch_light_block(&self, peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
         self(peer, height)
     }
 }
@@ -45,13 +45,12 @@ where
 /// light blocks from full nodes via RPC.
 #[derive(Clone, Debug)]
 pub struct ProdIo {
-    rpc_clients: HashMap<PeerId, rpc::Client>,
     peer_map: HashMap<PeerId, tendermint::net::Address>,
 }
 
 #[contract_trait]
 impl Io for ProdIo {
-    fn fetch_light_block(&mut self, peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
+    fn fetch_light_block(&self, peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
         let signed_header = self.fetch_signed_header(peer, height)?;
         let height = signed_header.header.height.into();
 
@@ -69,18 +68,11 @@ impl ProdIo {
     ///
     /// A peer map which maps peer IDS to their network address must be supplied.
     pub fn new(peer_map: HashMap<PeerId, tendermint::net::Address>) -> Self {
-        Self {
-            rpc_clients: HashMap::new(),
-            peer_map,
-        }
+        Self { peer_map }
     }
 
     #[pre(self.peer_map.contains_key(&peer))]
-    fn fetch_signed_header(
-        &mut self,
-        peer: PeerId,
-        height: Height,
-    ) -> Result<TMSignedHeader, IoError> {
+    fn fetch_signed_header(&self, peer: PeerId, height: Height) -> Result<TMSignedHeader, IoError> {
         let height: block::Height = height.into();
         let rpc_client = self.rpc_client_for(peer);
 
@@ -98,11 +90,7 @@ impl ProdIo {
     }
 
     #[pre(self.peer_map.contains_key(&peer))]
-    fn fetch_validator_set(
-        &mut self,
-        peer: PeerId,
-        height: Height,
-    ) -> Result<TMValidatorSet, IoError> {
+    fn fetch_validator_set(&self, peer: PeerId, height: Height) -> Result<TMValidatorSet, IoError> {
         let res = block_on(self.rpc_client_for(peer).validators(height));
 
         match res {
@@ -113,11 +101,9 @@ impl ProdIo {
 
     // FIXME: Cannot enable precondition because of "autoref lifetime" issue
     // #[pre(self.peer_map.contains_key(&peer))]
-    fn rpc_client_for(&mut self, peer: PeerId) -> &mut rpc::Client {
+    fn rpc_client_for(&self, peer: PeerId) -> rpc::Client {
         let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
-        self.rpc_clients
-            .entry(peer)
-            .or_insert_with(|| rpc::Client::new(peer_addr))
+        rpc::Client::new(peer_addr)
     }
 }
 
