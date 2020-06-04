@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use contracts::{contract_trait, post, pre};
-use dyn_clone::DynClone;
 use serde::{Deserialize, Serialize};
 use tendermint::{block, rpc};
 use thiserror::Error;
@@ -22,7 +21,7 @@ pub enum IoError {
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
 #[contract_trait]
-pub trait Io: Send + DynClone {
+pub trait Io: Send {
     /// Fetch a light block at the given height from the peer with the given peer ID.
     ///
     /// ## Postcondition
@@ -32,7 +31,7 @@ pub trait Io: Send + DynClone {
 }
 
 #[contract_trait]
-impl<F: Send + Clone> Io for F
+impl<F: Send> Io for F
 where
     F: Fn(PeerId, Height) -> Result<LightBlock, IoError>,
 {

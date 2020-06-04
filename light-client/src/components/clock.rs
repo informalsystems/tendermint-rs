@@ -1,8 +1,7 @@
 use crate::prelude::*;
-use dyn_clone::DynClone;
 
 /// Abstracts over the current time.
-pub trait Clock: Send + DynClone {
+pub trait Clock: Send {
     /// Get the current time.
     fn now(&self) -> Time;
 }

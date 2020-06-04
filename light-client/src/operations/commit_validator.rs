@@ -1,10 +1,9 @@
 use crate::prelude::*;
 
 use anomaly::BoxError;
-use dyn_clone::DynClone;
 use tendermint::lite::types::Commit as _;
 
-pub trait CommitValidator: Send + DynClone {
+pub trait CommitValidator: Send {
     fn validate(
         &self,
         signed_header: &SignedHeader,

@@ -1,10 +1,9 @@
 use crate::prelude::*;
 
 use anomaly::BoxError;
-use dyn_clone::DynClone;
 use tendermint::lite::types::ValidatorSet as _;
 
-pub trait VotingPowerCalculator: Send + DynClone {
+pub trait VotingPowerCalculator: Send {
     fn total_power_of(&self, validators: &ValidatorSet) -> u64;
     fn voting_power_in(
         &self,
