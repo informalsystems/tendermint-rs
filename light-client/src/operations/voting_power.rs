@@ -13,34 +13,6 @@ pub trait VotingPowerCalculator: Send + DynClone {
     ) -> Result<u64, BoxError>;
 }
 
-impl<T: VotingPowerCalculator + Send + Sync> VotingPowerCalculator for &T {
-    fn total_power_of(&self, validators: &ValidatorSet) -> u64 {
-        (*self).total_power_of(validators)
-    }
-
-    fn voting_power_in(
-        &self,
-        signed_header: &SignedHeader,
-        validators: &ValidatorSet,
-    ) -> Result<u64, BoxError> {
-        (*self).voting_power_in(signed_header, validators)
-    }
-}
-
-// impl VotingPowerCalculator for Box<dyn VotingPowerCalculator> {
-//     fn total_power_of(&self, validators: &ValidatorSet) -> u64 {
-//         self.as_ref().total_power_of(validators)
-//     }
-
-//     fn voting_power_in(
-//         &self,
-//         signed_header: &SignedHeader,
-//         validators: &ValidatorSet,
-//     ) -> Result<u64, BoxError> {
-//         self.as_ref().voting_power_in(signed_header, validators)
-//     }
-// }
-
 #[derive(Copy, Clone, Debug)]
 pub struct ProdVotingPowerCalculator;
 
