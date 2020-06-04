@@ -46,6 +46,7 @@ impl Options {
 /// correct for the duration of the trusted period.  The fault-tolerant read operation
 /// is designed for this security model.
 pub struct LightClient {
+    peer: PeerId,
     state: State,
     options: Options,
     clock: Box<dyn Clock>,
@@ -58,6 +59,7 @@ pub struct LightClient {
 impl LightClient {
     /// Constructs a new light client
     pub fn new(
+        peer: PeerId,
         state: State,
         options: Options,
         clock: impl Clock + 'static,
@@ -67,6 +69,7 @@ impl LightClient {
         io: impl Io + 'static,
     ) -> Self {
         Self {
+            peer,
             state,
             options,
             clock: Box::new(clock),
@@ -81,8 +84,7 @@ impl LightClient {
     ///
     /// Note: This functin delegates the actual work to `verify_to_target`.
     pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
-        let peer = self.state.peers.primary;
-        let target_block = match self.io.fetch_light_block(peer, LATEST_HEIGHT) {
+        let target_block = match self.io.fetch_light_block(self.peer, LATEST_HEIGHT) {
             Ok(last_block) => last_block,
             Err(io_error) => bail!(ErrorKind::Io(io_error)),
         };
@@ -164,9 +166,8 @@ impl LightClient {
                 return Ok(trusted_state);
             }
 
-            // Fetch the block at the current height from the primary node
-            let current_block =
-                self.get_or_fetch_block(self.state.peers.primary, current_height)?;
+            // Fetch the block at the current height from our peer
+            let current_block = self.get_or_fetch_block(self.peer, current_height)?;
 
             // Validate and verify the current block
             let verdict = self

@@ -85,13 +85,7 @@ fn sync_cmd(opts: SyncOpts) {
         light_store.insert(trusted_state, VerifiedStatus::Verified);
     }
 
-    let peers = Peers {
-        primary,
-        witnesses: Vec::new(),
-    };
-
     let state = State {
-        peers,
         light_store: Box::new(light_store),
         verification_trace: HashMap::new(),
     };
@@ -112,6 +106,7 @@ fn sync_cmd(opts: SyncOpts) {
     let fork_detector = ProdForkDetector::default();
 
     let mut light_client = LightClient::new(
+        primary,
         state,
         options,
         clock,
