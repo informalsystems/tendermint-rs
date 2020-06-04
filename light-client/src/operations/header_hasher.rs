@@ -9,18 +9,6 @@ pub trait HeaderHasher: Send + DynClone {
     fn hash(&self, header: &Header) -> Hash; // Or Error?
 }
 
-impl<T: HeaderHasher + Send + Sync> HeaderHasher for &T {
-    fn hash(&self, header: &Header) -> Hash {
-        (*self).hash(header)
-    }
-}
-
-// impl HeaderHasher for Box<dyn HeaderHasher> {
-//     fn hash(&self, header: &Header) -> Hash {
-//         self.as_ref().hash(header)
-//     }
-// }
-
 #[derive(Copy, Clone, Debug)]
 pub struct ProdHeaderHasher;
 
