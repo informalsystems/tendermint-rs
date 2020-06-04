@@ -98,27 +98,6 @@ impl LightClient {
         self.verify_to_target(target_block.height())
     }
 
-    /// See `verify_to_target_with_state`
-    // #[pre(
-    //     light_store_contains_block_within_trusting_period(
-    //         self.state.light_store.as_ref(),
-    //         self.options.trusting_period,
-    //         self.clock.now(),
-    //     )
-    // )]
-    #[post(
-        ret.is_ok() ==> trusted_store_contains_block_at_target_height(
-            self.state.light_store.as_ref(),
-            target_height,
-        )
-    )]
-    pub fn verify_to_target(&mut self, target_height: Height) -> Result<LightBlock, Error> {
-        let mut state = std::mem::replace(&mut self.state, State::new(MemoryStore::new()));
-        let result = self.verify_to_target_with_state(target_height, &mut state);
-        self.state = state;
-        result
-    }
-
     /// Attemps to update the light client to a block of the primary node at the given height.
     ///
     /// This is the main function and uses the following components:
@@ -148,6 +127,30 @@ impl LightClient {
     /// - If the core verification loop invariant is violated [LCV-INV-TP.1]
     /// - If verification of a light block fails
     /// - If it cannot fetch a block from the blockchain
+    ///
+    /// ## Note
+    /// - This method actually delegates the actual work to `verify_to_target_with_state` over the current state.
+    // #[pre(
+    //     light_store_contains_block_within_trusting_period(
+    //         self.state.light_store.as_ref(),
+    //         self.options.trusting_period,
+    //         self.clock.now(),
+    //     )
+    // )]
+    #[post(
+        ret.is_ok() ==> trusted_store_contains_block_at_target_height(
+            self.state.light_store.as_ref(),
+            target_height,
+        )
+    )]
+    pub fn verify_to_target(&mut self, target_height: Height) -> Result<LightBlock, Error> {
+        let mut state = std::mem::replace(&mut self.state, State::new(MemoryStore::new()));
+        let result = self.verify_to_target_with_state(target_height, &mut state);
+        self.state = state;
+        result
+    }
+
+    /// See `verify_to_target`
     // #[pre(
     //     light_store_contains_block_within_trusting_period(
     //         self.state.light_store.as_ref(),
