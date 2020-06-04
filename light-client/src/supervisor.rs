@@ -72,11 +72,11 @@ impl PeerList {
         self.peers.get_mut(&self.primary)
     }
 
-    pub fn secondary_peers(&self) -> Vec<PeerId> {
+    pub fn secondaries(&self) -> Vec<&LightClient> {
         self.peers
             .keys()
             .filter(|peer_id| peer_id != &&self.primary)
-            .copied()
+            .filter_map(|peer_id| self.get(peer_id))
             .collect()
     }
 
@@ -173,21 +173,17 @@ impl Supervisor {
 
     #[pre(self.peers.primary().is_some())]
     fn detect_forks(&mut self, light_block: &LightBlock) -> Option<Vec<Fork>> {
-        if self.peers.secondary_peers().is_empty() {
+        use crate::fork_detector::{ForkDetector, ProdForkDetector};
+
+        if self.peers.secondaries().is_empty() {
             return None;
         }
 
         let primary = self.peers.primary().unwrap();
-        let secondaries = self
-            .peers
-            .secondary_peers()
-            .iter()
-            .filter_map(|peer_id| self.peers.get(peer_id))
-            .collect::<Vec<_>>();
+        let secondaries = self.peers.secondaries();
 
-        use crate::fork_detector::{ForkDetector, ProdForkDetector};
         let fork_detector = ProdForkDetector::new();
-        let result = fork_detector.detect_forks(light_block, primary, secondaries);
+        let _result = fork_detector.detect_forks(light_block, primary, secondaries);
         Some(todo())
     }
 
