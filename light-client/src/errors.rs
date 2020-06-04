@@ -16,6 +16,12 @@ pub enum ErrorKind {
     #[error("store error")]
     Store,
 
+    #[error("no valid peer left")]
+    NoValidPeerLeft,
+
+    #[error("fork detected peers={0:?}")]
+    ForkDetected(Vec<PeerId>),
+
     #[error("no initial trusted state")]
     NoInitialTrustedState,
 

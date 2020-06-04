@@ -103,7 +103,6 @@ fn sync_cmd(opts: SyncOpts) {
     let verifier = ProdVerifier::default();
     let clock = SystemClock;
     let scheduler = scheduler::basic_bisecting_schedule;
-    let _fork_detector = ProdForkDetector::default();
 
     let mut light_client =
         LightClient::new(primary, state, options, clock, scheduler, verifier, io);
