@@ -52,7 +52,6 @@ pub struct LightClient {
     clock: Box<dyn Clock>,
     scheduler: Box<dyn Scheduler>,
     verifier: Box<dyn Verifier>,
-    fork_detector: Box<dyn ForkDetector>,
     io: Box<dyn Io>,
 }
 
@@ -65,7 +64,6 @@ impl LightClient {
         clock: impl Clock + 'static,
         scheduler: impl Scheduler + 'static,
         verifier: impl Verifier + 'static,
-        fork_detector: impl ForkDetector + 'static,
         io: impl Io + 'static,
     ) -> Self {
         Self {
@@ -75,7 +73,6 @@ impl LightClient {
             clock: Box::new(clock),
             scheduler: Box::new(scheduler),
             verifier: Box::new(verifier),
-            fork_detector: Box::new(fork_detector),
             io: Box::new(io),
         }
     }
@@ -207,24 +204,6 @@ impl LightClient {
                 target_height,
             );
         }
-    }
-
-    /// TODO
-    pub fn detect_forks(&self) -> Result<(), Error> {
-        let light_blocks = self
-            .state
-            .light_store
-            .all(VerifiedStatus::Verified)
-            .collect();
-
-        let result = self.fork_detector.detect(light_blocks);
-
-        match result {
-            ForkDetection::NotDetected => (),    // TODO
-            ForkDetection::Detected(_, _) => (), // TODO
-        }
-
-        Ok(())
     }
 
     /// Get the verification trace for the block at target_height.
