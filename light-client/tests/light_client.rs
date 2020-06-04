@@ -157,7 +157,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     let clock_drift = Duration::from_secs(1);
 
     let clock = MockClock { now };
-    let fork_detector = ProdForkDetector::new(ProdHeaderHasher);
+    let _fork_detector = ProdForkDetector::new(ProdHeaderHasher);
 
     let options = Options {
         trust_threshold,
@@ -196,7 +196,6 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
         clock,
         basic_schedule,
         verifier,
-        fork_detector,
         io.clone(),
     );
 

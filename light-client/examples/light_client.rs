@@ -103,18 +103,10 @@ fn sync_cmd(opts: SyncOpts) {
     let verifier = ProdVerifier::default();
     let clock = SystemClock;
     let scheduler = scheduler::basic_schedule;
-    let fork_detector = ProdForkDetector::default();
+    let _fork_detector = ProdForkDetector::default();
 
-    let mut light_client = LightClient::new(
-        primary,
-        state,
-        options,
-        clock,
-        scheduler,
-        verifier,
-        fork_detector,
-        io,
-    );
+    let mut light_client =
+        LightClient::new(primary, state, options, clock, scheduler, verifier, io);
 
     loop {
         match light_client.verify_to_highest() {
