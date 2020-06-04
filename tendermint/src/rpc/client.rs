@@ -13,6 +13,7 @@ use hyper::header;
 /// Tendermint RPC client.
 ///
 /// Presently supports JSONRPC via HTTP.
+#[derive(Clone, Debug)]
 pub struct Client {
     /// Address of the RPC server
     address: net::Address,

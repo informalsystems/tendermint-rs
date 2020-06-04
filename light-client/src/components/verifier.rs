@@ -1,6 +1,8 @@
 use crate::predicates as preds;
 use crate::prelude::*;
 
+use dyn_clone::DynClone;
+
 /// Represents the result of the verification performed by the
 /// verifier component.
 #[derive(Debug)]
@@ -33,7 +35,7 @@ impl From<Result<(), VerificationError>> for Verdict {
 /// ## Implements
 /// - [TMBC-VAL-CONTAINS-CORR.1]
 /// - [TMBC-VAL-COMMIT.1]
-pub trait Verifier {
+pub trait Verifier: Send + DynClone {
     /// Perform the verification.
     fn verify(&self, untrusted: &LightBlock, trusted: &LightBlock, options: &Options) -> Verdict;
 }
@@ -52,6 +54,17 @@ pub struct ProdVerifier {
     voting_power_calculator: Box<dyn VotingPowerCalculator>,
     commit_validator: Box<dyn CommitValidator>,
     header_hasher: Box<dyn HeaderHasher>,
+}
+
+impl Clone for ProdVerifier {
+    fn clone(&self) -> Self {
+        Self {
+            predicates: dyn_clone::clone_box(&*self.predicates),
+            voting_power_calculator: dyn_clone::clone_box(&*self.voting_power_calculator),
+            commit_validator: dyn_clone::clone_box(&*self.commit_validator),
+            header_hasher: dyn_clone::clone_box(&*self.header_hasher),
+        }
+    }
 }
 
 impl ProdVerifier {
@@ -85,9 +98,9 @@ impl Verifier for ProdVerifier {
     fn verify(&self, untrusted: &LightBlock, trusted: &TrustedState, options: &Options) -> Verdict {
         preds::verify(
             &*self.predicates,
-            &self.voting_power_calculator,
-            &self.commit_validator,
-            &self.header_hasher,
+            &*self.voting_power_calculator,
+            &*self.commit_validator,
+            &*self.header_hasher,
             &trusted,
             &untrusted,
             options,

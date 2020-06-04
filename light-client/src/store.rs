@@ -6,6 +6,7 @@
 
 use crate::prelude::*;
 
+use dyn_clone::DynClone;
 use serde::{Deserialize, Serialize};
 
 pub mod memory;
@@ -43,7 +44,7 @@ impl VerifiedStatus {
 ///
 /// ## Implements
 /// - [LCV-DIST-STORE.1]
-pub trait LightStore: std::fmt::Debug {
+pub trait LightStore: std::fmt::Debug + Send + DynClone {
     /// Get the light block at the given height with the given status, or return `None` otherwise.
     fn get(&self, height: Height, status: VerifiedStatus) -> Option<LightBlock>;
     /// Update the `status` of the given `light_block`.

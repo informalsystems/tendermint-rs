@@ -1,9 +1,10 @@
 use crate::prelude::*;
 
 use anomaly::BoxError;
+use dyn_clone::DynClone;
 use tendermint::lite::types::ValidatorSet as _;
 
-pub trait VotingPowerCalculator {
+pub trait VotingPowerCalculator: Send + DynClone {
     fn total_power_of(&self, validators: &ValidatorSet) -> u64;
     fn voting_power_in(
         &self,
@@ -12,7 +13,7 @@ pub trait VotingPowerCalculator {
     ) -> Result<u64, BoxError>;
 }
 
-impl<T: VotingPowerCalculator> VotingPowerCalculator for &T {
+impl<T: VotingPowerCalculator + Send + Sync> VotingPowerCalculator for &T {
     fn total_power_of(&self, validators: &ValidatorSet) -> u64 {
         (*self).total_power_of(validators)
     }
@@ -26,20 +27,21 @@ impl<T: VotingPowerCalculator> VotingPowerCalculator for &T {
     }
 }
 
-impl VotingPowerCalculator for Box<dyn VotingPowerCalculator> {
-    fn total_power_of(&self, validators: &ValidatorSet) -> u64 {
-        self.as_ref().total_power_of(validators)
-    }
+// impl VotingPowerCalculator for Box<dyn VotingPowerCalculator> {
+//     fn total_power_of(&self, validators: &ValidatorSet) -> u64 {
+//         self.as_ref().total_power_of(validators)
+//     }
 
-    fn voting_power_in(
-        &self,
-        signed_header: &SignedHeader,
-        validators: &ValidatorSet,
-    ) -> Result<u64, BoxError> {
-        self.as_ref().voting_power_in(signed_header, validators)
-    }
-}
+//     fn voting_power_in(
+//         &self,
+//         signed_header: &SignedHeader,
+//         validators: &ValidatorSet,
+//     ) -> Result<u64, BoxError> {
+//         self.as_ref().voting_power_in(signed_header, validators)
+//     }
+// }
 
+#[derive(Copy, Clone, Debug)]
 pub struct ProdVotingPowerCalculator;
 
 impl VotingPowerCalculator for ProdVotingPowerCalculator {
