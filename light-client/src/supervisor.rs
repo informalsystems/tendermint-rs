@@ -64,7 +64,11 @@ impl PeerList {
         self.peers.get_mut(peer_id)
     }
 
-    pub fn primary(&mut self) -> Option<&mut LightClient> {
+    pub fn primary(&self) -> Option<&LightClient> {
+        self.peers.get(&self.primary)
+    }
+
+    pub fn primary_mut(&mut self) -> Option<&mut LightClient> {
         self.peers.get_mut(&self.primary)
     }
 
@@ -117,7 +121,7 @@ impl Supervisor {
 
     #[pre(self.peers.primary().is_some())]
     pub fn verify_to_target(&mut self, height: Height) -> VerificationResult {
-        while let Some(primary) = self.peers.primary() {
+        while let Some(primary) = self.peers.primary_mut() {
             let verdict = primary.verify_to_target(height);
 
             match verdict {
@@ -173,20 +177,18 @@ impl Supervisor {
             return None;
         }
 
-        let state = State::new(MemoryStore::new());
-        let primary = self.peers.primary().unwrap().with_state(state.clone());
+        let primary = self.peers.primary().unwrap();
         let secondaries = self
             .peers
             .secondary_peers()
             .iter()
             .filter_map(|peer_id| self.peers.get(peer_id))
-            .map(|client| client.with_state(state.clone()))
             .collect::<Vec<_>>();
 
         use crate::fork_detector::{ForkDetector, ProdForkDetector};
         let fork_detector = ProdForkDetector::new();
         let result = fork_detector.detect_forks(light_block, primary, secondaries);
-        Some(todo!())
+        Some(todo())
     }
 
     pub fn handler(&mut self) -> Handler {

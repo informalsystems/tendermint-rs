@@ -100,6 +100,27 @@ impl LightClient {
         self.verify_to_target(target_block.height())
     }
 
+    /// See `verify_to_target_with_state`
+    // #[pre(
+    //     light_store_contains_block_within_trusting_period(
+    //         self.state.light_store.as_ref(),
+    //         self.options.trusting_period,
+    //         self.clock.now(),
+    //     )
+    // )]
+    #[post(
+        ret.is_ok() ==> trusted_store_contains_block_at_target_height(
+            self.state.light_store.as_ref(),
+            target_height,
+        )
+    )]
+    pub fn verify_to_target(&mut self, target_height: Height) -> Result<LightBlock, Error> {
+        let mut state = std::mem::replace(&mut self.state, State::new(MemoryStore::new()));
+        let result = self.verify_to_target_with_state(target_height, &mut state);
+        self.state = state;
+        result
+    }
+
     /// Attemps to update the light client to a block of the primary node at the given height.
     ///
     /// This is the main function and uses the following components:
@@ -142,7 +163,11 @@ impl LightClient {
             target_height,
         )
     )]
-    pub fn verify_to_target(&mut self, target_height: Height) -> Result<LightBlock, Error> {
+    pub fn verify_to_target_with_state(
+        &self,
+        target_height: Height,
+        state: &mut State,
+    ) -> Result<LightBlock, Error> {
         // Let's first look in the store to see whether we have already successfully verified this block
         if let Some(light_block) = self
             .state
@@ -175,7 +200,7 @@ impl LightClient {
             }
 
             // Trace the current height as a dependency of the block at the target height
-            self.state.trace_block(target_height, current_height);
+            state.trace_block(target_height, current_height);
 
             // If the trusted state is now at the height greater or equal to the target height,
             // we now trust this target height, and are thus done :) [LCV-DIST-LIFE.1]
@@ -184,7 +209,7 @@ impl LightClient {
             }
 
             // Fetch the block at the current height from our peer
-            let current_block = self.get_or_fetch_block(current_height)?;
+            let current_block = self.get_or_fetch_block(current_height, state)?;
 
             // Validate and verify the current block
             let verdict = self
@@ -194,13 +219,13 @@ impl LightClient {
             match verdict {
                 Verdict::Success => {
                     // Verification succeeded, add the block to the light store with `verified` status
-                    self.state
+                    state
                         .light_store
                         .update(current_block, VerifiedStatus::Verified);
                 }
                 Verdict::Invalid(e) => {
                     // Verification failed, add the block to the light store with `failed` status, and abort.
-                    self.state
+                    state
                         .light_store
                         .update(current_block, VerifiedStatus::Failed);
 
@@ -211,18 +236,16 @@ impl LightClient {
                     // Add the block to the light store with `unverified` status.
                     // This will engage bisection in an attempt to raise the height of the latest
                     // trusted state until there is enough overlap.
-                    self.state
+                    state
                         .light_store
                         .update(current_block, VerifiedStatus::Unverified);
                 }
             }
 
             // Compute the next height to fetch and verify
-            current_height = self.scheduler.schedule(
-                self.state.light_store.as_ref(),
-                current_height,
-                target_height,
-            );
+            current_height =
+                self.scheduler
+                    .schedule(state.light_store.as_ref(), current_height, target_height);
         }
     }
 
@@ -238,7 +261,11 @@ impl LightClient {
     /// - The provider of block that is returned matches the given peer.
     // TODO: Uncomment when provider field is available
     // #[post(ret.map(|lb| lb.provider == peer).unwrap_or(false))]
-    pub fn get_or_fetch_block(&mut self, current_height: Height) -> Result<LightBlock, Error> {
+    pub fn get_or_fetch_block(
+        &self,
+        current_height: Height,
+        state: &mut State,
+    ) -> Result<LightBlock, Error> {
         let current_block = self
             .state
             .light_store
@@ -256,24 +283,12 @@ impl LightClient {
         self.io
             .fetch_light_block(self.peer, current_height)
             .map(|current_block| {
-                self.state
+                state
                     .light_store
                     .insert(current_block.clone(), VerifiedStatus::Unverified);
 
                 current_block
             })
             .map_err(|e| ErrorKind::Io(e).into())
-    }
-
-    pub fn with_state(&self, state: State) -> Self {
-        Self {
-            state,
-            peer: self.peer,
-            options: self.options.clone(),
-            clock: dyn_clone::clone_box(&*self.clock),
-            scheduler: dyn_clone::clone_box(&*self.scheduler),
-            verifier: dyn_clone::clone_box(&*self.verifier),
-            io: dyn_clone::clone_box(&*self.io),
-        }
     }
 }
