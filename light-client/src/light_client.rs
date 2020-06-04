@@ -3,6 +3,7 @@
 use contracts::*;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 use crate::components::{io::*, scheduler::*, verifier::*};
 use crate::contracts::*;
@@ -51,6 +52,16 @@ pub struct LightClient {
     scheduler: Box<dyn Scheduler>,
     verifier: Box<dyn Verifier>,
     io: Box<dyn Io>,
+}
+
+impl fmt::Debug for LightClient {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LightClient")
+            .field("peer", &self.peer)
+            .field("options", &self.options)
+            .field("state", &self.state)
+            .finish()
+    }
 }
 
 impl LightClient {
