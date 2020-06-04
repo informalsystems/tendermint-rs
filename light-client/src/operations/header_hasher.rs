@@ -1,11 +1,10 @@
 use crate::prelude::*;
 
-use dyn_clone::DynClone;
 use tendermint::amino_types::{message::AminoMessage, BlockId, ConsensusVersion, TimeMsg};
 use tendermint::merkle::simple_hash_from_byte_vectors;
 use tendermint::Hash;
 
-pub trait HeaderHasher: Send + DynClone {
+pub trait HeaderHasher: Send {
     fn hash(&self, header: &Header) -> Hash; // Or Error?
 }
 

@@ -2,7 +2,6 @@
 
 use crate::prelude::*;
 
-use dyn_clone::DynClone;
 use tendermint::lite::ValidatorSet as _;
 
 pub mod errors;
@@ -19,7 +18,7 @@ impl VerificationPredicates for ProdPredicates {}
 ///
 /// This enables test implementations to only override a single method rather than
 /// have to re-define every predicate.
-pub trait VerificationPredicates: Send + DynClone {
+pub trait VerificationPredicates: Send {
     fn validator_sets_match(&self, light_block: &LightBlock) -> Result<(), VerificationError> {
         ensure!(
             light_block.signed_header.header.validators_hash == light_block.validators.hash(),

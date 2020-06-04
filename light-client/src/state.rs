@@ -17,15 +17,6 @@ pub struct State {
     pub verification_trace: VerificationTrace,
 }
 
-impl Clone for State {
-    fn clone(&self) -> Self {
-        Self {
-            light_store: dyn_clone::clone_box(&*self.light_store),
-            verification_trace: self.verification_trace.clone(),
-        }
-    }
-}
-
 impl State {
     pub fn new(light_store: impl LightStore + 'static) -> Self {
         Self {
