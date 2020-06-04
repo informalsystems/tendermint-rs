@@ -259,4 +259,16 @@ impl LightClient {
             })
             .map_err(|e| ErrorKind::Io(e).into())
     }
+
+    pub fn with_state(&self, state: State) -> Self {
+        Self {
+            state,
+            peer: self.peer,
+            options: self.options.clone(),
+            clock: dyn_clone::clone_box(&*self.clock),
+            scheduler: dyn_clone::clone_box(&*self.scheduler),
+            verifier: dyn_clone::clone_box(&*self.verifier),
+            io: dyn_clone::clone_box(&*self.io),
+        }
+    }
 }

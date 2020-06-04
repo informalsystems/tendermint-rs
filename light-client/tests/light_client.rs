@@ -125,6 +125,7 @@ impl Io for MockIo {
     }
 }
 
+#[derive(Clone)]
 struct MockClock {
     now: Time,
 }

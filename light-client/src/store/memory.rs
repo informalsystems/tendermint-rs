@@ -20,7 +20,7 @@ impl StoreEntry {
 }
 
 /// Transient in-memory store.
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct MemoryStore {
     store: BTreeMap<Height, StoreEntry>,
 }

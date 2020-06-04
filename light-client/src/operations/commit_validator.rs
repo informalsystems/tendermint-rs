@@ -1,9 +1,10 @@
 use crate::prelude::*;
-use anomaly::BoxError;
 
+use anomaly::BoxError;
+use dyn_clone::DynClone;
 use tendermint::lite::types::Commit as _;
 
-pub trait CommitValidator {
+pub trait CommitValidator: Send + DynClone {
     fn validate(
         &self,
         signed_header: &SignedHeader,
@@ -11,7 +12,7 @@ pub trait CommitValidator {
     ) -> Result<(), BoxError>;
 }
 
-impl<T: CommitValidator> CommitValidator for &T {
+impl<T: CommitValidator + Send + Sync> CommitValidator for &T {
     fn validate(
         &self,
         signed_header: &SignedHeader,
@@ -21,16 +22,17 @@ impl<T: CommitValidator> CommitValidator for &T {
     }
 }
 
-impl CommitValidator for Box<dyn CommitValidator> {
-    fn validate(
-        &self,
-        signed_header: &SignedHeader,
-        validators: &ValidatorSet,
-    ) -> Result<(), BoxError> {
-        self.as_ref().validate(signed_header, validators)
-    }
-}
+// impl CommitValidator for Box<dyn CommitValidator> {
+//     fn validate(
+//         &self,
+//         signed_header: &SignedHeader,
+//         validators: &ValidatorSet,
+//     ) -> Result<(), BoxError> {
+//         self.as_ref().validate(signed_header, validators)
+//     }
+// }
 
+#[derive(Copy, Clone)]
 pub struct ProdCommitValidator;
 
 impl CommitValidator for ProdCommitValidator {

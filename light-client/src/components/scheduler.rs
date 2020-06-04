@@ -1,12 +1,14 @@
 use crate::prelude::*;
+
 use contracts::*;
+use dyn_clone::DynClone;
 
 /// The scheduler decides what block to verify next given the current and target heights.
 ///
 /// The scheduler is given access to the light store, in order to optionally
 /// improve performance by picking a next block that has already been fetched.
 #[contract_trait]
-pub trait Scheduler {
+pub trait Scheduler: Send + DynClone {
     /// Decides what block to verify next.
     ///
     /// ## Precondition
@@ -25,7 +27,7 @@ pub trait Scheduler {
 }
 
 #[contract_trait]
-impl<F> Scheduler for F
+impl<F: Send + Clone> Scheduler for F
 where
     F: Fn(&dyn LightStore, Height, Height) -> Height,
 {
