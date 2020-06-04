@@ -158,7 +158,6 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     let clock_drift = Duration::from_secs(1);
 
     let clock = MockClock { now };
-    let _fork_detector = ProdForkDetector::new(ProdHeaderHasher);
 
     let options = Options {
         trust_threshold,

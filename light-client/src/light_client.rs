@@ -45,9 +45,9 @@ impl Options {
 /// correct for the duration of the trusted period.  The fault-tolerant read operation
 /// is designed for this security model.
 pub struct LightClient {
-    peer: PeerId,
-    state: State,
-    options: Options,
+    pub peer: PeerId,
+    pub state: State,
+    pub options: Options,
     clock: Box<dyn Clock>,
     scheduler: Box<dyn Scheduler>,
     verifier: Box<dyn Verifier>,
@@ -141,6 +141,15 @@ impl LightClient {
         )
     )]
     pub fn verify_to_target(&mut self, target_height: Height) -> Result<LightBlock, Error> {
+        // Let's first look in the store to see whether we have already successfully verified this block
+        if let Some(light_block) = self
+            .state
+            .light_store
+            .get(target_height, VerifiedStatus::Verified)
+        {
+            return Ok(light_block);
+        }
+
         // Override the `now` fields in the given verification options with the current time,
         // as per the given `clock`.
         let options = self.options.with_now(self.clock.now());
@@ -173,7 +182,7 @@ impl LightClient {
             }
 
             // Fetch the block at the current height from our peer
-            let current_block = self.get_or_fetch_block(self.peer, current_height)?;
+            let current_block = self.get_or_fetch_block(current_height)?;
 
             // Validate and verify the current block
             let verdict = self
@@ -227,21 +236,15 @@ impl LightClient {
     /// - The provider of block that is returned matches the given peer.
     // TODO: Uncomment when provider field is available
     // #[post(ret.map(|lb| lb.provider == peer).unwrap_or(false))]
-    fn get_or_fetch_block(
-        &mut self,
-        peer: PeerId,
-        current_height: Height,
-    ) -> Result<LightBlock, Error> {
+    pub fn get_or_fetch_block(&mut self, current_height: Height) -> Result<LightBlock, Error> {
         let current_block = self
             .state
             .light_store
             .get(current_height, VerifiedStatus::Verified)
-            // .filter(|lb| lb.provider == peer)
             .or_else(|| {
                 self.state
                     .light_store
                     .get(current_height, VerifiedStatus::Unverified)
-                // .filter(|lb| lb.provider == peer)
             });
 
         if let Some(current_block) = current_block {
@@ -249,7 +252,7 @@ impl LightClient {
         }
 
         self.io
-            .fetch_light_block(peer, current_height)
+            .fetch_light_block(self.peer, current_height)
             .map(|current_block| {
                 self.state
                     .light_store
