@@ -183,10 +183,6 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     light_store.insert(trusted_state, VerifiedStatus::Verified);
 
     let state = State {
-        peers: Peers {
-            primary: primary.clone(),
-            witnesses: vec![],
-        },
         light_store: Box::new(light_store),
         verification_trace: HashMap::new(),
     };
@@ -194,6 +190,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     let verifier = ProdVerifier::default();
 
     let mut light_client = LightClient::new(
+        primary,
         state,
         options,
         clock,
