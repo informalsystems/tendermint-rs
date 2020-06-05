@@ -1,12 +1,13 @@
 -------------------------- MODULE Lightclient_A_1 ----------------------------
-(*
+(**
  * A state-machine specification of the lite client, following the English spec:
+ *
  * https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification.md
  *) 
 
-EXTENDS Integers, Sequences, FiniteSets
+EXTENDS Integers, FiniteSets
 
-\* the parameters of Lite Client
+\* the parameters of Light Client
 CONSTANTS
   TRUSTED_HEIGHT,
     (* an index of the block header that the light client trusts by social consensus *)
@@ -19,7 +20,8 @@ CONSTANTS
 
 VARIABLES       (* see TypeOK below for the variable types *)
   state,        (* the current state of the light client *)
-  nextHeight    (* the next height to explore by the light client *)
+  nextHeight,   (* the next height to explore by the light client *)
+  nprobes       (* the lite client iteration, or the number of block tests *)
   
 (* the light store *)
 VARIABLES  
@@ -123,6 +125,7 @@ ValidAndVerified(trusted, untrusted) ==
 LCInit ==
     /\ state = "working"
     /\ nextHeight = TARGET_HEIGHT
+    /\ nprobes = 0
     /\ LET trustedBlock == blockchain[TRUSTED_HEIGHT]
            trustedLightBlock == [header |-> trustedBlock, Commits |-> AllNodes]
        IN
@@ -177,6 +180,7 @@ LightLoop ==
                 /\ UNCHANGED fetchedLightBlocks
            ELSE /\ FetchLightBlockInto(current, nextHeight)
                 /\ fetchedLightBlocks' = LightStoreUpdateBlocks(fetchedLightBlocks, current)
+        /\ nprobes' = nprobes + 1 \* one more test
         /\ LET verdict == ValidAndVerified(latestVerified, current) IN
            CASE verdict = "OK" ->
               /\ lightBlockStatus' = LightStoreUpdateStates(lightBlockStatus, nextHeight, "StateVerified")
@@ -204,7 +208,7 @@ LightLoop ==
 LightFinish ==
     /\ latestVerified.header.height >= TARGET_HEIGHT
     /\ state' = "finishedSuccess"
-    /\ UNCHANGED <<nextHeight, fetchedLightBlocks, lightBlockStatus, latestVerified>>  
+    /\ UNCHANGED <<nextHeight, nprobes, fetchedLightBlocks, lightBlockStatus, latestVerified>>  
     
 (*
  Actions of the light client: start or do bisection when receiving response.
@@ -224,7 +228,7 @@ Init ==
 
 (*
   The system step is very simple. The light client makes one iteration.
-  Simutaneously, the global clock may advance.
+  Simultaneously, the global clock may advance.
  *)
 Next ==
     /\ state /= "finished"
@@ -289,7 +293,9 @@ StoredHeadersAreSound ==
                \* or we can verify the right one using the left one
             \/ "OK" = ValidAndVerified(fetchedLightBlocks[lh], fetchedLightBlocks[rh])
 
-\* An improved version of StoredHeadersAreSound, assuming that a header may be not trusted
+\* An improved version of StoredHeadersAreSound, assuming that a header may be not trusted.
+\* This invariant candidate is also violated,
+\* as there may be some unverified blocks left in the middle.
 StoredHeadersAreSoundOrNotTrusted ==
     state = "finishedSuccess"
         =>
@@ -303,11 +309,43 @@ StoredHeadersAreSoundOrNotTrusted ==
                \* or the left header is outside the trusting period, so no guarantees
             \/ ~BC!InTrustingPeriod(fetchedLightBlocks[lh].header) 
 
+\* An improved version of StoredHeadersAreSound, assuming that a header may be not trusted.
+\* This invariant candidate is also violated,
+\* as there may be some unverified blocks left in the middle.
+VerifiedStoredHeadersAreSoundOrNotTrusted ==
+    state = "finishedSuccess"
+        =>
+        \A lh, rh \in DOMAIN fetchedLightBlocks:
+                \* for every pair of different stored headers
+            \/ lh >= rh
+            \/ lightBlockStatus[lh] = "StateUnverified"
+            \/ lightBlockStatus[rh] = "StateUnverified"
+               \* either there is a header between them
+            \/ \E mh \in DOMAIN fetchedLightBlocks:
+                lh < mh /\ mh < rh /\ lightBlockStatus[mh] = "StateVerified"
+               \* or we can verify the right one using the left one
+            \/ "OK" = ValidAndVerified(fetchedLightBlocks[lh], fetchedLightBlocks[rh])
+               \* or the left header is outside the trusting period, so no guarantees
+            \/ ~BC!InTrustingPeriod(fetchedLightBlocks[lh].header)
+
+\* When the light client terminates, there is no failed blocks            
+NoFailedBlocksOnSuccess ==
+    state = "finishedSuccess" =>
+        \A h \in DOMAIN fetchedLightBlocks:
+            lightBlockStatus[h] /= "StateFailed"            
+
 \* This property states that whenever the light client finishes with a positive outcome,
 \* the trusted header is still within the trusting period.
 \* We expect this property to be violated. And Apalache shows us a counterexample.
 PositiveBeforeTrustedHeaderExpires ==
     (state = "finishedSuccess") => BC!InTrustingPeriod(blockchain[TRUSTED_HEIGHT])
+    
+\* If the primary is correct and the initial trusted block has not expired,
+\* then whenever the algorithm terminates, it reports "success"    
+CorrectPrimaryAndTimeliness ==
+  (BC!InTrustingPeriod(blockchain[TRUSTED_HEIGHT])
+    /\ state /= "working" /\ IS_PRIMARY_CORRECT) =>
+      state = "finishedSuccess"     
 
 \* Lite Client Completeness: If header h was correctly generated by an instance
 \* of Tendermint consensus (and its age is less than the trusting period),
@@ -336,6 +374,12 @@ PrecisionBuggyInv ==
             LET lightBlock == fetchedLightBlocks[h] IN
             \* the full node lied to the lite client about the block header
             lightBlock.header /= blockchain[h]
+
+\* the worst complexity
+Complexity ==
+    LET N == TARGET_HEIGHT - TRUSTED_HEIGHT + 1 IN
+    state /= "working" =>
+        (2 * nprobes <= N * (N - 1)) 
 
 (*
  We omit termination, as the algorithm deadlocks in the end.
@@ -369,5 +413,5 @@ Completeness ==
 *)    
 =============================================================================
 \* Modification History
-\* Last modified Fri Jun 05 13:44:29 CEST 2020 by igor
+\* Last modified Fri Jun 05 16:54:49 CEST 2020 by igor
 \* Created Wed Oct 02 16:39:42 CEST 2019 by igor

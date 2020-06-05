@@ -6,7 +6,7 @@
   voting powers, introduce multiple copies of the same validator
   (do not forget to give them unique names though).
  *)
-EXTENDS Integers, Sequences, FiniteSets
+EXTENDS Integers, FiniteSets
 
 Min(a, b) == IF a < b THEN a ELSE b
 
@@ -75,8 +75,8 @@ NT == STRING
 NodeSet(S) == S <: {NT}
 EmptyNodeSet == NodeSet({})
 
-BT == [height |-> Int, lastCommit |-> {NT}, VS |-> {NT}, NextVS |-> {NT}]
-BlockSeq(seq) == seq <: Seq(BT)        
+BT == [height |-> Int, time |-> Int, lastCommit |-> {NT}, VS |-> {NT}, NextVS |-> {NT}]
+\*BlockSeq(seq) == seq <: Seq(BT)        
 
 LBT == [header |-> BT, Commits |-> {NT}]
 (* end of APALACHE annotations *)       
@@ -228,5 +228,5 @@ StutterInTheEnd ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Jun 05 13:42:07 CEST 2020 by igor
+\* Last modified Fri Jun 05 14:15:33 CEST 2020 by igor
 \* Created Fri Oct 11 15:45:11 CEST 2019 by igor
