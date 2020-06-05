@@ -1,9 +1,9 @@
 use crate::callback::Callback;
+use crate::fork_detector::{Fork, ForkDetection, ForkDetector, ProdForkDetector};
 use crate::prelude::*;
 
 use contracts::pre;
 use crossbeam_channel as channel;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub type VerificationResult = Result<LightBlock, Error>;
@@ -95,12 +95,6 @@ impl PeerList {
     }
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub enum Fork {
-    PassedVerification(PeerId),
-    FailedVerification(PeerId),
-}
-
 #[derive(Debug)]
 pub struct Supervisor {
     peers: PeerList,
@@ -133,12 +127,12 @@ impl Supervisor {
 
                             for fork in forks {
                                 match fork {
-                                    Fork::PassedVerification(peer_id) => {
-                                        self.report_evidence(&light_block);
-                                        forked.push(peer_id);
+                                    Fork::Forked(block) => {
+                                        self.report_evidence(&block);
+                                        forked.push(block.provider);
                                     }
-                                    Fork::FailedVerification(peer_id) => {
-                                        self.peers.remove_secondary(&peer_id);
+                                    Fork::Faulty(block) => {
+                                        self.peers.remove_secondary(&block.provider);
                                     }
                                 }
                             }
@@ -173,8 +167,6 @@ impl Supervisor {
 
     #[pre(self.peers.primary().is_some())]
     fn detect_forks(&mut self, light_block: &LightBlock) -> Option<Vec<Fork>> {
-        use crate::fork_detector::{ForkDetector, ProdForkDetector};
-
         if self.peers.secondaries().is_empty() {
             return None;
         }
@@ -183,8 +175,12 @@ impl Supervisor {
         let secondaries = self.peers.secondaries();
 
         let fork_detector = ProdForkDetector::new();
-        let _result = fork_detector.detect_forks(light_block, primary, secondaries);
-        Some(todo())
+        let result = fork_detector.detect_forks(light_block, primary, secondaries);
+
+        match result {
+            ForkDetection::Detected(forks) => Some(forks),
+            ForkDetection::NotDetected => None,
+        }
     }
 
     pub fn handler(&mut self) -> Handler {
