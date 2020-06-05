@@ -125,28 +125,28 @@ where
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::types::Height;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::types::Height;
 
-    #[test]
-    fn iter_next_back_returns_highest_height() {
-        const DB_PATH: &str = "/tmp/tendermint_light_client_sled_test/";
-        std::fs::remove_dir_all(DB_PATH).unwrap();
-        let db = sled::open(DB_PATH).unwrap();
-        let kv: KeyValueDb<Height, Height> = key_value("light_store/verified");
+//     #[test]
+//     fn iter_next_back_returns_highest_height() {
+//         const DB_PATH: &str = "/tmp/tendermint_light_client_sled_test/";
+//         std::fs::remove_dir_all(DB_PATH).unwrap();
+//         let db = sled::open(DB_PATH).unwrap();
+//         let kv: KeyValueDb<Height, Height> = key_value("light_store/verified");
 
-        kv.insert(&db, &1, &1).unwrap();
-        kv.insert(&db, &589473798493, &589473798493).unwrap();
-        kv.insert(&db, &12342425, &12342425).unwrap();
-        kv.insert(&db, &4, &4).unwrap();
+//         kv.insert(&db, &1, &1).unwrap();
+//         kv.insert(&db, &589473798493, &589473798493).unwrap();
+//         kv.insert(&db, &12342425, &12342425).unwrap();
+//         kv.insert(&db, &4, &4).unwrap();
 
-        let mut iter = kv.iter(&db);
-        assert_eq!(iter.next_back(), Some(589473798493));
-        assert_eq!(iter.next_back(), Some(12342425));
-        assert_eq!(iter.next_back(), Some(4));
-        assert_eq!(iter.next_back(), Some(1));
-        assert_eq!(iter.next_back(), None);
-    }
-}
+//         let mut iter = kv.iter(&db);
+//         assert_eq!(iter.next_back(), Some(589473798493));
+//         assert_eq!(iter.next_back(), Some(12342425));
+//         assert_eq!(iter.next_back(), Some(4));
+//         assert_eq!(iter.next_back(), Some(1));
+//         assert_eq!(iter.next_back(), None);
+//     }
+// }
