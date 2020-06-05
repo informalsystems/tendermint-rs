@@ -14,18 +14,6 @@ pub enum Verdict {
     Invalid(VerificationError),
 }
 
-impl Verdict {
-    /// Execute the `next` action only if `self` is a successful verdict.
-    /// This allows chaining computations returning a `Verdict` until
-    /// on of them is not successful.
-    pub fn and_then<A: Into<Self>>(self, next: impl Fn() -> A) -> Self {
-        match self {
-            Verdict::Success => next().into(),
-            other => other,
-        }
-    }
-}
-
 impl From<Result<(), VerificationError>> for Verdict {
     fn from(result: Result<(), VerificationError>) -> Self {
         match result {
