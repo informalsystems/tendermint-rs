@@ -238,8 +238,9 @@ pub trait VerificationPredicates {
 /// check that their (next) validator sets hashes match.
 /// - Otherwise, ensure that the untrusted block has a greater height than
 /// the trusted block.
-pub fn validate_light_block(
+pub fn verify(
     vp: &dyn VerificationPredicates,
+    voting_power_calculator: &dyn VotingPowerCalculator,
     commit_validator: &dyn CommitValidator,
     header_hasher: &dyn HeaderHasher,
     trusted: &LightBlock,
@@ -289,51 +290,24 @@ pub fn validate_light_block(
             &untrusted.signed_header.header,
             &trusted.signed_header.header,
         )?;
+
+        // Check there is enough overlap between the validator sets of
+        // the trusted and untrusted blocks.
+        vp.has_sufficient_validators_overlap(
+            &untrusted.signed_header,
+            &trusted.next_validators,
+            &options.trust_threshold,
+            voting_power_calculator,
+        )?;
     }
 
-    Ok(())
-}
-
-/// Assuming the given light block is valid, verify wether it can be trusted
-/// in relation with a trusted state, by checking whether there is enough
-/// overlap in their validators sets.
-pub fn verify_overlap(
-    vp: &dyn VerificationPredicates,
-    voting_power_calculator: &dyn VotingPowerCalculator,
-    trusted: &LightBlock,
-    untrusted: &LightBlock,
-    options: &Options,
-) -> Result<(), VerificationError> {
-    let untrusted_sh = &untrusted.signed_header;
-    let untrusted_vals = &untrusted.validators;
-
-    vp.has_sufficient_validators_overlap(
-        &untrusted_sh,
-        &trusted.next_validators,
-        &options.trust_threshold,
+    // Verify that more than 2/3 of the validators correctly committed the block.
+    vp.has_sufficient_signers_overlap(
+        &untrusted.signed_header,
+        &untrusted.validators,
         voting_power_calculator,
     )?;
 
-    vp.has_sufficient_signers_overlap(&untrusted_sh, &untrusted_vals, voting_power_calculator)?;
-
     Ok(())
 }
 
-/// Assuming the given light block is valid, check whether the voting
-/// power of its validators meet the required threshold.
-pub fn has_sufficient_voting_power(
-    vp: &dyn VerificationPredicates,
-    voting_power_calculator: &dyn VotingPowerCalculator,
-    light_block: &LightBlock,
-    options: &Options,
-) -> Result<(), VerificationError> {
-    let untrusted_sh = &light_block.signed_header;
-    let untrusted_vals = &light_block.validators;
-
-    vp.has_sufficient_voting_power(
-        &untrusted_sh,
-        &untrusted_vals,
-        &options.trust_threshold,
-        voting_power_calculator,
-    )
-}

@@ -95,35 +95,15 @@ impl Default for ProdVerifier {
 
 impl Verifier for ProdVerifier {
     fn verify(&self, untrusted: &LightBlock, trusted: &TrustedState, options: &Options) -> Verdict {
-        let verdict: Verdict = preds::validate_light_block(
+        preds::verify(
             &*self.predicates,
+            &self.voting_power_calculator,
             &self.commit_validator,
             &self.header_hasher,
             &trusted,
             &untrusted,
             options,
         )
-        .into();
-
-        let verdict = verdict.and_then(|| {
-            preds::verify_overlap(
-                &*self.predicates,
-                &self.voting_power_calculator,
-                &trusted,
-                &untrusted,
-                options,
-            )
-        });
-
-        let verdict = verdict.and_then(|| {
-            preds::has_sufficient_voting_power(
-                &*self.predicates,
-                &self.voting_power_calculator,
-                &untrusted,
-                options,
-            )
-        });
-
-        verdict
+        .into()
     }
 }
