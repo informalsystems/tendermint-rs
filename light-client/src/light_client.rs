@@ -155,14 +155,14 @@ impl LightClient {
     /// See `verify_to_target`
     // #[pre(
     //     light_store_contains_block_within_trusting_period(
-    //         self.state.light_store.as_ref(),
+    //         state.light_store.as_ref(),
     //         self.options.trusting_period,
     //         self.clock.now(),
     //     )
     // )]
     #[post(
         ret.is_ok() ==> trusted_store_contains_block_at_target_height(
-            self.state.light_store.as_ref(),
+            state.light_store.as_ref(),
             target_height,
         )
     )]
@@ -188,8 +188,7 @@ impl LightClient {
 
         loop {
             // Get the latest trusted state
-            let trusted_state = self
-                .state
+            let trusted_state = state
                 .light_store
                 .latest(VerifiedStatus::Verified)
                 .ok_or_else(|| ErrorKind::NoInitialTrustedState)?;
@@ -262,19 +261,17 @@ impl LightClient {
     ///
     /// ## Postcondition
     /// - The provider of block that is returned matches the given peer.
-    // TODO: Uncomment when provider field is available
-    // #[post(ret.map(|lb| lb.provider == peer).unwrap_or(false))]
+    #[post(ret.as_ref().map(|lb| lb.provider == self.peer).unwrap_or(true))]
     pub fn get_or_fetch_block(
         &self,
         current_height: Height,
         state: &mut State,
     ) -> Result<LightBlock, Error> {
-        let current_block = self
-            .state
+        let current_block = state
             .light_store
             .get(current_height, VerifiedStatus::Verified)
             .or_else(|| {
-                self.state
+                state
                     .light_store
                     .get(current_height, VerifiedStatus::Unverified)
             });
