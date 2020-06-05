@@ -160,7 +160,7 @@ InitToHeight ==
           /\ lastCommit[h] \subseteq vs[h - 1]   \* the non-validators cannot commit 
           /\ TwoThirds(vs[h - 1], lastCommit[h]) \* the commit has >2/3 of validator votes
           /\ IsCorrectPower(Faulty, vs[h])       \* the correct validators have >2/3 of power
-          /\ timestamp[h] >= timestamp[h - 1]    \* the time grows monotonically
+          /\ timestamp[h] > timestamp[h - 1]     \* the time grows monotonically
           /\ timestamp[h] < timestamp[h - 1] + TRUSTING_PERIOD    \* but not too fast
         \* form the block chain out of validator sets and commits (this makes apalache faster)
         /\ blockchain = [h \in Heights |->
@@ -228,5 +228,5 @@ StutterInTheEnd ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Jun 05 13:11:42 CEST 2020 by igor
+\* Last modified Fri Jun 05 13:42:07 CEST 2020 by igor
 \* Created Fri Oct 11 15:45:11 CEST 2019 by igor

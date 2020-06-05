@@ -3,7 +3,7 @@
 AllNodes == {"n1", "n2", "n3", "n4"}
 TRUSTED_HEIGHT == 1
 TARGET_HEIGHT == 7
-TRUSTING_PERIOD == 14 \* two weeks 
+TRUSTING_PERIOD == 1400 \* two weeks, one week is 100 time units :-)
 IS_PRIMARY_CORRECT == FALSE
 
 VARIABLES

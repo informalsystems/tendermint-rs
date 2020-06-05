@@ -72,6 +72,11 @@ ValidAndVerifiedPre(trusted, untrusted) ==
   IN
   /\ BC!InTrustingPeriod(thdr)
   /\ thdr.height < uhdr.height
+     \* the trusted block has been created earlier (no drift here)
+     (* the English spec says:
+        untrusted.Header.Time < now + clockDrift
+        the Time of trusted are smaller than the Time of untrusted *)
+  /\ thdr.time <= uhdr.time
   /\ thdr.height + 1 = uhdr.height =>
      /\ thdr.NextVS = uhdr.VS
      /\ untrusted.Commits \subseteq uhdr.VS
@@ -80,11 +85,8 @@ ValidAndVerifiedPre(trusted, untrusted) ==
         IN
         3 * SP > 2 * TP     
   (* TODO:
-  trusted.Commit is a commit is for the header trusted.Header, i.e. it contains the correct hash of the header
-  *)
-  (* we cannot check these:
-  untrusted.Header.Time < now + clockDrift
-  the Time of trusted are smaller than the Time of untrusted,
+  trusted.Commit is a commit is for the header trusted.Header,
+  i.e. it contains the correct hash of the header
   *)
   (* we do not have to check these:
   untrusted.Validators = hash(untrusted.Header.Validators)
@@ -367,5 +369,5 @@ Completeness ==
 *)    
 =============================================================================
 \* Modification History
-\* Last modified Fri Jun 05 13:24:10 CEST 2020 by igor
+\* Last modified Fri Jun 05 13:44:29 CEST 2020 by igor
 \* Created Wed Oct 02 16:39:42 CEST 2019 by igor
