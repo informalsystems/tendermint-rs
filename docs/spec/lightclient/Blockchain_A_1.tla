@@ -13,10 +13,12 @@ Min(a, b) == IF a < b THEN a ELSE b
 CONSTANT
   AllNodes,
     (* a set of all nodes that can act as validators (correct and faulty) *)
-  ULTIMATE_HEIGHT
+  ULTIMATE_HEIGHT,
     (* a maximal height that can be ever reached (modelling artifact) *)
+  TRUSTING_PERIOD
+    (* the period within which the validators are trusted *)
 
-Heights == 0..ULTIMATE_HEIGHT   (* possible heights *)
+Heights == 1..ULTIMATE_HEIGHT   (* possible heights *)
 
 (* A commit is just a set of nodes who have committed the block *)
 Commits == SUBSET AllNodes
@@ -26,6 +28,8 @@ Commits == SUBSET AllNodes
 BlockHeaders == [
   height: Heights,
     \* the block height
+  time: Int,
+    \* the block timestamp in some integer units
   lastCommit: Commits,
     \* the nodes who have voted on the previous block, the set itself instead of a hash
   (* in the implementation, only the hashes of V and NextV are stored in a block,
@@ -40,15 +44,17 @@ BlockHeaders == [
 LightBlocks == [header: BlockHeaders, Commits: Commits]
 
 VARIABLES
-    tooManyFaults,
+    \*tooManyFaults,
     (* whether there are more faults in the system than the blockchain can handle *)
     height,
     (* the height of the blockchain, starting with 0 *)
-    minTrustedHeight,
+    \*minTrustedHeight,
     (* The global height of the oldest block that is younger than
        the trusted period (AKA the almost rotten block).
        In the implementation, this is the oldest block,
        where block.bftTime + trustingPeriod >= globalClock.now. *)
+    now,
+        (* the current global time in integer units *)
     blockchain,
     (* A sequence of BlockHeaders, which gives us a bird view of the blockchain. *)
     Faulty
@@ -57,7 +63,7 @@ VARIABLES
        connect using a different id. *)
        
 (* all variables, to be used with UNCHANGED *)       
-vars == <<tooManyFaults, height, minTrustedHeight, blockchain, Faulty>>         
+vars == <<(*tooManyFaults,*) height, (*minTrustedHeight,*) now, blockchain, Faulty>>         
 
 (* The set of all correct nodes in a state *)
 Corr == AllNodes \ Faulty
@@ -79,8 +85,7 @@ LBT == [header |-> BT, Commits |-> {NT}]
 
 (* the header is still within the trusting period *)
 InTrustingPeriod(header) ==
-    minTrustedHeight <= header.height
-
+    now <= header.time + TRUSTING_PERIOD
 
 (*
  Given a function pVotingPower \in D -> Powers for some D \subseteq AllNodes
@@ -117,9 +122,10 @@ IsCorrectPower(pFaultyNodes, pVS) ==
     IsCorrectPowerForSet(pFaultyNodes, pVS)
     
 (* This is what we believe is the assumption about failures in Tendermint *)     
-FaultAssumption(pFaultyNodes, pMinTrustedHeight, pBlockchain) ==
+FaultAssumption(pFaultyNodes, (*pMinTrustedHeight,*) pNow, pBlockchain) ==
     \A h \in Heights:
-      (pMinTrustedHeight <= h /\ h <= Len(pBlockchain)) =>
+      (*pMinTrustedHeight <= h*)
+      pBlockchain[h].time + TRUSTING_PERIOD > pNow =>
         IsCorrectPower(pFaultyNodes, pBlockchain[h].NextVS)
 
 (* Can a block be produced by a correct peer, or an authenticated Byzantine peer *)
@@ -132,125 +138,95 @@ IsProducableByFaulty(ht, block) ==
 ProducableByFaultyLightBlocks(ht) ==
     { b \in LightBlocks: IsProducableByFaulty(ht, b) }
 
-(* Append a new block on the blockchain.
-   Importantly, more than 2/3 of voting power in the next set of validators
-   belongs to the correct processes. *)       
-AppendBlock ==
-  LET last == blockchain[Len(blockchain)] IN
-  \E lastCommit \in SUBSET (last.VS),
-     NVS \in SUBSET AllNodes:
-    /\ lastCommit /= EmptyNodeSet
-    /\ NVS /= EmptyNodeSet
-    /\ LET new == [ height |-> height + 1, lastCommit |-> lastCommit,
-                    VS |-> last.NextVS, NextVS |-> NVS ] IN
-       /\ TwoThirds(last.VS, lastCommit)
-       /\ IsCorrectPower(Faulty, NVS) \* the correct validators have >2/3 of power
-       /\ blockchain' = Append(blockchain, new)
-       /\ height' = height + 1
+(*
+ Initialize the blockchain to the ultimate height right in the initial states.
+ We pick the faulty validators statically, but that should not affect the light client.
+ *)            
+InitToHeight ==
+  /\ height = ULTIMATE_HEIGHT
+  \*/\ minTrustedHeight = 1       \* all blocks are initially trusted
+  /\ Faulty \in SUBSET AllNodes \* some nodes may fail
+  \*/\ tooManyFaults = FALSE      \* we pick blocks so the blockchain is in the green zone
+  \* pick the validator sets and last commits
+  /\ \E vs, lastCommit \in [Heights -> SUBSET AllNodes]:
+     \E timestamp \in [Heights -> Int]:
+        \* now is at least as early as the timestamp in the last block 
+        /\ \E tm \in Int: now = tm /\ tm >= timestamp[ULTIMATE_HEIGHT]
+        \* the genesis starts on day 1     
+        /\ timestamp[1] = 1
+        /\ vs[1] = AllNodes
+        /\ lastCommit[1] = EmptyNodeSet
+        /\ \A h \in Heights \ {1}:
+          /\ lastCommit[h] \subseteq vs[h - 1]   \* the non-validators cannot commit 
+          /\ TwoThirds(vs[h - 1], lastCommit[h]) \* the commit has >2/3 of validator votes
+          /\ IsCorrectPower(Faulty, vs[h])       \* the correct validators have >2/3 of power
+          /\ timestamp[h] >= timestamp[h - 1]    \* the time grows monotonically
+          /\ timestamp[h] < timestamp[h - 1] + TRUSTING_PERIOD    \* but not too fast
+        \* form the block chain out of validator sets and commits (this makes apalache faster)
+        /\ blockchain = [h \in Heights |->
+             [height |-> h,
+              time |-> timestamp[h],
+              VS |-> vs[h],
+              NextVS |-> IF h < ULTIMATE_HEIGHT THEN vs[h + 1] ELSE AllNodes,
+              lastCommit |-> lastCommit[h]]
+             ] \******
+       
 
-(* Initialize the blockchain *)
-Init ==
-  /\ height = 1             \* there is just genesis block
-  /\ minTrustedHeight = 1   \* the genesis is initially trusted
-  /\ Faulty = EmptyNodeSet  \* initially, there are no faults
-  /\ tooManyFaults = FALSE  \* there are no faults
-  (* pick a genesis block of all nodes where next correct validators have >2/3 of power *)
-  /\ \E NVS \in SUBSET AllNodes:          \* pick a next validator set
-         /\ NVS /= EmptyNodeSet     \* assume that there is at least one next validator 
-         /\ LET genesis ==
-              [ height |-> 1, lastCommit |-> EmptyNodeSet, VS |-> AllNodes, NextVS |-> NVS]
-            IN
-             \* initially, blockchain contains only the genesis
-            blockchain = BlockSeq(<<genesis>>)
+(* is the blockchain in the faulty zone where the Tendermint security model does not apply *)
+InFaultyZone ==
+  ~FaultAssumption(Faulty, (*minTrustedHeight,*) now, blockchain)       
 
 (********************* BLOCKCHAIN ACTIONS ********************************)
-          
 (*
-  The blockchain may progress by adding one more block, provided that:
-     (1) The ultimate height has not been reached yet, and
-     (2) The faults are within the bounds.
- *)
-AdvanceChain ==
-  /\ height < ULTIMATE_HEIGHT /\ ~tooManyFaults
-  /\ AppendBlock
-  /\ UNCHANGED <<minTrustedHeight, tooManyFaults, Faulty>>
-
-(*
-  As time is passing, the minimal trusted height may increase.
-  As a result, the blockchain may move out of the faulty zone.
+  Advance the clock by zero or more time units.
   *)
 AdvanceTime ==
-  /\ minTrustedHeight' \in (minTrustedHeight + 1) .. Min(height + 1, ULTIMATE_HEIGHT)
+  \E tm \in Int:
+    /\ tm >= now
+    /\ now' = tm
+
+  \*/\ minTrustedHeight' \in (minTrustedHeight + 1) .. Min(height + 1, ULTIMATE_HEIGHT)
   \* we are using IF-THEN-ELSE, otherwise Apalache may produce a spurious counterexample
   \* https://github.com/konnov/apalache/issues/148
+  (*
   /\ IF FaultAssumption(Faulty, minTrustedHeight', blockchain)
      THEN tooManyFaults' = FALSE
-     ELSE tooManyFaults' = TRUE 
+     ELSE tooManyFaults' = TRUE
+   *) 
   /\ UNCHANGED <<height, blockchain, Faulty>>
 
-(* One more process fails. As a result, the blockchain may move into the faulty zone. *)
+(*
+ One more process fails. As a result, the blockchain may move into the faulty zone.
+ The light client is not using this action, as the faults are picked in the initial state.
+ However, this action may be useful when reasoning about fork detection.
+ *)
 OneMoreFault ==
   /\ \E n \in AllNodes \ Faulty:
       /\ Faulty' = Faulty \cup {n}
       /\ Faulty' /= AllNodes \* at least process remains non-faulty
       \* we are using IF-THEN-ELSE, otherwise Apalache may produce a spurious counterexample
+      (*
       /\ IF FaultAssumption(Faulty', minTrustedHeight, blockchain)
          THEN tooManyFaults' = FALSE
-         ELSE tooManyFaults' = TRUE 
-  /\ UNCHANGED <<height, minTrustedHeight, blockchain>>
+         ELSE tooManyFaults' = TRUE
+       *) 
+  /\ UNCHANGED <<height, (*minTrustedHeight,*) now, blockchain>>
 
 (* stuttering at the end of the blockchain *)
 StutterInTheEnd == 
   height = ULTIMATE_HEIGHT /\ UNCHANGED vars
 
-(* Let the blockchain to make progress *)
-Next ==
-  \/ AdvanceChain
-  \/ AdvanceTime
-  \/ OneMoreFault
-  \/ StutterInTheEnd
-
 (********************* PROPERTIES TO CHECK ********************************)
-
-(* Invariant: it should be always possible to add one more block unless:
-  (1) either there are too many faults,
-  (2) or the bonding period of the last transaction has expired, so we are stuck.
- *)
-NeverStuck ==
-  \/ tooManyFaults
-  \/ height = ULTIMATE_HEIGHT
-  \/ minTrustedHeight > height \* the trusting period has expired
-  \/ ENABLED AdvanceChain
-
-(* The next validator set is never empty *)
-NextVSNonEmpty ==
-    \A h \in 1..Len(blockchain):
-      blockchain[h].NextVS /= EmptyNodeSet
-
 (* False properties that can be checked with TLC, to see interesting behaviors *)
 
 (* Check this to see how the blockchain can jump into the faulty zone *)
-NeverFaulty == ~tooManyFaults
+\*NeverFaulty == ~tooManyFaults
 
 (* check this to see how the trusted period can expire *)
-NeverUltimateHeight ==
-  minTrustedHeight < ULTIMATE_HEIGHT
-
-(* False: it should be always possible to add one more block *)
-NeverStuckFalse1 ==
-  ENABLED AdvanceChain
-
-(* False: it should be always possible to add one more block *)
-(*
-   TODO: this property is not false anymore, it is possible to add a block after
-   the trusted period has expired!
- *)
-NeverStuckFalse2 ==
-  \/ tooManyFaults
-  \/ height = ULTIMATE_HEIGHT
-  \/ ENABLED AdvanceChain
+\*NeverUltimateHeight ==
+\*  minTrustedHeight < ULTIMATE_HEIGHT
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Jun 04 15:52:46 CEST 2020 by igor
+\* Last modified Fri Jun 05 13:11:42 CEST 2020 by igor
 \* Created Fri Oct 11 15:45:11 CEST 2019 by igor

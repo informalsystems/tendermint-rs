@@ -12,6 +12,8 @@ CONSTANTS
     (* an index of the block header that the light client trusts by social consensus *)
   TARGET_HEIGHT,
     (* an index of the block header that the light client tries to verify *)
+  TRUSTING_PERIOD,
+    (* the period within which the validators are trusted *)
   IS_PRIMARY_CORRECT
     (* is primary correct? *)  
 
@@ -36,10 +38,10 @@ CONSTANTS
     (* a set of all nodes that can act as validators (correct and faulty) *)
 
 \* the state variables of Blockchain, see Blockchain.tla for the details
-VARIABLES tooManyFaults, chainHeight, minTrustedHeight, blockchain, Faulty
+VARIABLES (*tooManyFaults,*) chainHeight, (*minTrustedHeight,*) now, blockchain, Faulty
 
 \* All the variables of Blockchain. For some reason, BC!vars does not work
-bcvars == <<tooManyFaults, chainHeight, minTrustedHeight, blockchain, Faulty>>
+bcvars == <<(*tooManyFaults,*) chainHeight, (*minTrustedHeight,*) now, blockchain, Faulty>>
 
 (* Create an instance of Blockchain.
    We could write EXTENDS Blockchain, but then all the constants and state variables
@@ -48,8 +50,8 @@ bcvars == <<tooManyFaults, chainHeight, minTrustedHeight, blockchain, Faulty>>
 ULTIMATE_HEIGHT == TARGET_HEIGHT + 1 
  
 BC == INSTANCE Blockchain_A_1 WITH
-  tooManyFaults <- tooManyFaults, height <- chainHeight,
-  minTrustedHeight <- minTrustedHeight, blockchain <- blockchain, Faulty <- Faulty
+  (*tooManyFaults <- tooManyFaults,*) height <- chainHeight,
+  (*minTrustedHeight <- minTrustedHeight,*) now <- now, blockchain <- blockchain, Faulty <- Faulty
 
 (************************** Lite client ************************************)
 
@@ -174,7 +176,7 @@ LightLoop ==
            ELSE /\ FetchLightBlockInto(current, nextHeight)
                 /\ fetchedLightBlocks' = LightStoreUpdateBlocks(fetchedLightBlocks, current)
         /\ LET verdict == ValidAndVerified(latestVerified, current) IN
-           \/ /\ verdict = "OK"
+           CASE verdict = "OK" ->
               /\ lightBlockStatus' = LightStoreUpdateStates(lightBlockStatus, nextHeight, "StateVerified")
               /\ latestVerified' = current
               /\ state' =
@@ -183,14 +185,16 @@ LightLoop ==
                     ELSE "finishedSuccess"
               /\ \E newHeight \in HEIGHTS:
                  /\ ScheduleTo(newHeight, nextHeight, TARGET_HEIGHT, current)
-                 /\ nextHeight' = newHeight 
-           \/ /\ verdict = "CANNOT_VERIFY"
+                 /\ nextHeight' = newHeight
+                  
+           [] verdict = "CANNOT_VERIFY" ->
               /\ lightBlockStatus' = LightStoreUpdateStates(lightBlockStatus, nextHeight, "StateUnverified")
               /\ \E newHeight \in HEIGHTS:
                  /\ ScheduleTo(newHeight, nextHeight, TARGET_HEIGHT, latestVerified)
                  /\ nextHeight' = newHeight 
               /\ UNCHANGED <<latestVerified, state>>
-           \/ /\ verdict \notin { "OK", "CANNOT_VERIFY" }
+              
+           [] OTHER ->
               /\ lightBlockStatus' = LightStoreUpdateStates(lightBlockStatus, nextHeight, "StateFailed")
               /\ state' = "finishedFailure"
               /\ UNCHANGED <<latestVerified, nextHeight>>
@@ -209,22 +213,22 @@ LCNext ==
      /\ LightLoop \/ LightFinish 
             
             
-(********************* Lite client + Environment + Blockchain *******************)
+(********************* Lite client + Blockchain *******************)
 Init ==
-    BC!Init /\ LCInit
+    \* the blockchain is initialized immediately to the ULTIMATE_HEIGHT
+    /\ BC!InitToHeight
+    \* the light client starts
+    /\ LCInit
 
 (*
-  A system step is made by one of two components: light client and  blockchain.
+  The system step is very simple. The light client makes one iteration.
+  Simutaneously, the global clock may advance.
  *)
 Next ==
-    (* initialize the reference chain, no faults and time issues at this point *)
-    \/ chainHeight < ULTIMATE_HEIGHT /\ BC!AdvanceChain /\ UNCHANGED lcvars
-    (* advance time but still trust the ultimate block *)
-    \/ chainHeight = ULTIMATE_HEIGHT /\ BC!AdvanceTime /\ ~tooManyFaults' /\ UNCHANGED lcvars
-    (* introduce more faults but not too many *)
-    \/ chainHeight = ULTIMATE_HEIGHT /\ BC!OneMoreFault /\ ~tooManyFaults' /\ UNCHANGED lcvars
-    (* one more step by the light client *)
-    \/ chainHeight = ULTIMATE_HEIGHT /\ state /= "finished" /\ LCNext /\ UNCHANGED bcvars
+    /\ state /= "finished"
+    /\ LCNext         \* the light client makes one step
+    /\ BC!AdvanceTime \* the global clock is advanced by zero or more time units
+    /\ UNCHANGED bcvars
 
 (************************* Types ******************************************)
 
@@ -234,21 +238,28 @@ TypeOK ==
     /\ latestVerified \in BC!LightBlocks
     /\ \E HS \in SUBSET HEIGHTS:
         /\ fetchedLightBlocks \in [HS -> BC!LightBlocks]
-        /\ lightBlockStatus \in [HS -> {"StateVerified", "StateUnverified"}]
+        /\ lightBlockStatus
+             \in [HS -> {"StateVerified", "StateUnverified", "StateFailed"}]
 
 (************************* Properties ******************************************)
 
 (* The properties to check *)
+\* this invariant candidate is false    
 NeverFinish ==
     state = "working"
 
-\* check this property to get an example of a terminating light client
+\* this invariant candidate is false    
 NeverFinishNegative ==
     state /= "finishedFailure"
-    
-NeverFinishNegativeWhenTrusted ==
-    (minTrustedHeight <= TRUSTED_HEIGHT) => state /= "finishedFailure"     
 
+\* This invariant holds true, when the primary is correct. 
+\* This invariant candidate is false when the primary is faulty.    
+NeverFinishNegativeWhenTrusted ==
+    (*(minTrustedHeight <= TRUSTED_HEIGHT)*)
+    BC!InTrustingPeriod(blockchain[TRUSTED_HEIGHT])
+      => state /= "finishedFailure"     
+
+\* this invariant candidate is false    
 NeverFinishPositive ==
     state /= "finishedSuccess"
 
@@ -258,50 +269,80 @@ NeverFinishPositive ==
 \* Lite Client Accuracy: If header h was not generated by an instance of Tendermint consensus,
 \* then the lite client should never set trust(h) to true.
 CorrectnessInv ==
-    state = "finishedSuccess"
-        => \A h \in DOMAIN fetchedLightBlocks:
-             lightBlockStatus[h] = "StateVerified" =>
-                fetchedLightBlocks[h].header = blockchain[h]
+    state = "finishedSuccess" =>
+      \A h \in DOMAIN fetchedLightBlocks:
+         lightBlockStatus[h] = "StateVerified" =>
+           fetchedLightBlocks[h].header = blockchain[h]
 
-(*
-\* CorrectnessInv holds only under the assumption of the Tendermint security model.
-\* Hence, Correctness is restricted to the case when there are less than 1/3 of faulty validators.
-Correctness ==
-    []~tooManyFaults => CorrectnessInv
-
-\* There are no two headers of the same height
-NoDupsInv ==
-    \A shdr1, shdr2 \in storedLightBlocks:
-      (shdr1.header.height = shdr2.header.height) => (shdr1 = shdr2)
-
-\* Check that the sequence of the headers in storedLightBlocks satisfies checkSupport pairwise
+\* Check that the sequence of the headers in storedLightBlocks satisfies ValidAndVerified = "OK" pairwise
 \* This property is easily violated, whenever a header cannot be trusted anymore.
 StoredHeadersAreSound ==
-    outEvent.type = "finished" /\ outEvent.verdict = TRUE
+    state = "finishedSuccess"
         =>
-        \A left, right \in storedLightBlocks: \* for every pair of different stored headers
-            \/ left.header.height >= right.header.height
+        \A lh, rh \in DOMAIN fetchedLightBlocks: \* for every pair of different stored headers
+            \/ lh >= rh
                \* either there is a header between them
-            \/ \E middle \in storedLightBlocks:
-                /\ left.header.height < middle.header.height
-                /\ middle.header.height < right.header.height
+            \/ \E mh \in DOMAIN fetchedLightBlocks:
+                lh < mh /\ mh < rh
                \* or we can verify the right one using the left one
-            \/ CheckSupport(left.header.height, right.header.height, left.header, right)
+            \/ "OK" = ValidAndVerified(fetchedLightBlocks[lh], fetchedLightBlocks[rh])
 
 \* An improved version of StoredHeadersAreSound, assuming that a header may be not trusted
 StoredHeadersAreSoundOrNotTrusted ==
-    outEvent.type = "finished" /\ outEvent.verdict = TRUE
+    state = "finishedSuccess"
         =>
-        \A left, right \in storedLightBlocks: \* for every pair of different stored headers
-            \/ left.header.height >= right.header.height
+        \A lh, rh \in DOMAIN fetchedLightBlocks: \* for every pair of different stored headers
+            \/ lh >= rh
                \* either there is a header between them
-            \/ \E middle \in storedLightBlocks:
-                /\ left.header.height < middle.header.height
-                /\ middle.header.height < right.header.height
+            \/ \E mh \in DOMAIN fetchedLightBlocks:
+                lh < mh /\ mh < rh
                \* or we can verify the right one using the left one
-            \/ CheckSupport(left.header.height, right.header.height, left.header, right)
-               \* or the left header is outside the trusting period, so no guarantees 
-            \/ minTrustedHeight > left.header.height
+            \/ "OK" = ValidAndVerified(fetchedLightBlocks[lh], fetchedLightBlocks[rh])
+               \* or the left header is outside the trusting period, so no guarantees
+            \/ ~BC!InTrustingPeriod(fetchedLightBlocks[lh].header) 
+
+\* This property states that whenever the light client finishes with a positive outcome,
+\* the trusted header is still within the trusting period.
+\* We expect this property to be violated. And Apalache shows us a counterexample.
+PositiveBeforeTrustedHeaderExpires ==
+    (state = "finishedSuccess") => BC!InTrustingPeriod(blockchain[TRUSTED_HEIGHT])
+
+\* Lite Client Completeness: If header h was correctly generated by an instance
+\* of Tendermint consensus (and its age is less than the trusting period),
+\* then the lite client should eventually set trust(h) to true.
+\*
+\* Note that Completeness assumes that the lite client communicates with a correct full node.
+\*
+\* We decompose completeness into Termination (liveness) and Precision (safety).
+\* Once again, Precision is an inverse version of the safety property in Completeness,
+\* as A => B is logically equivalent to ~B => ~A. 
+PrecisionInv ==
+    (state = "finishedFailure")
+      => \/ ~BC!InTrustingPeriod(blockchain[TRUSTED_HEIGHT]) \* outside of the trusting period
+         \/ \E h \in DOMAIN fetchedLightBlocks:
+            LET lightBlock == fetchedLightBlocks[h] IN
+                 \* the full node lied to the lite client about the block header
+              \/ lightBlock.header /= blockchain[h]
+                 \* the full node lied to the lite client about the commits
+              \/ lightBlock.Commits /= lightBlock.header.VS
+
+\* the old invariant that was found to be buggy by TLC
+PrecisionBuggyInv ==
+    (state = "finishedFailure")
+      => \/ ~BC!InTrustingPeriod(blockchain[TRUSTED_HEIGHT]) \* outside of the trusting period
+         \/ \E h \in DOMAIN fetchedLightBlocks:
+            LET lightBlock == fetchedLightBlocks[h] IN
+            \* the full node lied to the lite client about the block header
+            lightBlock.header /= blockchain[h]
+
+(*
+ We omit termination, as the algorithm deadlocks in the end.
+ So termination can be demonstrated by finding a deadlock.
+ Of course, one has to analyze the deadlocked state and see that
+ the algorithm has indeed terminated there.
+*)
+
+(*
 
 \* The lite client must always terminate under the given pre-conditions.
 \* E.g., assuming that the full node always replies.
@@ -318,39 +359,6 @@ TerminationPre ==
 Termination ==
   TerminationPre => <>(outEvent.type = "finished")        
 
-\* This property states that whenever the light client finishes with a positive outcome,
-\* the trusted header is still within the trusting period.
-\* The current spec most likely violates this property.
-PositiveBeforeTrustedHeaderExpires ==
-    (outEvent.type = "finished" /\ outEvent.verdict = TRUE)
-        => (minTrustedHeight <= TRUSTED_HEIGHT)
-
-\* Lite Client Completeness: If header h was correctly generated by an instance
-\* of Tendermint consensus (and its age is less than the trusting period),
-\* then the lite client should eventually set trust(h) to true.
-\*
-\* Note that Completeness assumes that the lite client communicates with a correct full node.
-\*
-\* We decompose completeness into Termination (liveness) and Precision (safety).
-\* Once again, Precision is an inverse version of the safety property in Completeness,
-\* as A => B is logically equivalent to ~B => ~A. 
-PrecisionInv ==
-    (outEvent.type = "finished" /\ outEvent.verdict = FALSE)
-      => \/ minTrustedHeight > TRUSTED_HEIGHT \* outside of the trusting period
-         \/ \E shdr \in storedLightBlocks:
-                 \* the full node lied to the lite client about the block header
-              \/ shdr.header /= blockchain[shdr.header.height]
-                 \* the full node lied to the lite client about the commits
-              \/ shdr.Commits /= BC!VS(shdr.header)
-
-\* the old invariant that was found to be buggy by TLC
-PrecisionBuggyInv ==
-    (outEvent.type = "finished" /\ outEvent.verdict = FALSE)
-      => \/ minTrustedHeight > TRUSTED_HEIGHT \* outside of the trusting period
-         \/ \E shdr \in storedLightBlocks:
-              \* the full node lied to the lite client about the block header
-              shdr.header /= blockchain[shdr.header.height]
-
 \* Precision states that PrecisionInv always holds true.
 \* When we independently check Termination and PrecisionInv,
 \* there is no need to check Completeness.         
@@ -359,5 +367,5 @@ Completeness ==
 *)    
 =============================================================================
 \* Modification History
-\* Last modified Thu Jun 04 10:36:44 CEST 2020 by igor
+\* Last modified Fri Jun 05 13:24:10 CEST 2020 by igor
 \* Created Wed Oct 02 16:39:42 CEST 2019 by igor
