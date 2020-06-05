@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
+use crate::supervisor::Instance;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ForkDetection {
@@ -18,8 +19,8 @@ pub trait ForkDetector {
     fn detect_forks(
         &self,
         light_block: &LightBlock,
-        primary: &LightClient,
-        secondaries: Vec<&LightClient>,
+        trusted_state: &LightBlock,
+        secondaries: Vec<&Instance>,
     ) -> ForkDetection;
 }
 
@@ -41,14 +42,16 @@ impl ForkDetector for ProdForkDetector {
     fn detect_forks(
         &self,
         light_block: &LightBlock,
-        primary: &LightClient,
-        secondaries: Vec<&LightClient>,
+        trusted_state: &LightBlock,
+        secondaries: Vec<&Instance>,
     ) -> ForkDetection {
         let mut forks = Vec::with_capacity(secondaries.len());
 
         for secondary in secondaries {
-            let mut state: State = todo();
+            let mut state = State::new(MemoryStore::new());
+
             let secondary_block = secondary
+                .light_client
                 .get_or_fetch_block(light_block.height(), &mut state)
                 .unwrap(); // FIXME: unwrap
 
@@ -57,21 +60,17 @@ impl ForkDetector for ProdForkDetector {
                 continue;
             }
 
-            let latest_trusted = primary
-                .state
-                .light_store
-                .latest(VerifiedStatus::Verified)
-                .unwrap(); // FIXME: unwrap
-
             state
                 .light_store
-                .update(latest_trusted, VerifiedStatus::Verified);
+                .update(trusted_state.clone(), VerifiedStatus::Verified);
 
             state
                 .light_store
                 .update(secondary_block.clone(), VerifiedStatus::Unverified);
 
-            let result = secondary.verify_to_target_with_state(light_block.height(), &mut state);
+            let result = secondary
+                .light_client
+                .verify_to_target(light_block.height(), &mut state);
 
             match result {
                 Ok(_) => forks.push(Fork::Forked(secondary_block)),

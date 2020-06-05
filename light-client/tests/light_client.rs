@@ -139,10 +139,11 @@ impl Clock for MockClock {
 fn verify_bisection(
     untrusted_height: Height,
     light_client: &mut LightClient,
+    state: &mut State,
 ) -> Result<Vec<LightBlock>, Error> {
     light_client
-        .verify_to_target(untrusted_height)
-        .map(|_| light_client.get_trace(untrusted_height))
+        .verify_to_target(untrusted_height, state)
+        .map(|_| state.get_trace(untrusted_height))
 }
 
 fn run_bisection_test(tc: TestBisection<LightBlock>) {
@@ -182,7 +183,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     let mut light_store = MemoryStore::new();
     light_store.insert(trusted_state, VerifiedStatus::Verified);
 
-    let state = State {
+    let mut state = State {
         light_store: Box::new(light_store),
         verification_trace: HashMap::new(),
     };
@@ -191,7 +192,6 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
 
     let mut light_client = LightClient::new(
         primary,
-        state,
         options,
         clock,
         scheduler::basic_bisecting_schedule,
@@ -199,7 +199,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
         io.clone(),
     );
 
-    match verify_bisection(untrusted_height, &mut light_client) {
+    match verify_bisection(untrusted_height, &mut light_client, &mut state) {
         Ok(new_states) => {
             let untrusted_light_block = io
                 .fetch_light_block(primary.clone(), untrusted_height)

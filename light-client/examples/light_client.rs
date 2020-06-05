@@ -85,7 +85,7 @@ fn sync_cmd(opts: SyncOpts) {
         light_store.insert(trusted_state, VerifiedStatus::Verified);
     }
 
-    let state = State {
+    let mut state = State {
         light_store: Box::new(light_store),
         verification_trace: HashMap::new(),
     };
@@ -104,11 +104,10 @@ fn sync_cmd(opts: SyncOpts) {
     let clock = SystemClock;
     let scheduler = scheduler::basic_bisecting_schedule;
 
-    let mut light_client =
-        LightClient::new(primary, state, options, clock, scheduler, verifier, io);
+    let mut light_client = LightClient::new(primary, options, clock, scheduler, verifier, io);
 
     loop {
-        match light_client.verify_to_highest() {
+        match light_client.verify_to_highest(&mut state) {
             Ok(light_block) => {
                 println!("[ info  ] synced to block {}", light_block.height());
             }

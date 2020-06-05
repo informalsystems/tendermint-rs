@@ -48,7 +48,6 @@ impl Options {
 /// is designed for this security model.
 pub struct LightClient {
     pub peer: PeerId,
-    pub state: State,
     pub options: Options,
     clock: Box<dyn Clock>,
     scheduler: Box<dyn Scheduler>,
@@ -61,7 +60,6 @@ impl fmt::Debug for LightClient {
         f.debug_struct("LightClient")
             .field("peer", &self.peer)
             .field("options", &self.options)
-            .field("state", &self.state)
             .finish()
     }
 }
@@ -70,7 +68,6 @@ impl LightClient {
     /// Constructs a new light client
     pub fn new(
         peer: PeerId,
-        state: State,
         options: Options,
         clock: impl Clock + 'static,
         scheduler: impl Scheduler + 'static,
@@ -79,7 +76,6 @@ impl LightClient {
     ) -> Self {
         Self {
             peer,
-            state,
             options,
             clock: Box::new(clock),
             scheduler: Box::new(scheduler),
@@ -91,13 +87,13 @@ impl LightClient {
     /// Attempt to update the light client to the latest block of the primary node.
     ///
     /// Note: This functin delegates the actual work to `verify_to_target`.
-    pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
+    pub fn verify_to_highest(&mut self, state: &mut State) -> Result<LightBlock, Error> {
         let target_block = match self.io.fetch_light_block(self.peer, LATEST_HEIGHT) {
             Ok(last_block) => last_block,
             Err(io_error) => bail!(ErrorKind::Io(io_error)),
         };
 
-        self.verify_to_target(target_block.height())
+        self.verify_to_target(target_block.height(), state)
     }
 
     /// Attemps to update the light client to a block of the primary node at the given height.
@@ -129,30 +125,6 @@ impl LightClient {
     /// - If the core verification loop invariant is violated [LCV-INV-TP.1]
     /// - If verification of a light block fails
     /// - If it cannot fetch a block from the blockchain
-    ///
-    /// ## Note
-    /// - This method actually delegates the actual work to `verify_to_target_with_state` over the current state.
-    // #[pre(
-    //     light_store_contains_block_within_trusting_period(
-    //         self.state.light_store.as_ref(),
-    //         self.options.trusting_period,
-    //         self.clock.now(),
-    //     )
-    // )]
-    #[post(
-        ret.is_ok() ==> trusted_store_contains_block_at_target_height(
-            self.state.light_store.as_ref(),
-            target_height,
-        )
-    )]
-    pub fn verify_to_target(&mut self, target_height: Height) -> Result<LightBlock, Error> {
-        let mut state = std::mem::replace(&mut self.state, State::new(MemoryStore::new()));
-        let result = self.verify_to_target_with_state(target_height, &mut state);
-        self.state = state;
-        result
-    }
-
-    /// See `verify_to_target`
     // #[pre(
     //     light_store_contains_block_within_trusting_period(
     //         state.light_store.as_ref(),
@@ -166,14 +138,13 @@ impl LightClient {
             target_height,
         )
     )]
-    pub fn verify_to_target_with_state(
+    pub fn verify_to_target(
         &self,
         target_height: Height,
         state: &mut State,
     ) -> Result<LightBlock, Error> {
         // Let's first look in the store to see whether we have already successfully verified this block
-        if let Some(light_block) = self
-            .state
+        if let Some(light_block) = state
             .light_store
             .get(target_height, VerifiedStatus::Verified)
         {
@@ -249,11 +220,6 @@ impl LightClient {
                 self.scheduler
                     .schedule(state.light_store.as_ref(), current_height, target_height);
         }
-    }
-
-    /// Get the verification trace for the block at target_height.
-    pub fn get_trace(&self, target_height: Height) -> Vec<LightBlock> {
-        self.state.get_trace(target_height)
     }
 
     /// Look in the light store for a block from the given peer at the given height.

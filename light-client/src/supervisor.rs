@@ -20,7 +20,7 @@ pub enum Event {
 #[derive(Default)]
 pub struct PeerListBuilder {
     primary: Option<PeerId>,
-    peers: HashMap<PeerId, LightClient>,
+    peers: HashMap<PeerId, Instance>,
 }
 
 impl PeerListBuilder {
@@ -29,8 +29,8 @@ impl PeerListBuilder {
         self
     }
 
-    pub fn peer(&mut self, peer_id: PeerId, client: LightClient) -> &mut Self {
-        self.peers.insert(peer_id, client);
+    pub fn peer(&mut self, peer_id: PeerId, instance: Instance) -> &mut Self {
+        self.peers.insert(peer_id, instance);
         self
     }
 
@@ -46,8 +46,14 @@ impl PeerListBuilder {
 }
 
 #[derive(Debug)]
+pub struct Instance {
+    pub light_client: LightClient,
+    pub state: State,
+}
+
+#[derive(Debug)]
 pub struct PeerList {
-    peers: HashMap<PeerId, LightClient>,
+    peers: HashMap<PeerId, Instance>,
     primary: PeerId,
 }
 
@@ -56,23 +62,23 @@ impl PeerList {
         PeerListBuilder::default()
     }
 
-    pub fn get(&self, peer_id: &PeerId) -> Option<&LightClient> {
+    pub fn get(&self, peer_id: &PeerId) -> Option<&Instance> {
         self.peers.get(peer_id)
     }
 
-    pub fn get_mut(&mut self, peer_id: &PeerId) -> Option<&mut LightClient> {
+    pub fn get_mut(&mut self, peer_id: &PeerId) -> Option<&mut Instance> {
         self.peers.get_mut(peer_id)
     }
 
-    pub fn primary(&self) -> Option<&LightClient> {
+    pub fn primary(&self) -> Option<&Instance> {
         self.peers.get(&self.primary)
     }
 
-    pub fn primary_mut(&mut self) -> Option<&mut LightClient> {
+    pub fn primary_mut(&mut self) -> Option<&mut Instance> {
         self.peers.get_mut(&self.primary)
     }
 
-    pub fn secondaries(&self) -> Vec<&LightClient> {
+    pub fn secondaries(&self) -> Vec<&Instance> {
         self.peers
             .keys()
             .filter(|peer_id| peer_id != &&self.primary)
@@ -116,11 +122,21 @@ impl Supervisor {
     #[pre(self.peers.primary().is_some())]
     pub fn verify_to_target(&mut self, height: Height) -> VerificationResult {
         while let Some(primary) = self.peers.primary_mut() {
-            let verdict = primary.verify_to_target(height);
+            let verdict = primary
+                .light_client
+                .verify_to_target(height, &mut primary.state);
 
             match verdict {
                 Ok(light_block) => {
-                    let outcome = self.detect_forks(&light_block);
+                    // SAFETY: There must be a latest trusted state otherwise verification would have failed.
+                    let trusted_state = primary
+                        .state
+                        .light_store
+                        .latest(VerifiedStatus::Verified)
+                        .unwrap();
+
+                    let outcome = self.detect_forks(&light_block, &trusted_state);
+
                     match outcome {
                         Some(forks) => {
                             let mut forked = Vec::with_capacity(forks.len());
@@ -166,16 +182,18 @@ impl Supervisor {
     }
 
     #[pre(self.peers.primary().is_some())]
-    fn detect_forks(&mut self, light_block: &LightBlock) -> Option<Vec<Fork>> {
+    fn detect_forks(
+        &mut self,
+        light_block: &LightBlock,
+        trusted_state: &LightBlock,
+    ) -> Option<Vec<Fork>> {
         if self.peers.secondaries().is_empty() {
             return None;
         }
 
-        let primary = self.peers.primary().unwrap();
-        let secondaries = self.peers.secondaries();
-
-        let fork_detector = ProdForkDetector::new();
-        let result = fork_detector.detect_forks(light_block, primary, secondaries);
+        let fork_detector = ProdForkDetector::new(); // TODO: Should be injectable
+        let result =
+            fork_detector.detect_forks(light_block, &trusted_state, self.peers.secondaries());
 
         match result {
             ForkDetection::Detected(forks) => Some(forks),
@@ -239,7 +257,7 @@ impl Handler {
 
         match receiver.recv().unwrap() {
             Event::VerificationSuccessed(header) => Ok(header),
-            Event::VerificationFailed(_err) => todo!(),
+            Event::VerificationFailed(err) => Err(err),
             _ => todo!(),
         }
     }
