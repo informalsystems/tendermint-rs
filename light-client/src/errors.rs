@@ -45,3 +45,35 @@ impl ErrorKind {
         Context::new(self, Some(source.into()))
     }
 }
+
+pub trait ErrorExt {
+    /// Whether this error means that the light block
+    /// cannot be trusted w.r.t. the latest trusted state.
+    fn not_enough_trust(&self) -> bool;
+
+    /// Whether this error means that the light block has expired,
+    /// ie. it's outside of the trusting period.
+    fn has_expired(&self) -> bool;
+}
+
+impl ErrorExt for ErrorKind {
+    /// Whether this error means that the light block
+    /// cannot be trusted w.r.t. the latest trusted state.
+    fn not_enough_trust(&self) -> bool {
+        if let Self::InvalidLightBlock(e) = self {
+            e.not_enough_trust()
+        } else {
+            false
+        }
+    }
+
+    /// Whether this error means that the light block has expired,
+    /// ie. it's outside of the trusting period.
+    fn has_expired(&self) -> bool {
+        if let Self::InvalidLightBlock(e) = self {
+            e.has_expired()
+        } else {
+            false
+        }
+    }
+}

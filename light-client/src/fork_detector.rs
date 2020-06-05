@@ -4,7 +4,14 @@ use crate::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ForkDetection {
-    NoFork,
+    Detected(Vec<Fork>),
+    NotDetected,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum Fork {
+    Forked(LightBlock),
+    Faulty(LightBlock),
 }
 
 pub trait ForkDetector {
@@ -37,14 +44,16 @@ impl ForkDetector for ProdForkDetector {
         primary: &LightClient,
         secondaries: Vec<&LightClient>,
     ) -> ForkDetection {
+        let mut forks = Vec::with_capacity(secondaries.len());
+
         for secondary in secondaries {
             let mut state: State = todo();
             let secondary_block = secondary
                 .get_or_fetch_block(light_block.height(), &mut state)
                 .unwrap(); // FIXME: unwrap
 
+            // TODO: Should hash the headers here instead of comparing them for equality?
             if light_block.signed_header.header == secondary_block.signed_header.header {
-                // Header matches, we continue.
                 continue;
             }
 
@@ -60,17 +69,21 @@ impl ForkDetector for ProdForkDetector {
 
             state
                 .light_store
-                .update(secondary_block, VerifiedStatus::Unverified);
+                .update(secondary_block.clone(), VerifiedStatus::Unverified);
 
             let result = secondary.verify_to_target_with_state(light_block.height(), &mut state);
 
-            // TODO: Handle case where block expired
             match result {
-                Ok(_) => todo!(),  // There is a fork, report `secondary_block`
-                Err(_) => todo!(), // `secondary` is faulty, report it
+                Ok(_) => forks.push(Fork::Forked(secondary_block)),
+                Err(e) if e.kind().has_expired() => forks.push(Fork::Forked(secondary_block)),
+                Err(_) => forks.push(Fork::Faulty(secondary_block)),
             }
         }
 
-        ForkDetection::NoFork
+        if forks.is_empty() {
+            ForkDetection::NotDetected
+        } else {
+            ForkDetection::Detected(forks)
+        }
     }
 }
