@@ -44,15 +44,8 @@ BlockHeaders == [
 LightBlocks == [header: BlockHeaders, Commits: Commits]
 
 VARIABLES
-    \*tooManyFaults,
-    (* whether there are more faults in the system than the blockchain can handle *)
     height,
     (* the height of the blockchain, starting with 0 *)
-    \*minTrustedHeight,
-    (* The global height of the oldest block that is younger than
-       the trusted period (AKA the almost rotten block).
-       In the implementation, this is the oldest block,
-       where block.bftTime + trustingPeriod >= globalClock.now. *)
     now,
         (* the current global time in integer units *)
     blockchain,
@@ -63,7 +56,7 @@ VARIABLES
        connect using a different id. *)
        
 (* all variables, to be used with UNCHANGED *)       
-vars == <<(*tooManyFaults,*) height, (*minTrustedHeight,*) now, blockchain, Faulty>>         
+vars == <<height, now, blockchain, Faulty>>         
 
 (* The set of all correct nodes in a state *)
 Corr == AllNodes \ Faulty
@@ -76,7 +69,6 @@ NodeSet(S) == S <: {NT}
 EmptyNodeSet == NodeSet({})
 
 BT == [height |-> Int, time |-> Int, lastCommit |-> {NT}, VS |-> {NT}, NextVS |-> {NT}]
-\*BlockSeq(seq) == seq <: Seq(BT)        
 
 LBT == [header |-> BT, Commits |-> {NT}]
 (* end of APALACHE annotations *)       
@@ -99,12 +91,10 @@ TwoThirds(pVS, pNodes) ==
     3 * SP > 2 * TP \* when thinking in real numbers, not integers: SP > 2.0 / 3.0 * TP 
 
 (*
- Given a function pVotingPower \in D -> Powers for some D \subseteq pNodes,
- and a set of pFaultyNodes, test whether the voting power of the correct
- nodes in pNodes is more than 2/3 of the voting power of the faulty nodes
- among the nodes in pNodes.
+ Given a set of FaultyNodes, test whether the voting power of the correct nodes in D
+ is more than 2/3 of the voting power of the faulty nodes in D.
  *)
-IsCorrectPowerForSet(pFaultyNodes, pVS) ==
+IsCorrectPower(pFaultyNodes, pVS) ==
     LET FN == pFaultyNodes \intersect pVS   \* faulty nodes in pNodes
         CN == pVS \ pFaultyNodes            \* correct nodes in pNodes
         CP == Cardinality(CN)               \* power of the correct nodes
@@ -112,31 +102,17 @@ IsCorrectPowerForSet(pFaultyNodes, pVS) ==
     IN
     \* CP + FP = TP is the total voting power, so we write CP > 2.0 / 3 * TP as follows:
     CP > 2 * FP \* Note: when FP = 0, this implies CP > 0.
-
-(*
- Given a function votingPower \in D -> Power for some D \subseteq Nodes,
- and a set of FaultyNodes, test whether the voting power of the correct nodes in D
- is more than 2/3 of the voting power of the faulty nodes in D.
- *)
-IsCorrectPower(pFaultyNodes, pVS) ==
-    IsCorrectPowerForSet(pFaultyNodes, pVS)
     
 (* This is what we believe is the assumption about failures in Tendermint *)     
-FaultAssumption(pFaultyNodes, (*pMinTrustedHeight,*) pNow, pBlockchain) ==
+FaultAssumption(pFaultyNodes, pNow, pBlockchain) ==
     \A h \in Heights:
-      (*pMinTrustedHeight <= h*)
       pBlockchain[h].time + TRUSTING_PERIOD > pNow =>
         IsCorrectPower(pFaultyNodes, pBlockchain[h].NextVS)
 
 (* Can a block be produced by a correct peer, or an authenticated Byzantine peer *)
-IsProducableByFaulty(ht, block) == 
+IsLightBlockAllowedByDigitalSignatures(ht, block) == 
     \/ block.header = blockchain[ht] \* signed by correct and faulty (maybe)
     \/ block.Commits \subseteq Faulty /\ block.header.height = ht \* signed only by faulty
-
-(* A light block whose commit coincides with the last commit of a block,
-   unless the commits are made by the faulty nodes *)
-ProducableByFaultyLightBlocks(ht) ==
-    { b \in LightBlocks: IsProducableByFaulty(ht, b) }
 
 (*
  Initialize the blockchain to the ultimate height right in the initial states.
@@ -144,9 +120,7 @@ ProducableByFaultyLightBlocks(ht) ==
  *)            
 InitToHeight ==
   /\ height = ULTIMATE_HEIGHT
-  \*/\ minTrustedHeight = 1       \* all blocks are initially trusted
   /\ Faulty \in SUBSET AllNodes \* some nodes may fail
-  \*/\ tooManyFaults = FALSE      \* we pick blocks so the blockchain is in the green zone
   \* pick the validator sets and last commits
   /\ \E vs, lastCommit \in [Heights -> SUBSET AllNodes]:
      \E timestamp \in [Heights -> Int]:
@@ -174,7 +148,7 @@ InitToHeight ==
 
 (* is the blockchain in the faulty zone where the Tendermint security model does not apply *)
 InFaultyZone ==
-  ~FaultAssumption(Faulty, (*minTrustedHeight,*) now, blockchain)       
+  ~FaultAssumption(Faulty, now, blockchain)       
 
 (********************* BLOCKCHAIN ACTIONS ********************************)
 (*
@@ -184,15 +158,6 @@ AdvanceTime ==
   \E tm \in Int:
     /\ tm >= now
     /\ now' = tm
-
-  \*/\ minTrustedHeight' \in (minTrustedHeight + 1) .. Min(height + 1, ULTIMATE_HEIGHT)
-  \* we are using IF-THEN-ELSE, otherwise Apalache may produce a spurious counterexample
-  \* https://github.com/konnov/apalache/issues/148
-  (*
-  /\ IF FaultAssumption(Faulty, minTrustedHeight', blockchain)
-     THEN tooManyFaults' = FALSE
-     ELSE tooManyFaults' = TRUE
-   *) 
   /\ UNCHANGED <<height, blockchain, Faulty>>
 
 (*
@@ -204,29 +169,12 @@ OneMoreFault ==
   /\ \E n \in AllNodes \ Faulty:
       /\ Faulty' = Faulty \cup {n}
       /\ Faulty' /= AllNodes \* at least process remains non-faulty
-      \* we are using IF-THEN-ELSE, otherwise Apalache may produce a spurious counterexample
-      (*
-      /\ IF FaultAssumption(Faulty', minTrustedHeight, blockchain)
-         THEN tooManyFaults' = FALSE
-         ELSE tooManyFaults' = TRUE
-       *) 
-  /\ UNCHANGED <<height, (*minTrustedHeight,*) now, blockchain>>
+  /\ UNCHANGED <<height, now, blockchain>>
 
 (* stuttering at the end of the blockchain *)
 StutterInTheEnd == 
   height = ULTIMATE_HEIGHT /\ UNCHANGED vars
-
-(********************* PROPERTIES TO CHECK ********************************)
-(* False properties that can be checked with TLC, to see interesting behaviors *)
-
-(* Check this to see how the blockchain can jump into the faulty zone *)
-\*NeverFaulty == ~tooManyFaults
-
-(* check this to see how the trusted period can expire *)
-\*NeverUltimateHeight ==
-\*  minTrustedHeight < ULTIMATE_HEIGHT
-
 =============================================================================
 \* Modification History
-\* Last modified Fri Jun 05 14:15:33 CEST 2020 by igor
+\* Last modified Tue Jun 09 16:41:59 CEST 2020 by igor
 \* Created Fri Oct 11 15:45:11 CEST 2019 by igor

@@ -40,10 +40,10 @@ CONSTANTS
     (* a set of all nodes that can act as validators (correct and faulty) *)
 
 \* the state variables of Blockchain, see Blockchain.tla for the details
-VARIABLES (*tooManyFaults,*) chainHeight, (*minTrustedHeight,*) now, blockchain, Faulty
+VARIABLES chainHeight, now, blockchain, Faulty
 
 \* All the variables of Blockchain. For some reason, BC!vars does not work
-bcvars == <<(*tooManyFaults,*) chainHeight, (*minTrustedHeight,*) now, blockchain, Faulty>>
+bcvars == <<chainHeight, now, blockchain, Faulty>>
 
 (* Create an instance of Blockchain.
    We could write EXTENDS Blockchain, but then all the constants and state variables
@@ -52,8 +52,7 @@ bcvars == <<(*tooManyFaults,*) chainHeight, (*minTrustedHeight,*) now, blockchai
 ULTIMATE_HEIGHT == TARGET_HEIGHT + 1 
  
 BC == INSTANCE Blockchain_A_1 WITH
-  (*tooManyFaults <- tooManyFaults,*) height <- chainHeight,
-  (*minTrustedHeight <- minTrustedHeight,*) now <- now, blockchain <- blockchain, Faulty <- Faulty
+  height <- chainHeight, now <- now, blockchain <- blockchain, Faulty <- Faulty
 
 (************************** Lite client ************************************)
 
@@ -66,7 +65,7 @@ States == { "working", "finishedSuccess", "finishedFailure" }
 (**
  Check the precondition of ValidAndVerified.
  
- TODO: add a traceability tag
+ TODO: add a traceability tag as soon as the English spec has one
  *)
 ValidAndVerifiedPre(trusted, untrusted) ==
   LET thdr == trusted.header
@@ -75,9 +74,6 @@ ValidAndVerifiedPre(trusted, untrusted) ==
   /\ BC!InTrustingPeriod(thdr)
   /\ thdr.height < uhdr.height
      \* the trusted block has been created earlier (no drift here)
-     (* the English spec says:
-        untrusted.Header.Time < now + clockDrift
-        the Time of trusted are smaller than the Time of untrusted *)
   /\ thdr.time <= uhdr.time
   /\ thdr.height + 1 = uhdr.height =>
      /\ thdr.NextVS = uhdr.VS
@@ -86,17 +82,17 @@ ValidAndVerifiedPre(trusted, untrusted) ==
             SP == Cardinality(untrusted.Commits)
         IN
         3 * SP > 2 * TP     
-  (* TODO:
-  trusted.Commit is a commit is for the header trusted.Header,
-  i.e. it contains the correct hash of the header
-  *)
-  (* we do not have to check these:
-  untrusted.Validators = hash(untrusted.Header.Validators)
-  untrusted.NextValidators = hash(untrusted.Header.NextValidators)
+  (* As we do not have explicit hashes we ignore these three checks of the English spec:
+   
+     1. "trusted.Commit is a commit is for the header trusted.Header,
+      i.e. it contains the correct hash of the header".
+     2. untrusted.Validators = hash(untrusted.Header.Validators)
+     3. untrusted.NextValidators = hash(untrusted.Header.NextValidators)
    *)
 
-(** Check that the commits in an untrusted block form 1/3 of the next validators
-    in a trusted header
+(**
+  * Check that the commits in an untrusted block form 1/3 of the next validators
+  * in a trusted header.
  *)
 OneThird(trusted, untrusted) ==
   LET TP == Cardinality(trusted.header.NextVS)
@@ -107,7 +103,7 @@ OneThird(trusted, untrusted) ==
 (**
  Check, whether an untrusted block is valid and verifiable w.r.t. a trusted header.
  
- TODO: add traceability
+ TODO: add traceability tag as soon as the English spec has one
  *)   
 ValidAndVerified(trusted, untrusted) ==
     IF ~ValidAndVerifiedPre(trusted, untrusted)
@@ -120,45 +116,65 @@ ValidAndVerified(trusted, untrusted) ==
          ELSE "CANNOT_VERIFY"
 
 (*
- Initial states of the light client. No requests on the stack, no headers.
+ Initial states of the light client.
+ Initially, only the trusted light block is present.
  *)
 LCInit ==
     /\ state = "working"
     /\ nextHeight = TARGET_HEIGHT
-    /\ nprobes = 0
+    /\ nprobes = 0  \* no tests have been done so far
     /\ LET trustedBlock == blockchain[TRUSTED_HEIGHT]
            trustedLightBlock == [header |-> trustedBlock, Commits |-> AllNodes]
        IN
+        \* initially, fetchedLightBlocks is a function of one element, i.e., TRUSTED_HEIGHT
         /\ fetchedLightBlocks = [h \in {TRUSTED_HEIGHT} |-> trustedLightBlock]
+        \* initially, lightBlockStatus is a function of one element, i.e., TRUSTED_HEIGHT
         /\ lightBlockStatus = [h \in {TRUSTED_HEIGHT} |-> "StateVerified"]
+        \* the latest verified block the the trusted block
         /\ latestVerified = trustedLightBlock
-        
+
+\* copy the block from the light store        
 LightStoreGetInto(block, height) ==
     block = fetchedLightBlocks[height]
 
-IsCanonicalLightBlock(block, height) ==
+\* block should contain a copy of the block from the reference chain, with a matching commit
+CopyLightBlockFromChain(block, height) ==
     LET ref == blockchain[height]
         lastCommit ==
           IF height < ULTIMATE_HEIGHT
           THEN blockchain[height + 1].lastCommit
-          ELSE blockchain[height].VS \* for the ultimate block 
+            \* for the ultimate block, which we never use, as ULTIMATE_HEIGHT = TARGET_HEIGHT + 1
+          ELSE blockchain[height].VS 
     IN
     block = [header |-> ref, Commits |-> lastCommit]      
 
+\* Either the primary is correct and the block comes from the reference chain,
+\* or the block is produced by a faulty primary.
+\*
+\* TODO: add a traceability tag when Josef adds it in the English spec
 FetchLightBlockInto(block, height) ==
     IF IS_PRIMARY_CORRECT
-    THEN IsCanonicalLightBlock(block, height)
-    ELSE BC!IsProducableByFaulty(height, block)
-    
+    THEN CopyLightBlockFromChain(block, height)
+    ELSE BC!IsLightBlockAllowedByDigitalSignatures(height, block)
+
+\* add a block into the light store    
+\*
+\* TODO: add a traceability tag when Josef adds it in the English spec
 LightStoreUpdateBlocks(lightBlocks, block) ==
     LET ht == block.header.height IN    
     [h \in DOMAIN lightBlocks \union {ht} |->
         IF h = ht THEN block ELSE lightBlocks[h]]
-      
+
+\* update the state of a light block      
+\*
+\* TODO: add a traceability tag when Josef adds it in the English spec
 LightStoreUpdateStates(statuses, ht, blockState) ==
     [h \in DOMAIN statuses \union {ht} |->
         IF h = ht THEN blockState ELSE statuses[h]]      
 
+\* Check, whether newHeight is a possible next height for the light client.
+\*
+\* TODO: add a traceability tag when Josef adds it in the English spec
 ScheduleTo(newHeight, pNextHeight, pTargetHeight, pLatestVerified) ==
     LET ht == pLatestVerified.header.height IN
     \/ /\ ht = pNextHeight
@@ -171,17 +187,26 @@ ScheduleTo(newHeight, pNextHeight, pTargetHeight, pLatestVerified) ==
        /\ newHeight < pNextHeight
     \/ /\ ht = pTargetHeight
        /\ newHeight = pTargetHeight
-    
-LightLoop ==
+
+\* The loop of VerifyToTarget.
+\*
+\* TODO: add a traceability tag when Josef adds it in the English spec
+VerifyToTargetLoop ==
+      \* the loop condition is true
     /\ latestVerified.header.height < TARGET_HEIGHT
+      \* pick a light block, which will be constrained later
     /\ \E current \in BC!LightBlocks:
+        \* Get next LightBlock for verification
         /\ IF nextHeight \in DOMAIN fetchedLightBlocks
            THEN /\ LightStoreGetInto(current, nextHeight)
                 /\ UNCHANGED fetchedLightBlocks
            ELSE /\ FetchLightBlockInto(current, nextHeight)
                 /\ fetchedLightBlocks' = LightStoreUpdateBlocks(fetchedLightBlocks, current)
-        /\ nprobes' = nprobes + 1 \* one more test
+        \* Record that one more probe has been done (for complexity and model checking)
+        /\ nprobes' = nprobes + 1
+        \* Verify the current block
         /\ LET verdict == ValidAndVerified(latestVerified, current) IN
+           \* Decide whether/how to continue
            CASE verdict = "OK" ->
               /\ lightBlockStatus' = LightStoreUpdateStates(lightBlockStatus, nextHeight, "StateVerified")
               /\ latestVerified' = current
@@ -194,6 +219,12 @@ LightLoop ==
                  /\ nextHeight' = newHeight
                   
            [] verdict = "CANNOT_VERIFY" ->
+              (*
+                do nothing: the light block current passed validation, but the validator
+                set is too different to verify it. We keep the state of
+                current at StateUnverified. For a later iteration, Schedule
+                might decide to try verification of that light block again.
+                *)
               /\ lightBlockStatus' = LightStoreUpdateStates(lightBlockStatus, nextHeight, "StateUnverified")
               /\ \E newHeight \in HEIGHTS:
                  /\ ScheduleTo(newHeight, nextHeight, TARGET_HEIGHT, latestVerified)
@@ -201,22 +232,26 @@ LightLoop ==
               /\ UNCHANGED <<latestVerified, state>>
               
            [] OTHER ->
+              \* verdict is some error code
               /\ lightBlockStatus' = LightStoreUpdateStates(lightBlockStatus, nextHeight, "StateFailed")
               /\ state' = "finishedFailure"
               /\ UNCHANGED <<latestVerified, nextHeight>>
 
-LightFinish ==
+\* The terminating condition of VerifyToTarget.
+\*
+\* TODO: add a traceability tag when Josef adds it in the English spec
+VerifyToTargetDone ==
     /\ latestVerified.header.height >= TARGET_HEIGHT
     /\ state' = "finishedSuccess"
     /\ UNCHANGED <<nextHeight, nprobes, fetchedLightBlocks, lightBlockStatus, latestVerified>>  
     
 (*
- Actions of the light client: start or do bisection when receiving response.
+ The light client is either executing VerifyToTarget, or it has terminated.
+ (In the latter case, a model checker reports a deadlock.)
  *)
 LCNext ==
-  \*\/ state /= "working" /\ UNCHANGED lcvars
-  \/ /\ state = "working"
-     /\ LightLoop \/ LightFinish 
+  /\ state = "working"
+  /\ VerifyToTargetLoop \/ VerifyToTargetDone 
             
             
 (********************* Lite client + Blockchain *******************)
@@ -237,7 +272,6 @@ Next ==
     /\ UNCHANGED bcvars
 
 (************************* Types ******************************************)
-
 TypeOK ==
     /\ state \in States
     /\ nextHeight \in HEIGHTS
@@ -269,20 +303,24 @@ NeverFinishNegativeWhenTrusted ==
 NeverFinishPositive ==
     state /= "finishedSuccess"
 
-\* Correctness states that all the obtained headers are exactly like in the blockchain.
-\* This formula is equivalent to Accuracy in the English spec, that is, A => B iff ~B => ~A.
-\*
-\* Lite Client Accuracy: If header h was not generated by an instance of Tendermint consensus,
-\* then the lite client should never set trust(h) to true.
+(**
+  Correctness states that all the obtained headers are exactly like in the blockchain.
+ 
+  It is always the case that every verified header in LightStore was generated by
+  an instance of Tendermint consensus.
+  
+  [LCV-DIST-SAFE.1::CORRECTNESS-INV.1]
+ *)  
 CorrectnessInv ==
-    state = "finishedSuccess" =>
-      \A h \in DOMAIN fetchedLightBlocks:
-         lightBlockStatus[h] = "StateVerified" =>
-           fetchedLightBlocks[h].header = blockchain[h]
+    \A h \in DOMAIN fetchedLightBlocks:
+        lightBlockStatus[h] = "StateVerified" =>
+            fetchedLightBlocks[h].header = blockchain[h]
 
-\* Check that the sequence of the headers in storedLightBlocks satisfies ValidAndVerified = "OK" pairwise
-\* This property is easily violated, whenever a header cannot be trusted anymore.
-StoredHeadersAreSound ==
+(**
+ Check that the sequence of the headers in storedLightBlocks satisfies ValidAndVerified = "OK" pairwise
+ This property is easily violated, whenever a header cannot be trusted anymore.
+ *)
+StoredHeadersAreSoundInv ==
     state = "finishedSuccess"
         =>
         \A lh, rh \in DOMAIN fetchedLightBlocks: \* for every pair of different stored headers
@@ -296,7 +334,7 @@ StoredHeadersAreSound ==
 \* An improved version of StoredHeadersAreSound, assuming that a header may be not trusted.
 \* This invariant candidate is also violated,
 \* as there may be some unverified blocks left in the middle.
-StoredHeadersAreSoundOrNotTrusted ==
+StoredHeadersAreSoundOrNotTrustedInv ==
     state = "finishedSuccess"
         =>
         \A lh, rh \in DOMAIN fetchedLightBlocks: \* for every pair of different stored headers
@@ -309,27 +347,31 @@ StoredHeadersAreSoundOrNotTrusted ==
                \* or the left header is outside the trusting period, so no guarantees
             \/ ~BC!InTrustingPeriod(fetchedLightBlocks[lh].header) 
 
-\* An improved version of StoredHeadersAreSound, assuming that a header may be not trusted.
-\* This invariant candidate is also violated,
-\* as there may be some unverified blocks left in the middle.
-VerifiedStoredHeadersAreSoundOrNotTrusted ==
+(**
+ * An improved version of StoredHeadersAreSoundOrNotTrusted,
+ * checking the property only for the verified headers.
+ * This invariant holds true.
+ *)
+ProofOfChainOfTrustInv ==
     state = "finishedSuccess"
         =>
         \A lh, rh \in DOMAIN fetchedLightBlocks:
-                \* for every pair of different stored headers
+                \* for every pair of stored headers that have been verified
             \/ lh >= rh
             \/ lightBlockStatus[lh] = "StateUnverified"
             \/ lightBlockStatus[rh] = "StateUnverified"
                \* either there is a header between them
             \/ \E mh \in DOMAIN fetchedLightBlocks:
                 lh < mh /\ mh < rh /\ lightBlockStatus[mh] = "StateVerified"
+               \* or the left header is outside the trusting period, so no guarantees
+            \/ ~(BC!InTrustingPeriod(fetchedLightBlocks[lh].header))
                \* or we can verify the right one using the left one
             \/ "OK" = ValidAndVerified(fetchedLightBlocks[lh], fetchedLightBlocks[rh])
-               \* or the left header is outside the trusting period, so no guarantees
-            \/ ~BC!InTrustingPeriod(fetchedLightBlocks[lh].header)
 
-\* When the light client terminates, there is no failed blocks            
-NoFailedBlocksOnSuccess ==
+(**
+ * When the light client terminates, there are no failed blocks. (Otherwise, someone lied to us.) 
+ *)            
+NoFailedBlocksOnSuccessInv ==
     state = "finishedSuccess" =>
         \A h \in DOMAIN fetchedLightBlocks:
             lightBlockStatus[h] /= "StateFailed"            
@@ -344,6 +386,18 @@ PositiveBeforeTrustedHeaderExpires ==
 \* then whenever the algorithm terminates, it reports "success"    
 CorrectPrimaryAndTimeliness ==
   (BC!InTrustingPeriod(blockchain[TRUSTED_HEIGHT])
+    /\ state /= "working" /\ IS_PRIMARY_CORRECT) =>
+      state = "finishedSuccess"     
+
+(**
+  If the primary is correct and there is a trusted block that has not expired,
+  then whenever the algorithm terminates, it reports "success".
+
+  [LCV-DIST-LIVE.1::SUCCESS-CORR-PRIMARY-CHAIN-OF-TRUST.1]
+ *)
+SuccessOnCorrectPrimaryAndChainOfTrust ==
+  (\E h \in DOMAIN fetchedLightBlocks:
+        lightBlockStatus[h] = "StateVerified" /\ BC!InTrustingPeriod(blockchain[h])
     /\ state /= "working" /\ IS_PRIMARY_CORRECT) =>
       state = "finishedSuccess"     
 
@@ -413,5 +467,5 @@ Completeness ==
 *)    
 =============================================================================
 \* Modification History
-\* Last modified Fri Jun 05 16:54:49 CEST 2020 by igor
+\* Last modified Tue Jun 09 16:52:51 CEST 2020 by igor
 \* Created Wed Oct 02 16:39:42 CEST 2019 by igor
