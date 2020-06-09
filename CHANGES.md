@@ -20,10 +20,11 @@ RPC:
   - serialization/deserialization fixes
   - Updated/fixed integration tests
 
-CI: ([#120](https://github.com/informalsystems/tendermint-rs/issues/120))
-- Moved to GitHub Actions
-- Updated crates.io badges
-- Enabled integration tests in CI with Tendermint-Go node service
+CI:
+- Moved to GitHub Actions ([#120](https://github.com/informalsystems/tendermint-rs/issues/120))
+- Updated crates.io badges ([#120](https://github.com/informalsystems/tendermint-rs/issues/120))
+- Enabled integration tests in CI with Tendermint-Go node service ([#120](https://github.com/informalsystems/tendermint-rs/issues/120))
+- Removed docs folder from CI execution ([#309](https://github.com/informalsystems/tendermint-rs/issues/309))
 
 ## [0.13.0] (2020-04-20)
 
