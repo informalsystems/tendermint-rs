@@ -1,4 +1,4 @@
-use tendermint_light_client::components::scheduler::basic_schedule;
+use tendermint_light_client::components::scheduler;
 use tendermint_light_client::prelude::*;
 use tendermint_light_client::tests::{Trusted, *};
 
@@ -197,7 +197,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
         state,
         options,
         clock,
-        basic_schedule,
+        scheduler::basic_bisecting_schedule,
         verifier,
         fork_detector,
         io.clone(),

@@ -39,7 +39,7 @@ where
     }
 }
 
-/// Basic scheduler which picks the appropriate midpoint without
+/// Basic bisecting scheduler which picks the appropriate midpoint without
 /// optimizing for performance using the blocks available in the light store.
 ///
 /// ## Precondition
@@ -49,7 +49,7 @@ where
 /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
 #[pre(light_store.latest(VerifiedStatus::Verified).is_some())]
 #[post(valid_schedule(ret, target_height, current_height, light_store))]
-pub fn basic_schedule(
+pub fn basic_bisecting_schedule(
     light_store: &dyn LightStore,
     current_height: Height,
     target_height: Height,
