@@ -19,6 +19,7 @@ use tokio::net::TcpStream;
 
 /// There are only two valid queries to the websocket. A query that subscribes to all transactions
 /// and a query that susbscribes to all blocks.
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum EventSubscription {
     /// Subscribe to all transactions
     TransactionSubscription,
@@ -191,7 +192,8 @@ pub struct Attribute {
 ///Block Value
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EventDataNewBlock {
-    block: Option<Block>,
+    /// block
+    pub block: Option<Block>,
 
     // TODO(ismail): these should be the same as abci::responses::BeginBlock
     // and abci::responses::EndBlock
