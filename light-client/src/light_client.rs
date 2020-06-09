@@ -1,4 +1,6 @@
-//! Light client implementation.
+//! Light client implementation as per the [Core Verification specification][1].
+//!
+//! [1]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification.md
 
 use contracts::*;
 use derive_more::Display;

@@ -46,7 +46,7 @@ pub trait Verifier {
 /// - A commit validator
 /// - A header hasher
 ///
-/// For regular use, one can summon an implementation with `ProdVerifier::default()`.
+/// For regular use, one can construct a standard implementation with `ProdVerifier::default()`.
 pub struct ProdVerifier {
     predicates: Box<dyn VerificationPredicates>,
     voting_power_calculator: Box<dyn VotingPowerCalculator>,

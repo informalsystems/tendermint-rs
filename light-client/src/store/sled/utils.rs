@@ -125,6 +125,9 @@ where
     }
 }
 
+// TODO: The test below is currently disabled because it fails on CI as we don't have
+// access to `/tmp`. Need to figure out how to specify a proper temp dir.
+
 // #[cfg(test)]
 // mod tests {
 //     use super::*;

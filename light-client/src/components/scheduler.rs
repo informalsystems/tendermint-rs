@@ -76,18 +76,18 @@ pub fn basic_schedule(
 /// - i) If `latest_verified_height == current_height` and `latest_verified_height < target_height`
 /// then `current_height < scheduled_height <= target_height`.
 ///
-/// - ii) If `latest_verified_height < next_height` and `latest_verified_height < target_height`
-/// then `latest_verified_height < scheduled_height < next_height`.
+/// - ii) If `latest_verified_height < current_height` and `latest_verified_height < target_height`
+/// then `latest_verified_height < scheduled_height < current_height`.
 ///
 /// - iii) If `latest_verified_height = target_height` then `scheduled_height == target_height`.
 ///
 /// ## Note
 ///
-/// - Case i. captures the case where the light block at height nextHeight has been verified,
-/// and we can choose a height closer to the targetHeight. As we get the `light_store` as parameter,
-/// the choice of the next height can depend on the `light_store`, e.g., we can pick a height
-/// for which we have already downloaded a light block.
-/// - In Case ii. the header of `next_height` could not be verified, and we need to pick a smaller height.
+/// - Case i. captures the case where the light block at height `current_height` has been verified,
+///   and we can choose a height closer to the `target_height`. As we get the `light_store` as parameter,
+///   the choice of the next height can depend on the `light_store`, e.g., we can pick a height
+///   for which we have already downloaded a light block.
+/// - In Case ii. the header at `current_height` could not be verified, and we need to pick a lesser height.
 /// - In Case iii. is a special case when we have verified the `target_height`.
 ///
 /// ## Implements
