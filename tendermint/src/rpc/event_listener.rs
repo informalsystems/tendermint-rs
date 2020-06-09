@@ -101,7 +101,8 @@ impl EventListener {
             dbg!(&msg.to_string());
             return Ok(None);
         }
-
+        dbg!("received neither event nor generic string message:");
+        dbg!(&msg.to_string());
         Err(RPCError::new(
             Code::Other(-1),
             Some("received neither event nor generic string message".to_string()),
