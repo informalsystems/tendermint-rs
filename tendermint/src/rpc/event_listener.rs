@@ -101,7 +101,8 @@ impl EventListener {
             dbg!(&msg.to_string());
             return Ok(None);
         }
-
+        dbg!("received neither event nor generic string message:");
+        dbg!(&msg.to_string());
         Err(RPCError::new(
             Code::Other(-1),
             Some("received neither event nor generic string message".to_string()),
@@ -151,26 +152,27 @@ pub type WrappedResultEvent = Wrapper<ResultEvent>;
 /// TX value
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EventDataTx {
+    /// The actual TxResult
     #[serde(rename = "TxResult")]
-    tx_result: TxResult,
+    pub tx_result: TxResult,
 }
 
 /// Tx Result
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TxResult {
-    height: String,
-    index: i64,
-    tx: String,
-    result: TxResultResult,
+    pub height: String,
+    pub index: i64,
+    pub tx: String,
+    pub result: TxResultResult,
 }
 
 /// TX Results Results
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TxResultResult {
-    log: String,
-    gas_wanted: String,
-    gas_used: String,
-    events: Vec<TmEvent>,
+    pub log: String,
+    pub gas_wanted: String,
+    pub gas_used: String,
+    pub events: Vec<TmEvent>,
 }
 impl response::Response for TxResultResult {}
 
@@ -178,34 +180,34 @@ impl response::Response for TxResultResult {}
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TmEvent {
     #[serde(rename = "type")]
-    event_type: String,
-    attributes: Vec<Attribute>,
+    pub event_type: String,
+    pub attributes: Vec<Attribute>,
 }
 /// Event Attributes
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Attribute {
-    key: String,
-    value: String,
+    pub key: String,
+    pub value: String,
 }
 
 ///Block Value
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EventDataNewBlock {
-    block: Option<Block>,
+    pub block: Option<Block>,
 
     // TODO(ismail): these should be the same as abci::responses::BeginBlock
     // and abci::responses::EndBlock
-    result_begin_block: Option<ResultBeginBlock>,
-    result_end_block: Option<ResultEndBlock>,
+    pub result_begin_block: Option<ResultBeginBlock>,
+    pub result_end_block: Option<ResultEndBlock>,
 }
 
 /// Begin Block Events
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResultBeginBlock {
-    events: Option<Vec<TmEvent>>,
+    pub events: Option<Vec<TmEvent>>,
 }
 ///End Block Events
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResultEndBlock {
-    validator_updates: Option<Vec<Option<serde_json::Value>>>,
+    pub validator_updates: Option<Vec<Option<serde_json::Value>>>,
 }
