@@ -192,7 +192,6 @@ pub struct Attribute {
 ///Block Value
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EventDataNewBlock {
-    /// block
     pub block: Option<Block>,
 
     // TODO(ismail): these should be the same as abci::responses::BeginBlock
