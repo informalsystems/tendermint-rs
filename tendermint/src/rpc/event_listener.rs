@@ -19,6 +19,7 @@ use tokio::net::TcpStream;
 
 /// There are only two valid queries to the websocket. A query that subscribes to all transactions
 /// and a query that susbscribes to all blocks.
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum EventSubscription {
     /// Subscribe to all transactions
     TransactionSubscription,
