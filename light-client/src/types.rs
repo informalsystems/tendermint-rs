@@ -1,3 +1,5 @@
+//! Defines or just re-exports the main datatypes used by the light client.
+
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 

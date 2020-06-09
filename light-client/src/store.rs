@@ -1,3 +1,9 @@
+//! Interface and implementations of the light block store.
+//!
+//! See the `memory` and `sled` modules for:
+//! - a transient, in-memory implementation for testing purposes
+//! - a persistent, on-disk, sled-backed implementation for production
+
 use crate::prelude::*;
 
 use serde::{Deserialize, Serialize};

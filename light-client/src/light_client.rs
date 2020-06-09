@@ -1,3 +1,7 @@
+//! Light client implementation as per the [Core Verification specification][1].
+//!
+//! [1]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification.md
+
 use contracts::*;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
@@ -18,6 +22,8 @@ pub struct Options {
     pub trust_threshold: TrustThreshold,
     /// The trusting period
     pub trusting_period: Duration,
+    /// Correction parameter dealing with only approximately synchronized clocks.
+    pub clock_drift: Duration,
     /// The current time
     pub now: Time,
 }
@@ -98,7 +104,7 @@ impl LightClient {
     /// - [LCV-DIST-SAFE.1]
     /// - [LCV-DIST-LIFE.1]
     /// - [LCV-PRE-TP.1]
-    /// - [LCV-POST-TP.1]
+    /// - [LCV-POST-LS.1]
     /// - [LCV-INV-TP.1]
     ///
     /// ## Precondition
@@ -106,13 +112,20 @@ impl LightClient {
     ///
     /// ## Postcondition
     /// - The light store contains a light block that corresponds
-    ///   to a block of the blockchain of height `target_height` [LCV-POST-TP.1]
+    ///   to a block of the blockchain of height `target_height` [LCV-POST-LS.1]
     ///
     /// ## Error conditions
     /// - If the precondition is violated [LVC-PRE-TP.1]
     /// - If the core verification loop invariant is violated [LCV-INV-TP.1]
     /// - If verification of a light block fails
     /// - If it cannot fetch a block from the blockchain
+    // #[pre(
+    //     light_store_contains_block_within_trusting_period(
+    //         self.state.light_store.as_ref(),
+    //         self.options.trusting_period,
+    //         self.clock.now(),
+    //     )
+    // )]
     #[post(
         ret.is_ok() ==> trusted_store_contains_block_at_target_height(
             self.state.light_store.as_ref(),

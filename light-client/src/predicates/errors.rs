@@ -4,6 +4,8 @@ use thiserror::Error;
 
 use crate::prelude::*;
 
+/// The various errors which can be raised by the verifier component,
+/// when validating or verifying a light block.
 #[derive(Debug, Clone, Error, PartialEq, Serialize, Deserialize)]
 pub enum VerificationError {
     #[error("header from the future: header_time={header_time} now={now}")]
@@ -11,9 +13,13 @@ pub enum VerificationError {
     #[error("implementation specific: {0}")]
     ImplementationSpecific(String),
     #[error(
-        "insufficient validators overlap: total_power={total_power} signed_power={signed_power}"
+        "insufficient validators overlap: total_power={total_power} signed_power={signed_power} trust_threshold={trust_threshold}"
     )]
-    InsufficientValidatorsOverlap { total_power: u64, signed_power: u64 },
+    InsufficientValidatorsOverlap {
+        total_power: u64,
+        signed_power: u64,
+        trust_threshold: TrustThreshold,
+    },
     #[error("insufficient voting power: total_power={total_power} voting_power={voting_power}")]
     InsufficientVotingPower { total_power: u64, voting_power: u64 },
     #[error("invalid commit power: total_power={total_power} signed_power={signed_power}")]
@@ -53,6 +59,8 @@ impl VerificationError {
         Context::new(self, Some(source.into()))
     }
 
+    /// Determines whether this error means that the light block is outright invalid,
+    /// or just cannot be trusted w.r.t. the latest trusted state.
     pub fn not_enough_trust(&self) -> bool {
         if let Self::InsufficientValidatorsOverlap { .. } = self {
             true

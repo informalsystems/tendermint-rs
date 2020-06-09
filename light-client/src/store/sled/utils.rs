@@ -117,10 +117,39 @@ where
         Ok(())
     }
 
-    pub fn iter(&self, db: &sled::Db) -> impl Iterator<Item = V> {
+    pub fn iter(&self, db: &sled::Db) -> impl DoubleEndedIterator<Item = V> {
         db.iter()
             .flatten()
             .map(|(_, v)| serde_cbor::from_slice(&v))
             .flatten()
     }
 }
+
+// TODO: The test below is currently disabled because it fails on CI as we don't have
+// access to `/tmp`. Need to figure out how to specify a proper temp dir.
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::types::Height;
+
+//     #[test]
+//     fn iter_next_back_returns_highest_height() {
+//         const DB_PATH: &str = "/tmp/tendermint_light_client_sled_test/";
+//         std::fs::remove_dir_all(DB_PATH).unwrap();
+//         let db = sled::open(DB_PATH).unwrap();
+//         let kv: KeyValueDb<Height, Height> = key_value("light_store/verified");
+
+//         kv.insert(&db, &1, &1).unwrap();
+//         kv.insert(&db, &589473798493, &589473798493).unwrap();
+//         kv.insert(&db, &12342425, &12342425).unwrap();
+//         kv.insert(&db, &4, &4).unwrap();
+
+//         let mut iter = kv.iter(&db);
+//         assert_eq!(iter.next_back(), Some(589473798493));
+//         assert_eq!(iter.next_back(), Some(12342425));
+//         assert_eq!(iter.next_back(), Some(4));
+//         assert_eq!(iter.next_back(), Some(1));
+//         assert_eq!(iter.next_back(), None);
+//     }
+// }

@@ -1,3 +1,5 @@
+//! State maintained by the light client.
+
 use crate::prelude::*;
 
 use contracts::*;

@@ -1,5 +1,4 @@
-//! This prelude re-exports all the types which are commonly used
-//! both within the light client codebase, and potentially by its users.
+//! Re-exports all the types which are commonly used within the light client codebase.
 
 pub use std::time::{Duration, SystemTime};
 

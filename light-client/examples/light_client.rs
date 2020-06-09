@@ -1,5 +1,5 @@
 use gumdrop::Options;
-use light_client::prelude::Height;
+use tendermint_light_client::prelude::Height;
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -58,8 +58,8 @@ fn main() {
 }
 
 fn sync_cmd(opts: SyncOpts) {
-    use light_client::components::scheduler;
-    use light_client::prelude::*;
+    use tendermint_light_client::components::scheduler;
+    use tendermint_light_client::prelude::*;
 
     let primary_addr = opts.address;
     let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
@@ -102,24 +102,14 @@ fn sync_cmd(opts: SyncOpts) {
             denominator: 3,
         },
         trusting_period: Duration::from_secs(36000),
+        clock_drift: Duration::from_secs(1),
         now: Time::now(),
     };
 
-    let predicates = ProdPredicates;
-    let voting_power_calculator = ProdVotingPowerCalculator;
-    let commit_validator = ProdCommitValidator;
-    let header_hasher = ProdHeaderHasher;
-
-    let verifier = ProdVerifier::new(
-        predicates,
-        voting_power_calculator,
-        commit_validator,
-        header_hasher,
-    );
-
+    let verifier = ProdVerifier::default();
     let clock = SystemClock;
-    let scheduler = scheduler::schedule;
-    let fork_detector = RealForkDetector::new(header_hasher);
+    let scheduler = scheduler::basic_bisecting_schedule;
+    let fork_detector = ProdForkDetector::default();
 
     let mut light_client = LightClient::new(
         state,

@@ -1,3 +1,5 @@
+//! Utilities and datatypes for use in tests.
+
 use crate::prelude::*;
 
 use serde::Deserialize;

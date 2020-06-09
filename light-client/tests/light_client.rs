@@ -1,11 +1,13 @@
-use light_client::prelude::*;
-use light_client::tests::{Trusted, *};
+use tendermint_light_client::components::scheduler;
+use tendermint_light_client::prelude::*;
+use tendermint_light_client::tests::{Trusted, *};
 
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use contracts::contract_trait;
 use tendermint::rpc;
 
 // Link to the commit that generated below JSON test files:
@@ -21,14 +23,10 @@ fn verify_single(
     input: LightBlock,
     trust_threshold: TrustThreshold,
     trusting_period: Duration,
+    clock_drift: Duration,
     now: SystemTime,
 ) -> Result<LightBlock, Verdict> {
-    let verifier = ProdVerifier::new(
-        ProdPredicates,
-        ProdVotingPowerCalculator,
-        ProdCommitValidator,
-        ProdHeaderHasher,
-    );
+    let verifier = ProdVerifier::default();
 
     let trusted_state = LightBlock::new(
         trusted_state.signed_header,
@@ -40,13 +38,11 @@ fn verify_single(
     let options = Options {
         trust_threshold,
         trusting_period,
+        clock_drift,
         now: now.into(),
     };
 
-    let result = verifier
-        .validate_light_block(&input, &trusted_state, &options)
-        .and_then(|| verifier.verify_overlap(&input, &trusted_state, &options))
-        .and_then(|| verifier.has_sufficient_voting_power(&input, &options));
+    let result = verifier.verify(&input, &trusted_state, &options);
 
     match result {
         Verdict::Success => Ok(input),
@@ -65,6 +61,9 @@ fn run_test_case(tc: TestCase<LightBlock>) {
         None => false,
     };
 
+    // FIXME: What should this be, and where should it be configured?
+    let clock_drift = Duration::from_secs(1);
+
     let trusting_period: Duration = tc.initial.trusting_period.into();
     let tm_now = tc.initial.now;
     let now = tm_now.to_system_time().unwrap();
@@ -77,6 +76,7 @@ fn run_test_case(tc: TestCase<LightBlock>) {
             input.clone(),
             TrustThreshold::default(),
             trusting_period.into(),
+            clock_drift,
             now,
         ) {
             Ok(new_state) => {
@@ -115,6 +115,7 @@ impl MockIo {
     }
 }
 
+#[contract_trait]
 impl Io for MockIo {
     fn fetch_light_block(&mut self, _peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
         self.light_blocks
@@ -152,13 +153,16 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     let trusting_period = tc.trust_options.period;
     let now = tc.now;
 
+    // FIXME: What should this be, and where should it be configured?
+    let clock_drift = Duration::from_secs(1);
+
     let clock = MockClock { now };
-    let scheduler = light_client::components::scheduler::schedule;
-    let fork_detector = RealForkDetector::new(ProdHeaderHasher);
+    let fork_detector = ProdForkDetector::new(ProdHeaderHasher);
 
     let options = Options {
         trust_threshold,
         trusting_period: trusting_period.into(),
+        clock_drift,
         now,
     };
 
@@ -187,18 +191,13 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
         verification_trace: HashMap::new(),
     };
 
-    let verifier = ProdVerifier::new(
-        ProdPredicates,
-        ProdVotingPowerCalculator,
-        ProdCommitValidator,
-        ProdHeaderHasher,
-    );
+    let verifier = ProdVerifier::default();
 
     let mut light_client = LightClient::new(
         state,
         options,
         clock,
-        scheduler,
+        scheduler::basic_bisecting_schedule,
         verifier,
         fork_detector,
         io.clone(),
