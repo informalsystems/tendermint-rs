@@ -12,6 +12,7 @@ pub type VerificationResult = Result<LightBlock, Error>;
 pub enum Event {
     Terminate(Callback<()>),
     Terminated,
+    VerifyToHighest(Callback<VerificationResult>),
     VerifyToTarget(Height, Callback<VerificationResult>),
     VerificationSuccessed(LightBlock),
     VerificationFailed(Error),
@@ -24,12 +25,12 @@ pub struct PeerListBuilder {
 }
 
 impl PeerListBuilder {
-    pub fn primary(&mut self, primary: PeerId) -> &mut Self {
+    pub fn primary(mut self, primary: PeerId) -> Self {
         self.primary = Some(primary);
         self
     }
 
-    pub fn peer(&mut self, peer_id: PeerId, instance: Instance) -> &mut Self {
+    pub fn peer(mut self, peer_id: PeerId, instance: Instance) -> Self {
         self.peers.insert(peer_id, instance);
         self
     }
@@ -49,6 +50,15 @@ impl PeerListBuilder {
 pub struct Instance {
     pub light_client: LightClient,
     pub state: State,
+}
+
+impl Instance {
+    pub fn new(light_client: LightClient, state: State) -> Self {
+        Self {
+            light_client,
+            state,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -237,6 +247,28 @@ impl Handle {
         Self { sender }
     }
 
+    pub fn verify_to_highest(&mut self) -> VerificationResult {
+        let (sender, receiver) = channel::bounded::<Event>(1);
+
+        let callback = Callback::new(move |result| {
+            // We need to create an event here
+            let event = match result {
+                Ok(header) => Event::VerificationSuccessed(header),
+                Err(err) => Event::VerificationFailed(err),
+            };
+
+            sender.send(event).unwrap();
+        });
+
+        self.sender.send(Event::VerifyToHighest(callback)).unwrap();
+
+        match receiver.recv().unwrap() {
+            Event::VerificationSuccessed(header) => Ok(header),
+            Event::VerificationFailed(err) => Err(err),
+            _ => todo!(),
+        }
+    }
+
     pub fn verify_to_target(&mut self, height: Height) -> VerificationResult {
         let (sender, receiver) = channel::bounded::<Event>(1);
 
@@ -259,6 +291,14 @@ impl Handle {
             Event::VerificationFailed(err) => Err(err),
             _ => todo!(),
         }
+    }
+
+    pub fn verify_to_highest_async(
+        &mut self,
+        callback: impl FnOnce(VerificationResult) -> () + Send + 'static,
+    ) {
+        let event = Event::VerifyToHighest(Callback::new(callback));
+        self.sender.send(event).unwrap();
     }
 
     pub fn verify_to_target_async(

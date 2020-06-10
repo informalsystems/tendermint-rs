@@ -1,5 +1,9 @@
+use tendermint_light_client::components::scheduler;
+use tendermint_light_client::light_client;
+use tendermint_light_client::prelude::*;
+use tendermint_light_client::supervisor::*;
+
 use gumdrop::Options;
-use tendermint_light_client::prelude::Height;
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -58,15 +62,11 @@ fn main() {
 }
 
 fn sync_cmd(opts: SyncOpts) {
-    use tendermint_light_client::components::scheduler;
-    use tendermint_light_client::prelude::*;
-
     let primary_addr = opts.address;
     let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
 
     let mut peer_map = HashMap::new();
     peer_map.insert(primary, primary_addr);
-
     let io = ProdIo::new(peer_map);
 
     let db = sled::open(opts.db_path).unwrap_or_else(|e| {
@@ -85,12 +85,12 @@ fn sync_cmd(opts: SyncOpts) {
         light_store.insert(trusted_state, VerifiedStatus::Verified);
     }
 
-    let mut state = State {
+    let state = State {
         light_store: Box::new(light_store),
         verification_trace: HashMap::new(),
     };
 
-    let options = Options {
+    let options = light_client::Options {
         trust_threshold: TrustThreshold {
             numerator: 1,
             denominator: 3,
@@ -104,17 +104,28 @@ fn sync_cmd(opts: SyncOpts) {
     let clock = SystemClock;
     let scheduler = scheduler::basic_bisecting_schedule;
 
-    let mut light_client = LightClient::new(primary, options, clock, scheduler, verifier, io);
+    let light_client = LightClient::new(primary, options, clock, scheduler, verifier, io);
+
+    let instance = Instance::new(light_client, state);
+
+    let peer_list = PeerList::builder()
+        .primary(primary)
+        .peer(primary, instance)
+        .build();
+
+    let mut supervisor = Supervisor::new(peer_list);
+    let mut handle = supervisor.handle();
 
     loop {
-        match light_client.verify_to_highest(&mut state) {
+        handle.verify_to_highest_async(|result| match result {
             Ok(light_block) => {
                 println!("[ info  ] synced to block {}", light_block.height());
             }
             Err(e) => {
                 println!("[ error ] sync failed: {}", e);
             }
-        }
+        });
+
         std::thread::sleep(Duration::from_millis(800));
     }
 }
