@@ -21,7 +21,7 @@ pub trait ForkDetector {
         light_block: &LightBlock,
         trusted_state: &LightBlock,
         secondaries: Vec<&Instance>,
-    ) -> ForkDetection;
+    ) -> Result<ForkDetection, Error>;
 }
 
 pub struct ProdForkDetector {
@@ -48,7 +48,7 @@ impl ForkDetector for ProdForkDetector {
         light_block: &LightBlock,
         trusted_state: &LightBlock,
         secondaries: Vec<&Instance>,
-    ) -> ForkDetection {
+    ) -> Result<ForkDetection, Error> {
         let mut forks = Vec::with_capacity(secondaries.len());
 
         for secondary in secondaries {
@@ -89,9 +89,9 @@ impl ForkDetector for ProdForkDetector {
         }
 
         if forks.is_empty() {
-            ForkDetection::NotDetected
+            Ok(ForkDetection::NotDetected)
         } else {
-            ForkDetection::Detected(forks)
+            Ok(ForkDetection::Detected(forks))
         }
     }
 }

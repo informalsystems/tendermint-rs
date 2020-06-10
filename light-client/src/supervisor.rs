@@ -163,7 +163,7 @@ impl Supervisor {
                         .latest(VerifiedStatus::Verified)
                         .unwrap();
 
-                    let outcome = self.detect_forks(&light_block, &trusted_state);
+                    let outcome = self.detect_forks(&light_block, &trusted_state)?;
 
                     match outcome {
                         Some(forks) => {
@@ -214,18 +214,18 @@ impl Supervisor {
         &mut self,
         light_block: &LightBlock,
         trusted_state: &LightBlock,
-    ) -> Option<Vec<Fork>> {
+    ) -> Result<Option<Vec<Fork>>, Error> {
         if self.peers.secondaries().is_empty() {
-            return None;
+            return Ok(None);
         }
 
         let fork_detector = ProdForkDetector::default(); // TODO: Should be injectable
         let result =
-            fork_detector.detect_forks(light_block, &trusted_state, self.peers.secondaries());
+            fork_detector.detect_forks(light_block, &trusted_state, self.peers.secondaries())?;
 
         match result {
-            ForkDetection::Detected(forks) => Some(forks),
-            ForkDetection::NotDetected => None,
+            ForkDetection::Detected(forks) => Ok(Some(forks)),
+            ForkDetection::NotDetected => Ok(None),
         }
     }
 
