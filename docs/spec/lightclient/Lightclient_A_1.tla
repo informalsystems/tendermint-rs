@@ -40,10 +40,10 @@ CONSTANTS
     (* a set of all nodes that can act as validators (correct and faulty) *)
 
 \* the state variables of Blockchain, see Blockchain.tla for the details
-VARIABLES chainHeight, now, blockchain, Faulty
+VARIABLES now, blockchain, Faulty
 
 \* All the variables of Blockchain. For some reason, BC!vars does not work
-bcvars == <<chainHeight, now, blockchain, Faulty>>
+bcvars == <<now, blockchain, Faulty>>
 
 (* Create an instance of Blockchain.
    We could write EXTENDS Blockchain, but then all the constants and state variables
@@ -52,7 +52,7 @@ bcvars == <<chainHeight, now, blockchain, Faulty>>
 ULTIMATE_HEIGHT == TARGET_HEIGHT + 1 
  
 BC == INSTANCE Blockchain_A_1 WITH
-  height <- chainHeight, now <- now, blockchain <- blockchain, Faulty <- Faulty
+  now <- now, blockchain <- blockchain, Faulty <- Faulty
 
 (************************** Lite client ************************************)
 
@@ -467,5 +467,5 @@ Completeness ==
 *)    
 =============================================================================
 \* Modification History
-\* Last modified Tue Jun 09 16:52:51 CEST 2020 by igor
+\* Last modified Wed Jun 10 12:49:33 CEST 2020 by igor
 \* Created Wed Oct 02 16:39:42 CEST 2019 by igor

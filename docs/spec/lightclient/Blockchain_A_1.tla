@@ -44,8 +44,6 @@ BlockHeaders == [
 LightBlocks == [header: BlockHeaders, Commits: Commits]
 
 VARIABLES
-    height,
-    (* the height of the blockchain, starting with 0 *)
     now,
         (* the current global time in integer units *)
     blockchain,
@@ -56,7 +54,7 @@ VARIABLES
        connect using a different id. *)
        
 (* all variables, to be used with UNCHANGED *)       
-vars == <<height, now, blockchain, Faulty>>         
+vars == <<now, blockchain, Faulty>>         
 
 (* The set of all correct nodes in a state *)
 Corr == AllNodes \ Faulty
@@ -119,7 +117,6 @@ IsLightBlockAllowedByDigitalSignatures(ht, block) ==
  We pick the faulty validators statically, but that should not affect the light client.
  *)            
 InitToHeight ==
-  /\ height = ULTIMATE_HEIGHT
   /\ Faulty \in SUBSET AllNodes \* some nodes may fail
   \* pick the validator sets and last commits
   /\ \E vs, lastCommit \in [Heights -> SUBSET AllNodes]:
@@ -158,7 +155,7 @@ AdvanceTime ==
   \E tm \in Int:
     /\ tm >= now
     /\ now' = tm
-  /\ UNCHANGED <<height, blockchain, Faulty>>
+  /\ UNCHANGED <<blockchain, Faulty>>
 
 (*
  One more process fails. As a result, the blockchain may move into the faulty zone.
@@ -169,12 +166,8 @@ OneMoreFault ==
   /\ \E n \in AllNodes \ Faulty:
       /\ Faulty' = Faulty \cup {n}
       /\ Faulty' /= AllNodes \* at least process remains non-faulty
-  /\ UNCHANGED <<height, now, blockchain>>
-
-(* stuttering at the end of the blockchain *)
-StutterInTheEnd == 
-  height = ULTIMATE_HEIGHT /\ UNCHANGED vars
+  /\ UNCHANGED <<now, blockchain>>
 =============================================================================
 \* Modification History
-\* Last modified Tue Jun 09 16:41:59 CEST 2020 by igor
+\* Last modified Wed Jun 10 12:49:17 CEST 2020 by igor
 \* Created Fri Oct 11 15:45:11 CEST 2019 by igor

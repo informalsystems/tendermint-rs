@@ -9,7 +9,7 @@ IS_PRIMARY_CORRECT == FALSE
 VARIABLES
   state, nextHeight, nprobes, fetchedLightBlocks, lightBlockStatus,
   latestVerified, nprobes,
-  chainHeight, now, blockchain, Faulty
+  now, blockchain, Faulty
 
 INSTANCE Lightclient_A_1
 ============================================================================
