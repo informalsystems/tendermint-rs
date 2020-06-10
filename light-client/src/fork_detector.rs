@@ -15,7 +15,7 @@ pub enum Fork {
     Faulty(LightBlock),
 }
 
-pub trait ForkDetector {
+pub trait ForkDetector: Send {
     fn detect_forks(
         &self,
         light_block: &LightBlock,

@@ -1,5 +1,5 @@
 use crate::callback::Callback;
-use crate::fork_detector::{Fork, ForkDetection, ForkDetector, ProdForkDetector};
+use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
 use crate::prelude::*;
 
 use contracts::pre;
@@ -113,24 +113,33 @@ impl PeerList {
     }
 }
 
-#[derive(Debug)]
 pub struct Supervisor {
     peers: PeerList,
+    fork_detector: Box<dyn ForkDetector>,
     sender: channel::Sender<Event>,
     receiver: channel::Receiver<Event>,
+}
+
+impl std::fmt::Debug for Supervisor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Supervisor")
+            .field("peers", &self.peers)
+            .finish()
+    }
 }
 
 // Ensure the `Supervisor` can be sent across thread boundaries.
 static_assertions::assert_impl_all!(Supervisor: Send);
 
 impl Supervisor {
-    pub fn new(peers: PeerList) -> Self {
+    pub fn new(peers: PeerList, fork_detector: impl ForkDetector + 'static) -> Self {
         let (sender, receiver) = channel::unbounded::<Event>();
 
         Self {
+            peers,
             sender,
             receiver,
-            peers,
+            fork_detector: Box::new(fork_detector),
         }
     }
 
@@ -219,9 +228,11 @@ impl Supervisor {
             return Ok(None);
         }
 
-        let fork_detector = ProdForkDetector::default(); // TODO: Should be injectable
-        let result =
-            fork_detector.detect_forks(light_block, &trusted_state, self.peers.secondaries())?;
+        let result = self.fork_detector.detect_forks(
+            light_block,
+            &trusted_state,
+            self.peers.secondaries(),
+        )?;
 
         match result {
             ForkDetection::Detected(forks) => Ok(Some(forks)),

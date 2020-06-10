@@ -1,4 +1,5 @@
 use tendermint_light_client::components::scheduler;
+use tendermint_light_client::fork_detector::ProdForkDetector;
 use tendermint_light_client::light_client;
 use tendermint_light_client::prelude::*;
 use tendermint_light_client::supervisor::*;
@@ -118,7 +119,7 @@ fn sync_cmd(opts: SyncOpts) {
         .peer(primary, instance)
         .build();
 
-    let mut supervisor = Supervisor::new(peer_list);
+    let mut supervisor = Supervisor::new(peer_list, ProdForkDetector::default());
     let mut handle = supervisor.handle();
 
     std::thread::spawn(|| supervisor.run());
