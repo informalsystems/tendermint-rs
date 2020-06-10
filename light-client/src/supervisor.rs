@@ -107,8 +107,9 @@ impl Supervisor {
                                         self.report_evidence(&block);
                                         forked.push(block.provider);
                                     }
-                                    Fork::Faulty(block) => {
+                                    Fork::Faulty(block, _error) => {
                                         self.peers.remove_secondary(&block.provider);
+                                        // TODO: Log/record the error
                                     }
                                 }
                             }

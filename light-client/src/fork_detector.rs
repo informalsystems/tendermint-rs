@@ -12,7 +12,7 @@ pub enum ForkDetection {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Fork {
     Forked(LightBlock),
-    Faulty(LightBlock),
+    Faulty(LightBlock, ErrorKind),
 }
 
 pub trait ForkDetector: Send {
@@ -84,7 +84,7 @@ impl ForkDetector for ProdForkDetector {
             match result {
                 Ok(_) => forks.push(Fork::Forked(secondary_block)),
                 Err(e) if e.kind().has_expired() => forks.push(Fork::Forked(secondary_block)),
-                Err(_) => forks.push(Fork::Faulty(secondary_block)),
+                Err(e) => forks.push(Fork::Faulty(secondary_block, e.kind().clone())),
             }
         }
 
