@@ -204,8 +204,9 @@ impl Supervisor {
                 }
                 // Verification failed
                 Err(_err) => {
-                    // Swap primary, and continue with new primary, if any
+                    // Swap primary, and continue with new primary, if any.
                     self.peers.swap_primary()?;
+                    // TODO: Log/record error
                     continue;
                 }
             }
@@ -262,7 +263,7 @@ impl Supervisor {
                     callback.call(outcome);
                 }
                 _ => {
-                    // NoOp?
+                    // TODO: Log/record unexpected event
                 }
             }
         }
@@ -279,28 +280,17 @@ impl Handle {
     }
 
     pub fn verify_to_highest(&mut self) -> VerificationResult {
-        let (sender, receiver) = channel::bounded::<Event>(1);
-
-        let callback = Callback::new(move |result| {
-            // We need to create an event here
-            let event = match result {
-                Ok(header) => Event::VerificationSuccessed(header),
-                Err(err) => Event::VerificationFailed(err),
-            };
-
-            sender.send(event).unwrap();
-        });
-
-        self.sender.send(Event::VerifyToHighest(callback)).unwrap();
-
-        match receiver.recv().unwrap() {
-            Event::VerificationSuccessed(header) => Ok(header),
-            Event::VerificationFailed(err) => Err(err),
-            _ => todo!(),
-        }
+        self.verify(Event::VerifyToHighest)
     }
 
     pub fn verify_to_target(&mut self, height: Height) -> VerificationResult {
+        self.verify(|callback| Event::VerifyToTarget(height, callback))
+    }
+
+    fn verify(
+        &mut self,
+        make_event: impl FnOnce(Callback<VerificationResult>) -> Event,
+    ) -> VerificationResult {
         let (sender, receiver) = channel::bounded::<Event>(1);
 
         let callback = Callback::new(move |result| {
@@ -313,9 +303,8 @@ impl Handle {
             sender.send(event).unwrap();
         });
 
-        self.sender
-            .send(Event::VerifyToTarget(height, callback))
-            .unwrap();
+        let event = make_event(callback);
+        self.sender.send(event).unwrap();
 
         match receiver.recv().unwrap() {
             Event::VerificationSuccessed(header) => Ok(header),
