@@ -152,9 +152,7 @@ InFaultyZone ==
   Advance the clock by zero or more time units.
   *)
 AdvanceTime ==
-  \E tm \in Int:
-    /\ tm >= now
-    /\ now' = tm
+  \E tm \in Int: tm >= now /\ now' = tm
   /\ UNCHANGED <<blockchain, Faulty>>
 
 (*
@@ -169,5 +167,5 @@ OneMoreFault ==
   /\ UNCHANGED <<now, blockchain>>
 =============================================================================
 \* Modification History
-\* Last modified Wed Jun 10 12:49:17 CEST 2020 by igor
+\* Last modified Wed Jun 10 14:10:54 CEST 2020 by igor
 \* Created Fri Oct 11 15:45:11 CEST 2019 by igor

@@ -244,15 +244,6 @@ VerifyToTargetDone ==
     /\ latestVerified.header.height >= TARGET_HEIGHT
     /\ state' = "finishedSuccess"
     /\ UNCHANGED <<nextHeight, nprobes, fetchedLightBlocks, lightBlockStatus, latestVerified>>  
-    
-(*
- The light client is either executing VerifyToTarget, or it has terminated.
- (In the latter case, a model checker reports a deadlock.)
- *)
-LCNext ==
-  /\ state = "working"
-  /\ VerifyToTargetLoop \/ VerifyToTargetDone 
-            
             
 (********************* Lite client + Blockchain *******************)
 Init ==
@@ -262,14 +253,15 @@ Init ==
     /\ LCInit
 
 (*
-  The system step is very simple. The light client makes one iteration.
+  The system step is very simple.
+  The light client is either executing VerifyToTarget, or it has terminated.
+  (In the latter case, a model checker reports a deadlock.)
   Simultaneously, the global clock may advance.
  *)
 Next ==
-    /\ state /= "finished"
-    /\ LCNext         \* the light client makes one step
+    /\ state = "working"
+    /\ VerifyToTargetLoop \/ VerifyToTargetDone 
     /\ BC!AdvanceTime \* the global clock is advanced by zero or more time units
-    /\ UNCHANGED bcvars
 
 (************************* Types ******************************************)
 TypeOK ==
@@ -467,5 +459,5 @@ Completeness ==
 *)    
 =============================================================================
 \* Modification History
-\* Last modified Wed Jun 10 12:49:33 CEST 2020 by igor
+\* Last modified Wed Jun 10 14:55:58 CEST 2020 by igor
 \* Created Wed Oct 02 16:39:42 CEST 2019 by igor
