@@ -96,15 +96,16 @@ impl LightClient {
         self.verify_to_target(target_block.height(), state)
     }
 
-    /// Attemps to update the light client to a block of the primary node at the given height.
+    /// Update the light client to a block of the primary node at the given height.
     ///
     /// This is the main function and uses the following components:
     ///
-    /// - The I/O component is called to download the next light block.
+    /// - The I/O component is called to fetch the next light block.
     ///   It is the only component that communicates with other nodes.
     /// - The Verifier component checks whether a header is valid and checks if a new
     ///   light block should be trusted based on a previously verified light block.
-    /// - The Scheduler component decides which height to try to verify next.
+    /// - The Scheduler component decides which height to try to verify next, in case
+    ///   the current block pass verification but cannot be trusted yet.
     ///
     /// ## Implements
     /// - [LCV-DIST-SAFE.1]
