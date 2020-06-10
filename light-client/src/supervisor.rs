@@ -103,8 +103,10 @@ impl PeerList {
 
     pub fn swap_primary(&mut self) -> Result<(), Error> {
         if let Some(peer_id) = self.peers.keys().next() {
-            self.primary = *peer_id;
-            return Ok(());
+            if peer_id != &self.primary {
+                self.primary = *peer_id;
+                return Ok(());
+            }
         }
 
         bail!(ErrorKind::NoValidPeerLeft)
@@ -133,11 +135,24 @@ impl Supervisor {
     }
 
     #[pre(self.peers.primary().is_some())]
+    pub fn verify_to_highest(&mut self) -> VerificationResult {
+        self.verify(None)
+    }
+
+    #[pre(self.peers.primary().is_some())]
     pub fn verify_to_target(&mut self, height: Height) -> VerificationResult {
+        self.verify(Some(height))
+    }
+
+    #[pre(self.peers.primary().is_some())]
+    fn verify(&mut self, height: Option<Height>) -> VerificationResult {
         while let Some(primary) = self.peers.primary_mut() {
-            let verdict = primary
-                .light_client
-                .verify_to_target(height, &mut primary.state);
+            let verdict = match height {
+                None => primary.light_client.verify_to_highest(&mut primary.state),
+                Some(height) => primary
+                    .light_client
+                    .verify_to_target(height, &mut primary.state),
+            };
 
             match verdict {
                 Ok(light_block) => {
@@ -221,6 +236,7 @@ impl Supervisor {
     pub fn run(mut self) {
         loop {
             let event = self.receiver.recv().unwrap();
+
             match event {
                 Event::Terminate(callback) => {
                     callback.call(());
@@ -228,6 +244,10 @@ impl Supervisor {
                 }
                 Event::VerifyToTarget(height, callback) => {
                     let outcome = self.verify_to_target(height);
+                    callback.call(outcome);
+                }
+                Event::VerifyToHighest(callback) => {
+                    let outcome = self.verify_to_highest();
                     callback.call(outcome);
                 }
                 _ => {

@@ -83,6 +83,11 @@ fn sync_cmd(opts: SyncOpts) {
         });
 
         light_store.insert(trusted_state, VerifiedStatus::Verified);
+    } else {
+        if light_store.latest(VerifiedStatus::Verified).is_none() {
+            println!("[ error ] no trusted state in database, please specify a trusted header");
+            std::process::exit(1);
+        }
     }
 
     let state = State {
@@ -115,6 +120,8 @@ fn sync_cmd(opts: SyncOpts) {
 
     let mut supervisor = Supervisor::new(peer_list);
     let mut handle = supervisor.handle();
+
+    std::thread::spawn(|| supervisor.run());
 
     loop {
         handle.verify_to_highest_async(|result| match result {
