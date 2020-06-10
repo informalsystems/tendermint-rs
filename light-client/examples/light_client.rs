@@ -1,6 +1,7 @@
 use tendermint_light_client::components::scheduler;
 use tendermint_light_client::fork_detector::ProdForkDetector;
 use tendermint_light_client::light_client;
+use tendermint_light_client::peer_list::PeerList;
 use tendermint_light_client::prelude::*;
 use tendermint_light_client::supervisor::*;
 

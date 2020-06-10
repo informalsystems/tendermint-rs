@@ -19,6 +19,7 @@ pub mod errors;
 pub mod fork_detector;
 pub mod light_client;
 pub mod operations;
+pub mod peer_list;
 pub mod predicates;
 pub mod prelude;
 pub mod state;
