@@ -219,7 +219,7 @@ impl Supervisor {
             return None;
         }
 
-        let fork_detector = ProdForkDetector::new(); // TODO: Should be injectable
+        let fork_detector = ProdForkDetector::default(); // TODO: Should be injectable
         let result =
             fork_detector.detect_forks(light_block, &trusted_state, self.peers.secondaries());
 

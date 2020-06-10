@@ -24,17 +24,21 @@ pub trait ForkDetector {
     ) -> ForkDetection;
 }
 
-pub struct ProdForkDetector {}
+pub struct ProdForkDetector {
+    header_hasher: Box<dyn HeaderHasher>,
+}
 
 impl ProdForkDetector {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(header_hasher: impl HeaderHasher + 'static) -> Self {
+        Self {
+            header_hasher: Box::new(header_hasher),
+        }
     }
 }
 
 impl Default for ProdForkDetector {
     fn default() -> Self {
-        Self::new()
+        Self::new(ProdHeaderHasher)
     }
 }
 
@@ -55,8 +59,13 @@ impl ForkDetector for ProdForkDetector {
                 .get_or_fetch_block(light_block.height(), &mut state)
                 .unwrap(); // FIXME: unwrap
 
-            // TODO: Should hash the headers here instead of comparing them for equality?
-            if light_block.signed_header.header == secondary_block.signed_header.header {
+            let primary_hash = self.header_hasher.hash(&light_block.signed_header.header);
+            let secondary_hash = self
+                .header_hasher
+                .hash(&secondary_block.signed_header.header);
+
+            if primary_hash == secondary_hash {
+                // Hashes match, continue with next secondary, if any.
                 continue;
             }
 
