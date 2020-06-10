@@ -108,6 +108,9 @@ pub struct Supervisor {
     receiver: channel::Receiver<Event>,
 }
 
+// Ensure the `Supervisor` can be sent across thread boundaries.
+static_assertions::assert_impl_all!(Supervisor: Send);
+
 impl Supervisor {
     pub fn new(peers: PeerList) -> Self {
         let (sender, receiver) = channel::unbounded::<Event>();
@@ -285,14 +288,3 @@ impl Handler {
     }
 }
 
-#[allow(dead_code, unused_variables)]
-mod test {
-    use super::*;
-
-    fn test(mut s: Supervisor) {
-        let h1 = s.handler();
-        let h2 = s.handler();
-
-        std::thread::spawn(move || s.run());
-    }
-}
