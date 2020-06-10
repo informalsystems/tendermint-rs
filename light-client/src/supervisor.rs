@@ -204,8 +204,8 @@ impl Supervisor {
         }
     }
 
-    pub fn handler(&mut self) -> Handler {
-        Handler::new(self.sender.clone())
+    pub fn handle(&mut self) -> Handle {
+        Handle::new(self.sender.clone())
     }
 
     pub fn run(mut self) {
@@ -228,11 +228,11 @@ impl Supervisor {
     }
 }
 
-pub struct Handler {
+pub struct Handle {
     sender: channel::Sender<Event>,
 }
 
-impl Handler {
+impl Handle {
     pub fn new(sender: channel::Sender<Event>) -> Self {
         Self { sender }
     }
