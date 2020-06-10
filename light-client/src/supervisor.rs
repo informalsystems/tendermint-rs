@@ -205,8 +205,6 @@ impl Supervisor {
         Handler::new(self.sender.clone())
     }
 
-    // Consume the instance here but return a runtime which will allow interaction
-    // Maybe return an output channnel here?
     pub fn run(mut self) {
         loop {
             let event = self.receiver.recv().unwrap();
@@ -231,9 +229,7 @@ pub struct Handler {
     sender: channel::Sender<Event>,
 }
 
-// Assume single handler
 impl Handler {
-    // How do we connect with the runtime?
     pub fn new(sender: channel::Sender<Event>) -> Self {
         Self { sender }
     }
