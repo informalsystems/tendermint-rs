@@ -2,7 +2,7 @@
 
 use std::slice;
 use {
-    crate::{serializers, PublicKey, Vote},
+    crate::{serializers, PublicKey, Vote, block::signed_header::SignedHeader},
     serde::{Deserialize, Serialize},
 };
 
@@ -17,6 +17,10 @@ pub enum Evidence {
     /// Duplicate vote evidence
     #[serde(rename = "tendermint/DuplicateVoteEvidence")]
     DuplicateVote(DuplicateVoteEvidence),
+
+    /// Conflicting headers evidence
+    #[serde(rename = "tendermint/ConflictingHeadersEvidence")]
+    ConflictingHeaders(ConflictingHeadersEvidence),
 }
 
 /// Duplicate vote evidence
@@ -28,6 +32,15 @@ pub struct DuplicateVoteEvidence {
     vote_a: Vote,
     #[serde(rename = "VoteB")]
     vote_b: Vote,
+}
+
+/// Conflicting headers evidence.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ConflictingHeadersEvidence {
+    #[serde(rename = "H1")]
+    h1: SignedHeader,
+    #[serde(rename = "H2")]
+    h2: SignedHeader,
 }
 
 /// Evidence data is a wrapper for a list of `Evidence`.
