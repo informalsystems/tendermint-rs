@@ -6,7 +6,7 @@ use crate::{
     net,
     rpc::{endpoint::*, Error, Request, Response},
     Genesis,
-    Evidence,
+    evidence::Evidence,
 };
 use bytes::buf::ext::BufExt;
 use hyper::header;
@@ -156,8 +156,8 @@ impl Client {
     pub async fn broadcast_evidence(
         &self,
         e: Evidence,
-    ) -> Result<broadcast_evidence::Response, Error> {
-        self.perform(broadcast_evidence::Request::new(e)).await
+    ) -> Result<evidence::Response, Error> {
+        self.perform(evidence::Request::new(e)).await
     }
 
     /// Perform a request against the RPC endpoint

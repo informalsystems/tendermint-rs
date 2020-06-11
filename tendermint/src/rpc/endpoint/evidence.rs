@@ -2,7 +2,7 @@
 //! `/broadcast_evidence`: broadcast an evidence.
 
 use crate::{
-    abci::{transaction},
+    abci::transaction,
     rpc,
     evidence::Evidence,
 };
@@ -12,13 +12,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
     /// Evidence to broadcast
-    pub e: Evidence,
+    pub ev: Evidence,
 }
 
 impl Request {
     /// Create a new evidence broadcast RPC request
-    pub fn new(e: Evidence) -> Request {
-        Request { e }
+    pub fn new(ev: Evidence) -> Request {
+        Request { ev }
     }
 }
 
@@ -34,6 +34,7 @@ impl rpc::Request for Request {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
     /// Evidence hash
+    /// TODO: transaction::Hash should be tmhash (github.com/tendermint/tendermint/crypto/tmhash)
     pub hash: transaction::Hash,
 }
 
