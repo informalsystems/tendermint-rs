@@ -13,3 +13,4 @@ pub mod net_info;
 pub mod status;
 pub mod subscribe;
 pub mod validators;
+pub mod evidence;

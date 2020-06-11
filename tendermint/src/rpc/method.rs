@@ -56,6 +56,9 @@ pub enum Method {
 
     /// Subscribe to events over the websocket
     Subscribe,
+
+    /// Broadcast evidence
+    BroadcastEvidence,
 }
 
 impl Method {
@@ -77,6 +80,7 @@ impl Method {
             Method::Status => "status",
             Method::Validators => "validators",
             Method::Subscribe => "subscribe",
+            Method::BroadcastEvidence => "broadcast_evidence",
         }
     }
 }
@@ -101,6 +105,7 @@ impl FromStr for Method {
             "status" => Method::Status,
             "validators" => Method::Validators,
             "subscribe" => Method::Subscribe,
+            "broadcast_evidence" => Method::BroadcastEvidence,
             other => return Err(Error::method_not_found(other)),
         })
     }
