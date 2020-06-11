@@ -1,4 +1,7 @@
-use crate::prelude::*;
+use crate::{
+    store::{LightStore, VerifiedStatus},
+    types::Height,
+};
 
 use contracts::*;
 

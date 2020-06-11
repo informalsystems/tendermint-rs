@@ -4,7 +4,7 @@
 //! - a transient, in-memory implementation for testing purposes
 //! - a persistent, on-disk, sled-backed implementation for production
 
-use crate::prelude::*;
+use crate::types::{Height, LightBlock};
 
 use serde::{Deserialize, Serialize};
 

@@ -4,7 +4,12 @@ use anomaly::{BoxError, Context};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::prelude::*;
+use crate::{
+    components::io::IoError,
+    light_client::Options,
+    predicates::errors::VerificationError,
+    types::{Height, LightBlock, PeerId},
+};
 
 pub type Error = anomaly::Error<ErrorKind>;
 
@@ -27,7 +32,7 @@ pub enum ErrorKind {
 
     #[error("latest trusted state outside of trusting period")]
     TrustedStateOutsideTrustingPeriod {
-        trusted_state: Box<TrustedState>,
+        trusted_state: Box<LightBlock>,
         options: Options,
     },
 

@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::types::Time;
 
 /// Abstracts over the current time.
 pub trait Clock: Send {

@@ -5,11 +5,17 @@
 use contracts::*;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::{fmt, time::Duration};
 
-use crate::components::{io::*, scheduler::*, verifier::*};
+use crate::components::{clock::Clock, io::*, scheduler::*, verifier::*};
 use crate::contracts::*;
-use crate::prelude::*;
+use crate::{
+    bail,
+    errors::{Error, ErrorKind},
+    state::State,
+    store::VerifiedStatus,
+    types::{Height, LightBlock, PeerId, Time, TrustThreshold},
+};
 
 /// Verification parameters
 ///

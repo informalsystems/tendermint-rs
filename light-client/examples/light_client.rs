@@ -1,14 +1,23 @@
-use tendermint_light_client::components::scheduler;
-use tendermint_light_client::fork_detector::ProdForkDetector;
-use tendermint_light_client::light_client;
-use tendermint_light_client::peer_list::PeerList;
-use tendermint_light_client::prelude::*;
-use tendermint_light_client::supervisor::*;
+use tendermint_light_client::{
+    components::{
+        clock::SystemClock,
+        io::{Io, ProdIo},
+        scheduler,
+        verifier::ProdVerifier,
+    },
+    fork_detector::ProdForkDetector,
+    light_client::{self, LightClient},
+    peer_list::PeerList,
+    state::State,
+    store::{sled::SledStore, LightStore, VerifiedStatus},
+    supervisor::{Instance, Supervisor},
+    types::{Height, PeerId, Time, TrustThreshold},
+};
 
 use gumdrop::Options;
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 
 #[derive(Debug, Options)]
 struct CliOptions {

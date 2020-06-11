@@ -1,6 +1,6 @@
 //! Utilities and datatypes for use in tests.
 
-use crate::prelude::*;
+use crate::types::{Hash, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet};
 
 use serde::Deserialize;
 

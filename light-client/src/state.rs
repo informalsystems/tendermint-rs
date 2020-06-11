@@ -1,6 +1,9 @@
 //! State maintained by the light client.
 
-use crate::prelude::*;
+use crate::{
+    store::{LightStore, VerifiedStatus},
+    types::{Height, LightBlock},
+};
 
 use contracts::*;
 use std::collections::{HashMap, HashSet};

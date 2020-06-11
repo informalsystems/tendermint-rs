@@ -1,7 +1,14 @@
 use crate::callback::Callback;
 use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
 use crate::peer_list::PeerList;
-use crate::prelude::*;
+use crate::{
+    bail,
+    errors::{Error, ErrorKind},
+    light_client::LightClient,
+    state::State,
+    store::VerifiedStatus,
+    types::{Height, LightBlock},
+};
 
 use contracts::pre;
 use crossbeam_channel as channel;

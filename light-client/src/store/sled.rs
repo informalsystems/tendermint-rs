@@ -1,8 +1,11 @@
 pub mod utils;
 
-use self::utils::*;
-use crate::prelude::*;
+use crate::{
+    store::sled::utils::*,
+    types::{Height, LightBlock},
+};
 
+use super::{LightStore, VerifiedStatus};
 use ::sled::Db as SledDb;
 
 const VERIFIED_PREFIX: &str = "light_store/verified";

@@ -1,4 +1,8 @@
-use crate::prelude::*;
+use crate::{
+    bail,
+    predicates::errors::VerificationError,
+    types::{SignedHeader, ValidatorSet},
+};
 
 use anomaly::BoxError;
 use tendermint::lite::types::ValidatorSet as _;

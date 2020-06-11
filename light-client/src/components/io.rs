@@ -8,7 +8,7 @@ use thiserror::Error;
 use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
 use tendermint::validator::Set as TMValidatorSet;
 
-use crate::prelude::*;
+use crate::types::{Height, LightBlock, PeerId};
 
 pub const LATEST_HEIGHT: Height = 0;
 

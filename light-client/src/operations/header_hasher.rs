@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::types::Header;
 
 use tendermint::amino_types::{message::AminoMessage, BlockId, ConsensusVersion, TimeMsg};
 use tendermint::merkle::simple_hash_from_byte_vectors;

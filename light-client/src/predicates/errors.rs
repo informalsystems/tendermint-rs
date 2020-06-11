@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::errors::ErrorExt;
-use crate::prelude::*;
+use crate::types::{Hash, Height, Time, TrustThreshold};
 
 /// The various errors which can be raised by the verifier component,
 /// when validating or verifying a light block.

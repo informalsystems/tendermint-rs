@@ -1,5 +1,9 @@
-use crate::prelude::*;
-use crate::supervisor::Instance;
+use crate::{
+    bail,
+    errors::{Error, ErrorKind},
+    supervisor::Instance,
+    types::PeerId,
+};
 
 use contracts::pre;
 use std::collections::HashMap;

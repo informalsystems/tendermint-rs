@@ -1,7 +1,14 @@
 //! Predicates for light block validation and verification.
 
-use crate::prelude::*;
+use crate::{
+    ensure,
+    light_client::Options,
+    operations::{CommitValidator, HeaderHasher, VotingPowerCalculator},
+    types::{Header, Height, LightBlock, SignedHeader, Time, TrustThreshold, ValidatorSet},
+};
 
+use errors::VerificationError;
+use std::time::Duration;
 use tendermint::lite::ValidatorSet as _;
 
 pub mod errors;
@@ -212,7 +219,7 @@ pub trait VerificationPredicates: Send {
     fn valid_next_validator_set(
         &self,
         light_block: &LightBlock,
-        trusted_state: &TrustedState,
+        trusted_state: &LightBlock,
     ) -> Result<(), VerificationError> {
         ensure!(
             light_block.signed_header.header.validators_hash
