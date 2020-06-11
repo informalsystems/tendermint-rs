@@ -75,8 +75,9 @@ fn run_test_case(tc: TestCase<LightBlock>) {
         None => false,
     };
 
-    // FIXME: What should this be, and where should it be configured?
-    let clock_drift = Duration::from_secs(1);
+    // In Go, default is 10 sec.
+    // Once we switch to the proposer based timestamps, it will probably be a consensus parameter
+    let clock_drift = Duration::from_secs(10);
 
     let trusting_period: Duration = tc.initial.trusting_period.into();
     let tm_now = tc.initial.now;
@@ -169,8 +170,9 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     let trusting_period = tc.trust_options.period;
     let now = tc.now;
 
-    // FIXME: What should this be, and where should it be configured?
-    let clock_drift = Duration::from_secs(1);
+    // In Go, default is 10 sec.
+    // Once we switch to the proposer based timestamps, it will probably be a consensus parameter
+    let clock_drift = Duration::from_secs(10);
 
     let clock = MockClock { now };
 
