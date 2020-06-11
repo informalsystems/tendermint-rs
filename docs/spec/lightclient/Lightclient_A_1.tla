@@ -312,7 +312,7 @@ CorrectnessInv ==
  Check that the sequence of the headers in storedLightBlocks satisfies ValidAndVerified = "OK" pairwise
  This property is easily violated, whenever a header cannot be trusted anymore.
  *)
-StoredHeadersAreSoundInv ==
+StoredHeadersAreVerifiedInv ==
     state = "finishedSuccess"
         =>
         \A lh, rh \in DOMAIN fetchedLightBlocks: \* for every pair of different stored headers
@@ -326,7 +326,7 @@ StoredHeadersAreSoundInv ==
 \* An improved version of StoredHeadersAreSound, assuming that a header may be not trusted.
 \* This invariant candidate is also violated,
 \* as there may be some unverified blocks left in the middle.
-StoredHeadersAreSoundOrNotTrustedInv ==
+StoredHeadersAreVerifiedOrNotTrustedInv ==
     state = "finishedSuccess"
         =>
         \A lh, rh \in DOMAIN fetchedLightBlocks: \* for every pair of different stored headers
@@ -459,5 +459,5 @@ Completeness ==
 *)    
 =============================================================================
 \* Modification History
-\* Last modified Wed Jun 10 14:55:58 CEST 2020 by igor
+\* Last modified Thu Jun 11 10:48:56 CEST 2020 by igor
 \* Created Wed Oct 02 16:39:42 CEST 2019 by igor

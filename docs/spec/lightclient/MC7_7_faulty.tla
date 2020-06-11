@@ -1,8 +1,8 @@
----------------------------- MODULE MC4_1_3_faulty ---------------------------
+------------------------- MODULE MC7_7_faulty ---------------------------
 
-AllNodes == {"n1", "n2", "n3", "n4"}
+AllNodes == {"n1", "n2", "n3", "n4", "n5", "n6", "n7"}
 TRUSTED_HEIGHT == 1
-TARGET_HEIGHT == 3
+TARGET_HEIGHT == 7
 TRUSTING_PERIOD == 1400 \* two weeks, one day is 100 time units :-)
 IS_PRIMARY_CORRECT == FALSE
 
@@ -12,4 +12,4 @@ VARIABLES
   now, blockchain, Faulty
 
 INSTANCE Lightclient_A_1
-==============================================================================
+============================================================================

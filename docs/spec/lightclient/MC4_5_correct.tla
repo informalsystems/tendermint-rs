@@ -1,10 +1,10 @@
-------------------------- MODULE MC4_1_6_faulty ---------------------------
+------------------------- MODULE MC4_5_correct ---------------------------
 
 AllNodes == {"n1", "n2", "n3", "n4"}
 TRUSTED_HEIGHT == 1
-TARGET_HEIGHT == 6
+TARGET_HEIGHT == 5
 TRUSTING_PERIOD == 1400 \* two weeks, one day is 100 time units :-)
-IS_PRIMARY_CORRECT == FALSE
+IS_PRIMARY_CORRECT == TRUE
 
 VARIABLES
   state, nextHeight, fetchedLightBlocks, lightBlockStatus, latestVerified,
