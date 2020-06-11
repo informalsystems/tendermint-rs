@@ -35,7 +35,7 @@ impl PeerList {
         self.peers.get_mut(&self.primary)
     }
 
-    pub fn secondaries(&self) -> Vec<&Instance> {
+    pub fn witnesses(&self) -> Vec<&Instance> {
         self.peers
             .keys()
             .filter(|peer_id| peer_id != &&self.primary)
@@ -44,7 +44,7 @@ impl PeerList {
     }
 
     #[pre(peer_id != &self.primary)]
-    pub fn remove_secondary(&mut self, peer_id: &PeerId) {
+    pub fn remove_witness(&mut self, peer_id: &PeerId) {
         self.peers.remove(peer_id);
     }
 

@@ -21,6 +21,9 @@ pub enum ErrorKind {
     #[error("store error")]
     Store,
 
+    #[error("no witnesses")]
+    NoWitnesses,
+
     #[error("no valid peer left")]
     NoValidPeerLeft,
 

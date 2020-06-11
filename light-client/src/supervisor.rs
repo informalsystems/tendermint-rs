@@ -115,7 +115,7 @@ impl Supervisor {
                                         forked.push(block.provider);
                                     }
                                     Fork::Faulty(block, _error) => {
-                                        self.peers.remove_secondary(&block.provider);
+                                        self.peers.remove_witness(&block.provider);
                                         // TODO: Log/record the error
                                     }
                                 }
@@ -156,15 +156,13 @@ impl Supervisor {
         light_block: &LightBlock,
         trusted_state: &LightBlock,
     ) -> Result<Option<Vec<Fork>>, Error> {
-        if self.peers.secondaries().is_empty() {
-            return Ok(None);
+        if self.peers.witnesses().is_empty() {
+            bail!(ErrorKind::NoWitnesses);
         }
 
-        let result = self.fork_detector.detect_forks(
-            light_block,
-            &trusted_state,
-            self.peers.secondaries(),
-        )?;
+        let result =
+            self.fork_detector
+                .detect_forks(light_block, &trusted_state, self.peers.witnesses())?;
 
         match result {
             ForkDetection::Detected(forks) => Ok(Some(forks)),
