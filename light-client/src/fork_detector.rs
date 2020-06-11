@@ -26,7 +26,7 @@ pub trait ForkDetector: Send {
         &self,
         light_block: &LightBlock,
         trusted_state: &LightBlock,
-        secondaries: Vec<&Instance>,
+        witnesses: Vec<&Instance>,
     ) -> Result<ForkDetection, Error>;
 }
 
@@ -53,26 +53,24 @@ impl ForkDetector for ProdForkDetector {
         &self,
         light_block: &LightBlock,
         trusted_state: &LightBlock,
-        secondaries: Vec<&Instance>,
+        witnesses: Vec<&Instance>,
     ) -> Result<ForkDetection, Error> {
         let primary_hash = self.header_hasher.hash(&light_block.signed_header.header);
 
-        let mut forks = Vec::with_capacity(secondaries.len());
+        let mut forks = Vec::with_capacity(witnesses.len());
 
-        for secondary in secondaries {
+        for witness in witnesses {
             let mut state = State::new(MemoryStore::new());
 
-            let secondary_block = secondary
+            let witness_block = witness
                 .light_client
                 .get_or_fetch_block(light_block.height(), &mut state)
                 .unwrap(); // FIXME: unwrap
 
-            let secondary_hash = self
-                .header_hasher
-                .hash(&secondary_block.signed_header.header);
+            let witness_hash = self.header_hasher.hash(&witness_block.signed_header.header);
 
-            if primary_hash == secondary_hash {
-                // Hashes match, continue with next secondary, if any.
+            if primary_hash == witness_hash {
+                // Hashes match, continue with next witness, if any.
                 continue;
             }
 
@@ -82,16 +80,16 @@ impl ForkDetector for ProdForkDetector {
 
             state
                 .light_store
-                .update(secondary_block.clone(), VerifiedStatus::Unverified);
+                .update(witness_block.clone(), VerifiedStatus::Unverified);
 
-            let result = secondary
+            let result = witness
                 .light_client
                 .verify_to_target(light_block.height(), &mut state);
 
             match result {
-                Ok(_) => forks.push(Fork::Forked(secondary_block)),
-                Err(e) if e.kind().has_expired() => forks.push(Fork::Forked(secondary_block)),
-                Err(e) => forks.push(Fork::Faulty(secondary_block, e.kind().clone())),
+                Ok(_) => forks.push(Fork::Forked(witness_block)),
+                Err(e) if e.kind().has_expired() => forks.push(Fork::Forked(witness_block)),
+                Err(e) => forks.push(Fork::Faulty(witness_block, e.kind().clone())),
             }
         }
 
