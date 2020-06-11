@@ -55,6 +55,8 @@ impl ForkDetector for ProdForkDetector {
         trusted_state: &LightBlock,
         secondaries: Vec<&Instance>,
     ) -> Result<ForkDetection, Error> {
+        let primary_hash = self.header_hasher.hash(&light_block.signed_header.header);
+
         let mut forks = Vec::with_capacity(secondaries.len());
 
         for secondary in secondaries {
@@ -65,7 +67,6 @@ impl ForkDetector for ProdForkDetector {
                 .get_or_fetch_block(light_block.height(), &mut state)
                 .unwrap(); // FIXME: unwrap
 
-            let primary_hash = self.header_hasher.hash(&light_block.signed_header.header);
             let secondary_hash = self
                 .header_hasher
                 .hash(&secondary_block.signed_header.header);
