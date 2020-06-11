@@ -11,8 +11,11 @@ use crate::{
     types::{Height, LightBlock},
 };
 
-use contracts::pre;
+use std::collections::HashMap;
+
+use contracts::{contract_trait, pre};
 use crossbeam_channel as channel;
+use tendermint::rpc;
 
 /// Type alias for readability
 pub type VerificationResult = Result<LightBlock, Error>;
@@ -103,6 +106,7 @@ pub struct Supervisor {
     sender: channel::Sender<Event>,
     /// Channel through which to receive events from the `Handle`s
     receiver: channel::Receiver<Event>,
+    evidence_reporter: Box<dyn EvidenceReporter>,
 }
 
 impl std::fmt::Debug for Supervisor {
@@ -117,8 +121,14 @@ impl std::fmt::Debug for Supervisor {
 static_assertions::assert_impl_all!(Supervisor: Send);
 
 impl Supervisor {
+<<<<<<< HEAD
     /// Constructs a new supevisor from the given list of peers and fork detector instance.
     pub fn new(peers: PeerList, fork_detector: impl ForkDetector + 'static) -> Self {
+=======
+    pub fn new(peers: PeerList,
+        fork_detector: impl ForkDetector + 'static,
+        evidence_reporter: impl EvidenceReporter + 'static) -> Self {
+>>>>>>> EvidenceReporter and /broadcast_evidence endpoint
         let (sender, receiver) = channel::unbounded::<Event>();
 
         Self {
@@ -126,6 +136,7 @@ impl Supervisor {
             sender,
             receiver,
             fork_detector: Box::new(fork_detector),
+            evidence_reporter: Box::new(evidence_reporter),
         }
     }
 
@@ -214,7 +225,7 @@ impl Supervisor {
 
     /// Report the given light block as evidence of a fork.
     fn report_evidence(&mut self, _light_block: &LightBlock) {
-        ()
+        // self.evidence_reporter.report()
     }
 
     /// Perform fork detection with the given block and trusted state.
@@ -373,4 +384,61 @@ impl Handle {
             }
         }
     }
+}
+
+struct Evidence {
+
+}
+
+/// Interface for reporting evidence to full nodes, typically via the RPC client.
+#[contract_trait]
+pub trait EvidenceReporter: Send {
+    /// Report evidence to all connected full nodes.
+    fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError>;
+}
+
+/// Production implementation of the EvidenceReporter component, which reports evidence to full
+/// nodes via RPC.
+#[derive(Clone, Debug)]
+pub struct ProdEvidenceReporter {
+    peer_map: HashMap<PeerId, tendermint::net::Address>,
+}
+
+#[contract_trait]
+impl EvidenceReporter for ProdEvidenceReporter {
+
+    #[pre(self.peer_map.contains_key(&peer))]
+    fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
+        let res = block_on(self.rpc_client_for(peer).broadcast_evidence(e));
+
+        match res {
+            Ok(response) => Ok(response.hash),
+            Err(err) => Err(IoError::IoError(err)),
+        }
+    }
+}
+
+impl ProdEvidenceReporter {
+    /// Constructs a new ProdEvidenceReporter component.
+    ///
+    /// A peer map which maps peer IDS to their network address must be supplied.
+    pub fn new(peer_map: HashMap<PeerId, tendermint::net::Address>) -> Self {
+        Self { peer_map }
+    }
+
+    // FIXME: Cannot enable precondition because of "autoref lifetime" issue
+    // #[pre(self.peer_map.contains_key(&peer))]
+    fn rpc_client_for(&self, peer: PeerId) -> rpc::Client {
+        let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
+        rpc::Client::new(peer_addr)
+    }
+}
+
+fn block_on<F: std::future::Future>(f: F) -> F::Output {
+    tokio::runtime::Builder::new()
+        .basic_scheduler()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(f)
 }
