@@ -1,10 +1,11 @@
-use crate::callback::Callback;
-use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
-use crate::peer_list::PeerList;
 use crate::{
     bail,
+    callback::Callback,
+    components::io::IoError,
     errors::{Error, ErrorKind},
+    fork_detector::{Fork, ForkDetection, ForkDetector},
     light_client::LightClient,
+    peer_list::PeerList,
     state::State,
     store::VerifiedStatus,
     types::{Height, LightBlock},
@@ -162,11 +163,19 @@ impl Supervisor {
 
         let result =
             self.fork_detector
-                .detect_forks(light_block, &trusted_state, self.peers.witnesses())?;
+                .detect_forks(light_block, &trusted_state, self.peers.witnesses());
 
         match result {
-            ForkDetection::Detected(forks) => Ok(Some(forks)),
-            ForkDetection::NotDetected => Ok(None),
+            Ok(ForkDetection::Detected(forks)) => Ok(Some(forks)),
+            Ok(ForkDetection::NotDetected) => Ok(None),
+            Err(e) => match e.kind() {
+                // TODO: Clean this up
+                ErrorKind::Io(IoError::Timeout(peer)) => {
+                    self.peers.remove_witness(peer);
+                    Err(e)
+                }
+                _ => Err(e),
+            },
         }
     }
 

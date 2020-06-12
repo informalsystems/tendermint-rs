@@ -64,8 +64,7 @@ impl ForkDetector for ProdForkDetector {
 
             let witness_block = witness
                 .light_client
-                .get_or_fetch_block(light_block.height(), &mut state)
-                .unwrap(); // FIXME: unwrap
+                .get_or_fetch_block(light_block.height(), &mut state)?;
 
             let witness_hash = self.header_hasher.hash(&witness_block.signed_header.header);
 

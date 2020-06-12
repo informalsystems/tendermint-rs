@@ -20,8 +20,8 @@ pub enum IoError {
     IoError(#[from] rpc::Error),
 
     /// The request timed out.
-    #[error("request timed out")]
-    Timeout,
+    #[error("request to peer {0} timed out")]
+    Timeout(PeerId),
 }
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
@@ -91,6 +91,7 @@ impl ProdIo {
                     _ => rpc_client.commit(height).await,
                 }
             },
+            peer,
             self.timeout,
         )?;
 
@@ -102,7 +103,11 @@ impl ProdIo {
 
     #[pre(self.peer_map.contains_key(&peer))]
     fn fetch_validator_set(&self, peer: PeerId, height: Height) -> Result<TMValidatorSet, IoError> {
-        let res = block_on(self.rpc_client_for(peer).validators(height), self.timeout)?;
+        let res = block_on(
+            self.rpc_client_for(peer).validators(height),
+            peer,
+            self.timeout,
+        )?;
 
         match res {
             Ok(response) => Ok(TMValidatorSet::new(response.validators)),
@@ -118,7 +123,11 @@ impl ProdIo {
     }
 }
 
-fn block_on<F: std::future::Future>(f: F, timeout: Option<Duration>) -> Result<F::Output, IoError> {
+fn block_on<F: std::future::Future>(
+    f: F,
+    peer: PeerId,
+    timeout: Option<Duration>,
+) -> Result<F::Output, IoError> {
     let mut rt = tokio::runtime::Builder::new()
         .basic_scheduler()
         .enable_all()
@@ -127,7 +136,7 @@ fn block_on<F: std::future::Future>(f: F, timeout: Option<Duration>) -> Result<F
 
     if let Some(timeout) = timeout {
         rt.block_on(async { tokio::time::timeout(timeout, f).await })
-            .map_err(|_| IoError::Timeout)
+            .map_err(|_| IoError::Timeout(peer))
     } else {
         Ok(rt.block_on(f))
     }
