@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use contracts::{contract_trait, post, pre};
 use serde::{Deserialize, Serialize};
@@ -17,6 +18,10 @@ pub enum IoError {
     /// Wrapper for a `tendermint::rpc::Error`.
     #[error(transparent)]
     IoError(#[from] rpc::Error),
+
+    /// The request timed out.
+    #[error("request timed out")]
+    Timeout,
 }
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
@@ -45,6 +50,7 @@ where
 #[derive(Clone, Debug)]
 pub struct ProdIo {
     peer_map: HashMap<PeerId, tendermint::net::Address>,
+    timeout: Option<Duration>,
 }
 
 #[contract_trait]
@@ -66,8 +72,11 @@ impl ProdIo {
     /// Constructs a new ProdIo component.
     ///
     /// A peer map which maps peer IDS to their network address must be supplied.
-    pub fn new(peer_map: HashMap<PeerId, tendermint::net::Address>) -> Self {
-        Self { peer_map }
+    pub fn new(
+        peer_map: HashMap<PeerId, tendermint::net::Address>,
+        timeout: Option<Duration>,
+    ) -> Self {
+        Self { peer_map, timeout }
     }
 
     #[pre(self.peer_map.contains_key(&peer))]
@@ -75,12 +84,15 @@ impl ProdIo {
         let height: block::Height = height.into();
         let rpc_client = self.rpc_client_for(peer);
 
-        let res = block_on(async {
-            match height.value() {
-                0 => rpc_client.latest_commit().await,
-                _ => rpc_client.commit(height).await,
-            }
-        });
+        let res = block_on(
+            async {
+                match height.value() {
+                    0 => rpc_client.latest_commit().await,
+                    _ => rpc_client.commit(height).await,
+                }
+            },
+            self.timeout,
+        )?;
 
         match res {
             Ok(response) => Ok(response.signed_header),
@@ -90,7 +102,7 @@ impl ProdIo {
 
     #[pre(self.peer_map.contains_key(&peer))]
     fn fetch_validator_set(&self, peer: PeerId, height: Height) -> Result<TMValidatorSet, IoError> {
-        let res = block_on(self.rpc_client_for(peer).validators(height));
+        let res = block_on(self.rpc_client_for(peer).validators(height), self.timeout)?;
 
         match res {
             Ok(response) => Ok(TMValidatorSet::new(response.validators)),
@@ -106,11 +118,17 @@ impl ProdIo {
     }
 }
 
-fn block_on<F: std::future::Future>(f: F) -> F::Output {
-    tokio::runtime::Builder::new()
+fn block_on<F: std::future::Future>(f: F, timeout: Option<Duration>) -> Result<F::Output, IoError> {
+    let mut rt = tokio::runtime::Builder::new()
         .basic_scheduler()
         .enable_all()
         .build()
-        .unwrap()
-        .block_on(f)
+        .unwrap();
+
+    if let Some(timeout) = timeout {
+        rt.block_on(async { tokio::time::timeout(timeout, f).await })
+            .map_err(|_| IoError::Timeout)
+    } else {
+        Ok(rt.block_on(f))
+    }
 }
