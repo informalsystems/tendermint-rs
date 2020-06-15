@@ -168,7 +168,7 @@ impl LightClient {
             // Get the latest trusted state
             let trusted_state = state
                 .light_store
-                .latest(VerifiedStatus::Verified)
+                .highest(VerifiedStatus::Verified)
                 .ok_or_else(|| ErrorKind::NoInitialTrustedState)?;
 
             // Check invariant [LCV-INV-TP.1]

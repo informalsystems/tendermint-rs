@@ -161,7 +161,7 @@ impl Supervisor {
                     let trusted_state = primary
                         .state
                         .light_store
-                        .latest(VerifiedStatus::Verified)
+                        .highest(VerifiedStatus::Verified)
                         .unwrap();
 
                     // Perform fork detection with the highest verified block as the trusted state.

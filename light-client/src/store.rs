@@ -54,7 +54,7 @@ pub trait LightStore: std::fmt::Debug + Send {
     /// Remove the light block with the given height and status, if any.
     fn remove(&mut self, height: Height, status: VerifiedStatus);
     /// Get the highest light block with the given status.
-    fn latest(&self, status: VerifiedStatus) -> Option<LightBlock>;
+    fn highest(&self, status: VerifiedStatus) -> Option<LightBlock>;
     /// Get an iterator of all light blocks with the given status.
     fn all(&self, status: VerifiedStatus) -> Box<dyn Iterator<Item = LightBlock>>;
 }
