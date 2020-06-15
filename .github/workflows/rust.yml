@@ -61,11 +61,35 @@ jobs:
           command: test
           args: --all-features --no-fail-fast
 
-  test-integration-ignored:
+  # TODO(shonfeder): remove duplication once GitHub addresses one of these
+  #  - https://github.community/t/support-for-yaml-anchors/16128/15
+  #  - https://github.community/t/reusing-sharing-inheriting-steps-between-jobs-declarations/16851/13
+  #  - https://github.community/t/using-matrix-variable-in-docker-image-name/17296
+  test-integration-stable:
     runs-on: ubuntu-latest
     services:
       tendermint:
-        image: tendermint/tendermint
+        image: tendermint/tendermint:v0.33.5
+        ports:
+          - 26656:26656
+          - 26657:26657
+          - 26660:26660
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p tendermint --test integration --no-fail-fast -- --ignored
+
+  test-integration-latest:
+    runs-on: ubuntu-latest
+    services:
+      tendermint:
+        image: tendermint/tendermint:latest
         ports:
           - 26656:26656
           - 26657:26657
