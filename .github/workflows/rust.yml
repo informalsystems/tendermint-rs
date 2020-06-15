@@ -1,11 +1,11 @@
 name: Rust
-on: 
+on:
   pull_request:
     paths-ignore:
-      - 'docs/**'
+      - "docs/**"
   push:
     paths-ignore:
-      - 'docs/**'
+      - "docs/**"
     branches:
       - master
 jobs:
@@ -86,6 +86,8 @@ jobs:
           args: -p tendermint --test integration --no-fail-fast -- --ignored
 
   test-integration-latest:
+    # Don't fail CI due to integration failures on unstable/unreleased versions
+    continue-on-error: true
     runs-on: ubuntu-latest
     services:
       tendermint:
