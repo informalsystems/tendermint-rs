@@ -49,7 +49,7 @@ impl PeerList {
     }
 
     pub fn swap_primary(&mut self) -> Result<(), Error> {
-        if let Some(peer_id) = self.peers.keys().next() {
+        while let Some(peer_id) = self.peers.keys().next() {
             if peer_id != &self.primary {
                 self.primary = *peer_id;
                 return Ok(());
