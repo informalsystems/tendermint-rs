@@ -208,14 +208,16 @@ Given a (trusted) block *tb* of the blockchain, a given set of full nodes
 
 #### **[TMBC-SOUND-DISTR-POSS-COMMIT.1]**:
 For a block *b*, each element *pc* of *PossibleCommit(b)* satisfies:
-  - each vote *v* in *pc* satisfies
-     * *pc* contains only votes (cf. [TMBC-VOTE.1])
+  - *pc* contains only votes (cf. [TMBC-VOTE.1])
 	 by validators from *b.Validators*
-     * v.blockID = hash(b)
-	 * v.Height = b.Height  
-	 **TODO:** complete the checks here
   - the sum of the voting powers in *pc* is greater than 2/3
   *TotalVotingPower(b.Validators)*
+  - and there is an *r* such that  each vote *v* in *pc* satisfies
+     * v.Type = precommit
+	 * v.Height = b.Height
+	 * v.Round = r
+     * v.blockID = hash(b)
+
 
 > The following property comes from the validity of the [consensus][arXiv]: A
 > correct validator node only sends `prevote` or `precommit`, if
@@ -562,6 +564,7 @@ func FetchLightBlock(peer PeerID, height Height) LightBlock
    * if *n* is correct: precondition violated **TODO:** mention message
    * if *n* is faulty: arbitrary error
    * if *lb.provider != peer* 
+   * times out after 2 Delta (by assumption *n* is faulty)
 ---
 
 
@@ -635,7 +638,7 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
 - Error conditions
    - if the precondition is violated
    - if `ValidAndVerified` or `FetchLightBlock` report an error
-   - if [**[LCV-INV-TP.1]**](#LCV-INV-TP) is violated
+   - if [**[LCV-INV-TP.1]**](#LCV-INV-TP.1) is violated
   
 
 
@@ -746,7 +749,7 @@ have the state *StateVerified*.
     - `ValidAndVerified` either verify the header using the trusting
       period or falls back to sequential
       verification
-    - If [**[LCV-INV-TP.1]**](#LCV-INV-TP) holds, eventually every
+    - If [**[LCV-INV-TP.1]**](#LCV-INV-TP.1) holds, eventually every
 	  header will be verified and core verification **terminates successfully**.
     - successful termination depends on the age of *lightStore.LatestVerified*
       (for instance, initially on the age of  *trustedHeader*) and the
@@ -762,7 +765,7 @@ have the state *StateVerified*.
 
 ## Liveness Scenarios
 
-The liveness argument above assumes [**[LCV-INV-TP.1]**](#LCV-INV-TP)
+The liveness argument above assumes [**[LCV-INV-TP.1]**](#LCV-INV-TP.1)
 which requires that there is a header that does not expire before the
 target height is reached. Here we discuss scenarios to ensure this.
 
