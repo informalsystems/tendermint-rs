@@ -145,9 +145,8 @@ fn sync_cmd(opts: SyncOpts) {
     let witness_instance = make_instance(witness, addr.clone(), witness_path, &opts);
 
     let peer_list = PeerList::builder()
-        .primary(primary)
-        .peer(primary, primary_instance)
-        .peer(witness, witness_instance)
+        .primary(primary, primary_instance)
+        .witness(witness, witness_instance)
         .build();
 
     let mut supervisor = Supervisor::new(peer_list, ProdForkDetector::default());

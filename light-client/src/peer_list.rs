@@ -67,12 +67,13 @@ pub struct PeerListBuilder {
 }
 
 impl PeerListBuilder {
-    pub fn primary(mut self, primary: PeerId) -> Self {
-        self.primary = Some(primary);
+    pub fn primary(mut self, peer_id: PeerId, instance: Instance) -> Self {
+        self.primary = Some(peer_id);
+        self.peers.insert(peer_id, instance);
         self
     }
 
-    pub fn peer(mut self, peer_id: PeerId, instance: Instance) -> Self {
+    pub fn witness(mut self, peer_id: PeerId, instance: Instance) -> Self {
         self.peers.insert(peer_id, instance);
         self
     }
