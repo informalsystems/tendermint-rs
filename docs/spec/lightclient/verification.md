@@ -913,8 +913,101 @@ If on the blockchain the validator set of the block at height
 
 
 
+## Supporting the IBC Relayer
+
+We might need to download and verify headers whose heights are smaller
+than  lightStore.LatestVerified.Height. The following function
 
 
+```go
+func (ls LightStore) LatestPrevious(height Height) (LightBlock, bool) 
+```
+- Expected postcondition
+  - returns a light block that satisfies:
+      - lb is in lightStore
+      - lb is verified and not expired
+	  - lb.Header.Height < targetHeight
+	  - for all b in lightStore s.t. b is verified and not expired it
+        holds lb.Header.Height >= b.Header.Height
+   - or false in the second argument if
+    the LightStore does not contain such an lb.
+ 
+
+#### **[LCV-FUNC-IBCMAIN.1]**:
+```go
+func Main(primary PeerID, lightStore LightStore,
+                    targetHeight Height) (LightStore, Result) {
+  if targetHeight > lightStore.LatestVerified.height {
+    return VerifyToTarget(primary, lightStore, targetHeight)
+  }
+  else if targetHeight = lightStore.LatestVerified.height {
+    return  (lightStore, ResultSuccess)
+  }
+  else {
+    lb, res = lightStore.LatestPrevious(targetHeight);
+    if res = true {
+	  auxLS.Init;
+	  auxLS.Update(lb,StateVerified);
+	  auxLS, res2 = VerifyToTarget(primary, auxLS, targetHeight)
+	  if res2 = ResultSuccess {
+	     // move all lightblocks from auxLS to lightStore, maintain state
+	     for i, s range auxLS {
+		   lighStore.Update(s,s.State)
+	     }
+	     return (lightStore, ResultSuccess)
+	  }
+	  else {
+	    return (lightStore, ResultFailure)
+	  }
+	}
+	else {
+	   return Backwards(primary, lightStore, targetHeight)
+	}
+}
+```
+<!-- - Expected postcondition: -->
+<!--   - if targetHeight > lightStore.LatestVerified.height then -->
+<!--     return VerifyToTarget(primary, lightStore, targetHeight) -->
+<!--   - if targetHeight = lightStore.LatestVerified.height then -->
+<!--     return (lightStore, ResultSuccess) -->
+<!--   - if targetHeight < lightStore.LatestVerified.height -->
+<!--      - let lb be in lightStore  -->
+<!--         - that is verified and not expired -->
+<!-- 	    - lb.Header.Height < targetHeight -->
+<!-- 	    - for all b in lightStore s.t. b  is verified and not expired it -->
+<!--         holds lb.Header.Height >= b.Header.Height -->
+<!-- 	 - if lb does not exists -->
+<!--          return Backwards(primary, lightStore, targetHeight) -->
+<!-- 	 - if lb exists -->
+<!--           - make auxiliary light store auxLS containing only lb -->
+	 
+<!-- 	       VerifyToTarget(primary, auxLS, targetHeight) -->
+<!--      - if lb  -->
+
+#### **[LCV-FUNC-BACKWARDS.1]**:
+```go
+func Backwards(primary PeerID, lightStore LightStore,
+                    targetHeight Height) (LightStore, Result) {
+  
+  // let lb = smallest verified lightblock in lightstore
+  // lb might even be expired
+  
+  
+  assert (targetHeight < lb.Header.Height)
+  latest := lb.Header
+  for i := lb.Header.height - 1; i >= targetHeight; i-- {
+    current := FetchLightBlock(primary,i)
+    if (hash(current) != latest.Header.LastBlockId) {
+      return (lightStore, ResultFailure)
+    }
+	else {
+	  lightStore.Update(current, StateVerified)
+	}
+    latest := current
+  }
+  return (lightStore, ResultSuccess)
+ }
+```
 
 
 
