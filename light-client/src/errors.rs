@@ -4,7 +4,12 @@ use anomaly::{BoxError, Context};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::prelude::*;
+use crate::{
+    components::io::IoError,
+    light_client::Options,
+    predicates::errors::VerificationError,
+    types::{Height, LightBlock, PeerId},
+};
 
 pub type Error = anomaly::Error<ErrorKind>;
 
@@ -16,12 +21,21 @@ pub enum ErrorKind {
     #[error("store error")]
     Store,
 
+    #[error("no witnesses")]
+    NoWitnesses,
+
+    #[error("no witness left")]
+    NoWitnessLeft,
+
+    #[error("fork detected peers={0:?}")]
+    ForkDetected(Vec<PeerId>),
+
     #[error("no initial trusted state")]
     NoInitialTrustedState,
 
     #[error("latest trusted state outside of trusting period")]
     TrustedStateOutsideTrustingPeriod {
-        trusted_state: Box<TrustedState>,
+        trusted_state: Box<LightBlock>,
         options: Options,
     },
 
@@ -37,5 +51,37 @@ impl ErrorKind {
     /// You can convert the resulting `Context` into an `Error` by calling `.into()`.
     pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
         Context::new(self, Some(source.into()))
+    }
+}
+
+pub trait ErrorExt {
+    /// Whether this error means that the light block
+    /// cannot be trusted w.r.t. the latest trusted state.
+    fn not_enough_trust(&self) -> bool;
+
+    /// Whether this error means that the light block has expired,
+    /// ie. it's outside of the trusting period.
+    fn has_expired(&self) -> bool;
+}
+
+impl ErrorExt for ErrorKind {
+    /// Whether this error means that the light block
+    /// cannot be trusted w.r.t. the latest trusted state.
+    fn not_enough_trust(&self) -> bool {
+        if let Self::InvalidLightBlock(e) = self {
+            e.not_enough_trust()
+        } else {
+            false
+        }
+    }
+
+    /// Whether this error means that the light block has expired,
+    /// ie. it's outside of the trusting period.
+    fn has_expired(&self) -> bool {
+        if let Self::InvalidLightBlock(e) = self {
+            e.has_expired()
+        } else {
+            false
+        }
     }
 }

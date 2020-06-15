@@ -8,16 +8,18 @@ edition = "2018"
 tendermint = { path = "../tendermint" }
 
 anomaly = { version = "0.2.0", features = ["serializer"] }
-derive_more = "0.99.5"
-serde = "1.0.106"
-serde_derive = "1.0.106"
-thiserror = "1.0.15"
-futures = "0.3.4"
-tokio = "0.2.20"
-prost-amino = "0.5.0"
 contracts = "0.4.0"
-sled = "0.31.0"
+crossbeam-channel = "0.4.2"
+derive_more = "0.99.5"
+futures = "0.3.4"
+prost-amino = "0.5.0"
+serde = "1.0.106"
 serde_cbor = "0.11.1"
+serde_derive = "1.0.106"
+sled = "0.31.0"
+static_assertions = "1.1.0"
+thiserror = "1.0.15"
+tokio = "0.2.20"
 
 [dev-dependencies]
 serde_json = "1.0.51"

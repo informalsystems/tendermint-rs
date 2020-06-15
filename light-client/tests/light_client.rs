@@ -1,11 +1,25 @@
-use tendermint_light_client::components::scheduler;
-use tendermint_light_client::prelude::*;
-use tendermint_light_client::tests::{Trusted, *};
+use tendermint_light_client::{
+    components::{
+        clock::Clock,
+        io::{AtHeight, Io, IoError},
+        scheduler,
+        verifier::{ProdVerifier, Verdict, Verifier},
+    },
+    errors::Error,
+    light_client::{LightClient, Options},
+    state::State,
+    store::{memory::MemoryStore, LightStore, VerifiedStatus},
+    tests::{Trusted, *},
+    types::{Height, LightBlock, PeerId, Time, TrustThreshold},
+};
 
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    time::{Duration, SystemTime},
+};
 
 use contracts::contract_trait;
 use tendermint::rpc;
@@ -61,8 +75,9 @@ fn run_test_case(tc: TestCase<LightBlock>) {
         None => false,
     };
 
-    // FIXME: What should this be, and where should it be configured?
-    let clock_drift = Duration::from_secs(1);
+    // In Go, default is 10 sec.
+    // Once we switch to the proposer based timestamps, it will probably be a consensus parameter
+    let clock_drift = Duration::from_secs(10);
 
     let trusting_period: Duration = tc.initial.trusting_period.into();
     let tm_now = tc.initial.now;
@@ -99,10 +114,13 @@ fn run_test_case(tc: TestCase<LightBlock>) {
 struct MockIo {
     chain_id: String,
     light_blocks: HashMap<Height, LightBlock>,
+    latest_height: Height,
 }
 
 impl MockIo {
     fn new(chain_id: String, light_blocks: Vec<LightBlock>) -> Self {
+        let latest_height = light_blocks.iter().map(|lb| lb.height()).max().unwrap();
+
         let light_blocks = light_blocks
             .into_iter()
             .map(|lb| (lb.height(), lb))
@@ -111,13 +129,19 @@ impl MockIo {
         Self {
             chain_id,
             light_blocks,
+            latest_height,
         }
     }
 }
 
 #[contract_trait]
 impl Io for MockIo {
-    fn fetch_light_block(&mut self, _peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
+    fn fetch_light_block(&self, _peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
+        let height = match height {
+            AtHeight::Latest => self.latest_height,
+            AtHeight::At(height) => height,
+        };
+
         self.light_blocks
             .get(&height)
             .cloned()
@@ -125,6 +149,7 @@ impl Io for MockIo {
     }
 }
 
+#[derive(Clone)]
 struct MockClock {
     now: Time,
 }
@@ -138,10 +163,11 @@ impl Clock for MockClock {
 fn verify_bisection(
     untrusted_height: Height,
     light_client: &mut LightClient,
+    state: &mut State,
 ) -> Result<Vec<LightBlock>, Error> {
     light_client
-        .verify_to_target(untrusted_height)
-        .map(|_| light_client.get_trace(untrusted_height))
+        .verify_to_target(untrusted_height, state)
+        .map(|_| state.get_trace(untrusted_height))
 }
 
 fn run_bisection_test(tc: TestBisection<LightBlock>) {
@@ -153,11 +179,11 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     let trusting_period = tc.trust_options.period;
     let now = tc.now;
 
-    // FIXME: What should this be, and where should it be configured?
-    let clock_drift = Duration::from_secs(1);
+    // In Go, default is 10 sec.
+    // Once we switch to the proposer based timestamps, it will probably be a consensus parameter
+    let clock_drift = Duration::from_secs(10);
 
     let clock = MockClock { now };
-    let fork_detector = ProdForkDetector::new(ProdHeaderHasher);
 
     let options = Options {
         trust_threshold,
@@ -172,21 +198,17 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     };
 
     let provider = tc.primary;
-    let mut io = MockIo::new(provider.chain_id, provider.lite_blocks);
+    let io = MockIo::new(provider.chain_id, provider.lite_blocks);
 
     let trusted_height = tc.trust_options.height.try_into().unwrap();
     let trusted_state = io
-        .fetch_light_block(primary.clone(), trusted_height)
+        .fetch_light_block(primary.clone(), AtHeight::At(trusted_height))
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
     light_store.insert(trusted_state, VerifiedStatus::Verified);
 
-    let state = State {
-        peers: Peers {
-            primary: primary.clone(),
-            witnesses: vec![],
-        },
+    let mut state = State {
         light_store: Box::new(light_store),
         verification_trace: HashMap::new(),
     };
@@ -194,19 +216,18 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     let verifier = ProdVerifier::default();
 
     let mut light_client = LightClient::new(
-        state,
+        primary,
         options,
         clock,
         scheduler::basic_bisecting_schedule,
         verifier,
-        fork_detector,
         io.clone(),
     );
 
-    match verify_bisection(untrusted_height, &mut light_client) {
+    match verify_bisection(untrusted_height, &mut light_client, &mut state) {
         Ok(new_states) => {
             let untrusted_light_block = io
-                .fetch_light_block(primary.clone(), untrusted_height)
+                .fetch_light_block(primary.clone(), AtHeight::At(untrusted_height))
                 .expect("header at untrusted height not found");
 
             // TODO: number of bisections started diverting in JSON tests and Rust impl

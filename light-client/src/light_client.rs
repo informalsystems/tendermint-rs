@@ -5,10 +5,17 @@
 use contracts::*;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
+use std::{fmt, time::Duration};
 
-use crate::components::{io::*, scheduler::*, verifier::*};
+use crate::components::{clock::Clock, io::*, scheduler::*, verifier::*};
 use crate::contracts::*;
-use crate::prelude::*;
+use crate::{
+    bail,
+    errors::{Error, ErrorKind},
+    state::State,
+    store::VerifiedStatus,
+    types::{Height, LightBlock, PeerId, Time, TrustThreshold},
+};
 
 /// Verification parameters
 ///
@@ -46,33 +53,39 @@ impl Options {
 /// correct for the duration of the trusted period.  The fault-tolerant read operation
 /// is designed for this security model.
 pub struct LightClient {
-    state: State,
-    options: Options,
+    pub peer: PeerId,
+    pub options: Options,
     clock: Box<dyn Clock>,
     scheduler: Box<dyn Scheduler>,
     verifier: Box<dyn Verifier>,
-    fork_detector: Box<dyn ForkDetector>,
     io: Box<dyn Io>,
+}
+
+impl fmt::Debug for LightClient {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LightClient")
+            .field("peer", &self.peer)
+            .field("options", &self.options)
+            .finish()
+    }
 }
 
 impl LightClient {
     /// Constructs a new light client
     pub fn new(
-        state: State,
+        peer: PeerId,
         options: Options,
         clock: impl Clock + 'static,
         scheduler: impl Scheduler + 'static,
         verifier: impl Verifier + 'static,
-        fork_detector: impl ForkDetector + 'static,
         io: impl Io + 'static,
     ) -> Self {
         Self {
-            state,
+            peer,
             options,
             clock: Box::new(clock),
             scheduler: Box::new(scheduler),
             verifier: Box::new(verifier),
-            fork_detector: Box::new(fork_detector),
             io: Box::new(io),
         }
     }
@@ -80,25 +93,25 @@ impl LightClient {
     /// Attempt to update the light client to the latest block of the primary node.
     ///
     /// Note: This functin delegates the actual work to `verify_to_target`.
-    pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
-        let peer = self.state.peers.primary;
-        let target_block = match self.io.fetch_light_block(peer, LATEST_HEIGHT) {
+    pub fn verify_to_highest(&mut self, state: &mut State) -> Result<LightBlock, Error> {
+        let target_block = match self.io.fetch_light_block(self.peer, AtHeight::Latest) {
             Ok(last_block) => last_block,
             Err(io_error) => bail!(ErrorKind::Io(io_error)),
         };
 
-        self.verify_to_target(target_block.height())
+        self.verify_to_target(target_block.height(), state)
     }
 
-    /// Attemps to update the light client to a block of the primary node at the given height.
+    /// Update the light client to a block of the primary node at the given height.
     ///
     /// This is the main function and uses the following components:
     ///
-    /// - The I/O component is called to download the next light block.
+    /// - The I/O component is called to fetch the next light block.
     ///   It is the only component that communicates with other nodes.
     /// - The Verifier component checks whether a header is valid and checks if a new
     ///   light block should be trusted based on a previously verified light block.
-    /// - The Scheduler component decides which height to try to verify next.
+    /// - The Scheduler component decides which height to try to verify next, in case
+    ///   the current block pass verification but cannot be trusted yet.
     ///
     /// ## Implements
     /// - [LCV-DIST-SAFE.1]
@@ -121,18 +134,30 @@ impl LightClient {
     /// - If it cannot fetch a block from the blockchain
     // #[pre(
     //     light_store_contains_block_within_trusting_period(
-    //         self.state.light_store.as_ref(),
+    //         state.light_store.as_ref(),
     //         self.options.trusting_period,
     //         self.clock.now(),
     //     )
     // )]
     #[post(
         ret.is_ok() ==> trusted_store_contains_block_at_target_height(
-            self.state.light_store.as_ref(),
+            state.light_store.as_ref(),
             target_height,
         )
     )]
-    pub fn verify_to_target(&mut self, target_height: Height) -> Result<LightBlock, Error> {
+    pub fn verify_to_target(
+        &self,
+        target_height: Height,
+        state: &mut State,
+    ) -> Result<LightBlock, Error> {
+        // Let's first look in the store to see whether we have already successfully verified this block
+        if let Some(light_block) = state
+            .light_store
+            .get(target_height, VerifiedStatus::Verified)
+        {
+            return Ok(light_block);
+        }
+
         // Override the `now` fields in the given verification options with the current time,
         // as per the given `clock`.
         let options = self.options.with_now(self.clock.now());
@@ -141,8 +166,7 @@ impl LightClient {
 
         loop {
             // Get the latest trusted state
-            let trusted_state = self
-                .state
+            let trusted_state = state
                 .light_store
                 .latest(VerifiedStatus::Verified)
                 .ok_or_else(|| ErrorKind::NoInitialTrustedState)?;
@@ -156,7 +180,7 @@ impl LightClient {
             }
 
             // Trace the current height as a dependency of the block at the target height
-            self.state.trace_block(target_height, current_height);
+            state.trace_block(target_height, current_height);
 
             // If the trusted state is now at the height greater or equal to the target height,
             // we now trust this target height, and are thus done :) [LCV-DIST-LIFE.1]
@@ -164,9 +188,8 @@ impl LightClient {
                 return Ok(trusted_state);
             }
 
-            // Fetch the block at the current height from the primary node
-            let current_block =
-                self.get_or_fetch_block(self.state.peers.primary, current_height)?;
+            // Fetch the block at the current height from our peer
+            let current_block = self.get_or_fetch_block(current_height, state)?;
 
             // Validate and verify the current block
             let verdict = self
@@ -176,13 +199,13 @@ impl LightClient {
             match verdict {
                 Verdict::Success => {
                     // Verification succeeded, add the block to the light store with `verified` status
-                    self.state
+                    state
                         .light_store
                         .update(current_block, VerifiedStatus::Verified);
                 }
                 Verdict::Invalid(e) => {
                     // Verification failed, add the block to the light store with `failed` status, and abort.
-                    self.state
+                    state
                         .light_store
                         .update(current_block, VerifiedStatus::Failed);
 
@@ -193,42 +216,17 @@ impl LightClient {
                     // Add the block to the light store with `unverified` status.
                     // This will engage bisection in an attempt to raise the height of the latest
                     // trusted state until there is enough overlap.
-                    self.state
+                    state
                         .light_store
                         .update(current_block, VerifiedStatus::Unverified);
                 }
             }
 
             // Compute the next height to fetch and verify
-            current_height = self.scheduler.schedule(
-                self.state.light_store.as_ref(),
-                current_height,
-                target_height,
-            );
+            current_height =
+                self.scheduler
+                    .schedule(state.light_store.as_ref(), current_height, target_height);
         }
-    }
-
-    /// TODO
-    pub fn detect_forks(&self) -> Result<(), Error> {
-        let light_blocks = self
-            .state
-            .light_store
-            .all(VerifiedStatus::Verified)
-            .collect();
-
-        let result = self.fork_detector.detect(light_blocks);
-
-        match result {
-            ForkDetection::NotDetected => (),    // TODO
-            ForkDetection::Detected(_, _) => (), // TODO
-        }
-
-        Ok(())
-    }
-
-    /// Get the verification trace for the block at target_height.
-    pub fn get_trace(&self, target_height: Height) -> Vec<LightBlock> {
-        self.state.get_trace(target_height)
     }
 
     /// Look in the light store for a block from the given peer at the given height.
@@ -236,23 +234,19 @@ impl LightClient {
     ///
     /// ## Postcondition
     /// - The provider of block that is returned matches the given peer.
-    // TODO: Uncomment when provider field is available
-    // #[post(ret.map(|lb| lb.provider == peer).unwrap_or(false))]
-    fn get_or_fetch_block(
-        &mut self,
-        peer: PeerId,
+    #[post(ret.as_ref().map(|lb| lb.provider == self.peer).unwrap_or(true))]
+    pub fn get_or_fetch_block(
+        &self,
         current_height: Height,
+        state: &mut State,
     ) -> Result<LightBlock, Error> {
-        let current_block = self
-            .state
+        let current_block = state
             .light_store
             .get(current_height, VerifiedStatus::Verified)
-            // .filter(|lb| lb.provider == peer)
             .or_else(|| {
-                self.state
+                state
                     .light_store
                     .get(current_height, VerifiedStatus::Unverified)
-                // .filter(|lb| lb.provider == peer)
             });
 
         if let Some(current_block) = current_block {
@@ -260,9 +254,9 @@ impl LightClient {
         }
 
         self.io
-            .fetch_light_block(peer, current_height)
+            .fetch_light_block(self.peer, AtHeight::At(current_height))
             .map(|current_block| {
-                self.state
+                state
                     .light_store
                     .insert(current_block.clone(), VerifiedStatus::Unverified);
 

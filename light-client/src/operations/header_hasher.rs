@@ -1,23 +1,11 @@
-use crate::prelude::*;
+use crate::types::Header;
 
 use tendermint::amino_types::{message::AminoMessage, BlockId, ConsensusVersion, TimeMsg};
 use tendermint::merkle::simple_hash_from_byte_vectors;
 use tendermint::Hash;
 
-pub trait HeaderHasher {
+pub trait HeaderHasher: Send {
     fn hash(&self, header: &Header) -> Hash; // Or Error?
-}
-
-impl<T: HeaderHasher> HeaderHasher for &T {
-    fn hash(&self, header: &Header) -> Hash {
-        (*self).hash(header)
-    }
-}
-
-impl HeaderHasher for Box<dyn HeaderHasher> {
-    fn hash(&self, header: &Header) -> Hash {
-        self.as_ref().hash(header)
-    }
 }
 
 #[derive(Copy, Clone, Debug)]

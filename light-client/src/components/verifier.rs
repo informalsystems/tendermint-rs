@@ -1,5 +1,14 @@
 use crate::predicates as preds;
-use crate::prelude::*;
+use crate::{
+    errors::ErrorExt,
+    light_client::Options,
+    operations::{
+        CommitValidator, HeaderHasher, ProdCommitValidator, ProdHeaderHasher,
+        ProdVotingPowerCalculator, VotingPowerCalculator,
+    },
+    types::LightBlock,
+};
+use preds::{errors::VerificationError, ProdPredicates, VerificationPredicates};
 
 /// Represents the result of the verification performed by the
 /// verifier component.
@@ -33,7 +42,7 @@ impl From<Result<(), VerificationError>> for Verdict {
 /// ## Implements
 /// - [TMBC-VAL-CONTAINS-CORR.1]
 /// - [TMBC-VAL-COMMIT.1]
-pub trait Verifier {
+pub trait Verifier: Send {
     /// Perform the verification.
     fn verify(&self, untrusted: &LightBlock, trusted: &LightBlock, options: &Options) -> Verdict;
 }
@@ -82,12 +91,12 @@ impl Default for ProdVerifier {
 }
 
 impl Verifier for ProdVerifier {
-    fn verify(&self, untrusted: &LightBlock, trusted: &TrustedState, options: &Options) -> Verdict {
+    fn verify(&self, untrusted: &LightBlock, trusted: &LightBlock, options: &Options) -> Verdict {
         preds::verify(
             &*self.predicates,
-            &self.voting_power_calculator,
-            &self.commit_validator,
-            &self.header_hasher,
+            &*self.voting_power_calculator,
+            &*self.commit_validator,
+            &*self.header_hasher,
             &trusted,
             &untrusted,
             options,
