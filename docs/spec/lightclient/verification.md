@@ -536,18 +536,74 @@ It is always the case that *LightStore.LatestVerified.Header.Time > now - trusti
 > its trust can only be based on social consensus.
 
 
-### Messages
+### Used Remote Functions
 
-**TODO:** 
+We use the functions `commit` and `validators` that are provided 
+by the [RPC client for Tendermint][RPC].
+
+```
+// POST /commit
+{
+  "jsonrpc": "2.0",
+  "id": "ccc84631-dfdb-4adc-b88c-5291ea3c2cfb", // UUID v4, unique per request
+  "method": "commit",
+  "params": {
+    "height": 1234
+  }
+}
+// POST /validators
+{
+  "jsonrpc": "2.0",
+  "id": "ccc84631-dfdb-4adc-b88c-5291ea3c2cfb", // UUID v4, unique per request
+  "method": "commit",
+  "params": {
+    "height": 1234
+  }
+}
+```
+
+```go
+func Commit(height int64) (SignedHeader, error)
+```
+- Implementation remark
+   - RPC to full node *n*
+- Expected precodnition
+  - header of `height` exists on blockchain
+- Expected postcondition
+  - if *n* is correct: Returns the signed header of height `height`
+  from the blockchain if communication is timely (no timeout)
+  - if *n* is faulty: Returns a signed header with arbitrary content
+- Error condition
+   * if *n* is correct: precondition violated or timeout
+   * if *n* is faulty: arbitrary error
+----
+
+
+```go
+func Validators(height int64) (ValidatorSet, error)
+```
+- Implementation remark
+   - RPC to full node *n*
+- Expected precodnition
+  - header of `height` exists on blockchain
+- Expected postcondition
+  - if *n* is correct: Returns the validator set of height `height`
+  from the blockchain if communication is timely (no timeout)
+  - if *n* is faulty: Returns arbitrary validator set
+- Error condition
+  - if *n* is correct: precondition violated or timeout 
+  - if *n* is faulty: arbitrary error
+----
+
+
  
-### Remote Functions
+### Communicating Functions
   ```go
 func FetchLightBlock(peer PeerID, height Height) LightBlock
 ```
 - Implementation remark
    - RPC to peer at *PeerID*
-   - Request message: **TODO**
-   - Response message: **TODO**
+   - calls `Commit` and `Validators`
 - Expected precondition
   - `height` is less than or equal to height of the peer **[LCV-IO-PRE-HEIGHT.1]**
 - Expected postcondition:
@@ -561,7 +617,7 @@ func FetchLightBlock(peer PeerID, height Height) LightBlock
   - if *node* is faulty: Returns a LightBlock with arbitrary content 
     [**[TMBC-AUTH-BYZ.1]**][TMBC-Auth-Byz-link]
 - Error condition
-   * if *n* is correct: precondition violated **TODO:** mention message
+   * if *n* is correct: precondition violated
    * if *n* is faulty: arbitrary error
    * if *lb.provider != peer* 
    * times out after 2 Delta (by assumption *n* is faulty)
@@ -860,12 +916,15 @@ If on the blockchain the validator set of the block at height
 
 [[blockchain]] The specification of the Tendermint blockchain. Tags refering to this specification are labeled [TMBC-*].
 
+[[RPC]] RPC client for Tendermint
+
 [[failuredetector]] The specification of the light client fork detector.
 
 [[fullnode]] Specification of the full node API
 
 [[lightclient]] The light client ADR [77d2651 on Dec 27, 2019].
 
+[RPC]: https://docs.tendermint.com/master/rpc/
 
 [block]: https://github.com/tendermint/spec/blob/master/spec/blockchain/blockchain.md
 [blockchain]: https://github.com/informalsystems/VDD/tree/master/blockchain/blockchain.md
