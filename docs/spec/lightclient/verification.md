@@ -75,6 +75,7 @@ these tags we frequently use the following short forms:
 - LCV: Lightclient Verification
 - LIVE: liveness
 - SAFE: safety
+- FUNC: function
 - INV: invariant
 - A: assumption
 
@@ -541,32 +542,24 @@ It is always the case that *LightStore.LatestVerified.Header.Time > now - trusti
 We use the functions `commit` and `validators` that are provided 
 by the [RPC client for Tendermint][RPC].
 
-```
-// POST /commit
-{
-  "jsonrpc": "2.0",
-  "id": "ccc84631-dfdb-4adc-b88c-5291ea3c2cfb", // UUID v4, unique per request
-  "method": "commit",
-  "params": {
-    "height": 1234
-  }
-}
-// POST /validators
-{
-  "jsonrpc": "2.0",
-  "id": "ccc84631-dfdb-4adc-b88c-5291ea3c2cfb", // UUID v4, unique per request
-  "method": "commit",
-  "params": {
-    "height": 1234
-  }
-}
-```
 
 ```go
 func Commit(height int64) (SignedHeader, error)
 ```
 - Implementation remark
    - RPC to full node *n*
+   - JSON sent:
+```javascript
+// POST /commit
+{
+	"jsonrpc": "2.0",
+	"id": "ccc84631-dfdb-4adc-b88c-5291ea3c2cfb", // UUID v4, unique per request
+	"method": "commit",
+	"params": {
+		"height": 1234
+	}
+}
+```
 - Expected precodnition
   - header of `height` exists on blockchain
 - Expected postcondition
@@ -584,6 +577,18 @@ func Validators(height int64) (ValidatorSet, error)
 ```
 - Implementation remark
    - RPC to full node *n*
+   - JSON sent:
+```javascript
+// POST /validators
+{
+	"jsonrpc": "2.0",
+	"id": "ccc84631-dfdb-4adc-b88c-5291ea3c2cfb", // UUID v4, unique per request
+	"method": "validators",
+	"params": {
+		"height": 1234
+	}
+}
+```
 - Expected precodnition
   - header of `height` exists on blockchain
 - Expected postcondition
@@ -596,14 +601,18 @@ func Validators(height int64) (ValidatorSet, error)
 ----
 
 
+
+
+
  
-### Communicating Functions
+### Communicating Function
+#### **[LCV-FUNC-FETCH.1]**:
   ```go
 func FetchLightBlock(peer PeerID, height Height) LightBlock
 ```
 - Implementation remark
    - RPC to peer at *PeerID*
-   - calls `Commit` and `Validators`
+   - calls `Commit` for *height* and `Validators` for *height* and *height+1*
 - Expected precondition
   - `height` is less than or equal to height of the peer **[LCV-IO-PRE-HEIGHT.1]**
 - Expected postcondition:
@@ -641,6 +650,7 @@ In the following description of `VerifyToTarget` we do not deal with error
 handling. If any of the above function returns an error, VerifyToTarget just
 passes the error on.
 
+#### **[LCV-FUNC-MAIN.1]**:
 ```go
 func VerifyToTarget(primary PeerID, lightStore LightStore,
                     targetHeight Height) (LightStore, Result) {
@@ -702,7 +712,7 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
 
 
 
-
+#### **[LCV-FUNC-VALID.1]**:
 ```go
 func ValidAndVerified(trusted LightBlock, untrusted LightBlock) Result
 ```
@@ -754,7 +764,7 @@ func ValidAndVerified(trusted LightBlock, untrusted LightBlock) Result
 ---
 
 
-
+#### **[LCV-FUNC-SCHEDULE.1]**:
 ```go
 func Schedule(lightStore, nextHeight, targetHeight) Height
 ```
