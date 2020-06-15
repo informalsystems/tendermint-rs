@@ -3,21 +3,41 @@ use std::time::Duration;
 
 use contracts::{contract_trait, post, pre};
 use serde::{Deserialize, Serialize};
-use tendermint::{block, rpc};
 use thiserror::Error;
 
-use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
-use tendermint::validator::Set as TMValidatorSet;
+use tendermint::{
+    block::signed_header::SignedHeader as TMSignedHeader, rpc, validator::Set as TMValidatorSet,
+};
 
-use crate::types::{Height, LightBlock, PeerId};
+use crate::{
+    bail,
+    types::{Height, LightBlock, PeerId},
+};
 
-pub const LATEST_HEIGHT: Height = 0;
+pub enum AtHeight {
+    At(Height),
+    Latest,
+}
+
+impl From<Height> for AtHeight {
+    fn from(height: Height) -> Self {
+        if height == 0 {
+            Self::Latest
+        } else {
+            Self::At(height)
+        }
+    }
+}
 
 #[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 pub enum IoError {
     /// Wrapper for a `tendermint::rpc::Error`.
     #[error(transparent)]
     IoError(#[from] rpc::Error),
+
+    /// Given height is invalid
+    #[error("invalid height: {0}")]
+    InvalidHeight(String),
 
     /// The request timed out.
     #[error("request to peer {0} timed out")]
@@ -32,15 +52,15 @@ pub trait Io: Send {
     /// ## Postcondition
     /// - The provider of the returned light block matches the given peer [LCV-IO-POST-PROVIDER]
     #[post(ret.as_ref().map(|lb| lb.provider == peer).unwrap_or(true))]
-    fn fetch_light_block(&self, peer: PeerId, height: Height) -> Result<LightBlock, IoError>;
+    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError>;
 }
 
 #[contract_trait]
 impl<F: Send> Io for F
 where
-    F: Fn(PeerId, Height) -> Result<LightBlock, IoError>,
+    F: Fn(PeerId, AtHeight) -> Result<LightBlock, IoError>,
 {
-    fn fetch_light_block(&self, peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
+    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
         self(peer, height)
     }
 }
@@ -55,12 +75,12 @@ pub struct ProdIo {
 
 #[contract_trait]
 impl Io for ProdIo {
-    fn fetch_light_block(&self, peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
+    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
         let signed_header = self.fetch_signed_header(peer, height)?;
-        let height = signed_header.header.height.into();
+        let height: Height = signed_header.header.height.into();
 
-        let validator_set = self.fetch_validator_set(peer, height)?;
-        let next_validator_set = self.fetch_validator_set(peer, height + 1)?;
+        let validator_set = self.fetch_validator_set(peer, height.into())?;
+        let next_validator_set = self.fetch_validator_set(peer, (height + 1).into())?;
 
         let light_block = LightBlock::new(signed_header, validator_set, next_validator_set, peer);
 
@@ -80,15 +100,18 @@ impl ProdIo {
     }
 
     #[pre(self.peer_map.contains_key(&peer))]
-    fn fetch_signed_header(&self, peer: PeerId, height: Height) -> Result<TMSignedHeader, IoError> {
-        let height: block::Height = height.into();
+    fn fetch_signed_header(
+        &self,
+        peer: PeerId,
+        height: AtHeight,
+    ) -> Result<TMSignedHeader, IoError> {
         let rpc_client = self.rpc_client_for(peer);
 
         let res = block_on(
             async {
-                match height.value() {
-                    0 => rpc_client.latest_commit().await,
-                    _ => rpc_client.commit(height).await,
+                match height {
+                    AtHeight::Latest => rpc_client.latest_commit().await,
+                    AtHeight::At(height) => rpc_client.commit(height).await,
                 }
             },
             peer,
@@ -102,7 +125,18 @@ impl ProdIo {
     }
 
     #[pre(self.peer_map.contains_key(&peer))]
-    fn fetch_validator_set(&self, peer: PeerId, height: Height) -> Result<TMValidatorSet, IoError> {
+    fn fetch_validator_set(
+        &self,
+        peer: PeerId,
+        height: AtHeight,
+    ) -> Result<TMValidatorSet, IoError> {
+        let height = match height {
+            AtHeight::Latest => bail!(IoError::InvalidHeight(
+                "given height must be greater than 0".to_string()
+            )),
+            AtHeight::At(height) => height,
+        };
+
         let res = block_on(
             self.rpc_client_for(peer).validators(height),
             peer,

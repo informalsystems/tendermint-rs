@@ -1,7 +1,7 @@
 use tendermint_light_client::{
     components::{
         clock::Clock,
-        io::{Io, IoError},
+        io::{AtHeight, Io, IoError},
         scheduler,
         verifier::{ProdVerifier, Verdict, Verifier},
     },
@@ -114,10 +114,13 @@ fn run_test_case(tc: TestCase<LightBlock>) {
 struct MockIo {
     chain_id: String,
     light_blocks: HashMap<Height, LightBlock>,
+    latest_height: Height,
 }
 
 impl MockIo {
     fn new(chain_id: String, light_blocks: Vec<LightBlock>) -> Self {
+        let latest_height = light_blocks.iter().map(|lb| lb.height()).max().unwrap();
+
         let light_blocks = light_blocks
             .into_iter()
             .map(|lb| (lb.height(), lb))
@@ -126,13 +129,19 @@ impl MockIo {
         Self {
             chain_id,
             light_blocks,
+            latest_height,
         }
     }
 }
 
 #[contract_trait]
 impl Io for MockIo {
-    fn fetch_light_block(&self, _peer: PeerId, height: Height) -> Result<LightBlock, IoError> {
+    fn fetch_light_block(&self, _peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
+        let height = match height {
+            AtHeight::Latest => self.latest_height,
+            AtHeight::At(height) => height,
+        };
+
         self.light_blocks
             .get(&height)
             .cloned()
@@ -193,7 +202,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
 
     let trusted_height = tc.trust_options.height.try_into().unwrap();
     let trusted_state = io
-        .fetch_light_block(primary.clone(), trusted_height)
+        .fetch_light_block(primary.clone(), AtHeight::At(trusted_height))
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
@@ -218,7 +227,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     match verify_bisection(untrusted_height, &mut light_client, &mut state) {
         Ok(new_states) => {
             let untrusted_light_block = io
-                .fetch_light_block(primary.clone(), untrusted_height)
+                .fetch_light_block(primary.clone(), AtHeight::At(untrusted_height))
                 .expect("header at untrusted height not found");
 
             // TODO: number of bisections started diverting in JSON tests and Rust impl

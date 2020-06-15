@@ -94,7 +94,7 @@ impl LightClient {
     ///
     /// Note: This functin delegates the actual work to `verify_to_target`.
     pub fn verify_to_highest(&mut self, state: &mut State) -> Result<LightBlock, Error> {
-        let target_block = match self.io.fetch_light_block(self.peer, LATEST_HEIGHT) {
+        let target_block = match self.io.fetch_light_block(self.peer, AtHeight::Latest) {
             Ok(last_block) => last_block,
             Err(io_error) => bail!(ErrorKind::Io(io_error)),
         };
@@ -254,7 +254,7 @@ impl LightClient {
         }
 
         self.io
-            .fetch_light_block(self.peer, current_height)
+            .fetch_light_block(self.peer, AtHeight::At(current_height))
             .map(|current_block| {
                 state
                     .light_store

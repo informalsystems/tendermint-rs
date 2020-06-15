@@ -1,7 +1,7 @@
 use tendermint_light_client::{
     components::{
         clock::SystemClock,
-        io::{Io, ProdIo},
+        io::{AtHeight, Io, ProdIo},
         scheduler,
         verifier::ProdVerifier,
     },
@@ -95,10 +95,12 @@ fn make_instance(
     let mut light_store = SledStore::new(db);
 
     if let Some(height) = opts.trusted_height {
-        let trusted_state = io.fetch_light_block(peer_id, height).unwrap_or_else(|e| {
-            println!("[ error ] could not retrieve trusted header: {}", e);
-            std::process::exit(1);
-        });
+        let trusted_state = io
+            .fetch_light_block(peer_id, AtHeight::At(height))
+            .unwrap_or_else(|e| {
+                println!("[ error ] could not retrieve trusted header: {}", e);
+                std::process::exit(1);
+            });
 
         light_store.insert(trusted_state, VerifiedStatus::Verified);
     } else {
