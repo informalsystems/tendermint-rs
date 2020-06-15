@@ -144,7 +144,7 @@ impl Supervisor {
             }
         }
 
-        bail!(ErrorKind::NoValidPeerLeft)
+        bail!(ErrorKind::NoWitnessLeft)
     }
 
     fn report_evidence(&mut self, _light_block: &LightBlock) {

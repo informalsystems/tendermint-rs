@@ -9,19 +9,28 @@ use crate::{
     types::LightBlock,
 };
 
+/// Result of fork detection
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ForkDetection {
+    /// One or more forks have been detected
     Detected(Vec<Fork>),
+    /// No fork has been detected
     NotDetected,
 }
 
+/// Types of fork
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Fork {
+    /// An actual fork was found for this `LightBlock`
     Forked(LightBlock),
+    /// The node has been deemed faulty for this `LightBlock`
     Faulty(LightBlock, ErrorKind),
 }
 
+/// Interface for a fork detector
 pub trait ForkDetector: Send {
+    /// Detect forks using the given light block, trusted state,
+    /// and list of witnesses to verify the given light block against.
     fn detect_forks(
         &self,
         light_block: &LightBlock,
@@ -30,11 +39,24 @@ pub trait ForkDetector: Send {
     ) -> Result<ForkDetection, Error>;
 }
 
+/// A production-ready fork detector which compares
+/// light blocks fetched from the witnesses by hash.
+/// If the hashes don't match, this fork detector
+/// then attempts to verify the light block pulled from
+/// the witness against a light block containing only
+/// the given trusted state, and then:
+///
+/// - If the verification succeeds, we have a real fork
+/// - If verification fails because of lack of trust,
+///   we have a potential fork.
+/// - If verification fails for any other reason, the
+///   witness is deemed faulty.
 pub struct ProdForkDetector {
     header_hasher: Box<dyn HeaderHasher>,
 }
 
 impl ProdForkDetector {
+    /// Construct a new fork detector that will use the given header hasher.
     pub fn new(header_hasher: impl HeaderHasher + 'static) -> Self {
         Self {
             header_hasher: Box::new(header_hasher),
@@ -49,6 +71,7 @@ impl Default for ProdForkDetector {
 }
 
 impl ForkDetector for ProdForkDetector {
+    /// Perform fork detection. See the documentation `ProdForkDetector` for details.
     fn detect_forks(
         &self,
         light_block: &LightBlock,
