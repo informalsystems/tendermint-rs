@@ -6,7 +6,8 @@ CommitSig:
 - Added CommitSig timestamp zero-check compatibility code [#259](https://github.com/informalsystems/tendermint-rs/issues/259)
 
 Testing:
-- Updated abci_info test to 0.17.0 ([#249](https://github.com/informalsystems/tendermint-rs/issues/249))
+- Add integration test to track tendermint-go v0.33.5 ([#324](https://github.com/informalsystems/tendermint-rs/pull/324))
+- Remove test for hard-coded version in `abci_info` ([#324](https://github.com/informalsystems/tendermint-rs/pull/324))
 
 Serialization:
 - Refactor serializers library to use modules, give a nicer annotation to structs and separated into its own folder. ([#247](https://github.com/informalsystems/tendermint-rs/issues/247))
