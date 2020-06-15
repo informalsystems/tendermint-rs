@@ -86,8 +86,6 @@ jobs:
           args: -p tendermint --test integration --no-fail-fast -- --ignored
 
   test-integration-latest:
-    # Don't fail CI due to integration failures on unstable/unreleased versions
-    continue-on-error: true
     runs-on: ubuntu-latest
     services:
       tendermint:
@@ -103,6 +101,8 @@ jobs:
           toolchain: stable
           override: true
       - uses: actions-rs/cargo@v1
+        # Don't fail CI due to integration failures on unstable/unreleased versions
+        continue-on-error: true
         with:
           command: test
           args: -p tendermint --test integration --no-fail-fast -- --ignored
