@@ -16,13 +16,13 @@ use crate::{
 
 pub enum AtHeight {
     At(Height),
-    Latest,
+    Highest,
 }
 
 impl From<Height> for AtHeight {
     fn from(height: Height) -> Self {
         if height == 0 {
-            Self::Latest
+            Self::Highest
         } else {
             Self::At(height)
         }
@@ -110,7 +110,7 @@ impl ProdIo {
         let res = block_on(
             async {
                 match height {
-                    AtHeight::Latest => rpc_client.latest_commit().await,
+                    AtHeight::Highest => rpc_client.latest_commit().await,
                     AtHeight::At(height) => rpc_client.commit(height).await,
                 }
             },
@@ -131,7 +131,7 @@ impl ProdIo {
         height: AtHeight,
     ) -> Result<TMValidatorSet, IoError> {
         let height = match height {
-            AtHeight::Latest => bail!(IoError::InvalidHeight(
+            AtHeight::Highest => bail!(IoError::InvalidHeight(
                 "given height must be greater than 0".to_string()
             )),
             AtHeight::At(height) => height,
