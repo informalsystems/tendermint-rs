@@ -24,8 +24,8 @@ pub enum ErrorKind {
     #[error("no witnesses")]
     NoWitnesses,
 
-    #[error("no witness left")]
-    NoWitnessLeft,
+    #[error("no valid peer left")]
+    NoValidPeerLeft,
 
     #[error("fork detected peers={0:?}")]
     ForkDetected(Vec<PeerId>),
