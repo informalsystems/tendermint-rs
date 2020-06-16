@@ -42,8 +42,8 @@ use sha2::{Digest, Sha256};
 /// Compute the Amino prefix for the given registered type name
 pub fn compute_prefix(name: &str) -> Vec<u8> {
     let mut sh = Sha256::default();
-    sh.input(name.as_bytes());
-    let output = sh.result();
+    sh.update(name.as_bytes());
+    let output = sh.finalize();
 
     output
         .iter()
