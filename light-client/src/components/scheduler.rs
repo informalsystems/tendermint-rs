@@ -18,7 +18,7 @@ pub trait Scheduler: Send {
     ///
     /// ## Postcondition
     /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
-    #[pre(light_store.latest(VerifiedStatus::Verified).is_some())]
+    #[pre(light_store.highest(VerifiedStatus::Verified).is_some())]
     #[post(valid_schedule(ret, target_height, current_height, light_store))]
     fn schedule(
         &self,
@@ -51,23 +51,23 @@ where
 ///
 /// ## Postcondition
 /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
-#[pre(light_store.latest(VerifiedStatus::Verified).is_some())]
+#[pre(light_store.highest(VerifiedStatus::Verified).is_some())]
 #[post(valid_schedule(ret, target_height, current_height, light_store))]
 pub fn basic_bisecting_schedule(
     light_store: &dyn LightStore,
     current_height: Height,
     target_height: Height,
 ) -> Height {
-    let latest_trusted_height = light_store
-        .latest(VerifiedStatus::Verified)
+    let trusted_height = light_store
+        .highest(VerifiedStatus::Verified)
         .map(|lb| lb.height())
         .unwrap();
 
-    if latest_trusted_height == current_height && latest_trusted_height < target_height {
+    if trusted_height == current_height && trusted_height < target_height {
         target_height
-    } else if latest_trusted_height < current_height && latest_trusted_height < target_height {
-        midpoint(latest_trusted_height, current_height)
-    } else if latest_trusted_height == target_height {
+    } else if trusted_height < current_height && trusted_height < target_height {
+        midpoint(trusted_height, current_height)
+    } else if trusted_height == target_height {
         target_height
     } else {
         midpoint(current_height, target_height)
@@ -103,7 +103,7 @@ pub fn valid_schedule(
     light_store: &dyn LightStore,
 ) -> bool {
     let latest_trusted_height = light_store
-        .latest(VerifiedStatus::Verified)
+        .highest(VerifiedStatus::Verified)
         .map(|lb| lb.height())
         .unwrap();
 

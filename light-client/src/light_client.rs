@@ -90,11 +90,11 @@ impl LightClient {
         }
     }
 
-    /// Attempt to update the light client to the latest block of the primary node.
+    /// Attempt to update the light client to the highest block of the primary node.
     ///
     /// Note: This functin delegates the actual work to `verify_to_target`.
     pub fn verify_to_highest(&mut self, state: &mut State) -> Result<LightBlock, Error> {
-        let target_block = match self.io.fetch_light_block(self.peer, AtHeight::Latest) {
+        let target_block = match self.io.fetch_light_block(self.peer, AtHeight::Highest) {
             Ok(last_block) => last_block,
             Err(io_error) => bail!(ErrorKind::Io(io_error)),
         };
@@ -165,10 +165,10 @@ impl LightClient {
         let mut current_height = target_height;
 
         loop {
-            // Get the latest trusted state
+            // Get the highest trusted state
             let trusted_state = state
                 .light_store
-                .latest(VerifiedStatus::Verified)
+                .highest(VerifiedStatus::Verified)
                 .ok_or_else(|| ErrorKind::NoInitialTrustedState)?;
 
             // Check invariant [LCV-INV-TP.1]
@@ -214,7 +214,7 @@ impl LightClient {
                 Verdict::NotEnoughTrust(_) => {
                     // The current block cannot be trusted because of missing overlap in the validator sets.
                     // Add the block to the light store with `unverified` status.
-                    // This will engage bisection in an attempt to raise the height of the latest
+                    // This will engage bisection in an attempt to raise the height of the highest
                     // trusted state until there is enough overlap.
                     state
                         .light_store

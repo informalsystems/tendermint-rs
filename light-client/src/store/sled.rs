@@ -67,7 +67,7 @@ impl LightStore for SledStore {
         self.db(status).remove(&self.db, &height).ok();
     }
 
-    fn latest(&self, status: VerifiedStatus) -> Option<LightBlock> {
+    fn highest(&self, status: VerifiedStatus) -> Option<LightBlock> {
         self.db(status).iter(&self.db).next_back()
     }
 

@@ -73,7 +73,7 @@ impl PeerList {
             }
         }
 
-        bail!(ErrorKind::NoWitnessLeft)
+        bail!(ErrorKind::NoValidPeerLeft)
     }
 }
 
