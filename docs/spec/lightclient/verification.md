@@ -1,4 +1,10 @@
-# Core Verification
+# Light Client Verification - Release 1 (draft)
+
+## Revision History
+
+1. Release planned 2nd quarter 2020
+
+## Abstract
 
 The light client implements a read operation of a
 [header][TMBC-HEADER-link] from the [blockchain][TMBC-SEQ-link], by
