@@ -63,33 +63,76 @@ secondaries using this specification.
 ### Tendermint Consensus and Forks
 
 
+#### **[TMBC-FUNC]**
+- let *b* and *c* be two light blocks. We define *supports(b,c,t)* 
+    iff `ValidAndVerified(b1, b2)` at time *t*
 
-**TODO:** formalize the following
+- let b and c be two light blocks
+with *b.Header.Height + 1 = c.Header.Height*. We define *signs(b1,b2)*
+    iff `ValidAndVerified(b1, b2)` 
 
-- The chain induces a sequence of NextV_i sets.
-- Tendermint security model imposes correctness of >2/3 of each NextV_i
-  for [Time_i, Time_i + trustingPeriod]
+- let *Genesis* be the agreed-upon initial block (file)
+
+#### **[TMBC-SEQ-ROOTED]**
+Let *b* be a light block. 
+We define *sequ-rooted(b)* iff for all i, 1 <= i < h = b.Header.Height,
+there exists light blocks a(i) s.t.
+   - *a(1) = Genesis* and
+   - *a(h) = b* and
+   - *signs(a(i),a(i+1))*.
+
+#### **[TMBC-SEQ-ROOTED]**
+Let *b* and *c* be light blocks. We define *skip-rooted(b,c,t)* if at
+time t there exists an *h* and a sequence *a(1)*, ... *a(h)* s.t.
+   - *a(1) = bs* and
+   - *a(h) = c* and
+   - *supports(a(i),a(i+1),t)*.
+
+
+#### **[TMBC-SIGN-SUPPORT-UNIQUE]**
+Let *a*, *b*, *c*, be light blocks and *t* a time, we define 
+*sign-skip-unique(a,b,c) = true* iff
+   - *sequ-rooted(a)*
+   - *sequ-rooted(b)*
+   - *b.Header.Height = c.Header.Height*
+   - *skip-rooted(a,c,t)*
+then *b = c*.
+
+If there exists three light blocks a, b, and c, with 
+*sign-skip-unique(b,c) =
+false* then we have a *light fork*.
+
+> **TODO** I believe this corresponds to **Slashable fork** in
+> [forks][tendermintfork]. Please confirm!
+
   
-- If this assumption holds, consensus ensures that for each height, 
-  there exists at most one block that is "properly signed"
+#### **[TMBC-SIGN-UNIQUE]**
+Let *b* and *c* be two light blocks, we define *sign-unique(b,c) =
+true* iff
+   - *a.Header.Height =  b.Header.Height* and
+   - *rooted(a)* and
+   - *rooted(b)*
+implies *b = c*.
 
-Define "is supported" as containing >1/3 of the voting power of some
-validator set
+If there exists two light blocks b and c, with *sign-unique(b,c) =
+false* then we have a *fork on the chain*.
 
-Define "is signed" as containing >2/3 of the voting power of the
-"current" validator set
+> I think this is what was the intuition behind **Main chain forks**
+> in the document on [forks][tendermintfork]. However, main chain
+> forks where defined more operational "forks that are observed by
+> full nodes as part of normal Tendermint consensus protocol"
 
-- if two distinct headers A and B both have height h, and A and B are supported
-  by two validator sets within the trusting period, we call it a
-  light fork.
- 
-- if two headers A and B both have height h, and there is a block at
-  height h-1 within the trusting period such that its validator set
-  signed A and B, we call it a fork on the main chain, or fork.
-  
-  
-- a block that is not supported is called bogus (it can be generated
-  just by faulty nodes within the tendermint security model)
+
+#### **[TMBC-LC-FORK]**
+If there exists exactly one light block *b*, with *sequ-rooted(b)*,
+and there exists a light block *c*, with *sign-skip-unique(b,c) =
+false*, then we have a **light client fork**.
+
+#### **[TMBC-BOGUS]**
+Let *b* be a light block and *t* a time. We define *bogus(b,t)* iff
+  - *sequ-rooted(b) = false* and
+  - for all *a*, *sequ-rooted(a)* implies *skip-rooted(a,b,t) = false*
+
 
 
 ### Informal Problem statement
@@ -374,6 +417,8 @@ func ForkDetector(ls LightStore)  {
 
 [[verification]] The specification of the light client verification.
 
+[[tendermintfork]] Tendermint fork detection and accountability
+
 
 [TMBC-FM-2THIRDS-linkVDD]: https://github.com/informalsystems/VDD/tree/master/blockchain/blockchain.md#**[TMBC-FM-2THIRDS-link]**:
 
@@ -391,3 +436,5 @@ func ForkDetector(ls LightStore)  {
 [verification]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification.md
 
 [accountability]: https://github.com/tendermint/spec/blob/master/spec/consensus/light-client/accountability.md
+
+[tendermintfork]: https://docs.google.com/document/d/1xjyp5JOPt7QfHem1AFEaowBH2Plk0IHACWtYFXFvO7E/edit#heading=h.th2369ptc2ve
