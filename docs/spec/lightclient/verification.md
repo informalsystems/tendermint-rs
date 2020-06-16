@@ -1,8 +1,9 @@
-# Light Client Verification - Release 1 (draft)
+# Light Client Verification - Version 2 (draft)
 
-## Revision History
+## Versions
 
-1. Release planned 2nd quarter 2020
+1. draft
+2. draft
 
 ## Abstract
 
