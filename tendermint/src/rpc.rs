@@ -10,6 +10,7 @@ pub mod error;
 pub mod event_listener;
 mod id;
 mod method;
+mod proxy;
 pub mod request;
 pub mod response;
 mod version;
