@@ -124,13 +124,12 @@ If there exists three light blocks a, b, and c, with
 *sign-skip-match(a,b,c,t) =
 false* then we have a *slashable fork*.
 
-> **TODO:** make link to account
 
 
 > **TODO:** I think the following definition is
-> the intuition behind **Main chain forks**
+> the intuition behind **main chain forks**
 > in the document on [forks][tendermintfork]. However, main chain
-> forks where defined more operational "forks that are observed by
+> forks were defined more operational "forks that are observed by
 > full nodes as part of normal Tendermint consensus protocol". Please
 > confirm! 
   
@@ -159,8 +158,8 @@ Let *a*, *b*, *c*, be light blocks and *t* a time. We define
 *light-client-fork(a,b,c,t)* iff
    - *sign-skip-match(a,b,c,t) = false* and
    - *sequ-rooted(b)* and
-   - for all *d*,  *sequ-rooted(d)* and *d.Header.Height=b.Header.Height* 
-     implies *d = b*
+   - *b* is "unique", that is, for all *d*,  *sequ-rooted(d)* and
+     *d.Header.Height=b.Header.Height* implies *d = b*
 
 
 > Finally, let's also define bogus blocks that have no support.
@@ -176,7 +175,8 @@ Let *b* be a light block and *t* a time. We define *bogus(b,t)* iff
 > chain and to a light client fork.  
 > F4 and F5 (phantom validators, lunatic) cannot lead to a fork on the
 > chain but to a light client
-> fork if *t+1 < f < 2t+1*.
+> fork if *t+1 < f < 2t+1*.  
+> F4 and F5 can also lead to bogus blocks
 
 
 
