@@ -57,3 +57,4 @@ ripemd160 = "0.9"
 
 [dev-dependencies]
 tendermint-rpc = { version = "0.1.0", path = "../rpc" }
+tokio = { version = "0.2", features = [ "macros" ] }
