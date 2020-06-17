@@ -183,7 +183,7 @@ Let *b* be a light block and *t* a time. We define *bogus(b,t)* iff
 ### Informal Problem statement
 
 > We put tags to informal problem statements as there is no sequential
-> secification.
+> specification.
 
 The following requirements are operational in that they describe how
 things should be done, rather than what should be done. However, they
@@ -484,4 +484,3 @@ func ForkDetector(ls LightStore)  {
 [accountability]: https://github.com/tendermint/spec/blob/master/spec/consensus/light-client/accountability.md
 
 [tendermintfork]: https://docs.google.com/document/d/1xjyp5JOPt7QfHem1AFEaowBH2Plk0IHACWtYFXFvO7E/edit#heading=h.th2369ptc2ve
-
