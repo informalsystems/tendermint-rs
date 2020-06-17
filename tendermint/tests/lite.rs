@@ -189,14 +189,14 @@ fn run_test_case(tc: &TestCase) {
         }
     }
 }
-#[tokio::test]
-async fn bisection() {
+#[test]
+fn bisection() {
     // TODO: re-enable multi-peer tests as soon as the light client can handle these:
     // let dir = "bisection/multi_peer";
     // run_bisection_tests(dir).await;
 
     let dir = "bisection/single_peer";
-    run_bisection_tests(dir).await;
+    futures::executor::block_on(run_bisection_tests(dir));
 }
 
 #[test]

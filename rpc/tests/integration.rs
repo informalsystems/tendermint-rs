@@ -4,13 +4,14 @@ mod endpoints {
     use std::{fs, path::PathBuf};
     use tendermint::abci::Code;
     use tendermint::lite::Header;
-    use tendermint::rpc::{self, endpoint, Response};
+
+    use tendermint_rpc::{self as rpc, endpoint, Response};
 
     const EXAMPLE_APP: &str = "GaiaApp";
     const EXAMPLE_CHAIN: &str = "cosmoshub-2";
 
     fn read_json_fixture(name: &str) -> String {
-        fs::read_to_string(PathBuf::from("./tests/support/rpc/").join(name.to_owned() + ".json"))
+        fs::read_to_string(PathBuf::from("./tests/support/").join(name.to_owned() + ".json"))
             .unwrap()
     }
 

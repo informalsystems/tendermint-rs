@@ -9,11 +9,13 @@
 /// cargo test -- --ignored
 /// ```
 mod rpc {
+    use futures::executor::block_on;
     use std::cmp::min;
+
+    use tendermint_rpc::{event_listener, Client};
+
     use tendermint::abci::Code;
     use tendermint::abci::Log;
-    use tendermint::rpc::event_listener::TMEventData;
-    use tendermint::rpc::Client;
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> Client {
@@ -21,19 +23,19 @@ mod rpc {
     }
 
     /// `/health` endpoint
-    #[tokio::test]
+    #[test]
     #[ignore]
-    async fn health() {
-        let result = localhost_rpc_client().health().await;
+    fn health() {
+        let result = block_on(localhost_rpc_client().health());
 
         assert!(result.is_ok(), "health check failed");
     }
 
     /// `/abci_info` endpoint
-    #[tokio::test]
+    #[test]
     #[ignore]
-    async fn abci_info() {
-        let abci_info = localhost_rpc_client().abci_info().await.unwrap();
+    fn abci_info() {
+        let abci_info = block_on(localhost_rpc_client().abci_info()).unwrap();
 
         assert_eq!(abci_info.app_version, 1u64);
         // the kvstore app's reply will contain "{\"size\":0}" as data right from the start
@@ -43,14 +45,12 @@ mod rpc {
     }
 
     /// `/abci_query` endpoint
-    #[tokio::test]
+    #[test]
     #[ignore]
-    async fn abci_query() {
+    fn abci_query() {
         let key = "unpopulated_key".parse().unwrap();
-        let abci_query = localhost_rpc_client()
-            .abci_query(Some(key), vec![], None, false)
-            .await
-            .unwrap();
+        let abci_query =
+            block_on(localhost_rpc_client().abci_query(Some(key), vec![], None, false)).unwrap();
 
         assert_eq!(abci_query.code, Code::Ok);
         assert_eq!(abci_query.log, Log::from("does not exist"));
@@ -65,36 +65,34 @@ mod rpc {
     }
 
     /// `/block` endpoint
-    #[tokio::test]
+    #[test]
     #[ignore]
-    async fn block() {
+    fn block() {
         let height = 1u64;
-        let block_info = localhost_rpc_client().block(height).await.unwrap();
+        let block_info = block_on(localhost_rpc_client().block(height)).unwrap();
 
         assert!(block_info.block.last_commit.is_none());
         assert_eq!(block_info.block.header.height.value(), height);
     }
 
     /// `/block_results` endpoint
-    #[tokio::test]
+    #[test]
     #[ignore]
-    async fn block_results() {
+    fn block_results() {
         let height = 1u64;
-        let block_results = localhost_rpc_client().block_results(height).await.unwrap();
+        let block_results = block_on(localhost_rpc_client().block_results(height)).unwrap();
 
         assert_eq!(block_results.height.value(), height);
         assert!(block_results.txs_results.is_none());
     }
 
     /// `/blockchain` endpoint
-    #[tokio::test]
+    #[test]
     #[ignore]
-    async fn blockchain() {
+    fn blockchain() {
         let max_height = 10u64;
-        let blockchain_info = localhost_rpc_client()
-            .blockchain(1u64, max_height)
-            .await
-            .unwrap();
+        let blockchain_info =
+            block_on(localhost_rpc_client().blockchain(1u64, max_height)).unwrap();
 
         assert_eq!(
             blockchain_info.block_metas.len() as u64,
@@ -103,21 +101,21 @@ mod rpc {
     }
 
     /// `/commit` endpoint
-    #[tokio::test]
+    #[test]
     #[ignore]
-    async fn commit() {
+    fn commit() {
         let height = 1u64;
-        let commit_info = localhost_rpc_client().commit(height).await.unwrap();
+        let commit_info = block_on(localhost_rpc_client().commit(height)).unwrap();
 
         assert_eq!(commit_info.signed_header.header.height.value(), height);
         assert_eq!(commit_info.canonical, true);
     }
 
     /// `/genesis` endpoint
-    #[tokio::test]
+    #[test]
     #[ignore]
-    async fn genesis() {
-        let genesis = localhost_rpc_client().genesis().await.unwrap();
+    fn genesis() {
+        let genesis = block_on(localhost_rpc_client().genesis()).unwrap();
 
         assert_eq!(
             genesis.consensus_params.validator.pub_key_types[0].to_string(),
@@ -126,52 +124,48 @@ mod rpc {
     }
 
     /// `/net_info` endpoint integration test
-    #[tokio::test]
+    #[test]
     #[ignore]
-    async fn net_info() {
-        let net_info = localhost_rpc_client().net_info().await.unwrap();
+    fn net_info() {
+        let net_info = block_on(localhost_rpc_client().net_info()).unwrap();
 
         assert!(net_info.listening);
     }
 
     /// `/status` endpoint integration test
-    #[tokio::test]
+    #[test]
     #[ignore]
-    async fn status_integration() {
-        let status = localhost_rpc_client().status().await.unwrap();
+    fn status_integration() {
+        let status = block_on(localhost_rpc_client().status()).unwrap();
 
         // For lack of better things to test
         assert_eq!(status.validator_info.voting_power.value(), 10);
     }
 
-    #[tokio::test]
+    #[test]
     #[ignore]
-    async fn event_subscription() {
-        let mut client = tendermint::rpc::event_listener::EventListener::connect(
+    fn event_subscription() {
+        let mut client = block_on(event_listener::EventListener::connect(
             "tcp://127.0.0.1:26657".parse().unwrap(),
-        )
-        .await
+        ))
         .unwrap();
-        client
-            .subscribe(tendermint::rpc::event_listener::EventSubscription::BlockSubscription)
-            .await
-            .unwrap();
+        block_on(client.subscribe(event_listener::EventSubscription::BlockSubscription)).unwrap();
         // client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
 
         // Loop here is helpful when debugging parsing of JSON events
         // loop{
-        let maybe_result_event = client.get_event().await.unwrap();
+        let maybe_result_event = block_on(client.get_event()).unwrap();
         dbg!(&maybe_result_event);
         // }
         let result_event = maybe_result_event.expect("unexpected msg read");
         match result_event.data {
-            TMEventData::EventDataNewBlock(nb) => {
+            event_listener::TMEventData::EventDataNewBlock(nb) => {
                 dbg!("got EventDataNewBlock: {:?}", nb);
             }
-            TMEventData::EventDataTx(tx) => {
+            event_listener::TMEventData::EventDataTx(tx) => {
                 dbg!("got EventDataTx: {:?}", tx);
             }
-            TMEventData::GenericJSONEvent(v) => {
+            event_listener::TMEventData::GenericJSONEvent(v) => {
                 panic!("got a GenericJSONEvent: {:?}", v);
             }
         }
