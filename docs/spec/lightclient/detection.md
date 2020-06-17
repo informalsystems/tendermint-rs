@@ -183,7 +183,7 @@ Let *b* be a light block and *t* a time. We define *bogus(b,t)* iff
 ### Informal Problem statement
 
 > We put tags to informal problem statements as there is no sequential
-> secification.
+> specification.
 
 The following requirements are operational in that they describe how
 things should be done, rather than what should be done. However, they
@@ -206,7 +206,7 @@ primary and returns with
  detector should query the secondaries by calling `FetchLightBlock` for height
  *LightStore.LatestVerified().Height* remotely.  
 Then, 
-the detector returns the set of all headers $h'$ downloaded from
+the detector returns the set of all headers *h'* downloaded from
 secondaries that satisfy
  - *h'* is different from *LightStore.LatestVerified()*
  - *h'* is a (light) fork
@@ -218,7 +218,7 @@ Whenever the detector observes misbehavior of a full node from the set
 of Secondaries it should be replaced by a fresh full node.  (A full
 node that has not been primary or secondary before). This includes in
 particular the case where *h'* is different from
-*LightStore.LatestVerified()* but h' is not a fork.
+*LightStore.LatestVerified()* but *h'* is not a fork.
 
 
 
@@ -484,4 +484,3 @@ func ForkDetector(ls LightStore)  {
 [accountability]: https://github.com/tendermint/spec/blob/master/spec/consensus/light-client/accountability.md
 
 [tendermintfork]: https://docs.google.com/document/d/1xjyp5JOPt7QfHem1AFEaowBH2Plk0IHACWtYFXFvO7E/edit#heading=h.th2369ptc2ve
-
