@@ -1,9 +1,9 @@
 //! Tendermint RPC definitons and types.
 
-pub mod error;
-// TODO(ismail): document fields or re-use the abci types
 mod client;
 pub mod endpoint;
+pub mod error;
+// TODO(ismail): document fields or re-use the abci types
 #[allow(missing_docs)]
 pub mod event_listener;
 mod id;
