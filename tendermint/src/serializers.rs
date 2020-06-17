@@ -38,9 +38,9 @@
 //!   serializers::primitives::string.
 //! * serializers::bytes::* deserializes a null value into an empty vec![].
 
-pub(crate) mod bytes;
-pub(crate) mod from_str;
-pub(crate) mod time_duration;
+pub mod bytes;
+pub mod from_str;
+pub mod time_duration;
 
 mod raw_commit_sig;
 pub(crate) use raw_commit_sig::BlockIDFlag;
@@ -50,5 +50,5 @@ pub(crate) use raw_commit_sig::RawCommitSig;
 mod tests;
 
 mod custom;
-pub(crate) use custom::parse_non_empty_block_id;
-pub(crate) use custom::parse_non_empty_hash;
+pub use custom::parse_non_empty_block_id;
+pub use custom::parse_non_empty_hash;

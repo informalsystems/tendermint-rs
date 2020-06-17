@@ -216,8 +216,8 @@ impl Serialize for Code {
 
 #[cfg(test)]
 mod tests {
-    use crate::rpc::error::Code;
-    use crate::rpc::Error;
+    use super::Code;
+    use super::Error;
 
     #[test]
     fn test_serialize() {

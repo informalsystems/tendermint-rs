@@ -1,8 +1,9 @@
-//! `/block` endpoint JSONRPC wrapper
+//! `/block` endpoint JSONcrate wrapper
 
-use crate::{block, rpc};
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
+
+use tendermint::block;
 
 /// Get information about a specific block
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -32,11 +33,11 @@ impl From<Range<block::Height>> for Request {
     }
 }
 
-impl rpc::Request for Request {
+impl crate::Request for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::Blockchain
+    fn method(&self) -> crate::Method {
+        crate::Method::Blockchain
     }
 }
 
@@ -50,4 +51,4 @@ pub struct Response {
     pub block_metas: Vec<block::Meta>,
 }
 
-impl rpc::Response for Response {}
+impl crate::Response for Response {}

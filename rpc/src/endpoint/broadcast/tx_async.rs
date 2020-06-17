@@ -1,10 +1,8 @@
 //! `/broadcast_tx_async`: broadcast a transaction and return immediately.
 
-use crate::{
-    abci::{transaction, Code, Data, Log, Transaction},
-    rpc,
-};
 use serde::{Deserialize, Serialize};
+
+use tendermint::abci::{transaction, Code, Data, Log, Transaction};
 
 /// `/broadcast_tx_async`: broadcast a transaction and return immediately.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -14,17 +12,17 @@ pub struct Request {
 }
 
 impl Request {
-    /// Create a new async transaction broadcast RPC request
+    /// Create a new async transaction broadcast crate request
     pub fn new(tx: Transaction) -> Request {
         Request { tx }
     }
 }
 
-impl rpc::Request for Request {
+impl crate::Request for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::BroadcastTxAsync
+    fn method(&self) -> crate::Method {
+        crate::Method::BroadcastTxAsync
     }
 }
 
@@ -44,4 +42,4 @@ pub struct Response {
     pub hash: transaction::Hash,
 }
 
-impl rpc::Response for Response {}
+impl crate::Response for Response {}

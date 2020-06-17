@@ -1,17 +1,18 @@
 //! `/status` endpoint JSONRPC wrapper
 
-use crate::{block, node, rpc, serializers, validator, Hash, Time};
 use serde::{Deserialize, Serialize};
+
+use tendermint::{block, node, serializers, validator, Hash, Time};
 
 /// Node status request
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
-impl rpc::Request for Request {
+impl crate::Request for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::Status
+    fn method(&self) -> crate::Method {
+        crate::Method::Status
     }
 }
 
@@ -28,7 +29,7 @@ pub struct Response {
     pub validator_info: validator::Info,
 }
 
-impl rpc::Response for Response {}
+impl crate::Response for Response {}
 
 /// Sync information
 #[derive(Clone, Debug, Deserialize, Serialize)]

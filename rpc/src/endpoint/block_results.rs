@@ -1,7 +1,8 @@
-//! `/block_results` endpoint JSONRPC wrapper
+//! `/block_results` endpoint JSONcrate wrapper
 
-use crate::{abci, block, consensus, rpc, validator};
 use serde::{Deserialize, Serialize};
+
+use tendermint::{abci, block, consensus, validator};
 
 /// Get ABCI results at a given height.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -21,11 +22,11 @@ impl Request {
     }
 }
 
-impl rpc::Request for Request {
+impl crate::Request for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::BlockResults
+    fn method(&self) -> crate::Method {
+        crate::Method::BlockResults
     }
 }
 
@@ -52,4 +53,4 @@ pub struct Response {
     pub consensus_param_updates: Option<consensus::Params>,
 }
 
-impl rpc::Response for Response {}
+impl crate::Response for Response {}

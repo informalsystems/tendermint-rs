@@ -1,10 +1,8 @@
 //! `/broadcast_tx_sync`: returns with the response from `CheckTx`.
 
-use crate::{
-    abci::{transaction, Code, Data, Log, Transaction},
-    rpc,
-};
 use serde::{Deserialize, Serialize};
+
+use tendermint::abci::{transaction, Code, Data, Log, Transaction};
 
 /// `/broadcast_tx_sync`: returns with the response from `CheckTx`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -20,11 +18,11 @@ impl Request {
     }
 }
 
-impl rpc::Request for Request {
+impl crate::Request for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::BroadcastTxSync
+    fn method(&self) -> crate::Method {
+        crate::Method::BroadcastTxSync
     }
 }
 
@@ -44,4 +42,4 @@ pub struct Response {
     pub hash: transaction::Hash,
 }
 
-impl rpc::Response for Response {}
+impl crate::Response for Response {}

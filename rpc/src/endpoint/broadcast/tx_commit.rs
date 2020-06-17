@@ -1,11 +1,12 @@
 //! `/broadcast_tx_commit`: only returns error if `mempool.CheckTx()` errs or
 //! if we timeout waiting for tx to commit.
 
-use crate::{
-    abci::{transaction, Code, Data, Log, Transaction},
-    block, rpc,
-};
 use serde::{Deserialize, Serialize};
+
+use tendermint::{
+    abci::{transaction, Code, Data, Log, Transaction},
+    block,
+};
 
 /// `/broadcast_tx_commit`: only returns error if `mempool.CheckTx()` errs or
 /// if we timeout waiting for tx to commit.
@@ -25,11 +26,11 @@ impl Request {
     }
 }
 
-impl rpc::Request for Request {
+impl crate::Request for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::BroadcastTxCommit
+    fn method(&self) -> crate::Method {
+        crate::Method::BroadcastTxCommit
     }
 }
 
@@ -49,7 +50,7 @@ pub struct Response {
     pub height: block::Height,
 }
 
-impl rpc::Response for Response {}
+impl crate::Response for Response {}
 
 /// Results from either `CheckTx` or `DeliverTx`.
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
