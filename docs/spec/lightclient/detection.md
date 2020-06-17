@@ -136,9 +136,9 @@ false* then we have a *slashable fork*.
 #### **[TMBC-SIGN-UNIQUE]**
 Let *b* and *c* be  light blocks, we define *sign-unique(b,c) =
 true* iff
-   - *a.Header.Height =  b.Header.Height* and
-   - *rooted(a)* and
-   - *rooted(b)*
+   - *b.Header.Height =  c.Header.Height* and
+   - *rooted(b)* and
+   - *rooted(c)*
    
 implies *b = c*.
 
