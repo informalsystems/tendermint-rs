@@ -218,7 +218,7 @@ Whenever the detector observes misbehavior of a full node from the set
 of Secondaries it should be replaced by a fresh full node.  (A full
 node that has not been primary or secondary before). This includes in
 particular the case where *h'* is different from
-*LightStore.LatestVerified()* but h' is not a fork.
+*LightStore.LatestVerified()* but *h'* is not a fork.
 
 
 
