@@ -12,7 +12,7 @@ pub struct Request {
 }
 
 impl Request {
-    /// Create a new async transaction broadcast crate request
+    /// Create a new async transaction broadcast RPC request
     pub fn new(tx: Transaction) -> Request {
         Request { tx }
     }
