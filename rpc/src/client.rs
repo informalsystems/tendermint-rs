@@ -1,14 +1,14 @@
 //! Tendermint RPC client
 
-use crate::{
-    abci::{self, Transaction},
-    block::Height,
-    net,
-    rpc::{endpoint::*, Error, Request, Response},
-    Genesis,
-};
 use bytes::buf::ext::BufExt;
 use hyper::header;
+
+use tendermint::abci::{self, Transaction};
+use tendermint::block::Height;
+use tendermint::net;
+use tendermint::Genesis;
+
+use crate::{endpoint::*, Error, Request, Response};
 
 /// Tendermint RPC client.
 ///

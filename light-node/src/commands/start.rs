@@ -2,23 +2,24 @@
 
 /// App-local prelude includes `app_reader()`/`app_writer()`/`app_config()`
 /// accessors along with logging macros. Customize as you see fit.
-use crate::prelude::*;
-
-use tendermint::hash;
-use tendermint::lite;
-use tendermint::lite::ValidatorSet as _;
-use tendermint::lite::{Header, Height, Requester, TrustThresholdFraction};
-use tendermint::rpc;
-use tendermint::Hash;
-
-use crate::application::APPLICATION;
-use crate::config::LightNodeConfig;
-use crate::requester::RPCRequester;
-use crate::store::{MemStore, State};
 use abscissa_core::{config, Command, FrameworkError, Options, Runnable};
 use std::process;
 use std::time::{Duration, SystemTime};
+
+use tendermint::hash;
+use tendermint::lite;
 use tendermint::lite::error::Error;
+use tendermint::lite::ValidatorSet as _;
+use tendermint::lite::{Header, Height, Requester, TrustThresholdFraction};
+use tendermint::Hash;
+
+use tendermint_rpc as rpc;
+
+use crate::application::APPLICATION;
+use crate::config::LightNodeConfig;
+use crate::prelude::*;
+use crate::requester::RPCRequester;
+use crate::store::{MemStore, State};
 
 /// `start` subcommand
 ///

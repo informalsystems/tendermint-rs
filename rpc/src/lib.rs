@@ -1,6 +1,4 @@
-//! Tendermint RPC: JSONRPC over HTTP support
-//!
-//! Wraps the RPC API described at: <https://tendermint.com/rpc/>
+//! Tendermint RPC definitons and types.
 
 mod client;
 pub mod endpoint;

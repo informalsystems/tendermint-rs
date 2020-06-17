@@ -1,7 +1,8 @@
 //! `/validators` endpoint JSONRPC wrapper
 
-use crate::{block, rpc, validator};
 use serde::{Deserialize, Serialize};
+
+use tendermint::{block, validator};
 
 /// List validators for a specific block
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -16,11 +17,11 @@ impl Request {
     }
 }
 
-impl rpc::Request for Request {
+impl crate::Request for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::Validators
+    fn method(&self) -> crate::Method {
+        crate::Method::Validators
     }
 }
 
@@ -34,4 +35,4 @@ pub struct Response {
     pub validators: Vec<validator::Info>,
 }
 
-impl rpc::Response for Response {}
+impl crate::Response for Response {}

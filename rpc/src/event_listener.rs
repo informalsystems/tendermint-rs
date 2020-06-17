@@ -1,21 +1,20 @@
 //! Tendermint Websocket event listener client
 
-use crate::{
-    block::Block,
-    net,
-    rpc::response,
-    rpc::response::Wrapper,
-    rpc::Request,
-    rpc::{endpoint::subscribe, Error as RPCError},
-};
 use async_tungstenite::{tokio::connect_async, tokio::TokioAdapter, tungstenite::Message};
 use futures::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error as stdError;
-
-use crate::rpc::error::Code;
 use tokio::net::TcpStream;
+
+use tendermint::block;
+use tendermint::net;
+
+use crate::error::Code;
+use crate::response;
+use crate::response::Wrapper;
+use crate::Request;
+use crate::{endpoint::subscribe, Error as RPCError};
 
 /// There are only two valid queries to the websocket. A query that subscribes to all transactions
 /// and a query that susbscribes to all blocks.
@@ -194,7 +193,7 @@ pub struct Attribute {
 ///Block Value
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EventDataNewBlock {
-    pub block: Option<Block>,
+    pub block: Option<block::Block>,
 
     // TODO(ismail): these should be the same as abci::responses::BeginBlock
     // and abci::responses::EndBlock

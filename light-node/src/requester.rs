@@ -3,10 +3,11 @@ use async_trait::async_trait;
 use tendermint::block::signed_header::SignedHeader as TMCommit;
 use tendermint::block::Header as TMHeader;
 use tendermint::lite::{error, Height, SignedHeader};
-use tendermint::rpc;
 use tendermint::validator;
 use tendermint::validator::Set;
 use tendermint::{block, lite};
+
+use tendermint_rpc as rpc;
 
 /// RPCRequester wraps the Tendermint rpc::Client.
 pub struct RPCRequester {
@@ -50,11 +51,13 @@ impl lite::types::Requester<TMCommit, TMHeader> for RPCRequester {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tendermint::lite::types::Header as LiteHeader;
     use tendermint::lite::types::Requester as LiteRequester;
     use tendermint::lite::types::ValidatorSet as LiteValSet;
-    use tendermint::rpc;
+
+    use tendermint_rpc as rpc;
+
+    use super::*;
 
     // TODO: integration test
     #[tokio::test]

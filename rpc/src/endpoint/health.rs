@@ -1,17 +1,16 @@
 //! `/health` endpoint JSONRPC wrapper
 
-use crate::rpc;
 use serde::{Deserialize, Serialize};
 
 /// Perform a basic healthceck of the backend
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
-impl rpc::Request for Request {
+impl crate::Request for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::Health
+    fn method(&self) -> crate::Method {
+        crate::Method::Health
     }
 }
 
@@ -19,4 +18,4 @@ impl rpc::Request for Request {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {}
 
-impl rpc::Response for Response {}
+impl crate::Response for Response {}

@@ -1,12 +1,12 @@
 //! Serialize/deserialize bytes (Vec<u8>) type
 
 /// Serialize into hexstring, deserialize from hexstring
-pub(crate) mod hexstring {
+pub mod hexstring {
     use serde::{Deserialize, Deserializer, Serializer};
     use subtle_encoding::hex;
 
     /// Deserialize hexstring into Vec<u8>
-    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -17,7 +17,7 @@ pub(crate) mod hexstring {
     }
 
     /// Serialize from T into hexstring
-    pub(crate) fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
         T: AsRef<[u8]>,
@@ -29,12 +29,12 @@ pub(crate) mod hexstring {
 }
 
 /// Serialize into base64string, deserialize from base64string
-pub(crate) mod base64string {
+pub mod base64string {
     use serde::{Deserialize, Deserializer, Serializer};
     use subtle_encoding::base64;
 
     /// Deserialize base64string into Vec<u8>
-    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -43,7 +43,7 @@ pub(crate) mod base64string {
     }
 
     /// Serialize from T into base64string
-    pub(crate) fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
         T: AsRef<[u8]>,
