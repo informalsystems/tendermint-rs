@@ -206,7 +206,7 @@ primary and returns with
  detector should query the secondaries by calling `FetchLightBlock` for height
  *LightStore.LatestVerified().Height* remotely.  
 Then, 
-the detector returns the set of all headers $h'$ downloaded from
+the detector returns the set of all headers *h'* downloaded from
 secondaries that satisfy
  - *h'* is different from *LightStore.LatestVerified()*
  - *h'* is a (light) fork
