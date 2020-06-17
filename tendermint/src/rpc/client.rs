@@ -3,11 +3,12 @@
 use crate::{
     abci::{self, Transaction},
     block::Height,
+    evidence::Evidence,
     net,
     rpc::{endpoint::*, Error, Request, Response},
     Genesis,
-    evidence::Evidence,
 };
+
 use bytes::buf::ext::BufExt;
 use hyper::header;
 
@@ -153,10 +154,7 @@ impl Client {
     }
 
     /// `/broadcast_evidence`: broadcast an evidence.
-    pub async fn broadcast_evidence(
-        &self,
-        e: Evidence,
-    ) -> Result<evidence::Response, Error> {
+    pub async fn broadcast_evidence(&self, e: Evidence) -> Result<evidence::Response, Error> {
         self.perform(evidence::Request::new(e)).await
     }
 

@@ -1,15 +1,11 @@
-
 //! `/broadcast_evidence`: broadcast an evidence.
 
-use crate::{
-    abci::transaction,
-    rpc,
-    evidence::Evidence,
-};
+use crate::{abci::transaction, evidence::Evidence, rpc};
+
 use serde::{Deserialize, Serialize};
 
 /// `/broadcast_evidence`: broadcast an evidence.
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Request {
     /// Evidence to broadcast
     pub ev: Evidence,

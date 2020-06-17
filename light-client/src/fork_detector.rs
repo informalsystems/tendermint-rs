@@ -22,7 +22,10 @@ pub enum ForkDetection {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Fork {
     /// An actual fork was found for this `LightBlock`
-    Forked(LightBlock),
+    Forked {
+        primary: LightBlock,
+        witness: LightBlock,
+    },
     /// The node has been deemed faulty for this `LightBlock`
     Faulty(LightBlock, ErrorKind),
 }
@@ -109,8 +112,16 @@ impl ForkDetector for ProdForkDetector {
                 .verify_to_target(light_block.height(), &mut state);
 
             match result {
-                Ok(_) => forks.push(Fork::Forked(witness_block)),
-                Err(e) if e.kind().has_expired() => forks.push(Fork::Forked(witness_block)),
+                Ok(_) => forks.push(Fork::Forked {
+                    primary: light_block.clone(),
+                    witness: witness_block,
+                }),
+                Err(e) if e.kind().has_expired() => {
+                    forks.push(Fork::Forked {
+                        primary: light_block.clone(),
+                        witness: witness_block,
+                    });
+                }
                 Err(e) => forks.push(Fork::Faulty(witness_block, e.kind().clone())),
             }
         }
