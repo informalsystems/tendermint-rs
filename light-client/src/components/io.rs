@@ -6,8 +6,10 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use tendermint::{
-    block::signed_header::SignedHeader as TMSignedHeader, rpc, validator::Set as TMValidatorSet,
+    block::signed_header::SignedHeader as TMSignedHeader, validator::Set as TMValidatorSet,
 };
+
+use tendermint_rpc as rpc;
 
 use crate::{
     bail,
