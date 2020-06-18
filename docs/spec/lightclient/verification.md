@@ -1,11 +1,6 @@
-# Light Client Verification - Version 2 (draft)
+# Light Client Verification
 
-## Versions
 
-1. draft
-2. draft
-
-## Abstract
 
 The light client implements a read operation of a
 [header][TMBC-HEADER-link] from the [blockchain][TMBC-SEQ-link], by
@@ -923,22 +918,71 @@ If on the blockchain the validator set of the block at height
 ## Supporting the IBC Relayer
 
 We might need to download and verify headers whose heights are smaller
-than  lightStore.LatestVerified.Height. The following function
+than lightStore.LatestVerified.Height. To formalize
+the solution, we start with the following methods for the LightStore
 
 
 ```go
 func (ls LightStore) LatestPrevious(height Height) (LightBlock, bool) 
 ```
 - Expected postcondition
-  - returns a light block that satisfies:
-      - lb is in lightStore
-      - lb is verified and not expired
-	  - lb.Header.Height < targetHeight
-	  - for all b in lightStore s.t. b is verified and not expired it
-        holds lb.Header.Height >= b.Header.Height
+  - returns a light block *lb* that satisfies:
+      - *lb* is in lightStore
+      - *lb* is verified and not expired
+	  - *lb.Header.Height < height*
+	  - for all *b* in lightStore s.t. *b* is verified and not expired it
+        holds *lb.Header.Height >= b.Header.Height*
    - or false in the second argument if
-    the LightStore does not contain such an lb.
+    the LightStore does not contain such an *lb*.
  
+
+```go
+func (ls LightStore) MinVerified() (LightBlock, bool) 
+```
+- Expected postcondition
+  - returns a light block *lb* that satisfies:
+      - *lb* is in lightStore
+      - *lb* is verified
+	  - *lb.Header.Height* is minimal in the lightStore
+	  - **TODO:** according to this it might be expired (outside the
+        trusting period). I believe this is safe. Are there reasons we
+        should not do that?
+   - or false in the second argument if
+    the LightStore does not contain such an *lb*.
+ 
+If a height that is smaller than the smallest height in the lightstore
+is required, we check the hashes backwards. This is done with the
+following function:
+ 
+#### **[LCV-FUNC-BACKWARDS.1]**:
+```go
+func Backwards(primary PeerID, lightStore LightStore,
+                    targetHeight Height) (LightStore, Result) {
+  
+  lb,res = lightStore.MinVerified()
+  if res = false {
+    return (lightStore, ResultFailure)
+  }
+
+  latest := lb.Header
+  for i := lb.Header.height - 1; i >= targetHeight; i-- {
+    // here we download height-by-height. We might first download all
+	// headers down to targetHeight and then check them.
+    current := FetchLightBlock(primary,i)
+    if (hash(current) != latest.Header.LastBlockId) {
+      return (lightStore, ResultFailure)
+    }
+	else {
+	  lightStore.Update(current, StateVerified)
+	}
+    latest := current
+  }
+  return (lightStore, ResultSuccess)
+ }
+```
+
+The following function just decided based on the required height which
+method should be used.
 
 #### **[LCV-FUNC-IBCMAIN.1]**:
 ```go
@@ -948,11 +992,15 @@ func Main(primary PeerID, lightStore LightStore,
     return VerifyToTarget(primary, lightStore, targetHeight)
   }
   else if targetHeight = lightStore.LatestVerified.height {
-    return  (lightStore, ResultSuccess)
+    return (lightStore, ResultSuccess)
   }
   else {
     lb, res = lightStore.LatestPrevious(targetHeight);
     if res = true {
+	  // make auxiliary lightStore auxLS to call VerifyToTarget
+	  // VerifyToTarget uses LatestVerified of the lightStore passed in
+	  // For that we need:
+	  // auxLS.LatestVerified = lightStore.LatestPrevious(targetHeight)
 	  auxLS.Init;
 	  auxLS.Update(lb,StateVerified);
 	  auxLS, res2 = VerifyToTarget(primary, auxLS, targetHeight)
@@ -990,31 +1038,6 @@ func Main(primary PeerID, lightStore LightStore,
 	 
 <!-- 	       VerifyToTarget(primary, auxLS, targetHeight) -->
 <!--      - if lb  -->
-
-#### **[LCV-FUNC-BACKWARDS.1]**:
-```go
-func Backwards(primary PeerID, lightStore LightStore,
-                    targetHeight Height) (LightStore, Result) {
-  
-  // let lb = smallest verified lightblock in lightstore
-  // lb might even be expired
-  
-  
-  assert (targetHeight < lb.Header.Height)
-  latest := lb.Header
-  for i := lb.Header.height - 1; i >= targetHeight; i-- {
-    current := FetchLightBlock(primary,i)
-    if (hash(current) != latest.Header.LastBlockId) {
-      return (lightStore, ResultFailure)
-    }
-	else {
-	  lightStore.Update(current, StateVerified)
-	}
-    latest := current
-  }
-  return (lightStore, ResultSuccess)
- }
-```
 
 
 
