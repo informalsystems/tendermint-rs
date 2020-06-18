@@ -54,11 +54,12 @@ pub trait VotingPowerCalculator: Send {
         untrusted_header: &SignedHeader,
         untrusted_validators: &ValidatorSet,
     ) -> Result<VotingPower, VerificationError> {
-        let two_thirds = TrustThreshold::new(2, 3).unwrap();
-        let voting_power =
-            self.voting_power_of(untrusted_header, untrusted_validators, two_thirds)?;
+        let trust_threshold = TrustThreshold::TWO_THIRDS;
 
-        if two_thirds.is_enough_power(voting_power.tallied, voting_power.total) {
+        let voting_power =
+            self.voting_power_of(untrusted_header, untrusted_validators, trust_threshold)?;
+
+        if trust_threshold.is_enough_power(voting_power.tallied, voting_power.total) {
             Ok(voting_power)
         } else {
             Err(VerificationError::InsufficientSignersOverlap(voting_power))

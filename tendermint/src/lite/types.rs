@@ -97,6 +97,12 @@ pub struct TrustThresholdFraction {
 }
 
 impl TrustThresholdFraction {
+    /// Constant for a trust threshold of 2/3.
+    pub const TWO_THIRDS: Self = Self {
+        numerator: 2,
+        denominator: 3,
+    };
+
     /// Instantiate a TrustThresholdFraction if the given denominator and
     /// numerator are valid.
     ///
