@@ -39,7 +39,6 @@ pub trait VotingPowerCalculator: Send {
         untrusted_validators: &ValidatorSet,
         trust_threshold: TrustThreshold,
     ) -> Result<VotingPower, VerificationError> {
-        println!("check_validators_overlap");
         let voting_power =
             self.voting_power_of(untrusted_header, untrusted_validators, trust_threshold)?;
 
@@ -55,7 +54,6 @@ pub trait VotingPowerCalculator: Send {
         untrusted_header: &SignedHeader,
         untrusted_validators: &ValidatorSet,
     ) -> Result<VotingPower, VerificationError> {
-        println!("check_signers_overlap");
         let two_thirds = TrustThreshold::new(2, 3).unwrap();
         let voting_power =
             self.voting_power_of(untrusted_header, untrusted_validators, two_thirds)?;
