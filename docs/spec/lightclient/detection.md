@@ -100,7 +100,7 @@ Let *b* and *c* be light blocks. We define *skip-root(b,c,t)* if at
 time t there exists an *h* and a sequence *a(1)*, ... *a(h)* s.t.
    - *a(1) = b* and
    - *a(h) = c* and
-   - *supports( a(i), a(i+1), t)*, for *1 <= i < h*.
+   - *supports( a(i), a(i+1), t)*, for all i, *1 <= i < h*.
 
 > **TODO** In the above we might use a sequence of times t(i). Not sure.
 
