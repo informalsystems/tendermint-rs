@@ -55,10 +55,8 @@ pub trait VotingPowerCalculator: Send {
         untrusted_validators: &ValidatorSet,
     ) -> Result<VotingPower, VerificationError> {
         let trust_threshold = TrustThreshold::TWO_THIRDS;
-
         let voting_power =
             self.voting_power_of(untrusted_header, untrusted_validators, trust_threshold)?;
-
         if trust_threshold.is_enough_power(voting_power.tallied, voting_power.total) {
             Ok(voting_power)
         } else {
@@ -93,7 +91,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
         let mut tallied_voting_power = 0_u64;
         let mut seen_validators = HashSet::new();
 
-        for (idx, signature) in signatures.into_iter().enumerate() {
+        for (idx, signature) in signatures.iter().enumerate() {
             let vote = vote_from_non_absent_signature(signature, idx as u64, &signed_header.commit);
             let vote = match vote {
                 Some(vote) => vote,
@@ -162,8 +160,8 @@ fn vote_from_non_absent_signature(
             timestamp,
             signature,
         } => (
-            validator_address.clone(),
-            timestamp.clone(),
+            *validator_address,
+            *timestamp,
             signature.clone(),
             Some(commit.block_id.clone()),
         ),
@@ -171,12 +169,7 @@ fn vote_from_non_absent_signature(
             validator_address,
             timestamp,
             signature,
-        } => (
-            validator_address.clone(),
-            timestamp.clone(),
-            signature.clone(),
-            None,
-        ),
+        } => (*validator_address, *timestamp, signature.clone(), None),
     };
 
     Some(Vote {
