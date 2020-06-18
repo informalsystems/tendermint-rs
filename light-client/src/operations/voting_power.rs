@@ -101,28 +101,16 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
                 None => continue, // Ok, some signatures can be absent
             };
 
+            // Ensure we only count a validator's power once
             if seen_validators.contains(&vote.validator_address) {
-                println!(
-                    "  > already seen vote from this validator: {}",
-                    vote.validator_address
-                );
-
                 continue;
             } else {
                 seen_validators.insert(vote.validator_address);
             }
 
-            // TODO: Check that we didn't see a vote from this validator twice...
             let validator = match validator_set.validator(vote.validator_address) {
                 Some(validator) => validator,
-                None => {
-                    // println!(
-                    //     "  > couldn't find validator with address {}",
-                    //     vote.validator_address,
-                    // );
-
-                    continue;
-                }
+                None => continue, // Cannot find matching validator, so we skip the vote
             };
 
             let signed_vote = SignedVote::new(
