@@ -91,13 +91,16 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
         let mut tallied_voting_power = 0_u64;
         let mut seen_validators = HashSet::new();
 
-        for (idx, signature) in signatures.iter().enumerate() {
-            let vote = vote_from_non_absent_signature(signature, idx as u64, &signed_header.commit);
-            let vote = match vote {
-                Some(vote) => vote,
-                None => continue, // Ok, some signatures can be absent
-            };
+        // Get non-absent votes from the signatures
+        let non_absent_votes = signatures.iter().enumerate().flat_map(|(idx, signature)| {
+            if let Some(vote) = non_absent_vote(signature, idx as u64, &signed_header.commit) {
+                Some((signature, vote))
+            } else {
+                None
+            }
+        });
 
+        for (signature, vote) in non_absent_votes {
             // Ensure we only count a validator's power once
             if seen_validators.contains(&vote.validator_address) {
                 continue;
@@ -149,11 +152,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
     }
 }
 
-fn vote_from_non_absent_signature(
-    commit_sig: &CommitSig,
-    validator_index: u64,
-    commit: &Commit,
-) -> Option<Vote> {
+fn non_absent_vote(commit_sig: &CommitSig, validator_index: u64, commit: &Commit) -> Option<Vote> {
     let (validator_address, timestamp, signature, block_id) = match commit_sig {
         CommitSig::BlockIDFlagAbsent { .. } => return None,
         CommitSig::BlockIDFlagCommit {
