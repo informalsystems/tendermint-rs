@@ -10,6 +10,8 @@ use tendermint::Genesis;
 
 use crate::{endpoint::*, Error, Request, Response};
 
+pub mod event_listener;
+
 /// Tendermint RPC client.
 ///
 /// Presently supports JSONRPC via HTTP.

@@ -10,7 +10,7 @@ async-trait = "0.1"
 gumdrop = "0.7"
 serde = { version = "1", features = ["serde_derive"] }
 tendermint = { version = "0.13.0-dev", path = "../tendermint" }
-tendermint-rpc = { version = "0.1.0", path = "../rpc" }
+tendermint-rpc = { version = "0.1.0", path = "../rpc", features = [ "client" ] }
 tokio = { version = "0.2", features = ["full"] }
 
 [dependencies.abscissa_core]
