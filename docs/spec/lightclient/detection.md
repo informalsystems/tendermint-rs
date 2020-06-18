@@ -137,7 +137,7 @@ false* then we have a *slashable fork*.
 Let *b* and *c* be  light blocks, we define *sign-unique(b,c) =
 true* iff
    - *b.Header.Height =  c.Header.Height* and
-   - *rooted(b)* and
+   - *sequ-rooted(b)* and
    - *rooted(c)*
    
 implies *b = c*.
