@@ -138,7 +138,7 @@ Let *b* and *c* be  light blocks, we define *sign-unique(b,c) =
 true* iff
    - *b.Header.Height =  c.Header.Height* and
    - *sequ-rooted(b)* and
-   - *rooted(c)*
+   - *sequ-rooted(c)*
    
 implies *b = c*.
 
