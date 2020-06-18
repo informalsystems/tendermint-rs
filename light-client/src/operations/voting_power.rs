@@ -135,7 +135,8 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
                 // to measure validator availability.
             }
 
-            // TODO: Break out when we have enough voting power
+            // TODO: Break out of the loop when we have enough voting power.
+            // See https://github.com/informalsystems/tendermint-rs/issues/235
         }
 
         let voting_power = VotingPower {
