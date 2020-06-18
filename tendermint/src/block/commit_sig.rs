@@ -11,8 +11,8 @@ use std::convert::TryFrom;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(try_from = "RawCommitSig", into = "RawCommitSig")]
 pub enum CommitSig {
+    // TODO: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
     /// no vote was received from a validator.
-    // Todo: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
     BlockIDFlagAbsent,
     /// voted for the Commit.BlockID.
     BlockIDFlagCommit {
@@ -32,6 +32,42 @@ pub enum CommitSig {
         /// Signature of vote
         signature: Signature,
     },
+}
+
+impl CommitSig {
+    /// Get the address of this validator if a vote was received.
+    pub fn validator_address(&self) -> Option<account::Id> {
+        match self {
+            Self::BlockIDFlagCommit {
+                validator_address, ..
+            } => Some(*validator_address),
+            Self::BlockIDFlagNil {
+                validator_address, ..
+            } => Some(*validator_address),
+            _ => None,
+        }
+    }
+
+    /// Whether this signature is absent (no vote was received from validator)
+    pub fn is_absent(&self) -> bool {
+        self == &Self::BlockIDFlagAbsent
+    }
+
+    /// Whether this signature is a commit  (validator voted for the Commit.BlockId)
+    pub fn is_commit(&self) -> bool {
+        match self {
+            Self::BlockIDFlagCommit { .. } => true,
+            _ => false,
+        }
+    }
+
+    /// Whether this signature is nil (validator voted for nil)
+    pub fn is_nil(&self) -> bool {
+        match self {
+            Self::BlockIDFlagNil { .. } => true,
+            _ => false,
+        }
+    }
 }
 
 // Todo: https://github.com/informalsystems/tendermint-rs/issues/259 - CommitSig Timestamp can be zero time
