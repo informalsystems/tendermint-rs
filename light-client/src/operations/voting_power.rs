@@ -1,10 +1,11 @@
 use crate::{
-    bail, ensure,
+    bail,
     predicates::errors::VerificationError,
     types::{Commit, SignedHeader, TrustThreshold, ValidatorSet},
 };
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::fmt;
 
 use tendermint::block::CommitSig;
@@ -91,6 +92,8 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
         let signatures = &signed_header.commit.signatures;
 
         let mut tallied_voting_power = 0_u64;
+        let mut seen_validators = HashSet::new();
+
         for (idx, signature) in signatures.into_iter().enumerate() {
             let vote = vote_from_non_absent_signature(signature, idx as u64, &signed_header.commit);
             let vote = match vote {
@@ -98,7 +101,18 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
                 None => continue, // Ok, some signatures can be absent
             };
 
-            // TODO: Check that we didn't see a vote from this validator twice ...
+            if seen_validators.contains(&vote.validator_address) {
+                println!(
+                    "  > already seen vote from this validator: {}",
+                    vote.validator_address
+                );
+
+                continue;
+            } else {
+                seen_validators.insert(vote.validator_address);
+            }
+
+            // TODO: Check that we didn't see a vote from this validator twice...
             let validator = match validator_set.validator(vote.validator_address) {
                 Some(validator) => validator,
                 None => {
