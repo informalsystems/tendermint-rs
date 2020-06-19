@@ -104,7 +104,9 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
         for (signature, vote) in non_absent_votes {
             // Ensure we only count a validator's power once
             if seen_validators.contains(&vote.validator_address) {
-                continue;
+                bail!(VerificationError::DuplicateValidator(
+                    vote.validator_address
+                ));
             } else {
                 seen_validators.insert(vote.validator_address);
             }

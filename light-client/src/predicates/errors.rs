@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::errors::ErrorExt;
 use crate::operations::voting_power::VotingPowerTally;
-use crate::types::{Hash, Height, Time, Validator};
+use crate::types::{Hash, Height, Time, Validator, ValidatorAddress};
 
 /// The various errors which can be raised by the verifier component,
 /// when validating or verifying a light block.
@@ -22,13 +22,15 @@ pub enum VerificationError {
     #[error("insufficient signers overlap: {0}")]
     InsufficientSignersOverlap(VotingPowerTally),
 
-    #[error(
-        "validators and signatures count do no match: {validators_count} != {signatures_count}"
-    )]
-    ValidatorsAndSignaturesCountMismatch {
-        validators_count: usize,
-        signatures_count: usize,
-    },
+    // #[error(
+    //     "validators and signatures count do no match: {validators_count} != {signatures_count}"
+    // )]
+    // ValidatorsAndSignaturesCountMismatch {
+    //     validators_count: usize,
+    //     signatures_count: usize,
+    // },
+    #[error("duplicate validator with address {0}")]
+    DuplicateValidator(ValidatorAddress),
 
     #[error("Couldn't verify signature `{signature:?}` with validator `{validator:?}` on sign_bytes `{sign_bytes:?}`")]
     InvalidSignature {
