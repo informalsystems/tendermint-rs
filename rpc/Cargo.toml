@@ -1,8 +1,17 @@
 [package]
 name = "tendermint-rpc"
-version = "0.1.0"
+version = "0.14.0"
 authors = ["Alexander Simmerl <a.simmerl@gmail.com>"]
 edition = "2018"
+
+description = """
+    tenndermint-rpc contains the core types returned by a Tendermint node's RPC endpoint.
+    All networking related features are feature guarded to keep the dependencies small in
+    cases where only the core types are needed.
+    """
+
+[package.metadata.docs.rs]
+all-features = true
 
 [features]
 default = []
@@ -14,7 +23,7 @@ getrandom = "0.1"
 serde = { version = "1", features = [ "derive" ] }
 serde_bytes = "0.11"
 serde_json = "1"
-tendermint = { version = "0.13.0", path = "../tendermint" }
+tendermint = { version = "0.14.0", path = "../tendermint" }
 thiserror = "1"
 uuid = { version = "0.8", default-features = false }
 

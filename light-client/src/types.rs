@@ -4,11 +4,13 @@ use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
 use tendermint::{
+    account::Id as TMAccountId,
     block::{
         header::Header as TMHeader, signed_header::SignedHeader as TMSignedHeader,
         Commit as TMCommit,
     },
     lite::TrustThresholdFraction,
+    validator::Info as TMValidatorInfo,
     validator::Set as TMValidatorSet,
 };
 
@@ -29,6 +31,12 @@ pub type Header = TMHeader;
 
 /// Set of validators
 pub type ValidatorSet = TMValidatorSet;
+
+/// Info about a single validator
+pub type Validator = TMValidatorInfo;
+
+/// Validator address
+pub type ValidatorAddress = TMAccountId;
 
 /// A commit contains the justification (ie. a set of signatures)
 /// that a block was consensus, as committed by a set previous block of validators.

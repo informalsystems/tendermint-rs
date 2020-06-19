@@ -91,7 +91,7 @@ fn run_test_case(tc: TestCase<LightBlock>) {
             latest_trusted.clone(),
             input.clone(),
             TrustThreshold::default(),
-            trusting_period.into(),
+            trusting_period,
             clock_drift,
             now,
         ) {
@@ -104,7 +104,11 @@ fn run_test_case(tc: TestCase<LightBlock>) {
 
                 latest_trusted = Trusted::new(new_state.signed_header, new_state.next_validators);
             }
-            Err(_) => {
+            Err(e) => {
+                dbg!(e);
+                // if !expects_err {
+                //     dbg!(e);
+                // }
                 assert!(expects_err);
             }
         }
@@ -146,7 +150,7 @@ impl Io for MockIo {
         self.light_blocks
             .get(&height)
             .cloned()
-            .ok_or(rpc::Error::new((-32600).into(), None).into())
+            .ok_or_else(|| rpc::Error::new((-32600).into(), None).into())
     }
 }
 
@@ -203,7 +207,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
 
     let trusted_height = tc.trust_options.height.try_into().unwrap();
     let trusted_state = io
-        .fetch_light_block(primary.clone(), AtHeight::At(trusted_height))
+        .fetch_light_block(primary, AtHeight::At(trusted_height))
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
@@ -228,7 +232,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
     match verify_bisection(untrusted_height, &mut light_client, &mut state) {
         Ok(new_states) => {
             let untrusted_light_block = io
-                .fetch_light_block(primary.clone(), AtHeight::At(untrusted_height))
+                .fetch_light_block(primary, AtHeight::At(untrusted_height))
                 .expect("header at untrusted height not found");
 
             // TODO: number of bisections started diverting in JSON tests and Rust impl
@@ -240,9 +244,10 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
             assert!(!expects_err);
         }
         Err(e) => {
-            if !expects_err {
-                dbg!(e);
-            }
+            dbg!(e);
+            // if !expects_err {
+            //     dbg!(e);
+            // }
             assert!(expects_err);
         }
     }
