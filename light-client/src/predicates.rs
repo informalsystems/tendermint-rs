@@ -144,30 +144,6 @@ pub trait VerificationPredicates: Send {
         Ok(())
     }
 
-    fn has_sufficient_voting_power(
-        &self,
-        signed_header: &SignedHeader,
-        validators: &ValidatorSet,
-        trust_threshold: &TrustThreshold,
-        calculator: &dyn VotingPowerCalculator,
-    ) -> Result<(), VerificationError> {
-        // FIXME: Do not discard underlying error
-        let total_power = calculator.total_power_of(validators);
-        let voting_power = calculator
-            .voting_power_in(signed_header, validators)
-            .map_err(|e| VerificationError::ImplementationSpecific(e.to_string()))?;
-
-        ensure!(
-            voting_power * trust_threshold.denominator > total_power * trust_threshold.numerator,
-            VerificationError::InsufficientVotingPower {
-                total_power,
-                voting_power,
-            }
-        );
-
-        Ok(())
-    }
-
     fn has_sufficient_validators_overlap(
         &self,
         untrusted_sh: &SignedHeader,
@@ -175,21 +151,7 @@ pub trait VerificationPredicates: Send {
         trust_threshold: &TrustThreshold,
         calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), VerificationError> {
-        // FIXME: Do not discard underlying error
-        let total_power = calculator.total_power_of(trusted_validators);
-        let voting_power = calculator
-            .voting_power_in(untrusted_sh, trusted_validators)
-            .map_err(|e| VerificationError::ImplementationSpecific(e.to_string()))?;
-
-        ensure!(
-            voting_power * trust_threshold.denominator > total_power * trust_threshold.numerator,
-            VerificationError::InsufficientValidatorsOverlap {
-                total_power,
-                signed_power: voting_power,
-                trust_threshold: *trust_threshold,
-            }
-        );
-
+        calculator.check_enough_trust(untrusted_sh, trusted_validators, *trust_threshold)?;
         Ok(())
     }
 
@@ -199,20 +161,7 @@ pub trait VerificationPredicates: Send {
         untrusted_validators: &ValidatorSet,
         calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), VerificationError> {
-        // FIXME: Do not discard underlying error
-        let total_power = calculator.total_power_of(untrusted_validators);
-        let signed_power = calculator
-            .voting_power_in(untrusted_sh, untrusted_validators)
-            .map_err(|e| VerificationError::ImplementationSpecific(e.to_string()))?;
-
-        ensure!(
-            signed_power * 3 > total_power * 2,
-            VerificationError::InsufficientCommitPower {
-                total_power,
-                signed_power,
-            }
-        );
-
+        calculator.check_signers_overlap(untrusted_sh, untrusted_validators)?;
         Ok(())
     }
 

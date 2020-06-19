@@ -104,7 +104,11 @@ fn run_test_case(tc: TestCase<LightBlock>) {
 
                 latest_trusted = Trusted::new(new_state.signed_header, new_state.next_validators);
             }
-            Err(_) => {
+            Err(e) => {
+                dbg!(e);
+                // if !expects_err {
+                //     dbg!(e);
+                // }
                 assert!(expects_err);
             }
         }
@@ -240,9 +244,10 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
             assert!(!expects_err);
         }
         Err(e) => {
-            if !expects_err {
-                dbg!(e);
-            }
+            dbg!(e);
+            // if !expects_err {
+            //     dbg!(e);
+            // }
             assert!(expects_err);
         }
     }
