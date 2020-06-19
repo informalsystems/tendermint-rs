@@ -32,9 +32,9 @@ pub enum Event {
     /// The supervisor has terminated
     Terminated,
     /// The verification has succeded
-    VerificationSuccessed(LightBlock),
+    VerificationSuccess(Box<LightBlock>),
     /// The verification has failed
-    VerificationFailed(Error),
+    VerificationFailure(Error),
 }
 
 /// An light client `Instance` packages a `LightClient` together with its `State`.
@@ -213,9 +213,7 @@ impl Supervisor {
     }
 
     /// Report the given light block as evidence of a fork.
-    fn report_evidence(&mut self, _light_block: &LightBlock) {
-        ()
-    }
+    fn report_evidence(&mut self, _light_block: &LightBlock) {}
 
     /// Perform fork detection with the given block and trusted state.
     #[pre(self.peers.primary().is_some())]
@@ -314,8 +312,8 @@ impl Handle {
         let callback = Callback::new(move |result| {
             // We need to create an event here
             let event = match result {
-                Ok(header) => Event::VerificationSuccessed(header),
-                Err(err) => Event::VerificationFailed(err),
+                Ok(header) => Event::VerificationSuccess(Box::new(header)),
+                Err(err) => Event::VerificationFailure(err),
             };
 
             sender.send(event).unwrap();
@@ -325,8 +323,8 @@ impl Handle {
         self.sender.send(event).unwrap();
 
         match receiver.recv().unwrap() {
-            Event::VerificationSuccessed(header) => Ok(header),
-            Event::VerificationFailed(err) => Err(err),
+            Event::VerificationSuccess(header) => Ok(*header),
+            Event::VerificationFailure(err) => Err(err),
             _ => todo!(),
         }
     }
