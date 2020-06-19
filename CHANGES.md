@@ -4,7 +4,7 @@ This release mainly targets compatibility with Tendermint [v0.33.x] but contains
 Also noteworthy that the rpc module was broken out into a separate crate ([tendermint-rpc]).
 
 ⚠️ ️Deprecation warning ⚠️ : This might be that last release containing the [lite] module. 
-It will be (soon) replaced with the [light-client] crate.
+It will be replaced with the [light-client] crate (soon).
 
 CommitSig:
 - Refactored CommitSig into a more Rust-friendly enum. ([#247])
