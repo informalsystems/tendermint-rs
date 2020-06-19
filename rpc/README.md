@@ -11,7 +11,7 @@ the [tendermint.rs] crate with the same version number.
 
 ## The `client` Feature
 
-Additionally, this crate includes a RPC client implementation to query Tendermint RPC endpoints.
+Additionally, this crate includes an RPC client implementation to query Tendermint RPC endpoints.
 To keep dependencies small when only the core types are needed, it has to be explicitly enabled via the `client` feature. 
 
 ### Related
