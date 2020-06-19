@@ -20,7 +20,7 @@ impl<A> Callback<A> {
     }
 
     /// Call the underlying closure on `result`.
-    pub fn call(self, result: A) -> () {
+    pub fn call(self, result: A) {
         (self.inner)(result);
     }
 }
