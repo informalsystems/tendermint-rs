@@ -1,7 +1,7 @@
 ## [0.14.0] (2020-06-19)
 
 This release mainly targets compatibility with Tendermint [v0.33.x] but contains a lot of smaller improvements regarding testing and (de)serialization.
-Also noteworthy that the rpc module was broken out into a separate crate ([tendermint-rpc]).
+Also noteworthy is that the rpc module was broken out into a separate crate ([tendermint-rpc]).
 
 ⚠️ ️Deprecation warning ⚠️ : This might be that last release containing the [lite] module. 
 It will be replaced with the [light-client] crate (soon).
