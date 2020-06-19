@@ -24,7 +24,7 @@ pub enum ErrorKind {
     #[error("no witnesses")]
     NoWitnesses,
 
-    #[error("no valid peer left")]
+    #[error("no witness left")]
     NoWitnessLeft,
 
     #[error("fork detected peers={0:?}")]
