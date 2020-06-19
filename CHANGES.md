@@ -1,4 +1,6 @@
-## Pending
+## [0.14.0] (2020-06-19)
+
+TODO
 
 CommitSig:
 - Refactored CommitSig into a more Rust-friendly enum. ([#247](https://github.com/informalsystems/tendermint-rs/issues/247))
