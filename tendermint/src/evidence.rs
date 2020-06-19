@@ -20,7 +20,7 @@ pub enum Evidence {
 
     /// Conflicting headers evidence
     #[serde(rename = "tendermint/ConflictingHeadersEvidence")]
-    ConflictingHeaders(ConflictingHeadersEvidence),
+    ConflictingHeaders(Box<ConflictingHeadersEvidence>),
 }
 
 /// Duplicate vote evidence

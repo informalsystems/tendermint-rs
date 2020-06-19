@@ -231,13 +231,13 @@ impl Supervisor {
         primary: &LightBlock,
         witness: &LightBlock,
     ) -> Result<(), Error> {
-        let evidence = Evidence::ConflictingHeaders(ConflictingHeadersEvidence::new(
+        let evidence = ConflictingHeadersEvidence::new(
             primary.signed_header.clone(),
             witness.signed_header.clone(),
-        ));
+        );
 
         self.evidence_reporter
-            .report(evidence, provider)
+            .report(Evidence::ConflictingHeaders(Box::new(evidence)), provider)
             .map_err(ErrorKind::Io)?;
 
         Ok(())
