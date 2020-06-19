@@ -7,6 +7,7 @@ pub mod block_results;
 pub mod blockchain;
 pub mod broadcast;
 pub mod commit;
+pub mod evidence;
 pub mod genesis;
 pub mod health;
 pub mod net_info;
