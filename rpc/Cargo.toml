@@ -4,6 +4,15 @@ version = "0.1.0"
 authors = ["Alexander Simmerl <a.simmerl@gmail.com>"]
 edition = "2018"
 
+description = """
+    tenndermint-rpc contains the core types returned by a Tendermint node's RPC endpoint.
+    All networking related features are feature guarded to keep the dependencies small in
+    cases where only the core types are needed.
+    """
+
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
 default = []
 client = [ "async-tungstenite", "futures", "http", "hyper", "tokio" ]
