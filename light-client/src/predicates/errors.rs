@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::errors::ErrorExt;
-use crate::operations::voting_power::VotingPower;
+use crate::operations::voting_power::VotingPowerTally;
 use crate::types::{Hash, Height, Time, Validator};
 
 /// The various errors which can be raised by the verifier component,
@@ -17,10 +17,10 @@ pub enum VerificationError {
     ImplementationSpecific(String),
 
     #[error("not enough trust because insufficient validators overlap: {0}")]
-    NotEnoughTrust(VotingPower),
+    NotEnoughTrust(VotingPowerTally),
 
     #[error("insufficient signers overlap: {0}")]
-    InsufficientSignersOverlap(VotingPower),
+    InsufficientSignersOverlap(VotingPowerTally),
 
     #[error(
         "validators and signatures count do no match: {validators_count} != {signatures_count}"

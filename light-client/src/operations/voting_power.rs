@@ -14,13 +14,13 @@ use tendermint::lite::types::ValidatorSet as _;
 use tendermint::vote::{SignedVote, Vote};
 
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct VotingPower {
+pub struct VotingPowerTally {
     pub total: u64,
     pub tallied: u64,
     pub trust_threshold: TrustThreshold,
 }
 
-impl fmt::Display for VotingPower {
+impl fmt::Display for VotingPowerTally {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -38,12 +38,12 @@ pub trait VotingPowerCalculator: Send {
         untrusted_header: &SignedHeader,
         untrusted_validators: &ValidatorSet,
         trust_threshold: TrustThreshold,
-    ) -> Result<VotingPower, VerificationError> {
+    ) -> Result<(), VerificationError> {
         let voting_power =
-            self.voting_power_of(untrusted_header, untrusted_validators, trust_threshold)?;
+            self.voting_power_in(untrusted_header, untrusted_validators, trust_threshold)?;
 
         if trust_threshold.is_enough_power(voting_power.tallied, voting_power.total) {
-            Ok(voting_power)
+            Ok(())
         } else {
             Err(VerificationError::NotEnoughTrust(voting_power))
         }
@@ -53,23 +53,24 @@ pub trait VotingPowerCalculator: Send {
         &self,
         untrusted_header: &SignedHeader,
         untrusted_validators: &ValidatorSet,
-    ) -> Result<VotingPower, VerificationError> {
+    ) -> Result<(), VerificationError> {
         let trust_threshold = TrustThreshold::TWO_THIRDS;
         let voting_power =
-            self.voting_power_of(untrusted_header, untrusted_validators, trust_threshold)?;
+            self.voting_power_in(untrusted_header, untrusted_validators, trust_threshold)?;
+
         if trust_threshold.is_enough_power(voting_power.tallied, voting_power.total) {
-            Ok(voting_power)
+            Ok(())
         } else {
             Err(VerificationError::InsufficientSignersOverlap(voting_power))
         }
     }
 
-    fn voting_power_of(
+    fn voting_power_in(
         &self,
         signed_header: &SignedHeader,
         validator_set: &ValidatorSet,
         trust_threshold: TrustThreshold,
-    ) -> Result<VotingPower, VerificationError>;
+    ) -> Result<VotingPowerTally, VerificationError>;
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -80,12 +81,12 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
         validators.total_power()
     }
 
-    fn voting_power_of(
+    fn voting_power_in(
         &self,
         signed_header: &SignedHeader,
         validator_set: &ValidatorSet,
         trust_threshold: TrustThreshold,
-    ) -> Result<VotingPower, VerificationError> {
+    ) -> Result<VotingPowerTally, VerificationError> {
         let signatures = &signed_header.commit.signatures;
 
         let mut tallied_voting_power = 0_u64;
@@ -131,7 +132,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
             }
 
             // If the vote is neither absent nor nil, tally its power
-            if signature.is_commit() {
+            if true || signature.is_commit() {
                 tallied_voting_power += validator.power();
             } else {
                 // It's OK. We include stray signatures (~votes for nil)
@@ -142,7 +143,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
             // See https://github.com/informalsystems/tendermint-rs/issues/235
         }
 
-        let voting_power = VotingPower {
+        let voting_power = VotingPowerTally {
             total: self.total_power_of(validator_set),
             tallied: tallied_voting_power,
             trust_threshold,
