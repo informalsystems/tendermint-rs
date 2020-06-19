@@ -181,7 +181,7 @@ impl Supervisor {
                                     }
                                     // A witness has been deemed faulty, remove it from the peer list.
                                     Fork::Faulty(block, _error) => {
-                                        self.peers.remove_witness(&block.provider);
+                                        self.peers.mark_witness_as_faulty(block.provider);
                                         // TODO: Log/record the error
                                     }
                                 }
@@ -209,7 +209,7 @@ impl Supervisor {
             }
         }
 
-        bail!(ErrorKind::NoValidPeerLeft)
+        bail!(ErrorKind::NoWitnessLeft)
     }
 
     /// Report the given light block as evidence of a fork.
@@ -238,7 +238,7 @@ impl Supervisor {
                 // Some RPC request timed out, this peer might be down so let's
                 // remove it from the witnesses, and bubble the error up.
                 ErrorKind::Io(IoError::Timeout(peer)) => {
-                    self.peers.remove_witness(peer);
+                    self.peers.mark_witness_as_faulty(*peer);
                     Err(e)
                 }
                 _ => Err(e),
