@@ -49,7 +49,7 @@ CI:
 [#343]: https://github.com/informalsystems/tendermint-rs/pull/343
 
 [0.14.0]: https://github.com/informalsystems/tendermint-rs/pull/347
-[v0.33]: https://github.com/tendermint/tendermint/blob/v0.33.5/CHANGELOG.md#v0335
+[v0.33.x]: https://github.com/tendermint/tendermint/blob/v0.33.5/CHANGELOG.md#v0335
 [tendermint-rpc]: https://github.com/informalsystems/tendermint-rs/tree/master/rpc#tendermint-rpc
 [lite]: https://github.com/informalsystems/tendermint-rs/tree/master/tendermint/src/lite
 [light-client]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
