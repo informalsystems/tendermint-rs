@@ -132,7 +132,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
             }
 
             // If the vote is neither absent nor nil, tally its power
-            if true || signature.is_commit() {
+            if signature.is_commit() {
                 tallied_voting_power += validator.power();
             } else {
                 // It's OK. We include stray signatures (~votes for nil)
