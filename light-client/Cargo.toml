@@ -3,10 +3,11 @@ name = "tendermint-light-client"
 version = "0.1.0"
 authors = ["Romain Ruetschi <romain@informal.systems>"]
 edition = "2018"
+publish = false
 
 [dependencies]
 tendermint = { path = "../tendermint" }
-tendermint-rpc = { version = "0.1.0", path = "../rpc" }
+tendermint-rpc = { version = "0.14.0", path = "../rpc" }
 
 anomaly = { version = "0.2.0", features = ["serializer"] }
 contracts = "0.4.0"
