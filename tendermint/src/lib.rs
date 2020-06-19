@@ -38,7 +38,6 @@ pub mod net;
 pub mod node;
 pub mod private_key;
 pub mod public_key;
-pub mod rpc;
 pub mod serializers;
 pub mod signature;
 pub mod time;

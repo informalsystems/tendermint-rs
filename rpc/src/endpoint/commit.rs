@@ -1,7 +1,8 @@
 //! `/commit` endpoint JSONRPC wrapper
 
-use crate::{block, block::signed_header::SignedHeader, rpc};
 use serde::{Deserialize, Serialize};
+
+use tendermint::{block, block::signed_header::SignedHeader};
 
 /// Get commit information about a specific block
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -18,11 +19,11 @@ impl Request {
     }
 }
 
-impl rpc::Request for Request {
+impl crate::Request for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::Commit
+    fn method(&self) -> crate::Method {
+        crate::Method::Commit
     }
 }
 
@@ -36,4 +37,4 @@ pub struct Response {
     pub canonical: bool,
 }
 
-impl rpc::Response for Response {}
+impl crate::Response for Response {}

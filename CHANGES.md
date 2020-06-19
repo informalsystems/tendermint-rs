@@ -21,6 +21,7 @@ RPC:
   - `abci_info`, `abci_query`, `block_results`, `genesis` structs
   - serialization/deserialization fixes
   - Updated/fixed integration tests
+- Move into its own crate ([#338](https://github.com/informalsystems/tendermint-rs/pull/338))
 
 CI:
 - Moved to GitHub Actions ([#120](https://github.com/informalsystems/tendermint-rs/issues/120))

@@ -4,7 +4,7 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Deserialize string into T
-pub(crate) fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
 where
     D: Deserializer<'de>,
     T: std::str::FromStr,
@@ -16,7 +16,7 @@ where
 }
 
 /// Serialize from T into string
-pub(crate) fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
     T: std::fmt::Display,

@@ -1,16 +1,17 @@
 //! Tendermint RPC client
 
-use crate::{
-    abci::{self, Transaction},
-    block::Height,
-    evidence::Evidence,
-    net,
-    rpc::{endpoint::*, Error, Request, Response},
-    Genesis,
-};
-
 use bytes::buf::ext::BufExt;
 use hyper::header;
+
+use tendermint::abci::{self, Transaction};
+use tendermint::block::Height;
+use tendermint::evidence::Evidence;
+use tendermint::net;
+use tendermint::Genesis;
+
+use crate::{endpoint::*, Error, Request, Response};
+
+pub mod event_listener;
 
 /// Tendermint RPC client.
 ///

@@ -1,3 +1,13 @@
+use std::collections::HashMap;
+use std::convert::TryInto;
+use std::fs;
+use std::{
+    path::{Path, PathBuf},
+    time::{Duration, SystemTime},
+};
+
+use contracts::contract_trait;
+
 use tendermint_light_client::{
     components::{
         clock::Clock,
@@ -13,16 +23,7 @@ use tendermint_light_client::{
     types::{Height, LightBlock, PeerId, Time, TrustThreshold},
 };
 
-use std::collections::HashMap;
-use std::convert::TryInto;
-use std::fs;
-use std::{
-    path::{Path, PathBuf},
-    time::{Duration, SystemTime},
-};
-
-use contracts::contract_trait;
-use tendermint::rpc;
+use tendermint_rpc as rpc;
 
 // Link to the commit that generated below JSON test files:
 // https://github.com/Shivani912/tendermint/commit/e02f8fd54a278f0192353e54b84a027c8fe31c1e

@@ -1,18 +1,19 @@
 //! `/abci_info` endpoint JSONRPC wrapper
 
-use crate::serializers;
-use crate::{block, rpc};
 use serde::{Deserialize, Serialize};
+
+use tendermint::block;
+use tendermint::serializers;
 
 /// Request ABCI information from a node
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
-impl rpc::Request for Request {
+impl crate::Request for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::AbciInfo
+    fn method(&self) -> crate::Method {
+        crate::Method::AbciInfo
     }
 }
 
@@ -23,7 +24,7 @@ pub struct Response {
     pub response: AbciInfo,
 }
 
-impl rpc::Response for Response {}
+impl crate::Response for Response {}
 
 /// ABCI information
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]

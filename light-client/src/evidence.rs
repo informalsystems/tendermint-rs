@@ -1,5 +1,7 @@
 use crate::{components::io::IoError, types::PeerId};
-use tendermint::{abci::transaction::Hash, evidence::Evidence, rpc};
+
+use tendermint::{abci::transaction::Hash, evidence::Evidence};
+use tendermint_rpc as rpc;
 
 use contracts::{contract_trait, pre};
 use std::collections::HashMap;

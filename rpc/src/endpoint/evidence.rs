@@ -1,8 +1,11 @@
 //! `/broadcast_evidence`: broadcast an evidence.
 
-use crate::{abci::transaction, evidence::Evidence, rpc};
+use crate::Method;
+use crate::Request as RpcRequest;
+use crate::Response as RpcResponse;
 
 use serde::{Deserialize, Serialize};
+use tendermint::{abci::transaction, evidence::Evidence};
 
 /// `/broadcast_evidence`: broadcast an evidence.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -18,11 +21,11 @@ impl Request {
     }
 }
 
-impl rpc::Request for Request {
+impl RpcRequest for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::BroadcastEvidence
+    fn method(&self) -> Method {
+        Method::BroadcastEvidence
     }
 }
 
@@ -34,4 +37,4 @@ pub struct Response {
     pub hash: transaction::Hash,
 }
 
-impl rpc::Response for Response {}
+impl RpcResponse for Response {}

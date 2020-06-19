@@ -1,12 +1,11 @@
 //! `/abci_query` endpoint JSONRPC wrapper
 
-use crate::{
-    abci::{Code, Log, Path},
-    block,
-    merkle::proof::Proof,
-    rpc, serializers,
-};
 use serde::{Deserialize, Serialize};
+
+use tendermint::abci::{Code, Log, Path};
+use tendermint::block;
+use tendermint::merkle::proof::Proof;
+use tendermint::serializers;
 
 /// Query the ABCI application for information
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -42,11 +41,11 @@ impl Request {
     }
 }
 
-impl rpc::Request for Request {
+impl crate::Request for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::AbciQuery
+    fn method(&self) -> crate::Method {
+        crate::Method::AbciQuery
     }
 }
 
@@ -57,7 +56,7 @@ pub struct Response {
     pub response: AbciQuery,
 }
 
-impl rpc::Response for Response {}
+impl crate::Response for Response {}
 
 /// ABCI query results
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]

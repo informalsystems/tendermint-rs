@@ -1,10 +1,8 @@
 //! `/block` endpoint JSONRPC wrapper
 
-use crate::{
-    block::{self, Block},
-    rpc,
-};
 use serde::{Deserialize, Serialize};
+
+use tendermint::block::{self, Block};
 
 /// Get information about a specific block
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -24,11 +22,11 @@ impl Request {
     }
 }
 
-impl rpc::Request for Request {
+impl crate::Request for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::Block
+    fn method(&self) -> crate::Method {
+        crate::Method::Block
     }
 }
 
@@ -42,4 +40,4 @@ pub struct Response {
     pub block: Block,
 }
 
-impl rpc::Response for Response {}
+impl crate::Response for Response {}

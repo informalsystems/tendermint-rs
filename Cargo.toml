@@ -1,7 +1,8 @@
 [workspace]
 
 members = [
-    "tendermint",
-    "light-node",
     "light-client",
+    "light-node",
+    "rpc",
+    "tendermint",
 ]

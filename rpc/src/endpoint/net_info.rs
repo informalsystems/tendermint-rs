@@ -1,22 +1,21 @@
 //! `/net_info` endpoint JSONRPC wrapper
 
-use crate::{channel::Channel, node, rpc, serializers, Time};
 use serde::{Deserialize, Serialize};
-use std::{
-    fmt::{self, Display},
-    net::IpAddr,
-    time::Duration,
-};
+use std::fmt::{self, Display};
+use std::net::IpAddr;
+use std::time::Duration;
+
+use tendermint::{channel::Channel, node, serializers, Time};
 
 /// Request network information from a node
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request;
 
-impl rpc::Request for Request {
+impl crate::Request for Request {
     type Response = Response;
 
-    fn method(&self) -> rpc::Method {
-        rpc::Method::NetInfo
+    fn method(&self) -> crate::Method {
+        crate::Method::NetInfo
     }
 }
 
@@ -37,7 +36,7 @@ pub struct Response {
     pub peers: Vec<PeerInfo>,
 }
 
-impl rpc::Response for Response {}
+impl crate::Response for Response {}
 
 /// Listener information
 #[derive(Clone, Debug, Deserialize, Serialize)]

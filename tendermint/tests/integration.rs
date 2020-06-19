@@ -10,10 +10,11 @@
 /// ```
 mod rpc {
     use std::cmp::min;
+
+    use tendermint_rpc::{event_listener, Client};
+
     use tendermint::abci::Code;
     use tendermint::abci::Log;
-    use tendermint::rpc::event_listener::TMEventData;
-    use tendermint::rpc::Client;
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> Client {
@@ -147,13 +148,12 @@ mod rpc {
     #[tokio::test]
     #[ignore]
     async fn event_subscription() {
-        let mut client = tendermint::rpc::event_listener::EventListener::connect(
-            "tcp://127.0.0.1:26657".parse().unwrap(),
-        )
-        .await
-        .unwrap();
+        let mut client =
+            event_listener::EventListener::connect("tcp://127.0.0.1:26657".parse().unwrap())
+                .await
+                .unwrap();
         client
-            .subscribe(tendermint::rpc::event_listener::EventSubscription::BlockSubscription)
+            .subscribe(event_listener::EventSubscription::BlockSubscription)
             .await
             .unwrap();
         // client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
@@ -165,13 +165,13 @@ mod rpc {
         // }
         let result_event = maybe_result_event.expect("unexpected msg read");
         match result_event.data {
-            TMEventData::EventDataNewBlock(nb) => {
+            event_listener::TMEventData::EventDataNewBlock(nb) => {
                 dbg!("got EventDataNewBlock: {:?}", nb);
             }
-            TMEventData::EventDataTx(tx) => {
+            event_listener::TMEventData::EventDataTx(tx) => {
                 dbg!("got EventDataTx: {:?}", tx);
             }
-            TMEventData::GenericJSONEvent(v) => {
+            event_listener::TMEventData::GenericJSONEvent(v) => {
                 panic!("got a GenericJSONEvent: {:?}", v);
             }
         }
