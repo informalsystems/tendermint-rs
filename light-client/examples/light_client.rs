@@ -5,6 +5,7 @@ use tendermint_light_client::{
         scheduler,
         verifier::ProdVerifier,
     },
+    evidence::ProdEvidenceReporter,
     fork_detector::ProdForkDetector,
     light_client::{self, LightClient},
     peer_list::PeerList,
@@ -142,14 +143,23 @@ fn sync_cmd(opts: SyncOpts) {
     let witness_path = opts.db_path.join(witness.to_string());
 
     let primary_instance = make_instance(primary, addr.clone(), primary_path, &opts);
-    let witness_instance = make_instance(witness, addr, witness_path, &opts);
+    let witness_instance = make_instance(witness, addr.clone(), witness_path, &opts);
+
+    let mut peer_addr = HashMap::new();
+    peer_addr.insert(primary, addr.clone());
+    peer_addr.insert(witness, addr);
 
     let peer_list = PeerList::builder()
         .primary(primary, primary_instance)
         .witness(witness, witness_instance)
         .build();
 
-    let mut supervisor = Supervisor::new(peer_list, ProdForkDetector::default());
+    let mut supervisor = Supervisor::new(
+        peer_list,
+        ProdForkDetector::default(),
+        ProdEvidenceReporter::new(peer_addr),
+    );
+
     let mut handle = supervisor.handle();
 
     std::thread::spawn(|| supervisor.run());

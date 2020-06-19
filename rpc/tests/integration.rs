@@ -62,8 +62,10 @@ mod endpoints {
 
         let tendermint::Block { evidence, .. } = response.block;
         let evidence = evidence.iter().next().unwrap();
+
         match evidence {
-            tendermint::evidence::Evidence::DuplicateVote(_) => {}
+            tendermint::evidence::Evidence::DuplicateVote(_) => (),
+            _ => unreachable!(),
         }
     }
 

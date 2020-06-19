@@ -5,6 +5,7 @@ use hyper::header;
 
 use tendermint::abci::{self, Transaction};
 use tendermint::block::Height;
+use tendermint::evidence::Evidence;
 use tendermint::net;
 use tendermint::Genesis;
 
@@ -151,6 +152,11 @@ impl Client {
     /// block hash, app hash, block height and time.
     pub async fn status(&self) -> Result<status::Response, Error> {
         self.perform(status::Request).await
+    }
+
+    /// `/broadcast_evidence`: broadcast an evidence.
+    pub async fn broadcast_evidence(&self, e: Evidence) -> Result<evidence::Response, Error> {
+        self.perform(evidence::Request::new(e)).await
     }
 
     /// Perform a request against the RPC endpoint

@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::errors::ErrorExt;
-use crate::types::{Hash, Height, Time, TrustThreshold};
+use crate::operations::voting_power::VotingPowerTally;
+use crate::types::{Hash, Height, Time, Validator, ValidatorAddress};
 
 /// The various errors which can be raised by the verifier component,
 /// when validating or verifying a light block.
@@ -15,20 +16,28 @@ pub enum VerificationError {
     #[error("implementation specific: {0}")]
     ImplementationSpecific(String),
 
-    #[error(
-        "insufficient validators overlap: total_power={total_power} signed_power={signed_power} trust_threshold={trust_threshold}"
-    )]
-    InsufficientValidatorsOverlap {
-        total_power: u64,
-        signed_power: u64,
-        trust_threshold: TrustThreshold,
+    #[error("not enough trust because insufficient validators overlap: {0}")]
+    NotEnoughTrust(VotingPowerTally),
+
+    #[error("insufficient signers overlap: {0}")]
+    InsufficientSignersOverlap(VotingPowerTally),
+
+    // #[error(
+    //     "validators and signatures count do no match: {validators_count} != {signatures_count}"
+    // )]
+    // ValidatorsAndSignaturesCountMismatch {
+    //     validators_count: usize,
+    //     signatures_count: usize,
+    // },
+    #[error("duplicate validator with address {0}")]
+    DuplicateValidator(ValidatorAddress),
+
+    #[error("Couldn't verify signature `{signature:?}` with validator `{validator:?}` on sign_bytes `{sign_bytes:?}`")]
+    InvalidSignature {
+        signature: Vec<u8>,
+        validator: Validator,
+        sign_bytes: Vec<u8>,
     },
-
-    #[error("insufficient voting power: total_power={total_power} voting_power={voting_power}")]
-    InsufficientVotingPower { total_power: u64, voting_power: u64 },
-
-    #[error("invalid commit power: total_power={total_power} signed_power={signed_power}")]
-    InsufficientCommitPower { total_power: u64, signed_power: u64 },
 
     #[error("invalid commit: {0}")]
     InvalidCommit(String),
@@ -76,7 +85,7 @@ impl ErrorExt for VerificationError {
     /// Whether this error means that the light block
     /// cannot be trusted w.r.t. the latest trusted state.
     fn not_enough_trust(&self) -> bool {
-        if let Self::InsufficientValidatorsOverlap { .. } = self {
+        if let Self::NotEnoughTrust { .. } = self {
             true
         } else {
             false

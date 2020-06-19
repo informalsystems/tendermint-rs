@@ -16,6 +16,7 @@ pub mod callback;
 pub mod components;
 pub mod contracts;
 pub mod errors;
+pub mod evidence;
 pub mod fork_detector;
 pub mod light_client;
 pub mod operations;
