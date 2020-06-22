@@ -1,6 +1,7 @@
 use gumdrop::Options;
 use std::io::{self, Read};
 use serde::Deserialize;
+use serde::de::DeserializeOwned;
 use signatory_dalek::Ed25519Signer;
 use signatory::ed25519;
 use signatory::public_key::PublicKeyed;
@@ -77,6 +78,16 @@ fn read_input() -> Result<String, SimpleError> {
     Ok(buffer)
 }
 
+fn read_input_as<T: DeserializeOwned>() -> Result<T, SimpleError> {
+//fn read_input_as<T: Deserialize>() -> Result<T, SimpleError> {
+    let mut buffer = String::new();
+    try_with!(io::stdin().read_to_string(&mut buffer), "failed to read from standard input");
+    let res: T = try_with!(serde_json::from_str(&buffer), "failed to decode input");
+    //from_str()
+    Ok(res)
+}
+
+
 fn produce_validator(opts: ValidatorOpts) -> Result<String, SimpleError> {
     let input = read_input()?;
     let mut bytes = input.into_bytes();
@@ -104,9 +115,7 @@ struct HeaderOpts {
 }
 
 fn produce_header(_opts: HeaderOpts) -> Result<String, SimpleError> {
-    let input = read_input()?;
-    let vals = try_with!(serde_json::from_str::<Vec<Info>>(input.as_str()),
-        "was expecting a validator array");
+    let vals = read_input_as::<Vec<Info>>()?;
     if vals.is_empty() {
         bail!("can't produce a header for empty validator array")
     }
@@ -141,16 +150,14 @@ struct CommitOpts {
     round: Option<u64>
 }
 
-fn produce_commit(cli_opts: CommitOpts) -> Result<String, SimpleError> {
+fn produce_commit(cli: CommitOpts) -> Result<String, SimpleError> {
     const EXAMPLE_SHA256_ID: &str =
         "26C0A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
 
-    let input = read_input()?;
-    let input_opts: CommitOpts = serde_json::from_str(&input).unwrap();
-
+    let input = read_input_as::<CommitOpts>()?;
     let commit = Commit {
         height: Default::default(),
-        round: choose_from(cli_opts.round, input_opts.round, 1),
+        round: choose_from(cli.round, input.round, 1),
         block_id: Id::from_str(EXAMPLE_SHA256_ID).unwrap(),
         signatures: Default::default()
     };
