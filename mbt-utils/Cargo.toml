@@ -14,6 +14,7 @@ sha2 = { version = "0.9", default-features = false }
 signatory = { version = "0.20", features = ["ed25519", "ecdsa"] }
 signatory-dalek = "0.20"
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
+simple-error = "0.2.1"
 
 [[bin]]
 name = "mbt-tendermint-produce"

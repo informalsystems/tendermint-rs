@@ -7,12 +7,12 @@ use signatory::public_key::PublicKeyed;
 use tendermint::validator::{Info, ProposerPriority};
 use tendermint::vote::Power;
 use tendermint::public_key::PublicKey;
-use std::process::exit;
 use tendermint::block::*;
 use tendermint::block::header::Version;
 use tendermint::{Time, validator, chain};
 use tendermint::lite::ValidatorSet;
 use std::str::FromStr;
+use simple_error::*;
 
 
 #[derive(Debug, Options)]
@@ -33,11 +33,9 @@ enum Command {
 
 }
 
-
-
-fn main() {
+fn run() -> Result<(), SimpleError> {
     let opts = CliOptions::parse_args_default_or_exit();
-    match opts.command {
+    let res = match opts.command {
         None => {
             eprintln!("Produce tendermint datastructures from minimal input");
             eprintln!("Please specify a command:");
@@ -47,6 +45,15 @@ fn main() {
         }
         Some(Command::Validator(opts)) => produce_validator(opts),
         Some(Command::Header(opts)) => produce_header(opts),
+    }?;
+    println!("{}", res);
+    Ok(())
+}
+
+fn main() {
+    match run() {
+        Ok(_) => (),
+        Err(e) => println!("Error: {}", e)
     }
 }
 
@@ -61,13 +68,17 @@ struct ValidatorOpts {
     proposer_priority: Option<i64>,
 }
 
-fn produce_validator(opts: ValidatorOpts) {
+fn read_input() -> Result<String, SimpleError> {
     let mut buffer = String::new();
-    io::stdin().read_to_string(&mut buffer).unwrap();
-    let mut bytes = buffer.into_bytes();
+    try_with!(io::stdin().read_to_string(&mut buffer), "");
+    Ok(buffer)
+}
+
+fn produce_validator(opts: ValidatorOpts) -> Result<String, SimpleError> {
+    let input = read_input()?;
+    let mut bytes = input.into_bytes();
     if bytes.len() > 32 {
-        eprintln!("identifier is too long");
-        exit(1)
+        bail!("identifier is too long")
     }
     bytes.extend(vec![0u8; 32 - bytes.len()].iter());
     let seed = ed25519::Seed::from_bytes(bytes).unwrap();
@@ -80,7 +91,7 @@ fn produce_validator(opts: ValidatorOpts) {
     if let Some(priority) = opts.proposer_priority {
         info.proposer_priority = Some(ProposerPriority::new(priority));
     }
-    println!("{}", serde_json::to_string(&info).unwrap());
+    Ok(try_with!(serde_json::to_string(&info), "failed to serialize into JSON"))
 }
 
 #[derive(Debug, Options)]
@@ -89,31 +100,29 @@ struct HeaderOpts {
     help: bool,
 }
 
-fn produce_header(_opts: HeaderOpts) {
-    let mut buffer = String::new();
-    io::stdin().read_to_string(&mut buffer).unwrap();
-    if let Ok(vals) = serde_json::from_str::<Vec<Info>>(buffer.as_str()) {
-        if vals.is_empty() {
-            eprintln!("can't produce a header for empty validator set");
-            exit(1)
-        }
-        let valset = validator::Set::new(vals.clone());
-        let header = Header {
-            version: Version { block: 0, app: 0 },
-            chain_id: chain::Id::from_str("test-chain-01").unwrap(),
-            height: Default::default(),
-            time: Time::now(),
-            last_block_id: None,
-            last_commit_hash: None,
-            data_hash: None,
-            validators_hash: valset.hash(),
-            next_validators_hash: valset.hash(),
-            consensus_hash: valset.hash(),
-            app_hash: vec![],
-            last_results_hash: None,
-            evidence_hash: None,
-            proposer_address: vals[0].address.clone()
-        };
-        println!("{}", serde_json::to_string(&header).unwrap());
+fn produce_header(_opts: HeaderOpts) -> Result<String, SimpleError> {
+    let input = read_input()?;
+    let vals = try_with!(serde_json::from_str::<Vec<Info>>(input.as_str()),
+        "was expecting a validator array");
+    if vals.is_empty() {
+        bail!("can't produce a header for empty validator array")
     }
+    let valset = validator::Set::new(vals.clone());
+    let header = Header {
+        version: Version { block: 0, app: 0 },
+        chain_id: chain::Id::from_str("test-chain-01").unwrap(),
+        height: Default::default(),
+        time: Time::now(),
+        last_block_id: None,
+        last_commit_hash: None,
+        data_hash: None,
+        validators_hash: valset.hash(),
+        next_validators_hash: valset.hash(),
+        consensus_hash: valset.hash(),
+        app_hash: vec![],
+        last_results_hash: None,
+        evidence_hash: None,
+        proposer_address: vals[0].address.clone()
+    };
+    Ok(try_with!(serde_json::to_string(&header), "failed to serialize into JSON"))
 }
