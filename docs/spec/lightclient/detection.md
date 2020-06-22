@@ -287,6 +287,8 @@ return the empty set.
 
 **TODO:** be precise about what a fork is. 
 
+**TODO:** add requirements about stateTrusted
+
 #### **[LCD-DIST-LIVE-FORK]**
 
 If there is a fork at height *h*, with *h-trust < h <= h-target*, and
@@ -403,7 +405,7 @@ func ForkDetector(ls LightStore)  {
 				// we set up an auxiliary lightstore with the highest
 			    // trusted lightblock and the lightblock we want to verify
 				auxLS.Init
-				auxLS.Update(LightStore.LatestTrusted(),StateVerified);
+				auxLS.Update(LightStore.LatestTrusted(), StateVerified);
 				auxLS.Update(sh,StateUnverified);
 				result := VerifyToTarget(s, auxLS, LightStore.LatestVerified().Height)
 				if result = (_,ResultSuccess) || (_,EXPIRED) {
@@ -422,7 +424,10 @@ func ForkDetector(ls LightStore)  {
 				}
 			}
 	}
-	return (Forks,OK)
+	if Forks.isEmpty {
+	    LightStore.Update(LightStore.LatestVerified(), StateTrusted)
+	}
+	return (LightStore,Forks,OK)
 }
 ```
 
