@@ -98,4 +98,8 @@ impl ErrorExt for VerificationError {
             false
         }
     }
+
+    fn is_timeout(&self) -> bool {
+        false
+    }
 }

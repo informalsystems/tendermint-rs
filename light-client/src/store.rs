@@ -18,6 +18,8 @@ pub enum VerifiedStatus {
     Unverified,
     /// The light block has been successfully verified.
     Verified,
+    /// The light block has been successfully verified and has passed fork detection.
+    Trusted,
     /// The light block has failed verification.
     Failed,
 }
@@ -28,6 +30,7 @@ impl VerifiedStatus {
         static ALL: &[VerifiedStatus] = &[
             VerifiedStatus::Unverified,
             VerifiedStatus::Verified,
+            VerifiedStatus::Trusted,
             VerifiedStatus::Failed,
         ];
 
@@ -47,7 +50,7 @@ pub trait LightStore: std::fmt::Debug + Send {
     /// Get the light block at the given height with the given status, or return `None` otherwise.
     fn get(&self, height: Height, status: VerifiedStatus) -> Option<LightBlock>;
     /// Update the `status` of the given `light_block`.
-    fn update(&mut self, light_block: LightBlock, status: VerifiedStatus);
+    fn update(&mut self, light_block: &LightBlock, status: VerifiedStatus);
     /// Insert a new light block in the store with the given status.
     /// Overrides any other block with the same height and status.
     fn insert(&mut self, light_block: LightBlock, status: VerifiedStatus);

@@ -169,13 +169,14 @@ impl LightClient {
             let trusted_state = state
                 .light_store
                 .highest(VerifiedStatus::Verified)
-                .ok_or_else(|| ErrorKind::NoInitialTrustedState)?;
+                .ok_or_else(|| ErrorKind::NoInitialTrustedState(VerifiedStatus::Verified))?;
 
             // Check invariant [LCV-INV-TP.1]
             if !is_within_trust_period(&trusted_state, options.trusting_period, options.now) {
                 bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
                     trusted_state: Box::new(trusted_state),
                     options,
+                    status: VerifiedStatus::Verified
                 });
             }
 
@@ -201,13 +202,13 @@ impl LightClient {
                     // Verification succeeded, add the block to the light store with `verified` status
                     state
                         .light_store
-                        .update(current_block, VerifiedStatus::Verified);
+                        .update(&current_block, VerifiedStatus::Verified);
                 }
                 Verdict::Invalid(e) => {
                     // Verification failed, add the block to the light store with `failed` status, and abort.
                     state
                         .light_store
-                        .update(current_block, VerifiedStatus::Failed);
+                        .update(&current_block, VerifiedStatus::Failed);
 
                     bail!(ErrorKind::InvalidLightBlock(e))
                 }
@@ -218,7 +219,7 @@ impl LightClient {
                     // trusted state until there is enough overlap.
                     state
                         .light_store
-                        .update(current_block, VerifiedStatus::Unverified);
+                        .update(&current_block, VerifiedStatus::Unverified);
                 }
             }
 

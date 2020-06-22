@@ -58,8 +58,8 @@ impl LightStore for MemoryStore {
         }
     }
 
-    fn update(&mut self, light_block: LightBlock, status: VerifiedStatus) {
-        self.insert(light_block, status);
+    fn update(&mut self, light_block: &LightBlock, status: VerifiedStatus) {
+        self.insert(light_block.clone(), status);
     }
 
     fn highest(&self, status: VerifiedStatus) -> Option<LightBlock> {
