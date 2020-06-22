@@ -1,6 +1,6 @@
 use gumdrop::Options;
 use std::io::{self, Read};
-
+use serde::Deserialize;
 use signatory_dalek::Ed25519Signer;
 use signatory::ed25519;
 use signatory::public_key::PublicKeyed;
@@ -31,7 +31,8 @@ enum Command {
     Validator(ValidatorOpts),
     #[options(help = "produce header, from an array of validators passed via STDIN")]
     Header(HeaderOpts),
-
+    #[options(help = "produce commit, from an array of validators passed via STDIN")]
+    Commit(CommitOpts),
 }
 
 fn run() -> Result<(), SimpleError> {
@@ -46,6 +47,7 @@ fn run() -> Result<(), SimpleError> {
         }
         Some(Command::Validator(opts)) => produce_validator(opts),
         Some(Command::Header(opts)) => produce_header(opts),
+        Some(Command::Commit(opts)) => produce_commit(opts),
     }?;
     println!("{}", res);
     Ok(())
@@ -128,8 +130,41 @@ fn produce_header(_opts: HeaderOpts) -> Result<String, SimpleError> {
     Ok(try_with!(serde_json::to_string(&header), "failed to serialize into JSON"))
 }
 
+
+#[derive(Debug, Options, Deserialize)]
+struct CommitOpts {
+    #[options(help = "print this help and exit")]
+    #[serde(skip)]
+    help: bool,
+
+    #[options(help = "commit round (default: 1)")]
+    round: Option<u64>
+}
+
+fn produce_commit(cli_opts: CommitOpts) -> Result<String, SimpleError> {
+    const EXAMPLE_SHA256_ID: &str =
+        "26C0A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
+
+    let input = read_input()?;
+    let input_opts: CommitOpts = serde_json::from_str(&input).unwrap();
+
+    let commit = Commit {
+        height: Default::default(),
+        round: choose_from(cli_opts.round, input_opts.round, 1),
+        block_id: Id::from_str(EXAMPLE_SHA256_ID).unwrap(),
+        signatures: Default::default()
+    };
+    Ok(try_with!(serde_json::to_string(&commit), "failed to serialize into JSON"))
+}
+
+fn choose_from<T>(cli: Option<T>, input: Option<T>, default: T) -> T {
+    if let Some(x) = cli { x }
+    else if let Some(y) = input { y }
+    else { default }
+}
+
 // Default consensus params modeled after Go code; but it's not clear how to go to a valid hash from here
-fn default_consensus_params() -> consensus::Params {
+fn _default_consensus_params() -> consensus::Params {
     consensus::Params {
         block: block::Size {
             max_bytes: 22020096,
