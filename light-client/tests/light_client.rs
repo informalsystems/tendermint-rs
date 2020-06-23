@@ -254,7 +254,6 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
 }
 
 fn run_single_step_tests(dir: &str) {
-
     let paths = fs::read_dir(PathBuf::from(TEST_FILES_PATH).join(dir)).unwrap();
 
     for file_path in paths {
@@ -309,9 +308,9 @@ fn bisection() {
 #[test]
 fn single_step_sequential() {
     let dirs = [
-        "single_step/sequential/commit",
+        // "single_step/sequential/commit",
         "single_step/sequential/header",
-        "single_step/sequential/validator_set",
+        // "single_step/sequential/validator_set",
     ];
 
     for dir in &dirs {
