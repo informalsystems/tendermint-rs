@@ -64,7 +64,6 @@ fn main() {
 
 // tries to parse a string as the given type; otherwise returns the input wrapped in SimpleError
 fn parse_as<T: DeserializeOwned>(input: &str) -> Result<T, SimpleError> {
-    println!("parse_as: |{}|", input);
     match serde_json::from_str(input) {
         Ok(res) => Ok(res),
         Err(_) => Err(SimpleError::new(input))
