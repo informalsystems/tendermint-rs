@@ -308,9 +308,9 @@ fn bisection() {
 #[test]
 fn single_step_sequential() {
     let dirs = [
-        // "single_step/sequential/commit",
+        "single_step/sequential/commit",
         "single_step/sequential/header",
-        // "single_step/sequential/validator_set",
+        "single_step/sequential/validator_set",
     ];
 
     for dir in &dirs {
