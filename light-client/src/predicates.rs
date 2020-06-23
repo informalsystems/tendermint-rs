@@ -73,12 +73,10 @@ pub trait VerificationPredicates: Send {
         &self,
         signed_header: &SignedHeader,
         validators: &ValidatorSet,
-        validator: &dyn CommitValidator,
+        commit_validator: &dyn CommitValidator,
     ) -> Result<(), VerificationError> {
-        // FIXME: Do not discard underlying error
-        validator
-            .validate(signed_header, validators)
-            .map_err(|e| VerificationError::InvalidCommit(e.to_string()))?;
+        commit_validator.validate(signed_header, validators)?;
+        commit_validator.validate_full(signed_header, validators)?;
 
         Ok(())
     }
