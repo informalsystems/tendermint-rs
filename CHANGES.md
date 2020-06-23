@@ -1,3 +1,9 @@
+## [0.14.1] (2020-06-23)
+
+- Update `prost-amino`/`prost-amino-derive` to v0.6 ([#367])
+
+[#367]: https://github.com/informalsystems/tendermint-rs/issues/367
+
 ## [0.14.0] (2020-06-19)
 
 This release mainly targets compatibility with Tendermint [v0.33.x] but contains a lot of smaller improvements regarding testing and (de)serialization.
