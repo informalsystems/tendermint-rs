@@ -63,14 +63,13 @@ pub fn basic_bisecting_schedule(
         .map(|lb| lb.height())
         .unwrap();
 
-    if trusted_height == current_height && trusted_height < target_height {
-        target_height
-    } else if trusted_height < current_height && trusted_height < target_height {
-        midpoint(trusted_height, current_height)
-    } else if trusted_height == target_height {
+    if trusted_height == current_height {
+        // We can't go further back, so let's try to verify the target height again,
+        // hopefully we have enough trust in the store by now.
         target_height
     } else {
-        midpoint(current_height, target_height)
+        // Pick a midpoint H between `trusted_height <= H <= current_height`.
+        midpoint(trusted_height, current_height)
     }
 }
 
@@ -118,8 +117,8 @@ pub fn valid_schedule(
     }
 }
 
-#[pre(low < high)]
-#[post(low < ret && ret <= high)]
+#[pre(low <= high)]
+#[post(low <= ret && ret <= high)]
 fn midpoint(low: Height, high: Height) -> Height {
     low + (high + 1 - low) / 2
 }
