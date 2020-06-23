@@ -3,8 +3,8 @@ use crate::{
     errors::ErrorExt,
     light_client::Options,
     operations::{
-        CommitValidator, HeaderHasher, ProdCommitValidator, ProdHeaderHasher,
-        ProdVotingPowerCalculator, VotingPowerCalculator,
+        CommitValidator, Hasher, ProdCommitValidator, ProdHasher, ProdVotingPowerCalculator,
+        VotingPowerCalculator,
     },
     types::LightBlock,
 };
@@ -60,7 +60,7 @@ pub struct ProdVerifier {
     predicates: Box<dyn VerificationPredicates>,
     voting_power_calculator: Box<dyn VotingPowerCalculator>,
     commit_validator: Box<dyn CommitValidator>,
-    header_hasher: Box<dyn HeaderHasher>,
+    hasher: Box<dyn Hasher>,
 }
 
 impl ProdVerifier {
@@ -68,13 +68,13 @@ impl ProdVerifier {
         predicates: impl VerificationPredicates + 'static,
         voting_power_calculator: impl VotingPowerCalculator + 'static,
         commit_validator: impl CommitValidator + 'static,
-        header_hasher: impl HeaderHasher + 'static,
+        hasher: impl Hasher + 'static,
     ) -> Self {
         Self {
             predicates: Box::new(predicates),
             voting_power_calculator: Box::new(voting_power_calculator),
             commit_validator: Box::new(commit_validator),
-            header_hasher: Box::new(header_hasher),
+            hasher: Box::new(hasher),
         }
     }
 }
@@ -85,7 +85,7 @@ impl Default for ProdVerifier {
             ProdPredicates,
             ProdVotingPowerCalculator,
             ProdCommitValidator,
-            ProdHeaderHasher,
+            ProdHasher,
         )
     }
 }
@@ -96,7 +96,7 @@ impl Verifier for ProdVerifier {
             &*self.predicates,
             &*self.voting_power_calculator,
             &*self.commit_validator,
-            &*self.header_hasher,
+            &*self.hasher,
             &trusted,
             &untrusted,
             options,

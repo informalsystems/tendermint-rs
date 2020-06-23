@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{Error, ErrorExt, ErrorKind},
-    operations::{HeaderHasher, ProdHeaderHasher},
+    operations::{Hasher, ProdHasher},
     state::State,
     store::{memory::MemoryStore, VerifiedStatus},
     supervisor::Instance,
@@ -55,21 +55,21 @@ pub trait ForkDetector: Send {
 /// - If verification fails for any other reason, the
 ///   witness is deemed faulty.
 pub struct ProdForkDetector {
-    header_hasher: Box<dyn HeaderHasher>,
+    hasher: Box<dyn Hasher>,
 }
 
 impl ProdForkDetector {
     /// Construct a new fork detector that will use the given header hasher.
-    pub fn new(header_hasher: impl HeaderHasher + 'static) -> Self {
+    pub fn new(hasher: impl Hasher + 'static) -> Self {
         Self {
-            header_hasher: Box::new(header_hasher),
+            hasher: Box::new(hasher),
         }
     }
 }
 
 impl Default for ProdForkDetector {
     fn default() -> Self {
-        Self::new(ProdHeaderHasher)
+        Self::new(ProdHasher)
     }
 }
 
@@ -81,7 +81,7 @@ impl ForkDetector for ProdForkDetector {
         trusted_state: &LightBlock,
         witnesses: Vec<&Instance>,
     ) -> Result<ForkDetection, Error> {
-        let primary_hash = self.header_hasher.hash(&light_block.signed_header.header);
+        let primary_hash = self.hasher.hash_header(&light_block.signed_header.header);
 
         let mut forks = Vec::with_capacity(witnesses.len());
 
@@ -92,7 +92,7 @@ impl ForkDetector for ProdForkDetector {
                 .light_client
                 .get_or_fetch_block(light_block.height(), &mut state)?;
 
-            let witness_hash = self.header_hasher.hash(&witness_block.signed_header.header);
+            let witness_hash = self.hasher.hash_header(&witness_block.signed_header.header);
 
             if primary_hash == witness_hash {
                 // Hashes match, continue with next witness, if any.

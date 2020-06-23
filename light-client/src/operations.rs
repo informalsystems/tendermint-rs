@@ -1,7 +1,7 @@
 //! Crypto function traits allowing mocking out during testing
 
-pub mod header_hasher;
-pub use self::header_hasher::*;
+pub mod hasher;
+pub use self::hasher::*;
 
 pub mod voting_power;
 pub use self::voting_power::*;

@@ -3,13 +3,12 @@
 use crate::{
     ensure,
     light_client::Options,
-    operations::{CommitValidator, HeaderHasher, VotingPowerCalculator},
+    operations::{CommitValidator, Hasher, VotingPowerCalculator},
     types::{Header, Height, LightBlock, SignedHeader, Time, TrustThreshold, ValidatorSet},
 };
 
 use errors::VerificationError;
 use std::time::Duration;
-use tendermint::lite::ValidatorSet as _;
 
 pub mod errors;
 
@@ -26,25 +25,36 @@ impl VerificationPredicates for ProdPredicates {}
 /// This enables test implementations to only override a single method rather than
 /// have to re-define every predicate.
 pub trait VerificationPredicates: Send {
-    fn validator_sets_match(&self, light_block: &LightBlock) -> Result<(), VerificationError> {
+    fn validator_sets_match(
+        &self,
+        light_block: &LightBlock,
+        hasher: &dyn Hasher,
+    ) -> Result<(), VerificationError> {
+        let validators_hash = hasher.hash_validator_set(&light_block.validators);
+
         ensure!(
-            light_block.signed_header.header.validators_hash == light_block.validators.hash(),
+            light_block.signed_header.header.validators_hash == validators_hash,
             VerificationError::InvalidValidatorSet {
                 header_validators_hash: light_block.signed_header.header.validators_hash,
-                validators_hash: light_block.validators.hash(),
+                validators_hash,
             }
         );
 
         Ok(())
     }
 
-    fn next_validators_match(&self, light_block: &LightBlock) -> Result<(), VerificationError> {
+    fn next_validators_match(
+        &self,
+        light_block: &LightBlock,
+        hasher: &dyn Hasher,
+    ) -> Result<(), VerificationError> {
+        let next_validators_hash = hasher.hash_validator_set(&light_block.next_validators);
+
         ensure!(
-            light_block.signed_header.header.next_validators_hash
-                == light_block.next_validators.hash(),
+            light_block.signed_header.header.next_validators_hash == next_validators_hash,
             VerificationError::InvalidNextValidatorSet {
                 header_next_validators_hash: light_block.signed_header.header.next_validators_hash,
-                next_validators_hash: light_block.next_validators.hash(),
+                next_validators_hash: next_validators_hash
             }
         );
 
@@ -54,9 +64,9 @@ pub trait VerificationPredicates: Send {
     fn header_matches_commit(
         &self,
         signed_header: &SignedHeader,
-        header_hasher: &dyn HeaderHasher,
+        hasher: &dyn Hasher,
     ) -> Result<(), VerificationError> {
-        let header_hash = header_hasher.hash(&signed_header.header);
+        let header_hash = hasher.hash_header(&signed_header.header);
 
         ensure!(
             header_hash == signed_header.commit.block_id.hash,
@@ -198,7 +208,7 @@ pub fn verify(
     vp: &dyn VerificationPredicates,
     voting_power_calculator: &dyn VotingPowerCalculator,
     commit_validator: &dyn CommitValidator,
-    header_hasher: &dyn HeaderHasher,
+    hasher: &dyn Hasher,
     trusted: &LightBlock,
     untrusted: &LightBlock,
     options: &Options,
@@ -212,13 +222,13 @@ pub fn verify(
     )?;
 
     // Ensure the header validator hashes match the given validators
-    vp.validator_sets_match(&untrusted)?;
+    vp.validator_sets_match(&untrusted, &*hasher)?;
 
     // Ensure the header next validator hashes match the given next validators
-    vp.next_validators_match(&untrusted)?;
+    vp.next_validators_match(&untrusted, &*hasher)?;
 
     // Ensure the header matches the commit
-    vp.header_matches_commit(&untrusted.signed_header, header_hasher)?;
+    vp.header_matches_commit(&untrusted.signed_header, hasher)?;
 
     // Additional implementation specific validation
     vp.valid_commit(

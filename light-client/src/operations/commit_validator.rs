@@ -31,6 +31,7 @@ impl CommitValidator for ProdCommitValidator {
                 "no signatures for commit".to_string()
             ));
         }
+
         if signed_header.commit.signatures.len() != validator_set.validators().len() {
             bail!(VerificationError::ImplementationSpecific(format!(
                 "pre-commit length: {} doesn't match validator length: {}",
