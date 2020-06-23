@@ -64,8 +64,11 @@ fn main() {
 
 // tries to parse a string as the given type; otherwise returns the input wrapped in SimpleError
 fn parse_as<T: DeserializeOwned>(input: &str) -> Result<T, SimpleError> {
-    let vals: T = try_with!(serde_json::from_str(input),"");
-    Ok(vals)
+    println!("parse_as: |{}|", input);
+    match serde_json::from_str(input) {
+        Ok(res) => Ok(res),
+        Err(_) => Err(SimpleError::new(input))
+    }
 }
 
 // tries to parse STDIN as the given type; otherwise returns the input wrapped in SimpleError
@@ -125,37 +128,59 @@ fn produce_validator(cli: ValidatorOpts) -> Result<String, SimpleError> {
     Ok(try_with!(serde_json::to_string(&info), "failed to serialize into JSON"))
 }
 
-#[derive(Debug, Options)]
+#[derive(Debug, Options, Deserialize)]
 struct HeaderOpts {
     #[options(help = "print this help and exit")]
     help: bool,
 
     #[options(help = "validators (required)", parse(try_from_str = "parse_as::<Vec<Info>>"))]
-    validators: Option<Vec<Info>>
+    validators: Option<Vec<Info>>,
+    #[options(help = "next validators (default: same as validators)", parse(try_from_str = "parse_as::<Vec<Info>>"))]
+    next_validators: Option<Vec<Info>>,
+
+    #[options(help = "time (default: now)")]
+    time: Option<Time>,
 }
 
-
-fn produce_header(_opts: HeaderOpts) -> Result<String, SimpleError> {
-    let vals = parse_stdin_as::<Vec<Info>>()?;
-    if vals.is_empty() {
-        bail!("can't produce a header for empty validator array")
+fn produce_header(cli: HeaderOpts) -> Result<String, SimpleError> {
+    let input = match parse_stdin_as::<HeaderOpts>() {
+        Ok(input) => input,
+        Err(input) => {
+            HeaderOpts {
+                help: false,
+                validators: match parse_as::<Vec<Info>>(input.as_str()) {
+                    Ok(vals) => Some(vals),
+                    Err(_) => None
+                },
+                next_validators: None,
+                time: None
+            }
+        }
+    };
+    let vals = choose_from_two(cli.validators, input.validators);
+    if let None = vals {
+        bail!("validator array is missing")
     }
-    let valset = validator::Set::new(vals.clone());
+    let valset = validator::Set::new(vals.clone().unwrap());
+    let next_valset = match choose_from_two(cli.next_validators, input.next_validators) {
+        Some(next_vals) => validator::Set::new(next_vals.clone()),
+        None => valset.clone()
+    };
     let header = Header {
         version: Version { block: 0, app: 0 },
         chain_id: chain::Id::from_str("test-chain-01").unwrap(),
         height: Default::default(),
-        time: Time::now(),
+        time: choose_from(cli.time, input.time,Time::now()),
         last_block_id: None,
         last_commit_hash: None,
         data_hash: None,
         validators_hash: valset.hash(),
-        next_validators_hash: valset.hash(),
+        next_validators_hash: next_valset.hash(),
         consensus_hash: valset.hash(), // TODO: currently not clear how to produce a valid hash
         app_hash: vec![],
         last_results_hash: None,
         evidence_hash: None,
-        proposer_address: vals[0].address.clone()
+        proposer_address: vals.unwrap()[0].address.clone()
     };
     Ok(try_with!(serde_json::to_string(&header), "failed to serialize into JSON"))
 }
