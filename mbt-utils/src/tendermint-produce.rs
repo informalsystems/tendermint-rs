@@ -28,11 +28,11 @@ struct CliOptions {
 
 #[derive(Debug, Options)]
 enum Command {
-    #[options(help = "produce validator from an identifier, passed via STDIN")]
+    #[options(help = "produce validator from identifier")]
     Validator(ValidatorOpts),
-    #[options(help = "produce header, from an array of validators passed via STDIN")]
+    #[options(help = "produce header from validator array")]
     Header(HeaderOpts),
-    #[options(help = "produce commit, from an array of validators passed via STDIN")]
+    #[options(help = "produce commit from validator array")]
     Commit(CommitOpts),
 }
 
@@ -62,6 +62,21 @@ fn main() {
 }
 
 
+// tries to parse a string as the given type; otherwise returns the input wrapped in SimpleError
+fn parse_as<T: DeserializeOwned>(input: &str) -> Result<T, SimpleError> {
+    let vals: T = try_with!(serde_json::from_str(input),"");
+    Ok(vals)
+}
+
+// tries to parse STDIN as the given type; otherwise returns the input wrapped in SimpleError
+fn parse_stdin_as<T: DeserializeOwned>() -> Result<T, SimpleError> {
+    let mut buffer = String::new();
+    match io::stdin().read_to_string(&mut buffer) {
+        Err(_) => Err(SimpleError::new("")),
+        Ok(_) => parse_as::<T>(&buffer)
+    }
+}
+
 #[derive(Debug, Options, Deserialize)]
 struct ValidatorOpts {
     #[options(help = "print this help and exit")]
@@ -69,30 +84,16 @@ struct ValidatorOpts {
     help: bool,
     #[options(help = "validator id (required; can be passed via STDIN)")]
     id: Option<String>,
-    #[options(help = "voting power of this validator (default: 0)", meta = "POWER")]
-    voting_power: Option<u64>,
-    #[options(help = "proposer priority of this validator (default: none)", meta = "PRIORITY")]
-    proposer_priority: Option<i64>,
-}
-
-// tries to parse STDIN as the given type; otherwise returns the raw input wrapped in SimpleError
-fn read_input_as<T: DeserializeOwned>() -> Result<T, SimpleError> {
-    let mut buffer = String::new();
-    match io::stdin().read_to_string(&mut buffer) {
-        Err(_) => Err(SimpleError::new("")),
-        Ok(_) => {
-            match serde_json::from_str(&buffer) {
-                Ok(res) => Ok(res),
-                Err(_) => {
-                    Err(SimpleError::new(buffer))
-                }
-            }
-        }
-    }
+    #[options(help = "voting power of this validator (default: 0)", meta = "POWER",
+        parse(try_from_str = "parse_as::<Power>"))]
+    voting_power: Option<Power>,
+    #[options(help = "proposer priority of this validator (default: none)", meta = "PRIORITY",
+        parse(try_from_str = "parse_as::<ProposerPriority>"))]
+    proposer_priority: Option<ProposerPriority>,
 }
 
 fn produce_validator(cli: ValidatorOpts) -> Result<String, SimpleError> {
-    let input = match read_input_as::<ValidatorOpts>() {
+    let input = match parse_stdin_as::<ValidatorOpts>() {
         Ok(input) => input,
         Err(input) => {
             ValidatorOpts {
@@ -118,11 +119,8 @@ fn produce_validator(cli: ValidatorOpts) -> Result<String, SimpleError> {
     let info = Info {
         address: account::Id::from(pk),
         pub_key: PublicKey::from(pk),
-        voting_power: Power::new(choose_from(cli.voting_power, input.voting_power, 0)),
-        proposer_priority: match choose_from_two(cli.proposer_priority, input.proposer_priority) {
-            Some(x) => Some(ProposerPriority::new(x)),
-            None => None
-        }
+        voting_power: choose_from(cli.voting_power, input.voting_power, Power::new(0)),
+        proposer_priority: choose_from_two(cli.proposer_priority, input.proposer_priority)
     };
     Ok(try_with!(serde_json::to_string(&info), "failed to serialize into JSON"))
 }
@@ -131,10 +129,14 @@ fn produce_validator(cli: ValidatorOpts) -> Result<String, SimpleError> {
 struct HeaderOpts {
     #[options(help = "print this help and exit")]
     help: bool,
+
+    #[options(help = "validators (required)", parse(try_from_str = "parse_as::<Vec<Info>>"))]
+    validators: Option<Vec<Info>>
 }
 
+
 fn produce_header(_opts: HeaderOpts) -> Result<String, SimpleError> {
-    let vals = read_input_as::<Vec<Info>>()?;
+    let vals = parse_stdin_as::<Vec<Info>>()?;
     if vals.is_empty() {
         bail!("can't produce a header for empty validator array")
     }
@@ -173,7 +175,7 @@ fn produce_commit(cli: CommitOpts) -> Result<String, SimpleError> {
     const EXAMPLE_SHA256_ID: &str =
         "26C0A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
 
-    let input = read_input_as::<CommitOpts>()?;
+    let input = parse_stdin_as::<CommitOpts>()?;
     let commit = Commit {
         height: Default::default(),
         round: choose_from(cli.round, input.round, 1),
