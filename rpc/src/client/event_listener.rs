@@ -1,5 +1,8 @@
 //! Tendermint Websocket event listener client
 
+// TODO(ismail): document fields or re-use the abci types
+#![allow(missing_docs)]
+
 use async_tungstenite::{tokio::connect_async, tokio::TokioAdapter, tungstenite::Message};
 use futures::prelude::*;
 use serde::{Deserialize, Serialize};

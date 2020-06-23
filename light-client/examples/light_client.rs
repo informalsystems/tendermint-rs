@@ -5,6 +5,7 @@ use tendermint_light_client::{
         scheduler,
         verifier::ProdVerifier,
     },
+    evidence::ProdEvidenceReporter,
     fork_detector::ProdForkDetector,
     light_client::{self, LightClient},
     peer_list::PeerList,
@@ -103,11 +104,9 @@ fn make_instance(
             });
 
         light_store.insert(trusted_state, VerifiedStatus::Verified);
-    } else {
-        if light_store.highest(VerifiedStatus::Verified).is_none() {
-            println!("[ error ] no trusted state in database, please specify a trusted header");
-            std::process::exit(1);
-        }
+    } else if light_store.highest(VerifiedStatus::Verified).is_none() {
+        println!("[ error ] no trusted state in database, please specify a trusted header");
+        std::process::exit(1);
     }
 
     let state = State {
@@ -140,18 +139,27 @@ fn sync_cmd(opts: SyncOpts) {
     let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
     let witness: PeerId = "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF".parse().unwrap();
 
-    let primary_path = opts.db_path.clone().join(primary.to_string());
-    let witness_path = opts.db_path.clone().join(witness.to_string());
+    let primary_path = opts.db_path.join(primary.to_string());
+    let witness_path = opts.db_path.join(witness.to_string());
 
     let primary_instance = make_instance(primary, addr.clone(), primary_path, &opts);
     let witness_instance = make_instance(witness, addr.clone(), witness_path, &opts);
+
+    let mut peer_addr = HashMap::new();
+    peer_addr.insert(primary, addr.clone());
+    peer_addr.insert(witness, addr);
 
     let peer_list = PeerList::builder()
         .primary(primary, primary_instance)
         .witness(witness, witness_instance)
         .build();
 
-    let mut supervisor = Supervisor::new(peer_list, ProdForkDetector::default());
+    let mut supervisor = Supervisor::new(
+        peer_list,
+        ProdForkDetector::default(),
+        ProdEvidenceReporter::new(peer_addr),
+    );
+
     let mut handle = supervisor.handle();
 
     std::thread::spawn(|| supervisor.run());

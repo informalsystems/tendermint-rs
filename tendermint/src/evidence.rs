@@ -2,7 +2,7 @@
 
 use std::slice;
 use {
-    crate::{serializers, PublicKey, Vote},
+    crate::{block::signed_header::SignedHeader, serializers, PublicKey, Vote},
     serde::{Deserialize, Serialize},
 };
 
@@ -11,16 +11,20 @@ use {
 /// evidence: `DuplicateVoteEvidence`.
 ///
 /// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#evidence>
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", content = "value")]
 pub enum Evidence {
     /// Duplicate vote evidence
     #[serde(rename = "tendermint/DuplicateVoteEvidence")]
     DuplicateVote(DuplicateVoteEvidence),
+
+    /// Conflicting headers evidence
+    #[serde(rename = "tendermint/ConflictingHeadersEvidence")]
+    ConflictingHeaders(Box<ConflictingHeadersEvidence>),
 }
 
 /// Duplicate vote evidence
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct DuplicateVoteEvidence {
     #[serde(rename = "PubKey")]
     pub_key: PublicKey,
@@ -28,6 +32,22 @@ pub struct DuplicateVoteEvidence {
     vote_a: Vote,
     #[serde(rename = "VoteB")]
     vote_b: Vote,
+}
+
+/// Conflicting headers evidence.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct ConflictingHeadersEvidence {
+    #[serde(rename = "H1")]
+    h1: SignedHeader,
+    #[serde(rename = "H2")]
+    h2: SignedHeader,
+}
+
+impl ConflictingHeadersEvidence {
+    /// Create a new evidence of conflicting headers
+    pub fn new(h1: SignedHeader, h2: SignedHeader) -> Self {
+        Self { h1, h2 }
+    }
 }
 
 /// Evidence data is a wrapper for a list of `Evidence`.

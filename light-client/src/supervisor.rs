@@ -3,13 +3,16 @@ use crate::{
     callback::Callback,
     components::io::IoError,
     errors::{Error, ErrorKind},
+    evidence::EvidenceReporter,
     fork_detector::{Fork, ForkDetection, ForkDetector},
     light_client::LightClient,
     peer_list::PeerList,
     state::State,
     store::VerifiedStatus,
-    types::{Height, LightBlock},
+    types::{Height, LightBlock, PeerId},
 };
+
+use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
 
 use contracts::pre;
 use crossbeam_channel as channel;
@@ -32,9 +35,9 @@ pub enum Event {
     /// The supervisor has terminated
     Terminated,
     /// The verification has succeded
-    VerificationSuccessed(LightBlock),
+    VerificationSuccess(Box<LightBlock>),
     /// The verification has failed
-    VerificationFailed(Error),
+    VerificationFailure(Error),
 }
 
 /// An light client `Instance` packages a `LightClient` together with its `State`.
@@ -99,6 +102,8 @@ pub struct Supervisor {
     peers: PeerList,
     /// An instance of the fork detector
     fork_detector: Box<dyn ForkDetector>,
+    /// Reporter of fork evidence
+    evidence_reporter: Box<dyn EvidenceReporter>,
     /// Channel through which to reply to `Handle`s
     sender: channel::Sender<Event>,
     /// Channel through which to receive events from the `Handle`s
@@ -118,7 +123,11 @@ static_assertions::assert_impl_all!(Supervisor: Send);
 
 impl Supervisor {
     /// Constructs a new supevisor from the given list of peers and fork detector instance.
-    pub fn new(peers: PeerList, fork_detector: impl ForkDetector + 'static) -> Self {
+    pub fn new(
+        peers: PeerList,
+        fork_detector: impl ForkDetector + 'static,
+        evidence_reporter: impl EvidenceReporter + 'static,
+    ) -> Self {
         let (sender, receiver) = channel::unbounded::<Event>();
 
         Self {
@@ -126,6 +135,7 @@ impl Supervisor {
             sender,
             receiver,
             fork_detector: Box::new(fork_detector),
+            evidence_reporter: Box::new(evidence_reporter),
         }
     }
 
@@ -175,13 +185,15 @@ impl Supervisor {
                             for fork in forks {
                                 match fork {
                                     // An actual fork was detected, report evidence and record forked peer.
-                                    Fork::Forked(block) => {
-                                        self.report_evidence(&block);
-                                        forked.push(block.provider);
+                                    Fork::Forked { primary, witness } => {
+                                        let provider = witness.provider;
+                                        self.report_evidence(provider, &primary, &witness)?;
+
+                                        forked.push(provider);
                                     }
                                     // A witness has been deemed faulty, remove it from the peer list.
                                     Fork::Faulty(block, _error) => {
-                                        self.peers.remove_witness(&block.provider);
+                                        self.peers.mark_witness_as_faulty(block.provider);
                                         // TODO: Log/record the error
                                     }
                                 }
@@ -209,12 +221,26 @@ impl Supervisor {
             }
         }
 
-        bail!(ErrorKind::NoValidPeerLeft)
+        bail!(ErrorKind::NoWitnessLeft)
     }
 
-    /// Report the given light block as evidence of a fork.
-    fn report_evidence(&mut self, _light_block: &LightBlock) {
-        ()
+    /// Report the given evidence of a fork.
+    fn report_evidence(
+        &mut self,
+        provider: PeerId,
+        primary: &LightBlock,
+        witness: &LightBlock,
+    ) -> Result<(), Error> {
+        let evidence = ConflictingHeadersEvidence::new(
+            primary.signed_header.clone(),
+            witness.signed_header.clone(),
+        );
+
+        self.evidence_reporter
+            .report(Evidence::ConflictingHeaders(Box::new(evidence)), provider)
+            .map_err(ErrorKind::Io)?;
+
+        Ok(())
     }
 
     /// Perform fork detection with the given block and trusted state.
@@ -240,7 +266,7 @@ impl Supervisor {
                 // Some RPC request timed out, this peer might be down so let's
                 // remove it from the witnesses, and bubble the error up.
                 ErrorKind::Io(IoError::Timeout(peer)) => {
-                    self.peers.remove_witness(peer);
+                    self.peers.mark_witness_as_faulty(*peer);
                     Err(e)
                 }
                 _ => Err(e),
@@ -314,8 +340,8 @@ impl Handle {
         let callback = Callback::new(move |result| {
             // We need to create an event here
             let event = match result {
-                Ok(header) => Event::VerificationSuccessed(header),
-                Err(err) => Event::VerificationFailed(err),
+                Ok(header) => Event::VerificationSuccess(Box::new(header)),
+                Err(err) => Event::VerificationFailure(err),
             };
 
             sender.send(event).unwrap();
@@ -325,8 +351,8 @@ impl Handle {
         self.sender.send(event).unwrap();
 
         match receiver.recv().unwrap() {
-            Event::VerificationSuccessed(header) => Ok(header),
-            Event::VerificationFailed(err) => Err(err),
+            Event::VerificationSuccess(header) => Ok(*header),
+            Event::VerificationFailure(err) => Err(err),
             _ => todo!(),
         }
     }
