@@ -255,7 +255,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
 
 fn run_single_step_tests(dir: &str) {
     // TODO: this test need further investigation:
-    let skipped = ["commit/one_third_vals_don't_sign.json"];
+    // let skipped = ["commit/one_third_vals_don't_sign.json"];
 
     let paths = fs::read_dir(PathBuf::from(TEST_FILES_PATH).join(dir)).unwrap();
 
@@ -263,13 +263,13 @@ fn run_single_step_tests(dir: &str) {
         let dir_entry = file_path.unwrap();
         let fp_str = format!("{}", dir_entry.path().display());
 
-        if skipped
-            .iter()
-            .any(|failing_case| fp_str.ends_with(failing_case))
-        {
-            println!("Skipping JSON test: {}", fp_str);
-            return;
-        }
+        // if skipped
+        //     .iter()
+        //     .any(|failing_case| fp_str.ends_with(failing_case))
+        // {
+        //     println!("Skipping JSON test: {}", fp_str);
+        //     return;
+        // }
 
         println!(
             "Running light client against 'single-step' test-file: {}",
