@@ -62,35 +62,52 @@ fn main() {
 }
 
 
-#[derive(Debug, Options)]
+#[derive(Debug, Options, Deserialize)]
 struct ValidatorOpts {
     #[options(help = "print this help and exit")]
+    #[serde(skip)]
     help: bool,
+    #[options(help = "validator id (required; can be passed via STDIN)")]
+    id: Option<String>,
     #[options(help = "voting power of this validator (default: 0)", meta = "POWER")]
     voting_power: Option<u64>,
     #[options(help = "proposer priority of this validator (default: none)", meta = "PRIORITY")]
     proposer_priority: Option<i64>,
 }
 
-fn read_input() -> Result<String, SimpleError> {
-    let mut buffer = String::new();
-    try_with!(io::stdin().read_to_string(&mut buffer), "");
-    Ok(buffer)
-}
-
+// tries to parse STDIN as the given type; otherwise returns the raw input wrapped in SimpleError
 fn read_input_as<T: DeserializeOwned>() -> Result<T, SimpleError> {
-//fn read_input_as<T: Deserialize>() -> Result<T, SimpleError> {
     let mut buffer = String::new();
-    try_with!(io::stdin().read_to_string(&mut buffer), "failed to read from standard input");
-    let res: T = try_with!(serde_json::from_str(&buffer), "failed to decode input");
-    //from_str()
-    Ok(res)
+    match io::stdin().read_to_string(&mut buffer) {
+        Err(_) => Err(SimpleError::new("")),
+        Ok(_) => {
+            match serde_json::from_str(&buffer) {
+                Ok(res) => Ok(res),
+                Err(_) => {
+                    Err(SimpleError::new(buffer))
+                }
+            }
+        }
+    }
 }
 
-
-fn produce_validator(opts: ValidatorOpts) -> Result<String, SimpleError> {
-    let input = read_input()?;
-    let mut bytes = input.into_bytes();
+fn produce_validator(cli: ValidatorOpts) -> Result<String, SimpleError> {
+    let input = match read_input_as::<ValidatorOpts>() {
+        Ok(input) => input,
+        Err(input) => {
+            ValidatorOpts {
+                help: false,
+                id: if input.to_string().len()==0 { None } else { Some (input.to_string()) },
+                voting_power: None,
+                proposer_priority: None
+            }
+        }
+    };
+    let id = choose_from_two(cli.id, input.id);
+    if let None = id {
+        bail!("validator identifier is missing")
+    }
+    let mut bytes = id.unwrap().into_bytes();
     if bytes.len() > 32 {
         bail!("identifier is too long")
     }
@@ -98,13 +115,15 @@ fn produce_validator(opts: ValidatorOpts) -> Result<String, SimpleError> {
     let seed = ed25519::Seed::from_bytes(bytes).unwrap();
     let signer = Ed25519Signer::from(&seed);
     let pk = signer.public_key().unwrap();
-    let mut info = Info::new(PublicKey::from(pk), Power::new(0));
-    if let Some(power) = opts.voting_power {
-        info.voting_power = Power::new(power);
-    }
-    if let Some(priority) = opts.proposer_priority {
-        info.proposer_priority = Some(ProposerPriority::new(priority));
-    }
+    let info = Info {
+        address: account::Id::from(pk),
+        pub_key: PublicKey::from(pk),
+        voting_power: Power::new(choose_from(cli.voting_power, input.voting_power, 0)),
+        proposer_priority: match choose_from_two(cli.proposer_priority, input.proposer_priority) {
+            Some(x) => Some(ProposerPriority::new(x)),
+            None => None
+        }
+    };
     Ok(try_with!(serde_json::to_string(&info), "failed to serialize into JSON"))
 }
 
@@ -168,6 +187,12 @@ fn choose_from<T>(cli: Option<T>, input: Option<T>, default: T) -> T {
     if let Some(x) = cli { x }
     else if let Some(y) = input { y }
     else { default }
+}
+
+fn choose_from_two<T>(cli: Option<T>, input: Option<T>) -> Option<T> {
+    if let Some(x) = cli { Some(x) }
+    else if let Some(y) = input { Some(y) }
+    else { None }
 }
 
 // Default consensus params modeled after Go code; but it's not clear how to go to a valid hash from here
