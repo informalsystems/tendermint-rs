@@ -182,9 +182,8 @@ impl LightClient {
             // Trace the current height as a dependency of the block at the target height
             state.trace_block(target_height, current_height);
 
-            // If the trusted state is now at the height greater or equal to the target height,
-            // we now trust this target height, and are thus done :) [LCV-DIST-LIFE.1]
-            if target_height <= trusted_state.height() {
+            // If the trusted state is now at a height equal to the target height, we are done. [LCV-DIST-LIFE.1]
+            if target_height == trusted_state.height() {
                 return Ok(trusted_state);
             }
 
