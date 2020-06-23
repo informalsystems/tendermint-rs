@@ -39,9 +39,6 @@ pub enum VerificationError {
         sign_bytes: Vec<u8>,
     },
 
-    #[error("invalid commit: {0}")]
-    InvalidCommit(String),
-
     #[error("invalid commit value: header_hash={header_hash} commit_hash={commit_hash}")]
     InvalidCommitValue {
         header_hash: Hash,
