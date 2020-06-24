@@ -47,7 +47,7 @@ fn run() -> Result<(), SimpleError> {
             std::process::exit(1);
         }
         Some(Command::Validator(opts)) => encode_validator(opts),
-        Some(Command::Header(opts)) => produce_header(opts),
+        Some(Command::Header(opts)) => encode_header(opts),
         Some(Command::Commit(opts)) => produce_commit(opts),
     }?;
     println!("{}", res);
@@ -132,10 +132,12 @@ fn encode_validator(cli: ValidatorOpts) -> Result<String, SimpleError> {
 }
 
 #[derive(Debug, Options, Deserialize)]
-struct HeaderOpts {
+pub struct HeaderOpts {
     #[options(help = "print this help and exit")]
     help: bool,
-
+    #[options(help = "do not try to parse input from STDIN")]
+    #[serde(skip)]
+    ignore_stdin: bool,
     #[options(help = "validators (required)", parse(try_from_str = "parse_as::<Vec<Info>>"))]
     validators: Option<Vec<Info>>,
     #[options(help = "next validators (default: same as validators)", parse(try_from_str = "parse_as::<Vec<Info>>"))]
@@ -145,12 +147,16 @@ struct HeaderOpts {
     time: Option<Time>,
 }
 
-fn produce_header(cli: HeaderOpts) -> Result<String, SimpleError> {
+fn parse_header_opts(cli: HeaderOpts) -> HeaderOpts {
+    if cli.ignore_stdin {
+        return cli
+    }
     let input = match parse_stdin_as::<HeaderOpts>() {
         Ok(input) => input,
         Err(input) => {
             HeaderOpts {
                 help: false,
+                ignore_stdin: false,
                 validators: match parse_as::<Vec<Info>>(input.as_str()) {
                     Ok(vals) => Some(vals),
                     Err(_) => None
@@ -160,12 +166,22 @@ fn produce_header(cli: HeaderOpts) -> Result<String, SimpleError> {
             }
         }
     };
-    let vals = choose_from_two(cli.validators, input.validators);
-    if let None = vals {
+    HeaderOpts {
+        help: false,
+        ignore_stdin: false,
+        validators: choose_from_two(cli.validators, input.validators),
+        next_validators: choose_from_two(cli.next_validators, input.next_validators),
+        time: choose_from_two(cli.time, input.time)
+    }
+}
+
+pub fn produce_header(input: HeaderOpts) -> Result<Header, SimpleError> {
+    if let None = input.validators {
         bail!("validator array is missing")
     }
-    let valset = validator::Set::new(vals.clone().unwrap());
-    let next_valset = match choose_from_two(cli.next_validators, input.next_validators) {
+    let vals = input.validators.unwrap();
+    let valset = validator::Set::new(vals.clone());
+    let next_valset = match input.next_validators {
         Some(next_vals) => validator::Set::new(next_vals.clone()),
         None => valset.clone()
     };
@@ -173,7 +189,7 @@ fn produce_header(cli: HeaderOpts) -> Result<String, SimpleError> {
         version: Version { block: 0, app: 0 },
         chain_id: chain::Id::from_str("test-chain-01").unwrap(),
         height: Default::default(),
-        time: choose_from(cli.time, input.time,Time::now()),
+        time: choose_or(input.time,Time::now()),
         last_block_id: None,
         last_commit_hash: None,
         data_hash: None,
@@ -183,11 +199,16 @@ fn produce_header(cli: HeaderOpts) -> Result<String, SimpleError> {
         app_hash: vec![],
         last_results_hash: None,
         evidence_hash: None,
-        proposer_address: vals.unwrap()[0].address.clone()
+        proposer_address: vals[0].address.clone()
     };
-    Ok(try_with!(serde_json::to_string(&header), "failed to serialize into JSON"))
+    Ok(header)
 }
 
+fn encode_header(cli: HeaderOpts) -> Result<String, SimpleError> {
+    let input = parse_header_opts(cli);
+    let header = produce_header(input)?;
+    Ok(try_with!(serde_json::to_string(&header), "failed to serialize header into JSON"))
+}
 
 #[derive(Debug, Options, Deserialize)]
 struct CommitOpts {
