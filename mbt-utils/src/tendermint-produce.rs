@@ -48,7 +48,7 @@ fn run() -> Result<(), SimpleError> {
         }
         Some(Command::Validator(opts)) => encode_validator(opts),
         Some(Command::Header(opts)) => encode_header(opts),
-        Some(Command::Commit(opts)) => produce_commit(opts),
+        Some(Command::Commit(opts)) => encode_commit(opts),
     }?;
     println!("{}", res);
     Ok(())
@@ -219,25 +219,55 @@ struct CommitOpts {
     #[options(help = "print this help and exit")]
     #[serde(skip)]
     help: bool,
-
+    #[options(help = "do not try to parse input from STDIN")]
+    #[serde(skip)]
+    ignore_stdin: bool,
+    #[options(help = "block height (default: 1)",
+    parse(try_from_str = "parse_as::<Height>"))]
+    height: Option<Height>,
     #[options(help = "commit round (default: 1)")]
     round: Option<u64>
 }
 
-fn produce_commit(cli: CommitOpts) -> Result<String, SimpleError> {
+fn parse_commit_opts(cli: CommitOpts) -> CommitOpts {
+    if cli.ignore_stdin {
+        return cli
+    }
+    let input = match parse_stdin_as::<CommitOpts>() {
+        Ok(input) => input,
+        Err(_) => CommitOpts {
+            help: false,
+            ignore_stdin: false,
+            height: None,
+            round: None
+        }
+    };
+    CommitOpts {
+        help: false,
+        ignore_stdin: false,
+        height: choose_from_two(cli.height, input.height),
+        round: choose_from_two(cli.round, input.round)
+    }
+}
+
+
+fn produce_commit(input: CommitOpts) -> Result<Commit, SimpleError> {
     const EXAMPLE_SHA256_ID: &str =
         "26C0A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
-
-    let input = parse_stdin_as::<CommitOpts>()?;
     let commit = Commit {
-        height: Default::default(),
-        round: choose_from(cli.round, input.round, 1),
+        height: choose_or(input.height, Height(1)),
+        round: choose_or(input.round, 1),
         block_id: Id::from_str(EXAMPLE_SHA256_ID).unwrap(),
         signatures: Default::default()
     };
-    Ok(try_with!(serde_json::to_string(&commit), "failed to serialize into JSON"))
+    Ok(commit)
 }
 
+fn encode_commit(cli: CommitOpts) -> Result<String, SimpleError> {
+    let input = parse_commit_opts(cli);
+    let commit = produce_commit(input)?;
+    Ok(try_with!(serde_json::to_string(&commit), "failed to serialize commit into JSON"))
+}
 
 // Helper functions
 
