@@ -46,7 +46,7 @@ fn run() -> Result<(), SimpleError> {
             eprintln!("{}\n", CliOptions::usage());
             std::process::exit(1);
         }
-        Some(Command::Validator(opts)) => produce_validator(opts),
+        Some(Command::Validator(opts)) => encode_validator(opts),
         Some(Command::Header(opts)) => produce_header(opts),
         Some(Command::Commit(opts)) => produce_commit(opts),
     }?;
@@ -61,29 +61,14 @@ fn main() {
     }
 }
 
-
-// tries to parse a string as the given type; otherwise returns the input wrapped in SimpleError
-fn parse_as<T: DeserializeOwned>(input: &str) -> Result<T, SimpleError> {
-    match serde_json::from_str(input) {
-        Ok(res) => Ok(res),
-        Err(_) => Err(SimpleError::new(input))
-    }
-}
-
-// tries to parse STDIN as the given type; otherwise returns the input wrapped in SimpleError
-fn parse_stdin_as<T: DeserializeOwned>() -> Result<T, SimpleError> {
-    let mut buffer = String::new();
-    match io::stdin().read_to_string(&mut buffer) {
-        Err(_) => Err(SimpleError::new("")),
-        Ok(_) => parse_as::<T>(&buffer)
-    }
-}
-
 #[derive(Debug, Options, Deserialize)]
-struct ValidatorOpts {
+pub struct ValidatorOpts {
     #[options(help = "print this help and exit")]
     #[serde(skip)]
     help: bool,
+    #[options(help = "do not try to parse input from STDIN")]
+    #[serde(skip)]
+    ignore_stdin: bool,
     #[options(help = "validator id (required; can be passed via STDIN)")]
     id: Option<String>,
     #[options(help = "voting power of this validator (default: 0)", meta = "POWER",
@@ -94,37 +79,56 @@ struct ValidatorOpts {
     proposer_priority: Option<ProposerPriority>,
 }
 
-fn produce_validator(cli: ValidatorOpts) -> Result<String, SimpleError> {
+fn parse_validator_opts(cli: ValidatorOpts) -> ValidatorOpts {
+    if cli.ignore_stdin {
+        return cli
+    }
     let input = match parse_stdin_as::<ValidatorOpts>() {
         Ok(input) => input,
         Err(input) => {
             ValidatorOpts {
                 help: false,
+                ignore_stdin: false,
                 id: if input.to_string().len()==0 { None } else { Some (input.to_string()) },
                 voting_power: None,
                 proposer_priority: None
             }
         }
     };
-    let id = choose_from_two(cli.id, input.id);
-    if let None = id {
+    ValidatorOpts {
+        help: false,
+        ignore_stdin: false,
+        id: choose_from_two(cli.id, input.id),
+        voting_power: choose_from_two(cli.voting_power, input.voting_power),
+        proposer_priority: choose_from_two(cli.proposer_priority, input.proposer_priority)
+    }
+}
+
+pub fn produce_validator(input: ValidatorOpts) -> Result<Info, SimpleError> {
+    if let None = input.id {
         bail!("validator identifier is missing")
     }
-    let mut bytes = id.unwrap().into_bytes();
+    let mut bytes = input.id.unwrap().into_bytes();
     if bytes.len() > 32 {
         bail!("identifier is too long")
     }
     bytes.extend(vec![0u8; 32 - bytes.len()].iter());
-    let seed = ed25519::Seed::from_bytes(bytes).unwrap();
+    let seed = require_with!(ed25519::Seed::from_bytes(bytes), "failed to construct a seed");
     let signer = Ed25519Signer::from(&seed);
-    let pk = signer.public_key().unwrap();
+    let pk = try_with!(signer.public_key(), "failed to get a public key");
     let info = Info {
         address: account::Id::from(pk),
         pub_key: PublicKey::from(pk),
-        voting_power: choose_from(cli.voting_power, input.voting_power, Power::new(0)),
-        proposer_priority: choose_from_two(cli.proposer_priority, input.proposer_priority)
+        voting_power: choose_or(input.voting_power, Power::new(0)),
+        proposer_priority: input.proposer_priority
     };
-    Ok(try_with!(serde_json::to_string(&info), "failed to serialize into JSON"))
+    Ok(info)
+}
+
+fn encode_validator(cli: ValidatorOpts) -> Result<String, SimpleError> {
+    let input = parse_validator_opts(cli);
+    let info = produce_validator(input)?;
+    Ok(try_with!(serde_json::to_string(&info), "failed to serialize validator into JSON"))
 }
 
 #[derive(Debug, Options, Deserialize)]
@@ -208,6 +212,32 @@ fn produce_commit(cli: CommitOpts) -> Result<String, SimpleError> {
     };
     Ok(try_with!(serde_json::to_string(&commit), "failed to serialize into JSON"))
 }
+
+
+// Helper functions
+
+// tries to parse a string as the given type; otherwise returns the input wrapped in SimpleError
+fn parse_as<T: DeserializeOwned>(input: &str) -> Result<T, SimpleError> {
+    match serde_json::from_str(input) {
+        Ok(res) => Ok(res),
+        Err(_) => Err(SimpleError::new(input))
+    }
+}
+
+// tries to parse STDIN as the given type; otherwise returns the input wrapped in SimpleError
+fn parse_stdin_as<T: DeserializeOwned>() -> Result<T, SimpleError> {
+    let mut buffer = String::new();
+    match io::stdin().read_to_string(&mut buffer) {
+        Err(_) => Err(SimpleError::new("")),
+        Ok(_) => parse_as::<T>(&buffer)
+    }
+}
+
+fn choose_or<T>(input: Option<T>, default: T) -> T {
+    if let Some(x) = input { x }
+    else { default }
+}
+
 
 fn choose_from<T>(cli: Option<T>, input: Option<T>, default: T) -> T {
     if let Some(x) = cli { x }
