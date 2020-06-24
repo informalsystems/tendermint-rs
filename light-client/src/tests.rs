@@ -34,10 +34,16 @@ pub struct TestBisection<LB> {
     pub description: String,
     pub trust_options: TrustOptions,
     pub primary: Provider<LB>,
+    pub witnesses: Vec<WitnessProvider<LB>>,
     pub height_to_verify: HeightStr,
     pub now: Time,
     pub expected_output: Option<String>,
     pub expected_num_of_bisections: usize,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct WitnessProvider<LB> {
+    pub value: Provider<LB>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -129,12 +135,21 @@ impl From<Provider<AnonLightBlock>> for Provider<LightBlock> {
     }
 }
 
+impl From<WitnessProvider<AnonLightBlock>> for WitnessProvider<LightBlock> {
+    fn from(p: WitnessProvider<AnonLightBlock>) -> Self {
+        Self {
+            value: p.value.into(),
+        }
+    }
+}
+
 impl From<TestBisection<AnonLightBlock>> for TestBisection<LightBlock> {
     fn from(tb: TestBisection<AnonLightBlock>) -> Self {
         Self {
             description: tb.description,
             trust_options: tb.trust_options,
             primary: tb.primary.into(),
+            witnesses: tb.witnesses.into_iter().map(Into::into).collect(),
             height_to_verify: tb.height_to_verify,
             now: tb.now,
             expected_output: tb.expected_output,
