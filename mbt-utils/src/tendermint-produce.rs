@@ -142,7 +142,9 @@ pub struct HeaderOpts {
     validators: Option<Vec<Info>>,
     #[options(help = "next validators (default: same as validators)", parse(try_from_str = "parse_as::<Vec<Info>>"))]
     next_validators: Option<Vec<Info>>,
-
+    #[options(help = "block height (default: 1)",
+        parse(try_from_str = "parse_as::<Height>"))]
+    height: Option<Height>,
     #[options(help = "time (default: now)")]
     time: Option<Time>,
 }
@@ -162,6 +164,7 @@ fn parse_header_opts(cli: HeaderOpts) -> HeaderOpts {
                     Err(_) => None
                 },
                 next_validators: None,
+                height: None,
                 time: None
             }
         }
@@ -171,6 +174,7 @@ fn parse_header_opts(cli: HeaderOpts) -> HeaderOpts {
         ignore_stdin: false,
         validators: choose_from_two(cli.validators, input.validators),
         next_validators: choose_from_two(cli.next_validators, input.next_validators),
+        height: choose_from_two(cli.height, input.height),
         time: choose_from_two(cli.time, input.time)
     }
 }
@@ -188,7 +192,7 @@ pub fn produce_header(input: HeaderOpts) -> Result<Header, SimpleError> {
     let header = Header {
         version: Version { block: 0, app: 0 },
         chain_id: chain::Id::from_str("test-chain-01").unwrap(),
-        height: Default::default(),
+        height: choose_or(input.height,Height(1)),
         time: choose_or(input.time,Time::now()),
         last_block_id: None,
         last_commit_hash: None,
