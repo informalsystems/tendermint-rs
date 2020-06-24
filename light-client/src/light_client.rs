@@ -171,6 +171,13 @@ impl LightClient {
                 .highest(VerifiedStatus::Verified)
                 .ok_or_else(|| ErrorKind::NoInitialTrustedState)?;
 
+            if target_height < trusted_state.height() {
+                bail!(ErrorKind::TargetLowerThanTrustedState {
+                    target_height,
+                    trusted_height: trusted_state.height()
+                });
+            }
+
             // Check invariant [LCV-INV-TP.1]
             if !is_within_trust_period(&trusted_state, options.trusting_period, options.now) {
                 bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {

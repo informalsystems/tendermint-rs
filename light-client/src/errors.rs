@@ -33,6 +33,12 @@ pub enum ErrorKind {
     #[error("no initial trusted state")]
     NoInitialTrustedState,
 
+    #[error("target height ({target_height}) is lower than trusted state ({trusted_height})")]
+    TargetLowerThanTrustedState {
+        target_height: Height,
+        trusted_height: Height,
+    },
+
     #[error("latest trusted state outside of trusting period")]
     TrustedStateOutsideTrustingPeriod {
         trusted_state: Box<LightBlock>,
