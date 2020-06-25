@@ -209,7 +209,7 @@ Then,
 the detector returns the set of all headers *h'* downloaded from
 secondaries that satisfy
  - *h'* is different from *LightStore.LatestVerified()*
- - *h'* is a (light) fork
+ - *h'* is a (light) fork.
 
 
 #### **[LCD-IP-PEERSET]**
