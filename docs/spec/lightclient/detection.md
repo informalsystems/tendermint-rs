@@ -276,7 +276,7 @@ Let *h-target = lightStore.LatestVerified().Height* and
      [LCV-DATA-LIGHTSTORE]).
 It queries the secondaries for  headers at height *h-target*.
 The  detector returns a set *Forks*, and should satisfy the following
-     temporal formulas 
+     temporal formulas:
 
 
 #### **[LCD-DIST-INV]**
