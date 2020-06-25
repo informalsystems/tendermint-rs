@@ -1,4 +1,10 @@
-***This is the beginning of an unfinished draft. Comments are welcome!***
+***This an unfinished draft. Comments are welcome!***
+
+## TODOs
+
+- the main logic, i.e., describing what happens when the function of
+  the current spec returns. If a fork is detected, we need to report
+  evidence (and shut down light client?. 
 
 # Fork detector
 
