@@ -15,6 +15,7 @@ use tendermint::{Time, validator, chain};
 use tendermint::lite::ValidatorSet;
 use std::str::FromStr;
 use simple_error::*;
+use subtle_encoding::hex::encode;
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -39,10 +40,10 @@ directly via STDIN, without wrapping it into JSON object.
 E.g., in the validator case, the following are equivalent:
 
     mbt-tendermint-produce validator --id a --voting-power 3
-    echo -n '{"id": "a", "voting_power": 3}' | mbt-tendermint-produce validator
-    echo -n a | mbt-tendermint-produce validator --voting-power 3
-    echo -n '{"id": "a"}' | mbt-tendermint-produce validator --voting-power 3
-    echo -n '{"id": "a", "voting_power": 100}' | mbt-tendermint-produce validator --voting-power 3
+    echo -n '{"id": "a", "voting_power": 3}' | mbt-tendermint-produce --read-stdin validator
+    echo -n a | mbt-tendermint-produce --read-stdin validator --voting-power 3
+    echo -n '{"id": "a"}' | mbt-tendermint-produce --read-stdin validator --voting-power 3
+    echo -n '{"id": "a", "voting_power": 100}' | mbt-tendermint-produce --read-stdin validator --voting-power 3
 
 The result is:
     {
@@ -63,8 +64,8 @@ struct CliOptions {
     help: bool,
     #[options(help = "provide detailed usage instructions")]
     usage: bool,
-    #[options(help = "do not try to parse input from STDIN")]
-    ignore_stdin: bool,
+    #[options(help = "read input from STDIN (default: no)")]
+    read_stdin: bool,
 
     #[options(command)]
     command: Option<Command>,
@@ -80,9 +81,10 @@ enum Command {
     Commit(Commit),
 }
 
-fn run_command<Opts: Producer<T> + Options, T: serde::Serialize>(cli: Opts, ignore_stdin: bool) {
-    let res = if ignore_stdin { Opts::encode(&cli) }
-    else { Opts::encode_with_input(&cli) };
+fn run_command<Opts: Producer<T> + Options, T: serde::Serialize>(cli: Opts, read_stdin: bool) {
+    let res =
+        if read_stdin { Opts::encode_with_input(&cli) }
+        else { Opts::encode(&cli) };
     match res {
         Ok(res) => println!("{}", res),
         Err(e) => {
@@ -111,9 +113,9 @@ fn main() {
             }
             std::process::exit(1);
         }
-        Some(Command::Validator(cli)) => run_command(cli, opts.ignore_stdin),
-        Some(Command::Header(cli)) => run_command(cli, opts.ignore_stdin),
-        Some(Command::Commit(cli)) => run_command(cli, opts.ignore_stdin)
+        Some(Command::Validator(cli)) => run_command(cli, opts.read_stdin),
+        Some(Command::Header(cli)) => run_command(cli, opts.read_stdin),
+        Some(Command::Commit(cli)) => run_command(cli, opts.read_stdin)
     }
 }
 
@@ -130,8 +132,7 @@ trait Producer<Output: serde::Serialize> {
         where Self: std::marker::Sized {
         let stdin = Self::parse_input();
         let input = Self::combine_inputs(cli, &stdin);
-        let res = Self::produce(&input)?;
-        Ok(try_with!(serde_json::to_string_pretty(&res), "failed to serialize into JSON"))
+        Self::encode(&input)
     }
 }
 
