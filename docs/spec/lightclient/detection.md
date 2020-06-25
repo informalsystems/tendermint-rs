@@ -397,11 +397,12 @@ just been verified by the verifier.
 ```go
 func ForkDetector(ls LightStore)  {
     Forks.Init // initialize a container in which we collect forks
+	testedLB := LightStore.LatestVerified()
 	for i, s range Secondaries {
-		sh := FetchLightBlock(s,LightStore.LatestVerified().Height)
+		sh := FetchLightBlock(s,testedLB.Height)
 		// as the check below only needs the header, it is sufficient
 		// to download the header rather than the LighBlock
-		if LightStore.LatestVerified().Header == sh.Header {
+		if testedLB.Header == sh.Header {
 				// header matches. we do nothing.
 	    }
 		else {
@@ -431,7 +432,7 @@ func ForkDetector(ls LightStore)  {
 			}
 	}
 	if Forks.isEmpty {
-	    LightStore.Update(LightStore.LatestVerified(), StateTrusted)
+	    LightStore.Update(testedLB, StateTrusted)
 	}
 	return (LightStore,Forks,OK)
 }
