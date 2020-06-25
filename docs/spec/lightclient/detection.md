@@ -244,7 +244,7 @@ detector.
 #### **[LCD-A-CorrFull]**
 
 At all times there is at least one correct full
-node among the primary and the secondary.
+node among the primary and the secondaries.
 
 **Remark:** Check whether [LCD-A-CorrFull] is not needed in the end because
 the verification conditions [LCD-DIST-*] have preconditions on specific
