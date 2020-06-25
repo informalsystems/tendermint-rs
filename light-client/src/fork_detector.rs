@@ -4,9 +4,9 @@ use crate::{
     errors::{Error, ErrorExt, ErrorKind},
     operations::{Hasher, ProdHasher},
     state::State,
-    store::{memory::MemoryStore, VerifiedStatus},
+    store::memory::MemoryStore,
     supervisor::Instance,
-    types::LightBlock,
+    types::{LightBlock, PeerId, Status},
 };
 
 /// Result of fork detection
@@ -101,13 +101,9 @@ impl ForkDetector for ProdForkDetector {
                 continue;
             }
 
-            state
-                .light_store
-                .update(&trusted_state, VerifiedStatus::Verified);
+            state.light_store.update(&trusted_state, Status::Verified);
 
-            state
-                .light_store
-                .update(&witness_block, VerifiedStatus::Unverified);
+            state.light_store.update(&witness_block, Status::Unverified);
 
             let result = witness
                 .light_client

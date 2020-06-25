@@ -1,8 +1,8 @@
 //! State maintained by the light client.
 
 use crate::{
-    store::{LightStore, VerifiedStatus},
-    types::{Height, LightBlock},
+    store::LightStore,
+    types::{Height, LightBlock, Status},
 };
 
 use contracts::*;
@@ -47,7 +47,7 @@ impl State {
             .get(&target_height)
             .unwrap_or(&HashSet::new())
             .iter()
-            .flat_map(|h| self.light_store.get(*h, VerifiedStatus::Verified))
+            .flat_map(|h| self.light_store.get(*h, Status::Verified))
             .collect::<Vec<_>>();
 
         trace.sort_by_key(|lb| lb.height());

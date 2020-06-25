@@ -8,7 +8,7 @@ use crate::{
     components::io::IoError,
     light_client::Options,
     predicates::errors::VerificationError,
-    types::{Height, LightBlock, PeerId},
+    types::{Height, LightBlock, PeerId, Status},
 };
 
 pub type Error = anomaly::Error<ErrorKind>;
@@ -31,16 +31,16 @@ pub enum ErrorKind {
     ForkDetected(Vec<PeerId>),
 
     #[error("no initial trusted state")]
-    NoInitialTrustedState(VerifiedStatus),
+    NoInitialTrustedState(Status),
 
     #[error("no trusted state")]
-    NoTrustedState(VerifiedStatus),
+    NoTrustedState(Status),
 
     #[error("trusted state outside of trusting period")]
     TrustedStateOutsideTrustingPeriod {
         trusted_state: Box<LightBlock>,
         options: Options,
-        status: VerifiedStatus,
+        status: Status,
     },
 
     #[error("bisection for target at height {0} failed when reached trusted state at height {1}")]
@@ -81,8 +81,6 @@ impl ErrorExt for ErrorKind {
         }
     }
 
-    /// Whether this error means that the light block has expired,
-    /// ie. it's outside of the trusting period.
     fn has_expired(&self) -> bool {
         if let Self::InvalidLightBlock(e) = self {
             e.has_expired()

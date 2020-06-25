@@ -48,6 +48,33 @@ pub type SignedHeader = TMSignedHeader;
 /// A type alias for a `LightBlock`.
 pub type TrustedState = LightBlock;
 
+/// Verification status of a light block.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Status {
+    /// The light has not been verified yet.
+    Unverified,
+    /// The light block has been successfully verified.
+    Verified,
+    /// The light block has been successfully verified and has passed fork detection.
+    Trusted,
+    /// The light block has failed verification.
+    Failed,
+}
+
+impl Status {
+    /// Return a slice of all the possible values for this enum.
+    pub fn iter() -> &'static [Status] {
+        static ALL: &[Status] = &[
+            Status::Unverified,
+            Status::Verified,
+            Status::Trusted,
+            Status::Failed,
+        ];
+
+        ALL
+    }
+}
+
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
 #[derive(Clone, Debug, Display, PartialEq, Serialize, Deserialize)]

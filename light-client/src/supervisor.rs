@@ -1,15 +1,13 @@
 use crate::{
     bail,
     callback::Callback,
-    components::io::IoError,
     errors::{Error, ErrorKind},
     evidence::EvidenceReporter,
     fork_detector::{Fork, ForkDetection, ForkDetector},
     light_client::LightClient,
     peer_list::PeerList,
     state::State,
-    store::VerifiedStatus,
-    types::{Height, LightBlock, PeerId},
+    types::{Height, LightBlock, PeerId, Status},
 };
 
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
@@ -59,11 +57,11 @@ impl Instance {
     }
 
     pub fn latest_trusted(&self) -> Option<LightBlock> {
-        self.state.light_store.highest(VerifiedStatus::Trusted)
+        self.state.light_store.highest(Status::Trusted)
     }
 
     pub fn trust_block(&mut self, lb: &LightBlock) {
-        self.state.light_store.update(lb, VerifiedStatus::Trusted);
+        self.state.light_store.update(lb, Status::Trusted);
     }
 }
 
@@ -191,7 +189,7 @@ impl Supervisor {
                 Ok(light_block) => {
                     let trusted_state = primary
                         .latest_trusted()
-                        .ok_or_else(|| ErrorKind::NoTrustedState(VerifiedStatus::Trusted))?;
+                        .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
 
                     // Perform fork detection with the highest verified block as the trusted state.
                     let outcome = self.detect_forks(&light_block, &trusted_state)?;
