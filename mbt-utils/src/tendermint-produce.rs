@@ -77,7 +77,7 @@ enum Command {
     #[options(help = "produce header from validator array and other parameters")]
     Header(Header),
     #[options(help = "produce commit from validator array and other parameters")]
-    Commit(CommitOpts),
+    Commit(Commit),
 }
 
 fn run_command<Opts: Producer<T> + Options, T: serde::Serialize>(cli: Opts, ignore_stdin: bool) {
@@ -113,12 +113,12 @@ fn main() {
         }
         Some(Command::Validator(cli)) => run_command(cli, opts.ignore_stdin),
         Some(Command::Header(cli)) => run_command(cli, opts.ignore_stdin),
-        Some(Command::Commit(cli)) => (), //encode_commit(cli),
+        Some(Command::Commit(cli)) => run_command(cli, opts.ignore_stdin)
     }
 }
 
 trait Producer<Output: serde::Serialize> {
-    fn parse_input() -> Self;
+    fn parse_input() -> Self; // TODO Result<Self, SimpleError>
     fn combine_inputs(cli: &Self, stdin: &Self) -> Self;
     fn produce(opts: &Self) -> Result<Output, SimpleError>;
     fn encode(opts: &Self) -> Result<String, SimpleError>
@@ -160,9 +160,9 @@ impl Producer<Info> for Validator {
     }
     fn combine_inputs(cli: &Self, stdin: &Self) -> Self {
         Validator {
-            id: choose_from_two(&cli.id, &stdin.id),
-            voting_power: choose_from_two(&cli.voting_power, &stdin.voting_power),
-            proposer_priority: choose_from_two(&cli.proposer_priority, &stdin.proposer_priority)
+            id: choose_from(&cli.id, &stdin.id),
+            voting_power: choose_from(&cli.voting_power, &stdin.voting_power),
+            proposer_priority: choose_from(&cli.proposer_priority, &stdin.proposer_priority)
         }
     }
     fn produce(input: &Self) -> Result<Info, SimpleError> {
@@ -223,10 +223,10 @@ impl Producer<block::Header> for Header {
 
     fn combine_inputs(cli: &Self, stdin: &Self) -> Self {
         Header {
-            validators: choose_from_two(&cli.validators, &stdin.validators),
-            next_validators: choose_from_two(&cli.next_validators, &stdin.next_validators),
-            height: choose_from_two(&cli.height, &stdin.height),
-            time: choose_from_two(&cli.time, &stdin.time)
+            validators: choose_from(&cli.validators, &stdin.validators),
+            next_validators: choose_from(&cli.next_validators, &stdin.next_validators),
+            height: choose_from(&cli.height, &stdin.height),
+            time: choose_from(&cli.time, &stdin.time)
         }
     }
 
@@ -265,47 +265,42 @@ fn produce_validators(vals: &Vec<Validator>) -> Result<Vec<Info>, SimpleError> {
 }
 
 #[derive(Debug, Options, Deserialize)]
-pub struct CommitOpts {
+pub struct Commit {
     #[options(help = "block height (default: 1)")]
     height: Option<u64>,
     #[options(help = "commit round (default: 1)")]
     round: Option<u64>
 }
 
-fn parse_commit_opts(cli: CommitOpts) -> CommitOpts {
-    // if cli.ignore_stdin {
-    //     return cli
-    // }
-    let input = match parse_stdin_as::<CommitOpts>() {
-        Ok(input) => input,
-        Err(_) => CommitOpts {
-            height: None,
-            round: None
+impl Producer<block::Commit> for Commit {
+    fn parse_input() -> Self {
+        match parse_stdin_as::<Commit>() {
+            Ok(input) => input,
+            Err(_) => Commit {
+                height: None,
+                round: None
+            }
         }
-    };
-    CommitOpts {
-        height: choose_from_two(&cli.height, &input.height),
-        round: choose_from_two(&cli.round, &input.round)
     }
-}
 
+    fn combine_inputs(cli: &Self, stdin: &Self) -> Self {
+        Commit {
+            height: choose_from(&cli.height, &stdin.height),
+            round: choose_from(&cli.round, &stdin.round)
+        }
+    }
 
-pub fn produce_commit(input: CommitOpts) -> Result<block::Commit, SimpleError> {
-    const EXAMPLE_SHA256_ID: &str =
-        "26C0A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
-    let commit = block::Commit {
-        height: block::Height(choose_or(input.height, 1)),
-        round: choose_or(input.round, 1),
-        block_id: block::Id::from_str(EXAMPLE_SHA256_ID).unwrap(),
-        signatures: Default::default()
-    };
-    Ok(commit)
-}
-
-fn encode_commit(cli: CommitOpts) -> Result<String, SimpleError> {
-    let input = parse_commit_opts(cli);
-    let commit = produce_commit(input)?;
-    Ok(try_with!(serde_json::to_string(&commit), "failed to serialize commit into JSON"))
+    fn produce(input: &Self) -> Result<block::Commit, SimpleError> {
+        const EXAMPLE_SHA256_ID: &str =
+            "26C0A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
+        let commit = block::Commit {
+            height: block::Height(choose_or(input.height, 1)),
+            round: choose_or(input.round, 1),
+            block_id: block::Id::from_str(EXAMPLE_SHA256_ID).unwrap(),
+            signatures: Default::default()
+        };
+        Ok(commit)
+    }
 }
 
 // Helper functions
@@ -338,14 +333,7 @@ fn choose_or<T>(input: Option<T>, default: T) -> T {
     else { default }
 }
 
-
-// fn _choose_from<T>(cli: &Option<T>, input: &Option<T>, default: T) -> T {
-//     if let Some(x) = cli { x }
-//     else if let Some(y) = input { y }
-//     else { default }
-// }
-
-fn choose_from_two<T: Clone>(cli: &Option<T>, input: &Option<T>) -> Option<T> {
+fn choose_from<T: Clone>(cli: &Option<T>, input: &Option<T>) -> Option<T> {
     if let Some(x) = cli { Some(x.clone()) }
     else if let Some(y) = input { Some(y.clone()) }
     else { None }
