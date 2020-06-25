@@ -42,11 +42,11 @@ pub trait VotingPowerCalculator: Send {
     fn check_enough_trust(
         &self,
         untrusted_header: &SignedHeader,
-        untrusted_validators: &ValidatorSet,
+        trusted_validators: &ValidatorSet,
         trust_threshold: TrustThreshold,
     ) -> Result<(), VerificationError> {
         let voting_power =
-            self.voting_power_in(untrusted_header, untrusted_validators, trust_threshold)?;
+            self.voting_power_in(untrusted_header, trusted_validators, trust_threshold)?;
 
         if trust_threshold.is_enough_power(voting_power.tallied, voting_power.total) {
             Ok(())
