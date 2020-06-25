@@ -4,7 +4,15 @@
 
 - the main logic, i.e., describing what happens when the function of
   the current spec returns. If a fork is detected, we need to report
-  evidence (and shut down light client?. 
+  evidence (and shut down light client?).
+  
+- We should clarify what is the expectation of VerifyToTarget so if it
+  returns TimeoutError it can be assumed faulty. I guess that
+  VerifyToTarget with correct full node should never terminate with
+  TimeoutError.
+
+- clarify EXPIRED case. Can we always punish? Can we give sufficient
+  conditions. 
 
 # Fork detector
 
@@ -170,11 +178,17 @@ Let *a*, *b*, *c*, be light blocks and *t* a time. We define
 
 > Finally, let's also define bogus blocks that have no support.
 > Observe that bogus is even defined if there is a fork on the chain.
+> Also, for the definition it would be sufficient to restrict *a* to 
+> *a.height < b.height* (which is implied by the definitions which
+> unfold until *supports()*.
 
 #### **[TMBC-BOGUS]**
 Let *b* be a light block and *t* a time. We define *bogus(b,t)* iff
   - *sequ-rooted(b) = false* and
   - for all *a*, *sequ-rooted(a)* implies *skip-root(a,b,t) = false*
+  
+  
+  
 
 > Relation to [fork accountability][accountability]: F1, F2, and F3
 > (equivocation, amnesia, back to the past) can lead to a fork on the
@@ -220,11 +234,17 @@ secondaries that satisfy
 
 #### **[LCD-IP-PEERSET]**
 
-Whenever the detector observes misbehavior of a full node from the set
-of Secondaries it should be replaced by a fresh full node.  (A full
-node that has not been primary or secondary before). This includes in
-particular the case where *h'* is different from
-*LightStore.LatestVerified()* but *h'* is not a fork.
+Whenever the detector observes *detectable misbehavior* of a full node
+from the set of Secondaries it should be replaced by a fresh full
+node.  (A full node that has not been primary or secondary
+before). Detectable misbehavior can be
+- a timeout
+- The case where *h'* is different
+from *LightStore.LatestVerified()* but *h'* is not a fork, that is, if
+*h'* is bogus. In other words, the
+secondary cannot provide a sequence of light blocks that constitutes
+proof of *h'*.
+
 
 
 
@@ -277,17 +297,17 @@ before the timeout expires.
 > distributed system, there is no sequential specification.
 
 The  detector gets as input a lightstore *lightStore*.
-Let *h-target = lightStore.LatestVerified().Height* and
+Let *h-verified = lightStore.LatestVerified().Height* and
      *h-trust=lightStore.LatestTrusted().Height* (see
      [LCV-DATA-LIGHTSTORE]).
-It queries the secondaries for  headers at height *h-target*.
+It queries the secondaries for  headers at height *h-verified*.
 The  detector returns a set *Forks*, and should satisfy the following
      temporal formulas:
 
 
 #### **[LCD-DIST-INV]**
 
-If there is no fork at height *h-target*, then the detector should
+If there is no fork at height *h-verified*, then the detector should
 return the empty set.
 
 
@@ -297,7 +317,7 @@ return the empty set.
 
 #### **[LCD-DIST-LIVE-FORK]**
 
-If there is a fork at height *h*, with *h-trust < h <= h-target*, and
+If there is a fork at height *h*, with *h-trust < h <= h-verified*, and
 there are two correct full nodes *i* and *j* that are
   - on different branches, and
   - primary or secondary,
@@ -424,7 +444,7 @@ func ForkDetector(ls LightStore)  {
 				}
 				else {
 					// s might be faulty or unreachable
-					Replace_peer(s)
+					Replace_Secondary(s)
 					// If a new node is added to secondaries, this
 					// should not imply an additional loop iteration.
 					// We assume one of the secondaries is correct.
