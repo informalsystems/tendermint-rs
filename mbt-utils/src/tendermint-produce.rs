@@ -16,11 +16,54 @@ use tendermint::lite::ValidatorSet;
 use std::str::FromStr;
 use simple_error::*;
 
+const USAGE: &str = r#"
+This is a small utility for producing tendermint datastructures
+from minimal input (for testing purposes only).
+
+For example, a tendermint validator can be produced only from an identifier,
+or a tendermint header only from a set of validators.
+
+To get an idea which input is needed for each datastructure, try '--help CMD':
+it will list the required and optional parameters.
+
+The parameters can be supplied in two ways:
+  - via STDIN: in that case they are expected to be a valid JSON object,
+    with each parameter being a field of this object
+  - via command line arguments to the specific command.
+
+If a parameter is supplied both via STDIN and CLI, the latter is given preference.
+
+In case a particular datastructure can be produced from a single parameter
+(like validator), there is a shortcut that allows to provide this parameter
+directly via STDIN, without wrapping it into JSON object.
+E.g., in the validator case, the following are equivalent:
+
+    echo -n a | mbt-tendermint-produce validator --voting-power 3
+    echo -n '{"id": "a"}' | mbt-tendermint-produce validator --voting-power 3
+    echo -n '{"id": "a", "voting_power": 3}' | mbt-tendermint-produce validator
+    echo -n '{"id": "a", "voting_power": 100}' | mbt-tendermint-produce validator --voting-power 3
+
+The result is:
+    {
+      "address": "730D3D6B2E9F4F0F23879458F2D02E0004F0F241",
+      "pub_key": {
+        "type": "tendermint/PubKeyEd25519",
+        "value": "YnT69eNDaRaNU7teDTcyBedSD0B/Ziqx+sejm0wQba0="
+      },
+      "voting_power": "10",
+      "proposer_priority": null
+    }
+"#;
+
 
 #[derive(Debug, Options)]
 struct CliOptions {
-    #[options(help = "print this help and exit")]
+    #[options(help = "print this help and exit (--help CMD for command-specific help)")]
     help: bool,
+    #[options(help = "provide detailed usage instructions")]
+    usage: bool,
+    #[options(help = "do not try to parse input from STDIN")]
+    ignore_stdin: bool,
 
     #[options(command)]
     command: Option<Command>,
@@ -29,28 +72,51 @@ struct CliOptions {
 #[derive(Debug, Options)]
 enum Command {
     #[options(help = "produce validator from identifier")]
-    Validator(ValidatorOpts),
+    Validator(Validator),
     #[options(help = "produce header from validator array")]
     Header(HeaderOpts),
     #[options(help = "produce commit from validator array")]
     Commit(CommitOpts),
 }
 
+fn run_command<Opts: Producer<T> + Options, T: serde::Serialize>(cli: Opts, ignore_stdin: bool) {
+    let res =
+        if ignore_stdin { Opts::encode(&cli) }
+        else { Opts::encode_input(&cli) };
+    match res {
+        Ok(res) => println!("{}", res),
+        Err(e) => eprintln!("{}\n", cli.self_usage())
+    }
+}
+
+
 fn run() -> Result<(), SimpleError> {
     let opts = CliOptions::parse_args_default_or_exit();
+    if(opts.usage) {
+        eprintln!("{}", USAGE);
+        std::process::exit(1);
+    }
     let res = match opts.command {
         None => {
-            eprintln!("Produce tendermint datastructures from minimal input");
+            eprintln!("Produce tendermint datastructures for testing from minimal input\n");
             eprintln!("Please specify a command:");
             eprintln!("{}\n", CliOptions::command_list().unwrap());
             eprintln!("{}\n", CliOptions::usage());
+            for cmd in vec!["validator", "header", "commit"] {
+                eprintln!("\n{}", cmd);
+                for line in CliOptions::command_usage(cmd).unwrap().lines().skip(1) {
+                    eprintln!("{}", line);
+                }
+
+            }
             std::process::exit(1);
         }
-        Some(Command::Validator(opts)) => encode_validator(opts),
-        Some(Command::Header(opts)) => encode_header(opts),
-        Some(Command::Commit(opts)) => encode_commit(opts),
-    }?;
-    println!("{}", res);
+        Some(Command::Validator(cli)) => run_command(cli, opts.ignore_stdin),
+            // if opts.ignore_stdin { Validator::encode(&cli) } else { Validator::encode_input(&cli) },
+        Some(Command::Header(cli)) => (), //encode_header(cli),
+        Some(Command::Commit(cli)) => (), //encode_commit(cli),
+    };
+    //println!("{}", res);
     Ok(())
 }
 
@@ -61,87 +127,81 @@ fn main() {
     }
 }
 
-#[derive(Debug, Options, Deserialize)]
-pub struct ValidatorOpts {
-    #[options(help = "print this help and exit")]
-    #[serde(skip)]
-    help: bool,
-    #[options(help = "do not try to parse input from STDIN")]
-    #[serde(skip)]
-    ignore_stdin: bool,
+trait Producer<Output: serde::Serialize> {
+    fn produce(opts: &Self) -> Result<Output, SimpleError>;
+    fn parse_input(opts: &Self) -> Self;
+    fn encode(opts: &Self) -> Result<String, SimpleError>
+        where Self: std::marker::Sized {
+        let res = Self::produce(&opts)?;
+        Ok(try_with!(serde_json::to_string(&res), "failed to serialize into JSON"))
+    }
+    fn encode_input(opts: &Self) -> Result<String, SimpleError>
+        where Self: std::marker::Sized {
+        let input = Self::parse_input(opts);
+        let res = Self::produce(&input)?;
+        Ok(try_with!(serde_json::to_string_pretty(&res), "failed to serialize into JSON"))
+    }
+}
+
+impl Producer<Info> for Validator {
+    fn produce(input: &Self) -> Result<Info, SimpleError> {
+        if let None = input.id {
+            bail!("validator identifier is missing")
+        }
+        let mut bytes = input.id.clone().unwrap().into_bytes();
+        if bytes.len() > 32 {
+            bail!("identifier is too long")
+        }
+        bytes.extend(vec![0u8; 32 - bytes.len()].iter());
+        let seed = require_with!(ed25519::Seed::from_bytes(bytes), "failed to construct a seed");
+        let signer = Ed25519Signer::from(&seed);
+        let pk = try_with!(signer.public_key(), "failed to get a public key");
+        let info = Info {
+            address: account::Id::from(pk),
+            pub_key: PublicKey::from(pk),
+            voting_power: Power::new(choose_or(input.voting_power, 0)),
+            proposer_priority: input.proposer_priority
+        };
+        Ok(info)
+    }
+    fn parse_input(cli: &Self) -> Self {
+        let input = match parse_stdin_as::<Validator>() {
+            Ok(input) => input,
+            Err(input) => {
+                Validator {
+                    id: if input.to_string().len()==0 { None } else { Some (input.to_string()) },
+                    voting_power: None,
+                    proposer_priority: None
+                }
+            }
+        };
+        Validator {
+            id: choose_from_two(&cli.id, &input.id),
+            voting_power: choose_from_two(&cli.voting_power, &input.voting_power),
+            proposer_priority: choose_from_two(&cli.proposer_priority, &input.proposer_priority)
+        }
+    }
+
+
+}
+
+#[derive(Debug, Options, Deserialize, Clone)]
+pub struct Validator {
     #[options(help = "validator id (required; can be passed via STDIN)")]
     id: Option<String>,
-    #[options(help = "voting power of this validator (default: 0)", meta = "POWER",
-        parse(try_from_str = "parse_as::<Power>"))]
-    voting_power: Option<Power>,
+    #[options(help = "voting power of this validator (default: 0)", meta = "POWER")]
+    voting_power: Option<u64>,
     #[options(help = "proposer priority of this validator (default: none)", meta = "PRIORITY",
         parse(try_from_str = "parse_as::<ProposerPriority>"))]
     proposer_priority: Option<ProposerPriority>,
 }
 
-fn parse_validator_opts(cli: ValidatorOpts) -> ValidatorOpts {
-    if cli.ignore_stdin {
-        return cli
-    }
-    let input = match parse_stdin_as::<ValidatorOpts>() {
-        Ok(input) => input,
-        Err(input) => {
-            ValidatorOpts {
-                help: false,
-                ignore_stdin: false,
-                id: if input.to_string().len()==0 { None } else { Some (input.to_string()) },
-                voting_power: None,
-                proposer_priority: None
-            }
-        }
-    };
-    ValidatorOpts {
-        help: false,
-        ignore_stdin: false,
-        id: choose_from_two(cli.id, input.id),
-        voting_power: choose_from_two(cli.voting_power, input.voting_power),
-        proposer_priority: choose_from_two(cli.proposer_priority, input.proposer_priority)
-    }
-}
-
-pub fn produce_validator(input: ValidatorOpts) -> Result<Info, SimpleError> {
-    if let None = input.id {
-        bail!("validator identifier is missing")
-    }
-    let mut bytes = input.id.unwrap().into_bytes();
-    if bytes.len() > 32 {
-        bail!("identifier is too long")
-    }
-    bytes.extend(vec![0u8; 32 - bytes.len()].iter());
-    let seed = require_with!(ed25519::Seed::from_bytes(bytes), "failed to construct a seed");
-    let signer = Ed25519Signer::from(&seed);
-    let pk = try_with!(signer.public_key(), "failed to get a public key");
-    let info = Info {
-        address: account::Id::from(pk),
-        pub_key: PublicKey::from(pk),
-        voting_power: choose_or(input.voting_power, Power::new(0)),
-        proposer_priority: input.proposer_priority
-    };
-    Ok(info)
-}
-
-fn encode_validator(cli: ValidatorOpts) -> Result<String, SimpleError> {
-    let input = parse_validator_opts(cli);
-    let info = produce_validator(input)?;
-    Ok(try_with!(serde_json::to_string(&info), "failed to serialize validator into JSON"))
-}
-
 #[derive(Debug, Options, Deserialize)]
 pub struct HeaderOpts {
-    #[options(help = "print this help and exit")]
-    help: bool,
-    #[options(help = "do not try to parse input from STDIN")]
-    #[serde(skip)]
-    ignore_stdin: bool,
-    #[options(help = "validators (required)", parse(try_from_str = "parse_as::<Vec<Info>>"))]
-    validators: Option<Vec<Info>>,
-    #[options(help = "next validators (default: same as validators)", parse(try_from_str = "parse_as::<Vec<Info>>"))]
-    next_validators: Option<Vec<Info>>,
+    #[options(help = "validators (required)", parse(try_from_str = "parse_as::<Vec<Validator>>"))]
+    validators: Option<Vec<Validator>>,
+    #[options(help = "next validators (default: same as validators)", parse(try_from_str = "parse_as::<Vec<Validator>>"))]
+    next_validators: Option<Vec<Validator>>,
     #[options(help = "block height (default: 1)",
         parse(try_from_str = "parse_as::<Height>"))]
     height: Option<Height>,
@@ -150,16 +210,14 @@ pub struct HeaderOpts {
 }
 
 fn parse_header_opts(cli: HeaderOpts) -> HeaderOpts {
-    if cli.ignore_stdin {
-        return cli
-    }
+    // if cli.ignore_stdin {
+    //     return cli
+    // }
     let input = match parse_stdin_as::<HeaderOpts>() {
         Ok(input) => input,
         Err(input) => {
             HeaderOpts {
-                help: false,
-                ignore_stdin: false,
-                validators: match parse_as::<Vec<Info>>(input.as_str()) {
+                validators: match parse_as::<Vec<Validator>>(input.as_str()) {
                     Ok(vals) => Some(vals),
                     Err(_) => None
                 },
@@ -170,23 +228,25 @@ fn parse_header_opts(cli: HeaderOpts) -> HeaderOpts {
         }
     };
     HeaderOpts {
-        help: false,
-        ignore_stdin: false,
-        validators: choose_from_two(cli.validators, input.validators),
-        next_validators: choose_from_two(cli.next_validators, input.next_validators),
-        height: choose_from_two(cli.height, input.height),
-        time: choose_from_two(cli.time, input.time)
+        validators: choose_from_two(&cli.validators, &input.validators),
+        next_validators: choose_from_two(&cli.next_validators, &input.next_validators),
+        height: choose_from_two(&cli.height, &input.height),
+        time: choose_from_two(&cli.time, &input.time)
     }
+}
+
+fn produce_validators(vals: Vec<Validator>) -> Result<Vec<Info>, SimpleError> {
+    Ok(vals.iter().map(|v| Validator::produce(v).unwrap()).collect())
 }
 
 pub fn produce_header(input: HeaderOpts) -> Result<Header, SimpleError> {
     if let None = input.validators {
         bail!("validator array is missing")
     }
-    let vals = input.validators.unwrap();
+    let vals = produce_validators(input.validators.unwrap())?;
     let valset = validator::Set::new(vals.clone());
     let next_valset = match input.next_validators {
-        Some(next_vals) => validator::Set::new(next_vals.clone()),
+        Some(next_vals) => validator::Set::new(produce_validators(next_vals)?.clone()),
         None => valset.clone()
     };
     let header = Header {
@@ -215,13 +275,7 @@ fn encode_header(cli: HeaderOpts) -> Result<String, SimpleError> {
 }
 
 #[derive(Debug, Options, Deserialize)]
-struct CommitOpts {
-    #[options(help = "print this help and exit")]
-    #[serde(skip)]
-    help: bool,
-    #[options(help = "do not try to parse input from STDIN")]
-    #[serde(skip)]
-    ignore_stdin: bool,
+pub struct CommitOpts {
     #[options(help = "block height (default: 1)",
     parse(try_from_str = "parse_as::<Height>"))]
     height: Option<Height>,
@@ -230,28 +284,24 @@ struct CommitOpts {
 }
 
 fn parse_commit_opts(cli: CommitOpts) -> CommitOpts {
-    if cli.ignore_stdin {
-        return cli
-    }
+    // if cli.ignore_stdin {
+    //     return cli
+    // }
     let input = match parse_stdin_as::<CommitOpts>() {
         Ok(input) => input,
         Err(_) => CommitOpts {
-            help: false,
-            ignore_stdin: false,
             height: None,
             round: None
         }
     };
     CommitOpts {
-        help: false,
-        ignore_stdin: false,
-        height: choose_from_two(cli.height, input.height),
-        round: choose_from_two(cli.round, input.round)
+        height: choose_from_two(&cli.height, &input.height),
+        round: choose_from_two(&cli.round, &input.round)
     }
 }
 
 
-fn produce_commit(input: CommitOpts) -> Result<Commit, SimpleError> {
+pub fn produce_commit(input: CommitOpts) -> Result<Commit, SimpleError> {
     const EXAMPLE_SHA256_ID: &str =
         "26C0A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
     let commit = Commit {
@@ -294,15 +344,15 @@ fn choose_or<T>(input: Option<T>, default: T) -> T {
 }
 
 
-fn choose_from<T>(cli: Option<T>, input: Option<T>, default: T) -> T {
-    if let Some(x) = cli { x }
-    else if let Some(y) = input { y }
-    else { default }
-}
+// fn _choose_from<T>(cli: &Option<T>, input: &Option<T>, default: T) -> T {
+//     if let Some(x) = cli { x }
+//     else if let Some(y) = input { y }
+//     else { default }
+// }
 
-fn choose_from_two<T>(cli: Option<T>, input: Option<T>) -> Option<T> {
-    if let Some(x) = cli { Some(x) }
-    else if let Some(y) = input { Some(y) }
+fn choose_from_two<T: Clone>(cli: &Option<T>, input: &Option<T>) -> Option<T> {
+    if let Some(x) = cli { Some(x.clone()) }
+    else if let Some(y) = input { Some(y.clone()) }
     else { None }
 }
 
