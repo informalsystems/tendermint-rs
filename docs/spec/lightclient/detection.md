@@ -407,7 +407,7 @@ func ForkDetector(ls LightStore)  {
 				auxLS.Init
 				auxLS.Update(LightStore.LatestTrusted(), StateVerified);
 				auxLS.Update(sh,StateUnverified);
-				result := VerifyToTarget(s, auxLS, LightStore.LatestVerified().Height)
+				result := VerifyToTarget(s, auxLS, sh.Header.Height)
 				if result = (_,ResultSuccess) || (_,EXPIRED) {
 				    // we verified header sh which is conflicting to hd
 					// there is a fork on the main blockchain.
