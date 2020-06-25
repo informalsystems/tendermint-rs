@@ -256,7 +256,7 @@ Communication between the  detector and a correct full node is
 reliable and bounded in time. Reliable communication means that
 messages are not lost, not duplicated, and eventually delivered. There
 is a (known) end-to-end delay *Delta*, such that if a message is sent
-at time *t* then it is received and processes by time *t + Delta*.
+at time *t* then it is received and processed by time *t + Delta*.
 This implies that we need a timeout of at least *2 Delta* for remote
 procedure calls to ensure that the response of a correct peer arrives
 before the timeout expires.
