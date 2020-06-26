@@ -75,13 +75,12 @@ ValidAndVerifiedPre(trusted, untrusted) ==
   /\ thdr.height < uhdr.height
      \* the trusted block has been created earlier (no drift here)
   /\ thdr.time <= uhdr.time
-  /\ thdr.height + 1 = uhdr.height =>
-     /\ thdr.NextVS = uhdr.VS
-     /\ untrusted.Commits \subseteq uhdr.VS
-     /\ LET TP == Cardinality(uhdr.VS)
-            SP == Cardinality(untrusted.Commits)
-        IN
-        3 * SP > 2 * TP     
+  /\ untrusted.Commits \subseteq uhdr.VS
+  /\ LET TP == Cardinality(uhdr.VS)
+         SP == Cardinality(untrusted.Commits)
+     IN
+     3 * SP > 2 * TP     
+  /\ thdr.height + 1 = uhdr.height => thdr.NextVS = uhdr.VS
   (* As we do not have explicit hashes we ignore these three checks of the English spec:
    
      1. "trusted.Commit is a commit is for the header trusted.Header,
@@ -94,7 +93,7 @@ ValidAndVerifiedPre(trusted, untrusted) ==
   * Check that the commits in an untrusted block form 1/3 of the next validators
   * in a trusted header.
  *)
-OneThird(trusted, untrusted) ==
+SignedByOneThirdOfTrusted(trusted, untrusted) ==
   LET TP == Cardinality(trusted.header.NextVS)
       SP == Cardinality(untrusted.Commits \intersect trusted.header.NextVS)
   IN
@@ -109,9 +108,13 @@ ValidAndVerified(trusted, untrusted) ==
     IF ~ValidAndVerifiedPre(trusted, untrusted)
     THEN "FAILED_VERIFICATION"
     ELSE IF ~BC!InTrustingPeriod(untrusted.header)
+    (* We leave the following test for the documentation purposes.
+       The implementation should do this test, as signature verification may be slow.
+       In the TLA+ specification, ValidAndVerified happens in no time.
+     *) 
     THEN "FAILED_TRUSTING_PERIOD" 
     ELSE IF untrusted.header.height = trusted.header.height + 1
-             \/ OneThird(trusted, untrusted)
+             \/ SignedByOneThirdOfTrusted(trusted, untrusted)
          THEN "OK"
          ELSE "CANNOT_VERIFY"
 
@@ -132,10 +135,6 @@ LCInit ==
         /\ lightBlockStatus = [h \in {TRUSTED_HEIGHT} |-> "StateVerified"]
         \* the latest verified block the the trusted block
         /\ latestVerified = trustedLightBlock
-
-\* copy the block from the light store        
-LightStoreGetInto(block, height) ==
-    block = fetchedLightBlocks[height]
 
 \* block should contain a copy of the block from the reference chain, with a matching commit
 CopyLightBlockFromChain(block, height) ==
@@ -175,7 +174,7 @@ LightStoreUpdateStates(statuses, ht, blockState) ==
 \* Check, whether newHeight is a possible next height for the light client.
 \*
 \* TODO: add a traceability tag when Josef adds it in the English spec
-ScheduleTo(newHeight, pNextHeight, pTargetHeight, pLatestVerified) ==
+CanScheduleTo(newHeight, pLatestVerified, pNextHeight, pTargetHeight) ==
     LET ht == pLatestVerified.header.height IN
     \/ /\ ht = pNextHeight
        /\ ht < pTargetHeight
@@ -198,9 +197,11 @@ VerifyToTargetLoop ==
     /\ \E current \in BC!LightBlocks:
         \* Get next LightBlock for verification
         /\ IF nextHeight \in DOMAIN fetchedLightBlocks
-           THEN /\ LightStoreGetInto(current, nextHeight)
+           THEN \* copy the block from the light store
+                /\ current = fetchedLightBlocks[nextHeight]
                 /\ UNCHANGED fetchedLightBlocks
-           ELSE /\ FetchLightBlockInto(current, nextHeight)
+           ELSE \* retrieve a light block and save it in the light store
+                /\ FetchLightBlockInto(current, nextHeight)
                 /\ fetchedLightBlocks' = LightStoreUpdateBlocks(fetchedLightBlocks, current)
         \* Record that one more probe has been done (for complexity and model checking)
         /\ nprobes' = nprobes + 1
@@ -215,7 +216,7 @@ VerifyToTargetLoop ==
                     THEN "working"
                     ELSE "finishedSuccess"
               /\ \E newHeight \in HEIGHTS:
-                 /\ ScheduleTo(newHeight, nextHeight, TARGET_HEIGHT, current)
+                 /\ CanScheduleTo(newHeight, current, nextHeight, TARGET_HEIGHT)
                  /\ nextHeight' = newHeight
                   
            [] verdict = "CANNOT_VERIFY" ->
@@ -227,7 +228,7 @@ VerifyToTargetLoop ==
                 *)
               /\ lightBlockStatus' = LightStoreUpdateStates(lightBlockStatus, nextHeight, "StateUnverified")
               /\ \E newHeight \in HEIGHTS:
-                 /\ ScheduleTo(newHeight, nextHeight, TARGET_HEIGHT, latestVerified)
+                 /\ CanScheduleTo(newHeight, latestVerified, nextHeight, TARGET_HEIGHT)
                  /\ nextHeight' = newHeight 
               /\ UNCHANGED <<latestVerified, state>>
               
@@ -433,31 +434,7 @@ Complexity ==
  Of course, one has to analyze the deadlocked state and see that
  the algorithm has indeed terminated there.
 *)
-
-(*
-
-\* The lite client must always terminate under the given pre-conditions.
-\* E.g., assuming that the full node always replies.
-TerminationPre ==
-       \* the user and the full node take steps, if they can
-    /\ WF_envvars(EnvNext)
-       \* and the lite client takes steps, if it can
-    /\ WF_lcvars(LCNext)
-       \* eventually, the blockchain is sufficiently high, and
-       \* the blockchain is never dead, see NeverStuck in Blockchain.tla
-    /\ <>[](height >= minTrustedHeight /\ height >= TO_VERIFY_HEIGHT)
-
-\* Given the preconditions, the lite client eventually terminates.        
-Termination ==
-  TerminationPre => <>(outEvent.type = "finished")        
-
-\* Precision states that PrecisionInv always holds true.
-\* When we independently check Termination and PrecisionInv,
-\* there is no need to check Completeness.         
-Completeness ==
-    Termination /\ []PrecisionInv
-*)    
 =============================================================================
 \* Modification History
-\* Last modified Thu Jun 11 10:48:56 CEST 2020 by igor
+\* Last modified Fri Jun 26 12:08:28 CEST 2020 by igor
 \* Created Wed Oct 02 16:39:42 CEST 2019 by igor
