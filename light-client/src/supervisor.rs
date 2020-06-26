@@ -144,36 +144,19 @@ impl Supervisor {
 
     /// Verify to the highest block.
     #[pre(self.peers.primary().is_some())]
-    pub fn verify_to_highest(&mut self) -> VerificationResult {
+    pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
         self.verify(None)
     }
 
     /// Verify to the block at the given height.
     #[pre(self.peers.primary().is_some())]
-    pub fn verify_to_target(&mut self, height: Height) -> VerificationResult {
+    pub fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
         self.verify(Some(height))
     }
 
     /// Verify either to the latest block (if `height == None`) or to a given block (if `height == Some(height)`).
     #[pre(self.peers.primary().is_some())]
-    fn verify(&mut self, height: Option<Height>) -> VerificationResult {
-        self.verify_inner(height).map(|trusted_lightblock| {
-            // We can now trust this block
-            self.peers
-                .primary_mut()
-                .unwrap() // SAFETY:`verify_inner` wouldn't have returned `Ok` if there were no more primary
-                .trust_block(&trusted_lightblock);
-
-            trusted_lightblock
-        })
-    }
-
-    /// Helper for `verify` to work around limitations of the borrow checker.
-    ///
-    /// ## Warning
-    /// This function must not be called directly, use `verify` instead.
-    #[pre(self.peers.primary().is_some())]
-    fn verify_inner(&mut self, height: Option<Height>) -> VerificationResult {
+    fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
         // While there is a primary peer left:
         while let Some(primary) = self.peers.primary_mut() {
             // Perform light client core verification for the given height (or highest).
@@ -204,6 +187,16 @@ impl Supervisor {
                             }
                         }
                         ForkDetection::NotDetected => {
+                            // We need to re-ask for the primary here as the compiler
+                            // is not smart enough to realize that we do not mutate
+                            // the `primary` field of `PeerList` between the initial
+                            // borrow of the primary and here (can't blame it, it's
+                            // not that obvious).
+                            // Note: This always succeeds since we already have a primary,
+                            if let Some(primary) = self.peers.primary_mut() {
+                                primary.trust_block(&light_block);
+                            }
+
                             // No fork detected, exiting
                             return Ok(light_block);
                         }
