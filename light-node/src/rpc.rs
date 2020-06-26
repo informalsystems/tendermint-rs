@@ -1,19 +1,40 @@
 use jsonrpc_core::futures::future::{self, Future, FutureResult};
 use jsonrpc_core::Error;
 use jsonrpc_derive::rpc;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+struct State {
+    header: String,
+    commit: String,
+    validator_set: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct Status {
+    latest_height: u64,
+}
 
 #[rpc]
 pub trait Rpc {
-    /// Performs asynchronous operation
+    /// Latest state.
+    #[rpc(name = "state")]
+    fn state(&self) -> FutureResult<State, Error>;
+
+    /// TODO(xla): Document.
     #[rpc(name = "status")]
-    fn status(&self) -> FutureResult<String, Error>;
+    fn status(&self) -> FutureResult<Status, Error>;
 }
 
 struct RpcImpl;
 
 impl Rpc for RpcImpl {
-    fn status(&self) -> FutureResult<String, Error> {
-        future::ok("OK".to_owned())
+    fn state(&self) -> FutureResult<State, Error> {
+        future::ok(State::default())
+    }
+
+    fn status(&self) -> FutureResult<Status, Error> {
+        future::ok(Status { latest_height: 12 })
     }
 }
 
@@ -28,13 +49,28 @@ mod test {
     use super::RpcImpl;
 
     #[test]
-    fn hello() {
+    fn state() {
         let mut io = IoHandler::new();
         io.extend_with(RpcImpl.to_delegate());
 
         let fut = {
             let (client, server) = local::connect::<gen_client::Client, _, _>(io);
-            client.status().map(|res| println!("{}", res)).join(server)
+            client.state().map(|res| println!("{:?}", res)).join(server)
+        };
+        fut.wait().unwrap();
+    }
+
+    #[test]
+    fn status() {
+        let mut io = IoHandler::new();
+        io.extend_with(RpcImpl.to_delegate());
+
+        let fut = {
+            let (client, server) = local::connect::<gen_client::Client, _, _>(io);
+            client
+                .status()
+                .map(|res| println!("{:?}", res))
+                .join(server)
         };
         fut.wait().unwrap();
     }
