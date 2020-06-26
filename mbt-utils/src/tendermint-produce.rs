@@ -9,10 +9,9 @@ use tendermint::*;
 use validator::{Info, ProposerPriority};
 use tendermint::vote::Power;
 use tendermint::public_key::{PublicKey, Algorithm};
-//use tendermint::block::*;
 use tendermint::block::header::Version;
 use tendermint::{Time, validator, chain};
-use tendermint::lite::ValidatorSet;
+use tendermint::lite::{ValidatorSet};
 use std::str::FromStr;
 use simple_error::*;
 use subtle_encoding::hex::encode;
@@ -192,7 +191,7 @@ impl Producer<Info> for Validator {
     }
 }
 
-#[derive(Debug, Options, Deserialize)]
+#[derive(Debug, Options, Deserialize, Clone)]
 pub struct Header {
     #[options(help = "validators (required), encoded as array of 'validator' parameters", parse(try_from_str = "parse_as::<Vec<Validator>>"))]
     validators: Option<Vec<Validator>>,
@@ -267,8 +266,8 @@ fn produce_validators(vals: &Vec<Validator>) -> Result<Vec<Info>, SimpleError> {
 
 #[derive(Debug, Options, Deserialize)]
 pub struct Commit {
-    #[options(help = "block height (default: 1)")]
-    height: Option<u64>,
+    #[options(help = "header (required)", parse(try_from_str = "parse_as::<Header>"))]
+    header: Option<Header>,
     #[options(help = "commit round (default: 1)")]
     round: Option<u64>
 }
@@ -277,27 +276,37 @@ impl Producer<block::Commit> for Commit {
     fn parse_input() -> Self {
         match parse_stdin_as::<Commit>() {
             Ok(input) => input,
-            Err(_) => Commit {
-                height: None,
-                round: None
+            Err(input) => {
+                Commit {
+                    header: match parse_as::<Header>(input.as_str()) {
+                        Ok(header) => Some(header),
+                        Err(e) => {
+                            eprintln!("{}", e);
+                            None
+                        }
+                    },
+                    round: None
+                }
             }
         }
     }
 
     fn combine_inputs(cli: &Self, stdin: &Self) -> Self {
         Commit {
-            height: choose_from(&cli.height, &stdin.height),
+            header: choose_from(&cli.header, &stdin.header),
             round: choose_from(&cli.round, &stdin.round)
         }
     }
 
     fn produce(input: &Self) -> Result<block::Commit, SimpleError> {
-        const EXAMPLE_SHA256_ID: &str =
-            "26C0A41F3243C6BCD7AD2DFF8A8D83A71D29D307B5326C227F734A1A512FE47D";
+        if let None = input.header {
+            bail!("header is missing")
+        }
+        let header = Header::produce(&input.header.as_ref().unwrap())?;
         let commit = block::Commit {
-            height: block::Height(choose_or(input.height, 1)),
+            height: header.height,
             round: choose_or(input.round, 1),
-            block_id: block::Id::from_str(EXAMPLE_SHA256_ID).unwrap(),
+            block_id: block::Id::new(lite::Header::hash(&header), None),
             signatures: Default::default()
         };
         Ok(commit)
