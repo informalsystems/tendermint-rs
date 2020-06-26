@@ -15,7 +15,7 @@ use tendermint_light_client::{
         scheduler,
         verifier::{ProdVerifier, Verdict, Verifier},
     },
-    errors::Error,
+    errors::{Error, ErrorKind},
     light_client::{LightClient, Options},
     state::State,
     store::{memory::MemoryStore, LightStore},
@@ -105,10 +105,9 @@ fn run_test_case(tc: TestCase<LightBlock>) {
                 latest_trusted = Trusted::new(new_state.signed_header, new_state.next_validators);
             }
             Err(e) => {
-                dbg!(e);
-                // if !expects_err {
-                //     dbg!(e);
-                // }
+                if !expects_err {
+                    dbg!(e);
+                }
                 assert!(expects_err);
             }
         }
@@ -175,7 +174,12 @@ fn verify_bisection(
         .map(|_| state.get_trace(untrusted_height))
 }
 
-fn run_bisection_test(tc: TestBisection<LightBlock>) {
+struct BisectionTestResult {
+    untrusted_light_block: LightBlock,
+    new_states: Result<Vec<LightBlock>, Error>,
+}
+
+fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
     println!("  - {}", tc.description);
 
     let primary = default_peer_id();
@@ -195,11 +199,6 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
         trusting_period: trusting_period.into(),
         clock_drift,
         now,
-    };
-
-    let expects_err = match &tc.expected_output {
-        Some(eo) => eo.eq("error"),
-        None => false,
     };
 
     let provider = tc.primary;
@@ -229,27 +228,15 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) {
         io.clone(),
     );
 
-    match verify_bisection(untrusted_height, &mut light_client, &mut state) {
-        Ok(new_states) => {
-            let untrusted_light_block = io
-                .fetch_light_block(primary, AtHeight::At(untrusted_height))
-                .expect("header at untrusted height not found");
+    let result = verify_bisection(untrusted_height, &mut light_client, &mut state);
 
-            // TODO: number of bisections started diverting in JSON tests and Rust impl
-            // assert_eq!(new_states.len(), case.expected_num_of_bisections);
+    let untrusted_light_block = io
+        .fetch_light_block(primary, AtHeight::At(untrusted_height))
+        .expect("header at untrusted height not found");
 
-            let expected_state = untrusted_light_block;
-            assert_eq!(new_states[0].height(), expected_state.height());
-            assert_eq!(new_states[0], expected_state);
-            assert!(!expects_err);
-        }
-        Err(e) => {
-            dbg!(e);
-            // if !expects_err {
-            //     dbg!(e);
-            // }
-            assert!(expects_err);
-        }
+    BisectionTestResult {
+        untrusted_light_block,
+        new_states: result,
     }
 }
 
@@ -270,21 +257,81 @@ fn run_single_step_tests(dir: &str) {
     }
 }
 
-fn run_bisection_tests(dir: &str) {
+fn foreach_bisection_test(dir: &str, f: impl Fn(String, TestBisection<LightBlock>) -> ()) {
     let paths = fs::read_dir(PathBuf::from(TEST_FILES_PATH).join(dir)).unwrap();
 
     for file_path in paths {
         let dir_entry = file_path.unwrap();
         let fp_str = format!("{}", dir_entry.path().display());
+        let tc = read_bisection_test_case(&fp_str);
+        f(fp_str, tc);
+    }
+}
+
+fn run_bisection_tests(dir: &str) {
+    foreach_bisection_test(dir, |file, tc| {
+        println!("Running light client against bisection test-file: {}", file);
+
+        let expect_error = match &tc.expected_output {
+            Some(eo) => eo.eq("error"),
+            None => false,
+        };
+
+        let test_result = run_bisection_test(tc);
+        let expected_state = test_result.untrusted_light_block;
+
+        match test_result.new_states {
+            Ok(new_states) => {
+                assert_eq!(new_states[0].height(), expected_state.height());
+                assert_eq!(new_states[0], expected_state);
+                assert!(!expect_error);
+            }
+            Err(e) => {
+                if !expect_error {
+                    dbg!(e);
+                }
+                assert!(expect_error);
+            }
+        }
+    });
+}
+
+/// Test that the light client fails with `ErrorKind::TargetLowerThanTrustedState`
+/// when the target height is lower than the last trusted state height.
+///
+/// To do this, we override increment the trusted height by 1
+/// and set the target height to `trusted_height - 1`, then run
+/// the bisection test as normal. We then assert that we get the expected error.
+fn run_bisection_lower_tests(dir: &str) {
+    foreach_bisection_test(dir, |file, mut tc| {
+        let mut trusted_height: Height = tc.trust_options.height.into();
+
+        if trusted_height <= 1 {
+            tc.trust_options.height = (trusted_height + 1).into();
+            trusted_height += 1;
+        }
 
         println!(
-            "Running light client against bisection test-file: {}",
-            fp_str
+            "Running light client against bisection test file with target height too low: {}",
+            file
         );
 
-        let case = read_bisection_test_case(&fp_str);
-        run_bisection_test(case);
-    }
+        tc.height_to_verify = (trusted_height - 1).into();
+
+        let test_result = run_bisection_test(tc);
+        match test_result.new_states {
+            Ok(_) => {
+                panic!("test unexpectedly succeeded, expected TargetLowerThanTrustedState error");
+            }
+            Err(e) => match e.kind() {
+                ErrorKind::TargetLowerThanTrustedState { .. } => (),
+                kind => panic!(
+                    "unexpected error, expected: TargetLowerThanTrustedState, got: {}",
+                    kind
+                ),
+            },
+        }
+    });
 }
 
 fn read_test_case(file_path: &str) -> TestCase<LightBlock> {
@@ -303,6 +350,12 @@ fn read_bisection_test_case(file_path: &str) -> TestBisection<LightBlock> {
 fn bisection() {
     let dir = "bisection/single_peer";
     run_bisection_tests(dir);
+}
+
+#[test]
+fn bisection_lower() {
+    let dir = "bisection/single_peer";
+    run_bisection_lower_tests(dir);
 }
 
 #[test]
