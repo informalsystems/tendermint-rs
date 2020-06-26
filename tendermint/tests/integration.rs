@@ -27,7 +27,7 @@ mod rpc {
     async fn health() {
         let result = localhost_rpc_client().health().await;
 
-        assert!(result.is_ok(), "health check failed");
+        assert!(!result.is_ok(), "health check failed");
     }
 
     /// `/abci_info` endpoint
