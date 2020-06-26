@@ -942,7 +942,7 @@ func (ls LightStore) MinVerified() (LightBlock, bool)
 - Expected postcondition
   - returns a light block *lb* that satisfies:
       - *lb* is in lightStore
-      - *lb* is verified
+      - *lb* is verified **TODO:** perhaps replace by trusted?
 	  - *lb.Header.Height* is minimal in the lightStore
 	  - **TODO:** according to this it might be expired (outside the
         trusting period). I believe this is safe. Are there reasons we
@@ -974,6 +974,7 @@ func Backwards(primary PeerID, lightStore LightStore,
     }
 	else {
 	  lightStore.Update(current, StateVerified)
+	  // **TODO:** Do we need a new state type for backwards.
 	}
     latest := current
   }
@@ -988,21 +989,30 @@ method should be used.
 ```go
 func Main(primary PeerID, lightStore LightStore,
                     targetHeight Height) (LightStore, Result) {
+  b1, r1 = lightStore.Get(targetHeight)
+  if r1 = true and b1.State = StateVerified {
+    //
+    return (lightStore, ResultSuccess)
+  }
+  
   if targetHeight > lightStore.LatestVerified.height {
     return VerifyToTarget(primary, lightStore, targetHeight)
   }
-  else if targetHeight = lightStore.LatestVerified.height {
-    return (lightStore, ResultSuccess)
-  }
   else {
-    lb, res = lightStore.LatestPrevious(targetHeight);
-    if res = true {
+    b2, r2 = lightStore.LatestPrevious(targetHeight);
+    if r2 = true {
 	  // make auxiliary lightStore auxLS to call VerifyToTarget
 	  // VerifyToTarget uses LatestVerified of the lightStore passed in
 	  // For that we need:
 	  // auxLS.LatestVerified = lightStore.LatestPrevious(targetHeight)
 	  auxLS.Init;
-	  auxLS.Update(lb,StateVerified);
+	  auxLS.Update(b2,StateVerified);
+	  if r1 = true {
+	    // we need to verify a previously downloaded light block
+		// we add it to the auxiliary store so that VerifyToTarget
+		// does not download it again
+	    auxLS.Update(b1,b1.State);
+	  }
 	  auxLS, res2 = VerifyToTarget(primary, auxLS, targetHeight)
 	  if res2 = ResultSuccess {
 	     // move all lightblocks from auxLS to lightStore, maintain state
@@ -1026,18 +1036,18 @@ func Main(primary PeerID, lightStore LightStore,
 <!--   - if targetHeight = lightStore.LatestVerified.height then -->
 <!--     return (lightStore, ResultSuccess) -->
 <!--   - if targetHeight < lightStore.LatestVerified.height -->
-<!--      - let lb be in lightStore  -->
+<!--      - let b2 be in lightStore  -->
 <!--         - that is verified and not expired -->
-<!-- 	    - lb.Header.Height < targetHeight -->
+<!-- 	    - b2.Header.Height < targetHeight -->
 <!-- 	    - for all b in lightStore s.t. b  is verified and not expired it -->
-<!--         holds lb.Header.Height >= b.Header.Height -->
-<!-- 	 - if lb does not exists -->
+<!--         holds b2.Header.Height >= b.Header.Height -->
+<!-- 	 - if b2 does not exists -->
 <!--          return Backwards(primary, lightStore, targetHeight) -->
-<!-- 	 - if lb exists -->
-<!--           - make auxiliary light store auxLS containing only lb -->
+<!-- 	 - if b2 exists -->
+<!--           - make auxiliary light store auxLS containing only b2 -->
 	 
 <!-- 	       VerifyToTarget(primary, auxLS, targetHeight) -->
-<!--      - if lb  -->
+<!--      - if b2  -->
 
 
 
