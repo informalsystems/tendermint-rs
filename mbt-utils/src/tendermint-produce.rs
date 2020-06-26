@@ -145,6 +145,24 @@ pub struct Validator {
     proposer_priority: Option<i64>,
 }
 
+impl Validator {
+    fn new(id: &str) -> Self {
+        Validator {
+            id: Some(id.to_string()),
+            voting_power: None,
+            proposer_priority: None
+        }
+    }
+    fn voting_power(mut self, power: u64) -> Self {
+        self.voting_power = Some(power);
+        self
+    }
+    fn proposer_priority(mut self, priority: i64) -> Self {
+        self.proposer_priority = Some(priority);
+        self
+    }
+}
+
 impl Producer<Info> for Validator {
     fn parse_input() -> Self {
         match parse_stdin_as::<Validator>() {
@@ -201,6 +219,29 @@ pub struct Header {
     height: Option<u64>,
     #[options(help = "time (default: now)")]
     time: Option<Time>,
+}
+
+impl Header {
+    fn new(validators: &Vec<Validator>) -> Self {
+        Header {
+            validators: Some(validators.clone()),
+            next_validators: None,
+            height: None,
+            time: None
+        }
+    }
+    fn next_validators(mut self, vals: &Vec<Validator>) -> Self {
+        self.next_validators = Some(vals.clone());
+        self
+    }
+    fn height(mut self, height: u64) -> Self {
+        self.height = Some(height);
+        self
+    }
+    fn time(mut self, time: Time) -> Self {
+        self.time = Some(time);
+        self
+    }
 }
 
 impl Producer<block::Header> for Header {
@@ -270,6 +311,20 @@ pub struct Commit {
     header: Option<Header>,
     #[options(help = "commit round (default: 1)")]
     round: Option<u64>
+}
+
+impl Commit {
+    fn new(header: &Header) -> Self {
+        Commit {
+            header: Some(header.clone()),
+            round: None
+        }
+
+    }
+    fn round(mut self, round: u64) -> Self {
+        self.round = Some(round);
+        self
+    }
 }
 
 impl Producer<block::Commit> for Commit {
