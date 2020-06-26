@@ -79,7 +79,7 @@ pub trait VotingPowerCalculator: Send {
     ) -> Result<VotingPowerTally, VerificationError>;
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct ProdVotingPowerCalculator;
 
 impl VotingPowerCalculator for ProdVotingPowerCalculator {
@@ -187,4 +187,77 @@ fn non_absent_vote(commit_sig: &CommitSig, validator_index: u64, commit: &Commit
         validator_index,
         signature,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde::Deserialize;
+    use std::fs;
+    use std::path::Path;
+
+    const TEST_FILES_PATH: &str = "./tests/support/voting_power/";
+
+    #[test]
+    fn json_testcases() {
+        run_all_tests();
+    }
+
+    #[derive(Debug, Deserialize)]
+    enum TestResult {
+        Ok { total: u64, tallied: u64 },
+        Err { error_type: String },
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct TestCase {
+        description: String,
+        result: TestResult,
+        signed_header: SignedHeader,
+        validator_set: ValidatorSet,
+    }
+
+    fn read_json_fixture(file: impl AsRef<Path>) -> String {
+        fs::read_to_string(file).unwrap()
+    }
+
+    fn read_test_case(file_path: impl AsRef<Path>) -> TestCase {
+        serde_json::from_str(read_json_fixture(file_path).as_str()).unwrap()
+    }
+
+    fn run_all_tests() {
+        for entry in fs::read_dir(TEST_FILES_PATH).unwrap() {
+            let entry = entry.unwrap();
+            let tc = read_test_case(entry.path());
+            let name = entry.file_name().to_string_lossy().to_string();
+            run_test(tc, name);
+        }
+    }
+
+    fn run_test(tc: TestCase, file: String) {
+        println!("- Test '{}' in {}", tc.description, file);
+
+        let calculator = ProdVotingPowerCalculator::default();
+        let trust_threshold = TrustThreshold::default();
+
+        let tally =
+            calculator.voting_power_in(&tc.signed_header, &tc.validator_set, trust_threshold);
+
+        match tc.result {
+            TestResult::Ok { total, tallied } => {
+                assert!(tally.is_ok(), "unexpected error");
+                let tally = tally.unwrap();
+                assert_eq!(tally.total, total);
+                assert_eq!(tally.tallied, tallied);
+            }
+            TestResult::Err { error_type } => {
+                assert!(tally.is_err());
+                let err = tally.err().unwrap();
+                let err_str = format!("{:?}", err);
+                assert!(err_str.contains(&error_type));
+            }
+        }
+
+        println!("  => SUCCESS");
+    }
 }
