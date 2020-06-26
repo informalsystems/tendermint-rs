@@ -140,7 +140,7 @@ async fn subjective_init(
 
     if vals.hash() != vals_hash {
         // TODO
-        panic!("vals hash dont match")
+        panic!(format!("vals hash dont match {} != {}", vals.hash(), vals_hash))
     }
 
     let signed_header = req.signed_header(height).await?;

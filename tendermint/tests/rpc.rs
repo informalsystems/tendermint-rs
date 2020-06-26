@@ -109,7 +109,7 @@ mod endpoints {
         let response =
             endpoint::block_results::Response::from_string(&read_json_fixture("block_results"))
                 .unwrap();
-        assert_eq!(response.height.value(), 1814);
+        assert_eq!(response.height.value(), 1810);
 
         let validator_updates = response.validator_updates;
         let deliver_tx = response.txs_results.unwrap();

@@ -36,7 +36,7 @@ pub static RUNNER: Lazy<CmdRunner> = Lazy::new(CmdRunner::default);
 fn start_no_args() {
     let mut runner = RUNNER.clone();
     let mut cmd = runner.arg("start").capture_stdout().run();
-    cmd.stdout().expect_line("");
+    cmd.stdout().expect_line("Requesting from localhost:26657.");
     cmd.wait().unwrap().expect_success();
 }
 

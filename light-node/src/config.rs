@@ -51,7 +51,7 @@ impl Default for SubjectiveInit {
             height: 1,
             // TODO(liamsi): a default hash here does not make sense unless it is a valid hash
             // from a public network
-            validators_hash: "A5A7DEA707ADE6156F8A981777CA093F178FC790475F6EC659B6617E704871DD"
+            validators_hash: "19D03F40DA80CF368A01932C8EFBB75CAEECB27385A0DAFA71057FAD605108E5"
                 .to_owned(),
         }
     }
