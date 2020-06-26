@@ -418,46 +418,45 @@ just been verified by the verifier.
 
 ```go
 func ForkDetector(ls LightStore)  {
-    Forks.Init // initialize a container in which we collect forks
+	Forks.Init // initialize a container in which we collect forks
 	testedLB := LightStore.LatestVerified()
 	for i, s range Secondaries {
 		sh := FetchLightBlock(s,testedLB.Height)
 		// as the check below only needs the header, it is sufficient
 		// to download the header rather than the LighBlock
 		if testedLB.Header == sh.Header {
-				// header matches. we do nothing.
-	    }
-		else {
-			    // [LCD-REQ-REP]
-			    // header does not match. there is a situation.
-				// we try to verify sh by querying s
-				// we set up an auxiliary lightstore with the highest
-			    // trusted lightblock and the lightblock we want to verify
-				auxLS.Init
-				auxLS.Update(LightStore.LatestTrusted(), StateVerified);
-				auxLS.Update(sh,StateUnverified);
-				result := VerifyToTarget(s, auxLS, sh.Header.Height)
-				if result = (_,ResultSuccess) || (_,EXPIRED) {
-				    // we verified header sh which is conflicting to hd
-					// there is a fork on the main blockchain.
-                    // If return code was EXPIRED it might be too late
-			    	// to punish, we still report it.
-					Forks.Add(sh)
-				}
-				else {
-					// s might be faulty or unreachable
-					Replace_Secondary(s)
-					// If a new node is added to secondaries, this
-					// should not imply an additional loop iteration.
-					// We assume one of the secondaries is correct.
-				}
+			// header matches. we do nothing.
+		} else {
+			// [LCD-REQ-REP]
+			// header does not match. there is a situation.
+			// we try to verify sh by querying s
+			// we set up an auxiliary lightstore with the highest
+			// trusted lightblock and the lightblock we want to verify
+			auxLS.Init
+			auxLS.Update(LightStore.LatestTrusted(), StateVerified);
+			auxLS.Update(sh,StateUnverified);
+			result := VerifyToTarget(s, auxLS, sh.Header.Height)
+			if result = (_,ResultSuccess) || (_,EXPIRED) {
+				// we verified header sh which is conflicting to hd
+				// there is a fork on the main blockchain.
+				// If return code was EXPIRED it might be too late
+				// to punish, we still report it.
+				Forks.Add(sh)
+			} else {
+				// s might be faulty or unreachable
+				Replace_Secondary(s)
+				// If a new node is added to secondaries, this
+				// should not imply an additional loop iteration.
+				// We assume one of the secondaries is correct.
 			}
+		}
 	}
 	if Forks.isEmpty {
-	    LightStore.Update(testedLB, StateTrusted)
+		LightStore.Update(testedLB, StateTrusted)
 	}
 	return (LightStore,Forks,OK)
 }
+
 ```
 
 - Expected precondition
