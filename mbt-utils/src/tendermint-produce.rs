@@ -82,7 +82,7 @@ enum Command {
 
 fn run_command<Opts: Producer<T> + Options, T: serde::Serialize>(cli: Opts, read_stdin: bool) {
     let res =
-        if read_stdin { Opts::encode_with_input(&cli) }
+        if read_stdin { Opts::encode_with_stdin(&cli) }
         else { Opts::encode(&cli) };
     match res {
         Ok(res) => println!("{}", res),
@@ -119,19 +119,19 @@ fn main() {
 }
 
 trait Producer<Output: serde::Serialize> {
-    fn parse_input() -> Self; // TODO Result<Self, SimpleError>
-    fn combine_inputs(cli: &Self, stdin: &Self) -> Self;
-    fn produce(opts: &Self) -> Result<Output, SimpleError>;
-    fn encode(opts: &Self) -> Result<String, SimpleError>
+    fn parse_stdin() -> Self; // TODO Result<Self, SimpleError>
+    fn merge_as_default(&self, other: &Self) -> Self;
+    fn produce(&self) -> Result<Output, SimpleError>;
+    fn encode(&self) -> Result<String, SimpleError>
         where Self: std::marker::Sized {
-        let res = Self::produce(&opts)?;
+        let res = self.produce()?;
         Ok(try_with!(serde_json::to_string_pretty(&res), "failed to serialize into JSON"))
     }
-    fn encode_with_input(cli: &Self) -> Result<String, SimpleError>
+    fn encode_with_stdin(&self) -> Result<String, SimpleError>
         where Self: std::marker::Sized {
-        let stdin = Self::parse_input();
-        let input = Self::combine_inputs(cli, &stdin);
-        Self::encode(&input)
+        let stdin = Self::parse_stdin();
+        let producer = self.merge_as_default(&stdin);
+        producer.encode()
     }
 }
 
@@ -164,7 +164,7 @@ impl Validator {
 }
 
 impl Producer<Info> for Validator {
-    fn parse_input() -> Self {
+    fn parse_stdin() -> Self {
         match parse_stdin_as::<Validator>() {
             Ok(input) => input,
             Err(input) => {
@@ -176,18 +176,18 @@ impl Producer<Info> for Validator {
             }
         }
     }
-    fn combine_inputs(cli: &Self, stdin: &Self) -> Self {
+    fn merge_as_default(&self, other: &Self) -> Self {
         Validator {
-            id: choose_from(&cli.id, &stdin.id),
-            voting_power: choose_from(&cli.voting_power, &stdin.voting_power),
-            proposer_priority: choose_from(&cli.proposer_priority, &stdin.proposer_priority)
+            id: choose_from(&self.id, &other.id),
+            voting_power: choose_from(&self.voting_power, &other.voting_power),
+            proposer_priority: choose_from(&self.proposer_priority, &other.proposer_priority)
         }
     }
-    fn produce(input: &Self) -> Result<Info, SimpleError> {
-        if let None = input.id {
+    fn produce(&self) -> Result<Info, SimpleError> {
+        if let None = self.id {
             bail!("validator identifier is missing")
         }
-        let mut bytes = input.id.clone().unwrap().into_bytes();
+        let mut bytes = self.id.clone().unwrap().into_bytes();
         if bytes.len() > 32 {
             bail!("identifier is too long")
         }
@@ -198,8 +198,8 @@ impl Producer<Info> for Validator {
         let info = Info {
             address: account::Id::from(pk),
             pub_key: PublicKey::from(pk),
-            voting_power: Power::new(choose_or(input.voting_power, 0)),
-            proposer_priority: match input.proposer_priority {
+            voting_power: Power::new(choose_or(self.voting_power, 0)),
+            proposer_priority: match self.proposer_priority {
                 None => None,
                 Some(p) => Some(ProposerPriority::new(p))
             }
@@ -245,7 +245,7 @@ impl Header {
 }
 
 impl Producer<block::Header> for Header {
-    fn parse_input() -> Self {
+    fn parse_stdin() -> Self {
         match parse_stdin_as::<Header>() {
             Ok(input) => input,
             Err(input) => {
@@ -262,30 +262,30 @@ impl Producer<block::Header> for Header {
         }
     }
 
-    fn combine_inputs(cli: &Self, stdin: &Self) -> Self {
+    fn merge_as_default(&self, other: &Self) -> Self {
         Header {
-            validators: choose_from(&cli.validators, &stdin.validators),
-            next_validators: choose_from(&cli.next_validators, &stdin.next_validators),
-            height: choose_from(&cli.height, &stdin.height),
-            time: choose_from(&cli.time, &stdin.time)
+            validators: choose_from(&self.validators, &other.validators),
+            next_validators: choose_from(&self.next_validators, &other.next_validators),
+            height: choose_from(&self.height, &other.height),
+            time: choose_from(&self.time, &other.time)
         }
     }
 
-    fn produce(input: &Self) -> Result<block::Header, SimpleError> {
-        if let None = input.validators {
+    fn produce(&self) -> Result<block::Header, SimpleError> {
+        if let None = self.validators {
             bail!("validator array is missing")
         }
-        let vals = produce_validators(&input.validators.as_ref().unwrap())?;
+        let vals = produce_validators(&self.validators.as_ref().unwrap())?;
         let valset = validator::Set::new(vals.clone());
-        let next_valset = match &input.next_validators {
+        let next_valset = match &self.next_validators {
             Some(next_vals) => validator::Set::new(produce_validators(next_vals)?.clone()),
             None => valset.clone()
         };
         let header = block::Header {
             version: Version { block: 0, app: 0 },
             chain_id: chain::Id::from_str("test-chain-01").unwrap(),
-            height: block::Height(choose_or(input.height,1)),
-            time: choose_or(input.time,Time::now()),
+            height: block::Height(choose_or(self.height,1)),
+            time: choose_or(self.time,Time::now()),
             last_block_id: None,
             last_commit_hash: None,
             data_hash: None,
@@ -302,7 +302,7 @@ impl Producer<block::Header> for Header {
 }
 
 fn produce_validators(vals: &Vec<Validator>) -> Result<Vec<Info>, SimpleError> {
-    Ok(vals.iter().map(|v| Validator::produce(v).unwrap()).collect())
+    Ok(vals.iter().map(|v| v.produce().unwrap()).collect())
 }
 
 #[derive(Debug, Options, Deserialize)]
@@ -328,7 +328,7 @@ impl Commit {
 }
 
 impl Producer<block::Commit> for Commit {
-    fn parse_input() -> Self {
+    fn parse_stdin() -> Self {
         match parse_stdin_as::<Commit>() {
             Ok(input) => input,
             Err(input) => {
@@ -336,7 +336,6 @@ impl Producer<block::Commit> for Commit {
                     header: match parse_as::<Header>(input.as_str()) {
                         Ok(header) => Some(header),
                         Err(e) => {
-                            eprintln!("{}", e);
                             None
                         }
                     },
@@ -346,21 +345,21 @@ impl Producer<block::Commit> for Commit {
         }
     }
 
-    fn combine_inputs(cli: &Self, stdin: &Self) -> Self {
+    fn merge_as_default(&self, other: &Self) -> Self {
         Commit {
-            header: choose_from(&cli.header, &stdin.header),
-            round: choose_from(&cli.round, &stdin.round)
+            header: choose_from(&self.header, &other.header),
+            round: choose_from(&self.round, &other.round)
         }
     }
 
-    fn produce(input: &Self) -> Result<block::Commit, SimpleError> {
-        if let None = input.header {
+    fn produce(&self) -> Result<block::Commit, SimpleError> {
+        if let None = self.header {
             bail!("header is missing")
         }
-        let header = Header::produce(&input.header.as_ref().unwrap())?;
+        let header = self.header.as_ref().unwrap().produce()?;
         let commit = block::Commit {
             height: header.height,
-            round: choose_or(input.round, 1),
+            round: choose_or(self.round, 1),
             block_id: block::Id::new(lite::Header::hash(&header), None),
             signatures: Default::default()
         };
