@@ -4,7 +4,8 @@
 
 - the main logic, i.e., describing what happens when the function of
   the current spec returns. If a fork is detected, we need to report
-  evidence (and shut down light client?).
+  evidence (and shut down light client?). + pre and post conditions on
+  lightstore when `VerifyToTarget` or detector are called.
   
 - We should clarify what is the expectation of VerifyToTarget so if it
   returns TimeoutError it can be assumed faulty. I guess that
@@ -128,8 +129,9 @@ time t there exists an *h* and a sequence *a(1)*, ... *a(h)* s.t.
 Let *a*, *b*, *c*, be light blocks and *t* a time, we define 
 *sign-skip-match(a,b,c,t) = true* iff
    - *sequ-rooted(a)* and
-   - *sequ-rooted(b)* and
+   <!-- - *sequ-rooted(b)* and -->
    - *b.Header.Height = c.Header.Height* and
+   - *skip-root(a,b,t)*
    - *skip-root(a,c,t)*
 
 implies *b = c*.
