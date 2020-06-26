@@ -171,6 +171,13 @@ impl LightClient {
                 .highest(VerifiedStatus::Verified)
                 .ok_or_else(|| ErrorKind::NoInitialTrustedState)?;
 
+            if target_height < trusted_state.height() {
+                bail!(ErrorKind::TargetLowerThanTrustedState {
+                    target_height,
+                    trusted_height: trusted_state.height()
+                });
+            }
+
             // Check invariant [LCV-INV-TP.1]
             if !is_within_trust_period(&trusted_state, options.trusting_period, options.now) {
                 bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
@@ -182,9 +189,8 @@ impl LightClient {
             // Trace the current height as a dependency of the block at the target height
             state.trace_block(target_height, current_height);
 
-            // If the trusted state is now at the height greater or equal to the target height,
-            // we now trust this target height, and are thus done :) [LCV-DIST-LIFE.1]
-            if target_height <= trusted_state.height() {
+            // If the trusted state is now at a height equal to the target height, we are done. [LCV-DIST-LIFE.1]
+            if target_height == trusted_state.height() {
                 return Ok(trusted_state);
             }
 
