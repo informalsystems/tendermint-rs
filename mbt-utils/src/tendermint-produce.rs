@@ -119,8 +119,9 @@ fn main() {
 }
 
 trait Producer<Output: serde::Serialize> {
-    fn parse_stdin() -> Self; // TODO Result<Self, SimpleError>
-    fn merge_as_default(&self, other: &Self) -> Self;
+    fn parse_stdin() -> Result<Self, SimpleError>
+        where Self: std::marker::Sized;
+    fn merge_with_default(&self, other: &Self) -> Self;
     fn produce(&self) -> Result<Output, SimpleError>;
     fn encode(&self) -> Result<String, SimpleError>
         where Self: std::marker::Sized {
@@ -129,8 +130,8 @@ trait Producer<Output: serde::Serialize> {
     }
     fn encode_with_stdin(&self) -> Result<String, SimpleError>
         where Self: std::marker::Sized {
-        let stdin = Self::parse_stdin();
-        let producer = self.merge_as_default(&stdin);
+        let stdin = Self::parse_stdin()?;
+        let producer = self.merge_with_default(&stdin);
         producer.encode()
     }
 }
@@ -164,19 +165,21 @@ impl Validator {
 }
 
 impl Producer<Info> for Validator {
-    fn parse_stdin() -> Self {
-        match parse_stdin_as::<Validator>() {
+    fn parse_stdin() -> Result<Self, SimpleError> {
+        let validator = match parse_stdin_as::<Validator>() {
             Ok(input) => input,
             Err(input) => {
                 Validator {
-                    id: if input.to_string().len()==0 { None } else { Some (input.to_string()) },
+                    id: if input.to_string().len()==0 { bail!("failed to read validator from input") }
+                        else { Some (input.to_string()) },
                     voting_power: None,
                     proposer_priority: None
                 }
             }
-        }
+        };
+        Ok(validator)
     }
-    fn merge_as_default(&self, other: &Self) -> Self {
+    fn merge_with_default(&self, other: &Self) -> Self {
         Validator {
             id: choose_from(&self.id, &other.id),
             voting_power: choose_from(&self.voting_power, &other.voting_power),
@@ -245,24 +248,25 @@ impl Header {
 }
 
 impl Producer<block::Header> for Header {
-    fn parse_stdin() -> Self {
-        match parse_stdin_as::<Header>() {
+    fn parse_stdin() -> Result<Self, SimpleError> {
+        let header = match parse_stdin_as::<Header>() {
             Ok(input) => input,
             Err(input) => {
                 Header {
                     validators: match parse_as::<Vec<Validator>>(input.as_str()) {
                         Ok(vals) => Some(vals),
-                        Err(_) => None
+                        Err(e) => bail!("failed to read header from input")
                     },
                     next_validators: None,
                     height: None,
                     time: None
                 }
             }
-        }
+        };
+        Ok(header)
     }
 
-    fn merge_as_default(&self, other: &Self) -> Self {
+    fn merge_with_default(&self, other: &Self) -> Self {
         Header {
             validators: choose_from(&self.validators, &other.validators),
             next_validators: choose_from(&self.next_validators, &other.next_validators),
@@ -328,24 +332,25 @@ impl Commit {
 }
 
 impl Producer<block::Commit> for Commit {
-    fn parse_stdin() -> Self {
-        match parse_stdin_as::<Commit>() {
+    fn parse_stdin() -> Result<Self, SimpleError> {
+        let commit = match parse_stdin_as::<Commit>() {
             Ok(input) => input,
             Err(input) => {
                 Commit {
                     header: match parse_as::<Header>(input.as_str()) {
                         Ok(header) => Some(header),
                         Err(e) => {
-                            None
+                            bail!("failed to read commit from input")
                         }
                     },
                     round: None
                 }
             }
-        }
+        };
+        Ok(commit)
     }
 
-    fn merge_as_default(&self, other: &Self) -> Self {
+    fn merge_with_default(&self, other: &Self) -> Self {
         Commit {
             header: choose_from(&self.header, &other.header),
             round: choose_from(&self.round, &other.round)
