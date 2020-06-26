@@ -10,9 +10,11 @@
 /// ```
 mod rpc {
     use std::cmp::min;
+
+    use tendermint_rpc::{event_listener, Client};
+
     use tendermint::abci::Code;
     use tendermint::abci::Log;
-    use tendermint::rpc::Client;
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> Client {
@@ -34,7 +36,6 @@ mod rpc {
     async fn abci_info() {
         let abci_info = localhost_rpc_client().abci_info().await.unwrap();
 
-        assert_eq!(&abci_info.version, "0.16.1");
         assert_eq!(abci_info.app_version, 1u64);
         // the kvstore app's reply will contain "{\"size\":0}" as data right from the start
         assert_eq!(&abci_info.data, "{\"size\":0}");
@@ -58,7 +59,7 @@ mod rpc {
         assert_eq!(abci_query.index, 0);
         assert_eq!(&abci_query.key, &Vec::<u8>::new());
         assert!(&abci_query.key.is_empty());
-        assert!(abci_query.value.is_none());
+        assert_eq!(abci_query.value, Vec::<u8>::new());
         assert!(abci_query.proof.is_none());
         assert!(abci_query.height.value() > 0);
         assert_eq!(abci_query.codespace, String::new());
@@ -142,5 +143,37 @@ mod rpc {
 
         // For lack of better things to test
         assert_eq!(status.validator_info.voting_power.value(), 10);
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn event_subscription() {
+        let mut client =
+            event_listener::EventListener::connect("tcp://127.0.0.1:26657".parse().unwrap())
+                .await
+                .unwrap();
+        client
+            .subscribe(event_listener::EventSubscription::BlockSubscription)
+            .await
+            .unwrap();
+        // client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
+
+        // Loop here is helpful when debugging parsing of JSON events
+        // loop{
+        let maybe_result_event = client.get_event().await.unwrap();
+        dbg!(&maybe_result_event);
+        // }
+        let result_event = maybe_result_event.expect("unexpected msg read");
+        match result_event.data {
+            event_listener::TMEventData::EventDataNewBlock(nb) => {
+                dbg!("got EventDataNewBlock: {:?}", nb);
+            }
+            event_listener::TMEventData::EventDataTx(tx) => {
+                dbg!("got EventDataTx: {:?}", tx);
+            }
+            event_listener::TMEventData::GenericJSONEvent(v) => {
+                panic!("got a GenericJSONEvent: {:?}", v);
+            }
+        }
     }
 }

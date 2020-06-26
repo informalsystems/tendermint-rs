@@ -13,7 +13,6 @@ mod gas;
 mod info;
 mod log;
 mod path;
-mod proof;
 pub mod responses;
 pub mod tag;
 pub mod transaction;
@@ -25,7 +24,6 @@ pub use self::{
     info::Info,
     log::Log,
     path::Path,
-    proof::Proof,
     responses::{DeliverTx, Event, Responses},
     transaction::Transaction,
 };

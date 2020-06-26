@@ -85,7 +85,7 @@ these tags we frequently use the following short forms:
 
 ## Header Fields necessary for the Light Client
 
-#### **[TMBC-HEADER]**:
+#### **[TMBC-HEADER.1]**:
 A set of blockchain transactions is stored in a data structure called
 *block*, which contains a field called *header*. (The data structure
 *block* is defined [here][block]).  As the header contains hashes to
@@ -93,13 +93,13 @@ the relevant fields of the block, for the purpose of this
 specification, we will assume that the blockchain is a list of
 headers, rather than a list of blocks. 
 
-#### **[TMBC-HASH-UNIQUENESS]**:
+#### **[TMBC-HASH-UNIQUENESS.1]**:
 We assume that every hash in the header identifies the data it hashes. 
 Therefore, in this specification, we do not distinguish between hashes and the 
 data they represent.
 
 
-#### **[TMBC-HEADER-FIELDS]**:
+#### **[TMBC-HEADER-FIELDS.1]**:
 A header contains the following fields:
 
  - `Height`: non-negative integer
@@ -113,12 +113,12 @@ A header contains the following fields:
  - `LastResults`: DomainRes
 
 
-#### **[TMBC-SEQ]**:
+#### **[TMBC-SEQ.1]**:
 
 The Tendermint blockchain is a list *chain* of headers. 
 
 
-#### **[TMBC-VALIDATOR-PAIR]**:
+#### **[TMBC-VALIDATOR-PAIR.1]**:
 
 Given a full node, a 
 *validator pair* is a pair *(peerID, voting_power)*, where 
@@ -130,13 +130,14 @@ Given a full node, a
 pair* is called `Validator`
 
 
-#### **[TMBC-VALIDATOR-SET]**:
+#### **[TMBC-VALIDATOR-SET.1]**:
 
 A *validator set* is a set of validator pairs. For a validator set
 *vs*, we write *TotalVotingPower(vs)* for the sum of the voting powers
 of its validator pairs.
 
-#### **[TMBC-VOTE]**:
+#### **[TMBC-VOTE.1]**:
+
 A *vote* contains a `prevote` or `precommit` message sent and signed by
 a validator node during the execution of [consensus][arXiv]. Each 
 message contains the following fields
@@ -147,13 +148,15 @@ message contains the following fields
 
 
 
-#### **[TMBC-COMMIT]**:
+#### **[TMBC-COMMIT.1]**:
+
 A commit is a set of `precommit` message.
 
 
 ## Tendermint Failure Model
 
-#### **[TMBC-AUTH-BYZ]**:
+#### **[TMBC-AUTH-BYZ.1]**:
+
 We assume the authenticated Byzantine fault model in which no node (faulty or
 correct) may break digital signatures, but otherwise, no additional
 assumption is made about the internal behavior of faulty 
@@ -161,13 +164,15 @@ nodes. That is, faulty nodes are only limited in that they cannot forge
 messages.
 
 
-#### **[TMBC-TIME-PARAMS]**:
+#### **[TMBC-TIME-PARAMS.1]**:
+
 A Tendermint blockchain has the following configuration parameters:
  - *unbondingPeriod*: a time duration.
  - *trustingPeriod*: a time duration smaller than *unbondingPeriod*.
 
 
-#### **[TMBC-CORRECT]**:
+#### **[TMBC-CORRECT.1]**:
+
 We define a predicate *correctUntil(n, t)*, where *n* is a node and *t* is a 
 time point. 
 The predicate *correctUntil(n, t)* is true if and only if the node *n* 
@@ -175,27 +180,29 @@ follows all the protocols (at least) until time *t*.
 
 
 
-#### **[TMBC-FM-2THIRDS]**:
+
+#### **[TMBC-FM-2THIRDS.1]**:
+
 If a block *h* is in the chain,
 then there exists a subset *CorrV*
 of *h.NextValidators*, such that:
   - *TotalVotingPower(CorrV) > 2/3
-    TotalVotingPower(h.NextValidators)*; cf. [TMBC-VALIDATOR-SET]
+    TotalVotingPower(h.NextValidators)*; cf. [TMBC-VALIDATOR-SET.1]
   - For every validator pair *(n,p)* in *CorrV*, it holds *correctUntil(n,
-    h.Time + trustingPeriod)*; cf. [TMBC-CORRECT]
+    h.Time + trustingPeriod)*; cf. [TMBC-CORRECT.1]
 
 
 > The definition of correct
-> [**[TMBC-CORRECT]**](TMBC-CORRECT-link) refers to realtime, while it
+> [**[TMBC-CORRECT.1]**](TMBC-CORRECT-link) refers to realtime, while it
 > is used here with *Time* and *trustingPeriod*, which are "hardware
 > times".  We do not make a distinction here.
 
 ## What the Light Client Checks
 
 
-> From [TMBC-FM-2THIRDS] we directly derive the following observation:
+> From [TMBC-FM-2THIRDS.1] we directly derive the following observation:
 
-#### **[TMBC-VAL-CONTAINS-CORR]**:
+#### **[TMBC-VAL-CONTAINS-CORR.1]**:
 
 Given a (trusted) block *tb* of the blockchain, a given set of full nodes 
 *N* contains a correct node at a real-time *t*, if
@@ -206,10 +213,10 @@ Given a (trusted) block *tb* of the blockchain, a given set of full nodes
 > The following describes how a commit for a given block *b* must look
 > like.
 
-#### **[TMBC-SOUND-DISTR-POSS-COMMIT]**:
+#### **[TMBC-SOUND-DISTR-POSS-COMMIT.1]**:
 For a block *b*, each element *pc* of *PossibleCommit(b)* satisfies:
   - each vote *v* in *pc* satisfies
-     * *pc* contains only votes (cf. [TMBC-VOTE])
+     * *pc* contains only votes (cf. [TMBC-VOTE.1])
 	 by validators from *b.Validators*
      * v.blockID = hash(b)
 	 * v.Height = b.Height  
@@ -223,7 +230,7 @@ For a block *b*, each element *pc* of *PossibleCommit(b)* satisfies:
 > `BlockID` of the new (to-be-decided) block is equal to the hash of
 > the last block.
 
-#### **[TMBC-VAL-COMMIT]**:
+#### **[TMBC-VAL-COMMIT.1]**:
 
 If for a block *b*,  a commit *c*
   - contains at least one validator pair *(v,p)* such that *v* is a 
@@ -247,7 +254,7 @@ header it receives coincides with the one generated by Tendermint
 consensus.
 
 The two 
- properties [[TMBC-VAL-CONTAINS-CORR]][TMBC-VAL-CONTAINS-CORR-link] and
+ properties [[TMBC-VAL-CONTAINS-CORR.1]][TMBC-VAL-CONTAINS-CORR-link] and
 [[TMBC-VAL-COMMIT]][TMBC-VAL-COMMIT-link]  formalize the checks done
  by this specification:
 Given a trusted block *tb* and an untrusted block *ub* with a commit *cub*,
@@ -271,11 +278,12 @@ never be stored.
 
 ## Sequential Problem statement
 
-#### **[LCV-SEQ-LIFE]**: 
+#### **[LCV-SEQ-LIVE.1]**: 
 The *Verifier* gets as input a height *targetHeight*, and eventually stores the
 header of height *targetHeight* of the blockchain.
 
-#### **[LCV-SEQ-SAFE]**:
+#### **[LCV-SEQ-SAFE.1]**:
+
 The *Verifier* never stores a header which is not in the blockchain.
 
 
@@ -299,10 +307,11 @@ the light client.
 
 ## Computational Model
 
-#### **[LCV-A-PEER]**:
+#### **[LCV-A-PEER.1]**:
 The verifier communicates with a full node called *primary*. No assumption is made about the full node (it may be correct or faulty).
 
-#### **[LCV-A-COMM]**:
+#### **[LCV-A-COMM.1]**:
+
 Communication between the light client and a correct full node is
 reliable and bounded in time. Reliable communication means that
 messages are not lost, not duplicated, and eventually delivered. There
@@ -312,12 +321,12 @@ This implies that we need a timeout of at least *2 Delta* for remote
 procedure calls to ensure that the response of a correct peer arrives
 before the timeout expires.
 
-#### **[LCV-A-TFM]**:
-The Tendermint blockchain satisfies the Tendermint failure model [**[TMBC-FM-2THIRDS]**][TMBC-FM-2THIRDS-link].
+#### **[LCV-A-TFM.1]**:
+The Tendermint blockchain satisfies the Tendermint failure model [**[TMBC-FM-2THIRDS.1]**][TMBC-FM-2THIRDS-link].
 
-#### **[LCV-A-VAL]**:
-The system satisfies [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link] and
-[**[TMBC-FM-2THIRDS]**][TMBC-FM-2THIRDS-link]. Thus, there is a
+#### **[LCV-A-VAL.1]**:
+The system satisfies [**[TMBC-AUTH-BYZ.1]**][TMBC-Auth-Byz-link] and
+[**[TMBC-FM-2THIRDS.1]**][TMBC-FM-2THIRDS-link]. Thus, there is a
 blockchain that satisfies the soundness requirements (that is, the
 validation rules in [[block]]).
 
@@ -336,33 +345,36 @@ terminate successfully, and satisfy the requirements of the sequential
 problem statement:
 
 
-#### **[LCV-DIST-TERM]**:
+#### **[LCV-DIST-TERM.1]**:
+
 *Core Verification* either *terminates
 successfully* or it *terminates with failure*.
 
 
 ### Design choices
 
-#### **[LCV-DIST-STORE]**:
+#### **[LCV-DIST-STORE.1]**:
+
 *Core Verification* has a local data structure called *LightStore* that
 contains light blocks (that contain a header). For each light block we
 record whether it is verified.
 
 
-#### **[LCV-DIST-PRIMARY]**:
+#### **[LCV-DIST-PRIMARY.1]**:
 *Core Verification* has a local variable *primary* that contains the PeerID of a full node.
 
-#### **[LCV-DIST-INIT]**:
+#### **[LCV-DIST-INIT.1]**:
 *LightStore* is initialized with a header *trustedHeader* that was correctly 
 generated by the Tendermint consensus. We say *trustedHeader* is verified.
 
 ### Temporal Properties
 
-#### **[LCV-DIST-SAFE]**:
+#### **[LCV-DIST-SAFE.1]**:
 It is always the case that every verified header in *LightStore* was 
 generated by an instance of Tendermint consensus.
 
-#### **[LCV-DIST-LIFE]**:
+#### **[LCV-DIST-LIVE.1]**:
+
 From time to time, a new instance of *Core Verification* is called with a
 height *targetHeight*. Each instance must eventually terminate. 
   - If
@@ -375,10 +387,10 @@ height *targetHeight*. Each instance must eventually terminate.
 
 > These definitions imply that if the primary is faulty, a header may or
 > may not be added to *LightStore*. In any case,
-> [**[LCV-DIST-SAFE]**](#lcv-vc-inv) must hold.
+> [**[LCV-DIST-SAFE.1]**](#lcv-vc-inv) must hold.
 
-> The invariant [**[LCV-DIST-SAFE]**](#lcv-dist-safe) and the liveness 
-> requirement [**[LCV-DIST-LIFE]**](#lcv-dist-life)
+> The invariant [**[LCV-DIST-SAFE.1]**](#lcv-dist-safe) and the liveness 
+> requirement [**[LCV-DIST-LIVE.1]**](#lcv-dist-life)
 > allow that verified headers are added to *LightStore* whose 
 > height was not passed
 > to the verifier (e.g., intermediate headers used in bisection; see below).
@@ -396,16 +408,17 @@ height *targetHeight*. Each instance must eventually terminate.
 This specification provides a partial solution to the sequential specification.
 The *Verifier* solves the invariant of the sequential part
 
-[**[LCV-DIST-SAFE]**](#lcv-vc-inv) => [**[LCV-SEQ-SAFE]**](#lcv-seq-inv)
+[**[LCV-DIST-SAFE.1]**](#lcv-vc-inv) => [**[LCV-SEQ-SAFE.1]**](#lcv-seq-inv)
 
 In the case the primary is correct, and there is a recent header in *LightStore*, the verifier satisfies the liveness requirements.
 
-/\ "correct primary"  
-/\ always \E verified header in LightStore. header.Time > now - *trustingPeriod*  
-/\ [**[LCV-A-Comm]**](#lcv-a-comm) /\
-       [**[TMBC-CorrFull]**][TMBC-CorrFull-link] /\
-       [**[LCV-DIST-LIVE]**](#lcv-vc-live)  
-       => [**[LCV-SEQ-LIVE]**](#lcv-seq-live)
+⋀ *primary is correct*  
+⋀ always ∃ verified header in LightStore. *header.Time* > *now* - *trustingPeriod*  
+⋀ [**[LCV-A-Comm.1]**](#lcv-a-comm) ⋀ (
+       ( [**[TMBC-CorrFull.1]**][TMBC-CorrFull-link] ⋀
+         [**[LCV-DIST-LIVE.1]**](#lcv-vc-live) )
+       ⟹ [**[LCV-SEQ-LIVE.1]**](#lcv-seq-live)
+)
 
 
 # Part IV - Light Client Verification Protocol
@@ -422,7 +435,7 @@ independently:
 - `FetchLightBlock` is called to download a light block (header) of a
   given height from a peer.
 - `ValidAndVerified` is a local code that checks the header.
-- `Pivot` decides which height to try to verify next. We keep this
+- `Schedule` decides which height to try to verify next. We keep this
   underspecified as different implementations (currently in Goland and
   Rust) may implement different optimizations here. We just provide
   necessary conditions on how the height may evolve.
@@ -448,8 +461,7 @@ type LightBlock struct {
 }
 ```	
 
-#### **[LCV-DATA-LIGHTSTORE]**:
-
+#### **[LCV-DATA-LIGHTSTORE.1]**:
 
 LightBlocks are stored in a structure which stores all LightBlock from
 initialization or received from peers.
@@ -460,7 +472,6 @@ type LightStore struct {
 }
 
 ```
-
 
 Each LightBlock is in one of the following states:
 ```go
@@ -495,6 +506,7 @@ func (ls LightStore) LatestVerified() LightBlock
      or `StateTrusted`
 
 
+
 ```go
 func (ls LightStore) Update(lightBlock LightBlock, verfiedState VerifiedState)
 ```
@@ -512,19 +524,19 @@ func (ls LightStore) LatestTrusted() LightBlock
      checked by the detector.
  
 
-
 ### Inputs
 - *lightStore*: stores light blocks that have been downloaded and that
     passed verification. Initially it contains a light block with
 	*trustedHeader*.
 - *primary*: peerID
-- *targetHeight*: they height of the needed header
+- *targetHeight*: the height of the needed header
+
 
 
 ### Configuration Parameters
 
 - *trustThreshold*: a float. Can be used if correctness should not be based on more voting power and 1/3.
-- *trustingPeriod*: a time duration [**[TMBC-TIME_PARAMS]**][TMBC-TIME_PARAMS-link].
+- *trustingPeriod*: a time duration [**[TMBC-TIME_PARAMS.1]**][TMBC-TIME_PARAMS-link].
 - *clockDrift*: a time duration. Correction parameter dealing with only approximately synchronized clocks.
 
 
@@ -539,14 +551,14 @@ func (ls LightStore) LatestTrusted() LightBlock
 
 ### Assumptions
 
-#### **[LCV-A-INIT]**:
+#### **[LCV-A-INIT.1]**:
 - *trustedHeader* is from the blockchain
 
 - *targetHeight > LightStore.LatestVerified.Header.Height*
 
 ### Invariants
 
-#### **[LCV-INV-TP]**:
+#### **[LCV-INV-TP.1]**:
 It is always the case that *LightStore.LatestTrusted.Header.Time > now - trustingPeriod*.
 
 > If the invariant is violated, the light client does not have a
@@ -566,21 +578,18 @@ func FetchLightBlock(peer PeerID, height Height) LightBlock
    - RPC to peer at *PeerID*
    - Request message: **TODO**
    - Response message: **TODO**
-- Expected precodnition
-  - `height` is less than or equal to height of the peer
-- Expected postcondition
+- Expected precondition
+  - `height` is less than or equal to height of the peer **[LCV-IO-PRE-HEIGHT.1]**
+- Expected postcondition:
   - if *node* is correct: 
     - Returns the LightBlock *lb* of height `height`
       that is consistent with the blockchain
-	- *lb.provider = peer* 
-    - *lb.Header* is a header consistent with
-      the blockchain
-    - *lb.Validators* is the validator set of the
-      blockchain at height *nextheight*
-    - *lb.NextValidators* is the validator set of the
-      blockchain at height *nextheight + 1*
+	- *lb.provider = peer* **[LCV-IO-POST-PROVIDER.1]**
+    - *lb.Header* is a header consistent with the blockchain
+    - *lb.Validators* is the validator set of the blockchain at height *nextHeight*
+    - *lb.NextValidators* is the validator set of the blockchain at height *nextHeight + 1*
   - if *node* is faulty: Returns a LightBlock with arbitrary content 
-    [**[TMBC-AUTH-BYZ]**][TMBC-Auth-Byz-link]
+    [**[TMBC-AUTH-BYZ.1]**][TMBC-Auth-Byz-link]
 - Error condition
    * if *n* is correct: precondition violated **TODO:** mention message
    * if *n* is faulty: arbitrary error
@@ -599,7 +608,7 @@ The `VerifyToTarget` is the main function and uses the following functions.
 - `ValidAndVerified` checks whether header is valid and checks if a
   new lightBlock should be trusted
   based on a previously verified lightBlock.
-- `Pivot` decides which height to try to verify next
+- `Schedule` decides which height to try to verify next
 
 In the following description of `VerifyToTarget` we do not deal with error
 handling. If any of the above function returns an error, VerifyToTarget just
@@ -631,7 +640,7 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
             // do nothing
 			// the light block current passed validation, but the validator
             // set is too different to verify it. We keep the state of
-			// current at StateUnverified. For a later iteration, Pivot
+			// current at StateUnverified. For a later iteration, Schedule
 			// might decide to try verification of that light block again.
         }    
         else { 
@@ -640,25 +649,25 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
             // possibly remove all LightBlocks from primary
             return (lightStore, ResultFailure)
         } 
-        nextHeight = Pivot(lightStore, nextHeight, targetHeight)
+        nextHeight = Schedule(lightStore, nextHeight, targetHeight)
     }
     return (lightStore, ResultSuccess)
 }
 ```
 
 - Expected precondition
-   - *lightStore* contains a LightBlock within the *trustingPeriod*
-   - *targetHeight* is greater than the height of all the LightBlocks
-     in *lightStore*
+   - *lightStore* contains a LightBlock within the *trustingPeriod*  **[LCV-PRE-TP.1]**
+   - *targetHeight* is greater than the height of all the LightBlocks in *lightStore*
+     (**TODO:** This precondition might not be upheld by the relayer as it may need to
+     verify arbitrary blocks, and not only the most recent one)
 - Expected postcondition: 
-   - returns *lightStore* that contains a LightBlock that corresponds 
-     to a block
-     of the blockchain of height *targetHeight* (that is, the
-     LightBlock has been added to *lightStore*)
+   - returns *lightStore* that contains a LightBlock that corresponds to a block
+     of the blockchain of height *targetHeight*
+     (that is, the LightBlock has been added to *lightStore*) **[LCV-POST-LS.1]**
 - Error conditions
    - if the precondition is violated
    - if `ValidAndVerified` or `FetchLightBlock` report an error
-   - if [**[LCV-INV-TP]**](#LCV-INV-TP) is violated
+   - if [**[LCV-INV-TP.1]**](#LCV-INV-TP) is violated
   
 
 
@@ -697,21 +706,19 @@ func ValidAndVerified(trusted LightBlock, untrusted LightBlock) Result
 		     - contains no signature from nodes that are not in *trusted.Header.NextValidators*
 - Expected postcondition: 
     - Returns `OK`:
-        - if *untrusted* is the immediate successor of *trusted*,
-          or otherwise,
-        - if
-		   - signatures of a set of validators that have more than
+        - if *untrusted* is the immediate successor of *trusted*, or otherwise,
+        - if the signatures of a set of validators that have more than
              *max(1/3,trustThreshold)* of voting power in
              *trusted.Nextvalidators* is contained in
              *untrusted.Commit* (that is, header passes the tests
-             [**[TMBC-VAL-CONTAINS-CORR]**][TMBC-VAL-CONTAINS-CORR-link]
-             and [**[TMBC-VAL-COMMIT]**][TMBC-VAL-COMMIT-link])
+             [**[TMBC-VAL-CONTAINS-CORR.1]**][TMBC-VAL-CONTAINS-CORR-link]
+             and [**[TMBC-VAL-COMMIT.1]**][TMBC-VAL-COMMIT-link])
     - Returns `CANNOT_VERIFY` if:
          - *untrusted* is *not* the immediate successor of
            *trusted*
 		   and the  *max(1/3,trustThreshold)* threshold is not reached
            (that is, if
-	     [**[TMBC-VAL-CONTAINS-CORR]**][TMBC-VAL-CONTAINS-CORR-link] 
+	     [**[TMBC-VAL-CONTAINS-CORR.1]**][TMBC-VAL-CONTAINS-CORR-link] 
 	     fails and header is does not violate the soundness
          checks [[block]]).
 - Error condition: 
@@ -722,12 +729,13 @@ func ValidAndVerified(trusted LightBlock, untrusted LightBlock) Result
 
 
 ```go
-func Pivot(lightStore, nextHeight, targetHeight) Height
+func Schedule(lightStore, nextHeight, targetHeight) Height
 ```
 - Implementation remark: If picks the next height to be verified. 
   We keep the precise choice of the next header under-specified. It is
   subject to performance optimizations that do not influence the correctness
-- Expected postcondition: return *H* s.t.
+- Expected postcondition: **[LCV-SCHEDULE-POST.1]**
+   Return *H* s.t.
    1. if *lightStore.LatestVerified.Height = nextHeight* and
       *lightStore.LatestVerified < targetHeight* then  
 	  *nextHeight < H <= targetHeight*
@@ -737,15 +745,14 @@ func Pivot(lightStore, nextHeight, targetHeight) Height
    3. if *lightStore.LatestVerified.Height = targetHeight* then  
      *H =  targetHeight*
 
-> Case i. captures the case where the light block at height
-> *nextHeight* has been verified, and we can choose a height closer to
-> the *targetHeight*. As we
-> get the *lightStore* as parameter, the choice of the next height can
-> depend on the *lightStore*, e.g., we can pick a height for which we
-> have already downloaded a light block. 
-> In Case iii. is a special case when we have
-> verified the *targetHeight*. In Case ii. the header of *nextHeight*
-> could not be verified, and we need to pick a smaller height. 
+
+> Case i. captures the case where the light block at height *nextHeight*
+> has been verified, and we can choose a height closer to the *targetHeight*.
+> As we get the *lightStore* as parameter, the choice of the next height can
+> depend on the *lightStore*, e.g., we can pick a height for which we have
+> already downloaded a light block.
+> In Case ii. the header of *nextHeight* could not be verified, and we need to pick a smaller height.
+> In Case iii. is a special case when we have verified the *targetHeight*.
 
 
 ### Solving the distributed specification
@@ -754,17 +761,19 @@ func Pivot(lightStore, nextHeight, targetHeight) Height
 have the state *StateVerified*.
 
 **TODO: check**
-#### Argument for [**[LCV-DIST-SAFE]**](#lcv-dist-safe):
+
+#### Argument for [**[LCV-DIST-SAFE.1]**](#lcv-dist-safe):
 
 - `ValidAndVerified` implements the soundness checks and the checks 
-  [**[TMBC-VAL-CONTAINS-CORR]**][TMBC-VAL-CONTAINS-CORR-link] and 
-  [**[TMBC-VAL-COMMIT]**][TMBC-VAL-COMMIT-link] under
-  the assumption [**[TMBC-FM-2THIRDS]**][TMBC-FM-2THIRDS-link]
+  [**[TMBC-VAL-CONTAINS-CORR.1]**][TMBC-VAL-CONTAINS-CORR-link] and 
+  [**[TMBC-VAL-COMMIT.1]**][TMBC-VAL-COMMIT-link] under
+  the assumption [**[TMBC-FM-2THIRDS.1]**][TMBC-FM-2THIRDS-link]
 - Only if `ValidAndVerified` returns with `OK`, the state of a light block is
   set to *StateVerified*.
 
 
-#### Argument for [**[LCV-DIST-LIFE]**](#lcv-dist-life):
+
+#### Argument for [**[LCV-DIST-LIVE.1]**](#lcv-dist-life):
 
 - If *primary* is correct, 
     - `FetchLightBlock` will always return a light block consistent
@@ -772,7 +781,7 @@ have the state *StateVerified*.
     - `ValidAndVerified` either verify the header using the trusting
       period or falls back to sequential
       verification
-    - If [**[LCV-INV-TP]**](#LCV-INV-TP) holds, eventually every
+    - If [**[LCV-INV-TP.1]**](#LCV-INV-TP) holds, eventually every
 	  header will be verified and core verification **terminates successfully**.
     - successful termination depends on the age of *lightStore.LatestVerified*
       (for instance, initially on the age of  *trustedHeader*) and the
@@ -788,7 +797,8 @@ have the state *StateVerified*.
 
 ## Liveness Scenarios
 
-The liveness argument above assumes [**[LCV-INV-TP]**](#LCV-INV-TP)
+
+The liveness argument above assumes [**[LCV-INV-TP.1]**](#LCV-INV-TP)
 which requires that there is a header that does not expire before the
 target height is reached. Here we discuss scenarios to ensure this.
 
@@ -804,7 +814,8 @@ headers to *LightStore* and verify them, before all headers in
 
 #### Many changes in validator set
 
- Let's consider `Pivot` implements
+
+ Let's consider `Schedule` implements
  bisection, that is, it halves the distance.
  Assume the case where the validator set changes completely in each
 block. Then the 
@@ -823,7 +834,7 @@ header of height *startHeader.Height + 1* is added to *LightStore*.
   check one header.
 - Then the first time a verified header could be added to *LightStore* is
   startTime + W * (Comp + 2 Delta)
-- [TP] However, it can only be added if we still have a header in
+- [TP.1] However, it can only be added if we still have a header in
   *LightStore*, 
   which is not
   expired, that is only the case if
@@ -833,7 +844,7 @@ header of height *startHeader.Height + 1* is added to *LightStore*.
 	  startTime < startHeader.Time + trustingPeriod -  WCG * (Comp + 2 Delta) 
 
 - one may then do an inductive argument from this point on, depending
-  on the implementation of `Pivot`. We may have to account for the 
+  on the implementation of `Schedule`. We may have to account for the
   headers that are already
   downloaded, but they are checked against the new *LightStore.LatestVerified*.
 
@@ -841,7 +852,7 @@ header of height *startHeader.Height + 1* is added to *LightStore*.
 > the worst case time it needs to verify the header of height
 > *targetHeight* depends mainly on how frequent the validator set on the
 > blockchain changes. That core verification terminates successfully
-> crucially depends on the check [TP], that is, that the headers in
+> crucially depends on the check [TP.1], that is, that the headers in
 > *LightStore* do not expire in the time needed to download more
 > headers, which depends on the creation time of the headers in
 > *LightStore*. That is, termination of core verification is highly

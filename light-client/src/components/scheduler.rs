@@ -1,0 +1,125 @@
+use crate::{
+    store::{LightStore, VerifiedStatus},
+    types::Height,
+};
+
+use contracts::*;
+
+/// The scheduler decides what block to verify next given the current and target heights.
+///
+/// The scheduler is given access to the light store, in order to optionally
+/// improve performance by picking a next block that has already been fetched.
+#[contract_trait]
+pub trait Scheduler: Send {
+    /// Decides what block to verify next.
+    ///
+    /// ## Precondition
+    /// - The light store contains at least one verified block. [LCV-SCHEDULE-PRE.1]
+    ///
+    /// ## Postcondition
+    /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
+    #[pre(light_store.highest(VerifiedStatus::Verified).is_some())]
+    #[post(valid_schedule(ret, target_height, current_height, light_store))]
+    fn schedule(
+        &self,
+        light_store: &dyn LightStore,
+        current_height: Height,
+        target_height: Height,
+    ) -> Height;
+}
+
+#[contract_trait]
+impl<F: Send + Clone> Scheduler for F
+where
+    F: Fn(&dyn LightStore, Height, Height) -> Height,
+{
+    fn schedule(
+        &self,
+        light_store: &dyn LightStore,
+        current_height: Height,
+        target_height: Height,
+    ) -> Height {
+        self(light_store, current_height, target_height)
+    }
+}
+
+/// Basic bisecting scheduler which picks the appropriate midpoint without
+/// optimizing for performance using the blocks available in the light store.
+///
+/// ## Precondition
+/// - The light store contains at least one verified block. [LCV-SCHEDULE-PRE.1]
+///
+/// ## Postcondition
+/// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
+#[pre(light_store.highest(VerifiedStatus::Verified).is_some())]
+#[post(valid_schedule(ret, target_height, current_height, light_store))]
+pub fn basic_bisecting_schedule(
+    light_store: &dyn LightStore,
+    current_height: Height,
+    target_height: Height,
+) -> Height {
+    let trusted_height = light_store
+        .highest(VerifiedStatus::Verified)
+        .map(|lb| lb.height())
+        .unwrap();
+
+    if trusted_height == current_height && trusted_height < target_height {
+        target_height
+    } else if trusted_height < current_height && trusted_height < target_height {
+        midpoint(trusted_height, current_height)
+    } else if trusted_height == target_height {
+        target_height
+    } else {
+        midpoint(current_height, target_height)
+    }
+}
+
+/// Checks whether the given `scheduled_height` is a valid schedule according to the
+/// following specification.
+///
+/// - i) If `latest_verified_height == current_height` and `latest_verified_height < target_height`
+/// then `current_height < scheduled_height <= target_height`.
+///
+/// - ii) If `latest_verified_height < current_height` and `latest_verified_height < target_height`
+/// then `latest_verified_height < scheduled_height < current_height`.
+///
+/// - iii) If `latest_verified_height = target_height` then `scheduled_height == target_height`.
+///
+/// ## Note
+///
+/// - Case i. captures the case where the light block at height `current_height` has been verified,
+///   and we can choose a height closer to the `target_height`. As we get the `light_store` as parameter,
+///   the choice of the next height can depend on the `light_store`, e.g., we can pick a height
+///   for which we have already downloaded a light block.
+/// - In Case ii. the header at `current_height` could not be verified, and we need to pick a lesser height.
+/// - In Case iii. is a special case when we have verified the `target_height`.
+///
+/// ## Implements
+/// - [LCV-SCHEDULE-POST.1]
+pub fn valid_schedule(
+    scheduled_height: Height,
+    target_height: Height,
+    current_height: Height,
+    light_store: &dyn LightStore,
+) -> bool {
+    let latest_trusted_height = light_store
+        .highest(VerifiedStatus::Verified)
+        .map(|lb| lb.height())
+        .unwrap();
+
+    if latest_trusted_height == current_height && latest_trusted_height < target_height {
+        current_height < scheduled_height && scheduled_height <= target_height
+    } else if latest_trusted_height < current_height && latest_trusted_height < target_height {
+        latest_trusted_height < scheduled_height && scheduled_height < current_height
+    } else if latest_trusted_height == target_height {
+        scheduled_height == target_height
+    } else {
+        true
+    }
+}
+
+#[pre(low < high)]
+#[post(low < ret && ret <= high)]
+fn midpoint(low: Height, high: Height) -> Height {
+    low + (high + 1 - low) / 2
+}

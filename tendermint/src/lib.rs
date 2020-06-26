@@ -13,7 +13,7 @@
     unused_qualifications
 )]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/tendermint/0.13.0")]
+#![doc(html_root_url = "https://docs.rs/tendermint/0.14.1")]
 
 #[macro_use]
 pub mod error;
@@ -38,8 +38,7 @@ pub mod net;
 pub mod node;
 pub mod private_key;
 pub mod public_key;
-pub mod rpc;
-mod serializers;
+pub mod serializers;
 pub mod signature;
 pub mod time;
 mod timeout;

@@ -1,3 +1,65 @@
+## [0.14.1] (2020-06-23)
+
+- Update `prost-amino`/`prost-amino-derive` to v0.6 ([#367])
+
+[#367]: https://github.com/informalsystems/tendermint-rs/issues/367
+
+## [0.14.0] (2020-06-19)
+
+This release mainly targets compatibility with Tendermint [v0.33.x] but contains a lot of smaller improvements regarding testing and (de)serialization.
+Also noteworthy is that the rpc module was broken out into a separate crate ([tendermint-rpc]).
+
+⚠️ ️Deprecation warning ⚠️ : This might be that last release containing the [lite] module. 
+It will be replaced with the [light-client] crate (soon).
+
+CommitSig:
+- Refactored CommitSig into a more Rust-friendly enum. ([#247])
+- Added CommitSig compatibility code to Absent vote ([#260])
+- Added CommitSig timestamp zero-check compatibility code ([#259])
+
+Testing:
+- Configure integration test against latest tendermint-go to continue on error ([#304])
+- Add integration test to track tendermint-go v0.33.5 ([#304])
+- Remove test for hard-coded version in `abci_info` ([#304])
+
+Serialization:
+- Refactor serializers library to use modules, give a nicer annotation to structs and separated into its own folder. ([#247])
+- Added nullable Vec<u8> serialization ([#247])
+- Moved/created tests for serialization in the same library and locked library to local crate ([#263])
+- Made serialization tests symmetric ([#261])
+
+RPC:
+- Tendermint-Go v0.33 compatibility ([#184])
+  - `abci_info`, `abci_query`, `block_results`, `genesis` structs
+  - serialization/deserialization fixes
+  - Updated/fixed integration tests
+- Move into its own crate ([#338]) 
+  - Feature guard `rpc::client` (makes networking an optional dependency) ([#343])  
+
+CI:
+- Moved to GitHub Actions ([#120])
+- Updated crates.io badges ([#120])
+- Enabled integration tests in CI with Tendermint-Go node service ([#120])
+- Exclude changes in docs folder to trigger CI execution ([#309])
+
+[#120]: https://github.com/informalsystems/tendermint-rs/issues/120
+[#184]: https://github.com/informalsystems/tendermint-rs/issues/184
+[#247]: https://github.com/informalsystems/tendermint-rs/issues/247
+[#259]: https://github.com/informalsystems/tendermint-rs/issues/259
+[#260]: https://github.com/informalsystems/tendermint-rs/issues/260
+[#261]: https://github.com/informalsystems/tendermint-rs/issues/261
+[#263]: https://github.com/informalsystems/tendermint-rs/issues/263
+[#304]: https://github.com/informalsystems/tendermint-rs/issues/304
+[#309]: https://github.com/informalsystems/tendermint-rs/issues/309
+[#338]: https://github.com/informalsystems/tendermint-rs/pull/338
+[#343]: https://github.com/informalsystems/tendermint-rs/pull/343
+
+[0.14.0]: https://github.com/informalsystems/tendermint-rs/pull/347
+[v0.33.x]: https://github.com/tendermint/tendermint/blob/v0.33.5/CHANGELOG.md#v0335
+[tendermint-rpc]: https://github.com/informalsystems/tendermint-rs/tree/master/rpc#tendermint-rpc
+[lite]: https://github.com/informalsystems/tendermint-rs/tree/master/tendermint/src/lite
+[light-client]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
+
 ## [0.13.0] (2020-04-20)
 
 Dependencies:

@@ -1,7 +1,7 @@
 //! All traits that are necessary and need to be implemented to use the main
 //! verification logic in [`super::verifier`] for a light client.
 
-use std::fmt::Debug;
+use std::fmt::{self, Debug, Display};
 use std::time::SystemTime;
 
 use crate::serializers;
@@ -90,19 +90,19 @@ pub trait TrustThreshold: Copy + Clone + Debug + Serialize + DeserializeOwned {
 /// [`TrustThreshold`] which can be passed into all relevant methods.
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TrustThresholdFraction {
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
-    numerator: u64,
-    #[serde(
-        serialize_with = "serializers::serialize_u64",
-        deserialize_with = "serializers::parse_u64"
-    )]
-    denominator: u64,
+    #[serde(with = "serializers::from_str")]
+    pub numerator: u64,
+    #[serde(with = "serializers::from_str")]
+    pub denominator: u64,
 }
 
 impl TrustThresholdFraction {
+    /// Constant for a trust threshold of 2/3.
+    pub const TWO_THIRDS: Self = Self {
+        numerator: 2,
+        denominator: 3,
+    };
+
     /// Instantiate a TrustThresholdFraction if the given denominator and
     /// numerator are valid.
     ///
@@ -133,6 +133,12 @@ impl Default for TrustThresholdFraction {
     fn default() -> Self {
         Self::new(1, 3)
             .expect("initializing TrustThresholdFraction with valid fraction mustn't panic")
+    }
+}
+
+impl Display for TrustThresholdFraction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}/{}", self.numerator, self.denominator)
     }
 }
 

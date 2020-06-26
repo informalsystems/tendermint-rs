@@ -1,9 +1,13 @@
 name: Rust
-on: 
+on:
   pull_request:
+    paths-ignore:
+      - "docs/**"
   push:
-      branches: 
-        - master
+    paths-ignore:
+      - "docs/**"
+    branches:
+      - master
 jobs:
   cleanup-runs:
     runs-on: ubuntu-latest
@@ -57,11 +61,15 @@ jobs:
           command: test
           args: --all-features --no-fail-fast
 
-  test-integration-ignored:
+  # TODO(shonfeder): remove duplication once GitHub addresses one of these
+  #  - https://github.community/t/support-for-yaml-anchors/16128/15
+  #  - https://github.community/t/reusing-sharing-inheriting-steps-between-jobs-declarations/16851/13
+  #  - https://github.community/t/using-matrix-variable-in-docker-image-name/17296
+  test-integration-stable:
     runs-on: ubuntu-latest
     services:
       tendermint:
-        image: tendermint/tendermint
+        image: tendermint/tendermint:v0.33.5
         ports:
           - 26656:26656
           - 26657:26657
@@ -73,6 +81,28 @@ jobs:
           toolchain: stable
           override: true
       - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p tendermint --test integration --no-fail-fast -- --ignored
+
+  test-integration-latest:
+    runs-on: ubuntu-latest
+    services:
+      tendermint:
+        image: tendermint/tendermint:latest
+        ports:
+          - 26656:26656
+          - 26657:26657
+          - 26660:26660
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        # Don't fail CI due to integration failures on unstable/unreleased versions
+        continue-on-error: true
         with:
           command: test
           args: -p tendermint --test integration --no-fail-fast -- --ignored
@@ -94,7 +124,7 @@ jobs:
           args: --all-features --no-fail-fast
         env:
           CARGO_INCREMENTAL: "0"
-          RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Zno-landing-pads"
+          RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=unwind -Zpanic_abort_tests"
       - uses: actions-rs/grcov@v0.1
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
