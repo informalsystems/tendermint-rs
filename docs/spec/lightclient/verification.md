@@ -2,7 +2,7 @@
 
 
 
-The light client implements a read operation of a
+The light client implements a read operatio of a
 [header][TMBC-HEADER-link] from the [blockchain][TMBC-SEQ-link], by
 communicating with full nodes.  As some full nodes may be faulty, this
 functionality must be implemented in a fault-tolerant way.
@@ -681,7 +681,7 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
             // set is too different to verify it. We keep the state of
 			// current at StateUnverified. For a later iteration, Schedule
 			// might decide to try verification of that light block again.
-        }    
+        }
         else { 
             // verdict is some error code
             lightStore.Update(current, StateFailed)
@@ -959,27 +959,27 @@ following function:
 func Backwards(primary PeerID, lightStore LightStore,
                     targetHeight Height) (LightStore, Result) {
   
-  lb,res = lightStore.MinVerified()
-  if res = false {
-    return (lightStore, ResultFailure)
-  }
-
-  latest := lb.Header
-  for i := lb.Header.height - 1; i >= targetHeight; i-- {
-    // here we download height-by-height. We might first download all
-	// headers down to targetHeight and then check them.
-    current := FetchLightBlock(primary,i)
-    if (hash(current) != latest.Header.LastBlockId) {
-      return (lightStore, ResultFailure)
+    lb,res = lightStore.MinVerified()
+    if res = false {
+        return (lightStore, ResultFailure)
     }
-	else {
-	  lightStore.Update(current, StateVerified)
-	  // **TODO:** Do we need a new state type for backwards.
-	}
-    latest := current
-  }
-  return (lightStore, ResultSuccess)
- }
+
+    latest := lb.Header
+    for i := lb.Header.height - 1; i >= targetHeight; i-- {
+        // here we download height-by-height. We might first download all
+        // headers down to targetHeight and then check them.
+        current := FetchLightBlock(primary,i)
+        if (hash(current) != latest.Header.LastBlockId) {
+            return (lightStore, ResultFailure)
+        }
+        else {
+            lightStore.Update(current, StateVerified)
+            // **TODO:** Do we need a new state type for backwards.
+        }
+        latest := current
+    }
+    return (lightStore, ResultSuccess)
+}
 ```
 
 The following function just decided based on the required height which
@@ -987,47 +987,50 @@ method should be used.
 
 #### **[LCV-FUNC-IBCMAIN.1]**:
 ```go
-func Main(primary PeerID, lightStore LightStore,
-                    targetHeight Height) (LightStore, Result) {
-  b1, r1 = lightStore.Get(targetHeight)
-  if r1 = true and b1.State = StateVerified {
-    //
-    return (lightStore, ResultSuccess)
-  }
-  
-  if targetHeight > lightStore.LatestVerified.height {
-    return VerifyToTarget(primary, lightStore, targetHeight)
-  }
-  else {
-    b2, r2 = lightStore.LatestPrevious(targetHeight);
-    if r2 = true {
-	  // make auxiliary lightStore auxLS to call VerifyToTarget
-	  // VerifyToTarget uses LatestVerified of the lightStore passed in
-	  // For that we need:
-	  // auxLS.LatestVerified = lightStore.LatestPrevious(targetHeight)
-	  auxLS.Init;
-	  auxLS.Update(b2,StateVerified);
-	  if r1 = true {
-	    // we need to verify a previously downloaded light block
-		// we add it to the auxiliary store so that VerifyToTarget
-		// does not download it again
-	    auxLS.Update(b1,b1.State);
-	  }
-	  auxLS, res2 = VerifyToTarget(primary, auxLS, targetHeight)
-	  if res2 = ResultSuccess {
-	     // move all lightblocks from auxLS to lightStore, maintain state
-	     for i, s range auxLS {
-		   lighStore.Update(s,s.State)
-	     }
-	     return (lightStore, ResultSuccess)
-	  }
-	  else {
-	    return (lightStore, ResultFailure)
-	  }
-	}
-	else {
-	   return Backwards(primary, lightStore, targetHeight)
-	}
+func Main (primary PeerID, lightStore LightStore, targetHeight Height) 
+          (LightStore, Result) {
+
+    b1, r1 = lightStore.Get(targetHeight)
+    if r1 = true and b1.State = StateVerified {
+        // block already there
+        return (lightStore, ResultSuccess)
+    }
+
+    if targetHeight > lightStore.LatestVerified.height {
+        return VerifyToTarget(primary, lightStore, targetHeight)
+    }
+    else {
+        b2, r2 = lightStore.LatestPrevious(targetHeight);
+        if r2 = true {
+            // make auxiliary lightStore auxLS to call VerifyToTarget
+			// VerifyToTarget uses LatestVerified of the lightStore
+            // passed in. For that we need:
+            // auxLS.LatestVerified = lightStore.LatestPrevious(targetHeight)
+            auxLS.Init;
+            auxLS.Update(b2,StateVerified);
+            if r1 = true {
+                // we need to verify a previously downloaded light block
+                // we add it to the auxiliary store so that VerifyToTarget
+                // does not download it again
+                auxLS.Update(b1,b1.State);
+            }
+            auxLS, res2 = VerifyToTarget(primary, auxLS, targetHeight)
+            if res2 = ResultSuccess {
+                // move all lightblocks from auxLS to lightStore, 
+                // maintain state
+                for i, s range auxLS {
+                    lighStore.Update(s,s.State)
+                }
+                return (lightStore, ResultSuccess)
+            }
+            else {
+                return (lightStore, ResultFailure)
+            }
+        }
+        else {
+            return Backwards(primary, lightStore, targetHeight)
+        }
+    }
 }
 ```
 <!-- - Expected postcondition: -->
