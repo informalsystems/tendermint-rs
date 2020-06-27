@@ -18,6 +18,7 @@ use subtle_encoding::hex::encode;
 use subtle_encoding::base64;
 //use ed25519::*;
 use signatory::signature::Signature as _;
+use signatory::ed25519::SIGNATURE_SIZE;
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -367,12 +368,27 @@ impl Producer<block::Commit> for Commit {
         if let None = self.header {
             bail!("header is missing")
         }
-        let header = self.header.as_ref().unwrap().produce()?;
+        let header = self.header.as_ref().unwrap();
+        let block_header = header.produce()?;
+        let vs: Vec<block::CommitSig> = header.validators.as_ref().unwrap().into_iter().map (
+            |v| {
+                let validator = v.produce().unwrap();
+                let sig = block::CommitSig::BlockIDFlagCommit {
+                    validator_address: validator.address,
+                    timestamp: block_header.time,
+                    signature: Signature::Ed25519(ed25519::Signature::from_bytes(&vec![0_u8; SIGNATURE_SIZE]).unwrap())
+                };
+                sig
+            }
+        ).collect();
+
+        let sigs = block::CommitSigs::new(vs);
+
         let commit = block::Commit {
-            height: header.height,
+            height: block_header.height,
             round: choose_or(self.round, 1),
-            block_id: block::Id::new(lite::Header::hash(&header), None),
-            signatures: Default::default()
+            block_id: block::Id::new(lite::Header::hash(&block_header), None), // TODO do we need at least one part?
+            signatures: sigs
         };
         Ok(commit)
     }
