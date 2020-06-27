@@ -370,7 +370,7 @@ impl Producer<block::Commit> for Commit {
         }
         let header = self.header.as_ref().unwrap();
         let block_header = header.produce()?;
-        let vs: Vec<block::CommitSig> = header.validators.as_ref().unwrap().into_iter().map (
+        let sigs: Vec<block::CommitSig> = header.validators.as_ref().unwrap().into_iter().map (
             |v| {
                 let validator = v.produce().unwrap();
                 let sig = block::CommitSig::BlockIDFlagCommit {
@@ -382,13 +382,11 @@ impl Producer<block::Commit> for Commit {
             }
         ).collect();
 
-        let sigs = block::CommitSigs::new(vs);
-
         let commit = block::Commit {
             height: block_header.height,
             round: choose_or(self.round, 1),
             block_id: block::Id::new(lite::Header::hash(&block_header), None), // TODO do we need at least one part?
-            signatures: sigs
+            signatures: block::CommitSigs::new(sigs)
         };
         Ok(commit)
     }
