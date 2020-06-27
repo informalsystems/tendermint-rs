@@ -15,6 +15,9 @@ use tendermint::lite::{ValidatorSet};
 use std::str::FromStr;
 use simple_error::*;
 use subtle_encoding::hex::encode;
+use subtle_encoding::base64;
+//use ed25519::*;
+use signatory::signature::Signature as _;
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -162,6 +165,18 @@ impl Validator {
         self.proposer_priority = Some(priority);
         self
     }
+    fn signer(&self) -> Result<Ed25519Signer, SimpleError> {
+        if let None = self.id {
+            bail!("validator identifier is missing")
+        }
+        let mut bytes = self.id.clone().unwrap().into_bytes();
+        if bytes.len() > 32 {
+            bail!("identifier is too long")
+        }
+        bytes.extend(vec![0u8; 32 - bytes.len()].iter());
+        let seed = require_with!(ed25519::Seed::from_bytes(bytes), "failed to construct a seed");
+        Ok(Ed25519Signer::from(&seed))
+    }
 }
 
 impl Producer<Info> for Validator {
@@ -187,16 +202,7 @@ impl Producer<Info> for Validator {
         }
     }
     fn produce(&self) -> Result<Info, SimpleError> {
-        if let None = self.id {
-            bail!("validator identifier is missing")
-        }
-        let mut bytes = self.id.clone().unwrap().into_bytes();
-        if bytes.len() > 32 {
-            bail!("identifier is too long")
-        }
-        bytes.extend(vec![0u8; 32 - bytes.len()].iter());
-        let seed = require_with!(ed25519::Seed::from_bytes(bytes), "failed to construct a seed");
-        let signer = Ed25519Signer::from(&seed);
+        let signer = self.signer()?;
         let pk = try_with!(signer.public_key(), "failed to get a public key");
         let info = Info {
             address: account::Id::from(pk),
