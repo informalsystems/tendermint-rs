@@ -42,6 +42,7 @@ impl Rpc for Server {
 
 #[cfg(test)]
 mod test {
+    use futures::compat::Future01CompatExt as _;
     use jsonrpc_core::futures::future::Future;
     use jsonrpc_core::IoHandler;
     use jsonrpc_core_client::transports::local;
@@ -49,15 +50,15 @@ mod test {
 
     use super::{Client, Rpc as _, Server};
 
-    #[test]
-    fn state() {
+    #[tokio::test]
+    async fn state() {
         let fut = {
             let mut io = IoHandler::new();
             io.extend_with(Server.to_delegate());
             let (client, server) = local::connect::<Client, _, _>(io);
             client.state().join(server)
         };
-        let (res, _) = fut.wait().unwrap();
+        let (res, _) = fut.compat().await.unwrap();
 
         assert_eq!(
             res,
@@ -69,15 +70,15 @@ mod test {
         );
     }
 
-    #[test]
-    fn status() {
+    #[tokio::test]
+    async fn status() {
         let fut = {
             let mut io = IoHandler::new();
             io.extend_with(Server.to_delegate());
             let (client, server) = local::connect::<Client, _, _>(io);
             client.status().join(server)
         };
-        let (res, _) = fut.wait().unwrap();
+        let (res, _) = fut.compat().await.unwrap();
 
         assert_eq!(res, super::Status { latest_height: 12 });
     }
