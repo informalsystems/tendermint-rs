@@ -510,7 +510,7 @@ func (ls LightStore) LatestVerified() LightBlock
 - Expected postcondition
    - returns the highest verified light block.
 
-
+#### **[LCV-FUNC-UPDATE.1]**:
 ```go
 func (ls LightStore) Update(lightBlock LightBlock, verfiedState VerifiedState)
 ```
@@ -628,6 +628,7 @@ func Validators(height int64) (ValidatorSet, error)
 
  
 ### Communicating Function
+
 #### **[LCV-FUNC-FETCH.1]**:
   ```go
 func FetchLightBlock(peer PeerID, height Height) LightBlock
