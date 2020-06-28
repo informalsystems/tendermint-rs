@@ -390,7 +390,8 @@ From time to time, a new instance of *Core Verification* is called with a
 height *targetHeight* greater than the height of any header in *LightStore*. 
 Each instance must eventually terminate. 
   - If
-     - the  *primary* is correct, and 
+     - the  *primary* is correct (and locally has the block of
+       *targetHeight*), and 
      - *LightStore* always contains a verified header whose age is less than the
         trusting period,  
     then *Core Verification* adds a verified header *hd* with height
@@ -453,8 +454,8 @@ independently:
   necessary conditions on how the height may evolve.
   
 
-> `ValidAndVerified` is the function that is sometimes called "Light
-> Client" in the IBC context.
+<!-- > `ValidAndVerified` is the function that is sometimes called "Light -->
+<!-- > Client" in the IBC context. -->
 
 
 ## Definitions
@@ -653,7 +654,7 @@ func FetchLightBlock(peer PeerID, height Height) LightBlock
    * if *n* is faulty: arbitrary error
    * if *lb.provider != peer* 
    * times out after 2 Delta (by assumption *n* is faulty)
----
+----
 
 
 
@@ -718,8 +719,6 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
 - Expected precondition
    - *lightStore* contains a LightBlock within the *trustingPeriod*  **[LCV-PRE-TP.1]**
    - *targetHeight* is greater than the height of all the LightBlocks in *lightStore*
-     (**TODO:** This precondition might not be upheld by the relayer as it may need to
-     verify arbitrary blocks, and not only the most recent one)
 - Expected postcondition: 
    - returns *lightStore* that contains a LightBlock that corresponds to a block
      of the blockchain of height *targetHeight*
@@ -739,9 +738,6 @@ func VerifyToTarget(primary PeerID, lightStore LightStore,
 ```go
 func ValidAndVerified(trusted LightBlock, untrusted LightBlock) Result
 ```
-- **TODO:** check and make complete
-- Expected precondition
-  - none
 - Expected precondition:
    - *untrusted* is valid, that is, satisfies the soundness [checks][block]
    - *untrusted* is **well-formed**, that is,
@@ -749,9 +745,9 @@ func ValidAndVerified(trusted LightBlock, untrusted LightBlock) Result
         - *untrusted.Validators = hash(untrusted.Header.Validators)*
         - *untrusted.NextValidators = hash(untrusted.Header.NextValidators)*
    - *trusted.Header.Time > now - trustingPeriod*
-   - *trusted.Commit* is a commit is for the header 
-     *trusted.Header*, i.e. it contains
-     the correct hash of the header
+   - *trusted.Commit* is a commit for the header 
+     *trusted.Header*, i.e., it contains
+     the correct hash of the header, and +2/3 of signatures
    - the `Height` and `Time` of `trusted` are smaller than the Height and 
   `Time` of `untrusted`, respectively
    - the *untrusted.Header* is well-formed (passes the tests from
@@ -784,7 +780,7 @@ func ValidAndVerified(trusted LightBlock, untrusted LightBlock) Result
 - Error condition: 
    - if precondition violated 
    - If *trusted.Header.Time > now - trustingPeriod* the blabla
----
+----
 
 
 #### **[LCV-FUNC-SCHEDULE.1]**:
@@ -819,7 +815,7 @@ func Schedule(lightStore, nextHeight, targetHeight) Height
 *trustedStore* is implemented by the light blocks in lightStore that
 have the state *StateVerified*.
 
-**TODO: check**
+
 #### Argument for [**[LCV-DIST-SAFE.1]**](#lcv-dist-safe):
 
 - `ValidAndVerified` implements the soundness checks and the checks 
@@ -835,7 +831,7 @@ have the state *StateVerified*.
 - If *primary* is correct, 
     - `FetchLightBlock` will always return a light block consistent
       with the blockchain
-    - `ValidAndVerified` either verify the header using the trusting
+    - `ValidAndVerified` either verifies the header using the trusting
       period or falls back to sequential
       verification
     - If [**[LCV-INV-TP.1]**](#LCV-INV-TP.1) holds, eventually every
@@ -848,6 +844,8 @@ have the state *StateVerified*.
     - it either provides headers that pass all the tests, and we
       return with the header 
 	- it provides one header that fails a test, core verification
+      **terminates with failure**.
+	- it times out and core verification
       **terminates with failure**.
 
 
