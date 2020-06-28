@@ -1,8 +1,27 @@
+use tendermint_light_client::{
+    components::{
+        clock::SystemClock,
+        io::{AtHeight, Io, ProdIo},
+        scheduler,
+        verifier::ProdVerifier,
+    },
+    evidence::ProdEvidenceReporter,
+    fork_detector::ProdForkDetector,
+    light_client::{self, LightClient},
+    peer_list::PeerList,
+    state::State,
+    store::{sled::SledStore, LightStore, VerifiedStatus},
+    supervisor::{Instance, Supervisor},
+    types::{Height, PeerId, Time, TrustThreshold},
+};
+
 use gumdrop::Options;
-use tendermint_light_client::prelude::Height;
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
 #[derive(Debug, Options)]
 struct CliOptions {
@@ -57,19 +76,19 @@ fn main() {
     }
 }
 
-fn sync_cmd(opts: SyncOpts) {
-    use tendermint_light_client::components::scheduler;
-    use tendermint_light_client::prelude::*;
-
-    let primary_addr = opts.address;
-    let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
-
+fn make_instance(
+    peer_id: PeerId,
+    addr: tendermint::net::Address,
+    db_path: impl AsRef<Path>,
+    opts: &SyncOpts,
+) -> Instance {
     let mut peer_map = HashMap::new();
-    peer_map.insert(primary, primary_addr);
+    peer_map.insert(peer_id, addr);
 
-    let mut io = ProdIo::new(peer_map);
+    let timeout = Duration::from_secs(10);
+    let io = ProdIo::new(peer_map, Some(timeout));
 
-    let db = sled::open(opts.db_path).unwrap_or_else(|e| {
+    let db = sled::open(db_path).unwrap_or_else(|e| {
         println!("[ error ] could not open database: {}", e);
         std::process::exit(1);
     });
@@ -77,26 +96,25 @@ fn sync_cmd(opts: SyncOpts) {
     let mut light_store = SledStore::new(db);
 
     if let Some(height) = opts.trusted_height {
-        let trusted_state = io.fetch_light_block(primary, height).unwrap_or_else(|e| {
-            println!("[ error ] could not retrieve trusted header: {}", e);
-            std::process::exit(1);
-        });
+        let trusted_state = io
+            .fetch_light_block(peer_id, AtHeight::At(height))
+            .unwrap_or_else(|e| {
+                println!("[ error ] could not retrieve trusted header: {}", e);
+                std::process::exit(1);
+            });
 
         light_store.insert(trusted_state, VerifiedStatus::Verified);
+    } else if light_store.highest(VerifiedStatus::Verified).is_none() {
+        println!("[ error ] no trusted state in database, please specify a trusted header");
+        std::process::exit(1);
     }
 
-    let peers = Peers {
-        primary,
-        witnesses: Vec::new(),
-    };
-
     let state = State {
-        peers,
         light_store: Box::new(light_store),
         verification_trace: HashMap::new(),
     };
 
-    let options = Options {
+    let options = light_client::Options {
         trust_threshold: TrustThreshold {
             numerator: 1,
             denominator: 3,
@@ -109,27 +127,53 @@ fn sync_cmd(opts: SyncOpts) {
     let verifier = ProdVerifier::default();
     let clock = SystemClock;
     let scheduler = scheduler::basic_bisecting_schedule;
-    let fork_detector = ProdForkDetector::default();
 
-    let mut light_client = LightClient::new(
-        state,
-        options,
-        clock,
-        scheduler,
-        verifier,
-        fork_detector,
-        io,
+    let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, io);
+
+    Instance::new(light_client, state)
+}
+
+fn sync_cmd(opts: SyncOpts) {
+    let addr = opts.address.clone();
+
+    let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
+    let witness: PeerId = "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF".parse().unwrap();
+
+    let primary_path = opts.db_path.join(primary.to_string());
+    let witness_path = opts.db_path.join(witness.to_string());
+
+    let primary_instance = make_instance(primary, addr.clone(), primary_path, &opts);
+    let witness_instance = make_instance(witness, addr.clone(), witness_path, &opts);
+
+    let mut peer_addr = HashMap::new();
+    peer_addr.insert(primary, addr.clone());
+    peer_addr.insert(witness, addr);
+
+    let peer_list = PeerList::builder()
+        .primary(primary, primary_instance)
+        .witness(witness, witness_instance)
+        .build();
+
+    let mut supervisor = Supervisor::new(
+        peer_list,
+        ProdForkDetector::default(),
+        ProdEvidenceReporter::new(peer_addr),
     );
 
+    let mut handle = supervisor.handle();
+
+    std::thread::spawn(|| supervisor.run());
+
     loop {
-        match light_client.verify_to_highest() {
+        handle.verify_to_highest_async(|result| match result {
             Ok(light_block) => {
                 println!("[ info  ] synced to block {}", light_block.height());
             }
             Err(e) => {
                 println!("[ error ] sync failed: {}", e);
             }
-        }
+        });
+
         std::thread::sleep(Duration::from_millis(800));
     }
 }

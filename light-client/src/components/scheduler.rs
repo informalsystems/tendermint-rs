@@ -1,4 +1,8 @@
-use crate::prelude::*;
+use crate::{
+    store::{LightStore, VerifiedStatus},
+    types::Height,
+};
+
 use contracts::*;
 
 /// The scheduler decides what block to verify next given the current and target heights.
@@ -6,7 +10,7 @@ use contracts::*;
 /// The scheduler is given access to the light store, in order to optionally
 /// improve performance by picking a next block that has already been fetched.
 #[contract_trait]
-pub trait Scheduler {
+pub trait Scheduler: Send {
     /// Decides what block to verify next.
     ///
     /// ## Precondition
@@ -14,7 +18,7 @@ pub trait Scheduler {
     ///
     /// ## Postcondition
     /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
-    #[pre(light_store.latest(VerifiedStatus::Verified).is_some())]
+    #[pre(light_store.highest(VerifiedStatus::Verified).is_some())]
     #[post(valid_schedule(ret, target_height, current_height, light_store))]
     fn schedule(
         &self,
@@ -25,7 +29,7 @@ pub trait Scheduler {
 }
 
 #[contract_trait]
-impl<F> Scheduler for F
+impl<F: Send + Clone> Scheduler for F
 where
     F: Fn(&dyn LightStore, Height, Height) -> Height,
 {
@@ -47,26 +51,25 @@ where
 ///
 /// ## Postcondition
 /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
-#[pre(light_store.latest(VerifiedStatus::Verified).is_some())]
+#[pre(light_store.highest(VerifiedStatus::Verified).is_some())]
 #[post(valid_schedule(ret, target_height, current_height, light_store))]
 pub fn basic_bisecting_schedule(
     light_store: &dyn LightStore,
     current_height: Height,
     target_height: Height,
 ) -> Height {
-    let latest_trusted_height = light_store
-        .latest(VerifiedStatus::Verified)
+    let trusted_height = light_store
+        .highest(VerifiedStatus::Verified)
         .map(|lb| lb.height())
         .unwrap();
 
-    if latest_trusted_height == current_height && latest_trusted_height < target_height {
-        target_height
-    } else if latest_trusted_height < current_height && latest_trusted_height < target_height {
-        midpoint(latest_trusted_height, current_height)
-    } else if latest_trusted_height == target_height {
+    if trusted_height == current_height {
+        // We can't go further back, so let's try to verify the target height again,
+        // hopefully we have enough trust in the store by now.
         target_height
     } else {
-        midpoint(current_height, target_height)
+        // Pick a midpoint H between `trusted_height <= H <= current_height`.
+        midpoint(trusted_height, current_height)
     }
 }
 
@@ -99,7 +102,7 @@ pub fn valid_schedule(
     light_store: &dyn LightStore,
 ) -> bool {
     let latest_trusted_height = light_store
-        .latest(VerifiedStatus::Verified)
+        .highest(VerifiedStatus::Verified)
         .map(|lb| lb.height())
         .unwrap();
 
@@ -114,8 +117,8 @@ pub fn valid_schedule(
     }
 }
 
-#[pre(low < high)]
-#[post(low < ret && ret <= high)]
+#[pre(low <= high)]
+#[post(low <= ret && ret <= high)]
 fn midpoint(low: Height, high: Height) -> Height {
     low + (high + 1 - low) / 2
 }

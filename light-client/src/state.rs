@@ -1,6 +1,9 @@
 //! State maintained by the light client.
 
-use crate::prelude::*;
+use crate::{
+    store::{LightStore, VerifiedStatus},
+    types::{Height, LightBlock},
+};
 
 use contracts::*;
 use std::collections::{HashMap, HashSet};
@@ -8,20 +11,9 @@ use std::collections::{HashMap, HashSet};
 /// Records which blocks were needed to verify a target block, eg. during bisection.
 pub type VerificationTrace = HashMap<Height, HashSet<Height>>;
 
-/// The set of peers of a light client.
-#[derive(Debug)]
-pub struct Peers {
-    /// The primary peer from which the light client will fetch blocks.
-    pub primary: PeerId,
-    /// Witnesses used for fork detection.
-    pub witnesses: Vec<PeerId>,
-}
-
 /// The state managed by the light client.
 #[derive(Debug)]
 pub struct State {
-    /// Set of peers of the light client.
-    pub peers: Peers,
     /// Store for light blocks.
     pub light_store: Box<dyn LightStore>,
     /// Records which blocks were needed to verify a target block, eg. during bisection.
@@ -29,6 +21,13 @@ pub struct State {
 }
 
 impl State {
+    pub fn new(light_store: impl LightStore + 'static) -> Self {
+        Self {
+            light_store: Box::new(light_store),
+            verification_trace: VerificationTrace::new(),
+        }
+    }
+
     /// Record that the block at `height` was needed to verify the block at `target_height`.
     ///
     /// ## Preconditions

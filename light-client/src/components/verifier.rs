@@ -1,5 +1,14 @@
 use crate::predicates as preds;
-use crate::prelude::*;
+use crate::{
+    errors::ErrorExt,
+    light_client::Options,
+    operations::{
+        CommitValidator, Hasher, ProdCommitValidator, ProdHasher, ProdVotingPowerCalculator,
+        VotingPowerCalculator,
+    },
+    types::LightBlock,
+};
+use preds::{errors::VerificationError, ProdPredicates, VerificationPredicates};
 
 /// Represents the result of the verification performed by the
 /// verifier component.
@@ -33,7 +42,7 @@ impl From<Result<(), VerificationError>> for Verdict {
 /// ## Implements
 /// - [TMBC-VAL-CONTAINS-CORR.1]
 /// - [TMBC-VAL-COMMIT.1]
-pub trait Verifier {
+pub trait Verifier: Send {
     /// Perform the verification.
     fn verify(&self, untrusted: &LightBlock, trusted: &LightBlock, options: &Options) -> Verdict;
 }
@@ -51,7 +60,7 @@ pub struct ProdVerifier {
     predicates: Box<dyn VerificationPredicates>,
     voting_power_calculator: Box<dyn VotingPowerCalculator>,
     commit_validator: Box<dyn CommitValidator>,
-    header_hasher: Box<dyn HeaderHasher>,
+    hasher: Box<dyn Hasher>,
 }
 
 impl ProdVerifier {
@@ -59,13 +68,13 @@ impl ProdVerifier {
         predicates: impl VerificationPredicates + 'static,
         voting_power_calculator: impl VotingPowerCalculator + 'static,
         commit_validator: impl CommitValidator + 'static,
-        header_hasher: impl HeaderHasher + 'static,
+        hasher: impl Hasher + 'static,
     ) -> Self {
         Self {
             predicates: Box::new(predicates),
             voting_power_calculator: Box::new(voting_power_calculator),
             commit_validator: Box::new(commit_validator),
-            header_hasher: Box::new(header_hasher),
+            hasher: Box::new(hasher),
         }
     }
 }
@@ -76,18 +85,18 @@ impl Default for ProdVerifier {
             ProdPredicates,
             ProdVotingPowerCalculator,
             ProdCommitValidator,
-            ProdHeaderHasher,
+            ProdHasher,
         )
     }
 }
 
 impl Verifier for ProdVerifier {
-    fn verify(&self, untrusted: &LightBlock, trusted: &TrustedState, options: &Options) -> Verdict {
+    fn verify(&self, untrusted: &LightBlock, trusted: &LightBlock, options: &Options) -> Verdict {
         preds::verify(
             &*self.predicates,
-            &self.voting_power_calculator,
-            &self.commit_validator,
-            &self.header_hasher,
+            &*self.voting_power_calculator,
+            &*self.commit_validator,
+            &*self.hasher,
             &trusted,
             &untrusted,
             options,

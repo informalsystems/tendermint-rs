@@ -1,8 +1,11 @@
 pub mod utils;
 
-use self::utils::*;
-use crate::prelude::*;
+use crate::{
+    store::sled::utils::*,
+    types::{Height, LightBlock},
+};
 
+use super::{LightStore, VerifiedStatus};
 use ::sled::Db as SledDb;
 
 const VERIFIED_PREFIX: &str = "light_store/verified";
@@ -10,7 +13,7 @@ const UNVERIFIED_PREFIX: &str = "light_store/unverified";
 const FAILED_PREFIX: &str = "light_store/failed";
 
 /// Persistent store backed by an on-disk `sled` database.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SledStore {
     db: SledDb,
     verified_db: KeyValueDb<Height, LightBlock>,
@@ -64,7 +67,7 @@ impl LightStore for SledStore {
         self.db(status).remove(&self.db, &height).ok();
     }
 
-    fn latest(&self, status: VerifiedStatus) -> Option<LightBlock> {
+    fn highest(&self, status: VerifiedStatus) -> Option<LightBlock> {
         self.db(status).iter(&self.db).next_back()
     }
 

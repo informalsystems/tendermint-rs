@@ -1,6 +1,11 @@
 //! Predicates used in components contracts.
 
-use crate::prelude::*;
+use crate::{
+    store::{LightStore, VerifiedStatus},
+    types::{Height, LightBlock, Time},
+};
+
+use std::time::Duration;
 
 pub fn trusted_store_contains_block_at_target_height(
     light_store: &dyn LightStore,

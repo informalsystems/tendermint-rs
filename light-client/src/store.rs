@@ -4,7 +4,7 @@
 //! - a transient, in-memory implementation for testing purposes
 //! - a persistent, on-disk, sled-backed implementation for production
 
-use crate::prelude::*;
+use crate::types::{Height, LightBlock};
 
 use serde::{Deserialize, Serialize};
 
@@ -43,7 +43,7 @@ impl VerifiedStatus {
 ///
 /// ## Implements
 /// - [LCV-DIST-STORE.1]
-pub trait LightStore: std::fmt::Debug {
+pub trait LightStore: std::fmt::Debug + Send {
     /// Get the light block at the given height with the given status, or return `None` otherwise.
     fn get(&self, height: Height, status: VerifiedStatus) -> Option<LightBlock>;
     /// Update the `status` of the given `light_block`.
@@ -54,7 +54,7 @@ pub trait LightStore: std::fmt::Debug {
     /// Remove the light block with the given height and status, if any.
     fn remove(&mut self, height: Height, status: VerifiedStatus);
     /// Get the highest light block with the given status.
-    fn latest(&self, status: VerifiedStatus) -> Option<LightBlock>;
+    fn highest(&self, status: VerifiedStatus) -> Option<LightBlock>;
     /// Get an iterator of all light blocks with the given status.
     fn all(&self, status: VerifiedStatus) -> Box<dyn Iterator<Item = LightBlock>>;
 }

@@ -12,15 +12,19 @@
 
 //! See the `light_client` module for the main documentation.
 
+pub mod callback;
 pub mod components;
 pub mod contracts;
 pub mod errors;
+pub mod evidence;
+pub mod fork_detector;
 pub mod light_client;
 pub mod operations;
+pub mod peer_list;
 pub mod predicates;
-pub mod prelude;
 pub mod state;
 pub mod store;
+pub mod supervisor;
 pub mod types;
 
 mod macros;

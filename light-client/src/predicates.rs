@@ -1,8 +1,14 @@
 //! Predicates for light block validation and verification.
 
-use crate::prelude::*;
+use crate::{
+    ensure,
+    light_client::Options,
+    operations::{CommitValidator, Hasher, VotingPowerCalculator},
+    types::{Header, Height, LightBlock, SignedHeader, Time, TrustThreshold, ValidatorSet},
+};
 
-use tendermint::lite::ValidatorSet as _;
+use errors::VerificationError;
+use std::time::Duration;
 
 pub mod errors;
 
@@ -18,26 +24,37 @@ impl VerificationPredicates for ProdPredicates {}
 ///
 /// This enables test implementations to only override a single method rather than
 /// have to re-define every predicate.
-pub trait VerificationPredicates {
-    fn validator_sets_match(&self, light_block: &LightBlock) -> Result<(), VerificationError> {
+pub trait VerificationPredicates: Send {
+    fn validator_sets_match(
+        &self,
+        light_block: &LightBlock,
+        hasher: &dyn Hasher,
+    ) -> Result<(), VerificationError> {
+        let validators_hash = hasher.hash_validator_set(&light_block.validators);
+
         ensure!(
-            light_block.signed_header.header.validators_hash == light_block.validators.hash(),
+            light_block.signed_header.header.validators_hash == validators_hash,
             VerificationError::InvalidValidatorSet {
                 header_validators_hash: light_block.signed_header.header.validators_hash,
-                validators_hash: light_block.validators.hash(),
+                validators_hash,
             }
         );
 
         Ok(())
     }
 
-    fn next_validators_match(&self, light_block: &LightBlock) -> Result<(), VerificationError> {
+    fn next_validators_match(
+        &self,
+        light_block: &LightBlock,
+        hasher: &dyn Hasher,
+    ) -> Result<(), VerificationError> {
+        let next_validators_hash = hasher.hash_validator_set(&light_block.next_validators);
+
         ensure!(
-            light_block.signed_header.header.next_validators_hash
-                == light_block.next_validators.hash(),
+            light_block.signed_header.header.next_validators_hash == next_validators_hash,
             VerificationError::InvalidNextValidatorSet {
                 header_next_validators_hash: light_block.signed_header.header.next_validators_hash,
-                next_validators_hash: light_block.next_validators.hash(),
+                next_validators_hash: next_validators_hash
             }
         );
 
@@ -47,9 +64,9 @@ pub trait VerificationPredicates {
     fn header_matches_commit(
         &self,
         signed_header: &SignedHeader,
-        header_hasher: &dyn HeaderHasher,
+        hasher: &dyn Hasher,
     ) -> Result<(), VerificationError> {
-        let header_hash = header_hasher.hash(&signed_header.header);
+        let header_hash = hasher.hash_header(&signed_header.header);
 
         ensure!(
             header_hash == signed_header.commit.block_id.hash,
@@ -66,12 +83,10 @@ pub trait VerificationPredicates {
         &self,
         signed_header: &SignedHeader,
         validators: &ValidatorSet,
-        validator: &dyn CommitValidator,
+        commit_validator: &dyn CommitValidator,
     ) -> Result<(), VerificationError> {
-        // FIXME: Do not discard underlying error
-        validator
-            .validate(signed_header, validators)
-            .map_err(|e| VerificationError::InvalidCommit(e.to_string()))?;
+        commit_validator.validate(signed_header, validators)?;
+        commit_validator.validate_full(signed_header, validators)?;
 
         Ok(())
     }
@@ -137,30 +152,6 @@ pub trait VerificationPredicates {
         Ok(())
     }
 
-    fn has_sufficient_voting_power(
-        &self,
-        signed_header: &SignedHeader,
-        validators: &ValidatorSet,
-        trust_threshold: &TrustThreshold,
-        calculator: &dyn VotingPowerCalculator,
-    ) -> Result<(), VerificationError> {
-        // FIXME: Do not discard underlying error
-        let total_power = calculator.total_power_of(validators);
-        let voting_power = calculator
-            .voting_power_in(signed_header, validators)
-            .map_err(|e| VerificationError::ImplementationSpecific(e.to_string()))?;
-
-        ensure!(
-            voting_power * trust_threshold.denominator > total_power * trust_threshold.numerator,
-            VerificationError::InsufficientVotingPower {
-                total_power,
-                voting_power,
-            }
-        );
-
-        Ok(())
-    }
-
     fn has_sufficient_validators_overlap(
         &self,
         untrusted_sh: &SignedHeader,
@@ -168,21 +159,7 @@ pub trait VerificationPredicates {
         trust_threshold: &TrustThreshold,
         calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), VerificationError> {
-        // FIXME: Do not discard underlying error
-        let total_power = calculator.total_power_of(trusted_validators);
-        let voting_power = calculator
-            .voting_power_in(untrusted_sh, trusted_validators)
-            .map_err(|e| VerificationError::ImplementationSpecific(e.to_string()))?;
-
-        ensure!(
-            voting_power * trust_threshold.denominator > total_power * trust_threshold.numerator,
-            VerificationError::InsufficientValidatorsOverlap {
-                total_power,
-                signed_power: voting_power,
-                trust_threshold: *trust_threshold,
-            }
-        );
-
+        calculator.check_enough_trust(untrusted_sh, trusted_validators, *trust_threshold)?;
         Ok(())
     }
 
@@ -192,27 +169,14 @@ pub trait VerificationPredicates {
         untrusted_validators: &ValidatorSet,
         calculator: &dyn VotingPowerCalculator,
     ) -> Result<(), VerificationError> {
-        // FIXME: Do not discard underlying error
-        let total_power = calculator.total_power_of(untrusted_validators);
-        let signed_power = calculator
-            .voting_power_in(untrusted_sh, untrusted_validators)
-            .map_err(|e| VerificationError::ImplementationSpecific(e.to_string()))?;
-
-        ensure!(
-            signed_power * 3 > total_power * 2,
-            VerificationError::InsufficientCommitPower {
-                total_power,
-                signed_power,
-            }
-        );
-
+        calculator.check_signers_overlap(untrusted_sh, untrusted_validators)?;
         Ok(())
     }
 
     fn valid_next_validator_set(
         &self,
         light_block: &LightBlock,
-        trusted_state: &TrustedState,
+        trusted_state: &LightBlock,
     ) -> Result<(), VerificationError> {
         ensure!(
             light_block.signed_header.header.validators_hash
@@ -242,7 +206,7 @@ pub fn verify(
     vp: &dyn VerificationPredicates,
     voting_power_calculator: &dyn VotingPowerCalculator,
     commit_validator: &dyn CommitValidator,
-    header_hasher: &dyn HeaderHasher,
+    hasher: &dyn Hasher,
     trusted: &LightBlock,
     untrusted: &LightBlock,
     options: &Options,
@@ -256,13 +220,13 @@ pub fn verify(
     )?;
 
     // Ensure the header validator hashes match the given validators
-    vp.validator_sets_match(&untrusted)?;
+    vp.validator_sets_match(&untrusted, &*hasher)?;
 
     // Ensure the header next validator hashes match the given next validators
-    vp.next_validators_match(&untrusted)?;
+    vp.next_validators_match(&untrusted, &*hasher)?;
 
     // Ensure the header matches the commit
-    vp.header_matches_commit(&untrusted.signed_header, header_hasher)?;
+    vp.header_matches_commit(&untrusted.signed_header, hasher)?;
 
     // Additional implementation specific validation
     vp.valid_commit(
