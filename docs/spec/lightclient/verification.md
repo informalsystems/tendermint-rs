@@ -68,6 +68,19 @@ of the problem addressed by the Lightclient Verification protocol.
        client makes progress depends heavily on the changes in the
        validator sets of the blockchain. We discuss some typical scenarios.
 
+- [Part V](#part-v---supporting-the-ibc-relayer): The above parts
+  focus on a common case where the last verified block has height *h1*
+  and the 
+  requested height *h2* satisfies *h2 > h1*. For IBC, there are
+  scenarios where this might not be the case. In this part, we provide
+  some preliminaries for supporting this. As not all details of the
+  IBC requirements are clear by now, we do not provide a complete
+  specification at this point. We mark with "Open Question" points
+  that need to be addressed in order to finalize this specification. 
+  It should be noted that the technically
+  most challenging case is the one specified in Part IV.
+
+
 In this document we quite extensively use tags in order to be able to
 reference assumptions, invariants, etc. in future communication. In
 these tags we frequently use the following short forms:
@@ -915,40 +928,75 @@ If on the blockchain the validator set of the block at height
 
 
 
-## Supporting the IBC Relayer
+# Part V - Supporting the IBC Relayer
 
-We might need to download and verify headers whose heights are smaller
-than lightStore.LatestVerified.Height. To formalize
-the solution, we start with the following methods for the LightStore
+The above specification focuses on the most common case, which also
+constitutes the most challenging task: using the Tendermint [security
+model][TMBC-FM-2THIRDS-link] to verify light blocks without
+downloading all intermediate blocks. To focus on this challenge, above
+we have restricted ourselves to the case where  *targetHeight* is
+greater than the height of any trusted header. This simplified
+presentation of the algorithm as initially
+`lightStore.LatestVerified()` is less than *targetHeight*, and in the
+process of verification `lightStore.LatestVerified()` increases until
+*targetHeight* is reached.
+
+For [IBC][ibc-rs] it might be that some "older" header is
+needed, that is,  *targetHeight < lightStore.LatestVerified()*. In this section we present a preliminary design, and we mark some
+remaining open questions. 
+If  *targetHeight < lightStore.LatestVerified()* our design separates
+the following cases:
+
+- A previous instance of ` VerifyToTarget` has already downloaded the
+  light block of *targetHeight*. There are two cases
+   - the light block has been verified
+   - the light block has not been verified yet
+- No light block of *targetHeight* had been downloaded before. There
+  are two cases:
+   - there exists a verified light block of height less than  *targetHeight*
+   - otherwise. In this case we need to do "backwards verification"
+     using the hash of the previous block in the `LastBlockID` field
+     of a header.
+	 
+**Open Question:** what are the security assumptions for backward
+verification. Should we check that the light block we verify from
+(and/or the checked light block) is within the trusting period?
+   
+
+The design just presents the above case
+distinction as a function, and defines some auxiliary functions in the
+same way the protocol was presented in 
+[Part IV](#part-iv---light-client-verification-protocol).
+
 
 
 ```go
 func (ls LightStore) LatestPrevious(height Height) (LightBlock, bool) 
 ```
 - Expected postcondition
-  - returns a light block *lb* that satisfies:
-      - *lb* is in lightStore
-      - *lb* is verified and not expired
-	  - *lb.Header.Height < height*
-	  - for all *b* in lightStore s.t. *b* is verified and not expired it
-        holds *lb.Header.Height >= b.Header.Height*
-   - or false in the second argument if
-    the LightStore does not contain such an *lb*.
+    - returns a light block *lb* that satisfies:
+	    - *lb* is in lightStore
+		- *lb* is verified and not expired
+	    - *lb.Header.Height < height*
+	    - for all *b* in lightStore s.t. *b* is verified and not expired it
+          holds *lb.Header.Height >= b.Header.Height*
+    - *false* in the second argument if
+      the LightStore does not contain such an *lb*.
  
 
 ```go
 func (ls LightStore) MinVerified() (LightBlock, bool) 
 ```
 - Expected postcondition
-  - returns a light block *lb* that satisfies:
-      - *lb* is in lightStore
-      - *lb* is verified **TODO:** perhaps replace by trusted?
-	  - *lb.Header.Height* is minimal in the lightStore
-	  - **TODO:** according to this it might be expired (outside the
-        trusting period). I believe this is safe. Are there reasons we
-        should not do that?
-   - or false in the second argument if
-    the LightStore does not contain such an *lb*.
+    - returns a light block *lb* that satisfies:
+        - *lb* is in lightStore
+        - *lb* is verified **Open Question:** replace by trusted?
+	    - *lb.Header.Height* is minimal in the lightStore
+	    - **Open Question:** according to this, it might be expired (outside the
+          trusting period). This approach appears safe. Are there reasons we
+          should not do that?
+    - *false* in the second argument if
+      the LightStore does not contain such an *lb*.
  
 If a height that is smaller than the smallest height in the lightstore
 is required, we check the hashes backwards. This is done with the
@@ -956,8 +1004,8 @@ following function:
  
 #### **[LCV-FUNC-BACKWARDS.1]**:
 ```go
-func Backwards(primary PeerID, lightStore LightStore,
-                    targetHeight Height) (LightStore, Result) {
+func Backwards (primary PeerID, lightStore LightStore, targetHeight Height) 
+               (LightStore, Result) {
   
     lb,res = lightStore.MinVerified()
     if res = false {
@@ -974,9 +1022,10 @@ func Backwards(primary PeerID, lightStore LightStore,
         }
         else {
             lightStore.Update(current, StateVerified)
-            // **TODO:** Do we need a new state type for backwards.
+            // **Open Question:** Do we need a new state type for
+            // backwards verified light blocks?
         }
-        latest := current
+        latest = current
     }
     return (lightStore, ResultSuccess)
 }
@@ -997,35 +1046,32 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
     }
 
     if targetHeight > lightStore.LatestVerified.height {
+	    // case of Part IV
         return VerifyToTarget(primary, lightStore, targetHeight)
     }
     else {
         b2, r2 = lightStore.LatestPrevious(targetHeight);
         if r2 = true {
-            // make auxiliary lightStore auxLS to call VerifyToTarget
-			// VerifyToTarget uses LatestVerified of the lightStore
-            // passed in. For that we need:
+            // make auxiliary lightStore auxLS to call VerifyToTarget.
+			// VerifyToTarget uses LatestVerified of the given lightStore
+            // For that we need:
             // auxLS.LatestVerified = lightStore.LatestPrevious(targetHeight)
             auxLS.Init;
             auxLS.Update(b2,StateVerified);
             if r1 = true {
-                // we need to verify a previously downloaded light block
+                // we need to verify a previously downloaded light block.
                 // we add it to the auxiliary store so that VerifyToTarget
                 // does not download it again
                 auxLS.Update(b1,b1.State);
             }
             auxLS, res2 = VerifyToTarget(primary, auxLS, targetHeight)
-            if res2 = ResultSuccess {
-                // move all lightblocks from auxLS to lightStore, 
-                // maintain state
-                for i, s range auxLS {
-                    lighStore.Update(s,s.State)
-                }
-                return (lightStore, ResultSuccess)
+            // move all lightblocks from auxLS to lightStore, 
+            // maintain state
+			// we do that whether VerifyToTarget was successful or not
+            for i, s range auxLS {
+                lighStore.Update(s,s.State)
             }
-            else {
-                return (lightStore, ResultFailure)
-            }
+            return (lightStore, res2)
         }
         else {
             return Backwards(primary, lightStore, targetHeight)
@@ -1068,6 +1114,8 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 
 [[fullnode]] Specification of the full node API
 
+[[ibc-rs]] Rust implementation of IBC modules and relayer.
+
 [[lightclient]] The light client ADR [77d2651 on Dec 27, 2019].
 
 [RPC]: https://docs.tendermint.com/master/rpc/
@@ -1096,6 +1144,8 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 [lightclient]: https://github.com/interchainio/tendermint-rs/blob/e2cb9aca0b95430fca2eac154edddc9588038982/docs/architecture/adr-002-lite-client.md
 [failuredetector]: https://github.com/informalsystems/VDD/blob/master/liteclient/failuredetector.md
 [fullnode]: https://github.com/tendermint/spec/blob/master/spec/blockchain/fullnode.md
+
+[ibc-rs]:https://github.com/informalsystems/ibc-rs
 
 [FN-LuckyCase-link]: https://github.com/tendermint/spec/blob/master/spec/blockchain/fullnode.md#fn-luckycase
 
