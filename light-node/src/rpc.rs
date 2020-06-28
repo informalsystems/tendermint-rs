@@ -3,15 +3,15 @@ use jsonrpc_core::Error;
 use jsonrpc_derive::rpc;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Deserialize, Serialize)]
-struct State {
+#[derive(Debug, Default, PartialEq, Deserialize, Serialize)]
+pub struct State {
     header: String,
     commit: String,
     validator_set: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-struct Status {
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
+pub struct Status {
     latest_height: u64,
 }
 
@@ -26,9 +26,11 @@ pub trait Rpc {
     fn status(&self) -> FutureResult<Status, Error>;
 }
 
-struct RpcImpl;
+pub use self::rpc_impl_Rpc::gen_client::Client;
 
-impl Rpc for RpcImpl {
+pub struct Server;
+
+impl Rpc for Server {
     fn state(&self) -> FutureResult<State, Error> {
         future::ok(State::default())
     }
@@ -43,35 +45,40 @@ mod test {
     use jsonrpc_core::futures::future::Future;
     use jsonrpc_core::IoHandler;
     use jsonrpc_core_client::transports::local;
+    use pretty_assertions::assert_eq;
 
-    use super::rpc_impl_Rpc::gen_client;
-    use super::rpc_impl_Rpc::gen_server::Rpc;
-    use super::RpcImpl;
+    use super::{Client, Rpc as _, Server};
 
     #[test]
     fn state() {
-        let mut io = IoHandler::new();
-        io.extend_with(RpcImpl.to_delegate());
-
         let fut = {
-            let (client, server) = local::connect::<gen_client::Client, _, _>(io);
-            client.state().map(|res| println!("{:?}", res)).join(server)
+            let mut io = IoHandler::new();
+            io.extend_with(Server.to_delegate());
+            let (client, server) = local::connect::<Client, _, _>(io);
+            client.state().join(server)
         };
-        fut.wait().unwrap();
+        let (res, _) = fut.wait().unwrap();
+
+        assert_eq!(
+            res,
+            super::State {
+                header: "".to_string(),
+                commit: "".to_string(),
+                validator_set: "".to_string(),
+            }
+        );
     }
 
     #[test]
     fn status() {
-        let mut io = IoHandler::new();
-        io.extend_with(RpcImpl.to_delegate());
-
         let fut = {
-            let (client, server) = local::connect::<gen_client::Client, _, _>(io);
-            client
-                .status()
-                .map(|res| println!("{:?}", res))
-                .join(server)
+            let mut io = IoHandler::new();
+            io.extend_with(Server.to_delegate());
+            let (client, server) = local::connect::<Client, _, _>(io);
+            client.status().join(server)
         };
-        fut.wait().unwrap();
+        let (res, _) = fut.wait().unwrap();
+
+        assert_eq!(res, super::Status { latest_height: 12 });
     }
 }
