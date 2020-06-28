@@ -1112,8 +1112,6 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 
 [[block]] Specification of the block data structure. 
 
-[[blockchain]] The specification of the Tendermint blockchain. Tags refering to this specification are labeled [TMBC-*].
-
 [[RPC]] RPC client for Tendermint
 
 [[failuredetector]] The specification of the light client fork detector.
