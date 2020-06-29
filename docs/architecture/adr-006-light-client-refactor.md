@@ -4,7 +4,7 @@
 - 2020-03-15: Initial draft
 - 2020-03-23: New decomposition
 - 2020-05-18: Concurrency
-- 2020-06-26: Handler Abstraction
+- 2020-06-26: Handle Abstraction
 
 ## Context
 
@@ -37,15 +37,22 @@ which provides an API for interacting with a set of peers known as a
 PeerList. The PeerList will have a single peer as the Primary and
 multiple Peers available as Secondaries.
 
-Each lightClient Instance will be configured to perform the light client
+Each LightClient Instance will be configured to perform the light client
 protocol against a single peer. The Instance will be decomposed into
-IO independently verifiable components for:
+independently verifiable components for:
 
     * IO: Fetching LightBlocks from the peer
     * Verifier: Verifying a LightBlock based on a TrustedState
     * Scheduler: Schedule the next block based on the last TrustedState
+    * Clock: Provide the current time
 
-Each component will be represented as a trait allowing mock replacements
+In addition, cryptographic operations are also decomposed into three "sub-components":
+
+    * Hasher: For hashing headers
+    * CommitValidator: For validating commit integrity
+    * VotingPowerCalculator: For tallying the voting power of a validator set in a commit and verifying signatures
+
+Each component and operation will be represented as a trait allowing mock replacements
 to be used during integration testing.
 
 The Supervisor will:
@@ -73,8 +80,8 @@ freely and safely in distinct threads or runtime.
 fn main() {
     let mut light_client = Supervisor::new();
 
-    // Get a handler specifically for the relayer
-    let relayer_light_client = light_client.handler();
+    // Get a handle specifically for the relayer
+    let relayer_light_client = light_client.handle();
 
     let relayer = Relayer::new(light_client);
     ...
@@ -84,15 +91,15 @@ fn main() {
 }
 ```
 
-For lack of better naming we call this abstraction "Handler". The
+For lack of better naming we call this abstraction "Handle". The
 Supervisor outlined above is executed by running in it's own thread. But
-before doing so, it spawns a `Hander`. The Handler is clonable and can
+before doing so, it spawns a `Handle`. The Handle is clonable and can
 be given to any component who wants safe, serialized access to the
 Supervisor.
 
 The implementation is a simple abstraction which facilitates
 communication over channels. Events send across a channel include a
-callback. This callback abstraction allows the outer handler to expose a
+callback. This callback abstraction allows the outer handle to expose a
 synchronous operation event if the delegation is inherently
 asynchronous. Delegating at this level opens to door to exposing
 synchronous interaction to thread pools and allowing components to
@@ -100,11 +107,11 @@ handle their concurrency optimization internally without burdening the
 component user.
 
 ```rust
-pub struct Handler {
+pub struct Handle {
     sender: channel::Sender<Event>,
 }
 ...
-impl Handler {
+impl Handle {
     pub fn verify_to_target(&mut self, height: Height) -> Result<Header, &'static str> {
         let (sender, receiver) = channel::bounded::<Event>(1);
         let callback = Callback::new(move |result| {
@@ -146,10 +153,10 @@ pub struct Supervisor {
 
 impl Supervisor {
     ...
-    pub fn handler(&mut self) -> Handler {
+    pub fn handle(&mut self) -> Handle {
         let sender = self.sender.clone();
 
-        return Handler::new(sender);
+        return Handle::new(sender);
     }
     ...
     pub fn run(mut self) {
