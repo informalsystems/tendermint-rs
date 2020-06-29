@@ -22,13 +22,14 @@ pub type VerificationResult = Result<LightBlock, Error>;
 /// used to communicate back the responses of the requests.
 #[derive(Debug)]
 enum HandleInput {
-    // Inputs
     /// Terminate the supervisor process
     Terminate(Callback<()>),
     /// Verify to the highest height, call the provided callback with result
     VerifyToHighest(Callback<VerificationResult>),
     /// Verify to the given height, call the provided callback with result
     VerifyToTarget(Height, Callback<VerificationResult>),
+    /// Get the latest trusted block.
+    LatestTrusted(Callback<Result<Option<LightBlock>, Error>>),
 }
 
 /// An light client `Instance` packages a `LightClient` together with its `State`.
@@ -133,6 +134,17 @@ impl Supervisor {
             fork_detector: Box::new(fork_detector),
             evidence_reporter: Box::new(evidence_reporter),
         }
+    }
+
+    /// Create a new handle to this supervisor.
+    pub fn handle(&mut self) -> Handle {
+        Handle::new(self.sender.clone())
+    }
+
+    #[pre(self.peers.primary().is_some())]
+    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
+        let primary = self.peers.primary().ok_or_else(|| ErrorKind::NoPrimary)?;
+        Ok(primary.latest_trusted())
     }
 
     /// Verify to the highest block.
@@ -270,11 +282,6 @@ impl Supervisor {
             .detect_forks(light_block, &trusted_state, self.peers.witnesses())
     }
 
-    /// Create a new handle to this supervisor.
-    pub fn handle(&mut self) -> Handle {
-        Handle::new(self.sender.clone())
-    }
-
     /// Run the supervisor event loop in the same thread.
     ///
     /// This method should typically be called within a new thread with `std::thread::spawn`.
@@ -283,6 +290,10 @@ impl Supervisor {
             let event = self.receiver.recv().unwrap();
 
             match event {
+                HandleInput::LatestTrusted(callback) => {
+                    let outcome = self.latest_trusted();
+                    callback.call(outcome);
+                }
                 HandleInput::Terminate(callback) => {
                     callback.call(());
                     return;
@@ -311,6 +322,23 @@ impl Handle {
     /// the given channel. For internal use only.
     fn new(sender: channel::Sender<HandleInput>) -> Self {
         Self { sender }
+    }
+
+    /// Get latest trusted block from the [`Supervisor`].
+    pub fn latest_trusted(&mut self) -> Result<Option<LightBlock>, Error> {
+        let (sender, receiver) = channel::bounded::<Result<Option<LightBlock>, Error>>(1);
+
+        let callback = Callback::new(move |result| {
+            sender.send(result).unwrap();
+        });
+
+        // TODO(xla): Transform crossbeam errors into proper domain errors.
+        self.sender
+            .send(HandleInput::LatestTrusted(callback))
+            .unwrap();
+
+        // TODO(xla): Transform crossbeam errors into proper domain errors.
+        receiver.recv().unwrap()
     }
 
     /// Verify to the highest block.
