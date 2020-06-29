@@ -1,6 +1,6 @@
 use crate::{
-    store::{LightStore, VerifiedStatus},
-    types::Height,
+    store::LightStore,
+    types::{Height, Status},
 };
 
 use contracts::*;
@@ -18,7 +18,7 @@ pub trait Scheduler: Send {
     ///
     /// ## Postcondition
     /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
-    #[pre(light_store.highest(VerifiedStatus::Verified).is_some())]
+    #[pre(light_store.highest(Status::Verified).is_some())]
     #[post(valid_schedule(ret, target_height, current_height, light_store))]
     fn schedule(
         &self,
@@ -51,7 +51,7 @@ where
 ///
 /// ## Postcondition
 /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
-#[pre(light_store.highest(VerifiedStatus::Verified).is_some())]
+#[pre(light_store.highest(Status::Verified).is_some())]
 #[post(valid_schedule(ret, target_height, current_height, light_store))]
 pub fn basic_bisecting_schedule(
     light_store: &dyn LightStore,
@@ -59,7 +59,7 @@ pub fn basic_bisecting_schedule(
     target_height: Height,
 ) -> Height {
     let trusted_height = light_store
-        .highest(VerifiedStatus::Verified)
+        .highest(Status::Verified)
         .map(|lb| lb.height())
         .unwrap();
 
@@ -102,7 +102,7 @@ pub fn valid_schedule(
     light_store: &dyn LightStore,
 ) -> bool {
     let latest_trusted_height = light_store
-        .highest(VerifiedStatus::Verified)
+        .highest(Status::Verified)
         .map(|lb| lb.height())
         .unwrap();
 

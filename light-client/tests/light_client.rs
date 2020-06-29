@@ -18,9 +18,9 @@ use tendermint_light_client::{
     errors::{Error, ErrorKind},
     light_client::{LightClient, Options},
     state::State,
-    store::{memory::MemoryStore, LightStore, VerifiedStatus},
+    store::{memory::MemoryStore, LightStore},
     tests::{Trusted, *},
-    types::{Height, LightBlock, PeerId, Time, TrustThreshold},
+    types::{Height, LightBlock, PeerId, Status, Time, TrustThreshold},
 };
 
 use tendermint_rpc as rpc;
@@ -210,7 +210,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
-    light_store.insert(trusted_state, VerifiedStatus::Verified);
+    light_store.insert(trusted_state, Status::Verified);
 
     let mut state = State {
         light_store: Box::new(light_store),

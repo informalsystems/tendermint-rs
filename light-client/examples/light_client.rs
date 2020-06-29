@@ -10,9 +10,9 @@ use tendermint_light_client::{
     light_client::{self, LightClient},
     peer_list::PeerList,
     state::State,
-    store::{sled::SledStore, LightStore, VerifiedStatus},
+    store::{sled::SledStore, LightStore},
     supervisor::{Instance, Supervisor},
-    types::{Height, PeerId, Time, TrustThreshold},
+    types::{Height, PeerId, Status, Time, TrustThreshold},
 };
 
 use gumdrop::Options;
@@ -103,8 +103,8 @@ fn make_instance(
                 std::process::exit(1);
             });
 
-        light_store.insert(trusted_state, VerifiedStatus::Verified);
-    } else if light_store.highest(VerifiedStatus::Verified).is_none() {
+        light_store.insert(trusted_state, Status::Verified);
+    } else if light_store.highest(Status::Verified).is_none() {
         println!("[ error ] no trusted state in database, please specify a trusted header");
         std::process::exit(1);
     }

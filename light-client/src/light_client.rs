@@ -13,8 +13,7 @@ use crate::{
     bail,
     errors::{Error, ErrorKind},
     state::State,
-    store::VerifiedStatus,
-    types::{Height, LightBlock, PeerId, Time, TrustThreshold},
+    types::{Height, LightBlock, PeerId, Status, Time, TrustThreshold},
 };
 
 /// Verification parameters
@@ -151,10 +150,7 @@ impl LightClient {
         state: &mut State,
     ) -> Result<LightBlock, Error> {
         // Let's first look in the store to see whether we have already successfully verified this block
-        if let Some(light_block) = state
-            .light_store
-            .get(target_height, VerifiedStatus::Verified)
-        {
+        if let Some(light_block) = state.light_store.get(target_height, Status::Verified) {
             return Ok(light_block);
         }
 
@@ -168,8 +164,8 @@ impl LightClient {
             // Get the highest trusted state
             let trusted_state = state
                 .light_store
-                .highest(VerifiedStatus::Verified)
-                .ok_or_else(|| ErrorKind::NoInitialTrustedState)?;
+                .highest(Status::Verified)
+                .ok_or_else(|| ErrorKind::NoInitialTrustedState(Status::Verified))?;
 
             if target_height < trusted_state.height() {
                 bail!(ErrorKind::TargetLowerThanTrustedState {
@@ -183,6 +179,7 @@ impl LightClient {
                 bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
                     trusted_state: Box::new(trusted_state),
                     options,
+                    status: Status::Verified
                 });
             }
 
@@ -205,15 +202,11 @@ impl LightClient {
             match verdict {
                 Verdict::Success => {
                     // Verification succeeded, add the block to the light store with `verified` status
-                    state
-                        .light_store
-                        .update(current_block, VerifiedStatus::Verified);
+                    state.light_store.update(&current_block, Status::Verified);
                 }
                 Verdict::Invalid(e) => {
                     // Verification failed, add the block to the light store with `failed` status, and abort.
-                    state
-                        .light_store
-                        .update(current_block, VerifiedStatus::Failed);
+                    state.light_store.update(&current_block, Status::Failed);
 
                     bail!(ErrorKind::InvalidLightBlock(e))
                 }
@@ -222,9 +215,7 @@ impl LightClient {
                     // Add the block to the light store with `unverified` status.
                     // This will engage bisection in an attempt to raise the height of the highest
                     // trusted state until there is enough overlap.
-                    state
-                        .light_store
-                        .update(current_block, VerifiedStatus::Unverified);
+                    state.light_store.update(&current_block, Status::Unverified);
                 }
             }
 
@@ -248,12 +239,8 @@ impl LightClient {
     ) -> Result<LightBlock, Error> {
         let current_block = state
             .light_store
-            .get(current_height, VerifiedStatus::Verified)
-            .or_else(|| {
-                state
-                    .light_store
-                    .get(current_height, VerifiedStatus::Unverified)
-            });
+            .get(current_height, Status::Verified)
+            .or_else(|| state.light_store.get(current_height, Status::Unverified));
 
         if let Some(current_block) = current_block {
             return Ok(current_block);
@@ -264,7 +251,7 @@ impl LightClient {
             .map(|current_block| {
                 state
                     .light_store
-                    .insert(current_block.clone(), VerifiedStatus::Unverified);
+                    .insert(current_block.clone(), Status::Unverified);
 
                 current_block
             })

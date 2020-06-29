@@ -79,8 +79,6 @@ impl VerificationError {
 }
 
 impl ErrorExt for VerificationError {
-    /// Whether this error means that the light block
-    /// cannot be trusted w.r.t. the latest trusted state.
     fn not_enough_trust(&self) -> bool {
         if let Self::NotEnoughTrust { .. } = self {
             true
@@ -89,13 +87,15 @@ impl ErrorExt for VerificationError {
         }
     }
 
-    /// Whether this error means that the light block has expired,
-    /// ie. it's outside of the trusting period.
     fn has_expired(&self) -> bool {
         if let Self::NotWithinTrustPeriod { .. } = self {
             true
         } else {
             false
         }
+    }
+
+    fn is_timeout(&self) -> bool {
+        false
     }
 }

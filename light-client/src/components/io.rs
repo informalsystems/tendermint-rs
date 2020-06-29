@@ -46,6 +46,13 @@ pub enum IoError {
     Timeout(PeerId),
 }
 
+impl IoError {
+    /// Whether this error means that a timeout occured when querying a node.
+    pub fn is_timeout(&self) -> bool {
+        matches!(self, Self::Timeout(_))
+    }
+}
+
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
 #[contract_trait]
 pub trait Io: Send {
