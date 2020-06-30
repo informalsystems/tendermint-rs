@@ -1,4 +1,4 @@
-#![allow(dead_code, unused_imports)]
+#![allow(unused_imports)]
 
 use tendermint_light_client::{
     components::{
@@ -17,6 +17,7 @@ use tendermint_light_client::{
     types::{Height, LightBlock, PeerId, Time, TrustThreshold},
 };
 
+use std::convert::TryInto;
 use std::collections::HashMap;
 use std::{
     fs,
@@ -24,7 +25,13 @@ use std::{
     time::Duration,
 };
 
-use tendermint_light_client::tests::{AnonLightBlock, TestBisection};
+use tendermint_light_client::tests::{AnonLightBlock, TestBisection, TrustOptions, WitnessProvider, Provider, MockIo, MockEvidenceReporter, random_peer_id, MockClock};
+use futures::StreamExt;
+use tendermint_light_client::evidence::EvidenceReporter;
+use tendermint::evidence::Evidence;
+use tendermint::abci::transaction::Hash;
+use tendermint_light_client::components::io::IoError;
+use tendermint_light_client::store::memory::MemoryStore;
 
 const TEST_FILES_PATH: &str = "./tests/support/";
 
@@ -40,61 +47,24 @@ fn load_multi_peer_testcases(dir: &str) -> Vec<TestBisection<LightBlock>>{
         .map(|entry| read_json_fixture(entry.path()).to_string())
         .map(|contents| serde_json::from_str::<TestBisection<AnonLightBlock>>(&contents).unwrap())
         .map(|testcase| testcase.into())
-        .collect::<Vec<TestBisection<LightBlock>>>();
-}
-
-#[derive(Clone)]
-struct MockIo {
-    chain_id: String,
-    light_blocks: HashMap<Height, LightBlock>,
-    latest_height: Height,
-}
-
-impl MockIo {
-    fn new(chain_id: String, light_blocks: Vec<LightBlock>) -> Self {
-        let latest_height = light_blocks.iter().map(|lb| lb.height()).max().unwrap();
-
-        let light_blocks = light_blocks
-            .into_iter()
-            .map(|lb| (lb.height(), lb))
-            .collect();
-
-        Self {
-            chain_id,
-            light_blocks,
-            latest_height,
-        }
-    }
-}
-
-#[contract_trait]
-impl Io for MockIo {
-    fn fetch_light_block(&self, _peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
-        let height = match height {
-            AtHeight::Highest => self.latest_height,
-            AtHeight::At(height) => height,
-        };
-
-        self.light_blocks
-            .get(&height)
-            .cloned()
-            .ok_or_else(|| rpc::Error::new((-32600).into(), None).into())
-    }
+        .collect::<Vec<TestBisection<LightBlock>>>()
 }
 
 fn make_instance(
     peer_id: PeerId,
     trust_options: TrustOptions,
-    provider: WitnessProvider<LightBlock>,
+    provider: Provider<LightBlock>,
+    now: Time,
 ) -> Instance {
-    let timeout = Duration::from_secs(10);
 
-    let io = MockIo::new(); // TODO
+    let io = MockIo::new(provider.chain_id, provider.lite_blocks);
 
-    // TODO: pick light block at height trust_options.height from the light blocks in the provider.
-    let trusted_state = todo!();
+    let trusted_height = trust_options.height.value();
+    let trusted_state = io
+        .fetch_light_block(peer_id, AtHeight::At(trusted_height))
+        .expect("could not 'request' light block");
 
-    let mut light_store = MemoryStore::new(); // TODO
+    let mut light_store = MemoryStore::new();
     light_store.insert(trusted_state, VerifiedStatus::Verified);
 
     let state = State {
@@ -103,17 +73,14 @@ fn make_instance(
     };
 
     let options = light_client::Options {
-        trust_threshold: TrustThreshold {
-            numerator: 1,
-            denominator: 3,
-        },
-        trusting_period: Duration::from_secs(36000),
-        clock_drift: Duration::from_secs(1),
-        now: Time::now(),
+        trust_threshold: trust_options.trust_level,
+        trusting_period: trust_options.period.into(),
+        clock_drift: Duration::from_secs(10),
+        now,
     };
 
     let verifier = ProdVerifier::default();
-    let clock = SystemClock;
+    let clock = MockClock { now };
     let scheduler = scheduler::basic_bisecting_schedule;
 
     let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, io);
@@ -122,26 +89,37 @@ fn make_instance(
 }
 
 fn run_multipeer_test(tc: TestBisection<LightBlock>) {
-    let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
-    let primary_instance = make_instance(primary, &opts);
+
+    let primary = tc.primary.lite_blocks[0].provider;
+
+    println!("Running Test Case: {}\nwith Primary Peer: {:?}", tc.description, primary);
+
+    let expects_err = match &tc.expected_output {
+        Some(eo) => eo.eq("error"),
+        None => false,
+    };
+
+    let primary_instance = make_instance(primary, tc.trust_options.clone(), tc.primary, tc.now);
 
     //- - - - - - - - - -
 
     let mut peer_list = PeerList::builder();
-    peer_list.primary(primary, primary_instance);
+    peer_list = peer_list.primary(primary, primary_instance);
 
-    for provider in tc.witnesses {
-        let peer_id = todo!(); // TODO: Make up a peer id
-        let instance = make_instance(peer_id, trust_options, provider);
-        peer_list.witness(peer_id, instance);
+    for provider in tc.witnesses.iter() {
+
+        let peer_id =  provider.value.lite_blocks[0].provider;
+        println!("Witness: {}", peer_id);
+        let instance = make_instance(peer_id, tc.trust_options.clone(), provider.clone().value, tc.now);
+        peer_list = peer_list.witness(peer_id, instance);
     }
 
     //- - - - - - - - - -
 
     let mut supervisor = Supervisor::new(
-        peer_list,
+        peer_list.build(),
         ProdForkDetector::default(),
-        ProdEvidenceReporter::new(peer_addr), // TODO: Use mock EvidenceReporter
+        MockEvidenceReporter::new(),
     );
 
     // TODO: Add method to `Handle` to get a copy of the current peer list
@@ -149,7 +127,21 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
     let mut handle = supervisor.handle();
     std::thread::spawn(|| supervisor.run());
 
-    let verdict = handle.verify_to_target(target_height);
+    let target_height = tc.height_to_verify.try_into().unwrap();
+
+    match handle.verify_to_target(target_height) {
+        Ok(_new_states) => {
+            assert!(!expects_err);
+        }
+        Err(e) => {
+            dbg!(e);
+            // if !expects_err {
+            //     dbg!(e);
+            // }
+
+            assert!(expects_err);
+        }
+    }
 
     // TODO: Check the verdict
     // TODO: Check the peer list
@@ -162,7 +154,7 @@ fn deserialize_multi_peer_json() {
 }
 
 #[test]
-fn run_tests() {
+fn run_multipeer_tests() {
     let testcases = load_multi_peer_testcases("bisection/multi_peer");
     for testcase in testcases {
         run_multipeer_test(testcase);

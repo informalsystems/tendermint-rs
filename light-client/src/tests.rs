@@ -1,11 +1,18 @@
 //! Utilities and datatypes for use in tests.
 
-use crate::types::{Hash, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet};
+use crate::types::{LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet, Height};
 
 use serde::Deserialize;
+use tendermint_rpc as rpc;
+use tendermint::abci::transaction::Hash;
 
 use tendermint::block::Height as HeightStr;
-use tendermint::evidence::Duration as DurationStr;
+use tendermint::evidence::{Duration as DurationStr, Evidence};
+use crate::components::io::{Io, AtHeight, IoError};
+use std::collections::HashMap;
+use crate::evidence::EvidenceReporter;
+use contracts::contract_trait;
+use crate::components::clock::Clock;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TestCases<LB> {
@@ -72,6 +79,72 @@ impl Trusted {
             signed_header,
             next_validators,
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct MockClock {
+    pub now: Time,
+}
+
+impl Clock for MockClock {
+    fn now(&self) -> Time {
+        self.now
+    }
+}
+
+#[derive(Clone)]
+pub struct MockIo {
+    chain_id: String,
+    light_blocks: HashMap<Height, LightBlock>,
+    latest_height: Height,
+}
+
+impl MockIo {
+    pub fn new(chain_id: String, light_blocks: Vec<LightBlock>) -> Self {
+        let latest_height = light_blocks.iter().map(|lb| lb.height()).max().unwrap();
+
+        let light_blocks = light_blocks
+            .into_iter()
+            .map(|lb| (lb.height(), lb))
+            .collect();
+
+        Self {
+            chain_id,
+            light_blocks,
+            latest_height,
+        }
+    }
+}
+
+#[contract_trait]
+impl Io for MockIo {
+    fn fetch_light_block(&self, _peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
+        let height = match height {
+            AtHeight::Highest => self.latest_height,
+            AtHeight::At(height) => height,
+        };
+
+        self.light_blocks
+            .get(&height)
+            .cloned()
+            .ok_or_else(|| rpc::Error::new((-32600).into(), None).into())
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct MockEvidenceReporter;
+
+#[contract_trait]
+impl EvidenceReporter for MockEvidenceReporter {
+    fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
+        Ok(Hash::new([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]))
+    }
+}
+
+impl MockEvidenceReporter {
+    pub fn new() -> Self {
+        Self
     }
 }
 
@@ -143,13 +216,33 @@ impl From<WitnessProvider<AnonLightBlock>> for WitnessProvider<LightBlock> {
     }
 }
 
+pub fn random_peer_id(count: usize) -> PeerId {
+    let peer_ids: Vec<PeerId> = vec![
+        "ADBEEFC0FFEEFACADEBADFADADE0BEFEEDC0C0AD".parse().unwrap(),
+        "BADFADBEEFC0FFEEFACADEAD0BEFEEDC0C0ADEAD".parse().unwrap(),
+        "CADEEDC0C0ADEADBEEFBADFADAD0BEFEC0FFEEFA".parse().unwrap(),
+        "D0BEFEEDC0C0ADEABADFADADBEEFC0FFEEFACADE".parse().unwrap(),
+        "EEFC0FFEEFACADEBADFADAD0BEFEEDC0C0ADEADB".parse().unwrap(),
+        "FC0FFEEFABAC0C0ADEADDFBEEADAD0BEFEEDCADE".parse().unwrap(),
+    ];
+    peer_ids[count]
+}
+
 impl From<TestBisection<AnonLightBlock>> for TestBisection<LightBlock> {
     fn from(tb: TestBisection<AnonLightBlock>) -> Self {
+        let mut witnesses: Vec<WitnessProvider<LightBlock>> = tb.witnesses.into_iter().map(Into::into).collect();
+
+        for (count, provider) in witnesses.iter_mut().enumerate() {
+            for lb in provider.value.lite_blocks.iter_mut() {
+                lb.provider = random_peer_id(count);
+            }
+        }
+
         Self {
             description: tb.description,
             trust_options: tb.trust_options,
             primary: tb.primary.into(),
-            witnesses: tb.witnesses.into_iter().map(Into::into).collect(),
+            witnesses: witnesses,
             height_to_verify: tb.height_to_verify,
             now: tb.now,
             expected_output: tb.expected_output,
@@ -157,3 +250,4 @@ impl From<TestBisection<AnonLightBlock>> for TestBisection<LightBlock> {
         }
     }
 }
+
