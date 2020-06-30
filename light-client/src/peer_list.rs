@@ -72,9 +72,8 @@ impl PeerList {
     /// Get a list of references to all the witnesses,
     /// (ie. all peers which are not the primary).
     pub fn witnesses(&self) -> Vec<&Instance> {
-        self.instances
-            .keys()
-            .filter(|peer_id| peer_id != &&self.primary)
+        self.witnesses
+            .iter()
             .filter_map(|peer_id| self.get(peer_id))
             .collect()
     }
