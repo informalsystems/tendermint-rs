@@ -102,7 +102,7 @@ SignedByOneThirdOfTrusted(trusted, untrusted) ==
 (**
  Check, whether an untrusted block is valid and verifiable w.r.t. a trusted header.
  
- [LCV-FUNC-VALID.1]
+ [LCV-FUNC-VALID.1::TLA.1]
  *)   
 ValidAndVerified(trusted, untrusted) ==
     IF ~ValidAndVerifiedPre(trusted, untrusted)
