@@ -3,16 +3,14 @@ use crossbeam_channel as channel;
 
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
 
-use crate::{
-    bail,
-    errors::{Error, ErrorKind},
-    evidence::EvidenceReporter,
-    fork_detector::{Fork, ForkDetection, ForkDetector},
-    light_client::LightClient,
-    peer_list::PeerList,
-    state::State,
-    types::{Height, LightBlock, PeerId, Status},
-};
+use crate::bail;
+use crate::errors::{Error, ErrorKind};
+use crate::evidence::EvidenceReporter;
+use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
+use crate::light_client::LightClient;
+use crate::peer_list::PeerList;
+use crate::state::State;
+use crate::types::{Height, LightBlock, PeerId, Status};
 
 pub trait Handle {
     /// Get latest trusted block from the [`Supervisor`].
