@@ -158,7 +158,7 @@ FetchLightBlockInto(block, height) ==
 
 \* add a block into the light store    
 \*
-\* [LCV-FUNC-UPDATE.1]
+\* [LCV-FUNC-UPDATE.1::TLA.1]
 LightStoreUpdateBlocks(lightBlocks, block) ==
     LET ht == block.header.height IN    
     [h \in DOMAIN lightBlocks \union {ht} |->
