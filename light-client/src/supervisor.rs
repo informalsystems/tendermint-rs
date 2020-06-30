@@ -15,9 +15,6 @@ use crate::{
     types::{Height, LightBlock, PeerId, Status},
 };
 
-/// Type alias for readability
-pub type VerificationResult = Result<LightBlock, Error>;
-
 /// Input events sent by the [`Handle`]s to the [`Supervisor`]. They carry a [`Callback`] which is
 /// used to communicate back the responses of the requests.
 #[derive(Debug)]
@@ -25,9 +22,9 @@ enum HandleInput {
     /// Terminate the supervisor process
     Terminate(Callback<()>),
     /// Verify to the highest height, call the provided callback with result
-    VerifyToHighest(Callback<VerificationResult>),
+    VerifyToHighest(Callback<Result<LightBlock, Error>>),
     /// Verify to the given height, call the provided callback with result
-    VerifyToTarget(Height, Callback<VerificationResult>),
+    VerifyToTarget(Height, Callback<Result<LightBlock, Error>>),
     /// Get the latest trusted block.
     LatestTrusted(Callback<Result<Option<LightBlock>, Error>>),
 }
@@ -342,21 +339,21 @@ impl Handle {
     }
 
     /// Verify to the highest block.
-    pub fn verify_to_highest(&mut self) -> VerificationResult {
+    pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
         self.verify(HandleInput::VerifyToHighest)
     }
 
     /// Verify to the block at the given height.
-    pub fn verify_to_target(&mut self, height: Height) -> VerificationResult {
+    pub fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
         self.verify(|callback| HandleInput::VerifyToTarget(height, callback))
     }
 
     /// Verify either to the latest block (if `height == None`) or to a given block (if `height == Some(height)`).
     fn verify(
         &mut self,
-        make_event: impl FnOnce(Callback<VerificationResult>) -> HandleInput,
-    ) -> VerificationResult {
-        let (sender, receiver) = channel::bounded::<VerificationResult>(1);
+        make_event: impl FnOnce(Callback<Result<LightBlock, Error>>) -> HandleInput,
+    ) -> Result<LightBlock, Error> {
+        let (sender, receiver) = channel::bounded::<Result<LightBlock, Error>>(1);
 
         let callback = Callback::new(move |result| {
             sender.send(result).unwrap();
@@ -374,7 +371,7 @@ impl Handle {
     /// verification result.
     pub fn verify_to_highest_async(
         &mut self,
-        callback: impl FnOnce(VerificationResult) -> () + Send + 'static,
+        callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
     ) {
         let event = HandleInput::VerifyToHighest(Callback::new(callback));
         self.sender.send(event).unwrap();
@@ -387,7 +384,7 @@ impl Handle {
     pub fn verify_to_target_async(
         &mut self,
         height: Height,
-        callback: impl FnOnce(VerificationResult) -> () + Send + 'static,
+        callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
     ) {
         let event = HandleInput::VerifyToTarget(height, Callback::new(callback));
         self.sender.send(event).unwrap();
