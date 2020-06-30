@@ -87,7 +87,7 @@ fn main() {
     let relayer = Relayer::new(light_client);
     ...
 
-    // Run (consume master)
+    // Run (consume Supervisor)
     light_client.run();
 }
 ```
@@ -102,7 +102,7 @@ The implementation is a simple abstraction which facilitates
 communication over channels. Events send across a channel include a
 callback. This callback abstraction allows the outer handle to expose a
 synchronous operation event if the delegation is inherently
-asynchronous. Delegating at this level opens to door to exposing
+asynchronous. Delegating at this level opens the door to exposing
 synchronous interaction to thread pools and allowing components to
 handle their concurrency optimization internally without burdening the
 component user.
@@ -187,10 +187,11 @@ impl Supervisor {
 ## Status
 
 Implemented:
-    * [Verification Predicates](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/predicates.rs)
-    * [Verifier Component](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/verifier.rs)
-    * [IO Component](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/io.rs)
-    * [Scheduler Component](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/scheduler.rs)
+
+* [Verification Predicates](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/predicates.rs)
+* [Verifier Component](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/verifier.rs)
+* [IO Component](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/io.rs)
+* [Scheduler Component](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/scheduler.rs)
     * [Supervisor](https://github.com/informalsystems/tendermint-rs/blob/e2335c40b1c5e1f7d47ee28ae5f9cc679730b7a2/light-client/src/supervisor.rs)
     * [Example](https://github.com/informalsystems/tendermint-rs/blob/e2335c40b1c5e1f7d47ee28ae5f9cc679730b7a2/light-client/examples/light_client.rs)
 
