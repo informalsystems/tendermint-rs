@@ -77,7 +77,8 @@ impl PeerList {
     }
 
     /// Remove the given peer from the list of witnesses,
-    /// and mark it as faulty.
+    /// and mark it as faulty. Get a new witness from
+    /// the list of full nodes, if there are any left.
     ///
     /// ## Precondition
     /// - The given peer id must not be the primary peer id.
@@ -95,12 +96,14 @@ impl PeerList {
         self.faulty_nodes.insert(faulty_witness);
     }
 
-    /// Swap the primary for the next available witness, if any.
+    /// Mark the primary as faulty and swap it for the next available witness, if any.
     ///
     /// ## Errors
     /// - If there are no witness left, returns `ErrorKind::NoWitnessLeft`.
     #[post(ret.is_ok() ==> Self::invariant(&self))]
-    pub fn swap_primary(&mut self) -> Result<(), Error> {
+    pub fn replace_faulty_primary(&mut self) -> Result<(), Error> {
+        self.faulty_nodes.insert(self.primary);
+
         while let Some(peer_id) = self.witnesses.iter().next() {
             if peer_id != &self.primary {
                 self.primary = *peer_id;

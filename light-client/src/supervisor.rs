@@ -205,7 +205,7 @@ impl Supervisor {
                 // Verification failed
                 Err(_err) => {
                     // Swap primary, and continue with new primary, if there is any witness left.
-                    self.peers.swap_primary()?;
+                    self.peers.replace_faulty_primary()?;
                     // TODO: Log/record error
                     continue;
                 }
