@@ -5,7 +5,6 @@ use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
 
 use crate::{
     bail,
-    callback::Callback,
     errors::{Error, ErrorKind},
     evidence::EvidenceReporter,
     fork_detector::{Fork, ForkDetection, ForkDetector},
@@ -34,13 +33,13 @@ pub trait Handle {
 #[derive(Debug)]
 enum HandleInput {
     /// Terminate the supervisor process
-    Terminate(Callback<()>),
+    Terminate(channel::Sender<()>),
     /// Verify to the highest height, call the provided callback with result
-    VerifyToHighest(Callback<Result<LightBlock, Error>>),
+    VerifyToHighest(channel::Sender<Result<LightBlock, Error>>),
     /// Verify to the given height, call the provided callback with result
-    VerifyToTarget(Height, Callback<Result<LightBlock, Error>>),
+    VerifyToTarget(Height, channel::Sender<Result<LightBlock, Error>>),
     /// Get the latest trusted block.
-    LatestTrusted(Callback<Result<Option<LightBlock>, Error>>),
+    LatestTrusted(channel::Sender<Result<Option<LightBlock>, Error>>),
 }
 
 /// An light client `Instance` packages a `LightClient` together with its `State`.
@@ -302,21 +301,25 @@ impl Supervisor {
             let event = self.receiver.recv().unwrap();
 
             match event {
-                HandleInput::LatestTrusted(callback) => {
+                HandleInput::LatestTrusted(sender) => {
                     let outcome = self.latest_trusted();
-                    callback.call(outcome);
+                    // TODO(xla): Manage error case.
+                    sender.send(outcome).unwrap();
                 }
-                HandleInput::Terminate(callback) => {
-                    callback.call(());
+                HandleInput::Terminate(sender) => {
+                    // TODO(xla): Manage error case.
+                    sender.send(()).unwrap();
                     return;
                 }
-                HandleInput::VerifyToTarget(height, callback) => {
+                HandleInput::VerifyToTarget(height, sender) => {
                     let outcome = self.verify_to_target(height);
-                    callback.call(outcome);
+                    // TODO(xla): Manage error case.
+                    sender.send(outcome).unwrap();
                 }
-                HandleInput::VerifyToHighest(callback) => {
+                HandleInput::VerifyToHighest(sender) => {
                     let outcome = self.verify_to_highest();
-                    callback.call(outcome);
+                    // TODO(xla): Manage error case.
+                    sender.send(outcome).unwrap();
                 }
             }
         }
@@ -338,15 +341,11 @@ impl SupervisorHandle {
 
     fn verify(
         &mut self,
-        make_event: impl FnOnce(Callback<Result<LightBlock, Error>>) -> HandleInput,
+        make_event: impl FnOnce(channel::Sender<Result<LightBlock, Error>>) -> HandleInput,
     ) -> Result<LightBlock, Error> {
         let (sender, receiver) = channel::bounded::<Result<LightBlock, Error>>(1);
 
-        let callback = Callback::new(move |result| {
-            sender.send(result).unwrap();
-        });
-
-        let event = make_event(callback);
+        let event = make_event(sender);
         self.sender.send(event).unwrap();
 
         receiver.recv().unwrap()
@@ -357,13 +356,9 @@ impl Handle for SupervisorHandle {
     fn latest_trusted(&mut self) -> Result<Option<LightBlock>, Error> {
         let (sender, receiver) = channel::bounded::<Result<Option<LightBlock>, Error>>(1);
 
-        let callback = Callback::new(move |result| {
-            sender.send(result).unwrap();
-        });
-
         // TODO(xla): Transform crossbeam errors into proper domain errors.
         self.sender
-            .send(HandleInput::LatestTrusted(callback))
+            .send(HandleInput::LatestTrusted(sender))
             .unwrap();
 
         // TODO(xla): Transform crossbeam errors into proper domain errors.
@@ -375,17 +370,13 @@ impl Handle for SupervisorHandle {
     }
 
     fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
-        self.verify(|callback| HandleInput::VerifyToTarget(height, callback))
+        self.verify(|sender| HandleInput::VerifyToTarget(height, sender))
     }
 
     fn terminate(&mut self) {
         let (sender, receiver) = channel::bounded::<()>(1);
 
-        let callback = Callback::new(move |_| {
-            sender.send(()).unwrap();
-        });
-
-        self.sender.send(HandleInput::Terminate(callback)).unwrap();
+        self.sender.send(HandleInput::Terminate(sender)).unwrap();
 
         receiver.recv().unwrap()
     }
