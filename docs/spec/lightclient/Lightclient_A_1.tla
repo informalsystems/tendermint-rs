@@ -189,7 +189,7 @@ CanScheduleTo(newHeight, pLatestVerified, pNextHeight, pTargetHeight) ==
 
 \* The loop of VerifyToTarget.
 \*
-\* [LCV-FUNC-MAIN.1]
+\* [LCV-FUNC-MAIN.1::TLA-LOOP.1]
 VerifyToTargetLoop ==
       \* the loop condition is true
     /\ latestVerified.header.height < TARGET_HEIGHT
