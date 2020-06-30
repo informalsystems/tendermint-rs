@@ -192,8 +192,8 @@ Implemented:
 * [Verifier Component](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/verifier.rs)
 * [IO Component](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/io.rs)
 * [Scheduler Component](https://github.com/informalsystems/tendermint-rs/blob/e2335c4/light-client/src/components/scheduler.rs)
-    * [Supervisor](https://github.com/informalsystems/tendermint-rs/blob/e2335c40b1c5e1f7d47ee28ae5f9cc679730b7a2/light-client/src/supervisor.rs)
-    * [Example](https://github.com/informalsystems/tendermint-rs/blob/e2335c40b1c5e1f7d47ee28ae5f9cc679730b7a2/light-client/examples/light_client.rs)
+* [Supervisor](https://github.com/informalsystems/tendermint-rs/blob/e2335c40b1c5e1f7d47ee28ae5f9cc679730b7a2/light-client/src/supervisor.rs)
+* [Example](https://github.com/informalsystems/tendermint-rs/blob/e2335c40b1c5e1f7d47ee28ae5f9cc679730b7a2/light-client/examples/light_client.rs)
 
 ## Consequences
 
