@@ -25,25 +25,6 @@ pub trait Handle {
     /// Verify to the block at the given height.
     fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error>;
 
-    /// Async version of `verify_to_highest`.
-    ///
-    /// The given `callback` will be called asynchronously with the
-    /// verification result.
-    fn verify_to_highest_async(
-        &mut self,
-        callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
-    );
-
-    /// Async version of `verify_to_target`.
-    ///
-    /// The given `callback` will be called asynchronously with the
-    /// verification result.
-    fn verify_to_target_async(
-        &mut self,
-        height: Height,
-        callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
-    );
-
     /// Terminate the underlying [`Supervisor`].
     fn terminate(&mut self);
 }
@@ -99,7 +80,7 @@ impl Instance {
 /// removed.
 ///
 /// The supervisor is intended to be ran in its own thread, and queried
-/// via a `Handle`, sync- or asynchronously.
+/// via a `Handle`.
 ///
 /// ## Example
 ///
@@ -112,12 +93,13 @@ impl Instance {
 ///
 /// loop {
 ///     // Asynchronously query the supervisor via a handle
-///     handle.verify_to_highest_async(|result| match result {
+///     let maybe_block = handle.verify_to_highest();
+///     match maybe_block {
 ///         Ok(light_block) => {
-///             println!("[ info  ] synced to block {}", light_block.height());
+///             println!("[info] synced to block {}", light_block.height());
 ///         }
 ///         Err(e) => {
-///             println!("[ error ] sync failed: {}", e);
+///             println!("[error] sync failed: {}", e);
 ///         }
 ///     });
 ///
@@ -394,23 +376,6 @@ impl Handle for SupervisorHandle {
 
     fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
         self.verify(|callback| HandleInput::VerifyToTarget(height, callback))
-    }
-
-    fn verify_to_highest_async(
-        &mut self,
-        callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
-    ) {
-        let event = HandleInput::VerifyToHighest(Callback::new(callback));
-        self.sender.send(event).unwrap();
-    }
-
-    fn verify_to_target_async(
-        &mut self,
-        height: Height,
-        callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
-    ) {
-        let event = HandleInput::VerifyToTarget(height, Callback::new(callback));
-        self.sender.send(event).unwrap();
     }
 
     fn terminate(&mut self) {

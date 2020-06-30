@@ -165,14 +165,15 @@ fn sync_cmd(opts: SyncOpts) {
     std::thread::spawn(|| supervisor.run());
 
     loop {
-        handle.verify_to_highest_async(|result| match result {
+        let maybe_block = handle.verify_to_highest();
+        match maybe_block {
             Ok(light_block) => {
-                println!("[ info  ] synced to block {}", light_block.height());
+                println!("[info] synced to block {}", light_block.height());
             }
-            Err(e) => {
-                println!("[ error ] sync failed: {}", e);
+            Err(err) => {
+                println!("[error] sync failed: {}", err);
             }
-        });
+        }
 
         std::thread::sleep(Duration::from_millis(800));
     }
