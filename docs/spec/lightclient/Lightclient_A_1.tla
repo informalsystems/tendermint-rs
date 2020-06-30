@@ -240,7 +240,7 @@ VerifyToTargetLoop ==
 
 \* The terminating condition of VerifyToTarget.
 \*
-\* [LCV-FUNC-MAIN.1]
+\* [LCV-FUNC-MAIN.1::TLA-LOOPCOND.1]
 VerifyToTargetDone ==
     /\ latestVerified.header.height >= TARGET_HEIGHT
     /\ state' = "finishedSuccess"
