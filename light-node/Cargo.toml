@@ -15,6 +15,7 @@ jsonrpc-http-server = "14.2"
 jsonrpc-derive = "14.2"
 serde = { version = "1", features = ["serde_derive"] }
 tendermint = { version = "0.14.0", path = "../tendermint" }
+tendermint-light-client = { version = "0.14.0", path = "../light-client" }
 tendermint-rpc = { version = "0.14.0", path = "../rpc", features = [ "client" ] }
 tokio = { version = "0.2", features = ["full"] }
 

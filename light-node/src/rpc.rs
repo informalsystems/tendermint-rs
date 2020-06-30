@@ -1,14 +1,11 @@
 use jsonrpc_core::futures::future::{self, Future, FutureResult};
-use jsonrpc_core::Error;
+use jsonrpc_core::Error as jsonrpcError;
 use jsonrpc_derive::rpc;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, PartialEq, Deserialize, Serialize)]
-pub struct State {
-    header: String,
-    commit: String,
-    validator_set: String,
-}
+use tendermint_light_client::errors::Error;
+use tendermint_light_client::supervisor::Handle;
+use tendermint_light_client::types::LightBlock;
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Status {
@@ -19,23 +16,31 @@ pub struct Status {
 pub trait Rpc {
     /// Latest state.
     #[rpc(name = "state")]
-    fn state(&self) -> FutureResult<State, Error>;
+    fn state(&self) -> FutureResult<Option<LightBlock>, Error>;
 
     /// TODO(xla): Document.
     #[rpc(name = "status")]
-    fn status(&self) -> FutureResult<Status, Error>;
+    fn status(&self) -> FutureResult<Status, jsonrpcError>;
 }
 
 pub use self::rpc_impl_Rpc::gen_client::Client;
 
-pub struct Server;
+pub struct Server {
+    handle: Handle,
+}
+
+impl Server {
+    pub fn new(handle: Handle) -> Self {
+        Self { handle }
+    }
+}
 
 impl Rpc for Server {
-    fn state(&self) -> FutureResult<State, Error> {
-        future::ok(State::default())
+    fn state(&self) -> FutureResult<Option<LightBlock>, Error> {
+        future::result(self.handle.latest_trusted())
     }
 
-    fn status(&self) -> FutureResult<Status, Error> {
+    fn status(&self) -> FutureResult<Status, jsonrpcError> {
         future::ok(Status { latest_height: 12 })
     }
 }
@@ -52,9 +57,10 @@ mod test {
 
     #[tokio::test]
     async fn state() {
+        let server = Server::new();
         let fut = {
             let mut io = IoHandler::new();
-            io.extend_with(Server.to_delegate());
+            io.extend_with(server.to_delegate());
             let (client, server) = local::connect::<Client, _, _>(io);
             client.state().join(server)
         };
@@ -72,9 +78,10 @@ mod test {
 
     #[tokio::test]
     async fn status() {
+        let server = Server::new();
         let fut = {
             let mut io = IoHandler::new();
-            io.extend_with(Server.to_delegate());
+            io.extend_with(server.to_delegate());
             let (client, server) = local::connect::<Client, _, _>(io);
             client.status().join(server)
         };
