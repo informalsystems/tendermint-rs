@@ -173,7 +173,7 @@ LightStoreUpdateStates(statuses, ht, blockState) ==
 
 \* Check, whether newHeight is a possible next height for the light client.
 \*
-\* [LCV-FUNC-SCHEDULE.1]
+\* [LCV-FUNC-SCHEDULE.1::TLA.1]
 CanScheduleTo(newHeight, pLatestVerified, pNextHeight, pTargetHeight) ==
     LET ht == pLatestVerified.header.height IN
     \/ /\ ht = pNextHeight
