@@ -45,7 +45,6 @@ independently verifiable components for:
     * Verifier: Verifying a LightBlock based on a TrustedState
     * Scheduler: Schedule the next block based on the last TrustedState
     * Clock: Provide the current time
-    * Clock: Provide the current time
 
 In addition, cryptographic operations are also decomposed into three "sub-components":
 
