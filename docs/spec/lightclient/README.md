@@ -18,10 +18,10 @@ The light client is decomposed into three components:
 
 ## Commit Verification
 
-The [English specification](verification.md) describes the light client
+The [English specification](verification/verification.md) describes the light client
 commit verification problem in terms of the temporal properties
-[LCV-DIST-SAFE.1](https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification.md#lcv-dist-safe1) and 
-[LCV-DIST-LIVE.1](https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification.md#lcv-dist-live1). 
+[LCV-DIST-SAFE.1](https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md#lcv-dist-safe1) and 
+[LCV-DIST-LIVE.1](https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md#lcv-dist-live1). 
 Commit verification is assumed to operate within the Tendermint Failure Model, where +2/3 of validators are correct for some time period and
 validator sets can change arbitrarily at each height.
 
@@ -33,7 +33,7 @@ many intermediate headers by exploiting overlap in trusted and untrusted validat
 When there is not enough overlap, a bisection routine can be used to find a
 minimal set of headers that do provide the required overlap.
 
-The [TLA+ specification](Lightclient_A_1.tla) is a formal description of the
+The [TLA+ specification](verification/Lightclient_A_1.tla) is a formal description of the
 commit verification protocol executed by a client, including the safety and
 liveness properties, which can be model checked with Apalache.
 
@@ -48,7 +48,7 @@ TODO:
 
 This is a work-in-progress draft.
 
-The [English specification](detection.md) defines blockchain forks and describes
+The [English specification](detection/detection.md) defines blockchain forks and describes
 the problem of a light client detecting them from communication with a network
 of full nodes, where at least one is correct.
 
