@@ -104,9 +104,10 @@ impl PeerList {
     pub fn replace_faulty_primary(&mut self) -> Result<(), Error> {
         self.faulty_nodes.insert(self.primary);
 
-        while let Some(peer_id) = self.witnesses.iter().next() {
-            if peer_id != &self.primary {
-                self.primary = *peer_id;
+        while let Some(new_primary) = self.witnesses.iter().next().copied() {
+            if new_primary != self.primary {
+                self.primary = new_primary;
+                self.witnesses.remove(&new_primary);
                 return Ok(());
             }
         }
