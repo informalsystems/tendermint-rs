@@ -1,3 +1,9 @@
+## pending
+
+Light Client:
+
+- Expose latest_trusted from Supervisor Handle ([#394])
+
 ## [0.14.1] (2020-06-23)
 
 - Update `prost-amino`/`prost-amino-derive` to v0.6 ([#367])
