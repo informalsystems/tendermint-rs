@@ -37,12 +37,37 @@ The [TLA+ specification](verification/Lightclient_A_1.tla) is a formal descripti
 commit verification protocol executed by a client, including the safety and
 liveness properties, which can be model checked with Apalache.
 
-TODO: 
-- more detail on TLA+?
-- describe/cleanup the MC files 
-- more detail on how to run the model checker
-- some explanation about the experiments  
-  ![Experimental results](experiments.png)
+The `MC*.tla` files contain concrete parameters for the
+[TLA+ specification](verification/Lightclient_A_1.tla), in order to do model checking.
+For instance, [MC4_3_faulty.tla](verification/MC4_3_faulty.tla) contains the following parameters
+for the nodes, heights, the trusting period, and correctness of the primary node:
+
+```tla
+AllNodes == {"n1", "n2", "n3", "n4"}
+TRUSTED_HEIGHT == 1
+TARGET_HEIGHT == 3
+TRUSTING_PERIOD == 1400 \* two weeks, one day is 100 time units :-)
+IS_PRIMARY_CORRECT == FALSE
+```
+
+To run a complete set of experiments, clone [apalache](https://github.com/informalsystems/apalache) and [apalache-tests](https://github.com/informalsystems/apalache-tests) into a directory `$DIR` and run the following commands:
+
+```sh
+$ $DIR/apalache-tests/scripts/mk-run.py --memlimit 28 001bmc-apalache.csv $DIR/apalache . out
+$ ./out/run-all.sh
+```
+
+After the experiments have finished, you can collect the logs by executing the following command:
+
+```sh
+cd ./out
+$DIR/apalache-tests/scripts/parse-logs.py --human .
+```
+
+The following table summarizes the experimental results. The TLA+ properties can be found in the
+[TLA+ specification](verification/Lightclient_A_1.tla).
+
+![Experimental results](experiments.png)
 
 ## Fork Detection
 
