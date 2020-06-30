@@ -28,6 +28,9 @@ impl PeerList {
         peer_list.full_nodes.is_disjoint(&peer_list.witnesses)
             && peer_list.full_nodes.is_disjoint(&peer_list.faulty_nodes)
             && peer_list.witnesses.is_disjoint(&peer_list.faulty_nodes)
+            && !peer_list.witnesses.contains(&peer_list.primary)
+            && !peer_list.full_nodes.contains(&peer_list.primary)
+            && !peer_list.faulty_nodes.contains(&peer_list.primary)
     }
 
     /// Transition invariant maintained by a `PeerList`
@@ -104,12 +107,10 @@ impl PeerList {
     pub fn replace_faulty_primary(&mut self) -> Result<(), Error> {
         self.faulty_nodes.insert(self.primary);
 
-        while let Some(new_primary) = self.witnesses.iter().next().copied() {
-            if new_primary != self.primary {
-                self.primary = new_primary;
-                self.witnesses.remove(&new_primary);
-                return Ok(());
-            }
+        if let Some(new_primary) = self.witnesses.iter().next().copied() {
+            self.primary = new_primary;
+            self.witnesses.remove(&new_primary);
+            return Ok(());
         }
 
         bail!(ErrorKind::NoWitnessLeft)
@@ -136,6 +137,7 @@ impl PeerListBuilder {
     }
 
     /// Register the given peer id and instance as a witness.
+    #[pre(self.primary != Some(peer_id))]
     pub fn witness(mut self, peer_id: PeerId, instance: Instance) -> Self {
         self.instances.insert(peer_id, instance);
         self.witnesses.insert(peer_id);
@@ -143,12 +145,14 @@ impl PeerListBuilder {
     }
 
     /// Register the given peer id and instance as a full node.
+    #[pre(self.primary != Some(peer_id))]
     pub fn full_node(mut self, peer_id: PeerId, instance: Instance) -> Self {
         self.instances.insert(peer_id, instance);
         self.full_nodes.insert(peer_id);
         self
     }
     /// Register the given peer id and instance as a faulty node.
+    #[pre(self.primary != Some(peer_id))]
     pub fn faulty_node(mut self, peer_id: PeerId, instance: Instance) -> Self {
         self.instances.insert(peer_id, instance);
         self.faulty_nodes.insert(peer_id);
