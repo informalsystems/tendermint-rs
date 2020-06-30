@@ -166,7 +166,7 @@ LightStoreUpdateBlocks(lightBlocks, block) ==
 
 \* update the state of a light block      
 \*
-\* [LCV-FUNC-UPDATE.1]
+\* [LCV-FUNC-UPDATE.1::TLA.1]
 LightStoreUpdateStates(statuses, ht, blockState) ==
     [h \in DOMAIN statuses \union {ht} |->
         IF h = ht THEN blockState ELSE statuses[h]]      
