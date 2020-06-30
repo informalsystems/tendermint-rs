@@ -6,7 +6,7 @@ use crate::{
 };
 
 use contracts::{post, pre};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 
 /// A mapping from PeerIds to Light Client instances.
 /// Keeps track of which peer is deemed the primary peer.
@@ -14,9 +14,9 @@ use std::collections::{HashMap, HashSet};
 pub struct PeerList {
     instances: HashMap<PeerId, Instance>,
     primary: PeerId,
-    witnesses: HashSet<PeerId>,
-    full_nodes: HashSet<PeerId>,
-    faulty_nodes: HashSet<PeerId>,
+    witnesses: BTreeSet<PeerId>,
+    full_nodes: BTreeSet<PeerId>,
+    faulty_nodes: BTreeSet<PeerId>,
 }
 
 impl PeerList {
@@ -82,21 +82,17 @@ impl PeerList {
     /// ## Precondition
     /// - The given peer id must not be the primary peer id.
     /// - The given peer must be in the witness list
-    #[pre(peer_id != self.primary && self.witnesses.contains(&peer_id))]
+    #[pre(faulty_witness != self.primary && self.witnesses.contains(&faulty_witness))]
     #[post(Self::invariant(&self))]
-    pub fn mark_witness_as_faulty(&mut self, peer_id: PeerId) {
-        self.witnesses.remove(&peer_id);
-        self.faulty_nodes.insert(peer_id);
-    }
+    pub fn replace_faulty_witness(&mut self, faulty_witness: PeerId) {
+        self.witnesses.remove(&faulty_witness);
 
-    /// Fill witness list with up to `n` full nodes
-    #[post(Self::invariant(&self))]
-    pub fn fill_witness_list(&mut self, n: usize) {
-        let new_witnesses: Vec<_> = self.full_nodes.iter().take(n).copied().collect();
-        for new_witness in new_witnesses {
-            self.full_nodes.remove(&new_witness);
+        if let Some(new_witness) = self.full_nodes.iter().next().copied() {
             self.witnesses.insert(new_witness);
+            self.full_nodes.remove(&new_witness);
         }
+
+        self.faulty_nodes.insert(faulty_witness);
     }
 
     /// Swap the primary for the next available witness, if any.
@@ -121,9 +117,9 @@ impl PeerList {
 pub struct PeerListBuilder {
     instances: HashMap<PeerId, Instance>,
     primary: Option<PeerId>,
-    witnesses: HashSet<PeerId>,
-    full_nodes: HashSet<PeerId>,
-    faulty_nodes: HashSet<PeerId>,
+    witnesses: BTreeSet<PeerId>,
+    full_nodes: BTreeSet<PeerId>,
+    faulty_nodes: BTreeSet<PeerId>,
 }
 
 impl PeerListBuilder {

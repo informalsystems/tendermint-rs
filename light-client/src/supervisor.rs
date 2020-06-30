@@ -229,12 +229,12 @@ impl Supervisor {
                 }
                 // A witness has timed out, remove it from the peer list.
                 Fork::Timeout(provider, _error) => {
-                    self.peers.mark_witness_as_faulty(provider);
+                    self.peers.replace_faulty_witness(provider);
                     // TODO: Log/record the error
                 }
                 // A witness has been deemed faulty, remove it from the peer list.
                 Fork::Faulty(block, _error) => {
-                    self.peers.mark_witness_as_faulty(block.provider);
+                    self.peers.replace_faulty_witness(block.provider);
                     // TODO: Log/record the error
                 }
             }
