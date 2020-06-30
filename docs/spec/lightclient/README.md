@@ -41,6 +41,8 @@ TODO:
 - more detail on TLA+?
 - describe/cleanup the MC files 
 - more detail on how to run the model checker
+- some explanation about the experiments  
+  ![Experimental results](experiments.png)
 
 ## Fork Detection
 
