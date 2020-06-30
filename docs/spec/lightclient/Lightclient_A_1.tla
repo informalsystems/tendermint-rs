@@ -65,7 +65,7 @@ States == { "working", "finishedSuccess", "finishedFailure" }
 (**
  Check the precondition of ValidAndVerified.
  
- [LCV-FUNC-VALID.1]
+ [LCV-FUNC-VALID.1::TLA-PRE.1]
  *)
 ValidAndVerifiedPre(trusted, untrusted) ==
   LET thdr == trusted.header
