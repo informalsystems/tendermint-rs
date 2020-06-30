@@ -150,7 +150,7 @@ CopyLightBlockFromChain(block, height) ==
 \* Either the primary is correct and the block comes from the reference chain,
 \* or the block is produced by a faulty primary.
 \*
-\* [LCV-FUNC-FETCH.1]
+\* [LCV-FUNC-FETCH.1::TLA.1]
 FetchLightBlockInto(block, height) ==
     IF IS_PRIMARY_CORRECT
     THEN CopyLightBlockFromChain(block, height)
