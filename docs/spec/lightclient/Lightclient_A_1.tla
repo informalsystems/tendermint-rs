@@ -65,7 +65,7 @@ States == { "working", "finishedSuccess", "finishedFailure" }
 (**
  Check the precondition of ValidAndVerified.
  
- TODO: add a traceability tag as soon as the English spec has one
+ [LCV-FUNC-VALID.1::TLA-PRE.1]
  *)
 ValidAndVerifiedPre(trusted, untrusted) ==
   LET thdr == trusted.header
@@ -102,7 +102,7 @@ SignedByOneThirdOfTrusted(trusted, untrusted) ==
 (**
  Check, whether an untrusted block is valid and verifiable w.r.t. a trusted header.
  
- TODO: add traceability tag as soon as the English spec has one
+ [LCV-FUNC-VALID.1::TLA.1]
  *)   
 ValidAndVerified(trusted, untrusted) ==
     IF ~ValidAndVerifiedPre(trusted, untrusted)
@@ -150,7 +150,7 @@ CopyLightBlockFromChain(block, height) ==
 \* Either the primary is correct and the block comes from the reference chain,
 \* or the block is produced by a faulty primary.
 \*
-\* TODO: add a traceability tag when Josef adds it in the English spec
+\* [LCV-FUNC-FETCH.1::TLA.1]
 FetchLightBlockInto(block, height) ==
     IF IS_PRIMARY_CORRECT
     THEN CopyLightBlockFromChain(block, height)
@@ -158,7 +158,7 @@ FetchLightBlockInto(block, height) ==
 
 \* add a block into the light store    
 \*
-\* TODO: add a traceability tag when Josef adds it in the English spec
+\* [LCV-FUNC-UPDATE.1::TLA.1]
 LightStoreUpdateBlocks(lightBlocks, block) ==
     LET ht == block.header.height IN    
     [h \in DOMAIN lightBlocks \union {ht} |->
@@ -166,14 +166,14 @@ LightStoreUpdateBlocks(lightBlocks, block) ==
 
 \* update the state of a light block      
 \*
-\* TODO: add a traceability tag when Josef adds it in the English spec
+\* [LCV-FUNC-UPDATE.1::TLA.1]
 LightStoreUpdateStates(statuses, ht, blockState) ==
     [h \in DOMAIN statuses \union {ht} |->
         IF h = ht THEN blockState ELSE statuses[h]]      
 
 \* Check, whether newHeight is a possible next height for the light client.
 \*
-\* TODO: add a traceability tag when Josef adds it in the English spec
+\* [LCV-FUNC-SCHEDULE.1::TLA.1]
 CanScheduleTo(newHeight, pLatestVerified, pNextHeight, pTargetHeight) ==
     LET ht == pLatestVerified.header.height IN
     \/ /\ ht = pNextHeight
@@ -189,7 +189,7 @@ CanScheduleTo(newHeight, pLatestVerified, pNextHeight, pTargetHeight) ==
 
 \* The loop of VerifyToTarget.
 \*
-\* TODO: add a traceability tag when Josef adds it in the English spec
+\* [LCV-FUNC-MAIN.1::TLA-LOOP.1]
 VerifyToTargetLoop ==
       \* the loop condition is true
     /\ latestVerified.header.height < TARGET_HEIGHT
@@ -240,7 +240,7 @@ VerifyToTargetLoop ==
 
 \* The terminating condition of VerifyToTarget.
 \*
-\* TODO: add a traceability tag when Josef adds it in the English spec
+\* [LCV-FUNC-MAIN.1::TLA-LOOPCOND.1]
 VerifyToTargetDone ==
     /\ latestVerified.header.height >= TARGET_HEIGHT
     /\ state' = "finishedSuccess"
