@@ -34,12 +34,12 @@ pub enum Fork {
 
 /// Interface for a fork detector
 pub trait ForkDetector: Send {
-    /// Detect forks using the given light block, trusted state,
+    /// Detect forks using the given the verified block, trusted block,
     /// and list of witnesses to verify the given light block against.
     fn detect_forks(
         &self,
         verified_block: &LightBlock,
-        trusted_state: &LightBlock,
+        trusted_block: &LightBlock,
         witnesses: Vec<&Instance>,
     ) -> Result<ForkDetection, Error>;
 }
@@ -80,7 +80,7 @@ impl ForkDetector for ProdForkDetector {
     fn detect_forks(
         &self,
         verified_block: &LightBlock,
-        trusted_state: &LightBlock,
+        trusted_block: &LightBlock,
         witnesses: Vec<&Instance>,
     ) -> Result<ForkDetection, Error> {
         let primary_hash = self
@@ -105,7 +105,7 @@ impl ForkDetector for ProdForkDetector {
 
             // XXX: Shouldn't this have already happened? Why do we need
             // to re-mark the trusted block as verified?
-            state.light_store.update(&trusted_state, Status::Verified);
+            state.light_store.update(&trusted_block, Status::Verified);
 
             state.light_store.update(&witness_block, Status::Unverified);
 

@@ -298,19 +298,19 @@ impl Supervisor {
         Ok(())
     }
 
-    /// Perform fork detection with the given verified block and trusted state.
+    /// Perform fork detection with the given verified block and trusted block.
     #[pre(self.peers.primary().is_some())]
     fn detect_forks(
         &self,
         verified_block: &LightBlock,
-        trusted_state: &LightBlock,
+        trusted_block: &LightBlock,
     ) -> Result<ForkDetection, Error> {
         if self.peers.witnesses().is_empty() {
             bail!(ErrorKind::NoWitnesses);
         }
 
         self.fork_detector
-            .detect_forks(verified_block, &trusted_state, self.peers.witnesses())
+            .detect_forks(verified_block, &trusted_block, self.peers.witnesses())
     }
 
     /// Run the supervisor event loop in the same thread.
