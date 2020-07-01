@@ -8,7 +8,7 @@
 
 The initial approach to use callbacks in order to capture async responses
 from requests issued by the `Handle` to its `Supervisor` introduces a couple of
-has some drawbacks, i.e. try semantics, scope and borrow complexities. As the
+drawbacks, i.e. try semantics, scope and borrow complexities. As the
 general pattern seems to be that a bounded channel is constructed to transport
 the response it could be reworked to be the actual value send with the event to
 the Supervisor. Which in turn send back the response on the typed channel to the
@@ -25,7 +25,7 @@ Remove the callback abstraction in favour of passing channels in the events
 exchanged directly as the pattern is present already in the current concrete
 implementation of the `supervisor::Handle` anyway.
 
-Remove async versions of the public methods until use-case drive their
+Remove async versions of the public methods until a use-case drives their
 implementation.
 
 ## Status
