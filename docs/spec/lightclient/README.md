@@ -18,10 +18,10 @@ The light client is decomposed into three components:
 
 ## Commit Verification
 
-The [English specification](verification.md) describes the light client
+The [English specification](verification/verification.md) describes the light client
 commit verification problem in terms of the temporal properties
-[LCV-DIST-SAFE.1](https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification.md#lcv-dist-safe1) and 
-[LCV-DIST-LIVE.1](https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification.md#lcv-dist-live1). 
+[LCV-DIST-SAFE.1](https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md#lcv-dist-safe1) and 
+[LCV-DIST-LIVE.1](https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md#lcv-dist-live1). 
 Commit verification is assumed to operate within the Tendermint Failure Model, where +2/3 of validators are correct for some time period and
 validator sets can change arbitrarily at each height.
 
@@ -33,20 +33,47 @@ many intermediate headers by exploiting overlap in trusted and untrusted validat
 When there is not enough overlap, a bisection routine can be used to find a
 minimal set of headers that do provide the required overlap.
 
-The [TLA+ specification](Lightclient_A_1.tla) is a formal description of the
+The [TLA+ specification](verification/Lightclient_A_1.tla) is a formal description of the
 commit verification protocol executed by a client, including the safety and
 liveness properties, which can be model checked with Apalache.
 
-TODO: 
-- more detail on TLA+?
-- describe/cleanup the MC files 
-- more detail on how to run the model checker
+The `MC*.tla` files contain concrete parameters for the
+[TLA+ specification](verification/Lightclient_A_1.tla), in order to do model checking.
+For instance, [MC4_3_faulty.tla](verification/MC4_3_faulty.tla) contains the following parameters
+for the nodes, heights, the trusting period, and correctness of the primary node:
+
+```tla
+AllNodes == {"n1", "n2", "n3", "n4"}
+TRUSTED_HEIGHT == 1
+TARGET_HEIGHT == 3
+TRUSTING_PERIOD == 1400 \* two weeks, one day is 100 time units :-)
+IS_PRIMARY_CORRECT == FALSE
+```
+
+To run a complete set of experiments, clone [apalache](https://github.com/informalsystems/apalache) and [apalache-tests](https://github.com/informalsystems/apalache-tests) into a directory `$DIR` and run the following commands:
+
+```sh
+$ $DIR/apalache-tests/scripts/mk-run.py --memlimit 28 001bmc-apalache.csv $DIR/apalache . out
+$ ./out/run-all.sh
+```
+
+After the experiments have finished, you can collect the logs by executing the following command:
+
+```sh
+cd ./out
+$DIR/apalache-tests/scripts/parse-logs.py --human .
+```
+
+The following table summarizes the experimental results. The TLA+ properties can be found in the
+[TLA+ specification](verification/Lightclient_A_1.tla).
+
+![Experimental results](experiments.png)
 
 ## Fork Detection
 
 This is a work-in-progress draft.
 
-The [English specification](detection.md) defines blockchain forks and describes
+The [English specification](detection/detection.md) defines blockchain forks and describes
 the problem of a light client detecting them from communication with a network
 of full nodes, where at least one is correct.
 

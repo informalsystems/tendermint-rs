@@ -1,3 +1,12 @@
+use std::collections::HashMap;
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
+
+use gumdrop::Options;
+
+use tendermint_light_client::supervisor::{Handle as _, Instance, Supervisor};
 use tendermint_light_client::{
     components::{
         clock::SystemClock,
@@ -11,16 +20,7 @@ use tendermint_light_client::{
     peer_list::PeerList,
     state::State,
     store::{sled::SledStore, LightStore},
-    supervisor::{Instance, Supervisor},
     types::{Height, PeerId, Status, Time, TrustThreshold},
-};
-
-use gumdrop::Options;
-
-use std::collections::HashMap;
-use std::{
-    path::{Path, PathBuf},
-    time::Duration,
 };
 
 #[derive(Debug, Options)]

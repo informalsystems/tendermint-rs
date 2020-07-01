@@ -21,6 +21,9 @@ pub enum ErrorKind {
     #[error("store error")]
     Store,
 
+    #[error("no primary")]
+    NoPrimary,
+
     #[error("no witnesses")]
     NoWitnesses,
 
