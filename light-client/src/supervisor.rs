@@ -204,13 +204,13 @@ impl Supervisor {
 
             match verdict {
                 // Verification succeeded, let's perform fork detection
-                Ok(light_block) => {
-                    let trusted_state = primary
+                Ok(verified_block) => {
+                    let trusted_block = primary
                         .latest_trusted()
                         .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
 
-                    // Perform fork detection with the highest verified block as the trusted state.
-                    let outcome = self.detect_forks(&light_block, &trusted_state)?;
+                    // Perform fork detection with the highest verified block and the trusted block.
+                    let outcome = self.detect_forks(&verified_block, &trusted_block)?;
 
                     match outcome {
                         // There was a fork or a faulty peer
@@ -229,11 +229,11 @@ impl Supervisor {
                             // not that obvious).
                             // Note: This always succeeds since we already have a primary,
                             if let Some(primary) = self.peers.primary_mut() {
-                                primary.trust_block(&light_block);
+                                primary.trust_block(&verified_block);
                             }
 
                             // No fork detected, exiting
-                            return Ok(light_block);
+                            return Ok(verified_block);
                         }
                     }
                 }
@@ -256,6 +256,7 @@ impl Supervisor {
         for fork in forks {
             match fork {
                 // An actual fork was detected, report evidence and record forked peer.
+                // TODO: also report to primary
                 Fork::Forked { primary, witness } => {
                     let provider = witness.provider;
                     self.report_evidence(provider, &primary, &witness)?;
@@ -297,11 +298,11 @@ impl Supervisor {
         Ok(())
     }
 
-    /// Perform fork detection with the given block and trusted state.
+    /// Perform fork detection with the given verified block and trusted state.
     #[pre(self.peers.primary().is_some())]
     fn detect_forks(
         &self,
-        light_block: &LightBlock,
+        verified_block: &LightBlock,
         trusted_state: &LightBlock,
     ) -> Result<ForkDetection, Error> {
         if self.peers.witnesses().is_empty() {
@@ -309,7 +310,7 @@ impl Supervisor {
         }
 
         self.fork_detector
-            .detect_forks(light_block, &trusted_state, self.peers.witnesses())
+            .detect_forks(verified_block, &trusted_state, self.peers.witnesses())
     }
 
     /// Run the supervisor event loop in the same thread.

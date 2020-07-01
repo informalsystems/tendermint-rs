@@ -38,7 +38,7 @@ pub trait ForkDetector: Send {
     /// and list of witnesses to verify the given light block against.
     fn detect_forks(
         &self,
-        light_block: &LightBlock,
+        verified_block: &LightBlock,
         trusted_state: &LightBlock,
         witnesses: Vec<&Instance>,
     ) -> Result<ForkDetection, Error>;
@@ -79,11 +79,13 @@ impl ForkDetector for ProdForkDetector {
     /// Perform fork detection. See the documentation `ProdForkDetector` for details.
     fn detect_forks(
         &self,
-        light_block: &LightBlock,
+        verified_block: &LightBlock,
         trusted_state: &LightBlock,
         witnesses: Vec<&Instance>,
     ) -> Result<ForkDetection, Error> {
-        let primary_hash = self.hasher.hash_header(&light_block.signed_header.header);
+        let primary_hash = self
+            .hasher
+            .hash_header(&verified_block.signed_header.header);
 
         let mut forks = Vec::with_capacity(witnesses.len());
 
@@ -92,7 +94,7 @@ impl ForkDetector for ProdForkDetector {
 
             let witness_block = witness
                 .light_client
-                .get_or_fetch_block(light_block.height(), &mut state)?;
+                .get_or_fetch_block(verified_block.height(), &mut state)?;
 
             let witness_hash = self.hasher.hash_header(&witness_block.signed_header.header);
 
@@ -109,16 +111,16 @@ impl ForkDetector for ProdForkDetector {
 
             let result = witness
                 .light_client
-                .verify_to_target(light_block.height(), &mut state);
+                .verify_to_target(verified_block.height(), &mut state);
 
             match result {
                 Ok(_) => forks.push(Fork::Forked {
-                    primary: light_block.clone(),
+                    primary: verified_block.clone(),
                     witness: witness_block,
                 }),
                 Err(e) if e.kind().has_expired() => {
                     forks.push(Fork::Forked {
-                        primary: light_block.clone(),
+                        primary: verified_block.clone(),
                         witness: witness_block,
                     });
                 }
