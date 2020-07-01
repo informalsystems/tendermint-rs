@@ -14,16 +14,16 @@ use crate::types::{Height, LightBlock, PeerId, Status};
 
 pub trait Handle {
     /// Get latest trusted block from the [`Supervisor`].
-    fn latest_trusted(&mut self) -> Result<Option<LightBlock>, Error>;
+    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error>;
 
     /// Verify to the highest block.
-    fn verify_to_highest(&mut self) -> Result<LightBlock, Error>;
+    fn verify_to_highest(&self) -> Result<LightBlock, Error>;
 
     /// Verify to the block at the given height.
-    fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error>;
+    fn verify_to_target(&self, height: Height) -> Result<LightBlock, Error>;
 
     /// Terminate the underlying [`Supervisor`].
-    fn terminate(&mut self);
+    fn terminate(&self);
 }
 
 /// Input events sent by the [`Handle`]s to the [`Supervisor`]. They carry a [`Callback`] which is
@@ -338,7 +338,7 @@ impl SupervisorHandle {
     }
 
     fn verify(
-        &mut self,
+        &self,
         make_event: impl FnOnce(channel::Sender<Result<LightBlock, Error>>) -> HandleInput,
     ) -> Result<LightBlock, Error> {
         let (sender, receiver) = channel::bounded::<Result<LightBlock, Error>>(1);
@@ -350,7 +350,7 @@ impl SupervisorHandle {
     }
 }
 impl Handle for SupervisorHandle {
-    fn latest_trusted(&mut self) -> Result<Option<LightBlock>, Error> {
+    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
         let (sender, receiver) = channel::bounded::<Result<Option<LightBlock>, Error>>(1);
 
         // TODO(xla): Transform crossbeam errors into proper domain errors.
@@ -362,15 +362,15 @@ impl Handle for SupervisorHandle {
         receiver.recv().unwrap()
     }
 
-    fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
+    fn verify_to_highest(&self) -> Result<LightBlock, Error> {
         self.verify(HandleInput::VerifyToHighest)
     }
 
-    fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
+    fn verify_to_target(&self, height: Height) -> Result<LightBlock, Error> {
         self.verify(|sender| HandleInput::VerifyToTarget(height, sender))
     }
 
-    fn terminate(&mut self) {
+    fn terminate(&self) {
         let (sender, receiver) = channel::bounded::<()>(1);
 
         self.sender.send(HandleInput::Terminate(sender)).unwrap();

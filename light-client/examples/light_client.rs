@@ -160,7 +160,7 @@ fn sync_cmd(opts: SyncOpts) {
         ProdEvidenceReporter::new(peer_addr),
     );
 
-    let mut handle = supervisor.handle();
+    let handle = supervisor.handle();
 
     std::thread::spawn(|| supervisor.run());
 
