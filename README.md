@@ -7,15 +7,76 @@
 [![Apache 2.0 Licensed][license-image]][license-link]
 ![Rust 1.39+][rustc-image]
 
-Rust crate for interacting with [Tendermint]: a high-performance blockchain
+Rust crates for interacting with [Tendermint]: a high-performance blockchain
 consensus engine that powers Byzantine fault tolerant applications written
 in any programming language.
 
-[Documentation][docs-link]
+Also includes [TLA+ specifications](/docs/spec).
 
-## Requirements
+## Releases
 
-- Rust 1.39+
+Release tags can be found on
+[Github](https://github.com/informalsystems/tendermint-rs/releases).
+
+Releases for each crate are published to crates.io:
+
+- [tendermint][tendermint-docs-link] - Tendermint data structures and
+  serialization
+- [tendermint-rpc][tendermint-rpc-docs-link] - Tendermint RPC client and
+  response types
+
+
+The following crates have not been published to crates.io yet:
+
+- light-client - Tendermint light client library for verifying
+  signed headers, tracking validator set changes, and detecting forks
+- light-node- Tendermint light client binary
+
+## Installation
+
+Requires Rust 1.39+
+
+## Documentation
+
+See documentation on [crates.io](#releases).
+
+## Contributing
+
+The Tendermint protocols are specified in English in the
+[tendermint/spec repo](https://github.com/tendermint/spec).
+Any protocol changes or clarifications should be contributed there.
+
+This repo contains the TLA+ specifications and Rust implementations for
+various components of Tendermint. If you're interested in contributing, please
+comment on an issue or open a new one!
+
+## Versioning
+
+We follow [Semantic Versioning](https://semver.org/). However, as we are
+pre-v1.0.0, we use the MINOR version to refer to breaking changes and the PATCH
+version for features, improvements, and fixes.
+
+Only the following crates are covered by SemVer guarantees:
+
+- tendermint
+- tendermint-rpc
+
+Other crates may change arbitrarily with every release for now.
+
+We use the same version for all crates and release them collectively.
+
+## Resources
+
+Software, Specs, and Documentation
+
+- [Tendermint Datastructures Spec](https://github.com/tendermint/spec)
+- [Tendermint in Go](https://github.com/tendermint/tendermint)
+- [Docs for Tendermint in Go](http://docs.tendermint.com/)
+
+Papers
+
+- [The latest gossip on BFT consensus](https://arxiv.org/abs/1807.04938)
+- [Ethan Buchman's Master's Thesis on Tendermint](https://atrium.lib.uoguelph.ca/xmlui/handle/10214/9769)
 
 ## License
 
@@ -49,4 +110,6 @@ limitations under the License.
 
 [//]: # (general links)
 
+[tendermint-docs-link]: https://docs.rs/tendermint/
+[tendermint-rpc-docs-link]: https://docs.rs/tendermint-rpc/
 [Tendermint]: https://github.com/tendermint/tendermint
