@@ -349,7 +349,6 @@ impl SupervisorHandle {
         receiver.recv().unwrap()
     }
 }
-
 impl Handle for SupervisorHandle {
     fn latest_trusted(&mut self) -> Result<Option<LightBlock>, Error> {
         let (sender, receiver) = channel::bounded::<Result<Option<LightBlock>, Error>>(1);

@@ -3,7 +3,7 @@
 Light Client:
 
 - Expose latest_trusted from Supervisor Handle ([#394])
-- Turn `Handle` into a trait for ease of integration ([#401])
+- Turn `Handle` into a trait for ease of integration and testability ([#401])
 
 [#394]: https://github.com/informalsystems/tendermint-rs/pull/394
 [#401]: https://github.com/informalsystems/tendermint-rs/pull/401
