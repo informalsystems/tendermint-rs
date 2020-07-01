@@ -15,6 +15,39 @@ use crate::{
     types::{Height, LightBlock, PeerId, Status},
 };
 
+pub trait Handle {
+    /// Get latest trusted block from the [`Supervisor`].
+    fn latest_trusted(&mut self) -> Result<Option<LightBlock>, Error>;
+
+    /// Verify to the highest block.
+    fn verify_to_highest(&mut self) -> Result<LightBlock, Error>;
+
+    /// Verify to the block at the given height.
+    fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error>;
+
+    /// Async version of `verify_to_highest`.
+    ///
+    /// The given `callback` will be called asynchronously with the
+    /// verification result.
+    fn verify_to_highest_async(
+        &mut self,
+        callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
+    );
+
+    /// Async version of `verify_to_target`.
+    ///
+    /// The given `callback` will be called asynchronously with the
+    /// verification result.
+    fn verify_to_target_async(
+        &mut self,
+        height: Height,
+        callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
+    );
+
+    /// Terminate the underlying [`Supervisor`].
+    fn terminate(&mut self);
+}
+
 /// Input events sent by the [`Handle`]s to the [`Supervisor`]. They carry a [`Callback`] which is
 /// used to communicate back the responses of the requests.
 #[derive(Debug)]
@@ -134,8 +167,8 @@ impl Supervisor {
     }
 
     /// Create a new handle to this supervisor.
-    pub fn handle(&mut self) -> Handle {
-        Handle::new(self.sender.clone())
+    pub fn handle(&mut self) -> impl Handle {
+        SupervisorHandle::new(self.sender.clone())
     }
 
     #[pre(self.peers.primary().is_some())]
@@ -308,47 +341,19 @@ impl Supervisor {
     }
 }
 
-/// A handle to a `Supervisor` which allows to communicate with
+/// A [`Handle`] to the [`Supervisor`] which allows to communicate with
 /// the supervisor across thread boundaries via message passing.
-pub struct Handle {
+struct SupervisorHandle {
     sender: channel::Sender<HandleInput>,
 }
 
-impl Handle {
+impl SupervisorHandle {
     /// Crate a new handle that sends events to the supervisor via
     /// the given channel. For internal use only.
     fn new(sender: channel::Sender<HandleInput>) -> Self {
         Self { sender }
     }
 
-    /// Get latest trusted block from the [`Supervisor`].
-    pub fn latest_trusted(&mut self) -> Result<Option<LightBlock>, Error> {
-        let (sender, receiver) = channel::bounded::<Result<Option<LightBlock>, Error>>(1);
-
-        let callback = Callback::new(move |result| {
-            sender.send(result).unwrap();
-        });
-
-        // TODO(xla): Transform crossbeam errors into proper domain errors.
-        self.sender
-            .send(HandleInput::LatestTrusted(callback))
-            .unwrap();
-
-        // TODO(xla): Transform crossbeam errors into proper domain errors.
-        receiver.recv().unwrap()
-    }
-
-    /// Verify to the highest block.
-    pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
-        self.verify(HandleInput::VerifyToHighest)
-    }
-
-    /// Verify to the block at the given height.
-    pub fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
-        self.verify(|callback| HandleInput::VerifyToTarget(height, callback))
-    }
-
-    /// Verify either to the latest block (if `height == None`) or to a given block (if `height == Some(height)`).
     fn verify(
         &mut self,
         make_event: impl FnOnce(Callback<Result<LightBlock, Error>>) -> HandleInput,
@@ -364,12 +369,34 @@ impl Handle {
 
         receiver.recv().unwrap()
     }
+}
 
-    /// Async version of `verify_to_highest`.
-    ///
-    /// The given `callback` will be called asynchronously with the
-    /// verification result.
-    pub fn verify_to_highest_async(
+impl Handle for SupervisorHandle {
+    fn latest_trusted(&mut self) -> Result<Option<LightBlock>, Error> {
+        let (sender, receiver) = channel::bounded::<Result<Option<LightBlock>, Error>>(1);
+
+        let callback = Callback::new(move |result| {
+            sender.send(result).unwrap();
+        });
+
+        // TODO(xla): Transform crossbeam errors into proper domain errors.
+        self.sender
+            .send(HandleInput::LatestTrusted(callback))
+            .unwrap();
+
+        // TODO(xla): Transform crossbeam errors into proper domain errors.
+        receiver.recv().unwrap()
+    }
+
+    fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
+        self.verify(HandleInput::VerifyToHighest)
+    }
+
+    fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
+        self.verify(|callback| HandleInput::VerifyToTarget(height, callback))
+    }
+
+    fn verify_to_highest_async(
         &mut self,
         callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
     ) {
@@ -377,11 +404,7 @@ impl Handle {
         self.sender.send(event).unwrap();
     }
 
-    /// Async version of `verify_to_target`.
-    ///
-    /// The given `callback` will be called asynchronously with the
-    /// verification result.
-    pub fn verify_to_target_async(
+    fn verify_to_target_async(
         &mut self,
         height: Height,
         callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
@@ -390,8 +413,7 @@ impl Handle {
         self.sender.send(event).unwrap();
     }
 
-    /// Terminate the underlying supervisor.
-    pub fn terminate(&mut self) {
+    fn terminate(&mut self) {
         let (sender, receiver) = channel::bounded::<()>(1);
 
         let callback = Callback::new(move |_| {
