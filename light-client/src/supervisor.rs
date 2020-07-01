@@ -62,7 +62,7 @@ enum HandleInput {
     LatestTrusted(Callback<Result<Option<LightBlock>, Error>>),
 }
 
-/// An light client `Instance` packages a `LightClient` together with its `State`.
+/// A light client `Instance` packages a `LightClient` together with its `State`.
 #[derive(Debug)]
 pub struct Instance {
     /// The light client for this instance

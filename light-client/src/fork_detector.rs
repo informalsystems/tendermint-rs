@@ -101,6 +101,8 @@ impl ForkDetector for ProdForkDetector {
                 continue;
             }
 
+            // XXX: Shouldn't this have already happened? Why do we need
+            // to re-mark the trusted block as verified?
             state.light_store.update(&trusted_state, Status::Verified);
 
             state.light_store.update(&witness_block, Status::Unverified);
