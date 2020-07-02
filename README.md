@@ -30,7 +30,7 @@ The following crates have not been published to crates.io yet:
 
 - light-client - Tendermint light client library for verifying
   signed headers, tracking validator set changes, and detecting forks
-- light-node- Tendermint light client binary
+- light-node - Tendermint light client binary
 
 ## Installation
 
