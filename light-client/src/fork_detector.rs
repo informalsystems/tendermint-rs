@@ -4,9 +4,9 @@ use crate::{
     errors::{Error, ErrorExt, ErrorKind},
     operations::{Hasher, ProdHasher},
     state::State,
-    store::{memory::MemoryStore, VerifiedStatus},
+    store::memory::MemoryStore,
     supervisor::Instance,
-    types::LightBlock,
+    types::{LightBlock, PeerId, Status},
 };
 
 /// Result of fork detection
@@ -28,6 +28,8 @@ pub enum Fork {
     },
     /// The node has been deemed faulty for this `LightBlock`
     Faulty(LightBlock, ErrorKind),
+    /// The node has timed out
+    Timeout(PeerId, ErrorKind),
 }
 
 /// Interface for a fork detector
@@ -99,13 +101,9 @@ impl ForkDetector for ProdForkDetector {
                 continue;
             }
 
-            state
-                .light_store
-                .update(trusted_state.clone(), VerifiedStatus::Verified);
+            state.light_store.update(&trusted_state, Status::Verified);
 
-            state
-                .light_store
-                .update(witness_block.clone(), VerifiedStatus::Unverified);
+            state.light_store.update(&witness_block, Status::Unverified);
 
             let result = witness
                 .light_client
@@ -121,6 +119,9 @@ impl ForkDetector for ProdForkDetector {
                         primary: light_block.clone(),
                         witness: witness_block,
                     });
+                }
+                Err(e) if e.kind().is_timeout() => {
+                    forks.push(Fork::Timeout(witness_block.provider, e.kind().clone()))
                 }
                 Err(e) => forks.push(Fork::Faulty(witness_block, e.kind().clone())),
             }

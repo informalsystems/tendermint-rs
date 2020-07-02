@@ -1,3 +1,12 @@
+use std::collections::HashMap;
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
+
+use gumdrop::Options;
+
+use tendermint_light_client::supervisor::{Handle as _, Instance, Supervisor};
 use tendermint_light_client::{
     components::{
         clock::SystemClock,
@@ -10,17 +19,8 @@ use tendermint_light_client::{
     light_client::{self, LightClient},
     peer_list::PeerList,
     state::State,
-    store::{sled::SledStore, LightStore, VerifiedStatus},
-    supervisor::{Instance, Supervisor},
-    types::{Height, PeerId, Time, TrustThreshold},
-};
-
-use gumdrop::Options;
-
-use std::collections::HashMap;
-use std::{
-    path::{Path, PathBuf},
-    time::Duration,
+    store::{sled::SledStore, LightStore},
+    types::{Height, PeerId, Status, Time, TrustThreshold},
 };
 
 #[derive(Debug, Options)]
@@ -103,8 +103,8 @@ fn make_instance(
                 std::process::exit(1);
             });
 
-        light_store.insert(trusted_state, VerifiedStatus::Verified);
-    } else if light_store.highest(VerifiedStatus::Verified).is_none() {
+        light_store.insert(trusted_state, Status::Verified);
+    } else if light_store.highest(Status::Verified).is_none() {
         println!("[ error ] no trusted state in database, please specify a trusted header");
         std::process::exit(1);
     }

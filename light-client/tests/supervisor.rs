@@ -12,26 +12,29 @@ use tendermint_light_client::{
     light_client::{self, LightClient},
     peer_list::PeerList,
     state::State,
-    store::{sled::SledStore, LightStore, VerifiedStatus},
-    supervisor::{Instance, Supervisor},
-    types::{Height, LightBlock, PeerId, Time, TrustThreshold},
+    store::{sled::SledStore, LightStore},
+    supervisor::{Handle, Instance, Supervisor},
+    types::{Height, LightBlock, PeerId, Status, Time, TrustThreshold},
 };
 
-use std::convert::TryInto;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::{
     fs,
     path::{Path, PathBuf},
     time::Duration,
 };
 
-use tendermint_light_client::tests::{AnonLightBlock, TestBisection, TrustOptions, WitnessProvider, Provider, MockIo, MockEvidenceReporter, random_peer_id, MockClock};
 use futures::StreamExt;
-use tendermint_light_client::evidence::EvidenceReporter;
-use tendermint::evidence::Evidence;
 use tendermint::abci::transaction::Hash;
+use tendermint::evidence::Evidence;
 use tendermint_light_client::components::io::IoError;
+use tendermint_light_client::evidence::EvidenceReporter;
 use tendermint_light_client::store::memory::MemoryStore;
+use tendermint_light_client::tests::{
+    random_peer_id, AnonLightBlock, MockClock, MockEvidenceReporter, MockIo, Provider,
+    TestBisection, TrustOptions, WitnessProvider,
+};
 
 const TEST_FILES_PATH: &str = "./tests/support/";
 
@@ -39,7 +42,7 @@ fn read_json_fixture(file: impl AsRef<Path>) -> String {
     fs::read_to_string(file).unwrap()
 }
 
-fn load_multi_peer_testcases(dir: &str) -> Vec<TestBisection<LightBlock>>{
+fn load_multi_peer_testcases(dir: &str) -> Vec<TestBisection<LightBlock>> {
     let paths = fs::read_dir(PathBuf::from(TEST_FILES_PATH).join(dir)).unwrap();
     paths
         .into_iter()
@@ -56,7 +59,6 @@ fn make_instance(
     provider: Provider<LightBlock>,
     now: Time,
 ) -> Instance {
-
     let io = MockIo::new(provider.chain_id, provider.lite_blocks);
 
     let trusted_height = trust_options.height.value();
@@ -65,7 +67,7 @@ fn make_instance(
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
-    light_store.insert(trusted_state, VerifiedStatus::Verified);
+    light_store.insert(trusted_state, Status::Verified);
 
     let state = State {
         light_store: Box::new(light_store),
@@ -89,10 +91,12 @@ fn make_instance(
 }
 
 fn run_multipeer_test(tc: TestBisection<LightBlock>) {
-
     let primary = tc.primary.lite_blocks[0].provider;
 
-    println!("Running Test Case: {}\nwith Primary Peer: {:?}", tc.description, primary);
+    println!(
+        "Running Test Case: {}\nwith Primary Peer: {:?}",
+        tc.description, primary
+    );
 
     let expects_err = match &tc.expected_output {
         Some(eo) => eo.eq("error"),
@@ -107,10 +111,14 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
     peer_list = peer_list.primary(primary, primary_instance);
 
     for provider in tc.witnesses.iter() {
-
-        let peer_id =  provider.value.lite_blocks[0].provider;
+        let peer_id = provider.value.lite_blocks[0].provider;
         println!("Witness: {}", peer_id);
-        let instance = make_instance(peer_id, tc.trust_options.clone(), provider.clone().value, tc.now);
+        let instance = make_instance(
+            peer_id,
+            tc.trust_options.clone(),
+            provider.clone().value,
+            tc.now,
+        );
         peer_list = peer_list.witness(peer_id, instance);
     }
 

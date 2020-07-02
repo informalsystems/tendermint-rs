@@ -1,18 +1,18 @@
 //! Utilities and datatypes for use in tests.
 
-use crate::types::{LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet, Height};
+use crate::types::{Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet};
 
 use serde::Deserialize;
-use tendermint_rpc as rpc;
 use tendermint::abci::transaction::Hash;
+use tendermint_rpc as rpc;
 
-use tendermint::block::Height as HeightStr;
-use tendermint::evidence::{Duration as DurationStr, Evidence};
-use crate::components::io::{Io, AtHeight, IoError};
-use std::collections::HashMap;
+use crate::components::clock::Clock;
+use crate::components::io::{AtHeight, Io, IoError};
 use crate::evidence::EvidenceReporter;
 use contracts::contract_trait;
-use crate::components::clock::Clock;
+use std::collections::HashMap;
+use tendermint::block::Height as HeightStr;
+use tendermint::evidence::{Duration as DurationStr, Evidence};
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TestCases<LB> {
@@ -132,13 +132,16 @@ impl Io for MockIo {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct MockEvidenceReporter;
 
 #[contract_trait]
 impl EvidenceReporter for MockEvidenceReporter {
     fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
-        Ok(Hash::new([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]))
+        Ok(Hash::new([
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0,
+        ]))
     }
 }
 
@@ -230,7 +233,8 @@ pub fn random_peer_id(count: usize) -> PeerId {
 
 impl From<TestBisection<AnonLightBlock>> for TestBisection<LightBlock> {
     fn from(tb: TestBisection<AnonLightBlock>) -> Self {
-        let mut witnesses: Vec<WitnessProvider<LightBlock>> = tb.witnesses.into_iter().map(Into::into).collect();
+        let mut witnesses: Vec<WitnessProvider<LightBlock>> =
+            tb.witnesses.into_iter().map(Into::into).collect();
 
         for (count, provider) in witnesses.iter_mut().enumerate() {
             for lb in provider.value.lite_blocks.iter_mut() {
@@ -242,7 +246,7 @@ impl From<TestBisection<AnonLightBlock>> for TestBisection<LightBlock> {
             description: tb.description,
             trust_options: tb.trust_options,
             primary: tb.primary.into(),
-            witnesses: witnesses,
+            witnesses,
             height_to_verify: tb.height_to_verify,
             now: tb.now,
             expected_output: tb.expected_output,
@@ -250,4 +254,3 @@ impl From<TestBisection<AnonLightBlock>> for TestBisection<LightBlock> {
         }
     }
 }
-
