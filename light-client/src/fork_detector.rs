@@ -103,11 +103,13 @@ impl ForkDetector for ProdForkDetector {
                 continue;
             }
 
-            // XXX: Shouldn't this have already happened? Why do we need
-            // to re-mark the trusted block as verified?
-            state.light_store.update(&trusted_block, Status::Verified);
+            state
+                .light_store
+                .insert(trusted_block.clone(), Status::Verified);
 
-            state.light_store.update(&witness_block, Status::Unverified);
+            state
+                .light_store
+                .insert(witness_block.clone(), Status::Unverified);
 
             let result = witness
                 .light_client
