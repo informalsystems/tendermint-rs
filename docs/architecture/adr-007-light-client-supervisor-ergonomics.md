@@ -16,8 +16,8 @@ Handle. As an added side-effect this could remove the need for the Callback
 abstraction all together and fully embraces CSP style concurrency.
 
 Furthermore we have async versions of most `Handle` methods, but no real
-use-case driving it. If we find such needs, we should look into an interface
-embracing `async/await`.
+use-case driving it. At this point we can't anticipate the limitations of the
+current design with regards to concurrent access.
 
 ## Decision
 
@@ -26,7 +26,9 @@ exchanged directly as the pattern is present already in the current concrete
 implementation of the `supervisor::Handle` anyway.
 
 Remove async versions of the public methods until a use-case drives their
-implementation.
+implementation. We will leave concurrency to be informed by emerging use-cases
+and field reports. With the first real integration likely happen in the RPC
+server and ibc relayer.
 
 ## Status
 
