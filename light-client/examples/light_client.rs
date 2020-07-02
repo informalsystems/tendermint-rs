@@ -165,8 +165,7 @@ fn sync_cmd(opts: SyncOpts) {
     std::thread::spawn(|| supervisor.run());
 
     loop {
-        let maybe_block = handle.verify_to_highest();
-        match maybe_block {
+        match handle.verify_to_highest() {
             Ok(light_block) => {
                 println!("[info] synced to block {}", light_block.height());
             }
