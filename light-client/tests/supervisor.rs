@@ -44,10 +44,10 @@ fn read_json_fixture(file: impl AsRef<Path>) -> String {
 
 fn load_multi_peer_testcases(dir: &str) -> Vec<TestBisection<LightBlock>> {
     let paths = fs::read_dir(PathBuf::from(TEST_FILES_PATH).join(dir)).unwrap();
+
     paths
-        .into_iter()
         .flatten()
-        .map(|entry| read_json_fixture(entry.path()).to_string())
+        .map(|entry| read_json_fixture(entry.path()))
         .map(|contents| serde_json::from_str::<TestBisection<AnonLightBlock>>(&contents).unwrap())
         .map(|testcase| testcase.into())
         .collect::<Vec<TestBisection<LightBlock>>>()
