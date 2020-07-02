@@ -61,7 +61,7 @@ enum HandleInput {
     LatestTrusted(Callback<Result<Option<LightBlock>, Error>>),
 }
 
-/// An light client `Instance` packages a `LightClient` together with its `State`.
+/// A light client `Instance` packages a `LightClient` together with its `State`.
 #[derive(Debug)]
 pub struct Instance {
     /// The light client for this instance
@@ -198,13 +198,13 @@ impl Supervisor {
 
         match verdict {
             // Verification succeeded, let's perform fork detection
-            Ok(light_block) => {
-                let trusted_state = primary
+            Ok(verified_block) => {
+                let trusted_block = primary
                     .latest_trusted()
                     .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
 
-                // Perform fork detection with the highest verified block as the trusted state.
-                let outcome = self.detect_forks(&light_block, &trusted_state)?;
+                // Perform fork detection with the highest verified block and the trusted block.
+                let outcome = self.detect_forks(&verified_block, &trusted_block)?;
 
                 match outcome {
                     // There was a fork or a faulty peer
@@ -224,10 +224,10 @@ impl Supervisor {
                         // the `primary` field of `PeerList` between the initial
                         // borrow of the primary and here (can't blame it, it's
                         // not that obvious).
-                        self.peers.primary_mut().trust_block(&light_block);
+                        self.peers.primary_mut().trust_block(&verified_block);
 
                         // No fork detected, exiting
-                        Ok(light_block)
+                        Ok(verified_block)
                     }
                 }
             }
@@ -248,6 +248,7 @@ impl Supervisor {
         for fork in forks {
             match fork {
                 // An actual fork was detected, report evidence and record forked peer.
+                // TODO: also report to primary
                 Fork::Forked { primary, witness } => {
                     let provider = witness.provider;
                     self.report_evidence(provider, &primary, &witness)?;
@@ -289,11 +290,11 @@ impl Supervisor {
         Ok(())
     }
 
-    /// Perform fork detection with the given block and trusted state.
+    /// Perform fork detection with the given verified block and trusted block.
     fn detect_forks(
         &self,
-        light_block: &LightBlock,
-        trusted_state: &LightBlock,
+        verified_block: &LightBlock,
+        trusted_block: &LightBlock,
     ) -> Result<ForkDetection, Error> {
         if self.peers.witnesses_ids().is_empty() {
             bail!(ErrorKind::NoWitnesses);
@@ -307,7 +308,7 @@ impl Supervisor {
             .collect();
 
         self.fork_detector
-            .detect_forks(light_block, &trusted_state, witnesses)
+            .detect_forks(verified_block, &trusted_block, witnesses)
     }
 
     /// Run the supervisor event loop in the same thread.
