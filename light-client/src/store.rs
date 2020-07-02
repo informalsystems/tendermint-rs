@@ -31,13 +31,13 @@ pub trait LightStore: std::fmt::Debug + Send {
     /// Remove the light block with the given height and status, if any.
     fn remove(&mut self, height: Height, status: Status);
 
-    /// Get the latest light block with the given status.
+    /// Get the light block of greatest height with the given status.
     fn latest(&self, status: Status) -> Option<LightBlock>;
 
     /// Get an iterator of all light blocks with the given status.
     fn all(&self, status: Status) -> Box<dyn Iterator<Item = LightBlock>>;
 
-    /// Get the latest trusted or verified block from the store.
+    /// Get the light block of greatest height with the trusted or verified status.
     fn latest_trusted_or_verified(&self) -> Option<LightBlock> {
         let latest_trusted = self.latest(Status::Trusted);
         let latest_verified = self.latest(Status::Verified);
