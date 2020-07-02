@@ -34,7 +34,7 @@ pub enum Fork {
 
 /// Interface for a fork detector
 pub trait ForkDetector: Send {
-    /// Detect forks using the given the verified block, trusted block,
+    /// Detect forks using the given verified block, trusted block,
     /// and list of witnesses to verify the given light block against.
     fn detect_forks(
         &self,
