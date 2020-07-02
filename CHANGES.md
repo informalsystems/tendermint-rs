@@ -4,11 +4,12 @@ Light Client:
 
 - Expose latest_trusted from Supervisor Handle ([#394])
 - Turn `Handle` into a trait for ease of integration and testability ([#401])
-- Improve `Supervisor` ergonomics ([#403])
+- Improve `Supervisor` ergonomics according to [ADR-007] ([#403])
 
 [#394]: https://github.com/informalsystems/tendermint-rs/pull/394
 [#401]: https://github.com/informalsystems/tendermint-rs/pull/401
 [#401]: https://github.com/informalsystems/tendermint-rs/pull/403
+[ADR-007]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-007-light-client-supervisor-ergonomics.md
 
 ## [0.14.1] (2020-06-23)
 
