@@ -13,7 +13,7 @@ use crate::types::{Height, LightBlock, PeerId, Status};
 
 pub trait Handle {
     /// Get latest trusted block from the [`Supervisor`].
-    fn latest_trusted(&self) -> Option<LightBlock> {
+    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
         todo!()
     }
 
@@ -28,7 +28,7 @@ pub trait Handle {
     }
 
     /// Terminate the underlying [`Supervisor`].
-    fn terminate(&self) {
+    fn terminate(&self) -> Result<(), Error> {
         todo!()
     }
 }
@@ -301,30 +301,26 @@ impl Supervisor {
     /// Run the supervisor event loop in the same thread.
     ///
     /// This method should typically be called within a new thread with `std::thread::spawn`.
-    pub fn run(mut self) {
+    pub fn run(mut self) -> Result<(), Error> {
         loop {
-            let event = self.receiver.recv().unwrap();
+            let event = self.receiver.recv().map_err(ErrorKind::from)?;
 
             match event {
                 HandleInput::LatestTrusted(sender) => {
                     let outcome = self.latest_trusted();
-                    // TODO(xla): Manage error case.
-                    sender.send(outcome).unwrap();
+                    sender.send(outcome).map_err(ErrorKind::from)?;
                 }
                 HandleInput::Terminate(sender) => {
-                    // TODO(xla): Manage error case.
-                    sender.send(()).unwrap();
-                    return;
+                    sender.send(()).map_err(ErrorKind::from)?;
+                    return Ok(());
                 }
                 HandleInput::VerifyToTarget(height, sender) => {
                     let outcome = self.verify_to_target(height);
-                    // TODO(xla): Manage error case.
-                    sender.send(outcome).unwrap();
+                    sender.send(outcome).map_err(ErrorKind::from)?;
                 }
                 HandleInput::VerifyToHighest(sender) => {
                     let outcome = self.verify_to_highest();
-                    // TODO(xla): Manage error case.
-                    sender.send(outcome).unwrap();
+                    sender.send(outcome).map_err(ErrorKind::from)?;
                 }
             }
         }
@@ -351,22 +347,20 @@ impl SupervisorHandle {
         let (sender, receiver) = channel::bounded::<Result<LightBlock, Error>>(1);
 
         let event = make_event(sender);
-        self.sender.send(event).unwrap();
+        self.sender.send(event).map_err(ErrorKind::from)?;
 
-        receiver.recv().unwrap()
+        receiver.recv().map_err(ErrorKind::from)?
     }
 }
 impl Handle for SupervisorHandle {
-    fn latest_trusted(&self) -> Option<LightBlock> {
+    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
         let (sender, receiver) = channel::bounded::<Option<LightBlock>>(1);
 
-        // TODO(xla): Transform crossbeam errors into proper domain errors.
         self.sender
             .send(HandleInput::LatestTrusted(sender))
-            .unwrap();
+            .map_err(ErrorKind::from)?;
 
-        // TODO(xla): Transform crossbeam errors into proper domain errors.
-        receiver.recv().unwrap()
+        Ok(receiver.recv().map_err(ErrorKind::from)?)
     }
 
     fn verify_to_highest(&self) -> Result<LightBlock, Error> {
@@ -377,11 +371,13 @@ impl Handle for SupervisorHandle {
         self.verify(|sender| HandleInput::VerifyToTarget(height, sender))
     }
 
-    fn terminate(&self) {
+    fn terminate(&self) -> Result<(), Error> {
         let (sender, receiver) = channel::bounded::<()>(1);
 
-        self.sender.send(HandleInput::Terminate(sender)).unwrap();
+        self.sender
+            .send(HandleInput::Terminate(sender))
+            .map_err(ErrorKind::from)?;
 
-        receiver.recv().unwrap()
+        Ok(receiver.recv().map_err(ErrorKind::from)?)
     }
 }
