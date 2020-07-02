@@ -64,7 +64,7 @@ mod test {
 
     use tendermint_light_client::errors::Error;
     use tendermint_light_client::supervisor::Handle;
-    use tendermint_light_client::types::{Height, LightBlock};
+    use tendermint_light_client::types::LightBlock;
 
     use super::{Client, Rpc as _, Server};
 
@@ -106,34 +106,7 @@ mod test {
     struct MockHandle;
 
     impl Handle for MockHandle {
-        fn latest_trusted(&mut self) -> Result<Option<LightBlock>, Error> {
-            todo!()
-        }
-
-        fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
-            todo!()
-        }
-
-        fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
-            todo!()
-        }
-
-        fn verify_to_highest_async(
-            &mut self,
-            callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
-        ) {
-            todo!()
-        }
-
-        fn verify_to_target_async(
-            &mut self,
-            height: Height,
-            callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
-        ) {
-            todo!()
-        }
-
-        fn terminate(&mut self) {
+        fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
             todo!()
         }
     }
