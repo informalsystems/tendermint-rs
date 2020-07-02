@@ -3,6 +3,7 @@
 ## Changelog
 
 * 2020-06-30: Initial draft
+* 2020-07-02: approved with corrections
 
 ## Context
 
@@ -32,7 +33,7 @@ server and ibc relayer.
 
 ## Status
 
-Proposed
+Approved
 
 ## Consequences
 
