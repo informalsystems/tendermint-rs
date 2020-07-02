@@ -210,7 +210,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
-    light_store.insert(trusted_state, Status::Verified);
+    light_store.insert(trusted_state, Status::Trusted);
 
     let mut state = State {
         light_store: Box::new(light_store),
