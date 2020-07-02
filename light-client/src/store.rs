@@ -39,7 +39,19 @@ pub trait LightStore: std::fmt::Debug + Send {
 
     /// Get the latest trusted or verified block from the store.
     fn latest_trusted_or_verified(&self) -> Option<LightBlock> {
-        self.latest(Status::Trusted)
-            .or_else(|| self.latest(Status::Verified))
+        let latest_trusted = self.latest(Status::Trusted);
+        let latest_verified = self.latest(Status::Verified);
+
+        match (latest_trusted, latest_verified) {
+            (None, latest_verified) => latest_verified,
+            (latest_trusted, None) => latest_trusted,
+            (Some(latest_trusted), Some(latest_verified)) => {
+                if latest_trusted.height() > latest_verified.height() {
+                    Some(latest_trusted)
+                } else {
+                    Some(latest_verified)
+                }
+            }
+        }
     }
 }
