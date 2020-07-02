@@ -165,10 +165,10 @@ impl LightClient {
         let mut current_height = target_height;
 
         loop {
-            // Get the highest trusted state
+            // Get the latest trusted state
             let trusted_state = state
                 .light_store
-                .highest(Status::Verified)
+                .latest_trusted_or_verified()
                 .ok_or_else(|| ErrorKind::NoInitialTrustedState(Status::Verified))?;
 
             if target_height < trusted_state.height() {

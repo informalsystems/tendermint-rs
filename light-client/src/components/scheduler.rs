@@ -51,7 +51,7 @@ where
 ///
 /// ## Postcondition
 /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
-#[pre(light_store.highest(Status::Verified).is_some())]
+#[pre(light_store.latest_trusted_or_verified().is_some())]
 #[post(valid_schedule(ret, target_height, current_height, light_store))]
 pub fn basic_bisecting_schedule(
     light_store: &dyn LightStore,

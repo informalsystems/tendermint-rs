@@ -31,4 +31,10 @@ pub trait LightStore: std::fmt::Debug + Send {
     fn highest(&self, status: Status) -> Option<LightBlock>;
     /// Get an iterator of all light blocks with the given status.
     fn all(&self, status: Status) -> Box<dyn Iterator<Item = LightBlock>>;
+
+    /// Get the latest trusted or verified block from the store.
+    fn latest_trusted_or_verified(&self) -> Option<LightBlock> {
+        self.highest(Status::Trusted)
+            .or_else(|| self.highest(Status::Verified))
+    }
 }
