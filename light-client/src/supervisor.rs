@@ -1,4 +1,3 @@
-use contracts::pre;
 use crossbeam_channel as channel;
 
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
@@ -14,23 +13,23 @@ use crate::types::{Height, LightBlock, PeerId, Status};
 
 pub trait Handle {
     /// Get latest trusted block from the [`Supervisor`].
-    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
-    	todo!()
+    fn latest_trusted(&self) -> Option<LightBlock> {
+        todo!()
     }
 
     /// Verify to the highest block.
     fn verify_to_highest(&self) -> Result<LightBlock, Error> {
-    	todo!()
+        todo!()
     }
 
     /// Verify to the block at the given height.
     fn verify_to_target(&self, _height: Height) -> Result<LightBlock, Error> {
-    	todo!()
+        todo!()
     }
 
     /// Terminate the underlying [`Supervisor`].
     fn terminate(&self) {
-    	todo!()
+        todo!()
     }
 }
 
@@ -45,10 +44,10 @@ enum HandleInput {
     /// Verify to the given height, call the provided callback with result
     VerifyToTarget(Height, channel::Sender<Result<LightBlock, Error>>),
     /// Get the latest trusted block.
-    LatestTrusted(channel::Sender<Result<Option<LightBlock>, Error>>),
+    LatestTrusted(channel::Sender<Option<LightBlock>>),
 }
 
-/// An light client `Instance` packages a `LightClient` together with its `State`.
+/// A light client `Instance` packages a `LightClient` together with its `State`.
 #[derive(Debug)]
 pub struct Instance {
     /// The light client for this instance
@@ -112,8 +111,8 @@ impl Instance {
 /// }
 /// ```
 pub struct Supervisor {
-    /// List of peers (primary + witnesses)
-    peers: PeerList,
+    /// List of peers and their instances (primary, witnesses, full and faulty nodes)
+    peers: PeerList<Instance>,
     /// An instance of the fork detector
     fork_detector: Box<dyn ForkDetector>,
     /// Reporter of fork evidence
@@ -138,7 +137,7 @@ static_assertions::assert_impl_all!(Supervisor: Send);
 impl Supervisor {
     /// Constructs a new supevisor from the given list of peers and fork detector instance.
     pub fn new(
-        peers: PeerList,
+        peers: PeerList<Instance>,
         fork_detector: impl ForkDetector + 'static,
         evidence_reporter: impl EvidenceReporter + 'static,
     ) -> Self {
@@ -158,83 +157,76 @@ impl Supervisor {
         SupervisorHandle::new(self.sender.clone())
     }
 
-    #[pre(self.peers.primary().is_some())]
-    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
-        let primary = self.peers.primary().ok_or_else(|| ErrorKind::NoPrimary)?;
-        Ok(primary.latest_trusted())
+    fn latest_trusted(&self) -> Option<LightBlock> {
+        self.peers.primary().latest_trusted()
     }
 
     /// Verify to the highest block.
-    #[pre(self.peers.primary().is_some())]
     pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
         self.verify(None)
     }
 
     /// Verify to the block at the given height.
-    #[pre(self.peers.primary().is_some())]
     pub fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
         self.verify(Some(height))
     }
 
     /// Verify either to the latest block (if `height == None`) or to a given block (if `height == Some(height)`).
-    #[pre(self.peers.primary().is_some())]
     fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
-        // While there is a primary peer left:
-        while let Some(primary) = self.peers.primary_mut() {
-            // Perform light client core verification for the given height (or highest).
-            let verdict = match height {
-                None => primary.light_client.verify_to_highest(&mut primary.state),
-                Some(height) => primary
-                    .light_client
-                    .verify_to_target(height, &mut primary.state),
-            };
+        let primary = self.peers.primary_mut();
 
-            match verdict {
-                // Verification succeeded, let's perform fork detection
-                Ok(light_block) => {
-                    let trusted_state = primary
-                        .latest_trusted()
-                        .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
+        // Perform light client core verification for the given height (or highest).
+        let verdict = match height {
+            None => primary.light_client.verify_to_highest(&mut primary.state),
+            Some(height) => primary
+                .light_client
+                .verify_to_target(height, &mut primary.state),
+        };
 
-                    // Perform fork detection with the highest verified block as the trusted state.
-                    let outcome = self.detect_forks(&light_block, &trusted_state)?;
+        match verdict {
+            // Verification succeeded, let's perform fork detection
+            Ok(verified_block) => {
+                let trusted_block = primary
+                    .latest_trusted()
+                    .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
 
-                    match outcome {
-                        // There was a fork or a faulty peer
-                        ForkDetection::Detected(forks) => {
-                            let forked = self.process_forks(forks)?;
-                            if !forked.is_empty() {
-                                // Fork detected, exiting
-                                bail!(ErrorKind::ForkDetected(forked))
-                            }
+                // Perform fork detection with the highest verified block and the trusted block.
+                let outcome = self.detect_forks(&verified_block, &trusted_block)?;
+
+                match outcome {
+                    // There was a fork or a faulty peer
+                    ForkDetection::Detected(forks) => {
+                        let forked = self.process_forks(forks)?;
+                        if !forked.is_empty() {
+                            // Fork detected, exiting
+                            bail!(ErrorKind::ForkDetected(forked))
                         }
-                        ForkDetection::NotDetected => {
-                            // We need to re-ask for the primary here as the compiler
-                            // is not smart enough to realize that we do not mutate
-                            // the `primary` field of `PeerList` between the initial
-                            // borrow of the primary and here (can't blame it, it's
-                            // not that obvious).
-                            // Note: This always succeeds since we already have a primary,
-                            if let Some(primary) = self.peers.primary_mut() {
-                                primary.trust_block(&light_block);
-                            }
 
-                            // No fork detected, exiting
-                            return Ok(light_block);
-                        }
+                        // If there were no hard forks, perform verification again
+                        self.verify(height)
+                    }
+                    ForkDetection::NotDetected => {
+                        // We need to re-ask for the primary here as the compiler
+                        // is not smart enough to realize that we do not mutate
+                        // the `primary` field of `PeerList` between the initial
+                        // borrow of the primary and here (can't blame it, it's
+                        // not that obvious).
+                        self.peers.primary_mut().trust_block(&verified_block);
+
+                        // No fork detected, exiting
+                        Ok(verified_block)
                     }
                 }
-                // Verification failed
-                Err(_err) => {
-                    // Swap primary, and continue with new primary, if there is any witness left.
-                    self.peers.swap_primary()?;
-                    // TODO: Log/record error
-                    continue;
-                }
+            }
+            // Verification failed
+            Err(_err) => {
+                // TODO: Log/record error
+
+                // Swap primary, and continue with new primary, if there is any witness left.
+                self.peers.replace_faulty_primary()?;
+                self.verify(height)
             }
         }
-
-        bail!(ErrorKind::NoWitnessLeft)
     }
 
     fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
@@ -243,6 +235,7 @@ impl Supervisor {
         for fork in forks {
             match fork {
                 // An actual fork was detected, report evidence and record forked peer.
+                // TODO: also report to primary
                 Fork::Forked { primary, witness } => {
                     let provider = witness.provider;
                     self.report_evidence(provider, &primary, &witness)?;
@@ -251,12 +244,12 @@ impl Supervisor {
                 }
                 // A witness has timed out, remove it from the peer list.
                 Fork::Timeout(provider, _error) => {
-                    self.peers.mark_witness_as_faulty(provider);
+                    self.peers.replace_faulty_witness(provider);
                     // TODO: Log/record the error
                 }
                 // A witness has been deemed faulty, remove it from the peer list.
                 Fork::Faulty(block, _error) => {
-                    self.peers.mark_witness_as_faulty(block.provider);
+                    self.peers.replace_faulty_witness(block.provider);
                     // TODO: Log/record the error
                 }
             }
@@ -284,19 +277,25 @@ impl Supervisor {
         Ok(())
     }
 
-    /// Perform fork detection with the given block and trusted state.
-    #[pre(self.peers.primary().is_some())]
+    /// Perform fork detection with the given verified block and trusted block.
     fn detect_forks(
         &self,
-        light_block: &LightBlock,
-        trusted_state: &LightBlock,
+        verified_block: &LightBlock,
+        trusted_block: &LightBlock,
     ) -> Result<ForkDetection, Error> {
-        if self.peers.witnesses().is_empty() {
+        if self.peers.witnesses_ids().is_empty() {
             bail!(ErrorKind::NoWitnesses);
         }
 
+        let witnesses = self
+            .peers
+            .witnesses_ids()
+            .iter()
+            .filter_map(|id| self.peers.get(id))
+            .collect();
+
         self.fork_detector
-            .detect_forks(light_block, &trusted_state, self.peers.witnesses())
+            .detect_forks(verified_block, &trusted_block, witnesses)
     }
 
     /// Run the supervisor event loop in the same thread.
@@ -358,8 +357,8 @@ impl SupervisorHandle {
     }
 }
 impl Handle for SupervisorHandle {
-    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
-        let (sender, receiver) = channel::bounded::<Result<Option<LightBlock>, Error>>(1);
+    fn latest_trusted(&self) -> Option<LightBlock> {
+        let (sender, receiver) = channel::bounded::<Option<LightBlock>>(1);
 
         // TODO(xla): Transform crossbeam errors into proper domain errors.
         self.sender

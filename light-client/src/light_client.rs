@@ -26,9 +26,13 @@ pub struct Options {
     /// and trusted validator set is sufficient for a commit to be
     /// accepted going forward.
     pub trust_threshold: TrustThreshold,
-    /// The trusting period
+    /// How long a validator set is trusted for (must be shorter than the chain's
+    /// unbonding period)
     pub trusting_period: Duration,
     /// Correction parameter dealing with only approximately synchronized clocks.
+    /// The local clock should always be ahead of timestamps from the blockchain; this
+    /// is the maximum amount that the local clock may drift behind a timestamp from the
+    /// blockchain.
     pub clock_drift: Duration,
     /// The current time
     pub now: Time,
@@ -183,7 +187,7 @@ impl LightClient {
                 });
             }
 
-            // Trace the current height as a dependency of the block at the target height
+            // Log the current height as a dependency of the block at the target height
             state.trace_block(target_height, current_height);
 
             // If the trusted state is now at a height equal to the target height, we are done. [LCV-DIST-LIFE.1]
