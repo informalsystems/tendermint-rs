@@ -20,21 +20,26 @@ pub mod sled;
 pub trait LightStore: std::fmt::Debug + Send {
     /// Get the light block at the given height with the given status, or return `None` otherwise.
     fn get(&self, height: Height, status: Status) -> Option<LightBlock>;
+
     /// Update the `status` of the given `light_block`.
     fn update(&mut self, light_block: &LightBlock, status: Status);
+
     /// Insert a new light block in the store with the given status.
     /// Overrides any other block with the same height and status.
     fn insert(&mut self, light_block: LightBlock, status: Status);
+
     /// Remove the light block with the given height and status, if any.
     fn remove(&mut self, height: Height, status: Status);
-    /// Get the highest light block with the given status.
-    fn highest(&self, status: Status) -> Option<LightBlock>;
+
+    /// Get the latest light block with the given status.
+    fn latest(&self, status: Status) -> Option<LightBlock>;
+
     /// Get an iterator of all light blocks with the given status.
     fn all(&self, status: Status) -> Box<dyn Iterator<Item = LightBlock>>;
 
     /// Get the latest trusted or verified block from the store.
     fn latest_trusted_or_verified(&self) -> Option<LightBlock> {
-        self.highest(Status::Trusted)
-            .or_else(|| self.highest(Status::Verified))
+        self.latest(Status::Trusted)
+            .or_else(|| self.latest(Status::Verified))
     }
 }

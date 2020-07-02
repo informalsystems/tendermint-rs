@@ -104,7 +104,7 @@ fn make_instance(
             });
 
         light_store.insert(trusted_state, Status::Verified);
-    } else if light_store.highest(Status::Verified).is_none() {
+    } else if light_store.latest(Status::Verified).is_none() {
         println!("[ error ] no trusted state in database, please specify a trusted header");
         std::process::exit(1);
     }

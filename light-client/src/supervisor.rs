@@ -80,7 +80,7 @@ impl Instance {
     }
 
     pub fn latest_trusted(&self) -> Option<LightBlock> {
-        self.state.light_store.highest(Status::Trusted)
+        self.state.light_store.latest(Status::Trusted)
     }
 
     pub fn trust_block(&mut self, lb: &LightBlock) {
