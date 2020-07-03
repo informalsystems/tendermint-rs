@@ -138,10 +138,7 @@ pub struct MockEvidenceReporter;
 #[contract_trait]
 impl EvidenceReporter for MockEvidenceReporter {
     fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
-        Ok(Hash::new([
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0,
-        ]))
+        Ok(Hash::new([0; 32]))
     }
 }
 

@@ -23,7 +23,7 @@ use std::{
 
 use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::tests::{
-    AnonLightBlock, MockClock, MockEvidenceReporter, MockIo, Provider, TestBisection, TrustOptions,
+    AnonLightBlock, MockClock, MockEvidenceReporter, MockIo, TestBisection, TrustOptions,
 };
 
 const TEST_FILES_PATH: &str = "./tests/support/";
@@ -43,14 +43,7 @@ fn load_multi_peer_testcases(dir: &str) -> Vec<TestBisection<LightBlock>> {
         .collect::<Vec<TestBisection<LightBlock>>>()
 }
 
-fn make_instance(
-    peer_id: PeerId,
-    trust_options: TrustOptions,
-    provider: Provider<LightBlock>,
-    now: Time,
-) -> Instance {
-    let io = MockIo::new(provider.chain_id, provider.lite_blocks);
-
+fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance {
     let trusted_height = trust_options.height.value();
     let trusted_state = io
         .fetch_light_block(peer_id, AtHeight::At(trusted_height))
@@ -93,26 +86,19 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
         None => false,
     };
 
-    let primary_instance = make_instance(primary, tc.trust_options.clone(), tc.primary, tc.now);
-
-    //- - - - - - - - - -
+    let io = MockIo::new(tc.primary.chain_id, tc.primary.lite_blocks);
+    let primary_instance = make_instance(primary, tc.trust_options.clone(), io.clone(), tc.now);
 
     let mut peer_list = PeerList::builder();
     peer_list = peer_list.primary(primary, primary_instance);
 
-    for provider in tc.witnesses.iter() {
+    for provider in tc.witnesses.into_iter() {
         let peer_id = provider.value.lite_blocks[0].provider;
         println!("Witness: {}", peer_id);
-        let instance = make_instance(
-            peer_id,
-            tc.trust_options.clone(),
-            provider.clone().value,
-            tc.now,
-        );
+        let io = MockIo::new(provider.value.chain_id, provider.value.lite_blocks);
+        let instance = make_instance(peer_id, tc.trust_options.clone(), io.clone(), tc.now);
         peer_list = peer_list.witness(peer_id, instance);
     }
-
-    //- - - - - - - - - -
 
     let mut supervisor = Supervisor::new(
         peer_list.build(),
@@ -128,20 +114,25 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
     let target_height = tc.height_to_verify.try_into().unwrap();
 
     match handle.verify_to_target(target_height) {
-        Ok(_new_states) => {
+        Ok(new_state) => {
+            /// Check that the expected state and new_state match
+            let untrusted_light_block = io
+                .fetch_light_block(primary, AtHeight::At(target_height))
+                .expect("header at untrusted height not found");
+
+            let expected_state = untrusted_light_block;
+            assert_eq!(new_state.height(), expected_state.height());
+            assert_eq!(new_state, expected_state);
+
+            /// Check the verdict
             assert!(!expects_err);
         }
         Err(e) => {
             dbg!(e);
-            // if !expects_err {
-            //     dbg!(e);
-            // }
-
             assert!(expects_err);
         }
     }
 
-    // TODO: Check the verdict
     // TODO: Check the peer list
     // TODO: Check we recorded a fork evidence (or not)
 }
