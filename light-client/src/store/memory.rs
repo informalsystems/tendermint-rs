@@ -62,7 +62,7 @@ impl LightStore for MemoryStore {
         self.insert(light_block.clone(), status);
     }
 
-    fn highest(&self, status: Status) -> Option<LightBlock> {
+    fn latest(&self, status: Status) -> Option<LightBlock> {
         self.store
             .iter()
             .rev()

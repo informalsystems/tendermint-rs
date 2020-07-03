@@ -104,7 +104,7 @@ fn make_instance(
             });
 
         light_store.insert(trusted_state, Status::Verified);
-    } else if light_store.highest(Status::Verified).is_none() {
+    } else if light_store.latest(Status::Verified).is_none() {
         println!("[ error ] no trusted state in database, please specify a trusted header");
         std::process::exit(1);
     }
@@ -160,19 +160,19 @@ fn sync_cmd(opts: SyncOpts) {
         ProdEvidenceReporter::new(peer_addr),
     );
 
-    let mut handle = supervisor.handle();
+    let handle = supervisor.handle();
 
     std::thread::spawn(|| supervisor.run());
 
     loop {
-        handle.verify_to_highest_async(|result| match result {
+        match handle.verify_to_highest() {
             Ok(light_block) => {
-                println!("[ info  ] synced to block {}", light_block.height());
+                println!("[info] synced to block {}", light_block.height());
             }
-            Err(e) => {
-                println!("[ error ] sync failed: {}", e);
+            Err(err) => {
+                println!("[error] sync failed: {}", err);
             }
-        });
+        }
 
         std::thread::sleep(Duration::from_millis(800));
     }

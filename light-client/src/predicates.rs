@@ -54,7 +54,7 @@ pub trait VerificationPredicates: Send {
             light_block.signed_header.header.next_validators_hash == next_validators_hash,
             VerificationError::InvalidNextValidatorSet {
                 header_next_validators_hash: light_block.signed_header.header.next_validators_hash,
-                next_validators_hash
+                next_validators_hash,
             }
         );
 

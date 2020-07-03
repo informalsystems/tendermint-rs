@@ -123,7 +123,7 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
 
     // TODO: Add method to `Handle` to get a copy of the current peer list
 
-    let mut handle = supervisor.handle();
+    let handle = supervisor.handle();
     std::thread::spawn(|| supervisor.run());
 
     let target_height = tc.height_to_verify.try_into().unwrap();
