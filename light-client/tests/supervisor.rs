@@ -8,7 +8,7 @@ use tendermint_light_client::{
     light_client::{self, LightClient},
     peer_list::PeerList,
     state::State,
-    store::{LightStore},
+    store::LightStore,
     supervisor::{Handle, Instance, Supervisor},
     types::{LightBlock, PeerId, Status, Time},
 };
@@ -23,8 +23,7 @@ use std::{
 
 use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::tests::{
-    AnonLightBlock, MockClock, MockEvidenceReporter, MockIo, Provider,
-    TestBisection, TrustOptions,
+    AnonLightBlock, MockClock, MockEvidenceReporter, MockIo, Provider, TestBisection, TrustOptions,
 };
 
 const TEST_FILES_PATH: &str = "./tests/support/";
