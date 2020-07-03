@@ -3862,6 +3862,6 @@
  	],
  	"height_to_verify": "11",
  	"now": "2019-11-02T15:30:00Z",
- 	"expected_output": "no error",
+ 	"expected_output": "error",
  	"expected_num_of_bisections": 2
  }
