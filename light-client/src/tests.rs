@@ -219,7 +219,7 @@ impl From<WitnessProvider<AnonLightBlock>> for WitnessProvider<LightBlock> {
     }
 }
 
-pub fn random_peer_id(count: usize) -> PeerId {
+pub fn peer_id_at(count: usize) -> PeerId {
     let peer_ids: Vec<PeerId> = vec![
         "ADBEEFC0FFEEFACADEBADFADADE0BEFEEDC0C0AD".parse().unwrap(),
         "BADFADBEEFC0FFEEFACADEAD0BEFEEDC0C0ADEAD".parse().unwrap(),
@@ -238,7 +238,7 @@ impl From<TestBisection<AnonLightBlock>> for TestBisection<LightBlock> {
 
         for (count, provider) in witnesses.iter_mut().enumerate() {
             for lb in provider.value.lite_blocks.iter_mut() {
-                lb.provider = random_peer_id(count);
+                lb.provider = peer_id_at(count);
             }
         }
 

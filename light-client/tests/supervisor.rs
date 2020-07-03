@@ -1,20 +1,16 @@
-#![allow(unused_imports)]
-
 use tendermint_light_client::{
     components::{
-        clock::SystemClock,
-        io::{AtHeight, Io, ProdIo},
+        io::{AtHeight, Io},
         scheduler,
         verifier::ProdVerifier,
     },
-    evidence::ProdEvidenceReporter,
     fork_detector::ProdForkDetector,
     light_client::{self, LightClient},
     peer_list::PeerList,
     state::State,
-    store::{sled::SledStore, LightStore},
+    store::{LightStore},
     supervisor::{Handle, Instance, Supervisor},
-    types::{Height, LightBlock, PeerId, Status, Time, TrustThreshold},
+    types::{LightBlock, PeerId, Status, Time},
 };
 
 use std::collections::HashMap;
@@ -25,15 +21,10 @@ use std::{
     time::Duration,
 };
 
-use futures::StreamExt;
-use tendermint::abci::transaction::Hash;
-use tendermint::evidence::Evidence;
-use tendermint_light_client::components::io::IoError;
-use tendermint_light_client::evidence::EvidenceReporter;
 use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::tests::{
-    random_peer_id, AnonLightBlock, MockClock, MockEvidenceReporter, MockIo, Provider,
-    TestBisection, TrustOptions, WitnessProvider,
+    AnonLightBlock, MockClock, MockEvidenceReporter, MockIo, Provider,
+    TestBisection, TrustOptions,
 };
 
 const TEST_FILES_PATH: &str = "./tests/support/";
