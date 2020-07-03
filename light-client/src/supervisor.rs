@@ -1,46 +1,53 @@
-use crate::{
-    bail,
-    callback::Callback,
-    components::io::IoError,
-    errors::{Error, ErrorKind},
-    evidence::EvidenceReporter,
-    fork_detector::{Fork, ForkDetection, ForkDetector},
-    light_client::LightClient,
-    peer_list::PeerList,
-    state::State,
-    store::VerifiedStatus,
-    types::{Height, LightBlock, PeerId},
-};
+use crossbeam_channel as channel;
 
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
 
-use contracts::pre;
-use crossbeam_channel as channel;
+use crate::bail;
+use crate::errors::{Error, ErrorKind};
+use crate::evidence::EvidenceReporter;
+use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
+use crate::light_client::LightClient;
+use crate::peer_list::PeerList;
+use crate::state::State;
+use crate::types::{Height, LightBlock, PeerId, Status};
 
-/// Type alias for readability
-pub type VerificationResult = Result<LightBlock, Error>;
+pub trait Handle {
+    /// Get latest trusted block from the [`Supervisor`].
+    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
+        todo!()
+    }
 
-/// Events which are exchanged between the `Supervisor` and its `Handle`s.
-#[derive(Debug)]
-pub enum Event {
-    // Inputs
-    /// Terminate the supervisor process
-    Terminate(Callback<()>),
-    /// Verify to the highest height, call the provided callback with result
-    VerifyToHighest(Callback<VerificationResult>),
-    /// Verify to the given height, call the provided callback with result
-    VerifyToTarget(Height, Callback<VerificationResult>),
+    /// Verify to the highest block.
+    fn verify_to_highest(&self) -> Result<LightBlock, Error> {
+        todo!()
+    }
 
-    // Outputs
-    /// The supervisor has terminated
-    Terminated,
-    /// The verification has succeded
-    VerificationSuccess(Box<LightBlock>),
-    /// The verification has failed
-    VerificationFailure(Error),
+    /// Verify to the block at the given height.
+    fn verify_to_target(&self, _height: Height) -> Result<LightBlock, Error> {
+        todo!()
+    }
+
+    /// Terminate the underlying [`Supervisor`].
+    fn terminate(&self) -> Result<(), Error> {
+        todo!()
+    }
 }
 
-/// An light client `Instance` packages a `LightClient` together with its `State`.
+/// Input events sent by the [`Handle`]s to the [`Supervisor`]. They carry a [`Callback`] which is
+/// used to communicate back the responses of the requests.
+#[derive(Debug)]
+enum HandleInput {
+    /// Terminate the supervisor process
+    Terminate(channel::Sender<()>),
+    /// Verify to the highest height, call the provided callback with result
+    VerifyToHighest(channel::Sender<Result<LightBlock, Error>>),
+    /// Verify to the given height, call the provided callback with result
+    VerifyToTarget(Height, channel::Sender<Result<LightBlock, Error>>),
+    /// Get the latest trusted block.
+    LatestTrusted(channel::Sender<Option<LightBlock>>),
+}
+
+/// A light client `Instance` packages a `LightClient` together with its `State`.
 #[derive(Debug)]
 pub struct Instance {
     /// The light client for this instance
@@ -57,6 +64,14 @@ impl Instance {
             state,
         }
     }
+
+    pub fn latest_trusted(&self) -> Option<LightBlock> {
+        self.state.light_store.highest(Status::Trusted)
+    }
+
+    pub fn trust_block(&mut self, lb: &LightBlock) {
+        self.state.light_store.update(lb, Status::Trusted);
+    }
 }
 
 /// The supervisor manages multiple light client instances, of which one
@@ -69,7 +84,7 @@ impl Instance {
 /// removed.
 ///
 /// The supervisor is intended to be ran in its own thread, and queried
-/// via a `Handle`, sync- or asynchronously.
+/// via a `Handle`.
 ///
 /// ## Example
 ///
@@ -82,32 +97,30 @@ impl Instance {
 ///
 /// loop {
 ///     // Asynchronously query the supervisor via a handle
-///     handle.verify_to_highest_async(|result| match result {
+///     let maybe_block = handle.verify_to_highest();
+///     match maybe_block {
 ///         Ok(light_block) => {
-///             println!("[ info  ] synced to block {}", light_block.height());
+///             println!("[info] synced to block {}", light_block.height());
 ///         }
 ///         Err(e) => {
-///             println!("[ error ] sync failed: {}", e);
+///             println!("[error] sync failed: {}", e);
 ///         }
 ///     });
 ///
 ///     std::thread::sleep(Duration::from_millis(800));
 /// }
 /// ```
-///
-/// ## TODO
-/// - Report evidence for forks
 pub struct Supervisor {
-    /// List of peers (primary + witnesses)
-    peers: PeerList,
+    /// List of peers and their instances (primary, witnesses, full and faulty nodes)
+    peers: PeerList<Instance>,
     /// An instance of the fork detector
     fork_detector: Box<dyn ForkDetector>,
     /// Reporter of fork evidence
     evidence_reporter: Box<dyn EvidenceReporter>,
     /// Channel through which to reply to `Handle`s
-    sender: channel::Sender<Event>,
+    sender: channel::Sender<HandleInput>,
     /// Channel through which to receive events from the `Handle`s
-    receiver: channel::Receiver<Event>,
+    receiver: channel::Receiver<HandleInput>,
 }
 
 impl std::fmt::Debug for Supervisor {
@@ -124,11 +137,11 @@ static_assertions::assert_impl_all!(Supervisor: Send);
 impl Supervisor {
     /// Constructs a new supevisor from the given list of peers and fork detector instance.
     pub fn new(
-        peers: PeerList,
+        peers: PeerList<Instance>,
         fork_detector: impl ForkDetector + 'static,
         evidence_reporter: impl EvidenceReporter + 'static,
     ) -> Self {
-        let (sender, receiver) = channel::unbounded::<Event>();
+        let (sender, receiver) = channel::unbounded::<HandleInput>();
 
         Self {
             peers,
@@ -139,89 +152,110 @@ impl Supervisor {
         }
     }
 
+    /// Create a new handle to this supervisor.
+    pub fn handle(&mut self) -> impl Handle {
+        SupervisorHandle::new(self.sender.clone())
+    }
+
+    fn latest_trusted(&self) -> Option<LightBlock> {
+        self.peers.primary().latest_trusted()
+    }
+
     /// Verify to the highest block.
-    #[pre(self.peers.primary().is_some())]
-    pub fn verify_to_highest(&mut self) -> VerificationResult {
+    pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
         self.verify(None)
     }
 
     /// Verify to the block at the given height.
-    #[pre(self.peers.primary().is_some())]
-    pub fn verify_to_target(&mut self, height: Height) -> VerificationResult {
+    pub fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
         self.verify(Some(height))
     }
 
     /// Verify either to the latest block (if `height == None`) or to a given block (if `height == Some(height)`).
-    #[pre(self.peers.primary().is_some())]
-    fn verify(&mut self, height: Option<Height>) -> VerificationResult {
-        // While there is a primary peer left:
-        while let Some(primary) = self.peers.primary_mut() {
-            // Perform light client core verification for the given height (or highest).
-            let verdict = match height {
-                None => primary.light_client.verify_to_highest(&mut primary.state),
-                Some(height) => primary
-                    .light_client
-                    .verify_to_target(height, &mut primary.state),
-            };
+    fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
+        let primary = self.peers.primary_mut();
 
-            match verdict {
-                // Verification succeeded, let's peform fork detection
-                Ok(light_block) => {
-                    // SAFETY: There must be a latest trusted state otherwise verification would have failed.
-                    let trusted_state = primary
-                        .state
-                        .light_store
-                        .highest(VerifiedStatus::Verified)
-                        .unwrap();
+        // Perform light client core verification for the given height (or highest).
+        let verdict = match height {
+            None => primary.light_client.verify_to_highest(&mut primary.state),
+            Some(height) => primary
+                .light_client
+                .verify_to_target(height, &mut primary.state),
+        };
 
-                    // Perform fork detection with the highest verified block as the trusted state.
-                    let outcome = self.detect_forks(&light_block, &trusted_state)?;
+        match verdict {
+            // Verification succeeded, let's perform fork detection
+            Ok(verified_block) => {
+                let trusted_block = primary
+                    .latest_trusted()
+                    .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
 
-                    match outcome {
-                        // There was a fork or a faulty peer
-                        Some(forks) => {
-                            let mut forked = Vec::with_capacity(forks.len());
+                // Perform fork detection with the highest verified block and the trusted block.
+                let outcome = self.detect_forks(&verified_block, &trusted_block)?;
 
-                            for fork in forks {
-                                match fork {
-                                    // An actual fork was detected, report evidence and record forked peer.
-                                    Fork::Forked { primary, witness } => {
-                                        let provider = witness.provider;
-                                        self.report_evidence(provider, &primary, &witness)?;
-
-                                        forked.push(provider);
-                                    }
-                                    // A witness has been deemed faulty, remove it from the peer list.
-                                    Fork::Faulty(block, _error) => {
-                                        self.peers.mark_witness_as_faulty(block.provider);
-                                        // TODO: Log/record the error
-                                    }
-                                }
-                            }
-
-                            if !forked.is_empty() {
-                                // Fork detected, exiting
-                                bail!(ErrorKind::ForkDetected(forked))
-                            }
+                match outcome {
+                    // There was a fork or a faulty peer
+                    ForkDetection::Detected(forks) => {
+                        let forked = self.process_forks(forks)?;
+                        if !forked.is_empty() {
+                            // Fork detected, exiting
+                            bail!(ErrorKind::ForkDetected(forked))
                         }
-                        None => {
-                            // No fork detected, exiting
-                            // TODO: Send to relayer, maybe the run method does this?
-                            return Ok(light_block);
-                        }
+
+                        // If there were no hard forks, perform verification again
+                        self.verify(height)
+                    }
+                    ForkDetection::NotDetected => {
+                        // We need to re-ask for the primary here as the compiler
+                        // is not smart enough to realize that we do not mutate
+                        // the `primary` field of `PeerList` between the initial
+                        // borrow of the primary and here (can't blame it, it's
+                        // not that obvious).
+                        self.peers.primary_mut().trust_block(&verified_block);
+
+                        // No fork detected, exiting
+                        Ok(verified_block)
                     }
                 }
-                // Verification failed
-                Err(_err) => {
-                    // Swap primary, and continue with new primary, if there is any witness left.
-                    self.peers.swap_primary()?;
-                    // TODO: Log/record error
-                    continue;
+            }
+            // Verification failed
+            Err(_err) => {
+                // TODO: Log/record error
+
+                // Swap primary, and continue with new primary, if there is any witness left.
+                self.peers.replace_faulty_primary()?;
+                self.verify(height)
+            }
+        }
+    }
+
+    fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
+        let mut forked = Vec::with_capacity(forks.len());
+
+        for fork in forks {
+            match fork {
+                // An actual fork was detected, report evidence and record forked peer.
+                // TODO: also report to primary
+                Fork::Forked { primary, witness } => {
+                    let provider = witness.provider;
+                    self.report_evidence(provider, &primary, &witness)?;
+
+                    forked.push(provider);
+                }
+                // A witness has timed out, remove it from the peer list.
+                Fork::Timeout(provider, _error) => {
+                    self.peers.replace_faulty_witness(provider);
+                    // TODO: Log/record the error
+                }
+                // A witness has been deemed faulty, remove it from the peer list.
+                Fork::Faulty(block, _error) => {
+                    self.peers.replace_faulty_witness(block.provider);
+                    // TODO: Log/record the error
                 }
             }
         }
 
-        bail!(ErrorKind::NoWitnessLeft)
+        Ok(forked)
     }
 
     /// Report the given evidence of a fork.
@@ -243,160 +277,107 @@ impl Supervisor {
         Ok(())
     }
 
-    /// Perform fork detection with the given block and trusted state.
-    #[pre(self.peers.primary().is_some())]
+    /// Perform fork detection with the given verified block and trusted block.
     fn detect_forks(
-        &mut self,
-        light_block: &LightBlock,
-        trusted_state: &LightBlock,
-    ) -> Result<Option<Vec<Fork>>, Error> {
-        if self.peers.witnesses().is_empty() {
+        &self,
+        verified_block: &LightBlock,
+        trusted_block: &LightBlock,
+    ) -> Result<ForkDetection, Error> {
+        if self.peers.witnesses_ids().is_empty() {
             bail!(ErrorKind::NoWitnesses);
         }
 
-        let result =
-            self.fork_detector
-                .detect_forks(light_block, &trusted_state, self.peers.witnesses());
+        let witnesses = self
+            .peers
+            .witnesses_ids()
+            .iter()
+            .filter_map(|id| self.peers.get(id))
+            .collect();
 
-        match result {
-            Ok(ForkDetection::Detected(forks)) => Ok(Some(forks)),
-            Ok(ForkDetection::NotDetected) => Ok(None),
-            Err(e) => match e.kind() {
-                // TODO: Clean this up
-                // Some RPC request timed out, this peer might be down so let's
-                // remove it from the witnesses, and bubble the error up.
-                ErrorKind::Io(IoError::Timeout(peer)) => {
-                    self.peers.mark_witness_as_faulty(*peer);
-                    Err(e)
-                }
-                _ => Err(e),
-            },
-        }
-    }
-
-    /// Create a new handle to this supervisor.
-    pub fn handle(&mut self) -> Handle {
-        Handle::new(self.sender.clone())
+        self.fork_detector
+            .detect_forks(verified_block, &trusted_block, witnesses)
     }
 
     /// Run the supervisor event loop in the same thread.
     ///
     /// This method should typically be called within a new thread with `std::thread::spawn`.
-    pub fn run(mut self) {
+    pub fn run(mut self) -> Result<(), Error> {
         loop {
-            let event = self.receiver.recv().unwrap();
+            let event = self.receiver.recv().map_err(ErrorKind::from)?;
 
             match event {
-                Event::Terminate(callback) => {
-                    callback.call(());
-                    return;
+                HandleInput::LatestTrusted(sender) => {
+                    let outcome = self.latest_trusted();
+                    sender.send(outcome).map_err(ErrorKind::from)?;
                 }
-                Event::VerifyToTarget(height, callback) => {
+                HandleInput::Terminate(sender) => {
+                    sender.send(()).map_err(ErrorKind::from)?;
+                    return Ok(());
+                }
+                HandleInput::VerifyToTarget(height, sender) => {
                     let outcome = self.verify_to_target(height);
-                    callback.call(outcome);
+                    sender.send(outcome).map_err(ErrorKind::from)?;
                 }
-                Event::VerifyToHighest(callback) => {
+                HandleInput::VerifyToHighest(sender) => {
                     let outcome = self.verify_to_highest();
-                    callback.call(outcome);
-                }
-                _ => {
-                    // TODO: Log/record unexpected event
+                    sender.send(outcome).map_err(ErrorKind::from)?;
                 }
             }
         }
     }
 }
 
-/// A handle to a `Supervisor` which allows to communicate with
+/// A [`Handle`] to the [`Supervisor`] which allows to communicate with
 /// the supervisor across thread boundaries via message passing.
-pub struct Handle {
-    sender: channel::Sender<Event>,
+struct SupervisorHandle {
+    sender: channel::Sender<HandleInput>,
 }
 
-impl Handle {
+impl SupervisorHandle {
     /// Crate a new handle that sends events to the supervisor via
     /// the given channel. For internal use only.
-    pub fn new(sender: channel::Sender<Event>) -> Self {
+    fn new(sender: channel::Sender<HandleInput>) -> Self {
         Self { sender }
     }
 
-    /// Verify to the highest block.
-    pub fn verify_to_highest(&mut self) -> VerificationResult {
-        self.verify(Event::VerifyToHighest)
-    }
-
-    /// Verify to the block at the given height.
-    pub fn verify_to_target(&mut self, height: Height) -> VerificationResult {
-        self.verify(|callback| Event::VerifyToTarget(height, callback))
-    }
-
-    /// Verify either to the latest block (if `height == None`) or to a given block (if `height == Some(height)`).
     fn verify(
-        &mut self,
-        make_event: impl FnOnce(Callback<VerificationResult>) -> Event,
-    ) -> VerificationResult {
-        let (sender, receiver) = channel::bounded::<Event>(1);
+        &self,
+        make_event: impl FnOnce(channel::Sender<Result<LightBlock, Error>>) -> HandleInput,
+    ) -> Result<LightBlock, Error> {
+        let (sender, receiver) = channel::bounded::<Result<LightBlock, Error>>(1);
 
-        let callback = Callback::new(move |result| {
-            // We need to create an event here
-            let event = match result {
-                Ok(header) => Event::VerificationSuccess(Box::new(header)),
-                Err(err) => Event::VerificationFailure(err),
-            };
+        let event = make_event(sender);
+        self.sender.send(event).map_err(ErrorKind::from)?;
 
-            sender.send(event).unwrap();
-        });
+        receiver.recv().map_err(ErrorKind::from)?
+    }
+}
+impl Handle for SupervisorHandle {
+    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
+        let (sender, receiver) = channel::bounded::<Option<LightBlock>>(1);
 
-        let event = make_event(callback);
-        self.sender.send(event).unwrap();
+        self.sender
+            .send(HandleInput::LatestTrusted(sender))
+            .map_err(ErrorKind::from)?;
 
-        match receiver.recv().unwrap() {
-            Event::VerificationSuccess(header) => Ok(*header),
-            Event::VerificationFailure(err) => Err(err),
-            _ => todo!(),
-        }
+        Ok(receiver.recv().map_err(ErrorKind::from)?)
     }
 
-    /// Async version of `verify_to_highest`.
-    ///
-    /// The given `callback` will be called asynchronously with the
-    /// verification result.
-    pub fn verify_to_highest_async(
-        &mut self,
-        callback: impl FnOnce(VerificationResult) -> () + Send + 'static,
-    ) {
-        let event = Event::VerifyToHighest(Callback::new(callback));
-        self.sender.send(event).unwrap();
+    fn verify_to_highest(&self) -> Result<LightBlock, Error> {
+        self.verify(HandleInput::VerifyToHighest)
     }
 
-    /// Async version of `verify_to_target`.
-    ///
-    /// The given `callback` will be called asynchronously with the
-    /// verification result.
-    pub fn verify_to_target_async(
-        &mut self,
-        height: Height,
-        callback: impl FnOnce(VerificationResult) -> () + Send + 'static,
-    ) {
-        let event = Event::VerifyToTarget(height, Callback::new(callback));
-        self.sender.send(event).unwrap();
+    fn verify_to_target(&self, height: Height) -> Result<LightBlock, Error> {
+        self.verify(|sender| HandleInput::VerifyToTarget(height, sender))
     }
 
-    /// Terminate the underlying supervisor.
-    pub fn terminate(&mut self) {
-        let (sender, receiver) = channel::bounded::<Event>(1);
+    fn terminate(&self) -> Result<(), Error> {
+        let (sender, receiver) = channel::bounded::<()>(1);
 
-        let callback = Callback::new(move |_| {
-            sender.send(Event::Terminated).unwrap();
-        });
+        self.sender
+            .send(HandleInput::Terminate(sender))
+            .map_err(ErrorKind::from)?;
 
-        self.sender.send(Event::Terminate(callback)).unwrap();
-
-        while let Ok(event) = receiver.recv() {
-            match event {
-                Event::Terminated => return,
-                _ => continue,
-            }
-        }
+        Ok(receiver.recv().map_err(ErrorKind::from)?)
     }
 }

@@ -12,7 +12,6 @@
 
 //! See the `light_client` module for the main documentation.
 
-pub mod callback;
 pub mod components;
 pub mod contracts;
 pub mod errors;

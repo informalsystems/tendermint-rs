@@ -4,36 +4,10 @@
 //! - a transient, in-memory implementation for testing purposes
 //! - a persistent, on-disk, sled-backed implementation for production
 
-use crate::types::{Height, LightBlock};
-
-use serde::{Deserialize, Serialize};
+use crate::types::{Height, LightBlock, Status};
 
 pub mod memory;
 pub mod sled;
-
-/// Verification status of a light block.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub enum VerifiedStatus {
-    /// The light has not been verified yet.
-    Unverified,
-    /// The light block has been successfully verified.
-    Verified,
-    /// The light block has failed verification.
-    Failed,
-}
-
-impl VerifiedStatus {
-    /// Return a slice of all the possible values for this enum.
-    pub fn iter() -> &'static [VerifiedStatus] {
-        static ALL: &[VerifiedStatus] = &[
-            VerifiedStatus::Unverified,
-            VerifiedStatus::Verified,
-            VerifiedStatus::Failed,
-        ];
-
-        ALL
-    }
-}
 
 /// Store for light blocks.
 ///
@@ -45,16 +19,16 @@ impl VerifiedStatus {
 /// - [LCV-DIST-STORE.1]
 pub trait LightStore: std::fmt::Debug + Send {
     /// Get the light block at the given height with the given status, or return `None` otherwise.
-    fn get(&self, height: Height, status: VerifiedStatus) -> Option<LightBlock>;
+    fn get(&self, height: Height, status: Status) -> Option<LightBlock>;
     /// Update the `status` of the given `light_block`.
-    fn update(&mut self, light_block: LightBlock, status: VerifiedStatus);
+    fn update(&mut self, light_block: &LightBlock, status: Status);
     /// Insert a new light block in the store with the given status.
     /// Overrides any other block with the same height and status.
-    fn insert(&mut self, light_block: LightBlock, status: VerifiedStatus);
+    fn insert(&mut self, light_block: LightBlock, status: Status);
     /// Remove the light block with the given height and status, if any.
-    fn remove(&mut self, height: Height, status: VerifiedStatus);
+    fn remove(&mut self, height: Height, status: Status);
     /// Get the highest light block with the given status.
-    fn highest(&self, status: VerifiedStatus) -> Option<LightBlock>;
+    fn highest(&self, status: Status) -> Option<LightBlock>;
     /// Get an iterator of all light blocks with the given status.
-    fn all(&self, status: VerifiedStatus) -> Box<dyn Iterator<Item = LightBlock>>;
+    fn all(&self, status: Status) -> Box<dyn Iterator<Item = LightBlock>>;
 }

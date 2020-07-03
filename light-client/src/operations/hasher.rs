@@ -1,19 +1,31 @@
-use crate::types::Header;
+use crate::types::{Header, ValidatorSet};
 
 use tendermint::amino_types::{message::AminoMessage, BlockId, ConsensusVersion, TimeMsg};
-use tendermint::merkle::simple_hash_from_byte_vectors;
+use tendermint::merkle;
 use tendermint::Hash;
 
-pub trait HeaderHasher: Send {
-    fn hash(&self, header: &Header) -> Hash; // Or Error?
+pub trait Hasher: Send {
+    fn hash_header(&self, header: &Header) -> Hash;
+    fn hash_validator_set(&self, validator_set: &ValidatorSet) -> Hash;
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct ProdHeaderHasher;
+pub struct ProdHasher;
 
-impl HeaderHasher for ProdHeaderHasher {
-    fn hash(&self, header: &Header) -> Hash {
+impl Hasher for ProdHasher {
+    fn hash_header(&self, header: &Header) -> Hash {
         amino_hash(header)
+    }
+
+    /// Compute the Merkle root of the validator set
+    fn hash_validator_set(&self, validator_set: &ValidatorSet) -> Hash {
+        let validator_bytes: Vec<Vec<u8>> = validator_set
+            .validators()
+            .iter()
+            .map(|validator| validator.hash_bytes())
+            .collect();
+
+        Hash::Sha256(merkle::simple_hash_from_byte_vectors(validator_bytes))
     }
 }
 
@@ -51,7 +63,7 @@ fn amino_hash(header: &Header) -> Hash {
     fields_bytes.push(header.evidence_hash.as_ref().map_or(vec![], encode_hash));
     fields_bytes.push(bytes_enc(header.proposer_address.as_bytes()));
 
-    Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
+    Hash::Sha256(merkle::simple_hash_from_byte_vectors(fields_bytes))
 }
 
 fn bytes_enc(bytes: &[u8]) -> Vec<u8> {

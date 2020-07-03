@@ -1,8 +1,8 @@
 //! Predicates used in components contracts.
 
 use crate::{
-    store::{LightStore, VerifiedStatus},
-    types::{Height, LightBlock, Time},
+    store::LightStore,
+    types::{Height, LightBlock, Status, Time},
 };
 
 use std::time::Duration;
@@ -11,9 +11,7 @@ pub fn trusted_store_contains_block_at_target_height(
     light_store: &dyn LightStore,
     target_height: Height,
 ) -> bool {
-    light_store
-        .get(target_height, VerifiedStatus::Verified)
-        .is_some()
+    light_store.get(target_height, Status::Verified).is_some()
 }
 
 pub fn is_within_trust_period(
@@ -31,7 +29,7 @@ pub fn light_store_contains_block_within_trusting_period(
     now: Time,
 ) -> bool {
     light_store
-        .all(VerifiedStatus::Verified)
+        .all(Status::Verified)
         .any(|lb| is_within_trust_period(&lb, trusting_period, now))
 }
 
@@ -40,6 +38,6 @@ pub fn light_store_contains_block_within_trusting_period(
 //     target_height: Height,
 // ) -> bool {
 //     light_store
-//         .all(VerifiedStatus::Verified)
+//         .all(Status::Verified)
 //         .all(|lb| lb.height() < target_height)
 // }
