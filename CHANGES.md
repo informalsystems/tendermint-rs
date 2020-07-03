@@ -1,12 +1,15 @@
-## pending
+# pending
 
 Light Client:
 
 - Expose latest_trusted from Supervisor Handle ([#394])
 - Turn `Handle` into a trait for ease of integration and testability ([#401])
+- Improve `Supervisor` ergonomics according to [ADR-007] ([#403])
 
 [#394]: https://github.com/informalsystems/tendermint-rs/pull/394
 [#401]: https://github.com/informalsystems/tendermint-rs/pull/401
+[#403]: https://github.com/informalsystems/tendermint-rs/pull/403
+[ADR-007]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-007-light-client-supervisor-ergonomics.md
 
 ## [0.14.1] (2020-06-23)
 
@@ -274,7 +277,7 @@ This release is compatible with [tendermint v0.28]
 [#205]: https://github.com/tendermint/kms/pull/219
 [#181]: https://github.com/tendermint/kms/pull/181
 [tendermint v0.29]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0290
-[tendermint v0.28]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0280 
+[tendermint v0.28]: https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md#v0280
 [#30]: https://github.com/interchainio/tendermint-rs/pull/30
 [#16]: https://github.com/interchainio/tendermint-rs/pull/16
 [#15]: https://github.com/interchainio/tendermint-rs/pull/15

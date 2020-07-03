@@ -2,49 +2,35 @@ use crossbeam_channel as channel;
 
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
 
-use crate::{
-    bail,
-    callback::Callback,
-    errors::{Error, ErrorKind},
-    evidence::EvidenceReporter,
-    fork_detector::{Fork, ForkDetection, ForkDetector},
-    light_client::LightClient,
-    peer_list::PeerList,
-    state::State,
-    types::{Height, LightBlock, PeerId, Status},
-};
+use crate::bail;
+use crate::errors::{Error, ErrorKind};
+use crate::evidence::EvidenceReporter;
+use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
+use crate::light_client::LightClient;
+use crate::peer_list::PeerList;
+use crate::state::State;
+use crate::types::{Height, LightBlock, PeerId, Status};
 
 pub trait Handle {
     /// Get latest trusted block from the [`Supervisor`].
-    fn latest_trusted(&mut self) -> Result<Option<LightBlock>, Error>;
+    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
+        todo!()
+    }
 
     /// Verify to the highest block.
-    fn verify_to_highest(&mut self) -> Result<LightBlock, Error>;
+    fn verify_to_highest(&self) -> Result<LightBlock, Error> {
+        todo!()
+    }
 
     /// Verify to the block at the given height.
-    fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error>;
-
-    /// Async version of `verify_to_highest`.
-    ///
-    /// The given `callback` will be called asynchronously with the
-    /// verification result.
-    fn verify_to_highest_async(
-        &mut self,
-        callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
-    );
-
-    /// Async version of `verify_to_target`.
-    ///
-    /// The given `callback` will be called asynchronously with the
-    /// verification result.
-    fn verify_to_target_async(
-        &mut self,
-        height: Height,
-        callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
-    );
+    fn verify_to_target(&self, _height: Height) -> Result<LightBlock, Error> {
+        todo!()
+    }
 
     /// Terminate the underlying [`Supervisor`].
-    fn terminate(&mut self);
+    fn terminate(&self) -> Result<(), Error> {
+        todo!()
+    }
 }
 
 /// Input events sent by the [`Handle`]s to the [`Supervisor`]. They carry a [`Callback`] which is
@@ -52,16 +38,16 @@ pub trait Handle {
 #[derive(Debug)]
 enum HandleInput {
     /// Terminate the supervisor process
-    Terminate(Callback<()>),
+    Terminate(channel::Sender<()>),
     /// Verify to the highest height, call the provided callback with result
-    VerifyToHighest(Callback<Result<LightBlock, Error>>),
+    VerifyToHighest(channel::Sender<Result<LightBlock, Error>>),
     /// Verify to the given height, call the provided callback with result
-    VerifyToTarget(Height, Callback<Result<LightBlock, Error>>),
+    VerifyToTarget(Height, channel::Sender<Result<LightBlock, Error>>),
     /// Get the latest trusted block.
-    LatestTrusted(Callback<Result<Option<LightBlock>, Error>>),
+    LatestTrusted(channel::Sender<Option<LightBlock>>),
 }
 
-/// An light client `Instance` packages a `LightClient` together with its `State`.
+/// A light client `Instance` packages a `LightClient` together with its `State`.
 #[derive(Debug)]
 pub struct Instance {
     /// The light client for this instance
@@ -80,7 +66,7 @@ impl Instance {
     }
 
     pub fn latest_trusted(&self) -> Option<LightBlock> {
-        self.state.light_store.highest(Status::Trusted)
+        self.state.light_store.latest(Status::Trusted)
     }
 
     pub fn trust_block(&mut self, lb: &LightBlock) {
@@ -98,7 +84,7 @@ impl Instance {
 /// removed.
 ///
 /// The supervisor is intended to be ran in its own thread, and queried
-/// via a `Handle`, sync- or asynchronously.
+/// via a `Handle`.
 ///
 /// ## Example
 ///
@@ -111,12 +97,13 @@ impl Instance {
 ///
 /// loop {
 ///     // Asynchronously query the supervisor via a handle
-///     handle.verify_to_highest_async(|result| match result {
+///     let maybe_block = handle.verify_to_highest();
+///     match maybe_block {
 ///         Ok(light_block) => {
-///             println!("[ info  ] synced to block {}", light_block.height());
+///             println!("[info] synced to block {}", light_block.height());
 ///         }
 ///         Err(e) => {
-///             println!("[ error ] sync failed: {}", e);
+///             println!("[error] sync failed: {}", e);
 ///         }
 ///     });
 ///
@@ -198,13 +185,13 @@ impl Supervisor {
 
         match verdict {
             // Verification succeeded, let's perform fork detection
-            Ok(light_block) => {
-                let trusted_state = primary
+            Ok(verified_block) => {
+                let trusted_block = primary
                     .latest_trusted()
                     .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
 
-                // Perform fork detection with the highest verified block as the trusted state.
-                let outcome = self.detect_forks(&light_block, &trusted_state)?;
+                // Perform fork detection with the highest verified block and the trusted block.
+                let outcome = self.detect_forks(&verified_block, &trusted_block)?;
 
                 match outcome {
                     // There was a fork or a faulty peer
@@ -224,10 +211,10 @@ impl Supervisor {
                         // the `primary` field of `PeerList` between the initial
                         // borrow of the primary and here (can't blame it, it's
                         // not that obvious).
-                        self.peers.primary_mut().trust_block(&light_block);
+                        self.peers.primary_mut().trust_block(&verified_block);
 
                         // No fork detected, exiting
-                        Ok(light_block)
+                        Ok(verified_block)
                     }
                 }
             }
@@ -248,6 +235,7 @@ impl Supervisor {
         for fork in forks {
             match fork {
                 // An actual fork was detected, report evidence and record forked peer.
+                // TODO: also report to primary
                 Fork::Forked { primary, witness } => {
                     let provider = witness.provider;
                     self.report_evidence(provider, &primary, &witness)?;
@@ -289,11 +277,11 @@ impl Supervisor {
         Ok(())
     }
 
-    /// Perform fork detection with the given block and trusted state.
+    /// Perform fork detection with the given verified block and trusted block.
     fn detect_forks(
         &self,
-        light_block: &LightBlock,
-        trusted_state: &LightBlock,
+        verified_block: &LightBlock,
+        trusted_block: &LightBlock,
     ) -> Result<ForkDetection, Error> {
         if self.peers.witnesses_ids().is_empty() {
             bail!(ErrorKind::NoWitnesses);
@@ -307,32 +295,32 @@ impl Supervisor {
             .collect();
 
         self.fork_detector
-            .detect_forks(light_block, &trusted_state, witnesses)
+            .detect_forks(verified_block, &trusted_block, witnesses)
     }
 
     /// Run the supervisor event loop in the same thread.
     ///
     /// This method should typically be called within a new thread with `std::thread::spawn`.
-    pub fn run(mut self) {
+    pub fn run(mut self) -> Result<(), Error> {
         loop {
-            let event = self.receiver.recv().unwrap();
+            let event = self.receiver.recv().map_err(ErrorKind::from)?;
 
             match event {
-                HandleInput::LatestTrusted(callback) => {
+                HandleInput::LatestTrusted(sender) => {
                     let outcome = self.latest_trusted();
-                    callback.call(Ok(outcome));
+                    sender.send(outcome).map_err(ErrorKind::from)?;
                 }
-                HandleInput::Terminate(callback) => {
-                    callback.call(());
-                    return;
+                HandleInput::Terminate(sender) => {
+                    sender.send(()).map_err(ErrorKind::from)?;
+                    return Ok(());
                 }
-                HandleInput::VerifyToTarget(height, callback) => {
+                HandleInput::VerifyToTarget(height, sender) => {
                     let outcome = self.verify_to_target(height);
-                    callback.call(outcome);
+                    sender.send(outcome).map_err(ErrorKind::from)?;
                 }
-                HandleInput::VerifyToHighest(callback) => {
+                HandleInput::VerifyToHighest(sender) => {
                     let outcome = self.verify_to_highest();
-                    callback.call(outcome);
+                    sender.send(outcome).map_err(ErrorKind::from)?;
                 }
             }
         }
@@ -353,73 +341,43 @@ impl SupervisorHandle {
     }
 
     fn verify(
-        &mut self,
-        make_event: impl FnOnce(Callback<Result<LightBlock, Error>>) -> HandleInput,
+        &self,
+        make_event: impl FnOnce(channel::Sender<Result<LightBlock, Error>>) -> HandleInput,
     ) -> Result<LightBlock, Error> {
         let (sender, receiver) = channel::bounded::<Result<LightBlock, Error>>(1);
 
-        let callback = Callback::new(move |result| {
-            sender.send(result).unwrap();
-        });
+        let event = make_event(sender);
+        self.sender.send(event).map_err(ErrorKind::from)?;
 
-        let event = make_event(callback);
-        self.sender.send(event).unwrap();
-
-        receiver.recv().unwrap()
+        receiver.recv().map_err(ErrorKind::from)?
     }
 }
-
 impl Handle for SupervisorHandle {
-    fn latest_trusted(&mut self) -> Result<Option<LightBlock>, Error> {
-        let (sender, receiver) = channel::bounded::<Result<Option<LightBlock>, Error>>(1);
+    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
+        let (sender, receiver) = channel::bounded::<Option<LightBlock>>(1);
 
-        let callback = Callback::new(move |result| {
-            sender.send(result).unwrap();
-        });
-
-        // TODO(xla): Transform crossbeam errors into proper domain errors.
         self.sender
-            .send(HandleInput::LatestTrusted(callback))
-            .unwrap();
+            .send(HandleInput::LatestTrusted(sender))
+            .map_err(ErrorKind::from)?;
 
-        // TODO(xla): Transform crossbeam errors into proper domain errors.
-        receiver.recv().unwrap()
+        Ok(receiver.recv().map_err(ErrorKind::from)?)
     }
 
-    fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
+    fn verify_to_highest(&self) -> Result<LightBlock, Error> {
         self.verify(HandleInput::VerifyToHighest)
     }
 
-    fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
-        self.verify(|callback| HandleInput::VerifyToTarget(height, callback))
+    fn verify_to_target(&self, height: Height) -> Result<LightBlock, Error> {
+        self.verify(|sender| HandleInput::VerifyToTarget(height, sender))
     }
 
-    fn verify_to_highest_async(
-        &mut self,
-        callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
-    ) {
-        let event = HandleInput::VerifyToHighest(Callback::new(callback));
-        self.sender.send(event).unwrap();
-    }
-
-    fn verify_to_target_async(
-        &mut self,
-        height: Height,
-        callback: impl FnOnce(Result<LightBlock, Error>) -> () + Send + 'static,
-    ) {
-        let event = HandleInput::VerifyToTarget(height, Callback::new(callback));
-        self.sender.send(event).unwrap();
-    }
-
-    fn terminate(&mut self) {
+    fn terminate(&self) -> Result<(), Error> {
         let (sender, receiver) = channel::bounded::<()>(1);
 
-        let callback = Callback::new(move |_| {
-            sender.send(()).unwrap();
-        });
+        self.sender
+            .send(HandleInput::Terminate(sender))
+            .map_err(ErrorKind::from)?;
 
-        self.sender.send(HandleInput::Terminate(callback)).unwrap();
-
-        receiver.recv().unwrap()
+        Ok(receiver.recv().map_err(ErrorKind::from)?)
     }
 }

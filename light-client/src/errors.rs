@@ -1,6 +1,9 @@
 //! Toplevel errors raised by the light client.
 
+use std::fmt::Debug;
+
 use anomaly::{BoxError, Context};
+use crossbeam_channel as crossbeam;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -57,6 +60,9 @@ pub enum ErrorKind {
 
     #[error("invalid light block: {0}")]
     InvalidLightBlock(#[source] VerificationError),
+
+    #[error("internal channel disconnected")]
+    ChannelDisconnected,
 }
 
 impl ErrorKind {
@@ -105,5 +111,17 @@ impl ErrorExt for ErrorKind {
         } else {
             false
         }
+    }
+}
+
+impl<T: Debug + Send + Sync + 'static> From<crossbeam::SendError<T>> for ErrorKind {
+    fn from(_err: crossbeam::SendError<T>) -> Self {
+        Self::ChannelDisconnected
+    }
+}
+
+impl From<crossbeam::RecvError> for ErrorKind {
+    fn from(_err: crossbeam::RecvError) -> Self {
+        Self::ChannelDisconnected
     }
 }
