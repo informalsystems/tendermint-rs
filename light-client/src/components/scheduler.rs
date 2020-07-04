@@ -1,9 +1,7 @@
-use crate::{
-    store::LightStore,
-    types::{Height, Status},
-};
-
 use contracts::*;
+
+use crate::store::LightStore;
+use crate::types::Height;
 
 /// The scheduler decides what block to verify next given the current and target heights.
 ///
