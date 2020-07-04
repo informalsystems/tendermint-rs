@@ -104,7 +104,7 @@ fn make_instance(
             });
 
         light_store.insert(trusted_state, Status::Verified);
-    } else if light_store.highest(Status::Verified).is_none() {
+    } else if light_store.latest(Status::Verified).is_none() {
         println!("[ error ] no trusted state in database, please specify a trusted header");
         std::process::exit(1);
     }
@@ -165,8 +165,7 @@ fn sync_cmd(opts: SyncOpts) {
     std::thread::spawn(|| supervisor.run());
 
     loop {
-        let maybe_block = handle.verify_to_highest();
-        match maybe_block {
+        match handle.verify_to_highest() {
             Ok(light_block) => {
                 println!("[info] synced to block {}", light_block.height());
             }
