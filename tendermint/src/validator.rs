@@ -35,7 +35,7 @@ impl Set {
     /// Sort the validators according to the current Tendermint requirements
     /// (v. 0.33 -> by validator address, ascending)
     fn sort_validators(vals: &mut Vec<Info>) {
-        vals.sort_by(|v1, v2| v1.address.partial_cmp(&v2.address).unwrap());
+        vals.sort_by_key(|v| v.address);
     }
 }
 
