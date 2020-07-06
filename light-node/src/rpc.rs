@@ -1,5 +1,3 @@
-use std::net::SocketAddr;
-
 use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::{AccessControlAllowOrigin, DomainsValidation, ServerBuilder};
 
@@ -15,7 +13,7 @@ pub use sealed::{Client, Rpc, Server};
 /// get the underlying Future to await, so we are left with this rather rudimental way to control
 /// the lifecyel. Should we be interested in a more controlled way to close the server we can
 /// expose a handle in the future.
-pub fn run<H>(server: Server<H>, addr: impl Into<SocketAddr>) -> Result<(), error::Error>
+pub fn run<H>(server: Server<H>, addr: &str) -> Result<(), error::Error>
 where
     H: Handle + Send + Sync + 'static,
 {
@@ -26,7 +24,7 @@ where
         .cors(DomainsValidation::AllowOnly(vec![
             AccessControlAllowOrigin::Any,
         ]))
-        .start_http(&addr.into())
+        .start_http(&addr.parse().map_err(error::Kind::from)?)
         .map_err(error::Kind::from)?;
 
     srv.wait();

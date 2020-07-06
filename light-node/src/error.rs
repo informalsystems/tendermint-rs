@@ -1,6 +1,7 @@
 //! Error types
 
 use std::io;
+use std::net;
 
 /// Error type
 pub type Error = anomaly::Error<Kind>;
@@ -8,6 +9,10 @@ pub type Error = anomaly::Error<Kind>;
 /// Kinds of errors
 #[derive(Clone, Debug, thiserror::Error)]
 pub enum Kind {
+    /// Error when parsing an address.
+    #[error(transparent)]
+    AddrParse(#[from] net::AddrParseError),
+
     /// Error in configuration file
     #[error("config error")]
     Config,
