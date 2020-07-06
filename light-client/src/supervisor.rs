@@ -1,3 +1,6 @@
+//! The [`Supervisor`] manages the lifecycle of multiple [`Instance`]s, coordinates the
+//! execution of the fork detection protocol and publishing evidence to peers.
+
 use crossbeam_channel as channel;
 
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
@@ -11,6 +14,8 @@ use crate::peer_list::PeerList;
 use crate::state::State;
 use crate::types::{Height, LightBlock, PeerId, Status};
 
+/// A [`Handle`] to the [`Supervisor`] which allows to communicate with
+/// the supervisor across thread boundaries.
 pub trait Handle {
     /// Get latest trusted block from the [`Supervisor`].
     fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
@@ -57,7 +62,7 @@ pub struct Instance {
 }
 
 impl Instance {
-    /// Constructs a new instance from the given light client and its state.
+    /// Constructs a new [`Instance`] from the given light client and its state.
     pub fn new(light_client: LightClient, state: State) -> Self {
         Self {
             light_client,
@@ -65,10 +70,12 @@ impl Instance {
         }
     }
 
+    /// Returns the latest trusted [`LightBlock`] known to the [`Instance`].
     pub fn latest_trusted(&self) -> Option<LightBlock> {
         self.state.light_store.latest(Status::Trusted)
     }
 
+    /// Trust the given [`LightBlock`].
     pub fn trust_block(&mut self, lb: &LightBlock) {
         self.state.light_store.update(lb, Status::Trusted);
     }
@@ -97,10 +104,9 @@ impl Instance {
 ///
 /// loop {
 ///     // Asynchronously query the supervisor via a handle
-///     let maybe_block = handle.verify_to_highest();
-///     match maybe_block {
-///         Ok(light_block) => {
-///             println!("[info] synced to block {}", light_block.height());
+///     match handle.verify_to_highest() {
+///         Ok(block) => {
+///             println!("[info] synced to block {}", block.height());
 ///         }
 ///         Err(e) => {
 ///             println!("[error] sync failed: {}", e);
@@ -327,8 +333,6 @@ impl Supervisor {
     }
 }
 
-/// A [`Handle`] to the [`Supervisor`] which allows to communicate with
-/// the supervisor across thread boundaries via message passing.
 struct SupervisorHandle {
     sender: channel::Sender<HandleInput>,
 }
