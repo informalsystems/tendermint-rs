@@ -115,7 +115,7 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
 
     match handle.verify_to_target(target_height) {
         Ok(new_state) => {
-            /// Check that the expected state and new_state match
+            // Check that the expected state and new_state match
             let untrusted_light_block = io
                 .fetch_light_block(primary, AtHeight::At(target_height))
                 .expect("header at untrusted height not found");
@@ -124,7 +124,7 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
             assert_eq!(new_state.height(), expected_state.height());
             assert_eq!(new_state, expected_state);
 
-            /// Check the verdict
+            // Check the verdict
             assert!(!expects_err);
         }
         Err(e) => {
