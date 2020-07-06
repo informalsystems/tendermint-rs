@@ -113,4 +113,3 @@ impl Producer<block::Commit> for Commit {
         Ok(commit)
     }
 }
-

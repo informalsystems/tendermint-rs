@@ -16,4 +16,3 @@ pub fn default_consensus_params() -> consensus::Params {
         },
     }
 }
-

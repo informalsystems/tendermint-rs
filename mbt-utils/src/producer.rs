@@ -30,4 +30,3 @@ pub trait Producer<Output: Serialize> {
         producer.encode()
     }
 }
-

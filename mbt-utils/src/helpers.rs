@@ -38,4 +38,3 @@ pub fn choose_from<T: Clone>(cli: &Option<T>, input: &Option<T>) -> Option<T> {
         None
     }
 }
-

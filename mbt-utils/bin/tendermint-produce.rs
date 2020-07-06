@@ -117,4 +117,3 @@ fn main() {
         Some(Command::Commit(cli)) => run_command(cli, opts.read_stdin),
     }
 }
-

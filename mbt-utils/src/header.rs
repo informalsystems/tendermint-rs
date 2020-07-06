@@ -108,4 +108,3 @@ impl Producer<block::Header> for Header {
         Ok(header)
     }
 }
-
