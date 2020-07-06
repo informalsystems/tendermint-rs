@@ -1,80 +1,33 @@
 //! Error types
 
-use abscissa_core::error::{BoxError, Context};
-use std::{
-    fmt::{self, Display},
-    io,
-    ops::Deref,
-};
+use std::io;
+
+/// Error type
+pub type Error = anomaly::Error<Kind>;
 
 /// Kinds of errors
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum ErrorKind {
+#[derive(Clone, Debug, thiserror::Error)]
+pub enum Kind {
     /// Error in configuration file
+    #[error("config error")]
     Config,
 
     /// Input/output error
-    Io,
+    #[error("i/o error: {0}")]
+    Io(String),
+
+    #[error("light client error: {0}")]
+    LightClient(#[from] tendermint_light_client::errors::ErrorKind),
 }
 
-impl ErrorKind {
-    /// Create an error context from this error
-    pub fn context(self, source: impl Into<BoxError>) -> Context<ErrorKind> {
-        Context::new(self, Some(source.into()))
-    }
-}
-
-impl Display for ErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let description = match self {
-            ErrorKind::Config => "config error",
-            ErrorKind::Io => "I/O error",
-        };
-
-        f.write_str(description)
-    }
-}
-
-impl std::error::Error for ErrorKind {}
-
-/// Error type
-#[derive(Debug)]
-pub struct Error(Box<Context<ErrorKind>>);
-
-impl Deref for Error {
-    type Target = Context<ErrorKind>;
-
-    fn deref(&self) -> &Context<ErrorKind> {
-        &self.0
-    }
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.0.source()
-    }
-}
-
-impl From<ErrorKind> for Error {
-    fn from(kind: ErrorKind) -> Self {
-        Context::new(kind, None).into()
-    }
-}
-
-impl From<Context<ErrorKind>> for Error {
-    fn from(context: Context<ErrorKind>) -> Self {
-        Error(Box::new(context))
-    }
-}
-
-impl From<io::Error> for Error {
+impl From<io::Error> for Kind {
     fn from(err: io::Error) -> Self {
-        ErrorKind::Io.context(err).into()
+        Self::Io(format!("{}", err))
+    }
+}
+
+impl Into<jsonrpc_core::types::Error> for Kind {
+    fn into(self) -> jsonrpc_core::types::Error {
+        todo!()
     }
 }
