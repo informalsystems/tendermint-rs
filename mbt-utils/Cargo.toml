@@ -20,4 +20,4 @@ simple-error = "0.2.1"
 
 [[bin]]
 name = "mbt-tendermint-produce"
-path = "src/tendermint-produce.rs"
+path = "bin/tendermint-produce.rs"
