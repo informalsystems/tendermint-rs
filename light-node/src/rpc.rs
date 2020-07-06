@@ -1,11 +1,21 @@
 use jsonrpc_core::futures::future::{self, Future, FutureResult};
-use jsonrpc_core::Error as jsonrpcError;
 use jsonrpc_derive::rpc;
 use serde::{Deserialize, Serialize};
 
-use tendermint_light_client::errors::Error;
 use tendermint_light_client::supervisor::Handle;
 use tendermint_light_client::types::LightBlock;
+
+mod error {
+    use thiserror::Error;
+
+    pub type Error = anomaly::Error<Kind>;
+
+    #[derive(Clone, Debug, Error)]
+    enum Kind {
+        #[error("light client error: {0}")]
+        LightClient(#[from] tendermint_light_client::errors::ErrorKind),
+    }
+}
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Status {
@@ -16,11 +26,11 @@ pub struct Status {
 pub trait Rpc {
     /// Latest state.
     #[rpc(name = "state")]
-    fn state(&self) -> FutureResult<Option<LightBlock>, Error>;
+    fn state(&self) -> FutureResult<Option<LightBlock>, error::Error>;
 
     /// TODO(xla): Document.
     #[rpc(name = "status")]
-    fn status(&self) -> FutureResult<Status, jsonrpcError>;
+    fn status(&self) -> FutureResult<Status, error::Error>;
 }
 
 pub use self::rpc_impl_Rpc::gen_client::Client;
@@ -45,11 +55,15 @@ impl<H> Rpc for Server<H>
 where
     H: Handle + Send + Sync + 'static,
 {
-    fn state(&self) -> FutureResult<Option<LightBlock>, Error> {
-        future::result(self.handle.latest_trusted())
+    fn state(&self) -> FutureResult<Option<LightBlock>, error::Error> {
+        future::result(
+            self.handle
+                .latest_trusted()
+                .map_err(|e| error::Error::from(e.kind())),
+        )
     }
 
-    fn status(&self) -> FutureResult<Status, jsonrpcError> {
+    fn status(&self) -> FutureResult<Status, error::Error> {
         future::ok(Status { latest_height: 12 })
     }
 }
