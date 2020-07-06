@@ -10,17 +10,13 @@ use signatory_dalek::Ed25519Signer;
 use simple_error::*;
 use std::io::{self, Read};
 use std::str::FromStr;
-use subtle_encoding::base64;
-use subtle_encoding::hex::encode;
-use tendermint::amino_types::message::AminoMessage;
 use tendermint::block::header::Version;
 use tendermint::lite::ValidatorSet;
-use tendermint::private_key::Ed25519Keypair;
 use tendermint::public_key::{Algorithm, PublicKey};
-use tendermint::vote::{Power, SignedVote, Type};
+use tendermint::vote::{Power, Type};
 use tendermint::*;
 use tendermint::{chain, validator, Time};
-use tendermint_light_client::operations::{Hasher, ProdHasher};
+use tendermint_light_client::operations::ProdHasher;
 use validator::{Info, ProposerPriority};
 
 const USAGE: &str = r#"
