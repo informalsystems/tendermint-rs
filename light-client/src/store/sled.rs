@@ -1,12 +1,12 @@
+//! Provides an sled based implemtation of the [`LightStore`].
+
+use sled::Db as SledDb;
+
+use crate::store::{LightStore, Status};
+use crate::types::{Height, LightBlock};
+
 pub mod utils;
-
-use crate::{
-    store::sled::utils::*,
-    types::{Height, LightBlock},
-};
-
-use super::{LightStore, Status};
-use ::sled::Db as SledDb;
+use utils::*;
 
 const UNVERIFIED_PREFIX: &str = "light_store/unverified";
 const VERIFIED_PREFIX: &str = "light_store/verified";
@@ -24,6 +24,7 @@ pub struct SledStore {
 }
 
 impl SledStore {
+    /// Constructs a new [`SledStore`] wrapping a
     pub fn new(db: SledDb) -> Self {
         Self {
             db,

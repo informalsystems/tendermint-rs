@@ -1,10 +1,10 @@
-use crate::{
-    store::{LightStore, Status},
-    types::{Height, LightBlock},
-};
+//! Provides an in-memory implementation of the [`LightStore`].
 
 use std::collections::btree_map::Entry::*;
 use std::collections::BTreeMap;
+
+use crate::store::{LightStore, Status};
+use crate::types::{Height, LightBlock};
 
 /// Internal entry for the memory store
 #[derive(Clone, Debug, PartialEq)]
@@ -29,6 +29,7 @@ pub struct MemoryStore {
 }
 
 impl MemoryStore {
+    /// Constructs a new [`MemoryStore`].
     pub fn new() -> Self {
         Self {
             store: BTreeMap::new(),
