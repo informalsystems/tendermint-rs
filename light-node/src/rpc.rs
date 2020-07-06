@@ -1,25 +1,15 @@
 use jsonrpc_core::futures::future::{self, Future, FutureResult};
 use jsonrpc_core::types::Error;
 use jsonrpc_derive::rpc;
-use serde::{Deserialize, Serialize};
 
 use tendermint_light_client::supervisor::Handle;
 use tendermint_light_client::types::LightBlock;
-
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
-pub struct Status {
-    latest_height: u64,
-}
 
 #[rpc]
 pub trait Rpc {
     /// Returns the latest trusted block.
     #[rpc(name = "state")]
     fn state(&self) -> FutureResult<Option<LightBlock>, Error>;
-
-    /// TODO(xla): Document.
-    #[rpc(name = "status")]
-    fn status(&self) -> FutureResult<Status, Error>;
 }
 
 pub use self::rpc_impl_Rpc::gen_client::Client;
@@ -52,10 +42,6 @@ where
 
         future::result(res)
     }
-
-    fn status(&self) -> FutureResult<Status, Error> {
-        future::ok(Status { latest_height: 12 })
-    }
 }
 
 #[cfg(test)]
@@ -85,20 +71,6 @@ mod test {
         let want = serde_json::from_str(LIGHTBLOCK_JSON).unwrap();
 
         assert_eq!(have, want);
-    }
-
-    #[tokio::test]
-    async fn status() {
-        let server = Server::new(MockHandle {});
-        let fut = {
-            let mut io = IoHandler::new();
-            io.extend_with(server.to_delegate());
-            let (client, server) = local::connect::<Client, _, _>(io);
-            client.status().join(server)
-        };
-        let (res, _) = fut.compat().await.unwrap();
-
-        assert_eq!(res, super::Status { latest_height: 12 });
     }
 
     struct MockHandle;
