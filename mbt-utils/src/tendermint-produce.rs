@@ -7,7 +7,7 @@ use signatory::ed25519;
 use signatory::public_key::PublicKeyed;
 use tendermint::*;
 use validator::{Info, ProposerPriority};
-use tendermint::vote::Power;
+use tendermint::vote::{Power, Type, SignedVote};
 use tendermint::public_key::{PublicKey, Algorithm};
 use tendermint::block::header::Version;
 use tendermint::{Time, validator, chain};
@@ -16,9 +16,12 @@ use std::str::FromStr;
 use simple_error::*;
 use subtle_encoding::hex::encode;
 use subtle_encoding::base64;
-//use ed25519::*;
 use signatory::signature::Signature as _;
 use signatory::ed25519::SIGNATURE_SIZE;
+use tendermint_light_client::operations::{ProdHasher, Hasher};
+use tendermint::amino_types::message::AminoMessage;
+use tendermint::private_key::Ed25519Keypair;
+use signatory::signature::Signer;
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -300,9 +303,9 @@ impl Producer<block::Header> for Header {
             last_block_id: None,
             last_commit_hash: None,
             data_hash: None,
-            validators_hash: valset.hash(),
-            next_validators_hash: next_valset.hash(),
-            consensus_hash: valset.hash(), // TODO: currently not clear how to produce a valid hash
+            validators_hash:  valset.hash(),
+            next_validators_hash: next_valset.hash(), // hasher.hash_validator_set(&next_valset), // next_valset.hash(),
+            consensus_hash: valset.hash(), //hasher.hash_validator_set(&valset), // TODO: currently not clear how to produce a valid hash
             app_hash: vec![],
             last_results_hash: None,
             evidence_hash: None,
@@ -370,13 +373,33 @@ impl Producer<block::Commit> for Commit {
         }
         let header = self.header.as_ref().unwrap();
         let block_header = header.produce()?;
-        let sigs: Vec<block::CommitSig> = header.validators.as_ref().unwrap().into_iter().map (
-            |v| {
+        let hasher = ProdHasher;
+        let block_id = block::Id::new(lite::Header::hash(&block_header), None);
+        let sigs: Vec<block::CommitSig> = header.validators.as_ref().unwrap().into_iter().enumerate().map (
+            |(i,v)| {
                 let validator = v.produce().unwrap();
+                let signer: Ed25519Signer = v.signer().unwrap();
+                let vote = Vote {
+                    vote_type: Type::Precommit,
+                    height: block_header.height,
+                    round: choose_or(self.round, 1),
+                    block_id: Some(block_id.clone()),
+                    timestamp: block_header.time,
+                    validator_address: validator.address,
+                    validator_index: i as u64,
+                    signature: Signature::Ed25519(
+                        ed25519::Signature::from_bytes(&vec![0_u8; SIGNATURE_SIZE]).unwrap())
+                };
+                let signed_vote = vote::SignedVote::new(
+                    amino_types::vote::Vote::from(&vote),
+                    block_header.chain_id.as_str(),
+                    validator.address,
+                    Signature::Ed25519(ed25519::Signature::from_bytes(&vec![0_u8; SIGNATURE_SIZE]).unwrap()));
+                let sign_bytes = signed_vote.sign_bytes();
                 let sig = block::CommitSig::BlockIDFlagCommit {
                     validator_address: validator.address,
                     timestamp: block_header.time,
-                    signature: Signature::Ed25519(ed25519::Signature::from_bytes(&vec![0_u8; SIGNATURE_SIZE]).unwrap())
+                    signature: Signature::Ed25519(signer.try_sign(sign_bytes.as_slice()).unwrap())
                 };
                 sig
             }
@@ -385,7 +408,7 @@ impl Producer<block::Commit> for Commit {
         let commit = block::Commit {
             height: block_header.height,
             round: choose_or(self.round, 1),
-            block_id: block::Id::new(lite::Header::hash(&block_header), None), // TODO do we need at least one part?
+            block_id: block_id, // TODO do we need at least one part? //block::Id::new(hasher.hash_header(&block_header), None), //
             signatures: block::CommitSigs::new(sigs)
         };
         Ok(commit)
