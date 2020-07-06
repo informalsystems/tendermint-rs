@@ -1,7 +1,4 @@
-use crate::{
-    store::LightStore,
-    types::{Height, Status},
-};
+use crate::{store::LightStore, types::Height};
 
 use contracts::*;
 
