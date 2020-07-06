@@ -55,7 +55,8 @@ fn parse_vals<'de, D>(d: D) -> Result<Vec<Info>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let mut vals: Vec<Info> = Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or_default())?;
+    let mut vals: Vec<Info>
+        = Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or_default())?;
     Set::sort_validators(&mut vals);
     Ok(vals)
 }
