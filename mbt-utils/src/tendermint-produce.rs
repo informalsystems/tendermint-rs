@@ -1,3 +1,6 @@
+use std::io::{self, Read};
+use std::str::FromStr;
+
 use gumdrop::Options;
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
@@ -8,16 +11,16 @@ use signatory::signature::Signature as _;
 use signatory::signature::Signer;
 use signatory_dalek::Ed25519Signer;
 use simple_error::*;
-use std::io::{self, Read};
-use std::str::FromStr;
+
 use tendermint::block::header::Version;
 use tendermint::lite::ValidatorSet;
 use tendermint::public_key::{Algorithm, PublicKey};
-use tendermint::vote::{Power, Type};
-use tendermint::*;
-use tendermint::{chain, validator, Time};
-use tendermint_light_client::operations::ProdHasher;
-use validator::{Info, ProposerPriority};
+use tendermint::signature::Signature;
+use tendermint::validator::{Info, ProposerPriority};
+use tendermint::vote::{Power, Type, Vote};
+use tendermint::{
+    account, amino_types, block, chain, consensus, evidence, lite, validator, vote, Time,
+};
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -112,7 +115,7 @@ fn main() {
             eprintln!("{}\n", CliOptions::usage());
             for cmd in CliOptions::command_list()
                 .unwrap()
-                .split("\n")
+                .split('\n')
                 .map(|s| s.split_whitespace().next().unwrap())
             {
                 eprintln!("\n{} parameters:", cmd);
@@ -182,7 +185,7 @@ impl Validator {
         self
     }
     pub fn signer(&self) -> Result<Ed25519Signer, SimpleError> {
-        if let None = self.id {
+        if self.id.is_none() {
             bail!("validator identifier is missing")
         }
         let mut bytes = self.id.clone().unwrap().into_bytes();
@@ -203,7 +206,7 @@ impl Producer<Info> for Validator {
         let validator = match parse_stdin_as::<Validator>() {
             Ok(input) => input,
             Err(input) => Validator {
-                id: if input.to_string().len() == 0 {
+                id: if input.to_string().is_empty() {
                     bail!("failed to read validator from input")
                 } else {
                     Some(input.to_string())
@@ -256,16 +259,16 @@ pub struct Header {
 }
 
 impl Header {
-    pub fn new(validators: &Vec<Validator>) -> Self {
+    pub fn new(validators: &[Validator]) -> Self {
         Header {
-            validators: Some(validators.clone()),
+            validators: Some(validators.to_vec()),
             next_validators: None,
             height: None,
             time: None,
         }
     }
-    pub fn next_validators(mut self, vals: &Vec<Validator>) -> Self {
-        self.next_validators = Some(vals.clone());
+    pub fn next_validators(mut self, vals: &[Validator]) -> Self {
+        self.next_validators = Some(vals.to_vec());
         self
     }
     pub fn height(mut self, height: u64) -> Self {
@@ -285,7 +288,7 @@ impl Producer<block::Header> for Header {
             Err(input) => Header {
                 validators: match parse_as::<Vec<Validator>>(input.as_str()) {
                     Ok(vals) => Some(vals),
-                    Err(e) => bail!("failed to read header from input"),
+                    Err(e) => bail!("failed to read header from input: {}", e),
                 },
                 next_validators: None,
                 height: None,
@@ -305,13 +308,13 @@ impl Producer<block::Header> for Header {
     }
 
     fn produce(&self) -> Result<block::Header, SimpleError> {
-        if let None = self.validators {
+        if self.validators.is_none() {
             bail!("validator array is missing")
         }
         let vals = produce_validators(&self.validators.as_ref().unwrap())?;
         let valset = validator::Set::new(vals.clone());
         let next_valset = match &self.next_validators {
-            Some(next_vals) => validator::Set::new(produce_validators(next_vals)?.clone()),
+            Some(next_vals) => validator::Set::new(produce_validators(next_vals)?),
             None => valset.clone(),
         };
         let header = block::Header {
@@ -328,13 +331,13 @@ impl Producer<block::Header> for Header {
             app_hash: vec![],
             last_results_hash: None,
             evidence_hash: None,
-            proposer_address: vals[0].address.clone(),
+            proposer_address: vals[0].address,
         };
         Ok(header)
     }
 }
 
-fn produce_validators(vals: &Vec<Validator>) -> Result<Vec<Info>, SimpleError> {
+fn produce_validators(vals: &[Validator]) -> Result<Vec<Info>, SimpleError> {
     Ok(vals.iter().map(|v| v.produce().unwrap()).collect())
 }
 
@@ -366,7 +369,7 @@ impl Producer<block::Commit> for Commit {
             Err(input) => Commit {
                 header: match parse_as::<Header>(input.as_str()) {
                     Ok(header) => Some(header),
-                    Err(e) => bail!("failed to read commit from input"),
+                    Err(e) => bail!("failed to read commit from input: {}", e),
                 },
                 round: None,
             },
@@ -382,18 +385,17 @@ impl Producer<block::Commit> for Commit {
     }
 
     fn produce(&self) -> Result<block::Commit, SimpleError> {
-        if let None = self.header {
+        if self.header.is_none() {
             bail!("header is missing")
         }
         let header = self.header.as_ref().unwrap();
         let block_header = header.produce()?;
-        let hasher = ProdHasher;
         let block_id = block::Id::new(lite::Header::hash(&block_header), None);
         let sigs: Vec<block::CommitSig> = header
             .validators
             .as_ref()
             .unwrap()
-            .into_iter()
+            .iter()
             .enumerate()
             .map(|(i, v)| {
                 let validator = v.produce().unwrap();
@@ -407,7 +409,7 @@ impl Producer<block::Commit> for Commit {
                     validator_address: validator.address,
                     validator_index: i as u64,
                     signature: Signature::Ed25519(
-                        ed25519::Signature::from_bytes(&vec![0_u8; SIGNATURE_SIZE]).unwrap(),
+                        ed25519::Signature::from_bytes(&[0_u8; SIGNATURE_SIZE]).unwrap(),
                     ),
                 };
                 let signed_vote = vote::SignedVote::new(
@@ -415,23 +417,23 @@ impl Producer<block::Commit> for Commit {
                     block_header.chain_id.as_str(),
                     validator.address,
                     Signature::Ed25519(
-                        ed25519::Signature::from_bytes(&vec![0_u8; SIGNATURE_SIZE]).unwrap(),
+                        ed25519::Signature::from_bytes(&[0_u8; SIGNATURE_SIZE]).unwrap(),
                     ),
                 );
                 let sign_bytes = signed_vote.sign_bytes();
-                let sig = block::CommitSig::BlockIDFlagCommit {
+
+                block::CommitSig::BlockIDFlagCommit {
                     validator_address: validator.address,
                     timestamp: block_header.time,
                     signature: Signature::Ed25519(signer.try_sign(sign_bytes.as_slice()).unwrap()),
-                };
-                sig
+                }
             })
             .collect();
 
         let commit = block::Commit {
             height: block_header.height,
             round: choose_or(self.round, 1),
-            block_id: block_id, // TODO do we need at least one part? //block::Id::new(hasher.hash_header(&block_header), None), //
+            block_id, // TODO do we need at least one part? //block::Id::new(hasher.hash_header(&block_header), None), //
             signatures: block::CommitSigs::new(sigs),
         };
         Ok(commit)
