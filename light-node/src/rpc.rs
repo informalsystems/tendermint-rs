@@ -1,46 +1,84 @@
-use jsonrpc_core::futures::future::{self, Future, FutureResult};
-use jsonrpc_core::types::Error;
-use jsonrpc_derive::rpc;
+use std::net::SocketAddr;
+
+use jsonrpc_core::IoHandler;
+use jsonrpc_http_server::{AccessControlAllowOrigin, DomainsValidation, ServerBuilder};
 
 use tendermint_light_client::supervisor::Handle;
-use tendermint_light_client::types::LightBlock;
 
-#[rpc]
-pub trait Rpc {
-    /// Returns the latest trusted block.
-    #[rpc(name = "state")]
-    fn state(&self) -> FutureResult<Option<LightBlock>, Error>;
-}
+use crate::error;
 
-pub use self::rpc_impl_Rpc::gen_client::Client;
+pub use sealed::{Client, Rpc, Server};
 
-pub struct Server<H>
-where
-    H: Handle,
-{
-    handle: H,
-}
-
-impl<H> Server<H>
-where
-    H: Handle,
-{
-    pub fn new(handle: H) -> Self {
-        Self { handle }
-    }
-}
-
-impl<H> Rpc for Server<H>
+/// Run the given [`Server`] on the given address and blocks until closed.
+///
+/// n.b. The underlying server has semantics to close on drop. Also does it not offer any way to
+/// get the underlying Future to await, so we are left with this rather rudimental way to control
+/// the lifecyel. Should we be interested in a more controlled way to close the server we can
+/// expose a handle in the future.
+pub fn run<H>(server: Server<H>, addr: impl Into<SocketAddr>) -> Result<(), error::Error>
 where
     H: Handle + Send + Sync + 'static,
 {
-    fn state(&self) -> FutureResult<Option<LightBlock>, Error> {
-        let res = self
-            .handle
-            .latest_trusted()
-            .map_err(|_e| Error::internal_error());
+    let mut io = IoHandler::new();
+    io.extend_with(server.to_delegate());
 
-        future::result(res)
+    let srv = ServerBuilder::new(io)
+        .cors(DomainsValidation::AllowOnly(vec![
+            AccessControlAllowOrigin::Any,
+        ]))
+        .start_http(&addr.into())
+        .map_err(error::Kind::from)?;
+
+    srv.wait();
+
+    Ok(())
+}
+
+mod sealed {
+    use jsonrpc_core::futures::future::{self, Future, FutureResult};
+    use jsonrpc_core::types::Error;
+    use jsonrpc_derive::rpc;
+
+    use tendermint_light_client::supervisor::Handle;
+    use tendermint_light_client::types::LightBlock;
+
+    #[rpc]
+    pub trait Rpc {
+        /// Returns the latest trusted block.
+        #[rpc(name = "state")]
+        fn state(&self) -> FutureResult<Option<LightBlock>, Error>;
+    }
+
+    pub use self::rpc_impl_Rpc::gen_client::Client;
+
+    pub struct Server<H>
+    where
+        H: Handle + Send + Sync,
+    {
+        handle: H,
+    }
+
+    impl<H> Server<H>
+    where
+        H: Handle + Send + Sync,
+    {
+        pub fn new(handle: H) -> Self {
+            Self { handle }
+        }
+    }
+
+    impl<H> Rpc for Server<H>
+    where
+        H: Handle + Send + Sync + 'static,
+    {
+        fn state(&self) -> FutureResult<Option<LightBlock>, Error> {
+            let res = self
+                .handle
+                .latest_trusted()
+                .map_err(|_e| Error::internal_error());
+
+            future::result(res)
+        }
     }
 }
 
