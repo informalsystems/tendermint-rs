@@ -21,6 +21,7 @@ pub struct State {
 }
 
 impl State {
+    /// Constructs a new [`State`] over the given [`LightStore`].
     pub fn new(light_store: impl LightStore + 'static) -> Self {
         Self {
             light_store: Box::new(light_store),
