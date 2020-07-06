@@ -1,27 +1,27 @@
 use gumdrop::Options;
-use std::io::{self, Read};
-use serde::Deserialize;
 use serde::de::DeserializeOwned;
-use signatory_dalek::Ed25519Signer;
+use serde::Deserialize;
 use signatory::ed25519;
-use signatory::public_key::PublicKeyed;
-use tendermint::*;
-use validator::{Info, ProposerPriority};
-use tendermint::vote::{Power, Type, SignedVote};
-use tendermint::public_key::{PublicKey, Algorithm};
-use tendermint::block::header::Version;
-use tendermint::{Time, validator, chain};
-use tendermint::lite::{ValidatorSet};
-use std::str::FromStr;
-use simple_error::*;
-use subtle_encoding::hex::encode;
-use subtle_encoding::base64;
-use signatory::signature::Signature as _;
 use signatory::ed25519::SIGNATURE_SIZE;
-use tendermint_light_client::operations::{ProdHasher, Hasher};
-use tendermint::amino_types::message::AminoMessage;
-use tendermint::private_key::Ed25519Keypair;
+use signatory::public_key::PublicKeyed;
+use signatory::signature::Signature as _;
 use signatory::signature::Signer;
+use signatory_dalek::Ed25519Signer;
+use simple_error::*;
+use std::io::{self, Read};
+use std::str::FromStr;
+use subtle_encoding::base64;
+use subtle_encoding::hex::encode;
+use tendermint::amino_types::message::AminoMessage;
+use tendermint::block::header::Version;
+use tendermint::lite::ValidatorSet;
+use tendermint::private_key::Ed25519Keypair;
+use tendermint::public_key::{Algorithm, PublicKey};
+use tendermint::vote::{Power, SignedVote, Type};
+use tendermint::*;
+use tendermint::{chain, validator, Time};
+use tendermint_light_client::operations::{Hasher, ProdHasher};
+use validator::{Info, ProposerPriority};
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -63,7 +63,6 @@ The result is:
     }
 "#;
 
-
 #[derive(Debug, Options)]
 struct CliOptions {
     #[options(help = "print this help and exit (--help CMD for command-specific help)")]
@@ -88,9 +87,11 @@ enum Command {
 }
 
 fn run_command<Opts: Producer<T> + Options, T: serde::Serialize>(cli: Opts, read_stdin: bool) {
-    let res =
-        if read_stdin { Opts::encode_with_stdin(&cli) }
-        else { Opts::encode(&cli) };
+    let res = if read_stdin {
+        Opts::encode_with_stdin(&cli)
+    } else {
+        Opts::encode(&cli)
+    };
     match res {
         Ok(res) => println!("{}", res),
         Err(e) => {
@@ -113,7 +114,11 @@ fn main() {
             eprintln!("Please specify a command:");
             eprintln!("{}\n", CliOptions::command_list().unwrap());
             eprintln!("{}\n", CliOptions::usage());
-            for cmd in CliOptions::command_list().unwrap().split("\n").map(|s| s.split_whitespace().next().unwrap()) {
+            for cmd in CliOptions::command_list()
+                .unwrap()
+                .split("\n")
+                .map(|s| s.split_whitespace().next().unwrap())
+            {
                 eprintln!("\n{} parameters:", cmd);
                 print_params(CliOptions::command_usage(cmd).unwrap())
             }
@@ -121,22 +126,30 @@ fn main() {
         }
         Some(Command::Validator(cli)) => run_command(cli, opts.read_stdin),
         Some(Command::Header(cli)) => run_command(cli, opts.read_stdin),
-        Some(Command::Commit(cli)) => run_command(cli, opts.read_stdin)
+        Some(Command::Commit(cli)) => run_command(cli, opts.read_stdin),
     }
 }
 
-trait Producer<Output: serde::Serialize> {
+pub trait Producer<Output: serde::Serialize> {
     fn parse_stdin() -> Result<Self, SimpleError>
-        where Self: std::marker::Sized;
+    where
+        Self: std::marker::Sized;
     fn merge_with_default(&self, other: &Self) -> Self;
     fn produce(&self) -> Result<Output, SimpleError>;
     fn encode(&self) -> Result<String, SimpleError>
-        where Self: std::marker::Sized {
+    where
+        Self: std::marker::Sized,
+    {
         let res = self.produce()?;
-        Ok(try_with!(serde_json::to_string_pretty(&res), "failed to serialize into JSON"))
+        Ok(try_with!(
+            serde_json::to_string_pretty(&res),
+            "failed to serialize into JSON"
+        ))
     }
     fn encode_with_stdin(&self) -> Result<String, SimpleError>
-        where Self: std::marker::Sized {
+    where
+        Self: std::marker::Sized,
+    {
         let stdin = Self::parse_stdin()?;
         let producer = self.merge_with_default(&stdin);
         producer.encode()
@@ -149,27 +162,30 @@ pub struct Validator {
     id: Option<String>,
     #[options(help = "voting power of this validator (default: 0)", meta = "POWER")]
     voting_power: Option<u64>,
-    #[options(help = "proposer priority of this validator (default: none)", meta = "PRIORITY")]
+    #[options(
+        help = "proposer priority of this validator (default: none)",
+        meta = "PRIORITY"
+    )]
     proposer_priority: Option<i64>,
 }
 
 impl Validator {
-    fn new(id: &str) -> Self {
+    pub fn new(id: &str) -> Self {
         Validator {
             id: Some(id.to_string()),
             voting_power: None,
-            proposer_priority: None
+            proposer_priority: None,
         }
     }
-    fn voting_power(mut self, power: u64) -> Self {
+    pub fn voting_power(mut self, power: u64) -> Self {
         self.voting_power = Some(power);
         self
     }
-    fn proposer_priority(mut self, priority: i64) -> Self {
+    pub fn proposer_priority(mut self, priority: i64) -> Self {
         self.proposer_priority = Some(priority);
         self
     }
-    fn signer(&self) -> Result<Ed25519Signer, SimpleError> {
+    pub fn signer(&self) -> Result<Ed25519Signer, SimpleError> {
         if let None = self.id {
             bail!("validator identifier is missing")
         }
@@ -178,7 +194,10 @@ impl Validator {
             bail!("identifier is too long")
         }
         bytes.extend(vec![0u8; 32 - bytes.len()].iter());
-        let seed = require_with!(ed25519::Seed::from_bytes(bytes), "failed to construct a seed");
+        let seed = require_with!(
+            ed25519::Seed::from_bytes(bytes),
+            "failed to construct a seed"
+        );
         Ok(Ed25519Signer::from(&seed))
     }
 }
@@ -187,14 +206,15 @@ impl Producer<Info> for Validator {
     fn parse_stdin() -> Result<Self, SimpleError> {
         let validator = match parse_stdin_as::<Validator>() {
             Ok(input) => input,
-            Err(input) => {
-                Validator {
-                    id: if input.to_string().len()==0 { bail!("failed to read validator from input") }
-                        else { Some (input.to_string()) },
-                    voting_power: None,
-                    proposer_priority: None
-                }
-            }
+            Err(input) => Validator {
+                id: if input.to_string().len() == 0 {
+                    bail!("failed to read validator from input")
+                } else {
+                    Some(input.to_string())
+                },
+                voting_power: None,
+                proposer_priority: None,
+            },
         };
         Ok(validator)
     }
@@ -202,7 +222,7 @@ impl Producer<Info> for Validator {
         Validator {
             id: choose_from(&self.id, &other.id),
             voting_power: choose_from(&self.voting_power, &other.voting_power),
-            proposer_priority: choose_from(&self.proposer_priority, &other.proposer_priority)
+            proposer_priority: choose_from(&self.proposer_priority, &other.proposer_priority),
         }
     }
     fn produce(&self) -> Result<Info, SimpleError> {
@@ -214,9 +234,8 @@ impl Producer<Info> for Validator {
             voting_power: Power::new(choose_or(self.voting_power, 0)),
             proposer_priority: match self.proposer_priority {
                 None => None,
-                Some(p) => Some(ProposerPriority::new(p))
-            }
-
+                Some(p) => Some(ProposerPriority::new(p)),
+            },
         };
         Ok(info)
     }
@@ -224,9 +243,15 @@ impl Producer<Info> for Validator {
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Header {
-    #[options(help = "validators (required), encoded as array of 'validator' parameters", parse(try_from_str = "parse_as::<Vec<Validator>>"))]
+    #[options(
+        help = "validators (required), encoded as array of 'validator' parameters",
+        parse(try_from_str = "parse_as::<Vec<Validator>>")
+    )]
     validators: Option<Vec<Validator>>,
-    #[options(help = "next validators (default: same as validators), encoded as array of 'validator' parameters", parse(try_from_str = "parse_as::<Vec<Validator>>"))]
+    #[options(
+        help = "next validators (default: same as validators), encoded as array of 'validator' parameters",
+        parse(try_from_str = "parse_as::<Vec<Validator>>")
+    )]
     next_validators: Option<Vec<Validator>>,
     #[options(help = "block height (default: 1)")]
     height: Option<u64>,
@@ -235,23 +260,23 @@ pub struct Header {
 }
 
 impl Header {
-    fn new(validators: &Vec<Validator>) -> Self {
+    pub fn new(validators: &Vec<Validator>) -> Self {
         Header {
             validators: Some(validators.clone()),
             next_validators: None,
             height: None,
-            time: None
+            time: None,
         }
     }
-    fn next_validators(mut self, vals: &Vec<Validator>) -> Self {
+    pub fn next_validators(mut self, vals: &Vec<Validator>) -> Self {
         self.next_validators = Some(vals.clone());
         self
     }
-    fn height(mut self, height: u64) -> Self {
+    pub fn height(mut self, height: u64) -> Self {
         self.height = Some(height);
         self
     }
-    fn time(mut self, time: Time) -> Self {
+    pub fn time(mut self, time: Time) -> Self {
         self.time = Some(time);
         self
     }
@@ -261,17 +286,15 @@ impl Producer<block::Header> for Header {
     fn parse_stdin() -> Result<Self, SimpleError> {
         let header = match parse_stdin_as::<Header>() {
             Ok(input) => input,
-            Err(input) => {
-                Header {
-                    validators: match parse_as::<Vec<Validator>>(input.as_str()) {
-                        Ok(vals) => Some(vals),
-                        Err(e) => bail!("failed to read header from input")
-                    },
-                    next_validators: None,
-                    height: None,
-                    time: None
-                }
-            }
+            Err(input) => Header {
+                validators: match parse_as::<Vec<Validator>>(input.as_str()) {
+                    Ok(vals) => Some(vals),
+                    Err(e) => bail!("failed to read header from input"),
+                },
+                next_validators: None,
+                height: None,
+                time: None,
+            },
         };
         Ok(header)
     }
@@ -281,7 +304,7 @@ impl Producer<block::Header> for Header {
             validators: choose_from(&self.validators, &other.validators),
             next_validators: choose_from(&self.next_validators, &other.next_validators),
             height: choose_from(&self.height, &other.height),
-            time: choose_from(&self.time, &other.time)
+            time: choose_from(&self.time, &other.time),
         }
     }
 
@@ -293,23 +316,23 @@ impl Producer<block::Header> for Header {
         let valset = validator::Set::new(vals.clone());
         let next_valset = match &self.next_validators {
             Some(next_vals) => validator::Set::new(produce_validators(next_vals)?.clone()),
-            None => valset.clone()
+            None => valset.clone(),
         };
         let header = block::Header {
             version: Version { block: 0, app: 0 },
             chain_id: chain::Id::from_str("test-chain-01").unwrap(),
-            height: block::Height(choose_or(self.height,1)),
-            time: choose_or(self.time,Time::now()),
+            height: block::Height(choose_or(self.height, 1)),
+            time: choose_or(self.time, Time::now()),
             last_block_id: None,
             last_commit_hash: None,
             data_hash: None,
-            validators_hash:  valset.hash(),
+            validators_hash: valset.hash(),
             next_validators_hash: next_valset.hash(), // hasher.hash_validator_set(&next_valset), // next_valset.hash(),
             consensus_hash: valset.hash(), //hasher.hash_validator_set(&valset), // TODO: currently not clear how to produce a valid hash
             app_hash: vec![],
             last_results_hash: None,
             evidence_hash: None,
-            proposer_address: vals[0].address.clone()
+            proposer_address: vals[0].address.clone(),
         };
         Ok(header)
     }
@@ -324,18 +347,17 @@ pub struct Commit {
     #[options(help = "header (required)", parse(try_from_str = "parse_as::<Header>"))]
     header: Option<Header>,
     #[options(help = "commit round (default: 1)")]
-    round: Option<u64>
+    round: Option<u64>,
 }
 
 impl Commit {
-    fn new(header: &Header) -> Self {
+    pub fn new(header: &Header) -> Self {
         Commit {
             header: Some(header.clone()),
-            round: None
+            round: None,
         }
-
     }
-    fn round(mut self, round: u64) -> Self {
+    pub fn round(mut self, round: u64) -> Self {
         self.round = Some(round);
         self
     }
@@ -345,17 +367,13 @@ impl Producer<block::Commit> for Commit {
     fn parse_stdin() -> Result<Self, SimpleError> {
         let commit = match parse_stdin_as::<Commit>() {
             Ok(input) => input,
-            Err(input) => {
-                Commit {
-                    header: match parse_as::<Header>(input.as_str()) {
-                        Ok(header) => Some(header),
-                        Err(e) => {
-                            bail!("failed to read commit from input")
-                        }
-                    },
-                    round: None
-                }
-            }
+            Err(input) => Commit {
+                header: match parse_as::<Header>(input.as_str()) {
+                    Ok(header) => Some(header),
+                    Err(e) => bail!("failed to read commit from input"),
+                },
+                round: None,
+            },
         };
         Ok(commit)
     }
@@ -363,7 +381,7 @@ impl Producer<block::Commit> for Commit {
     fn merge_with_default(&self, other: &Self) -> Self {
         Commit {
             header: choose_from(&self.header, &other.header),
-            round: choose_from(&self.round, &other.round)
+            round: choose_from(&self.round, &other.round),
         }
     }
 
@@ -375,8 +393,13 @@ impl Producer<block::Commit> for Commit {
         let block_header = header.produce()?;
         let hasher = ProdHasher;
         let block_id = block::Id::new(lite::Header::hash(&block_header), None);
-        let sigs: Vec<block::CommitSig> = header.validators.as_ref().unwrap().into_iter().enumerate().map (
-            |(i,v)| {
+        let sigs: Vec<block::CommitSig> = header
+            .validators
+            .as_ref()
+            .unwrap()
+            .into_iter()
+            .enumerate()
+            .map(|(i, v)| {
                 let validator = v.produce().unwrap();
                 let signer: Ed25519Signer = v.signer().unwrap();
                 let vote = Vote {
@@ -388,28 +411,32 @@ impl Producer<block::Commit> for Commit {
                     validator_address: validator.address,
                     validator_index: i as u64,
                     signature: Signature::Ed25519(
-                        ed25519::Signature::from_bytes(&vec![0_u8; SIGNATURE_SIZE]).unwrap())
+                        ed25519::Signature::from_bytes(&vec![0_u8; SIGNATURE_SIZE]).unwrap(),
+                    ),
                 };
                 let signed_vote = vote::SignedVote::new(
                     amino_types::vote::Vote::from(&vote),
                     block_header.chain_id.as_str(),
                     validator.address,
-                    Signature::Ed25519(ed25519::Signature::from_bytes(&vec![0_u8; SIGNATURE_SIZE]).unwrap()));
+                    Signature::Ed25519(
+                        ed25519::Signature::from_bytes(&vec![0_u8; SIGNATURE_SIZE]).unwrap(),
+                    ),
+                );
                 let sign_bytes = signed_vote.sign_bytes();
                 let sig = block::CommitSig::BlockIDFlagCommit {
                     validator_address: validator.address,
                     timestamp: block_header.time,
-                    signature: Signature::Ed25519(signer.try_sign(sign_bytes.as_slice()).unwrap())
+                    signature: Signature::Ed25519(signer.try_sign(sign_bytes.as_slice()).unwrap()),
                 };
                 sig
-            }
-        ).collect();
+            })
+            .collect();
 
         let commit = block::Commit {
             height: block_header.height,
             round: choose_or(self.round, 1),
             block_id: block_id, // TODO do we need at least one part? //block::Id::new(hasher.hash_header(&block_header), None), //
-            signatures: block::CommitSigs::new(sigs)
+            signatures: block::CommitSigs::new(sigs),
         };
         Ok(commit)
     }
@@ -427,7 +454,7 @@ fn print_params(options: &str) {
 fn parse_as<T: DeserializeOwned>(input: &str) -> Result<T, SimpleError> {
     match serde_json::from_str(input) {
         Ok(res) => Ok(res),
-        Err(_) => Err(SimpleError::new(input))
+        Err(_) => Err(SimpleError::new(input)),
     }
 }
 
@@ -436,19 +463,26 @@ fn parse_stdin_as<T: DeserializeOwned>() -> Result<T, SimpleError> {
     let mut buffer = String::new();
     match io::stdin().read_to_string(&mut buffer) {
         Err(_) => Err(SimpleError::new("")),
-        Ok(_) => parse_as::<T>(&buffer)
+        Ok(_) => parse_as::<T>(&buffer),
     }
 }
 
 fn choose_or<T>(input: Option<T>, default: T) -> T {
-    if let Some(x) = input { x }
-    else { default }
+    if let Some(x) = input {
+        x
+    } else {
+        default
+    }
 }
 
 fn choose_from<T: Clone>(cli: &Option<T>, input: &Option<T>) -> Option<T> {
-    if let Some(x) = cli { Some(x.clone()) }
-    else if let Some(y) = input { Some(y.clone()) }
-    else { None }
+    if let Some(x) = cli {
+        Some(x.clone())
+    } else if let Some(y) = input {
+        Some(y.clone())
+    } else {
+        None
+    }
 }
 
 // Default consensus params modeled after Go code; but it's not clear how to go to a valid hash from here
@@ -456,15 +490,15 @@ fn _default_consensus_params() -> consensus::Params {
     consensus::Params {
         block: block::Size {
             max_bytes: 22020096,
-            max_gas: -1
-            // Tendetmint-go also has TimeIotaMs: 1000, // 1s
+            max_gas: -1, // Tendetmint-go also has TimeIotaMs: 1000, // 1s
         },
         evidence: evidence::Params {
             max_age_num_blocks: 100000,
-            max_age_duration: evidence::Duration(std::time::Duration::new(48*3600,0))
+            max_age_duration: evidence::Duration(std::time::Duration::new(48 * 3600, 0)),
         },
         validator: consensus::params::ValidatorParams {
-            pub_key_types: vec![Algorithm::Ed25519]
-        }
+            pub_key_types: vec![Algorithm::Ed25519],
+        },
     }
 }
+
