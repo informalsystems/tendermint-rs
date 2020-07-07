@@ -10,7 +10,7 @@ pub use sealed::{Client, Rpc, Server};
 /// Run the given [`Server`] on the given address and blocks until closed.
 ///
 /// n.b. The underlying server has semantics to close on drop. Also does it not offer any way to
-/// get the underlying Future to await, so we are left with this rather rudimental way to control
+/// get the underlying Future to await, so we are left with this rather rudimentary way to control
 /// the lifecycle. Should we be interested in a more controlled way to close the server we can
 /// expose a handle in the future.
 pub fn run<H>(server: Server<H>, addr: &str) -> Result<(), error::Error>
