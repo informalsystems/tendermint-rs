@@ -20,19 +20,10 @@ pub enum Kind {
     /// Input/output error
     #[error("i/o error: {0}")]
     Io(String),
-
-    #[error("light client error: {0}")]
-    LightClient(#[from] tendermint_light_client::errors::ErrorKind),
 }
 
 impl From<io::Error> for Kind {
     fn from(err: io::Error) -> Self {
         Self::Io(format!("{}", err))
-    }
-}
-
-impl Into<jsonrpc_core::types::Error> for Kind {
-    fn into(self) -> jsonrpc_core::types::Error {
-        todo!()
     }
 }
