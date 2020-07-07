@@ -1,7 +1,8 @@
 //! Error types
 
-use std::io;
 use std::net;
+
+use anomaly::{BoxError, Context};
 
 /// Error type
 pub type Error = anomaly::Error<Kind>;
@@ -18,12 +19,14 @@ pub enum Kind {
     Config,
 
     /// Input/output error
-    #[error("i/o error: {0}")]
-    Io(String),
+    #[error("i/o error")]
+    Io,
 }
 
-impl From<io::Error> for Kind {
-    fn from(err: io::Error) -> Self {
-        Self::Io(format!("{}", err))
+impl Kind {
+    /// Add additional context (i.e. include a source error and capture a backtrace).
+    /// You can convert the resulting `Context` into an `Error` by calling `.into()`.
+    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
+        Context::new(self, Some(source.into()))
     }
 }
