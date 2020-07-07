@@ -153,7 +153,7 @@ impl Supervisor {
     }
 
     /// Create a new handle to this supervisor.
-    pub fn handle(&mut self) -> impl Handle {
+    pub fn handle(&mut self) -> SupervisorHandle {
         SupervisorHandle::new(self.sender.clone())
     }
 
@@ -329,7 +329,8 @@ impl Supervisor {
 
 /// A [`Handle`] to the [`Supervisor`] which allows to communicate with
 /// the supervisor across thread boundaries via message passing.
-struct SupervisorHandle {
+#[derive(Clone)]
+pub struct SupervisorHandle {
     sender: channel::Sender<HandleInput>,
 }
 
