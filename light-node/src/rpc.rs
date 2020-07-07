@@ -70,10 +70,12 @@ mod sealed {
         H: Handle + Send + Sync + 'static,
     {
         fn state(&self) -> FutureResult<Option<LightBlock>, Error> {
-            let res = self
-                .handle
-                .latest_trusted()
-                .map_err(|_e| Error::internal_error());
+            let res = self.handle.latest_trusted().map_err(|e| {
+                let mut err = Error::internal_error();
+                err.message = e.to_string();
+                err.data = serde_json::to_value(e.kind()).ok();
+                err
+            });
 
             future::result(res)
         }
