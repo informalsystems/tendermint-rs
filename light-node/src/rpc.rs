@@ -25,7 +25,7 @@ where
             AccessControlAllowOrigin::Any,
         ]))
         .start_http(&addr.parse().map_err(error::Kind::from)?)
-        .map_err(error::Kind::from)?;
+        .map_err(|e| error::Kind::Io.context(e))?;
 
     srv.wait();
 
