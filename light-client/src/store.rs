@@ -47,4 +47,10 @@ pub trait LightStore: std::fmt::Debug + Send {
             max_by_key(t, v, |lb| lb.height())
         })
     }
+
+    /// Get the light block of the given height with the trusted or verified status.
+    fn get_trusted_or_verified(&self, height: Height) -> Option<LightBlock> {
+        self.get(height, Status::Trusted)
+            .or_else(|| self.get(height, Status::Verified))
+    }
 }

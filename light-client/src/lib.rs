@@ -25,6 +25,7 @@ pub mod state;
 pub mod store;
 pub mod supervisor;
 pub mod types;
+mod utils;
 
 mod macros;
 

@@ -18,4 +18,3 @@ pub fn select<A>(a: Option<A>, b: Option<A>, f: impl FnOnce(A, A) -> A) -> Optio
         (Some(a), Some(b)) => Some(f(a, b)),
     }
 }
-

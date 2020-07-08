@@ -154,7 +154,7 @@ impl LightClient {
         state: &mut State,
     ) -> Result<LightBlock, Error> {
         // Let's first look in the store to see whether we have already successfully verified this block
-        if let Some(light_block) = state.light_store.get(target_height, Status::Verified) {
+        if let Some(light_block) = state.light_store.get_trusted_or_verified(target_height) {
             return Ok(light_block);
         }
 
@@ -169,7 +169,7 @@ impl LightClient {
             let trusted_state = state
                 .light_store
                 .latest_trusted_or_verified()
-                .ok_or_else(|| ErrorKind::NoInitialTrustedState(Status::Verified))?;
+                .ok_or_else(|| ErrorKind::NoInitialTrustedState)?;
 
             if target_height < trusted_state.height() {
                 bail!(ErrorKind::TargetLowerThanTrustedState {
@@ -183,7 +183,6 @@ impl LightClient {
                 bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
                     trusted_state: Box::new(trusted_state),
                     options,
-                    status: Status::Verified
                 });
             }
 
@@ -195,7 +194,8 @@ impl LightClient {
                 return Ok(trusted_state);
             }
 
-            // Fetch the block at the current height from our peer
+            // Fetch the block at the current height from the light store if already present,
+            // or from the primary peer otherwise.
             let current_block = self.get_or_fetch_block(current_height, state)?;
 
             // Validate and verify the current block
@@ -230,7 +230,9 @@ impl LightClient {
         }
     }
 
-    /// Look in the light store for a block from the given peer at the given height.
+    /// Look in the light store for a block from the given peer at the given height,
+    /// whatever its verification status.
+    ///
     /// If one cannot be found, fetch the block from the given peer.
     ///
     /// ## Postcondition
@@ -243,7 +245,8 @@ impl LightClient {
     ) -> Result<LightBlock, Error> {
         let current_block = state
             .light_store
-            .get(current_height, Status::Verified)
+            .get(current_height, Status::Trusted)
+            .or_else(|| state.light_store.get(current_height, Status::Verified))
             .or_else(|| state.light_store.get(current_height, Status::Unverified));
 
         if let Some(current_block) = current_block {

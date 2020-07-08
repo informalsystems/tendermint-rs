@@ -37,7 +37,7 @@ pub enum ErrorKind {
     ForkDetected(Vec<PeerId>),
 
     #[error("no initial trusted state")]
-    NoInitialTrustedState(Status),
+    NoInitialTrustedState,
 
     #[error("no trusted state")]
     NoTrustedState(Status),
@@ -52,7 +52,6 @@ pub enum ErrorKind {
     TrustedStateOutsideTrustingPeriod {
         trusted_state: Box<LightBlock>,
         options: Options,
-        status: Status,
     },
 
     #[error("bisection for target at height {0} failed when reached trusted state at height {1}")]
