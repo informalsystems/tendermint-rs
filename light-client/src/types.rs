@@ -49,29 +49,32 @@ pub type SignedHeader = TMSignedHeader;
 pub type TrustedState = LightBlock;
 
 /// Verification status of a light block.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Status {
+    /// The light block has failed verification.
+    Failed,
     /// The light has not been verified yet.
     Unverified,
     /// The light block has been successfully verified.
     Verified,
     /// The light block has been successfully verified and has passed fork detection.
     Trusted,
-    /// The light block has failed verification.
-    Failed,
 }
 
 impl Status {
     /// Return a slice of all the possible values for this enum.
-    pub fn iter() -> &'static [Status] {
-        static ALL: &[Status] = &[
-            Status::Unverified,
-            Status::Verified,
-            Status::Trusted,
-            Status::Failed,
-        ];
-
+    pub fn iter() -> &'static [Self] {
+        use Status::*;
+        static ALL: &[Status] = &[Unverified, Verified, Trusted, Failed];
         ALL
+    }
+
+    pub fn most_trusted(a: Self, b: Self) -> Self {
+        std::cmp::max(a, b)
+    }
+
+    pub fn least_trusted(a: Self, b: Self) -> Self {
+        std::cmp::min(a, b)
     }
 }
 
@@ -114,5 +117,53 @@ impl LightBlock {
     /// This is a shorthand for `block.signed_header.header.height.into()`.
     pub fn height(&self) -> Height {
         self.signed_header.header.height.into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    mod status {
+        use crate::types::Status;
+        use Status::*;
+
+        #[test]
+        fn ord_impl() {
+            assert!(Trusted > Verified);
+            assert!(Verified > Unverified);
+            assert!(Unverified > Failed);
+        }
+
+        #[test]
+        fn most_trusted() {
+            for (a, b) in cross(Status::iter()) {
+                if a > b {
+                    assert_eq!(Status::most_trusted(a, b), a);
+                } else {
+                    assert_eq!(Status::most_trusted(a, b), b);
+                }
+            }
+        }
+
+        #[test]
+        fn least_trusted() {
+            for (a, b) in cross(Status::iter()) {
+                if a > b {
+                    assert_eq!(Status::least_trusted(a, b), b);
+                } else {
+                    assert_eq!(Status::least_trusted(a, b), a);
+                }
+            }
+        }
+
+        fn cross<T>(xs: &[T]) -> Vec<(T, T)>
+        where
+            T: Copy,
+        {
+            xs.iter()
+                .copied()
+                .flat_map(|y| xs.iter().copied().map(move |x| (x, y)))
+                .collect()
+        }
     }
 }

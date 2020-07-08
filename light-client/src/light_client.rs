@@ -198,30 +198,30 @@ impl LightClient {
             // or from the primary peer otherwise.
             let (current_block, status) = self.get_or_fetch_block(current_height, state)?;
 
-            if status != Status::Trusted {
-                // Validate and verify the current block
-                let verdict = self
-                    .verifier
-                    .verify(&current_block, &trusted_state, &options);
+            // Validate and verify the current block
+            let verdict = self
+                .verifier
+                .verify(&current_block, &trusted_state, &options);
 
-                match verdict {
-                    Verdict::Success => {
-                        // Verification succeeded, add the block to the light store with `verified` status
-                        state.light_store.update(&current_block, Status::Verified);
-                    }
-                    Verdict::Invalid(e) => {
-                        // Verification failed, add the block to the light store with `failed` status, and abort.
-                        state.light_store.update(&current_block, Status::Failed);
+            match verdict {
+                Verdict::Success => {
+                    // Verification succeeded, add the block to the light store with
+                    // the `Verified` status or higher if already trusted.
+                    let new_status = Status::most_trusted(Status::Verified, status);
+                    state.light_store.update(&current_block, new_status);
+                }
+                Verdict::Invalid(e) => {
+                    // Verification failed, add the block to the light store with `Failed` status, and abort.
+                    state.light_store.update(&current_block, Status::Failed);
 
-                        bail!(ErrorKind::InvalidLightBlock(e))
-                    }
-                    Verdict::NotEnoughTrust(_) => {
-                        // The current block cannot be trusted because of missing overlap in the validator sets.
-                        // Add the block to the light store with `unverified` status.
-                        // This will engage bisection in an attempt to raise the height of the highest
-                        // trusted state until there is enough overlap.
-                        state.light_store.update(&current_block, Status::Unverified);
-                    }
+                    bail!(ErrorKind::InvalidLightBlock(e))
+                }
+                Verdict::NotEnoughTrust(_) => {
+                    // The current block cannot be trusted because of missing overlap in the validator sets.
+                    // Add the block to the light store with `Unverified` status.
+                    // This will engage bisection in an attempt to raise the height of the highest
+                    // trusted state until there is enough overlap.
+                    state.light_store.update(&current_block, Status::Unverified);
                 }
             }
 
