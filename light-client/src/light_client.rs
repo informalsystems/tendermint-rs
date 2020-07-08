@@ -253,15 +253,15 @@ impl LightClient {
             return Ok(current_block);
         }
 
-        self.io
+        let current_block = self
+            .io
             .fetch_light_block(self.peer, AtHeight::At(current_height))
-            .map(|current_block| {
-                state
-                    .light_store
-                    .insert(current_block.clone(), Status::Unverified);
+            .map_err(ErrorKind::Io)?;
 
-                current_block
-            })
-            .map_err(|e| ErrorKind::Io(e).into())
+        state
+            .light_store
+            .insert(current_block.clone(), Status::Unverified);
+
+        Ok(current_block)
     }
 }
