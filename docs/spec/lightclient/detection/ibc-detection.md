@@ -4,6 +4,81 @@
 
 > Rough outline of what the component is doing and why. 2-3 paragraphs 
 
+## What you need to know about IBC
+
+- A blockchain runs a **handler** that passively collect information about
+  other blockchains. It can be thought of a state machine that takes
+  input events.
+  
+    - the state includes a lightstore (what is the ibc name for that?)
+  
+- The active components are called **relayer**. 
+
+- a relayer contains light clients to two blockchains
+
+- relayer send headers to
+  the handler
+
+- the handler takes a header and puts it in its lightstore. It should
+  do so in a "secure" way. 
+  
+    - Right now if it receives a header, it checks its height is
+   larger than all heights it knows it verifies it in "one step"
+   with `ValidandVerified`. It does the trusting period check and the
+   +1/3 check. If it verifies a header it adds it to its lightstore,
+   if it does not pass verification it drops it.
+  
+    - this might change. 
+	
+- the handler can call a misbehavior function to flag a situation and
+  stop the protocol. 
+  
+- To do so, the relayer should provide the handler with
+  "evidence" that there was a fork. This is one of the challenges
+  addressed in this specification.
+  
+- The relayer can read what the handler knows. Thus the relayer can
+  feed the handler precisely the information it needs. What this
+  information is is part of this specification
+  
+- Fork detection at a relayer. Let's assume there is a fork at chain A:
+
+    1. as the relayer contains a light client for A, it also includes a fork
+      detector.
+	  
+	2. the relayer may also detect a fork by observing that the
+      A-handler (on chain B)
+      is on a different branch than the relayer
+	  
+- in both detection scenarios, the relayer should submit evidence to a
+  full node of chain A where there is a fork
+  
+- in the scenario 2., the relayer must feed the A-handler (on chain B)
+  proof of a fork on A so that chain B can react accordingly
+  
+- there are potentially many relayers, some correct some faulty
+
+- a handler cannot trust information by relayer, but must verify
+
+- we would like to assume that every now and then (smaller than the
+  trusting period) a correct relayer checks whether handler is on a
+  different branch than the relayer, in order to start the points
+  above.
+  
+- this might not be enough, if the correct relayer is also fooled to
+  be on a branch. So we need a correct relayer that in the case of a
+  fork sits on a different branch to checker a handler that sits on
+  another branch in order to detect a fork.
+  
+- just checking the state of the handler is not enough: both, the
+  handler and the relayer may have incomplete light stores, that do
+  not necessarily intersect in the crucial heights. If a relayer
+  cannot verify a header a handler has locally, it might need to do
+  bisection for that height.
+
+
+## The interconnectedness of things
+
 In the broader discussion of so-called "fork accountability" there are
 several subproblems
 
@@ -13,7 +88,7 @@ several subproblems
 
 - Isolating misbehaving nodes (and report them for punishment
 
-## Fork detection
+### Fork detection
 
 The preliminary specification ./detection.md formalizes the notion of
 a fork. Roughly, a fork exists if there are two conflicting headers
@@ -34,7 +109,7 @@ In principle everyone can detect a fork
       that it can halt
 	- the relayer should report the fork to a full node
 	
-## Evidence creation and submission
+### Evidence creation and submission
 
 - the information sent from the relayer to the handler could be called
   evidence, but perhaps a bad idea. Anyhow, the relayer knows what the
@@ -50,8 +125,18 @@ In principle everyone can detect a fork
   blockchain, and can confirm from a trusted height what is the
   problem.
 
-## Isolating misbehaving nodes
+### Isolating misbehaving nodes
 
+- this is the job of a full node. 
+
+- might be subjective in the future (the protocol depends on what the
+  full node believes is the "correct" chain. right now we postulate it
+  is)
+  
+- it figures out which nodes are
+    - lunatic
+	- double signing
+	- amnesic with challenge response protocol
 
 
 # Outline
