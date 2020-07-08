@@ -196,30 +196,32 @@ impl LightClient {
 
             // Fetch the block at the current height from the light store if already present,
             // or from the primary peer otherwise.
-            let current_block = self.get_or_fetch_block(current_height, state)?;
+            let (current_block, status) = self.get_or_fetch_block(current_height, state)?;
 
-            // Validate and verify the current block
-            let verdict = self
-                .verifier
-                .verify(&current_block, &trusted_state, &options);
+            if status != Status::Trusted {
+                // Validate and verify the current block
+                let verdict = self
+                    .verifier
+                    .verify(&current_block, &trusted_state, &options);
 
-            match verdict {
-                Verdict::Success => {
-                    // Verification succeeded, add the block to the light store with `verified` status
-                    state.light_store.update(&current_block, Status::Verified);
-                }
-                Verdict::Invalid(e) => {
-                    // Verification failed, add the block to the light store with `failed` status, and abort.
-                    state.light_store.update(&current_block, Status::Failed);
+                match verdict {
+                    Verdict::Success => {
+                        // Verification succeeded, add the block to the light store with `verified` status
+                        state.light_store.update(&current_block, Status::Verified);
+                    }
+                    Verdict::Invalid(e) => {
+                        // Verification failed, add the block to the light store with `failed` status, and abort.
+                        state.light_store.update(&current_block, Status::Failed);
 
-                    bail!(ErrorKind::InvalidLightBlock(e))
-                }
-                Verdict::NotEnoughTrust(_) => {
-                    // The current block cannot be trusted because of missing overlap in the validator sets.
-                    // Add the block to the light store with `unverified` status.
-                    // This will engage bisection in an attempt to raise the height of the highest
-                    // trusted state until there is enough overlap.
-                    state.light_store.update(&current_block, Status::Unverified);
+                        bail!(ErrorKind::InvalidLightBlock(e))
+                    }
+                    Verdict::NotEnoughTrust(_) => {
+                        // The current block cannot be trusted because of missing overlap in the validator sets.
+                        // Add the block to the light store with `unverified` status.
+                        // This will engage bisection in an attempt to raise the height of the highest
+                        // trusted state until there is enough overlap.
+                        state.light_store.update(&current_block, Status::Unverified);
+                    }
                 }
             }
 
@@ -237,31 +239,25 @@ impl LightClient {
     ///
     /// ## Postcondition
     /// - The provider of block that is returned matches the given peer.
-    #[post(ret.as_ref().map(|lb| lb.provider == self.peer).unwrap_or(true))]
+    #[post(ret.as_ref().map(|(lb, _)| lb.provider == self.peer).unwrap_or(true))]
     pub fn get_or_fetch_block(
         &self,
-        current_height: Height,
+        height: Height,
         state: &mut State,
-    ) -> Result<LightBlock, Error> {
-        let current_block = state
-            .light_store
-            .get(current_height, Status::Trusted)
-            .or_else(|| state.light_store.get(current_height, Status::Verified))
-            .or_else(|| state.light_store.get(current_height, Status::Unverified));
+    ) -> Result<(LightBlock, Status), Error> {
+        let block = state.light_store.get_any(height);
 
-        if let Some(current_block) = current_block {
-            return Ok(current_block);
+        if let Some(block) = block {
+            return Ok(block);
         }
 
-        let current_block = self
+        let block = self
             .io
-            .fetch_light_block(self.peer, AtHeight::At(current_height))
+            .fetch_light_block(self.peer, AtHeight::At(height))
             .map_err(ErrorKind::Io)?;
 
-        state
-            .light_store
-            .insert(current_block.clone(), Status::Unverified);
+        state.light_store.insert(block.clone(), Status::Unverified);
 
-        Ok(current_block)
+        Ok((block, Status::Unverified))
     }
 }

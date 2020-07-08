@@ -38,6 +38,22 @@ pub trait LightStore: std::fmt::Debug + Send {
     /// Get an iterator of all light blocks with the given status.
     fn all(&self, status: Status) -> Box<dyn Iterator<Item = LightBlock>>;
 
+    /// Get a block at a given hieht whatever its verification status
+    fn get_any(&self, height: Height) -> Option<(LightBlock, Status)> {
+        None.or_else(|| {
+            self.get(height, Status::Trusted)
+                .map(|lb| (lb, Status::Trusted))
+        })
+        .or_else(|| {
+            self.get(height, Status::Verified)
+                .map(|lb| (lb, Status::Verified))
+        })
+        .or_else(|| {
+            self.get(height, Status::Unverified)
+                .map(|lb| (lb, Status::Unverified))
+        })
+    }
+
     /// Get the light block of greatest height with the trusted or verified status.
     fn latest_trusted_or_verified(&self) -> Option<LightBlock> {
         let latest_trusted = self.latest(Status::Trusted);
