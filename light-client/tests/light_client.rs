@@ -49,10 +49,9 @@ fn verify_single(
         trust_threshold,
         trusting_period,
         clock_drift,
-        now: now.into(),
     };
 
-    let result = verifier.verify(&input, &trusted_state, &options);
+    let result = verifier.verify(&input, &trusted_state, &options, now.into());
 
     match result {
         Verdict::Success => Ok(input),
@@ -143,7 +142,6 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
         trust_threshold,
         trusting_period: trusting_period.into(),
         clock_drift,
-        now,
     };
 
     let provider = tc.primary;

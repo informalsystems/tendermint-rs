@@ -21,7 +21,7 @@ use tendermint_light_client::{
     state::State,
     store::{memory::MemoryStore, LightStore},
     supervisor::{Handle, Instance, Supervisor},
-    types::{PeerId, Status, Time, TrustThreshold},
+    types::{PeerId, Status, TrustThreshold},
 };
 
 use tendermint::abci::transaction::Hash as TransactionHash;
@@ -84,7 +84,6 @@ fn sync() {
         },
         trusting_period: Duration::from_secs(60 * 60), // 60 minutes
         clock_drift: Duration::from_secs(5 * 60),      // 5 minutes
-        now: Time::now(),
     };
 
     let primary_instance = make_instance(primary, options, io.clone());
