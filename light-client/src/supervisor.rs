@@ -221,7 +221,6 @@ impl Supervisor {
             // Verification failed
             Err(err) => {
                 // TODO: Log/record error
-                println!("verification failed: {}", err);
 
                 // Swap primary, and continue with new primary, if there is any witness left.
                 self.peers.replace_faulty_primary()?;
@@ -232,7 +231,6 @@ impl Supervisor {
 
     fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
         let mut forked = Vec::with_capacity(forks.len());
-        dbg!(&forks);
 
         for fork in forks {
             match fork {
