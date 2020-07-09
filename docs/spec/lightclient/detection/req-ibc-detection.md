@@ -84,7 +84,7 @@ type queryChainConsensusState = (height: uint64) => ConsensusState
   feed the handler precisely the information the handler needs to detect a
   fork. 
   What is this
-  information is needs to be specified.
+  information needs to be specified.
   
 - The information depends on the verification the handler does. It
   might be necessary to provide a bisection proof (list of
