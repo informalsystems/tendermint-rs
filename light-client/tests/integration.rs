@@ -71,6 +71,11 @@ fn sync() {
 
     let node_address: tendermint::net::Address = "tcp://127.0.0.1:26657".parse().unwrap();
 
+    // Because our CI infrastructure can only spawn a single Tendermint node at the moment,
+    // we run this test against this very node as both the primary and witness.
+    // In a production environment, one should make sure that the primary and witness are
+    // different nodes, and check that the configured peer IDs match the ones returned
+    // by the nodes.
     let mut peer_map = HashMap::new();
     peer_map.insert(primary, node_address.clone());
     peer_map.insert(witness, node_address);
