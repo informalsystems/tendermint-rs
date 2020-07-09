@@ -90,6 +90,7 @@ impl Runnable for StartCmd {
 
             std::thread::spawn(|| supervisor.run());
             let laddr = app_config().rpc_config.listen_addr;
+            // TODO: figure out howto handle the potenial error on run
             std::thread::spawn(move || rpc::run(server, &laddr.to_string()));
 
             loop {
