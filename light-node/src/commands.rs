@@ -13,12 +13,12 @@ mod start;
 mod version;
 
 use self::{start::StartCmd, version::VersionCmd};
+use crate::commands::initialize::InitCmd;
 use crate::config::LightNodeConfig;
 use abscissa_core::{
     config::Override, Command, Configurable, FrameworkError, Help, Options, Runnable,
 };
 use std::path::PathBuf;
-use crate::commands::initialize::InitCmd;
 
 /// LightNode Configuration Filename
 pub const CONFIG_FILE: &str = "light_node.toml";
@@ -31,7 +31,9 @@ pub enum LightNodeCmd {
     Help(Help<Self>),
 
     /// `intialize` the light node
-    #[options(help = "subjectively initialize the light client with given subjective height and validator set hash")]
+    #[options(
+        help = "subjectively initialize the light client with given subjective height and validator set hash"
+    )]
     Initialize(InitCmd),
 
     /// `start` the light node

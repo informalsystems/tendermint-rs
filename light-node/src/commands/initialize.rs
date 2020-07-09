@@ -1,20 +1,20 @@
 //! `intialize` subcommand
 
-use abscissa_core::{Command, Options, Runnable};
 use crate::application::app_config;
+use abscissa_core::{Command, Options, Runnable};
 
 /// `intialize` subcommand
 #[derive(Command, Debug, Default, Options)]
 pub struct InitCmd {
     #[options(
         free,
-        help = "subjective height of the initial trusted state to initialize the node with",
+        help = "subjective height of the initial trusted state to initialize the node with"
     )]
     pub height: u64,
 
     #[options(
         free,
-        help = "subjective hash of the initial validator set to initialize the node with",
+        help = "subjective hash of the initial validator set to initialize the node with"
     )]
     pub validators_hash: String,
 }
