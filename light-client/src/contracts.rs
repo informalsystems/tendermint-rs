@@ -12,6 +12,7 @@ pub fn trusted_store_contains_block_at_target_height(
     target_height: Height,
 ) -> bool {
     light_store.get(target_height, Status::Verified).is_some()
+        || light_store.get(target_height, Status::Trusted).is_some()
 }
 
 pub fn is_within_trust_period(
