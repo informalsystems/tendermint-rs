@@ -83,7 +83,7 @@ type queryChainConsensusState = (height: uint64) => ConsensusState
 - The relayer can read the handler's consensus state. Thus the relayer can
   feed the handler precisely the information the handler needs to detect a
   fork. 
-  What this
+  What is this
   information is needs to be specified.
   
 - The information depends on the verification the handler does. It
