@@ -6,11 +6,12 @@ use tendermint_light_client::{
     },
     fork_detector::ProdForkDetector,
     light_client::{self, LightClient},
+    operations::hasher::ProdHasher,
     peer_list::PeerList,
     state::State,
     store::LightStore,
     supervisor::{Handle, Instance, Supervisor},
-    types::{LightBlock, PeerId, Status, Time},
+    types::{LightBlock, PeerId, Status, TMLightBlock, Time},
 };
 
 use std::collections::HashMap;
@@ -32,7 +33,7 @@ fn read_json_fixture(file: impl AsRef<Path>) -> String {
     fs::read_to_string(file).unwrap()
 }
 
-fn load_multi_peer_testcases(dir: &str) -> Vec<TestBisection<LightBlock>> {
+fn load_multi_peer_testcases(dir: &str) -> Vec<TestBisection<TMLightBlock>> {
     let paths = fs::read_dir(PathBuf::from(TEST_FILES_PATH).join(dir)).unwrap();
 
     paths
@@ -40,10 +41,15 @@ fn load_multi_peer_testcases(dir: &str) -> Vec<TestBisection<LightBlock>> {
         .map(|entry| read_json_fixture(entry.path()))
         .map(|contents| serde_json::from_str::<TestBisection<AnonLightBlock>>(&contents).unwrap())
         .map(|testcase| testcase.into())
-        .collect::<Vec<TestBisection<LightBlock>>>()
+        .collect::<Vec<TestBisection<TMLightBlock>>>()
 }
 
-fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance {
+fn make_instance(
+    peer_id: PeerId,
+    trust_options: TrustOptions,
+    io: MockIo,
+    now: Time,
+) -> Instance<TMLightBlock> {
     let trusted_height = trust_options.height.value();
     let trusted_state = io
         .fetch_light_block(peer_id, AtHeight::At(trusted_height))
@@ -72,7 +78,7 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
     Instance::new(light_client, state)
 }
 
-fn run_multipeer_test(tc: TestBisection<LightBlock>) {
+fn run_multipeer_test(tc: TestBisection<TMLightBlock>) {
     let primary = tc.primary.lite_blocks[0].provider;
 
     println!(
@@ -101,6 +107,7 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
 
     let mut supervisor = Supervisor::new(
         peer_list.build(),
+        ProdHasher::default(),
         ProdForkDetector::default(),
         MockEvidenceReporter::new(),
     );

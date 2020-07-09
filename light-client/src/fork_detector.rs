@@ -8,42 +8,39 @@ use crate::{
     state::State,
     store::memory::MemoryStore,
     supervisor::Instance,
-    types::{LightBlock, PeerId, Status},
+    types::{LightBlock, PeerId, Status, TMLightBlock},
 };
 
 /// Result of fork detection
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum ForkDetection {
+pub enum ForkDetection<LB> {
     /// One or more forks have been detected
-    Detected(Vec<Fork>),
+    Detected(Vec<Fork<LB>>),
     /// No fork has been detected
     NotDetected,
 }
 
 /// Types of fork
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum Fork {
+pub enum Fork<LB> {
     /// An actual fork was found for this `LightBlock`
-    Forked {
-        primary: LightBlock,
-        witness: LightBlock,
-    },
+    Forked { primary: LB, witness: LB },
     /// The node has been deemed faulty for this `LightBlock`
-    Faulty(LightBlock, ErrorKind),
+    Faulty(LB, ErrorKind),
     /// The node has timed out
     Timeout(PeerId, ErrorKind),
 }
 
 /// Interface for a fork detector
-pub trait ForkDetector: Send {
+pub trait ForkDetector<LB: LightBlock>: Send {
     /// Detect forks using the given verified block, trusted block,
     /// and list of witnesses to verify the given light block against.
     fn detect_forks(
         &self,
-        verified_block: &LightBlock,
-        trusted_block: &LightBlock,
-        witnesses: Vec<&Instance>,
-    ) -> Result<ForkDetection, Error>;
+        verified_block: &LB,
+        trusted_block: &LB,
+        witnesses: Vec<&Instance<LB>>,
+    ) -> Result<ForkDetection<LB>, Error>;
 }
 
 /// A production-ready fork detector which compares
@@ -56,47 +53,54 @@ pub trait ForkDetector: Send {
 /// - If the verification succeeds, we have a real fork
 /// - If verification fails because of lack of trust, we have a potential fork.
 /// - If verification fails for any other reason, the witness is deemed faulty.
-pub struct ProdForkDetector {
-    hasher: Box<dyn Hasher>,
+pub struct ProdForkDetector<LB>
+where
+    LB: LightBlock,
+{
+    hasher: Box<dyn Hasher<LB>>,
 }
 
-impl ProdForkDetector {
+impl<LB> ProdForkDetector<LB>
+where
+    LB: LightBlock,
+{
     /// Construct a new fork detector that will use the given header hasher.
-    pub fn new(hasher: impl Hasher + 'static) -> Self {
+    pub fn new(hasher: impl Hasher<LB> + 'static) -> Self {
         Self {
             hasher: Box::new(hasher),
         }
     }
 }
 
-impl Default for ProdForkDetector {
+impl Default for ProdForkDetector<TMLightBlock> {
     fn default() -> Self {
-        Self::new(ProdHasher)
+        Self::new(ProdHasher::default())
     }
 }
 
-impl ForkDetector for ProdForkDetector {
+impl<LB> ForkDetector<LB> for ProdForkDetector<LB>
+where
+    LB: LightBlock,
+{
     /// Perform fork detection. See the documentation `ProdForkDetector` for details.
     fn detect_forks(
         &self,
-        verified_block: &LightBlock,
-        trusted_block: &LightBlock,
-        witnesses: Vec<&Instance>,
-    ) -> Result<ForkDetection, Error> {
-        let primary_hash = self
-            .hasher
-            .hash_header(&verified_block.signed_header.header);
+        verified_block: &LB,
+        trusted_block: &LB,
+        witnesses: Vec<&Instance<LB>>,
+    ) -> Result<ForkDetection<LB>, Error> {
+        let primary_hash = self.hasher.hash_header(&verified_block.header());
 
         let mut forks = Vec::with_capacity(witnesses.len());
 
         for witness in witnesses {
-            let mut state = State::new(MemoryStore::new());
+            let mut state: State<LB> = State::new(MemoryStore::new());
 
             let (witness_block, _) = witness
                 .light_client
                 .get_or_fetch_block(verified_block.height(), &mut state)?;
 
-            let witness_hash = self.hasher.hash_header(&witness_block.signed_header.header);
+            let witness_hash = self.hasher.hash_header(&witness_block.header());
 
             if primary_hash == witness_hash {
                 // Hashes match, continue with next witness, if any.
@@ -127,7 +131,7 @@ impl ForkDetector for ProdForkDetector {
                     });
                 }
                 Err(e) if e.kind().is_timeout() => {
-                    forks.push(Fork::Timeout(witness_block.provider, e.kind().clone()))
+                    forks.push(Fork::Timeout(witness_block.provider(), e.kind().clone()))
                 }
                 Err(e) => forks.push(Fork::Faulty(witness_block, e.kind().clone())),
             }

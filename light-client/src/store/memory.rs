@@ -8,13 +8,13 @@ use std::collections::BTreeMap;
 
 /// Internal entry for the memory store
 #[derive(Clone, Debug, PartialEq)]
-struct StoreEntry {
-    light_block: LightBlock,
+struct StoreEntry<LB> {
+    light_block: LB,
     status: Status,
 }
 
-impl StoreEntry {
-    fn new(light_block: LightBlock, status: Status) -> Self {
+impl<LB> StoreEntry<LB> {
+    fn new(light_block: LB, status: Status) -> Self {
         Self {
             light_block,
             status,
@@ -24,11 +24,11 @@ impl StoreEntry {
 
 /// Transient in-memory store.
 #[derive(Debug, Clone, Default)]
-pub struct MemoryStore {
-    store: BTreeMap<Height, StoreEntry>,
+pub struct MemoryStore<LB> {
+    store: BTreeMap<Height, StoreEntry<LB>>,
 }
 
-impl MemoryStore {
+impl<LB> MemoryStore<LB> {
     pub fn new() -> Self {
         Self {
             store: BTreeMap::new(),
@@ -36,8 +36,11 @@ impl MemoryStore {
     }
 }
 
-impl LightStore for MemoryStore {
-    fn get(&self, height: Height, status: Status) -> Option<LightBlock> {
+impl<LB> LightStore<LB> for MemoryStore<LB>
+where
+    LB: LightBlock,
+{
+    fn get(&self, height: Height, status: Status) -> Option<LB> {
         self.store
             .get(&height)
             .filter(|e| e.status == status)
@@ -45,7 +48,7 @@ impl LightStore for MemoryStore {
             .map(|e| e.light_block)
     }
 
-    fn insert(&mut self, light_block: LightBlock, status: Status) {
+    fn insert(&mut self, light_block: LB, status: Status) {
         self.store
             .insert(light_block.height(), StoreEntry::new(light_block, status));
     }
@@ -58,11 +61,11 @@ impl LightStore for MemoryStore {
         }
     }
 
-    fn update(&mut self, light_block: &LightBlock, status: Status) {
+    fn update(&mut self, light_block: &LB, status: Status) {
         self.insert(light_block.clone(), status);
     }
 
-    fn latest(&self, status: Status) -> Option<LightBlock> {
+    fn latest(&self, status: Status) -> Option<LB> {
         self.store
             .iter()
             .filter(|(_, e)| e.status == status)
@@ -70,7 +73,7 @@ impl LightStore for MemoryStore {
             .map(|(_, e)| e.light_block.clone())
     }
 
-    fn all(&self, status: Status) -> Box<dyn Iterator<Item = LightBlock>> {
+    fn all(&self, status: Status) -> Box<dyn Iterator<Item = LB>> {
         let light_blocks: Vec<_> = self
             .store
             .iter()

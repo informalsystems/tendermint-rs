@@ -1,47 +1,59 @@
+use std::marker::PhantomData;
+
 use crate::{
     bail,
     predicates::errors::VerificationError,
-    types::{SignedHeader, ValidatorSet},
+    types::{LightBlock, TMCommit, TMLightBlock, TMValidatorSet},
 };
 
 use tendermint::block::CommitSig;
 use tendermint::lite::types::ValidatorSet as _;
 
-pub trait CommitValidator: Send {
+pub trait CommitValidator<LB: LightBlock>: Send {
     fn validate(
         &self,
-        signed_header: &SignedHeader,
-        validators: &ValidatorSet,
+        commit: &LB::Commit,
+        validators: &LB::ValidatorSet,
     ) -> Result<(), VerificationError>;
 
     fn validate_full(
         &self,
-        signed_header: &SignedHeader,
-        validator_set: &ValidatorSet,
+        commit: &LB::Commit,
+        validators: &LB::ValidatorSet,
     ) -> Result<(), VerificationError>;
 }
 
 #[derive(Copy, Clone)]
-pub struct ProdCommitValidator;
+pub struct ProdCommitValidator<LB> {
+    marker: PhantomData<LB>,
+}
 
-impl CommitValidator for ProdCommitValidator {
+impl<LB> Default for ProdCommitValidator<LB> {
+    fn default() -> Self {
+        Self {
+            marker: PhantomData,
+        }
+    }
+}
+
+impl CommitValidator<TMLightBlock> for ProdCommitValidator<TMLightBlock> {
     fn validate(
         &self,
-        signed_header: &SignedHeader,
-        validator_set: &ValidatorSet,
+        commit: &TMCommit,
+        validator_set: &TMValidatorSet,
     ) -> Result<(), VerificationError> {
         // TODO: `self.commit.block_id` cannot be zero in the same way as in Go
         //       Clarify if this another encoding related issue
-        if signed_header.commit.signatures.len() == 0 {
+        if commit.signatures.len() == 0 {
             bail!(VerificationError::ImplementationSpecific(
                 "no signatures for commit".to_string()
             ));
         }
 
-        if signed_header.commit.signatures.len() != validator_set.validators().len() {
+        if commit.signatures.len() != validator_set.validators().len() {
             bail!(VerificationError::ImplementationSpecific(format!(
                 "pre-commit length: {} doesn't match validator length: {}",
-                signed_header.commit.signatures.len(),
+                commit.signatures.len(),
                 validator_set.validators().len()
             )));
         }
@@ -57,10 +69,10 @@ impl CommitValidator for ProdCommitValidator {
     // that is not present in the validator set
     fn validate_full(
         &self,
-        signed_header: &SignedHeader,
-        validator_set: &ValidatorSet,
+        commit: &TMCommit,
+        validator_set: &TMValidatorSet,
     ) -> Result<(), VerificationError> {
-        for commit_sig in signed_header.commit.signatures.iter() {
+        for commit_sig in commit.signatures.iter() {
             let validator_address = match commit_sig {
                 CommitSig::BlockIDFlagAbsent => continue,
                 CommitSig::BlockIDFlagCommit {

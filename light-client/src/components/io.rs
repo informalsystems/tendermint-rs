@@ -13,7 +13,7 @@ use tendermint_rpc as rpc;
 
 use crate::{
     bail,
-    types::{Height, LightBlock, PeerId},
+    types::{Height, LightBlock, PeerId, TMLightBlock},
 };
 
 pub enum AtHeight {
@@ -55,21 +55,24 @@ impl IoError {
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
 #[contract_trait]
-pub trait Io: Send {
+pub trait Io<LB>: Send
+where
+    LB: LightBlock,
+{
     /// Fetch a light block at the given height from the peer with the given peer ID.
     ///
     /// ## Postcondition
     /// - The provider of the returned light block matches the given peer [LCV-IO-POST-PROVIDER]
-    #[post(ret.as_ref().map(|lb| lb.provider == peer).unwrap_or(true))]
-    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError>;
+    #[post(ret.as_ref().map(|lb| lb.provider() == peer).unwrap_or(true))]
+    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LB, IoError>;
 }
 
 #[contract_trait]
-impl<F: Send> Io for F
+impl<F: Send, LB: LightBlock> Io<LB> for F
 where
-    F: Fn(PeerId, AtHeight) -> Result<LightBlock, IoError>,
+    F: Fn(PeerId, AtHeight) -> Result<LB, IoError>,
 {
-    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
+    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LB, IoError> {
         self(peer, height)
     }
 }
@@ -83,15 +86,15 @@ pub struct ProdIo {
 }
 
 #[contract_trait]
-impl Io for ProdIo {
-    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
+impl Io<TMLightBlock> for ProdIo {
+    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<TMLightBlock, IoError> {
         let signed_header = self.fetch_signed_header(peer, height)?;
         let height: Height = signed_header.header.height.into();
 
         let validator_set = self.fetch_validator_set(peer, height.into())?;
         let next_validator_set = self.fetch_validator_set(peer, (height + 1).into())?;
 
-        let light_block = LightBlock::new(signed_header, validator_set, next_validator_set, peer);
+        let light_block = TMLightBlock::new(signed_header, validator_set, next_validator_set, peer);
 
         Ok(light_block)
     }

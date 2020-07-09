@@ -29,12 +29,14 @@ use tendermint_light_client::evidence::ProdEvidenceReporter;
 use tendermint_light_client::fork_detector::ProdForkDetector;
 use tendermint_light_client::light_client;
 use tendermint_light_client::light_client::LightClient;
+use tendermint_light_client::operations::hasher::ProdHasher;
 use tendermint_light_client::peer_list::{PeerList, PeerListBuilder};
 use tendermint_light_client::state::State;
 use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
 use tendermint_light_client::supervisor::Handle;
 use tendermint_light_client::supervisor::{Instance, Supervisor};
+use tendermint_light_client::types::{LightBlock, TMLightBlock};
 
 /// `start` subcommand
 #[derive(Command, Debug, Options)]
@@ -123,7 +125,7 @@ impl StartCmd {
         light_config: &LightClientConfig,
         io: ProdIo,
         options: light_client::Options,
-    ) -> Instance {
+    ) -> Instance<TMLightBlock> {
         let peer_id = light_config.peer_id;
         let db_path = light_config.db_path.clone();
 
@@ -150,7 +152,7 @@ impl StartCmd {
 
     fn start_rpc_server<H>(h: H)
     where
-        H: Handle + Send + Sync + 'static,
+        H: Handle<TMLightBlock> + Send + Sync + 'static,
     {
         let server = Server::new(h);
         let laddr = app_config().rpc_config.listen_addr;
@@ -161,7 +163,7 @@ impl StartCmd {
 }
 
 impl StartCmd {
-    fn construct_supervisor(&self) -> Supervisor {
+    fn construct_supervisor(&self) -> Supervisor<TMLightBlock> {
         // TODO(ismail): we need to verify the addr <-> peerId mappings somewhere!
         let mut peer_map = HashMap::new();
         for light_conf in &app_config().light_clients {
@@ -174,7 +176,7 @@ impl StartCmd {
         let conf = app_config().deref().clone();
         let options: light_client::Options = conf.into();
 
-        let mut peer_list: PeerListBuilder<Instance> = PeerList::builder();
+        let mut peer_list: PeerListBuilder<Instance<TMLightBlock>> = PeerList::builder();
         for (i, light_conf) in app_config().light_clients.iter().enumerate() {
             let instance = self.make_instance(light_conf, io.clone(), options);
             if i == 0 {
@@ -188,6 +190,7 @@ impl StartCmd {
 
         Supervisor::new(
             peer_list,
+            ProdHasher::default(),
             ProdForkDetector::default(),
             ProdEvidenceReporter::new(peer_map),
         )

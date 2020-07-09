@@ -1,20 +1,34 @@
 //! Fork evidence data structures and interfaces.
 
-use crate::{components::io::IoError, types::PeerId};
+use crate::{
+    components::io::IoError,
+    types::{LightBlock, PeerId, TMLightBlock, TMSignedHeader},
+};
 
 use tendermint::abci::transaction::Hash;
+
 use tendermint_rpc as rpc;
 
 use contracts::{contract_trait, pre};
 use std::collections::HashMap;
 
+pub use tendermint::evidence::ConflictingHeadersEvidence;
 pub use tendermint::evidence::Evidence;
 
 /// Interface for reporting evidence to full nodes, typically via the RPC client.
 #[contract_trait]
-pub trait EvidenceReporter: Send {
+pub trait EvidenceReporter<LB>: Send
+where
+    LB: LightBlock,
+{
     /// Report evidence to all connected full nodes.
-    fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError>;
+    fn report(&self, e: LB::Evidence, peer: PeerId) -> Result<Hash, IoError>;
+
+    fn build_conflicting_headers_evidence(
+        &self,
+        sh1: LB::SignedHeader,
+        sh2: LB::SignedHeader,
+    ) -> LB::Evidence;
 }
 
 /// Production implementation of the EvidenceReporter component, which reports evidence to full
@@ -25,7 +39,7 @@ pub struct ProdEvidenceReporter {
 }
 
 #[contract_trait]
-impl EvidenceReporter for ProdEvidenceReporter {
+impl EvidenceReporter<TMLightBlock> for ProdEvidenceReporter {
     #[pre(self.peer_map.contains_key(&peer))]
     fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
         let res = block_on(self.rpc_client_for(peer).broadcast_evidence(e));
@@ -34,6 +48,14 @@ impl EvidenceReporter for ProdEvidenceReporter {
             Ok(response) => Ok(response.hash),
             Err(err) => Err(IoError::IoError(err)),
         }
+    }
+
+    fn build_conflicting_headers_evidence(
+        &self,
+        sh1: TMSignedHeader,
+        sh2: TMSignedHeader,
+    ) -> Evidence {
+        Evidence::ConflictingHeaders(Box::new(ConflictingHeadersEvidence::new(sh1, sh2)))
     }
 }
 

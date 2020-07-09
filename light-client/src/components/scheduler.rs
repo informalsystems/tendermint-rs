@@ -1,14 +1,17 @@
 use contracts::*;
 
 use crate::store::LightStore;
-use crate::types::Height;
+use crate::types::{Height, LightBlock};
 
 /// The scheduler decides what block to verify next given the current and target heights.
 ///
 /// The scheduler is given access to the light store, in order to optionally
 /// improve performance by picking a next block that has already been fetched.
 #[contract_trait]
-pub trait Scheduler: Send {
+pub trait Scheduler<LB>: Send
+where
+    LB: LightBlock,
+{
     /// Decides what block to verify next.
     ///
     /// ## Precondition
@@ -20,20 +23,21 @@ pub trait Scheduler: Send {
     #[post(valid_schedule(ret, target_height, current_height, light_store))]
     fn schedule(
         &self,
-        light_store: &dyn LightStore,
+        light_store: &dyn LightStore<LB>,
         current_height: Height,
         target_height: Height,
     ) -> Height;
 }
 
 #[contract_trait]
-impl<F: Send + Clone> Scheduler for F
+impl<F: Send + Clone, LB> Scheduler<LB> for F
 where
-    F: Fn(&dyn LightStore, Height, Height) -> Height,
+    LB: LightBlock,
+    F: Fn(&dyn LightStore<LB>, Height, Height) -> Height,
 {
     fn schedule(
         &self,
-        light_store: &dyn LightStore,
+        light_store: &dyn LightStore<LB>,
         current_height: Height,
         target_height: Height,
     ) -> Height {
@@ -51,11 +55,14 @@ where
 /// - The resulting height must be valid according to `valid_schedule`. [LCV-SCHEDULE-POST.1]
 #[pre(light_store.latest_trusted_or_verified().is_some())]
 #[post(valid_schedule(ret, target_height, current_height, light_store))]
-pub fn basic_bisecting_schedule(
-    light_store: &dyn LightStore,
+pub fn basic_bisecting_schedule<LB>(
+    light_store: &dyn LightStore<LB>,
     current_height: Height,
     target_height: Height,
-) -> Height {
+) -> Height
+where
+    LB: LightBlock,
+{
     let trusted_height = light_store
         .latest_trusted_or_verified()
         .map(|lb| lb.height())
@@ -94,12 +101,15 @@ pub fn basic_bisecting_schedule(
 ///
 /// ## Implements
 /// - [LCV-SCHEDULE-POST.1]
-pub fn valid_schedule(
+pub fn valid_schedule<LB>(
     scheduled_height: Height,
     target_height: Height,
     current_height: Height,
-    light_store: &dyn LightStore,
-) -> bool {
+    light_store: &dyn LightStore<LB>,
+) -> bool
+where
+    LB: LightBlock,
+{
     let latest_trusted_height = light_store
         .latest_trusted_or_verified()
         .map(|lb| lb.height())

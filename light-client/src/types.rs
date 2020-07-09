@@ -1,17 +1,12 @@
 //! Defines or just re-exports the main datatypes used by the light client.
 
+use std::fmt::Debug;
+
 use derive_more::Display;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use tendermint::{
-    account::Id as TMAccountId,
-    block::{
-        header::Header as TMHeader, signed_header::SignedHeader as TMSignedHeader,
-        Commit as TMCommit,
-    },
-    lite::TrustThresholdFraction,
-    validator::Info as TMValidatorInfo,
-    validator::Set as TMValidatorSet,
+    account::Id as TMAccountId, evidence::Evidence as TMEvidence, lite::TrustThresholdFraction,
 };
 
 pub use tendermint::{hash::Hash, lite::Height, time::Time};
@@ -27,26 +22,23 @@ pub type TrustThreshold = TrustThresholdFraction;
 /// A header contains metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
 /// previous block, and the results returned by the application.
-pub type Header = TMHeader;
+pub type TMHeader = tendermint::block::Header;
 
 /// Set of validators
-pub type ValidatorSet = TMValidatorSet;
+pub type TMValidatorSet = tendermint::validator::Set;
 
 /// Info about a single validator
-pub type Validator = TMValidatorInfo;
+pub type TMValidatorInfo = tendermint::validator::Info;
 
 /// Validator address
-pub type ValidatorAddress = TMAccountId;
+pub type TMValidatorAddress = TMAccountId;
 
 /// A commit contains the justification (ie. a set of signatures)
 /// that a block was consensus, as committed by a set previous block of validators.
-pub type Commit = TMCommit;
+pub type TMCommit = tendermint::block::Commit;
 
 /// A signed header contains both a `Header` and its corresponding `Commit`.
-pub type SignedHeader = TMSignedHeader;
-
-/// A type alias for a `LightBlock`.
-pub type TrustedState = LightBlock;
+pub type TMSignedHeader = tendermint::block::signed_header::SignedHeader;
 
 /// Verification status of a light block.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -74,45 +66,114 @@ impl Status {
     }
 }
 
+pub trait Commit {
+    fn block_hash(&self) -> Hash;
+}
+
+pub trait LightBlock: Send + Sync + Clone + Debug + Serialize + DeserializeOwned + 'static {
+    type Header;
+    type Commit: Commit;
+    type SignedHeader: Clone;
+    type ValidatorSet;
+    type Evidence;
+
+    fn height(&self) -> Height;
+    fn signed_header(&self) -> &Self::SignedHeader;
+    fn header(&self) -> &Self::Header;
+    fn commit(&self) -> &Self::Commit;
+    fn validators(&self) -> &Self::ValidatorSet;
+    fn next_validators(&self) -> &Self::ValidatorSet;
+    fn header_time(&self) -> Time;
+    fn validators_hash(&self) -> Hash;
+    fn next_validators_hash(&self) -> Hash;
+    fn provider(&self) -> PeerId;
+}
+
+impl Commit for TMCommit {
+    fn block_hash(&self) -> Hash {
+        self.block_id.hash
+    }
+}
+
+impl LightBlock for TMLightBlock {
+    type Header = TMHeader;
+    type Commit = TMCommit;
+    type SignedHeader = TMSignedHeader;
+    type ValidatorSet = TMValidatorSet;
+    type Evidence = TMEvidence;
+
+    fn height(&self) -> Height {
+        self.signed_header.header.height.into()
+    }
+
+    fn signed_header(&self) -> &Self::SignedHeader {
+        &self.signed_header
+    }
+
+    fn header(&self) -> &Self::Header {
+        &self.signed_header.header
+    }
+
+    fn commit(&self) -> &Self::Commit {
+        &self.signed_header.commit
+    }
+
+    fn validators(&self) -> &Self::ValidatorSet {
+        &self.validators
+    }
+
+    fn next_validators(&self) -> &Self::ValidatorSet {
+        &self.next_validators
+    }
+
+    fn header_time(&self) -> Time {
+        self.header().time
+    }
+
+    fn validators_hash(&self) -> Hash {
+        self.signed_header.header.validators_hash
+    }
+
+    fn next_validators_hash(&self) -> Hash {
+        self.signed_header.header.next_validators_hash
+    }
+
+    fn provider(&self) -> PeerId {
+        self.provider
+    }
+}
+
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
 #[derive(Clone, Debug, Display, PartialEq, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
-pub struct LightBlock {
+pub struct TMLightBlock {
     /// Header and commit of this block
-    pub signed_header: SignedHeader,
+    pub signed_header: TMSignedHeader,
     /// Validator set at the block height
     #[serde(rename = "validator_set")]
-    pub validators: ValidatorSet,
+    pub validators: TMValidatorSet,
     /// Validator set at the next block height
     #[serde(rename = "next_validator_set")]
-    pub next_validators: ValidatorSet,
+    pub next_validators: TMValidatorSet,
     /// The peer ID of the node that provided this block
     pub provider: PeerId,
 }
 
-impl LightBlock {
+impl TMLightBlock {
     /// Constructs a new light block
     pub fn new(
-        signed_header: SignedHeader,
-        validators: ValidatorSet,
-        next_validators: ValidatorSet,
+        signed_header: TMSignedHeader,
+        validators: TMValidatorSet,
+        next_validators: TMValidatorSet,
         provider: PeerId,
-    ) -> LightBlock {
+    ) -> Self {
         Self {
             signed_header,
             validators,
             next_validators,
             provider,
         }
-    }
-
-    /// Returns the height of this block.
-    ///
-    /// ## Note
-    /// This is a shorthand for `block.signed_header.header.height.into()`.
-    pub fn height(&self) -> Height {
-        self.signed_header.header.height.into()
     }
 }
 

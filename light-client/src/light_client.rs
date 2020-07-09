@@ -48,16 +48,22 @@ pub struct Options {
 /// of the header, more than two-thirds of the next validators of a new block are
 /// correct for the duration of the trusted period.  The fault-tolerant read operation
 /// is designed for this security model.
-pub struct LightClient {
+pub struct LightClient<LB>
+where
+    LB: LightBlock,
+{
     pub peer: PeerId,
     pub options: Options,
     clock: Box<dyn Clock>,
-    scheduler: Box<dyn Scheduler>,
-    verifier: Box<dyn Verifier>,
-    io: Box<dyn Io>,
+    scheduler: Box<dyn Scheduler<LB>>,
+    verifier: Box<dyn Verifier<LB>>,
+    io: Box<dyn Io<LB>>,
 }
 
-impl fmt::Debug for LightClient {
+impl<LB> fmt::Debug for LightClient<LB>
+where
+    LB: LightBlock,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("LightClient")
             .field("peer", &self.peer)
@@ -66,15 +72,18 @@ impl fmt::Debug for LightClient {
     }
 }
 
-impl LightClient {
+impl<LB> LightClient<LB>
+where
+    LB: LightBlock,
+{
     /// Constructs a new light client
     pub fn new(
         peer: PeerId,
         options: Options,
         clock: impl Clock + 'static,
-        scheduler: impl Scheduler + 'static,
-        verifier: impl Verifier + 'static,
-        io: impl Io + 'static,
+        scheduler: impl Scheduler<LB> + 'static,
+        verifier: impl Verifier<LB> + 'static,
+        io: impl Io<LB> + 'static,
     ) -> Self {
         Self {
             peer,
@@ -89,7 +98,7 @@ impl LightClient {
     /// Attempt to update the light client to the highest block of the primary node.
     ///
     /// Note: This function delegates the actual work to `verify_to_target`.
-    pub fn verify_to_highest(&mut self, state: &mut State) -> Result<LightBlock, Error> {
+    pub fn verify_to_highest(&mut self, state: &mut State<LB>) -> Result<LB, Error> {
         let target_block = match self.io.fetch_light_block(self.peer, AtHeight::Highest) {
             Ok(last_block) => last_block,
             Err(io_error) => bail!(ErrorKind::Io(io_error)),
@@ -128,13 +137,6 @@ impl LightClient {
     /// - If the core verification loop invariant is violated [LCV-INV-TP.1]
     /// - If verification of a light block fails
     /// - If it cannot fetch a block from the blockchain
-    // #[pre(
-    //     light_store_contains_block_within_trusting_period(
-    //         state.light_store.as_ref(),
-    //         self.options.trusting_period,
-    //         self.clock.now(),
-    //     )
-    // )]
     #[post(
         ret.is_ok() ==> trusted_store_contains_block_at_target_height(
             state.light_store.as_ref(),
@@ -144,8 +146,8 @@ impl LightClient {
     pub fn verify_to_target(
         &self,
         target_height: Height,
-        state: &mut State,
-    ) -> Result<LightBlock, Error> {
+        state: &mut State<LB>,
+    ) -> Result<LB, Error> {
         // Let's first look in the store to see whether we have already successfully verified this
         // block.
         if let Some(light_block) = state.light_store.get_trusted_or_verified(target_height) {
@@ -173,7 +175,7 @@ impl LightClient {
             // Check invariant [LCV-INV-TP.1]
             if !is_within_trust_period(&trusted_state, self.options.trusting_period, now) {
                 bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
-                    trusted_state: Box::new(trusted_state),
+                    trusted_height: trusted_state.height(),
                     options: self.options,
                 });
             }
@@ -235,12 +237,12 @@ impl LightClient {
     ///
     /// ## Postcondition
     /// - The provider of block that is returned matches the given peer.
-    #[post(ret.as_ref().map(|(lb, _)| lb.provider == self.peer).unwrap_or(true))]
+    #[post(ret.as_ref().map(|(lb, _)| lb.provider() == self.peer).unwrap_or(true))]
     pub fn get_or_fetch_block(
         &self,
         height: Height,
-        state: &mut State,
-    ) -> Result<(LightBlock, Status), Error> {
+        state: &mut State<LB>,
+    ) -> Result<(LB, Status), Error> {
         let block = state.light_store.get_non_failed(height);
 
         if let Some(block) = block {

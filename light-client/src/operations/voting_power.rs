@@ -1,7 +1,7 @@
 use crate::{
     bail,
     predicates::errors::VerificationError,
-    types::{Commit, SignedHeader, TrustThreshold, ValidatorSet},
+    types::{LightBlock, TMCommit, TMLightBlock, TMSignedHeader, TMValidatorSet, TrustThreshold},
 };
 
 use serde::{Deserialize, Serialize};
@@ -29,20 +29,20 @@ impl fmt::Display for VotingPowerTally {
     }
 }
 
-pub trait VotingPowerCalculator: Send {
-    fn total_power_of(&self, validator_set: &ValidatorSet) -> u64 {
-        validator_set
-            .validators()
-            .iter()
-            .fold(0u64, |total, val_info| {
-                total + val_info.voting_power.value()
-            })
-    }
+pub trait VotingPowerCalculator<LB: LightBlock>: Send {
+    fn total_power_of(&self, validator_set: &LB::ValidatorSet) -> u64;
+
+    fn voting_power_in(
+        &self,
+        signed_header: &LB::SignedHeader,
+        validator_set: &LB::ValidatorSet,
+        trust_threshold: TrustThreshold,
+    ) -> Result<VotingPowerTally, VerificationError>;
 
     fn check_enough_trust(
         &self,
-        untrusted_header: &SignedHeader,
-        trusted_validators: &ValidatorSet,
+        untrusted_header: &LB::SignedHeader,
+        trusted_validators: &LB::ValidatorSet,
         trust_threshold: TrustThreshold,
     ) -> Result<(), VerificationError> {
         let voting_power =
@@ -57,8 +57,8 @@ pub trait VotingPowerCalculator: Send {
 
     fn check_signers_overlap(
         &self,
-        untrusted_header: &SignedHeader,
-        untrusted_validators: &ValidatorSet,
+        untrusted_header: &LB::SignedHeader,
+        untrusted_validators: &LB::ValidatorSet,
     ) -> Result<(), VerificationError> {
         let trust_threshold = TrustThreshold::TWO_THIRDS;
         let voting_power =
@@ -70,23 +70,25 @@ pub trait VotingPowerCalculator: Send {
             Err(VerificationError::InsufficientSignersOverlap(voting_power))
         }
     }
-
-    fn voting_power_in(
-        &self,
-        signed_header: &SignedHeader,
-        validator_set: &ValidatorSet,
-        trust_threshold: TrustThreshold,
-    ) -> Result<VotingPowerTally, VerificationError>;
 }
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct ProdVotingPowerCalculator;
 
-impl VotingPowerCalculator for ProdVotingPowerCalculator {
+impl VotingPowerCalculator<TMLightBlock> for ProdVotingPowerCalculator {
+    fn total_power_of(&self, validator_set: &TMValidatorSet) -> u64 {
+        validator_set
+            .validators()
+            .iter()
+            .fold(0u64, |total, val_info| {
+                total + val_info.voting_power.value()
+            })
+    }
+
     fn voting_power_in(
         &self,
-        signed_header: &SignedHeader,
-        validator_set: &ValidatorSet,
+        signed_header: &TMSignedHeader,
+        validator_set: &TMValidatorSet,
         trust_threshold: TrustThreshold,
     ) -> Result<VotingPowerTally, VerificationError> {
         let signatures = &signed_header.commit.signatures;
@@ -157,7 +159,11 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
     }
 }
 
-fn non_absent_vote(commit_sig: &CommitSig, validator_index: u64, commit: &Commit) -> Option<Vote> {
+fn non_absent_vote(
+    commit_sig: &CommitSig,
+    validator_index: u64,
+    commit: &TMCommit,
+) -> Option<Vote> {
     let (validator_address, timestamp, signature, block_id) = match commit_sig {
         CommitSig::BlockIDFlagAbsent { .. } => return None,
         CommitSig::BlockIDFlagCommit {
@@ -213,8 +219,8 @@ mod tests {
     struct TestCase {
         description: String,
         result: TestResult,
-        signed_header: SignedHeader,
-        validator_set: ValidatorSet,
+        signed_header: TMSignedHeader,
+        validator_set: TMValidatorSet,
     }
 
     fn read_json_fixture(file: impl AsRef<Path>) -> String {

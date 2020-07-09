@@ -13,15 +13,19 @@ pub type VerificationTrace = HashMap<Height, HashSet<Height>>;
 
 /// The state managed by the light client.
 #[derive(Debug)]
-pub struct State {
+pub struct State<LB> {
     /// Store for light blocks.
-    pub light_store: Box<dyn LightStore>,
+    pub light_store: Box<dyn LightStore<LB>>,
+
     /// Records which blocks were needed to verify a target block, eg. during bisection.
     pub verification_trace: VerificationTrace,
 }
 
-impl State {
-    pub fn new(light_store: impl LightStore + 'static) -> Self {
+impl<LB> State<LB>
+where
+    LB: LightBlock,
+{
+    pub fn new(light_store: impl LightStore<LB> + 'static) -> Self {
         Self {
             light_store: Box::new(light_store),
             verification_trace: VerificationTrace::new(),
@@ -41,7 +45,7 @@ impl State {
     }
 
     /// Get the verification trace for the block at `target_height`.
-    pub fn get_trace(&self, target_height: Height) -> Vec<LightBlock> {
+    pub fn get_trace(&self, target_height: Height) -> Vec<LB> {
         let mut trace = self
             .verification_trace
             .get(&target_height)

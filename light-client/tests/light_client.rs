@@ -17,7 +17,7 @@ use tendermint_light_client::{
     state::State,
     store::{memory::MemoryStore, LightStore},
     tests::{Trusted, *},
-    types::{Height, LightBlock, Status, TrustThreshold},
+    types::{Height, LightBlock, Status, TMLightBlock, TrustThreshold},
 };
 
 // Link to the commit that generated below JSON test files:
@@ -30,15 +30,15 @@ fn read_json_fixture(file: impl AsRef<Path>) -> String {
 
 fn verify_single(
     trusted_state: Trusted,
-    input: LightBlock,
+    input: TMLightBlock,
     trust_threshold: TrustThreshold,
     trusting_period: Duration,
     clock_drift: Duration,
     now: SystemTime,
-) -> Result<LightBlock, Verdict> {
+) -> Result<TMLightBlock, Verdict> {
     let verifier = ProdVerifier::default();
 
-    let trusted_state = LightBlock::new(
+    let trusted_state = TMLightBlock::new(
         trusted_state.signed_header,
         trusted_state.next_validators.clone(),
         trusted_state.next_validators,
@@ -59,7 +59,7 @@ fn verify_single(
     }
 }
 
-fn run_test_case(tc: TestCase<LightBlock>) {
+fn run_test_case(tc: TestCase<TMLightBlock>) {
     let mut latest_trusted = Trusted::new(
         tc.initial.signed_header.clone(),
         tc.initial.next_validator_set.clone(),
@@ -110,20 +110,20 @@ fn run_test_case(tc: TestCase<LightBlock>) {
 
 fn verify_bisection(
     untrusted_height: Height,
-    light_client: &mut LightClient,
-    state: &mut State,
-) -> Result<Vec<LightBlock>, Error> {
+    light_client: &mut LightClient<TMLightBlock>,
+    state: &mut State<TMLightBlock>,
+) -> Result<Vec<TMLightBlock>, Error> {
     light_client
         .verify_to_target(untrusted_height, state)
         .map(|_| state.get_trace(untrusted_height))
 }
 
 struct BisectionTestResult {
-    untrusted_light_block: LightBlock,
-    new_states: Result<Vec<LightBlock>, Error>,
+    untrusted_light_block: TMLightBlock,
+    new_states: Result<Vec<TMLightBlock>, Error>,
 }
 
-fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
+fn run_bisection_test(tc: TestBisection<TMLightBlock>) -> BisectionTestResult {
     println!("  - {}", tc.description);
 
     let primary = default_peer_id();
@@ -200,7 +200,7 @@ fn run_single_step_tests(dir: &str) {
     }
 }
 
-fn foreach_bisection_test(dir: &str, f: impl Fn(String, TestBisection<LightBlock>) -> ()) {
+fn foreach_bisection_test(dir: &str, f: impl Fn(String, TestBisection<TMLightBlock>) -> ()) {
     let paths = fs::read_dir(PathBuf::from(TEST_FILES_PATH).join(dir)).unwrap();
 
     for file_path in paths {
@@ -277,13 +277,13 @@ fn run_bisection_lower_tests(dir: &str) {
     });
 }
 
-fn read_test_case(file_path: &str) -> TestCase<LightBlock> {
+fn read_test_case(file_path: &str) -> TestCase<TMLightBlock> {
     let tc: TestCase<AnonLightBlock> =
         serde_json::from_str(read_json_fixture(file_path).as_str()).unwrap();
     tc.into()
 }
 
-fn read_bisection_test_case(file_path: &str) -> TestBisection<LightBlock> {
+fn read_bisection_test_case(file_path: &str) -> TestBisection<TMLightBlock> {
     let tc: TestBisection<AnonLightBlock> =
         serde_json::from_str(read_json_fixture(file_path).as_str()).unwrap();
     tc.into()

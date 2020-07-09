@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::errors::ErrorExt;
 use crate::operations::voting_power::VotingPowerTally;
-use crate::types::{Hash, Height, Time, Validator, ValidatorAddress};
+use crate::types::{Hash, Height, TMValidatorAddress, TMValidatorInfo, Time};
 
 /// The various errors which can be raised by the verifier component,
 /// when validating or verifying a light block.
@@ -30,12 +30,12 @@ pub enum VerificationError {
     //     signatures_count: usize,
     // },
     #[error("duplicate validator with address {0}")]
-    DuplicateValidator(ValidatorAddress),
+    DuplicateValidator(TMValidatorAddress),
 
     #[error("Couldn't verify signature `{signature:?}` with validator `{validator:?}` on sign_bytes `{sign_bytes:?}`")]
     InvalidSignature {
         signature: Vec<u8>,
-        validator: Validator,
+        validator: TMValidatorInfo,
         sign_bytes: Vec<u8>,
     },
 

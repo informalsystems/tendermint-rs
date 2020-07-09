@@ -11,7 +11,7 @@ use crate::{
     components::io::IoError,
     light_client::Options,
     predicates::errors::VerificationError,
-    types::{Height, LightBlock, PeerId, Status},
+    types::{Height, PeerId, Status},
 };
 
 pub type Error = anomaly::Error<ErrorKind>;
@@ -50,7 +50,7 @@ pub enum ErrorKind {
 
     #[error("trusted state outside of trusting period")]
     TrustedStateOutsideTrustingPeriod {
-        trusted_state: Box<LightBlock>,
+        trusted_height: Height,
         options: Options,
     },
 

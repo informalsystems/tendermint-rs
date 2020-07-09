@@ -1,18 +1,21 @@
 //! Utilities and datatypes for use in tests.
 
-use crate::types::{Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet};
+use crate::types::{
+    Height, LightBlock, PeerId, TMLightBlock, TMSignedHeader, TMValidatorSet, Time, TrustThreshold,
+};
 
+use contracts::contract_trait;
 use serde::Deserialize;
-use tendermint::abci::transaction::Hash;
+use std::collections::HashMap;
 use tendermint_rpc as rpc;
 
 use crate::components::clock::Clock;
 use crate::components::io::{AtHeight, Io, IoError};
 use crate::evidence::EvidenceReporter;
-use contracts::contract_trait;
-use std::collections::HashMap;
+
+use tendermint::abci::transaction::Hash;
 use tendermint::block::Height as HeightStr;
-use tendermint::evidence::{Duration as DurationStr, Evidence};
+use tendermint::evidence::{ConflictingHeadersEvidence, Duration as DurationStr, Evidence};
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TestCases<LB> {
@@ -30,8 +33,8 @@ pub struct TestCase<LB> {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct Initial {
-    pub signed_header: SignedHeader,
-    pub next_validator_set: ValidatorSet,
+    pub signed_header: TMSignedHeader,
+    pub next_validator_set: TMValidatorSet,
     pub trusting_period: DurationStr,
     pub now: Time,
 }
@@ -69,12 +72,12 @@ pub struct TrustOptions {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct Trusted {
-    pub signed_header: SignedHeader,
-    pub next_validators: ValidatorSet,
+    pub signed_header: TMSignedHeader,
+    pub next_validators: TMValidatorSet,
 }
 
 impl Trusted {
-    pub fn new(signed_header: SignedHeader, next_validators: ValidatorSet) -> Self {
+    pub fn new(signed_header: TMSignedHeader, next_validators: TMValidatorSet) -> Self {
         Self {
             signed_header,
             next_validators,
@@ -96,12 +99,12 @@ impl Clock for MockClock {
 #[derive(Clone)]
 pub struct MockIo {
     chain_id: String,
-    light_blocks: HashMap<Height, LightBlock>,
+    light_blocks: HashMap<Height, TMLightBlock>,
     latest_height: Height,
 }
 
 impl MockIo {
-    pub fn new(chain_id: String, light_blocks: Vec<LightBlock>) -> Self {
+    pub fn new(chain_id: String, light_blocks: Vec<TMLightBlock>) -> Self {
         let latest_height = light_blocks.iter().map(|lb| lb.height()).max().unwrap();
 
         let light_blocks = light_blocks
@@ -118,8 +121,8 @@ impl MockIo {
 }
 
 #[contract_trait]
-impl Io for MockIo {
-    fn fetch_light_block(&self, _peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
+impl Io<TMLightBlock> for MockIo {
+    fn fetch_light_block(&self, _peer: PeerId, height: AtHeight) -> Result<TMLightBlock, IoError> {
         let height = match height {
             AtHeight::Highest => self.latest_height,
             AtHeight::At(height) => height,
@@ -136,9 +139,17 @@ impl Io for MockIo {
 pub struct MockEvidenceReporter;
 
 #[contract_trait]
-impl EvidenceReporter for MockEvidenceReporter {
+impl EvidenceReporter<TMLightBlock> for MockEvidenceReporter {
     fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
         Ok(Hash::new([0; 32]))
+    }
+
+    fn build_conflicting_headers_evidence(
+        &self,
+        h1: TMSignedHeader,
+        h2: TMSignedHeader,
+    ) -> Evidence {
+        Evidence::ConflictingHeaders(Box::new(ConflictingHeadersEvidence::new(h1, h2)))
     }
 }
 
@@ -155,11 +166,11 @@ impl MockEvidenceReporter {
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct AnonLightBlock {
-    pub signed_header: SignedHeader,
+    pub signed_header: TMSignedHeader,
     #[serde(rename = "validator_set")]
-    pub validators: ValidatorSet,
+    pub validators: TMValidatorSet,
     #[serde(rename = "next_validator_set")]
-    pub next_validators: ValidatorSet,
+    pub next_validators: TMValidatorSet,
     #[serde(default = "default_peer_id")]
     pub provider: PeerId,
 }
@@ -168,7 +179,7 @@ pub fn default_peer_id() -> PeerId {
     "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap()
 }
 
-impl From<AnonLightBlock> for LightBlock {
+impl From<AnonLightBlock> for TMLightBlock {
     fn from(alb: AnonLightBlock) -> Self {
         Self {
             signed_header: alb.signed_header,
@@ -179,7 +190,7 @@ impl From<AnonLightBlock> for LightBlock {
     }
 }
 
-impl From<TestCase<AnonLightBlock>> for TestCase<LightBlock> {
+impl From<TestCase<AnonLightBlock>> for TestCase<TMLightBlock> {
     fn from(tc: TestCase<AnonLightBlock>) -> Self {
         Self {
             description: tc.description,
@@ -190,7 +201,7 @@ impl From<TestCase<AnonLightBlock>> for TestCase<LightBlock> {
     }
 }
 
-impl From<TestCases<AnonLightBlock>> for TestCases<LightBlock> {
+impl From<TestCases<AnonLightBlock>> for TestCases<TMLightBlock> {
     fn from(tc: TestCases<AnonLightBlock>) -> Self {
         Self {
             batch_name: tc.batch_name,
@@ -199,7 +210,7 @@ impl From<TestCases<AnonLightBlock>> for TestCases<LightBlock> {
     }
 }
 
-impl From<Provider<AnonLightBlock>> for Provider<LightBlock> {
+impl From<Provider<AnonLightBlock>> for Provider<TMLightBlock> {
     fn from(p: Provider<AnonLightBlock>) -> Self {
         Self {
             chain_id: p.chain_id,
@@ -208,7 +219,7 @@ impl From<Provider<AnonLightBlock>> for Provider<LightBlock> {
     }
 }
 
-impl From<WitnessProvider<AnonLightBlock>> for WitnessProvider<LightBlock> {
+impl From<WitnessProvider<AnonLightBlock>> for WitnessProvider<TMLightBlock> {
     fn from(p: WitnessProvider<AnonLightBlock>) -> Self {
         Self {
             value: p.value.into(),
@@ -228,9 +239,9 @@ pub fn peer_id_at(count: usize) -> PeerId {
     peer_ids[count]
 }
 
-impl From<TestBisection<AnonLightBlock>> for TestBisection<LightBlock> {
+impl From<TestBisection<AnonLightBlock>> for TestBisection<TMLightBlock> {
     fn from(tb: TestBisection<AnonLightBlock>) -> Self {
-        let mut witnesses: Vec<WitnessProvider<LightBlock>> =
+        let mut witnesses: Vec<WitnessProvider<TMLightBlock>> =
             tb.witnesses.into_iter().map(Into::into).collect();
 
         for (count, provider) in witnesses.iter_mut().enumerate() {

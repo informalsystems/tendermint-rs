@@ -14,14 +14,15 @@ use tendermint_light_client::{
         scheduler,
         verifier::ProdVerifier,
     },
-    evidence::{Evidence, EvidenceReporter},
+    evidence::{ConflictingHeadersEvidence, Evidence, EvidenceReporter},
     fork_detector::ProdForkDetector,
     light_client::{self, LightClient},
+    operations::hasher::ProdHasher,
     peer_list::PeerList,
     state::State,
     store::{memory::MemoryStore, LightStore},
     supervisor::{Handle, Instance, Supervisor},
-    types::{PeerId, Status, TrustThreshold},
+    types::{LightBlock, PeerId, Status, TMLightBlock, TMSignedHeader, TrustThreshold},
 };
 
 use tendermint::abci::transaction::Hash as TransactionHash;
@@ -29,7 +30,11 @@ use tendermint::abci::transaction::Hash as TransactionHash;
 use std::collections::HashMap;
 use std::time::Duration;
 
-fn make_instance(peer_id: PeerId, options: light_client::Options, io: ProdIo) -> Instance {
+fn make_instance(
+    peer_id: PeerId,
+    options: light_client::Options,
+    io: ProdIo,
+) -> Instance<TMLightBlock> {
     let trusted_state = io
         .fetch_light_block(peer_id, AtHeight::Highest)
         .expect("could not request latest light block");
@@ -54,12 +59,20 @@ fn make_instance(peer_id: PeerId, options: light_client::Options, io: ProdIo) ->
 struct TestEvidenceReporter;
 
 #[contracts::contract_trait]
-impl EvidenceReporter for TestEvidenceReporter {
+impl EvidenceReporter<TMLightBlock> for TestEvidenceReporter {
     fn report(&self, evidence: Evidence, peer: PeerId) -> Result<TransactionHash, IoError> {
         panic!(
             "unexpected fork detected for peer {} with evidence: {:?}",
             peer, evidence
         );
+    }
+
+    fn build_conflicting_headers_evidence(
+        &self,
+        sh1: TMSignedHeader,
+        sh2: TMSignedHeader,
+    ) -> Evidence {
+        Evidence::ConflictingHeaders(Box::new(ConflictingHeadersEvidence::new(sh1, sh2)))
     }
 }
 
@@ -99,8 +112,12 @@ fn sync() {
         .witness(witness, witness_instance)
         .build();
 
-    let mut supervisor =
-        Supervisor::new(peer_list, ProdForkDetector::default(), TestEvidenceReporter);
+    let mut supervisor = Supervisor::new(
+        peer_list,
+        ProdHasher::default(),
+        ProdForkDetector::default(),
+        TestEvidenceReporter,
+    );
 
     let handle = supervisor.handle();
     std::thread::spawn(|| supervisor.run());
