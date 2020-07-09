@@ -5,11 +5,14 @@
 use abscissa_core::{config, Command, FrameworkError, Options, Runnable};
 use std::process;
 
-use crate::application::APPLICATION;
+use crate::application::{app_config, APPLICATION};
 use crate::config::LightNodeConfig;
 
 use abscissa_core::path::PathBuf;
 use std::net::SocketAddr;
+use tendermint_light_client::store::sled::SledStore;
+use tendermint_light_client::store::LightStore;
+use tendermint_light_client::types::Status;
 
 /// `start` subcommand
 ///
@@ -32,8 +35,19 @@ impl Runnable for StartCmd {
     /// Start the application.
     fn run(&self) {
         if let Err(err) = abscissa_tokio::run(&APPLICATION, async {
-            eprintln!("TODO");
-            process::exit(1);
+            // TODO: handle errors properly:
+            let primary_db_path = app_config().light_clients.first().unwrap().db_path.clone();
+            let db = sled::open(primary_db_path).unwrap_or_else(|e| {
+                println!("[error] could not open database: {}", e);
+                std::process::exit(1);
+            });
+
+            let primary_store = SledStore::new(db);
+
+            if primary_store.latest(Status::Verified).is_none() {
+                println!("[error] no trusted state in store for primary, please initialize with the `initialize` subcommand first");
+                std::process::exit(1);
+            }
         }) {
             eprintln!("Error while running application: {}", err);
             process::exit(1);
