@@ -6,7 +6,7 @@ use abscissa_core::{Command, Options, Runnable};
 use std::collections::HashMap;
 use tendermint::{hash, Hash};
 
-use tendermint::lite::ValidatorSet as _;
+use tendermint::lite::Header;
 
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;
@@ -26,15 +26,15 @@ pub struct InitCmd {
 
     #[options(
         free,
-        help = "subjective hash of the initial validator set to initialize the node with"
+        help = "hash of the initial subjectively trusted header to initialize the node with"
     )]
-    pub validators_hash: String,
+    pub header_hash: String,
 }
 
 impl Runnable for InitCmd {
     fn run(&self) {
         let vals_hash =
-            Hash::from_hex_upper(hash::Algorithm::Sha256, &self.validators_hash).unwrap();
+            Hash::from_hex_upper(hash::Algorithm::Sha256, &self.header_hash).unwrap();
         let app_cfg = app_config();
 
         let lc = app_cfg.light_clients.first().unwrap();
@@ -50,7 +50,7 @@ impl Runnable for InitCmd {
 
 fn initialize_subjectively(
     height: u64,
-    validators_hash: Hash,
+    subjective_header_hash: Hash,
     l_conf: &LightClientConfig,
     io: &ProdIo,
 ) {
@@ -79,8 +79,9 @@ fn initialize_subjectively(
         std::process::exit(1);
     }
     // TODO(ismail): actually verify more predicates of light block before storing!?
-    if trusted_state.validators.hash() != validators_hash {
-        println!("[error] received LightBlock's validator hash: {} does not match the subjective hash: {}", trusted_state.validators.hash(), validators_hash);
+    let got_header_hash = trusted_state.signed_header.header.hash();
+    if got_header_hash != subjective_header_hash {
+        println!("[error] received LightBlock's header hash: {} does not match the subjective hash: {}", got_header_hash, subjective_header_hash);
         std::process::exit(1);
     }
     light_store.insert(trusted_state, Status::Verified);

@@ -5,11 +5,8 @@
 use abscissa_core::{config, Command, FrameworkError, Options, Runnable};
 use std::process;
 
-use tendermint::lite::{Height, Requester, TrustThresholdFraction};
-
 use crate::application::APPLICATION;
 use crate::config::LightNodeConfig;
-use crate::prelude::*;
 
 use abscissa_core::path::PathBuf;
 
