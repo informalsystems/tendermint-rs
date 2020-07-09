@@ -69,7 +69,7 @@ type queryChainConsensusState = (height: uint64) => ConsensusState
   `checkMisbehaviourAndUpdateState`. It may also query
   `queryChainConsensusState`.
   
-- multiple relayers may talk to one handler. some relayers correct
+- multiple relayers may talk to one handler. Some relayers might be 
   some faulty.
 
 
