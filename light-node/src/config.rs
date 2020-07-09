@@ -6,23 +6,45 @@
 
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
+use tendermint_light_client::types::{PeerId, TrustThreshold};
+use abscissa_core::path::PathBuf;
 
 /// LightNode Configuration
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct LightNodeConfig {
-    /// RPC address to request headers and validators from.
-    pub rpc_address: String,
+    /// The fraction of the total voting power of a known
+    /// and trusted validator set is sufficient for a commit to be
+    /// accepted going forward.
+    pub trust_threshold: TrustThreshold,
     /// The duration until we consider a trusted state as expired.
     pub trusting_period: Duration,
-    /// Subjective initialization.
-    pub subjective_init: SubjectiveInit,
+    /// Correction parameter dealing with only approximately synchronized clocks.
+    pub clock_drift: Duration,
+
+    // TODO "now" should probably always be passed in as `Time::now()`
+
+    /// The actual light client instances' configuration.
+    /// Note: the first config will be used in the subjectively initialize
+    /// the light node in the `initialize` subcommand.
+    pub light_clients: Vec<LightClientConfig>,
+
+}
+
+/// LightClientConfig contains all options of a light client instance.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct LightClientConfig {
+    /// Address of the Tendermint fullnode to connect to and
+    /// fetch LightBlock data from.
+    pub address: tendermint::net::Address,
+    /// PeerID of the same Tendermint fullnode.
+    pub peer_id: PeerId,
+    /// The data base folder for this instance's store.
+    pub db_path: PathBuf,
 }
 
 /// Default configuration settings.
-///
-/// Note: if your needs are as simple as below, you can
-/// use `#[derive(Default)]` on LightNodeConfig instead.
 impl Default for LightNodeConfig {
     fn default() -> Self {
         Self {

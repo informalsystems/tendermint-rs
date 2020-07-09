@@ -20,16 +20,16 @@ use crate::config::LightNodeConfig;
 use crate::prelude::*;
 use crate::requester::RPCRequester;
 use crate::store::{MemStore, State};
+use abscissa_core::path::PathBuf;
 
 /// `start` subcommand
 ///
-/// The `Options` proc macro generates an option parser based on the struct
-/// definition, and is defined in the `gumdrop` crate. See their documentation
-/// for a more comprehensive example:
-///
-/// <https://docs.rs/gumdrop/>
 #[derive(Command, Debug, Options)]
 pub struct StartCmd {
+    /// Path to configuration file
+    #[options(short = "c", long = "config", help = "path to light_node.toml")]
+    pub config: Option<PathBuf>,
+
     /// RPC address to request headers and validators from.
     #[options(free)]
     rpc_addr: String,

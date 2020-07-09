@@ -1,13 +1,14 @@
 //! LightNode Subcommands
 //!
 //! The light client supports the following subcommands:
-//!
+//! - `initialize`: subjectively initializes the light node with a given height and hash
 //! - `start`: launches the light client
 //! - `version`: print application version
 //!
 //! See the `impl Configurable` below for how to specify the path to the
 //! application's configuration file.
 
+mod initialize;
 mod start;
 mod version;
 
@@ -17,6 +18,7 @@ use abscissa_core::{
     config::Override, Command, Configurable, FrameworkError, Help, Options, Runnable,
 };
 use std::path::PathBuf;
+use crate::commands::initialize::InitCmd;
 
 /// LightNode Configuration Filename
 pub const CONFIG_FILE: &str = "light_node.toml";
@@ -28,11 +30,15 @@ pub enum LightNodeCmd {
     #[options(help = "get usage information")]
     Help(Help<Self>),
 
-    /// `start` the light client
-    #[options(help = "start the light client daemon with the given config or command line params")]
+    /// `intialize` the light node
+    #[options(help = "subjectively initialize the light client with given subjective height and validator set hash")]
+    Initialize(InitCmd),
+
+    /// `start` the light node
+    #[options(help = "start the light node daemon with the given config or command line params")]
     Start(StartCmd),
 
-    /// `version` of the light client
+    /// `version` of the light node
     #[options(help = "display version information")]
     Version(VersionCmd),
 }
