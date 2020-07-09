@@ -33,7 +33,7 @@ type checkValidityAndUpdateState = (Header) => Void
   +1/3 check (+2/3 for sequential headers). 
   If it verifies a header, it adds it to its lightstore,
   if it does not pass verification it drops it.
-  Right now it only takes new headers, and drops old
+  Right now it only accepts a header more recent then the latest header, and drops older
   ones or ones that could not be verified. 
   
   > The above paragraph captures what I believe what is the current
@@ -293,4 +293,3 @@ In principle everyone can detect a fork
   the interface, and what the handler does
 
 - we write specs for these components.
-
