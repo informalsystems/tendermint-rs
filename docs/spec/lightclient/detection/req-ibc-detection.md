@@ -49,7 +49,7 @@ type checkMisbehaviourAndUpdateState = (bytes) => Void
      
   We have to design this, and the data that the handler can use to
   check that there was some misbehavior (fork) in order react on
-  it, e.g., flaging a situation and
+  it, e.g., flagging a situation and
   stop the protocol. 
 	  
 - The following function is used to query the light store (`ConsensusState`)
@@ -73,7 +73,7 @@ type queryChainConsensusState = (height: uint64) => ConsensusState
   some faulty.
 
 
-## Informal Problem Statement: Fork dectection in IBC
+## Informal Problem Statement: Fork detection in IBC
   
 ### Relayer requirement: Evidence for Handler
 
@@ -121,7 +121,8 @@ relayer can figure that out:
   
 - there are potentially many relayers, some correct some faulty
 
-- a handler cannot trust information by relayer, but must verify 
+- a handler cannot trust the information provided by the relayer, 
+  but must verify 
   (Доверя́й, но проверя́й)
 
 - in case of a fork, we accept that the handler temporarily stores
@@ -149,25 +150,26 @@ relayer can figure that out:
   
 - we have to specify what precisely `queryChainConsensusState`
   returns. It cannot be the complete lightstore. Is the last header enough?
-  
+
 - we would like to assume that every now and then (smaller than the
   trusting period) a correct relayer checks whether the handler is on a
-  different branch than the relayer, in order to check the handler's
-  light store. And we would like that this is enough to achieve
+  different branch than the relayer. 
+  And we would like that this is enough to achieve
   the Handler requirement.
   
-- here the correctness argument would be easy if a correct relayer is
-  based on a light client with a *trusted* state, that is, a light
-  client who never changes its opinion about trusted. Then if such a
-  correct relayer checks-in with a handler, it will detect a fork, and
-  act in-time.
+   - here the correctness argument would be easy if a correct relayer is
+     based on a light client with a *trusted* state, that is, a light
+     client who never changes its opinion about trusted. Then if such a
+     correct relayer checks-in with a handler, it will detect a fork, and
+     act in time.
 
-- if the light client does not provide this interface, in the case of
-  a fork, we need some assumption about a correct relayer being on a
-  different branch than the handler to check-in not too late. Also
-  what happens if the relayer's light client is forced to roll-back
-  its lightstore?
-  Does it have to recheck all handlers?
+   - if the light client does not provide this interface, in the case of
+     a fork, we need some assumption about a correct relayer being on a
+     different branch than the handler, and we need such a relayer to 
+	 check-in not too late. Also
+     what happens if the relayer's light client is forced to roll-back
+     its lightstore?
+     Does it have to re-check all handlers?
 
 
 
@@ -189,7 +191,7 @@ several subproblems
 The preliminary specification ./detection.md formalizes the notion of
 a fork. Roughly, a fork exists if there are two conflicting headers
 for the same height, where both are supported by bonded full nodes
-(that have been validators in the near past, that is, withing the
+(that have been validators in the near past, that is, within the
 trusting period). We distinguish between *fork on the chain* where two
 conflicting blocks are signed by +2/3 of the validators of that
 height, and a *light client fork* where one of the conflicting headers
@@ -198,7 +200,7 @@ validators of some smaller height.
 
 In principle everyone can detect a fork
 
-- ./detection talks about the tendermint light client with a focus on 
+- ./detection talks about the Tendermint light client with a focus on 
   light nodes.
   
 - a relayer runs such light clients and may detect forks in this way
@@ -219,7 +221,7 @@ In principle everyone can detect a fork
   introduce different terms for:
   
   - proof of fork for the handler (basically consisting of lightblocks)
-  - proof of fork for a full node (basically consisting of lightblocks)
+  - proof of fork for a full node (basically consisting of (fewer) lightblocks)
   - proof of misbehavior (consensus messages)
   
 
@@ -228,15 +230,15 @@ In principle everyone can detect a fork
 
 - this is the job of a full node. 
 
-- might be subjective in the future (the protocol depends on what the
-  full node believes is the "correct" chain. right now we postulate
-  that every full node is on the correct chain. That is, there is no
-  fork on the chain.)
+- might be subjective in the future: the protocol depends on what the
+  full node believes is the "correct" chain. Right now we postulate
+  that every full node is on the correct chain, that is, there is no
+  fork on the chain.
   
 - The full node figures out which nodes are
     - lunatic
 	- double signing
-	- amnesic **using challenge response protocol**
+	- amnesic; **using the challenge response protocol**
 
 - We do not punish "phantom" validators
     - currently we understand a phantom validator as a node that
@@ -245,20 +247,20 @@ In principle everyone can detect a fork
         - the node is not part of the +1/3 of previous validators that
           are used to support the header. Whether we call a validator
           phantom might be subjective and depend on the header we
-          check against. They formalization actually seems not so
+          check against. Their formalization actually seems not so
           clear.
 	- they can only do something if there are +1/3 faulty validators
       that are either lunatic, double signing, or amnesic.
     - abci requires that we only report bonded validators. So if a
       node is a "phantom", we would need the check whether the node is
-      bonded, which currently is expensive, as it require checking
+      bonded, which currently is expensive, as it requires checking
       blocks from the last three weeks.
 	- in the future, with state sync, a correct node might be
       convinced by faulty nodes that it is in the validator set. Then
       it might appear to be "phantom" although it behaves correctly
 
 
-### Next steps
+## Next steps
 
 > The following points are subject to my limited knowledge of the
 > state of the work on IBC. Some/most of it might already exist and we
@@ -281,7 +283,9 @@ In principle everyone can detect a fork
       packets, connections, etc.)
 	- the relayer submits proof of fork to handlers and full nodes
 	  
-	> the list is definitely not complete
+	> the list is definitely not complete. I think part of this
+	> (perhaps all)  is
+	> covered by what Anca presented recently.
 	
     We will need to define what we expect from these components
 
