@@ -6,15 +6,14 @@ use abscissa_core::{Command, Options, Runnable};
 use std::collections::HashMap;
 use tendermint::{hash, Hash};
 
-use std::time::Duration;
+use tendermint::lite::ValidatorSet as _;
+
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
-use tendermint_light_client::components::verifier::ProdVerifier;
 use tendermint_light_client::operations::ProdHasher;
 use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
 use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
 use tendermint_light_client::types::Status;
-use tendermint::lite::ValidatorSet;
 
 /// `intialize` subcommand
 #[derive(Command, Debug, Default, Options)]
@@ -51,7 +50,7 @@ impl Runnable for InitCmd {
 
 fn initialize_subjectively(
     height: u64,
-    _validators_hash: Hash,
+    validators_hash: Hash,
     l_conf: &LightClientConfig,
     io: &ProdIo,
 ) {
@@ -80,9 +79,9 @@ fn initialize_subjectively(
         std::process::exit(1);
     }
     // TODO(ismail): actually verify more predicates of light block before storing!?
-    if trusted_state.validators.hash() != _validators_hash {
-        println!("[error] validators' hash in received light block does not match the subjective");
-        // std::process::exit(1);
+    if trusted_state.validators.hash() != validators_hash {
+        println!("[error] received LightBlock's validator hash: {} does not match the subjective hash: {}", trusted_state.validators.hash(), validators_hash);
+        std::process::exit(1);
     }
     light_store.insert(trusted_state, Status::Verified);
 }
