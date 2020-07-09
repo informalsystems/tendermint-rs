@@ -70,7 +70,7 @@ type queryChainConsensusState = (height: uint64) => ConsensusState
   `queryChainConsensusState`.
   
 - multiple relayers may talk to one handler. Some relayers might be 
-  some faulty.
+  faulty. We assume existence of at least single correct relayer.
 
 
 ## Informal Problem Statement: Fork detection in IBC
