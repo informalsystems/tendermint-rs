@@ -82,8 +82,8 @@ fn sync() {
             numerator: 1,
             denominator: 3,
         },
-        trusting_period: Duration::from_secs(36000),
-        clock_drift: Duration::from_secs(1),
+        trusting_period: Duration::from_secs(60 * 60), // 60 minutes
+        clock_drift: Duration::from_secs(5 * 60),      // 5 minutes
         now: Time::now(),
     };
 
