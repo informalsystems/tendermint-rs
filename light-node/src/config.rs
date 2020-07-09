@@ -7,6 +7,8 @@
 use abscissa_core::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
+use tendermint::Time;
+use tendermint_light_client::light_client;
 use tendermint_light_client::types::{PeerId, TrustThreshold};
 
 /// LightNode Configuration
@@ -69,6 +71,17 @@ impl Default for LightNodeConfig {
             clock_drift: Duration::from_secs(1),
             request_timeout: Duration::from_secs(10),
             light_clients: vec![LightClientConfig::default()],
+        }
+    }
+}
+
+impl From<LightNodeConfig> for light_client::Options {
+    fn from(lnc: LightNodeConfig) -> Self {
+        Self {
+            trust_threshold: lnc.trust_threshold,
+            trusting_period: lnc.trusting_period,
+            clock_drift: lnc.clock_drift,
+            now: Time::now(),
         }
     }
 }

@@ -33,8 +33,7 @@ pub struct InitCmd {
 
 impl Runnable for InitCmd {
     fn run(&self) {
-        let vals_hash =
-            Hash::from_hex_upper(hash::Algorithm::Sha256, &self.header_hash).unwrap();
+        let subjective_header_hash = Hash::from_hex_upper(hash::Algorithm::Sha256, &self.header_hash).unwrap();
         let app_cfg = app_config();
 
         let lc = app_cfg.light_clients.first().unwrap();
@@ -44,7 +43,7 @@ impl Runnable for InitCmd {
 
         let io = ProdIo::new(peer_map, Some(app_cfg.request_timeout));
 
-        initialize_subjectively(self.height, vals_hash, &lc, &io);
+        initialize_subjectively(self.height, subjective_header_hash, &lc, &io);
     }
 }
 
@@ -81,7 +80,10 @@ fn initialize_subjectively(
     // TODO(ismail): actually verify more predicates of light block before storing!?
     let got_header_hash = trusted_state.signed_header.header.hash();
     if got_header_hash != subjective_header_hash {
-        println!("[error] received LightBlock's header hash: {} does not match the subjective hash: {}", got_header_hash, subjective_header_hash);
+        println!(
+            "[error] received LightBlock's header hash: {} does not match the subjective hash: {}",
+            got_header_hash, subjective_header_hash
+        );
         std::process::exit(1);
     }
     light_store.insert(trusted_state, Status::Verified);
