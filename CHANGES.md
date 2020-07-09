@@ -1,11 +1,29 @@
-# pending
+## Pending
 
-Light Client:
+### Light Client:
 
-- Expose latest_trusted from Supervisor Handle ([#394])
+- Introduce a `Supervisor` to tie the `LightClient` and the `ForkDetector` together ([#302])
+- Add evidence reporting to the supervisor ([#336])
+- Move `ValidatorSet::hash` method over the `HeaderHasher` trait ([#360])
+- Simplify basic bisecting scheduler logic ([#364])
+- Fix exit condition in `verify_to_target` ([#365])
+- Multi-peer conformance tests ([#371])
+- Introduce a `Trusted` status for light blocks which passed fork detection ([#375])
+- Add JSON-based unit tests for VotingPowerCalculator ([#383])
+- Expose `latest_trusted` from supervisor `Handle` ([#394])
+- Rework the `PeerList`, improve its API, and fix a bug in `swap_primary` ([#397])
 - Turn `Handle` into a trait for ease of integration and testability ([#401])
 - Improve `Supervisor` ergonomics according to [ADR-007] ([#403])
+- Correctly handle blocks marked `Trusted` in accordance with the specification ([#407])
 
+[#302]: https://github.com/informalsystems/tendermint-rs/pull/302
+[#336]: https://github.com/informalsystems/tendermint-rs/pull/336
+[#360]: https://github.com/informalsystems/tendermint-rs/pull/360
+[#364]: https://github.com/informalsystems/tendermint-rs/pull/364
+[#365]: https://github.com/informalsystems/tendermint-rs/pull/365
+[#371]: https://github.com/informalsystems/tendermint-rs/pull/371
+[#375]: https://github.com/informalsystems/tendermint-rs/pull/375
+[#383]: https://github.com/informalsystems/tendermint-rs/pull/383
 [#394]: https://github.com/informalsystems/tendermint-rs/pull/394
 [#401]: https://github.com/informalsystems/tendermint-rs/pull/401
 [#403]: https://github.com/informalsystems/tendermint-rs/pull/403
