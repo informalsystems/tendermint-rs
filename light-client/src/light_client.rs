@@ -161,6 +161,7 @@ impl LightClient {
         // Override the `now` fields in the given verification options with the current time,
         // as per the given `clock`.
         let options = self.options.with_now(self.clock.now());
+        dbg!(&self.options, &options, self.clock.now());
 
         let mut current_height = target_height;
 
