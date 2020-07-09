@@ -84,6 +84,10 @@ jobs:
         with:
           command: test
           args: -p tendermint --test integration --no-fail-fast -- --ignored
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p tendermint-light-client --test integration --no-fail-fast -- --ignored
 
   test-integration-latest:
     runs-on: ubuntu-latest
