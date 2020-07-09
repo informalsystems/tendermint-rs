@@ -13,14 +13,16 @@ nanos = 0
 [rpc_config]
 listen_addr = "127.0.0.1:8888"
 
-[rpc_config.request_timeout]
-secs = 10
-nanos = 0
+    [rpc_config.request_timeout]
+    secs = 10
+    nanos = 0
 
 [[light_clients]]
 address = "tcp://127.0.0.1:26657"
 peer_id = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+db_path = "./lightstore/BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
 
 [[light_clients]]
 address = "tcp://127.0.0.1:26657"
 peer_id = "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF"
+db_path = "./lightstore/CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF"

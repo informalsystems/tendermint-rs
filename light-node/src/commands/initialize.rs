@@ -2,13 +2,13 @@
 
 use crate::application::app_config;
 use crate::config::LightClientConfig;
+
 use abscissa_core::{Command, Options, Runnable};
 use std::collections::HashMap;
-use tendermint::{hash, Hash};
 
 use tendermint::lite::Header;
+use tendermint::{hash, Hash};
 
-use std::ops::Deref;
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;
 use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
