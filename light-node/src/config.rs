@@ -21,6 +21,8 @@ pub struct LightNodeConfig {
     pub trusting_period: Duration,
     /// Correction parameter dealing with only approximately synchronized clocks.
     pub clock_drift: Duration,
+    /// The duration after which any request to tendermint node will time out.
+    pub request_timeout: Duration,
 
     // TODO "now" should probably always be passed in as `Time::now()`
     /// The actual light client instances' configuration.
@@ -59,12 +61,13 @@ impl Default for LightClientConfig {
 impl Default for LightNodeConfig {
     fn default() -> Self {
         Self {
-            trusting_period: Duration::from_secs(51_840_000),
+            trusting_period: Duration::from_secs(864_000), // 60*60*24*10
             trust_threshold: TrustThreshold {
                 numerator: 1,
                 denominator: 3,
             },
             clock_drift: Duration::from_secs(1),
+            request_timeout: Duration::from_secs(10),
             light_clients: vec![LightClientConfig::default()],
         }
     }
