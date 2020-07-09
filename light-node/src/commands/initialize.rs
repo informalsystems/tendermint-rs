@@ -8,6 +8,7 @@ use tendermint::{hash, Hash};
 
 use tendermint::lite::Header;
 
+use std::ops::Deref;
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;
 use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
@@ -33,7 +34,8 @@ pub struct InitCmd {
 
 impl Runnable for InitCmd {
     fn run(&self) {
-        let subjective_header_hash = Hash::from_hex_upper(hash::Algorithm::Sha256, &self.header_hash).unwrap();
+        let subjective_header_hash =
+            Hash::from_hex_upper(hash::Algorithm::Sha256, &self.header_hash).unwrap();
         let app_cfg = app_config();
 
         let lc = app_cfg.light_clients.first().unwrap();
@@ -41,7 +43,7 @@ impl Runnable for InitCmd {
         let mut peer_map = HashMap::new();
         peer_map.insert(lc.peer_id, lc.address.clone());
 
-        let io = ProdIo::new(peer_map, Some(app_cfg.request_timeout));
+        let io = ProdIo::new(peer_map, Some(app_cfg.rpc_config.request_timeout));
 
         initialize_subjectively(self.height, subjective_header_hash, &lc, &io);
     }

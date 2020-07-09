@@ -6,6 +6,7 @@
 
 use abscissa_core::path::PathBuf;
 use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
 use std::time::Duration;
 use tendermint::Time;
 use tendermint_light_client::light_client;
@@ -23,8 +24,9 @@ pub struct LightNodeConfig {
     pub trusting_period: Duration,
     /// Correction parameter dealing with only approximately synchronized clocks.
     pub clock_drift: Duration,
-    /// The duration after which any request to tendermint node will time out.
-    pub request_timeout: Duration,
+
+    /// RPC related config parameters.
+    pub rpc_config: RpcConfig,
 
     // TODO "now" should probably always be passed in as `Time::now()`
     /// The actual light client instances' configuration.
@@ -44,6 +46,17 @@ pub struct LightClientConfig {
     pub peer_id: PeerId,
     /// The data base folder for this instance's store.
     pub db_path: PathBuf,
+}
+
+/// RpcConfig contains for the RPC server of the light node as
+/// well as RPC client related options.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RpcConfig {
+    /// The address the RPC server will serve.
+    pub listen_addr: SocketAddr,
+    /// The duration after which any RPC request to tendermint node will time out.
+    pub request_timeout: Duration,
 }
 
 /// Default light client config settings.
@@ -69,7 +82,10 @@ impl Default for LightNodeConfig {
                 denominator: 3,
             },
             clock_drift: Duration::from_secs(1),
-            request_timeout: Duration::from_secs(10),
+            rpc_config: RpcConfig {
+                listen_addr: "127.0.0.1:8888".parse().unwrap(),
+                request_timeout: Duration::from_secs(10),
+            },
             light_clients: vec![LightClientConfig::default()],
         }
     }

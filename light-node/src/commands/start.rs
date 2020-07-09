@@ -17,10 +17,6 @@ pub struct StartCmd {
     /// Path to configuration file
     #[options(short = "c", long = "config", help = "path to light_node.toml")]
     pub config: Option<PathBuf>,
-
-    /// RPC address to request headers and validators from.
-    #[options(free)]
-    rpc_addr: String,
 }
 
 impl Runnable for StartCmd {
@@ -40,10 +36,7 @@ impl config::Override<LightNodeConfig> for StartCmd {
     // Process the given command line options, overriding settings from
     // a configuration file using explicit flags taken from command-line
     // arguments.
-    fn override_config(
-        &self,
-        mut config: LightNodeConfig,
-    ) -> Result<LightNodeConfig, FrameworkError> {
+    fn override_config(&self, config: LightNodeConfig) -> Result<LightNodeConfig, FrameworkError> {
         Ok(config)
     }
 }
