@@ -84,7 +84,7 @@ impl Default for LightNodeConfig {
             clock_drift: Duration::from_secs(1),
             rpc_config: RpcConfig {
                 listen_addr: "127.0.0.1:8888".parse().unwrap(),
-                request_timeout: Duration::from_secs(10),
+                request_timeout: Duration::from_secs(60),
             },
             light_clients: vec![LightClientConfig::default()],
         }
