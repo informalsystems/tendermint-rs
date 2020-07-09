@@ -245,7 +245,7 @@ impl LightClient {
         height: Height,
         state: &mut State,
     ) -> Result<(LightBlock, Status), Error> {
-        let block = state.light_store.get_any(height);
+        let block = state.light_store.get_non_failed(height);
 
         if let Some(block) = block {
             return Ok(block);

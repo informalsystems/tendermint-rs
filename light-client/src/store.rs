@@ -38,8 +38,9 @@ pub trait LightStore: std::fmt::Debug + Send {
     /// Get an iterator of all light blocks with the given status.
     fn all(&self, status: Status) -> Box<dyn Iterator<Item = LightBlock>>;
 
-    /// Get a block at a given height whatever its verification status
-    fn get_any(&self, height: Height) -> Option<(LightBlock, Status)> {
+    /// Get a block at a given height whatever its verification status as long as it hasn't failed
+    /// verification (ie. its status is not `Status::Failed`).
+    fn get_non_failed(&self, height: Height) -> Option<(LightBlock, Status)> {
         None.or_else(|| {
             self.get(height, Status::Trusted)
                 .map(|lb| (lb, Status::Trusted))
