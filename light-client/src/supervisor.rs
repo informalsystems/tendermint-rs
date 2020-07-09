@@ -219,7 +219,7 @@ impl Supervisor {
                 }
             }
             // Verification failed
-            Err(err) => {
+            Err(_err) => {
                 // TODO: Log/record error
 
                 // Swap primary, and continue with new primary, if there is any witness left.
