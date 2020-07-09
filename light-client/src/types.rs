@@ -72,10 +72,6 @@ impl Status {
     pub fn most_trusted(a: Self, b: Self) -> Self {
         std::cmp::max(a, b)
     }
-
-    pub fn least_trusted(a: Self, b: Self) -> Self {
-        std::cmp::min(a, b)
-    }
 }
 
 /// A light block is the core data structure used by the light client.
@@ -141,17 +137,6 @@ mod tests {
                     assert_eq!(Status::most_trusted(a, b), a);
                 } else {
                     assert_eq!(Status::most_trusted(a, b), b);
-                }
-            }
-        }
-
-        #[test]
-        fn least_trusted() {
-            for (a, b) in cross(Status::iter()) {
-                if a > b {
-                    assert_eq!(Status::least_trusted(a, b), b);
-                } else {
-                    assert_eq!(Status::least_trusted(a, b), a);
                 }
             }
         }
