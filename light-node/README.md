@@ -35,6 +35,8 @@ If you are running a Tendermint fullnode on your machine, you can simply copy an
 $ cp light_node.toml.example light_node.toml
 ``` 
 Please, take a look into the config file and edit it according to your needs.
+The provided example configuration file comes with a lot of explanatory comments
+which hopefully provide enough guidance to configure your light node.
 
 ### Subjective initialization
 Assuming that you are running a Tendermint fullnode that exposes an RPC endpoint on your loopback interface, you can intialize the light-node subjectively following th following steps:
