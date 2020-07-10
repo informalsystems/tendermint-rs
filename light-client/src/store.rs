@@ -4,8 +4,8 @@
 //! - a transient, in-memory implementation for testing purposes
 //! - a persistent, on-disk, sled-backed implementation for production
 
+use crate::std_ext;
 use crate::types::{Height, LightBlock, Status};
-use crate::utils::{max_by_key, select};
 
 pub mod memory;
 pub mod sled;
@@ -60,8 +60,8 @@ pub trait LightStore: std::fmt::Debug + Send {
         let latest_trusted = self.latest(Status::Trusted);
         let latest_verified = self.latest(Status::Verified);
 
-        select(latest_trusted, latest_verified, |t, v| {
-            max_by_key(t, v, |lb| lb.height())
+        std_ext::option::select(latest_trusted, latest_verified, |t, v| {
+            std_ext::cmp::max_by_key(t, v, |lb| lb.height())
         })
     }
 

@@ -22,10 +22,10 @@ pub mod operations;
 pub mod peer_list;
 pub mod predicates;
 pub mod state;
+mod std_ext;
 pub mod store;
 pub mod supervisor;
 pub mod types;
-mod utils;
 
 mod macros;
 
