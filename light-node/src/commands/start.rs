@@ -53,45 +53,13 @@ impl Runnable for StartCmd {
     fn run(&self) {
         if let Err(err) = abscissa_tokio::run(&APPLICATION, async {
             StartCmd::assert_init_was_run();
+            let mut supervisor = self.construct_supervisor();
 
-            // TODO(ismail): we need to verify the addr <-> peerId mappings somewhere!
-            let mut peer_map = HashMap::new();
-            for light_conf in &app_config().light_clients {
-                peer_map.insert(light_conf.peer_id, light_conf.address.clone());
-            }
-            let io = ProdIo::new(
-                peer_map.clone(),
-                Some(app_config().rpc_config.request_timeout),
-            );
-            let conf = app_config().deref().clone();
-            let options: light_client::Options = conf.into();
-
-            let mut peer_list: PeerListBuilder<Instance> = PeerList::builder();
-            for (i, light_conf) in app_config().light_clients.iter().enumerate() {
-                let instance = self.make_instance(light_conf, io.clone(), options);
-                if i == 0 {
-                    // primary instance
-                    peer_list = peer_list.primary(instance.light_client.peer, instance);
-                } else {
-                    peer_list = peer_list.witness(instance.light_client.peer, instance);
-                }
-            }
-            let peer_list = peer_list.build();
-
-            let mut supervisor = Supervisor::new(
-                peer_list,
-                ProdForkDetector::default(),
-                ProdEvidenceReporter::new(peer_map.clone()),
-            );
+            let rpc_handler = supervisor.handle();
+            StartCmd::start_rpc_server(rpc_handler);
 
             let handle = supervisor.handle();
-            let rpc_handler = supervisor.handle();
-            let server = Server::new(rpc_handler);
-
             std::thread::spawn(|| supervisor.run());
-            let laddr = app_config().rpc_config.listen_addr;
-            // TODO: figure out howto handle the potenial error on run
-            std::thread::spawn(move || rpc::run(server, &laddr.to_string()));
 
             loop {
                 match handle.verify_to_highest() {
@@ -102,7 +70,7 @@ impl Runnable for StartCmd {
                         println!("[error] sync failed: {}", err);
                     }
                 }
-
+                // TODO: use ticks and make this configurable:
                 std::thread::sleep(Duration::from_millis(800));
             }
         }) {
@@ -128,6 +96,23 @@ impl config::Override<LightNodeConfig> for StartCmd {
     }
 }
 impl StartCmd {
+    fn assert_init_was_run() {
+        // TODO: handle errors properly:
+        let primary_db_path = app_config().light_clients.first().unwrap().db_path.clone();
+        let db = sled::open(primary_db_path).unwrap_or_else(|e| {
+            println!("[error] could not open database: {}", e);
+            std::process::exit(1);
+        });
+
+        let primary_store = SledStore::new(db);
+
+        if primary_store.latest(Status::Verified).is_none() {
+            println!("[error] no trusted state in store for primary, please initialize with the `initialize` subcommand first");
+            std::process::exit(1);
+        }
+    }
+    // TODO: this should do proper error handling, be gerneralized
+    // then moved to to the light-client crate.
     fn make_instance(
         &self,
         light_config: &LightClientConfig,
@@ -157,22 +142,49 @@ impl StartCmd {
 
         Instance::new(light_client, state)
     }
+
+    fn start_rpc_server<H>(h: H)
+    where
+        H: Handle + Send + Sync + 'static,
+    {
+        let server = Server::new(h);
+        let laddr = app_config().rpc_config.listen_addr;
+        // TODO: figure out howto handle the potenial error on run
+        std::thread::spawn(move || rpc::run(server, &laddr.to_string()));
+    }
 }
 
 impl StartCmd {
-    fn assert_init_was_run() {
-        // TODO: handle errors properly:
-        let primary_db_path = app_config().light_clients.first().unwrap().db_path.clone();
-        let db = sled::open(primary_db_path).unwrap_or_else(|e| {
-            println!("[error] could not open database: {}", e);
-            std::process::exit(1);
-        });
-
-        let primary_store = SledStore::new(db);
-
-        if primary_store.latest(Status::Verified).is_none() {
-            println!("[error] no trusted state in store for primary, please initialize with the `initialize` subcommand first");
-            std::process::exit(1);
+    fn construct_supervisor(&self) -> Supervisor {
+        // TODO(ismail): we need to verify the addr <-> peerId mappings somewhere!
+        let mut peer_map = HashMap::new();
+        for light_conf in &app_config().light_clients {
+            peer_map.insert(light_conf.peer_id, light_conf.address.clone());
         }
+        let io = ProdIo::new(
+            peer_map.clone(),
+            Some(app_config().rpc_config.request_timeout),
+        );
+        let conf = app_config().deref().clone();
+        let options: light_client::Options = conf.into();
+
+        let mut peer_list: PeerListBuilder<Instance> = PeerList::builder();
+        for (i, light_conf) in app_config().light_clients.iter().enumerate() {
+            let instance = self.make_instance(light_conf, io.clone(), options);
+            if i == 0 {
+                // primary instance
+                peer_list = peer_list.primary(instance.light_client.peer, instance);
+            } else {
+                peer_list = peer_list.witness(instance.light_client.peer, instance);
+            }
+        }
+        let peer_list = peer_list.build();
+
+        let supervisor = Supervisor::new(
+            peer_list,
+            ProdForkDetector::default(),
+            ProdEvidenceReporter::new(peer_map.clone()),
+        );
+        supervisor
     }
 }
