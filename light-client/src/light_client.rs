@@ -233,9 +233,10 @@ impl LightClient {
     }
 
     /// Look in the light store for a block from the given peer at the given height,
-    /// whatever its verification status.
+    /// which has not previously failed verification (ie. its status is not `Failed`).
     ///
-    /// If one cannot be found, fetch the block from the given peer.
+    /// If one cannot be found, fetch the block from the given peer and store
+    /// it in the light store with `Unverified` status.
     ///
     /// ## Postcondition
     /// - The provider of block that is returned matches the given peer.
