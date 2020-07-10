@@ -103,7 +103,7 @@ $ curl localhost:8888 -X POST -H 'Content-Type: application/json' \
 ```
 
 <details>
-  <summary>Click here to see an example for expected output:</summary>
+  <summary><b>Click here</b> to see an example for expected output:</summary>
   
   ```json
 $ curl localhost:8888 -X POST -H 'Content-Type: application/json' \
