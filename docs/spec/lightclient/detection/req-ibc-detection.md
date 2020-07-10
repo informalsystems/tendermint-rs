@@ -27,16 +27,18 @@ A blockchain runs a **handler** that passively collects information about
 ```go
 type checkValidityAndUpdateState = (Header) => Void
 ```
-	  
+
   For Tendermint, it will perform
   `ValidandVerified`, that is, it does the trusting period check and the
   +1/3 check (+2/3 for sequential headers). 
   If it verifies a header, it adds it to its lightstore,
   if it does not pass verification it drops it.
-  Right now it only accepts a header more recent then the latest header, and drops older
+  Right now it only accepts a header more recent then the latest
+  header,
+  and drops older
   ones or ones that could not be verified. 
-  
-  > The above paragraph captures what I believe what is the current
+
+> The above paragraph captures what I believe what is the current
   logic of `checkValidityAndUpdateState`. It may be subject to
   change. E.g., maintain a lightstore with state (unverified, verified)
 	  
@@ -201,9 +203,8 @@ validators of some smaller height.
 In principle everyone can detect a fork
 
 - ./detection talks about the Tendermint light client with a focus on 
-  light nodes.
-  
-- a relayer runs such light clients and may detect forks in this way
+  light nodes. A relayer runs such light clients and may detect 
+  forks in this way
 
 - in IBC, a relayer can see that a handler is on a conflicting branch
     - the relayer should feed the handler the necessary information so
@@ -283,11 +284,11 @@ In principle everyone can detect a fork
       packets, connections, etc.)
 	- the relayer submits proof of fork to handlers and full nodes
 	  
-	> the list is definitely not complete. I think part of this
-	> (perhaps all)  is
-	> covered by what Anca presented recently.
+> the list is definitely not complete. I think part of this
+> (perhaps all)  is
+> covered by what Anca presented recently.
 	
-    We will need to define what we expect from these components
+We will need to define what we expect from these components
 
 - for the parts where the relayer talks to the handler, we need to fix
   the interface, and what the handler does
