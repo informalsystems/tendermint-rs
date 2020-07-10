@@ -1,6 +1,6 @@
 # LightNode
 
-Tendermint light client node wraps the light-client crate into a command-line interface tool. 
+[Tendermint] light client node wraps the light-client crate into a command-line interface tool. 
 It can be used as a standalone light client daemon and exposes an RPC endpoint 
 that exposes the current state of the light node. 
 
@@ -105,7 +105,7 @@ $ curl localhost:8888 -X POST -H 'Content-Type: application/json' -d '{"jsonrpc"
   <summary>Click here to see an example for expected output:</summary>
   
   ```json
-curl localhost:8888 -X POST -H 'Content-Type: application/json' -d '{"jsonrpc": "2.0", "method": "state", "id": 1}' | jq 
+$ curl localhost:8888 -X POST -H 'Content-Type: application/json' -d '{"jsonrpc": "2.0", "method": "state", "id": 1}' | jq 
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 100  1902  100  1856  100    46   164k   4181 --:--:-- --:--:-- --:--:--  168k
@@ -195,3 +195,4 @@ curl localhost:8888 -X POST -H 'Content-Type: application/json' -d '{"jsonrpc": 
 
 
 [quick start]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/quick-start.md
+[Tendermint]: https://github.com/tendermint/tendermint
