@@ -92,7 +92,7 @@ impl ForkDetector for ProdForkDetector {
         for witness in witnesses {
             let mut state = State::new(MemoryStore::new());
 
-            let witness_block = witness
+            let (witness_block, _) = witness
                 .light_client
                 .get_or_fetch_block(verified_block.height(), &mut state)?;
 
