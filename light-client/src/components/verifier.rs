@@ -6,7 +6,7 @@ use crate::{
         CommitValidator, Hasher, ProdCommitValidator, ProdHasher, ProdVotingPowerCalculator,
         VotingPowerCalculator,
     },
-    types::LightBlock,
+    types::{LightBlock, Time},
 };
 use preds::{errors::VerificationError, ProdPredicates, VerificationPredicates};
 
@@ -44,7 +44,13 @@ impl From<Result<(), VerificationError>> for Verdict {
 /// - [TMBC-VAL-COMMIT.1]
 pub trait Verifier: Send {
     /// Perform the verification.
-    fn verify(&self, untrusted: &LightBlock, trusted: &LightBlock, options: &Options) -> Verdict;
+    fn verify(
+        &self,
+        untrusted: &LightBlock,
+        trusted: &LightBlock,
+        options: &Options,
+        now: Time,
+    ) -> Verdict;
 }
 
 /// Production implementation of the verifier.
@@ -91,7 +97,13 @@ impl Default for ProdVerifier {
 }
 
 impl Verifier for ProdVerifier {
-    fn verify(&self, untrusted: &LightBlock, trusted: &LightBlock, options: &Options) -> Verdict {
+    fn verify(
+        &self,
+        untrusted: &LightBlock,
+        trusted: &LightBlock,
+        options: &Options,
+        now: Time,
+    ) -> Verdict {
         preds::verify(
             &*self.predicates,
             &*self.voting_power_calculator,
@@ -100,6 +112,7 @@ impl Verifier for ProdVerifier {
             &trusted,
             &untrusted,
             options,
+            now,
         )
         .into()
     }

@@ -13,7 +13,7 @@ use crate::{
     bail,
     errors::{Error, ErrorKind},
     state::State,
-    types::{Height, LightBlock, PeerId, Status, Time, TrustThreshold},
+    types::{Height, LightBlock, PeerId, Status, TrustThreshold},
 };
 
 /// Verification parameters
@@ -26,23 +26,16 @@ pub struct Options {
     /// and trusted validator set is sufficient for a commit to be
     /// accepted going forward.
     pub trust_threshold: TrustThreshold,
+
     /// How long a validator set is trusted for (must be shorter than the chain's
     /// unbonding period)
     pub trusting_period: Duration,
+
     /// Correction parameter dealing with only approximately synchronized clocks.
     /// The local clock should always be ahead of timestamps from the blockchain; this
     /// is the maximum amount that the local clock may drift behind a timestamp from the
     /// blockchain.
     pub clock_drift: Duration,
-    /// The current time
-    pub now: Time,
-}
-
-impl Options {
-    /// Override the stored current time with the given one.
-    pub fn with_now(self, now: Time) -> Self {
-        Self { now, ..self }
-    }
 }
 
 /// The light client implements a read operation of a header from the blockchain,
@@ -158,13 +151,11 @@ impl LightClient {
             return Ok(light_block);
         }
 
-        // Override the `now` fields in the given verification options with the current time,
-        // as per the given `clock`.
-        let options = self.options.with_now(self.clock.now());
-
         let mut current_height = target_height;
 
         loop {
+            let now = self.clock.now();
+
             // Get the latest trusted state
             let trusted_state = state
                 .light_store
@@ -179,10 +170,10 @@ impl LightClient {
             }
 
             // Check invariant [LCV-INV-TP.1]
-            if !is_within_trust_period(&trusted_state, options.trusting_period, options.now) {
+            if !is_within_trust_period(&trusted_state, self.options.trusting_period, now) {
                 bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
                     trusted_state: Box::new(trusted_state),
-                    options,
+                    options: self.options,
                 });
             }
 
@@ -201,7 +192,7 @@ impl LightClient {
             // Validate and verify the current block
             let verdict = self
                 .verifier
-                .verify(&current_block, &trusted_state, &options);
+                .verify(&current_block, &trusted_state, &self.options, now);
 
             match verdict {
                 Verdict::Success => {
