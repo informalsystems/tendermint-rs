@@ -86,6 +86,8 @@ impl Default for LightNodeConfig {
                 listen_addr: "127.0.0.1:8888".parse().unwrap(),
                 request_timeout: Duration::from_secs(60),
             },
+            // TODO(ismail): need at least 2 peers for a proper init
+            // otherwise the light node will complain on `start` with `no witness left`
             light_clients: vec![LightClientConfig::default()],
         }
     }
