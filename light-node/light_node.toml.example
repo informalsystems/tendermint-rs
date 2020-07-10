@@ -1,15 +1,33 @@
+# Example light-node configuration file
+#
+# This is just an example for reference which can be used
+# against a locally running tendermint fullnode.
+
+# The fraction of the total voting power of a known
+# and trusted validator set is sufficient for a commit to be
+# accepted going forward.
 [trust_threshold]
 numerator = "1"
 denominator = "3"
 
+# The duration until we consider a trusted state as expired.
 [trusting_period]
 secs = 864000
 nanos = 0
 
+# Correction parameter dealing with only approximately synchronized clocks.
+# The local clock should always be ahead of timestamps from the blockchain; this
+# is the maximum amount that the local clock may drift behind a timestamp from the
+# blockchain.
 [clock_drift]
 secs = 5
 nanos = 0
 
+# rpc_config contains all configration options for the RPC server
+# of the light node as well as RPC client related options.
+#
+# - listen_addr: the address the RPC server will serve
+# - rpc_config.request_timeout: The duration after which any RPC request to tendermint node will time out.
 [rpc_config]
 listen_addr = "127.0.0.1:8888"
 
@@ -17,6 +35,11 @@ listen_addr = "127.0.0.1:8888"
     secs = 60
     nanos = 0
 
+# Actual light client configuration.
+# - address: Address of the Tendermint fullnode
+#            to connect to and fetch LightBlock data from.
+# - peer_id: PeerID of the same fullnode.
+# - The data base folder for this instance's store.
 [[light_clients]]
 address = "tcp://127.0.0.1:26657"
 peer_id = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
