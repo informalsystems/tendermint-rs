@@ -15,6 +15,8 @@
 - Turn `Handle` into a trait for ease of integration and testability ([#401])
 - Improve `Supervisor` ergonomics according to [ADR-007] ([#403])
 - Correctly handle blocks marked `Trusted` in accordance with the specification ([#407])
+- Treat `Trusted` status as a special case of `Verified` as per the spec ([#419])
+- Add integration test ([#431])
 
 [#302]: https://github.com/informalsystems/tendermint-rs/pull/302
 [#336]: https://github.com/informalsystems/tendermint-rs/pull/336
@@ -25,8 +27,13 @@
 [#375]: https://github.com/informalsystems/tendermint-rs/pull/375
 [#383]: https://github.com/informalsystems/tendermint-rs/pull/383
 [#394]: https://github.com/informalsystems/tendermint-rs/pull/394
+[#397]: https://github.com/informalsystems/tendermint-rs/pull/397
 [#401]: https://github.com/informalsystems/tendermint-rs/pull/401
 [#403]: https://github.com/informalsystems/tendermint-rs/pull/403
+[#407]: https://github.com/informalsystems/tendermint-rs/pull/407
+[#419]: https://github.com/informalsystems/tendermint-rs/pull/419
+[#431]: https://github.com/informalsystems/tendermint-rs/pull/431
+
 [ADR-007]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-007-light-client-supervisor-ergonomics.md
 
 ## [0.14.1] (2020-06-23)

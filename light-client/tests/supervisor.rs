@@ -61,7 +61,6 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
         trust_threshold: trust_options.trust_level,
         trusting_period: trust_options.period.into(),
         clock_drift: Duration::from_secs(10),
-        now,
     };
 
     let verifier = ProdVerifier::default();
