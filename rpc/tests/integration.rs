@@ -225,6 +225,16 @@ mod endpoints {
     }
 
     #[test]
+    fn commit_height_1() {
+        let response =
+            endpoint::commit::Response::from_string(&read_json_fixture("commit_1")).unwrap();
+        let header = response.signed_header.header;
+        let commit = response.signed_header.commit;
+        let block_id = commit.block_id;
+        assert_eq!(header.hash(), block_id.hash);
+    }
+
+    #[test]
     fn genesis() {
         let response =
             endpoint::genesis::Response::from_string(&read_json_fixture("genesis")).unwrap();
