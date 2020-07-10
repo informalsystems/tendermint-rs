@@ -6,10 +6,17 @@ that exposes the current state of the light node.
 
 ## Getting Started
 
+### Prerequisites
+
+This short tutorial assumes that you are familiar with how to run a Tendermint fullnode on your machine. To learn how to do this, you can consult the [quick start] section of the tendermint documentation.
+
+This tutorial further assumes you have `git` and the latest stable rust tool-chain installed.
+
+#### Cloning the repository
+
 To run the light node from source you have to clone this repository first:
 ```
 $ git clone https://github.com/informalsystems/tendermint-rs.git
-[...]
 ```
 
 Then navigate to the light node crate:
@@ -20,7 +27,7 @@ $ cd tendermint-rs/light-node
 ### Configuration
 
 You can configure all aspects of light node via a configuration file. 
-An example cofigartion can be found under [light_node.toml.example](light-node/light_node.toml.example). 
+An example cofigartion can be found under [light_node.toml.example](light_node.toml.example). 
 
 If you are running a Tendermint fullnode on your machine, you can simply copy and use it to get started:
 ```
@@ -53,6 +60,25 @@ Now you can start your light node by simply running:
 $ cargo run --  start                             
 ```
 
+If everything worked the output will look sth like:
+```
+ cargo run --  start                           17:56:31
+    Finished dev [unoptimized + debuginfo] target(s) in 0.42s
+     Running `/redacted/tendermint-rs/target/debug/light_node start`
+[info] synced to block 20041
+[info] synced to block 20042
+[info] synced to block 20044
+[info] synced to block 20046
+[info] synced to block 20048
+[info] synced to block 20049
+[info] synced to block 20051
+[info] synced to block 20053
+[info] synced to block 20054
+[...]
+```
+
+You can stop the light node by pressing Ctrl+c.
+
 ### Help
 
 You will notice that some config parameters can be overwritten via command line arguments. 
@@ -67,8 +93,10 @@ Or on a specific sub-command, e.g.:
 $ cargo run --  help start
  ```
 
-### RPC endpoint(s)
+### JSONRPC Endpoint(s)
 
 TODO
 
- 
+## Further Reading
+
+[quick start]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/quick-start.md
