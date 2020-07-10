@@ -10,7 +10,8 @@ that exposes the current state of the light node.
 
 This short tutorial assumes that you are familiar with how to run a Tendermint fullnode on your machine. To learn how to do this, you can consult the [quick start] section of the tendermint documentation.
 
-This tutorial further assumes you have `git` and the latest stable rust tool-chain installed.
+This tutorial further assumes you have `git` and the latest stable rust tool-chain installed (see https://rustup.rs/).
+Additionally, the `jq` tool will make your life easier when dealing with JSON output.
 
 #### Cloning the repository
 
@@ -95,8 +96,102 @@ $ cargo run --  help start
 
 ### JSONRPC Endpoint(s)
 
-TODO
+When you have a light-node running you can query its current state via:
+```
+$ curl localhost:8888 -X POST -H 'Content-Type: application/json' -d '{"jsonrpc": "2.0", "method": "state", "id": 1}' | jq
+```
 
-## Further Reading
+<details>
+  <summary>Click here to see an example for expected output:</summary>
+  
+  ```json
+curl localhost:8888 -X POST -H 'Content-Type: application/json' -d '{"jsonrpc": "2.0", "method": "state", "id": 1}' | jq 
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  1902  100  1856  100    46   164k   4181 --:--:-- --:--:-- --:--:--  168k
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "next_validator_set": {
+      "validators": [
+        {
+          "address": "AD358F20C8CE80889E0F0248FDDC454595D632AE",
+          "proposer_priority": "0",
+          "pub_key": {
+            "type": "tendermint/PubKeyEd25519",
+            "value": "uo9rbgR5J0kuED0C529bTa6mcHZ4uXDjJRdg1k8proY="
+          },
+          "voting_power": "10"
+        }
+      ]
+    },
+    "provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE",
+    "signed_header": {
+      "commit": {
+        "block_id": {
+          "hash": "76F85BEF1133114482FC8F78C5E78D2B1C1875DD8422A0394B175DD694A7FBA1",
+          "parts": {
+            "hash": "568F279E3F59FBE3CABEACE7A3C028C15CA6A902F9D77DDEBA3BFCB9514E2881",
+            "total": "1"
+          }
+        },
+        "height": "2",
+        "round": "0",
+        "signatures": [
+          {
+            "block_id_flag": 2,
+            "signature": "sN3e6bzKLeIFNRptQ4SytBDLZJA53e92D6FWTll5Lq8Wdg4fVzxya6qx3SHFU82ukuj8jKmBMkwTTJsb8xThCQ==",
+            "timestamp": "2020-07-10T12:39:06.977628900Z",
+            "validator_address": "AD358F20C8CE80889E0F0248FDDC454595D632AE"
+          }
+        ]
+      },
+      "header": {
+        "app_hash": "0000000000000000",
+        "chain_id": "dockerchain",
+        "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+        "data_hash": null,
+        "evidence_hash": null,
+        "height": "2",
+        "last_block_id": {
+          "hash": "F008EACA817CF6A3918CF7A6FD44F1F2464BB24D25A7EDB45A03E8783E9AB438",
+          "parts": {
+            "hash": "BF5130E879A02AC4BB83E392732ED4A37BE2F01304A615467EE7960858774E57",
+            "total": "1"
+          }
+        },
+        "last_commit_hash": "474496740A2EAA967EED02B239DA302BAF696AE36AEA78F7FEFCE4A77CCA5B33",
+        "last_results_hash": null,
+        "next_validators_hash": "74F2AC2B6622504D08DD2509E28CE731985CFE4D133C9DB0CB85763EDCA95AA3",
+        "proposer_address": "AD358F20C8CE80889E0F0248FDDC454595D632AE",
+        "time": "2020-07-10T12:39:05.977628900Z",
+        "validators_hash": "74F2AC2B6622504D08DD2509E28CE731985CFE4D133C9DB0CB85763EDCA95AA3",
+        "version": {
+          "app": "1",
+          "block": "10"
+        }
+      }
+    },
+    "validator_set": {
+      "validators": [
+        {
+          "address": "AD358F20C8CE80889E0F0248FDDC454595D632AE",
+          "proposer_priority": "0",
+          "pub_key": {
+            "type": "tendermint/PubKeyEd25519",
+            "value": "uo9rbgR5J0kuED0C529bTa6mcHZ4uXDjJRdg1k8proY="
+          },
+          "voting_power": "10"
+        }
+      ]
+    }
+  },
+  "id": 1
+}
+
+```
+
+</details>
+
 
 [quick start]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/quick-start.md
