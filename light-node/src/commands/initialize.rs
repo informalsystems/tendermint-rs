@@ -49,6 +49,10 @@ impl Runnable for InitCmd {
     }
 }
 
+// TODO(ismail): sth along these lines should live in the light-client crate / library
+// instead of here.
+// TODO(ismail): additionally here and everywhere else, we should return errors
+// instead of std::process::exit because no destructors will be run.
 fn initialize_subjectively(
     height: u64,
     subjective_header_hash: Hash,
