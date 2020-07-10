@@ -21,8 +21,6 @@
 use abscissa_core::testing::prelude::*;
 use once_cell::sync::Lazy;
 
-use tendermint_light_node::config::LightNodeConfig;
-
 /// Executes your application binary via `cargo run`.
 ///
 /// Storing this value as a [`Lazy`] static ensures that all instances of
@@ -45,46 +43,21 @@ fn start_no_args() {
 #[test]
 #[ignore]
 fn start_with_args() {
-    let mut runner = RUNNER.clone();
-    let mut cmd = runner
-        .args(&["start", "acceptance", "test"])
-        .capture_stdout()
-        .run();
-
-    cmd.stdout().expect_line("Hello, acceptance test!");
-    cmd.wait().unwrap().expect_success();
+    todo!()
 }
 
 /// Use configured value
 #[test]
 #[ignore]
 fn start_with_config_no_args() {
-    let mut config = LightNodeConfig::default();
-    config.rpc_address = "localhost:26657".to_owned();
-    let expected_line = format!("Requesting from {}.", &config.rpc_address);
-
-    let mut runner = RUNNER.clone();
-    let mut cmd = runner.config(&config).arg("start").capture_stdout().run();
-    cmd.stdout().expect_line(&expected_line);
-    cmd.wait().unwrap().expect_success();
+    todo!()
 }
 
 /// Override configured value with command-line argument
 #[test]
 #[ignore]
 fn start_with_config_and_args() {
-    let mut config = LightNodeConfig::default();
-    config.rpc_address = "localhost:26657".to_owned();
-
-    let mut runner = RUNNER.clone();
-    let mut cmd = runner
-        .config(&config)
-        .args(&["start", "other:26657"])
-        .capture_stdout()
-        .run();
-
-    cmd.stdout().expect_line("Requesting from other:26657.");
-    cmd.wait().unwrap().expect_success();
+    todo!()
 }
 
 /// Example of a test which matches a regular expression
