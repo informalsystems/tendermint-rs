@@ -98,14 +98,16 @@ $ cargo run --  help start
 
 When you have a light-node running you can query its current state via:
 ```
-$ curl localhost:8888 -X POST -H 'Content-Type: application/json' -d '{"jsonrpc": "2.0", "method": "state", "id": 1}' | jq
+$ curl localhost:8888 -X POST -H 'Content-Type: application/json' \
+  -d '{"jsonrpc": "2.0", "method": "state", "id": 1}' | jq
 ```
 
 <details>
   <summary>Click here to see an example for expected output:</summary>
   
   ```json
-$ curl localhost:8888 -X POST -H 'Content-Type: application/json' -d '{"jsonrpc": "2.0", "method": "state", "id": 1}' | jq 
+$ curl localhost:8888 -X POST -H 'Content-Type: application/json' \
+  -d '{"jsonrpc": "2.0", "method": "state", "id": 1}' | jq 
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 100  1902  100  1856  100    46   164k   4181 --:--:-- --:--:-- --:--:--  168k
