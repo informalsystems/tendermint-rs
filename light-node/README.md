@@ -1,6 +1,6 @@
-# LightNode
+# Light-Node
 
-[Tendermint] light client node wraps the light-client crate into a command-line interface tool. 
+The [Tendermint] light-node wraps the [light-client] crate into a command-line interface tool. 
 It can be used as a standalone light client daemon and exposes a JSONRPC endpoint 
 from which you can query the current state of the light node. 
 
@@ -55,6 +55,8 @@ You can now use this header hash to subjectively initialize your light node via:
 ```
 $ cargo run --  initialize  2 76F85BEF1133114482FC8F78C5E78D2B1C1875DD8422A0394B175DD694A7FBA1
 ```
+
+Note that calling `cargo run` for the first time might take a while as this command will also compile the light node and all its dependencies.
 
 ### Running the light node daemon
 
@@ -204,3 +206,4 @@ Example output:
 
 [quick start]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/quick-start.md
 [Tendermint]: https://github.com/tendermint/tendermint
+[light-client]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
