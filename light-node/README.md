@@ -1,8 +1,8 @@
 # LightNode
 
 [Tendermint] light client node wraps the light-client crate into a command-line interface tool. 
-It can be used as a standalone light client daemon and exposes an RPC endpoint 
-that exposes the current state of the light node. 
+It can be used as a standalone light client daemon and exposes a JSONRPC endpoint 
+from which you can query the current state of the light node. 
 
 ## Getting Started
 
