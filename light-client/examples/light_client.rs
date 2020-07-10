@@ -20,7 +20,7 @@ use tendermint_light_client::{
     peer_list::PeerList,
     state::State,
     store::{sled::SledStore, LightStore},
-    types::{Height, PeerId, Status, Time, TrustThreshold},
+    types::{Height, PeerId, Status, TrustThreshold},
 };
 
 #[derive(Debug, Options)]
@@ -121,7 +121,6 @@ fn make_instance(
         },
         trusting_period: Duration::from_secs(36000),
         clock_drift: Duration::from_secs(1),
-        now: Time::now(),
     };
 
     let verifier = ProdVerifier::default();

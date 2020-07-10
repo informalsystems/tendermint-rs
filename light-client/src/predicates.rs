@@ -202,6 +202,7 @@ pub trait VerificationPredicates: Send {
 /// check that their (next) validator sets hashes match.
 /// - Otherwise, ensure that the untrusted block has a greater height than
 /// the trusted block.
+#[allow(clippy::too_many_arguments)]
 pub fn verify(
     vp: &dyn VerificationPredicates,
     voting_power_calculator: &dyn VotingPowerCalculator,
@@ -210,13 +211,14 @@ pub fn verify(
     trusted: &LightBlock,
     untrusted: &LightBlock,
     options: &Options,
+    now: Time,
 ) -> Result<(), VerificationError> {
     // Ensure the latest trusted header hasn't expired
     vp.is_within_trust_period(
         &trusted.signed_header.header,
         options.trusting_period,
         options.clock_drift,
-        options.now,
+        now,
     )?;
 
     // Ensure the header validator hashes match the given validators

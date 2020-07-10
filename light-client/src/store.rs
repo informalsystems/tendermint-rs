@@ -4,6 +4,7 @@
 //! - a transient, in-memory implementation for testing purposes
 //! - a persistent, on-disk, sled-backed implementation for production
 
+use crate::std_ext;
 use crate::types::{Height, LightBlock, Status};
 
 pub mod memory;
@@ -37,21 +38,36 @@ pub trait LightStore: std::fmt::Debug + Send {
     /// Get an iterator of all light blocks with the given status.
     fn all(&self, status: Status) -> Box<dyn Iterator<Item = LightBlock>>;
 
+    /// Get a block at a given height whatever its verification status as long as it hasn't failed
+    /// verification (ie. its status is not `Status::Failed`).
+    fn get_non_failed(&self, height: Height) -> Option<(LightBlock, Status)> {
+        None.or_else(|| {
+            self.get(height, Status::Trusted)
+                .map(|lb| (lb, Status::Trusted))
+        })
+        .or_else(|| {
+            self.get(height, Status::Verified)
+                .map(|lb| (lb, Status::Verified))
+        })
+        .or_else(|| {
+            self.get(height, Status::Unverified)
+                .map(|lb| (lb, Status::Unverified))
+        })
+    }
+
     /// Get the light block of greatest height with the trusted or verified status.
     fn latest_trusted_or_verified(&self) -> Option<LightBlock> {
         let latest_trusted = self.latest(Status::Trusted);
         let latest_verified = self.latest(Status::Verified);
 
-        match (latest_trusted, latest_verified) {
-            (None, latest_verified) => latest_verified,
-            (latest_trusted, None) => latest_trusted,
-            (Some(latest_trusted), Some(latest_verified)) => {
-                if latest_trusted.height() > latest_verified.height() {
-                    Some(latest_trusted)
-                } else {
-                    Some(latest_verified)
-                }
-            }
-        }
+        std_ext::option::select(latest_trusted, latest_verified, |t, v| {
+            std_ext::cmp::max_by_key(t, v, |lb| lb.height())
+        })
+    }
+
+    /// Get the light block of the given height with the trusted or verified status.
+    fn get_trusted_or_verified(&self, height: Height) -> Option<LightBlock> {
+        self.get(height, Status::Trusted)
+            .or_else(|| self.get(height, Status::Verified))
     }
 }
