@@ -1,7 +1,7 @@
 //! ABCI response types used by the `/block_results` RPC endpoint.
 
 use super::{code::Code, data::Data, gas::Gas, info::Info, log::Log, tag::Tag};
-use crate::{consensus, validator};
+use crate::{consensus, serializers, validator};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt::{self, Display};
 
@@ -50,6 +50,7 @@ pub struct DeliverTx {
     pub code: Code,
 
     /// ABCI application data
+    #[serde(deserialize_with = "serializers::null_as_default")]
     pub data: Data,
 
     /// ABCI log data (nondeterministic)
@@ -59,9 +60,11 @@ pub struct DeliverTx {
     pub info: Info,
 
     /// Amount of gas wanted
+    #[serde(rename = "gasWanted")]
     pub gas_wanted: Gas,
 
     /// Amount of gas used
+    #[serde(rename = "gasUsed")]
     pub gas_used: Gas,
 
     /// Events
