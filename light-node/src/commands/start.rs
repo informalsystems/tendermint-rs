@@ -37,9 +37,9 @@ use tendermint_light_client::types::Status;
 pub struct StartCmd {
     /// Path to configuration file
     #[options(
-        short = "l",
-        long = "listen",
-        help = "address the rpc server will serve"
+        short = "b",
+        long = "jsonrpc-server-addr",
+        help = "address the rpc server will bind to"
     )]
     pub listen_addr: Option<SocketAddr>,
 
