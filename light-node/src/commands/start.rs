@@ -1,20 +1,26 @@
 //! `start` subcommand - start the light node.
 
-/// App-local prelude includes `app_reader()`/`app_writer()`/`app_config()`
-/// accessors along with logging macros. Customize as you see fit.
-use abscissa_core::{config, Command, FrameworkError, Options, Runnable};
 use std::process;
 
 use crate::application::{app_config, APPLICATION};
 use crate::config::{LightClientConfig, LightNodeConfig};
+use crate::rpc;
 use crate::rpc::Server;
 
-use crate::rpc;
+use abscissa_core::config;
 use abscissa_core::path::PathBuf;
+use abscissa_core::status_err;
+use abscissa_core::status_info;
+use abscissa_core::Command;
+use abscissa_core::FrameworkError;
+use abscissa_core::Options;
+use abscissa_core::Runnable;
+
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::ops::Deref;
 use std::time::Duration;
+
 use tendermint_light_client::components::clock::SystemClock;
 use tendermint_light_client::components::io::ProdIo;
 use tendermint_light_client::components::scheduler;
@@ -64,17 +70,17 @@ impl Runnable for StartCmd {
             loop {
                 match handle.verify_to_highest() {
                     Ok(light_block) => {
-                        println!("[info] synced to block {}", light_block.height());
+                        status_info!("synced to block {}", light_block.height().to_string());
                     }
                     Err(err) => {
-                        println!("[error] sync failed: {}", err);
+                        status_err!("sync failed: {}", err);
                     }
                 }
-                // TODO: use ticks and make this configurable:
+                // TODO(liamsi): use ticks and make this configurable:
                 std::thread::sleep(Duration::from_millis(800));
             }
         }) {
-            eprintln!("Error while running application: {}", err);
+            status_err!("Unexpected error while running application: {}", err);
             process::exit(1);
         }
     }
@@ -88,7 +94,7 @@ impl config::Override<LightNodeConfig> for StartCmd {
         &self,
         mut config: LightNodeConfig,
     ) -> Result<LightNodeConfig, FrameworkError> {
-        // Todo figure out if other options would be reasonable to overwrite via CLI arguments.
+        // TODO(liamsi): figure out if other options would be reasonable to overwrite via CLI arguments.
         if let Some(addr) = self.listen_addr {
             config.rpc_config.listen_addr = addr;
         }
@@ -97,17 +103,17 @@ impl config::Override<LightNodeConfig> for StartCmd {
 }
 impl StartCmd {
     fn assert_init_was_run() {
-        // TODO: handle errors properly:
+        // TODO(liamsi): handle errors properly:
         let primary_db_path = app_config().light_clients.first().unwrap().db_path.clone();
         let db = sled::open(primary_db_path).unwrap_or_else(|e| {
-            println!("[error] could not open database: {}", e);
+            status_err!("could not open database: {}", e);
             std::process::exit(1);
         });
 
         let primary_store = SledStore::new(db);
 
         if primary_store.latest(Status::Verified).is_none() {
-            println!("[error] no trusted state in store for primary, please initialize with the `initialize` subcommand first");
+            status_err!("no trusted state in store for primary, please initialize with the `initialize` subcommand first");
             std::process::exit(1);
         }
     }
@@ -123,7 +129,7 @@ impl StartCmd {
         let db_path = light_config.db_path.clone();
 
         let db = sled::open(db_path).unwrap_or_else(|e| {
-            println!("[ error ] could not open database: {}", e);
+            status_err!("could not open database: {}", e);
             std::process::exit(1);
         });
 
@@ -180,11 +186,10 @@ impl StartCmd {
         }
         let peer_list = peer_list.build();
 
-        let supervisor = Supervisor::new(
+        Supervisor::new(
             peer_list,
             ProdForkDetector::default(),
             ProdEvidenceReporter::new(peer_map.clone()),
-        );
-        supervisor
+        )
     }
 }

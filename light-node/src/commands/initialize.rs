@@ -3,11 +3,17 @@
 use crate::application::app_config;
 use crate::config::LightClientConfig;
 
-use abscissa_core::{Command, Options, Runnable};
 use std::collections::HashMap;
 
+use abscissa_core::status_err;
+use abscissa_core::status_warn;
+use abscissa_core::Command;
+use abscissa_core::Options;
+use abscissa_core::Runnable;
+
+use tendermint::hash;
 use tendermint::lite::Header;
-use tendermint::{hash, Hash};
+use tendermint::Hash;
 
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;
@@ -16,7 +22,7 @@ use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
 use tendermint_light_client::types::Status;
 
-/// `intialize` subcommand
+/// `initialize` subcommand
 #[derive(Command, Debug, Default, Options)]
 pub struct InitCmd {
     #[options(
@@ -60,35 +66,39 @@ fn initialize_subjectively(
     io: &ProdIo,
 ) {
     let db = sled::open(l_conf.db_path.clone()).unwrap_or_else(|e| {
-        println!("[ error ] could not open database: {}", e);
+        status_err!("could not open database: {}", e);
         std::process::exit(1);
     });
 
     let mut light_store = SledStore::new(db);
 
     if light_store.latest(Status::Verified).is_some() {
-        println!("[ warning ] overwriting trusted state in database");
+        status_warn!(
+            "overwriting trusted state in database: {:?}",
+            l_conf.db_path
+        );
     }
 
     let trusted_state = io
         .fetch_light_block(l_conf.peer_id, AtHeight::At(height))
         .unwrap_or_else(|e| {
-            println!("[error] could not retrieve trusted header: {}", e);
+            status_err!("could not retrieve trusted header: {}", e);
             std::process::exit(1);
         });
 
     let predicates = ProdPredicates;
     let hasher = ProdHasher;
     if let Err(err) = predicates.validator_sets_match(&trusted_state, &hasher) {
-        println!("[error] invalid light block: {}", err);
+        status_err!("invalid light block: {}", err);
         std::process::exit(1);
     }
     // TODO(ismail): actually verify more predicates of light block before storing!?
     let got_header_hash = trusted_state.signed_header.header.hash();
     if got_header_hash != subjective_header_hash {
-        println!(
-            "[error] received LightBlock's header hash: {} does not match the subjective hash: {}",
-            got_header_hash, subjective_header_hash
+        status_err!(
+            "received LightBlock's header hash: {} does not match the subjective hash: {}",
+            got_header_hash,
+            subjective_header_hash
         );
         std::process::exit(1);
     }
