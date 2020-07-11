@@ -31,9 +31,9 @@ nanos = 0
 [rpc_config]
 listen_addr = "127.0.0.1:8888"
 
-    [rpc_config.request_timeout]
-    secs = 60
-    nanos = 0
+[rpc_config.request_timeout]
+secs = 60
+nanos = 0
 
 # Actual light client configuration.
 # - address: Address of the Tendermint fullnode
