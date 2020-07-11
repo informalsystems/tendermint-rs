@@ -72,9 +72,11 @@ fn initialize_subjectively(
 
     let mut light_store = SledStore::new(db);
 
-    if light_store.latest(Status::Verified).is_some() {
+    if light_store.latest_trusted_or_verified().is_some() {
+        let lb = light_store.latest_trusted_or_verified().unwrap();
         status_warn!(
-            "overwriting trusted state in database: {:?}",
+            "already existing trusted or verified state of height {} in database: {:?}",
+            lb.signed_header.header.height,
             l_conf.db_path
         );
     }
@@ -102,5 +104,7 @@ fn initialize_subjectively(
         );
         std::process::exit(1);
     }
+    // TODO(liamsi): it is unclear if this should be Trusted or only Verified
+    //  - update the spec first and then use library method instead of this:
     light_store.insert(trusted_state, Status::Verified);
 }

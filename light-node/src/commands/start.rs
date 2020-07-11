@@ -112,8 +112,8 @@ impl StartCmd {
 
         let primary_store = SledStore::new(db);
 
-        if primary_store.latest(Status::Verified).is_none() {
-            status_err!("no trusted state in store for primary, please initialize with the `initialize` subcommand first");
+        if primary_store.latest_trusted_or_verified().is_none() {
+            status_err!("no trusted or verified state in store for primary, please initialize with the `initialize` subcommand first");
             std::process::exit(1);
         }
     }
@@ -155,7 +155,7 @@ impl StartCmd {
     {
         let server = Server::new(h);
         let laddr = app_config().rpc_config.listen_addr;
-        // TODO: figure out howto handle the potenial error on run
+        // TODO(liamsi): figure out how to handle the potential error on run
         std::thread::spawn(move || rpc::run(server, &laddr.to_string()));
     }
 }
