@@ -35,7 +35,7 @@ impl lite::Header for block::Header {
         fields_bytes.push(AminoMessage::bytes_vec(&ConsensusVersion::from(
             &self.version,
         )));
-        fields_bytes.push(bytes_enc(self.chain_id.as_bytes()));
+        fields_bytes.push(encode_bytes(self.chain_id.as_bytes()));
         fields_bytes.push(encode_varint(self.height.value()));
         fields_bytes.push(AminoMessage::bytes_vec(&TimeMsg::from(self.time)));
         fields_bytes.push(
@@ -48,28 +48,79 @@ impl lite::Header for block::Header {
         fields_bytes.push(encode_hash(&self.validators_hash));
         fields_bytes.push(encode_hash(&self.next_validators_hash));
         fields_bytes.push(encode_hash(&self.consensus_hash));
-        fields_bytes.push(bytes_enc(&self.app_hash));
+        fields_bytes.push(encode_bytes(&self.app_hash));
         fields_bytes.push(self.last_results_hash.as_ref().map_or(vec![], encode_hash));
         fields_bytes.push(self.evidence_hash.as_ref().map_or(vec![], encode_hash));
-        fields_bytes.push(bytes_enc(self.proposer_address.as_bytes()));
+        fields_bytes.push(encode_bytes(self.proposer_address.as_bytes()));
 
         Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
     }
 }
 
-fn bytes_enc(bytes: &[u8]) -> Vec<u8> {
-    let mut chain_id_enc = vec![];
-    prost_amino::encode_length_delimiter(bytes.len(), &mut chain_id_enc).unwrap();
-    chain_id_enc.append(&mut bytes.to_vec());
-    chain_id_enc
+fn encode_bytes(bytes: &[u8]) -> Vec<u8> {
+    let bytes_len = bytes.len();
+    if bytes_len > 0 {
+        let mut encoded = vec![];
+        prost_amino::encode_length_delimiter(bytes_len, &mut encoded).unwrap();
+        encoded.append(&mut bytes.to_vec());
+        encoded
+    } else {
+        vec![]
+    }
+
 }
 
 fn encode_hash(hash: &Hash) -> Vec<u8> {
-    bytes_enc(hash.as_bytes())
+    encode_bytes(hash.as_bytes())
 }
 
 fn encode_varint(val: u64) -> Vec<u8> {
     let mut val_enc = vec![];
     prost_amino::encoding::encode_varint(val, &mut val_enc);
     val_enc
+}
+
+#[cfg(test)]
+mod test {
+    use crate::lite::Header as _;
+    use crate::block::Header;
+    use crate::Hash;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_hash_height_1() {
+        let json_data = r#"
+        {
+            "version": {
+              "block": "10",
+              "app": "1"
+            },
+            "chain_id": "dockerchain",
+            "height": "1",
+            "time": "2020-07-09T14:24:44.7157258Z",
+            "last_block_id": {
+              "hash": "",
+              "parts": {
+                "total": "0",
+                "hash": ""
+              }
+            },
+            "last_commit_hash": "",
+            "data_hash": "",
+            "validators_hash": "74F2AC2B6622504D08DD2509E28CE731985CFE4D133C9DB0CB85763EDCA95AA3",
+            "next_validators_hash": "74F2AC2B6622504D08DD2509E28CE731985CFE4D133C9DB0CB85763EDCA95AA3",
+            "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+            "app_hash": "",
+            "last_results_hash": "",
+            "evidence_hash": "",
+            "proposer_address": "AD358F20C8CE80889E0F0248FDDC454595D632AE"
+        }"#;
+        // extracted expected hash from a commit via
+        //  jq .result.signed_header.commit.block_id.hash
+        let header: Header = serde_json::from_str(json_data).unwrap();
+        let got_hash = header.hash();
+        let want_hash = Hash::from_str("F008EACA817CF6A3918CF7A6FD44F1F2464BB24D25A7EDB45A03E8783E9AB438").unwrap();
+
+        assert_eq!(got_hash, want_hash);
+    }
 }
