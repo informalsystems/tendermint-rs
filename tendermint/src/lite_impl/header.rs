@@ -67,7 +67,6 @@ fn encode_bytes(bytes: &[u8]) -> Vec<u8> {
     } else {
         vec![]
     }
-
 }
 
 fn encode_hash(hash: &Hash) -> Vec<u8> {
@@ -82,13 +81,19 @@ fn encode_varint(val: u64) -> Vec<u8> {
 
 #[cfg(test)]
 mod test {
-    use crate::lite::Header as _;
     use crate::block::Header;
+    use crate::lite::Header as _;
     use crate::Hash;
     use std::str::FromStr;
 
     #[test]
     fn test_hash_height_1() {
+        // JSON extracted from https://github.com/tendermint/tendermint/tree/v0.33
+        // more precisely `curl`ed from locally build docker image of:
+        // git log --pretty=format:"%H" -1                                                                                                                              15:35:44
+        // 606d0a89ccabbd3e59cff521f9f4d875cc366ac9
+        // via
+        //  curl -X GET "http://localhost:26657/commit?height=1" -H  "accept: application/json" | jq .result.signed_header.header
         let json_data = r#"
         {
             "version": {
@@ -116,10 +121,12 @@ mod test {
             "proposer_address": "AD358F20C8CE80889E0F0248FDDC454595D632AE"
         }"#;
         // extracted expected hash from a commit via
-        //  jq .result.signed_header.commit.block_id.hash
+        // curl -X GET "http://localhost:26657/commit?height=1" -H  "accept: application/json" | jq .result.signed_header.commit.block_id.hash
         let header: Header = serde_json::from_str(json_data).unwrap();
         let got_hash = header.hash();
-        let want_hash = Hash::from_str("F008EACA817CF6A3918CF7A6FD44F1F2464BB24D25A7EDB45A03E8783E9AB438").unwrap();
+        let want_hash =
+            Hash::from_str("F008EACA817CF6A3918CF7A6FD44F1F2464BB24D25A7EDB45A03E8783E9AB438")
+                .unwrap();
 
         assert_eq!(got_hash, want_hash);
     }
