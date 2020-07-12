@@ -95,37 +95,82 @@ mod test {
         // via
         //  curl -X GET "http://localhost:26657/commit?height=1" -H  "accept: application/json" | jq .result.signed_header.header
         let json_data = r#"
-        {
-            "version": {
-              "block": "10",
-              "app": "1"
-            },
-            "chain_id": "dockerchain",
-            "height": "1",
-            "time": "2020-07-09T14:24:44.7157258Z",
-            "last_block_id": {
-              "hash": "",
-              "parts": {
-                "total": "0",
-                "hash": ""
-              }
-            },
-            "last_commit_hash": "",
-            "data_hash": "",
-            "validators_hash": "74F2AC2B6622504D08DD2509E28CE731985CFE4D133C9DB0CB85763EDCA95AA3",
-            "next_validators_hash": "74F2AC2B6622504D08DD2509E28CE731985CFE4D133C9DB0CB85763EDCA95AA3",
-            "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
-            "app_hash": "",
-            "last_results_hash": "",
-            "evidence_hash": "",
-            "proposer_address": "AD358F20C8CE80889E0F0248FDDC454595D632AE"
-        }"#;
+{
+    "version": {
+      "block": "10",
+      "app": "1"
+    },
+    "chain_id": "dockerchain",
+    "height": "1",
+    "time": "2020-07-09T14:24:44.7157258Z",
+    "last_block_id": {
+      "hash": "",
+      "parts": {
+        "total": "0",
+        "hash": ""
+      }
+    },
+    "last_commit_hash": "",
+    "data_hash": "",
+    "validators_hash": "74F2AC2B6622504D08DD2509E28CE731985CFE4D133C9DB0CB85763EDCA95AA3",
+    "next_validators_hash": "74F2AC2B6622504D08DD2509E28CE731985CFE4D133C9DB0CB85763EDCA95AA3",
+    "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+    "app_hash": "",
+    "last_results_hash": "",
+    "evidence_hash": "",
+    "proposer_address": "AD358F20C8CE80889E0F0248FDDC454595D632AE"
+}"#;
         // extracted expected hash from a commit via
         // curl -X GET "http://localhost:26657/commit?height=1" -H  "accept: application/json" | jq .result.signed_header.commit.block_id.hash
         let header: Header = serde_json::from_str(json_data).unwrap();
         let got_hash = header.hash();
         let want_hash =
             Hash::from_str("F008EACA817CF6A3918CF7A6FD44F1F2464BB24D25A7EDB45A03E8783E9AB438")
+                .unwrap();
+
+        assert_eq!(got_hash, want_hash);
+    }
+
+    #[test]
+    fn test_hash_height_2() {
+        // JSON test-vector extracted from https://github.com/tendermint/tendermint/tree/v0.33
+        // more precisely `curl`ed from locally build docker image of:
+        // git log --pretty=format:"%H" -1                                                                                                                              15:35:44
+        // 606d0a89ccabbd3e59cff521f9f4d875cc366ac9
+        // via
+        //  curl -X GET "http://localhost:26657/commit?height=2" -H  "accept: application/json" | jq .result.signed_header.header
+        let json_data = r#"
+{
+  "version": {
+    "block": "10",
+    "app": "1"
+  },
+  "chain_id": "dockerchain",
+  "height": "2",
+  "time": "2020-07-10T23:47:42.8655562Z",
+  "last_block_id": {
+    "hash": "F008EACA817CF6A3918CF7A6FD44F1F2464BB24D25A7EDB45A03E8783E9AB438",
+    "parts": {
+      "total": "1",
+      "hash": "BF5130E879A02AC4BB83E392732ED4A37BE2F01304A615467EE7960858774E57"
+    }
+  },
+  "last_commit_hash": "1527AF33311EB16EF9BB15B5570DE9664D6F3598BEE08231588CED89B2D8F8EA",
+  "data_hash": "",
+  "validators_hash": "74F2AC2B6622504D08DD2509E28CE731985CFE4D133C9DB0CB85763EDCA95AA3",
+  "next_validators_hash": "74F2AC2B6622504D08DD2509E28CE731985CFE4D133C9DB0CB85763EDCA95AA3",
+  "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+  "app_hash": "0000000000000000",
+  "last_results_hash": "",
+  "evidence_hash": "",
+  "proposer_address": "AD358F20C8CE80889E0F0248FDDC454595D632AE"
+}"#;
+        // extracted expected hash from a commit via
+        // curl -X GET "http://localhost:26657/commit?height=2" -H  "accept: application/json" | jq .result.signed_header.commit.block_id.hash
+        let header: Header = serde_json::from_str(json_data).unwrap();
+        let got_hash = header.hash();
+        let want_hash =
+            Hash::from_str("5CFF26AAECBEEA7CBD2181D5547BB087E4DC8004960D611ECA59CFEA724AD538")
                 .unwrap();
 
         assert_eq!(got_hash, want_hash);
