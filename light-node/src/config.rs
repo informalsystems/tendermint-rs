@@ -4,55 +4,101 @@
 //! application's configuration file and/or command-line options
 //! for specifying it.
 
+use abscissa_core::path::PathBuf;
 use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
 use std::time::Duration;
+
+use tendermint_light_client::light_client;
+use tendermint_light_client::types::{PeerId, TrustThreshold};
 
 /// LightNode Configuration
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct LightNodeConfig {
-    /// RPC address to request headers and validators from.
-    pub rpc_address: String,
+    /// The fraction of the total voting power of a known
+    /// and trusted validator set is sufficient for a commit to be
+    /// accepted going forward.
+    pub trust_threshold: TrustThreshold,
     /// The duration until we consider a trusted state as expired.
     pub trusting_period: Duration,
-    /// Subjective initialization.
-    pub subjective_init: SubjectiveInit,
+    /// Correction parameter dealing with only approximately synchronized clocks.
+    pub clock_drift: Duration,
+
+    /// RPC related config parameters.
+    pub rpc_config: RpcConfig,
+
+    // TODO "now" should probably always be passed in as `Time::now()`
+    /// The actual light client instances' configuration.
+    /// Note: the first config will be used in the subjectively initialize
+    /// the light node in the `initialize` subcommand.
+    pub light_clients: Vec<LightClientConfig>,
 }
 
-/// Default configuration settings.
-///
-/// Note: if your needs are as simple as below, you can
-/// use `#[derive(Default)]` on LightNodeConfig instead.
-impl Default for LightNodeConfig {
+/// LightClientConfig contains all options of a light client instance.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct LightClientConfig {
+    /// Address of the Tendermint fullnode to connect to and
+    /// fetch LightBlock data from.
+    pub address: tendermint::net::Address,
+    /// PeerID of the same Tendermint fullnode.
+    pub peer_id: PeerId,
+    /// The data base folder for this instance's store.
+    pub db_path: PathBuf,
+}
+
+/// RpcConfig contains for the RPC server of the light node as
+/// well as RPC client related options.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RpcConfig {
+    /// The address the RPC server will serve.
+    pub listen_addr: SocketAddr,
+    /// The duration after which any RPC request to tendermint node will time out.
+    pub request_timeout: Duration,
+}
+
+/// Default light client config settings.
+impl Default for LightClientConfig {
     fn default() -> Self {
         Self {
-            rpc_address: "localhost:26657".to_owned(),
-            trusting_period: Duration::new(6000, 0),
-            subjective_init: SubjectiveInit::default(),
+            address: "tcp://127.0.0.1:26657".parse().unwrap(),
+            peer_id: "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap(),
+            db_path: "./lightstore/BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+                .parse()
+                .unwrap(),
         }
     }
 }
 
-/// Configuration for subjective initialization.
-///
-/// Contains the subjective height and validators hash (as a string formatted as hex).
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct SubjectiveInit {
-    /// Subjective height.
-    pub height: u64,
-    /// Subjective validators hash.
-    pub validators_hash: String,
-}
-
-impl Default for SubjectiveInit {
+/// Default configuration settings.
+impl Default for LightNodeConfig {
     fn default() -> Self {
         Self {
-            height: 1,
-            // TODO(liamsi): a default hash here does not make sense unless it is a valid hash
-            // from a public network
-            validators_hash: "A5A7DEA707ADE6156F8A981777CA093F178FC790475F6EC659B6617E704871DD"
-                .to_owned(),
+            trusting_period: Duration::from_secs(864_000), // 60*60*24*10
+            trust_threshold: TrustThreshold {
+                numerator: 1,
+                denominator: 3,
+            },
+            clock_drift: Duration::from_secs(1),
+            rpc_config: RpcConfig {
+                listen_addr: "127.0.0.1:8888".parse().unwrap(),
+                request_timeout: Duration::from_secs(60),
+            },
+            // TODO(ismail): need at least 2 peers for a proper init
+            // otherwise the light node will complain on `start` with `no witness left`
+            light_clients: vec![LightClientConfig::default()],
+        }
+    }
+}
+
+impl From<LightNodeConfig> for light_client::Options {
+    fn from(lnc: LightNodeConfig) -> Self {
+        Self {
+            trust_threshold: lnc.trust_threshold,
+            trusting_period: lnc.trusting_period,
+            clock_drift: lnc.clock_drift,
         }
     }
 }
