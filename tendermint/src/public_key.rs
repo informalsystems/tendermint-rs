@@ -3,7 +3,9 @@
 use crate::error::{Error, Kind};
 use anomaly::fail;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use signatory::{ecdsa::curve::secp256k1, ed25519};
+#[cfg(feature = "secp256k1")]
+use signatory::ecdsa::curve::secp256k1;
+use signatory::ed25519;
 use std::{
     fmt::{self, Display},
     ops::Deref,
@@ -26,6 +28,7 @@ pub enum PublicKey {
     Ed25519(ed25519::PublicKey),
 
     /// Secp256k1 keys
+    #[cfg(feature = "secp256k1")]
     #[serde(
         rename = "tendermint/PubKeySecp256k1",
         serialize_with = "serialize_secp256k1_base64",
@@ -36,6 +39,7 @@ pub enum PublicKey {
 
 impl PublicKey {
     /// From raw secp256k1 public key bytes
+    #[cfg(feature = "secp256k1")]
     pub fn from_raw_secp256k1(bytes: &[u8]) -> Option<PublicKey> {
         Some(PublicKey::Secp256k1(secp256k1::PublicKey::from_bytes(
             bytes,
@@ -49,6 +53,7 @@ impl PublicKey {
 
     /// Get Ed25519 public key
     pub fn ed25519(self) -> Option<ed25519::PublicKey> {
+        #[allow(unreachable_patterns)]
         match self {
             PublicKey::Ed25519(pk) => Some(pk),
             _ => None,
@@ -59,6 +64,7 @@ impl PublicKey {
     pub fn as_bytes(self) -> Vec<u8> {
         match self {
             PublicKey::Ed25519(ref pk) => pk.as_bytes(),
+            #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(ref pk) => pk.as_bytes(),
         }
         .to_vec()
@@ -73,6 +79,7 @@ impl PublicKey {
                 key_bytes.extend(pk.as_bytes());
                 key_bytes
             }
+            #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(ref pk) => {
                 let mut key_bytes = vec![0xEB, 0x5A, 0xE9, 0x87, 0x21];
                 key_bytes.extend(pk.as_bytes());
@@ -98,6 +105,7 @@ impl From<ed25519::PublicKey> for PublicKey {
     }
 }
 
+#[cfg(feature = "secp256k1")]
 impl From<secp256k1::PublicKey> for PublicKey {
     fn from(pk: secp256k1::PublicKey) -> PublicKey {
         PublicKey::Secp256k1(pk)
@@ -118,14 +126,15 @@ impl TendermintKey {
     /// Create a new account key from a `PublicKey`
     pub fn new_account_key(public_key: PublicKey) -> Result<TendermintKey, Error> {
         match public_key {
-            PublicKey::Ed25519(_) | PublicKey::Secp256k1(_) => {
-                Ok(TendermintKey::AccountKey(public_key))
-            }
+            PublicKey::Ed25519(_) => Ok(TendermintKey::AccountKey(public_key)),
+            #[cfg(feature = "secp256k1")]
+            PublicKey::Secp256k1(_) => Ok(TendermintKey::AccountKey(public_key)),
         }
     }
 
     /// Create a new consensus key from a `PublicKey`
     pub fn new_consensus_key(public_key: PublicKey) -> Result<TendermintKey, Error> {
+        #[allow(unreachable_patterns)]
         match public_key {
             PublicKey::Ed25519(_) => Ok(TendermintKey::AccountKey(public_key)),
             _ => fail!(
@@ -209,6 +218,7 @@ where
 }
 
 /// Serialize the bytes of a secp256k1 ECDSA public key as Base64. Used for serializing JSON
+#[cfg(feature = "secp256k1")]
 fn serialize_secp256k1_base64<S>(
     pk: &secp256k1::PublicKey,
     serializer: S,
@@ -231,6 +241,7 @@ where
     ed25519::PublicKey::from_bytes(&bytes).ok_or_else(|| D::Error::custom("invalid ed25519 key"))
 }
 
+#[cfg(feature = "secp256k1")]
 fn deserialize_secp256k1_base64<'de, D>(
     deserializer: D,
 ) -> Result<signatory::ecdsa::curve::secp256k1::PublicKey, D::Error>
@@ -265,11 +276,11 @@ mod tests {
         );
     }
 
-    const EXAMPLE_ACCOUNT_KEY: &str =
-        "02A1633CAFCC01EBFB6D78E39F687A1F0995C62FC95F51EAD10A02EE0BE551B5DC";
-
     #[test]
+    #[cfg(feature = "secp256k1")]
     fn test_account_serialization() {
+        const EXAMPLE_ACCOUNT_KEY: &str =
+            "02A1633CAFCC01EBFB6D78E39F687A1F0995C62FC95F51EAD10A02EE0BE551B5DC";
         let example_key = TendermintKey::AccountKey(
             PublicKey::from_raw_secp256k1(&hex::decode_upper(EXAMPLE_ACCOUNT_KEY).unwrap())
                 .unwrap(),

@@ -101,6 +101,7 @@ impl From<PublicKey> for account::Id {
     fn from(pub_key: PublicKey) -> account::Id {
         match pub_key {
             PublicKey::Ed25519(pk) => account::Id::from(pk),
+            #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(pk) => account::Id::from(pk),
         }
     }
