@@ -28,4 +28,3 @@ impl Hasher for ProdHasher {
         Hash::Sha256(merkle::simple_hash_from_byte_vectors(validator_bytes))
     }
 }
-
