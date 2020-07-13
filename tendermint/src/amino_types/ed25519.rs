@@ -40,6 +40,7 @@ impl From<PublicKey> for PubKeyResponse {
             PublicKey::Ed25519(ref pk) => PubKeyResponse {
                 pub_key_ed25519: pk.as_bytes().to_vec(),
             },
+            #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(_) => panic!("secp256k1 PubKeyResponse unimplemented"),
         }
     }

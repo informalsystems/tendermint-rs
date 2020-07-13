@@ -1,10 +1,13 @@
 //! Tendermint accounts
 
 use crate::error::{Error, Kind};
+#[cfg(feature = "secp256k1")]
 use ripemd160::Ripemd160;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
-use signatory::{ecdsa::curve::secp256k1, ed25519};
+#[cfg(feature = "secp256k1")]
+use signatory::ecdsa::curve::secp256k1;
+use signatory::ed25519;
 use std::{
     fmt::{self, Debug, Display},
     str::FromStr,
@@ -60,6 +63,7 @@ impl Debug for Id {
 }
 
 // RIPEMD160(SHA256(pk))
+#[cfg(feature = "secp256k1")]
 impl From<secp256k1::PublicKey> for Id {
     fn from(pk: secp256k1::PublicKey) -> Id {
         let sha_digest = Sha256::digest(pk.as_bytes());
@@ -144,6 +148,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "secp256k1")]
     fn test_secp_id() {
         // test vector for pubkey and id (address)
         let pubkey_hex = "02950E1CDFCB133D6024109FD489F734EEB4502418E538C28481F22BCE276F248C";

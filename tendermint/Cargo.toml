@@ -47,15 +47,18 @@ serde_repr = "0.1"
 sha2 = { version = "0.9", default-features = false }
 signatory = { version = "0.20", features = ["ed25519", "ecdsa"] }
 signatory-dalek = "0.20"
-signatory-secp256k1 = "0.20"
+signatory-secp256k1 = { version = "0.20", optional = true }
 subtle = "2"
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
 tai64 = { version = "3", features = ["chrono"] }
 thiserror = "1"
 toml = { version = "0.5" }
 zeroize = { version = "1.1", features = ["zeroize_derive"] }
-ripemd160 = "0.9"
+ripemd160 = { version = "0.9", optional = true }
 
 [dev-dependencies]
 tendermint-rpc = { path = "../rpc", features = [ "client" ] }
 tokio = { version = "0.2", features = [ "macros" ] }
+
+[features]
+secp256k1 = ["signatory-secp256k1", "ripemd160"]

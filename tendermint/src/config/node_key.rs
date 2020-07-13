@@ -48,6 +48,7 @@ impl NodeKey {
 
     /// Get node ID for this keypair
     pub fn node_id(&self) -> node::Id {
+        #[allow(unreachable_patterns)]
         match &self.public_key() {
             PublicKey::Ed25519(key) => node::Id::from(*key),
             _ => unreachable!(),
