@@ -35,6 +35,7 @@ use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
 use tendermint_light_client::supervisor::Handle;
 use tendermint_light_client::supervisor::{Instance, Supervisor};
+use tendermint_light_client::store::memory::MemoryStore;
 
 /// `start` subcommand
 #[derive(Command, Debug, Options)]
@@ -68,7 +69,7 @@ impl Runnable for StartCmd {
             loop {
                 match handle.verify_to_highest() {
                     Ok(light_block) => {
-                        status_info!("synced to block:", light_block.height().to_string());
+                        status_info!("synced to block {}", light_block.height().to_string());
                     }
                     Err(err) => {
                         status_err!("sync failed: {}", err);
@@ -189,7 +190,8 @@ impl StartCmd {
         Supervisor::new(
             peer_list,
             ProdForkDetector::default(),
-            ProdEvidenceReporter::new(peer_map),
+            ProdEvidenceReporter::new(peer_map.clone()),
+            MemoryStore::new()
         )
     }
 }

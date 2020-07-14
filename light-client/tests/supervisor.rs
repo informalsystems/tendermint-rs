@@ -103,6 +103,7 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
         peer_list.build(),
         ProdForkDetector::default(),
         MockEvidenceReporter::new(),
+        MemoryStore::new()
     );
 
     // TODO: Add method to `Handle` to get a copy of the current peer list

@@ -11,7 +11,9 @@ use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
 use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
-use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
+use crate::types::{Height, LightBlock, PeerId, Status};
+use crate::store::memory::MemoryStore;
+use crate::store::LightStore;
 use tendermint::lite::{Header, ValidatorSet};
 
 /// Provides an interface to the supervisor for use in downstream code.
@@ -135,6 +137,8 @@ pub struct Supervisor {
     sender: channel::Sender<HandleInput>,
     /// Channel through which to receive events from the `Handle`s
     receiver: channel::Receiver<HandleInput>,
+    /// Shared state between all the peers
+    state: Box<dyn LightStore>
 }
 
 impl std::fmt::Debug for Supervisor {
@@ -154,6 +158,7 @@ impl Supervisor {
         peers: PeerList<Instance>,
         fork_detector: impl ForkDetector + 'static,
         evidence_reporter: impl EvidenceReporter + 'static,
+        state: impl LightStore + 'static
     ) -> Self {
         let (sender, receiver) = channel::unbounded::<HandleInput>();
 
@@ -163,6 +168,7 @@ impl Supervisor {
             receiver,
             fork_detector: Box::new(fork_detector),
             evidence_reporter: Box::new(evidence_reporter),
+            state: Box::new(state)
         }
     }
 
@@ -208,24 +214,28 @@ impl Supervisor {
     /// Some(height)`).
     fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
         let primary = self.peers.primary_mut();
+        // Initialize the primary state with a trusted LightBlock from the shared state.
+        let latest_trusted =
+            self.state
+                .latest(Status::Trusted)
+                .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
+        let mut verification_state = State::new(MemoryStore::new());
+        verification_state.light_store.update(&latest_trusted, Status::Trusted);
 
         // Perform light client core verification for the given height (or highest).
         let verdict = match height {
-            None => primary.light_client.verify_to_highest(&mut primary.state),
+            None => primary.light_client.verify_to_highest(&mut verification_state),
             Some(height) => primary
                 .light_client
-                .verify_to_target(height, &mut primary.state),
+                .verify_to_target(height, &mut verification_state),
         };
 
         match verdict {
             // Verification succeeded, let's perform fork detection
             Ok(verified_block) => {
-                let trusted_block = primary
-                    .latest_trusted()
-                    .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
 
                 // Perform fork detection with the highest verified block and the trusted block.
-                let outcome = self.detect_forks(&verified_block, &trusted_block)?;
+                let outcome = self.detect_forks(&verified_block, &latest_trusted)?;
 
                 match outcome {
                     // There was a fork or a faulty peer
@@ -240,14 +250,13 @@ impl Supervisor {
                         self.verify(height)
                     }
                     ForkDetection::NotDetected => {
-                        // We need to re-ask for the primary here as the compiler
-                        // is not smart enough to realize that we do not mutate
-                        // the `primary` field of `PeerList` between the initial
-                        // borrow of the primary and here (can't blame it, it's
-                        // not that obvious).
-                        self.peers.primary_mut().trust_block(&verified_block);
+                        // Insert the new trusted block to the shared state.
+                        // This is probably not enough as we would want to dump the whole state from
+                        // the primary.
+                        verification_state.light_store
+                            .all(Status::Verified)
+                            .for_each(|block| self.state.insert(block, Status::Trusted));
 
-                        // No fork detected, exiting
                         Ok(verified_block)
                     }
                 }

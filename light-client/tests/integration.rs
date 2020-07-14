@@ -100,7 +100,7 @@ fn sync() {
         .build();
 
     let mut supervisor =
-        Supervisor::new(peer_list, ProdForkDetector::default(), TestEvidenceReporter);
+        Supervisor::new(peer_list, ProdForkDetector::default(), TestEvidenceReporter, MemoryStore::new());
 
     let handle = supervisor.handle();
     std::thread::spawn(|| supervisor.run());

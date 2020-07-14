@@ -22,6 +22,7 @@ use tendermint_light_client::{
     store::{sled::SledStore, LightStore},
     types::{Height, PeerId, Status, TrustThreshold},
 };
+use tendermint_light_client::store::memory::MemoryStore;
 
 #[derive(Debug, Options)]
 struct CliOptions {
@@ -157,6 +158,7 @@ fn sync_cmd(opts: SyncOpts) {
         peer_list,
         ProdForkDetector::default(),
         ProdEvidenceReporter::new(peer_addr),
+        MemoryStore::new()
     );
 
     let handle = supervisor.handle();
