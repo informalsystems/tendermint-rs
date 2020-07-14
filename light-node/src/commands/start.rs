@@ -35,7 +35,6 @@ use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
 use tendermint_light_client::supervisor::Handle;
 use tendermint_light_client::supervisor::{Instance, Supervisor};
-use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::types::Status;
 
 /// `start` subcommand
@@ -174,7 +173,7 @@ impl StartCmd {
             Some(app_config().rpc_config.request_timeout),
         );
         let conf = app_config().deref().clone();
-        let options: light_client::Options = conf.into();
+        let options: light_client::Options = conf.clone().into();
 
         let mut peer_list: PeerListBuilder<Instance> = PeerList::builder();
         for (i, light_conf) in app_config().light_clients.iter().enumerate() {
@@ -188,7 +187,7 @@ impl StartCmd {
         }
         let peer_list = peer_list.build();
 
-        let mut shared_state = StartCmd::make_shared_state(conf);
+        let mut shared_state = StartCmd::make_shared_state(conf.clone());
 
         peer_list.primary().state.light_store
             .latest(Status::Trusted)
