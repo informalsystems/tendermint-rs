@@ -214,7 +214,8 @@ impl Supervisor {
     /// Some(height)`).
     fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
         let primary = self.peers.primary_mut();
-        // Initialize the primary state with a trusted LightBlock from the shared state.
+
+        // Initialize the state for verification on the primary with one Trusted LightBlock.
         let latest_trusted =
             self.state
                 .latest(Status::Trusted)
