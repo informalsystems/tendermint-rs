@@ -154,11 +154,17 @@ fn sync_cmd(opts: SyncOpts) {
         .witness(witness, witness_instance)
         .build();
 
+    let mut shared_state = MemoryStore::new();
+    peer_list.primary().state.light_store
+        .latest(Status::Trusted)
+        .iter()
+        .for_each(|block| shared_state.insert(block.clone(),Status::Trusted));
+
     let mut supervisor = Supervisor::new(
         peer_list,
         ProdForkDetector::default(),
         ProdEvidenceReporter::new(peer_addr),
-        MemoryStore::new()
+        shared_state
     );
 
     let handle = supervisor.handle();

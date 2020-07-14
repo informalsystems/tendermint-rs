@@ -36,6 +36,7 @@ use tendermint_light_client::store::LightStore;
 use tendermint_light_client::supervisor::Handle;
 use tendermint_light_client::supervisor::{Instance, Supervisor};
 use tendermint_light_client::store::memory::MemoryStore;
+use tendermint_light_client::types::Status;
 
 /// `start` subcommand
 #[derive(Command, Debug, Options)]
@@ -187,11 +188,17 @@ impl StartCmd {
         }
         let peer_list = peer_list.build();
 
+        let mut shared_state = MemoryStore::new();
+        peer_list.primary().state.light_store
+            .latest(Status::Trusted)
+            .iter()
+            .for_each(|block| shared_state.insert(block.clone(),Status::Trusted));
+
         Supervisor::new(
             peer_list,
             ProdForkDetector::default(),
             ProdEvidenceReporter::new(peer_map.clone()),
-            MemoryStore::new()
+            shared_state
         )
     }
 }

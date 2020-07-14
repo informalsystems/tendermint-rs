@@ -99,11 +99,19 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
         peer_list = peer_list.witness(peer_id, instance);
     }
 
+    let peer_list = peer_list.build();
+
+    let mut shared_state = MemoryStore::new();
+    peer_list.primary().state.light_store
+        .latest(Status::Trusted)
+        .iter()
+        .for_each(|block| shared_state.insert(block.clone(),Status::Trusted));
+
     let mut supervisor = Supervisor::new(
-        peer_list.build(),
+        peer_list,
         ProdForkDetector::default(),
         MockEvidenceReporter::new(),
-        MemoryStore::new()
+        shared_state
     );
 
     // TODO: Add method to `Handle` to get a copy of the current peer list
