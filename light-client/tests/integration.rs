@@ -92,15 +92,21 @@ fn sync() {
     };
 
     let primary_instance = make_instance(primary, options, io.clone());
-    let witness_instance = make_instance(witness, options, io);
+    let witness_instance = make_instance(witness, options, io.clone());
 
     let peer_list = PeerList::builder()
         .primary(primary, primary_instance)
         .witness(witness, witness_instance)
         .build();
 
+    let mut shared_state = MemoryStore::new();
+    let trusted_state = io
+        .fetch_light_block(primary, AtHeight::Highest)
+        .expect("could not request latest light block");
+    shared_state.insert(trusted_state, Status::Trusted);
+
     let mut supervisor =
-        Supervisor::new(peer_list, ProdForkDetector::default(), TestEvidenceReporter, MemoryStore::new());
+        Supervisor::new(peer_list, ProdForkDetector::default(), TestEvidenceReporter, shared_state);
 
     let handle = supervisor.handle();
     std::thread::spawn(|| supervisor.run());
