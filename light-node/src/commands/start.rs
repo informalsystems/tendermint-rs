@@ -188,11 +188,12 @@ impl StartCmd {
         }
         let peer_list = peer_list.build();
 
-        let mut shared_state = MemoryStore::new();
+        let mut shared_state = StartCmd::make_shared_state(conf);
+
         peer_list.primary().state.light_store
             .latest(Status::Trusted)
             .iter()
-            .for_each(|block| shared_state.insert(block.clone(),Status::Trusted));
+            .for_each(|block| shared_state.insert(block.clone(), Status::Trusted));
 
         Supervisor::new(
             peer_list,
@@ -200,5 +201,14 @@ impl StartCmd {
             ProdEvidenceReporter::new(peer_map.clone()),
             shared_state
         )
+    }
+
+    fn make_shared_state(conf: LightNodeConfig) -> SledStore {
+        let db = sled::open(conf.shared_state_config).unwrap_or_else(|e| {
+            status_err!("could not open database: {}", e);
+            std::process::exit(1);
+        });
+
+        SledStore::new(db)
     }
 }

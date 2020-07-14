@@ -33,6 +33,9 @@ pub struct LightNodeConfig {
     /// Note: the first config will be used in the subjectively initialize
     /// the light node in the `initialize` subcommand.
     pub light_clients: Vec<LightClientConfig>,
+
+    /// Shared state for all the LightClients
+    pub shared_state_config: PathBuf
 }
 
 /// LightClientConfig contains all options of a light client instance.
@@ -89,6 +92,7 @@ impl Default for LightNodeConfig {
             // TODO(ismail): need at least 2 peers for a proper init
             // otherwise the light node will complain on `start` with `no witness left`
             light_clients: vec![LightClientConfig::default()],
+            shared_state_config: "./lightstore".parse().unwrap(),
         }
     }
 }
