@@ -189,7 +189,10 @@ impl StartCmd {
 
         let mut shared_state = StartCmd::make_shared_state(conf.clone());
 
-        peer_list.primary().state.light_store
+        peer_list
+            .primary()
+            .state
+            .light_store
             .latest(Status::Trusted)
             .iter()
             .for_each(|block| shared_state.insert(block.clone(), Status::Trusted));
@@ -198,7 +201,7 @@ impl StartCmd {
             peer_list,
             ProdForkDetector::default(),
             ProdEvidenceReporter::new(peer_map.clone()),
-            shared_state
+            shared_state,
         )
     }
 

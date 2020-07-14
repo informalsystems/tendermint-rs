@@ -35,7 +35,7 @@ pub struct LightNodeConfig {
     pub light_clients: Vec<LightClientConfig>,
 
     /// Shared state for all the LightClients
-    pub shared_state_config: PathBuf
+    pub shared_state_config: PathBuf,
 }
 
 /// LightClientConfig contains all options of a light client instance.

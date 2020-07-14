@@ -6,6 +6,7 @@ use std::{
 
 use gumdrop::Options;
 
+use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::supervisor::{Handle as _, Instance, Supervisor};
 use tendermint_light_client::{
     components::{
@@ -22,7 +23,6 @@ use tendermint_light_client::{
     store::{sled::SledStore, LightStore},
     types::{Height, PeerId, Status, TrustThreshold},
 };
-use tendermint_light_client::store::memory::MemoryStore;
 
 #[derive(Debug, Options)]
 struct CliOptions {
@@ -155,16 +155,19 @@ fn sync_cmd(opts: SyncOpts) {
         .build();
 
     let mut shared_state = MemoryStore::new();
-    peer_list.primary().state.light_store
+    peer_list
+        .primary()
+        .state
+        .light_store
         .latest(Status::Trusted)
         .iter()
-        .for_each(|block| shared_state.insert(block.clone(),Status::Trusted));
+        .for_each(|block| shared_state.insert(block.clone(), Status::Trusted));
 
     let mut supervisor = Supervisor::new(
         peer_list,
         ProdForkDetector::default(),
         ProdEvidenceReporter::new(peer_addr),
-        shared_state
+        shared_state,
     );
 
     let handle = supervisor.handle();

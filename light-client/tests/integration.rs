@@ -105,8 +105,12 @@ fn sync() {
         .expect("could not request latest light block");
     shared_state.insert(trusted_state, Status::Trusted);
 
-    let mut supervisor =
-        Supervisor::new(peer_list, ProdForkDetector::default(), TestEvidenceReporter, shared_state);
+    let mut supervisor = Supervisor::new(
+        peer_list,
+        ProdForkDetector::default(),
+        TestEvidenceReporter,
+        shared_state,
+    );
 
     let handle = supervisor.handle();
     std::thread::spawn(|| supervisor.run());

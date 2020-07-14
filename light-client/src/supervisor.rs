@@ -11,7 +11,6 @@ use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
 use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
-use crate::types::{Height, LightBlock, PeerId, Status};
 use crate::store::LightStore;
 use tendermint::lite::{Header, ValidatorSet};
 
@@ -137,7 +136,7 @@ pub struct Supervisor {
     /// Channel through which to receive events from the `Handle`s
     receiver: channel::Receiver<HandleInput>,
     /// Shared state between all the peers
-    state: Box<dyn LightStore>
+    state: Box<dyn LightStore>,
 }
 
 impl std::fmt::Debug for Supervisor {
@@ -157,7 +156,7 @@ impl Supervisor {
         peers: PeerList<Instance>,
         fork_detector: impl ForkDetector + 'static,
         evidence_reporter: impl EvidenceReporter + 'static,
-        state: impl LightStore + 'static
+        state: impl LightStore + 'static,
     ) -> Self {
         let (sender, receiver) = channel::unbounded::<HandleInput>();
 
@@ -167,7 +166,7 @@ impl Supervisor {
             receiver,
             fork_detector: Box::new(fork_detector),
             evidence_reporter: Box::new(evidence_reporter),
-            state: Box::new(state)
+            state: Box::new(state),
         }
     }
 
@@ -215,13 +214,16 @@ impl Supervisor {
         let primary = self.peers.primary_mut();
 
         // Extract trusted LightBlock from the shared state.
-        let latest_trusted =
-            self.state
-                .latest(Status::Trusted)
-                .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
+        let latest_trusted = self
+            .state
+            .latest(Status::Trusted)
+            .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
 
         // Updates trusted state for primary if primary changed.
-        primary.state.light_store.update(&latest_trusted, Status::Trusted);
+        primary
+            .state
+            .light_store
+            .update(&latest_trusted, Status::Trusted);
 
         // Perform light client core verification for the given height (or highest).
         let verdict = match height {
@@ -234,7 +236,6 @@ impl Supervisor {
         match verdict {
             // Verification succeeded, let's perform fork detection
             Ok(verified_block) => {
-
                 // Perform fork detection with the highest verified block and the trusted block.
                 let outcome = self.detect_forks(&verified_block, &latest_trusted)?;
 
@@ -253,10 +254,15 @@ impl Supervisor {
                     ForkDetection::NotDetected => {
                         // Insert all blocks higher than the previous trusted LightBlock from the
                         // state of the primary.
-                        self.peers.primary_mut().state.light_store
+                        self.peers
+                            .primary_mut()
+                            .state
+                            .light_store
                             .all(Status::Verified)
-                            .filter(|verified|
-                                verified.signed_header.header.height > latest_trusted.signed_header.header.height)
+                            .filter(|verified| {
+                                verified.signed_header.header.height
+                                    > latest_trusted.signed_header.header.height
+                            })
                             .for_each(|block| self.state.insert(block, Status::Trusted));
 
                         Ok(verified_block)
