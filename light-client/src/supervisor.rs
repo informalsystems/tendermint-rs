@@ -12,7 +12,6 @@ use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
 use crate::types::{Height, LightBlock, PeerId, Status};
-use crate::store::memory::MemoryStore;
 use crate::store::LightStore;
 use tendermint::lite::{Header, ValidatorSet};
 
@@ -215,20 +214,21 @@ impl Supervisor {
     fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
         let primary = self.peers.primary_mut();
 
-        // Initialize the state for verification on the primary with one Trusted LightBlock.
+        // Extract trusted LightBlock from the shared state.
         let latest_trusted =
             self.state
                 .latest(Status::Trusted)
                 .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
-        let mut verification_state = State::new(MemoryStore::new());
-        verification_state.light_store.update(&latest_trusted, Status::Trusted);
+
+        // Updates trusted state for primary if primary changed.
+        primary.state.light_store.update(&latest_trusted, Status::Trusted);
 
         // Perform light client core verification for the given height (or highest).
         let verdict = match height {
-            None => primary.light_client.verify_to_highest(&mut verification_state),
+            None => primary.light_client.verify_to_highest(&mut primary.state),
             Some(height) => primary
                 .light_client
-                .verify_to_target(height, &mut verification_state),
+                .verify_to_target(height, &mut primary.state),
         };
 
         match verdict {
@@ -251,11 +251,12 @@ impl Supervisor {
                         self.verify(height)
                     }
                     ForkDetection::NotDetected => {
-                        // Insert the new trusted block to the shared state.
-                        // This is probably not enough as we would want to dump the whole state from
-                        // the primary.
-                        verification_state.light_store
+                        // Insert all blocks higher than the previous trusted LightBlock from the
+                        // state of the primary.
+                        self.peers.primary_mut().state.light_store
                             .all(Status::Verified)
+                            .filter(|verified|
+                                verified.signed_header.header.height > latest_trusted.signed_header.header.height)
                             .for_each(|block| self.state.insert(block, Status::Trusted));
 
                         Ok(verified_block)
