@@ -116,6 +116,28 @@ impl LightBlock {
     }
 }
 
+/// Contains the local status information, like the latest height, latest block and valset hashes,
+/// list of of connected full nodes (primary and witnesses).
+#[derive(Clone, Debug, Display, PartialEq, Serialize, Deserialize)]
+#[display(fmt = "{:?}", self)]
+pub struct LatestStatus {
+    /// The latest height we are trusting.
+    pub height: Height,
+    /// The latest block hash we are trusting.
+    pub block_hash: Hash,
+    /// The latest validator set we are trusting.
+    /// Note that this potentially did not yet sign a header yet.
+    pub valset_hash: Hash,
+    /// The list of fullnodes we are connected to, primary and witnesses.
+    pub connected_nodes: Vec<PeerId>,
+}
+
+impl LatestStatus {
+    pub fn new(height: u64, block_hash: Hash, valset_hash: Hash, connected_nodes: Vec<PeerId>) -> Self {
+        LatestStatus { height, block_hash, valset_hash, connected_nodes }
+    }
+}
+
 #[cfg(test)]
 mod tests {
 

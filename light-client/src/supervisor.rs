@@ -9,11 +9,16 @@ use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
 use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
-use crate::types::{Height, LightBlock, PeerId, Status};
+use crate::types::{Height, LightBlock, PeerId, Status, LatestStatus};
+use tendermint::lite::{Header, ValidatorSet};
 
 pub trait Handle {
     /// Get latest trusted block from the [`Supervisor`].
     fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
+        todo!()
+    }
+
+    fn latest_status(&self) -> Result<Option<LatestStatus>, Error> {
         todo!()
     }
 
@@ -45,6 +50,8 @@ enum HandleInput {
     VerifyToTarget(Height, channel::Sender<Result<LightBlock, Error>>),
     /// Get the latest trusted block.
     LatestTrusted(channel::Sender<Option<LightBlock>>),
+    /// Get the current status of the LightClient
+    GetStatus(channel::Sender<Option<LatestStatus>>)
 }
 
 /// A light client `Instance` packages a `LightClient` together with its `State`.
@@ -164,6 +171,22 @@ impl Supervisor {
     /// Verify to the highest block.
     pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
         self.verify(None)
+    }
+
+    /// Return latest trusted status summary.
+    fn latest_status(&mut self) -> Option<LatestStatus> {
+        let latest_trusted = self.peers.primary().latest_trusted();
+        match latest_trusted {
+            Some(trusted) => {
+                let connected_nodes: Vec<PeerId> = Vec::new();
+                Some(LatestStatus::new(
+                    trusted.signed_header.header.height(),
+                    trusted.signed_header.header.hash(),
+                    trusted.next_validators.hash(),
+                    connected_nodes,
+                ))},
+            None => None,
+        }
     }
 
     /// Verify to the block at the given height.
@@ -322,6 +345,10 @@ impl Supervisor {
                     let outcome = self.verify_to_highest();
                     sender.send(outcome).map_err(ErrorKind::from)?;
                 }
+                HandleInput::GetStatus(sender) => {
+                    let outcome = self.latest_status();
+                    sender.send(outcome).map_err(ErrorKind::from)?;
+                }
             }
         }
     }
@@ -360,6 +387,14 @@ impl Handle for SupervisorHandle {
             .send(HandleInput::LatestTrusted(sender))
             .map_err(ErrorKind::from)?;
 
+        Ok(receiver.recv().map_err(ErrorKind::from)?)
+    }
+
+    fn latest_status(&self) -> Result<Option<LatestStatus>, Error> {
+        let (sender, receiver) = channel::bounded::<Option<LatestStatus>>(1);
+        self.sender
+            .send(HandleInput::GetStatus(sender))
+            .map_err(ErrorKind::from)?;
         Ok(receiver.recv().map_err(ErrorKind::from)?)
     }
 

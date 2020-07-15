@@ -35,7 +35,6 @@ use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
 use tendermint_light_client::supervisor::Handle;
 use tendermint_light_client::supervisor::{Instance, Supervisor};
-use tendermint_light_client::types::Status;
 
 /// `start` subcommand
 ///
@@ -189,7 +188,7 @@ impl StartCmd {
         Supervisor::new(
             peer_list,
             ProdForkDetector::default(),
-            ProdEvidenceReporter::new(peer_map.clone()),
+            ProdEvidenceReporter::new(peer_map),
         )
     }
 }
