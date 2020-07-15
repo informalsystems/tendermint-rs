@@ -9,7 +9,7 @@ use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
 use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
-use crate::types::{Height, LightBlock, PeerId, Status, LatestStatus};
+use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
 use tendermint::lite::{Header, ValidatorSet};
 
 pub trait Handle {
@@ -51,7 +51,7 @@ enum HandleInput {
     /// Get the latest trusted block.
     LatestTrusted(channel::Sender<Option<LightBlock>>),
     /// Get the current status of the LightClient
-    GetStatus(channel::Sender<Option<LatestStatus>>)
+    GetStatus(channel::Sender<Option<LatestStatus>>),
 }
 
 /// A light client `Instance` packages a `LightClient` together with its `State`.
@@ -184,7 +184,8 @@ impl Supervisor {
                     trusted.signed_header.header.hash(),
                     trusted.next_validators.hash(),
                     connected_nodes,
-                ))},
+                ))
+            }
             None => None,
         }
     }

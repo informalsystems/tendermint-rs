@@ -133,8 +133,18 @@ pub struct LatestStatus {
 }
 
 impl LatestStatus {
-    pub fn new(height: u64, block_hash: Hash, valset_hash: Hash, connected_nodes: Vec<PeerId>) -> Self {
-        LatestStatus { height, block_hash, valset_hash, connected_nodes }
+    pub fn new(
+        height: u64,
+        block_hash: Hash,
+        valset_hash: Hash,
+        connected_nodes: Vec<PeerId>,
+    ) -> Self {
+        LatestStatus {
+            height,
+            block_hash,
+            valset_hash,
+            connected_nodes,
+        }
     }
 }
 

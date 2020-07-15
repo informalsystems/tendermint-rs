@@ -38,6 +38,7 @@ mod sealed {
     use jsonrpc_derive::rpc;
 
     use tendermint_light_client::supervisor::Handle;
+    use tendermint_light_client::types::LatestStatus;
     use tendermint_light_client::types::LightBlock;
 
     #[rpc]
@@ -45,6 +46,10 @@ mod sealed {
         /// Returns the latest trusted block.
         #[rpc(name = "state")]
         fn state(&self) -> FutureResult<Option<LightBlock>, Error>;
+
+        /// Returns the latest status.
+        #[rpc(name = "status")]
+        fn status(&self) -> FutureResult<Option<LatestStatus>, Error>;
     }
 
     pub use self::rpc_impl_Rpc::gen_client::Client;
@@ -71,6 +76,17 @@ mod sealed {
     {
         fn state(&self) -> FutureResult<Option<LightBlock>, Error> {
             let res = self.handle.latest_trusted().map_err(|e| {
+                let mut err = Error::internal_error();
+                err.message = e.to_string();
+                err.data = serde_json::to_value(e.kind()).ok();
+                err
+            });
+
+            future::result(res)
+        }
+
+        fn status(&self) -> FutureResult<Option<LatestStatus>, Error> {
+            let res = self.handle.latest_status().map_err(|e| {
                 let mut err = Error::internal_error();
                 err.message = e.to_string();
                 err.data = serde_json::to_value(e.kind()).ok();
