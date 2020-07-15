@@ -178,7 +178,9 @@ impl Supervisor {
         let latest_trusted = self.peers.primary().latest_trusted();
         match latest_trusted {
             Some(trusted) => {
-                let connected_nodes: Vec<PeerId> = Vec::new();
+                let mut connected_nodes: Vec<PeerId> = Vec::new();
+                connected_nodes.push(self.peers.primary_id());
+                connected_nodes.append(&mut self.peers.witnesses_ids().iter().copied().collect());
                 Some(LatestStatus::new(
                     trusted.signed_header.header.height(),
                     trusted.signed_header.header.hash(),
