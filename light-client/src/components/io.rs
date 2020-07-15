@@ -3,7 +3,8 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use contracts::{contract_trait, post, pre};
+use async_trait::async_trait;
+// use contracts::{contract_trait, post, pre};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -60,23 +61,33 @@ impl IoError {
 }
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
-#[contract_trait]
-#[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
-pub trait Io: Send {
+#[async_trait]
+// #[contract_trait]
+// #[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
+pub trait Io: Sync + Send {
     /// Fetch a light block at the given height from the peer with the given peer ID.
     ///
     /// ## Postcondition
     /// - The provider of the returned light block matches the given peer [LCV-IO-POST-PROVIDER]
-    #[post(ret.as_ref().map(|lb| lb.provider == peer).unwrap_or(true))]
-    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError>;
+    // #[post(ret.as_ref().map(|lb| lb.provider == peer).unwrap_or(true))]
+    async fn fetch_light_block(
+        &self,
+        peer: PeerId,
+        height: AtHeight,
+    ) -> Result<LightBlock, IoError>;
 }
 
-#[contract_trait]
+#[async_trait]
+// #[contract_trait]
 impl<F: Send> Io for F
 where
-    F: Fn(PeerId, AtHeight) -> Result<LightBlock, IoError>,
+    F: Fn(PeerId, AtHeight) -> Result<LightBlock, IoError> + Sync + Send,
 {
-    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
+    async fn fetch_light_block(
+        &self,
+        peer: PeerId,
+        height: AtHeight,
+    ) -> Result<LightBlock, IoError> {
         self(peer, height)
     }
 }
@@ -89,14 +100,19 @@ pub struct ProdIo {
     timeout: Option<Duration>,
 }
 
-#[contract_trait]
+#[async_trait]
+// #[contract_trait]
 impl Io for ProdIo {
-    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
-        let signed_header = self.fetch_signed_header(peer, height)?;
+    async fn fetch_light_block(
+        &self,
+        peer: PeerId,
+        height: AtHeight,
+    ) -> Result<LightBlock, IoError> {
+        let signed_header = self.fetch_signed_header(peer, height).await?;
         let height: Height = signed_header.header.height.into();
 
-        let validator_set = self.fetch_validator_set(peer, height.into())?;
-        let next_validator_set = self.fetch_validator_set(peer, (height + 1).into())?;
+        let validator_set = self.fetch_validator_set(peer, height.into()).await?;
+        let next_validator_set = self.fetch_validator_set(peer, (height + 1).into()).await?;
 
         let light_block = LightBlock::new(signed_header, validator_set, next_validator_set, peer);
 
@@ -115,24 +131,19 @@ impl ProdIo {
         Self { peer_map, timeout }
     }
 
-    #[pre(self.peer_map.contains_key(&peer))]
-    fn fetch_signed_header(
+    // #[pre(self.peer_map.contains_key(&peer))]
+    async fn fetch_signed_header(
         &self,
         peer: PeerId,
         height: AtHeight,
     ) -> Result<TMSignedHeader, IoError> {
         let rpc_client = self.rpc_client_for(peer);
 
-        let res = block_on(
-            async {
-                match height {
-                    AtHeight::Highest => rpc_client.latest_commit().await,
-                    AtHeight::At(height) => rpc_client.commit(height).await,
-                }
-            },
-            peer,
-            self.timeout,
-        )?;
+        // TODO: Re-add timeout
+        let res = match height {
+            AtHeight::Highest => rpc_client.latest_commit().await,
+            AtHeight::At(height) => rpc_client.commit(height).await,
+        };
 
         match res {
             Ok(response) => Ok(response.signed_header),
@@ -140,8 +151,8 @@ impl ProdIo {
         }
     }
 
-    #[pre(self.peer_map.contains_key(&peer))]
-    fn fetch_validator_set(
+    // #[pre(self.peer_map.contains_key(&peer))]
+    async fn fetch_validator_set(
         &self,
         peer: PeerId,
         height: AtHeight,
@@ -153,11 +164,8 @@ impl ProdIo {
             AtHeight::At(height) => height,
         };
 
-        let res = block_on(
-            self.rpc_client_for(peer).validators(height),
-            peer,
-            self.timeout,
-        )?;
+        // TODO: Re-add timeout
+        let res = self.rpc_client_for(peer).validators(height).await;
 
         match res {
             Ok(response) => Ok(TMValidatorSet::new(response.validators)),
@@ -173,21 +181,21 @@ impl ProdIo {
     }
 }
 
-fn block_on<F: std::future::Future>(
-    f: F,
-    peer: PeerId,
-    timeout: Option<Duration>,
-) -> Result<F::Output, IoError> {
-    let mut rt = tokio::runtime::Builder::new()
-        .basic_scheduler()
-        .enable_all()
-        .build()
-        .unwrap();
+// fn block_on<F: std::future::Future>(
+//     f: F,
+//     peer: PeerId,
+//     timeout: Option<Duration>,
+// ) -> Result<F::Output, IoError> {
+//     let mut rt = tokio::runtime::Builder::new()
+//         .basic_scheduler()
+//         .enable_all()
+//         .build()
+//         .unwrap();
 
-    if let Some(timeout) = timeout {
-        rt.block_on(async { tokio::time::timeout(timeout, f).await })
-            .map_err(|_| IoError::Timeout(peer))
-    } else {
-        Ok(rt.block_on(f))
-    }
-}
+//     if let Some(timeout) = timeout {
+//         rt.block_on(async { tokio::time::timeout(timeout, f).await })
+//             .map_err(|_| IoError::Timeout(peer))
+//     } else {
+//         Ok(rt.block_on(f))
+//     }
+// }

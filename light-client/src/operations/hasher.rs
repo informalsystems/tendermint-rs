@@ -7,7 +7,7 @@ use tendermint::merkle;
 use tendermint::Hash;
 
 /// Hashing for headers and validator sets
-pub trait Hasher: Send {
+pub trait Hasher: Sync + Send {
     /// Hash the given header
     fn hash_header(&self, header: &Header) -> Hash;
 

@@ -2,6 +2,7 @@
 
 use crossbeam_channel as channel;
 
+use async_recursion::async_recursion;
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
 
 use crate::bail;
@@ -176,8 +177,8 @@ impl Supervisor {
     }
 
     /// Verify to the highest block.
-    pub fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
-        self.verify(None)
+    pub async fn verify_to_highest(&mut self) -> Result<LightBlock, Error> {
+        self.verify(None).await
     }
 
     /// Return latest trusted status summary.
@@ -200,21 +201,30 @@ impl Supervisor {
     }
 
     /// Verify to the block at the given height.
-    pub fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
-        self.verify(Some(height))
+    pub async fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
+        self.verify(Some(height)).await
     }
 
-    /// Verify either to the latest block (if `height == None`) or to a given block (if `height ==
-    /// Some(height)`).
-    fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
+    /// Verify either to the latest block (if `height == None`)
+    /// or to a given block (if `height == Some(height)`).
+    #[async_recursion]
+    async fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
         let primary = self.peers.primary_mut();
 
         // Perform light client core verification for the given height (or highest).
         let verdict = match height {
-            None => primary.light_client.verify_to_highest(&mut primary.state),
-            Some(height) => primary
-                .light_client
-                .verify_to_target(height, &mut primary.state),
+            None => {
+                primary
+                    .light_client
+                    .verify_to_highest(&mut primary.state)
+                    .await
+            }
+            Some(height) => {
+                primary
+                    .light_client
+                    .verify_to_target(height, &mut primary.state)
+                    .await
+            }
         };
 
         match verdict {
@@ -225,7 +235,7 @@ impl Supervisor {
                     .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
 
                 // Perform fork detection with the highest verified block and the trusted block.
-                let outcome = self.detect_forks(&verified_block, &trusted_block)?;
+                let outcome = self.detect_forks(&verified_block, &trusted_block).await?;
 
                 match outcome {
                     // There was a fork or a faulty peer
@@ -237,7 +247,7 @@ impl Supervisor {
                         }
 
                         // If there were no hard forks, perform verification again
-                        self.verify(height)
+                        self.verify(height).await
                     }
                     ForkDetection::NotDetected => {
                         // We need to re-ask for the primary here as the compiler
@@ -256,7 +266,7 @@ impl Supervisor {
             Err(err) => {
                 // Swap primary, and continue with new primary, if there is any witness left.
                 self.peers.replace_faulty_primary(Some(err))?;
-                self.verify(height)
+                self.verify(height).await
             }
         }
     }
@@ -310,7 +320,7 @@ impl Supervisor {
     }
 
     /// Perform fork detection with the given verified block and trusted block.
-    fn detect_forks(
+    async fn detect_forks(
         &self,
         verified_block: &LightBlock,
         trusted_block: &LightBlock,
@@ -328,12 +338,13 @@ impl Supervisor {
 
         self.fork_detector
             .detect_forks(verified_block, &trusted_block, witnesses)
+            .await
     }
 
     /// Run the supervisor event loop in the same thread.
     ///
     /// This method should typically be called within a new thread with `std::thread::spawn`.
-    pub fn run(mut self) -> Result<(), Error> {
+    pub async fn run(mut self) -> Result<(), Error> {
         loop {
             let event = self.receiver.recv().map_err(ErrorKind::from)?;
 
@@ -347,11 +358,11 @@ impl Supervisor {
                     return Ok(());
                 }
                 HandleInput::VerifyToTarget(height, sender) => {
-                    let outcome = self.verify_to_target(height);
+                    let outcome = self.verify_to_target(height).await;
                     sender.send(outcome).map_err(ErrorKind::from)?;
                 }
                 HandleInput::VerifyToHighest(sender) => {
-                    let outcome = self.verify_to_highest();
+                    let outcome = self.verify_to_highest().await;
                     sender.send(outcome).map_err(ErrorKind::from)?;
                 }
                 HandleInput::GetStatus(sender) => {

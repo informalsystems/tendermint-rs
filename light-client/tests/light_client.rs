@@ -108,13 +108,14 @@ fn run_test_case(tc: TestCase<LightBlock>) {
     }
 }
 
-fn verify_bisection(
+async fn verify_bisection(
     untrusted_height: Height,
     light_client: &mut LightClient,
     state: &mut State,
 ) -> Result<Vec<LightBlock>, Error> {
     light_client
         .verify_to_target(untrusted_height, state)
+        .await
         .map(|_| state.get_trace(untrusted_height))
 }
 
@@ -123,7 +124,7 @@ struct BisectionTestResult {
     new_states: Result<Vec<LightBlock>, Error>,
 }
 
-fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
+async fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
     println!("  - {}", tc.description);
 
     let primary = default_peer_id();
@@ -150,6 +151,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
     let trusted_height = tc.trust_options.height.try_into().unwrap();
     let trusted_state = io
         .fetch_light_block(primary, AtHeight::At(trusted_height))
+        .await
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
@@ -171,10 +173,11 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
         io.clone(),
     );
 
-    let result = verify_bisection(untrusted_height, &mut light_client, &mut state);
+    let result = verify_bisection(untrusted_height, &mut light_client, &mut state).await;
 
     let untrusted_light_block = io
         .fetch_light_block(primary, AtHeight::At(untrusted_height))
+        .await
         .expect("header at untrusted height not found");
 
     BisectionTestResult {
@@ -220,7 +223,7 @@ fn run_bisection_tests(dir: &str) {
             None => false,
         };
 
-        let test_result = run_bisection_test(tc);
+        let test_result = block_on(run_bisection_test(tc));
         let expected_state = test_result.untrusted_light_block;
 
         match test_result.new_states {
@@ -261,7 +264,7 @@ fn run_bisection_lower_tests(dir: &str) {
 
         tc.height_to_verify = (trusted_height - 1).into();
 
-        let test_result = run_bisection_test(tc);
+        let test_result = block_on(run_bisection_test(tc));
         match test_result.new_states {
             Ok(_) => {
                 panic!("test unexpectedly succeeded, expected TargetLowerThanTrustedState error");
@@ -325,4 +328,14 @@ fn single_step_skipping() {
     for dir in &dirs {
         run_single_step_tests(dir);
     }
+}
+
+fn block_on<F: std::future::Future>(f: F) -> F::Output {
+    let mut rt = tokio::runtime::Builder::new()
+        .basic_scheduler()
+        .enable_all()
+        .build()
+        .unwrap();
+
+    rt.block_on(f)
 }

@@ -10,7 +10,7 @@ use tendermint::block::CommitSig;
 use tendermint::lite::types::ValidatorSet as _;
 
 /// Validates the commit associated with a header against a validator set
-pub trait CommitValidator: Send {
+pub trait CommitValidator: Sync + Send {
     /// Perform basic validation
     fn validate(
         &self,

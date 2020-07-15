@@ -43,10 +43,16 @@ fn load_multi_peer_testcases(dir: &str) -> Vec<TestBisection<LightBlock>> {
         .collect::<Vec<TestBisection<LightBlock>>>()
 }
 
-fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance {
+async fn make_instance(
+    peer_id: PeerId,
+    trust_options: TrustOptions,
+    io: MockIo,
+    now: Time,
+) -> Instance {
     let trusted_height = trust_options.height.value();
     let trusted_state = io
         .fetch_light_block(peer_id, AtHeight::At(trusted_height))
+        .await
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
@@ -72,7 +78,7 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
     Instance::new(light_client, state)
 }
 
-fn run_multipeer_test(tc: TestBisection<LightBlock>) {
+async fn run_multipeer_test(tc: TestBisection<LightBlock>) {
     let primary = tc.primary.lite_blocks[0].provider;
 
     println!(
@@ -86,7 +92,8 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
     };
 
     let io = MockIo::new(tc.primary.chain_id, tc.primary.lite_blocks);
-    let primary_instance = make_instance(primary, tc.trust_options.clone(), io.clone(), tc.now);
+    let primary_instance =
+        make_instance(primary, tc.trust_options.clone(), io.clone(), tc.now).await;
 
     let mut peer_list = PeerList::builder();
     peer_list = peer_list.primary(primary, primary_instance);
@@ -95,7 +102,7 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
         let peer_id = provider.value.lite_blocks[0].provider;
         println!("Witness: {}", peer_id);
         let io = MockIo::new(provider.value.chain_id, provider.value.lite_blocks);
-        let instance = make_instance(peer_id, tc.trust_options.clone(), io.clone(), tc.now);
+        let instance = make_instance(peer_id, tc.trust_options.clone(), io.clone(), tc.now).await;
         peer_list = peer_list.witness(peer_id, instance);
     }
 
@@ -108,7 +115,7 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
     // TODO: Add method to `Handle` to get a copy of the current peer list
 
     let handle = supervisor.handle();
-    std::thread::spawn(|| supervisor.run());
+    std::thread::spawn(|| block_on(supervisor.run()));
 
     let target_height = tc.height_to_verify.try_into().unwrap();
 
@@ -117,6 +124,7 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
             // Check that the expected state and new_state match
             let untrusted_light_block = io
                 .fetch_light_block(primary, AtHeight::At(target_height))
+                .await
                 .expect("header at untrusted height not found");
 
             let expected_state = untrusted_light_block;
@@ -145,6 +153,16 @@ fn deserialize_multi_peer_json() {
 fn run_multipeer_tests() {
     let testcases = load_multi_peer_testcases("bisection/multi_peer");
     for testcase in testcases {
-        run_multipeer_test(testcase);
+        block_on(run_multipeer_test(testcase));
     }
+}
+
+fn block_on<F: std::future::Future>(f: F) -> F::Output {
+    let mut rt = tokio::runtime::Builder::new()
+        .basic_scheduler()
+        .enable_all()
+        .build()
+        .unwrap();
+
+    rt.block_on(f)
 }

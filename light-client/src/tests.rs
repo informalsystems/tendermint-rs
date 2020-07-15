@@ -1,18 +1,19 @@
 //! Utilities and datatypes for use in tests.
 
-use crate::types::{Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet};
-
-use serde::Deserialize;
-use tendermint::abci::transaction::Hash;
-use tendermint_rpc as rpc;
-
 use crate::components::clock::Clock;
 use crate::components::io::{AtHeight, Io, IoError};
 use crate::evidence::EvidenceReporter;
-use contracts::contract_trait;
-use std::collections::HashMap;
+use crate::types::{Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet};
+
+use tendermint::abci::transaction::Hash;
 use tendermint::block::Height as HeightStr;
 use tendermint::evidence::{Duration as DurationStr, Evidence};
+use tendermint_rpc as rpc;
+
+use async_trait::async_trait;
+use contracts::contract_trait;
+use serde::Deserialize;
+use std::collections::HashMap;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TestCases<LB> {
@@ -117,9 +118,14 @@ impl MockIo {
     }
 }
 
-#[contract_trait]
+// #[contract_trait]
+#[async_trait]
 impl Io for MockIo {
-    fn fetch_light_block(&self, _peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
+    async fn fetch_light_block(
+        &self,
+        _peer: PeerId,
+        height: AtHeight,
+    ) -> Result<LightBlock, IoError> {
         let height = match height {
             AtHeight::Highest => self.latest_height,
             AtHeight::At(height) => height,

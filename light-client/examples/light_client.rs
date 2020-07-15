@@ -63,7 +63,8 @@ struct SyncOpts {
     db_path: PathBuf,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let opts = CliOptions::parse_args_default_or_exit();
     match opts.command {
         None => {
@@ -72,11 +73,11 @@ fn main() {
             eprintln!("{}\n", CliOptions::usage());
             std::process::exit(1);
         }
-        Some(Command::Sync(sync_opts)) => sync_cmd(sync_opts),
+        Some(Command::Sync(sync_opts)) => sync_cmd(sync_opts).await,
     }
 }
 
-fn make_instance(
+async fn make_instance(
     peer_id: PeerId,
     addr: tendermint::net::Address,
     db_path: impl AsRef<Path>,
@@ -98,6 +99,7 @@ fn make_instance(
     if let Some(height) = opts.trusted_height {
         let trusted_state = io
             .fetch_light_block(peer_id, AtHeight::At(height))
+            .await
             .unwrap_or_else(|e| {
                 println!("[ error ] could not retrieve trusted header: {}", e);
                 std::process::exit(1);
@@ -132,7 +134,7 @@ fn make_instance(
     Instance::new(light_client, state)
 }
 
-fn sync_cmd(opts: SyncOpts) {
+async fn sync_cmd(opts: SyncOpts) {
     let addr = opts.address.clone();
 
     let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
@@ -141,8 +143,8 @@ fn sync_cmd(opts: SyncOpts) {
     let primary_path = opts.db_path.join(primary.to_string());
     let witness_path = opts.db_path.join(witness.to_string());
 
-    let primary_instance = make_instance(primary, addr.clone(), primary_path, &opts);
-    let witness_instance = make_instance(witness, addr.clone(), witness_path, &opts);
+    let primary_instance = make_instance(primary, addr.clone(), primary_path, &opts).await;
+    let witness_instance = make_instance(witness, addr.clone(), witness_path, &opts).await;
 
     let mut peer_addr = HashMap::new();
     peer_addr.insert(primary, addr.clone());

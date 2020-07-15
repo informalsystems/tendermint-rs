@@ -81,8 +81,7 @@ fn initialize_subjectively(
         );
     }
 
-    let trusted_state = io
-        .fetch_light_block(l_conf.peer_id, AtHeight::At(height))
+    let trusted_state = block_on(io.fetch_light_block(l_conf.peer_id, AtHeight::At(height)))
         .unwrap_or_else(|e| {
             status_err!("could not retrieve trusted header: {}", e);
             std::process::exit(1);
@@ -107,4 +106,14 @@ fn initialize_subjectively(
     // TODO(liamsi): it is unclear if this should be Trusted or only Verified
     //  - update the spec first and then use library method instead of this:
     light_store.insert(trusted_state, Status::Verified);
+}
+
+fn block_on<F: std::future::Future>(f: F) -> F::Output {
+    let mut rt = tokio::runtime::Builder::new()
+        .basic_scheduler()
+        .enable_all()
+        .build()
+        .unwrap();
+
+    rt.block_on(f)
 }

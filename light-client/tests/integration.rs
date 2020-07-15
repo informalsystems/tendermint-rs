@@ -29,9 +29,10 @@ use tendermint::abci::transaction::Hash as TransactionHash;
 use std::collections::HashMap;
 use std::time::Duration;
 
-fn make_instance(peer_id: PeerId, options: light_client::Options, io: ProdIo) -> Instance {
+async fn make_instance(peer_id: PeerId, options: light_client::Options, io: ProdIo) -> Instance {
     let trusted_state = io
         .fetch_light_block(peer_id, AtHeight::Highest)
+        .await
         .expect("could not request latest light block");
 
     let mut light_store = MemoryStore::new();
@@ -63,6 +64,16 @@ impl EvidenceReporter for TestEvidenceReporter {
     }
 }
 
+fn block_on<F: std::future::Future>(f: F) -> F::Output {
+    let mut rt = tokio::runtime::Builder::new()
+        .basic_scheduler()
+        .enable_all()
+        .build()
+        .unwrap();
+
+    rt.block_on(f)
+}
+
 #[test]
 #[ignore]
 fn sync() {
@@ -91,8 +102,8 @@ fn sync() {
         clock_drift: Duration::from_secs(5 * 60),      // 5 minutes
     };
 
-    let primary_instance = make_instance(primary, options, io.clone());
-    let witness_instance = make_instance(witness, options, io);
+    let primary_instance = block_on(make_instance(primary, options, io.clone()));
+    let witness_instance = block_on(make_instance(witness, options, io));
 
     let peer_list = PeerList::builder()
         .primary(primary, primary_instance)
@@ -103,7 +114,7 @@ fn sync() {
         Supervisor::new(peer_list, ProdForkDetector::default(), TestEvidenceReporter);
 
     let handle = supervisor.handle();
-    std::thread::spawn(|| supervisor.run());
+    std::thread::spawn(|| block_on(supervisor.run()));
 
     let max_iterations: usize = 20;
 

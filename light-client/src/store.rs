@@ -18,7 +18,7 @@ pub mod sled;
 ///
 /// ## Implements
 /// - [LCV-DIST-STORE.1]
-pub trait LightStore: std::fmt::Debug + Send {
+pub trait LightStore: std::fmt::Debug + Sync + Send {
     /// Get the light block at the given height with the given status, or return `None` otherwise.
     fn get(&self, height: Height, status: Status) -> Option<LightBlock>;
 

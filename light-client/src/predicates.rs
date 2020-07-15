@@ -24,7 +24,7 @@ impl VerificationPredicates for ProdPredicates {}
 ///
 /// This enables test implementations to only override a single method rather than
 /// have to re-define every predicate.
-pub trait VerificationPredicates: Send {
+pub trait VerificationPredicates: Sync + Send {
     /// Compare the provided validator_set_hash against the hash produced from hashing the validator set.
     fn validator_sets_match(
         &self,
