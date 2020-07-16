@@ -53,6 +53,23 @@ impl Header {
     }
 }
 
+impl std::str::FromStr for Header {
+    type Err = SimpleError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let header = match parse_as::<Header>(s) {
+            Ok(input) => input,
+            Err(_) => Header {
+                validators: Some(parse_as::<Vec<Validator>>(s)?),
+                next_validators: None,
+                height: None,
+                time: None,
+            },
+        };
+        Ok(header)
+    }
+}
+
+
 impl Producer<block::Header> for Header {
     fn parse_stdin() -> Result<Self, SimpleError> {
         let header = match parse_stdin_as::<Header>() {

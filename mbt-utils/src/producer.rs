@@ -1,7 +1,8 @@
 use serde::Serialize;
+use std::str::FromStr;
 use simple_error::*;
 
-pub trait Producer<Output: Serialize> {
+pub trait Producer<Output: Serialize>: FromStr {
     fn parse_stdin() -> Result<Self, SimpleError>
     where
         Self: std::marker::Sized;

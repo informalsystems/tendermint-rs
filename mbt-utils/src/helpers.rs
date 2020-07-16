@@ -1,7 +1,7 @@
 //! Helper functions
 
 use serde::de::DeserializeOwned;
-use simple_error::SimpleError;
+use simple_error::*;
 use std::io::{self, Read};
 
 /// Tries to parse a string as the given type; otherwise returns the input wrapped in SimpleError
@@ -11,6 +11,13 @@ pub fn parse_as<T: DeserializeOwned>(input: &str) -> Result<T, SimpleError> {
         Err(_) => Err(SimpleError::new(input)),
     }
 }
+
+pub fn read_stdin() -> Result<String, SimpleError> {
+    let mut buffer = String::new();
+    try_with!(io::stdin().read_to_string(&mut buffer), "");
+    Ok(buffer)
+}
+
 
 /// Tries to parse STDIN as the given type; otherwise returns the input wrapped in SimpleError
 pub fn parse_stdin_as<T: DeserializeOwned>() -> Result<T, SimpleError> {

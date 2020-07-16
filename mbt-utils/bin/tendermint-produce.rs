@@ -70,9 +70,9 @@ enum Command {
 
 fn run_command<Opts: Producer<T> + Options, T: serde::Serialize>(cli: Opts, read_stdin: bool) {
     let res = if read_stdin {
-        Opts::encode_with_stdin(&cli)
+        cli.encode_with_stdin()
     } else {
-        Opts::encode(&cli)
+        cli.encode()
     };
     match res {
         Ok(res) => println!("{}", res),

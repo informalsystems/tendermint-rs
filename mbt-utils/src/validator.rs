@@ -59,6 +59,25 @@ impl Validator {
     }
 }
 
+impl std::str::FromStr for Validator {
+    type Err = SimpleError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let validator = match parse_as::<Validator>(s) {
+            Ok(input) => input,
+            Err(_) => Validator {
+                id: if s.is_empty() {
+                    bail!("failed to parse validator")
+                } else {
+                    Some(s.to_string())
+                },
+                voting_power: None,
+                proposer_priority: None,
+            }
+        };
+        Ok(validator)
+    }
+}
+
 impl Producer<Info> for Validator {
     fn parse_stdin() -> Result<Self, SimpleError> {
         let validator = match parse_stdin_as::<Validator>() {

@@ -36,6 +36,21 @@ impl Commit {
     }
 }
 
+
+impl std::str::FromStr for Commit {
+    type Err = SimpleError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let commit = match parse_as::<Commit>(s) {
+            Ok(input) => input,
+            Err(_) => Commit {
+                header: Some(parse_as::<Header>(s)?),
+                round: None,
+            },
+        };
+        Ok(commit)
+    }
+}
+
 impl Producer<block::Commit> for Commit {
     fn parse_stdin() -> Result<Self, SimpleError> {
         let commit = match parse_stdin_as::<Commit>() {
