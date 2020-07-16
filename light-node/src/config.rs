@@ -11,6 +11,7 @@ use std::time::Duration;
 
 use tendermint_light_client::light_client;
 use tendermint_light_client::types::{PeerId, TrustThreshold};
+use crate::config::LightStoreConfig::OnDisk;
 
 /// LightNode Configuration
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -34,8 +35,8 @@ pub struct LightNodeConfig {
     /// the light node in the `initialize` subcommand.
     pub light_clients: Vec<LightClientConfig>,
 
-    /// Shared state for all the LightClients
-    pub shared_state_config: PathBuf,
+    /// Shared state for all the LightClients.
+    pub shared_state_config: LightStoreConfig,
 }
 
 /// LightClientConfig contains all options of a light client instance.
@@ -48,13 +49,13 @@ pub struct LightClientConfig {
     /// PeerID of the same Tendermint fullnode.
     pub peer_id: PeerId,
     /// Configuration for LightClient state.
-    pub state: LightClientStateConfig,
+    pub state: LightStoreConfig,
 }
 
-/// LightClientStateConfig contains options for state type.
+/// LightClientStateConfig contains options for state type along with other configuration options.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
-pub enum LightClientStateConfig {
+pub enum LightStoreConfig {
     InMemory,
     OnDisk { db_path: PathBuf }
 }
@@ -76,9 +77,11 @@ impl Default for LightClientConfig {
         Self {
             address: "tcp://127.0.0.1:26657".parse().unwrap(),
             peer_id: "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap(),
-            db_path: "./lightstore/BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
-                .parse()
-                .unwrap(),
+            state: OnDisk {
+                db_path: "./lightstore/BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+                    .parse()
+                    .unwrap()
+            },
         }
     }
 }
@@ -100,7 +103,7 @@ impl Default for LightNodeConfig {
             // TODO(ismail): need at least 2 peers for a proper init
             // otherwise the light node will complain on `start` with `no witness left`
             light_clients: vec![LightClientConfig::default()],
-            shared_state_config: "./lightstore".parse().unwrap(),
+            shared_state_config: OnDisk {db_path: "./lightstore".parse().unwrap()},
         }
     }
 }

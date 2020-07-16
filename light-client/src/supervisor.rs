@@ -156,7 +156,7 @@ impl Supervisor {
         peers: PeerList<Instance>,
         fork_detector: impl ForkDetector + 'static,
         evidence_reporter: impl EvidenceReporter + 'static,
-        state: impl LightStore + 'static,
+        state: Box<dyn LightStore>,
     ) -> Self {
         let (sender, receiver) = channel::unbounded::<HandleInput>();
 
@@ -166,7 +166,7 @@ impl Supervisor {
             receiver,
             fork_detector: Box::new(fork_detector),
             evidence_reporter: Box::new(evidence_reporter),
-            state: Box::new(state),
+            state,
         }
     }
 

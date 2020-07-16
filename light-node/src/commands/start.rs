@@ -2,7 +2,7 @@
 
 use std::process;
 
-use crate::application::{app_config, APPLICATION};
+use crate::application::{app_config, APPLICATION, app_reader};
 use crate::config::{LightClientConfig, LightNodeConfig};
 use crate::rpc;
 use crate::rpc::Server;
@@ -31,8 +31,6 @@ use tendermint_light_client::light_client;
 use tendermint_light_client::light_client::LightClient;
 use tendermint_light_client::peer_list::{PeerList, PeerListBuilder};
 use tendermint_light_client::state::State;
-use tendermint_light_client::store::sled::SledStore;
-use tendermint_light_client::store::LightStore;
 use tendermint_light_client::supervisor::Handle;
 use tendermint_light_client::supervisor::{Instance, Supervisor};
 use tendermint_light_client::types::Status;
@@ -104,15 +102,10 @@ impl config::Override<LightNodeConfig> for StartCmd {
 impl StartCmd {
     fn assert_init_was_run() {
         // TODO(liamsi): handle errors properly:
-        let primary_db_path = app_config().light_clients.first().unwrap().db_path.clone();
-        let db = sled::open(primary_db_path).unwrap_or_else(|e| {
-            status_err!("could not open database: {}", e);
-            std::process::exit(1);
-        });
 
-        let primary_store = SledStore::new(db);
+        let shared_store = app_reader().light_store_factory().create(&app_config().shared_state_config);
 
-        if primary_store.latest_trusted_or_verified().is_none() {
+        if shared_store.latest_trusted_or_verified().is_none() {
             status_err!("no trusted or verified state in store for primary, please initialize with the `initialize` subcommand first");
             std::process::exit(1);
         }
@@ -126,17 +119,11 @@ impl StartCmd {
         options: light_client::Options,
     ) -> Instance {
         let peer_id = light_config.peer_id;
-        let db_path = light_config.db_path.clone();
 
-        let db = sled::open(db_path).unwrap_or_else(|e| {
-            status_err!("could not open database: {}", e);
-            std::process::exit(1);
-        });
-
-        let light_store = SledStore::new(db);
+        let light_store = app_reader().light_store_factory().create(&light_config.state);
 
         let state = State {
-            light_store: Box::new(light_store),
+            light_store,
             verification_trace: HashMap::new(),
         };
 
@@ -187,7 +174,7 @@ impl StartCmd {
         }
         let peer_list = peer_list.build();
 
-        let mut shared_state = StartCmd::make_shared_state(conf.clone());
+        let mut shared_state = app_reader().light_store_factory().create(&conf.shared_state_config);
 
         peer_list
             .primary()
@@ -203,14 +190,5 @@ impl StartCmd {
             ProdEvidenceReporter::new(peer_map.clone()),
             shared_state,
         )
-    }
-
-    fn make_shared_state(conf: LightNodeConfig) -> SledStore {
-        let db = sled::open(conf.shared_state_config).unwrap_or_else(|e| {
-            status_err!("could not open database: {}", e);
-            std::process::exit(1);
-        });
-
-        SledStore::new(db)
     }
 }

@@ -1,7 +1,7 @@
 //! `intialize` subcommand
 
-use crate::application::app_config;
-use crate::config::LightClientConfig;
+use crate::application::{app_config, app_reader};
+use crate::config::LightStoreConfig;
 
 use std::collections::HashMap;
 
@@ -18,9 +18,8 @@ use tendermint::Hash;
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;
 use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
-use tendermint_light_client::store::sled::SledStore;
-use tendermint_light_client::store::LightStore;
-use tendermint_light_client::types::Status;
+use tendermint_light_client::types::{Status, PeerId};
+use crate::store::LightStoreFactory;
 
 /// `initialize` subcommand
 #[derive(Command, Debug, Default, Options)]
@@ -51,7 +50,12 @@ impl Runnable for InitCmd {
 
         let io = ProdIo::new(peer_map, Some(app_cfg.rpc_config.request_timeout));
 
-        initialize_subjectively(self.height, subjective_header_hash, &lc, &io);
+        initialize_subjectively(
+            app_reader().light_store_factory().as_ref(),
+            self.height, subjective_header_hash,
+            &app_cfg.shared_state_config,
+            &app_cfg.light_clients.first().unwrap().peer_id,
+            &io);
     }
 }
 
@@ -60,29 +64,26 @@ impl Runnable for InitCmd {
 // TODO(ismail): additionally here and everywhere else, we should return errors
 // instead of std::process::exit because no destructors will be run.
 fn initialize_subjectively(
+    store_factory: &dyn LightStoreFactory,
     height: u64,
     subjective_header_hash: Hash,
-    l_conf: &LightClientConfig,
+    shared_state_config: &LightStoreConfig,
+    trusted_peer: &PeerId,
     io: &ProdIo,
 ) {
-    let db = sled::open(l_conf.db_path.clone()).unwrap_or_else(|e| {
-        status_err!("could not open database: {}", e);
-        std::process::exit(1);
-    });
-
-    let mut light_store = SledStore::new(db);
+    let mut light_store = store_factory.create(shared_state_config);
 
     if light_store.latest_trusted_or_verified().is_some() {
         let lb = light_store.latest_trusted_or_verified().unwrap();
         status_warn!(
             "already existing trusted or verified state of height {} in database: {:?}",
             lb.signed_header.header.height,
-            l_conf.db_path
+            shared_state_config
         );
     }
 
     let trusted_state = io
-        .fetch_light_block(l_conf.peer_id, AtHeight::At(height))
+        .fetch_light_block(trusted_peer.clone(), AtHeight::At(height))
         .unwrap_or_else(|e| {
             status_err!("could not retrieve trusted header: {}", e);
             std::process::exit(1);
