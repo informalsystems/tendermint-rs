@@ -47,8 +47,16 @@ pub struct LightClientConfig {
     pub address: tendermint::net::Address,
     /// PeerID of the same Tendermint fullnode.
     pub peer_id: PeerId,
-    /// The data base folder for this instance's store.
-    pub db_path: PathBuf,
+    /// Configuration for LightClient state.
+    pub state: LightClientStateConfig,
+}
+
+/// LightClientStateConfig contains options for state type.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum LightClientStateConfig {
+    InMemory,
+    OnDisk { db_path: PathBuf }
 }
 
 /// RpcConfig contains for the RPC server of the light node as
