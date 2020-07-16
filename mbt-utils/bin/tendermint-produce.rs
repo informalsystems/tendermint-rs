@@ -4,6 +4,7 @@ use tendermint_mbt_utils::commit::Commit;
 use tendermint_mbt_utils::header::Header;
 use tendermint_mbt_utils::producer::Producer;
 use tendermint_mbt_utils::validator::Validator;
+use simple_error::SimpleError;
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -68,9 +69,16 @@ enum Command {
     Commit(Commit),
 }
 
+fn encode_with_stdin<Opts: Producer<T> + Options, T: serde::Serialize>(cli: &Opts) -> Result<String, SimpleError>
+{
+    let stdin = Opts::parse_stdin()?;
+    let producer = cli.merge_with_default(&stdin);
+    producer.encode()
+}
+
 fn run_command<Opts: Producer<T> + Options, T: serde::Serialize>(cli: Opts, read_stdin: bool) {
     let res = if read_stdin {
-        cli.encode_with_stdin()
+        encode_with_stdin(&cli)
     } else {
         cli.encode()
     };

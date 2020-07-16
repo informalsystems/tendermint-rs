@@ -22,12 +22,4 @@ pub trait Producer<Output: Serialize>: FromStr {
         ))
     }
 
-    fn encode_with_stdin(&self) -> Result<String, SimpleError>
-    where
-        Self: std::marker::Sized,
-    {
-        let stdin = Self::parse_stdin()?;
-        let producer = self.merge_with_default(&stdin);
-        producer.encode()
-    }
 }
