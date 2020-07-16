@@ -117,8 +117,8 @@ $  curl localhost:8888 -X POST -H 'Content-Type: application/json'\             
   <summary><b>Click here</b> to see an example for expected output for the status endpoint:</summary>
 
 ```
-$curl localhost:8888 -X POST -H 'Content-Type: application/json'\                                                                        15:58:52
-                                                           -d '{"jsonrpc": "2.0", "method": "status", "id": 1}' | jq
+$ curl localhost:8888 -X POST -H 'Content-Type: application/json' \
+  -d '{"jsonrpc": "2.0", "method": "status", "id": 1}' | jq
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 100   364  100   317  100    47   1843    273 --:--:-- --:--:-- --:--:--  2104
