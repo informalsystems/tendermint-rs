@@ -35,7 +35,6 @@ use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
 use tendermint_light_client::supervisor::Handle;
 use tendermint_light_client::supervisor::{Instance, Supervisor};
-use tendermint_light_client::types::Status;
 
 /// `start` subcommand
 ///
@@ -70,7 +69,7 @@ impl Runnable for StartCmd {
             loop {
                 match handle.verify_to_highest() {
                     Ok(light_block) => {
-                        status_info!("synced to block {}", light_block.height().to_string());
+                        status_info!("synced to block:", light_block.height().to_string());
                     }
                     Err(err) => {
                         status_err!("sync failed: {}", err);
@@ -157,6 +156,7 @@ impl StartCmd {
         let laddr = app_config().rpc_config.listen_addr;
         // TODO(liamsi): figure out how to handle the potential error on run
         std::thread::spawn(move || rpc::run(server, &laddr.to_string()));
+        status_info!("started RPC server:", laddr.to_string());
     }
 }
 
@@ -189,7 +189,7 @@ impl StartCmd {
         Supervisor::new(
             peer_list,
             ProdForkDetector::default(),
-            ProdEvidenceReporter::new(peer_map.clone()),
+            ProdEvidenceReporter::new(peer_map),
         )
     }
 }

@@ -88,7 +88,7 @@ impl LightClient {
 
     /// Attempt to update the light client to the highest block of the primary node.
     ///
-    /// Note: This functin delegates the actual work to `verify_to_target`.
+    /// Note: This function delegates the actual work to `verify_to_target`.
     pub fn verify_to_highest(&mut self, state: &mut State) -> Result<LightBlock, Error> {
         let target_block = match self.io.fetch_light_block(self.peer, AtHeight::Highest) {
             Ok(last_block) => last_block,

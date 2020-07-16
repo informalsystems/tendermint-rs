@@ -17,10 +17,14 @@
 - Correctly handle blocks marked `Trusted` in accordance with the specification ([#407])
 - Treat `Trusted` status as a special case of `Verified` as per the spec ([#419])
 - Add integration test ([#431])
+- Rework light-node CLI to use `Supervisor` / `Handle` ([#430])
+- Add `latest_status` to the supervisor `Handle` ([#449])
+- Add JSONRPC endpoints to query the light-node ([#363], [#449])  
 
 [#302]: https://github.com/informalsystems/tendermint-rs/pull/302
 [#336]: https://github.com/informalsystems/tendermint-rs/pull/336
 [#360]: https://github.com/informalsystems/tendermint-rs/pull/360
+[#363]: https://github.com/informalsystems/tendermint-rs/pull/363
 [#364]: https://github.com/informalsystems/tendermint-rs/pull/364
 [#365]: https://github.com/informalsystems/tendermint-rs/pull/365
 [#371]: https://github.com/informalsystems/tendermint-rs/pull/371
@@ -32,7 +36,9 @@
 [#403]: https://github.com/informalsystems/tendermint-rs/pull/403
 [#407]: https://github.com/informalsystems/tendermint-rs/pull/407
 [#419]: https://github.com/informalsystems/tendermint-rs/pull/419
+[#430]: https://github.com/informalsystems/tendermint-rs/pull/430
 [#431]: https://github.com/informalsystems/tendermint-rs/pull/431
+[#449]: https://github.com/informalsystems/tendermint-rs/pull/449
 
 [ADR-007]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-007-light-client-supervisor-ergonomics.md
 
