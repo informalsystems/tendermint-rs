@@ -159,7 +159,7 @@ pub struct PeerListBuilder<T> {
 }
 
 // This instance must be derived manually because the automatically
-// derived instancce constrains T to be Default.
+// derived instance constrains T to be Default.
 // See https://github.com/rust-lang/rust/issues/26925
 impl<T> Default for PeerListBuilder<T> {
     fn default() -> Self {
