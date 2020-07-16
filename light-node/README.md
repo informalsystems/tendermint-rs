@@ -138,6 +138,7 @@ $ curl localhost:8888 -X POST -H 'Content-Type: application/json' \
   "id": 1
 }
 ```
+</details>
 
 <details>
   <summary><b>Click here</b> to see an example for expected output for the state endpoint:</summary>
