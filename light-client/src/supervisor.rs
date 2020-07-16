@@ -64,7 +64,7 @@ pub struct Instance {
 }
 
 impl Instance {
-    /// Constructs a new instance from the givlight-client/src/supervisor.rs:399:42en light client and its state.
+    /// Constructs a new instance from the given light client and its state.
     pub fn new(light_client: LightClient, state: State) -> Self {
         Self {
             light_client,
