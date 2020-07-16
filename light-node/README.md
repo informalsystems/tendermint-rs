@@ -106,8 +106,41 @@ $ curl localhost:8888 -X POST -H 'Content-Type: application/json' \
   -d '{"jsonrpc": "2.0", "method": "state", "id": 1}' | jq
 ```
 
+Or you can query a shorter summary via the `/status` endpoint:
+```
+$  curl localhost:8888 -X POST -H 'Content-Type: application/json'\                                                                        15:58:52
+                                                             -d '{"jsonrpc": "2.0", "method": "status", "id": 1}' | jq
+
+```
+
 <details>
-  <summary><b>Click here</b> to see an example for expected output:</summary>
+  <summary><b>Click here</b> to see an example for expected output for the status endpoint:</summary>
+
+```
+$curl localhost:8888 -X POST -H 'Content-Type: application/json'\                                                                        15:58:52
+                                                           -d '{"jsonrpc": "2.0", "method": "status", "id": 1}' | jq
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   364  100   317  100    47   1843    273 --:--:-- --:--:-- --:--:--  2104
+```
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "block_hash": "ED745723430944215F65ED78AD7DF9ED0AA8A2A3B465BF421E0BAF66AA55AA08",
+    "connected_nodes": [
+      "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE",
+      "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF"
+    ],
+    "height": 3850,
+    "valset_hash": "74F2AC2B6622504D08DD2509E28CE731985CFE4D133C9DB0CB85763EDCA95AA3"
+  },
+  "id": 1
+}
+```
+
+<details>
+  <summary><b>Click here</b> to see an example for expected output for the state endpoint:</summary>
 
 Command:  
   ```
