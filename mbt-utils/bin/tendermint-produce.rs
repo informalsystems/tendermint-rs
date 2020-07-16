@@ -5,6 +5,7 @@ use tendermint_mbt_utils::header::Header;
 use tendermint_mbt_utils::producer::Producer;
 use tendermint_mbt_utils::validator::Validator;
 use simple_error::SimpleError;
+use tendermint_mbt_utils::helpers::read_stdin;
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -71,8 +72,9 @@ enum Command {
 
 fn encode_with_stdin<Opts: Producer<T> + Options, T: serde::Serialize>(cli: &Opts) -> Result<String, SimpleError>
 {
-    let stdin = Opts::parse_stdin()?;
-    let producer = cli.merge_with_default(&stdin);
+    let stdin = read_stdin()?;
+    let default = Opts::from_str(&stdin)?;
+    let producer = cli.merge_with_default(&default);
     producer.encode()
 }
 

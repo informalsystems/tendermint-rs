@@ -52,20 +52,6 @@ impl std::str::FromStr for Commit {
 }
 
 impl Producer<block::Commit> for Commit {
-    fn parse_stdin() -> Result<Self, SimpleError> {
-        let commit = match parse_stdin_as::<Commit>() {
-            Ok(input) => input,
-            Err(input) => Commit {
-                header: match parse_as::<Header>(input.as_str()) {
-                    Ok(header) => Some(header),
-                    Err(e) => bail!("failed to read commit from input: {}", e),
-                },
-                round: None,
-            },
-        };
-        Ok(commit)
-    }
-
     fn merge_with_default(&self, other: &Self) -> Self {
         Commit {
             header: choose_from(&self.header, &other.header),

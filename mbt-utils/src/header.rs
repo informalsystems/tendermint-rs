@@ -71,22 +71,6 @@ impl std::str::FromStr for Header {
 
 
 impl Producer<block::Header> for Header {
-    fn parse_stdin() -> Result<Self, SimpleError> {
-        let header = match parse_stdin_as::<Header>() {
-            Ok(input) => input,
-            Err(input) => Header {
-                validators: match parse_as::<Vec<Validator>>(input.as_str()) {
-                    Ok(vals) => Some(vals),
-                    Err(e) => bail!("failed to read header from input: {}", e),
-                },
-                next_validators: None,
-                height: None,
-                time: None,
-            },
-        };
-        Ok(header)
-    }
-
     fn merge_with_default(&self, other: &Self) -> Self {
         Header {
             validators: choose_from(&self.validators, &other.validators),

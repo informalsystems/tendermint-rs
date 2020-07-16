@@ -79,22 +79,6 @@ impl std::str::FromStr for Validator {
 }
 
 impl Producer<Info> for Validator {
-    fn parse_stdin() -> Result<Self, SimpleError> {
-        let validator = match parse_stdin_as::<Validator>() {
-            Ok(input) => input,
-            Err(input) => Validator {
-                id: if input.to_string().is_empty() {
-                    bail!("failed to read validator from input")
-                } else {
-                    Some(input.to_string())
-                },
-                voting_power: None,
-                proposer_priority: None,
-            },
-        };
-        Ok(validator)
-    }
-
     fn merge_with_default(&self, other: &Self) -> Self {
         Validator {
             id: choose_from(&self.id, &other.id),
