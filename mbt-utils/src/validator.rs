@@ -104,5 +104,5 @@ impl Producer<Info> for Validator {
 }
 
 pub fn produce_validators(vals: &[Validator]) -> Result<Vec<Info>, SimpleError> {
-    Ok(vals.iter().map(|v| v.produce().unwrap()).collect())
+    Ok(vals.iter().map(|v| v.produce()).collect::<Result<Vec<Info>, SimpleError>>()?)
 }

@@ -14,5 +14,4 @@ pub trait Producer<Output: Serialize>: FromStr<Err = SimpleError> {
             "failed to serialize into JSON"
         ))
     }
-
 }

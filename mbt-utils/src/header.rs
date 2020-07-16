@@ -90,17 +90,21 @@ impl Producer<block::Header> for Header {
             Some(next_vals) => validator::Set::new(produce_validators(next_vals)?),
             None => valset.clone(),
         };
+        let  chain_id = match chain::Id::from_str("test-chain-01") {
+            Ok(id) => id,
+            Err(_) => bail!("failed to construct header chain_id")
+        };
         let header = block::Header {
             version: Version { block: 0, app: 0 },
-            chain_id: chain::Id::from_str("test-chain-01").unwrap(),
+            chain_id: chain_id,
             height: block::Height(choose_or(self.height, 1)),
             time: choose_or(self.time, Time::now()),
             last_block_id: None,
             last_commit_hash: None,
             data_hash: None,
             validators_hash: valset.hash(),
-            next_validators_hash: next_valset.hash(), // hasher.hash_validator_set(&next_valset), // next_valset.hash(),
-            consensus_hash: valset.hash(), //hasher.hash_validator_set(&valset), // TODO: currently not clear how to produce a valid hash
+            next_validators_hash: next_valset.hash(),
+            consensus_hash: valset.hash(), // TODO: currently not clear how to produce a valid hash
             app_hash: vec![],
             last_results_hash: None,
             evidence_hash: None,
