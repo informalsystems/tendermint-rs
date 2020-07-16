@@ -108,6 +108,7 @@ mod test {
 
     use tendermint_light_client::errors::Error;
     use tendermint_light_client::supervisor::Handle;
+    use tendermint_light_client::types::LatestStatus;
     use tendermint_light_client::types::LightBlock;
 
     use super::{Client, Rpc as _, Server};
@@ -127,6 +128,21 @@ mod test {
         assert_eq!(have, want);
     }
 
+    #[tokio::test]
+    async fn status() {
+        let server = Server::new(MockHandle {});
+        let fut = {
+            let mut io = IoHandler::new();
+            io.extend_with(server.to_delegate());
+            let (client, server) = local::connect::<Client, _, _>(io);
+            client.status().join(server)
+        };
+        let (have, _) = fut.compat().await.unwrap();
+        let want = serde_json::from_str(STATUS_JSON).unwrap();
+
+        assert_eq!(have, want);
+    }
+
     struct MockHandle;
 
     impl Handle for MockHandle {
@@ -134,6 +150,11 @@ mod test {
             let block: LightBlock = serde_json::from_str(LIGHTBLOCK_JSON).unwrap();
 
             Ok(Some(block))
+        }
+        fn latest_status(&self) -> Result<Option<LatestStatus>, Error> {
+            let status: LatestStatus = serde_json::from_str(STATUS_JSON).unwrap();
+
+            Ok(Some(status))
         }
     }
 
@@ -255,4 +276,14 @@ mod test {
     "provider": "9D61B19DEFFD5A60BA844AF492EC2CC44449C569"
 }
 "#;
+    const STATUS_JSON: &str = r#"
+{
+    "block_hash": "5A55D7AF2DF9AE4BF4B46FDABBBAD1B66D37B5E044A4843AB0FB0EBEC3E0422C",
+    "connected_nodes": [
+      "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE",
+      "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF"
+    ],
+    "height": 1565,
+    "valset_hash": "74F2AC2B6622504D08DD2509E28CE731985CFE4D133C9DB0CB85763EDCA95AA3"
+}"#;
 }
