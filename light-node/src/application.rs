@@ -1,6 +1,6 @@
 //! LightNode Abscissa Application
 
-use crate::store::{LightStoreFactory, ProdLightStoreFactory};
+use crate::store_factory::{LightStoreFactory, ProdLightStoreFactory};
 use crate::{commands::LightNodeCmd, config::LightNodeConfig};
 use abscissa_core::{
     application::{self, AppCell},

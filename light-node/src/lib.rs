@@ -25,3 +25,4 @@ pub mod config;
 pub mod error;
 pub mod prelude;
 pub mod rpc;
+pub mod store_factory;

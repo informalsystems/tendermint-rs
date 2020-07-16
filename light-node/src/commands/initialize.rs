@@ -15,7 +15,7 @@ use tendermint::hash;
 use tendermint::lite::Header;
 use tendermint::Hash;
 
-use crate::store::LightStoreFactory;
+use crate::store_factory::LightStoreFactory;
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;
 use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
