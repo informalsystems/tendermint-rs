@@ -94,7 +94,7 @@ fn make_instance(
         std::process::exit(1);
     });
 
-    let mut light_store = SledStore::new(db);
+    let mut light_store = Box::new(SledStore::new(db));
 
     if let Some(height) = opts.trusted_height {
         let trusted_state = io
@@ -111,7 +111,7 @@ fn make_instance(
     }
 
     let state = State {
-        light_store: Box::new(light_store),
+        light_store,
         verification_trace: HashMap::new(),
     };
 
@@ -154,7 +154,7 @@ fn sync_cmd(opts: SyncOpts) {
         .witness(witness, witness_instance)
         .build();
 
-    let mut shared_state = MemoryStore::new();
+    let mut shared_state = Box::new(MemoryStore::new());
     peer_list
         .primary()
         .state

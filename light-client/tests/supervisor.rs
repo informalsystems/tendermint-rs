@@ -101,7 +101,7 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
 
     let peer_list = peer_list.build();
 
-    let mut shared_state = MemoryStore::new();
+    let mut shared_state = Box::new(MemoryStore::new());
     peer_list
         .primary()
         .state

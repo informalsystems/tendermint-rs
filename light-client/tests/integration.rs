@@ -99,7 +99,7 @@ fn sync() {
         .witness(witness, witness_instance)
         .build();
 
-    let mut shared_state = MemoryStore::new();
+    let mut shared_state = Box::new(MemoryStore::new());
     let trusted_state = io
         .fetch_light_block(primary, AtHeight::Highest)
         .expect("could not request latest light block");
