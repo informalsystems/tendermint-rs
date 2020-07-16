@@ -122,21 +122,21 @@ impl LightBlock {
 #[display(fmt = "{:?}", self)]
 pub struct LatestStatus {
     /// The latest height we are trusting.
-    pub height: Height,
+    pub height: Option<Height>,
     /// The latest block hash we are trusting.
-    pub block_hash: Hash,
+    pub block_hash: Option<Hash>,
     /// The latest validator set we are trusting.
     /// Note that this potentially did not yet sign a header yet.
-    pub valset_hash: Hash,
+    pub valset_hash: Option<Hash>,
     /// The list of fullnodes we are connected to, primary and witnesses.
     pub connected_nodes: Vec<PeerId>,
 }
 
 impl LatestStatus {
     pub fn new(
-        height: u64,
-        block_hash: Hash,
-        valset_hash: Hash,
+        height: Option<u64>,
+        block_hash: Option<Hash>,
+        valset_hash: Option<Hash>,
         connected_nodes: Vec<PeerId>,
     ) -> Self {
         LatestStatus {

@@ -176,19 +176,19 @@ impl Supervisor {
     /// Return latest trusted status summary.
     fn latest_status(&mut self) -> Option<LatestStatus> {
         let latest_trusted = self.peers.primary().latest_trusted();
+        let mut connected_nodes: Vec<PeerId> = Vec::new();
+        connected_nodes.push(self.peers.primary_id());
+        connected_nodes.append(&mut self.peers.witnesses_ids().iter().copied().collect());
+
         match latest_trusted {
-            Some(trusted) => {
-                let mut connected_nodes: Vec<PeerId> = Vec::new();
-                connected_nodes.push(self.peers.primary_id());
-                connected_nodes.append(&mut self.peers.witnesses_ids().iter().copied().collect());
-                Some(LatestStatus::new(
-                    trusted.signed_header.header.height(),
-                    trusted.signed_header.header.hash(),
-                    trusted.next_validators.hash(),
-                    connected_nodes,
-                ))
-            }
-            None => None,
+            Some(trusted) => Some(LatestStatus::new(
+                Some(trusted.signed_header.header.height()),
+                Some(trusted.signed_header.header.hash()),
+                Some(trusted.next_validators.hash()),
+                connected_nodes,
+            )),
+            // only return connected nodes to see what is going on:
+            None => Some(LatestStatus::new(None, None, None, connected_nodes)),
         }
     }
 
