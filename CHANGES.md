@@ -17,7 +17,7 @@
 - Correctly handle blocks marked `Trusted` in accordance with the specification ([#407])
 - Treat `Trusted` status as a special case of `Verified` as per the spec ([#419])
 - Add integration test ([#431])
-- Reworked light-node to `Supervisor` / `Handle` ([#430])
+- Rework light-node CLI to use `Supervisor` / `Handle` ([#430])
 - Add `latest_status` to the supervisor `Handle` ([#449])
 - Add JSONRPC endpoints to query the light-node ([#363], [#449])  
 
