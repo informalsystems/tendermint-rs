@@ -1,9 +1,9 @@
 use abscissa_core::status_err;
 
 use crate::config::LightStoreConfig;
-use tendermint_light_client::store::LightStore;
 use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::store::sled::SledStore;
+use tendermint_light_client::store::LightStore;
 
 pub trait LightStoreFactory: Sync + Send {
     fn create(&self, config: &LightStoreConfig) -> Box<dyn LightStore>;
@@ -13,7 +13,9 @@ pub trait LightStoreFactory: Sync + Send {
 pub struct ProdLightStoreFactory;
 
 impl ProdLightStoreFactory {
-    pub fn new() -> Self { Self {} }
+    pub fn new() -> Self {
+        Self {}
+    }
 }
 
 impl LightStoreFactory for ProdLightStoreFactory {
@@ -26,7 +28,7 @@ impl LightStoreFactory for ProdLightStoreFactory {
                     std::process::exit(1);
                 });
                 Box::new(SledStore::new(db))
-            },
+            }
         }
     }
 }

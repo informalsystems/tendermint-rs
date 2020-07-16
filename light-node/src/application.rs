@@ -1,12 +1,12 @@
 //! LightNode Abscissa Application
 
+use crate::store::{LightStoreFactory, ProdLightStoreFactory};
 use crate::{commands::LightNodeCmd, config::LightNodeConfig};
 use abscissa_core::{
     application::{self, AppCell},
     config, trace, Application, EntryPoint, FrameworkError, StandardPaths,
 };
 use abscissa_tokio::TokioComponent;
-use crate::store::{LightStoreFactory, ProdLightStoreFactory};
 
 /// Application state
 pub static APPLICATION: AppCell<LightNodeApp> = AppCell::new();
@@ -59,7 +59,9 @@ impl Default for LightNodeApp {
 
 impl LightNodeApp {
     pub fn light_store_factory(&self) -> &Box<dyn LightStoreFactory> {
-        self.light_store_factory.as_ref().expect("LightStoreFactory not constructed")
+        self.light_store_factory
+            .as_ref()
+            .expect("LightStoreFactory not constructed")
     }
 }
 

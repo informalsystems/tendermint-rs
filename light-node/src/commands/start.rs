@@ -2,7 +2,7 @@
 
 use std::process;
 
-use crate::application::{app_config, APPLICATION, app_reader};
+use crate::application::{app_config, app_reader, APPLICATION};
 use crate::config::{LightClientConfig, LightNodeConfig};
 use crate::rpc;
 use crate::rpc::Server;
@@ -103,7 +103,9 @@ impl StartCmd {
     fn assert_init_was_run() {
         // TODO(liamsi): handle errors properly:
 
-        let shared_store = app_reader().light_store_factory().create(&app_config().shared_state_config);
+        let shared_store = app_reader()
+            .light_store_factory()
+            .create(&app_config().shared_state_config);
 
         if shared_store.latest_trusted_or_verified().is_none() {
             status_err!("no trusted or verified state in store for primary, please initialize with the `initialize` subcommand first");
@@ -120,7 +122,9 @@ impl StartCmd {
     ) -> Instance {
         let peer_id = light_config.peer_id;
 
-        let light_store = app_reader().light_store_factory().create(&light_config.state);
+        let light_store = app_reader()
+            .light_store_factory()
+            .create(&light_config.state);
 
         let state = State {
             light_store,
@@ -174,7 +178,9 @@ impl StartCmd {
         }
         let peer_list = peer_list.build();
 
-        let mut shared_state = app_reader().light_store_factory().create(&conf.shared_state_config);
+        let mut shared_state = app_reader()
+            .light_store_factory()
+            .create(&conf.shared_state_config);
 
         peer_list
             .primary()

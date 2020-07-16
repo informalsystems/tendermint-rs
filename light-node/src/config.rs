@@ -9,9 +9,9 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::time::Duration;
 
+use crate::config::LightStoreConfig::OnDisk;
 use tendermint_light_client::light_client;
 use tendermint_light_client::types::{PeerId, TrustThreshold};
-use crate::config::LightStoreConfig::OnDisk;
 
 /// LightNode Configuration
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -57,7 +57,7 @@ pub struct LightClientConfig {
 #[serde(tag = "type")]
 pub enum LightStoreConfig {
     InMemory,
-    OnDisk { db_path: PathBuf }
+    OnDisk { db_path: PathBuf },
 }
 
 /// RpcConfig contains for the RPC server of the light node as
@@ -80,7 +80,7 @@ impl Default for LightClientConfig {
             state: OnDisk {
                 db_path: "./lightstore/BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
                     .parse()
-                    .unwrap()
+                    .unwrap(),
             },
         }
     }
@@ -103,7 +103,9 @@ impl Default for LightNodeConfig {
             // TODO(ismail): need at least 2 peers for a proper init
             // otherwise the light node will complain on `start` with `no witness left`
             light_clients: vec![LightClientConfig::default()],
-            shared_state_config: OnDisk {db_path: "./lightstore".parse().unwrap()},
+            shared_state_config: OnDisk {
+                db_path: "./lightstore".parse().unwrap(),
+            },
         }
     }
 }

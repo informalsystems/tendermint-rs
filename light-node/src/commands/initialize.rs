@@ -15,11 +15,11 @@ use tendermint::hash;
 use tendermint::lite::Header;
 use tendermint::Hash;
 
+use crate::store::LightStoreFactory;
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;
 use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
-use tendermint_light_client::types::{Status, PeerId};
-use crate::store::LightStoreFactory;
+use tendermint_light_client::types::{PeerId, Status};
 
 /// `initialize` subcommand
 #[derive(Command, Debug, Default, Options)]
@@ -52,10 +52,12 @@ impl Runnable for InitCmd {
 
         initialize_subjectively(
             app_reader().light_store_factory().as_ref(),
-            self.height, subjective_header_hash,
+            self.height,
+            subjective_header_hash,
             &app_cfg.shared_state_config,
             &app_cfg.light_clients.first().unwrap().peer_id,
-            &io);
+            &io,
+        );
     }
 }
 
