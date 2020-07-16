@@ -49,7 +49,7 @@ mod sealed {
 
         /// Returns the latest status.
         #[rpc(name = "status")]
-        fn status(&self) -> FutureResult<Option<LatestStatus>, Error>;
+        fn status(&self) -> FutureResult<LatestStatus, Error>;
     }
 
     pub use self::rpc_impl_Rpc::gen_client::Client;
@@ -85,7 +85,7 @@ mod sealed {
             future::result(res)
         }
 
-        fn status(&self) -> FutureResult<Option<LatestStatus>, Error> {
+        fn status(&self) -> FutureResult<LatestStatus, Error> {
             let res = self.handle.latest_status().map_err(|e| {
                 let mut err = Error::internal_error();
                 err.message = e.to_string();
@@ -151,10 +151,10 @@ mod test {
 
             Ok(Some(block))
         }
-        fn latest_status(&self) -> Result<Option<LatestStatus>, Error> {
+        fn latest_status(&self) -> Result<LatestStatus, Error> {
             let status: LatestStatus = serde_json::from_str(STATUS_JSON).unwrap();
 
-            Ok(Some(status))
+            Ok(status)
         }
     }
 
