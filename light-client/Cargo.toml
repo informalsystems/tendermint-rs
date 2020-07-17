@@ -3,7 +3,6 @@ name = "tendermint-light-client"
 version = "0.14.0"
 authors = ["Romain Ruetschi <romain@informal.systems>"]
 edition = "2018"
-publish = false
 
 [dependencies]
 tendermint = { path = "../tendermint" }
