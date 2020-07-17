@@ -9,8 +9,8 @@ use tendermint::lite::ValidatorSet;
 use tendermint::{block, chain, validator, Time};
 
 use crate::helpers::*;
-use crate::producer::Producer;
-use crate::validator::{produce_validators, Validator};
+use crate::generator::Generator;
+use crate::validator::{generate_validators, Validator};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Header {
@@ -24,6 +24,8 @@ pub struct Header {
         parse(try_from_str = "parse_as::<Vec<Validator>>")
     )]
     pub next_validators: Option<Vec<Validator>>,
+    #[options(help = "chain id (default: test-chain)")]
+    pub chain_id: Option<String>,
     #[options(help = "block height (default: 1)")]
     pub height: Option<u64>,
     #[options(help = "time (default: now)")]
@@ -35,12 +37,17 @@ impl Header {
         Header {
             validators: Some(validators.to_vec()),
             next_validators: None,
+            chain_id: None,
             height: None,
             time: None,
         }
     }
     pub fn next_validators(mut self, vals: &[Validator]) -> Self {
         self.next_validators = Some(vals.to_vec());
+        self
+    }
+    pub fn chain_id(mut self, id: &str) -> Self {
+        self.chain_id = Some(id.to_string());
         self
     }
     pub fn height(mut self, height: u64) -> Self {
@@ -61,6 +68,7 @@ impl std::str::FromStr for Header {
             Err(_) => Header {
                 validators: Some(parse_as::<Vec<Validator>>(s)?),
                 next_validators: None,
+                chain_id: None,
                 height: None,
                 time: None,
             },
@@ -70,27 +78,29 @@ impl std::str::FromStr for Header {
 }
 
 
-impl Producer<block::Header> for Header {
-    fn merge_with_default(&self, other: &Self) -> Self {
+impl Generator<block::Header> for Header {
+    fn merge_with_default(&self, default: &Self) -> Self {
         Header {
-            validators: choose_from(&self.validators, &other.validators),
-            next_validators: choose_from(&self.next_validators, &other.next_validators),
-            height: choose_from(&self.height, &other.height),
-            time: choose_from(&self.time, &other.time),
+            validators: choose_from(&self.validators, &default.validators),
+            next_validators: choose_from(&self.next_validators, &default.next_validators),
+            chain_id: choose_from(&self.chain_id, &default.chain_id),
+            height: choose_from(&self.height, &default.height),
+            time: choose_from(&self.time, &default.time),
         }
     }
 
-    fn produce(&self) -> Result<block::Header, SimpleError> {
+    fn generate(&self) -> Result<block::Header, SimpleError> {
         if self.validators.is_none() {
             bail!("validator array is missing")
         }
-        let vals = produce_validators(&self.validators.as_ref().unwrap())?;
+        let vals = generate_validators(&self.validators.as_ref().unwrap())?;
         let valset = validator::Set::new(vals.clone());
         let next_valset = match &self.next_validators {
-            Some(next_vals) => validator::Set::new(produce_validators(next_vals)?),
+            Some(next_vals) => validator::Set::new(generate_validators(next_vals)?),
             None => valset.clone(),
         };
-        let  chain_id = match chain::Id::from_str("test-chain-01") {
+        let  chain_id = match chain::Id::from_str(
+            choose_or(self.chain_id.clone(), "test-chain".to_string()).as_str()) {
             Ok(id) => id,
             Err(_) => bail!("failed to construct header chain_id")
         };

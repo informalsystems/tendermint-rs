@@ -11,7 +11,7 @@ use tendermint::validator::{Info, ProposerPriority};
 use tendermint::vote::Power;
 
 use crate::helpers::*;
-use crate::producer::Producer;
+use crate::generator::Generator;
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Validator {
@@ -78,16 +78,16 @@ impl std::str::FromStr for Validator {
     }
 }
 
-impl Producer<Info> for Validator {
-    fn merge_with_default(&self, other: &Self) -> Self {
+impl Generator<Info> for Validator {
+    fn merge_with_default(&self, default: &Self) -> Self {
         Validator {
-            id: choose_from(&self.id, &other.id),
-            voting_power: choose_from(&self.voting_power, &other.voting_power),
-            proposer_priority: choose_from(&self.proposer_priority, &other.proposer_priority),
+            id: choose_from(&self.id, &default.id),
+            voting_power: choose_from(&self.voting_power, &default.voting_power),
+            proposer_priority: choose_from(&self.proposer_priority, &default.proposer_priority),
         }
     }
 
-    fn produce(&self) -> Result<Info, SimpleError> {
+    fn generate(&self) -> Result<Info, SimpleError> {
         let signer = self.signer()?;
         let pk = try_with!(signer.public_key(), "failed to get a public key");
         let info = Info {
@@ -103,6 +103,6 @@ impl Producer<Info> for Validator {
     }
 }
 
-pub fn produce_validators(vals: &[Validator]) -> Result<Vec<Info>, SimpleError> {
-    Ok(vals.iter().map(|v| v.produce()).collect::<Result<Vec<Info>, SimpleError>>()?)
+pub fn generate_validators(vals: &[Validator]) -> Result<Vec<Info>, SimpleError> {
+    Ok(vals.iter().map(|v| v.generate()).collect::<Result<Vec<Info>, SimpleError>>()?)
 }

@@ -13,7 +13,7 @@ use tendermint::{amino_types, block, lite, vote};
 
 use crate::header::Header;
 use crate::helpers::*;
-use crate::producer::Producer;
+use crate::generator::Generator;
 use crate::validator::Validator;
 
 #[derive(Debug, Options, Deserialize)]
@@ -52,7 +52,7 @@ impl std::str::FromStr for Commit {
     }
 }
 
-impl Producer<block::Commit> for Commit {
+impl Generator<block::Commit> for Commit {
     fn merge_with_default(&self, other: &Self) -> Self {
         Commit {
             header: choose_from(&self.header, &other.header),
@@ -60,16 +60,16 @@ impl Producer<block::Commit> for Commit {
         }
     }
 
-    fn produce(&self) -> Result<block::Commit, SimpleError> {
+    fn generate(&self) -> Result<block::Commit, SimpleError> {
         if self.header.is_none() {
             bail!("header is missing")
         }
         let header = self.header.as_ref().unwrap();
-        let block_header = header.produce()?;
+        let block_header = header.generate()?;
         let block_id = block::Id::new(lite::Header::hash(&block_header), None);
 
         let val_sign = |(i, v): (usize, &Validator)| -> Result<block::CommitSig, SimpleError> {
-            let validator = v.produce()?;
+            let validator = v.generate()?;
             let signer: Ed25519Signer = v.signer()?;
             let vote = Vote {
                 vote_type: Type::Precommit,

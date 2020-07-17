@@ -1,11 +1,11 @@
 use gumdrop::Options;
 
-use tendermint_mbt_utils::commit::Commit;
-use tendermint_mbt_utils::header::Header;
-use tendermint_mbt_utils::producer::Producer;
-use tendermint_mbt_utils::validator::Validator;
+use tendermint_typegen::commit::Commit;
+use tendermint_typegen::header::Header;
+use tendermint_typegen::generator::Generator;
+use tendermint_typegen::validator::Validator;
 use simple_error::SimpleError;
-use tendermint_mbt_utils::helpers::read_stdin;
+use tendermint_typegen::helpers::read_stdin;
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -70,7 +70,7 @@ enum Command {
     Commit(Commit),
 }
 
-fn encode_with_stdin<Opts: Producer<T> + Options, T: serde::Serialize>(cli: &Opts) -> Result<String, SimpleError>
+fn encode_with_stdin<Opts: Generator<T> + Options, T: serde::Serialize>(cli: &Opts) -> Result<String, SimpleError>
 {
     let stdin = read_stdin()?;
     let default = Opts::from_str(&stdin)?;
@@ -78,7 +78,7 @@ fn encode_with_stdin<Opts: Producer<T> + Options, T: serde::Serialize>(cli: &Opt
     producer.encode()
 }
 
-fn run_command<Opts: Producer<T> + Options, T: serde::Serialize>(cli: Opts, read_stdin: bool) {
+fn run_command<Opts: Generator<T> + Options, T: serde::Serialize>(cli: Opts, read_stdin: bool) {
     let res = if read_stdin {
         encode_with_stdin(&cli)
     } else {
