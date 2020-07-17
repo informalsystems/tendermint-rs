@@ -1,3 +1,5 @@
+//! Fork detection data structures and implementation.
+
 use serde::{Deserialize, Serialize};
 
 use crate::{

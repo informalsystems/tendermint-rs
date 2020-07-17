@@ -1,3 +1,5 @@
+//! Supervisor and Handle implementation.
+
 use crossbeam_channel as channel;
 
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
