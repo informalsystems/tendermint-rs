@@ -37,7 +37,6 @@ use tendermint_light_client::supervisor::Handle;
 use tendermint_light_client::supervisor::{Instance, Supervisor};
 
 /// `start` subcommand
-///
 #[derive(Command, Debug, Options)]
 pub struct StartCmd {
     /// Path to configuration file
@@ -93,7 +92,8 @@ impl config::Override<LightNodeConfig> for StartCmd {
         &self,
         mut config: LightNodeConfig,
     ) -> Result<LightNodeConfig, FrameworkError> {
-        // TODO(liamsi): figure out if other options would be reasonable to overwrite via CLI arguments.
+        // TODO(liamsi): figure out if other options would be reasonable to overwrite via CLI
+        // arguments.
         if let Some(addr) = self.listen_addr {
             config.rpc_config.listen_addr = addr;
         }

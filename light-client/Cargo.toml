@@ -4,6 +4,7 @@ version = "0.15.0"
 authors = ["Romain Ruetschi <romain@informal.systems>"]
 edition = "2018"
 license = "Apache-2.0"
+keywords   = ["blockchain", "bft", "consensus", "cosmos", "tendermint"]
 
 [dependencies]
 tendermint = { version = "0.15.0", path = "../tendermint" }
