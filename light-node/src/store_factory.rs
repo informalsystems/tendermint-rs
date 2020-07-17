@@ -1,6 +1,5 @@
 use abscissa_core::status_err;
 
-use crate::application::LightNodeApp;
 use crate::config::LightStoreConfig;
 use abscissa_core::component::{Component, Id};
 use tendermint_light_client::store::memory::MemoryStore;

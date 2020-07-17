@@ -1,6 +1,6 @@
 //! `intialize` subcommand
 
-use crate::application::{app_config, app_reader, LightNodeApp, APPLICATION};
+use crate::application::{app_config, APPLICATION};
 use crate::config::LightStoreConfig;
 
 use std::collections::HashMap;
@@ -9,13 +9,12 @@ use abscissa_core::status_warn;
 use abscissa_core::Command;
 use abscissa_core::Options;
 use abscissa_core::Runnable;
-use abscissa_core::{status_err, Application, Component};
+use abscissa_core::{status_err, Application};
 
 use tendermint::hash;
 use tendermint::lite::Header;
 use tendermint::Hash;
 
-use crate::store_factory::LIGHT_STORE_FACTORY_ID;
 use crate::store_factory::{LightStoreFactory, ProdLightStoreFactory};
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;

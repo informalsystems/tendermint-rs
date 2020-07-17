@@ -1,10 +1,10 @@
 //! LightNode Abscissa Application
 
-use crate::store_factory::{LightStoreFactory, ProdLightStoreFactory};
+use crate::store_factory::ProdLightStoreFactory;
 use crate::{commands::LightNodeCmd, config::LightNodeConfig};
 use abscissa_core::{
     application::{self, AppCell},
-    config, trace, Application, Component, EntryPoint, FrameworkError, StandardPaths,
+    config, trace, Application, EntryPoint, FrameworkError, StandardPaths,
 };
 use abscissa_tokio::TokioComponent;
 
