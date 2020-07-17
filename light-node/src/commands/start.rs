@@ -7,7 +7,6 @@ use crate::config::{LightClientConfig, LightNodeConfig};
 use crate::rpc;
 use crate::rpc::Server;
 
-use abscissa_core::{config, Application};
 use abscissa_core::path::PathBuf;
 use abscissa_core::status_err;
 use abscissa_core::status_info;
@@ -15,12 +14,14 @@ use abscissa_core::Command;
 use abscissa_core::FrameworkError;
 use abscissa_core::Options;
 use abscissa_core::Runnable;
+use abscissa_core::{config, Application};
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::ops::Deref;
 use std::time::Duration;
 
+use crate::store_factory::{LightStoreFactory, ProdLightStoreFactory};
 use tendermint_light_client::components::clock::SystemClock;
 use tendermint_light_client::components::io::ProdIo;
 use tendermint_light_client::components::scheduler;
@@ -34,7 +35,6 @@ use tendermint_light_client::state::State;
 use tendermint_light_client::supervisor::Handle;
 use tendermint_light_client::supervisor::{Instance, Supervisor};
 use tendermint_light_client::types::Status;
-use crate::store_factory::{ProdLightStoreFactory, LightStoreFactory};
 
 /// `start` subcommand
 #[derive(Command, Debug, Options)]
@@ -104,7 +104,11 @@ impl StartCmd {
     fn assert_init_was_run() {
         // TODO(liamsi): handle errors properly:
 
-        let shared_store = app_reader().state().components.get_downcast_ref::<ProdLightStoreFactory>().unwrap()
+        let shared_store = app_reader()
+            .state()
+            .components
+            .get_downcast_ref::<ProdLightStoreFactory>()
+            .unwrap()
             .create(&app_config().shared_state_config);
 
         if shared_store.latest_trusted_or_verified().is_none() {
@@ -122,7 +126,11 @@ impl StartCmd {
     ) -> Instance {
         let peer_id = light_config.peer_id;
 
-        let light_store = app_reader().state().components.get_downcast_ref::<ProdLightStoreFactory>().unwrap()
+        let light_store = app_reader()
+            .state()
+            .components
+            .get_downcast_ref::<ProdLightStoreFactory>()
+            .unwrap()
             .create(&light_config.state);
 
         let state = State {
@@ -177,7 +185,11 @@ impl StartCmd {
         }
         let peer_list = peer_list.build();
 
-        let mut shared_state = app_reader().state().components.get_downcast_ref::<ProdLightStoreFactory>().unwrap()
+        let mut shared_state = app_reader()
+            .state()
+            .components
+            .get_downcast_ref::<ProdLightStoreFactory>()
+            .unwrap()
             .create(&conf.shared_state_config);
 
         peer_list

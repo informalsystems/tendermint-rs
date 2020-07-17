@@ -1,11 +1,11 @@
 use abscissa_core::status_err;
 
+use crate::application::LightNodeApp;
 use crate::config::LightStoreConfig;
+use abscissa_core::component::{Component, Id};
 use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
-use abscissa_core::component::{Component, Id};
-use crate::application::LightNodeApp;
 
 pub const LIGHT_STORE_FACTORY_ID: Id = Id::new(concat!(std::module_path!(), "::LightStoreFactory"));
 

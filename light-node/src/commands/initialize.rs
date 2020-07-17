@@ -5,22 +5,22 @@ use crate::config::LightStoreConfig;
 
 use std::collections::HashMap;
 
-use abscissa_core::{status_err, Application, Component};
 use abscissa_core::status_warn;
 use abscissa_core::Command;
 use abscissa_core::Options;
 use abscissa_core::Runnable;
+use abscissa_core::{status_err, Application, Component};
 
 use tendermint::hash;
 use tendermint::lite::Header;
 use tendermint::Hash;
 
+use crate::store_factory::LIGHT_STORE_FACTORY_ID;
 use crate::store_factory::{LightStoreFactory, ProdLightStoreFactory};
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;
 use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
 use tendermint_light_client::types::{PeerId, Status};
-use crate::store_factory::LIGHT_STORE_FACTORY_ID;
 
 /// `initialize` subcommand
 #[derive(Command, Debug, Default, Options)]
@@ -53,7 +53,11 @@ impl Runnable for InitCmd {
 
         let lock = APPLICATION.read();
 
-        let factory: &dyn LightStoreFactory = lock.state().components.get_downcast_ref::<ProdLightStoreFactory>().expect("There should be a factory");
+        let factory: &dyn LightStoreFactory = lock
+            .state()
+            .components
+            .get_downcast_ref::<ProdLightStoreFactory>()
+            .expect("There should be a factory");
 
         initialize_subjectively(
             factory,
