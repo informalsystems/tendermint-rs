@@ -1,3 +1,5 @@
+//! Fork evidence data structures and interfaces.
+
 use crate::{components::io::IoError, types::PeerId};
 
 use tendermint::abci::transaction::Hash;
