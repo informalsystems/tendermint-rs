@@ -1,3 +1,5 @@
+
+
 use serde::Serialize;
 use std::str::FromStr;
 use simple_error::*;
@@ -14,4 +16,20 @@ pub trait Generator<Output: Serialize>: FromStr<Err = SimpleError> {
             "failed to serialize into JSON"
         ))
     }
+}
+
+#[macro_export]
+macro_rules! gen_setter {
+    ($name:ident, $t:ty) => {
+        pub fn $name(&mut self, $name: $t) -> &mut Self {
+        self.$name = Some($name);
+        self
+    }
+    };
+    ($name:ident, $t:ty, $val:expr) => {
+        pub fn $name(&mut self, $name: $t) -> &mut Self {
+        self.$name = Some($val);
+        self
+    }
+    };
 }

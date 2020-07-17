@@ -42,22 +42,10 @@ impl Header {
             time: None,
         }
     }
-    pub fn next_validators(mut self, vals: &[Validator]) -> Self {
-        self.next_validators = Some(vals.to_vec());
-        self
-    }
-    pub fn chain_id(mut self, id: &str) -> Self {
-        self.chain_id = Some(id.to_string());
-        self
-    }
-    pub fn height(mut self, height: u64) -> Self {
-        self.height = Some(height);
-        self
-    }
-    pub fn time(mut self, time: Time) -> Self {
-        self.time = Some(time);
-        self
-    }
+    gen_setter!(next_validators, &[Validator], next_validators.to_vec());
+    gen_setter!(chain_id, &str, chain_id.to_string());
+    gen_setter!(height, u64);
+    gen_setter!(time, Time);
 }
 
 impl std::str::FromStr for Header {

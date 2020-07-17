@@ -26,6 +26,9 @@ pub struct Validator {
     pub proposer_priority: Option<i64>,
 }
 
+
+
+
 impl Validator {
     pub fn new(id: &str) -> Self {
         Validator {
@@ -34,15 +37,10 @@ impl Validator {
             proposer_priority: None,
         }
     }
-    pub fn voting_power(mut self, power: u64) -> Self {
-        self.voting_power = Some(power);
-        self
-    }
-    pub fn proposer_priority(mut self, priority: i64) -> Self {
-        self.proposer_priority = Some(priority);
-        self
-    }
-    pub fn signer(&self) -> Result<Ed25519Signer, SimpleError> {
+    gen_setter!(voting_power, u64);
+    gen_setter!(proposer_priority, i64);
+
+    pub fn get_signer(&self) -> Result<Ed25519Signer, SimpleError> {
         if self.id.is_none() {
             bail!("validator identifier is missing")
         }
@@ -88,7 +86,7 @@ impl Generator<Info> for Validator {
     }
 
     fn generate(&self) -> Result<Info, SimpleError> {
-        let signer = self.signer()?;
+        let signer = self.get_signer()?;
         let pk = try_with!(signer.public_key(), "failed to get a public key");
         let info = Info {
             address: account::Id::from(pk),

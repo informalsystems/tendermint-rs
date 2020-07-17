@@ -31,10 +31,7 @@ impl Commit {
             round: None,
         }
     }
-    pub fn round(mut self, round: u64) -> Self {
-        self.round = Some(round);
-        self
-    }
+    gen_setter!(round, u64);
 }
 
 
@@ -70,7 +67,7 @@ impl Generator<block::Commit> for Commit {
 
         let val_sign = |(i, v): (usize, &Validator)| -> Result<block::CommitSig, SimpleError> {
             let validator = v.generate()?;
-            let signer: Ed25519Signer = v.signer()?;
+            let signer: Ed25519Signer = v.get_signer()?;
             let vote = Vote {
                 vote_type: Type::Precommit,
                 height: block_header.height,
