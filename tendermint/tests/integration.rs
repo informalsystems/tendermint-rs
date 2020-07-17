@@ -159,11 +159,10 @@ mod rpc {
         // client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
 
         // Loop here is helpful when debugging parsing of JSON events
-        // loop{
-        let maybe_result_event = client.get_event().await.unwrap();
-        dbg!(&maybe_result_event);
-        // }
-        let result_event = maybe_result_event.expect("unexpected msg read");
+        //loop{
+        //for _ in 0..5 {
+        let result_event = client.get_event().await.unwrap();
+        dbg!(&result_event);
         match result_event.data {
             event_listener::TMEventData::EventDataNewBlock(nb) => {
                 dbg!("got EventDataNewBlock: {:?}", nb);
@@ -175,5 +174,7 @@ mod rpc {
                 panic!("got a GenericJSONEvent: {:?}", v);
             }
         }
+        //}
+        client.close().await.unwrap();
     }
 }
