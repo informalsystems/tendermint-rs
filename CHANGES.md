@@ -26,6 +26,8 @@ The goal of releasing an early version of our Light Client is to make it accessi
 - Add `latest_status` to the supervisor `Handle` ([#449])
 - Add JSONRPC endpoints to query the light-node ([#363], [#449])  
 
+[0.15.0]: https://github.com/informalsystems/tendermint-rs/pull/454
+
 [#302]: https://github.com/informalsystems/tendermint-rs/pull/302
 [#336]: https://github.com/informalsystems/tendermint-rs/pull/336
 [#360]: https://github.com/informalsystems/tendermint-rs/pull/360
@@ -54,6 +56,7 @@ The goal of releasing an early version of our Light Client is to make it accessi
 - Update `prost-amino`/`prost-amino-derive` to v0.6 ([#367])
 
 [#367]: https://github.com/informalsystems/tendermint-rs/issues/367
+[0.14.1]: https://github.com/informalsystems/tendermint-rs/pull/368
 
 ## [0.14.0] (2020-06-19)
 
