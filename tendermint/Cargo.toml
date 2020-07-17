@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint"
-version    = "0.14.1" # Also update `html_root_url` in lib.rs and
+version    = "0.15.0" # Also update `html_root_url` in lib.rs and
                       # depending crates (rpc, light-node, ..) when bumping this
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"

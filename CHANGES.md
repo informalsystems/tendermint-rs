@@ -1,4 +1,9 @@
-## Pending
+## [0.15.0] (2020-07-17)
+This release is mostly about the revamped [light-client] library and the [light-node] command-line interface. 
+Note that both crates are to be considered experimental software that will still undergo a lot of improvements and iterations. 
+The goal of releasing an early version of our Light Client is to make it accessible, to get people use it, and to receive feedback. 
+ 
+ ⚠️ ️Deprecation warning ⚠️ : This might be that last release containing the [lite] module. Please take a look at the [light-client] crate.
 
 ### Light Client:
 
@@ -41,6 +46,8 @@
 [#449]: https://github.com/informalsystems/tendermint-rs/pull/449
 
 [ADR-007]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-007-light-client-supervisor-ergonomics.md
+
+[light-node]: ./light-node/README.md
 
 ## [0.14.1] (2020-06-23)
 
