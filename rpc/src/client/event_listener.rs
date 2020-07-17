@@ -119,11 +119,11 @@ impl EventListener {
                     self.socket
                         .send(Message::Pong(Vec::new()))
                         .await
-                        .or_else(|e| {
-                            Err(RPCError::websocket_error(format!(
+                        .map_err(|e| {
+                            RPCError::websocket_error(format!(
                                 "failed to send pong response: {}",
                                 e
-                            )))
+                            ))
                         })?
                 }
                 Message::Pong(_) => (),
@@ -147,11 +147,8 @@ impl EventListener {
                 reason: Cow::from("client closed connection"),
             }))
             .await
-            .or_else(|e| {
-                Err(RPCError::websocket_error(format!(
-                    "failed to close web socket connection: {}",
-                    e
-                )))
+            .map_err(|e| {
+                RPCError::websocket_error(format!("failed to close web socket connection: {}", e))
             })?;
         // try to gracefully close the connection
         match self.socket.next().await {
@@ -161,7 +158,7 @@ impl EventListener {
                 Err(e) => match e {
                     // this is what we want
                     tungsteniteError::ConnectionClosed | tungsteniteError::AlreadyClosed => Ok(()),
-                    _ => return Err(RPCError::websocket_error(e.to_string())),
+                    _ => Err(RPCError::websocket_error(e.to_string())),
                 },
             },
             None => Ok(()),
