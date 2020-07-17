@@ -29,11 +29,11 @@ In case a particular datastructure can be produced from a single parameter
 directly via STDIN, without wrapping it into JSON object.
 E.g., in the validator case, the following are equivalent:
 
-    mbt-tendermint-produce validator --id a --voting-power 3
-    echo -n '{"id": "a", "voting_power": 3}' | mbt-tendermint-produce --read-stdin validator
-    echo -n a | mbt-tendermint-produce --read-stdin validator --voting-power 3
-    echo -n '{"id": "a"}' | mbt-tendermint-produce --read-stdin validator --voting-power 3
-    echo -n '{"id": "a", "voting_power": 100}' | mbt-tendermint-produce --read-stdin validator --voting-power 3
+    tendermint-typegen validator --id a --voting-power 3
+    echo -n '{"id": "a", "voting_power": 3}' | tendermint-typegen --stdin validator
+    echo -n a | tendermint-typegen --stdin validator --voting-power 3
+    echo -n '{"id": "a"}' | tendermint-typegen --stdin validator --voting-power 3
+    echo -n '{"id": "a", "voting_power": 100}' | tendermint-typegen --stdin validator --voting-power 3
 
 The result is:
     {
@@ -54,7 +54,7 @@ struct CliOptions {
     #[options(help = "provide detailed usage instructions")]
     usage: bool,
     #[options(help = "read input from STDIN (default: no)")]
-    read_stdin: bool,
+    stdin: bool,
 
     #[options(command)]
     command: Option<Command>,
@@ -122,8 +122,8 @@ fn main() {
             }
             std::process::exit(1);
         }
-        Some(Command::Validator(cli)) => run_command(cli, opts.read_stdin),
-        Some(Command::Header(cli)) => run_command(cli, opts.read_stdin),
-        Some(Command::Commit(cli)) => run_command(cli, opts.read_stdin),
+        Some(Command::Validator(cli)) => run_command(cli, opts.stdin),
+        Some(Command::Header(cli)) => run_command(cli, opts.stdin),
+        Some(Command::Commit(cli)) => run_command(cli, opts.stdin),
     }
 }
