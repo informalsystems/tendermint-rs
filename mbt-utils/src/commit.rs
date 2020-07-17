@@ -31,7 +31,7 @@ impl Commit {
             round: None,
         }
     }
-    gen_setter!(round, u64);
+    set_option!(round, u64);
 }
 
 

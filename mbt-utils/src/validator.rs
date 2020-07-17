@@ -37,8 +37,8 @@ impl Validator {
             proposer_priority: None,
         }
     }
-    gen_setter!(voting_power, u64);
-    gen_setter!(proposer_priority, i64);
+    set_option!(voting_power, u64);
+    set_option!(proposer_priority, i64);
 
     pub fn get_signer(&self) -> Result<Ed25519Signer, SimpleError> {
         if self.id.is_none() {

@@ -42,10 +42,10 @@ impl Header {
             time: None,
         }
     }
-    gen_setter!(next_validators, &[Validator], next_validators.to_vec());
-    gen_setter!(chain_id, &str, chain_id.to_string());
-    gen_setter!(height, u64);
-    gen_setter!(time, Time);
+    set_option!(next_validators, &[Validator], next_validators.to_vec());
+    set_option!(chain_id, &str, chain_id.to_string());
+    set_option!(height, u64);
+    set_option!(time, Time);
 }
 
 impl std::str::FromStr for Header {

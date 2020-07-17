@@ -4,6 +4,22 @@ use serde::de::DeserializeOwned;
 use simple_error::*;
 use std::io::{self, Read};
 
+#[macro_export]
+macro_rules! set_option {
+    ($name:ident, $t:ty) => {
+        pub fn $name(&mut self, $name: $t) -> &mut Self {
+        self.$name = Some($name);
+        self
+    }
+    };
+    ($name:ident, $t:ty, $val:expr) => {
+        pub fn $name(&mut self, $name: $t) -> &mut Self {
+        self.$name = Some($val);
+        self
+    }
+    };
+}
+
 /// Tries to parse a string as the given type; otherwise returns the input wrapped in SimpleError
 pub fn parse_as<T: DeserializeOwned>(input: &str) -> Result<T, SimpleError> {
     match serde_json::from_str(input) {
