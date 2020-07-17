@@ -12,7 +12,8 @@ use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
 use crate::store::LightStore;
-use tendermint::lite::{Header, ValidatorSet};
+use crate::types::{LatestStatus, LightBlock, PeerId, Status};
+use tendermint::lite::{Header, Height, ValidatorSet};
 
 /// Provides an interface to the supervisor for use in downstream code.
 pub trait Handle {

@@ -31,7 +31,7 @@ pub fn app_config() -> config::Reader<LightNodeApp> {
 }
 
 /// LightNode Application
-// #[derive(Debug)]
+#[derive(Debug)]
 pub struct LightNodeApp {
     /// Application configuration.
     config: Option<LightNodeConfig>,
