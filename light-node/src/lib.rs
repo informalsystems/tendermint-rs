@@ -19,5 +19,4 @@ pub mod commands;
 pub mod config;
 pub mod error;
 pub mod prelude;
-pub mod requester;
 pub mod rpc;
