@@ -4,7 +4,7 @@ use crate::store_factory::{LightStoreFactory, ProdLightStoreFactory};
 use crate::{commands::LightNodeCmd, config::LightNodeConfig};
 use abscissa_core::{
     application::{self, AppCell},
-    config, trace, Application, EntryPoint, FrameworkError, StandardPaths,
+    config, trace, Application, EntryPoint, FrameworkError, StandardPaths, Component
 };
 use abscissa_tokio::TokioComponent;
 
@@ -36,9 +36,6 @@ pub struct LightNodeApp {
     /// Application configuration.
     config: Option<LightNodeConfig>,
 
-    /// State factory.
-    light_store_factory: Option<Box<dyn LightStoreFactory>>,
-
     /// Application state.
     state: application::State<Self>,
 }
@@ -51,17 +48,8 @@ impl Default for LightNodeApp {
     fn default() -> Self {
         Self {
             config: None,
-            light_store_factory: None,
             state: application::State::default(),
         }
-    }
-}
-
-impl LightNodeApp {
-    pub fn light_store_factory(&self) -> &Box<dyn LightStoreFactory> {
-        self.light_store_factory
-            .as_ref()
-            .expect("LightStoreFactory not constructed")
     }
 }
 
@@ -98,6 +86,7 @@ impl Application for LightNodeApp {
     fn register_components(&mut self, command: &Self::Cmd) -> Result<(), FrameworkError> {
         let mut components = self.framework_components(command)?;
         components.push(Box::new(TokioComponent::new()?));
+        components.push(Box::new(ProdLightStoreFactory::new()));
         self.state.components.register(components)
     }
 
@@ -110,7 +99,6 @@ impl Application for LightNodeApp {
         // Configure components
         self.state.components.after_config(&config)?;
         self.config = Some(config);
-        self.light_store_factory = Some(Box::new(ProdLightStoreFactory::new()));
         Ok(())
     }
 

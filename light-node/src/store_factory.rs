@@ -4,12 +4,16 @@ use crate::config::LightStoreConfig;
 use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
+use abscissa_core::component::{Component, Id};
+use crate::application::LightNodeApp;
+
+pub const LIGHT_STORE_FACTORY_ID: Id = Id::new(concat!(std::module_path!(), "::LightStoreFactory"));
 
 pub trait LightStoreFactory: Sync + Send {
     fn create(&self, config: &LightStoreConfig) -> Box<dyn LightStore>;
 }
 
-#[derive(Debug)]
+#[derive(Component, Debug)]
 pub struct ProdLightStoreFactory;
 
 impl ProdLightStoreFactory {

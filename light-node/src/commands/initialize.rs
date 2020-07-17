@@ -1,11 +1,11 @@
 //! `intialize` subcommand
 
-use crate::application::{app_config, app_reader};
+use crate::application::{app_config, app_reader, LightNodeApp, APPLICATION};
 use crate::config::LightStoreConfig;
 
 use std::collections::HashMap;
 
-use abscissa_core::status_err;
+use abscissa_core::{status_err, Application, Component};
 use abscissa_core::status_warn;
 use abscissa_core::Command;
 use abscissa_core::Options;
@@ -15,11 +15,12 @@ use tendermint::hash;
 use tendermint::lite::Header;
 use tendermint::Hash;
 
-use crate::store_factory::LightStoreFactory;
+use crate::store_factory::{LightStoreFactory, ProdLightStoreFactory};
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;
 use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
 use tendermint_light_client::types::{PeerId, Status};
+use crate::store_factory::LIGHT_STORE_FACTORY_ID;
 
 /// `initialize` subcommand
 #[derive(Command, Debug, Default, Options)]
@@ -50,8 +51,12 @@ impl Runnable for InitCmd {
 
         let io = ProdIo::new(peer_map, Some(app_cfg.rpc_config.request_timeout));
 
+        let lock = APPLICATION.read();
+
+        let factory: &dyn LightStoreFactory = lock.state().components.get_downcast_ref::<ProdLightStoreFactory>().expect("There should be a factory");
+
         initialize_subjectively(
-            app_reader().light_store_factory().as_ref(),
+            factory,
             self.height,
             subjective_header_hash,
             &app_cfg.shared_state_config,

@@ -7,7 +7,7 @@ use crate::config::{LightClientConfig, LightNodeConfig};
 use crate::rpc;
 use crate::rpc::Server;
 
-use abscissa_core::config;
+use abscissa_core::{config, Application};
 use abscissa_core::path::PathBuf;
 use abscissa_core::status_err;
 use abscissa_core::status_info;
@@ -34,6 +34,7 @@ use tendermint_light_client::state::State;
 use tendermint_light_client::supervisor::Handle;
 use tendermint_light_client::supervisor::{Instance, Supervisor};
 use tendermint_light_client::types::Status;
+use crate::store_factory::{ProdLightStoreFactory, LightStoreFactory};
 
 /// `start` subcommand
 #[derive(Command, Debug, Options)]
@@ -103,8 +104,7 @@ impl StartCmd {
     fn assert_init_was_run() {
         // TODO(liamsi): handle errors properly:
 
-        let shared_store = app_reader()
-            .light_store_factory()
+        let shared_store = app_reader().state().components.get_downcast_ref::<ProdLightStoreFactory>().unwrap()
             .create(&app_config().shared_state_config);
 
         if shared_store.latest_trusted_or_verified().is_none() {
@@ -122,8 +122,7 @@ impl StartCmd {
     ) -> Instance {
         let peer_id = light_config.peer_id;
 
-        let light_store = app_reader()
-            .light_store_factory()
+        let light_store = app_reader().state().components.get_downcast_ref::<ProdLightStoreFactory>().unwrap()
             .create(&light_config.state);
 
         let state = State {
@@ -178,8 +177,7 @@ impl StartCmd {
         }
         let peer_list = peer_list.build();
 
-        let mut shared_state = app_reader()
-            .light_store_factory()
+        let mut shared_state = app_reader().state().components.get_downcast_ref::<ProdLightStoreFactory>().unwrap()
             .create(&conf.shared_state_config);
 
         peer_list
