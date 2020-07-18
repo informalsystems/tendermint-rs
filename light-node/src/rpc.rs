@@ -1,3 +1,4 @@
+//! JSONRPC Server and Client for the light-node RPC endpoint.
 use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::{AccessControlAllowOrigin, DomainsValidation, ServerBuilder};
 
