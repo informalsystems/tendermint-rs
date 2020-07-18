@@ -13,6 +13,10 @@
     unused_lifetimes,
     unused_qualifications
 )]
+#![doc(
+    html_root_url = "https://docs.rs/tendermint-light-node/0.15.0",
+    html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs.png"
+)]
 
 pub mod application;
 pub mod commands;
