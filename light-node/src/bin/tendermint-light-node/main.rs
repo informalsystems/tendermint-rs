@@ -1,4 +1,4 @@
-//! Main entry point for light-node
+//! Main entry point for the Tendermint light-node
 
 #![deny(warnings, missing_docs, trivial_casts, unused_qualifications)]
 #![forbid(unsafe_code)]

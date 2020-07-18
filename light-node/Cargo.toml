@@ -14,6 +14,10 @@ description = """
     query the current state of the light node.
     """
 
+[[bin]]
+name = "tendermint-light-node"
+path = "src/bin/tendermint-light-node/main.rs"
+
 [dependencies]
 abscissa_tokio = "0.5"
 anomaly = { version = "0.2", features = [ "serializer" ] }
