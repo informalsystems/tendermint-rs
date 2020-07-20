@@ -1,4 +1,4 @@
-//! Light-Node
+//! light-node
 //!
 //! The Tendermint light-node wraps the light-client crate into a command-line interface tool.
 //!

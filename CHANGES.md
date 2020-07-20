@@ -3,7 +3,7 @@ This release is mostly about the revamped [light-client] library and the [light-
 Note that both crates are to be considered experimental software that will still undergo a lot of improvements and iterations. 
 The goal of releasing an early version of our Light Client is to make it accessible, to get people use it, and to receive feedback. 
  
- ⚠️ ️Deprecation warning ⚠️ : This might be that last release containing the [lite] module. Please take a look at the [light-client] crate.
+ ⚠️ ️Deprecation warning ⚠️ : This might be the last release containing the [lite] module. Please take a look at the [light-client] crate.
 
 ### Light Client:
 

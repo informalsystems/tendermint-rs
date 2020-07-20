@@ -147,7 +147,7 @@ impl LightClient {
         state: &mut State,
     ) -> Result<LightBlock, Error> {
         // Let's first look in the store to see whether we have already successfully verified this
-        // block
+        // block.
         if let Some(light_block) = state.light_store.get_trusted_or_verified(target_height) {
             return Ok(light_block);
         }
@@ -211,9 +211,9 @@ impl LightClient {
                     bail!(ErrorKind::InvalidLightBlock(e))
                 }
                 Verdict::NotEnoughTrust(_) => {
-                    // The current block cannot be trusted because of missing overlap in the
+                    // The current block cannot be trusted because of a missing overlap in the
                     // validator sets. Add the block to the light store with
-                    // `Unverified` status. This will engage bisection in an
+                    // the `Unverified` status. This will engage bisection in an
                     // attempt to raise the height of the highest trusted state
                     // until there is enough overlap.
                     state.light_store.update(&current_block, Status::Unverified);
