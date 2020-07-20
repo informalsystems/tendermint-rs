@@ -90,7 +90,7 @@ mod test {
     fn test_hash_height_1() {
         // JSON extracted from https://github.com/tendermint/tendermint/tree/v0.33
         // more precisely `curl`ed from locally build docker image of:
-        // git log --pretty=format:"%H" -1                                                                                                                              15:35:44
+        // git log --pretty=format:"%H" -1
         // 606d0a89ccabbd3e59cff521f9f4d875cc366ac9
         // via
         //  curl -X GET "http://localhost:26657/commit?height=1" -H  "accept: application/json" | jq .result.signed_header.header
@@ -135,7 +135,7 @@ mod test {
     fn test_hash_height_2() {
         // JSON test-vector extracted from https://github.com/tendermint/tendermint/tree/v0.33
         // more precisely `curl`ed from locally build docker image of:
-        // git log --pretty=format:"%H" -1                                                                                                                              15:35:44
+        // git log --pretty=format:"%H" -1
         // 606d0a89ccabbd3e59cff521f9f4d875cc366ac9
         // via
         //  curl -X GET "http://localhost:26657/commit?height=2" -H  "accept: application/json" | jq .result.signed_header.header

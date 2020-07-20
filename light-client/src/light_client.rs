@@ -102,12 +102,12 @@ impl LightClient {
     ///
     /// This is the main function and uses the following components:
     ///
-    /// - The I/O component is called to fetch the next light block.
-    ///   It is the only component that communicates with other nodes.
-    /// - The Verifier component checks whether a header is valid and checks if a new
-    ///   light block should be trusted based on a previously verified light block.
-    /// - The Scheduler component decides which height to try to verify next, in case
-    ///   the current block pass verification but cannot be trusted yet.
+    /// - The I/O component is called to fetch the next light block. It is the only component that
+    ///   communicates with other nodes.
+    /// - The Verifier component checks whether a header is valid and checks if a new light block
+    ///   should be trusted based on a previously verified light block.
+    /// - The Scheduler component decides which height to try to verify next, in case the current
+    ///   block pass verification but cannot be trusted yet.
     ///
     /// ## Implements
     /// - [LCV-DIST-SAFE.1]
@@ -120,8 +120,8 @@ impl LightClient {
     /// - The light store contains a light block within the trusting period [LCV-PRE-TP.1]
     ///
     /// ## Postcondition
-    /// - The light store contains a light block that corresponds
-    ///   to a block of the blockchain of height `target_height` [LCV-POST-LS.1]
+    /// - The light store contains a light block that corresponds to a block of the blockchain of
+    ///   height `target_height` [LCV-POST-LS.1]
     ///
     /// ## Error conditions
     /// - If the precondition is violated [LVC-PRE-TP.1]
@@ -146,7 +146,8 @@ impl LightClient {
         target_height: Height,
         state: &mut State,
     ) -> Result<LightBlock, Error> {
-        // Let's first look in the store to see whether we have already successfully verified this block
+        // Let's first look in the store to see whether we have already successfully verified this
+        // block.
         if let Some(light_block) = state.light_store.get_trusted_or_verified(target_height) {
             return Ok(light_block);
         }
@@ -180,7 +181,8 @@ impl LightClient {
             // Log the current height as a dependency of the block at the target height
             state.trace_block(target_height, current_height);
 
-            // If the trusted state is now at a height equal to the target height, we are done. [LCV-DIST-LIFE.1]
+            // If the trusted state is now at a height equal to the target height, we are done.
+            // [LCV-DIST-LIFE.1]
             if target_height == trusted_state.height() {
                 return Ok(trusted_state);
             }
@@ -202,16 +204,18 @@ impl LightClient {
                     state.light_store.update(&current_block, new_status);
                 }
                 Verdict::Invalid(e) => {
-                    // Verification failed, add the block to the light store with `Failed` status, and abort.
+                    // Verification failed, add the block to the light store with `Failed` status,
+                    // and abort.
                     state.light_store.update(&current_block, Status::Failed);
 
                     bail!(ErrorKind::InvalidLightBlock(e))
                 }
                 Verdict::NotEnoughTrust(_) => {
-                    // The current block cannot be trusted because of missing overlap in the validator sets.
-                    // Add the block to the light store with `Unverified` status.
-                    // This will engage bisection in an attempt to raise the height of the highest
-                    // trusted state until there is enough overlap.
+                    // The current block cannot be trusted because of a missing overlap in the
+                    // validator sets. Add the block to the light store with
+                    // the `Unverified` status. This will engage bisection in an
+                    // attempt to raise the height of the highest trusted state
+                    // until there is enough overlap.
                     state.light_store.update(&current_block, Status::Unverified);
                 }
             }

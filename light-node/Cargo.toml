@@ -1,9 +1,24 @@
 [package]
 name = "tendermint-light-node"
 authors = ["Ethan Buchman <ethan@coinculture.info>", "Ismail Khoffi <Ismail.Khoffi@gmail.com>"]
-version = "0.14.0"
+version = "0.15.0"
 edition = "2018"
-publish = false
+license = "Apache-2.0"
+repository = "https://github.com/informalsystems/tendermint-rs"
+readme     = "README.md"
+keywords   = ["blockchain", "bft", "consensus", "cosmos", "tendermint"]
+
+description = """
+    The Tendermint light-node wraps the light-client crate into a command-line
+    interface tool.
+    It can be used to initialize and start a standalone light client daemon and
+    exposes a JSONRPC endpoint from which you can query the current state of the
+    light node.
+    """
+
+[[bin]]
+name = "tendermint-light-node"
+path = "src/bin/tendermint-light-node/main.rs"
 
 [dependencies]
 abscissa_tokio = "0.5"
@@ -16,10 +31,10 @@ jsonrpc-http-server = "14.2"
 jsonrpc-derive = "14.2"
 serde = { version = "1", features = ["serde_derive"] }
 serde_json = "1.0"
-sled = "0.31.0"
-tendermint = { version = "0.14.0", path = "../tendermint" }
-tendermint-light-client = { version = "0.14.0", path = "../light-client" }
-tendermint-rpc = { version = "0.14.0", path = "../rpc", features = [ "client" ] }
+sled = "0.33.0"
+tendermint = { version = "0.15.0", path = "../tendermint" }
+tendermint-light-client = { version = "0.15.0", path = "../light-client" }
+tendermint-rpc = { version = "0.15.0", path = "../rpc", features = [ "client" ] }
 thiserror = "1.0"
 tokio = { version = "0.2", features = ["full"] }
 

@@ -1,8 +1,9 @@
-//! LightNode
+//! light-node
 //!
 //! The Tendermint light-node wraps the light-client crate into a command-line interface tool.
-//! It can be used as a standalone light client daemon and exposes a JSONRPC endpoint from which
-//! you can query the current state of the light node.
+//!
+//! It can be used to initialize and start a standalone light client daemon and exposes a JSONRPC
+//! endpoint from which you can query the current state of the light node.
 
 // Tip: Deny warnings with `RUSTFLAGS="-D warnings"` environment variable in CI
 
@@ -13,11 +14,14 @@
     unused_lifetimes,
     unused_qualifications
 )]
+#![doc(
+    html_root_url = "https://docs.rs/tendermint-light-node/0.15.0",
+    html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs.png"
+)]
 
 pub mod application;
 pub mod commands;
 pub mod config;
 pub mod error;
 pub mod prelude;
-pub mod requester;
 pub mod rpc;

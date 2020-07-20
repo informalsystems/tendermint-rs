@@ -199,7 +199,8 @@ impl Supervisor {
         self.verify(Some(height))
     }
 
-    /// Verify either to the latest block (if `height == None`) or to a given block (if `height == Some(height)`).
+    /// Verify either to the latest block (if `height == None`) or to a given block (if `height ==
+    /// Some(height)`).
     fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
         let primary = self.peers.primary_mut();
 

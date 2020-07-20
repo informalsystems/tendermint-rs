@@ -54,10 +54,8 @@ pub trait ForkDetector: Send {
 /// the given trusted state, and then:
 ///
 /// - If the verification succeeds, we have a real fork
-/// - If verification fails because of lack of trust,
-///   we have a potential fork.
-/// - If verification fails for any other reason, the
-///   witness is deemed faulty.
+/// - If verification fails because of lack of trust, we have a potential fork.
+/// - If verification fails for any other reason, the witness is deemed faulty.
 pub struct ProdForkDetector {
     hasher: Box<dyn Hasher>,
 }

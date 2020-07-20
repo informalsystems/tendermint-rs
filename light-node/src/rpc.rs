@@ -1,3 +1,4 @@
+//! JSONRPC Server and Client for the light-node RPC endpoint.
 use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::{AccessControlAllowOrigin, DomainsValidation, ServerBuilder};
 
@@ -9,10 +10,10 @@ pub use sealed::{Client, Rpc, Server};
 
 /// Run the given [`Server`] on the given address and blocks until closed.
 ///
-/// n.b. The underlying server has semantics to close on drop. Also does it does not offer any way to
-/// get the underlying Future to await, so we are left with this rather rudimentary way to control
-/// the lifecycle. Should we be interested in a more controlled way to close the server we can
-/// expose a handle in the future.
+/// n.b. The underlying server has semantics to close on drop. Also it does not offer any way
+/// to get the underlying Future to await, so we are left with this rather rudimentary way to
+/// control the lifecycle. Should we be interested in a more controlled way to close the server we
+/// can expose a handle in the future.
 pub fn run<H>(server: Server<H>, addr: &str) -> Result<(), error::Error>
 where
     H: Handle + Send + Sync + 'static,
