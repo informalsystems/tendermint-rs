@@ -9,8 +9,7 @@ use tendermint::lite::ValidatorSet;
 use tendermint::{block, chain, validator, Time};
 
 use crate::helpers::*;
-use crate::generator::Generator;
-use crate::validator::{generate_validators, Validator};
+use crate::{Generator, Validator, validator::generate_validators};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Header {
@@ -53,13 +52,7 @@ impl std::str::FromStr for Header {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let header = match parse_as::<Header>(s) {
             Ok(input) => input,
-            Err(_) => Header {
-                validators: Some(parse_as::<Vec<Validator>>(s)?),
-                next_validators: None,
-                chain_id: None,
-                height: None,
-                time: None,
-            },
+            Err(_) => Header::new(&parse_as::<Vec<Validator>>(s)?)
         };
         Ok(header)
     }

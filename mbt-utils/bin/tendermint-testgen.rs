@@ -1,9 +1,8 @@
 use gumdrop::Options;
 
-use tendermint_testgen::commit::Commit;
-use tendermint_testgen::header::Header;
-use tendermint_testgen::generator::Generator;
-use tendermint_testgen::validator::Validator;
+use tendermint_testgen::{
+    Generator, Validator, Header, Vote, Commit
+};
 use simple_error::SimpleError;
 use tendermint_testgen::helpers::read_stdin;
 
@@ -66,6 +65,8 @@ enum Command {
     Validator(Validator),
     #[options(help = "produce header from validator array and other parameters")]
     Header(Header),
+    #[options(help = "produce vote from validator and other parameters")]
+    Vote(Vote),
     #[options(help = "produce commit from validator array and other parameters")]
     Commit(Commit),
 }
@@ -124,6 +125,7 @@ fn main() {
         }
         Some(Command::Validator(cli)) => run_command(cli, opts.stdin),
         Some(Command::Header(cli)) => run_command(cli, opts.stdin),
+        Some(Command::Vote(cli)) => eprintln!("{:?}", cli),
         Some(Command::Commit(cli)) => run_command(cli, opts.stdin),
     }
 }

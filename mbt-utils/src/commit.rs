@@ -11,10 +11,8 @@ use tendermint::signature::Signature;
 use tendermint::vote::{Type, Vote};
 use tendermint::{amino_types, block, lite, vote};
 
-use crate::header::Header;
 use crate::helpers::*;
-use crate::generator::Generator;
-use crate::validator::Validator;
+use crate::{Generator, Validator, Header};
 
 #[derive(Debug, Options, Deserialize)]
 pub struct Commit {
@@ -40,10 +38,7 @@ impl std::str::FromStr for Commit {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let commit = match parse_as::<Commit>(s) {
             Ok(input) => input,
-            Err(_) => Commit {
-                header: Some(parse_as::<Header>(s)?),
-                round: None,
-            },
+            Err(_) => Commit::new(&parse_as::<Header>(s)?)
         };
         Ok(commit)
     }

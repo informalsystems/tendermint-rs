@@ -11,7 +11,7 @@ use tendermint::validator::{Info, ProposerPriority};
 use tendermint::vote::Power;
 
 use crate::helpers::*;
-use crate::generator::Generator;
+use crate::Generator;
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Validator {
@@ -45,8 +45,11 @@ impl Validator {
             bail!("validator identifier is missing")
         }
         let mut bytes = self.id.clone().unwrap().into_bytes();
+        if bytes.is_empty() {
+            bail!("empty validator identifier")
+        }
         if bytes.len() > 32 {
-            bail!("identifier is too long")
+            bail!("validator identifier is too long")
         }
         bytes.extend(vec![0u8; 32 - bytes.len()].iter());
         let seed = require_with!(
@@ -62,15 +65,7 @@ impl std::str::FromStr for Validator {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let validator = match parse_as::<Validator>(s) {
             Ok(input) => input,
-            Err(_) => Validator {
-                id: if s.is_empty() {
-                    bail!("failed to parse validator")
-                } else {
-                    Some(s.to_string())
-                },
-                voting_power: None,
-                proposer_priority: None,
-            }
+            Err(_) => Validator::new(s)
         };
         Ok(validator)
     }
