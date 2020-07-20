@@ -1,11 +1,11 @@
 use gumdrop::Options;
 
-use tendermint_typegen::commit::Commit;
-use tendermint_typegen::header::Header;
-use tendermint_typegen::generator::Generator;
-use tendermint_typegen::validator::Validator;
+use tendermint_testgen::commit::Commit;
+use tendermint_testgen::header::Header;
+use tendermint_testgen::generator::Generator;
+use tendermint_testgen::validator::Validator;
 use simple_error::SimpleError;
-use tendermint_typegen::helpers::read_stdin;
+use tendermint_testgen::helpers::read_stdin;
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -29,11 +29,11 @@ In case a particular datastructure can be produced from a single parameter
 directly via STDIN, without wrapping it into JSON object.
 E.g., in the validator case, the following are equivalent:
 
-    tendermint-typegen validator --id a --voting-power 3
-    echo -n '{"id": "a", "voting_power": 3}' | tendermint-typegen --stdin validator
-    echo -n a | tendermint-typegen --stdin validator --voting-power 3
-    echo -n '{"id": "a"}' | tendermint-typegen --stdin validator --voting-power 3
-    echo -n '{"id": "a", "voting_power": 100}' | tendermint-typegen --stdin validator --voting-power 3
+    tendermint-testgen validator --id a --voting-power 3
+    echo -n '{"id": "a", "voting_power": 3}' | tendermint-testgen --stdin validator
+    echo -n a | tendermint-testgen --stdin validator --voting-power 3
+    echo -n '{"id": "a"}' | tendermint-testgen --stdin validator --voting-power 3
+    echo -n '{"id": "a", "voting_power": 100}' | tendermint-testgen --stdin validator --voting-power 3
 
 The result is:
     {

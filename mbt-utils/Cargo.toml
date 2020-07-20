@@ -1,5 +1,5 @@
 [package]
-name = "tendermint-typegen"
+name = "tendermint-testgen"
 version = "0.1.0"
 authors = ["Andrey Kuprianov <andrey@informal.systems>"]
 edition = "2018"
@@ -19,5 +19,5 @@ subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
 simple-error = "0.2.1"
 
 [[bin]]
-name = "tendermint-typegen"
-path = "bin/tendermint-typegen.rs"
+name = "tendermint-testgen"
+path = "bin/tendermint-testgen.rs"
