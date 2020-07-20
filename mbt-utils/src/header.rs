@@ -38,8 +38,8 @@ impl Header {
             time: None,
         }
     }
-    set_option!(next_validators, &[Validator], next_validators.to_vec());
-    set_option!(chain_id, &str, chain_id.to_string());
+    set_option!(next_validators, &[Validator], Some(next_validators.to_vec()));
+    set_option!(chain_id, &str, Some(chain_id.to_string()));
     set_option!(height, u64);
     set_option!(time, Time);
 }

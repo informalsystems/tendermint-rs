@@ -21,9 +21,6 @@ pub struct Validator {
     pub proposer_priority: Option<i64>,
 }
 
-
-
-
 impl Validator {
     pub fn new(id: &str) -> Self {
         Validator {
@@ -65,6 +62,13 @@ impl std::str::FromStr for Validator {
         Ok(validator)
     }
 }
+
+impl std::cmp::PartialEq for Validator {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+impl std::cmp::Eq for Validator {}
 
 impl Generator<validator::Info> for Validator {
     fn merge_with_default(&self, default: &Self) -> Self {
