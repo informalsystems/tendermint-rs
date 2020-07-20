@@ -88,14 +88,8 @@ impl Generator<block::Commit> for Commit {
     }
 
     fn generate(&self) -> Result<block::Commit, SimpleError> {
-        let header = match &self.header{
-            None => bail!("failed to generate commit: header is missing"),
-            Some(h) => h
-        };
-        let votes = match &self.votes{
-            None => bail!("failed to generate commit: votes are missing"),
-            Some(vs) => vs
-        };
+        let header = self.header()?;
+        let votes = self.votes()?;
         let block_header = header.generate()?;
         let block_id = block::Id::new(lite::Header::hash(&block_header), None);
 
