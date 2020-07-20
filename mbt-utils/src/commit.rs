@@ -1,18 +1,16 @@
 use gumdrop::Options;
 use serde::Deserialize;
-use signatory::ed25519;
-use signatory::ed25519::SIGNATURE_SIZE;
-use signatory::signature::Signature as _;
-use signatory::signature::Signer;
-use signatory_dalek::Ed25519Signer;
 use simple_error::*;
+use signatory::{
+    ed25519,
+    signature::{ Signature as _, Signer }
+};
+use signatory_dalek::Ed25519Signer;
+use tendermint::{
+    amino_types, block, lite, vote,
+    signature::Signature };
 
-use tendermint::signature::Signature;
-use tendermint::vote::{Type, Vote};
-use tendermint::{amino_types, block, lite, vote};
-
-use crate::helpers::*;
-use crate::{Generator, Validator, Header};
+use crate::{Generator, Validator, Header, helpers::*};
 
 #[derive(Debug, Options, Deserialize)]
 pub struct Commit {
@@ -63,8 +61,8 @@ impl Generator<block::Commit> for Commit {
         let val_sign = |(i, v): (usize, &Validator)| -> Result<block::CommitSig, SimpleError> {
             let validator = v.generate()?;
             let signer: Ed25519Signer = v.get_signer()?;
-            let vote = Vote {
-                vote_type: Type::Precommit,
+            let vote = vote::Vote {
+                vote_type: vote::Type::Precommit,
                 height: block_header.height,
                 round: choose_or(self.round, 1),
                 block_id: Some(block_id.clone()),
@@ -72,7 +70,7 @@ impl Generator<block::Commit> for Commit {
                 validator_address: validator.address,
                 validator_index: i as u64,
                 signature: Signature::Ed25519(
-                    try_with!(ed25519::Signature::from_bytes(&[0_u8; SIGNATURE_SIZE]), "failed to construct empty ed25519 signature"),
+                    try_with!(ed25519::Signature::from_bytes(&[0_u8; ed25519::SIGNATURE_SIZE]), "failed to construct empty ed25519 signature"),
                 ),
             };
             let signed_vote = vote::SignedVote::new(

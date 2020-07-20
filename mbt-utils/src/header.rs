@@ -1,15 +1,12 @@
 use std::str::FromStr;
-
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
-
-use tendermint::block::header::Version;
-use tendermint::lite::ValidatorSet;
-use tendermint::{block, chain, validator, Time};
-
-use crate::helpers::*;
-use crate::{Generator, Validator, validator::generate_validators};
+use tendermint::{
+    block, chain, validator, Time,
+    lite::ValidatorSet };
+use crate::{
+    Generator, Validator, validator::generate_validators, helpers::* };
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Header {
@@ -86,7 +83,7 @@ impl Generator<block::Header> for Header {
             Err(_) => bail!("failed to construct header chain_id")
         };
         let header = block::Header {
-            version: Version { block: 0, app: 0 },
+            version: block::header::Version { block: 0, app: 0 },
             chain_id: chain_id,
             height: block::Height(choose_or(self.height, 1)),
             time: choose_or(self.time, Time::now()),

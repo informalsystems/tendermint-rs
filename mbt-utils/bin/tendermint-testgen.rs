@@ -1,10 +1,8 @@
 use gumdrop::Options;
-
-use tendermint_testgen::{
-    Generator, Validator, Header, Vote, Commit
-};
 use simple_error::SimpleError;
-use tendermint_testgen::helpers::read_stdin;
+use tendermint_testgen::{
+    Generator, Validator, Header, Vote, Commit, helpers::*
+};
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures

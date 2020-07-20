@@ -1,17 +1,12 @@
 use gumdrop::Options;
 use serde::Deserialize;
-use signatory::ed25519;
-use signatory::public_key::PublicKeyed;
-use signatory_dalek::Ed25519Signer;
 use simple_error::*;
-
-use tendermint::account;
-use tendermint::public_key::PublicKey;
-use tendermint::validator::{Info, ProposerPriority};
-use tendermint::vote::Power;
-
-use crate::helpers::*;
-use crate::Generator;
+use signatory::{ ed25519, public_key::PublicKeyed};
+use signatory_dalek::Ed25519Signer;
+use tendermint::{
+    account, public_key::PublicKey, validator, vote
+};
+use crate::{Generator, helpers::*};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Validator {
@@ -71,7 +66,7 @@ impl std::str::FromStr for Validator {
     }
 }
 
-impl Generator<Info> for Validator {
+impl Generator<validator::Info> for Validator {
     fn merge_with_default(&self, default: &Self) -> Self {
         Validator {
             id: choose_from(&self.id, &default.id),
@@ -80,22 +75,22 @@ impl Generator<Info> for Validator {
         }
     }
 
-    fn generate(&self) -> Result<Info, SimpleError> {
+    fn generate(&self) -> Result<validator::Info, SimpleError> {
         let signer = self.get_signer()?;
         let pk = try_with!(signer.public_key(), "failed to get a public key");
-        let info = Info {
+        let info = validator::Info {
             address: account::Id::from(pk),
             pub_key: PublicKey::from(pk),
-            voting_power: Power::new(choose_or(self.voting_power, 0)),
+            voting_power: vote::Power::new(choose_or(self.voting_power, 0)),
             proposer_priority: match self.proposer_priority {
                 None => None,
-                Some(p) => Some(ProposerPriority::new(p)),
+                Some(p) => Some(validator::ProposerPriority::new(p)),
             },
         };
         Ok(info)
     }
 }
 
-pub fn generate_validators(vals: &[Validator]) -> Result<Vec<Info>, SimpleError> {
-    Ok(vals.iter().map(|v| v.generate()).collect::<Result<Vec<Info>, SimpleError>>()?)
+pub fn generate_validators(vals: &[Validator]) -> Result<Vec<validator::Info>, SimpleError> {
+    Ok(vals.iter().map(|v| v.generate()).collect::<Result<Vec<validator::Info>, SimpleError>>()?)
 }

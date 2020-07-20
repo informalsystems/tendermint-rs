@@ -1,9 +1,8 @@
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
-use crate::helpers::*;
 use tendermint::{Time};
-use crate::{Validator, Header};
+use crate::{Validator, Header, helpers::*};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Vote {
