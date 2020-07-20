@@ -105,7 +105,7 @@ NilBlock ==
      lastCommit |-> NilCommit, VS |-> NIL_VS, NextVS |-> NIL_VS]
 
 \* a special value for an undefined peer
-NilPeer == "Nil" \* we have changed it to STRING for apalache efficiency
+NilPeer == "Nil" \* STRING for apalache efficiency
 
 \* control the state of the syncing node
 States == { "running", "finished"}
@@ -151,9 +151,12 @@ VARIABLES
 (* the variables of the node *)
 nvars == <<state, blockPool>>
 
-(* Type definitions for Apalache *)
-PIDT == STRING   \* type of process ids
-AsPidSet(a) == a <: {PIDT}
+(*************** Type definitions for Apalache (model checker) **********************)
+AsIntSet(S) == S <: {Int}
+
+\* type of process ids
+PIDT == STRING
+AsPidSet(S) == S <: {PIDT}
 
 \* ControlMessage type
 CMT == [type |-> STRING, peerId |-> PIDT] \* type of control messages
@@ -168,11 +171,14 @@ OMT == [type |-> STRING, peerId |-> PIDT, height |-> Int]
 AsOutMsg(m) == m <: OMT
 AsOutMsgSet(S) == S <: {OMT}
 
+\* block pool type
 BPT == [height |-> Int, peerIds |-> {PIDT}, peerHeights |-> [PIDT -> Int],
         blockStore |-> [Int -> BT], receivedBlocks |-> [Int -> PIDT],
         pendingBlocks |-> [Int -> PIDT], syncedBlocks |-> Int, syncHeight |-> Int]
 
 AsBlockPool(bp) == bp <: BPT
+
+(******************** Sets of messages ********************************)
 
 \* Control messages
 ControlMsgs ==
@@ -319,7 +325,7 @@ FindNextRequestHeight(bPool) ==
                 /\ i <= MaxPeerHeight(bPool)
                 /\ bPool.blockStore[i] = NilBlock
                 /\ bPool.pendingBlocks[i] = NilPeer} IN
-    IF S = {} <: {Int}
+    IF S = AsIntSet({})
         THEN NilHeight
     ELSE
         CHOOSE min \in S:  \A h \in S: h >= min
@@ -349,7 +355,7 @@ FindPeerToServe(bPool, h) ==
                \/ bPool.blockStore[i] /= NilBlock
         } IN
 
-    IF \/ peersThatCanServe = {} <: {PIDT}
+    IF \/ peersThatCanServe = AsPidSet({})
        \/ Cardinality(pendingBlocks) >= TARGET_PENDING
     THEN NilPeer
     \* pick a peer that can serve request for height h that has minimum number of pending requests
@@ -399,14 +405,24 @@ ExecuteBlocks(bPool) ==
 
     IF block1 = NilBlock \/ block2 = NilBlock
     THEN bPool  \* we don't have two next consecutive blocks
-    ELSE IF ~IsMatchingValidators(block1, block0.NextVS) \* the implementation stores NextVS in its state, not using block0
-            \/ ~VerifyCommit(block0, block1.lastCommit)  \* WE NEED THIS AT LEAST FOR THE TRUSTED BLOCK 
+
+    ELSE IF ~IsMatchingValidators(block1, block0.NextVS)
+              \* Check that block1.VS = block0.Next.
+              \* Otherwise, CorrectBlocksInv fails.
+              \* In the implementation NextVS is part of the application state,
+              \* so a mismatch can be found without access to block0.NextVS.
+            \*\/ ~VerifyCommit(block0, block1.lastCommit)
+              \* Verify commit of block1 based on block0. If we omit this check,
+              \* the property XXX breaks.
          THEN \* the block does not have the expected validator set
               RemovePeers({bPool.receivedBlocks[bPool.height]}, bPool)
          ELSE IF ~VerifyCommit(block1, block2.lastCommit)  
+              \* Verify commit of block2 based on block1.
                 \*\/ ~IsMatchingValidators(block2, block1.NextVS) \* we need this check too
               THEN \* remove the peers of block1 and block2, as they are considered faulty
-              RemovePeers({bPool.receivedBlocks[bPool.height], bPool.receivedBlocks[bPool.height + 1]}, bPool)
+              RemovePeers({bPool.receivedBlocks[bPool.height],
+                           bPool.receivedBlocks[bPool.height + 1]},
+                          bPool)
               ELSE  \* all good, execute block at position height
                 [bPool EXCEPT !.height = bPool.height + 1]
 
@@ -629,13 +645,13 @@ NextEnvStep(pState) ==
     \/  SendResponseMessage(pState)
     \/  GrowPeerHeight(pState)
     \/  SendControlMessage /\ peersState' = pState
+        \* note that we propagate pState that was missing in the previous version
 
 
 \* Peers consume a message and update it's local state. It then makes a single step, i.e., it sends at most single message.
 \* Message sent could be either a response to a request or faulty message (sent by faulty processes).
 NextPeers ==
     LET pState == HandleRequest(outMsg, peersState) IN
-
     /\ outMsg' = AsOutMsg(NoMsg)
     /\ NextEnvStep(pState)
 
@@ -667,7 +683,6 @@ FlipTurn ==
    "Node"
   ELSE
    "Peers"
-
 
 \* Compute max peer height. Used as a helper operator in properties.
 MaxCorrectPeerHeight(bPool) ==
@@ -701,16 +716,6 @@ TypeOK ==
                 syncedBlocks: Heights \union {NilHeight, -1},
                 syncHeight: Heights
            ]
-
-    (*
-    \* the constraints that would be better handled by apalache?
-    /\ \E PH \in [AllPeerIds -> Heights \union {NilHeight}]:
-         \E BR \in SUBSET [type: {"blockRequest"}, peerId: AllPeerIds, height: Heights]:
-           \E sr \in BOOLEAN:
-             peersState = [ peerHeights |-> PH,
-                            statusRequested |-> sr,
-                            blocksRequested |-> BR ]
-     *)
 
 (* Incorrect synchronization: The last block may be never received *) 
 Sync1 == 
