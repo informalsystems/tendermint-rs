@@ -150,7 +150,6 @@ impl EventListener {
             .map_err(|e| {
                 RPCError::websocket_error(format!("failed to close web socket connection: {}", e))
             })?;
-        // try to gracefully close the connection
         match self.socket.next().await {
             Some(r) => match r {
                 // we didn't get the connection closed message we wanted, so force connection closure
