@@ -155,7 +155,6 @@ impl EventListener {
                 // we didn't get the connection closed message we wanted, so force connection closure
                 Ok(_) => Ok(()),
                 Err(e) => match e {
-                    // this is what we want
                     tungsteniteError::ConnectionClosed | tungsteniteError::AlreadyClosed => Ok(()),
                     _ => Err(RPCError::websocket_error(e.to_string())),
                 },
