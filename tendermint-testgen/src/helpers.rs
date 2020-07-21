@@ -3,6 +3,9 @@
 use serde::de::DeserializeOwned;
 use simple_error::*;
 use std::io::{self, Read};
+use tendermint::{vote, signature::Signature, amino_types};
+use signatory_dalek::Ed25519Verifier;
+use signatory::signature::Verifier;
 
 #[macro_export]
 macro_rules! set_option {
@@ -59,5 +62,22 @@ pub fn choose_from<T: Clone>(cli: &Option<T>, input: &Option<T>) -> Option<T> {
         Some(y.clone())
     } else {
         None
+    }
+}
+
+pub fn get_vote_sign_bytes(chain_id: &str, vote: &vote::Vote) -> Vec<u8>{
+    let signed_vote = vote::SignedVote::new(
+        amino_types::vote::Vote::from(vote),
+        chain_id,
+        vote.validator_address,
+        vote.signature.clone()
+    );
+    signed_vote.sign_bytes()
+}
+
+pub fn verify_signature(verifier: &Ed25519Verifier, msg: &Vec<u8>, signature: &Signature) -> bool {
+    match signature {
+        tendermint::signature::Signature::Ed25519(sig) =>
+            verifier.verify(msg, sig).is_ok()
     }
 }

@@ -2,8 +2,7 @@ use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
 use tendermint::{
-    Time, vote, block, lite, amino_types,
-                 signature::Signature };
+    Time, vote, block, lite, signature::Signature };
 use signatory::{
     ed25519,
     signature::{ Signature as _, Signer }
@@ -102,14 +101,8 @@ impl Generator<vote::Vote> for Vote {
                 try_with!(ed25519::Signature::from_bytes(&[0_u8; ed25519::SIGNATURE_SIZE]), "failed to construct empty ed25519 signature"),
             ),
         };
-        let signed_vote = vote::SignedVote::new(
-            amino_types::vote::Vote::from(&vote),
-            block_header.chain_id.as_str(),
-            vote.validator_address,
-            vote.signature
-        );
-        let sign_bytes = signed_vote.sign_bytes();
-        vote.signature = Signature::Ed25519(try_with!(signer.try_sign(sign_bytes.as_slice()), "failed to sign using ed25519 signature"));
+        let sign_bytes = get_vote_sign_bytes(block_header.chain_id.as_str(), &vote);
+        vote.signature = Signature::Ed25519(signer.sign(sign_bytes.as_slice()));
         Ok(vote)
     }
 }
@@ -117,7 +110,6 @@ impl Generator<vote::Vote> for Vote {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use signatory::signature::Verifier;
 
     #[test]
     fn test_vote() {
@@ -141,18 +133,8 @@ mod tests {
         assert_eq!(block_vote.validator_index, 1);
         assert_eq!(block_vote.vote_type, vote::Type::Prevote);
 
-        let signed_vote = vote::SignedVote::new(
-            amino_types::vote::Vote::from(&block_vote),
-            block_header.chain_id.as_str(),
-            block_vote.validator_address,
-            block_vote.signature.clone()
-        );
-        let sign_bytes = signed_vote.sign_bytes();
-        match &block_vote.signature {
-            tendermint::signature::Signature::Ed25519(sig) => {
-                assert!(valset1[0].get_verifier().unwrap().verify(sign_bytes.as_slice(), sig).is_err());
-                assert!(valset1[1].get_verifier().unwrap().verify(sign_bytes.as_slice(), sig).is_ok());
-            }
-        };
+        let sign_bytes = get_vote_sign_bytes(block_header.chain_id.as_str(), &block_vote);
+        assert!(!verify_signature(&valset1[0].get_verifier().unwrap(), &sign_bytes, &block_vote.signature));
+        assert!(verify_signature(&valset1[1].get_verifier().unwrap(), &sign_bytes, &block_vote.signature));
     }
 }

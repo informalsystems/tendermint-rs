@@ -116,3 +116,46 @@ impl Generator<block::Commit> for Commit {
         Ok(commit)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tendermint::Time;
+
+    #[test]
+    fn test_commit() {
+        let valset1 = [Validator::new("a"), Validator::new("b"), Validator::new("c")];
+        let valset2 = [Validator::new("b"), Validator::new("c"), Validator::new("d")];
+
+        let now = Time::now();
+        let header = Header::new(&valset1).next_validators(&valset2).height(10).time(now);
+
+        let commit = Commit::new(&header).round(3).generate_default_votes();
+
+        let block_header = header.generate().unwrap();
+        let block_commit = commit.generate().unwrap();
+
+        assert_eq!(block_commit.round, 3);
+        assert_eq!(block_commit.height, block_header.height);
+
+        let mut commit = commit;
+        assert_eq!(commit.vote_at(1).round, Some(3));
+        assert_eq!(commit.vote_of("a").index, Some(0));
+
+        let votes = commit.votes.as_ref().unwrap();
+
+        for (i, sig) in block_commit.signatures.iter().enumerate() {
+            match sig {
+                block::CommitSig::BlockIDFlagCommit{
+                    validator_address: _, timestamp: _, signature
+                } => {
+                    let block_vote = votes[i].generate().unwrap();
+                    let sign_bytes = get_vote_sign_bytes(block_header.chain_id.as_str(), &block_vote);
+                    assert!(!verify_signature(&valset2[i].get_verifier().unwrap(), &sign_bytes, signature));
+                    assert!(verify_signature(&valset1[i].get_verifier().unwrap(), &sign_bytes, signature));
+                }
+                _ => assert!(false)
+            };
+        }
+    }
+}
