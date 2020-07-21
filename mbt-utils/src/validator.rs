@@ -97,3 +97,47 @@ impl Generator<validator::Info> for Validator {
 pub fn generate_validators(vals: &[Validator]) -> Result<Vec<validator::Info>, SimpleError> {
     Ok(vals.iter().map(|v| v.generate()).collect::<Result<Vec<validator::Info>, SimpleError>>()?)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_publickey(pk_string: &str) -> PublicKey {
+        serde_json::from_str(pk_string).unwrap()
+    }
+
+    // make a validator from a pubkey, a voting power, and a proposer priority
+    fn make_validator(pk: PublicKey, vp: u64, pp: Option<i64>) -> validator::Info {
+        let mut info = validator::Info::new(pk, vote::Power::new(vp));
+        info.proposer_priority = match pp {
+            None => None,
+            Some(pp) => Some(validator::ProposerPriority::new(pp))
+        };
+        info
+    }
+
+    #[test]
+    fn test_validator() {
+        let pk_a = make_publickey("{\"type\":\"tendermint/PubKeyEd25519\",\"value\":\"YnT69eNDaRaNU7teDTcyBedSD0B/Ziqx+sejm0wQba0=\"}");
+        let pk_b = make_publickey("{\"type\":\"tendermint/PubKeyEd25519\",\"value\":\"hYkrBnbzZQd3r/bjZgyxXfcxfNrYg8PCVsB4JLUB9eU=\"}");
+
+        let val = Validator::new("a").voting_power(10);
+        assert_eq!(val.generate().unwrap(), make_validator(pk_a, 10, None));
+
+        let val = val.voting_power(20);
+        assert_eq!(val.generate().unwrap(), make_validator(pk_a, 20, None));
+
+        let val = val.proposer_priority(100);
+        assert_eq!(val.generate().unwrap(), make_validator(pk_a, 20, Some(100)));
+
+        let val_b = val.id("b").proposer_priority(-100);
+        assert_eq!(val_b.generate().unwrap(), make_validator(pk_b, 20, Some(-100)));
+
+        let val_a = Validator::new("a").voting_power(20).proposer_priority(-100);
+        assert_eq!(val_a.generate().unwrap(), make_validator(pk_a, 20, Some(-100)));
+
+        let val_b_a = val_b.id("a");
+        assert_eq!(val_b_a, val_a);
+        assert_eq!(val_b_a.generate().unwrap(), val_a.generate().unwrap());
+    }
+}
