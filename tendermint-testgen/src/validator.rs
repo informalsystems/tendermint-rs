@@ -2,7 +2,7 @@ use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
 use signatory::{ ed25519, public_key::PublicKeyed};
-use signatory_dalek::Ed25519Signer;
+use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
 use tendermint::{
     account, public_key::PublicKey, validator, vote
 };
@@ -48,6 +48,13 @@ impl Validator {
             "failed to construct a seed from validator identifier"
         );
         Ok(Ed25519Signer::from(&seed))
+    }
+
+    pub fn get_verifier(&self) -> Result<Ed25519Verifier, SimpleError> {
+        let signer = self.get_signer()?;
+        let public_key = try_with!(signer.public_key(),"failed to get public key");
+        let verifier = Ed25519Verifier::from(&public_key);
+        Ok(verifier)
     }
 }
 

@@ -8,6 +8,7 @@ use signatory::{
     ed25519,
     signature::{ Signature as _, Signer }
 };
+
 use crate::{Generator, Validator, Header, helpers::*};
 
 #[derive(Debug, Options, Deserialize, Clone)]
@@ -110,5 +111,48 @@ impl Generator<vote::Vote> for Vote {
         let sign_bytes = signed_vote.sign_bytes();
         vote.signature = Signature::Ed25519(try_with!(signer.try_sign(sign_bytes.as_slice()), "failed to sign using ed25519 signature"));
         Ok(vote)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use signatory::signature::Verifier;
+
+    #[test]
+    fn test_vote() {
+        let valset1 = [Validator::new("a"), Validator::new("b"), Validator::new("c")];
+        let valset2 = [Validator::new("b"), Validator::new("c"), Validator::new("d")];
+
+        let now = Time::now();
+        let header = Header::new(&valset1).next_validators(&valset2).height(10).time(now);
+
+        let val = &valset1[1];
+        let vote = Vote::new(val, &header).round(2);
+
+        let block_val = val.generate().unwrap();
+        let block_header = header.generate().unwrap();
+        let block_vote = vote.generate().unwrap();
+
+        assert_eq!(block_vote.validator_address, block_val.address);
+        assert_eq!(block_vote.height, block_header.height);
+        assert_eq!(block_vote.round, 2);
+        assert_eq!(block_vote.timestamp, now);
+        assert_eq!(block_vote.validator_index, 1);
+        assert_eq!(block_vote.vote_type, vote::Type::Prevote);
+
+        let signed_vote = vote::SignedVote::new(
+            amino_types::vote::Vote::from(&block_vote),
+            block_header.chain_id.as_str(),
+            block_vote.validator_address,
+            block_vote.signature.clone()
+        );
+        let sign_bytes = signed_vote.sign_bytes();
+        match &block_vote.signature {
+            tendermint::signature::Signature::Ed25519(sig) => {
+                assert!(valset1[0].get_verifier().unwrap().verify(sign_bytes.as_slice(), sig).is_err());
+                assert!(valset1[1].get_verifier().unwrap().verify(sign_bytes.as_slice(), sig).is_ok());
+            }
+        };
     }
 }
