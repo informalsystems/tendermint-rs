@@ -93,7 +93,7 @@ impl Generator<vote::Vote> for Vote {
             vote_type: if self.precommit.is_some() { vote::Type::Precommit } else { vote::Type::Prevote },
             height: block_header.height,
             round: choose_or(self.round, 1),
-            block_id: Some(block_id.clone()),
+            block_id: Some(block_id),
             timestamp: block_header.time,
             validator_address: block_validator.address,
             validator_index,

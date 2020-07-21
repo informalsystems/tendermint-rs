@@ -75,7 +75,7 @@ pub fn get_vote_sign_bytes(chain_id: &str, vote: &vote::Vote) -> Vec<u8>{
     signed_vote.sign_bytes()
 }
 
-pub fn verify_signature(verifier: &Ed25519Verifier, msg: &Vec<u8>, signature: &Signature) -> bool {
+pub fn verify_signature(verifier: &Ed25519Verifier, msg: &[u8], signature: &Signature) -> bool {
     match signature {
         tendermint::signature::Signature::Ed25519(sig) =>
             verifier.verify(msg, sig).is_ok()

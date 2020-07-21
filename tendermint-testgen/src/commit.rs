@@ -50,17 +50,15 @@ impl Commit {
     // get a mutable reference to the vote of the given validator
     // this function will panic if the votes or the validator vote is not present
     pub fn vote_of(&mut self, val: &str) -> &mut Vote {
-        let vote = self.votes.as_mut().unwrap().iter_mut().find(
+        self.votes.as_mut().unwrap().iter_mut().find(
             |v| *v.validator.as_ref().unwrap() == Validator::new(val)
-            ).unwrap();
-        vote
+            ).unwrap()
     }
 
     // get a mutable reference to the vote at the given index
     // this function will panic if the votes or the vote at index is not present
     pub fn vote_at(&mut self, index: usize) -> &mut Vote {
-        let vote = self.votes.as_mut().unwrap().get_mut(index).unwrap();
-        vote
+        self.votes.as_mut().unwrap().get_mut(index).unwrap()
     }
 }
 
