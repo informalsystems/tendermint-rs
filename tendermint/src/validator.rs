@@ -23,13 +23,19 @@ impl Set {
     /// Create a new validator set.
     /// vals is mutable so it can be sorted by address.
     pub fn new(mut vals: Vec<Info>) -> Set {
-        vals.sort_by(|v1, v2| v1.address.partial_cmp(&v2.address).unwrap());
+        Self::sort_validators(&mut vals);
         Set { validators: vals }
     }
 
     /// Get Info of the underlying validators.
     pub fn validators(&self) -> &Vec<Info> {
         &self.validators
+    }
+
+    /// Sort the validators according to the current Tendermint requirements
+    /// (v. 0.33 -> by validator address, ascending)
+    fn sort_validators(vals: &mut Vec<Info>) {
+        vals.sort_by_key(|v| v.address);
     }
 }
 
@@ -49,7 +55,10 @@ fn parse_vals<'de, D>(d: D) -> Result<Vec<Info>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or_default())
+    let mut vals: Vec<Info> =
+        Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or_default())?;
+    Set::sort_validators(&mut vals);
+    Ok(vals)
 }
 
 /// Validator information
@@ -92,6 +101,7 @@ impl From<PublicKey> for account::Id {
     fn from(pub_key: PublicKey) -> account::Id {
         match pub_key {
             PublicKey::Ed25519(pk) => account::Id::from(pk),
+            #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(pk) => account::Id::from(pk),
         }
     }
@@ -187,6 +197,7 @@ pub struct Update {
     pub pub_key: PublicKey,
 
     /// New voting power
+    #[serde(default)]
     pub power: vote::Power,
 }
 

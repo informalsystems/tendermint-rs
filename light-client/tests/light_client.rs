@@ -6,12 +6,9 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use contracts::contract_trait;
-
 use tendermint_light_client::{
     components::{
-        clock::Clock,
-        io::{AtHeight, Io, IoError},
+        io::{AtHeight, Io},
         scheduler,
         verifier::{ProdVerifier, Verdict, Verifier},
     },
@@ -20,10 +17,8 @@ use tendermint_light_client::{
     state::State,
     store::{memory::MemoryStore, LightStore},
     tests::{Trusted, *},
-    types::{Height, LightBlock, PeerId, Status, Time, TrustThreshold},
+    types::{Height, LightBlock, Status, TrustThreshold},
 };
-
-use tendermint_rpc as rpc;
 
 // Link to the commit that generated below JSON test files:
 // https://github.com/Shivani912/tendermint/commit/e02f8fd54a278f0192353e54b84a027c8fe31c1e
@@ -54,10 +49,9 @@ fn verify_single(
         trust_threshold,
         trusting_period,
         clock_drift,
-        now: now.into(),
     };
 
-    let result = verifier.verify(&input, &trusted_state, &options);
+    let result = verifier.verify(&input, &trusted_state, &options, now.into());
 
     match result {
         Verdict::Success => Ok(input),
@@ -114,56 +108,6 @@ fn run_test_case(tc: TestCase<LightBlock>) {
     }
 }
 
-#[derive(Clone)]
-struct MockIo {
-    chain_id: String,
-    light_blocks: HashMap<Height, LightBlock>,
-    latest_height: Height,
-}
-
-impl MockIo {
-    fn new(chain_id: String, light_blocks: Vec<LightBlock>) -> Self {
-        let latest_height = light_blocks.iter().map(|lb| lb.height()).max().unwrap();
-
-        let light_blocks = light_blocks
-            .into_iter()
-            .map(|lb| (lb.height(), lb))
-            .collect();
-
-        Self {
-            chain_id,
-            light_blocks,
-            latest_height,
-        }
-    }
-}
-
-#[contract_trait]
-impl Io for MockIo {
-    fn fetch_light_block(&self, _peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
-        let height = match height {
-            AtHeight::Highest => self.latest_height,
-            AtHeight::At(height) => height,
-        };
-
-        self.light_blocks
-            .get(&height)
-            .cloned()
-            .ok_or_else(|| rpc::Error::new((-32600).into(), None).into())
-    }
-}
-
-#[derive(Clone)]
-struct MockClock {
-    now: Time,
-}
-
-impl Clock for MockClock {
-    fn now(&self) -> Time {
-        self.now
-    }
-}
-
 fn verify_bisection(
     untrusted_height: Height,
     light_client: &mut LightClient,
@@ -198,7 +142,6 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
         trust_threshold,
         trusting_period: trusting_period.into(),
         clock_drift,
-        now,
     };
 
     let provider = tc.primary;

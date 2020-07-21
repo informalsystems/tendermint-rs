@@ -1,3 +1,5 @@
+//! Supervisor and Handle implementation.
+
 use crossbeam_channel as channel;
 
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
@@ -9,11 +11,16 @@ use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
 use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
-use crate::types::{Height, LightBlock, PeerId, Status};
+use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
+use tendermint::lite::{Header, ValidatorSet};
 
 pub trait Handle {
     /// Get latest trusted block from the [`Supervisor`].
     fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
+        todo!()
+    }
+
+    fn latest_status(&self) -> Result<LatestStatus, Error> {
         todo!()
     }
 
@@ -45,6 +52,8 @@ enum HandleInput {
     VerifyToTarget(Height, channel::Sender<Result<LightBlock, Error>>),
     /// Get the latest trusted block.
     LatestTrusted(channel::Sender<Option<LightBlock>>),
+    /// Get the current status of the LightClient
+    GetStatus(channel::Sender<LatestStatus>),
 }
 
 /// A light client `Instance` packages a `LightClient` together with its `State`.
@@ -166,12 +175,32 @@ impl Supervisor {
         self.verify(None)
     }
 
+    /// Return latest trusted status summary.
+    fn latest_status(&mut self) -> LatestStatus {
+        let latest_trusted = self.peers.primary().latest_trusted();
+        let mut connected_nodes: Vec<PeerId> = Vec::new();
+        connected_nodes.push(self.peers.primary_id());
+        connected_nodes.append(&mut self.peers.witnesses_ids().iter().copied().collect());
+
+        match latest_trusted {
+            Some(trusted) => LatestStatus::new(
+                Some(trusted.signed_header.header.height()),
+                Some(trusted.signed_header.header.hash()),
+                Some(trusted.next_validators.hash()),
+                connected_nodes,
+            ),
+            // only return connected nodes to see what is going on:
+            None => LatestStatus::new(None, None, None, connected_nodes),
+        }
+    }
+
     /// Verify to the block at the given height.
     pub fn verify_to_target(&mut self, height: Height) -> Result<LightBlock, Error> {
         self.verify(Some(height))
     }
 
-    /// Verify either to the latest block (if `height == None`) or to a given block (if `height == Some(height)`).
+    /// Verify either to the latest block (if `height == None`) or to a given block (if `height ==
+    /// Some(height)`).
     fn verify(&mut self, height: Option<Height>) -> Result<LightBlock, Error> {
         let primary = self.peers.primary_mut();
 
@@ -322,6 +351,10 @@ impl Supervisor {
                     let outcome = self.verify_to_highest();
                     sender.send(outcome).map_err(ErrorKind::from)?;
                 }
+                HandleInput::GetStatus(sender) => {
+                    let outcome = self.latest_status();
+                    sender.send(outcome).map_err(ErrorKind::from)?;
+                }
             }
         }
     }
@@ -360,6 +393,14 @@ impl Handle for SupervisorHandle {
             .send(HandleInput::LatestTrusted(sender))
             .map_err(ErrorKind::from)?;
 
+        Ok(receiver.recv().map_err(ErrorKind::from)?)
+    }
+
+    fn latest_status(&self) -> Result<LatestStatus, Error> {
+        let (sender, receiver) = channel::bounded::<LatestStatus>(1);
+        self.sender
+            .send(HandleInput::GetStatus(sender))
+            .map_err(ErrorKind::from)?;
         Ok(receiver.recv().map_err(ErrorKind::from)?)
     }
 

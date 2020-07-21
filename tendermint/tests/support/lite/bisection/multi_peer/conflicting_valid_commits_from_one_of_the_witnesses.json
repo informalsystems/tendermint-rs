@@ -1,5 +1,5 @@
 {
- 	"description": "Case: Trusted height=1, found conflicting valid commit at height=11 from only one of the two witnesses, should not expect error",
+ 	"description": "Case: Trusted height=1, found conflicting valid commit at height=11 from only one of the two witnesses, should expect error",
  	"trust_options": {
  		"period": "10800000000000",
  		"height": "1",
@@ -3862,6 +3862,6 @@
  	],
  	"height_to_verify": "11",
  	"now": "2019-11-02T15:30:00Z",
- 	"expected_output": "no error",
+ 	"expected_output": "error",
  	"expected_num_of_bisections": 2
  }

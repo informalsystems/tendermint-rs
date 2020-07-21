@@ -13,7 +13,10 @@
     unused_qualifications
 )]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/tendermint/0.14.1")]
+#![doc(
+    html_root_url = "https://docs.rs/tendermint/0.15.0",
+    html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs.png"
+)]
 
 #[macro_use]
 pub mod error;

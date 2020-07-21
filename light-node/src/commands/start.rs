@@ -1,100 +1,84 @@
 //! `start` subcommand - start the light node.
 
-/// App-local prelude includes `app_reader()`/`app_writer()`/`app_config()`
-/// accessors along with logging macros. Customize as you see fit.
-use abscissa_core::{config, Command, FrameworkError, Options, Runnable};
 use std::process;
-use std::time::{Duration, SystemTime};
 
-use tendermint::hash;
-use tendermint::lite;
-use tendermint::lite::error::Error;
-use tendermint::lite::ValidatorSet as _;
-use tendermint::lite::{Header, Height, Requester, TrustThresholdFraction};
-use tendermint::Hash;
+use crate::application::{app_config, APPLICATION};
+use crate::config::{LightClientConfig, LightNodeConfig};
+use crate::rpc;
+use crate::rpc::Server;
 
-use tendermint_rpc as rpc;
+use abscissa_core::config;
+use abscissa_core::path::PathBuf;
+use abscissa_core::status_err;
+use abscissa_core::status_info;
+use abscissa_core::Command;
+use abscissa_core::FrameworkError;
+use abscissa_core::Options;
+use abscissa_core::Runnable;
 
-use crate::application::APPLICATION;
-use crate::config::LightNodeConfig;
-use crate::prelude::*;
-use crate::requester::RPCRequester;
-use crate::store::{MemStore, State};
+use std::collections::HashMap;
+use std::net::SocketAddr;
+use std::ops::Deref;
+use std::time::Duration;
+
+use tendermint_light_client::components::clock::SystemClock;
+use tendermint_light_client::components::io::ProdIo;
+use tendermint_light_client::components::scheduler;
+use tendermint_light_client::components::verifier::ProdVerifier;
+use tendermint_light_client::evidence::ProdEvidenceReporter;
+use tendermint_light_client::fork_detector::ProdForkDetector;
+use tendermint_light_client::light_client;
+use tendermint_light_client::light_client::LightClient;
+use tendermint_light_client::peer_list::{PeerList, PeerListBuilder};
+use tendermint_light_client::state::State;
+use tendermint_light_client::store::sled::SledStore;
+use tendermint_light_client::store::LightStore;
+use tendermint_light_client::supervisor::Handle;
+use tendermint_light_client::supervisor::{Instance, Supervisor};
 
 /// `start` subcommand
-///
-/// The `Options` proc macro generates an option parser based on the struct
-/// definition, and is defined in the `gumdrop` crate. See their documentation
-/// for a more comprehensive example:
-///
-/// <https://docs.rs/gumdrop/>
 #[derive(Command, Debug, Options)]
 pub struct StartCmd {
-    /// RPC address to request headers and validators from.
-    #[options(free)]
-    rpc_addr: String,
+    /// Path to configuration file
+    #[options(
+        short = "b",
+        long = "jsonrpc-server-addr",
+        help = "address the rpc server will bind to"
+    )]
+    pub listen_addr: Option<SocketAddr>,
+
+    /// Path to configuration file
+    #[options(short = "c", long = "config", help = "path to light_node.toml")]
+    pub config: Option<PathBuf>,
 }
 
 impl Runnable for StartCmd {
     /// Start the application.
     fn run(&self) {
         if let Err(err) = abscissa_tokio::run(&APPLICATION, async {
-            let config = app_config();
+            StartCmd::assert_init_was_run();
+            let mut supervisor = self.construct_supervisor();
 
-            let client = rpc::Client::new(config.rpc_address.parse().unwrap());
-            let req = RPCRequester::new(client);
-            let mut store = MemStore::new();
+            let rpc_handler = supervisor.handle();
+            StartCmd::start_rpc_server(rpc_handler);
 
-            let vals_hash = Hash::from_hex_upper(
-                hash::Algorithm::Sha256,
-                &config.subjective_init.validators_hash,
-            )
-            .unwrap();
-
-            println!("Requesting from {}.", config.rpc_address);
-
-            subjective_init(config.subjective_init.height, vals_hash, &mut store, &req)
-                .await
-                .unwrap();
+            let handle = supervisor.handle();
+            std::thread::spawn(|| supervisor.run());
 
             loop {
-                let latest_sh = (&req).signed_header(0).await.unwrap();
-                let latest_peer_height = latest_sh.header().height();
-
-                let latest_trusted = store.get(0).unwrap();
-                let latest_trusted_height = latest_trusted.last_header().header().height();
-
-                // only bisect to higher heights
-                if latest_peer_height <= latest_trusted_height {
-                    std::thread::sleep(Duration::new(1, 0));
-                    continue;
+                match handle.verify_to_highest() {
+                    Ok(light_block) => {
+                        status_info!("synced to block:", light_block.height().to_string());
+                    }
+                    Err(err) => {
+                        status_err!("sync failed: {}", err);
+                    }
                 }
-
-                println!(
-                    "attempting bisection from height {:?} to height {:?}",
-                    latest_trusted_height, latest_peer_height,
-                );
-
-                let now = SystemTime::now();
-                lite::verify_bisection(
-                    latest_trusted.to_owned(),
-                    latest_peer_height,
-                    TrustThresholdFraction::default(), // TODO
-                    config.trusting_period,
-                    now,
-                    &req,
-                )
-                .await
-                .unwrap();
-
-                println!("Succeeded bisecting!");
-
-                // notifications ?
-
-                // sleep for a few secs ?
+                // TODO(liamsi): use ticks and make this configurable:
+                std::thread::sleep(Duration::from_millis(800));
             }
         }) {
-            eprintln!("Error while running application: {}", err);
+            status_err!("Unexpected error while running application: {}", err);
             process::exit(1);
         }
     }
@@ -108,53 +92,104 @@ impl config::Override<LightNodeConfig> for StartCmd {
         &self,
         mut config: LightNodeConfig,
     ) -> Result<LightNodeConfig, FrameworkError> {
-        if !self.rpc_addr.is_empty() {
-            config.rpc_address = self.rpc_addr.to_owned();
+        // TODO(liamsi): figure out if other options would be reasonable to overwrite via CLI
+        // arguments.
+        if let Some(addr) = self.listen_addr {
+            config.rpc_config.listen_addr = addr;
         }
-
         Ok(config)
     }
 }
+impl StartCmd {
+    fn assert_init_was_run() {
+        // TODO(liamsi): handle errors properly:
+        let primary_db_path = app_config().light_clients.first().unwrap().db_path.clone();
+        let db = sled::open(primary_db_path).unwrap_or_else(|e| {
+            status_err!("could not open database: {}", e);
+            std::process::exit(1);
+        });
 
-/*
- * The following is initialization logic that should have a
- * function in the lite crate like:
- * `subjective_init(height, vals_hash, store, requester) -> Result<(), Error`
- * it would fetch the initial header/vals from the requester and populate a
- * trusted state and store it in the store ...
- * TODO: this should take traits ... but how to deal with the State ?
- * TODO: better name ?
- */
-async fn subjective_init(
-    height: Height,
-    vals_hash: Hash,
-    store: &mut MemStore,
-    req: &RPCRequester,
-) -> Result<(), Error> {
-    if store.get(height).is_ok() {
-        // we already have this !
-        return Ok(());
+        let primary_store = SledStore::new(db);
+
+        if primary_store.latest_trusted_or_verified().is_none() {
+            status_err!("no trusted or verified state in store for primary, please initialize with the `initialize` subcommand first");
+            std::process::exit(1);
+        }
+    }
+    // TODO: this should do proper error handling, be gerneralized
+    // then moved to to the light-client crate.
+    fn make_instance(
+        &self,
+        light_config: &LightClientConfig,
+        io: ProdIo,
+        options: light_client::Options,
+    ) -> Instance {
+        let peer_id = light_config.peer_id;
+        let db_path = light_config.db_path.clone();
+
+        let db = sled::open(db_path).unwrap_or_else(|e| {
+            status_err!("could not open database: {}", e);
+            std::process::exit(1);
+        });
+
+        let light_store = SledStore::new(db);
+
+        let state = State {
+            light_store: Box::new(light_store),
+            verification_trace: HashMap::new(),
+        };
+
+        let verifier = ProdVerifier::default();
+        let clock = SystemClock;
+        let scheduler = scheduler::basic_bisecting_schedule;
+
+        let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, io);
+
+        Instance::new(light_client, state)
     }
 
-    // check that the val hash matches
-    let vals = req.validator_set(height).await?;
-
-    if vals.hash() != vals_hash {
-        // TODO
-        panic!("vals hash dont match")
+    fn start_rpc_server<H>(h: H)
+    where
+        H: Handle + Send + Sync + 'static,
+    {
+        let server = Server::new(h);
+        let laddr = app_config().rpc_config.listen_addr;
+        // TODO(liamsi): figure out how to handle the potential error on run
+        std::thread::spawn(move || rpc::run(server, &laddr.to_string()));
+        status_info!("started RPC server:", laddr.to_string());
     }
+}
 
-    let signed_header = req.signed_header(height).await?;
+impl StartCmd {
+    fn construct_supervisor(&self) -> Supervisor {
+        // TODO(ismail): we need to verify the addr <-> peerId mappings somewhere!
+        let mut peer_map = HashMap::new();
+        for light_conf in &app_config().light_clients {
+            peer_map.insert(light_conf.peer_id, light_conf.address.clone());
+        }
+        let io = ProdIo::new(
+            peer_map.clone(),
+            Some(app_config().rpc_config.request_timeout),
+        );
+        let conf = app_config().deref().clone();
+        let options: light_client::Options = conf.into();
 
-    // TODO: validate signed_header.commit() with the vals ...
+        let mut peer_list: PeerListBuilder<Instance> = PeerList::builder();
+        for (i, light_conf) in app_config().light_clients.iter().enumerate() {
+            let instance = self.make_instance(light_conf, io.clone(), options);
+            if i == 0 {
+                // primary instance
+                peer_list = peer_list.primary(instance.light_client.peer, instance);
+            } else {
+                peer_list = peer_list.witness(instance.light_client.peer, instance);
+            }
+        }
+        let peer_list = peer_list.build();
 
-    let next_vals = req.validator_set(height + 1).await?;
-
-    // TODO: check next_vals ...
-
-    let trusted_state = &State::new(signed_header, next_vals);
-
-    store.add(trusted_state.to_owned())?;
-
-    Ok(())
+        Supervisor::new(
+            peer_list,
+            ProdForkDetector::default(),
+            ProdEvidenceReporter::new(peer_map),
+        )
+    }
 }

@@ -1,6 +1,7 @@
-use crate::{store::LightStore, types::Height};
-
 use contracts::*;
+
+use crate::store::LightStore;
+use crate::types::Height;
 
 /// The scheduler decides what block to verify next given the current and target heights.
 ///
@@ -84,10 +85,11 @@ pub fn basic_bisecting_schedule(
 /// ## Note
 ///
 /// - Case i. captures the case where the light block at height `current_height` has been verified,
-///   and we can choose a height closer to the `target_height`. As we get the `light_store` as parameter,
-///   the choice of the next height can depend on the `light_store`, e.g., we can pick a height
-///   for which we have already downloaded a light block.
-/// - In Case ii. the header at `current_height` could not be verified, and we need to pick a lesser height.
+///   and we can choose a height closer to the `target_height`. As we get the `light_store` as
+///   parameter, the choice of the next height can depend on the `light_store`, e.g., we can pick a
+///   height for which we have already downloaded a light block.
+/// - In Case ii. the header at `current_height` could not be verified, and we need to pick a lesser
+///   height.
 /// - In Case iii. is a special case when we have verified the `target_height`.
 ///
 /// ## Implements

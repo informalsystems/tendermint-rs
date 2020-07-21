@@ -1,10 +1,14 @@
+//! Fork evidence data structures and interfaces.
+
 use crate::{components::io::IoError, types::PeerId};
 
-use tendermint::{abci::transaction::Hash, evidence::Evidence};
+use tendermint::abci::transaction::Hash;
 use tendermint_rpc as rpc;
 
 use contracts::{contract_trait, pre};
 use std::collections::HashMap;
+
+pub use tendermint::evidence::Evidence;
 
 /// Interface for reporting evidence to full nodes, typically via the RPC client.
 #[contract_trait]

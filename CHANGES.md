@@ -1,21 +1,62 @@
-# pending
+## [0.15.0] (2020-07-17)
+This release is mostly about the revamped [light-client] library and the [light-node] command-line interface. 
+Note that both crates are to be considered experimental software that will still undergo a lot of improvements and iterations. 
+The goal of releasing an early version of our Light Client is to make it accessible, to get people use it, and to receive feedback. 
+ 
+ ⚠️ ️Deprecation warning ⚠️ : This might be the last release containing the [lite] module. Please take a look at the [light-client] crate.
 
-Light Client:
+### Light Client:
 
-- Expose latest_trusted from Supervisor Handle ([#394])
+- Introduce a `Supervisor` to tie the `LightClient` and the `ForkDetector` together ([#302])
+- Add evidence reporting to the supervisor ([#336])
+- Move `ValidatorSet::hash` method over the `HeaderHasher` trait ([#360])
+- Simplify basic bisecting scheduler logic ([#364])
+- Fix exit condition in `verify_to_target` ([#365])
+- Multi-peer conformance tests ([#371])
+- Introduce a `Trusted` status for light blocks which passed fork detection ([#375])
+- Add JSON-based unit tests for VotingPowerCalculator ([#383])
+- Expose `latest_trusted` from supervisor `Handle` ([#394])
+- Rework the `PeerList`, improve its API, and fix a bug in `swap_primary` ([#397])
 - Turn `Handle` into a trait for ease of integration and testability ([#401])
 - Improve `Supervisor` ergonomics according to [ADR-007] ([#403])
+- Correctly handle blocks marked `Trusted` in accordance with the specification ([#407])
+- Treat `Trusted` status as a special case of `Verified` as per the spec ([#419])
+- Add integration test ([#431])
+- Rework light-node CLI to use `Supervisor` / `Handle` ([#430])
+- Add `latest_status` to the supervisor `Handle` ([#449])
+- Add JSONRPC endpoints to query the light-node ([#363], [#449])  
 
+[0.15.0]: https://github.com/informalsystems/tendermint-rs/pull/454
+
+[#302]: https://github.com/informalsystems/tendermint-rs/pull/302
+[#336]: https://github.com/informalsystems/tendermint-rs/pull/336
+[#360]: https://github.com/informalsystems/tendermint-rs/pull/360
+[#363]: https://github.com/informalsystems/tendermint-rs/pull/363
+[#364]: https://github.com/informalsystems/tendermint-rs/pull/364
+[#365]: https://github.com/informalsystems/tendermint-rs/pull/365
+[#371]: https://github.com/informalsystems/tendermint-rs/pull/371
+[#375]: https://github.com/informalsystems/tendermint-rs/pull/375
+[#383]: https://github.com/informalsystems/tendermint-rs/pull/383
 [#394]: https://github.com/informalsystems/tendermint-rs/pull/394
+[#397]: https://github.com/informalsystems/tendermint-rs/pull/397
 [#401]: https://github.com/informalsystems/tendermint-rs/pull/401
 [#403]: https://github.com/informalsystems/tendermint-rs/pull/403
+[#407]: https://github.com/informalsystems/tendermint-rs/pull/407
+[#419]: https://github.com/informalsystems/tendermint-rs/pull/419
+[#430]: https://github.com/informalsystems/tendermint-rs/pull/430
+[#431]: https://github.com/informalsystems/tendermint-rs/pull/431
+[#449]: https://github.com/informalsystems/tendermint-rs/pull/449
+
 [ADR-007]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-007-light-client-supervisor-ergonomics.md
+
+[light-node]: ./light-node/README.md
 
 ## [0.14.1] (2020-06-23)
 
 - Update `prost-amino`/`prost-amino-derive` to v0.6 ([#367])
 
 [#367]: https://github.com/informalsystems/tendermint-rs/issues/367
+[0.14.1]: https://github.com/informalsystems/tendermint-rs/pull/368
 
 ## [0.14.0] (2020-06-19)
 

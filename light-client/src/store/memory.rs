@@ -65,8 +65,8 @@ impl LightStore for MemoryStore {
     fn latest(&self, status: Status) -> Option<LightBlock> {
         self.store
             .iter()
-            .rev()
-            .find(|(_, e)| e.status == status)
+            .filter(|(_, e)| e.status == status)
+            .max_by_key(|(&height, _)| height)
             .map(|(_, e)| e.light_block.clone())
     }
 

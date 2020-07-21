@@ -1,3 +1,5 @@
+//! Fork detection data structures and implementation.
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -52,10 +54,8 @@ pub trait ForkDetector: Send {
 /// the given trusted state, and then:
 ///
 /// - If the verification succeeds, we have a real fork
-/// - If verification fails because of lack of trust,
-///   we have a potential fork.
-/// - If verification fails for any other reason, the
-///   witness is deemed faulty.
+/// - If verification fails because of lack of trust, we have a potential fork.
+/// - If verification fails for any other reason, the witness is deemed faulty.
 pub struct ProdForkDetector {
     hasher: Box<dyn Hasher>,
 }
@@ -92,7 +92,7 @@ impl ForkDetector for ProdForkDetector {
         for witness in witnesses {
             let mut state = State::new(MemoryStore::new());
 
-            let witness_block = witness
+            let (witness_block, _) = witness
                 .light_client
                 .get_or_fetch_block(verified_block.height(), &mut state)?;
 
