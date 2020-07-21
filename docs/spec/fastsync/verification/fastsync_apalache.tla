@@ -52,7 +52,7 @@ We assume that fast sync protocol starts when connections with some number of pe
 are established. Therefore, peer set is initialised with non-empty set of peer ids. Note however
 that node does not know initially the peer heights.
 *)
-
+ 
 EXTENDS Integers, FiniteSets, Sequences
 
 
@@ -74,9 +74,6 @@ VARIABLE chain
 \* introduce tiny chain as the source of blocks for the correct nodes
 INSTANCE Tinychain
 
-\* simplifies execute blocks logic. Used only in block store.
-HeightsPlus == 1..MAX_HEIGHT+1
-
 \* a special value for an undefined height
 NilHeight == 0
 
@@ -94,8 +91,6 @@ AllPeerIds == CORRECT \union FAULTY
 CorrectLastCommit(h) == chain[h].lastCommit
 
 NilCommit == [blockIdEqRef |-> FALSE, committers |-> NIL_VS]
-
-\*BlocksWithNil == [height: Heights, lastCommit: LastCommits, wellFormed: BOOLEAN]
 
 \* correct node always supplies the blocks from the blockchain
 CorrectBlock(h) == chain[h]
@@ -400,8 +395,10 @@ VerifyCommit(block, lastCommit) ==
 ExecuteBlocks(bPool) ==
     LET bStore == bPool.blockStore IN
     LET block0 == bStore[bPool.height - 1] IN
+      \* blockPool is initialized with height = TrustedHeight + 1,
+      \* so bStore[bPool.height - 1] is well defined
     LET block1 == bStore[bPool.height] IN
-    LET block2 == bStore[bPool.height+1] IN
+    LET block2 == bStore[bPool.height + 1] IN
 
     IF block1 = NilBlock \/ block2 = NilBlock
     THEN bPool  \* we don't have two next consecutive blocks
@@ -411,14 +408,11 @@ ExecuteBlocks(bPool) ==
               \* Otherwise, CorrectBlocksInv fails.
               \* In the implementation NextVS is part of the application state,
               \* so a mismatch can be found without access to block0.NextVS.
-            \*\/ ~VerifyCommit(block0, block1.lastCommit)
-              \* Verify commit of block1 based on block0. If we omit this check,
-              \* the property XXX breaks.
          THEN \* the block does not have the expected validator set
               RemovePeers({bPool.receivedBlocks[bPool.height]}, bPool)
          ELSE IF ~VerifyCommit(block1, block2.lastCommit)  
               \* Verify commit of block2 based on block1.
-                \*\/ ~IsMatchingValidators(block2, block1.NextVS) \* we need this check too
+              \* Interestingly, we do not have to call IsMatchingValidators.
               THEN \* remove the peers of block1 and block2, as they are considered faulty
               RemovePeers({bPool.receivedBlocks[bPool.height],
                            bPool.receivedBlocks[bPool.height + 1]},
