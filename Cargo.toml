@@ -3,7 +3,7 @@
 members = [
     "light-client",
     "light-node",
-    "mbt-utils",
     "rpc",
     "tendermint",
+    "tendermint-testgen"
 ]
