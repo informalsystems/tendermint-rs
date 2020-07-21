@@ -24,13 +24,9 @@ Releases for each crate are published to crates.io:
   serialization
 - [tendermint-rpc][tendermint-rpc-docs-link] - Tendermint RPC client and
   response types
-
-
-The following crates have not been published to crates.io yet:
-
-- light-client - Tendermint light client library for verifying
+- [light-client][tendermint-light-client-docs-link] - Tendermint light client library for verifying
   signed headers, tracking validator set changes, and detecting forks
-- light-node - Tendermint light client binary
+- [light-node][tendermint-light-node-docs-link] - Tendermint light client binary
 
 ## Installation
 
@@ -113,3 +109,6 @@ limitations under the License.
 [tendermint-docs-link]: https://docs.rs/tendermint/
 [tendermint-rpc-docs-link]: https://docs.rs/tendermint-rpc/
 [Tendermint]: https://github.com/tendermint/tendermint
+[tendermint-light-client-docs-link]: https://docs.rs/tendermint-light-client/
+[tendermint-light-node-docs-link]: https://docs.rs/tendermint-light-node/
+ 
