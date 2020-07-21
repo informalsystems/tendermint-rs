@@ -26,6 +26,8 @@ pub struct Header {
     pub height: Option<u64>,
     #[options(help = "time (default: now)")]
     pub time: Option<Time>,
+    #[options(help = "proposer index (default: 0)")]
+    pub proposer: Option<usize>,
 }
 
 impl Header {
@@ -36,12 +38,15 @@ impl Header {
             chain_id: None,
             height: None,
             time: None,
+            proposer: None
         }
     }
+    set_option!(validators, &[Validator], Some(validators.to_vec()));
     set_option!(next_validators, &[Validator], Some(next_validators.to_vec()));
     set_option!(chain_id, &str, Some(chain_id.to_string()));
     set_option!(height, u64);
     set_option!(time, Time);
+    set_option!(proposer, usize);
 }
 
 impl std::str::FromStr for Header {
@@ -55,7 +60,6 @@ impl std::str::FromStr for Header {
     }
 }
 
-
 impl Generator<block::Header> for Header {
     fn merge_with_default(&self, default: &Self) -> Self {
         Header {
@@ -64,14 +68,16 @@ impl Generator<block::Header> for Header {
             chain_id: choose_from(&self.chain_id, &default.chain_id),
             height: choose_from(&self.height, &default.height),
             time: choose_from(&self.time, &default.time),
+            proposer: choose_from(&self.proposer, &default.proposer)
         }
     }
 
     fn generate(&self) -> Result<block::Header, SimpleError> {
-        if self.validators.is_none() {
-            bail!("validator array is missing")
-        }
-        let vals = generate_validators(&self.validators.as_ref().unwrap())?;
+        let vals = match &self.validators {
+            None => bail!("validator array is missing"),
+            Some(vals) => vals
+        };
+        let vals = generate_validators(vals)?;
         let valset = validator::Set::new(vals.clone());
         let next_valset = match &self.next_validators {
             Some(next_vals) => validator::Set::new(generate_validators(next_vals)?),
@@ -80,11 +86,11 @@ impl Generator<block::Header> for Header {
         let  chain_id = match chain::Id::from_str(
             choose_or(self.chain_id.clone(), "test-chain".to_string()).as_str()) {
             Ok(id) => id,
-            Err(_) => bail!("failed to construct header chain_id")
+            Err(_) => bail!("failed to construct header's chain_id")
         };
         let header = block::Header {
             version: block::header::Version { block: 0, app: 0 },
-            chain_id: chain_id,
+            chain_id,
             height: block::Height(choose_or(self.height, 1)),
             time: choose_or(self.time, Time::now()),
             last_block_id: None,
@@ -96,7 +102,7 @@ impl Generator<block::Header> for Header {
             app_hash: vec![],
             last_results_hash: None,
             evidence_hash: None,
-            proposer_address: vals[0].address,
+            proposer_address: vals[choose_or(self.proposer, 0)].address,
         };
         Ok(header)
     }

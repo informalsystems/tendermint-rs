@@ -21,9 +21,9 @@ pub struct Vote {
     pub header: Option<Header>,
     #[options(help = "vote type; 'precommit' if set, otherwise 'prevote' (default)")]
     pub precommit: Option<()>,
-    #[options(help = "block height (default: from commit header)")]
+    #[options(help = "block height (default: from header)")]
     pub height: Option<u64>,
-    #[options(help = "time (default: from commit header)")]
+    #[options(help = "time (default: from header)")]
     pub time: Option<Time>,
     #[options(help = "commit round (default: from commit)")]
     pub round: Option<u64>,
@@ -42,7 +42,8 @@ impl Vote {
         }
     }
     set_option!(index, u64);
-    set_option!(precommit, bool, if *precommit {Some(())} else {None});
+    set_option!(header, &Header, Some(header.clone()));
+    set_option!(precommit, bool, if precommit {Some(())} else {None});
     set_option!(height, u64);
     set_option!(time, Time);
     set_option!(round, u64);
@@ -81,7 +82,13 @@ impl Generator<vote::Vote> for Vote {
         let block_validator = validator.generate()?;
         let block_header = header.generate()?;
         let block_id = block::Id::new(lite::Header::hash(&block_header), None);
-        let val_index = header.validators.as_ref().unwrap().iter().enumerate().find(|(_,v)| **v == *validator);
+        let validator_index = match self.index {
+            Some(i) => i,
+            None => match header.validators.as_ref().unwrap().iter().position(|v| *v == *validator) {
+                Some(i) => i as u64,
+                None => bail!("failed to generate vote: no index given and validator not present in the header")
+            }
+        };
         let mut vote = vote::Vote {
             vote_type: if self.precommit.is_some() { vote::Type::Precommit } else { vote::Type::Prevote },
             height: block_header.height,
@@ -89,7 +96,7 @@ impl Generator<vote::Vote> for Vote {
             block_id: Some(block_id.clone()),
             timestamp: block_header.time,
             validator_address: block_validator.address,
-            validator_index: choose_or(self.index, if let Some(i) = val_index { i.0 as u64 } else { 0 }),
+            validator_index,
             signature: Signature::Ed25519(
                 try_with!(ed25519::Signature::from_bytes(&[0_u8; ed25519::SIGNATURE_SIZE]), "failed to construct empty ed25519 signature"),
             ),

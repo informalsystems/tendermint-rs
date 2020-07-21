@@ -14,10 +14,7 @@ pub struct Validator {
     pub id: Option<String>,
     #[options(help = "voting power of this validator (default: 0)", meta = "POWER")]
     pub voting_power: Option<u64>,
-    #[options(
-        help = "proposer priority of this validator (default: none)",
-        meta = "PRIORITY"
-    )]
+    #[options(help = "proposer priority of this validator (default: none)", meta = "PRIORITY")]
     pub proposer_priority: Option<i64>,
 }
 
@@ -29,24 +26,26 @@ impl Validator {
             proposer_priority: None,
         }
     }
+    set_option!(id, &str, Some(id.to_string()));
     set_option!(voting_power, u64);
     set_option!(proposer_priority, i64);
 
     pub fn get_signer(&self) -> Result<Ed25519Signer, SimpleError> {
-        if self.id.is_none() {
-            bail!("validator identifier is missing")
-        }
-        let mut bytes = self.id.clone().unwrap().into_bytes();
-        if bytes.is_empty() {
+        let id = match &self.id {
+            None => bail!("validator identifier is missing"),
+            Some(id) => id
+        };
+        if id.is_empty() {
             bail!("empty validator identifier")
         }
+        let mut bytes = id.clone().into_bytes();
         if bytes.len() > 32 {
             bail!("validator identifier is too long")
         }
         bytes.extend(vec![0u8; 32 - bytes.len()].iter());
         let seed = require_with!(
             ed25519::Seed::from_bytes(bytes),
-            "failed to construct a seed"
+            "failed to construct a seed from validator identifier"
         );
         Ok(Ed25519Signer::from(&seed))
     }

@@ -5,7 +5,7 @@ use tendermint::{ block, lite };
 
 use crate::{Generator, Validator, Header, Vote, helpers::*};
 
-#[derive(Debug, Options, Deserialize)]
+#[derive(Debug, Options, Deserialize, Clone)]
 pub struct Commit {
     #[options(help = "header (required)", parse(try_from_str = "parse_as::<Header>"))]
     pub header: Option<Header>,
@@ -24,26 +24,17 @@ impl Commit {
             votes: None
         }
     }
+    set_option!(votes, Vec<Vote>);
     set_option!(round, u64);
 
-    pub fn header(&self) -> Result<&Header, SimpleError> {
-        match &self.header{
-            None => bail!("commit header is missing"),
-            Some(h) => Ok(h)
-        }
-    }
-
-    pub fn votes(&self) -> Result<&Vec<Vote>, SimpleError> {
-        match &self.votes{
-            None => bail!("commit votes is missing"),
-            Some(vs) => Ok(vs)
-        }
-    }
-    pub fn generate_default_votes(mut self) -> Result<(), SimpleError>  {
-        let header = self.header()?;
+    // generate commit votes from all validators in the header
+    // this function will panic if the header is not present
+    pub fn generate_default_votes(mut self) -> Self  {
+        let header = self.header.as_ref().unwrap();
         let val_to_vote = |(i, v): (usize, &Validator)| -> Vote {
             Vote::new(v, header)
-                .index(&(i as u64))
+                .index(i as u64)
+                .round(choose_or(self.round, 1))
         };
         let votes = header.validators
             .as_ref()
@@ -53,17 +44,23 @@ impl Commit {
             .map(val_to_vote)
             .collect();
         self.votes = Some(votes);
-        Ok(())
+        self
     }
 
-    pub fn vote_of(&self, val: &Validator) -> Result<&Vote, SimpleError> {
-        let vote = require_with!(self.votes()?.iter().find(|v| *v.validator.as_ref().unwrap() == *val), "can't find vote by validator");
-        Ok(vote)
+    // get a mutable reference to the vote of the given validator
+    // this function will panic if the votes or the validator vote is not present
+    pub fn vote_of(&mut self, val: &str) -> &mut Vote {
+        let vote = self.votes.as_mut().unwrap().iter_mut().find(
+            |v| *v.validator.as_ref().unwrap() == Validator::new(val)
+            ).unwrap();
+        vote
     }
 
-    pub fn vote_at(&self, index: usize) -> Result<&Vote, SimpleError> {
-        let vote = require_with!(self.votes()?.get(index), "can't find vote by index");
-        Ok(vote)
+    // get a mutable reference to the vote at the given index
+    // this function will panic if the votes or the vote at index is not present
+    pub fn vote_at(&mut self, index: usize) -> &mut Vote {
+        let vote = self.votes.as_mut().unwrap().get_mut(index).unwrap();
+        vote
     }
 }
 
@@ -88,8 +85,14 @@ impl Generator<block::Commit> for Commit {
     }
 
     fn generate(&self) -> Result<block::Commit, SimpleError> {
-        let header = self.header()?;
-        let votes = self.votes()?;
+        let header = match &self.header{
+            None => bail!("failed to generate commit: header is missing"),
+            Some(h) => h
+        };
+        let votes = match &self.votes{
+            None => bail!("failed to generate commit: votes are missing"),
+            Some(vs) => vs
+        };
         let block_header = header.generate()?;
         let block_id = block::Id::new(lite::Header::hash(&block_header), None);
 

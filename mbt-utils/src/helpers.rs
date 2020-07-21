@@ -7,13 +7,13 @@ use std::io::{self, Read};
 #[macro_export]
 macro_rules! set_option {
     ($name:ident, $t:ty) => {
-        pub fn $name(mut self, $name: &$t) -> Self {
+        pub fn $name(mut self, $name: $t) -> Self {
         self.$name = Some($name.clone());
         self
     }
     };
     ($name:ident, $t:ty, $val:expr) => {
-        pub fn $name(mut self, $name: &$t) -> Self {
+        pub fn $name(mut self, $name: $t) -> Self {
         self.$name = $val;
         self
     }
