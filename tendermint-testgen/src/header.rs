@@ -136,5 +136,18 @@ mod tests {
 
         let header3 = header2.clone().next_validators(&valset1);
         assert_ne!(header1.generate(), header3.generate());
+
+        let mut block_header = header2.generate().unwrap();
+
+        block_header.chain_id = chain::Id::from_str("chain1").unwrap();
+        let header = header2.clone().chain_id("chain1");
+        assert_eq!(header.generate().unwrap(), block_header);
+
+        block_header.proposer_address = Validator::new("b").generate().unwrap().address;
+        assert_ne!(header.generate().unwrap(), block_header);
+
+        let header = header.clone().proposer(1);
+        assert_eq!(header.generate().unwrap(), block_header);
+
     }
 }

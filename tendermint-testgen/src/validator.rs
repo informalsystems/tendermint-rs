@@ -143,5 +143,19 @@ mod tests {
         let mut val = val_a;
         val.proposer_priority = None;
         assert_eq!(val.generate().unwrap(), make_validator(pk_a, 20, None));
+
+        let mut block_val = val.generate().unwrap();
+
+        block_val.voting_power = vote::Power::new(30);
+        assert_ne!(val.generate().unwrap(), block_val);
+
+        let val = val.voting_power(30);
+        assert_eq!(val.generate().unwrap(), block_val);
+
+        block_val.proposer_priority = Some(validator::ProposerPriority::new(1000));
+        assert_ne!(val.generate().unwrap(), block_val);
+
+        let val = val.proposer_priority(1000);
+        assert_eq!(val.generate().unwrap(), block_val);
     }
 }
