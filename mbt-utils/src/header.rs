@@ -107,3 +107,34 @@ impl Generator<block::Header> for Header {
         Ok(header)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn test_header() {
+        let valset1 = [Validator::new("a"), Validator::new("b"), Validator::new("c")];
+        let valset2 = [Validator::new("b"), Validator::new("c"), Validator::new("d")];
+
+        let now1 = Time::now();
+        let header1 = Header::new(&valset1).next_validators(&valset2).height(10).time(now1);
+
+        let now2 = now1 + Duration::from_secs(1);
+        let header2 = Header::new(&valset1).next_validators(&valset2).height(10).time(now2);
+        assert_ne!(header1.generate(), header2.generate());
+
+        let header2 = header2.time(now1);
+        assert_eq!(header1.generate(), header2.generate());
+
+        let header3 = header2.clone().height(11);
+        assert_ne!(header1.generate(), header3.generate());
+
+        let header3 = header2.clone().validators(&valset2);
+        assert_ne!(header1.generate(), header3.generate());
+
+        let header3 = header2.clone().next_validators(&valset1);
+        assert_ne!(header1.generate(), header3.generate());
+    }
+}

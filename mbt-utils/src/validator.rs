@@ -139,5 +139,9 @@ mod tests {
         let val_b_a = val_b.id("a");
         assert_eq!(val_b_a, val_a);
         assert_eq!(val_b_a.generate().unwrap(), val_a.generate().unwrap());
+
+        let mut val = val_a;
+        val.proposer_priority = None;
+        assert_eq!(val.generate().unwrap(), make_validator(pk_a, 20, None));
     }
 }
