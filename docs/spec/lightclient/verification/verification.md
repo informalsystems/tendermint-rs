@@ -477,6 +477,7 @@ independently:
 
 The core data structure of the protocol is the LightBlock.
 
+#### **[LCV-DATA-LIGHTBLOCK.1]**:
 ```go
 type LightBlock struct {
 		Header          Header
@@ -615,7 +616,7 @@ func Commit(height int64) (SignedHeader, error)
 	}
 }
 ```
-- Expected precodnition
+- Expected precondition
   - header of `height` exists on blockchain
 - Expected postcondition
   - if *n* is correct: Returns the signed header of height `height`
@@ -644,7 +645,7 @@ func Validators(height int64) (ValidatorSet, error)
 	}
 }
 ```
-- Expected precodnition
+- Expected precondition
   - header of `height` exists on blockchain
 - Expected postcondition
   - if *n* is correct: Returns the validator set of height `height`

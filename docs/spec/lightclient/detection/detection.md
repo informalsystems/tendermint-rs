@@ -1,5 +1,24 @@
 ***This an unfinished draft. Comments are welcome!***
 
+## Decisions with Zarko
+
+- Generating a minimal proof of fork is too costly at the light client
+    - we do not know all lightblocks from the primary
+	- therefore there are many scenarios. we might even need to ask
+      the primary again for additional lightblocks to isolate the
+      branch. As the main goal is to catch misbehavior of the primary,
+      evidence generation and punishment must not depend on their
+      cooperation. 
+
+
+- proof of fork is a trace of lightblocks that verifies a block
+  different from the one the full node knows
+
+- For each secondary, we check the primary against one secondary
+- We do not check secondary against secondary
+- the reason is that the attack is via the primary. We only try to
+  catch if the primary installs a bad light block
+
 ## TODOs
 
 - the main logic, i.e., describing what happens when the function of
@@ -14,6 +33,12 @@
 
 - clarify EXPIRED case. Can we always punish? Can we give sufficient
   conditions. 
+  
+- Discussion with end-user API in the case of
+    - user uses trusted blocks only
+	- user uses verified blocks (may need to roll back)
+
+-
 
 # Fork detector
 
@@ -365,7 +390,38 @@ and the following transition invariant
 
 ## Solution
 
+### Data Structures
 
+```go
+type LightNodeProofOfFork struct {
+  TrustedBlock        TrustedBlockInfo
+  ConflictingTrace    LightStore
+}
+
+// info about the LC's last trusted block
+type TrustedBlockInfo struct {
+  Height              int
+  BlockID             BlockID
+} 
+```
+
+#### **[LCV-DATA-POFSTORE.1]**:
+
+Proofs of Forks are stored in a structure which stores all proofs
+generated during detection
+
+```go
+type PoFStore struct {
+	...
+}
+```
+
+
+The following is defined at **[LCV-DATA-LIGHTBLOCK.1]**:
+```go
+// full light block (SignedHeader & ValidatorSet)
+type LightBlock struct {}
+```
 
 ### Inter Process Communication
 
@@ -375,7 +431,22 @@ func FetchLightBlock(peer PeerID, height Height) LightBlock
 ```
 See the [verification specification][verification] for details.
 
+
+
+```go
+func SubmitProofOfFork(peer PeerID, PoF LightNodeProofOfFork) Result
+```
+- Implementation remark
+    * Sends to `peer` a `PoF` that contains a header that is not 
+	  on the branch, the full node `peer` is on
+- Expected precondition
+- Expected postcondition
+- Error condition
+
+
 ### Auxiliary Functions (Local)
+
+
 
 
 ```go
@@ -415,10 +486,25 @@ The problem is solved by calling  the function `ForkDetector` with
 a lightstore that contains a light block that has
 just been verified by the verifier. 
 
+```go
+func Supervisor
+
+VerifyToTarget
+result := Forkdetector
+if result.Empty {
+  LightStore.Update(testedLB, StateTrusted)
+} 
+else {
+  submit all PoFs to primary
+  
+  + generate PoFs to be sent to secondaries
+
+}
+```
+
 
 ```go
-func ForkDetector(ls LightStore)  {
-	Forks.Init // initialize a container in which we collect forks
+func ForkDetector(ls LightStore, PoFs PoFStore)  {
 	testedLB := LightStore.LatestVerified()
 	for i, s range Secondaries {
 		sh := FetchLightBlock(s,testedLB.Height)
@@ -436,12 +522,18 @@ func ForkDetector(ls LightStore)  {
 			auxLS.Update(LightStore.LatestTrusted(), StateVerified);
 			auxLS.Update(sh,StateUnverified);
 			result := VerifyToTarget(s, auxLS, sh.Header.Height)
-			if result = (_,ResultSuccess) || (_,EXPIRED) {
+			if result = (LS,ResultSuccess) || (LS,EXPIRED) {
 				// we verified header sh which is conflicting to hd
 				// there is a fork on the main blockchain.
 				// If return code was EXPIRED it might be too late
 				// to punish, we still report it.
-				Forks.Add(sh)
+				
+				pof = new LightNodeProofOfFork
+				pof.ConflictingBlock := get smallest lightblock greater then latestTrusted
+				pof.TrustedBlock.Height = LightStore.LatestTrusted().Height
+				pof.TrustedBlock.BlockID = LightStore.LatestTrusted().Commit.LastBlockID
+				
+				PoFs.Add(pof)
 			} else {
 				// s might be faulty or unreachable
 				Replace_Secondary(s)
@@ -451,16 +543,20 @@ func ForkDetector(ls LightStore)  {
 			}
 		}
 	}
-	if Forks.isEmpty {
-		LightStore.Update(testedLB, StateTrusted)
+	if PoFs.isEmpty {
+	    return PoFs
+	} 
+	else {
+		return PoFs
 	}
-	return (LightStore,Forks,OK)
+
 }
 
 ```
 
 - Expected precondition
 	- Secondaries initialized and non-empty
+	- `PoFs` initialized and empty
 - Expected postcondition
     - satisfies [LCD-DIST-INV], [LCD-DIST-LIFE-FORK]
 	- removes faulty secondary if it reports wrong header
