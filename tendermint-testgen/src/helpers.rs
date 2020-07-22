@@ -7,6 +7,8 @@ use tendermint::{vote, signature::Signature, amino_types};
 use signatory_dalek::Ed25519Verifier;
 use signatory::signature::Verifier;
 
+
+/// A macro that generates a complete setter method from a one-liner with necessary information
 #[macro_export]
 macro_rules! set_option {
     ($name:ident, $t:ty) => {
@@ -44,24 +46,6 @@ pub fn parse_stdin_as<T: DeserializeOwned>() -> Result<T, SimpleError> {
     match io::stdin().read_to_string(&mut buffer) {
         Err(_) => Err(SimpleError::new("")),
         Ok(_) => parse_as::<T>(&buffer),
-    }
-}
-
-pub fn choose_or<T>(input: Option<T>, default: T) -> T {
-    if let Some(x) = input {
-        x
-    } else {
-        default
-    }
-}
-
-pub fn choose_from<T: Clone>(cli: &Option<T>, input: &Option<T>) -> Option<T> {
-    if let Some(x) = cli {
-        Some(x.clone())
-    } else if let Some(y) = input {
-        Some(y.clone())
-    } else {
-        None
     }
 }
 

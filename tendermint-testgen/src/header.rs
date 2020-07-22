@@ -61,14 +61,14 @@ impl std::str::FromStr for Header {
 }
 
 impl Generator<block::Header> for Header {
-    fn merge_with_default(&self, default: &Self) -> Self {
+    fn merge_with_default(self, default: Self) -> Self {
         Header {
-            validators: choose_from(&self.validators, &default.validators),
-            next_validators: choose_from(&self.next_validators, &default.next_validators),
-            chain_id: choose_from(&self.chain_id, &default.chain_id),
-            height: choose_from(&self.height, &default.height),
-            time: choose_from(&self.time, &default.time),
-            proposer: choose_from(&self.proposer, &default.proposer)
+            validators: self.validators.or(default.validators),
+            next_validators: self.next_validators.or(default.next_validators),
+            chain_id: self.chain_id.or(default.chain_id),
+            height: self.height.or(default.height),
+            time: self.time.or(default.time),
+            proposer: self.proposer.or(default.proposer)
         }
     }
 
@@ -84,15 +84,15 @@ impl Generator<block::Header> for Header {
             None => valset.clone(),
         };
         let  chain_id = match chain::Id::from_str(
-            choose_or(self.chain_id.clone(), "test-chain".to_string()).as_str()) {
+            self.chain_id.clone().unwrap_or("test-chain".to_string()).as_str()) {
             Ok(id) => id,
             Err(_) => bail!("failed to construct header's chain_id")
         };
         let header = block::Header {
             version: block::header::Version { block: 0, app: 0 },
             chain_id,
-            height: block::Height(choose_or(self.height, 1)),
-            time: choose_or(self.time, Time::now()),
+            height: block::Height(self.height.unwrap_or(1)),
+            time: self.time.unwrap_or(Time::now()),
             last_block_id: None,
             last_commit_hash: None,
             data_hash: None,
@@ -102,7 +102,7 @@ impl Generator<block::Header> for Header {
             app_hash: vec![],
             last_results_hash: None,
             evidence_hash: None,
-            proposer_address: vals[choose_or(self.proposer, 0)].address,
+            proposer_address: vals[self.proposer.unwrap_or(0)].address,
         };
         Ok(header)
     }

@@ -57,15 +57,15 @@ impl std::str::FromStr for Vote {
 }
 
 impl Generator<vote::Vote> for Vote {
-    fn merge_with_default(&self, default: &Self) -> Self {
+    fn merge_with_default(self, default: Self) -> Self {
         Vote {
-            validator: choose_from(&self.validator, &default.validator),
-            index: choose_from(&self.index, &default.index),
-            header: choose_from(&self.header, &default.header),
-            precommit: choose_from(&self.precommit, &default.precommit),
-            height: choose_from(&self.height, &default.height),
-            time: choose_from(&self.time, &default.time),
-            round: choose_from(&self.round, &default.round)
+            validator: self.validator.or(default.validator),
+            index: self.index.or(default.index),
+            header: self.header.or(default.header),
+            precommit: self.precommit.or(default.precommit),
+            height: self.height.or(default.height),
+            time: self.time.or(default.time),
+            round: self.round.or(default.round)
         }
     }
 
@@ -92,7 +92,7 @@ impl Generator<vote::Vote> for Vote {
         let mut vote = vote::Vote {
             vote_type: if self.precommit.is_some() { vote::Type::Precommit } else { vote::Type::Prevote },
             height: block_header.height,
-            round: choose_or(self.round, 1),
+            round: self.round.unwrap_or(1),
             block_id: Some(block_id),
             timestamp: block_header.time,
             validator_address: block_validator.address,

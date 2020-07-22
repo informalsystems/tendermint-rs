@@ -24,7 +24,7 @@ If a parameter is supplied both via STDIN and CLI, the latter is given preferenc
 In case a particular datastructure can be produced from a single parameter
 (like validator), there is a shortcut that allows to provide this parameter
 directly via STDIN, without wrapping it into JSON object.
-E.g., in the validator case, the following are equivalent:
+E.g., in the validator case, the following commands are all equivalent:
 
     tendermint-testgen validator --id a --voting-power 3
     echo -n '{"id": "a", "voting_power": 3}' | tendermint-testgen --stdin validator
@@ -73,7 +73,7 @@ fn encode_with_stdin<Opts: Generator<T> + Options, T: serde::Serialize>(cli: &Op
 {
     let stdin = read_stdin()?;
     let default = Opts::from_str(&stdin)?;
-    let producer = cli.merge_with_default(&default);
+    let producer = cli.clone().merge_with_default(default);
     producer.encode()
 }
 
@@ -86,9 +86,10 @@ fn run_command<Opts: Generator<T> + Options, T: serde::Serialize>(cli: Opts, rea
     match res {
         Ok(res) => println!("{}", res),
         Err(e) => {
-            println!("Error: {}\n", e);
-            println!("Supported parameters for this command are: ");
-            print_params(cli.self_usage())
+            eprintln!("Error: {}\n", e);
+            eprintln!("Supported parameters for this command are: ");
+            print_params(cli.self_usage());
+            std::process::exit(1);
         }
     }
 }
@@ -123,7 +124,7 @@ fn main() {
         }
         Some(Command::Validator(cli)) => run_command(cli, opts.stdin),
         Some(Command::Header(cli)) => run_command(cli, opts.stdin),
-        Some(Command::Vote(cli)) => eprintln!("{:?}", cli),
+        Some(Command::Vote(cli)) => run_command(cli, opts.stdin),
         Some(Command::Commit(cli)) => run_command(cli, opts.stdin),
     }
 }

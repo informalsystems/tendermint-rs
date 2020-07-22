@@ -30,6 +30,7 @@ impl Validator {
     set_option!(voting_power, u64);
     set_option!(proposer_priority, i64);
 
+    /// Get a signer from this validator companion.
     pub fn get_signer(&self) -> Result<Ed25519Signer, SimpleError> {
         let id = match &self.id {
             None => bail!("validator identifier is missing"),
@@ -50,6 +51,7 @@ impl Validator {
         Ok(Ed25519Signer::from(&seed))
     }
 
+    /// Get a verifier from this validator companion.
     pub fn get_verifier(&self) -> Result<Ed25519Verifier, SimpleError> {
         let signer = self.get_signer()?;
         let public_key = try_with!(signer.public_key(),"failed to get public key");
@@ -77,11 +79,11 @@ impl std::cmp::PartialEq for Validator {
 impl std::cmp::Eq for Validator {}
 
 impl Generator<validator::Info> for Validator {
-    fn merge_with_default(&self, default: &Self) -> Self {
+    fn merge_with_default(self, default: Self) -> Self {
         Validator {
-            id: choose_from(&self.id, &default.id),
-            voting_power: choose_from(&self.voting_power, &default.voting_power),
-            proposer_priority: choose_from(&self.proposer_priority, &default.proposer_priority),
+            id: self.id.or(default.id),
+            voting_power: self.voting_power.or(default.voting_power),
+            proposer_priority: self.proposer_priority.or(default.proposer_priority),
         }
     }
 
@@ -91,7 +93,7 @@ impl Generator<validator::Info> for Validator {
         let info = validator::Info {
             address: account::Id::from(pk),
             pub_key: PublicKey::from(pk),
-            voting_power: vote::Power::new(choose_or(self.voting_power, 0)),
+            voting_power: vote::Power::new(self.voting_power.unwrap_or(0)),
             proposer_priority: match self.proposer_priority {
                 None => None,
                 Some(p) => Some(validator::ProposerPriority::new(p)),
@@ -101,6 +103,7 @@ impl Generator<validator::Info> for Validator {
     }
 }
 
+/// A helper function to generate multiple validators at once.
 pub fn generate_validators(vals: &[Validator]) -> Result<Vec<validator::Info>, SimpleError> {
     Ok(vals.iter().map(|v| v.generate()).collect::<Result<Vec<validator::Info>, SimpleError>>()?)
 }

@@ -27,14 +27,14 @@ impl Commit {
     set_option!(votes, Vec<Vote>);
     set_option!(round, u64);
 
-    // generate commit votes from all validators in the header
-    // this function will panic if the header is not present
+    /// Generate commit votes from all validators in the header.
+    /// This function will panic if the header is not present
     pub fn generate_default_votes(mut self) -> Self  {
         let header = self.header.as_ref().unwrap();
         let val_to_vote = |(i, v): (usize, &Validator)| -> Vote {
             Vote::new(v, header)
                 .index(i as u64)
-                .round(choose_or(self.round, 1))
+                .round(self.round.unwrap_or(1))
         };
         let votes = header.validators
             .as_ref()
@@ -47,17 +47,17 @@ impl Commit {
         self
     }
 
-    // get a mutable reference to the vote of the given validator
-    // this function will panic if the votes or the validator vote is not present
-    pub fn vote_of(&mut self, val: &str) -> &mut Vote {
+    /// Get a mutable reference to the vote of the given validator.
+    /// This function will panic if the votes or the validator vote is not present
+    pub fn vote_of_validator(&mut self, id: &str) -> &mut Vote {
         self.votes.as_mut().unwrap().iter_mut().find(
-            |v| *v.validator.as_ref().unwrap() == Validator::new(val)
+            |v| *v.validator.as_ref().unwrap() == Validator::new(id)
             ).unwrap()
     }
 
-    // get a mutable reference to the vote at the given index
-    // this function will panic if the votes or the vote at index is not present
-    pub fn vote_at(&mut self, index: usize) -> &mut Vote {
+    /// Get a mutable reference to the vote at the given index
+    /// This function will panic if the votes or the vote at index is not present
+    pub fn vote_at_index(&mut self, index: usize) -> &mut Vote {
         self.votes.as_mut().unwrap().get_mut(index).unwrap()
     }
 }
@@ -74,11 +74,11 @@ impl std::str::FromStr for Commit {
 }
 
 impl Generator<block::Commit> for Commit {
-    fn merge_with_default(&self, other: &Self) -> Self {
+    fn merge_with_default(self, other: Self) -> Self {
         Commit {
-            header: choose_from(&self.header, &other.header),
-            round: choose_from(&self.round, &other.round),
-            votes: choose_from(&self.votes, &other.votes)
+            header: self.header.or( other.header),
+            round: self.round.or(other.round),
+            votes: self.votes.or(other.votes)
         }
     }
 
@@ -107,7 +107,7 @@ impl Generator<block::Commit> for Commit {
             .collect::<Result<Vec<block::CommitSig>, SimpleError>>()?;
         let commit = block::Commit {
             height: block_header.height,
-            round: choose_or(self.round, 1),
+            round: self.round.unwrap_or(1),
             block_id, // TODO do we need at least one part? //block::Id::new(hasher.hash_header(&block_header), None), //
             signatures: block::CommitSigs::new(sigs),
         };
@@ -137,8 +137,8 @@ mod tests {
         assert_eq!(block_commit.height, block_header.height);
 
         let mut commit = commit;
-        assert_eq!(commit.vote_at(1).round, Some(3));
-        assert_eq!(commit.vote_of("a").index, Some(0));
+        assert_eq!(commit.vote_at_index(1).round, Some(3));
+        assert_eq!(commit.vote_of_validator("a").index, Some(0));
 
         let votes = commit.votes.as_ref().unwrap();
 
