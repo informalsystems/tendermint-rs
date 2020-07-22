@@ -1,8 +1,6 @@
 use gumdrop::Options;
 use simple_error::SimpleError;
-use tendermint_testgen::{
-    Generator, Validator, Header, Vote, Commit, helpers::*
-};
+use tendermint_testgen::{helpers::*, Commit, Generator, Header, Validator, Vote};
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -69,8 +67,9 @@ enum Command {
     Commit(Commit),
 }
 
-fn encode_with_stdin<Opts: Generator<T> + Options, T: serde::Serialize>(cli: &Opts) -> Result<String, SimpleError>
-{
+fn encode_with_stdin<Opts: Generator<T> + Options, T: serde::Serialize>(
+    cli: &Opts,
+) -> Result<String, SimpleError> {
     let stdin = read_stdin()?;
     let default = Opts::from_str(&stdin)?;
     let producer = cli.clone().merge_with_default(default);

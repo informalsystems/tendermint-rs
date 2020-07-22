@@ -1,12 +1,9 @@
-use std::str::FromStr;
+use crate::{helpers::*, validator::generate_validators, Generator, Validator};
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
-use tendermint::{
-    block, chain, validator, Time,
-    lite::ValidatorSet };
-use crate::{
-    Generator, Validator, validator::generate_validators, helpers::* };
+use std::str::FromStr;
+use tendermint::{block, chain, lite::ValidatorSet, validator, Time};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Header {
@@ -38,11 +35,15 @@ impl Header {
             chain_id: None,
             height: None,
             time: None,
-            proposer: None
+            proposer: None,
         }
     }
     set_option!(validators, &[Validator], Some(validators.to_vec()));
-    set_option!(next_validators, &[Validator], Some(next_validators.to_vec()));
+    set_option!(
+        next_validators,
+        &[Validator],
+        Some(next_validators.to_vec())
+    );
     set_option!(chain_id, &str, Some(chain_id.to_string()));
     set_option!(height, u64);
     set_option!(time, Time);
@@ -54,7 +55,7 @@ impl std::str::FromStr for Header {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let header = match parse_as::<Header>(s) {
             Ok(input) => input,
-            Err(_) => Header::new(&parse_as::<Vec<Validator>>(s)?)
+            Err(_) => Header::new(&parse_as::<Vec<Validator>>(s)?),
         };
         Ok(header)
     }
@@ -68,14 +69,14 @@ impl Generator<block::Header> for Header {
             chain_id: self.chain_id.or(default.chain_id),
             height: self.height.or(default.height),
             time: self.time.or(default.time),
-            proposer: self.proposer.or(default.proposer)
+            proposer: self.proposer.or(default.proposer),
         }
     }
 
     fn generate(&self) -> Result<block::Header, SimpleError> {
         let vals = match &self.validators {
             None => bail!("validator array is missing"),
-            Some(vals) => vals
+            Some(vals) => vals,
         };
         let vals = generate_validators(vals)?;
         let valset = validator::Set::new(vals.clone());
@@ -83,10 +84,14 @@ impl Generator<block::Header> for Header {
             Some(next_vals) => validator::Set::new(generate_validators(next_vals)?),
             None => valset.clone(),
         };
-        let  chain_id = match chain::Id::from_str(
-            self.chain_id.clone().unwrap_or("test-chain".to_string()).as_str()) {
+        let chain_id = match chain::Id::from_str(
+            self.chain_id
+                .clone()
+                .unwrap_or("test-chain".to_string())
+                .as_str(),
+        ) {
             Ok(id) => id,
-            Err(_) => bail!("failed to construct header's chain_id")
+            Err(_) => bail!("failed to construct header's chain_id"),
         };
         let header = block::Header {
             version: block::header::Version { block: 0, app: 0 },
@@ -115,14 +120,28 @@ mod tests {
 
     #[test]
     fn test_header() {
-        let valset1 = [Validator::new("a"), Validator::new("b"), Validator::new("c")];
-        let valset2 = [Validator::new("b"), Validator::new("c"), Validator::new("d")];
+        let valset1 = [
+            Validator::new("a"),
+            Validator::new("b"),
+            Validator::new("c"),
+        ];
+        let valset2 = [
+            Validator::new("b"),
+            Validator::new("c"),
+            Validator::new("d"),
+        ];
 
         let now1 = Time::now();
-        let header1 = Header::new(&valset1).next_validators(&valset2).height(10).time(now1);
+        let header1 = Header::new(&valset1)
+            .next_validators(&valset2)
+            .height(10)
+            .time(now1);
 
         let now2 = now1 + Duration::from_secs(1);
-        let header2 = Header::new(&valset1).next_validators(&valset2).height(10).time(now2);
+        let header2 = Header::new(&valset1)
+            .next_validators(&valset2)
+            .height(10)
+            .time(now2);
         assert_ne!(header1.generate(), header2.generate());
 
         let header2 = header2.time(now1);
@@ -148,6 +167,5 @@ mod tests {
 
         let header = header.clone().proposer(1);
         assert_eq!(header.generate().unwrap(), block_header);
-
     }
 }

@@ -1,12 +1,10 @@
+use crate::{helpers::*, Generator};
 use gumdrop::Options;
 use serde::Deserialize;
-use simple_error::*;
-use signatory::{ ed25519, public_key::PublicKeyed};
+use signatory::{ed25519, public_key::PublicKeyed};
 use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
-use tendermint::{
-    account, public_key::PublicKey, validator, vote
-};
-use crate::{Generator, helpers::*};
+use simple_error::*;
+use tendermint::{account, public_key::PublicKey, validator, vote};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Validator {
@@ -14,7 +12,10 @@ pub struct Validator {
     pub id: Option<String>,
     #[options(help = "voting power of this validator (default: 0)", meta = "POWER")]
     pub voting_power: Option<u64>,
-    #[options(help = "proposer priority of this validator (default: none)", meta = "PRIORITY")]
+    #[options(
+        help = "proposer priority of this validator (default: none)",
+        meta = "PRIORITY"
+    )]
     pub proposer_priority: Option<i64>,
 }
 
@@ -34,7 +35,7 @@ impl Validator {
     pub fn get_signer(&self) -> Result<Ed25519Signer, SimpleError> {
         let id = match &self.id {
             None => bail!("validator identifier is missing"),
-            Some(id) => id
+            Some(id) => id,
         };
         if id.is_empty() {
             bail!("empty validator identifier")
@@ -54,7 +55,7 @@ impl Validator {
     /// Get a verifier from this validator companion.
     pub fn get_verifier(&self) -> Result<Ed25519Verifier, SimpleError> {
         let signer = self.get_signer()?;
-        let public_key = try_with!(signer.public_key(),"failed to get public key");
+        let public_key = try_with!(signer.public_key(), "failed to get public key");
         let verifier = Ed25519Verifier::from(&public_key);
         Ok(verifier)
     }
@@ -65,7 +66,7 @@ impl std::str::FromStr for Validator {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let validator = match parse_as::<Validator>(s) {
             Ok(input) => input,
-            Err(_) => Validator::new(s)
+            Err(_) => Validator::new(s),
         };
         Ok(validator)
     }
@@ -105,7 +106,10 @@ impl Generator<validator::Info> for Validator {
 
 /// A helper function to generate multiple validators at once.
 pub fn generate_validators(vals: &[Validator]) -> Result<Vec<validator::Info>, SimpleError> {
-    Ok(vals.iter().map(|v| v.generate()).collect::<Result<Vec<validator::Info>, SimpleError>>()?)
+    Ok(vals
+        .iter()
+        .map(|v| v.generate())
+        .collect::<Result<Vec<validator::Info>, SimpleError>>()?)
 }
 
 #[cfg(test)]
@@ -121,7 +125,7 @@ mod tests {
         let mut info = validator::Info::new(pk, vote::Power::new(vp));
         info.proposer_priority = match pp {
             None => None,
-            Some(pp) => Some(validator::ProposerPriority::new(pp))
+            Some(pp) => Some(validator::ProposerPriority::new(pp)),
         };
         info
     }
@@ -141,10 +145,16 @@ mod tests {
         assert_eq!(val.generate().unwrap(), make_validator(pk_a, 20, Some(100)));
 
         let val_b = val.id("b").proposer_priority(-100);
-        assert_eq!(val_b.generate().unwrap(), make_validator(pk_b, 20, Some(-100)));
+        assert_eq!(
+            val_b.generate().unwrap(),
+            make_validator(pk_b, 20, Some(-100))
+        );
 
         let val_a = Validator::new("a").voting_power(20).proposer_priority(-100);
-        assert_eq!(val_a.generate().unwrap(), make_validator(pk_a, 20, Some(-100)));
+        assert_eq!(
+            val_a.generate().unwrap(),
+            make_validator(pk_a, 20, Some(-100))
+        );
 
         let val_b_a = val_b.id("a");
         assert_eq!(val_b_a, val_a);
