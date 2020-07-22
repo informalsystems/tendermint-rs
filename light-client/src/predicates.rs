@@ -95,7 +95,7 @@ pub trait VerificationPredicates: Send {
         Ok(())
     }
 
-    /// Check that the given header is within the trusting period, adjusting for clock drift.
+    /// Check that the trusted header is within the trusting period, adjusting for clock drift.
     fn is_within_trust_period(
         &self,
         header: &Header,
@@ -115,6 +115,25 @@ pub trait VerificationPredicates: Send {
         ensure!(
             expires_at > now,
             VerificationError::NotWithinTrustPeriod { expires_at, now }
+        );
+
+        Ok(())
+    }
+
+    /// Check that the untrusted header is from past.
+    fn is_header_from_past(
+        &self,
+        header: &Header,
+        clock_drift: Duration,
+        now: Time,
+    ) -> Result<(), VerificationError> {
+
+        ensure!(
+            header.time < now + clock_drift,
+            VerificationError::HeaderFromTheFuture {
+                header_time: header.time,
+                now
+            }
         );
 
         Ok(())
@@ -227,6 +246,13 @@ pub fn verify(
     vp.is_within_trust_period(
         &trusted.signed_header.header,
         options.trusting_period,
+        options.clock_drift,
+        now,
+    )?;
+
+    // Ensure the header isn't from a future time
+    vp.is_header_from_past(
+        &untrusted.signed_header.header,
         options.clock_drift,
         now,
     )?;
