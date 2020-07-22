@@ -286,4 +286,3 @@ pub fn verify(
 
     Ok(())
 }
-

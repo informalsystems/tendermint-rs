@@ -191,4 +191,3 @@ fn block_on<F: std::future::Future>(
         Ok(rt.block_on(f))
     }
 }
-

@@ -16,4 +16,3 @@ impl Clock for SystemClock {
         Time::now()
     }
 }
-

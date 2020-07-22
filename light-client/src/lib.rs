@@ -7,8 +7,8 @@
     unused_import_braces,
     unused_qualifications,
     rust_2018_idioms,
-    nonstandard_style,
- )]
+    nonstandard_style
+)]
 #![doc(
     html_root_url = "https://docs.rs/tendermint-light-client/0.15.0",
     html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs.png"

@@ -132,4 +132,3 @@ impl ErrorExt for VerificationError {
         false
     }
 }
-

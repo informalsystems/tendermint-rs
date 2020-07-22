@@ -259,4 +259,3 @@ impl LightClient {
         Ok((block, Status::Unverified))
     }
 }
-

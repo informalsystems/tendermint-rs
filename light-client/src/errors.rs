@@ -144,4 +144,3 @@ impl From<crossbeam::RecvError> for ErrorKind {
         Self::ChannelDisconnected
     }
 }
-

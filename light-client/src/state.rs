@@ -57,4 +57,3 @@ impl State {
         trace
     }
 }
-

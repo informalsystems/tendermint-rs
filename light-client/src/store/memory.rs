@@ -84,4 +84,3 @@ impl LightStore for MemoryStore {
         Box::new(light_blocks.into_iter())
     }
 }
-

@@ -89,4 +89,3 @@ impl CommitValidator for ProdCommitValidator {
         Ok(())
     }
 }
-

@@ -41,4 +41,3 @@ pub fn light_store_contains_block_within_trusting_period(
         .all(Status::Trusted)
         .any(|lb| is_within_trust_period(&lb, trusting_period, now))
 }
-

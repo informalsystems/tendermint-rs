@@ -84,4 +84,3 @@ impl LightStore for SledStore {
         Box::new(self.db(status).iter(&self.db))
     }
 }
-

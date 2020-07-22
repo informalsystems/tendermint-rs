@@ -62,4 +62,3 @@ fn block_on<F: std::future::Future>(f: F) -> F::Output {
         .unwrap()
         .block_on(f)
 }
-

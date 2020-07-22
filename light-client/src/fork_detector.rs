@@ -142,4 +142,3 @@ impl ForkDetector for ProdForkDetector {
         }
     }
 }
-
