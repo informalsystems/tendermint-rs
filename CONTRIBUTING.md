@@ -27,7 +27,8 @@ All new contributions should start with a Github
 Issue. The issue helps capture the problem you're trying to solve and allows for
 early feedback. Once the issue is created, maintainers may request more detailed
 documentation be written in the form of a Request for Comment (RFC) or
-Architectural Decision Record (ADR).
+Architectural Decision Record
+([ADR](https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/README.md)).
 
 Discussion at the RFC stage will build collective understanding of the dimensions
 of the problems and help structure conversations around trade-offs.
@@ -95,18 +96,16 @@ See the [changelog template](CHANGELOG.md).
 
 Changelog entries should be formatted as follows:
 ```
-- [module] \#xxx Some description about the change (@contributor)
+- [crate] \#xxx Some description about the change (@contributor)
 ```
-Here, `module` is the part of the code that changed (typically a
-top-level package), `xxx` is the pull-request number, and `contributor`
+Here, `crate` is the part of the code that changed (typically a
+top-level crate), `xxx` is the pull-request number, and `contributor`
 is the author/s of the change.
 
 It's also acceptable for `xxx` to refer to the relevent issue number, but pull-request
 numbers are preferred.
 Note this means pull-requests should be opened first so the changelog can then
 be updated with the pull-request's number.
-There is no need to include the full link, as this will be added
-automatically during release. But please include the backslash and pound, eg. `\#2313`.
 
 Changelog entries should be ordered alphabetically according to the
 `module`, and numerically according to the pull-request number.
