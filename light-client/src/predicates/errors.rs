@@ -89,14 +89,14 @@ pub enum VerificationError {
     NonMonotonicBftTime {
         /// BFT time of the untrusted header
         header_bft_time: Time,
-        /// MFT time of the trusted header
+        /// BFT time of the trusted header
         trusted_header_bft_time: Time,
     },
 
     /// Trusted state not within the trusting period
     #[error("not withing trusting period: expires_at={expires_at} now={now}")]
     NotWithinTrustPeriod {
-        /// Time of expiration of the header
+        /// Expiration time of the header
         expires_at: Time,
         /// Current time
         now: Time,

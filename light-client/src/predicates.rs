@@ -25,7 +25,7 @@ impl VerificationPredicates for ProdPredicates {}
 /// This enables test implementations to only override a single method rather than
 /// have to re-define every predicate.
 pub trait VerificationPredicates: Send {
-    /// Check that the hash of the validator set in the header match the actual one.
+    /// Compare the provided validator_set_hash against the hash produced from hashing the validator set.
     fn validator_sets_match(
         &self,
         light_block: &LightBlock,
@@ -63,7 +63,7 @@ pub trait VerificationPredicates: Send {
         Ok(())
     }
 
-    /// Check that the hash of the header in the commit match the actual one.
+    /// Check that the hash of the header in the commit matches the actual one.
     fn header_matches_commit(
         &self,
         signed_header: &SignedHeader,

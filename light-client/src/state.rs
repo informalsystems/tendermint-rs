@@ -22,7 +22,7 @@ pub struct State {
 }
 
 impl State {
-    /// Crate a new state from the given light store with an empty verification trace.
+    /// Create a new state from the given light store with an empty verification trace.
     pub fn new(light_store: impl LightStore + 'static) -> Self {
         Self {
             light_store: Box::new(light_store),
