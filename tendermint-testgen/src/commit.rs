@@ -34,7 +34,7 @@ impl Commit {
     pub fn generate_default_votes(mut self) -> Self {
         let header = self.header.as_ref().unwrap();
         let val_to_vote = |(i, v): (usize, &Validator)| -> Vote {
-            Vote::new(v, header)
+            Vote::new(v.clone(), header.clone())
                 .index(i as u64)
                 .round(self.round.unwrap_or(1))
         };
@@ -73,7 +73,7 @@ impl std::str::FromStr for Commit {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let commit = match parse_as::<Commit>(s) {
             Ok(input) => input,
-            Err(_) => Commit::new(&parse_as::<Header>(s)?),
+            Err(_) => Commit::new(parse_as::<Header>(s)?),
         };
         Ok(commit)
     }
@@ -146,7 +146,9 @@ mod tests {
             .height(10)
             .time(now);
 
-        let commit = Commit::new(&header).round(3).generate_default_votes();
+        let commit = Commit::new(header.clone())
+            .round(3)
+            .generate_default_votes();
 
         let block_header = header.generate().unwrap();
         let block_commit = commit.generate().unwrap();

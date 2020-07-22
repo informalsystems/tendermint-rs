@@ -87,7 +87,7 @@ impl Generator<block::Header> for Header {
         let chain_id = match chain::Id::from_str(
             self.chain_id
                 .clone()
-                .unwrap_or("test-chain".to_string())
+                .unwrap_or_else(|| "test-chain".to_string())
                 .as_str(),
         ) {
             Ok(id) => id,

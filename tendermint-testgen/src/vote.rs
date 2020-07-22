@@ -137,7 +137,7 @@ mod tests {
             .time(now);
 
         let val = &valset1[1];
-        let vote = Vote::new(val, &header).round(2);
+        let vote = Vote::new(val.clone(), header.clone()).round(2);
 
         let block_val = val.generate().unwrap();
         let block_header = header.generate().unwrap();
