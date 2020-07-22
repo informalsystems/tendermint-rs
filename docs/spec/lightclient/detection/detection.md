@@ -412,7 +412,8 @@ generated during detection
 
 ```go
 type PoFStore struct {
-	...
+	PrimaryTrace  LightStore
+	SecondaryTraces List of LightStore
 }
 ```
 
@@ -486,25 +487,32 @@ The problem is solved by calling  the function `ForkDetector` with
 a lightstore that contains a light block that has
 just been verified by the verifier. 
 
+
+**TODO::** polish functions below
 ```go
 func Supervisor
-
+{
+loop {
 VerifyToTarget
 result := Forkdetector
 if result.Empty {
   LightStore.Update(testedLB, StateTrusted)
 } 
 else {
-  submit all PoFs to primary
-  
-  + generate PoFs to be sent to secondaries
-
+  For all ls in PoFs.SecondaryTraces {
+     send ls to PoFs.PrimaryTrace[1].Provider
+	 send PrimaryTrace to ls.Provider
+  **panic**
+  } 
+}
+}
 }
 ```
 
 
 ```go
-func ForkDetector(ls LightStore, PoFs PoFStore)  {
+func ForkDetector(ls LightStore, PoFs PoFStore) 
+{
 	testedLB := LightStore.LatestVerified()
 	for i, s range Secondaries {
 		sh := FetchLightBlock(s,testedLB.Height)
@@ -528,12 +536,9 @@ func ForkDetector(ls LightStore, PoFs PoFStore)  {
 				// If return code was EXPIRED it might be too late
 				// to punish, we still report it.
 				
-				pof = new LightNodeProofOfFork
-				pof.ConflictingBlock := get smallest lightblock greater then latestTrusted
-				pof.TrustedBlock.Height = LightStore.LatestTrusted().Height
-				pof.TrustedBlock.BlockID = LightStore.LatestTrusted().Commit.LastBlockID
-				
-				PoFs.Add(pof)
+				pof.ConflictingTrace := LS		
+				PoFs.SecondariyTraces.Add(pof)
+				PoFs.PrimaryTrace = ls // ls can be truncated from ls.LatestTrusted()
 			} else {
 				// s might be faulty or unreachable
 				Replace_Secondary(s)
