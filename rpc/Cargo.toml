@@ -1,12 +1,18 @@
 [package]
-name = "tendermint-rpc"
-version = "0.15.0"
-authors = ["Alexander Simmerl <a.simmerl@gmail.com>"]
-edition = "2018"
-license = "Apache-2.0"
+name       = "tendermint-rpc"
+version    = "0.15.0"
+edition    = "2018"
+license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
 repository = "https://github.com/informalsystems/tendermint-rs"
 readme     = "README.md"
+authors    = [
+  "Sean Braithwaite <sean@informal.systems>",
+  "Ethan Buchman <ethan@coinculture.info>",
+  "Ismail Khoffi <Ismail.Khoffi@gmail.com>",
+  "Romain Ruetschi <romain@informal.systems>",
+  "Alexander Simmerl <a.simmerl@gmail.com>",
+]
 
 description = """
     tenndermint-rpc contains the core types returned by a Tendermint node's RPC endpoint.

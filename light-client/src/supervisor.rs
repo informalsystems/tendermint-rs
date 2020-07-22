@@ -14,12 +14,14 @@ use crate::state::State;
 use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
 use tendermint::lite::{Header, ValidatorSet};
 
+/// Provides an interface to the supervisor for use in downstream code.
 pub trait Handle {
-    /// Get latest trusted block from the [`Supervisor`].
+    /// Get latest trusted block.
     fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
         todo!()
     }
 
+    /// Get the latest status.
     fn latest_status(&self) -> Result<LatestStatus, Error> {
         todo!()
     }
@@ -61,6 +63,7 @@ enum HandleInput {
 pub struct Instance {
     /// The light client for this instance
     pub light_client: LightClient,
+
     /// The state of the light client for this instance
     pub state: State,
 }
@@ -74,10 +77,12 @@ impl Instance {
         }
     }
 
+    /// Get the latest trusted block.
     pub fn latest_trusted(&self) -> Option<LightBlock> {
         self.state.light_store.latest(Status::Trusted)
     }
 
+    /// Trust the given block.
     pub fn trust_block(&mut self, lb: &LightBlock) {
         self.state.light_store.update(lb, Status::Trusted);
     }

@@ -1,3 +1,5 @@
+//! Provides a peer list for use within the `Supervisor`
+
 use crate::{
     bail,
     errors::{Error, ErrorKind},

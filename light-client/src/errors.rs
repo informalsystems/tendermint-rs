@@ -14,52 +14,71 @@ use crate::{
     types::{Height, LightBlock, PeerId, Status},
 };
 
+/// An error raised by this library
 pub type Error = anomaly::Error<ErrorKind>;
 
+/// The various error kinds raised by this library
 #[derive(Debug, Clone, Error, PartialEq, Serialize, Deserialize)]
 pub enum ErrorKind {
+    /// I/O error
     #[error("I/O error: {0}")]
     Io(#[from] IoError),
 
+    /// Store error
     #[error("store error")]
     Store,
 
+    /// No primary
     #[error("no primary")]
     NoPrimary,
 
+    /// No witnesses
     #[error("no witnesses")]
     NoWitnesses,
 
+    /// No witness left
     #[error("no witness left")]
     NoWitnessLeft,
 
+    /// A fork has been detected between some peers
     #[error("fork detected peers={0:?}")]
     ForkDetected(Vec<PeerId>),
 
+    /// No initial trusted state
     #[error("no initial trusted state")]
     NoInitialTrustedState,
 
+    /// No trusted state
     #[error("no trusted state")]
     NoTrustedState(Status),
 
+    /// Target height for the light client lower than latest trusted state height
     #[error("target height ({target_height}) is lower than trusted state ({trusted_height})")]
     TargetLowerThanTrustedState {
+        /// Target height
         target_height: Height,
+        /// Latest trusted state height
         trusted_height: Height,
     },
 
+    /// The trusted state is outside of the trusting period
     #[error("trusted state outside of trusting period")]
     TrustedStateOutsideTrustingPeriod {
+        /// Trusted state
         trusted_state: Box<LightBlock>,
+        /// Light client options
         options: Options,
     },
 
+    /// Bisection failed when reached trusted state
     #[error("bisection for target at height {0} failed when reached trusted state at height {1}")]
     BisectionFailed(Height, Height),
 
+    /// Verification failed for a light block
     #[error("invalid light block: {0}")]
     InvalidLightBlock(#[source] VerificationError),
 
+    /// Internal channel disconnected
     #[error("internal channel disconnected")]
     ChannelDisconnected,
 }
@@ -72,6 +91,7 @@ impl ErrorKind {
     }
 }
 
+/// Extension methods for `ErrorKind`
 pub trait ErrorExt {
     /// Whether this error means that the light block
     /// cannot be trusted w.r.t. the latest trusted state.

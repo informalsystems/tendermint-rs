@@ -1,3 +1,5 @@
+//! Persistent store backed by an on-disk `sled` database.
+
 pub mod utils;
 
 use crate::{
@@ -24,6 +26,7 @@ pub struct SledStore {
 }
 
 impl SledStore {
+    /// Create a new persistent store from a sled database
     pub fn new(db: SledDb) -> Self {
         Self {
             db,
