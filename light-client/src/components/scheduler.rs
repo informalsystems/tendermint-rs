@@ -1,3 +1,5 @@
+//! Provides an interface and default implementation of the `Scheduler` component
+
 use contracts::*;
 
 use crate::store::LightStore;
@@ -8,6 +10,7 @@ use crate::types::Height;
 /// The scheduler is given access to the light store, in order to optionally
 /// improve performance by picking a next block that has already been fetched.
 #[contract_trait]
+#[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
 pub trait Scheduler: Send {
     /// Decides what block to verify next.
     ///
@@ -121,3 +124,4 @@ pub fn valid_schedule(
 fn midpoint(low: Height, high: Height) -> Height {
     low + (high + 1 - low) / 2
 }
+

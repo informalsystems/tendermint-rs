@@ -16,11 +16,13 @@ pub type VerificationTrace = HashMap<Height, HashSet<Height>>;
 pub struct State {
     /// Store for light blocks.
     pub light_store: Box<dyn LightStore>,
+
     /// Records which blocks were needed to verify a target block, eg. during bisection.
     pub verification_trace: VerificationTrace,
 }
 
 impl State {
+    /// Crate a new state from the given light store with an empty verification trace.
     pub fn new(light_store: impl LightStore + 'static) -> Self {
         Self {
             light_store: Box::new(light_store),
@@ -55,3 +57,4 @@ impl State {
         trace
     }
 }
+

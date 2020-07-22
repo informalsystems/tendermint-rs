@@ -1,3 +1,5 @@
+//! Provides an interface and a default implementation of the `Io` component
+
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -16,8 +18,11 @@ use crate::{
     types::{Height, LightBlock, PeerId},
 };
 
+/// Type for selecting either a specific height or the latest one
 pub enum AtHeight {
+    /// A specific height
     At(Height),
+    /// The latest height
     Highest,
 }
 
@@ -31,6 +36,7 @@ impl From<Height> for AtHeight {
     }
 }
 
+/// I/O errors
 #[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 pub enum IoError {
     /// Wrapper for a `tendermint::rpc::Error`.
@@ -55,6 +61,7 @@ impl IoError {
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
 #[contract_trait]
+#[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
 pub trait Io: Send {
     /// Fetch a light block at the given height from the peer with the given peer ID.
     ///
@@ -184,3 +191,4 @@ fn block_on<F: std::future::Future>(
         Ok(rt.block_on(f))
     }
 }
+

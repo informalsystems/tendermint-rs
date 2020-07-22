@@ -25,7 +25,9 @@ pub enum ForkDetection {
 pub enum Fork {
     /// An actual fork was found for this `LightBlock`
     Forked {
+        /// Light block fetched from the primary
         primary: LightBlock,
+        /// Light block fetched from a witness
         witness: LightBlock,
     },
     /// The node has been deemed faulty for this `LightBlock`
@@ -140,3 +142,4 @@ impl ForkDetector for ProdForkDetector {
         }
     }
 }
+

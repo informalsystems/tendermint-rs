@@ -1,3 +1,5 @@
+//! Provides an interface and default implementation for the `CommitValidator` operation
+
 use crate::{
     bail,
     predicates::errors::VerificationError,
@@ -7,13 +9,16 @@ use crate::{
 use tendermint::block::CommitSig;
 use tendermint::lite::types::ValidatorSet as _;
 
+/// Validates the commit associated with a header against a validator set
 pub trait CommitValidator: Send {
+    /// Perform basic validation
     fn validate(
         &self,
         signed_header: &SignedHeader,
         validators: &ValidatorSet,
     ) -> Result<(), VerificationError>;
 
+    /// Perform full validation, only necessary if we do full verification (2/3)
     fn validate_full(
         &self,
         signed_header: &SignedHeader,
@@ -21,6 +26,7 @@ pub trait CommitValidator: Send {
     ) -> Result<(), VerificationError>;
 }
 
+/// Production-ready implementation of a commit validator
 #[derive(Copy, Clone)]
 pub struct ProdCommitValidator;
 
@@ -83,3 +89,4 @@ impl CommitValidator for ProdCommitValidator {
         Ok(())
     }
 }
+

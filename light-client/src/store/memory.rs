@@ -1,3 +1,5 @@
+//! Transient in-memory store
+
 use crate::{
     store::{LightStore, Status},
     types::{Height, LightBlock},
@@ -29,6 +31,7 @@ pub struct MemoryStore {
 }
 
 impl MemoryStore {
+    /// Create a new, empty, in-memory store
     pub fn new() -> Self {
         Self {
             store: BTreeMap::new(),
@@ -81,3 +84,4 @@ impl LightStore for MemoryStore {
         Box::new(light_blocks.into_iter())
     }
 }
+

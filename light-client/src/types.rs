@@ -69,6 +69,9 @@ impl Status {
         ALL
     }
 
+    /// Returns the most trusted status between the two given one.
+    ///
+    /// From least to most trusted: `Failed`, `Unverified`, `Verified`, `Trusted`.
     pub fn most_trusted(a: Self, b: Self) -> Self {
         std::cmp::max(a, b)
     }
@@ -133,6 +136,7 @@ pub struct LatestStatus {
 }
 
 impl LatestStatus {
+    /// Builds a new instance of this struct.
     pub fn new(
         height: Option<u64>,
         block_hash: Option<Hash>,
@@ -184,3 +188,4 @@ mod tests {
         }
     }
 }
+
