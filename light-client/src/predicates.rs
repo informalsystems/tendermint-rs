@@ -127,7 +127,6 @@ pub trait VerificationPredicates: Send {
         clock_drift: Duration,
         now: Time,
     ) -> Result<(), VerificationError> {
-
         ensure!(
             header.time < now + clock_drift,
             VerificationError::HeaderFromTheFuture {
@@ -251,11 +250,7 @@ pub fn verify(
     )?;
 
     // Ensure the header isn't from a future time
-    vp.is_header_from_past(
-        &untrusted.signed_header.header,
-        options.clock_drift,
-        now,
-    )?;
+    vp.is_header_from_past(&untrusted.signed_header.header, options.clock_drift, now)?;
 
     // Ensure the header validator hashes match the given validators
     vp.validator_sets_match(&untrusted, &*hasher)?;
