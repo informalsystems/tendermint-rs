@@ -28,22 +28,15 @@ macro_rules! set_option {
 pub fn parse_as<T: DeserializeOwned>(input: &str) -> Result<T, SimpleError> {
     match serde_json::from_str(input) {
         Ok(res) => Ok(res),
-        Err(_) => Err(SimpleError::new(input)),
+        Err(e) => Err(SimpleError::new(e.to_string())),
     }
 }
 
 pub fn read_stdin() -> Result<String, SimpleError> {
     let mut buffer = String::new();
-    try_with!(io::stdin().read_to_string(&mut buffer), "");
-    Ok(buffer)
-}
-
-/// Tries to parse STDIN as the given type; otherwise returns the input wrapped in SimpleError
-pub fn parse_stdin_as<T: DeserializeOwned>() -> Result<T, SimpleError> {
-    let mut buffer = String::new();
     match io::stdin().read_to_string(&mut buffer) {
-        Err(_) => Err(SimpleError::new("")),
-        Ok(_) => parse_as::<T>(&buffer),
+        Ok(_) => Ok(buffer),
+        Err(e) => Err(SimpleError::new(e.to_string())),
     }
 }
 
