@@ -21,7 +21,7 @@ repository:
 ## Decision Making
 
 When contributing to the project, the following process leads to the best chance of
-landing to changes in master.
+landing the changes in master.
 
 All new contributions should start with a Github
 Issue. The issue helps capture the problem you're trying to solve and allows for
