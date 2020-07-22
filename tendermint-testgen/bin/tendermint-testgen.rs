@@ -76,7 +76,11 @@ fn encode_with_stdin<Opts: Generator<T> + Options, T: serde::Serialize>(
     producer.encode()
 }
 
-fn run_command<Opts: Generator<T> + Options, T: serde::Serialize>(cli: Opts, read_stdin: bool) {
+fn run_command<Opts, T>(cli: Opts, read_stdin: bool)
+where
+    Opts: Generator<T> + Options,
+    T: serde::Serialize,
+{
     let res = if read_stdin {
         encode_with_stdin(&cli)
     } else {

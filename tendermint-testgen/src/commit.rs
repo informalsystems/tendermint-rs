@@ -19,9 +19,9 @@ pub struct Commit {
 }
 
 impl Commit {
-    pub fn new(header: &Header) -> Self {
+    pub fn new(header: Header) -> Self {
         Commit {
-            header: Some(header.clone()),
+            header: Some(header),
             round: None,
             votes: None,
         }

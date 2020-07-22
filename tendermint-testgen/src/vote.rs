@@ -31,11 +31,11 @@ pub struct Vote {
 }
 
 impl Vote {
-    pub fn new(validator: &Validator, header: &Header) -> Self {
+    pub fn new(validator: Validator, header: Header) -> Self {
         Vote {
-            validator: Some(validator.clone()),
+            validator: Some(validator),
             index: None,
-            header: Some(header.clone()),
+            header: Some(header),
             precommit: None,
             height: None,
             time: None,
@@ -43,7 +43,7 @@ impl Vote {
         }
     }
     set_option!(index, u64);
-    set_option!(header, &Header, Some(header.clone()));
+    set_option!(header, Header);
     set_option!(precommit, bool, if precommit { Some(()) } else { None });
     set_option!(height, u64);
     set_option!(time, Time);
