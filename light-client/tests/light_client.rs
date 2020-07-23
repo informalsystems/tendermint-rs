@@ -70,9 +70,10 @@ fn run_test_case(tc: TestCase<LightBlock>) {
         None => false,
     };
 
-    // In Go, default is 10 sec.
+    // For testing, it makes it easier to have smaller clock drift
+    // Same is done in Go - clock_drift is set to 1 sec for these tests
     // Once we switch to the proposer based timestamps, it will probably be a consensus parameter
-    let clock_drift = Duration::from_secs(10);
+    let clock_drift = Duration::from_secs(1);
 
     let trusting_period: Duration = tc.initial.trusting_period.into();
     let tm_now = tc.initial.now;
