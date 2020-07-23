@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use std::fs;
 use std::{
     path::{Path, PathBuf},
-    time::{Duration, SystemTime},
+    time::Duration,
 };
 
 use tendermint_light_client::{
@@ -17,7 +17,7 @@ use tendermint_light_client::{
     state::State,
     store::{memory::MemoryStore, LightStore},
     tests::{Trusted, *},
-    types::{Height, LightBlock, Status, TrustThreshold},
+    types::{Height, LightBlock, Status, Time, TrustThreshold},
 };
 
 // Link to the commit that generated below JSON test files:
@@ -34,7 +34,7 @@ fn verify_single(
     trust_threshold: TrustThreshold,
     trusting_period: Duration,
     clock_drift: Duration,
-    now: SystemTime,
+    now: Time,
 ) -> Result<LightBlock, Verdict> {
     let verifier = ProdVerifier::default();
 
@@ -51,7 +51,7 @@ fn verify_single(
         clock_drift,
     };
 
-    let result = verifier.verify(&input, &trusted_state, &options, now.into());
+    let result = verifier.verify(&input, &trusted_state, &options, now);
 
     match result {
         Verdict::Success => Ok(input),
@@ -76,8 +76,7 @@ fn run_test_case(tc: TestCase<LightBlock>) {
     let clock_drift = Duration::from_secs(1);
 
     let trusting_period: Duration = tc.initial.trusting_period.into();
-    let tm_now = tc.initial.now;
-    let now = tm_now.to_system_time().unwrap();
+    let now = tc.initial.now;
 
     for (i, input) in tc.input.iter().enumerate() {
         println!("  - {}: {}", i, tc.description);
