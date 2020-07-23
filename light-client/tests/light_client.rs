@@ -20,8 +20,8 @@ use tendermint_light_client::{
     types::{Height, LightBlock, Status, Time, TrustThreshold},
 };
 
-// Link to the commit that generated below JSON test files:
-// https://github.com/Shivani912/tendermint/commit/e02f8fd54a278f0192353e54b84a027c8fe31c1e
+// Link to JSON test files repo:
+// https://github.com/informalsystems/conformance-tests
 const TEST_FILES_PATH: &str = "./tests/support/";
 
 fn read_json_fixture(file: impl AsRef<Path>) -> String {
