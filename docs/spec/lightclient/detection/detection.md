@@ -399,9 +399,9 @@ defined at [LCV-DATA-LIGHTBLOCK.1] and [LCV-DATA-LIGHTSTORE.1]. See the [verific
 #### **[LCV-DATA-POF.1]**:
 ```go
 type LightNodeProofOfFork struct {
-    TrustedBlock    LightBlock
-    TraceA          LightStore
-    TraceB          LightStore
+    TrustedBlock      LightBlock
+    PrimaryTrace      LightStore
+    SecondaryTrace    LightStore
 }
 ```
 
@@ -425,9 +425,15 @@ type PoFStore struct {
 ```
 
 
+In additions to the functions defined in **TODO**, the LightStore exposes the following function
 
-
-
+```go
+func (ls LightStore) Subtrace(from int, to int) LightStore
+```
+- Expected postcondition
+   - returns a lightstore that contains all lightblocks *b* from *ls*
+     that satisfy: *from < b.Header.Height <= to*
+----
 
 ### Inter Process Communication
 
@@ -438,13 +444,12 @@ func FetchLightBlock(peer PeerID, height Height) LightBlock
 See the [verification specification][verification] for details.
 
 
-####**[LCD-FUNC-SUBMIT.1]:**
+#### **[LCD-FUNC-SUBMIT.1]:**
 ```go
-func SubmitProofOfFork(peer PeerID, PoF LightNodeProofOfFork) Result
+func SubmitProofOfFork(LightNodeProofOfFork) Result
 ```
 - Implementation remark
-    * Sends to `peer` a `PoF` that contains a header that is not 
-	  on the branch, the full node `peer` is on
+    * submit PoF to primary and secondaries. **TODO** minimize data?
 - Expected precondition
 - Expected postcondition
 - Error condition
@@ -510,10 +515,10 @@ The problem laid out is solved by calling  the function `ForkDetector`
 
 
 
-####**[LCD-FUNC-SUPERVISOR.1]:**
+#### **[LCD-FUNC-SUPERVISOR.1]:**
 
 ```go
-func Sequential-Supervisor {
+func Sequential-Supervisor () (error) {
     loop {
         nextheight := input();
         result := NoResult;
@@ -526,14 +531,16 @@ func Sequential-Supervisor {
 		
         PoFs := Forkdetector(lightStore, PoFs);
         if PoFs.Empty {
+		    // no fork detected with secondaries, we trust the new
+			// lightblock
             LightStore.Update(testedLB, StateTrusted);
         } 
         else {
-            For all ls in PoFs.SecondaryTraces {
-                send ls to PoFs.PrimaryTrace[1].Provider;
-	            send PrimaryTrace to ls.Provider;
-                **panic**;
+		    // there is a fork, we submit the proofs and exit
+            for i, p range PoFs {
+                SubmitProofOfFork(p);
             } 
+            return(ErrorFork);
         }
     }
 }
@@ -557,7 +564,7 @@ func Sequential-Supervisor {
 
 ### Fork Detector
 
-####**[LCD-FUNC-DETECTOR.1]:**
+#### **[LCD-FUNC-DETECTOR.1]:**
 ```go
 func ForkDetector(ls LightStore, PoFs PoFStore) 
 {
@@ -578,16 +585,22 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
 			auxLS.Update(LightStore.LatestTrusted(), StateVerified);
 			auxLS.Update(sh,StateUnverified);
 			LS,result := VerifyToTarget(s, auxLS, sh.Header.Height)
-			if result = ResultSuccess) || result = EXPIRED {
+			if (result = ResultSuccess || result = EXPIRED) {
 				// we verified header sh which is conflicting to hd
 				// there is a fork on the main blockchain.
 				// If return code was EXPIRED it might be too late
 				// to punish, we still report it.
-				
-				pof.ConflictingTrace := LS		
-				PoFs.SecondariyTraces.Add(pof)
-				PoFs.PrimaryTrace = ls // ls can be truncated from ls.LatestTrusted()
-			} else {
+				new pof;
+				pof.TrustedBlock := LightStore.LatestTrusted()	
+				pof.PrimaryTrace := 
+				    LightStore.Subtrace(LightStore.LatestTrusted().Height, 
+					                    testedLB.Height);
+				pof.SecondaryTrace := 
+				    auxLS.Subtrace(LightStore.LatestTrusted().Height, 
+					               testedLB.Height);
+				PoFs.Add(pof);
+			} 
+			else {
 				// s might be faulty or unreachable
 				Replace_Secondary(s)
 				// If a new node is added to secondaries, this
@@ -596,23 +609,16 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
 			}
 		}
 	}
-	if PoFs.isEmpty {
-	    return PoFs
-	} 
-	else {
-		return PoFs
-	}
-
+	return PoFs
 }
-
 ```
-
 - Expected precondition
 	- Secondaries initialized and non-empty
 	- `PoFs` initialized and empty
 - Expected postcondition
     - satisfies [LCD-DIST-INV], [LCD-DIST-LIFE-FORK]
 	- removes faulty secondary if it reports wrong header
+	- **TODO** proof of fork
 - Error condition
     - fails if precondition is violated
 	- fails if [LCV-INV-TP] is violated (no trusted header within
