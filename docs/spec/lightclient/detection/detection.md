@@ -446,18 +446,22 @@ See the [verification specification][verification] for details.
 
 #### **[LCD-FUNC-SUBMIT.1]:**
 ```go
-func SubmitProofOfFork(LightNodeProofOfFork) Result
+func SubmitProofOfFork(pof LightNodeProofOfFork) Result
 ```
 - Implementation remark
-    * submit PoF to primary and secondaries. **TODO** minimize data?
+    - **QUESTION** minimize data? We could submit to the primary only
+      the trace of the secondary, and vice versa
+	- **QUESTION** Should we broadcast the complete evidence to everyone?
 - Expected precondition
+    - none
 - Expected postcondition
+    -  submit evidence to primary and the secondary in *pof* 
 - Error condition
-
+    - none
 
 ### Auxiliary Functions (Local)
 
-####**[LCD-FUNC-REPLACE-P.1]:**
+#### **[LCD-FUNC-REPLACE-PRIMARY.1]:**
 ```go
 Replace_Primary()
 ```
@@ -466,11 +470,13 @@ Replace_Primary()
 - Expected postcondition
     - *primary* is moved to *FaultyNodes*
     - an address *a* from *FullNodes* is assigned to *primary*
+	- **QUESTION** OK: All lightblocks of heights greater than
+      *lightStore.LatestTrusted().Height* are removed from *lightStore*
 - Error condition
     - if precondition is violated
 
 
-####**[LCD-FUNC-REPLACE-S.1]:**
+#### **[LCD-FUNC-REPLACE-SECONDARY.1]:**
 ```go
 Replace_Secondary(addr Address)
 ```
@@ -495,11 +501,11 @@ See the [verification specification][verification] for details.
 
 ## Solution
 
-Shared data of the light client
+### Shared data of the light client
 - a pool of full nodes *FullNodes* that have not been contacted before
 - peer set called *Secondaries*
 - primary
-- LightStore
+- lightStore
 
 
 ### Outline
@@ -511,24 +517,25 @@ The problem laid out is solved by calling  the function `ForkDetector`
      of the supervisor function:
 
 
-**TODO::** polish functions below
-
-
 
 #### **[LCD-FUNC-SUPERVISOR.1]:**
 
 ```go
-func Sequential-Supervisor () (error) {
+func Sequential-Supervisor () (Error) {
     loop {
         nextheight := input();
         result := NoResult;
         while result != ResultSuccess {
             lightStore,result := VerifyToTarget(primary, lightStore, nextheight);
             if result == ResultFailure {
+			    // pick new primary and delete all lightblocks above
+	            // LastTrusted (they have not been cross-checked
+				// **QUESTION**: agreeotherwise we might get blocked
 	            Replace_Primary();
 			}
         }
-		
+		// at this point we have added a verified header of height nextheight
+		// now we cross-check
         PoFs := Forkdetector(lightStore, PoFs);
         if PoFs.Empty {
 		    // no fork detected with secondaries, we trust the new
@@ -546,9 +553,6 @@ func Sequential-Supervisor () (error) {
 }
 ```
 - Implementation remark
-    - sequential logic that fills the lightstore of the
-      supervisor. After verification (`VerifyToTarget`) it
-      cross-checks with secondaries (`Forkdetector`)
 - Expected precondition
     - *lightStore* initialized with trusted header
 	- *PoFs* empty
@@ -569,7 +573,7 @@ func Sequential-Supervisor () (error) {
 func ForkDetector(ls LightStore, PoFs PoFStore) 
 {
 	testedLB := LightStore.LatestVerified()
-	for i, s range Secondaries {
+	for i, secondary range Secondaries {
 		sh := FetchLightBlock(s,testedLB.Height)
 		// as the check below only needs the header, it is sufficient
 		// to download the header rather than the LighBlock
@@ -584,7 +588,7 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
 			auxLS.Init
 			auxLS.Update(LightStore.LatestTrusted(), StateVerified);
 			auxLS.Update(sh,StateUnverified);
-			LS,result := VerifyToTarget(s, auxLS, sh.Header.Height)
+			LS,result := VerifyToTarget(secondary, auxLS, sh.Header.Height)
 			if (result = ResultSuccess || result = EXPIRED) {
 				// we verified header sh which is conflicting to hd
 				// there is a fork on the main blockchain.
@@ -601,11 +605,16 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
 				PoFs.Add(pof);
 			} 
 			else {
-				// s might be faulty or unreachable
-				Replace_Secondary(s)
+				// secondary might be faulty or unreachable
+				// it might fail to provide a trace that supports sh
+				// or time out
+				newSecondary := Replace_Secondary(secondary)
 				// If a new node is added to secondaries, this
-				// should not imply an additional loop iteration.
-				// We assume one of the secondaries is correct.
+				// should imply an additional loop iteration.
+				  // **QUESTION** additional iteration added. OK?
+				  // **QUESTION** should check from oldest trusted lightblock
+				  // I want the invariant that a trusted
+				  // block has been checked with all secondaries
 			}
 		}
 	}
@@ -625,6 +634,8 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
       trusting period
 ----
 
+
+#### **[LCD-INV-SECONDARIES.1]:**
 
 
 ## Correctness arguments
