@@ -392,37 +392,42 @@ and the following transition invariant
 
 ### Data Structures
 
+Lightblocks and LightStores are
+defined at [LCV-DATA-LIGHTBLOCK.1] and [LCV-DATA-LIGHTSTORE.1]. See the [verification specification][verification] for details.
+
+
+#### **[LCV-DATA-POF.1]**:
 ```go
 type LightNodeProofOfFork struct {
-  TrustedBlock        TrustedBlockInfo
-  ConflictingTrace    LightStore
+    TrustedBlock    LightBlock
+    TraceA          LightStore
+    TraceB          LightStore
 }
-
-// info about the LC's last trusted block
-type TrustedBlockInfo struct {
-  Height              int
-  BlockID             BlockID
-} 
 ```
+
+<!-- ```go -->
+<!-- // info about the LC's last trusted block -->
+<!-- type TrustedBlockInfo struct { -->
+<!--   Height              int -->
+<!--   BlockID             BlockID -->
+<!-- }  -->
+<!-- ``` -->
 
 #### **[LCV-DATA-POFSTORE.1]**:
 
-Proofs of Forks are stored in a structure which stores all proofs
-generated during detection
+Proofs of Forks are stored in a structure which stores all  proofs
+generated during detection.
 
 ```go
 type PoFStore struct {
-	PrimaryTrace  LightStore
-	SecondaryTraces List of LightStore
+	...
 }
 ```
 
 
-The following is defined at **[LCV-DATA-LIGHTBLOCK.1]**:
-```go
-// full light block (SignedHeader & ValidatorSet)
-type LightBlock struct {}
-```
+
+
+
 
 ### Inter Process Communication
 
@@ -433,7 +438,7 @@ func FetchLightBlock(peer PeerID, height Height) LightBlock
 See the [verification specification][verification] for details.
 
 
-
+####**[LCD-FUNC-SUBMIT.1]:**
 ```go
 func SubmitProofOfFork(peer PeerID, PoF LightNodeProofOfFork) Result
 ```
@@ -447,9 +452,20 @@ func SubmitProofOfFork(peer PeerID, PoF LightNodeProofOfFork) Result
 
 ### Auxiliary Functions (Local)
 
+####**[LCD-FUNC-REPLACE-P.1]:**
+```go
+Replace_Primary()
+```
+- Expected precondition
+    - *FullNodes* is nonempty
+- Expected postcondition
+    - *primary* is moved to *FaultyNodes*
+    - an address *a* from *FullNodes* is assigned to *primary*
+- Error condition
+    - if precondition is violated
 
 
-
+####**[LCD-FUNC-REPLACE-S.1]:**
 ```go
 Replace_Secondary(addr Address)
 ```
@@ -481,35 +497,67 @@ Shared data of the light client
 - LightStore
 
 
+### Outline
 
-
-The problem is solved by calling  the function `ForkDetector` with
-a lightstore that contains a light block that has
-just been verified by the verifier. 
+The problem laid out is solved by calling  the function `ForkDetector`
+     with a lightstore that contains a light block that has just been
+     verified by the verifier. We start be describing the context on
+     which the fork detector is called by giving a sequential version
+     of the supervisor function:
 
 
 **TODO::** polish functions below
+
+
+
+####**[LCD-FUNC-SUPERVISOR.1]:**
+
 ```go
-func Supervisor
-{
-loop {
-VerifyToTarget
-result := Forkdetector
-if result.Empty {
-  LightStore.Update(testedLB, StateTrusted)
-} 
-else {
-  For all ls in PoFs.SecondaryTraces {
-     send ls to PoFs.PrimaryTrace[1].Provider
-	 send PrimaryTrace to ls.Provider
-  **panic**
-  } 
-}
-}
+func Sequential-Supervisor {
+    loop {
+        nextheight := input();
+        result := NoResult;
+        while result != ResultSuccess {
+            lightStore,result := VerifyToTarget(primary, lightStore, nextheight);
+            if result == ResultFailure {
+	            Replace_Primary();
+			}
+        }
+		
+        PoFs := Forkdetector(lightStore, PoFs);
+        if PoFs.Empty {
+            LightStore.Update(testedLB, StateTrusted);
+        } 
+        else {
+            For all ls in PoFs.SecondaryTraces {
+                send ls to PoFs.PrimaryTrace[1].Provider;
+	            send PrimaryTrace to ls.Provider;
+                **panic**;
+            } 
+        }
+    }
 }
 ```
+- Implementation remark
+    - sequential logic that fills the lightstore of the
+      supervisor. After verification (`VerifyToTarget`) it
+      cross-checks with secondaries (`Forkdetector`)
+- Expected precondition
+    - *lightStore* initialized with trusted header
+	- *PoFs* empty
+- Expected postcondition
+    - runs forever, or
+	- is terminated by user and satisfies LightStore invariant, or **TODO**
+	- has submitted proof of fork upon detecting a fork
+- Error condition
+    - none
+----
 
+**TODO** Discuss how lightstore can be used with different semantics
 
+### Fork Detector
+
+####**[LCD-FUNC-DETECTOR.1]:**
 ```go
 func ForkDetector(ls LightStore, PoFs PoFStore) 
 {
@@ -529,8 +577,8 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
 			auxLS.Init
 			auxLS.Update(LightStore.LatestTrusted(), StateVerified);
 			auxLS.Update(sh,StateUnverified);
-			result := VerifyToTarget(s, auxLS, sh.Header.Height)
-			if result = (LS,ResultSuccess) || (LS,EXPIRED) {
+			LS,result := VerifyToTarget(s, auxLS, sh.Header.Height)
+			if result = ResultSuccess) || result = EXPIRED {
 				// we verified header sh which is conflicting to hd
 				// there is a fork on the main blockchain.
 				// If return code was EXPIRED it might be too late
@@ -569,7 +617,7 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
     - fails if precondition is violated
 	- fails if [LCV-INV-TP] is violated (no trusted header within
       trusting period
-
+----
 
 
 
