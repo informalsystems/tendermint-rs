@@ -400,8 +400,8 @@ defined at [LCV-DATA-LIGHTBLOCK.1] and [LCV-DATA-LIGHTSTORE.1]. See the [verific
 ```go
 type LightNodeProofOfFork struct {
     TrustedBlock      LightBlock
-    PrimaryTrace      LightStore
-    SecondaryTrace    LightStore
+    PrimaryTrace      LightStore   // list of lightblocks is sufficient
+    SecondaryTrace    LightStore   // list of lightblocks is sufficient
 }
 ```
 
@@ -425,8 +425,9 @@ type PoFStore struct {
 ```
 
 
-In additions to the functions defined in **TODO**, the LightStore exposes the following function
+In additions to the functions defined in  the [verification specification][verification], the LightStore exposes the following function
 
+#### **[LCD-FUNC-SUBTRACE.1]:**
 ```go
 func (ls LightStore) Subtrace(from int, to int) LightStore
 ```
@@ -529,9 +530,13 @@ func Sequential-Supervisor () (Error) {
             lightStore,result := VerifyToTarget(primary, lightStore, nextheight);
             if result == ResultFailure {
 			    // pick new primary and delete all lightblocks above
-	            // LastTrusted (they have not been cross-checked
-				// **QUESTION**: agreeotherwise we might get blocked
+	            // LastTrusted (they have not been cross-checked)
+				// **QUESTION**: agreed? otherwise we might get blocked
+				// **QUESTION**: alternatively (preferred) we cross-check we new
+	            //   primary and might need to report a fork 
+				
 	            Replace_Primary();
+				
 			}
         }
 		// at this point we have added a verified header of height nextheight
@@ -608,7 +613,7 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
 				// secondary might be faulty or unreachable
 				// it might fail to provide a trace that supports sh
 				// or time out
-				newSecondary := Replace_Secondary(secondary)
+				newSecondary := Replace_Secondary(secondary,LightStore)
 				// If a new node is added to secondaries, this
 				// should imply an additional loop iteration.
 				  // **QUESTION** additional iteration added. OK?
