@@ -501,11 +501,18 @@ func SubmitProofOfFork(pof LightNodeProofOfFork) Result
 - Expected postcondition
     - submit evidence to primary and the secondary in *pof*, that is,
       to
-	      - `pof.PrimaryTrace[1].Provider`
-		  - `pof.SecondaryTrace[1].Provider`
+	     - `pof.PrimaryTrace[1].Provider`
+	     - `pof.SecondaryTrace[1].Provider`
     - **QUESTION** minimize data? We could submit to the primary only
-      the trace of the secondary, and vice versa
-	
+      the trace of the secondary, and vice versa. Do we need to spell
+      that out here? (Also, by [LCD-INV-TRUSTED-AGREED.1], we do not
+      need to send `pof.TrustedBlock`)
+	- **FUTURE WORK:** we might send *pof* to primary or all
+      secondaries or broadcast to all full nodes. However, in evidence
+      detection this might need that a full node has to check a *pof*
+      where both traces are not theirs. This leads to more complicated
+      logic at the full node, which we do not need right now.
+
 - Error condition
     - none
 
@@ -564,6 +571,7 @@ Replace_Primary()
 - Error condition
     - if precondition is violated
 
+**TODO:** pass in the lightstore to the replace functions
 
 #### **[LCD-FUNC-REPLACE-SECONDARY.1]:**
 ```go
@@ -626,15 +634,10 @@ func Sequential-Supervisor () (Error) {
         result := NoResult;
         while result != ResultSuccess {
             lightStore,result := VerifyToTarget(primary, lightStore, nextheight);
-            if result == ResultFailure {
-			    // pick new primary and delete all lightblocks above
+            if result == ResultFailure {				
+				// pick new primary and delete all lightblocks above
 	            // LastTrusted (they have not been cross-checked)
-				// **QUESTION**: agreed? otherwise we might get blocked
-				// **QUESTION**: alternatively (preferred) we cross-check we new
-	            //   primary and might need to report a fork 
-				
 	            Replace_Primary();
-				
 			}
         }
 		// at this point we have added a verified header of height nextheight
@@ -680,7 +683,8 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
 	for i, secondary range Secondaries {
 	    if OK = CrossCheck(secondary, testedLB) {
 			// header matches. we do nothing.
-		} else {
+		} 
+		else {
 			// [LCD-REQ-REP]
 			// header does not match. there is a situation.
 			// we try to verify sh by querying s
@@ -709,13 +713,7 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
 				// secondary might be faulty or unreachable
 				// it might fail to provide a trace that supports sh
 				// or time out
-				newSecondary := Replace_Secondary(secondary,LightStore)
-				// If a new node is added to secondaries, this
-				// should imply an additional loop iteration.
-				  // **QUESTION** additional iteration added. OK?
-				  // **QUESTION** should check from oldest trusted lightblock
-				  // I want the invariant that a trusted
-				  // block has been checked with all secondaries
+				Replace_Secondary(secondary)
 			}
 		}
 	}
