@@ -136,7 +136,10 @@ impl<T> PeerList<T> {
     /// ## Errors
     /// - If there are no witness left, returns `ErrorKind::NoWitnessLeft`.
     #[post(ret.is_ok() ==> Self::invariant(&self))]
-    pub fn replace_faulty_primary(&mut self) -> Result<PeerId, Error> {
+    pub fn replace_faulty_primary(
+        &mut self,
+        primary_error: Option<Error>,
+    ) -> Result<PeerId, Error> {
         self.faulty_nodes.insert(self.primary);
 
         if let Some(new_primary) = self.witnesses.iter().next().copied() {
@@ -145,7 +148,11 @@ impl<T> PeerList<T> {
             return Ok(new_primary);
         }
 
-        bail!(ErrorKind::NoWitnessLeft)
+        if let Some(err) = primary_error {
+            bail!(ErrorKind::NoWitnessLeft.context(err))
+        } else {
+            bail!(ErrorKind::NoWitnessLeft)
+        }
     }
 }
 
@@ -281,7 +288,7 @@ mod tests {
     fn replace_faulty_primary_succeeds() {
         let mut peer_list = dummy_peer_list();
         assert_eq!(peer_list.primary(), &1);
-        let new_primary = peer_list.replace_faulty_primary();
+        let new_primary = peer_list.replace_faulty_primary(None);
         assert_eq!(new_primary.unwrap(), b());
         assert_eq!(peer_list.primary(), &2);
         assert!(peer_list.witnesses_ids().is_empty());
@@ -290,8 +297,8 @@ mod tests {
     #[test]
     fn replace_faulty_primary_fails_if_no_more_witnesses() {
         let mut peer_list = dummy_peer_list();
-        let _ = peer_list.replace_faulty_primary().unwrap();
-        let new_primary = peer_list.replace_faulty_primary();
+        let _ = peer_list.replace_faulty_primary(None).unwrap();
+        let new_primary = peer_list.replace_faulty_primary(None);
         assert_eq!(
             new_primary.err().map(|e| e.kind().clone()),
             Some(ErrorKind::NoWitnessLeft)
