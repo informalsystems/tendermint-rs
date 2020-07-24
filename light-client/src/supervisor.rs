@@ -253,11 +253,9 @@ impl Supervisor {
                 }
             }
             // Verification failed
-            Err(_err) => {
-                // TODO: Log/record error
-
+            Err(err) => {
                 // Swap primary, and continue with new primary, if there is any witness left.
-                self.peers.replace_faulty_primary()?;
+                self.peers.replace_faulty_primary(Some(err))?;
                 self.verify(height)
             }
         }
