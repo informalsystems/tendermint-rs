@@ -161,10 +161,16 @@ Let *a*, *b*, *c*, be light blocks and *t* a time, we define
 
 implies *b = c*.
 
+----
+
+#### **[TMBC-SIGN-FORK]**
+
 If there exists three light blocks a, b, and c, with 
 *sign-skip-match(a,b,c,t) =
 false* then we have a *slashable fork*.
 
+We call *a* the bifurcation block of the fork.
+----
 
 
 > **TODO:** I think the following definition is
@@ -379,7 +385,7 @@ prefer the above as it is slightly less operational.
 
 
 
-#### **[LCD-INV-NODES]:**
+#### **[LCD-INV-NODES.1]:**
 The detector shall maintain the following invariants:
    - *FullNodes \intersect Secondaries = {}*
    - *FullNodes \intersect FaultyNodes = {}*
@@ -388,6 +394,11 @@ The detector shall maintain the following invariants:
 and the following transition invariant
    - *FullNodes' \union Secondaries' \union FaultyNodes' = FullNodes \union Secondaries \union FaultyNodes*
 
+
+#### **[LCD-INV-TRUSTED-AGREED.1]:**
+
+**TODO** The primary and the secondary agree on LatestTrusted.
+
 ## Solution
 
 ### Data Structures
@@ -395,15 +406,45 @@ and the following transition invariant
 Lightblocks and LightStores are
 defined at [LCV-DATA-LIGHTBLOCK.1] and [LCV-DATA-LIGHTSTORE.1]. See the [verification specification][verification] for details.
 
+The following data structure defines a **proof of fork**. Following
+[TMBC-SIGN-FORK], we require two blocks *b* and *c* for the same
+height that can both be verified from a common root block *a* (using
+the skipping or the sequential method).
+
+**TODO:** move this discussion up to beginning of spec!
+
+> Observe that just two blocks for the same height are not
+> sufficient. One of the blocks may be bogus [TMBC-BOGUS] which does
+> not constitute slashable behavior. 
+
+> Which leads to the question whether the light node should try to do
+fork detection on its initial block (from subjective
+initialization). This could be done by doing backwards verification
+(with the hashes) until a bifurcation block is found. 
+While there are scenarios where a
+fork could be found, there is also the scenario where a faulty full
+node feeds the light node with bogus light blocks and forces the light
+node to check hashes until a bogus chain is out of the trusting period.
+As a result, the light client
+should not try to establish a fork for its initial header.
 
 #### **[LCV-DATA-POF.1]**:
 ```go
 type LightNodeProofOfFork struct {
     TrustedBlock      LightBlock
-    PrimaryTrace      LightStore   // list of lightblocks is sufficient
-    SecondaryTrace    LightStore   // list of lightblocks is sufficient
+    PrimaryTrace      []LightBlock
+    SecondaryTrace    []LightBlock
 }
 ```
+
+> [LCV-DATA-POF.1] mirrors the definition [TMBC-SIGN-FORK]:
+> *TrustedBlock* corresponds to *a*, and *PrimaryTrace* and *SecondaryTrace*
+> are traces to two blocks *b* and *c*. The traces establish that both
+> *skip-root(a,b,t)* and *skip-root(a,c,t)* are satisfied.
+
+
+
+
 
 <!-- ```go -->
 <!-- // info about the LC's last trusted block -->
@@ -425,7 +466,9 @@ type PoFStore struct {
 ```
 
 
-In additions to the functions defined in  the [verification specification][verification], the LightStore exposes the following function
+In additions to the functions defined in 
+the [verification specification][verification], the 
+LightStore exposes the following function
 
 #### **[LCD-FUNC-SUBTRACE.1]:**
 ```go
@@ -435,6 +478,9 @@ func (ls LightStore) Subtrace(from int, to int) LightStore
    - returns a lightstore that contains all lightblocks *b* from *ls*
      that satisfy: *from < b.Header.Height <= to*
 ----
+
+
+
 
 ### Inter Process Communication
 
@@ -450,29 +496,71 @@ See the [verification specification][verification] for details.
 func SubmitProofOfFork(pof LightNodeProofOfFork) Result
 ```
 - Implementation remark
-    - **QUESTION** minimize data? We could submit to the primary only
-      the trace of the secondary, and vice versa
-	- **QUESTION** Should we broadcast the complete evidence to everyone?
 - Expected precondition
     - none
 - Expected postcondition
-    -  submit evidence to primary and the secondary in *pof* 
+    - submit evidence to primary and the secondary in *pof*, that is,
+      to
+	      - `pof.PrimaryTrace[1].Provider`
+		  - `pof.SecondaryTrace[1].Provider`
+    - **QUESTION** minimize data? We could submit to the primary only
+      the trace of the secondary, and vice versa
+	
 - Error condition
     - none
 
 ### Auxiliary Functions (Local)
 
+#### **[LCD-FUNC-CROSS-CHECK.1]:**
+
+```go
+func CrossCheck(peer PeerID, testedLB LightBlock) (result) {
+	sh := FetchLightBlock(peer, testedLB.Height);
+		// as the check below only needs the header, it is sufficient
+		// to download the header rather than the LighBlock
+    if testedLB.Header == sh.Header {
+	    return OK
+	}
+	else {
+	    return DoesNotMatch
+	}
+}
+```
+- Implementation remark
+- Expected precondition
+- Expected postcondition
+- Error condition
+
+
 #### **[LCD-FUNC-REPLACE-PRIMARY.1]:**
 ```go
 Replace_Primary()
 ```
+- Implementation remark
+    - the primary is replaced by a secondary, and lightblocks above
+      trusted blocks are removed
+	- to maintain a constant size of secondaries, at this point we
+      might need to 
+	     - pick a new secondary nsec
+		 - maintain [LCD-INV-TRUSTED-AGREED.1], that is,
+		    - call `CrossCheck(nsec,lightStore.LatestTrusted()`.
+              If it matches we are OK, otherwise
+			     - we might just repeat with another full node as new secondary
+				 - try to do fork detection from some possibly old
+                   lightblock in store. (Might be the approach for the
+                   light node that assumes to be connected to correct
+                   full nodes only from time to time)
+	  
 - Expected precondition
     - *FullNodes* is nonempty
+	
 - Expected postcondition
     - *primary* is moved to *FaultyNodes*
-    - an address *a* from *FullNodes* is assigned to *primary*
-	- **QUESTION** OK: All lightblocks of heights greater than
-      *lightStore.LatestTrusted().Height* are removed from *lightStore*
+    - all lightblocks with height greater than
+      lightStore.LatestTrusted().Height are removed from *lightStore*.
+    - a secondary *s* is moved from *Secondaries* to primary
+> this ensures that *s* agrees on the Last Trusted State
+
 - Error condition
     - if precondition is violated
 
@@ -481,6 +569,16 @@ Replace_Primary()
 ```go
 Replace_Secondary(addr Address)
 ```
+- Implementation remark
+     - maintain [LCD-INV-TRUSTED-AGREED.1], that is,
+		 - call `CrossCheck(nsec,lightStore.LatestTrusted()`.
+           If it matches we are OK, otherwise
+			   - we might just repeat with another full node as new secondary
+			   - try to do fork detection from some possibly old
+                   lightblock in store. (Might be the approach for the
+                   light node that assumes to be connected to correct
+                   full nodes only from time to time)
+
 - Expected precondition
     - *FullNodes* is nonempty
 - Expected postcondition
@@ -573,16 +671,14 @@ func Sequential-Supervisor () (Error) {
 
 ### Fork Detector
 
+
 #### **[LCD-FUNC-DETECTOR.1]:**
 ```go
 func ForkDetector(ls LightStore, PoFs PoFStore) 
 {
 	testedLB := LightStore.LatestVerified()
 	for i, secondary range Secondaries {
-		sh := FetchLightBlock(s,testedLB.Height)
-		// as the check below only needs the header, it is sufficient
-		// to download the header rather than the LighBlock
-		if testedLB.Header == sh.Header {
+	    if OK = CrossCheck(secondary, testedLB) {
 			// header matches. we do nothing.
 		} else {
 			// [LCD-REQ-REP]
@@ -599,7 +695,7 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
 				// there is a fork on the main blockchain.
 				// If return code was EXPIRED it might be too late
 				// to punish, we still report it.
-				new pof;
+				pof = new LightNodeProofOfFork;
 				pof.TrustedBlock := LightStore.LatestTrusted()	
 				pof.PrimaryTrace := 
 				    LightStore.Subtrace(LightStore.LatestTrusted().Height, 
@@ -638,9 +734,6 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
 	- fails if [LCV-INV-TP] is violated (no trusted header within
       trusting period
 ----
-
-
-#### **[LCD-INV-SECONDARIES.1]:**
 
 
 ## Correctness arguments
