@@ -97,7 +97,7 @@ impl Generator<block::Header> for Header {
             version: block::header::Version { block: 0, app: 0 },
             chain_id,
             height: block::Height(self.height.unwrap_or(1)),
-            time: self.time.unwrap_or_else(|| Time::now()),
+            time: self.time.unwrap_or_else(Time::now),
             last_block_id: None,
             last_commit_hash: None,
             data_hash: None,
