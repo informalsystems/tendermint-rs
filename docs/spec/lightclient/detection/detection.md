@@ -322,7 +322,8 @@ implies *b = c*.
 If there exists three light blocks a, b, and c, with 
 *sign-skip-match(a,b,c,t) =
 false* then we have a *slashable fork*.  
-We call *a* a bifurcation block of the fork.
+We call *a* a bifurcation block of the fork.  
+We say we have **a fork at height** *b.Header.Height*.
 
 > The lightblock *a* need not be unique, that is, a there may be
 > several blocks that satisfy the above requirement for blocks *b* and
@@ -489,34 +490,43 @@ The  detector gets as input a lightstore *lightStore*.
 Let *h-verified = lightStore.LatestVerified().Height* and
      *h-trust=lightStore.LatestTrusted().Height* (see
      [LCV-DATA-LIGHTSTORE]).
-It queries the secondaries for  headers at height *h-verified*.
-The  detector returns a set *Forks*, and should satisfy the following
+It queries the secondaries for headers at height *h-verified*.
+The  detector returns a set *PoF* of *Proof of Forks*, and should satisfy the following
      temporal formulas:
 
 
 #### **[LCD-DIST-INV.1]**
 
-If there is no fork at height *h-verified*, then the detector should
-return the empty set.
+If there is no fork at height *h-verified* ([TMBC-SIGN-FORK.1]), 
+then the detector should return the empty set.
 
-
-**TODO:** be precise about what a fork is. 
-
-**TODO:** add requirements about stateTrusted
+> If the empty set is returned the supervisor will change the state of
+> the header at height *h-verified* to *stateTrusted*.
 
 #### **[LCD-DIST-LIVE-FORK.1]**
 
-If there is a fork at height *h*, with *h-trust < h <= h-verified*, and
+If there is a fork at height *h-verified*, and
 there are two correct full nodes *i* and *j* that are
   - on different branches, and
-  - primary or secondary,
+  - *i* is primary and
+  - *j* is secondary,
 
 then the  detector eventually outputs the fork.
 
-**TODO:** We can weaken the above to "the (not-necessarily correct)
-primary provided branch A, and a correct secondary is on branch B". I
-prefer the above as it is slightly less operational.
+#### **[LCD-DIST-LIVE-FORK-FAULTY.1]**
 
+If there is a fork at height *h-verified*, and
+there is a correct secondary that is on a different branch than the
+primary reported,
+then the  detector eventually outputs the fork.
+
+> The above property is quite operational ("Than the primary
+> reported"), but it captures quite closely the requirement. As the
+> fork detector only makes sense in a distributed setting, and does
+> not have a sequential specification, less "pure"
+> specification are acceptable.
+
+> These properties capture the following operational requirement:
 
 > #### **[LCD-REQ-REP.1]**
 > If the  detector observes two conflicting headers for height *h*, 
@@ -551,9 +561,23 @@ and the following transition invariant
    - *FullNodes' \union Secondaries' \union FaultyNodes' = FullNodes \union Secondaries \union FaultyNodes*
 
 
+> The following invariant is very useful for reasoning, and underlies
+> many intuition when we 
+
 #### **[LCD-INV-TRUSTED-AGREED.1]:**
 
-**TODO** The primary and the secondary agree on LatestTrusted.
+It is always the case the light client has downloaded a lightblock for height
+*lightStore.LatestTrusted().Height* 
+from each of the current primary and the secondary, that all reported
+the identical lightblock for that height.
+
+> In the above, I guess "the identical" might be replaced with "a
+> matching" to cover commits that might be different.
+
+> The above requires us that before we pick a new secondary, we have to
+> query the secondary for the header of height 
+> *lightStore.LatestTrusted().Height*.
+
 
 ## Solution
 
@@ -562,11 +586,16 @@ and the following transition invariant
 Lightblocks and LightStores are
 defined at [LCV-DATA-LIGHTBLOCK.1] and [LCV-DATA-LIGHTSTORE.1]. See the [verification specification][verification] for details.
 
-The following data structure defines a **proof of fork**. Following
-[TMBC-SIGN-FORK.1], we require two blocks *b* and *c* for the same
-height that can both be verified from a common root block *a* (using
-the skipping or the sequential method).
+> The following data structure [LCV-DATA-POF.1]
+> defines a **proof of fork**. Following
+> [TMBC-SIGN-FORK.1], we require two blocks *b* and *c* for the same
+> height that can both be verified from a common root block *a* (using
+> the skipping or the sequential method).
 
+> [LCV-DATA-POF.1] mirrors the definition [TMBC-SIGN-FORK.1]:
+> *TrustedBlock* corresponds to *a*, and *PrimaryTrace* and *SecondaryTrace*
+> are traces to two blocks *b* and *c*. The traces establish that both
+> *skip-root(a,b,t)* and *skip-root(a,c,t)* are satisfied.
 
 
 #### **[LCV-DATA-POF.1]**:
@@ -578,10 +607,6 @@ type LightNodeProofOfFork struct {
 }
 ```
 
-> [LCV-DATA-POF.1] mirrors the definition [TMBC-SIGN-FORK.1]:
-> *TrustedBlock* corresponds to *a*, and *PrimaryTrace* and *SecondaryTrace*
-> are traces to two blocks *b* and *c*. The traces establish that both
-> *skip-root(a,b,t)* and *skip-root(a,c,t)* are satisfied.
 
 
 
@@ -636,6 +661,8 @@ See the [verification specification][verification] for details.
 ```go
 func SubmitProofOfFork(pof LightNodeProofOfFork) Result
 ```
+**TODO:** finalize what this should do, and what detail of
+  specification we need.
 - Implementation remark
 - Expected precondition
     - none
@@ -675,6 +702,7 @@ func CrossCheck(peer PeerID, testedLB LightBlock) (result) {
 }
 ```
 - Implementation remark
+    - download block and compare to previously downloaded one.
 - Expected precondition
 - Expected postcondition
 - Error condition
@@ -684,17 +712,19 @@ func CrossCheck(peer PeerID, testedLB LightBlock) (result) {
 ```go
 Replace_Primary()
 ```
+**TODO:** formalize conditions
 - Implementation remark
     - the primary is replaced by a secondary, and lightblocks above
       trusted blocks are removed
 	- to maintain a constant size of secondaries, at this point we
       might need to 
-	     - pick a new secondary nsec
+	     - pick a new secondary *nsec*
 		 - maintain [LCD-INV-TRUSTED-AGREED.1], that is,
 		    - call `CrossCheck(nsec,lightStore.LatestTrusted()`.
               If it matches we are OK, otherwise
-			     - we might just repeat with another full node as new secondary
-				 - try to do fork detection from some possibly old
+			     - we repeat with another full node as new
+                   secondary candidate
+				 - **FUTURE:** try to do fork detection from some possibly old
                    lightblock in store. (Might be the approach for the
                    light node that assumes to be connected to correct
                    full nodes only from time to time)
@@ -712,24 +742,24 @@ Replace_Primary()
 - Error condition
     - if precondition is violated
 
-**TODO:** pass in the lightstore to the replace functions
 
 #### **[LCD-FUNC-REPLACE-SECONDARY.1]:**
 ```go
 Replace_Secondary(addr Address)
 ```
+**TODO:** formalize conditions
 - Implementation remark
      - maintain [LCD-INV-TRUSTED-AGREED.1], that is,
 		 - call `CrossCheck(nsec,lightStore.LatestTrusted()`.
            If it matches we are OK, otherwise
-			   - we might just repeat with another full node as new secondary
-			   - try to do fork detection from some possibly old
-                   lightblock in store. (Might be the approach for the
-                   light node that assumes to be connected to correct
-                   full nodes only from time to time)
+		   - we might just repeat with another full node as new secondary
+		   - **FUTURE:** try to do fork detection from some possibly old
+             lightblock in store. (Might be the approach for the
+             light node that assumes to be connected to correct
+             full nodes only from time to time)
 
 - Expected precondition
-    - *FullNodes* is nonempty
+  - *FullNodes* is nonempty
 - Expected postcondition
     - addr is moved from *Secondaries* to *FaultyNodes*
     - an address *a* is moved from *FullNodes* to *Secondaries*
@@ -825,13 +855,15 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
 	return PoFs
 }
 ```
+**TODO:** formalize conditions
 - Expected precondition
 	- Secondaries initialized and non-empty
 	- `PoFs` initialized and empty
+	- *lightStore.LatestTrusted().Height < lightStore.LatestVerified().Height*
 - Expected postcondition
     - satisfies [LCD-DIST-INV.1], [LCD-DIST-LIFE-FORK.1]
 	- removes faulty secondary if it reports wrong header
-	- **TODO** proof of fork
+	- **TODO** submit proof of fork
 - Error condition
     - fails if precondition is violated
 	- fails if [LCV-INV-TP] is violated (no trusted header within
