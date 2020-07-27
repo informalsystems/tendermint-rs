@@ -1,3 +1,5 @@
+//! Provides an interface and default implementation of the `Verifier` component
+
 use crate::predicates as preds;
 use crate::{
     errors::ErrorExt,
@@ -70,6 +72,7 @@ pub struct ProdVerifier {
 }
 
 impl ProdVerifier {
+    /// Constructs a new instance of this struct
     pub fn new(
         predicates: impl VerificationPredicates + 'static,
         voting_power_calculator: impl VotingPowerCalculator + 'static,

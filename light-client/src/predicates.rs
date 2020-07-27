@@ -25,6 +25,7 @@ impl VerificationPredicates for ProdPredicates {}
 /// This enables test implementations to only override a single method rather than
 /// have to re-define every predicate.
 pub trait VerificationPredicates: Send {
+    /// Compare the provided validator_set_hash against the hash produced from hashing the validator set.
     fn validator_sets_match(
         &self,
         light_block: &LightBlock,
@@ -43,6 +44,7 @@ pub trait VerificationPredicates: Send {
         Ok(())
     }
 
+    /// Check that the hash of the next validator set in the header match the actual one.
     fn next_validators_match(
         &self,
         light_block: &LightBlock,
@@ -61,6 +63,7 @@ pub trait VerificationPredicates: Send {
         Ok(())
     }
 
+    /// Check that the hash of the header in the commit matches the actual one.
     fn header_matches_commit(
         &self,
         signed_header: &SignedHeader,
@@ -79,6 +82,7 @@ pub trait VerificationPredicates: Send {
         Ok(())
     }
 
+    /// Validate the commit using the given commit validator.
     fn valid_commit(
         &self,
         signed_header: &SignedHeader,
@@ -91,33 +95,41 @@ pub trait VerificationPredicates: Send {
         Ok(())
     }
 
+    /// Check that the trusted header is within the trusting period, adjusting for clock drift.
     fn is_within_trust_period(
         &self,
-        header: &Header,
+        trusted_header: &Header,
         trusting_period: Duration,
+        now: Time,
+    ) -> Result<(), VerificationError> {
+        let expires_at = trusted_header.time + trusting_period;
+        ensure!(
+            expires_at > now,
+            VerificationError::NotWithinTrustPeriod { expires_at, now }
+        );
+
+        Ok(())
+    }
+
+    /// Check that the untrusted header is from past.
+    fn is_header_from_past(
+        &self,
+        untrusted_header: &Header,
         clock_drift: Duration,
         now: Time,
     ) -> Result<(), VerificationError> {
         ensure!(
-            header.time < now + clock_drift,
+            untrusted_header.time < now + clock_drift,
             VerificationError::HeaderFromTheFuture {
-                header_time: header.time,
+                header_time: untrusted_header.time,
                 now
-            }
-        );
-
-        let expires_at = header.time + trusting_period;
-        ensure!(
-            expires_at > now,
-            VerificationError::NotWithinTrustPeriod {
-                at: expires_at,
-                now,
             }
         );
 
         Ok(())
     }
 
+    /// Check that time passed monotonically between the trusted header and the untrusted one.
     fn is_monotonic_bft_time(
         &self,
         untrusted_header: &Header,
@@ -134,6 +146,7 @@ pub trait VerificationPredicates: Send {
         Ok(())
     }
 
+    /// Check that the height increased between the trusted header and the untrusted one.
     fn is_monotonic_height(
         &self,
         untrusted_header: &Header,
@@ -152,6 +165,8 @@ pub trait VerificationPredicates: Send {
         Ok(())
     }
 
+    /// Check that there is enough validators overlap between the trusted validator set
+    /// and the untrusted signed header.
     fn has_sufficient_validators_overlap(
         &self,
         untrusted_sh: &SignedHeader,
@@ -163,6 +178,8 @@ pub trait VerificationPredicates: Send {
         Ok(())
     }
 
+    /// Check that there is enough signers overlap between the given, untrusted validator set
+    /// and the untrusted signed header.
     fn has_sufficient_signers_overlap(
         &self,
         untrusted_sh: &SignedHeader,
@@ -173,6 +190,8 @@ pub trait VerificationPredicates: Send {
         Ok(())
     }
 
+    /// Check that the hash of the next validator set in the trusted block matches
+    /// the hash of the validator set in the untrusted one.
     fn valid_next_validator_set(
         &self,
         light_block: &LightBlock,
@@ -217,9 +236,11 @@ pub fn verify(
     vp.is_within_trust_period(
         &trusted.signed_header.header,
         options.trusting_period,
-        options.clock_drift,
         now,
     )?;
+
+    // Ensure the header isn't from a future time
+    vp.is_header_from_past(&untrusted.signed_header.header, options.clock_drift, now)?;
 
     // Ensure the header validator hashes match the given validators
     vp.validator_sets_match(&untrusted, &*hasher)?;

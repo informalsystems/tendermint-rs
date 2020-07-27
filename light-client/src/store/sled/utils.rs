@@ -21,6 +21,7 @@ pub fn key_value<K, V>(prefix: impl Into<Vec<u8>>) -> KeyValueDb<K, V> {
 pub struct SingleDb<V>(KeyValueDb<(), V>);
 
 impl<V> SingleDb<V> {
+    /// Create a view over the database for storing a single value at the given prefix.
     pub fn new(prefix: impl Into<Vec<u8>>) -> Self {
         Self(KeyValueDb::new(prefix))
     }
@@ -30,10 +31,12 @@ impl<V> SingleDb<V>
 where
     V: Serialize + DeserializeOwned,
 {
+    /// Get the value associated with this view in the given sled database.
     pub fn get(&self, db: &sled::Db) -> Result<Option<V>, Error> {
         self.0.get(&db, &())
     }
 
+    /// Set a value associated with this view in the given sled database.
     pub fn set(&self, db: &sled::Db, value: &V) -> Result<(), Error> {
         self.0.insert(&db, &(), &value)
     }
@@ -47,6 +50,7 @@ pub struct KeyValueDb<K, V> {
 }
 
 impl<K, V> KeyValueDb<K, V> {
+    /// Create a view over the database for storing key/value pairs at the given prefix.
     pub fn new(prefix: impl Into<Vec<u8>>) -> Self {
         Self {
             prefix: prefix.into(),
@@ -66,6 +70,7 @@ where
         prefix_bytes
     }
 
+    /// Get the value associated with a key within this view in the given sled database.
     pub fn get(&self, db: &sled::Db, key: &K) -> Result<Option<V>, Error> {
         let key_bytes = serde_cbor::to_vec(&key).map_err(|e| ErrorKind::Store.context(e))?;
         let prefixed_key_bytes = self.prefixed_key(key_bytes);
@@ -84,6 +89,7 @@ where
         }
     }
 
+    /// Check whether there exists a key within this view in the given sled database.
     pub fn contains_key(&self, db: &sled::Db, key: &K) -> Result<bool, Error> {
         let key_bytes = serde_cbor::to_vec(&key).map_err(|e| ErrorKind::Store.context(e))?;
         let prefixed_key_bytes = self.prefixed_key(key_bytes);
@@ -95,6 +101,7 @@ where
         Ok(exists)
     }
 
+    /// Insert a value associated with a key within this view in the given sled database.
     pub fn insert(&self, db: &sled::Db, key: &K, value: &V) -> Result<(), Error> {
         let key_bytes = serde_cbor::to_vec(&key).map_err(|e| ErrorKind::Store.context(e))?;
         let prefixed_key_bytes = self.prefixed_key(key_bytes);
@@ -107,6 +114,7 @@ where
         Ok(())
     }
 
+    /// Remove the value associated with a key within this view in the given sled database.
     pub fn remove(&self, db: &sled::Db, key: &K) -> Result<(), Error> {
         let key_bytes = serde_cbor::to_vec(&key).map_err(|e| ErrorKind::Store.context(e))?;
         let prefixed_key_bytes = self.prefixed_key(key_bytes);
@@ -117,6 +125,7 @@ where
         Ok(())
     }
 
+    /// Iterate over all values within this view in the given sled database.
     pub fn iter(&self, db: &sled::Db) -> impl DoubleEndedIterator<Item = V> {
         db.iter()
             .flatten()

@@ -1,3 +1,5 @@
+//! Provides an interface and a default implementation of the `Clock` component
+
 use crate::types::Time;
 
 /// Abstracts over the current time.
