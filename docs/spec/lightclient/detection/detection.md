@@ -13,7 +13,7 @@ This document contains:
 
 ## Results of Discussions and Decisions 
 
-- Generating a minimal proof of fork is too costly at the light client
+- Generating a minimal proof of fork (as suggested in [Issue #5083](https://github.com/tendermint/tendermint/issues/5083)) is too costly at the light client
     - we do not know all lightblocks from the primary
 	- therefore there are many scenarios. we might even need to ask
       the primary again for additional lightblocks to isolate the
@@ -52,6 +52,23 @@ This document contains:
   catch if the primary installs a bad light block
     - We do not check secondary against secondary
     - For each secondary, we check the primary against one secondary
+
+
+- Observe that just two blocks for the same height are not
+sufficient proof of fork.
+One of the blocks may be bogus [TMBC-BOGUS.1] which does
+not constitute slashable behavior.  
+Which leads to the question whether the light node should try to do
+fork detection on its initial block (from subjective
+initialization). This could be done by doing backwards verification
+(with the hashes) until a bifurcation block is found. 
+While there are scenarios where a
+fork could be found, there is also the scenario where a faulty full
+node feeds the light node with bogus light blocks and forces the light
+node to check hashes until a bogus chain is out of the trusting period.
+As a result, the light client
+should not try to detect a fork for its initial header. **The initial
+header must be trusted as is.**
 
 
 # Light Client Sequential Supervisor
@@ -299,16 +316,17 @@ Let *a*, *b*, *c*, be light blocks and *t* a time, we define
 
 implies *b = c*.
 
-----
 
 #### **[TMBC-SIGN-FORK.1]**
 
 If there exists three light blocks a, b, and c, with 
 *sign-skip-match(a,b,c,t) =
-false* then we have a *slashable fork*.
+false* then we have a *slashable fork*.  
+We call *a* a bifurcation block of the fork.
 
-We call *a* the bifurcation block of the fork.
-----
+> The lightblock *a* need not be unique, that is, a there may be
+> several blocks that satisfy the above requirement for blocks *b* and
+> *c*.
 
 
 > **TODO:** I think the following definition is
@@ -549,22 +567,7 @@ The following data structure defines a **proof of fork**. Following
 height that can both be verified from a common root block *a* (using
 the skipping or the sequential method).
 
-**TODO:** move this discussion up to beginning of spec!
 
-> Observe that just two blocks for the same height are not
-> sufficient. One of the blocks may be bogus [TMBC-BOGUS.1] which does
-> not constitute slashable behavior. 
-
-> Which leads to the question whether the light node should try to do
-fork detection on its initial block (from subjective
-initialization). This could be done by doing backwards verification
-(with the hashes) until a bifurcation block is found. 
-While there are scenarios where a
-fork could be found, there is also the scenario where a faulty full
-node feeds the light node with bogus light blocks and forces the light
-node to check hashes until a bogus chain is out of the trusting period.
-As a result, the light client
-should not try to establish a fork for its initial header.
 
 #### **[LCV-DATA-POF.1]**:
 ```go
