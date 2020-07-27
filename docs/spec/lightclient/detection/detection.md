@@ -1,44 +1,182 @@
 ***This an unfinished draft. Comments are welcome!***
 
-## Decisions with Zarko
+This document contains:
+
+- the outcome of recent discussion
+- a sketch of the light client supervisor to provide the context in
+  which fork detection happens
+- a discussion about lightstore semantics
+- a draft of the light node fork detection including "proof of fork"
+  definition, that is, the data structure to submit evidence to full
+  nodes.
+  
+
+## Results of Discussions and Decisions 
 
 - Generating a minimal proof of fork is too costly at the light client
     - we do not know all lightblocks from the primary
 	- therefore there are many scenarios. we might even need to ask
       the primary again for additional lightblocks to isolate the
-      branch. As the main goal is to catch misbehavior of the primary,
+      branch. 
+> For instance, the light node starts with block at height 1 and the
+> primary provides a block of height 10 that the light node can
+> verify immediately. In cross-checking, a secondary now provides a
+> conflicting header b10 of height 10 that needs another header b5
+> of height 5 to
+> verify. Now, in order for the light node to convince the primary:
+>   - The light node cannot just sent b5, as it is not clear whether
+>     the fork happened before or after 5
+>   - The light node cannot just send b10, as the primary would also 
+>     need  b5 for verification
+>   - In order to minimize the evidence, the light node may try to
+>     figure out where the branch happens, e.g., by asking the primary
+>     for height 5 (it might be that more queries are required, also
+>     to the secondary. However, assuming that in this scenario the
+>     primary is faulty it may not respond.
+	  
+	  As the main goal is to catch misbehavior of the primary,
       evidence generation and punishment must not depend on their
-      cooperation. 
+      cooperation. So the moment we have proof of fork (even if it
+      contains several light blocks) we should submit right away.
 
 
-- proof of fork is a trace of lightblocks that verifies a block
-  different from the one the full node knows
+- decision: "full" proof of fork consists of two traces that origin in the
+  same lightblock and lead to conflicting headers of the same height.
+  
+- For submission of proof of fork, we may do some optimizations, for
+  instance, we might just submit  a trace of lightblocks that verifies a block
+  different from the one the full node knows (we do not send the trace
+  the primary gave us back to the primary)
 
-- For each secondary, we check the primary against one secondary
-- We do not check secondary against secondary
-- the reason is that the attack is via the primary. We only try to
+- The light client attack is via the primary. Thus we try to
   catch if the primary installs a bad light block
+    - We do not check secondary against secondary
+    - For each secondary, we check the primary against one secondary
 
-## TODOs
 
-- the main logic, i.e., describing what happens when the function of
-  the current spec returns. If a fork is detected, we need to report
-  evidence (and shut down light client?). + pre and post conditions on
-  lightstore when `VerifyToTarget` or detector are called.
-  
-- We should clarify what is the expectation of VerifyToTarget so if it
-  returns TimeoutError it can be assumed faulty. I guess that
-  VerifyToTarget with correct full node should never terminate with
-  TimeoutError.
+# Light Client Sequential Supervisor
 
-- clarify EXPIRED case. Can we always punish? Can we give sufficient
-  conditions. 
-  
-- Discussion with end-user API in the case of
-    - user uses trusted blocks only
-	- user uses verified blocks (may need to roll back)
+**TODO:** decide where (into which specification) to put the
+following:
 
--
+
+We describe the context on which the fork detector is called by giving
+a sequential version of the supervisor function.
+Roughly, it alternates two phases namely:
+   - Light Client Verification. As a result, a header of the required
+     height has been downloaded from and verified with the primary
+   - Light Client Fork Detections. As a result the header has been
+     cross-checked with the secondaries. In case the is a fork we
+     submit "proof of fork" and exit.
+   
+	 
+
+
+
+
+#### **[LC-FUNC-SUPERVISOR.1]:**
+
+```go
+func Sequential-Supervisor () (Error) {
+    loop {
+	    // get the next height
+        nextheight := input();
+		
+		// Verify
+        result := NoResult;
+        while result != ResultSuccess {
+            lightStore,result := VerifyToTarget(primary, lightStore, nextheight);
+            if result == ResultFailure {				
+				// pick new primary (promote a secondary to primary)
+				/// and delete all lightblocks above
+	            // LastTrusted (they have not been cross-checked)
+	            Replace_Primary();
+			}
+        }
+		
+		// Cross-check
+        PoFs := Forkdetector(lightStore, PoFs);
+        if PoFs.Empty {
+		    // no fork detected with secondaries, we trust the new
+			// lightblock
+            LightStore.Update(testedLB, StateTrusted);
+        } 
+        else {
+		    // there is a fork, we submit the proofs and exit
+            for i, p range PoFs {
+                SubmitProofOfFork(p);
+            } 
+            return(ErrorFork);
+        }
+    }
+}
+```
+**TODO:** finish conditions
+- Implementation remark
+- Expected precondition
+    - *lightStore* initialized with trusted header
+	- *PoFs* empty
+- Expected postcondition
+    - runs forever, or
+	- is terminated by user and satisfies LightStore invariant, or **TODO**
+	- has submitted proof of fork upon detecting a fork
+- Error condition
+    - none
+----
+
+# Semantics of the LightStore
+
+Currently, a lightblock in the lightstore can be in one of the
+following states:
+- StateUnverified
+- StateVerified
+- StateFailed
+- StateTrusted
+
+The intuition is that `StateVerified` captures that the lightblock has
+been verified with the primary, and `StateTrusted` is the state after
+successful cross-checking with the secondaries.
+
+Assuming there is **always one correct node among primary and
+secondaries**, and there is no fork on the blockchain, lightblocks that
+are in `StateTrusted` can be used by the user with the guarantee of
+"finality". If a block in  `StateVerified` is used, it might be that
+detection later finds a fork, and a roll-back might be needed.
+
+**Remark:** The assumption of one correct node, does not render
+verification useless. It is true that if the primary and the
+secondaries return the same block we may trust it. However, if there
+is a node that provides a different block, the light node still needs
+verification to understand whether there is a fork, or whether the
+different block is just bogus (without any support of some previous
+validator set).
+
+**Remark:** A light node may choose the full nodes it communicates
+with (the light node and the full node might even belong to the same
+stakeholder) so the assumption might be justified in some cases.
+
+In the future, we will do the following changes
+   - we assume that only from time to time, the light node is
+     connected to a correct full node
+   - this means for some limited time, the light node might have no
+     means to defend against light client attacks
+   - as a result we do not have finality
+   - once the light node reconnects with a correct full node, it
+     should detect the light client attack and submit evidence.
+
+Under these assumptions, `StateTrusted` loses its meaning. As a
+result, it should be removed from the API. We suggest that we replace
+it with a flag "trusted" that can be used 
+- internally for efficiency reasons (to maintain
+  [LCD-INV-TRUSTED-AGREED.1] until a fork is detected)
+- by light client based on the "one correct full node" assumption
+
+
+----
+
+
+
+> This is where the actual specification is going to start
 
 # Fork detector
 
@@ -102,10 +240,10 @@ secondaries using this specification.
 
 ### Tendermint Consensus and Forks
 
-#### **[TMBC-GENESIS]**
+#### **[TMBC-GENESIS.1]**
 Let *Genesis* be the agreed-upon initial block (file).
 
-#### **[TMBC-FUNC]**
+#### **[TMBC-FUNC.1]**
 > **TODO** be more precise. +2/3 of b.NextV = c.Val signed c. For now
 > the following will do:
 
@@ -123,7 +261,7 @@ Let *b* and *c* be two light blocks. We define **supports(b,c,t)**
 > The following formalizes that *b* was properly generated by
 > Tendermint; *b* can be traced back to genesis
 
-#### **[TMBC-SEQ-ROOTED]**
+#### **[TMBC-SEQ-ROOTED.1]**
 Let *b* be a light block. 
 We define *sequ-rooted(b)* iff for all i, 1 <= i < h = b.Header.Height,
 there exist light blocks a(i) s.t.
@@ -135,7 +273,7 @@ there exist light blocks a(i) s.t.
 > skipping verification. Observe that we do not require here (yet)
 > that *b* was properly generated.
 
-#### **[TMBC-SKIP-ROOT]**
+#### **[TMBC-SKIP-ROOT.1]**
 Let *b* and *c* be light blocks. We define *skip-root(b,c,t)* if at
 time t there exists an *h* and a sequence *a(1)*, ... *a(h)* s.t.
    - *a(1) = b* and
@@ -150,7 +288,7 @@ time t there exists an *h* and a sequence *a(1)*, ... *a(h)* s.t.
 > Observe that sign-skip-match  is even defined if there is a fork on
 > the chain.
 
-#### **[TMBC-SIGN-SKIP-MATCH]**
+#### **[TMBC-SIGN-SKIP-MATCH.1]**
 Let *a*, *b*, *c*, be light blocks and *t* a time, we define 
 *sign-skip-match(a,b,c,t) = true* iff
    - *sequ-rooted(a)* and
@@ -163,7 +301,7 @@ implies *b = c*.
 
 ----
 
-#### **[TMBC-SIGN-FORK]**
+#### **[TMBC-SIGN-FORK.1]**
 
 If there exists three light blocks a, b, and c, with 
 *sign-skip-match(a,b,c,t) =
@@ -180,7 +318,7 @@ We call *a* the bifurcation block of the fork.
 > full nodes as part of normal Tendermint consensus protocol". Please
 > confirm! 
   
-#### **[TMBC-SIGN-UNIQUE]**
+#### **[TMBC-SIGN-UNIQUE.1]**
 Let *b* and *c* be  light blocks, we define *sign-unique(b,c) =
 true* iff
    - *b.Header.Height =  c.Header.Height* and
@@ -200,7 +338,7 @@ false* then we have a *fork on the chain*.
 > fork. 
 
 
-#### **[TMBC-LC-FORK]**
+#### **[TMBC-LC-FORK.1]**
 Let *a*, *b*, *c*, be light blocks and *t* a time. We define
 *light-client-fork(a,b,c,t)* iff
    - *sign-skip-match(a,b,c,t) = false* and
@@ -215,7 +353,7 @@ Let *a*, *b*, *c*, be light blocks and *t* a time. We define
 > *a.height < b.height* (which is implied by the definitions which
 > unfold until *supports()*.
 
-#### **[TMBC-BOGUS]**
+#### **[TMBC-BOGUS.1]**
 Let *b* be a light block and *t* a time. We define *bogus(b,t)* iff
   - *sequ-rooted(b) = false* and
   - for all *a*, *sequ-rooted(a)* implies *skip-root(a,b,t) = false*
@@ -244,14 +382,14 @@ do not constitute temporal logic verification conditions. For those,
 see [LCD-DIST-*] below.
 
 
-#### **[LCD-IP-STATE]**
+#### **[LCD-IP-STATE.1]**
 
 The detector works on a LightStore that contains LightBlocks in one of 
 the state `StateUnverified`, ` StateVerified`, `StateFailed`, or
 `StateTrusted`.
 
 
-#### **[LCD-IP-Q]**
+#### **[LCD-IP-Q.1]**
 
 Whenever the light client verifier performs `VerifyToTarget` with the
 primary and returns with
@@ -265,7 +403,7 @@ secondaries that satisfy
  - *h'* is a (light) fork.
 
 
-#### **[LCD-IP-PEERSET]**
+#### **[LCD-IP-PEERSET.1]**
 
 Whenever the detector observes *detectable misbehavior* of a full node
 from the set of Secondaries it should be replaced by a fresh full
@@ -300,16 +438,16 @@ detector.
 
 ### Assumptions
 
-#### **[LCD-A-CorrFull]**
+#### **[LCD-A-CorrFull.1]**
 
 At all times there is at least one correct full
 node among the primary and the secondaries.
 
-**Remark:** Check whether [LCD-A-CorrFull] is not needed in the end because
+**Remark:** Check whether [LCD-A-CorrFull.1] is not needed in the end because
 the verification conditions [LCD-DIST-*] have preconditions on specific
 cases where primary and/or secondaries are faulty.
 
-#### **[LCD-A-RelComm]**
+#### **[LCD-A-RelComm.1]**
 
 Communication between the  detector and a correct full node is 
 reliable and bounded in time. Reliable communication means that
@@ -338,7 +476,7 @@ The  detector returns a set *Forks*, and should satisfy the following
      temporal formulas:
 
 
-#### **[LCD-DIST-INV]**
+#### **[LCD-DIST-INV.1]**
 
 If there is no fork at height *h-verified*, then the detector should
 return the empty set.
@@ -348,7 +486,7 @@ return the empty set.
 
 **TODO:** add requirements about stateTrusted
 
-#### **[LCD-DIST-LIVE-FORK]**
+#### **[LCD-DIST-LIVE-FORK.1]**
 
 If there is a fork at height *h*, with *h-trust < h <= h-verified*, and
 there are two correct full nodes *i* and *j* that are
@@ -362,7 +500,7 @@ primary provided branch A, and a correct secondary is on branch B". I
 prefer the above as it is slightly less operational.
 
 
-> #### **[LCD-REQ-REP]**
+> #### **[LCD-REQ-REP.1]**
 > If the  detector observes two conflicting headers for height *h*, 
 > it should try to verify both. If both are verified it should report evidence.
 > If the primary reports header *h* and a secondary reports header *h'*,
@@ -407,14 +545,14 @@ Lightblocks and LightStores are
 defined at [LCV-DATA-LIGHTBLOCK.1] and [LCV-DATA-LIGHTSTORE.1]. See the [verification specification][verification] for details.
 
 The following data structure defines a **proof of fork**. Following
-[TMBC-SIGN-FORK], we require two blocks *b* and *c* for the same
+[TMBC-SIGN-FORK.1], we require two blocks *b* and *c* for the same
 height that can both be verified from a common root block *a* (using
 the skipping or the sequential method).
 
 **TODO:** move this discussion up to beginning of spec!
 
 > Observe that just two blocks for the same height are not
-> sufficient. One of the blocks may be bogus [TMBC-BOGUS] which does
+> sufficient. One of the blocks may be bogus [TMBC-BOGUS.1] which does
 > not constitute slashable behavior. 
 
 > Which leads to the question whether the light node should try to do
@@ -437,7 +575,7 @@ type LightNodeProofOfFork struct {
 }
 ```
 
-> [LCV-DATA-POF.1] mirrors the definition [TMBC-SIGN-FORK]:
+> [LCV-DATA-POF.1] mirrors the definition [TMBC-SIGN-FORK.1]:
 > *TrustedBlock* corresponds to *a*, and *PrimaryTrace* and *SecondaryTrace*
 > are traces to two blocks *b* and *c*. The traces establish that both
 > *skip-root(a,b,t)* and *skip-root(a,c,t)* are satisfied.
@@ -619,58 +757,22 @@ See the [verification specification][verification] for details.
 
 The problem laid out is solved by calling  the function `ForkDetector`
      with a lightstore that contains a light block that has just been
-     verified by the verifier. We start be describing the context on
-     which the fork detector is called by giving a sequential version
-     of the supervisor function:
+     verified by the verifier. 
+	 
 
 
 
-#### **[LCD-FUNC-SUPERVISOR.1]:**
 
-```go
-func Sequential-Supervisor () (Error) {
-    loop {
-        nextheight := input();
-        result := NoResult;
-        while result != ResultSuccess {
-            lightStore,result := VerifyToTarget(primary, lightStore, nextheight);
-            if result == ResultFailure {				
-				// pick new primary and delete all lightblocks above
-	            // LastTrusted (they have not been cross-checked)
-	            Replace_Primary();
-			}
-        }
-		// at this point we have added a verified header of height nextheight
-		// now we cross-check
-        PoFs := Forkdetector(lightStore, PoFs);
-        if PoFs.Empty {
-		    // no fork detected with secondaries, we trust the new
-			// lightblock
-            LightStore.Update(testedLB, StateTrusted);
-        } 
-        else {
-		    // there is a fork, we submit the proofs and exit
-            for i, p range PoFs {
-                SubmitProofOfFork(p);
-            } 
-            return(ErrorFork);
-        }
-    }
-}
-```
-- Implementation remark
-- Expected precondition
-    - *lightStore* initialized with trusted header
-	- *PoFs* empty
-- Expected postcondition
-    - runs forever, or
-	- is terminated by user and satisfies LightStore invariant, or **TODO**
-	- has submitted proof of fork upon detecting a fork
-- Error condition
-    - none
-----
+- **TODO:** We should clarify what is the expectation of VerifyToTarget so if it
+  returns TimeoutError it can be assumed faulty. I guess that
+  VerifyToTarget with correct full node should never terminate with
+  TimeoutError.
 
-**TODO** Discuss how lightstore can be used with different semantics
+- **TODO:** clarify EXPIRED case. Can we always punish? Can we give sufficient
+  conditions. 
+  
+	  
+
 
 ### Fork Detector
 
@@ -724,7 +826,7 @@ func ForkDetector(ls LightStore, PoFs PoFStore)
 	- Secondaries initialized and non-empty
 	- `PoFs` initialized and empty
 - Expected postcondition
-    - satisfies [LCD-DIST-INV], [LCD-DIST-LIFE-FORK]
+    - satisfies [LCD-DIST-INV.1], [LCD-DIST-LIFE-FORK.1]
 	- removes faulty secondary if it reports wrong header
 	- **TODO** proof of fork
 - Error condition
