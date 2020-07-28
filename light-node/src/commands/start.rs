@@ -2,7 +2,7 @@
 
 use std::process;
 
-use crate::application::{app_config, app_reader, APPLICATION};
+use crate::application::{app_config, APPLICATION};
 use crate::config::{LightClientConfig, LightNodeConfig};
 use crate::rpc;
 use crate::rpc::Server;
@@ -14,7 +14,7 @@ use abscissa_core::Command;
 use abscissa_core::FrameworkError;
 use abscissa_core::Options;
 use abscissa_core::Runnable;
-use abscissa_core::{config, Application};
+use abscissa_core::config;
 
 use std::collections::HashMap;
 use std::net::SocketAddr;

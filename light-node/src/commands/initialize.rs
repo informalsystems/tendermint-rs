@@ -1,6 +1,6 @@
 //! `intialize` subcommand
 
-use crate::application::{app_config, APPLICATION};
+use crate::application::app_config;
 use crate::config::LightStoreConfig;
 
 use std::collections::HashMap;
@@ -9,7 +9,7 @@ use abscissa_core::status_warn;
 use abscissa_core::Command;
 use abscissa_core::Options;
 use abscissa_core::Runnable;
-use abscissa_core::{status_err, Application};
+use abscissa_core::status_err;
 
 use tendermint::hash;
 use tendermint::lite::Header;
@@ -49,8 +49,6 @@ impl Runnable for InitCmd {
         peer_map.insert(lc.peer_id, lc.address.clone());
 
         let io = ProdIo::new(peer_map, Some(app_cfg.rpc_config.request_timeout));
-
-        let lock = APPLICATION.read();
 
         let factory = ProdLightStoreFactory::new();
 
