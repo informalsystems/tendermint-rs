@@ -19,13 +19,24 @@ pub struct Commit {
 }
 
 impl Commit {
-    pub fn new(header: Header) -> Self {
+    /// Make a new commit using default votes produced from the header.
+    pub fn new(header: Header, round: u64) -> Self {
+        let commit = Commit {
+            header: Some(header),
+            round: Some(round),
+            votes: None,
+        };
+        commit.generate_default_votes()
+    }
+    /// Make a new commit using explicit votes.
+    pub fn new_with_votes(header: Header, round: u64, votes: Vec<Vote>) -> Self {
         Commit {
             header: Some(header),
-            round: None,
-            votes: None,
+            round: Some(round),
+            votes: Some(votes),
         }
     }
+    set_option!(header, Header);
     set_option!(votes, Vec<Vote>);
     set_option!(round, u64);
 
@@ -73,7 +84,7 @@ impl std::str::FromStr for Commit {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let commit = match parse_as::<Commit>(s) {
             Ok(input) => input,
-            Err(_) => Commit::new(parse_as::<Header>(s)?),
+            Err(_) => Commit::new(parse_as::<Header>(s)?, 1),
         };
         Ok(commit)
     }
@@ -94,8 +105,8 @@ impl Generator<block::Commit> for Commit {
             Some(h) => h,
         };
         let votes = match &self.votes {
-            None => bail!("failed to generate commit: votes are missing"),
-            Some(vs) => vs,
+            None => self.clone().generate_default_votes().votes.unwrap(),
+            Some(vs) => vs.to_vec(),
         };
         let block_header = header.generate()?;
         let block_id = block::Id::new(lite::Header::hash(&block_header), None);
@@ -146,9 +157,7 @@ mod tests {
             .height(10)
             .time(now);
 
-        let commit = Commit::new(header.clone())
-            .round(3)
-            .generate_default_votes();
+        let commit = Commit::new(header.clone(), 3);
 
         let block_header = header.generate().unwrap();
         let block_commit = commit.generate().unwrap();
