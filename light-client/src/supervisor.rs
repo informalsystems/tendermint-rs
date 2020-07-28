@@ -137,7 +137,7 @@ pub struct Supervisor {
     /// Channel through which to receive events from the `Handle`s
     receiver: channel::Receiver<HandleInput>,
     /// Shared state between all the peers
-    state: Box<dyn LightStore>,
+    shared_state: Box<dyn LightStore>,
 }
 
 impl std::fmt::Debug for Supervisor {
@@ -157,7 +157,7 @@ impl Supervisor {
         peers: PeerList<Instance>,
         fork_detector: impl ForkDetector + 'static,
         evidence_reporter: impl EvidenceReporter + 'static,
-        state: Box<dyn LightStore>,
+        shared_state: Box<dyn LightStore>,
     ) -> Self {
         let (sender, receiver) = channel::unbounded::<HandleInput>();
 
@@ -167,7 +167,7 @@ impl Supervisor {
             receiver,
             fork_detector: Box::new(fork_detector),
             evidence_reporter: Box::new(evidence_reporter),
-            state,
+            shared_state,
         }
     }
 
@@ -216,11 +216,11 @@ impl Supervisor {
 
         // Extract trusted LightBlock from the shared state.
         let latest_trusted = self
-            .state
+            .shared_state
             .latest(Status::Trusted)
             .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
 
-        // Updates trusted state for primary if primary changed.
+        // Updates trusted state even if it did not change.
         primary
             .state
             .light_store
@@ -253,8 +253,8 @@ impl Supervisor {
                         self.verify(height)
                     }
                     ForkDetection::NotDetected => {
-                        // Insert all blocks higher than the previous trusted LightBlock from the
-                        // state of the primary.
+                        // Insert all Verified blocks higher than the previous trusted LightBlock
+                        // from the state of the primary.
                         self.peers
                             .primary_mut()
                             .state
@@ -264,7 +264,7 @@ impl Supervisor {
                                 verified.signed_header.header.height
                                     > latest_trusted.signed_header.header.height
                             })
-                            .for_each(|block| self.state.insert(block, Status::Trusted));
+                            .for_each(|block| self.shared_state.insert(block, Status::Trusted));
 
                         Ok(verified_block)
                     }

@@ -25,7 +25,8 @@ impl VerificationPredicates for ProdPredicates {}
 /// This enables test implementations to only override a single method rather than
 /// have to re-define every predicate.
 pub trait VerificationPredicates: Send {
-    /// Compare the provided validator_set_hash against the hash produced from hashing the validator set.
+    /// Compare the provided validator_set_hash against the hash produced from hashing the validator
+    /// set.
     fn validator_sets_match(
         &self,
         light_block: &LightBlock,
@@ -233,11 +234,7 @@ pub fn verify(
     now: Time,
 ) -> Result<(), VerificationError> {
     // Ensure the latest trusted header hasn't expired
-    vp.is_within_trust_period(
-        &trusted.signed_header.header,
-        options.trusting_period,
-        now,
-    )?;
+    vp.is_within_trust_period(&trusted.signed_header.header, options.trusting_period, now)?;
 
     // Ensure the header isn't from a future time
     vp.is_header_from_past(&untrusted.signed_header.header, options.clock_drift, now)?;
