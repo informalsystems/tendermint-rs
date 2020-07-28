@@ -1,3 +1,8 @@
+[![Crate][crate-image]][crate-link]
+[![Docs][docs-image]][docs-link]
+
+See the [repo root](/) for build status, license, rust version, etc.
+
 # Light-Node
 
 The [Tendermint] light-node wraps the [light-client] crate into a command-line interface tool. 
