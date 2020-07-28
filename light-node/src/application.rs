@@ -86,7 +86,6 @@ impl Application for LightNodeApp {
     fn register_components(&mut self, command: &Self::Cmd) -> Result<(), FrameworkError> {
         let mut components = self.framework_components(command)?;
         components.push(Box::new(TokioComponent::new()?));
-        components.push(Box::new(ProdLightStoreFactory::new()));
         self.state.components.register(components)
     }
 

@@ -6,13 +6,11 @@ use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
 
-pub const LIGHT_STORE_FACTORY_ID: Id = Id::new(concat!(std::module_path!(), "::LightStoreFactory"));
-
-pub trait LightStoreFactory: Sync + Send {
+pub trait LightStoreFactory: {
     fn create(&self, config: &LightStoreConfig) -> Box<dyn LightStore>;
 }
 
-#[derive(Component, Debug)]
+#[derive(Debug)]
 pub struct ProdLightStoreFactory;
 
 impl ProdLightStoreFactory {

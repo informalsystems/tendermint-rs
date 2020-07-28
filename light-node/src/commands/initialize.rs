@@ -52,14 +52,10 @@ impl Runnable for InitCmd {
 
         let lock = APPLICATION.read();
 
-        let factory: &dyn LightStoreFactory = lock
-            .state()
-            .components
-            .get_downcast_ref::<ProdLightStoreFactory>()
-            .expect("There should be a factory");
+        let factory = ProdLightStoreFactory::new();
 
         initialize_subjectively(
-            factory,
+            &factory,
             self.height,
             subjective_header_hash,
             &app_cfg.shared_state_config,

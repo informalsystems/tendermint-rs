@@ -104,11 +104,7 @@ impl StartCmd {
     fn assert_init_was_run() {
         // TODO(liamsi): handle errors properly:
 
-        let shared_store = app_reader()
-            .state()
-            .components
-            .get_downcast_ref::<ProdLightStoreFactory>()
-            .unwrap()
+        let shared_store = ProdLightStoreFactory::new()
             .create(&app_config().shared_state_config);
 
         if shared_store.latest_trusted_or_verified().is_none() {
@@ -126,11 +122,7 @@ impl StartCmd {
     ) -> Instance {
         let peer_id = light_config.peer_id;
 
-        let light_store = app_reader()
-            .state()
-            .components
-            .get_downcast_ref::<ProdLightStoreFactory>()
-            .unwrap()
+        let light_store = ProdLightStoreFactory::new()
             .create(&light_config.state);
 
         let state = State {
@@ -185,11 +177,7 @@ impl StartCmd {
         }
         let peer_list = peer_list.build();
 
-        let mut shared_state = app_reader()
-            .state()
-            .components
-            .get_downcast_ref::<ProdLightStoreFactory>()
-            .unwrap()
+        let mut shared_state = ProdLightStoreFactory::new()
             .create(&conf.shared_state_config);
 
         peer_list
