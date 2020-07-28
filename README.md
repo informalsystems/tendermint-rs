@@ -49,7 +49,7 @@ The Tendermint protocols are specified in English in the
 Any protocol changes or clarifications should be contributed there.
 
 This repo contains the TLA+ specifications and Rust implementations for
-various components of Tendermint. See the [CONTRIBUTING.md] to start
+various components of Tendermint. See the [CONTRIBUTING.md][contributing] to start
 contributing.
 
 ## Versioning
@@ -117,3 +117,4 @@ limitations under the License.
 [Tendermint]: https://github.com/tendermint/tendermint
 [tendermint-light-client-docs-link]: https://docs.rs/tendermint-light-client/
 [tendermint-light-node-docs-link]: https://docs.rs/tendermint-light-node/
+[contributing]: ./CONTRIBUTING.md
