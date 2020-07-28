@@ -5,7 +5,7 @@ use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
 
-pub trait LightStoreFactory: {
+pub trait LightStoreFactory {
     fn create(&self, config: &LightStoreConfig) -> Box<dyn LightStore>;
 }
 

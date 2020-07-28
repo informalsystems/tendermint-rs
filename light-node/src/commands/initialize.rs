@@ -5,11 +5,11 @@ use crate::config::LightStoreConfig;
 
 use std::collections::HashMap;
 
+use abscissa_core::status_err;
 use abscissa_core::status_warn;
 use abscissa_core::Command;
 use abscissa_core::Options;
 use abscissa_core::Runnable;
-use abscissa_core::status_err;
 
 use tendermint::hash;
 use tendermint::lite::Header;

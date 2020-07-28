@@ -7,6 +7,7 @@ use crate::config::{LightClientConfig, LightNodeConfig};
 use crate::rpc;
 use crate::rpc::Server;
 
+use abscissa_core::config;
 use abscissa_core::path::PathBuf;
 use abscissa_core::status_err;
 use abscissa_core::status_info;
@@ -14,7 +15,6 @@ use abscissa_core::Command;
 use abscissa_core::FrameworkError;
 use abscissa_core::Options;
 use abscissa_core::Runnable;
-use abscissa_core::config;
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -104,8 +104,7 @@ impl StartCmd {
     fn assert_init_was_run() {
         // TODO(liamsi): handle errors properly:
 
-        let shared_store = ProdLightStoreFactory::new()
-            .create(&app_config().shared_state_config);
+        let shared_store = ProdLightStoreFactory::new().create(&app_config().shared_state_config);
 
         if shared_store.latest_trusted_or_verified().is_none() {
             status_err!("no trusted or verified state in store for primary, please initialize with the `initialize` subcommand first");
@@ -122,8 +121,7 @@ impl StartCmd {
     ) -> Instance {
         let peer_id = light_config.peer_id;
 
-        let light_store = ProdLightStoreFactory::new()
-            .create(&light_config.state);
+        let light_store = ProdLightStoreFactory::new().create(&light_config.state);
 
         let state = State {
             light_store,
@@ -177,8 +175,7 @@ impl StartCmd {
         }
         let peer_list = peer_list.build();
 
-        let mut shared_state = ProdLightStoreFactory::new()
-            .create(&conf.shared_state_config);
+        let mut shared_state = ProdLightStoreFactory::new().create(&conf.shared_state_config);
 
         peer_list
             .primary()
