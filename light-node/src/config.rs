@@ -11,7 +11,6 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 use crate::config::LightStoreConfig::OnDisk;
-use sled::Db;
 use tendermint_light_client::light_client;
 use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::store::sled::SledStore;

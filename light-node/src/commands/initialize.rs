@@ -18,7 +18,6 @@ use tendermint::Hash;
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;
 use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
-use tendermint_light_client::store::LightStore;
 use tendermint_light_client::types::{PeerId, Status};
 
 /// `initialize` subcommand
