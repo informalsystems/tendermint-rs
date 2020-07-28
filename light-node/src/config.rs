@@ -5,12 +5,17 @@
 //! for specifying it.
 
 use abscissa_core::path::PathBuf;
+use abscissa_core::status_err;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::time::Duration;
 
 use crate::config::LightStoreConfig::OnDisk;
+use sled::Db;
 use tendermint_light_client::light_client;
+use tendermint_light_client::store::memory::MemoryStore;
+use tendermint_light_client::store::sled::SledStore;
+use tendermint_light_client::store::LightStore;
 use tendermint_light_client::types::{PeerId, TrustThreshold};
 
 /// LightNode Configuration
@@ -116,6 +121,19 @@ impl From<LightNodeConfig> for light_client::Options {
             trust_threshold: lnc.trust_threshold,
             trusting_period: lnc.trusting_period,
             clock_drift: lnc.clock_drift,
+        }
+    }
+}
+
+pub fn store_from_config(config: &LightStoreConfig) -> Box<dyn LightStore> {
+    match config {
+        LightStoreConfig::InMemory => Box::new(MemoryStore::new()),
+        OnDisk { db_path } => {
+            let db = sled::open(db_path.clone()).unwrap_or_else(|e| {
+                status_err!("could not open database: {}", e);
+                std::process::exit(1);
+            });
+            Box::new(SledStore::new(db))
         }
     }
 }

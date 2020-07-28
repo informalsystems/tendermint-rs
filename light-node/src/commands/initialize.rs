@@ -1,7 +1,7 @@
 //! `intialize` subcommand
 
 use crate::application::app_config;
-use crate::config::LightStoreConfig;
+use crate::config::{store_from_config, LightStoreConfig};
 
 use std::collections::HashMap;
 
@@ -15,10 +15,10 @@ use tendermint::hash;
 use tendermint::lite::Header;
 use tendermint::Hash;
 
-use crate::store_factory::{LightStoreFactory, ProdLightStoreFactory};
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;
 use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
+use tendermint_light_client::store::LightStore;
 use tendermint_light_client::types::{PeerId, Status};
 
 /// `initialize` subcommand
@@ -50,10 +50,7 @@ impl Runnable for InitCmd {
 
         let io = ProdIo::new(peer_map, Some(app_cfg.rpc_config.request_timeout));
 
-        let factory = ProdLightStoreFactory::new();
-
         initialize_subjectively(
-            &factory,
             self.height,
             subjective_header_hash,
             &app_cfg.shared_state_config,
@@ -68,14 +65,13 @@ impl Runnable for InitCmd {
 // TODO(ismail): additionally here and everywhere else, we should return errors
 // instead of std::process::exit because no destructors will be run.
 fn initialize_subjectively(
-    store_factory: &dyn LightStoreFactory,
     height: u64,
     subjective_header_hash: Hash,
     shared_state_config: &LightStoreConfig,
     trusted_peer: &PeerId,
     io: &ProdIo,
 ) {
-    let mut light_store = store_factory.create(shared_state_config);
+    let mut light_store = store_from_config(shared_state_config);
 
     if light_store.latest_trusted_or_verified().is_some() {
         let lb = light_store.latest_trusted_or_verified().unwrap();
