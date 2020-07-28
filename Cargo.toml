@@ -5,5 +5,5 @@ members = [
     "light-node",
     "rpc",
     "tendermint",
-    "tendermint-testgen"
+    "testgen"
 ]
