@@ -242,6 +242,15 @@ Example output:
 
 </details>
 
+[//]: # (badges)
+
+[crate-image]: https://img.shields.io/crates/v/tendermint-light-node.svg
+[crate-link]: https://crates.io/crates/tendermint-light-node
+[docs-image]: https://docs.rs/tendermint-light-node/badge.svg
+[docs-link]: https://docs.rs/tendermint-light-node/
+
+[//]: # (general links)
+
 
 [repo root]: https://github.com/informalsystems/tendermint-rs
 [quick start]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/quick-start.md
