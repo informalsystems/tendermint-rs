@@ -15,9 +15,37 @@ https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics
 
 #### An IBC/Tendermint Dictionary
 
-| IBC Term | Tendermint-RS Spec Term |
-|----------|-------------------------|
-|Commitment root is app hash | AppState |
+| IBC Term | Tendermint-RS Spec Term | Comment |
+|----------|-------------------------| --------|
+| `CommitmentRoot` | AppState | app hash |
+| `ConsensusState` | Lightblock | not all fields are there. NextValidator is definitly needed |
+| `ClientState` | latest light block + configuration parameters (e.g., trusting period + `frozenHeight` |  NextValidators missing |
+| `frozenHeight` | height of fork | set when a fork is detected |
+| "would-have-been-fooled" | light node fork detection | light node may submit proof of fork to IBC component to halt it |
+| `Height` | (no epochs) | (epoch,height) pair in lexicographical order (`compare`) |
+| `Header` | ~signed header | validatorSet explicit (no hash); nextValidators missing |
+| `Evidence` | t.b.d. | definition unclear "which the light client would have considered valid". Data structure will need to change |
+| `verify` | `ValidAndVerified` | signature does not match perfectly (ClientState vs. LightBlock) |
+
+
+#### Required Changes in ICS 007
+
+- `assert(height > 0)` in definition of `initialise` doesn't match
+  definition of `Height` as *(epoch,height)* pair.
+  
+- `initialise` needs to be updated to new data structures
+
+- `checkValidityAndUpdateState`
+    - `verify`: it needs to be clarified that checkValidityAndUpdateState
+      does not perform "bisection" (as currently hinted in the text) but
+	  performs a single step of "skipping verification", called,
+      `ValidAndVerified`
+	- `assert (header.height > clientState.latestHeight)`: no old
+      headers can be installed. This might be OK, but we need to check
+      interplay with misbehavior
+
+- `checkMisbehaviourAndUpdateState`: as evidence will contain a trace
+  (or two), the assertion that uses verify will need to change.
 
 #### Handler
 
