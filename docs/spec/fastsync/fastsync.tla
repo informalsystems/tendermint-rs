@@ -1,4 +1,4 @@
------------------------------ MODULE fastsync_apalache -----------------------------
+----------------------------- MODULE fastsync -----------------------------
 (*
  In this document we give the high level specification of the fast sync
  protocol as implemented here:
