@@ -1,7 +1,7 @@
 [![Crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
 
-See the [repo root](/) for build status, license, rust version, etc.
+See the [repo root] for build status, license, rust version, etc.
 
 # tendermint
 
@@ -20,4 +20,5 @@ See documentation on [crates.io][docs-link].
 
 [//]: # (general links)
 
+[repo root]: https://github.com/informalsystems/tendermint-rs
 [Tendermint]: https://github.com/tendermint/tendermint

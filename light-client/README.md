@@ -1,7 +1,7 @@
 [![Crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
 
-See the [repo root](/) for build status, license, rust version, etc.
+See the [repo root] for build status, license, rust version, etc.
 
 # Light-Client
 
@@ -67,6 +67,7 @@ loop {
 
 [//]: # (general links)
 
+[repo root]: https://github.com/informalsystems/tendermint-rs
 [quick start]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/quick-start.md
 [Tendermint]: https://github.com/tendermint/tendermint
 [light-client-verification]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md

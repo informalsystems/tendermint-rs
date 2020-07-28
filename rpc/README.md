@@ -1,7 +1,7 @@
 [![Crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
 
-See the [repo root](/) for build status, license, rust version, etc.
+See the [repo root] for build status, license, rust version, etc.
 
 # tendermint-rpc
 
@@ -37,6 +37,7 @@ https://docs.tendermint.com/master/rpc/
 [//]: # (general links)
 
 
+[repo root]: https://github.com/informalsystems/tendermint-rs
 [tendermint]: https://github.com/tendermint/tendermint
 [core types]: https://github.com/tendermint/tendermint/blob/8b4a30fada85fccd8f0cb15009344f1cbd8de616/rpc/core/types/responses.go#L1
 [tendermint.rs]: https://crates.io/crates/tendermint

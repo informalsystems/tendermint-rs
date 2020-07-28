@@ -1,7 +1,7 @@
 [![Crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
 
-See the [repo root](/) for build status, license, rust version, etc.
+See the [repo root] for build status, license, rust version, etc.
 
 # Light-Node
 
@@ -243,6 +243,7 @@ Example output:
 </details>
 
 
+[repo root]: https://github.com/informalsystems/tendermint-rs
 [quick start]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/quick-start.md
 [Tendermint]: https://github.com/tendermint/tendermint
 [light-client]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
