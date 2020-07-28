@@ -5,7 +5,7 @@
 [![Build Status][build-image]][build-link]
 [![Audit Status][audit-image]][audit-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
-![Rust 1.39+][rustc-image]
+![Rust 1.44+][rustc-image]
 
 [Tendermint] in Rust with [TLA+ specifications](/docs/spec).
 
