@@ -1,0 +1,44 @@
+[package]
+name = "abci"
+version = "0.10.0"
+authors = ["Devashish Dixit <devashishdxt@gmail.com>"]
+license = "MIT/Apache-2.0"
+description = "A Rust crate for creating ABCI applications"
+homepage = "https://github.com/devashishdxt/abci-rs"
+repository = "https://github.com/devashishdxt/abci-rs"
+categories = ["network-programming"]
+keywords = ["blockchain", "tendermint", "abci"]
+readme = "README.md"
+include = ["Cargo.toml", "src/**/*.rs", "README.md"]
+edition = "2018"
+
+[lib]
+name = "abci"
+
+[package.metadata.docs.rs]
+features = ["doc"]
+rustdoc-args = ["--cfg", "feature=\"doc\""]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-std = { version = "1.6", optional = true }
+async-trait = "0.1"
+bytes = "0.5"
+integer-encoding = { version = "1.1", optional = true }
+prost = "0.6"
+prost-types = "0.6"
+tendermint-proto = { path = "../proto" }
+tokio = { version = "0.2", optional = true, features = ["io-util", "sync", "tcp", "stream", "rt-core", "uds"] }
+tracing = { version = "0.1", features = ["log"] }
+tracing-futures = "0.2"
+
+[dev-dependencies]
+tokio = { version = "0.2", features = ["macros"] }
+tracing-subscriber = "0.2"
+
+[features]
+default = ["use-tokio"]
+doc = []
+use-async-std = ["async-std", "integer-encoding/futures_async"]
+use-tokio = ["tokio", "integer-encoding/tokio_async"]
