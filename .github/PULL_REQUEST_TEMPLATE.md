@@ -10,4 +10,4 @@ changes in the PR.
 * [ ] Updated all relevant documentation in docs
 * [ ] Updated all code comments where relevant
 * [ ] Wrote tests
-* [ ] Updated CHANGES.md
+* [ ] Updated CHANGELOG.md
