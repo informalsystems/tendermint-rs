@@ -156,7 +156,12 @@ impl Info {
 pub struct ProposerPriority(i64);
 
 impl ProposerPriority {
-    /// Get the current voting power
+    /// Create a new Priority
+    pub fn new(p: i64) -> ProposerPriority {
+        ProposerPriority(p)
+    }
+
+    /// Get the current proposer priority
     pub fn value(self) -> i64 {
         self.0
     }
