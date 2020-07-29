@@ -211,17 +211,17 @@ fn single_step_sequential() {
     }
 }
 
-#[test]
-fn single_step_skipping() {
-    let dirs = [
-        "single_step/skipping/commit",
-        "single_step/skipping/header",
-        "single_step/skipping/validator_set",
-    ];
-    for dir in &dirs {
-        run_single_step_tests(dir);
-    }
-}
+// #[test]
+// fn single_step_skipping() {
+//     let dirs = [
+//         "single_step/skipping/commit",
+//         "single_step/skipping/header",
+//         "single_step/skipping/validator_set",
+//     ];
+//     for dir in &dirs {
+//         run_single_step_tests(dir);
+//     }
+// }
 
 async fn run_bisection_tests(dir: &str) {
     let paths = fs::read_dir(PathBuf::from(TEST_FILES_PATH).join(dir)).unwrap();
