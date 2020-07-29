@@ -56,7 +56,8 @@ of smaller incremental changes, in the form of small PRs that can be merged
 quickly. This helps manage the load for reviewers and reduces the likelihood
 that PRs will sit open for longer.
 
-![Contributing flow](./docs/imgs/contributing.png)
+![Contributing
+flow](https://github.com/tendermint/tendermint/blob/v0.33.6/docs/imgs/contributing.png)
 
 Each stage of the process is aimed at creating feedback cycles which align contributors and maintainers to make sure:
 
@@ -87,19 +88,24 @@ To pull in updates from the origin repo, run
 
 ## Changelog
 
-Every non-trivial PR must update the CHANGELOG.md.
+Every non-trivial PR must update the [CHANGELOG.md].
 
-Changes for a given release should be split between the four sections: Breaking
+Changelog structure is modeled after 
+[Tendermint
+Core](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md)
+and 
+[Hashicorp Consul](http://github.com/hashicorp/consul/tree/master/CHANGELOG.md).
+See those changelogs for examples.
+
+Changes for a given release should be split between the five sections: Security, Breaking
 Changes, Features, Improvements, Bug Fixes.
-
-See the [changelog template](CHANGELOG.md). 
 
 Changelog entries should be formatted as follows:
 ```
-- [crate] \#xxx Some description about the change (@contributor)
+- [pkg] \#xxx Some description about the change (@contributor)
 ```
-Here, `crate` is the part of the code that changed (typically a
-top-level crate), `xxx` is the pull-request number, and `contributor`
+Here, `pkg` is the part of the code that changed (typically a
+top-level crate, but could be <crate>/<module>), `xxx` is the pull-request number, and `contributor`
 is the author/s of the change.
 
 It's also acceptable for `xxx` to refer to the relevent issue number, but pull-request
@@ -108,7 +114,7 @@ Note this means pull-requests should be opened first so the changelog can then
 be updated with the pull-request's number.
 
 Changelog entries should be ordered alphabetically according to the
-`module`, and numerically according to the pull-request number.
+`pkg`, and numerically according to the pull-request number.
 
 Changes with multiple classifications should be doubly included (eg. a bug fix
 that is also a breaking change should be recorded under both).
