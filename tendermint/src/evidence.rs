@@ -101,7 +101,7 @@ pub struct Params {
 /// essentially, to keep the usages look cleaner
 /// i.e. you can avoid using serde annotations everywhere
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-pub struct Duration(#[serde(with = "serializers::time_duration")] std::time::Duration);
+pub struct Duration(#[serde(with = "serializers::time_duration")] pub std::time::Duration);
 
 impl From<Duration> for std::time::Duration {
     fn from(d: Duration) -> std::time::Duration {
