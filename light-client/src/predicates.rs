@@ -233,11 +233,7 @@ pub fn verify(
     now: Time,
 ) -> Result<(), VerificationError> {
     // Ensure the latest trusted header hasn't expired
-    vp.is_within_trust_period(
-        &trusted.signed_header.header,
-        options.trusting_period,
-        now,
-    )?;
+    vp.is_within_trust_period(&trusted.signed_header.header, options.trusting_period, now)?;
 
     // Ensure the header isn't from a future time
     vp.is_header_from_past(&untrusted.signed_header.header, options.clock_drift, now)?;
