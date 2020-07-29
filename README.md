@@ -5,36 +5,42 @@
 [![Build Status][build-image]][build-link]
 [![Audit Status][audit-image]][audit-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
-![Rust 1.39+][rustc-image]
+![Rust 1.44+][rustc-image]
 
-Rust crates for interacting with [Tendermint]: a high-performance blockchain
-consensus engine that powers Byzantine fault tolerant applications written
-in any programming language.
+[Tendermint] in Rust with [TLA+ specifications](/docs/spec).
 
-Also includes [TLA+ specifications](/docs/spec).
+Tendermint is a high-performance blockchain consensus engine 
+for Byzantine fault tolerant applications written in any programming language.
 
-## Releases
+## Requirements
 
-Release tags can be found on
-[Github](https://github.com/informalsystems/tendermint-rs/releases).
+Tested with Rust 1.44+, may work on older version.
 
-Releases for each crate are published to crates.io:
-
-- [tendermint][tendermint-docs-link] - Tendermint data structures and
-  serialization
-- [tendermint-rpc][tendermint-rpc-docs-link] - Tendermint RPC client and
-  response types
-- [light-client][tendermint-light-client-docs-link] - Tendermint light client library for verifying
-  signed headers, tracking validator set changes, and detecting forks
-- [light-node][tendermint-light-node-docs-link] - Tendermint light client binary
-
-## Installation
-
-Requires Rust 1.39+
+Compatible with the v0.33 series of [Tendermint Core][Tendermint].
 
 ## Documentation
 
-See documentation on [crates.io](#releases).
+See each component for the relevant documentation.
+
+Libraries:
+
+- [tendermint](./tendermint) - Tendermint data structures and
+  serialization
+- [tendermint-rpc](./rpc) - Tendermint RPC client and
+  response types
+- [light-client](./light-client) - Tendermint light client library for verifying
+  signed headers, tracking validator set changes, and detecting forks
+
+Binaries:
+
+- [light-node](./light-node) - Tendermint light node to synchronize with a
+  blockchain using the light client 
+
+## Releases
+
+Release tags can be found on [Github](https://github.com/informalsystems/tendermint-rs/releases).
+
+Crates are released on crates.io.
 
 ## Contributing
 
@@ -43,8 +49,8 @@ The Tendermint protocols are specified in English in the
 Any protocol changes or clarifications should be contributed there.
 
 This repo contains the TLA+ specifications and Rust implementations for
-various components of Tendermint. If you're interested in contributing, please
-comment on an issue or open a new one!
+various components of Tendermint. See the [CONTRIBUTING.md][contributing] to start
+contributing.
 
 ## Versioning
 
@@ -102,7 +108,7 @@ limitations under the License.
 [audit-link]: https://github.com/informalsystems/tendermint-rs/actions?query=workflow%3AAudit-Check
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
 [license-link]: https://github.com/interchainio/tendermint-rs/blob/master/LICENSE
-[rustc-image]: https://img.shields.io/badge/rustc-1.39+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.44+-blue.svg
 
 [//]: # (general links)
 
@@ -111,4 +117,4 @@ limitations under the License.
 [Tendermint]: https://github.com/tendermint/tendermint
 [tendermint-light-client-docs-link]: https://docs.rs/tendermint-light-client/
 [tendermint-light-node-docs-link]: https://docs.rs/tendermint-light-node/
- 
+[contributing]: ./CONTRIBUTING.md
