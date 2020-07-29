@@ -13,27 +13,38 @@ https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics
 
 > I assume you know what that is.
 
-#### An IBC/Tendermint Dictionary
+#### An IBC/Tendermint correspondence
 
 | IBC Term | Tendermint-RS Spec Term | Comment |
 |----------|-------------------------| --------|
 | `CommitmentRoot` | AppState | app hash |
 | `ConsensusState` | Lightblock | not all fields are there. NextValidator is definitly needed |
-| `ClientState` | latest light block + configuration parameters (e.g., trusting period + `frozenHeight` |  NextValidators missing |
+| `ClientState` | latest light block + configuration parameters (e.g., trusting period + `frozenHeight` |  NextValidators missing; what is `proofSpecs`?|
 | `frozenHeight` | height of fork | set when a fork is detected |
 | "would-have-been-fooled" | light node fork detection | light node may submit proof of fork to IBC component to halt it |
 | `Height` | (no epochs) | (epoch,height) pair in lexicographical order (`compare`) |
 | `Header` | ~signed header | validatorSet explicit (no hash); nextValidators missing |
 | `Evidence` | t.b.d. | definition unclear "which the light client would have considered valid". Data structure will need to change |
-| `verify` | `ValidAndVerified` | signature does not match perfectly (ClientState vs. LightBlock) |
+| `verify` | `ValidAndVerified` | signature does not match perfectly (ClientState vs. LightBlock) + in `checkMisbehaviourAndUpdateState` it is unclear whether it uses traces or goes to h1 and h2 in one step |
 
+#### Some IBC links
 
+- [QueryConsensusState](https://github.com/cosmos/cosmos-sdk/blob/2651427ab4c6ea9f81d26afa0211757fc76cf747/x/ibc/02-client/client/utils/utils.go#L68)
+  
+  
+  
+  
 #### Required Changes in ICS 007
 
 - `assert(height > 0)` in definition of `initialise` doesn't match
   definition of `Height` as *(epoch,height)* pair.
   
 - `initialise` needs to be updated to new data structures
+
+- `clientState.frozenHeight` semantics seem not totally consistent in
+  document. E.g., `min` needs to be defined over optional value in
+  `checkMisbehaviourAndUpdateState`. Also, if you are frozen, why do
+  you accept more evidence.
 
 - `checkValidityAndUpdateState`
     - `verify`: it needs to be clarified that checkValidityAndUpdateState
@@ -43,9 +54,51 @@ https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics
 	- `assert (header.height > clientState.latestHeight)`: no old
       headers can be installed. This might be OK, but we need to check
       interplay with misbehavior
-
+	- clienstState needs to be updated according to complete data
+      structure
+	  
 - `checkMisbehaviourAndUpdateState`: as evidence will contain a trace
   (or two), the assertion that uses verify will need to change.
+
+- ICS 002 states w.r.t. `queryChainConsensusState` that "Note that
+  retrieval of past consensus states by height (as opposed to just the
+  current consensus state) is convenient but not required." For
+  Tendermint fork detection, this seems to be a necessity.
+  
+- `Header` should become a lightblock
+
+- `Evidence` should become `LightNodeProofOfFork` [LCV-DATA-POF.1]
+
+
+```go
+func checkMisbehaviourAndUpdateState(cs: ClientState, PoF: LightNodeProofOfFork) 
+```
+**TODO:** finish conditions
+- Implementation remark
+- Expected precondition
+    - PoF.TrustedBlock.Header.Height = to the one I have stored
+	- both traces end with header of same height
+	- header are different
+	- both traces are supported (`supports` defined in  [TMBC-FUNC]) 
+	  by PoF.TrustedBlock, that is, for `t = currentTimestamp()` (see
+	  ICS 024)
+	    - supports(PoF.TrustedBlock, PoF.PrimaryTrace[1], t)
+        - supports(PoF.PrimaryTrace[i], PoF.PrimaryTrace[i+1], t) for
+		   *0 < i < length(PoF.PrimaryTrace)*
+	    - supports(PoF.TrustedBlock,  PoF.SecondaryTrace[1], t)
+        - supports(PoF.SecondaryTrace[i], PoF.SecondaryTrace[i+1], t) for
+		   *0 < i < length(PoF.SecondaryTrace)*  
+- Expected postcondition
+    - set cs.FrozenHeight to min(cs.FrozenHeight, PoF.TrustedBlock.Header.Height)
+- Error condition
+    - none
+----
+
+
+#### Things that need clarification
+
+- `upgradeClientState` what is the semantics (in particular what is
+  `height` doing.
 
 #### Handler
 
