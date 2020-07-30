@@ -151,9 +151,12 @@ func QueryHeightsRange(id, from, to) ([]Height)
       IBC component has a consensus state.
 ----
 
+**TODO:** check and do fork on ibc component
 
 #### [TAG-COMMON-ROOT.1]
-```go commonRoot(lightStore LightStore, ibc IBCComponent, lblock
+
+```go 
+func commonRoot(lightStore LightStore, ibc IBCComponent, lblock
 LightBlock) (LightBlock, LightBlock, Result) {
 
        // first we ask for the heights the ibc component is aware of 
@@ -179,9 +182,9 @@ LightBlock) (LightBlock, LightBlock, Result) {
 			    ibcHeights.remove(h)
 		    }
 		} 
-    }
 }
 ```
+
 - Expected postcondition
     - returns a lightBlock b1 from the IBC component, and a lightBlock b2
       from the lightStore with height less than lblock.Header.Hight, s.t.
@@ -191,17 +194,19 @@ LightBlock) (LightBlock, LightBlock, Result) {
 
 #### [TAG-EXTEND-POF.1]
 ```go 
-func extendPoF (root LightBlock, connector LightBlock, lightStore LightStore, Pof LightNodeProofofFork) 
-               (LightNodeProofofFork}
+func extendPoF (root LightBlock, 
+                connector LightBlock, 
+				lightStore LightStore, 
+				Pof LightNodeProofofFork) (LightNodeProofofFork}
 ```
 - Implementation remark
     - PoF is not sufficient to convince an IBC component, so we extend
       the proof of fork farther in the past
 - Expected postcondition
-    - returns a newPOF
+    - returns a newPOF:
 	    - newPoF.TrustedBlock = root
         - let prefix = 
-		     root + 
+		     connector +
 		     lightStore.Subtrace(connector.Header.Height, PoF.TrustedBlock.Header.Height-1) + 
 		     PoF.TrustedBlock  
             - newPoF.PrimaryTrace = prefix + PoF.PrimaryTrace
