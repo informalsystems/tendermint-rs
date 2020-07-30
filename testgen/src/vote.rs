@@ -20,8 +20,8 @@ pub struct Vote {
     pub index: Option<u64>,
     #[options(help = "header to sign (default: commit header)")]
     pub header: Option<Header>,
-    #[options(help = "vote type; 'precommit' if set, otherwise 'prevote' (default)")]
-    pub precommit: Option<()>,
+    #[options(help = "vote type; 'prevote' if set, otherwise 'precommit' (default)")]
+    pub prevote: Option<()>,
     #[options(help = "block height (default: from header)")]
     pub height: Option<u64>,
     #[options(help = "time (default: from header)")]
@@ -36,7 +36,7 @@ impl Vote {
             validator: Some(validator),
             index: None,
             header: Some(header),
-            precommit: None,
+            prevote: None,
             height: None,
             time: None,
             round: None,
@@ -44,7 +44,7 @@ impl Vote {
     }
     set_option!(index, u64);
     set_option!(header, Header);
-    set_option!(precommit, bool, if precommit { Some(()) } else { None });
+    set_option!(prevote, bool, if prevote { Some(()) } else { None });
     set_option!(height, u64);
     set_option!(time, Time);
     set_option!(round, u64);
@@ -63,7 +63,7 @@ impl Generator<vote::Vote> for Vote {
             validator: self.validator.or(default.validator),
             index: self.index.or(default.index),
             header: self.header.or(default.header),
-            precommit: self.precommit.or(default.precommit),
+            prevote: self.prevote.or(default.prevote),
             height: self.height.or(default.height),
             time: self.time.or(default.time),
             round: self.round.or(default.round),
@@ -91,10 +91,10 @@ impl Generator<vote::Vote> for Vote {
             }
         };
         let mut vote = vote::Vote {
-            vote_type: if self.precommit.is_some() {
-                vote::Type::Precommit
-            } else {
+            vote_type: if self.prevote.is_some() {
                 vote::Type::Prevote
+            } else {
+                vote::Type::Precommit
             },
             height: block_header.height,
             round: self.round.unwrap_or(1),
@@ -148,7 +148,7 @@ mod tests {
         assert_eq!(block_vote.round, 2);
         assert_eq!(block_vote.timestamp, now);
         assert_eq!(block_vote.validator_index, 1);
-        assert_eq!(block_vote.vote_type, vote::Type::Prevote);
+        assert_eq!(block_vote.vote_type, vote::Type::Precommit);
 
         let sign_bytes = get_vote_sign_bytes(block_header.chain_id.as_str(), &block_vote);
         assert!(!verify_signature(
