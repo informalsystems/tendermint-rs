@@ -151,6 +151,44 @@ func QueryHeightsRange(id, from, to) ([]Height)
       IBC component has a consensus state.
 ----
 
+
+#### [TAG-COMMON-ROOT.1]
+```go commonRoot(lightStore LightStore, ibc IBCComponent, lblock
+LightBlock) (LightBlock, LightBlock, Result) {
+
+       // first we ask for the heights the ibc component is aware of 
+		ibcHeights = ibc.QueryHeightsRange(
+		                   ibc.id,
+		                   lightStore.LowestVerified().Height,
+		                   lblock.Height - 1);
+		// this function does not exist yet. Alternatively, we may
+		// request all transactions that installed headers via CosmosSDK
+		
+
+        for {
+            h, result = max(ibcHeights)
+			if result = Empty {
+			    return (_, _, NoRoot)
+		    }
+		    ibcLightBlock = ibc.queryChainConsensusState(h)
+		    connector, result := Connector(lightStore, ibcLightBlock, lblock.Header.Height)
+		    if result = success {
+			    return (ibcLightBlock, connector, Success)
+			}
+			else{
+			    ibcHeights.remove(h)
+		    }
+		} 
+    }
+}
+```
+- Expected postcondition
+    - returns a lightBlock b1 from the IBC component, and a lightBlock b2
+      from the lightStore with height less than lblock.Header.Hight, s.t.
+      b1 supports b2
+----
+
+
 #### [TAG-EXTEND-POF.1]
 ```go 
 func extendPoF (root LightBlock, connector LightBlock, lightStore LightStore, Pof LightNodeProofofFork) 
@@ -187,30 +225,16 @@ func SubmitIBCProofOfFork(
 		// even be on yet a different branch. We have to compute a PoF
 		// that the ibc component can verifiy based on its current knowledge
 
-        // first we ask for the heights the ibc component is aware of 
-		ibcHeights = ibc.QueryHeightsRange(
-		                   ibc.id,
-		                   lightStore.LowestVerified().Height,
-		                   PoF.TrustedBlock.Height - 1);
-		// this function does not exist yet. Alternatively, we may
-		// request all transactions that installed headers via CosmosSDK
-		
+        ibcLightBlock, lblock, result := commonRoot(lightStore, ibc, PoF.TrustedBlock)
 
-        for {
-            h, result = max(ibcHeights)
-			if result = Empty {
-			    return CouldNotGeneratePoF
-		    }
-		    ibcLightBlock = ibc.queryChainConsensusState(h)
-		    lblock, result := Connector(lightStore, ibcLightBlock, PoF.TrustedBlock.Height)
-		    if result = success {
-			    newPoF = extendPoF(ibcLightBlock, lblock, lightStore, PoF)
-		        ibc.submitMisbehaviourToClient(ibc.id, newPoF)
-			}
-			else{
-			    ibcHeights.remove(h)
-		    }
-		} 
+	    if result = Success {
+			newPoF = extendPoF(ibcLightBlock, lblock, lightStore, PoF)
+		    ibc.submitMisbehaviourToClient(ibc.id, newPoF)
+		    return Success
+	    }
+		else{
+			return CouldNotGeneratePoF
+	    }
     }
 }
 ```
