@@ -1137,7 +1137,7 @@ Arguments:
 
 <!-- [[blockchain]] The specification of the Tendermint blockchain. Tags refering to this specification are labeled [TMBC-*]. -->
 
-[block]: https://github.com/tendermint/spec/blob/master/spec/blockchain/blockchain.md
+[block]: https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md
 
 <!-- [blockchain]: https://github.com/informalsystems/VDD/tree/master/blockchain/blockchain.md -->
 
@@ -1201,7 +1201,7 @@ Arguments:
 
 [FN-LuckyCase-link]: https://github.com/tendermint/spec/blob/master/spec/blockchain/fullnode.md#fn-luckycase
 
-[blockchain-validator-set]: https://github.com/tendermint/spec/blob/master/spec/blockchain/blockchain.md#data-structures
+[blockchain-validator-set]: https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#data-structures
 
 [fullnode-data-structures]: https://github.com/tendermint/spec/blob/master/spec/blockchain/fullnode.md#data-structures
 
