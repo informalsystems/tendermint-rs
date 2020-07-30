@@ -69,6 +69,8 @@ https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics
 
 - `Evidence` should become `LightNodeProofOfFork` [LCV-DATA-POF.1]
 
+- `upgradeClientState` what is the semantics (in particular what is
+  `height` doing.
 
 ```go
 func checkMisbehaviourAndUpdateState(cs: ClientState, PoF: LightNodeProofOfFork) 
@@ -76,7 +78,8 @@ func checkMisbehaviourAndUpdateState(cs: ClientState, PoF: LightNodeProofOfFork)
 **TODO:** finish conditions
 - Implementation remark
 - Expected precondition
-    - PoF.TrustedBlock.Header.Height = to the one I have stored
+    - PoF.TrustedBlock.Header is equal to lightBlock on store with
+      same height
 	- both traces end with header of same height
 	- header are different
 	- both traces are supported (`supports` defined in  [TMBC-FUNC]) 
@@ -94,11 +97,144 @@ func checkMisbehaviourAndUpdateState(cs: ClientState, PoF: LightNodeProofOfFork)
     - none
 ----
 
+### Relayer proof of fork preparation and submission algorithm
 
-#### Things that need clarification
+We get as input a proof of fork and submit a proof of fork the ibc
+component can verify.
 
-- `upgradeClientState` what is the semantics (in particular what is
-  `height` doing.
+#### Auxiliary Functions
+
+> For the lightStore
+
+#### [LCV-LS-FUNC-GET-PREV.1]
+```go
+func (ls LightStore) GetPreviousVerified(height Height) (LightBlock, bool)
+```
+- Expected postcondition
+    - returns a verified LightBlock, whose height is maximal among all
+      verified lightblocks with height smaller than `height`
+----
+
+<!-- #### [TAG-LS-FUNC-ROOT.1] -->
+<!-- ```go -->
+<!-- func rootOfTrust (lightStore LightStore, lb LightBlock) (LightBlock, bool) -->
+<!-- ``` -->
+<!-- - Expected postcondition -->
+<!--     - returns a verified LightBlock from lightStore that can verify -->
+<!--       lb in one step, and whose height is maximal among -->
+<!--       all lightBlocks that can verify lb in one step -->
+	  
+#### [TAG-LS-FUNC-CONNECT.1]
+```go
+func Connector (lightStore LightStore, lb LightBlock, h Height) (LightBlock, bool)
+```
+- Expected postcondition
+    - returns a verified LightBlock from lightStore with height less
+      than *h* that can be
+      verified by lb in one step.
+	  
+**TODO:** for the above to work we need an invariant that all verified
+lightblocks form a chain of trust. Otherwise, we need a lightblock
+that has a chain of trust to height.
+	  
+	  
+
+
+> IBC component on-chain
+
+#### [TAG-IBC-HEIGHTS.1]
+```go
+func QueryHeightsRange(id, from, to) ([]Height)
+```
+- Expected postcondition
+    - returns all heights *h*, with *from <= h <= to* for which the
+      IBC component has a consensus state.
+----
+
+#### [TAG-EXTEND-POF.1]
+```go 
+func extendPoF (root LightBlock, connector LightBlock, lightStore LightStore, Pof LightNodeProofofFork) 
+               (LightNodeProofofFork}
+```
+- Implementation remark
+    - PoF is not sufficient to convince an IBC component, so we extend
+      the proof of fork farther in the past
+- Expected postcondition
+    - returns a newPOF
+	    - newPoF.TrustedBlock = root
+        - let prefix = 
+		     root + 
+		     lightStore.Subtrace(connector.Header.Height, PoF.TrustedBlock.Header.Height-1) + 
+		     PoF.TrustedBlock  
+            - newPoF.PrimaryTrace = prefix + PoF.PrimaryTrace
+            - newPoF.SecondaryTrace = prefix + PoF.SecondaryTrace
+
+
+#### [TAG-SUBMIT-POF-IBC.1]
+```go
+func SubmitIBCProofOfFork(
+  lightStore LightStore, 
+  PoF: LightNodeProofOfFork, 
+  ibc IBCComponent) (Error) {
+    if ibc.queryChainConsensusState(PoF.TrustedBlock.Height) = PoF.TrustedBlock {
+		// IBC component has root of PoF on store, we can just submit
+        ibc.submitMisbehaviourToClient(ibc.id,PoF)
+		return Success
+	    // note sure about the id parameter
+    }
+    else {
+        // the ibc component does not have the TrustedBlock and might
+		// even be on yet a different branch. We have to compute a PoF
+		// that the ibc component can verifiy based on its current knowledge
+
+        // first we ask for the heights the ibc component is aware of 
+		ibcHeights = ibc.QueryHeightsRange(
+		                   ibc.id,
+		                   lightStore.LowestVerified().Height,
+		                   PoF.TrustedBlock.Height - 1);
+		// this function does not exist yet. Alternatively, we may
+		// request all transactions that installed headers via CosmosSDK
+		
+
+        for {
+            h, result = max(ibcHeights)
+			if result = Empty {
+			    return CouldNotGeneratePoF
+		    }
+		    ibcLightBlock = ibc.queryChainConsensusState(h)
+		    lblock, result := Connector(lightStore, ibcLightBlock, PoF.TrustedBlock.Height)
+		    if result = success {
+			    newPoF = extendPoF(ibcLightBlock, lblock, lightStore, PoF)
+		        ibc.submitMisbehaviourToClient(ibc.id, newPoF)
+			}
+			else{
+			    ibcHeights.remove(h)
+		    }
+		} 
+    }
+}
+```
+**TODO:** finish conditions
+- Implementation remark
+- Expected precondition
+    - the light
+	- both traces end with header of same height
+	- header are different
+	- both traces are supported (`supports` defined in  [TMBC-FUNC]) 
+	  by PoF.TrustedBlock, that is, for `t = currentTimestamp()` (see
+	  ICS 024)
+	    - supports(PoF.TrustedBlock, PoF.PrimaryTrace[1], t)
+        - supports(PoF.PrimaryTrace[i], PoF.PrimaryTrace[i+1], t) for
+		   *0 < i < length(PoF.PrimaryTrace)*
+	    - supports(PoF.TrustedBlock,  PoF.SecondaryTrace[1], t)
+        - supports(PoF.SecondaryTrace[i], PoF.SecondaryTrace[i+1], t) for
+		   *0 < i < length(PoF.SecondaryTrace)*  
+- Expected postcondition
+    - set cs.FrozenHeight to min(cs.FrozenHeight, PoF.TrustedBlock.Header.Height)
+- Error condition
+    - none
+----
+
 
 #### Handler
 
