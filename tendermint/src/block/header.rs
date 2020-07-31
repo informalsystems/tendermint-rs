@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 /// consensus, as well as commitments to the data in the current block, the
 /// previous block, and the results returned by the application.
 ///
-/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#header>
+/// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#header>
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Header {
     /// Header version
@@ -63,7 +63,7 @@ pub struct Header {
 /// `Version` contains the protocol version for the blockchain and the
 /// application.
 ///
-/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#version>
+/// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#version>
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Version {
     /// Block version

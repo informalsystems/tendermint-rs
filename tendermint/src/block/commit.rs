@@ -10,7 +10,7 @@ use std::{ops::Deref, slice};
 /// of validators.
 /// TODO: Update links below!
 /// <https://github.com/tendermint/tendermint/blob/51dc810d041eaac78320adc6d53ad8b160b06601/types/block.go#L486-L502>
-/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#lastcommit>
+/// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#lastcommit>
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Commit {
     /// Block height

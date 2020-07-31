@@ -60,7 +60,7 @@ impl Serialize for Transaction {
 /// Transaction data is a wrapper for a list of transactions, where
 /// transactions are arbitrary byte arrays.
 ///
-/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#data>
+/// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#data>
 #[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub struct Data {
     txs: Option<Vec<Transaction>>,

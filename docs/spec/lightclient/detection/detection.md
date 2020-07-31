@@ -504,7 +504,7 @@ func ForkDetector(ls LightStore)  {
 [TMBC-FM-2THIRDS-link]: https://github.com/tendermint/spec/blob/master/spec/consensus/light-client/verification.md
 
 
-[block]: https://github.com/tendermint/spec/blob/master/spec/blockchain/blockchain.md
+[block]: https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md
 
 [blockchain]: https://github.com/informalsystems/VDD/tree/master/blockchain/blockchain.md
 
