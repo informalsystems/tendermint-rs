@@ -157,8 +157,10 @@ func QueryHeightsRange(id, from, to) ([]Height)
 
 ```go 
 func commonRoot(lightStore LightStore, ibc IBCComponent, lblock
-LightBlock) (LightBlock, LightBlock, Result) {
-
+LightBlock) (LightBlock, LightBlock, LightStore, Result) {
+       
+	   auxLS.Init
+			
        // first we ask for the heights the ibc component is aware of 
 		ibcHeights = ibc.QueryHeightsRange(
 		                   ibc.id,
@@ -171,12 +173,13 @@ LightBlock) (LightBlock, LightBlock, Result) {
         for {
             h, result = max(ibcHeights)
 			if result = Empty {
-			    return (_, _, NoRoot)
+			    return (_, _, _, NoRoot)
 		    }
 		    ibcLightBlock = ibc.queryChainConsensusState(h)
+			auxLS.Update(ibcLightBlock, StateVerified);
 		    connector, result := Connector(lightStore, ibcLightBlock, lblock.Header.Height)
 		    if result = success {
-			    return (ibcLightBlock, connector, Success)
+			    return (ibcLightBlock, connector, auxLS, Success)
 			}
 			else{
 			    ibcHeights.remove(h)
@@ -188,7 +191,8 @@ LightBlock) (LightBlock, LightBlock, Result) {
 - Expected postcondition
     - returns a lightBlock b1 from the IBC component, and a lightBlock b2
       from the lightStore with height less than lblock.Header.Hight, s.t.
-      b1 supports b2
+      b1 supports b2, and a lightstore with the blocks downloaded from
+      the ibc component
 ----
 
 
@@ -213,6 +217,32 @@ func extendPoF (root LightBlock,
             - newPoF.SecondaryTrace = prefix + PoF.SecondaryTrace
 
 
+#### [TAG-HANDLER-DETECT-FORK.1]
+```go
+func DetectIBCFork(ibc IBCComponent, lightStore LightStore) (LightNodeProofOfFork, Error) {
+    cs = ibc.queryClientState(ibc);
+	lb, found := lightStore.Get(cs.Header.Height)
+    if !found {
+	**TODO:** need verify to target
+        lb = FetchLightBlock(primary, nextHeight)
+		// I guess here we have to get into the light client
+        lightStore.Update(current, StateUnverified)
+    }
+	if cs != lb {
+	    // IBC component disagrees with my primary.
+		// I fetch the
+	    ibcLightBlock, lblock, ibcStore, result := commonRoot(lightStore, ibc, lb) 
+		pof = new LightNodeProofOfFork;
+		pof.TrustedBlock := ibcLightBlock
+		pof.PrimaryTrace := ibcStore + cs
+		pof.SecondaryTrace :=  lightStore.Subtrace(lblock.Header.Height, 
+					                               lb.Header.Height);
+        return(pof, Fork)
+	}
+	return(nil , NoFork)
+}
+```
+
 #### [TAG-SUBMIT-POF-IBC.1]
 ```go
 func SubmitIBCProofOfFork(
@@ -230,7 +260,7 @@ func SubmitIBCProofOfFork(
 		// even be on yet a different branch. We have to compute a PoF
 		// that the ibc component can verifiy based on its current knowledge
 
-        ibcLightBlock, lblock, result := commonRoot(lightStore, ibc, PoF.TrustedBlock)
+        ibcLightBlock, lblock, _, result := commonRoot(lightStore, ibc, PoF.TrustedBlock)
 
 	    if result = Success {
 			newPoF = extendPoF(ibcLightBlock, lblock, lightStore, PoF)
