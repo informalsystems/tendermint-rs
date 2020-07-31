@@ -9,6 +9,8 @@ use tendermint::lite::Requester;
 use tendermint::{
     block::signed_header::SignedHeader, evidence::Duration, lite, validator::Set, Time,
 };
+use std::{process, io};
+use std::io::Read;
 
 /// Test that a struct `T` can be:
 ///
@@ -89,4 +91,49 @@ impl MockRequester {
             validators: val_map,
         }
     }
+}
+
+/// Thin wrapper around process::Command to facilitate running external commands.
+pub struct Command {
+    pub command: process::Command,
+}
+
+impl Command {
+    /// Constructs a new Command for the given program with arguments.
+    pub fn new(program: &str, args: Vec<&str>) -> Command {
+        let mut command = process::Command::new(program);
+        command.args(args);
+        Command {
+            command
+        }
+    }
+    /// Sets the working directory for the child process
+    pub fn current_dir(&mut self, dir: &str) -> &mut Self {
+        self.command.current_dir(dir);
+        self
+    }
+    /// Executes the command as a child process, and extracts its status, stdout, stderr.
+    pub fn spawn(&mut self) -> io::Result<CommandRun> {
+        let mut process = self.command
+            .stdout(process::Stdio::piped())
+            .stderr(process::Stdio::piped())
+            .spawn()?;
+        let status = process.wait()?;
+        let mut stdout = String::new();
+        process.stdout.unwrap().read_to_string(&mut stdout)?;
+        let mut stderr = String::new();
+        process.stderr.unwrap().read_to_string(&mut stderr)?;
+        Ok(CommandRun {
+            status,
+            stdout,
+            stderr
+        })
+    }
+}
+
+/// The result of a command execution if managed to run the child process
+pub struct CommandRun {
+    pub status: process::ExitStatus,
+    pub stdout: String,
+    pub stderr: String
 }
