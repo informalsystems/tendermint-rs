@@ -151,7 +151,7 @@ func QueryHeightsRange(id, from, to) ([]Height)
       IBC component has a consensus state.
 ----
 
-**TODO:** check and do fork on ibc component
+
 
 #### [TAG-COMMON-ROOT.1]
 
@@ -224,9 +224,12 @@ func DetectIBCFork(ibc IBCComponent, lightStore LightStore) (LightNodeProofOfFor
 	lb, found := lightStore.Get(cs.Header.Height)
     if !found {
 	**TODO:** need verify to target
-        lb = FetchLightBlock(primary, nextHeight)
+        lb, result = LightClient.Main(primary, lightStore, cs.Header.Height)
+		// [LCV-FUNC-IBCMAIN.1]
+		**TODO** decide what to do following the outcome of Issue #499
+		
 		// I guess here we have to get into the light client
-        lightStore.Update(current, StateUnverified)
+        
     }
 	if cs != lb {
 	    // IBC component disagrees with my primary.
@@ -242,6 +245,14 @@ func DetectIBCFork(ibc IBCComponent, lightStore LightStore) (LightNodeProofOfFor
 	return(nil , NoFork)
 }
 ```
+**TODO:** finish conditions
+- Implementation remark
+    - we ask the handle for the lastest check. Cross-check with the
+      chain. In case they deviate we generate PoF.
+	- we assume IBC component is correct. It has verified the
+      consensus state
+- Expected precondition
+- Expected postcondition
 
 #### [TAG-SUBMIT-POF-IBC.1]
 ```go
