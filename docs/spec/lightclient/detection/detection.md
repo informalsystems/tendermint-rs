@@ -40,7 +40,7 @@ This document contains:
       contains several light blocks) we should submit right away.
 
 
-- decision: "full" proof of fork consists of two traces that origin in the
+- decision: "full" proof of fork consists of two traces that originate in the
   same lightblock and lead to conflicting headers of the same height.
   
 - For submission of proof of fork, we may do some optimizations, for
