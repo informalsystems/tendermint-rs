@@ -5,7 +5,7 @@ use signatory::{
     signature::{Signature as _, Signer},
 };
 use simple_error::*;
-use tendermint::{block, lite, signature::Signature, vote, Time};
+use tendermint::{block, signature::Signature, vote, Time};
 
 use crate::{helpers::*, Generator, Header, Validator};
 
@@ -82,7 +82,7 @@ impl Generator<vote::Vote> for Vote {
         let signer = validator.get_signer()?;
         let block_validator = validator.generate()?;
         let block_header = header.generate()?;
-        let block_id = block::Id::new(lite::Header::hash(&block_header), None);
+        let block_id = block::Id::new(block_header.hash(), None);
         let validator_index = match self.index {
             Some(i) => i,
             None => match header.validators.as_ref().unwrap().iter().position(|v| *v == *validator) {

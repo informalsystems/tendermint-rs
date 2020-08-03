@@ -11,16 +11,14 @@ use abscissa_core::Command;
 use abscissa_core::Options;
 use abscissa_core::Runnable;
 
-use tendermint::hash;
-use tendermint::lite::Header;
-use tendermint::Hash;
+use tendermint::{hash, Hash};
 
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;
 use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
 use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
-use tendermint_light_client::types::Status;
+use tendermint_light_client::types::{Height, Status};
 
 /// `initialize` subcommand
 #[derive(Command, Debug, Default, Options)]
@@ -51,7 +49,7 @@ impl Runnable for InitCmd {
 
         let io = ProdIo::new(peer_map, Some(app_cfg.rpc_config.request_timeout));
 
-        initialize_subjectively(self.height, subjective_header_hash, &lc, &io);
+        initialize_subjectively(self.height.into(), subjective_header_hash, &lc, &io);
     }
 }
 
@@ -60,7 +58,7 @@ impl Runnable for InitCmd {
 // TODO(ismail): additionally here and everywhere else, we should return errors
 // instead of std::process::exit because no destructors will be run.
 fn initialize_subjectively(
-    height: u64,
+    height: Height,
     subjective_header_hash: Hash,
     l_conf: &LightClientConfig,
     io: &ProdIo,

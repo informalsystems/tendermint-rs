@@ -44,7 +44,7 @@ fn load_multi_peer_testcases(dir: &str) -> Vec<TestBisection<LightBlock>> {
 }
 
 fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance {
-    let trusted_height = trust_options.height.value();
+    let trusted_height = trust_options.height;
     let trusted_state = io
         .fetch_light_block(peer_id, AtHeight::At(trusted_height))
         .expect("could not 'request' light block");

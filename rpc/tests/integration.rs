@@ -3,7 +3,6 @@
 mod endpoints {
     use std::{fs, path::PathBuf};
     use tendermint::abci::Code;
-    use tendermint::lite::Header;
 
     use tendermint_rpc::{self as rpc, endpoint, Response};
 

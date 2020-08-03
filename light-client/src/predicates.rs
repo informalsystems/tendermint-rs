@@ -4,7 +4,7 @@ use crate::{
     ensure,
     light_client::Options,
     operations::{CommitValidator, Hasher, VotingPowerCalculator},
-    types::{Header, Height, LightBlock, SignedHeader, Time, TrustThreshold, ValidatorSet},
+    types::{Header, LightBlock, SignedHeader, Time, TrustThreshold, ValidatorSet},
 };
 
 use errors::VerificationError;
@@ -14,7 +14,7 @@ pub mod errors;
 
 /// Production predicates, using the default implementation
 /// of the `VerificationPredicates` trait.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Default, Debug)]
 pub struct ProdPredicates;
 impl VerificationPredicates for ProdPredicates {}
 
@@ -152,13 +152,13 @@ pub trait VerificationPredicates: Send {
         untrusted_header: &Header,
         trusted_header: &Header,
     ) -> Result<(), VerificationError> {
-        let trusted_height: Height = trusted_header.height.into();
+        let trusted_height = trusted_header.height;
 
         ensure!(
             untrusted_header.height > trusted_header.height,
             VerificationError::NonIncreasingHeight {
-                got: untrusted_header.height.into(),
-                expected: trusted_height + 1,
+                got: untrusted_header.height,
+                expected: trusted_height.increment(),
             }
         );
 
@@ -260,7 +260,7 @@ pub fn verify(
         &trusted.signed_header.header,
     )?;
 
-    let trusted_next_height = trusted.height().checked_add(1).expect("height overflow");
+    let trusted_next_height = trusted.height().increment();
 
     if untrusted.height() == trusted_next_height {
         // If the untrusted block is the very next block after the trusted block,

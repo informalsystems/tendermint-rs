@@ -2,9 +2,7 @@
 
 use crate::types::{Header, ValidatorSet};
 
-use tendermint::lite::types::Header as _;
-use tendermint::merkle;
-use tendermint::Hash;
+use tendermint::{merkle, Hash};
 
 /// Hashing for headers and validator sets
 pub trait Hasher: Send {
@@ -16,7 +14,7 @@ pub trait Hasher: Send {
 }
 
 /// Default implementation of a hasher
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Default, Debug)]
 pub struct ProdHasher;
 
 impl Hasher for ProdHasher {

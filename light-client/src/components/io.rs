@@ -28,7 +28,7 @@ pub enum AtHeight {
 
 impl From<Height> for AtHeight {
     fn from(height: Height) -> Self {
-        if height == 0 {
+        if height.value() == 0 {
             Self::Highest
         } else {
             Self::At(height)
@@ -93,10 +93,10 @@ pub struct ProdIo {
 impl Io for ProdIo {
     fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
         let signed_header = self.fetch_signed_header(peer, height)?;
-        let height: Height = signed_header.header.height.into();
+        let height = signed_header.header.height;
 
         let validator_set = self.fetch_validator_set(peer, height.into())?;
-        let next_validator_set = self.fetch_validator_set(peer, (height + 1).into())?;
+        let next_validator_set = self.fetch_validator_set(peer, height.increment().into())?;
 
         let light_block = LightBlock::new(signed_header, validator_set, next_validator_set, peer);
 

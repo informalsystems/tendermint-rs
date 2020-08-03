@@ -32,9 +32,6 @@ pub mod consensus;
 pub mod evidence;
 pub mod genesis;
 pub mod hash;
-#[allow(dead_code, missing_docs)]
-pub mod lite;
-pub mod lite_impl;
 pub mod merkle;
 mod moniker;
 pub mod net;
@@ -45,6 +42,7 @@ pub mod serializers;
 pub mod signature;
 pub mod time;
 mod timeout;
+pub mod trust_threshold;
 pub mod validator;
 mod version;
 pub mod vote;

@@ -9,12 +9,12 @@ use tendermint::{
         header::Header as TMHeader, signed_header::SignedHeader as TMSignedHeader,
         Commit as TMCommit,
     },
-    lite::TrustThresholdFraction,
+    trust_threshold::TrustThresholdFraction,
     validator::Info as TMValidatorInfo,
     validator::Set as TMValidatorSet,
 };
 
-pub use tendermint::{hash::Hash, lite::Height, time::Time};
+pub use tendermint::{block::Height, hash::Hash, time::Time};
 
 /// Peer ID (public key) of a full node
 pub type PeerId = tendermint::node::Id;
@@ -113,9 +113,9 @@ impl LightBlock {
     /// Returns the height of this block.
     ///
     /// ## Note
-    /// This is a shorthand for `block.signed_header.header.height.into()`.
+    /// This is a shorthand for `block.signed_header.header.height`.
     pub fn height(&self) -> Height {
-        self.signed_header.header.height.into()
+        self.signed_header.header.height
     }
 }
 
@@ -138,7 +138,7 @@ pub struct LatestStatus {
 impl LatestStatus {
     /// Builds a new instance of this struct.
     pub fn new(
-        height: Option<u64>,
+        height: Option<Height>,
         block_hash: Option<Hash>,
         valset_hash: Option<Hash>,
         connected_nodes: Vec<PeerId>,
