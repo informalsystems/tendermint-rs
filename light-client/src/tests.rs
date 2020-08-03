@@ -118,8 +118,8 @@ impl MockIo {
     }
 }
 
-// #[contract_trait]
 #[async_trait]
+// #[contract_trait]
 impl Io for MockIo {
     async fn fetch_light_block(
         &self,

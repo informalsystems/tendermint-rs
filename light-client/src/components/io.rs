@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use async_trait::async_trait;
-// use contracts::{contract_trait, post, pre};
+use contracts::pre;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -61,9 +61,9 @@ impl IoError {
 }
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
-#[async_trait]
-// #[contract_trait]
+// #[contract_trait] // FIXME: Postconditions are not supported on async functions
 // #[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
+#[async_trait]
 pub trait Io: Sync + Send {
     /// Fetch a light block at the given height from the peer with the given peer ID.
     ///
@@ -131,6 +131,7 @@ impl ProdIo {
         Self { peer_map, timeout }
     }
 
+    // FIXME: `contracts` macros do not work with async functions
     // #[pre(self.peer_map.contains_key(&peer))]
     async fn fetch_signed_header(
         &self,
@@ -151,6 +152,7 @@ impl ProdIo {
         }
     }
 
+    // FIXME: `contracts` macros do not work with async functions
     // #[pre(self.peer_map.contains_key(&peer))]
     async fn fetch_validator_set(
         &self,
@@ -173,8 +175,7 @@ impl ProdIo {
         }
     }
 
-    // FIXME: Cannot enable precondition because of "autoref lifetime" issue
-    // #[pre(self.peer_map.contains_key(&peer))]
+    #[pre(self.peer_map.contains_key(&peer))]
     fn rpc_client_for(&self, peer: PeerId) -> rpc::Client {
         let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
         rpc::Client::new(peer_addr)
@@ -199,3 +200,4 @@ impl ProdIo {
 //         Ok(rt.block_on(f))
 //     }
 // }
+
