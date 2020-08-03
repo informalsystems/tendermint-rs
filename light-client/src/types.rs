@@ -125,7 +125,7 @@ impl LightBlock {
 #[display(fmt = "{:?}", self)]
 pub struct LatestStatus {
     /// The latest height we are trusting.
-    pub height: Option<Height>,
+    pub height: Option<u64>,
     /// The latest block hash we are trusting.
     pub block_hash: Option<Hash>,
     /// The latest validator set we are trusting.
@@ -138,12 +138,12 @@ pub struct LatestStatus {
 impl LatestStatus {
     /// Builds a new instance of this struct.
     pub fn new(
-        height: Option<Height>,
+        height: Option<u64>,
         block_hash: Option<Hash>,
         valset_hash: Option<Hash>,
         connected_nodes: Vec<PeerId>,
     ) -> Self {
-        LatestStatus {
+        Self {
             height,
             block_hash,
             valset_hash,
@@ -188,3 +188,4 @@ mod tests {
         }
     }
 }
+

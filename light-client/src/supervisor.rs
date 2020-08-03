@@ -188,7 +188,7 @@ impl Supervisor {
 
         match latest_trusted {
             Some(trusted) => LatestStatus::new(
-                Some(trusted.signed_header.header.height),
+                Some(trusted.signed_header.header.height.value()),
                 Some(trusted.signed_header.header.hash()),
                 Some(trusted.next_validators.hash()),
                 connected_nodes,
@@ -424,3 +424,4 @@ impl Handle for SupervisorHandle {
         Ok(receiver.recv().map_err(ErrorKind::from)?)
     }
 }
+
