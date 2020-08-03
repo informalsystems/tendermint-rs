@@ -424,4 +424,3 @@ impl Handle for SupervisorHandle {
         Ok(receiver.recv().map_err(ErrorKind::from)?)
     }
 }
-
