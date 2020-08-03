@@ -240,7 +240,8 @@ impl Supervisor {
                 match outcome {
                     // There was a fork or a faulty peer
                     ForkDetection::Detected(forks) => {
-                        let forked = self.process_forks(forks)?;
+                        let forked = self.process_forks(forks).await?;
+
                         if !forked.is_empty() {
                             // Fork detected, exiting
                             bail!(ErrorKind::ForkDetected(forked))
@@ -271,7 +272,7 @@ impl Supervisor {
         }
     }
 
-    fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
+    async fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
         let mut forked = Vec::with_capacity(forks.len());
 
         for fork in forks {
@@ -280,7 +281,7 @@ impl Supervisor {
                 // TODO: also report to primary
                 Fork::Forked { primary, witness } => {
                     let provider = witness.provider;
-                    self.report_evidence(provider, &primary, &witness)?;
+                    self.report_evidence(provider, &primary, &witness).await?;
 
                     forked.push(provider);
                 }
@@ -301,7 +302,7 @@ impl Supervisor {
     }
 
     /// Report the given evidence of a fork.
-    fn report_evidence(
+    async fn report_evidence(
         &mut self,
         provider: PeerId,
         primary: &LightBlock,
@@ -314,6 +315,7 @@ impl Supervisor {
 
         self.evidence_reporter
             .report(Evidence::ConflictingHeaders(Box::new(evidence)), provider)
+            .await
             .map_err(ErrorKind::Io)?;
 
         Ok(())

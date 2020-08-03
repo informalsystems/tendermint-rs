@@ -54,9 +54,10 @@ async fn make_instance(peer_id: PeerId, options: light_client::Options, io: Prod
 
 struct TestEvidenceReporter;
 
+#[async_trait::async_trait]
 #[contracts::contract_trait]
 impl EvidenceReporter for TestEvidenceReporter {
-    fn report(&self, evidence: Evidence, peer: PeerId) -> Result<TransactionHash, IoError> {
+    async fn report(&self, evidence: Evidence, peer: PeerId) -> Result<TransactionHash, IoError> {
         panic!(
             "unexpected fork detected for peer {} with evidence: {:?}",
             peer, evidence

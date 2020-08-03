@@ -182,22 +182,3 @@ impl ProdIo {
     }
 }
 
-// fn block_on<F: std::future::Future>(
-//     f: F,
-//     peer: PeerId,
-//     timeout: Option<Duration>,
-// ) -> Result<F::Output, IoError> {
-//     let mut rt = tokio::runtime::Builder::new()
-//         .basic_scheduler()
-//         .enable_all()
-//         .build()
-//         .unwrap();
-
-//     if let Some(timeout) = timeout {
-//         rt.block_on(async { tokio::time::timeout(timeout, f).await })
-//             .map_err(|_| IoError::Timeout(peer))
-//     } else {
-//         Ok(rt.block_on(f))
-//     }
-// }
-

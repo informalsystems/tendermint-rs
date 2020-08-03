@@ -5,17 +5,19 @@ use crate::{components::io::IoError, types::PeerId};
 use tendermint::abci::transaction::Hash;
 use tendermint_rpc as rpc;
 
+use async_trait::async_trait;
 use contracts::{contract_trait, pre};
 use std::collections::HashMap;
 
 pub use tendermint::evidence::Evidence;
 
 /// Interface for reporting evidence to full nodes, typically via the RPC client.
+#[async_trait]
 #[contract_trait]
 #[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
 pub trait EvidenceReporter: Sync + Send {
     /// Report evidence to all connected full nodes.
-    fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError>;
+    async fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError>;
 }
 
 /// Production implementation of the EvidenceReporter component, which reports evidence to full
@@ -25,11 +27,12 @@ pub struct ProdEvidenceReporter {
     peer_map: HashMap<PeerId, tendermint::net::Address>,
 }
 
+#[async_trait]
 #[contract_trait]
 impl EvidenceReporter for ProdEvidenceReporter {
     #[pre(self.peer_map.contains_key(&peer))]
-    fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
-        let res = block_on(self.rpc_client_for(peer).broadcast_evidence(e));
+    async fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
+        let res = self.rpc_client_for(peer).broadcast_evidence(e).await;
 
         match res {
             Ok(response) => Ok(response.hash),
@@ -54,11 +57,3 @@ impl ProdEvidenceReporter {
     }
 }
 
-fn block_on<F: std::future::Future>(f: F) -> F::Output {
-    tokio::runtime::Builder::new()
-        .basic_scheduler()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(f)
-}

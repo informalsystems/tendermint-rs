@@ -141,9 +141,10 @@ impl Io for MockIo {
 #[derive(Clone, Debug, Default)]
 pub struct MockEvidenceReporter;
 
+#[async_trait]
 #[contract_trait]
 impl EvidenceReporter for MockEvidenceReporter {
-    fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
+    async fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
         Ok(Hash::new([0; 32]))
     }
 }
