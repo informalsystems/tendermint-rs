@@ -12,7 +12,7 @@ Tendermint full nodes for information relating to the blockchain.
 Tendermint servers (e.g. full nodes) provide an [event
 subscription][tm-event-subs] RPC endpoint to allow clients to receive
 notifications of specific events as they happen (currently via a WebSockets
-connection). We need to expose this subscription mechanism to the RPC client.
+connection). We need to expose this subscription mechanism through the RPC client.
 
 In order to achieve this, we need:
 
