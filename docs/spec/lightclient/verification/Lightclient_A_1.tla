@@ -29,8 +29,24 @@ VARIABLES
   lightBlockStatus,   (* a function from heights to block statuses *)
   latestVerified      (* the latest verified block *)
 
-(* the variables of the lite client *)  
-lcvars == <<state, nextHeight, fetchedLightBlocks, lightBlockStatus, latestVerified>>  
+(* the light client history variables *)
+VARIABLES
+  prevVerified,       (* the latest verified block in the previous state *)
+  prevChecked,        (* the block that was checked in the previous state *)
+  prevVerdict         (* the verdict in the previous state *)
+
+InitHistory(verified, checked, verdict) ==
+  /\ prevVerified = verified
+  /\ prevChecked = checked
+  /\ prevVerdict = verdict
+
+NextHistory(verified, checked, verdict) ==
+  /\ prevVerified' = verified
+  /\ prevChecked' = checked
+  /\ prevVerdict' = verdict
+
+(* the variables of the lite client *)
+lcvars == <<state, nextHeight, fetchedLightBlocks, lightBlockStatus, latestVerified>>
 
 (******************* Blockchain instance ***********************************)
 
@@ -135,6 +151,7 @@ LCInit ==
         /\ lightBlockStatus = [h \in {TRUSTED_HEIGHT} |-> "StateVerified"]
         \* the latest verified block the the trusted block
         /\ latestVerified = trustedLightBlock
+        /\ NextHistory(trustedLightBlock, trustedLightBlock, "OK")
 
 \* block should contain a copy of the block from the reference chain, with a matching commit
 CopyLightBlockFromChain(block, height) ==
@@ -207,6 +224,7 @@ VerifyToTargetLoop ==
         /\ nprobes' = nprobes + 1
         \* Verify the current block
         /\ LET verdict == ValidAndVerified(latestVerified, current) IN
+           NextHistory(latestVerified, current, verdict) /\
            \* Decide whether/how to continue
            CASE verdict = "OK" ->
               /\ lightBlockStatus' = LightStoreUpdateStates(lightBlockStatus, nextHeight, "StateVerified")
@@ -244,7 +262,8 @@ VerifyToTargetLoop ==
 VerifyToTargetDone ==
     /\ latestVerified.header.height >= TARGET_HEIGHT
     /\ state' = "finishedSuccess"
-    /\ UNCHANGED <<nextHeight, nprobes, fetchedLightBlocks, lightBlockStatus, latestVerified>>  
+    /\ UNCHANGED <<nextHeight, nprobes, fetchedLightBlocks, lightBlockStatus, latestVerified>>
+    /\ UNCHANGED <<prevVerified, prevChecked, prevVerdict>>
             
 (********************* Lite client + Blockchain *******************)
 Init ==
