@@ -97,7 +97,7 @@ Roughly, it alternates two phases namely:
 func Sequential-Supervisor () (Error) {
     loop {
 	    // get the next height
-        nextheight := input();
+        nextHeight := input();
 		
 		// Verify
         result := NoResult;
