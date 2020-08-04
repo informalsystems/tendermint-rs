@@ -171,7 +171,7 @@ BroadcastPrevote(pSrc, pRound, pId) ==
   LET newMsg == AsMsg([type |-> "PREVOTE",
                        src |-> pSrc, round |-> pRound, id |-> pId])
   IN
-  msgsPrevote' = [msgsPrevote EXCEPT ![pRound] = msgsPrevote[pRound] \cup {newMsg}]
+  msgsPrevote' = [msgsPrevote EXCEPT ![pRound] = msgsPrevote[pRound] \union {newMsg}]
 
 BroadcastPrecommit(pSrc, pRound, pId) ==
   LET newMsg == AsMsg([type |-> "PRECOMMIT",
