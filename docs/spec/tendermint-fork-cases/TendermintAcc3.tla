@@ -177,7 +177,7 @@ BroadcastPrecommit(pSrc, pRound, pId) ==
   LET newMsg == AsMsg([type |-> "PRECOMMIT",
                        src |-> pSrc, round |-> pRound, id |-> pId])
   IN
-  msgsPrecommit' = [msgsPrecommit EXCEPT ![pRound] = msgsPrecommit[pRound] \cup {newMsg}]
+  msgsPrecommit' = [msgsPrecommit EXCEPT ![pRound] = msgsPrecommit[pRound] \union {newMsg}]
 
 
 (********************* PROTOCOL TRANSITIONS ******************************)
