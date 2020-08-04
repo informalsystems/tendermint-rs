@@ -81,7 +81,7 @@ We describe the context on which the fork detector is called by giving
 a sequential version of the supervisor function.
 Roughly, it alternates two phases namely:
    - Light Client Verification. As a result, a header of the required
-     height has been downloaded from and verified with the primary
+     height has been downloaded from and verified with the primary.
    - Light Client Fork Detections. As a result the header has been
      cross-checked with the secondaries. In case the is a fork we
      submit "proof of fork" and exit.
