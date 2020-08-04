@@ -55,7 +55,6 @@ impl TrustThresholdFraction {
     }
 }
 
-// TODO: should this go in the central place all impls live instead? (currently lite_impl)
 impl TrustThreshold for TrustThresholdFraction {
     fn is_enough_power(&self, signed_voting_power: u64, total_voting_power: u64) -> bool {
         signed_voting_power * self.denominator > total_voting_power * self.numerator
