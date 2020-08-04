@@ -102,7 +102,7 @@ func Sequential-Supervisor () (Error) {
 		// Verify
         result := NoResult;
         while result != ResultSuccess {
-            lightStore,result := VerifyToTarget(primary, lightStore, nextheight);
+            lightStore,result := VerifyToTarget(primary, lightStore, nextHeight);
             if result == ResultFailure {				
 				// pick new primary (promote a secondary to primary)
 				/// and delete all lightblocks above
