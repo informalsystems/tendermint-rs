@@ -165,7 +165,7 @@ BroadcastProposal(pSrc, pRound, pProposal, pValidRound) ==
     AsMsg([type |-> "PROPOSAL", src |-> pSrc, round |-> pRound,
            proposal |-> pProposal, validRound |-> pValidRound])
   IN
-  msgsPropose' = [msgsPropose EXCEPT ![pRound] = msgsPropose[pRound] \cup {newMsg}]
+  msgsPropose' = [msgsPropose EXCEPT ![pRound] = msgsPropose[pRound] \union {newMsg}]
 
 BroadcastPrevote(pSrc, pRound, pId) ==
   LET newMsg == AsMsg([type |-> "PREVOTE",
