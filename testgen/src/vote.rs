@@ -87,7 +87,7 @@ impl Generator<vote::Vote> for Vote {
             Some(i) => i,
             None => match header.validators.as_ref().unwrap().iter().position(|v| *v == *validator) {
                 Some(i) => i as u64,
-                None => bail!("failed to generate vote: no index given and validator not present in the header")
+                None => 0 // bail!("failed to generate vote: no index given and validator not present in the header")
             }
         };
         let mut vote = vote::Vote {
