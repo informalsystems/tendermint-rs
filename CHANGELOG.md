@@ -7,6 +7,10 @@
 
 [#472]: https://github.com/informalsystems/tendermint-rs/pull/472
 
+### Proto crate
+
+- Created Rust structs from Tendermint Proto files ([#504])
+
 ## [0.15.0] (2020-07-17)
 
 This release is mostly about the revamped [light-client] library and the [light-node] command-line interface.
