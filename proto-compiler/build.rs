@@ -5,7 +5,6 @@ use std::path::PathBuf;
 use walkdir::WalkDir;
 
 fn main() {
-    // Paths
     // Assume that the tendermint Go repository was cloned into the current repository's
     // target/tendermint folder.
     let tendermint_go_path =
