@@ -9,7 +9,7 @@ fn main() {
     // Assume that the tendermint Go repository was cloned into the current repository's
     // target/tendermint folder.
     let tendermint_go_path =
-        var("TENDERMINT_DIR").unwrap_or_else(|_| "../../target/tendermint".to_string());
+        var("TENDERMINT_DIR").unwrap_or_else(|_| "../target/tendermint".to_string());
     let proto_paths = [format!("{}/proto", tendermint_go_path)];
     let proto_includes_paths = [
         format!("{}/proto", tendermint_go_path),

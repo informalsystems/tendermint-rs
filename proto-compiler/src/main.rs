@@ -3,7 +3,7 @@ use std::fs::{copy, create_dir_all};
 use walkdir::WalkDir;
 
 pub(crate) fn main() {
-    let tendermint_proto_path = "tendermint-proto/src/prost";
+    let tendermint_proto_path = "../proto/src/prost";
 
     // Remove old compiled files
     remove_dir_all(tendermint_proto_path).unwrap_or_default();

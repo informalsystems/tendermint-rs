@@ -17,5 +17,5 @@ description = """
 all-features = true
 
 [dependencies]
-prost = { version = "0.6.1" }
-prost-types = { version = "0.6.1" }
+prost = { version = "0.6" }
+prost-types = { version = "0.6" }
