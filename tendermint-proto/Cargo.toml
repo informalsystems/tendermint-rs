@@ -1,0 +1,21 @@
+[package]
+name = "tendermint-proto"
+version = "0.1.0"
+authors = ["Greg Szabo <greg@informal.systems>"]
+edition = "2018"
+license = "Apache-2.0"
+repository = "https://github.com/informalsystems/tendermint-rs/tree/master/tendermint-proto"
+readme     = "README.md"
+categories = ["cryptography", "cryptography::cryptocurrencies", "database"]
+keywords   = ["blockchain", "tendermint", "proto"]
+
+description = """
+    tendermint-proto is a the Rust implementation of the Tendermint proto structs.
+    """
+
+[package.metadata.docs.rs]
+all-features = true
+
+[dependencies]
+prost = { version = "0.6.1" }
+prost-types = { version = "0.6.1" }
