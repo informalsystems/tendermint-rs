@@ -5,7 +5,6 @@ use walkdir::WalkDir;
 pub(crate) fn main() {
     let tendermint_proto_path = "tendermint-proto/src/prost";
 
-    println!("{:?}", std::env::current_dir().unwrap());
     // Remove old compiled files
     remove_dir_all(tendermint_proto_path).unwrap_or_default();
     create_dir_all(tendermint_proto_path).unwrap();
