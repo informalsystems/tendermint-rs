@@ -14,7 +14,7 @@ pub trait Hasher: Send {
 }
 
 /// Default implementation of a hasher
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct ProdHasher;
 
 impl Hasher for ProdHasher {
