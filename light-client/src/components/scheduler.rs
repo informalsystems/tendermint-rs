@@ -122,5 +122,5 @@ pub fn valid_schedule(
 #[pre(low <= high)]
 #[post(low <= ret && ret <= high)]
 fn midpoint(low: Height, high: Height) -> Height {
-    low + (high + 1 - low) / 2
+    (low.value() + (high.value() + 1 - low.value()) / 2).into()
 }

@@ -3,7 +3,7 @@ use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
 use std::str::FromStr;
-use tendermint::{block, chain, lite::ValidatorSet, validator, Time};
+use tendermint::{block, chain, validator, Time};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Header {
@@ -159,13 +159,13 @@ mod tests {
         let mut block_header = header2.generate().unwrap();
 
         block_header.chain_id = chain::Id::from_str("chain1").unwrap();
-        let header = header2.clone().chain_id("chain1");
+        let header = header2.chain_id("chain1");
         assert_eq!(header.generate().unwrap(), block_header);
 
         block_header.proposer_address = Validator::new("b").generate().unwrap().address;
         assert_ne!(header.generate().unwrap(), block_header);
 
-        let header = header.clone().proposer(1);
+        let header = header.proposer(1);
         assert_eq!(header.generate().unwrap(), block_header);
     }
 }

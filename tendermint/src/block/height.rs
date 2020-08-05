@@ -21,7 +21,7 @@ impl Height {
 
     /// Increment the block height by 1
     pub fn increment(self) -> Self {
-        Height(self.0.checked_add(1).unwrap())
+        Height(self.0.checked_add(1).expect("height overflow"))
     }
 }
 

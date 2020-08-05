@@ -1,7 +1,7 @@
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
-use tendermint::{block, lite};
+use tendermint::block;
 
 use crate::{helpers::*, Generator, Header, Validator, Vote};
 
@@ -109,7 +109,7 @@ impl Generator<block::Commit> for Commit {
             Some(vs) => vs.to_vec(),
         };
         let block_header = header.generate()?;
-        let block_id = block::Id::new(lite::Header::hash(&block_header), None);
+        let block_id = block::Id::new(block_header.hash(), None);
 
         let vote_to_sig = |v: &Vote| -> Result<block::CommitSig, SimpleError> {
             let vote = v.generate()?;
@@ -192,7 +192,7 @@ mod tests {
                         signature
                     ));
                 }
-                _ => assert!(false),
+                _ => panic!("signature was not a commit"),
             };
         }
     }

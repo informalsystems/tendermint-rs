@@ -247,11 +247,11 @@ fn run_bisection_tests(dir: &str) {
 /// the bisection test as normal. We then assert that we get the expected error.
 fn run_bisection_lower_tests(dir: &str) {
     foreach_bisection_test(dir, |file, mut tc| {
-        let mut trusted_height: Height = tc.trust_options.height.into();
+        let mut trusted_height = tc.trust_options.height;
 
-        if trusted_height <= 1 {
-            tc.trust_options.height = (trusted_height + 1).into();
-            trusted_height += 1;
+        if trusted_height.value() <= 1 {
+            tc.trust_options.height = trusted_height.increment();
+            trusted_height = trusted_height.increment();
         }
 
         println!(
@@ -259,7 +259,7 @@ fn run_bisection_lower_tests(dir: &str) {
             file
         );
 
-        tc.height_to_verify = (trusted_height - 1).into();
+        tc.height_to_verify = (trusted_height.value() - 1).into();
 
         let test_result = run_bisection_test(tc);
         match test_result.new_states {
