@@ -1,18 +1,20 @@
 extern crate prost_build;
 
+use git2::Repository;
 use std::env::var;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 fn main() {
-    // Assume that the tendermint Go repository was cloned into the current repository's
-    // target/tendermint folder.
-    let tendermint_go_path =
-        var("TENDERMINT_DIR").unwrap_or_else(|_| "../target/tendermint".to_string());
-    let proto_paths = [format!("{}/proto", tendermint_go_path)];
+    let tendermint_dir = var("TENDERMINT_DIR").unwrap_or_else(|_| "target/tendermint".to_string());
+    if !Path::new(&tendermint_dir).exists() {
+        let url = "https://github.com/tendermint/tendermint";
+        Repository::clone(url, &tendermint_dir).unwrap();
+    }
+    let proto_paths = [format!("{}/proto", tendermint_dir)];
     let proto_includes_paths = [
-        format!("{}/proto", tendermint_go_path),
-        format!("{}/third_party/proto", tendermint_go_path),
+        format!("{}/proto", tendermint_dir),
+        format!("{}/third_party/proto", tendermint_dir),
     ];
 
     // List available proto files
