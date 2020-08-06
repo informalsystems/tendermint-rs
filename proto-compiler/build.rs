@@ -1,6 +1,5 @@
-extern crate prost_build;
-
 use git2::Repository;
+use prost_build::compile_protos;
 use std::env::var;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -38,5 +37,5 @@ fn main() {
     let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
     // Compile all proto files
-    prost_build::compile_protos(&protos, &includes).unwrap();
+    compile_protos(&protos, &includes).unwrap();
 }
