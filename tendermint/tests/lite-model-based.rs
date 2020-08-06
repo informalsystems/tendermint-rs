@@ -164,12 +164,12 @@ fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<CommandRun
 #[test]
 fn apalache_test() {
     let test = ApalacheTestCase {
-        model: "MC4_10_correct.tla".to_string(),
+        model: "MC4_4_faulty.tla".to_string(),
         test: "TestFailureInv".to_string(),
         length: None,
         timeout: None
     };
-    match run_apalache_test("./tests/support/lite-model-based", test) {
+    match run_apalache_test("tests/support/lite-model-based", test) {
         Ok(run) => {
             eprintln!("Stdout: {}", run.stdout);
             eprintln!("Stderr: {}", run.stderr)
