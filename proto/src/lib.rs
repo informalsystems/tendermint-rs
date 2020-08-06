@@ -1,8 +1,7 @@
 //! tendermint-proto library gives the developer access to the Tendermint proto-defined structs.
 
-// Todo: automate the creation of this module setup based on the dots in the filenames.
-//  This module setup is necessary because the generated code contains "super::" calls for
-//  dependencies.
+// This module setup is necessary because the generated code contains "super::" calls for
+// dependencies. Unfortunately, prost doesn't create this for us automatically.
 
 #![deny(
     warnings,
