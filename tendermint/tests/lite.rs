@@ -6,8 +6,8 @@ use tendermint::block::{Header, Height};
 use tendermint::lite::{Requester, TrustThresholdFraction, TrustedState};
 use tendermint::{block::signed_header::SignedHeader, evidence::Duration, lite, Hash, Time};
 
-mod lite_tests;
-use lite_tests::*;
+mod utils;
+use utils::lite::*;
 
 #[derive(Deserialize, Clone, Debug)]
 struct TestCases {

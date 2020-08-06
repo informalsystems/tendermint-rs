@@ -1,14 +1,13 @@
-use std::{process, io};
-use std::io::Read;
+use std::{io};
 use std::{fs, path::PathBuf};
 use serde::Deserialize;
-use tempfile::tempdir;
-use tendermint::{block::signed_header::SignedHeader, evidence::Duration, lite, Hash, Time};
-use tendermint::block::{Header, Height};
-use tendermint::lite::{Requester, TrustThresholdFraction, TrustedState};
-mod lite_tests;
-use lite_tests::*;
-use tendermint::lite::error::Error;
+//use tempfile::tempdir;
+use tendermint::{block::signed_header::SignedHeader, lite};
+use tendermint::block::{Header};
+use tendermint::lite::{TrustThresholdFraction, TrustedState};
+
+mod utils;
+use utils::{apalache::*, command::*, lite::*};
 
 type Trusted = lite::TrustedState<SignedHeader, Header>;
 
@@ -47,24 +46,6 @@ pub struct SingleStepTestCase {
 pub struct BlockVerdict {
     block: LiteBlock,
     verdict: LiteVerdict,
-}
-
-#[derive(Deserialize, Clone, Debug)]
-pub struct ApalacheTestBatch {
-    pub description: String,
-    pub kind: LiteTestKind,
-    pub model: String,
-    pub length: Option<u64>,
-    pub timeout: Option<u64>,
-    pub tests: Vec<String>,
-}
-
-#[derive(Deserialize, Clone, Debug)]
-pub struct ApalacheTestCase {
-    pub model: String,
-    pub test: String,
-    pub length: Option<u64>,
-    pub timeout: Option<u64>,
 }
 
 const TEST_DIR: &str = "./tests/support/lite-model-based/";
@@ -126,8 +107,6 @@ fn single_step_test() {
     run_single_step_test(&tc);
 }
 
-
-
 fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<CommandRun> {
     let mut cmd = Command::new();
     if let Some(timeout) = test.timeout {
@@ -163,6 +142,10 @@ fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<CommandRun
 
 #[test]
 fn apalache_test() {
+
+    println!("Apalache: {}", Command::exists_program("apalache-mc"));
+    println!("Jsonatr: {}", Command::exists_program("jsonatr"));
+
     let test = ApalacheTestCase {
         model: "MC4_4_faulty.tla".to_string(),
         test: "TestFailureInv".to_string(),
