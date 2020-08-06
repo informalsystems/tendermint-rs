@@ -1,5 +1,3 @@
-use std::{io};
-use std::{fs, path::PathBuf};
 use serde::Deserialize;
 //use tempfile::tempdir;
 use tendermint::{block::signed_header::SignedHeader, lite};
@@ -7,7 +5,7 @@ use tendermint::block::{Header};
 use tendermint::lite::{TrustThresholdFraction, TrustedState};
 
 mod utils;
-use utils::{apalache::*, command::*, lite::*};
+use utils::{*, apalache::*, command::*, lite::*};
 
 type Trusted = lite::TrustedState<SignedHeader, Header>;
 
@@ -49,10 +47,6 @@ pub struct BlockVerdict {
 }
 
 const TEST_DIR: &str = "./tests/support/lite-model-based/";
-
-fn read_file(dir: &str, file: &str) -> String {
-    fs::read_to_string(PathBuf::from(dir.to_owned() + file)).unwrap()
-}
 
 fn read_single_step_test(dir: &str, file: &str) -> SingleStepTestCase {
     serde_json::from_str(read_file(dir, file).as_str()).unwrap()
@@ -106,39 +100,6 @@ fn single_step_test() {
     let tc = read_single_step_test(TEST_DIR, "first-model-based-test.json");
     run_single_step_test(&tc);
 }
-
-fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<CommandRun> {
-    let mut cmd = Command::new();
-    if let Some(timeout) = test.timeout {
-        cmd.program("timeout");
-        cmd.arg(&timeout.to_string());
-        cmd.arg("apalache-mc");
-    }
-    else {
-        cmd.program("apalache-mc");
-    }
-    cmd.arg("check");
-    cmd.arg_from_parts(vec!["--inv=", &test.test]);
-    if let Some(length) = test.length {
-        cmd.arg_from_parts(vec!["--length=", &length.to_string()]);
-    }
-    cmd.arg(&test.model);
-    if !dir.is_empty() {
-        cmd.current_dir(dir);
-    }
-    match cmd.spawn() {
-        Ok(run) => {
-            if run.status.success() {
-                Ok(run)
-            }
-            else {
-                Err(io::Error::new(io::ErrorKind::Interrupted, run.stdout.to_string()))
-            }
-        },
-        Err(e) => Err(e)
-    }
-}
-
 
 #[test]
 fn apalache_test() {

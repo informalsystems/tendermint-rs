@@ -1,6 +1,6 @@
 use anomaly::fail;
 use async_trait::async_trait;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use tendermint::block::Header;
@@ -9,20 +9,6 @@ use tendermint::lite::Requester;
 use tendermint::{
     block::signed_header::SignedHeader, evidence::Duration, lite, validator::Set, Time,
 };
-
-/// Test that a struct `T` can be:
-///
-/// - serialized to JSON
-/// - parsed back from the serialized JSON of the previous step
-/// - that the two parsed structs are equal according to their `PartialEq` impl
-pub fn test_serialization_roundtrip<T>(obj: &T)
-    where
-        T: Debug + PartialEq + Serialize + DeserializeOwned,
-{
-    let serialized = serde_json::to_string(obj).unwrap();
-    let parsed = serde_json::from_str(&serialized).unwrap();
-    assert_eq!(obj, &parsed);
-}
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct Initial {
