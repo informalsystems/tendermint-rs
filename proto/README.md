@@ -7,7 +7,7 @@
 [![Apache 2.0 Licensed][license-image]][license-link]
 ![Rust 1.39+][rustc-image]
 
-Rust crate for interacting with Tendermint [proto structs][tendermint-go-proto-link].
+Crate for interacting with Tendermint [proto structs][tendermint-go-proto-link].
 
 [Documentation][docs-link]
 
