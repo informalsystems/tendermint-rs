@@ -51,20 +51,20 @@ pub struct BlockVerdict {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ApalacheTestBatch {
-    description: String,
-    kind: LiteTestKind,
-    model: String,
-    length_bound: Option<u64>,
-    timeout: Option<u64>,
-    tests: Vec<String>,
+    pub description: String,
+    pub kind: LiteTestKind,
+    pub model: String,
+    pub length: Option<u64>,
+    pub timeout: Option<u64>,
+    pub tests: Vec<String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ApalacheTestCase {
-    model: String,
-    test: String,
-    length_bound: Option<u64>,
-    timeout: Option<u64>,
+    pub model: String,
+    pub test: String,
+    pub length: Option<u64>,
+    pub timeout: Option<u64>,
 }
 
 const TEST_DIR: &str = "./tests/support/lite-model-based/";
@@ -124,4 +124,56 @@ fn run_single_step_test(tc: &SingleStepTestCase) {
 fn single_step_test() {
     let tc = read_single_step_test(TEST_DIR, "first-model-based-test.json");
     run_single_step_test(&tc);
+}
+
+
+
+fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<CommandRun> {
+    let mut cmd = Command::new();
+    if let Some(timeout) = test.timeout {
+        cmd.program("timeout");
+        cmd.arg(&timeout.to_string());
+        cmd.arg("apalache-mc");
+    }
+    else {
+        cmd.program("apalache-mc");
+    }
+    cmd.arg("check");
+    cmd.arg_from_parts(vec!["--inv=", &test.test]);
+    if let Some(length) = test.length {
+        cmd.arg_from_parts(vec!["--length=", &length.to_string()]);
+    }
+    cmd.arg(&test.model);
+    if !dir.is_empty() {
+        cmd.current_dir(dir);
+    }
+    match cmd.spawn() {
+        Ok(run) => {
+            if run.status.success() {
+                Ok(run)
+            }
+            else {
+                Err(io::Error::new(io::ErrorKind::Interrupted, run.stdout.to_string()))
+            }
+        },
+        Err(e) => Err(e)
+    }
+}
+
+
+#[test]
+fn apalache_test() {
+    let test = ApalacheTestCase {
+        model: "MC4_10_correct.tla".to_string(),
+        test: "TestFailureInv".to_string(),
+        length: None,
+        timeout: None
+    };
+    match run_apalache_test("./tests/support/lite-model-based", test) {
+        Ok(run) => {
+            eprintln!("Stdout: {}", run.stdout);
+            eprintln!("Stderr: {}", run.stderr)
+        },
+        Err(e) => eprintln!("ERR: {}", e.to_string())
+    }
 }

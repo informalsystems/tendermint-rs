@@ -143,10 +143,14 @@ impl Command {
         match &self.program {
             None => Err(io::Error::new(io::ErrorKind::InvalidInput, "")),
             Some(program) => {
-                let mut process = process::Command::new(program)
+                let mut command = process::Command::new(program);
+                command.args(&self.args)
                     .stdout(process::Stdio::piped())
-                    .stderr(process::Stdio::piped())
-                    .spawn()?;
+                    .stderr(process::Stdio::piped());
+                if let Some(dir) = &self.dir {
+                    command.current_dir(dir);
+                }
+                let mut process = command.spawn()?;
                 let status = process.wait()?;
                 let mut stdout = String::new();
                 process.stdout.unwrap().read_to_string(&mut stdout)?;
