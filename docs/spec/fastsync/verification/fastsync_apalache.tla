@@ -1,4 +1,4 @@
------------------------------ MODULE fastsync -----------------------------
+----------------------------- MODULE fastsync_apalache -----------------------------
 (*
  In this document we give the high level specification of the fast sync
  protocol as implemented here:
@@ -208,7 +208,7 @@ OutMsgs ==
 
 InitNode ==
      \E pIds \in SUBSET AllPeerIds:                   \* set of peers node established initial connections with
-        /\ pIds \subseteq CORRECT   \* this line is not necessary
+        /\ pIds \subseteq CORRECT
         /\ pIds /= AsPidSet({}) \* apalache better checks non-emptiness than subtracts from SUBSET
         /\ blockPool = AsBlockPool([
                 height |-> TrustedHeight + 1,       \* the genesis block is at height 1
@@ -590,20 +590,17 @@ SendControlMessage ==
     \/ SendSyncTimeoutMessage
 
 \* An extremely important property of block hashes (blockId):
-\* If the block hash coincides with the hash of the reference block,
-\* then the blocks should be equal.
+\* If a commit is correct, then the previous block in the block store must be also correct.
 UnforgeableBlockId(height, block) ==
     block.hashEqRef => block = chain[height]
 
 \* A faulty peer cannot forge enough of the validators signatures.
-\* In other words: If a commit contains enough signatures from the validators (in reality 2/3, in the model all), 
-\* then the blockID points to the block on the chain, encoded as block.lastCommit.blockIdEqRef being true
 \* A more precise rule should have checked that the commiters have over 2/3 of the VS's voting power.
 NoFork(height, block) ==
     (height > 1 /\ block.lastCommit.committers = chain[height - 1].VS)
         => block.lastCommit.blockIdEqRef
 
-\* Can be block produced by a faulty peer, assuming it cannot generate forks (basic assumption of the protocol)
+\* Can be block produced by a faulty peer
 IsBlockByFaulty(height, block) ==
     /\ block.height = height
     /\ UnforgeableBlockId(height, block)
