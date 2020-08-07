@@ -103,6 +103,7 @@ fn single_step_test() {
 
 #[test]
 fn apalache_test() {
+    assert!(Command::exists_program("tendermint-testgen"));
     assert!(Command::exists_program("apalache-mc"));
     assert!(Command::exists_program("jsonatr"));
 
