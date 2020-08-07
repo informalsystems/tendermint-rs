@@ -1,8 +1,8 @@
 
 ```rust
 /// Stores the LightBlocks which could not be confirmed to have originated from
-/// the same chain as the predecesor light blocks.
-type FetchedStack = Stack<LightBlock>;
+/// the same chain as the predecessor light blocks.
+type FetchedStack = Vec<LightBlock>;
 
 /// Pair of light block and height of the light block which was the 
 /// highest one for which we believe originated from the same chain
