@@ -82,9 +82,9 @@ pub fn verify_to_target(
 trait LightStore {
     /// Current highest LightBlock which we believe to be from a chain 
     /// for which this store is associated with.
-    fn highest_trusted(&self) -> LightBlock;
+    fn highest(&self) -> LightBlock;
 
-    /// Stores the list of ChainPair, possibly changing the highest_trusted LightBlock;
+    /// Stores the list of ChainPair, possibly changing the highest LightBlock;
     /// Precondition is the existence of Light Block for which the chain can be linked
     /// with the already stored ChainPair. Failing if the chain can bot be linked with
     /// existing history or if there is conflicting information.
@@ -109,7 +109,8 @@ pub fn sequential_supervisor() -> Result<(), Forked> {
     loop {
 	    // get the next height
         let target_height = input();
-        // trusted_store contains all (LightBlock, previous) which passed fork detection
+        // light_store contains all (LightBlock, previous), for this supervisor all have passed
+        // fork detection and there will be no recoveries, etc.
 		
 		// Verify
         let mut result = Err(NoPeer);
@@ -127,10 +128,10 @@ pub fn sequential_supervisor() -> Result<(), Forked> {
         assert_eq!(target_height, result.current_height());
 		
         // Cross-check
-        let fork_result = fork_detector(witnesses(), trusted_store.heighest_trusted(), target_height);
+        let fork_result = fork_detector(witnesses(), light_store.heighest_trusted(), target_height);
         match fork_result {
             NoFork => {
-                trusted_store.store_chain(result.verification_chain());
+                light_store.store_chain(result.verification_chain());
             }
             Fork(proof_of_fork) => {
                 submit_evidence(proof_of_fork);
