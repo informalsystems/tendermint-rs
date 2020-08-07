@@ -602,7 +602,7 @@ NoFork(height, block) ==
     (height > 1 /\ block.lastCommit.committers = chain[height - 1].VS)
         => block.lastCommit.blockIdEqRef
 
-\* Can be block produced by a faulty peer
+\* Can be block produced by a faulty peer, assuming it cannot generate forks (basic assumption of the protocol)
 IsBlockByFaulty(height, block) ==
     /\ block.height = height
     /\ UnforgeableBlockId(height, block)
