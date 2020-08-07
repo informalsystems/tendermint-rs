@@ -208,7 +208,7 @@ OutMsgs ==
 
 InitNode ==
      \E pIds \in SUBSET AllPeerIds:                   \* set of peers node established initial connections with
-        /\ pIds \subseteq CORRECT
+        /\ pIds \subseteq CORRECT   \* this line is not necessary
         /\ pIds /= AsPidSet({}) \* apalache better checks non-emptiness than subtracts from SUBSET
         /\ blockPool = AsBlockPool([
                 height |-> TrustedHeight + 1,       \* the genesis block is at height 1
@@ -590,7 +590,8 @@ SendControlMessage ==
     \/ SendSyncTimeoutMessage
 
 \* An extremely important property of block hashes (blockId):
-\* If a commit is correct, then the previous block in the block store must be also correct.
+\* If the block hash coincides with the hash of the reference block,
+\* then the blocks should be equal.
 UnforgeableBlockId(height, block) ==
     block.hashEqRef => block = chain[height]
 

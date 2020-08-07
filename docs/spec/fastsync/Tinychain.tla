@@ -40,16 +40,19 @@ CONSTANTS
     
 Heights == 1..MAX_HEIGHT    
 
-\* the set of all possible commits
+\* the set of all potential commits
 Commits == [blockIdEqRef: BOOLEAN, committers: VALIDATOR_SETS]
 
-\* the set of all possible blocks, not necessarily valid ones
+\* the set of all potential blocks, not necessarily coming from the blockchain
 Blocks ==
   [height: Heights, hashEqRef: BOOLEAN, wellFormed: BOOLEAN,
    VS: VALIDATOR_SETS, NextVS: VALIDATOR_SETS, lastCommit: Commits]
 
 \* Does the chain contain a sound sequence of blocks that could be produced by
 \* a 2/3 of faulty validators. This operator can be used to initialise the chain!
+\* Since we are abstracting validator sets with VALIDATOR_SETS, which are
+\* 2/3 quorums, we just compare committers to those sets. In a more detailed
+\* specification, one would write the \subseteq operator instead of equality.
 IsCorrectChain(chain) ==
     \* restrict the structure of the blocks, to decrease the TLC search space
     LET OkCommits == [blockIdEqRef: {TRUE}, committers: VALIDATOR_SETS]
