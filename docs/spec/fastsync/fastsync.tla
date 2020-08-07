@@ -595,6 +595,8 @@ UnforgeableBlockId(height, block) ==
     block.hashEqRef => block = chain[height]
 
 \* A faulty peer cannot forge enough of the validators signatures.
+\* In other words: If a commit contains enough signatures from the validators (in reality 2/3, in the model all), 
+\* then the blockID points to the block on the chain, encoded as block.lastCommit.blockIdEqRef being true
 \* A more precise rule should have checked that the commiters have over 2/3 of the VS's voting power.
 NoFork(height, block) ==
     (height > 1 /\ block.lastCommit.committers = chain[height - 1].VS)
