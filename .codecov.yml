@@ -21,3 +21,6 @@ parsers:
       loop: yes
       method: yes
       macro: no
+
+ignore:
+  - "proto/src/prost"    # Rust structs automatically generated from Protobuf definitions

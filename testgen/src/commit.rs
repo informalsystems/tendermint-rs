@@ -126,7 +126,8 @@ impl Generator<block::Commit> for Commit {
         let commit = block::Commit {
             height: block_header.height,
             round: self.round.unwrap_or(1),
-            block_id, // TODO do we need at least one part? //block::Id::new(hasher.hash_header(&block_header), None), //
+            block_id, /* TODO do we need at least one part?
+                       * //block::Id::new(hasher.hash_header(&block_header), None), // */
             signatures: block::CommitSigs::new(sigs),
         };
         Ok(commit)
