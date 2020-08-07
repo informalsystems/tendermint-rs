@@ -21,7 +21,7 @@ LCT == [blockIdEqRef |-> BOOLEAN, committers |-> VST]
 
 \* Block type.
 \* A block contains its height, validator set, next validator set, and last commit.
-\* Moreover, it contains the flag that tells us whether the block equals to the one
+\* Moreover, it contains the flag that tells us whether the block is equal to the one
 \* on the reference chain (this is an abstraction of hash).
 BT == [height |-> Int, hashEqRef |-> BOOLEAN, wellFormed |-> BOOLEAN,
        VS |-> VST, NextVS |-> VST, lastCommit |-> LCT]
