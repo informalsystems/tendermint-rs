@@ -31,7 +31,7 @@ trait Trace {
 pub fn verify_to_target(
     primary: PeerID,
     starting_light_block: LightBlock,
-    target_height: Height) -> Result<Trace, (LightBlock, Reason)> {
+    target_height: Height) -> Result<Trace, (LightBlock, VerificationError)> {
 
     // Verified state always has one starting LightBlock
     let mut trace = Trace::from(starting_light_block);
@@ -58,8 +58,8 @@ pub fn verify_to_target(
                 continue;
             },
             // invalid block stop
-            Invalid(reason) => {
-                return Err((lowest_unverified, reason))
+            Invalid(error) => {
+                return error
             },
             Untrusted => {
                 // we need an intermediate LightBlock
@@ -101,16 +101,16 @@ trait LightStore {
     /// height. Erases all light blocks from the store with height greater or equal to boundary.
     /// Returning the chain of light blocks which are removed. To be used if a fork is discovered
     /// after insertions of light blocks.
-    fn recover(&mut self, boundary: Height) -> LinkedList<ChainPair>;
+    fn recover(&mut self, boundary: Height) -> Result<LinkedList<ChainPair>, LightStoreError>;
 
     /// Returns the firsts LightBlock above if it exists.
-    fn above(&self, height: Height) -> Option<&LightBlock>;
+    fn above(&self, height: Height) -> Result<&LightBlock, ListStoreError>;
     
     /// Returns the firsts LightBlock below if it exists.
-    fn below(&self, height: Height) -> Option<&LightBlock>;
+    fn below(&self, height: Height) -> Result<&LightBlock, ListStoreError>;
     
     /// Tries to get a certain height.
-    fn get(&self, height: Height) -> Option<&LightBlock>;
+    fn get(&self, height: Height) -> Result<&LightBlock, ListStoreError>;
 }
 
 /// Current understanding how a LightNode functions.
