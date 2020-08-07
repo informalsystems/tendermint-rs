@@ -362,18 +362,4 @@ We will need to define what we expect from these components
 - we write specs for these components.
 
 
-# ICS-007
-
-> Below we will discuss in more detail the  necessary steps to address
-[Issue 461](https://github.com/informalsystems/tendermint-rs/issues/461)
-in particular w.r.t. 1. "proof of fork" for on-chain clients - may
-require breaking changes to 
-[ICS07](https://github.com/cosmos/ics/tree/master/spec/ics-007-tendermint-client).
-
-- "Tendermint client state tracks the current validator set": is this
-  the validator set or the nextvalidator set of the block with tha
-  maximum height verified thus far? What is `validatorSet` used for?
-  
-
-  
 
