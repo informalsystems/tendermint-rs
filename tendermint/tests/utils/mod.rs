@@ -4,6 +4,7 @@ use std::{fs, path::PathBuf};
 
 pub mod apalache;
 pub mod command;
+pub mod jsonatr;
 pub mod lite;
 
 /// Test that a struct `T` can be:
