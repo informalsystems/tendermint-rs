@@ -102,6 +102,15 @@ trait LightStore {
     /// Returning the chain of light blocks which are removed. To be used if a fork is discovered
     /// after insertions of light blocks.
     fn recover(&mut self, boundary: Height) -> LinkedList<ChainPair>;
+
+    /// Returns the firsts LightBlock above if it exists.
+    fn above(&self, height: Height) -> Option<&LightBlock>;
+    
+    /// Returns the firsts LightBlock below if it exists.
+    fn below(&self, height: Height) -> Option<&LightBlock>;
+    
+    /// Tries to get a certain height.
+    fn get(&self, height: Height) -> Option<&LightBlock>;
 }
 
 /// Current understanding how a LightNode functions.
