@@ -1,0 +1,46 @@
+{
+  "description": "Transform an Apalache counterexample into a Tendermint LightClient test",
+  "use": [
+    "unix.json",
+    "apalache-tendermint.json"
+  ],
+  "input": [
+    {
+      "name": "block_to_initial_block",
+      "description": "transforms a block from Apalache CE into a JSON-encoded Tendermint initial light block",
+      "kind": "INLINE",
+      "let": {
+        "now": "$utc_timestamp",
+        "utc_timestamp": "$utc_timestamp_2hours_ago"
+      },
+      "source": {
+        "signed_header": "$ | block_to_signed_header",
+        "next_validator_set": "$ | block_next_validators | ids_to_validator_set",
+        "trusting_period": "10800000000000",
+        "now": "$now"
+      }
+    },
+    {
+      "name": "state_to_lite_block_verdict",
+      "description": "transforms a block from Apalache CE into a JSON-encoded Tendermint light block",
+      "kind": "INLINE",
+      "let": {
+        "utc_timestamp": "$utc_timestamp_hour_ago",
+        "block": "$..[?(@.eq == 'prevChecked')]"
+      },
+      "source": {
+        "block": {
+          "signed_header": "$block | block_to_signed_header",
+          "validator_set": "$block | block_validators | ids_to_validator_set",
+          "next_validator_set": "$block | block_next_validators | ids_to_validator_set"
+        },
+        "verdict": "$..[?(@.eq == 'prevVerdict')].arg.str | unwrap"
+      }
+    }
+  ],
+  "output": {
+    "description": "auto-generated from Apalache counterexample",
+    "initial": "$states[0]..[?(@.eq == 'prevVerified')] | block_to_initial_block",
+    "input": "$states[1:] | map(state_to_lite_block_verdict)"
+  }
+}
