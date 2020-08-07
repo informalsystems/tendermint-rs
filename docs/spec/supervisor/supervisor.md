@@ -1,10 +1,10 @@
 
 ```rust
-/// Stores the Light Blocks which could not be confirmed to have originated from
+/// Stores the LightBlocks which could not be confirmed to have originated from
 /// the same chain as the predecesor light blocks.
 type FetchedStack = Stack<LightBlock>;
 
-/// Pair of light block and height of the light block which was highest 
+/// Pair of light block and height of the light block which was the 
 /// highest one for which we believe originated from the same chain
 type ChainPair = (LightBlock, Height);
 
@@ -21,7 +21,7 @@ trait Trace {
 
     /// Returns the list of all LightBlock which were inserted through 
     /// insert with associated previous current_height().
-    fn verification_chain(&self) -> LinkedList<ChainPair>;
+    fn chain(&self) -> LinkedList<ChainPair>;
 }
 
 
@@ -34,7 +34,7 @@ pub fn verify_to_target(
     target_height: Height) -> Result<Trace, (LightBlock, Reason)> {
 
     // Verified state always has one starting LightBlock
-    let mut trace = Trace::from(startingLightBlock);
+    let mut trace = Trace::from(starting_light_block);
     let mut fetch_stack = FetchedStack::empty();
 
     // insert the light block of target height, simplifies the loop
@@ -86,7 +86,7 @@ trait LightStore {
 
     /// Stores the list of ChainPair, possibly changing the highest LightBlock;
     /// Precondition is the existence of Light Block for which the chain can be linked
-    /// with the already stored ChainPair. Failing if the chain can bot be linked with
+    /// with the already stored ChainPair. Failing if the chain can not be linked with
     /// existing history or if there is conflicting information.
     fn store_chain(&mut self, chain: LinkedList<ChainPair>) -> Result<(), Error>;
     
