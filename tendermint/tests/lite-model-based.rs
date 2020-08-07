@@ -5,7 +5,7 @@ use tendermint::block::{Header};
 use tendermint::lite::{TrustThresholdFraction, TrustedState};
 
 mod utils;
-use utils::{*, apalache::*, command::*, lite::*};
+use utils::{*, apalache::*, jsonatr::*, command::*, lite::*};
 
 type Trusted = lite::TrustedState<SignedHeader, Header>;
 
@@ -103,9 +103,8 @@ fn single_step_test() {
 
 #[test]
 fn apalache_test() {
-
-    println!("Apalache: {}", Command::exists_program("apalache-mc"));
-    println!("Jsonatr: {}", Command::exists_program("jsonatr"));
+    assert!(Command::exists_program("apalache-mc"));
+    assert!(Command::exists_program("jsonatr"));
 
     let test = ApalacheTestCase {
         model: "MC4_4_faulty.tla".to_string(),
@@ -113,11 +112,15 @@ fn apalache_test() {
         length: None,
         timeout: None
     };
-    match run_apalache_test("tests/support/lite-model-based", test) {
-        Ok(run) => {
-            eprintln!("Stdout: {}", run.stdout);
-            eprintln!("Stderr: {}", run.stderr)
-        },
-        Err(e) => eprintln!("ERR: {}", e.to_string())
-    }
+    assert!(run_apalache_test(TEST_DIR, test).is_ok());
+
+    let transform = JsonatrTransform {
+        input: "counterexample.json".to_string(),
+        include: vec!["../../utils/jsonatr-lib/apalache_to_lite_test.json".to_string()],
+        output: "lite_test.json".to_string()
+    };
+    assert!(run_jsonatr_transform(TEST_DIR, transform).is_ok());
+
+    let tc = read_single_step_test(TEST_DIR, "lite_test.json");
+    run_single_step_test(&tc);
 }

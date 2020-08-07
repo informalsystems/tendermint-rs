@@ -20,6 +20,9 @@ pub fn run_jsonatr_transform(dir: &str, transform: JsonatrTransform) -> io::Resu
         cmd.arg("--use");
         cmd.arg(&include);
     }
+    if !dir.is_empty() {
+        cmd.current_dir(dir);
+    }
     match cmd.spawn() {
         Ok(run) => {
             if run.status.success() {
