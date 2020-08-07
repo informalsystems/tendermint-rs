@@ -1,3 +1,5 @@
+//! Provides an interface and a default implementation of the `Io` component
+
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -16,14 +18,17 @@ use crate::{
     types::{Height, LightBlock, PeerId},
 };
 
+/// Type for selecting either a specific height or the latest one
 pub enum AtHeight {
+    /// A specific height
     At(Height),
+    /// The latest height
     Highest,
 }
 
 impl From<Height> for AtHeight {
     fn from(height: Height) -> Self {
-        if height == 0 {
+        if height.value() == 0 {
             Self::Highest
         } else {
             Self::At(height)
@@ -31,6 +36,7 @@ impl From<Height> for AtHeight {
     }
 }
 
+/// I/O errors
 #[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 pub enum IoError {
     /// Wrapper for a `tendermint::rpc::Error`.
@@ -55,6 +61,7 @@ impl IoError {
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
 #[contract_trait]
+#[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
 pub trait Io: Send {
     /// Fetch a light block at the given height from the peer with the given peer ID.
     ///
@@ -86,10 +93,10 @@ pub struct ProdIo {
 impl Io for ProdIo {
     fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
         let signed_header = self.fetch_signed_header(peer, height)?;
-        let height: Height = signed_header.header.height.into();
+        let height = signed_header.header.height;
 
         let validator_set = self.fetch_validator_set(peer, height.into())?;
-        let next_validator_set = self.fetch_validator_set(peer, (height + 1).into())?;
+        let next_validator_set = self.fetch_validator_set(peer, height.increment().into())?;
 
         let light_block = LightBlock::new(signed_header, validator_set, next_validator_set, peer);
 

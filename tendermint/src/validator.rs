@@ -10,7 +10,8 @@ use signatory_dalek::Ed25519Verifier;
 use subtle_encoding::base64;
 
 use crate::amino_types::message::AminoMessage;
-use crate::{account, vote, PublicKey};
+use crate::hash::Hash;
+use crate::{account, merkle, vote, PublicKey};
 
 /// Validator set contains a vector of validators
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -37,15 +38,31 @@ impl Set {
     fn sort_validators(vals: &mut Vec<Info>) {
         vals.sort_by_key(|v| v.address);
     }
-}
 
-impl Set {
     /// Returns the validator with the given Id if its in the Set.
     pub fn validator(&self, val_id: account::Id) -> Option<Info> {
         self.validators
             .iter()
             .find(|val| val.address == val_id)
             .cloned()
+    }
+
+    /// Compute the hash of this validator set
+    pub fn hash(&self) -> Hash {
+        let validator_bytes: Vec<Vec<u8>> = self
+            .validators()
+            .iter()
+            .map(|validator| validator.hash_bytes())
+            .collect();
+
+        Hash::Sha256(merkle::simple_hash_from_byte_vectors(validator_bytes))
+    }
+
+    /// Compute the total voting power within this validator set
+    pub fn total_power(&self) -> u64 {
+        self.validators().iter().fold(0u64, |total, val_info| {
+            total + val_info.voting_power.value()
+        })
     }
 }
 
@@ -156,7 +173,12 @@ impl Info {
 pub struct ProposerPriority(i64);
 
 impl ProposerPriority {
-    /// Get the current voting power
+    /// Create a new Priority
+    pub fn new(p: i64) -> ProposerPriority {
+        ProposerPriority(p)
+    }
+
+    /// Get the current proposer priority
     pub fn value(self) -> i64 {
         self.0
     }
@@ -227,8 +249,6 @@ where
 #[cfg(test)]
 mod tests {
     use subtle_encoding::hex;
-
-    use crate::lite::ValidatorSet;
 
     use super::*;
 

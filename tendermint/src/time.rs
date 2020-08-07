@@ -12,7 +12,7 @@ use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Tendermint timestamps
-/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#time>
+/// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#time>
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Time(DateTime<Utc>);
 

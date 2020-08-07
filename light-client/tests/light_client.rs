@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use std::fs;
 use std::{
     path::{Path, PathBuf},
-    time::{Duration, SystemTime},
+    time::Duration,
 };
 
 use tendermint_light_client::{
@@ -17,11 +17,11 @@ use tendermint_light_client::{
     state::State,
     store::{memory::MemoryStore, LightStore},
     tests::{Trusted, *},
-    types::{Height, LightBlock, Status, TrustThreshold},
+    types::{Height, LightBlock, Status, Time, TrustThreshold},
 };
 
-// Link to the commit that generated below JSON test files:
-// https://github.com/Shivani912/tendermint/commit/e02f8fd54a278f0192353e54b84a027c8fe31c1e
+// Link to JSON test files repo:
+// https://github.com/informalsystems/conformance-tests
 const TEST_FILES_PATH: &str = "./tests/support/";
 
 fn read_json_fixture(file: impl AsRef<Path>) -> String {
@@ -34,7 +34,7 @@ fn verify_single(
     trust_threshold: TrustThreshold,
     trusting_period: Duration,
     clock_drift: Duration,
-    now: SystemTime,
+    now: Time,
 ) -> Result<LightBlock, Verdict> {
     let verifier = ProdVerifier::default();
 
@@ -51,7 +51,7 @@ fn verify_single(
         clock_drift,
     };
 
-    let result = verifier.verify(&input, &trusted_state, &options, now.into());
+    let result = verifier.verify(&input, &trusted_state, &options, now);
 
     match result {
         Verdict::Success => Ok(input),
@@ -70,13 +70,13 @@ fn run_test_case(tc: TestCase<LightBlock>) {
         None => false,
     };
 
-    // In Go, default is 10 sec.
+    // For testing, it makes it easier to have smaller clock drift
+    // Same is done in Go - clock_drift is set to 1 sec for these tests
     // Once we switch to the proposer based timestamps, it will probably be a consensus parameter
-    let clock_drift = Duration::from_secs(10);
+    let clock_drift = Duration::from_secs(1);
 
     let trusting_period: Duration = tc.initial.trusting_period.into();
-    let tm_now = tc.initial.now;
-    let now = tm_now.to_system_time().unwrap();
+    let now = tc.initial.now;
 
     for (i, input) in tc.input.iter().enumerate() {
         println!("  - {}: {}", i, tc.description);
@@ -247,11 +247,11 @@ fn run_bisection_tests(dir: &str) {
 /// the bisection test as normal. We then assert that we get the expected error.
 fn run_bisection_lower_tests(dir: &str) {
     foreach_bisection_test(dir, |file, mut tc| {
-        let mut trusted_height: Height = tc.trust_options.height.into();
+        let mut trusted_height = tc.trust_options.height;
 
-        if trusted_height <= 1 {
-            tc.trust_options.height = (trusted_height + 1).into();
-            trusted_height += 1;
+        if trusted_height.value() <= 1 {
+            tc.trust_options.height = trusted_height.increment();
+            trusted_height = trusted_height.increment();
         }
 
         println!(
@@ -259,7 +259,7 @@ fn run_bisection_lower_tests(dir: &str) {
             file
         );
 
-        tc.height_to_verify = (trusted_height - 1).into();
+        tc.height_to_verify = (trusted_height.value() - 1).into();
 
         let test_result = run_bisection_test(tc);
         match test_result.new_states {

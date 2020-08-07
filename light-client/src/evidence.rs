@@ -12,6 +12,7 @@ pub use tendermint::evidence::Evidence;
 
 /// Interface for reporting evidence to full nodes, typically via the RPC client.
 #[contract_trait]
+#[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
 pub trait EvidenceReporter: Send {
     /// Report evidence to all connected full nodes.
     fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError>;

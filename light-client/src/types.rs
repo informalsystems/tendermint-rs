@@ -9,12 +9,12 @@ use tendermint::{
         header::Header as TMHeader, signed_header::SignedHeader as TMSignedHeader,
         Commit as TMCommit,
     },
-    lite::TrustThresholdFraction,
+    trust_threshold::TrustThresholdFraction,
     validator::Info as TMValidatorInfo,
     validator::Set as TMValidatorSet,
 };
 
-pub use tendermint::{hash::Hash, lite::Height, time::Time};
+pub use tendermint::{block::Height, hash::Hash, time::Time};
 
 /// Peer ID (public key) of a full node
 pub type PeerId = tendermint::node::Id;
@@ -69,6 +69,9 @@ impl Status {
         ALL
     }
 
+    /// Returns the most trusted status between the two given one.
+    ///
+    /// From least to most trusted: `Failed`, `Unverified`, `Verified`, `Trusted`.
     pub fn most_trusted(a: Self, b: Self) -> Self {
         std::cmp::max(a, b)
     }
@@ -110,9 +113,9 @@ impl LightBlock {
     /// Returns the height of this block.
     ///
     /// ## Note
-    /// This is a shorthand for `block.signed_header.header.height.into()`.
+    /// This is a shorthand for `block.signed_header.header.height`.
     pub fn height(&self) -> Height {
-        self.signed_header.header.height.into()
+        self.signed_header.header.height
     }
 }
 
@@ -122,7 +125,7 @@ impl LightBlock {
 #[display(fmt = "{:?}", self)]
 pub struct LatestStatus {
     /// The latest height we are trusting.
-    pub height: Option<Height>,
+    pub height: Option<u64>,
     /// The latest block hash we are trusting.
     pub block_hash: Option<Hash>,
     /// The latest validator set we are trusting.
@@ -133,13 +136,14 @@ pub struct LatestStatus {
 }
 
 impl LatestStatus {
+    /// Builds a new instance of this struct.
     pub fn new(
         height: Option<u64>,
         block_hash: Option<Hash>,
         valset_hash: Option<Hash>,
         connected_nodes: Vec<PeerId>,
     ) -> Self {
-        LatestStatus {
+        Self {
             height,
             block_hash,
             valset_hash,

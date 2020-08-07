@@ -1,7 +1,9 @@
+
 # Tendermint fork detection and IBC fork detection
 
 ## Status
 
+This is a work in progress.
 This directory captures the ongoing work and discussion on fork
 detection both in the context of a Tendermint light node and in the
 context of IBC. It contains the following files
@@ -69,3 +71,4 @@ supervisor along the outcomes of
 that also addresses initialization
 
 - https://github.com/tendermint/spec/issues/131
+

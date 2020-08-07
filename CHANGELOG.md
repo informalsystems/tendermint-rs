@@ -1,8 +1,20 @@
+## Unreleased
+
+### Light Client
+
+- Add missing documentation to all items ([#472])
+- Add major contributors as authors of the `light-client`, `light-node`, and `rpc` crate ([#472])
+- Remove and consolidate deprecated [lite] and [lite_impl] modules from the `tendermint` crate ([#500])
+
+[#472]: https://github.com/informalsystems/tendermint-rs/pull/472
+[lite_impl]: https://github.com/informalsystems/tendermint-rs/tree/master/tendermint/src/lite_impl
+
 ## [0.15.0] (2020-07-17)
-This release is mostly about the revamped [light-client] library and the [light-node] command-line interface. 
-Note that both crates are to be considered experimental software that will still undergo a lot of improvements and iterations. 
-The goal of releasing an early version of our Light Client is to make it accessible, to get people use it, and to receive feedback. 
- 
+
+This release is mostly about the revamped [light-client] library and the [light-node] command-line interface.
+Note that both crates are to be considered experimental software that will still undergo a lot of improvements and iterations.
+The goal of releasing an early version of our Light Client is to make it accessible, to get people use it, and to receive feedback.
+
  ⚠️ ️Deprecation warning ⚠️ : This might be the last release containing the [lite] module. Please take a look at the [light-client] crate.
 
 ### Light Client:
@@ -24,7 +36,7 @@ The goal of releasing an early version of our Light Client is to make it accessi
 - Add integration test ([#431])
 - Rework light-node CLI to use `Supervisor` / `Handle` ([#430])
 - Add `latest_status` to the supervisor `Handle` ([#449])
-- Add JSONRPC endpoints to query the light-node ([#363], [#449])  
+- Add JSONRPC endpoints to query the light-node ([#363], [#449])
 
 [0.15.0]: https://github.com/informalsystems/tendermint-rs/pull/454
 
@@ -63,7 +75,7 @@ The goal of releasing an early version of our Light Client is to make it accessi
 This release mainly targets compatibility with Tendermint [v0.33.x] but contains a lot of smaller improvements regarding testing and (de)serialization.
 Also noteworthy is that the rpc module was broken out into a separate crate ([tendermint-rpc]).
 
-⚠️ ️Deprecation warning ⚠️ : This might be that last release containing the [lite] module. 
+⚠️ ️Deprecation warning ⚠️ : This might be that last release containing the [lite] module.
 It will be replaced with the [light-client] crate (soon).
 
 CommitSig:
@@ -87,8 +99,8 @@ RPC:
   - `abci_info`, `abci_query`, `block_results`, `genesis` structs
   - serialization/deserialization fixes
   - Updated/fixed integration tests
-- Move into its own crate ([#338]) 
-  - Feature guard `rpc::client` (makes networking an optional dependency) ([#343])  
+- Move into its own crate ([#338])
+  - Feature guard `rpc::client` (makes networking an optional dependency) ([#343])
 
 CI:
 - Moved to GitHub Actions ([#120])
@@ -127,16 +139,16 @@ Dependencies:
 
 Dependencies
 - Update to bytes `0.5` and amino_rs `0.5`.
-- Tokens for amino_rs are now fully non-conflicting with prost. Allowing both to be used together 
+- Tokens for amino_rs are now fully non-conflicting with prost. Allowing both to be used together
 - Made RPC type values optional for full compatibility with tendermint-go@v0.32: `abci_info`, `abci_query` [#120]
 - JSON ID is JSON specification compatible and accepts int, string or null - [#88]
 
 ## [0.11.0] (2019-12-11)
 
-This is the first release since this repository was split off 
-from the [KMS](https://github.com/tendermint/kms) repo a few months 
-ago and contains more than the usual number of changes. 
-As the new repository matures we will be working towards a more robust 
+This is the first release since this repository was split off
+from the [KMS](https://github.com/tendermint/kms) repo a few months
+ago and contains more than the usual number of changes.
+As the new repository matures we will be working towards a more robust
 release cycle.
 
 This release also contains a first draft of the Tendermint Light Client :).
@@ -263,7 +275,7 @@ This release is compatible with [tendermint v0.28]
 
 - Split `PubKeyMsg` into `PubKeyRequest` and `PubKeyResponse` (#141)
 - Migrate to Rust 2018 edition (#138)
- 
+
 ## 0.1.4 (2018-12-02)
 
 - Allow empty BlockIds in validation method (#131)

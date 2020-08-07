@@ -1177,7 +1177,7 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 
 [RPC]: https://docs.tendermint.com/master/rpc/
 
-[block]: https://github.com/tendermint/spec/blob/master/spec/blockchain/blockchain.md
+[block]: https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md
 
 [TMBC-HEADER-link]: #tmbc-header.1
 [TMBC-SEQ-link]: #tmbc-seq.1

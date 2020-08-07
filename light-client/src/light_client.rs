@@ -49,7 +49,9 @@ pub struct Options {
 /// correct for the duration of the trusted period.  The fault-tolerant read operation
 /// is designed for this security model.
 pub struct LightClient {
+    /// The peer id of the peer this client is connected to
     pub peer: PeerId,
+    /// Options for this light client
     pub options: Options,
     clock: Box<dyn Clock>,
     scheduler: Box<dyn Scheduler>,

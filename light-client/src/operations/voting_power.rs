@@ -1,3 +1,5 @@
+//! Provides an interface and default implementation for the `VotingPower` operation
+
 use crate::{
     bail,
     predicates::errors::VerificationError,
@@ -9,13 +11,17 @@ use std::collections::HashSet;
 use std::fmt;
 
 use tendermint::block::CommitSig;
-use tendermint::lite::types::TrustThreshold as _;
+use tendermint::trust_threshold::TrustThreshold as _;
 use tendermint::vote::{SignedVote, Vote};
 
+/// Tally for the voting power computed by the `VotingPowerCalculator`
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct VotingPowerTally {
+    /// Total voting power
     pub total: u64,
+    /// Tallied voting power
     pub tallied: u64,
+    /// Trust threshold for voting power
     pub trust_threshold: TrustThreshold,
 }
 
@@ -29,7 +35,11 @@ impl fmt::Display for VotingPowerTally {
     }
 }
 
+/// Computes the voting power in a commit against a validator set.
+///
+/// This trait provides default implementation of some helper functions.
 pub trait VotingPowerCalculator: Send {
+    /// Compute the total voting power in a validator set
     fn total_power_of(&self, validator_set: &ValidatorSet) -> u64 {
         validator_set
             .validators()
@@ -39,6 +49,8 @@ pub trait VotingPowerCalculator: Send {
             })
     }
 
+    /// Check against the given threshold that there is enough trust
+    /// between an untrusted header and a trusted validator set
     fn check_enough_trust(
         &self,
         untrusted_header: &SignedHeader,
@@ -55,6 +67,8 @@ pub trait VotingPowerCalculator: Send {
         }
     }
 
+    /// Check against the given threshold that there is enough signers
+    /// overlap between an untrusted header and untrusted validator set
     fn check_signers_overlap(
         &self,
         untrusted_header: &SignedHeader,
@@ -71,6 +85,10 @@ pub trait VotingPowerCalculator: Send {
         }
     }
 
+    /// Compute the voting power in a header and its commit against a validator set.
+    ///
+    /// The `trust_threshold` is currently not used, but might be in the future
+    /// for optimization purposes.
     fn voting_power_in(
         &self,
         signed_header: &SignedHeader,
@@ -79,6 +97,7 @@ pub trait VotingPowerCalculator: Send {
     ) -> Result<VotingPowerTally, VerificationError>;
 }
 
+/// Default implementation of a `VotingPowerCalculator`
 #[derive(Copy, Clone, Debug, Default)]
 pub struct ProdVotingPowerCalculator;
 

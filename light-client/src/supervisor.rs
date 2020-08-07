@@ -12,14 +12,15 @@ use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
 use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
-use tendermint::lite::{Header, ValidatorSet};
 
+/// Provides an interface to the supervisor for use in downstream code.
 pub trait Handle {
-    /// Get latest trusted block from the [`Supervisor`].
+    /// Get latest trusted block.
     fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
         todo!()
     }
 
+    /// Get the latest status.
     fn latest_status(&self) -> Result<LatestStatus, Error> {
         todo!()
     }
@@ -61,6 +62,7 @@ enum HandleInput {
 pub struct Instance {
     /// The light client for this instance
     pub light_client: LightClient,
+
     /// The state of the light client for this instance
     pub state: State,
 }
@@ -74,10 +76,12 @@ impl Instance {
         }
     }
 
+    /// Get the latest trusted block.
     pub fn latest_trusted(&self) -> Option<LightBlock> {
         self.state.light_store.latest(Status::Trusted)
     }
 
+    /// Trust the given block.
     pub fn trust_block(&mut self, lb: &LightBlock) {
         self.state.light_store.update(lb, Status::Trusted);
     }
@@ -184,7 +188,7 @@ impl Supervisor {
 
         match latest_trusted {
             Some(trusted) => LatestStatus::new(
-                Some(trusted.signed_header.header.height()),
+                Some(trusted.signed_header.header.height.value()),
                 Some(trusted.signed_header.header.hash()),
                 Some(trusted.next_validators.hash()),
                 connected_nodes,
@@ -248,11 +252,9 @@ impl Supervisor {
                 }
             }
             // Verification failed
-            Err(_err) => {
-                // TODO: Log/record error
-
+            Err(err) => {
                 // Swap primary, and continue with new primary, if there is any witness left.
-                self.peers.replace_faulty_primary()?;
+                self.peers.replace_faulty_primary(Some(err))?;
                 self.verify(height)
             }
         }

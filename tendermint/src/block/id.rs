@@ -15,7 +15,7 @@ pub const PREFIX_LENGTH: usize = 10;
 /// Block identifiers which contain two distinct Merkle roots of the block,
 /// as well as the number of parts in the block.
 ///
-/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#blockid>
+/// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#blockid>
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Id {
     /// The block's main hash is the Merkle root of all the fields in the

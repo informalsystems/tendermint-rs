@@ -10,7 +10,7 @@ use {
 /// encoded using an Amino prefix. There is currently only a single type of
 /// evidence: `DuplicateVoteEvidence`.
 ///
-/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#evidence>
+/// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidence>
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", content = "value")]
 pub enum Evidence {
@@ -52,7 +52,7 @@ impl ConflictingHeadersEvidence {
 
 /// Evidence data is a wrapper for a list of `Evidence`.
 ///
-/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#evidencedata>
+/// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidencedata>
 #[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub struct Data {
     evidence: Option<Vec<Evidence>>,
@@ -101,7 +101,7 @@ pub struct Params {
 /// essentially, to keep the usages look cleaner
 /// i.e. you can avoid using serde annotations everywhere
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-pub struct Duration(#[serde(with = "serializers::time_duration")] std::time::Duration);
+pub struct Duration(#[serde(with = "serializers::time_duration")] pub std::time::Duration);
 
 impl From<Duration> for std::time::Duration {
     fn from(d: Duration) -> std::time::Duration {
