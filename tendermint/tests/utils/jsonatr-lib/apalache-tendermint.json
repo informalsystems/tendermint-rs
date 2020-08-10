@@ -48,6 +48,12 @@
       "source": "$..[?(@.key.str == 'height')].value | unwrap"
     },
     {
+      "name": "block_time",
+      "description": "extract time from a block of Apalache CE",
+      "kind": "INLINE",
+      "source": "$..[?(@.key.str == 'time')].value | unwrap"
+    },
+    {
       "name": "id_to_validator",
       "description": "transform an identifier into a validator expected by `tendermint-testgen validator`",
       "kind": "INLINE",
@@ -73,7 +79,7 @@
         "validators": "$ | block_validators | map(id_to_validator)",
         "next_validators": "$ | block_next_validators | map(id_to_validator)",
         "height": "$ | block_height",
-        "time": "$utc_timestamp"
+        "time": "$ | block_time"
       }
     },
     {

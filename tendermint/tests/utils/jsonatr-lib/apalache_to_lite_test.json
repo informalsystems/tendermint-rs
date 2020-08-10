@@ -34,6 +34,7 @@
           "validator_set": "$block | block_validators | ids_to_validator_set",
           "next_validator_set": "$block | block_next_validators | ids_to_validator_set"
         },
+        "time": "$..[?(@.eq == 'now')].arg | unwrap | tendermint_time",
         "verdict": "$..[?(@.eq == 'prevVerdict')].arg.str | unwrap"
       }
     }

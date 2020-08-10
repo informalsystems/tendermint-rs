@@ -21,6 +21,11 @@
       "name": "tendermint_vote",
       "kind": "COMMAND",
       "source": "tendermint-testgen --stdin vote"
+    },
+    {
+      "name": "tendermint_time",
+      "kind": "COMMAND",
+      "source": "tendermint-testgen --stdin time"
     }
   ]
 }

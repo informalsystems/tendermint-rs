@@ -1,6 +1,6 @@
 use serde::Deserialize;
 //use tempfile::tempdir;
-use tendermint::{block::signed_header::SignedHeader, lite};
+use tendermint::{block::signed_header::SignedHeader, lite, Time};
 use tendermint::block::{Header};
 use tendermint::lite::{TrustThresholdFraction, TrustedState};
 
@@ -39,10 +39,11 @@ pub struct SingleStepTestCase {
     input: Vec<BlockVerdict>,
 }
 
-/// A LiteBlock together with the expected verdict
+/// A LiteBlock together with the time when it's being checked, and the expected verdict
 #[derive(Deserialize, Clone, Debug)]
 pub struct BlockVerdict {
     block: LiteBlock,
+    time: Time,
     verdict: LiteVerdict,
 }
 
@@ -59,12 +60,11 @@ fn run_single_step_test(tc: &SingleStepTestCase) {
     test_serialization_roundtrip(&latest_trusted);
 
     let trusting_period: std::time::Duration = tc.initial.clone().trusting_period.into();
-    let tm_now = tc.initial.now;
-    let now = tm_now.to_system_time().unwrap();
 
     for (i, input) in tc.input.iter().enumerate() {
         println!("i: {}, {}", i, tc.description);
-
+        let tm_now = input.time;
+        let now = tm_now.to_system_time().unwrap();
         let untrusted_signed_header = &input.block.signed_header;
         let untrusted_vals = &input.block.validator_set;
         let untrusted_next_vals = &input.block.next_validator_set;
@@ -89,6 +89,7 @@ fn run_single_step_test(tc: &SingleStepTestCase) {
                 test_serialization_roundtrip(&latest_trusted);
             }
             Err(e) => {
+                eprintln!("ERROR: {}", e.to_string());
                 assert_ne!(input.verdict, LiteVerdict::OK);
             }
         }
@@ -109,7 +110,7 @@ fn apalache_test() {
 
     let test = ApalacheTestCase {
         model: "MC4_4_faulty.tla".to_string(),
-        test: "TestFailureInv".to_string(),
+        test: "TestSuccessInv".to_string(),
         length: None,
         timeout: None
     };
