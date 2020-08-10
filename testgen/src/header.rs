@@ -3,7 +3,7 @@ use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
 use std::str::FromStr;
-use tendermint::{block, chain, lite::ValidatorSet, validator, Time};
+use tendermint::{block, chain, lite::ValidatorSet, validator};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Header {
@@ -22,7 +22,7 @@ pub struct Header {
     #[options(help = "block height (default: 1)")]
     pub height: Option<u64>,
     #[options(help = "time (default: now)")]
-    pub time: Option<Time>,
+    pub time: Option<u64>,
     #[options(help = "proposer index (default: 0)")]
     pub proposer: Option<usize>,
 }
@@ -46,7 +46,7 @@ impl Header {
     );
     set_option!(chain_id, &str, Some(chain_id.to_string()));
     set_option!(height, u64);
-    set_option!(time, Time);
+    set_option!(time, u64);
     set_option!(proposer, usize);
 }
 
@@ -93,11 +93,14 @@ impl Generator<block::Header> for Header {
             Ok(id) => id,
             Err(_) => bail!("failed to construct header's chain_id"),
         };
+        let time =
+            if let Some(t) = self.time { get_time(t) }
+            else { tendermint::Time::now() };
         let header = block::Header {
             version: block::header::Version { block: 0, app: 0 },
             chain_id,
             height: block::Height(self.height.unwrap_or(1)),
-            time: self.time.unwrap_or_else(Time::now),
+            time,
             last_block_id: None,
             last_commit_hash: None,
             data_hash: None,
@@ -116,7 +119,6 @@ impl Generator<block::Header> for Header {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
 
     #[test]
     fn test_header() {
@@ -131,13 +133,13 @@ mod tests {
             Validator::new("d"),
         ];
 
-        let now1 = Time::now();
+        let now1: u64 = 100;
         let header1 = Header::new(&valset1)
             .next_validators(&valset2)
             .height(10)
             .time(now1);
 
-        let now2 = now1 + Duration::from_secs(1);
+        let now2 = now1 + 1;
         let header2 = Header::new(&valset1)
             .next_validators(&valset2)
             .height(10)
@@ -162,7 +164,7 @@ mod tests {
         let header = header2.clone().chain_id("chain1");
         assert_eq!(header.generate().unwrap(), block_header);
 
-        block_header.proposer_address = Validator::new("b").generate().unwrap().address;
+        block_header.proposer_address = Validator::new("c").generate().unwrap().address;
         assert_ne!(header.generate().unwrap(), block_header);
 
         let header = header.clone().proposer(1);

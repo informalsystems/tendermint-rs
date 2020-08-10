@@ -152,26 +152,24 @@ impl Generator<block::Commit> for Commit {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tendermint::Time;
 
     #[test]
     fn test_commit() {
-        let valset1 = [
+        let valset1 = sort_validators(&vec![
             Validator::new("a"),
             Validator::new("b"),
             Validator::new("c"),
-        ];
-        let valset2 = [
-            Validator::new("b"),
-            Validator::new("c"),
+        ]);
+        let valset2 = sort_validators(&vec![
             Validator::new("d"),
-        ];
+            Validator::new("e"),
+            Validator::new("f"),
+        ]);
 
-        let now = Time::now();
         let header = Header::new(&valset1)
             .next_validators(&valset2)
             .height(10)
-            .time(now);
+            .time(11);
 
         let commit = Commit::new(header.clone(), 3);
 
@@ -183,7 +181,7 @@ mod tests {
 
         let mut commit = commit;
         assert_eq!(commit.vote_at_index(1).round, Some(3));
-        assert_eq!(commit.vote_of_validator("a").index, Some(0));
+        assert_eq!(commit.vote_of_validator("b").index, Some(0));
 
         let votes = commit.votes.as_ref().unwrap();
 

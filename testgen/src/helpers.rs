@@ -5,7 +5,7 @@ use signatory::signature::Verifier;
 use signatory_dalek::Ed25519Verifier;
 use simple_error::*;
 use std::io::{self, Read};
-use tendermint::{amino_types, signature::Signature, vote};
+use tendermint::{amino_types, signature::Signature, vote, Time};
 
 /// A macro that generates a complete setter method from a one-liner with necessary information
 #[macro_export]
@@ -54,4 +54,8 @@ pub fn verify_signature(verifier: &Ed25519Verifier, msg: &[u8], signature: &Sign
     match signature {
         tendermint::signature::Signature::Ed25519(sig) => verifier.verify(msg, sig).is_ok(),
     }
+}
+
+pub fn get_time(abs: u64) -> Time {
+    (std::time::UNIX_EPOCH + std::time::Duration::from_secs(abs)).into()
 }

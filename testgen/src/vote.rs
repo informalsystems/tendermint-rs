@@ -5,7 +5,7 @@ use signatory::{
     signature::{Signature as _, Signer},
 };
 use simple_error::*;
-use tendermint::{block, lite, signature::Signature, vote, Time};
+use tendermint::{block, lite, signature::Signature, vote};
 
 use crate::{helpers::*, Generator, Header, Validator};
 
@@ -25,7 +25,7 @@ pub struct Vote {
     #[options(help = "block height (default: from header)")]
     pub height: Option<u64>,
     #[options(help = "time (default: from header)")]
-    pub time: Option<Time>,
+    pub time: Option<u64>,
     #[options(help = "commit round (default: from commit)")]
     pub round: Option<u64>,
 }
@@ -46,7 +46,7 @@ impl Vote {
     set_option!(header, Header);
     set_option!(prevote, bool, if prevote { Some(()) } else { None });
     set_option!(height, u64);
-    set_option!(time, Time);
+    set_option!(time, u64);
     set_option!(round, u64);
 }
 
@@ -90,6 +90,9 @@ impl Generator<vote::Vote> for Vote {
                 None => 0 // bail!("failed to generate vote: no index given and validator not present in the header")
             }
         };
+        let timestamp =
+            if let Some(t) = self.time { get_time(t) }
+            else { block_header.time };
         let mut vote = vote::Vote {
             vote_type: if self.prevote.is_some() {
                 vote::Type::Prevote
@@ -99,7 +102,7 @@ impl Generator<vote::Vote> for Vote {
             height: block_header.height,
             round: self.round.unwrap_or(1),
             block_id: Some(block_id),
-            timestamp: block_header.time,
+            timestamp,
             validator_address: block_validator.address,
             validator_index,
             signature: Signature::Ed25519(try_with!(
@@ -116,6 +119,7 @@ impl Generator<vote::Vote> for Vote {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Time;
 
     #[test]
     fn test_vote() {
@@ -130,11 +134,11 @@ mod tests {
             Validator::new("d"),
         ];
 
-        let now = Time::now();
+        let now = Time::new(10).generate().unwrap();
         let header = Header::new(&valset1)
             .next_validators(&valset2)
             .height(10)
-            .time(now);
+            .time(10);
 
         let val = &valset1[1];
         let vote = Vote::new(val.clone(), header.clone()).round(2);
