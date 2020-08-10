@@ -9,15 +9,11 @@
       "name": "block_to_initial_block",
       "description": "transforms a block from Apalache CE into a JSON-encoded Tendermint initial light block",
       "kind": "INLINE",
-      "let": {
-        "now": "$utc_timestamp",
-        "utc_timestamp": "$utc_timestamp_2hours_ago"
-      },
       "source": {
         "signed_header": "$ | block_to_signed_header",
         "next_validator_set": "$ | block_next_validators | ids_to_validator_set",
-        "trusting_period": "10800000000000",
-        "now": "$now"
+        "trusting_period": "1400000000000",
+        "now": "$utc_timestamp"
       }
     },
     {
@@ -25,7 +21,6 @@
       "description": "transforms a block from Apalache CE into a JSON-encoded Tendermint light block",
       "kind": "INLINE",
       "let": {
-        "utc_timestamp": "$utc_timestamp_hour_ago",
         "block": "$..[?(@.eq == 'prevChecked')]"
       },
       "source": {
@@ -34,7 +29,7 @@
           "validator_set": "$block | block_validators | ids_to_validator_set",
           "next_validator_set": "$block | block_next_validators | ids_to_validator_set"
         },
-        "time": "$..[?(@.eq == 'now')].arg | unwrap | tendermint_time",
+        "time": "$..[?(@.eq == 'prevTime')].arg | unwrap | tendermint_time",
         "verdict": "$..[?(@.eq == 'prevVerdict')].arg.str | unwrap"
       }
     }
