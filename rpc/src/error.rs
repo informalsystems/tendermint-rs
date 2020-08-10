@@ -73,6 +73,10 @@ impl Error {
         Error::new(Code::ServerError, Some(data.to_string()))
     }
 
+    pub fn internal_error(cause: impl Into<String>) -> Error {
+        Error::new(Code::InternalError, Some(cause.into()))
+    }
+
     /// Obtain the `rpc::error::Code` for this error
     pub fn code(&self) -> Code {
         self.code

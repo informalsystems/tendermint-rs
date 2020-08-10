@@ -1,31 +1,35 @@
 //! Tendermint RPC client
 
-use bytes::buf::ext::BufExt;
-use hyper::header;
+use tendermint::{
+    abci::{self, Transaction},
+    block::Height,
+    evidence::Evidence,
+    net, Genesis,
+};
 
-use tendermint::abci::{self, Transaction};
-use tendermint::block::Height;
-use tendermint::evidence::Evidence;
-use tendermint::net;
-use tendermint::Genesis;
-
-use crate::{endpoint::*, Error, Request, Response};
+use crate::{
+    client::transport::{http_ws::HttpWsTransport, Transport},
+    endpoint::*,
+    Error, Request, Response,
+};
 
 pub mod event_listener;
+pub mod transport;
 
 /// Tendermint RPC client.
 ///
 /// Presently supports JSONRPC via HTTP.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Client {
-    /// Address of the RPC server
-    address: net::Address,
+    transport: Box<dyn Transport>,
 }
 
 impl Client {
     /// Create a new Tendermint RPC client, connecting to the given address
-    pub fn new(address: net::Address) -> Self {
-        Self { address }
+    pub fn new(address: net::Address) -> Result<Self, Error> {
+        Ok(Self {
+            transport: Box::new(HttpWsTransport::new(address)?),
+        })
     }
 
     /// `/abci_info`: get information about the ABCI application.
@@ -165,35 +169,7 @@ impl Client {
         R: Request,
     {
         let request_body = request.into_json();
-
-        let (host, port) = match &self.address {
-            net::Address::Tcp { host, port, .. } => (host, port),
-            other => {
-                return Err(Error::invalid_params(&format!(
-                    "invalid RPC address: {:?}",
-                    other
-                )))
-            }
-        };
-
-        let mut request = hyper::Request::builder()
-            .method("POST")
-            .uri(&format!("http://{}:{}/", host, port))
-            .body(hyper::Body::from(request_body.into_bytes()))?;
-
-        {
-            let headers = request.headers_mut();
-            headers.insert(header::CONTENT_TYPE, "application/json".parse().unwrap());
-            headers.insert(
-                header::USER_AGENT,
-                format!("tendermint.rs/{}", env!("CARGO_PKG_VERSION"))
-                    .parse()
-                    .unwrap(),
-            );
-        }
-        let http_client = hyper::Client::builder().build_http();
-        let response = http_client.request(request).await?;
-        let response_body = hyper::body::aggregate(response.into_body()).await?;
-        R::Response::from_reader(response_body.reader())
+        let response_body = self.transport.request(request_body).await?;
+        R::Response::from_string(response_body)
     }
 }

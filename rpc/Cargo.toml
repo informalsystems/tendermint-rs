@@ -25,7 +25,7 @@ all-features = true
 
 [features]
 default = []
-client = [ "async-tungstenite", "futures", "http", "hyper", "tokio" ]
+client = [ "async-tungstenite", "futures", "http", "hyper", "tokio", "async-trait" ]
 secp256k1 = ["tendermint/secp256k1"]
 
 [dependencies]
@@ -43,3 +43,4 @@ futures = { version = "0.3", optional = true }
 http = { version = "0.2", optional = true }
 hyper = { version = "0.13", optional = true }
 tokio = { version = "0.2", features = ["macros"], optional = true }
+async-trait = { version = "0.1.36", optional = true }

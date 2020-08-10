@@ -121,7 +121,7 @@ impl ProdIo {
         peer: PeerId,
         height: AtHeight,
     ) -> Result<TMSignedHeader, IoError> {
-        let rpc_client = self.rpc_client_for(peer);
+        let rpc_client = self.rpc_client_for(peer)?;
 
         let res = block_on(
             async {
@@ -154,7 +154,7 @@ impl ProdIo {
         };
 
         let res = block_on(
-            self.rpc_client_for(peer).validators(height),
+            self.rpc_client_for(peer)?.validators(height),
             peer,
             self.timeout,
         )?;
@@ -167,9 +167,9 @@ impl ProdIo {
 
     // FIXME: Cannot enable precondition because of "autoref lifetime" issue
     // #[pre(self.peer_map.contains_key(&peer))]
-    fn rpc_client_for(&self, peer: PeerId) -> rpc::Client {
+    fn rpc_client_for(&self, peer: PeerId) -> Result<rpc::Client, IoError> {
         let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
-        rpc::Client::new(peer_addr)
+        rpc::Client::new(peer_addr).map_err(IoError::from)
     }
 }
 

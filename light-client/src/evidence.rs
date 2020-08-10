@@ -29,7 +29,7 @@ pub struct ProdEvidenceReporter {
 impl EvidenceReporter for ProdEvidenceReporter {
     #[pre(self.peer_map.contains_key(&peer))]
     fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
-        let res = block_on(self.rpc_client_for(peer).broadcast_evidence(e));
+        let res = block_on(self.rpc_client_for(peer)?.broadcast_evidence(e));
 
         match res {
             Ok(response) => Ok(response.hash),
@@ -48,9 +48,9 @@ impl ProdEvidenceReporter {
 
     // FIXME: Cannot enable precondition because of "autoref lifetime" issue
     // #[pre(self.peer_map.contains_key(&peer))]
-    fn rpc_client_for(&self, peer: PeerId) -> rpc::Client {
+    fn rpc_client_for(&self, peer: PeerId) -> Result<rpc::Client, IoError> {
         let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
-        rpc::Client::new(peer_addr)
+        rpc::Client::new(peer_addr).map_err(IoError::from)
     }
 }
 
