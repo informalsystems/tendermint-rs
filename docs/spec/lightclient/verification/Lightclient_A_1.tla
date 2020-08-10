@@ -32,30 +32,24 @@ VARIABLES
 (* the variables of the lite client *)
 lcvars == <<state, nextHeight, fetchedLightBlocks, lightBlockStatus, latestVerified>>
 
-(* the light client history variables *)
-VARIABLES
-  prevVerified,       (* the latest verified block in the previous state *)
-  prevChecked,        (* the block that was checked in the previous state *)
-  prevTime,           (* the time when the check was performed in the previous state *)
-  prevVerdict         (* the verdict in the previous state *)
+(* The light client history, which is the function mapping states (0 .. nprobes) to the record with fields:
+   - verified: the latest verified block in this state
+   - current: the block that is being checked in this state
+   - now: the time point in this state
+   - verdict: the light client verdict for the `current` block in this state
+*)
+VARIABLE
+  history
 
-(* the history variables of the lite client *)
-lchistory == <<prevVerified, prevChecked, prevTime, prevVerdict>>
+InitHistory(verified, current, now, verdict) ==
+  LET first == [ verified |-> verified, current |-> current, now |-> now, verdict |-> verdict ]
+  IN history = [ n \in {0} |-> first ]
 
-Update(vars, newvars) == vars = newvars
-
-
-InitHistory(verified, checked, time, verdict) ==
-  /\ prevVerified = verified
-  /\ prevChecked = checked
-  /\ prevTime = time
-  /\ prevVerdict = verdict
-
-NextHistory(verified, checked, time, verdict) ==
-  /\ prevVerified' = verified
-  /\ prevChecked' = checked
-  /\ prevTime' = time
-  /\ prevVerdict' = verdict
+NextHistory(verified, current, now, verdict) ==
+  LET last == [ verified |-> verified, current |-> current, now |-> now, verdict |-> verdict ]
+      np == nprobes+1
+  IN history' = [ n \in DOMAIN history \union {np} |->
+      IF n = np THEN last ELSE history[n]]
 
 
 (******************* Blockchain instance ***********************************)
@@ -273,7 +267,7 @@ VerifyToTargetDone ==
     /\ latestVerified.header.height >= TARGET_HEIGHT
     /\ state' = "finishedSuccess"
     /\ UNCHANGED <<nextHeight, nprobes, fetchedLightBlocks, lightBlockStatus, latestVerified>>
-    /\ UNCHANGED lchistory
+    /\ UNCHANGED <<history>>
             
 (********************* Lite client + Blockchain *******************)
 Init ==
