@@ -75,7 +75,7 @@ LBT == [header |-> BT, Commits |-> {NT}]
 
 (* the header is still within the trusting period *)
 InTrustingPeriod(header) ==
-    now <= header.time + TRUSTING_PERIOD
+    now < header.time + TRUSTING_PERIOD
 
 (*
  Given a function pVotingPower \in D -> Powers for some D \subseteq AllNodes
