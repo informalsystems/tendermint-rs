@@ -109,13 +109,24 @@ mod tests {
     }
 
     #[test]
+    fn test_rfc6962_empty_tree() {
+        let empty_tree_root_hex =
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+        let empty_tree_root = &hex::decode(empty_tree_root_hex).unwrap();
+        let empty_tree: Vec<Vec<u8>> = vec![vec![]; 0];
+
+        let root = simple_hash_from_byte_vectors(empty_tree);
+        assert_eq!(empty_tree_root, &root);
+    }
+
+    #[test]
     fn test_rfc6962_empty_leaf() {
         let empty_leaf_root_hex =
             "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d";
         let empty_leaf_root = &hex::decode(empty_leaf_root_hex).unwrap();
-        let empty_tree: Vec<Vec<u8>> = vec![vec![]; 1];
+        let one_empty_leaf: Vec<Vec<u8>> = vec![vec![]; 1];
 
-        let root = simple_hash_from_byte_vectors(empty_tree);
+        let root = simple_hash_from_byte_vectors(one_empty_leaf);
         assert_eq!(empty_leaf_root, &root);
     }
 
