@@ -1,6 +1,6 @@
 //! JSONRPC error types
 
-#[cfg(feature = "client")]
+#[cfg(feature = "rpc-client")]
 use async_tungstenite::tungstenite::Error as WSError;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -104,21 +104,21 @@ impl Display for Error {
     }
 }
 
-#[cfg(feature = "client")]
+#[cfg(feature = "rpc-client")]
 impl From<http::Error> for Error {
     fn from(http_error: http::Error) -> Error {
         Error::http_error(http_error.to_string())
     }
 }
 
-#[cfg(feature = "client")]
+#[cfg(feature = "rpc-client")]
 impl From<hyper::Error> for Error {
     fn from(hyper_error: hyper::Error) -> Error {
         Error::http_error(hyper_error.to_string())
     }
 }
 
-#[cfg(feature = "client")]
+#[cfg(feature = "rpc-client")]
 impl From<WSError> for Error {
     fn from(websocket_error: WSError) -> Error {
         Error::websocket_error(websocket_error.to_string())

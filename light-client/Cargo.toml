@@ -18,9 +18,12 @@ description = """
     Implementation of the Tendermint Light Client Verification Protocol.
 """
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 tendermint = { version = "0.16.0", path = "../tendermint" }
-tendermint-rpc = { version = "0.16.0", path = "../rpc", features = ["client"] }
+tendermint-rpc = { version = "0.16.0", path = "../rpc" }
 
 anomaly = { version = "0.2.0", features = ["serializer"] }
 contracts = "0.4.0"
@@ -42,4 +45,7 @@ gumdrop = "0.8.0"
 tendermint-testgen = { path = "../testgen"}
 
 [features]
+default = ["rpc-client"]
+
+rpc-client = ["tendermint-rpc/client"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]

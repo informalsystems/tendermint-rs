@@ -1,8 +1,8 @@
 //! Tendermint RPC definitons and types.
 
-#[cfg(feature = "client")]
+#[cfg(feature = "rpc-client")]
 mod client;
-#[cfg(feature = "client")]
+#[cfg(feature = "rpc-client")]
 pub use client::{event_listener, Client};
 
 pub mod endpoint;
