@@ -79,6 +79,13 @@ impl Generator<block::Header> for Header {
             Some(vals) => vals,
         };
         let vals = generate_validators(vals)?;
+        let proposer_index = self.proposer.unwrap_or(0);
+        let proposer_address = if !vals.is_empty() {
+            vals[proposer_index].address
+        }
+        else {
+            Validator::new("a").generate().unwrap().address
+        };
         let valset = validator::Set::new(vals.clone());
         let next_valset = match &self.next_validators {
             Some(next_vals) => validator::Set::new(generate_validators(next_vals)?),
@@ -110,7 +117,7 @@ impl Generator<block::Header> for Header {
             app_hash: vec![],
             last_results_hash: None,
             evidence_hash: None,
-            proposer_address: vals[self.proposer.unwrap_or(0)].address,
+            proposer_address,
         };
         Ok(header)
     }
