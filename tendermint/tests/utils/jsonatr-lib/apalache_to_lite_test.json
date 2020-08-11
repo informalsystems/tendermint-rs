@@ -21,7 +21,7 @@
       "description": "transforms a block from Apalache CE into a JSON-encoded Tendermint light block",
       "kind": "INLINE",
       "let": {
-        "block": "$..[?(@.eq == 'prevChecked')]"
+        "block": "$..[?(@.key.str == 'current')].value"
       },
       "source": {
         "block": {
@@ -29,14 +29,14 @@
           "validator_set": "$block | block_validators | ids_to_validator_set",
           "next_validator_set": "$block | block_next_validators | ids_to_validator_set"
         },
-        "time": "$..[?(@.eq == 'prevTime')].arg | unwrap | tendermint_time",
-        "verdict": "$..[?(@.eq == 'prevVerdict')].arg.str | unwrap"
+        "now": "$..[?(@.key.str == 'now')].value | unwrap | tendermint_time",
+        "verdict": "$..[?(@.key.str == 'verdict')].value.str | unwrap"
       }
     }
   ],
   "output": {
     "description": "auto-generated from Apalache counterexample",
-    "initial": "$states[0]..[?(@.eq == 'prevVerified')] | block_to_initial_block",
-    "input": "$states[1:] | map(state_to_lite_block_verdict)"
+    "initial": "$history[0]..[?(@.key.str == 'current')].value | block_to_initial_block",
+    "input": "$history[1:] | map(state_to_lite_block_verdict)"
   }
 }

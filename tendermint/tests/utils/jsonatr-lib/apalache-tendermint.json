@@ -14,7 +14,13 @@
       "name": "last_state",
       "description": "extract the last state from Apalache CE",
       "kind": "INLINE",
-      "source": "$.declarations[-1].body.and | unwrap"
+      "source": "$.declarations[-2].body.and | unwrap"
+    },
+    {
+      "name": "history",
+      "description": "extract the history from the last state of Apalache CE",
+      "kind": "INLINE",
+      "source": "$last_state..[?(@.eq == 'history')].arg.atat..arg.record"
     },
     {
       "name": "states",
@@ -94,12 +100,41 @@
       }
     },
     {
+      "name": "ids_to_validators",
+      "description": "transform a non-empty array of identifiers into Tendermint validators",
+      "kind": "INLINE",
+      "source": "$ | map(id_to_validator) | map(tendermint_validator)"
+    },
+    {
+      "name": "empty_array",
+      "description": "just an empty array",
+      "kind": "INLINE",
+      "source": []
+    },
+    {
+      "name": "first_validator",
+      "description": "extract first validator from a non-empty array of identifiers",
+      "kind": "INLINE",
+      "source": "$[0] | unwrap | id_to_validator | tendermint_validator"
+    },
+    {
+      "name": "const_id",
+      "description": "constant identifier",
+      "kind": "INLINE",
+      "source": "a"
+    },    {
+      "name": "fixed_validator",
+      "description": "extract first validator from a non-empty array of identifiers",
+      "kind": "INLINE",
+      "source": "$const_id | id_to_validator | tendermint_validator"
+    },
+    {
       "name": "ids_to_validator_set",
-      "description": "transform an array of identifiers into a a JSON-encoded Tendermint validator set",
+      "description": "transform an array of identifiers into a JSON-encoded Tendermint validator set",
       "kind": "INLINE",
       "source": {
-        "validators": "$ | map(id_to_validator) | map(tendermint_validator)",
-        "proposer": "$[0] | unwrap | id_to_validator | tendermint_validator"
+        "validators": "$ | ifelse(ids_to_validators,empty_array)",
+        "proposer": "$ | ifelse(first_validator,fixed_validator)"
       }
     },
     {
