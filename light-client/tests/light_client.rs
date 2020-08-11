@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::fs;
 use std::{
     path::{Path, PathBuf},
@@ -127,7 +126,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
     println!("  - {}", tc.description);
 
     let primary = default_peer_id();
-    let untrusted_height = tc.height_to_verify.try_into().unwrap();
+    let untrusted_height = tc.height_to_verify;
     let trust_threshold = tc.trust_options.trust_level;
     let trusting_period = tc.trust_options.period;
     let now = tc.now;
@@ -147,7 +146,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
     let provider = tc.primary;
     let io = MockIo::new(provider.chain_id, provider.lite_blocks);
 
-    let trusted_height = tc.trust_options.height.try_into().unwrap();
+    let trusted_height = tc.trust_options.height;
     let trusted_state = io
         .fetch_light_block(primary, AtHeight::At(trusted_height))
         .expect("could not 'request' light block");
@@ -200,7 +199,7 @@ fn run_single_step_tests(dir: &str) {
     }
 }
 
-fn foreach_bisection_test(dir: &str, f: impl Fn(String, TestBisection<LightBlock>) -> ()) {
+fn foreach_bisection_test(dir: &str, f: impl Fn(String, TestBisection<LightBlock>)) {
     let paths = fs::read_dir(PathBuf::from(TEST_FILES_PATH).join(dir)).unwrap();
 
     for file_path in paths {
