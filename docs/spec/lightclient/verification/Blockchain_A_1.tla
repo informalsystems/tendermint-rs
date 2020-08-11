@@ -110,7 +110,7 @@ FaultAssumption(pFaultyNodes, pNow, pBlockchain) ==
 (* Can a block be produced by a correct peer, or an authenticated Byzantine peer *)
 IsLightBlockAllowedByDigitalSignatures(ht, block) == 
     \/ block.header = blockchain[ht] \* signed by correct and faulty (maybe)
-    \/ block.Commits \subseteq Faulty /\ block.header.height = ht \* signed only by faulty
+    \/ block.Commits \subseteq Faulty /\ block.header.height = ht /\ block.header.time > 0 \* signed only by faulty
 
 (*
  Initialize the blockchain to the ultimate height right in the initial states.
