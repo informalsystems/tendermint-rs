@@ -11,7 +11,7 @@
 )]
 #![doc(
     html_root_url = "https://docs.rs/tendermint-light-client/0.15.0",
-    html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs.png"
+    html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs_3961x4001.png"
 )]
 
 //! See the `light_client` module for the main documentation.
