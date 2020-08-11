@@ -21,7 +21,7 @@ pub fn simple_hash_from_byte_vectors(byte_vecs: Vec<Vec<u8>>) -> Hash {
 fn simple_hash_from_byte_slices_inner(byte_slices: &[Vec<u8>]) -> Hash {
     let length = byte_slices.len();
     match length {
-        0 => [0; HASH_SIZE],
+        0 => empty_hash(),
         1 => leaf_hash(byte_slices[0].as_slice()),
         _ => {
             let k = get_split_point(length);
@@ -40,6 +40,20 @@ fn get_split_point(length: usize) -> usize {
         2 => 1,
         _ => length.next_power_of_two() / 2,
     }
+}
+
+// tmhash({})
+fn empty_hash() -> Hash {
+    // the empty string / byte slice
+    let empty = Vec::with_capacity(0);
+
+    // hash it !
+    let digest = Sha256::digest(&empty);
+
+    // copy the GenericArray out
+    let mut hash_bytes = [0u8; HASH_SIZE];
+    hash_bytes.copy_from_slice(&digest);
+    hash_bytes
 }
 
 // tmhash(0x00 || leaf)
