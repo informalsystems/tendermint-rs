@@ -31,6 +31,15 @@ Test2CannotVerifySuccess ==
 
 Test2CannotVerifySuccessInv == ~Test2CannotVerifySuccess
 
+Test2CannotVerifyFailure ==
+    /\ state = "finishedFailure"
+    /\ \E s1, s2 \in DOMAIN history :
+       /\ s1 /= s2
+       /\ history[s1].verdict = "CANNOT_VERIFY"
+       /\ history[s2].verdict = "CANNOT_VERIFY"
+
+Test2CannotVerifyFailureInv == ~Test2CannotVerifyFailure
+
 Test3CannotVerifySuccess ==
     /\ state = "finishedSuccess"
     /\ \E s1, s2, s3 \in DOMAIN history :

@@ -1,0 +1,11 @@
+{
+  "description": "Tests for 4 validators, target height 4, with faulty primary",
+  "model": "MC4_4_faulty.tla",
+  "timeout": 20,
+  "tests": [
+    "TestSuccessInv",
+    "TestFailureInv",
+    "Test2CannotVerifySuccessInv",
+    "Test2CannotVerifyFailureInv"
+  ]
+}
