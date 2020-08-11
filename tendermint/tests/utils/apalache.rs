@@ -19,7 +19,7 @@ pub struct ApalacheTestCase {
     pub timeout: Option<u64>,
 }
 
-pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<CommandRun> {
+pub fn run_apalache_test(dir: &str, test: &ApalacheTestCase) -> io::Result<CommandRun> {
     let mut cmd = Command::new();
     if let Some(timeout) = test.timeout {
         cmd.program("timeout");

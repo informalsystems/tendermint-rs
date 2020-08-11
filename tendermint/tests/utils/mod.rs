@@ -23,5 +23,13 @@ pub fn test_serialization_roundtrip<T>(obj: &T)
 
 /// Read a file into a string
 pub fn read_file(dir: &str, file: &str) -> String {
-    fs::read_to_string(PathBuf::from(dir.to_owned() + file)).unwrap()
+    fs::read_to_string(PathBuf::from(dir.to_owned()).join(file)).unwrap()
+}
+
+/// Tries to parse a string as the given type
+pub fn parse_as<T: DeserializeOwned>(input: &str) -> Option<T> {
+    match serde_json::from_str(input) {
+        Ok(res) => Some(res),
+        Err(_) => None,
+    }
 }
