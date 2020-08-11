@@ -18,7 +18,7 @@ mod rpc {
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> Client {
-        Client::new("tcp://127.0.0.1:26657".parse().unwrap())
+        Client::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap()
     }
 
     /// `/health` endpoint
