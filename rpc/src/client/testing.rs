@@ -1,64 +1,43 @@
 //! Testing-related utilities for the Tendermint RPC Client. Here we aim to
 //! provide some useful abstractions in cases where you may want to use an RPC
-//! client in your code, but mock its remote endpoint(s).
+//! client in your code, but mock its remote endpoint's responses.
 
-use async_trait::async_trait;
-use std::{collections::HashMap, path::Path};
+use std::path::PathBuf;
 use tokio::fs;
 
-use crate::{client::transport::Transport, Error};
+pub mod matching_transport;
 
-/// A rudimentary fixture-based transport, where certain requests are
-/// preconfigured to always produce specific kinds of responses.
-#[derive(Debug)]
-pub struct MappedFixtureTransport {
-    successes: HashMap<String, String>,
-    failures: HashMap<String, Error>,
+/// A fixture that can refer to a file in the filesystem or is a string in its
+/// own right.
+#[derive(Debug, Clone)]
+pub enum Fixture {
+    File(PathBuf),
+    Raw(String),
 }
 
-#[async_trait]
-impl Transport for MappedFixtureTransport {
-    async fn request(&self, request: String) -> Result<String, Error> {
-        match self.successes.get(&request) {
-            Some(response) => Ok(response.clone()),
-            None => match self.failures.get(&request) {
-                Some(e) => Err(e.clone()),
-                None => Err(Error::internal_error(
-                    "no request/response mapping for supplied request",
-                )),
-            },
+impl Fixture {
+    async fn read(&self) -> String {
+        match self {
+            Fixture::File(path) => fs::read_to_string(path.as_path()).await.unwrap(),
+            Fixture::Raw(s) => s.clone(),
         }
     }
 }
 
-impl MappedFixtureTransport {
-    /// Instantiate a new, empty mapped fixture transport (all requests will
-    /// generate errors).
-    pub fn new() -> Self {
-        Self {
-            successes: HashMap::new(),
-            failures: HashMap::new(),
-        }
+impl Into<Fixture> for String {
+    fn into(self) -> Fixture {
+        Fixture::Raw(self)
     }
+}
 
-    /// Reads a JSON fixture for a request and response from the given
-    /// filesystem paths.
-    pub async fn read_success_fixture(
-        &mut self,
-        request_path: &Path,
-        response_path: &Path,
-    ) -> &mut Self {
-        self.successes.insert(
-            fs::read_to_string(request_path).await.unwrap(),
-            fs::read_to_string(response_path).await.unwrap(),
-        );
-        self
+impl Into<Fixture> for &str {
+    fn into(self) -> Fixture {
+        Fixture::Raw(self.to_string())
     }
+}
 
-    /// Reads a JSON fixture for a request and maps it to the given error.
-    pub async fn read_failure_fixture(&mut self, request_path: &Path, err: Error) -> &mut Self {
-        self.failures
-            .insert(fs::read_to_string(request_path).await.unwrap(), err);
-        self
+impl Into<Fixture> for PathBuf {
+    fn into(self) -> Fixture {
+        Fixture::File(self)
     }
 }

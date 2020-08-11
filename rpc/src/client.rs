@@ -188,19 +188,106 @@ impl From<Box<dyn Transport>> for Client {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::path::PathBuf;
+    use crate::Method;
+    use testing::matching_transport::{MethodMatcher, RequestMatchingTransport};
+
+    // TODO: Read from a fixture in the crate.
+    const ABCI_INFO_RESPONSE: &str = r#"{
+  "jsonrpc": "2.0",
+  "id": "",
+  "result": {
+    "response": {
+      "data": "GaiaApp",
+      "last_block_height": "488120",
+      "last_block_app_hash": "2LnCw0fN+Zq/gs5SOuya/GRHUmtWftAqAkTUuoxl4g4="
+    }
+  }
+}
+"#;
+
+    // TODO: Read from a fixture in the crate.
+    const BLOCK_RESPONSE: &str = r#"{
+  "jsonrpc": "2.0",
+  "id": "",
+  "result": {
+    "block_id": {
+      "hash": "4FFD15F274758E474898498A191EB8CA6FC6C466576255DA132908A12AC1674C",
+      "parts": {
+        "total": "1",
+        "hash": "BBA710736635FA20CDB4F48732563869E90871D31FE9E7DE3D900CD4334D8775"
+      }
+    },
+    "block": {
+      "header": {
+        "version": {
+          "block": "10",
+          "app": "1"
+        },
+        "chain_id": "cosmoshub-2",
+        "height": "10",
+        "time": "2020-03-15T16:57:08.151Z",
+        "last_block_id": {
+          "hash": "760E050B2404A4BC661635CA552FF45876BCD927C367ADF88961E389C01D32FF",
+          "parts": {
+            "total": "1",
+            "hash": "485070D01F9543827B3F9BAF11BDCFFBFD2BDED0B63D7192FA55649B94A1D5DE"
+          }
+        },
+        "last_commit_hash": "594F029060D5FAE6DDF82C7DC4612055EC7F941DFED34D43B2754008DC3BBC77",
+        "data_hash": "",
+        "validators_hash": "3C0A744897A1E0DBF1DEDE1AF339D65EDDCF10E6338504368B20C508D6D578DC",
+        "next_validators_hash": "3C0A744897A1E0DBF1DEDE1AF339D65EDDCF10E6338504368B20C508D6D578DC",
+        "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+        "app_hash": "0000000000000000",
+        "last_results_hash": "",
+        "evidence_hash": "",
+        "proposer_address": "12CC3970B3AE9F19A4B1D98BE1799F2CB923E0A3"
+      },
+      "data": {
+        "txs": null
+      },
+      "evidence": {
+        "evidence": null
+      },
+      "last_commit": {
+        "height": "9",
+        "round": "0",
+        "block_id": {
+          "hash": "760E050B2404A4BC661635CA552FF45876BCD927C367ADF88961E389C01D32FF",
+          "parts": {
+            "total": "1",
+            "hash": "485070D01F9543827B3F9BAF11BDCFFBFD2BDED0B63D7192FA55649B94A1D5DE"
+          }
+        },
+        "signatures": [
+          {
+            "block_id_flag": 2,
+            "validator_address": "12CC3970B3AE9F19A4B1D98BE1799F2CB923E0A3",
+            "timestamp": "2020-03-15T16:57:08.151Z",
+            "signature": "GRBX/UNaf19vs5byJfAuXk2FQ05soOHmaMFCbrNBhHdNZtFKHp6J9eFwZrrG+YCxKMdqPn2tQWAes6X8kpd1DA=="
+          }
+        ]
+      }
+    }
+  }
+}"#;
 
     #[tokio::test]
-    async fn test_client_interface() {
-        let mut ft = testing::MappedFixtureTransport::new();
-        ft.read_success_fixture(
-            PathBuf::from("./testing/fixtures/abci_info_request.json").as_path(),
-            PathBuf::from("../tests/support/abci_info.json").as_path(),
-        )
-        .await;
-        let transport: Box<dyn Transport> = Box::new(ft);
+    async fn test_mocked_transport() {
+        let mt = RequestMatchingTransport::new(MethodMatcher::new(
+            Method::AbciInfo,
+            Ok(ABCI_INFO_RESPONSE.into()),
+        ))
+        .push(MethodMatcher::new(Method::Block, Ok(BLOCK_RESPONSE.into())));
+
+        let transport: Box<dyn Transport> = Box::new(mt);
         let client = Client::from(transport);
+
         let abci_info = client.abci_info().await.unwrap();
-        assert_eq!(abci_info.data, "GaiaApp".to_string());
+        assert_eq!("GaiaApp".to_string(), abci_info.data);
+
+        // supplied height is irrelevant when using MethodMatcher
+        let block = client.block(Height::from(1234)).await.unwrap().block;
+        assert_eq!(Height::from(10), block.header.height);
     }
 }
