@@ -43,7 +43,7 @@ pub struct SingleStepTestCase {
 #[derive(Deserialize, Clone, Debug)]
 pub struct BlockVerdict {
     block: LiteBlock,
-    time: Time,
+    now: Time,
     verdict: LiteVerdict,
 }
 
@@ -63,7 +63,7 @@ fn run_single_step_test(tc: &SingleStepTestCase) {
 
     for (i, input) in tc.input.iter().enumerate() {
         println!("i: {}, {}", i, tc.description);
-        let tm_now = input.time;
+        let tm_now = input.now;
         let now = tm_now.to_system_time().unwrap();
         let untrusted_signed_header = &input.block.signed_header;
         let untrusted_vals = &input.block.validator_set;
@@ -110,19 +110,24 @@ fn apalache_test() {
 
     let test = ApalacheTestCase {
         model: "MC4_4_faulty.tla".to_string(),
-        test: "TestSuccessInv".to_string(),
+        test: "Test2CannotVerifySuccessInv".to_string(),
         length: None,
         timeout: None
     };
-    assert!(run_apalache_test(TEST_DIR, test).is_ok());
+    let apalache_run = run_apalache_test(TEST_DIR, test);
+    assert!(apalache_run.is_ok());
+    if !apalache_run.unwrap().stdout.contains("The outcome is: Error") {
+        eprintln!("Apalache failed to generate a counterexample; please check the model, the test, and the length bound");
+    }
+    else {
+        let transform = JsonatrTransform {
+            input: "counterexample.json".to_string(),
+            include: vec!["../../utils/jsonatr-lib/apalache_to_lite_test.json".to_string()],
+            output: "lite_test.json".to_string()
+        };
+        assert!(run_jsonatr_transform(TEST_DIR, transform).is_ok());
 
-    let transform = JsonatrTransform {
-        input: "counterexample.json".to_string(),
-        include: vec!["../../utils/jsonatr-lib/apalache_to_lite_test.json".to_string()],
-        output: "lite_test.json".to_string()
-    };
-    assert!(run_jsonatr_transform(TEST_DIR, transform).is_ok());
-
-    let tc = read_single_step_test(TEST_DIR, "lite_test.json");
-    run_single_step_test(&tc);
+        let tc = read_single_step_test(TEST_DIR, "lite_test.json");
+        run_single_step_test(&tc);
+    }
 }
