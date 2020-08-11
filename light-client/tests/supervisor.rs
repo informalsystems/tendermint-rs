@@ -14,7 +14,6 @@ use tendermint_light_client::{
 };
 
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -110,7 +109,7 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
     let handle = supervisor.handle();
     std::thread::spawn(|| supervisor.run());
 
-    let target_height = tc.height_to_verify.try_into().unwrap();
+    let target_height = tc.height_to_verify;
 
     match handle.verify_to_target(target_height) {
         Ok(new_state) => {
