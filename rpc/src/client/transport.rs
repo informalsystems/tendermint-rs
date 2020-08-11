@@ -6,7 +6,7 @@ use crate::Error;
 
 pub mod http_ws;
 
-/// Abstracting the transport layer allows us to easily simulate interactions
+/// Transport layer abstraction that allows us to easily simulate interactions
 /// with remote Tendermint nodes' RPC endpoints.
 #[async_trait]
 pub trait Transport: std::fmt::Debug {
