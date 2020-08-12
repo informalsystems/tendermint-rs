@@ -11,7 +11,7 @@ use std::{
 };
 use tokio::{stream::StreamExt, sync::mpsc, task::JoinHandle};
 
-use crate::{client::transport::EventConnection, events::Event, Error};
+use crate::{client::transport::EventConnection, event::Event, Error};
 
 /// The subscription manager is an interface to the subscription
 /// router, which runs asynchronously in a separate process.

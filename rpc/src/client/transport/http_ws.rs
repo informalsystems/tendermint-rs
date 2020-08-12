@@ -20,7 +20,7 @@ use tokio::{net::TcpStream, sync::mpsc, task::JoinHandle};
 use crate::{
     client::transport::{EventConnection, EventProducer, SubscriptionTransport, Transport},
     endpoint::{subscribe, unsubscribe},
-    events::Event,
+    event::Event,
     response::Response,
     Error, Request,
 };

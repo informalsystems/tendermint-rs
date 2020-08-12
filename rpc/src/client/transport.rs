@@ -8,7 +8,7 @@ use futures::{
 use std::pin::Pin;
 use tokio::sync::mpsc;
 
-use crate::{events::Event, Error};
+use crate::{event::Event, Error};
 
 pub mod http_ws;
 
