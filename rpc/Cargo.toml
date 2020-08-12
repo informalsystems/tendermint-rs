@@ -39,8 +39,8 @@ thiserror = "1"
 uuid = { version = "0.8", default-features = false }
 
 async-tungstenite = { version="0.5", features = ["tokio-runtime"], optional = true }
+async-trait = { version = "0.1", optional = true }
 futures = { version = "0.3", optional = true }
 http = { version = "0.2", optional = true }
 hyper = { version = "0.13", optional = true }
 tokio = { version = "0.2", features = ["macros", "fs"], optional = true }
-async-trait = { version = "0.1.36", optional = true }
