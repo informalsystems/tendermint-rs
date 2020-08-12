@@ -14,7 +14,7 @@ use {
 /// Votes are signed messages from validators for a particular block which
 /// include information about the validator signing it.
 ///
-/// <https://github.com/tendermint/tendermint/blob/master/docs/spec/blockchain/blockchain.md#vote>
+/// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#vote>
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Vote {
     /// Type of vote (prevote or precommit)

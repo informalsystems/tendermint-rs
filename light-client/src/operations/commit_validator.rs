@@ -2,12 +2,12 @@
 
 use crate::{
     bail,
+    operations::{Hasher, ProdHasher},
     predicates::errors::VerificationError,
     types::{SignedHeader, ValidatorSet},
 };
 
 use tendermint::block::CommitSig;
-use tendermint::lite::types::ValidatorSet as _;
 
 /// Validates the commit associated with a header against a validator set
 pub trait CommitValidator: Send {
@@ -27,8 +27,25 @@ pub trait CommitValidator: Send {
 }
 
 /// Production-ready implementation of a commit validator
-#[derive(Copy, Clone)]
-pub struct ProdCommitValidator;
+pub struct ProdCommitValidator {
+    hasher: Box<dyn Hasher>,
+}
+
+impl ProdCommitValidator {
+    /// Create a new commit validator using the given [`Hasher`]
+    /// to compute the hash of headers and validator sets.
+    pub fn new(hasher: impl Hasher + 'static) -> Self {
+        Self {
+            hasher: Box::new(hasher),
+        }
+    }
+}
+
+impl Default for ProdCommitValidator {
+    fn default() -> Self {
+        Self::new(ProdHasher::default())
+    }
+}
 
 impl CommitValidator for ProdCommitValidator {
     fn validate(
@@ -81,7 +98,7 @@ impl CommitValidator for ProdCommitValidator {
                 bail!(VerificationError::ImplementationSpecific(format!(
                     "Found a faulty signer ({}) not present in the validator set ({})",
                     validator_address,
-                    validator_set.hash()
+                    self.hasher.hash_validator_set(validator_set)
                 )));
             }
         }

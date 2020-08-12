@@ -12,7 +12,6 @@ use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
 use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
-use tendermint::lite::{Header, ValidatorSet};
 
 /// Provides an interface to the supervisor for use in downstream code.
 pub trait Handle {
@@ -189,7 +188,7 @@ impl Supervisor {
 
         match latest_trusted {
             Some(trusted) => LatestStatus::new(
-                Some(trusted.signed_header.header.height()),
+                Some(trusted.signed_header.header.height.value()),
                 Some(trusted.signed_header.header.hash()),
                 Some(trusted.next_validators.hash()),
                 connected_nodes,

@@ -52,10 +52,13 @@ We assume that fast sync protocol starts when connections with some number of pe
 are established. Therefore, peer set is initialised with non-empty set of peer ids. Note however
 that node does not know initially the peer heights.
 *)
-
+ 
 EXTENDS Integers, FiniteSets, Sequences
 
-CONSTANTS MAX_HEIGHT,
+
+CONSTANTS MAX_HEIGHT,                \* the maximal height of blockchain
+          VALIDATOR_SETS,            \* abstract set of validators
+          NIL_VS,                    \* a nil validator set
           CORRECT,                   \* set of correct peers
           FAULTY,                    \* set of faulty peers
           TARGET_PENDING,            \* maximum number of pending requests + downloaded blocks that are not yet processed
@@ -65,43 +68,39 @@ ASSUME CORRECT \intersect FAULTY = {}
 ASSUME TARGET_PENDING > 0
 ASSUME PEER_MAX_REQUESTS > 0
 
-
-\* the set of potential heights
-Heights == 1..MAX_HEIGHT
-
-\* simplifies execute blocks logic. Used only in block store.
-HeightsPlus == 1..MAX_HEIGHT+1
+\* the blockchain, see Tinychain
+VARIABLE chain
+  
+\* introduce tiny chain as the source of blocks for the correct nodes
+INSTANCE Tinychain
 
 \* a special value for an undefined height
 NilHeight == 0
 
+\* the height of the genesis block
+TrustedHeight == 1
+
 \* the set of all peer ids the node can receive a message from
 AllPeerIds == CORRECT \union FAULTY
-
-\* the set of potential blocks ids. For simplification, correct blocks are equal to block height.
-BlockIds == Heights \union {NilHeight}
-
-LastCommits == [blockId: BlockIds, enoughVotingPower: BOOLEAN]
 
 \* Correct last commit have enough voting power, i.e., +2/3 of the voting power of
 \* the corresponding validator set (enoughVotingPower = TRUE) that signs blockId.
 \* BlockId defines correct previous block (in the implementation it is the hash of the block).
-\* For simplicity, we model blockId as the height of the previous block.
-CorrectLastCommit(h) == [blockId |-> h-1, enoughVotingPower |-> TRUE]
+\* Instead of blockId, we encode blockIdEqRef, which is true, if the block id is equal
+\* to the hash of the previous block, see Tinychain.
+CorrectLastCommit(h) == chain[h].lastCommit
 
-NilCommit == [blockId |-> 0, enoughVotingPower |-> TRUE]
+NilCommit == [blockIdEqRef |-> FALSE, committers |-> NIL_VS]
 
-Blocks == [height: Heights, lastCommit: LastCommits, wellFormed: BOOLEAN]
+\* correct node always supplies the blocks from the blockchain
+CorrectBlock(h) == chain[h]
 
-\*BlocksWithNil == [height: Heights, lastCommit: LastCommits, wellFormed: BOOLEAN]
-
-\* correct node will create always valid blocks, i.e., wellFormed = true and lastCommit is correct.
-CorrectBlock(h) == [height |-> h, lastCommit |-> CorrectLastCommit(h), wellFormed |-> TRUE]
-
-NilBlock == [height |-> 0, lastCommit |-> NilCommit, wellFormed |-> TRUE]
+NilBlock ==
+    [height |-> 0, hashEqRef |-> FALSE, wellFormed |-> FALSE,
+     lastCommit |-> NilCommit, VS |-> NIL_VS, NextVS |-> NIL_VS]
 
 \* a special value for an undefined peer
-NilPeer == 0
+NilPeer == "Nil" \* STRING for apalache efficiency
 
 \* control the state of the syncing node
 States == { "running", "finished"}
@@ -136,10 +135,9 @@ VARIABLES
   ]
   *)
   peersState
-  
 
  \* the variables for the network and scheduler
- VARIABLES
+VARIABLES
   turn,                                     \* who is taking the turn: "Peers" or "Node"
   inMsg,                                    \* a node receives message by this variable
   outMsg                                    \* a node sends a message by this variable
@@ -148,49 +146,82 @@ VARIABLES
 (* the variables of the node *)
 nvars == <<state, blockPool>>
 
+(*************** Type definitions for Apalache (model checker) **********************)
+AsIntSet(S) == S <: {Int}
+
+\* type of process ids
+PIDT == STRING
+AsPidSet(S) == S <: {PIDT}
+
+\* ControlMessage type
+CMT == [type |-> STRING, peerId |-> PIDT] \* type of control messages
+
+\* InMsg type
+IMT == [type |-> STRING, peerId |-> PIDT, height |-> Int, block |-> BT]
+AsInMsg(m) == m <: IMT
+AsInMsgSet(S) == S <: {IMT}
+
+\* OutMsg type
+OMT == [type |-> STRING, peerId |-> PIDT, height |-> Int]
+AsOutMsg(m) == m <: OMT
+AsOutMsgSet(S) == S <: {OMT}
+
+\* block pool type
+BPT == [height |-> Int, peerIds |-> {PIDT}, peerHeights |-> [PIDT -> Int],
+        blockStore |-> [Int -> BT], receivedBlocks |-> [Int -> PIDT],
+        pendingBlocks |-> [Int -> PIDT], syncedBlocks |-> Int, syncHeight |-> Int]
+
+AsBlockPool(bp) == bp <: BPT
+
+(******************** Sets of messages ********************************)
+
 \* Control messages
 ControlMsgs ==
-    [type: {"addPeer"}, peerId: AllPeerIds]
+    AsInMsgSet([type: {"addPeer"}, peerId: AllPeerIds])
         \union
-    [type: {"removePeer"}, peerId: AllPeerIds]
+    AsInMsgSet([type: {"removePeer"}, peerId: AllPeerIds])
         \union
-    [type: {"syncTimeout"}]
+    AsInMsgSet([type: {"syncTimeout"}])
 
 \* All messages (and events) received by a node
 InMsgs ==
-    {NoMsg}
+    AsInMsgSet({NoMsg})
         \union
-    [type: {"blockResponse"}, peerId: AllPeerIds, block: Blocks]
+    AsInMsgSet([type: {"blockResponse"}, peerId: AllPeerIds, block: Blocks])
         \union
-    [type: {"noBlockResponse"}, peerId: AllPeerIds, height: Heights]
+    AsInMsgSet([type: {"noBlockResponse"}, peerId: AllPeerIds, height: Heights])
         \union    
-    [type: {"statusResponse"}, peerId: AllPeerIds, height: Heights]
+    AsInMsgSet([type: {"statusResponse"}, peerId: AllPeerIds, height: Heights])
         \union
     ControlMsgs
 
 \* Messages sent by a node and received by peers (environment in our case)
 OutMsgs ==
-    {NoMsg}
+    AsOutMsgSet({NoMsg})
         \union
-    [type: {"statusRequest"}]           \* StatusRequest is broadcast to the set of connected peers.
+    AsOutMsgSet([type: {"statusRequest"}]) \* StatusRequest is broadcast to the set of connected peers.
         \union
-    [type: {"blockRequest"}, peerId: AllPeerIds, height: Heights]
+    AsOutMsgSet([type: {"blockRequest"}, peerId: AllPeerIds, height: Heights])
 
 
 (********************************** NODE ***********************************)
 
 InitNode ==
-     \E pIds \in SUBSET AllPeerIds \ {{}}:                   \* set of peers node established initial connections with
-        /\ blockPool = [
-                height |-> 1,
+     \E pIds \in SUBSET AllPeerIds:                   \* set of peers node established initial connections with
+        /\ pIds \subseteq CORRECT   \* this line is not necessary
+        /\ pIds /= AsPidSet({}) \* apalache better checks non-emptiness than subtracts from SUBSET
+        /\ blockPool = AsBlockPool([
+                height |-> TrustedHeight + 1,       \* the genesis block is at height 1
+                syncHeight |-> TrustedHeight + 1,   \* and we are synchronized to it
                 peerIds |-> pIds,
                 peerHeights |-> [p \in AllPeerIds |-> NilHeight],     \* no peer height is known
-                blockStore |-> [h \in Heights |-> NilBlock],
+                blockStore |->
+                    [h \in Heights |->
+                      IF h > TrustedHeight THEN NilBlock ELSE chain[1]],
                 receivedBlocks |-> [h \in Heights |-> NilPeer],
                 pendingBlocks |-> [h \in Heights |-> NilPeer],
-                syncedBlocks |-> -1,
-                syncHeight |-> 1
-           ]
+                syncedBlocks |-> -1
+           ])
        /\ state = "running"
 
 \* Remove faulty peers.
@@ -275,7 +306,7 @@ HandleBlockResponse(msg, bPool) ==
 \* Compute max peer height.
 \* See https://github.com/tendermint/tendermint/blob/dac030d6daf4d3e066d84275911128856838af4e/blockchain/v2/scheduler.go#L440
 MaxPeerHeight(bPool) ==
-    IF bPool.peerIds = {}
+    IF bPool.peerIds = AsPidSet({})
     THEN 0 \* no peers, just return 0
     ELSE LET Hts == {bPool.peerHeights[p] : p \in bPool.peerIds} IN
            CHOOSE max \in Hts: \A h \in Hts: h <= max
@@ -289,7 +320,7 @@ FindNextRequestHeight(bPool) ==
                 /\ i <= MaxPeerHeight(bPool)
                 /\ bPool.blockStore[i] = NilBlock
                 /\ bPool.pendingBlocks[i] = NilPeer} IN
-    IF S = {}
+    IF S = AsIntSet({})
         THEN NilHeight
     ELSE
         CHOOSE min \in S:  \A h \in S: h >= min
@@ -319,7 +350,7 @@ FindPeerToServe(bPool, h) ==
                \/ bPool.blockStore[i] /= NilBlock
         } IN
 
-    IF \/ peersThatCanServe = {}
+    IF \/ peersThatCanServe = AsPidSet({})
        \/ Cardinality(pendingBlocks) >= TARGET_PENDING
     THEN NilPeer
     \* pick a peer that can serve request for height h that has minimum number of pending requests
@@ -331,10 +362,10 @@ FindPeerToServe(bPool, h) ==
 CreateRequest(bPool) ==
     LET nextHeight == FindNextRequestHeight(bPool) IN
 
-    IF nextHeight = NilHeight THEN [msg |-> NoMsg, pool |-> bPool]
+    IF nextHeight = NilHeight THEN [msg |-> AsOutMsg(NoMsg), pool |-> bPool]
     ELSE
      LET peer == FindPeerToServe(bPool, nextHeight) IN
-     IF peer = NilPeer THEN [msg |-> NoMsg, pool |-> bPool]
+     IF peer = NilPeer THEN [msg |-> AsOutMsg(NoMsg), pool |-> bPool]
      ELSE
         LET m == [type |-> "blockRequest", peerId |-> peer, height |-> nextHeight] IN
         LET newPool == [bPool EXCEPT
@@ -356,24 +387,38 @@ ComputeNextState(bPool) ==
 (* Verify if commit is for the given block id and if commit has enough voting power.
    See https://github.com/tendermint/tendermint/blob/61057a8b0af2beadee106e47c4616b279e83c920/blockchain/v2/processor_context.go#L12 *)
 VerifyCommit(block, lastCommit) ==
-    /\ lastCommit.enoughVotingPower
-    /\ lastCommit.blockId = block.height
-
+    PossibleCommit(block, lastCommit)
 
 (* Tries to execute next block in the pool, i.e., defines block validation logic.
    Returns new block pool (peers that has send invalid blocks are removed).
    See https://github.com/tendermint/tendermint/blob/dac030d6daf4d3e066d84275911128856838af4e/blockchain/v2/processor.go#L135 *)
 ExecuteBlocks(bPool) ==
     LET bStore == bPool.blockStore IN
+    LET block0 == bStore[bPool.height - 1] IN
+      \* blockPool is initialized with height = TrustedHeight + 1,
+      \* so bStore[bPool.height - 1] is well defined
     LET block1 == bStore[bPool.height] IN
-    LET block2 == bStore[bPool.height+1] IN
+    LET block2 == bStore[bPool.height + 1] IN
 
-    IF block1 = NilBlock \/ block2 = NilBlock \* we don't have two next consecutive blocks
-    THEN bPool
-    ELSE IF bPool.height > 1 /\ ~VerifyCommit(block1, block2.lastCommit)
-         THEN RemovePeers({bPool.receivedBlocks[block1.height], bPool.receivedBlocks[block2.height]}, bPool)
-         ELSE  \* all good, execute block at position height
-            [bPool EXCEPT !.height = bPool.height + 1]
+    IF block1 = NilBlock \/ block2 = NilBlock
+    THEN bPool  \* we don't have two next consecutive blocks
+
+    ELSE IF ~IsMatchingValidators(block1, block0.NextVS)
+              \* Check that block1.VS = block0.Next.
+              \* Otherwise, CorrectBlocksInv fails.
+              \* In the implementation NextVS is part of the application state,
+              \* so a mismatch can be found without access to block0.NextVS.
+         THEN \* the block does not have the expected validator set
+              RemovePeers({bPool.receivedBlocks[bPool.height]}, bPool)
+         ELSE IF ~VerifyCommit(block1, block2.lastCommit)  
+              \* Verify commit of block2 based on block1.
+              \* Interestingly, we do not have to call IsMatchingValidators.
+              THEN \* remove the peers of block1 and block2, as they are considered faulty
+              RemovePeers({bPool.receivedBlocks[bPool.height],
+                           bPool.receivedBlocks[bPool.height + 1]},
+                          bPool)
+              ELSE  \* all good, execute block at position height
+                [bPool EXCEPT !.height = bPool.height + 1]
 
 
 \* Defines logic for pruning peers.
@@ -454,7 +499,7 @@ NodeStep ==
         /\ state' = nstate
         /\ blockPool' = msgAndPool.pool
         /\ outMsg' = msgAndPool.msg
-        /\ inMsg' = NoMsg
+        /\ inMsg' = AsInMsg(NoMsg)
 
 
 \* If node is running, then in every step we try to create blockRequest.
@@ -474,7 +519,7 @@ InitPeers ==
         peersState = [
          peerHeights |-> pHeights,
          statusRequested |-> FALSE,
-         blocksRequested |-> {}
+         blocksRequested |-> AsOutMsgSet({})
     ]
 
 HandleStatusRequest(msg, pState) ==
@@ -484,11 +529,11 @@ HandleStatusRequest(msg, pState) ==
 
 HandleBlockRequest(msg, pState) ==
     [pState EXCEPT
-        !.blocksRequested = pState.blocksRequested \union {msg}
+        !.blocksRequested = pState.blocksRequested \union AsOutMsgSet({msg})
     ]
 
 HandleRequest(msg, pState) ==
-    IF msg = NoMsg
+    IF msg = AsOutMsg(NoMsg)
     THEN pState
     ELSE IF msg.type = "statusRequest"
          THEN HandleStatusRequest(msg, pState)
@@ -497,28 +542,27 @@ HandleRequest(msg, pState) ==
 CreateStatusResponse(peer, pState, anyHeight) ==
     LET m ==
         IF peer \in CORRECT
-        THEN [type |-> "statusResponse", peerId |-> peer, height |-> pState.peerHeights[peer]]
-        ELSE [type |-> "statusResponse", peerId |-> peer, height |-> anyHeight] IN
+        THEN AsInMsg([type |-> "statusResponse", peerId |-> peer, height |-> pState.peerHeights[peer]])
+        ELSE AsInMsg([type |-> "statusResponse", peerId |-> peer, height |-> anyHeight]) IN
 
     [msg |-> m, peers |-> pState]
 
 CreateBlockResponse(msg, pState, arbitraryBlock) ==
     LET m ==
         IF msg.peerId \in CORRECT
-        THEN [type |-> "blockResponse", peerId |-> msg.peerId, block |-> CorrectBlock(msg.height)]
-        ELSE [type |-> "blockResponse", peerId |-> msg.peerId, block |-> arbitraryBlock] IN
+        THEN AsInMsg([type |-> "blockResponse", peerId |-> msg.peerId, block |-> CorrectBlock(msg.height)])
+        ELSE AsInMsg([type |-> "blockResponse", peerId |-> msg.peerId, block |-> arbitraryBlock]) IN
     LET npState ==
         [pState EXCEPT
             !.blocksRequested = pState.blocksRequested \ {msg}
         ] IN
     [msg |-> m, peers |-> npState]
 
-GrowBlockchain(pState) ==
+GrowPeerHeight(pState) ==
     \E p \in CORRECT:
         /\ pState.peerHeights[p] < MAX_HEIGHT
         /\ peersState' = [pState EXCEPT !.peerHeights[p] = @ + 1]
-        /\ inMsg' = NoMsg
-
+        /\ inMsg' = AsInMsg(NoMsg)
 
 SendStatusResponseMessage(pState) ==
     /\ \E arbitraryHeight \in Heights:
@@ -530,17 +574,14 @@ SendStatusResponseMessage(pState) ==
 
 SendAddPeerMessage ==
    \E peer \in AllPeerIds:
-     /\ inMsg' = [type |-> "addPeer", peerId |-> peer]
-     /\ UNCHANGED peersState
+     inMsg' = AsInMsg([type |-> "addPeer", peerId |-> peer])
 
 SendRemovePeerMessage ==
    \E peer \in AllPeerIds:
-     /\ inMsg' = [type |-> "removePeer", peerId |-> peer]
-     /\ UNCHANGED peersState
+     inMsg' = AsInMsg([type |-> "removePeer", peerId |-> peer])
 
 SendSyncTimeoutMessage ==
-    /\ inMsg' = [type |-> "syncTimeout"]
-    /\ UNCHANGED peersState
+     inMsg' = AsInMsg([type |-> "syncTimeout"])
 
 
 SendControlMessage ==
@@ -548,22 +589,47 @@ SendControlMessage ==
     \/ SendRemovePeerMessage
     \/ SendSyncTimeoutMessage
 
+\* An extremely important property of block hashes (blockId):
+\* If the block hash coincides with the hash of the reference block,
+\* then the blocks should be equal.
+UnforgeableBlockId(height, block) ==
+    block.hashEqRef => block = chain[height]
+
+\* A faulty peer cannot forge enough of the validators signatures.
+\* In other words: If a commit contains enough signatures from the validators (in reality 2/3, in the model all), 
+\* then the blockID points to the block on the chain, encoded as block.lastCommit.blockIdEqRef being true
+\* A more precise rule should have checked that the commiters have over 2/3 of the VS's voting power.
+NoFork(height, block) ==
+    (height > 1 /\ block.lastCommit.committers = chain[height - 1].VS)
+        => block.lastCommit.blockIdEqRef
+
+\* Can be block produced by a faulty peer, assuming it cannot generate forks (basic assumption of the protocol)
+IsBlockByFaulty(height, block) ==
+    /\ block.height = height
+    /\ UnforgeableBlockId(height, block)
+    /\ NoFork(height, block)
 
 SendBlockResponseMessage(pState) ==
-    \/  /\ pState.blocksRequested /= {}
+    \* a response to a requested block: either by a correct, or by a faulty peer
+    \/  /\ pState.blocksRequested /= AsOutMsgSet({})
         /\ \E msg \in pState.blocksRequested:
              \E block \in Blocks:
-                LET msgAndPeers == CreateBlockResponse(msg, pState, block) IN
-                 /\ peersState' = msgAndPeers.peers
-                 /\ inMsg' = msgAndPeers.msg
+                 /\ IsBlockByFaulty(msg.height, block)
+                 /\ LET msgAndPeers == CreateBlockResponse(msg, pState, block) IN
+                    /\ peersState' = msgAndPeers.peers
+                    /\ inMsg' = msgAndPeers.msg
 
-
-    \/  /\ peersState' = pState
-        /\ inMsg' \in [type: {"blockResponse"}, peerId: FAULTY, block: Blocks]
+    \* a faulty peer can always send an unsolicited block
+    \/ \E peerId \in FAULTY:
+         \E block \in Blocks:
+           /\ IsBlockByFaulty(block.height, block)
+           /\ peersState' = pState
+           /\ inMsg' = AsInMsg([type |-> "blockResponse",
+                                peerId |-> peerId, block |-> block])
         
- SendNoBlockResponseMessage(pState) == 
+SendNoBlockResponseMessage(pState) == 
     /\ peersState' = pState
-    /\ inMsg' \in [type: {"noBlockResponse"}, peerId: FAULTY, height: Heights]
+    /\ inMsg' \in AsInMsgSet([type: {"noBlockResponse"}, peerId: FAULTY, height: Heights])
         
                    
 SendResponseMessage(pState) == 
@@ -574,53 +640,51 @@ SendResponseMessage(pState) ==
 
 NextEnvStep(pState) ==
     \/  SendResponseMessage(pState)
-    \/  GrowBlockchain(pState)
-    \/  SendControlMessage
+    \/  GrowPeerHeight(pState)
+    \/  SendControlMessage /\ peersState' = pState
+        \* note that we propagate pState that was missing in the previous version
 
 
 \* Peers consume a message and update it's local state. It then makes a single step, i.e., it sends at most single message.
 \* Message sent could be either a response to a request or faulty message (sent by faulty processes).
 NextPeers ==
     LET pState == HandleRequest(outMsg, peersState) IN
-
-    \/  /\ outMsg' = NoMsg
-        /\ NextEnvStep(pState)
+    /\ outMsg' = AsOutMsg(NoMsg)
+    /\ NextEnvStep(pState)
 
 
 \* the composition of the node, the peers, the network and scheduler
 Init ==
+    /\ IsCorrectChain(chain)   \* initialize the blockchain
     /\ InitNode
     /\ InitPeers
     /\ turn = "Peers"
-    /\ inMsg = NoMsg
-    /\ outMsg = [type |-> "statusRequest"]
+    /\ inMsg = AsInMsg(NoMsg)
+    /\ outMsg = AsOutMsg([type |-> "statusRequest"])
 
 Next ==
-    IF turn = "Peers"
-    THEN
-        /\ NextPeers
-        /\ turn' = "Node"
-        /\ UNCHANGED nvars
-    ELSE
-        /\ NextNode
-        /\ turn' = "Peers"
-        /\ UNCHANGED peersState
-
+  IF turn = "Peers"
+  THEN
+    /\ NextPeers
+    /\ turn' = "Node"
+    /\ UNCHANGED <<nvars, chain>>
+  ELSE
+    /\ NextNode
+    /\ turn' = "Peers"
+    /\ UNCHANGED <<peersState, chain>>
 
 
 FlipTurn ==
- turn' = (
+ turn' =
   IF turn = "Peers" THEN
    "Node"
   ELSE
    "Peers"
- )
-
 
 \* Compute max peer height. Used as a helper operator in properties.
 MaxCorrectPeerHeight(bPool) ==
     LET correctPeers == {p \in bPool.peerIds: p \in CORRECT} IN
-    IF correctPeers = {}
+    IF correctPeers = AsPidSet({})
     THEN 0 \* no peers, just return 0
     ELSE LET Hts == {bPool.peerHeights[p] : p \in correctPeers} IN
             CHOOSE max \in Hts: \A h \in Hts: h <= max
@@ -639,7 +703,6 @@ TypeOK ==
                [type: {"blockRequest"}, peerId: AllPeerIds, height: Heights]
 
         ]
-
     /\ blockPool \in [
                 height: Heights,
                 peerIds: SUBSET AllPeerIds,
@@ -651,27 +714,87 @@ TypeOK ==
                 syncHeight: Heights
            ]
 
-\* TODO: align with the English spec. Add reference to it
-Correctness1 == state = "finished" =>
-    blockPool.height >= MaxCorrectPeerHeight(blockPool)
+(* Incorrect synchronization: The last block may be never received *) 
+Sync1 == 
+    [](state = "finished" =>
+        blockPool.height >= MaxCorrectPeerHeight(blockPool))
 
-\* TODO: align with the English spec. Add reference to it
-Correctness2 ==
+Sync1AsInv ==
+    state = "finished" => blockPool.height >= MaxCorrectPeerHeight(blockPool)
+
+(* Incorrect synchronization, as there may be a timeout *)
+Sync2 ==
    \A p \in CORRECT:
         \/ p \notin blockPool.peerIds
         \/ [] (state = "finished" => blockPool.height >= blockPool.peerHeights[p] - 1)
 
-\* TODO: align with the English spec. Add reference to it
-Termination == WF_turn(FlipTurn) => <>(state = "finished")
+Sync2AsInv ==
+   \A p \in CORRECT:
+        \/ p \notin blockPool.peerIds
+        \/ (state = "finished" => blockPool.height >= blockPool.peerHeights[p] - 1)
 
-\* a few simple properties that trigger counterexamples
+(* Correct synchronization *)
+Sync3 ==
+   \A p \in CORRECT:
+        \/ p \notin blockPool.peerIds
+        \/ blockPool.syncedBlocks <= 0 \* timeout
+        \/ [] (state = "finished" => blockPool.height >= blockPool.peerHeights[p] - 1)
 
-\* Shows execution in which peer set is empty
-PeerSetIsNeverEmpty == blockPool.peerIds /= {}
+Sync3AsInv ==
+   \A p \in CORRECT:
+        \/ p \notin blockPool.peerIds
+        \/ blockPool.syncedBlocks <= 0 \* timeout
+        \/ (state = "finished" => blockPool.height >= blockPool.peerHeights[p] - 1)
 
-\* Shows execution in which state = "finished" and MaxPeerHeight is not equal to 1
-StateNotFinished ==
-    state /= "finished" \/ MaxPeerHeight(blockPool) = 1
+(* Naive termination *)
+\* This property is violated, as the faulty peers may produce infinitely many responses
+Termination ==
+    WF_turn(FlipTurn) => <>(state = "finished")
+
+(* Termination by timeout: the protocol terminates, if there is a timeout *)
+\* the precondition: fair flip turn and eventual timeout when no new blocks were synchronized
+TerminationByTOPre ==
+  /\ WF_turn(FlipTurn)
+  /\ <>(inMsg.type = "syncTimeout" /\ blockPool.height <= blockPool.syncHeight)
+
+TerminationByTO ==
+  TerminationByTOPre => <>(state = "finished")
+
+(* The termination property when we only have correct peers *)
+\* as correct peers may spam the node with addPeer, removePeer, and statusResponse,
+\* we have to enforce eventual response (there are no queues in our spec)
+CorrBlockResponse ==
+  \A h \in Heights:
+    [](outMsg.type = "blockRequest" /\ outMsg.height = h
+            => <>(inMsg.type = "blockResponse" /\ inMsg.block.height = h))
+
+\* a precondition for termination in presence of only correct processes
+TerminationCorrPre ==
+    /\ FAULTY = AsPidSet({})
+    /\ WF_turn(FlipTurn)
+    /\ CorrBlockResponse
+
+\* termination when there are only correct processes    
+TerminationCorr ==
+    TerminationCorrPre => <>(state = "finished")
+
+\* All synchronized blocks (but the last one) are exactly like in the reference chain
+CorrectBlocksInv ==
+    \/ state /= "finished"
+    \/ \A h \in 1..(blockPool.height - 1):
+        blockPool.blockStore[h] = chain[h]
+
+\* A false expectation that the protocol only finishes with the blocks
+\* from the processes that had not been suspected in being faulty
+SyncFromCorrectInv ==
+    \/ state /= "finished"
+    \/ \A h \in 1..blockPool.height:
+        blockPool.receivedBlocks[h] \in blockPool.peerIds \union {NilPeer}
+
+\* A false expectation that a correct process is never removed from the set of peer ids.
+\* A correct process may reply too late and then gets evicted.
+CorrectNeverSuspectedInv ==
+    CORRECT \subseteq blockPool.peerIds
 
 BlockPoolInvariant ==
     \A h \in Heights:
@@ -683,10 +806,20 @@ BlockPoolInvariant ==
           /\ blockPool.blockStore[h] /= NilBlock
           /\ blockPool.pendingBlocks[h] = NilPeer
 
+(* a few simple properties that trigger counterexamples *)
+
+\* Shows execution in which peer set is empty
+PeerSetIsNeverEmpty == blockPool.peerIds /= AsPidSet({})
+
+\* Shows execution in which state = "finished" and MaxPeerHeight is not equal to 1
+StateNotFinished ==
+    state /= "finished" \/ MaxPeerHeight(blockPool) = 1
+
+
 =============================================================================
 
 \*=============================================================================
 \* Modification History
+\* Last modified Fri May 29 20:41:53 CEST 2020 by igor
 \* Last modified Thu Apr 16 16:57:22 CEST 2020 by zarkomilosevic
-\* Last modified Thu Apr 09 12:53:53 CEST 2020 by igor
 \* Created Tue Feb 04 10:36:18 CET 2020 by zarkomilosevic

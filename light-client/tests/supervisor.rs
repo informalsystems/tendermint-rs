@@ -14,7 +14,6 @@ use tendermint_light_client::{
 };
 
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -44,7 +43,7 @@ fn load_multi_peer_testcases(dir: &str) -> Vec<TestBisection<LightBlock>> {
 }
 
 fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance {
-    let trusted_height = trust_options.height.value();
+    let trusted_height = trust_options.height;
     let trusted_state = io
         .fetch_light_block(peer_id, AtHeight::At(trusted_height))
         .expect("could not 'request' light block");
@@ -110,7 +109,7 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
     let handle = supervisor.handle();
     std::thread::spawn(|| supervisor.run());
 
-    let target_height = tc.height_to_verify.try_into().unwrap();
+    let target_height = tc.height_to_verify;
 
     match handle.verify_to_target(target_height) {
         Ok(new_state) => {

@@ -11,7 +11,7 @@ use std::collections::HashSet;
 use std::fmt;
 
 use tendermint::block::CommitSig;
-use tendermint::lite::types::TrustThreshold as _;
+use tendermint::trust_threshold::TrustThreshold as _;
 use tendermint::vote::{SignedVote, Vote};
 
 /// Tally for the voting power computed by the `VotingPowerCalculator`

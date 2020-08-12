@@ -3,7 +3,12 @@
 members = [
     "light-client",
     "light-node",
+    "proto",
     "rpc",
     "tendermint",
     "testgen"
+]
+
+exclude = [
+    "proto-compiler"
 ]

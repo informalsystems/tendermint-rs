@@ -23,6 +23,22 @@ This specification tries to reduce the number of intermediate blocks
 that need to be checked, by exploiting the guarantees provided by the
 [security model][TMBC-FM-2THIRDS-link].
 
+# Status
+
+This document is thoroughly reviewed, and the protocol has been
+formalized in TLA+ and model checked. 
+
+## Issues that need to be addressed
+
+As it is part of the larger light node, its data structures and
+functions interact with the fork dectection functionality of the light
+client. As a result of the work on
+[Pull Request 479](https://github.com/informalsystems/tendermint-rs/pull/479) we
+established the need for an update in the data structures in [Issue 499](https://github.com/informalsystems/tendermint-rs/issues/499). This
+will not change the verification logic, but it will record information
+about verification that can be used in fork detection (in particular
+in computing more efficiently the proof of fork).
+
 # Outline
 
 - [Part I](#part-i---tendermint-blockchain): Introduction of
@@ -477,6 +493,7 @@ independently:
 
 The core data structure of the protocol is the LightBlock.
 
+#### **[LCV-DATA-LIGHTBLOCK.1]**:
 ```go
 type LightBlock struct {
 		Header          Header
@@ -615,7 +632,7 @@ func Commit(height int64) (SignedHeader, error)
 	}
 }
 ```
-- Expected precodnition
+- Expected precondition
   - header of `height` exists on blockchain
 - Expected postcondition
   - if *n* is correct: Returns the signed header of height `height`
@@ -644,7 +661,7 @@ func Validators(height int64) (ValidatorSet, error)
 	}
 }
 ```
-- Expected precodnition
+- Expected precondition
   - header of `height` exists on blockchain
 - Expected postcondition
   - if *n* is correct: Returns the validator set of height `height`
@@ -1160,7 +1177,7 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 
 [RPC]: https://docs.tendermint.com/master/rpc/
 
-[block]: https://github.com/tendermint/spec/blob/master/spec/blockchain/blockchain.md
+[block]: https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md
 
 [TMBC-HEADER-link]: #tmbc-header.1
 [TMBC-SEQ-link]: #tmbc-seq.1

@@ -91,10 +91,10 @@ impl ProdVerifier {
 impl Default for ProdVerifier {
     fn default() -> Self {
         Self::new(
-            ProdPredicates,
-            ProdVotingPowerCalculator,
-            ProdCommitValidator,
-            ProdHasher,
+            ProdPredicates::default(),
+            ProdVotingPowerCalculator::default(),
+            ProdCommitValidator::default(),
+            ProdHasher::default(),
         )
     }
 }
