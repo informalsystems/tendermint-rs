@@ -46,8 +46,8 @@ pub struct EventConnection {
     // The `EventConnection` struct is a workaround for the fact that we need
     // to use `Transport` as a trait object, but trait objects are not allowed
     // to use generics in their method signatures.
-    pub(crate) transport: Box<dyn SubscriptionTransport>,
-    pub(crate) event_producer: EventProducer,
+    pub transport: Box<dyn SubscriptionTransport>,
+    pub event_producer: EventProducer,
 }
 
 impl EventConnection {
