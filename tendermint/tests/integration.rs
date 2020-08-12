@@ -147,6 +147,7 @@ mod rpc {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn subscription_interface() {
         let client = localhost_rpc_client();
         let mut subs_mgr = client.new_subscription_manager(10).await.unwrap();
