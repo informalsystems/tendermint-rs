@@ -41,7 +41,7 @@ struct SubscriptionRouter {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct SubscriptionId(usize);
+pub struct SubscriptionId(usize);
 
 #[derive(Debug)]
 enum RouterCmd {
