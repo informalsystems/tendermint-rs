@@ -1,20 +1,14 @@
 //! Tendermint RPC client
 
-use tendermint::{
-    abci::{self, Transaction},
-    block::Height,
-    evidence::Evidence,
-    net, Genesis,
-};
-
-use crate::{
-    client::{
-        subscription::SubscriptionManager,
-        transport::{http_ws::HttpWsTransport, Transport},
-    },
-    endpoint::*,
-    Error, Request, Response,
-};
+use crate::client::subscription::SubscriptionManager;
+use crate::client::transport::http_ws::HttpWsTransport;
+use crate::client::transport::Transport;
+use crate::endpoint::*;
+use crate::{Error, Request, Response};
+use tendermint::abci::{self, Transaction};
+use tendermint::block::Height;
+use tendermint::evidence::Evidence;
+use tendermint::{net, Genesis};
 
 pub mod event_listener;
 pub mod subscription;
