@@ -25,7 +25,7 @@ all-features = true
 
 [features]
 default = []
-client = [ "async-tungstenite", "futures", "http", "hyper", "tokio", "async-trait" ]
+client = [ "async-trait", "async-tungstenite", "futures", "http", "hyper", "tokio" ]
 secp256k1 = ["tendermint/secp256k1"]
 
 [dependencies]
