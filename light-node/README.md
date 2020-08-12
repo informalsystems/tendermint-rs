@@ -33,7 +33,7 @@ $ cd tendermint-rs/light-node
 ### Configuration
 
 You can configure all aspects of light node via a configuration file. 
-An example cofigartion can be found under [light_node.toml.example](light_node.toml.example). 
+An example configuration can be found under [light_node.toml.example](light_node.toml.example). 
 
 If you are running a Tendermint fullnode on your machine, you can simply copy and use it to get started:
 ```
