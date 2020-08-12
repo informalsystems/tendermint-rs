@@ -21,7 +21,7 @@ pub mod subscription;
 pub mod transport;
 
 #[cfg(test)]
-pub mod testing;
+pub mod test;
 
 /// Tendermint RPC client.
 ///
