@@ -7,6 +7,7 @@ pub use client::{event_listener, Client};
 
 pub mod endpoint;
 pub mod error;
+pub mod events;
 mod id;
 mod method;
 pub mod request;

@@ -13,6 +13,7 @@ mod rpc {
 
     use tendermint_rpc::{event_listener, Client};
 
+    use futures::StreamExt;
     use tendermint::abci::Code;
     use tendermint::abci::Log;
 
@@ -143,6 +144,28 @@ mod rpc {
 
         // For lack of better things to test
         assert_eq!(status.validator_info.voting_power.value(), 10);
+    }
+
+    #[tokio::test]
+    async fn subscription_interface() {
+        let client = localhost_rpc_client();
+        let mut subs_mgr = client.new_subscription_manager(10).await.unwrap();
+        let mut subs = subs_mgr
+            .subscribe("tm.event='NewBlock'".to_string(), 10)
+            .await
+            .unwrap();
+        let mut ev_count: usize = 0;
+
+        dbg!("Attempting to grab 10 new blocks");
+        while let Some(ev) = subs.next().await {
+            dbg!("Got event: {:?}", ev);
+            ev_count += 1;
+            if ev_count > 10 {
+                break;
+            }
+        }
+
+        subs_mgr.terminate().await.unwrap();
     }
 
     #[tokio::test]

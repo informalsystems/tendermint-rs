@@ -1,7 +1,10 @@
 use async_trait::async_trait;
 
 use crate::{
-    client::{testing::Fixture, transport::Transport},
+    client::{
+        testing::Fixture,
+        transport::{EventConnection, Transport},
+    },
     Error, Method,
 };
 
@@ -43,6 +46,10 @@ impl Transport for RequestMatchingTransport {
             "no matcher for request: {}",
             request
         )))
+    }
+
+    async fn new_event_connection(&self, event_buf_size: usize) -> Result<EventConnection, Error> {
+        unimplemented!()
     }
 }
 

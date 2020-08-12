@@ -8,15 +8,20 @@ use tendermint::{
 };
 
 use crate::{
-    client::transport::{http_ws::HttpWsTransport, Transport},
+    client::{
+        subscription::SubscriptionManager,
+        transport::{http_ws::HttpWsTransport, Transport},
+    },
     endpoint::*,
     Error, Request, Response,
 };
 
 pub mod event_listener;
+pub mod subscription;
+pub mod transport;
+
 #[cfg(test)]
 pub mod testing;
-pub mod transport;
 
 /// Tendermint RPC client.
 ///
@@ -168,6 +173,17 @@ impl Client {
         self.perform(evidence::Request::new(e)).await
     }
 
+    /// Creates a subscription management interface for this RPC client. This
+    /// interface facilitates subscribing and unsubscribing from receiving
+    /// events produced by specific RPC queries.
+    pub async fn new_subscription_manager(
+        &self,
+        event_buf_size: usize,
+    ) -> Result<SubscriptionManager, Error> {
+        let conn = self.transport.new_event_connection(event_buf_size).await?;
+        Ok(SubscriptionManager::new(conn, 10))
+    }
+
     /// Perform a request against the RPC endpoint
     pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
     where
@@ -273,7 +289,7 @@ mod test {
 }"#;
 
     #[tokio::test]
-    async fn test_mocked_transport() {
+    async fn mocked_transport() {
         let mt = RequestMatchingTransport::new(MethodMatcher::new(
             Method::AbciInfo,
             Ok(ABCI_INFO_RESPONSE.into()),
