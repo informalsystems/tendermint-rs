@@ -27,7 +27,6 @@ Currently, there are two new crates which were created in order to explore other
 
 `abci2`'s architecture is very minimal and is akin to a wrapper around raw `TcpStream` with `protobuf` encoding/decoding
 of ABCI types. All the burden of handing requests of different types in different ways is left to the developer.
-ABCI server.
 
 Unlike `abci2`, `abci-rs`' architecture is similar to `rust-abci` with some additional features, for example, support
 for [`async_trait`](https://docs.rs/async-trait)s, ABCI logic [sanity checks](https://github.com/tendermint/rust-abci/issues/49)
