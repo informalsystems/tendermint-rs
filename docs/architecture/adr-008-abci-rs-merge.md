@@ -15,7 +15,7 @@ this purpose:
 
 ### History
 
-There was a [proposal](https://github.com/tendermint/rust-abci/issues/61) for rearchitecturing `rust-abci` where a lot
+There was a [proposal](https://github.com/tendermint/rust-abci/issues/61) for rearchitecting `rust-abci` where a lot
 of different aspects about `rust-abci` were discussed (for example, current `Application` trait does not enforce `Send +
 Sync`, also `abci-rs` is not easy to work with when rest of the application is using `async` Rust etc.). A decision was
 made to explore other architectures for `rust-abci` which are also compatible with `async` Rust.
