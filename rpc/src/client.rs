@@ -258,7 +258,7 @@ mod test {
     };
     use crate::Method;
 
-    // TODO: Read from a fixture in the crate.
+    // TODO(thane): Read from a fixture in the crate.
     const ABCI_INFO_RESPONSE: &str = r#"{
   "jsonrpc": "2.0",
   "id": "",
@@ -272,7 +272,7 @@ mod test {
 }
 "#;
 
-    // TODO: Read from a fixture in the crate.
+    // TODO(thane): Read from a fixture in the crate.
     const BLOCK_RESPONSE: &str = r#"{
   "jsonrpc": "2.0",
   "id": "",
