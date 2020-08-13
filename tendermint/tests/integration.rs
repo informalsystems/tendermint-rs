@@ -11,15 +11,16 @@
 mod rpc {
     use std::cmp::min;
 
-    use tendermint_rpc::{event_listener, Client};
+    use tendermint_rpc::transport::http_ws::HttpTransport;
+    use tendermint_rpc::{event_listener, new_subscription_client, Client};
 
     use futures::StreamExt;
     use tendermint::abci::Code;
     use tendermint::abci::Log;
 
     /// Get the address of the local node
-    pub fn localhost_rpc_client() -> Client {
-        Client::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap()
+    pub fn localhost_rpc_client() -> Client<HttpTransport> {
+        Client::new(HttpTransport::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap())
     }
 
     /// `/health` endpoint
@@ -150,23 +151,24 @@ mod rpc {
     #[ignore]
     async fn subscription_interface() {
         let client = localhost_rpc_client();
-        let mut subs_mgr = client.new_subscription_manager(10).await.unwrap();
-        let mut subs = subs_mgr
-            .subscribe("tm.event='NewBlock'".to_string(), 10)
+        let mut subs_client = new_subscription_client(&client).await.unwrap();
+        let mut subs = subs_client
+            .subscribe("tm.event='NewBlock'".to_string())
             .await
             .unwrap();
-        let mut ev_count: usize = 0;
+        let mut ev_count = 10_i32;
 
-        dbg!("Attempting to grab 10 new blocks");
+        dbg!("Attempting to grab {} new blocks", ev_count);
         while let Some(ev) = subs.next().await {
             dbg!("Got event: {:?}", ev);
-            ev_count += 1;
-            if ev_count > 10 {
+            ev_count -= 1;
+            if ev_count < 0 {
                 break;
             }
         }
 
-        subs_mgr.terminate().await.unwrap();
+        subs_client.close().await.unwrap();
+        client.close().await.unwrap();
     }
 
     #[tokio::test]

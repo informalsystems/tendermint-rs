@@ -5,7 +5,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fmt::Debug;
 
 /// JSONRPC requests
-pub trait Request: Debug + DeserializeOwned + Serialize + Sized {
+pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
     /// Response type for this command
     type Response: super::response::Response;
 

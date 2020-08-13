@@ -6,7 +6,7 @@ use std::io::Read;
 /// Subscription request for events.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
-    query: String,
+    pub query: String,
 }
 
 impl Request {

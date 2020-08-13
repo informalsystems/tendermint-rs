@@ -3,7 +3,7 @@
 #[cfg(feature = "client")]
 mod client;
 #[cfg(feature = "client")]
-pub use client::{event_listener, Client};
+pub use client::{event_listener, new_subscription_client, transport, Client, SubscriptionClient};
 
 pub mod endpoint;
 pub mod error;

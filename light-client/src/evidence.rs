@@ -47,10 +47,16 @@ impl ProdEvidenceReporter {
     }
 
     // FIXME: Cannot enable precondition because of "autoref lifetime" issue
+    // TODO(thane): Generalize over client transport (instead of using HttpTransport directly).
     // #[pre(self.peer_map.contains_key(&peer))]
-    fn rpc_client_for(&self, peer: PeerId) -> Result<rpc::Client, IoError> {
+    fn rpc_client_for(
+        &self,
+        peer: PeerId,
+    ) -> Result<rpc::Client<rpc::transport::http_ws::HttpTransport>, IoError> {
         let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
-        rpc::Client::new(peer_addr).map_err(IoError::from)
+        Ok(rpc::Client::new(
+            rpc::transport::http_ws::HttpTransport::new(peer_addr).map_err(IoError::from)?,
+        ))
     }
 }
 
