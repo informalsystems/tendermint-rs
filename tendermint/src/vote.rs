@@ -108,8 +108,8 @@ impl SignedVote {
     }
 
     /// Return the actual signature on the canonicalized vote.
-    pub fn signature(&self) -> &[u8] {
-        self.signature.as_ref()
+    pub fn signature(&self) -> &Signature {
+        &self.signature
     }
 }
 

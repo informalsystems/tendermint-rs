@@ -1,19 +1,24 @@
 //! Tendermint accounts
 
-use crate::error::{Error, Kind};
-#[cfg(feature = "secp256k1")]
-use ripemd160::Ripemd160;
+use crate::{
+    error::{Error, Kind},
+    public_key::Ed25519,
+};
+
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
-#[cfg(feature = "secp256k1")]
-use signatory::ecdsa::curve::secp256k1;
-use signatory::ed25519;
 use std::{
+    convert::TryInto,
     fmt::{self, Debug, Display},
     str::FromStr,
 };
 use subtle::{self, ConstantTimeEq};
 use subtle_encoding::hex;
+
+#[cfg(feature = "secp256k1")]
+use crate::public_key::Secp256k1;
+#[cfg(feature = "secp256k1")]
+use ripemd160::Ripemd160;
 
 /// Size of an  account ID in bytes
 pub const LENGTH: usize = 20;
@@ -64,8 +69,8 @@ impl Debug for Id {
 
 // RIPEMD160(SHA256(pk))
 #[cfg(feature = "secp256k1")]
-impl From<secp256k1::PublicKey> for Id {
-    fn from(pk: secp256k1::PublicKey) -> Id {
+impl From<Secp256k1> for Id {
+    fn from(pk: Secp256k1) -> Id {
         let sha_digest = Sha256::digest(pk.as_bytes());
         let ripemd_digest = Ripemd160::digest(&sha_digest[..]);
         let mut bytes = [0u8; LENGTH];
@@ -75,12 +80,10 @@ impl From<secp256k1::PublicKey> for Id {
 }
 
 // SHA256(pk)[:20]
-impl From<ed25519::PublicKey> for Id {
-    fn from(pk: ed25519::PublicKey) -> Id {
+impl From<Ed25519> for Id {
+    fn from(pk: Ed25519) -> Id {
         let digest = Sha256::digest(pk.as_bytes());
-        let mut bytes = [0u8; LENGTH];
-        bytes.copy_from_slice(&digest[..LENGTH]);
-        Id(bytes)
+        Id(digest[..LENGTH].try_into().unwrap())
     }
 }
 
@@ -141,7 +144,7 @@ mod tests {
         let id_bytes = Id::from_str(id_hex).expect("expected id_hex to decode properly");
 
         // get id for pubkey
-        let pubkey = ed25519::PublicKey::from_bytes(pubkey_bytes).unwrap();
+        let pubkey = Ed25519::from_bytes(pubkey_bytes).unwrap();
         let id = Id::from(pubkey);
 
         assert_eq!(id_bytes.ct_eq(&id).unwrap_u8(), 1);
@@ -160,7 +163,7 @@ mod tests {
         let id_bytes = Id::from_str(id_hex).expect("expected id_hex to decode properly");
 
         // get id for pubkey
-        let pubkey = secp256k1::PublicKey::from_bytes(pubkey_bytes).unwrap();
+        let pubkey = Secp256k1::from_bytes(pubkey_bytes).unwrap();
         let id = Id::from(pubkey);
 
         assert_eq!(id_bytes.ct_eq(&id).unwrap_u8(), 1);

@@ -2,16 +2,10 @@
 
 use prost_amino_derive::Message;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use signatory::{
-    ed25519,
-    signature::{Signature, Verifier},
-};
-use signatory_dalek::Ed25519Verifier;
 use subtle_encoding::base64;
 
 use crate::amino_types::message::AminoMessage;
-use crate::hash::Hash;
-use crate::{account, merkle, vote, PublicKey};
+use crate::{account, hash::Hash, merkle, vote, Error, PublicKey, Signature};
 
 /// Validator set contains a vector of validators
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -103,14 +97,8 @@ impl Info {
 
     /// Verify the given signature against the given sign_bytes using the validators
     /// public key.
-    pub fn verify_signature(&self, sign_bytes: &[u8], signature: &[u8]) -> bool {
-        if let Some(pk) = &self.pub_key.ed25519() {
-            let verifier = Ed25519Verifier::from(pk);
-            if let Ok(sig) = ed25519::Signature::from_bytes(signature) {
-                return verifier.verify(sign_bytes, &sig).is_ok();
-            }
-        }
-        false
+    pub fn verify_signature(&self, sign_bytes: &[u8], signature: &Signature) -> Result<(), Error> {
+        self.pub_key.verify(sign_bytes, signature)
     }
 }
 
@@ -153,7 +141,7 @@ struct InfoHashable {
 impl From<&Info> for InfoHashable {
     fn from(info: &Info) -> InfoHashable {
         InfoHashable {
-            pub_key: info.pub_key.as_bytes(),
+            pub_key: info.pub_key.to_bytes(),
             voting_power: info.voting_power.value(),
         }
     }
@@ -254,7 +242,8 @@ mod tests {
 
     // make a validator from a hex ed25519 pubkey and a voting power
     fn make_validator(pk_string: &str, vp: u64) -> Info {
-        let pk = PublicKey::from_raw_ed25519(&hex::decode_upper(pk_string).unwrap()).unwrap();
+        let bytes = hex::decode_upper(pk_string).unwrap();
+        let pk = PublicKey::from_raw_ed25519(&bytes).unwrap();
         Info::new(pk, vote::Power::new(vp))
     }
 
@@ -270,18 +259,18 @@ mod tests {
             158_095_448_483_785_107,
         );
         let v3 = make_validator(
-            "EB6B732C4BD86B5FA3F3BC3DB688DA0ED182A7411F81C2D405506B298FC19E52",
+            "76A2B3F5CBB567F0D689D9DF7155FC89A4C878F040D7A5BB85FF68B74D253FC7",
             770_561_664_770_006_272,
         );
-        let hash_string = "B92B4474567A1B57969375C13CF8129AA70230642BD7FB9FB2CC316E87CE01D7";
-        let hash_expect = &hex::decode_upper(hash_string).unwrap();
+        let hash_string = "7B7B00C03EBA5ED17923243D5F7CF974BE2499522EF5B92A3EC60E868A0CCA19";
+        let hash_expect = hex::decode_upper(hash_string).unwrap();
 
         let val_set = Set::new(vec![v1, v2, v3]);
         let hash = val_set.hash();
-        assert_eq!(hash_expect, &hash.as_bytes().to_vec());
+        assert_eq!(hash_expect, hash.as_bytes().to_vec());
 
         let not_in_set = make_validator(
-            "EB6B732C5BD86B5FA3F3BC3DB688DA0ED182A7411F81C2D405506B298FC19E52",
+            "76A2B3F5CBB567F0D689D9DF7155FC89A4C878F040D7A5BB85FF68B74D253FC9",
             1,
         );
         assert_eq!(val_set.validator(v1.address).unwrap(), v1);
