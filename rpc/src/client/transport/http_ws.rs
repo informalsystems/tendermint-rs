@@ -286,7 +286,7 @@ impl WebSocketSubscriptionDriver {
         .await?;
 
         while let Some(res) = self.stream.next().await {
-            if let Err(_) = res {
+            if res.is_err() {
                 return Ok(());
             }
         }

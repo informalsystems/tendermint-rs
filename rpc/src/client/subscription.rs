@@ -82,7 +82,7 @@ impl SubscriptionRouter {
             // TODO(thane): Right now we automatically remove any disconnected
             //              or full channels. We must handle full channels
             //              differently to disconnected ones.
-            if let Err(_) = event_tx.send(ev.clone()).await {
+            if event_tx.send(ev.clone()).await.is_err() {
                 disconnected.push(id.clone());
             }
         }
