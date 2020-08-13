@@ -1,5 +1,7 @@
 //! Transport layer abstraction for the Tendermint RPC client.
 
+pub mod http_ws;
+
 use crate::client::subscription::{Subscription, SubscriptionId};
 use crate::endpoint::{subscribe, unsubscribe};
 use crate::event::Event;
@@ -7,8 +9,6 @@ use crate::{Error, Request};
 use async_trait::async_trait;
 use std::fmt::Debug;
 use tokio::sync::mpsc;
-
-pub mod http_ws;
 
 /// Transport layer abstraction for interacting with real or mocked Tendermint
 /// full nodes.

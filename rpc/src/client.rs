@@ -1,5 +1,11 @@
 //! Tendermint RPC client
 
+pub mod event_listener;
+pub mod subscription;
+#[cfg(test)]
+pub mod test_support;
+pub mod transport;
+
 use crate::client::subscription::Subscription;
 use crate::client::transport::{SubscriptionTransport, Transport};
 use crate::endpoint::*;
@@ -9,13 +15,6 @@ use tendermint::block::Height;
 use tendermint::evidence::Evidence;
 use tendermint::Genesis;
 use tokio::sync::mpsc;
-
-pub mod event_listener;
-pub mod subscription;
-pub mod transport;
-
-#[cfg(test)]
-pub mod test_support;
 
 /// The default number of events we buffer in a [`Subscription`] if you do not
 /// specify the buffer size when creating it.

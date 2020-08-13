@@ -2,10 +2,10 @@
 //! provide some useful abstractions in cases where you may want to use an RPC
 //! client in your code, but mock its remote endpoint's responses.
 
+pub mod matching_transport;
+
 use std::path::PathBuf;
 use tokio::fs;
-
-pub mod matching_transport;
 
 /// A fixture that can refer to a file in the filesystem or is a string in its
 /// own right.
