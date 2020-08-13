@@ -5,9 +5,7 @@
 
 ## Context
 
-As mentioned [here](https://github.com/informalsystems/tendermint-rs/issues/388#issue-646627068), one high level goal
-for this `tendermint-rs` is to merge an already existing crate for build ABCI servers. There are three main crates for
-this purpose:
+As mentioned #388 one of the high level goals for the `tendermint-rs` repo is to merge an already existing crate to build ABCI servers with. There are three existing crates for this purpose:
 
 1. [`rust-abci`](https://github.com/tendermint/rust-abci)
 1. [`abci-rs`](https://github.com/devashishdxt/abci-rs)
