@@ -156,9 +156,14 @@ impl HttpWebSocketClient {
         })
     }
 
-    /// In the absence of an `async` version of [`std::convert::TryFrom`],
-    /// this constructor provides an `async` way to upgrade an [`HttpClient`]
-    /// to an [`HttpWebSocketClient`].
+    /// In the absence of an `async` version of [`TryFrom`], this constructor
+    /// provides an `async` way to upgrade an [`HttpClient`] to an
+    /// [`HttpWebSocketClient`].
+    ///
+    /// [`TryFrom`]: https://doc.rust-lang.org/std/convert/trait.TryFrom.html
+    /// [`HttpClient`]: struct.HttpClient.html
+    /// [`HttpWebSocketClient`]: struct.HttpWebSocketClient.html
+    ///
     pub async fn try_from(client: HttpClient) -> Result<HttpWebSocketClient> {
         HttpWebSocketClient::new(net::Address::Tcp {
             peer_id: None,
