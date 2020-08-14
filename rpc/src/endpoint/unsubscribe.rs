@@ -20,7 +20,7 @@ impl crate::Request for Request {
     type Response = Response;
 
     fn method(&self) -> crate::Method {
-        crate::Method::Subscribe
+        crate::Method::Unsubscribe
     }
 }
 

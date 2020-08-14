@@ -17,7 +17,11 @@
 //!   (see [`HttpClient`]), and a WebSocket-based interface for `Event`
 //!   subscription (see [`HttpWebSocketClient`]).
 //!
-//! [`Event`]: event::Event
+//! [`MinimalClient`]: trait.MinimalClient.html
+//! [`FullClient`]: trait.FullClient.html
+//! [`Event`]: event/struct.Event.html
+//! [`HttpClient`]: struct.HttpClient.html
+//! [`HttpWebSocketClient`]: struct.HttpWebSocketClient.html
 
 mod subscription;
 pub use subscription::{Subscription, SubscriptionId, SubscriptionRouter};
@@ -36,6 +40,9 @@ use tendermint::Genesis;
 
 /// The default number of events we buffer in a [`Subscription`] if you do not
 /// specify the buffer size when creating it.
+///
+/// [`Subscription`]: struct.Subscription.html
+///
 pub const DEFAULT_SUBSCRIPTION_BUF_SIZE: usize = 100;
 
 /// A `MinimalClient` provides lightweight access to the Tendermint RPC. It
@@ -44,6 +51,9 @@ pub const DEFAULT_SUBSCRIPTION_BUF_SIZE: usize = 100;
 ///
 /// To access event subscription capabilities, use a client that implements the
 /// [`FullClient`] trait.
+///
+/// [`FullClient`]: trait.FullClient.html
+///
 #[async_trait]
 pub trait MinimalClient {
     /// `/abci_info`: get information about the ABCI application.
@@ -188,6 +198,9 @@ pub trait MinimalClient {
 
 /// A `FullClient` is one that augments a [`MinimalClient`] functionality with
 /// subscription capabilities.
+///
+/// [`MinimalClient`]: trait.MinimalClient.html
+///
 #[async_trait]
 pub trait FullClient: MinimalClient {
     /// `/subscribe`: subscribe to receive events produced by the given query.
@@ -199,7 +212,7 @@ pub trait FullClient: MinimalClient {
     /// The slower your application processes events, the larger this buffer
     /// needs to be.
     ///
-    /// [`Subscription`]: client::subscription::Subscription
+    /// [`Subscription`]: struct.Subscription.html
     ///
     async fn subscribe_with_buf_size(
         &mut self,
@@ -212,7 +225,8 @@ pub trait FullClient: MinimalClient {
     /// Uses [`DEFAULT_SUBSCRIPTION_BUF_SIZE`] as the buffer size for the
     /// returned [`Subscription`].
     ///
-    /// [`Subscription`]: client::subscription::Subscription
+    /// [`DEFAULT_SUBSCRIPTION_BUF_SIZE`]: constant.DEFAULT_SUBSCRIPTION_BUF_SIZE.html
+    /// [`Subscription`]: struct.Subscription.html
     ///
     async fn subscribe(&mut self, query: String) -> Result<Subscription> {
         self.subscribe_with_buf_size(query, DEFAULT_SUBSCRIPTION_BUF_SIZE)

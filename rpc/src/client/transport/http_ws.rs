@@ -28,6 +28,36 @@ use tokio::task::JoinHandle;
 const DEFAULT_WEBSOCKET_CMD_BUF_SIZE: usize = 20;
 
 /// An HTTP-based Tendermint RPC client (a [`MinimalClient`] implementation).
+///
+/// Does not provide [`Event`] subscription facilities (see
+/// [`HttpWebSocketClient`] for a client that does provide `Event` subscription
+/// facilities).
+///
+/// ## Examples
+///
+/// We don't test this example automatically at present, but it has and can
+/// been tested against a Tendermint node running on `localhost`.
+///
+/// ```ignore
+/// use tendermint_rpc::{HttpClient, MinimalClient};
+///
+/// #[tokio::main]
+/// async fn main() {
+///     let client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+///         .unwrap();
+///
+///     let abci_info = client.abci_info()
+///         .await
+///         .unwrap();
+///
+///     println!("Got ABCI info: {:?}", abci_info);
+/// }
+/// ```
+///
+/// [`MinimalClient`]: trait.MinimalClient.html
+/// [`Event`]: ./event/struct.Event.html
+/// [`HttpWebSocketClient`]: struct.HttpWebSocketClient.html
+///
 #[derive(Debug, Clone)]
 pub struct HttpClient {
     host: String,
@@ -61,6 +91,44 @@ impl HttpClient {
 /// HTTP is used for all requests except those pertaining to [`Event`]
 /// subscription. `Event` subscription is facilitated by a WebSocket
 /// connection, which is opened as this client is created.
+///
+/// ## Examples
+///
+/// We don't test this example automatically at present, but it has and can
+/// been tested against a Tendermint node running on `localhost`.
+///
+/// ```ignore
+/// use tendermint_rpc::{HttpWebSocketClient, FullClient, MinimalClient};
+/// use futures::StreamExt;
+///
+/// #[tokio::main]
+/// async fn main() {
+///     let mut client = HttpWebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+///         .await
+///         .unwrap();
+///
+///     let mut subs = client.subscribe("tm.event='NewBlock'".to_string())
+///         .await
+///         .unwrap();
+///
+///     // Grab 5 NewBlock events
+///     let mut ev_count = 5_i32;
+///
+///     while let Some(ev) = subs.next().await {
+///         println!("Got event: {:?}", ev);
+///         ev_count -= 1;
+///         if ev_count < 0 {
+///             break
+///         }
+///     }
+///
+///     client.unsubscribe(subs).await.unwrap();
+///     client.close().await.unwrap();
+/// }
+/// ```
+///
+/// [`Event`]: ./event/struct.Event.html
+///
 #[derive(Debug)]
 pub struct HttpWebSocketClient {
     host: String,
