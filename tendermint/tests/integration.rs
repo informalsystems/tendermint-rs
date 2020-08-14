@@ -156,7 +156,7 @@ mod rpc {
             .subscribe("tm.event='NewBlock'".to_string())
             .await
             .unwrap();
-        let mut ev_count = 10_i32;
+        let mut ev_count = 5_i32;
 
         dbg!("Attempting to grab {} new blocks", ev_count);
         while let Some(ev) = subs.next().await {
