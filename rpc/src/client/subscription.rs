@@ -38,21 +38,19 @@ impl Subscription {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SubscriptionId(usize);
 
-impl From<usize> for SubscriptionId {
-    fn from(u: usize) -> Self {
-        SubscriptionId(u)
-    }
-}
-
-impl From<SubscriptionId> for usize {
-    fn from(subs_id: SubscriptionId) -> Self {
-        subs_id.0
+impl Default for SubscriptionId {
+    fn default() -> Self {
+        Self(0)
     }
 }
 
 impl SubscriptionId {
-    pub fn next(&self) -> SubscriptionId {
-        SubscriptionId(self.0 + 1)
+    /// Advances this subscription ID to the next logical ID, returning the
+    /// previous one.
+    pub fn advance(&mut self) -> SubscriptionId {
+        let cur_id = self.clone();
+        self.0 += 1;
+        cur_id
     }
 }
 
@@ -111,5 +109,11 @@ impl SubscriptionRouter {
             None => return,
         };
         subs_for_query.remove(&subs.id);
+    }
+}
+
+impl Default for SubscriptionRouter {
+    fn default() -> Self {
+        Self::new()
     }
 }

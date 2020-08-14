@@ -3,7 +3,9 @@
 #[cfg(feature = "client")]
 mod client;
 #[cfg(feature = "client")]
-pub use client::{event_listener, new_subscription_client, transport, Client, SubscriptionClient};
+pub use client::{FullClient, MinimalClient, Subscription, SubscriptionId, SubscriptionRouter};
+#[cfg(feature = "http_ws")]
+pub use client::{HttpClient, HttpWebSocketClient};
 
 pub mod endpoint;
 pub mod error;
@@ -12,8 +14,10 @@ mod id;
 mod method;
 pub mod request;
 pub mod response;
+pub mod result;
 mod version;
 
 pub use self::{
-    error::Error, id::Id, method::Method, request::Request, response::Response, version::Version,
+    error::Error, id::Id, method::Method, request::Request, response::Response, result::Result,
+    version::Version,
 };

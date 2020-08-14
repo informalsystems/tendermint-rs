@@ -11,16 +11,15 @@
 mod rpc {
     use std::cmp::min;
 
-    use tendermint_rpc::transport::http_ws::HttpTransport;
-    use tendermint_rpc::{event_listener, new_subscription_client, Client};
+    use tendermint_rpc::{FullClient, HttpClient, HttpWebSocketClient, MinimalClient};
 
     use futures::StreamExt;
     use tendermint::abci::Code;
     use tendermint::abci::Log;
 
     /// Get the address of the local node
-    pub fn localhost_rpc_client() -> Client<HttpTransport> {
-        Client::new(HttpTransport::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap())
+    pub fn localhost_rpc_client() -> HttpClient {
+        HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap()
     }
 
     /// `/health` endpoint
@@ -150,9 +149,10 @@ mod rpc {
     #[tokio::test]
     #[ignore]
     async fn subscription_interface() {
-        let client = localhost_rpc_client();
-        let mut subs_client = new_subscription_client(&client).await.unwrap();
-        let mut subs = subs_client
+        let mut client = HttpWebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+            .await
+            .unwrap();
+        let mut subs = client
             .subscribe("tm.event='NewBlock'".to_string())
             .await
             .unwrap();
@@ -167,39 +167,6 @@ mod rpc {
             }
         }
 
-        subs_client.close().await.unwrap();
         client.close().await.unwrap();
-    }
-
-    #[tokio::test]
-    #[ignore]
-    async fn event_subscription() {
-        let mut client =
-            event_listener::EventListener::connect("tcp://127.0.0.1:26657".parse().unwrap())
-                .await
-                .unwrap();
-        client
-            .subscribe(event_listener::EventSubscription::BlockSubscription)
-            .await
-            .unwrap();
-        // client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
-
-        // Loop here is helpful when debugging parsing of JSON events
-        // loop{
-        let maybe_result_event = client.get_event().await.unwrap();
-        dbg!(&maybe_result_event);
-        // }
-        let result_event = maybe_result_event.expect("unexpected msg read");
-        match result_event.data {
-            event_listener::TMEventData::EventDataNewBlock(nb) => {
-                dbg!("got EventDataNewBlock: {:?}", nb);
-            }
-            event_listener::TMEventData::EventDataTx(tx) => {
-                dbg!("got EventDataTx: {:?}", tx);
-            }
-            event_listener::TMEventData::GenericJSONEvent(v) => {
-                panic!("got a GenericJSONEvent: {:?}", v);
-            }
-        }
     }
 }

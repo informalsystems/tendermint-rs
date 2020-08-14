@@ -4,6 +4,7 @@ use crate::{components::io::IoError, types::PeerId};
 
 use tendermint::abci::transaction::Hash;
 use tendermint_rpc as rpc;
+use tendermint_rpc::MinimalClient;
 
 use contracts::{contract_trait, pre};
 use std::collections::HashMap;
@@ -47,16 +48,11 @@ impl ProdEvidenceReporter {
     }
 
     // FIXME: Cannot enable precondition because of "autoref lifetime" issue
-    // TODO(thane): Generalize over client transport (instead of using HttpTransport directly).
+    // TODO(thane): Generalize over client transport (instead of using HttpClient directly).
     // #[pre(self.peer_map.contains_key(&peer))]
-    fn rpc_client_for(
-        &self,
-        peer: PeerId,
-    ) -> Result<rpc::Client<rpc::transport::http_ws::HttpTransport>, IoError> {
+    fn rpc_client_for(&self, peer: PeerId) -> Result<rpc::HttpClient, IoError> {
         let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
-        Ok(rpc::Client::new(
-            rpc::transport::http_ws::HttpTransport::new(peer_addr).map_err(IoError::from)?,
-        ))
+        Ok(rpc::HttpClient::new(peer_addr).map_err(IoError::from)?)
     }
 }
 

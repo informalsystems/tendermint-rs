@@ -1,0 +1,73 @@
+{
+  "jsonrpc": "2.0",
+  "id": "de2b057f-445d-4f4b-9f3d-8701de6b3c44",
+  "result": {
+    "query": "tm.event='NewBlock'",
+    "data": {
+      "type": "tendermint/event/NewBlock",
+      "value": {
+        "block": {
+          "header": {
+            "version": {
+              "block": "10",
+              "app": "1"
+            },
+            "chain_id": "test-chain-WKiDTw",
+            "height": "166",
+            "time": "2020-08-14T14:50:33.899482Z",
+            "last_block_id": {
+              "hash": "8A003E7438AEE700E8452A34416FBFA482D147590F31BD8757418BC228139277",
+              "parts": {
+                "total": "1",
+                "hash": "19BA877ED58A3F841DF321E9771CACF726D9753BB01551F477BEC5D6B69801C4"
+              }
+            },
+            "last_commit_hash": "3BD6C71931030C050DBFDD5B0C96EC5BC16DAD25A5C54787D8BCED8F7C1776EF",
+            "data_hash": "",
+            "validators_hash": "ABF17FC49D88F55BA29D8BA7890EF44F9684C825483A95666670320CECC60448",
+            "next_validators_hash": "ABF17FC49D88F55BA29D8BA7890EF44F9684C825483A95666670320CECC60448",
+            "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+            "app_hash": "0000000000000000",
+            "last_results_hash": "",
+            "evidence_hash": "",
+            "proposer_address": "F19E2E909675C8461B2CE4D0051255C1FC08E0E3"
+          },
+          "data": {
+            "txs": null
+          },
+          "evidence": {
+            "evidence": null
+          },
+          "last_commit": {
+            "height": "165",
+            "round": "0",
+            "block_id": {
+              "hash": "8A003E7438AEE700E8452A34416FBFA482D147590F31BD8757418BC228139277",
+              "parts": {
+                "total": "1",
+                "hash": "19BA877ED58A3F841DF321E9771CACF726D9753BB01551F477BEC5D6B69801C4"
+              }
+            },
+            "signatures": [
+              {
+                "block_id_flag": 2,
+                "validator_address": "F19E2E909675C8461B2CE4D0051255C1FC08E0E3",
+                "timestamp": "2020-08-14T14:50:33.899482Z",
+                "signature": "UwrIhrTgqI/sdanT3Yp6ZA9PnTW8bIkj8SwUX1jXlh8rR4C51FMLtFNEQSpjf0+xdiyy0X+sLSfhfd7oqY2xAg=="
+              }
+            ]
+          }
+        },
+        "result_begin_block": {},
+        "result_end_block": {
+          "validator_updates": null
+        }
+      }
+    },
+    "events": {
+      "tm.event": [
+        "NewBlock"
+      ]
+    }
+  }
+}
