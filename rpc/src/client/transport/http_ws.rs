@@ -120,7 +120,8 @@ impl HttpClient {
 ///     // Grab 5 NewBlock events
 ///     let mut ev_count = 5_i32;
 ///
-///     while let Some(ev) = subs.next().await {
+///     while let Some(res) = subs.next().await {
+///         let ev = res.unwrap();
 ///         println!("Got event: {:?}", ev);
 ///         ev_count -= 1;
 ///         if ev_count < 0 {
@@ -245,7 +246,10 @@ impl FullClient for HttpWebSocketClient {
     async fn unsubscribe(&mut self, subscription: Subscription) -> Result<()> {
         let (result_tx, result_rx) = oneshot::channel();
         self.send_cmd(WebSocketDriverCmd::Unsubscribe {
-            req: request::Wrapper::new(unsubscribe::Request::new(subscription.query.clone())),
+            req: request::Wrapper::new_with_id(
+                subscription.id.clone().into(),
+                unsubscribe::Request::new(subscription.query.clone()),
+            ),
             subscription,
             result_tx,
         })

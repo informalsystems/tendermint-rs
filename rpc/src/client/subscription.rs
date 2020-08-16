@@ -19,7 +19,7 @@ pub type PendingResultTx = oneshot::Sender<Result<()>>;
 #[derive(Debug)]
 pub struct Subscription {
     pub query: String,
-    id: SubscriptionId,
+    pub id: SubscriptionId,
     event_rx: EventRx,
 }
 
