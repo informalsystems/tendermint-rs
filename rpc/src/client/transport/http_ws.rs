@@ -141,7 +141,6 @@ pub struct HttpWebSocketClient {
     port: u16,
     driver_handle: JoinHandle<Result<()>>,
     cmd_tx: mpsc::Sender<WebSocketDriverCmd>,
-    next_subscription_id: SubscriptionId,
 }
 
 impl HttpWebSocketClient {
@@ -158,7 +157,6 @@ impl HttpWebSocketClient {
             port,
             driver_handle,
             cmd_tx,
-            next_subscription_id: SubscriptionId::default(),
         })
     }
 
