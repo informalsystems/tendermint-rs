@@ -10,7 +10,7 @@ use tendermint::{
 use crate::{response::Wrapper, Response};
 
 /// An incoming event produced by a subscription.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Event {
     /// The query that produced the event.
     pub query: String,
@@ -24,7 +24,7 @@ impl Response for Event {}
 /// A JSONRPC-wrapped event.
 pub type WrappedEvent = Wrapper<Event>;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "value")]
 pub enum EventData {
     #[serde(alias = "tendermint/event/NewBlock")]
@@ -41,7 +41,7 @@ pub enum EventData {
 }
 
 /// Tx Result
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct TxResult {
     pub height: String,
     pub index: i64,
@@ -50,7 +50,7 @@ pub struct TxResult {
 }
 
 /// TX Results Results
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct TxResultResult {
     pub log: String,
     pub gas_wanted: String,
@@ -59,7 +59,7 @@ pub struct TxResultResult {
 }
 
 /// Tendermint ABCI Events
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct TmEvent {
     #[serde(rename = "type")]
     pub event_type: String,
@@ -67,7 +67,7 @@ pub struct TmEvent {
 }
 
 /// Event Attributes
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Attribute {
     pub key: String,
     pub value: String,

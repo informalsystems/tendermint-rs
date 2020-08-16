@@ -98,7 +98,7 @@ struct PendingUnsubscribe {
     result_tx: PendingResultTx,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum SubscriptionState {
     Pending,
     Active,
@@ -315,6 +315,172 @@ impl Default for SubscriptionRouter {
             subscriptions: HashMap::new(),
             pending_subscribe: HashMap::new(),
             pending_unsubscribe: HashMap::new(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::event::{Event, WrappedEvent};
+    use std::path::PathBuf;
+    use tokio::fs;
+
+    async fn read_json_fixture(name: &str) -> String {
+        fs::read_to_string(PathBuf::from("./tests/support/").join(name.to_owned() + ".json"))
+            .await
+            .unwrap()
+    }
+
+    async fn read_event(name: &str) -> Event {
+        serde_json::from_str::<WrappedEvent>(read_json_fixture(name).await.as_str())
+            .unwrap()
+            .into_result()
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn router_basic_pub_sub() {
+        let mut router = SubscriptionRouter::default();
+
+        let (subs1_id, subs2_id, subs3_id) = (
+            SubscriptionId::default(),
+            SubscriptionId::default(),
+            SubscriptionId::default(),
+        );
+        let (subs1_event_tx, mut subs1_event_rx) = mpsc::channel(1);
+        let (subs2_event_tx, mut subs2_event_rx) = mpsc::channel(1);
+        let (subs3_event_tx, mut subs3_event_rx) = mpsc::channel(1);
+
+        // Two subscriptions with the same query
+        router.add(subs1_id.clone(), "query1".into(), subs1_event_tx);
+        router.add(subs2_id.clone(), "query1".into(), subs2_event_tx);
+        // Another subscription with a different query
+        router.add(subs3_id.clone(), "query2".into(), subs3_event_tx);
+
+        let mut ev = read_event("event_new_block_1").await;
+        ev.query = "query1".into();
+        router.publish(ev.clone()).await;
+
+        let subs1_ev = subs1_event_rx.try_recv().unwrap().unwrap();
+        let subs2_ev = subs2_event_rx.try_recv().unwrap().unwrap();
+        if subs3_event_rx.try_recv().is_ok() {
+            panic!("should not have received an event here");
+        }
+        assert_eq!(ev, subs1_ev);
+        assert_eq!(ev, subs2_ev);
+
+        ev.query = "query2".into();
+        router.publish(ev.clone()).await;
+
+        if subs1_event_rx.try_recv().is_ok() {
+            panic!("should not have received an event here");
+        }
+        if subs2_event_rx.try_recv().is_ok() {
+            panic!("should not have received an event here");
+        }
+        let subs3_ev = subs3_event_rx.try_recv().unwrap().unwrap();
+        assert_eq!(ev, subs3_ev);
+    }
+
+    #[tokio::test]
+    async fn router_pending_subscription() {
+        let mut router = SubscriptionRouter::default();
+        let subs_id = SubscriptionId::default();
+        let (event_tx, mut event_rx) = mpsc::channel(1);
+        let (result_tx, mut result_rx) = oneshot::channel();
+        let query = "query".to_string();
+        let mut ev = read_event("event_new_block_1").await;
+        ev.query = query.clone();
+
+        assert_eq!(
+            SubscriptionState::NotFound,
+            router.subscription_state(&subs_id)
+        );
+        router.add_pending_subscribe(subs_id.clone(), query.clone(), event_tx, result_tx);
+        assert_eq!(
+            SubscriptionState::Pending,
+            router.subscription_state(&subs_id)
+        );
+        router.publish(ev.clone()).await;
+        if event_rx.try_recv().is_ok() {
+            panic!("should not have received an event prior to confirming a pending subscription")
+        }
+
+        router.confirm_pending_subscribe(&subs_id).unwrap();
+        assert_eq!(
+            SubscriptionState::Active,
+            router.subscription_state(&subs_id)
+        );
+        if event_rx.try_recv().is_ok() {
+            panic!("should not have received an event here")
+        }
+        if result_rx.try_recv().is_err() {
+            panic!("we should have received successful confirmation of the new subscription")
+        }
+
+        router.publish(ev.clone()).await;
+        let received_ev = event_rx.try_recv().unwrap().unwrap();
+        assert_eq!(ev, received_ev);
+
+        let (result_tx, mut result_rx) = oneshot::channel();
+        router.add_pending_unsubscribe(
+            Subscription::new(subs_id.clone(), query.clone(), event_rx),
+            result_tx,
+        );
+        assert_eq!(
+            SubscriptionState::Cancelling,
+            router.subscription_state(&subs_id),
+        );
+
+        router.confirm_pending_unsubscribe(&subs_id).unwrap();
+        assert_eq!(
+            SubscriptionState::NotFound,
+            router.subscription_state(&subs_id)
+        );
+        router.publish(ev.clone()).await;
+        if result_rx.try_recv().is_err() {
+            panic!("we should have received successful confirmation of the unsubscribe request")
+        }
+    }
+
+    #[tokio::test]
+    async fn router_cancel_pending_subscription() {
+        let mut router = SubscriptionRouter::default();
+        let subs_id = SubscriptionId::default();
+        let (event_tx, mut event_rx) = mpsc::channel(1);
+        let (result_tx, mut result_rx) = oneshot::channel();
+        let query = "query".to_string();
+        let mut ev = read_event("event_new_block_1").await;
+        ev.query = query.clone();
+
+        assert_eq!(
+            SubscriptionState::NotFound,
+            router.subscription_state(&subs_id)
+        );
+        router.add_pending_subscribe(subs_id.clone(), query, event_tx, result_tx);
+        assert_eq!(
+            SubscriptionState::Pending,
+            router.subscription_state(&subs_id)
+        );
+        router.publish(ev.clone()).await;
+        if event_rx.try_recv().is_ok() {
+            panic!("should not have received an event prior to confirming a pending subscription")
+        }
+
+        let cancel_error = Error::client_error("cancelled");
+        router
+            .cancel_pending_subscribe(&subs_id, cancel_error.clone())
+            .unwrap();
+        assert_eq!(
+            SubscriptionState::NotFound,
+            router.subscription_state(&subs_id)
+        );
+        assert_eq!(Err(cancel_error), result_rx.try_recv().unwrap());
+
+        router.publish(ev.clone()).await;
+        if event_rx.try_recv().is_ok() {
+            panic!("should not have received an event prior to confirming a pending subscription")
         }
     }
 }
