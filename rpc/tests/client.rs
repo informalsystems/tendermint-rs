@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use tendermint::block::Height;
 use tendermint_rpc::event::{Event, EventData, WrappedEvent};
 use tendermint_rpc::{
-    Error, FullClient, Method, MinimalClient, Request, Response, Result, Subscription,
+    Error, EventTx, FullClient, Method, MinimalClient, Request, Response, Result, Subscription,
     SubscriptionId, SubscriptionRouter,
 };
 use tokio::fs;
@@ -33,7 +33,6 @@ struct MockClient {
     driver_handle: JoinHandle<Result<()>>,
     event_tx: mpsc::Sender<Event>,
     cmd_tx: mpsc::Sender<MockClientCmd>,
-    next_subs_id: SubscriptionId,
 }
 
 #[async_trait]
@@ -68,7 +67,7 @@ impl FullClient for MockClient {
     ) -> Result<Subscription> {
         let (event_tx, event_rx) = mpsc::channel(buf_size);
         let (response_tx, response_rx) = oneshot::channel();
-        let id = self.next_subs_id.advance();
+        let id = SubscriptionId::default();
         self.cmd_tx
             .send(MockClientCmd::Subscribe {
                 id: id.clone(),
@@ -104,7 +103,6 @@ impl MockClient {
             driver_handle: driver_hdl,
             event_tx,
             cmd_tx,
-            next_subs_id: SubscriptionId::default(),
         }
     }
 
@@ -130,7 +128,7 @@ enum MockClientCmd {
     Subscribe {
         id: SubscriptionId,
         query: String,
-        event_tx: mpsc::Sender<Event>,
+        event_tx: EventTx,
         response_tx: oneshot::Sender<Result<()>>,
     },
     Unsubscribe(Subscription),
@@ -151,7 +149,7 @@ impl MockClientDriver {
         Self {
             event_rx,
             cmd_rx,
-            router: SubscriptionRouter::new(),
+            router: SubscriptionRouter::default(),
         }
     }
 
@@ -222,9 +220,9 @@ async fn full_client() {
         .unwrap();
 
     let subs1_events_task =
-        tokio::spawn(async move { subs1.take(3).collect::<Vec<Event>>().await });
+        tokio::spawn(async move { subs1.take(3).collect::<Vec<Result<Event>>>().await });
     let subs2_events_task =
-        tokio::spawn(async move { subs2.take(3).collect::<Vec<Event>>().await });
+        tokio::spawn(async move { subs2.take(3).collect::<Vec<Result<Event>>>().await });
 
     println!("Publishing incoming events...");
     for ev in incoming_events {
@@ -242,17 +240,19 @@ async fn full_client() {
 
     println!("Checking collected events...");
     for i in 0..3 {
-        match &subs1_events[i].data {
+        let subs1_event = subs1_events[i].as_ref().unwrap();
+        let subs2_event = subs2_events[i].as_ref().unwrap();
+        match &subs1_event.data {
             EventData::NewBlock { block, .. } => {
                 assert_eq!(expected_heights[i], block.as_ref().unwrap().header.height);
             }
-            _ => panic!("invalid event type for subs1: {:?}", subs1_events[i]),
+            _ => panic!("invalid event type for subs1: {:?}", subs1_event),
         }
-        match &subs2_events[i].data {
+        match &subs2_event.data {
             EventData::NewBlock { block, .. } => {
                 assert_eq!(expected_heights[i], block.as_ref().unwrap().header.height);
             }
-            _ => panic!("invalid event type for subs2: {:?}", subs2_events[i]),
+            _ => panic!("invalid event type for subs2: {:?}", subs2_event),
         }
     }
 }

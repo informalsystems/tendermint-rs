@@ -159,7 +159,8 @@ mod rpc {
         let mut ev_count = 5_i32;
 
         dbg!("Attempting to grab {} new blocks", ev_count);
-        while let Some(ev) = subs.next().await {
+        while let Some(res) = subs.next().await {
+            let ev = res.unwrap();
             dbg!("Got event: {:?}", ev);
             ev_count -= 1;
             if ev_count < 0 {

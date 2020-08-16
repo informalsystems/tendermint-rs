@@ -3,9 +3,11 @@
 //!
 //! The `client` and `http_ws` features are required to use this module.
 
+use crate::client::subscription::{EventTx, PendingResultTx, SubscriptionState};
 use crate::client::{Subscription, SubscriptionId, SubscriptionRouter};
 use crate::endpoint::{subscribe, unsubscribe};
 use crate::event::Event;
+use crate::{request, response};
 use crate::{Error, FullClient, MinimalClient, Request, Response, Result};
 use async_trait::async_trait;
 use async_tungstenite::tokio::{connect_async, TokioAdapter};
@@ -16,7 +18,9 @@ use async_tungstenite::WebSocketStream;
 use bytes::buf::BufExt;
 use futures::{SinkExt, StreamExt};
 use hyper::header;
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+use std::convert::TryInto;
 use tendermint::net;
 use tokio::net::TcpStream;
 use tokio::sync::{mpsc, oneshot};
@@ -28,6 +32,7 @@ use tokio::task::JoinHandle;
 const DEFAULT_WEBSOCKET_CMD_BUF_SIZE: usize = 20;
 
 /// An HTTP-based Tendermint RPC client (a [`MinimalClient`] implementation).
+/// Requires features `client` and `http_ws`.
 ///
 /// Does not provide [`Event`] subscription facilities (see
 /// [`HttpWebSocketClient`] for a client that does provide `Event` subscription
@@ -86,7 +91,8 @@ impl HttpClient {
     }
 }
 
-/// An HTTP- and WebSocket-based Tendermint RPC client.
+/// An HTTP- and WebSocket-based Tendermint RPC client. Requires features
+/// `client` and `http_ws`.
 ///
 /// HTTP is used for all requests except those pertaining to [`Event`]
 /// subscription. `Event` subscription is facilitated by a WebSocket
@@ -197,7 +203,7 @@ impl MinimalClient for HttpWebSocketClient {
     async fn close(mut self) -> Result<()> {
         self.send_cmd(WebSocketDriverCmd::Close).await?;
         self.driver_handle.await.map_err(|e| {
-            Error::internal_error(format!("failed to join client driver async task: {}", e))
+            Error::client_error(format!("failed to join client driver async task: {}", e))
         })?
     }
 }
@@ -210,19 +216,27 @@ impl FullClient for HttpWebSocketClient {
         buf_size: usize,
     ) -> Result<Subscription> {
         let (event_tx, event_rx) = mpsc::channel(buf_size);
-        let (response_tx, response_rx) = oneshot::channel();
-        let id = self.next_subscription_id.advance();
+        let (result_tx, result_rx) = oneshot::channel();
+        // We use the same ID for our subscription as for the JSONRPC request
+        // so that we can correlate incoming RPC responses with specific
+        // subscriptions. We use this to establish whether or not a
+        // subscription request was successful, as well as whether we support
+        // the remote endpoint's serialization format.
+        let id = SubscriptionId::default();
+        let req = request::Wrapper::new_with_id(
+            id.clone().into(),
+            subscribe::Request::new(query.clone()),
+        );
         self.send_cmd(WebSocketDriverCmd::Subscribe {
-            id: id.clone(),
-            query: query.clone(),
+            req,
             event_tx,
-            response_tx,
+            result_tx,
         })
         .await?;
         // Wait to make sure our subscription request went through
         // successfully.
-        response_rx.await.map_err(|e| {
-            Error::internal_error(format!(
+        result_rx.await.map_err(|e| {
+            Error::client_error(format!(
                 "failed to receive response from client driver for subscription request: {}",
                 e
             ))
@@ -231,13 +245,26 @@ impl FullClient for HttpWebSocketClient {
     }
 
     async fn unsubscribe(&mut self, subscription: Subscription) -> Result<()> {
-        // TODO(thane): Should we insist on a response here to ensure the
-        //              subscription was actually terminated? Right now this is
-        //              just fire-and-forget.
-        self.send_cmd(WebSocketDriverCmd::Unsubscribe(subscription))
-            .await
+        let (result_tx, result_rx) = oneshot::channel();
+        self.send_cmd(WebSocketDriverCmd::Unsubscribe {
+            req: request::Wrapper::new(unsubscribe::Request::new(subscription.query.clone())),
+            subscription,
+            result_tx,
+        })
+        .await?;
+        result_rx.await.map_err(|e| {
+            Error::client_error(format!(
+                "failed to receive response from client driver for unsubscribe request: {}",
+                e
+            ))
+        })?
     }
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct GenericJSONResponse(serde_json::Value);
+
+impl Response for GenericJSONResponse {}
 
 #[derive(Debug)]
 struct WebSocketSubscriptionDriver {
@@ -253,7 +280,7 @@ impl WebSocketSubscriptionDriver {
     ) -> Self {
         Self {
             stream,
-            router: SubscriptionRouter::new(),
+            router: SubscriptionRouter::default(),
             cmd_rx,
         }
     }
@@ -273,12 +300,13 @@ impl WebSocketSubscriptionDriver {
                 },
                 Some(cmd) = self.cmd_rx.next() => match cmd {
                     WebSocketDriverCmd::Subscribe {
-                        id,
-                        query,
+                        req,
                         event_tx,
-                        response_tx,
-                    } => self.subscribe(id, query, event_tx, response_tx).await?,
-                    WebSocketDriverCmd::Unsubscribe(subscription) => self.unsubscribe(subscription).await?,
+                        result_tx,
+                    } => self.subscribe(req, event_tx, result_tx).await?,
+                    WebSocketDriverCmd::Unsubscribe { req, subscription, result_tx } => {
+                        self.unsubscribe(req, subscription, result_tx).await?
+                    }
                     WebSocketDriverCmd::Close => return self.close().await,
                 }
             }
@@ -293,43 +321,54 @@ impl WebSocketSubscriptionDriver {
 
     async fn subscribe(
         &mut self,
-        id: SubscriptionId,
-        query: String,
-        event_tx: mpsc::Sender<Event>,
-        response_tx: oneshot::Sender<Result<()>>,
+        req: request::Wrapper<subscribe::Request>,
+        event_tx: EventTx,
+        result_tx: PendingResultTx,
     ) -> Result<()> {
+        // We require the outgoing request to have an ID that we can use as the
+        // subscription ID.
+        let subs_id = match req.id().clone().try_into() {
+            Ok(id) => id,
+            Err(e) => {
+                let _ = result_tx.send(Err(e));
+                return Ok(());
+            }
+        };
         if let Err(e) = self
-            .send(Message::Text(
-                subscribe::Request::new(query.clone()).into_json(),
-            ))
+            .send(Message::Text(serde_json::to_string_pretty(&req).unwrap()))
             .await
         {
-            if response_tx.send(Err(e)).is_err() {
-                return Err(Error::internal_error(
+            if result_tx.send(Err(e)).is_err() {
+                return Err(Error::client_error(
                     "failed to respond internally to subscription request",
                 ));
             }
             // One failure shouldn't bring down the entire client.
             return Ok(());
         }
-        // TODO(thane): Should we wait for a response from the remote endpoint?
-        self.router.add(id, query, event_tx);
-        // TODO(thane): How do we deal with the case where the following
-        //              response fails?
-        if response_tx.send(Ok(())).is_err() {
-            return Err(Error::internal_error(
-                "failed to respond internally to subscription request",
-            ));
-        }
+        self.router
+            .add_pending_subscribe(subs_id, req.params().query.clone(), event_tx, result_tx);
         Ok(())
     }
 
-    async fn unsubscribe(&mut self, subs: Subscription) -> Result<()> {
-        self.send(Message::Text(
-            unsubscribe::Request::new(subs.query.clone()).into_json(),
-        ))
-        .await?;
-        self.router.remove(subs);
+    async fn unsubscribe(
+        &mut self,
+        req: request::Wrapper<unsubscribe::Request>,
+        subscription: Subscription,
+        result_tx: PendingResultTx,
+    ) -> Result<()> {
+        if let Err(e) = self
+            .send(Message::Text(serde_json::to_string_pretty(&req).unwrap()))
+            .await
+        {
+            if result_tx.send(Err(e)).is_err() {
+                return Err(Error::client_error(
+                    "failed to respond internally to unsubscribe request",
+                ));
+            }
+            return Ok(());
+        }
+        self.router.add_pending_unsubscribe(subscription, result_tx);
         Ok(())
     }
 
@@ -343,18 +382,58 @@ impl WebSocketSubscriptionDriver {
     }
 
     async fn handle_text_msg(&mut self, msg: String) -> Result<()> {
-        match Event::from_string(msg) {
+        match Event::from_string(&msg) {
             Ok(ev) => {
                 self.router.publish(ev).await;
                 Ok(())
             }
-            // TODO(thane): Should we just ignore messages we can't
-            //              deserialize? There are a number of possible
-            //              messages we may receive from the WebSocket endpoint
-            //              that we'll end up ignoring anyways (like responses
-            //              for subscribe/unsubscribe requests).
-            Err(_) => Ok(()),
+            Err(_) => match serde_json::from_str::<response::Wrapper<GenericJSONResponse>>(&msg) {
+                Ok(wrapper) => self.handle_generic_response(wrapper).await,
+                _ => Ok(()),
+            },
         }
+    }
+
+    async fn handle_generic_response(
+        &mut self,
+        wrapper: response::Wrapper<GenericJSONResponse>,
+    ) -> Result<()> {
+        let subs_id: SubscriptionId = match wrapper.id().clone().try_into() {
+            Ok(id) => id,
+            // Just ignore the message if it doesn't have an intelligible ID.
+            Err(_) => return Ok(()),
+        };
+        match wrapper.into_result() {
+            Ok(_) => match self.router.subscription_state(&subs_id) {
+                SubscriptionState::Pending => {
+                    let _ = self.router.confirm_pending_subscribe(&subs_id);
+                }
+                SubscriptionState::Cancelling => {
+                    let _ = self.router.confirm_pending_unsubscribe(&subs_id);
+                }
+                _ => (),
+            },
+            Err(e) => match self.router.subscription_state(&subs_id) {
+                SubscriptionState::Pending => {
+                    let _ = self.router.cancel_pending_subscribe(&subs_id, e);
+                }
+                SubscriptionState::Cancelling => {
+                    let _ = self.router.cancel_pending_unsubscribe(&subs_id, e);
+                }
+                // This is important to allow the remote endpoint to
+                // arbitrarily send error responses back to specific
+                // subscriptions.
+                SubscriptionState::Active => {
+                    if let Some(event_tx) = self.router.get_active_subscription_mut(&subs_id) {
+                        // TODO(thane): Does an error here warrant terminating the subscription, or the driver?
+                        let _ = event_tx.send(Err(e)).await;
+                    }
+                }
+                SubscriptionState::NotFound => (),
+            },
+        }
+
+        Ok(())
     }
 
     async fn pong(&mut self, v: Vec<u8>) -> Result<()> {
@@ -380,12 +459,15 @@ impl WebSocketSubscriptionDriver {
 #[derive(Debug)]
 enum WebSocketDriverCmd {
     Subscribe {
-        id: SubscriptionId,
-        query: String,
-        event_tx: mpsc::Sender<Event>,
-        response_tx: oneshot::Sender<Result<()>>,
+        req: request::Wrapper<subscribe::Request>,
+        event_tx: mpsc::Sender<Result<Event>>,
+        result_tx: oneshot::Sender<Result<()>>,
     },
-    Unsubscribe(Subscription),
+    Unsubscribe {
+        req: request::Wrapper<unsubscribe::Request>,
+        subscription: Subscription,
+        result_tx: oneshot::Sender<Result<()>>,
+    },
     Close,
 }
 

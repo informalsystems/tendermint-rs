@@ -30,8 +30,8 @@
 mod client;
 #[cfg(feature = "client")]
 pub use client::{
-    FullClient, MinimalClient, Subscription, SubscriptionId, SubscriptionRouter,
-    DEFAULT_SUBSCRIPTION_BUF_SIZE,
+    EventRx, EventTx, FullClient, MinimalClient, PendingResultTx, Subscription, SubscriptionId,
+    SubscriptionRouter, DEFAULT_SUBSCRIPTION_BUF_SIZE,
 };
 #[cfg(feature = "http_ws")]
 pub use client::{HttpClient, HttpWebSocketClient};

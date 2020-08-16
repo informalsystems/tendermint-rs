@@ -77,6 +77,10 @@ impl Error {
         Error::new(Code::InternalError, Some(cause.into()))
     }
 
+    pub fn client_error(cause: impl Into<String>) -> Error {
+        Error::new(Code::ClientError, Some(cause.into()))
+    }
+
     /// Obtain the `rpc::error::Code` for this error
     pub fn code(&self) -> Code {
         self.code
@@ -143,6 +147,10 @@ pub enum Code {
     #[error("Websocket Error")]
     WebSocketError,
 
+    /// The client encountered an error.
+    #[error("Client error")]
+    ClientError,
+
     /// Parse error i.e. invalid JSON (-32700)
     #[error("Parse error. Invalid JSON")]
     ParseError,
@@ -184,6 +192,7 @@ impl From<i32> for Code {
         match value {
             0 => Code::HttpError,
             1 => Code::WebSocketError,
+            2 => Code::ClientError,
             -32700 => Code::ParseError,
             -32600 => Code::InvalidRequest,
             -32601 => Code::MethodNotFound,
@@ -200,6 +209,7 @@ impl From<Code> for i32 {
         match code {
             Code::HttpError => 0,
             Code::WebSocketError => 1,
+            Code::ClientError => 2,
             Code::ParseError => -32700,
             Code::InvalidRequest => -32600,
             Code::MethodNotFound => -32601,

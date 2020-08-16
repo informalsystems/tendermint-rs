@@ -1,7 +1,9 @@
 //! Tendermint RPC client.
 
 mod subscription;
-pub use subscription::{Subscription, SubscriptionId, SubscriptionRouter};
+pub use subscription::{
+    EventRx, EventTx, PendingResultTx, Subscription, SubscriptionId, SubscriptionRouter,
+};
 
 mod transport;
 #[cfg(feature = "http_ws")]
