@@ -411,7 +411,16 @@ impl WebSocketSubscriptionDriver {
                 SubscriptionState::Cancelling => {
                     let _ = self.router.confirm_pending_unsubscribe(&subs_id);
                 }
-                _ => (),
+                SubscriptionState::Active => {
+                    if let Some(event_tx) = self.router.get_active_subscription_mut(&subs_id) {
+                        let _ = event_tx.send(
+                            Err(Error::websocket_error(
+                                "failed to parse incoming response from remote WebSocket endpoint - does this client support the remote's RPC version?",
+                            )),
+                        ).await;
+                    }
+                }
+                SubscriptionState::NotFound => (),
             },
             Err(e) => match self.router.subscription_state(&subs_id) {
                 SubscriptionState::Pending => {
