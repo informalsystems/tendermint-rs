@@ -207,7 +207,7 @@ impl Serialize for ProposerPriority {
 }
 
 /// Updates to the validator set
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Update {
     /// Validator public key
     #[serde(deserialize_with = "deserialize_public_key")]
