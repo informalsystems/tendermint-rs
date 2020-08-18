@@ -43,7 +43,7 @@ mod id;
 mod method;
 pub mod request;
 pub mod response;
-pub mod result;
+mod result;
 mod version;
 
 pub use self::{
