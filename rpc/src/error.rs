@@ -73,12 +73,9 @@ impl Error {
         Error::new(Code::ServerError, Some(data.to_string()))
     }
 
-    pub fn internal_error(cause: impl Into<String>) -> Error {
-        Error::new(Code::InternalError, Some(cause.into()))
-    }
-
-    pub fn client_error(cause: impl Into<String>) -> Error {
-        Error::new(Code::ClientError, Some(cause.into()))
+    /// An internal error occurred within the client.
+    pub fn client_internal_error(cause: impl Into<String>) -> Error {
+        Error::new(Code::ClientInternalError, Some(cause.into()))
     }
 
     /// Obtain the `rpc::error::Code` for this error
@@ -147,9 +144,14 @@ pub enum Code {
     #[error("Websocket Error")]
     WebSocketError,
 
-    /// The client encountered an error.
-    #[error("Client error")]
-    ClientError,
+    /// An internal error occurred within the client.
+    ///
+    /// This is an error unique to this client, and is not available in the
+    /// [Go client].
+    ///
+    /// [Go client]: https://github.com/tendermint/tendermint/tree/master/rpc/jsonrpc/client
+    #[error("Client internal error")]
+    ClientInternalError,
 
     /// Parse error i.e. invalid JSON (-32700)
     #[error("Parse error. Invalid JSON")]
@@ -167,7 +169,7 @@ pub enum Code {
     #[error("Invalid params")]
     InvalidParams,
 
-    /// Internal error (-32603)
+    /// Internal RPC server error (-32603)
     #[error("Internal error")]
     InternalError,
 
@@ -192,7 +194,7 @@ impl From<i32> for Code {
         match value {
             0 => Code::HttpError,
             1 => Code::WebSocketError,
-            2 => Code::ClientError,
+            2 => Code::ClientInternalError,
             -32700 => Code::ParseError,
             -32600 => Code::InvalidRequest,
             -32601 => Code::MethodNotFound,
@@ -209,7 +211,7 @@ impl From<Code> for i32 {
         match code {
             Code::HttpError => 0,
             Code::WebSocketError => 1,
-            Code::ClientError => 2,
+            Code::ClientInternalError => 2,
             Code::ParseError => -32700,
             Code::InvalidRequest => -32600,
             Code::MethodNotFound => -32601,

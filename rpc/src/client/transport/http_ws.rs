@@ -178,7 +178,7 @@ impl HttpWebSocketClient {
 
     async fn send_cmd(&mut self, cmd: WebSocketDriverCmd) -> Result<()> {
         self.cmd_tx.send(cmd).await.map_err(|e| {
-            Error::internal_error(format!("failed to send command to client driver: {}", e))
+            Error::client_internal_error(format!("failed to send command to client driver: {}", e))
         })
     }
 }
@@ -200,7 +200,7 @@ impl MinimalClient for HttpWebSocketClient {
     async fn close(mut self) -> Result<()> {
         self.send_cmd(WebSocketDriverCmd::Close).await?;
         self.driver_handle.await.map_err(|e| {
-            Error::client_error(format!("failed to join client driver async task: {}", e))
+            Error::client_internal_error(format!("failed to join client driver async task: {}", e))
         })?
     }
 }
@@ -233,7 +233,7 @@ impl FullClient for HttpWebSocketClient {
         // Wait to make sure our subscription request went through
         // successfully.
         result_rx.await.map_err(|e| {
-            Error::client_error(format!(
+            Error::client_internal_error(format!(
                 "failed to receive response from client driver for subscription request: {}",
                 e
             ))
@@ -253,7 +253,7 @@ impl FullClient for HttpWebSocketClient {
         })
         .await?;
         result_rx.await.map_err(|e| {
-            Error::client_error(format!(
+            Error::client_internal_error(format!(
                 "failed to receive response from client driver for unsubscribe request: {}",
                 e
             ))
@@ -339,7 +339,7 @@ impl WebSocketSubscriptionDriver {
             .await
         {
             if result_tx.send(Err(e)).is_err() {
-                return Err(Error::client_error(
+                return Err(Error::client_internal_error(
                     "failed to respond internally to subscription request",
                 ));
             }
@@ -362,7 +362,7 @@ impl WebSocketSubscriptionDriver {
             .await
         {
             if result_tx.send(Err(e)).is_err() {
-                return Err(Error::client_error(
+                return Err(Error::client_internal_error(
                     "failed to respond internally to unsubscribe request",
                 ));
             }

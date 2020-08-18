@@ -110,7 +110,7 @@ impl TryInto<SubscriptionId> for Id {
         match self {
             Id::Str(s) => Ok(SubscriptionId(s)),
             Id::Num(i) => Ok(SubscriptionId(format!("{}", i))),
-            Id::None => Err(Error::client_error(
+            Id::None => Err(Error::client_internal_error(
                 "cannot convert an empty JSONRPC ID into a subscription ID",
             )),
         }
@@ -223,7 +223,7 @@ impl SubscriptionRouter {
                     pending_subscribe.event_tx,
                 );
                 Ok(pending_subscribe.result_tx.send(Ok(())).map_err(|_| {
-                    Error::client_error(format!(
+                    Error::client_internal_error(format!(
                         "failed to communicate result of pending subscription with ID: {}",
                         id
                     ))
@@ -246,7 +246,7 @@ impl SubscriptionRouter {
                 .result_tx
                 .send(Err(err.into()))
                 .map_err(|_| {
-                    Error::client_error(format!(
+                    Error::client_internal_error(format!(
                         "failed to communicate result of pending subscription with ID: {}",
                         id
                     ))
@@ -287,7 +287,7 @@ impl SubscriptionRouter {
                 );
                 self.remove(subscription);
                 Ok(result_tx.send(Ok(())).map_err(|_| {
-                    Error::client_error(format!(
+                    Error::client_internal_error(format!(
                         "failed to communicate result of pending unsubscribe for subscription with ID: {}",
                         id
                     ))
@@ -307,7 +307,7 @@ impl SubscriptionRouter {
         match self.pending_unsubscribe.remove(id) {
             Some(pending_unsubscribe) => {
                 Ok(pending_unsubscribe.result_tx.send(Err(err.into())).map_err(|_| {
-                    Error::client_error(format!(
+                    Error::client_internal_error(format!(
                         "failed to communicate result of pending unsubscribe for subscription with ID: {}",
                         id
                     ))
@@ -505,7 +505,7 @@ mod test {
             panic!("should not have received an event prior to confirming a pending subscription")
         }
 
-        let cancel_error = Error::client_error("cancelled");
+        let cancel_error = Error::client_internal_error("cancelled");
         router
             .cancel_pending_subscribe(&subs_id, cancel_error.clone())
             .unwrap();
