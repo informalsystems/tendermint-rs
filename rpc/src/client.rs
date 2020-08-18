@@ -24,12 +24,11 @@ use tendermint::Genesis;
 ///
 pub const DEFAULT_SUBSCRIPTION_BUF_SIZE: usize = 100;
 
-/// A `MinimalClient` provides lightweight access to the Tendermint RPC. It
-/// gives access to all endpoints with the exception of the event
-/// subscription-related ones.
+/// Provides lightweight access to the Tendermint RPC. It gives access to all
+/// endpoints with the exception of the event subscription-related ones.
 ///
-/// To access event subscription capabilities, use a client that implements the
-/// [`FullClient`] trait.
+/// To access event subscription capabilities, rather use a client that
+/// implements the [`FullClient`] trait.
 ///
 /// [`FullClient`]: trait.FullClient.html
 ///
@@ -175,8 +174,8 @@ pub trait MinimalClient {
     async fn close(self) -> Result<()>;
 }
 
-/// A `FullClient` is one that augments a [`MinimalClient`] functionality with
-/// subscription capabilities.
+/// A client that augments a [`MinimalClient`] functionality with subscription
+/// capabilities.
 ///
 /// [`MinimalClient`]: trait.MinimalClient.html
 ///

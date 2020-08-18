@@ -26,6 +26,8 @@
 //! [`HttpClient`]: struct.HttpClient.html
 //! [`HttpWebSocketClient`]: struct.HttpWebSocketClient.html
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 #[cfg(feature = "client")]
 mod client;
 #[cfg(feature = "client")]

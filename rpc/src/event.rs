@@ -9,7 +9,9 @@ use tendermint::{
 
 use crate::{response::Wrapper, Response};
 
-/// An incoming event produced by a subscription.
+/// An incoming event produced by a [`Subscription`].
+///
+/// [`Subscription`]: ../struct.Subscription.html
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Event {
     /// The query that produced the event.

@@ -32,7 +32,6 @@ use tokio::task::JoinHandle;
 const DEFAULT_WEBSOCKET_CMD_BUF_SIZE: usize = 20;
 
 /// An HTTP-based Tendermint RPC client (a [`MinimalClient`] implementation).
-/// Requires features `client` and `http_ws`.
 ///
 /// Does not provide [`Event`] subscription facilities (see
 /// [`HttpWebSocketClient`] for a client that does provide `Event` subscription
@@ -91,8 +90,7 @@ impl HttpClient {
     }
 }
 
-/// An HTTP- and WebSocket-based Tendermint RPC client. Requires features
-/// `client` and `http_ws`.
+/// An HTTP- and WebSocket-based Tendermint RPC client.
 ///
 /// HTTP is used for all requests except those pertaining to [`Event`]
 /// subscription. `Event` subscription is facilitated by a WebSocket

@@ -42,7 +42,7 @@ where
     ///
     /// By default this sets the ID of the request to a random [UUIDv4] value.
     ///
-    /// [UUIDv4]: https://en.wikipedia.org/wiki/Universally_unique_identifier
+    /// [UUIDv4]: https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)
     pub fn new(request: R) -> Self {
         Wrapper::new_with_id(Id::uuid_v4(), request)
     }

@@ -14,11 +14,38 @@ pub type EventRx = mpsc::Receiver<Result<Event>>;
 pub type EventTx = mpsc::Sender<Result<Event>>;
 pub type PendingResultTx = oneshot::Sender<Result<()>>;
 
-/// An interface that can be used to asynchronously receive events for a
+/// An interface that can be used to asynchronously receive [`Event`]s for a
 /// particular subscription.
+///
+/// ## Examples
+///
+/// ```
+/// use tendermint_rpc::{SubscriptionId, Subscription};
+/// use futures::StreamExt;
+///
+/// /// Prints `count` events from the given subscription.
+/// async fn print_events(subs: &mut Subscription, count: usize) {
+///     let mut counter = 0_usize;
+///     while let Some(res) = subs.next().await {
+///         // Technically, a subscription produces `Result<Event, Error>`
+///         // instances. Errors can be produced by the remote endpoint at any
+///         // time and need to be handled here.
+///         let ev = res.unwrap();
+///         println!("Got incoming event: {:?}", ev);
+///         counter += 1;
+///         if counter >= count {
+///             break
+///         }
+///     }
+/// }
+/// ```
+///
+/// [`Event`]: ./event/struct.Event.html
 #[derive(Debug)]
 pub struct Subscription {
+    /// The query for which events will be produced.
     pub query: String,
+    /// The ID of this subscription (automatically assigned).
     pub id: SubscriptionId,
     event_rx: EventRx,
 }
@@ -42,6 +69,11 @@ impl Subscription {
 }
 
 /// Each new subscription is automatically assigned an ID.
+///
+/// By default, we generate random [UUIDv4] IDs for each subscription to
+/// minimize chances of collision.
+///
+/// [UUIDv4]: https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SubscriptionId(String);
 
@@ -106,9 +138,14 @@ pub enum SubscriptionState {
     NotFound,
 }
 
-/// Provides a mechanism for tracking subscriptions and routing events to those
-/// subscriptions. This is useful when implementing your own RPC client
-/// transport layer.
+/// Provides a mechanism for tracking [`Subscription`]s and routing [`Event`]s
+/// to those subscriptions.
+///
+/// This is useful when implementing your own RPC client transport layer.
+///
+/// [`Subscription`]: struct.Subscription.html
+/// [`Event`]: ./event/struct.Event.html
+///
 #[derive(Debug)]
 pub struct SubscriptionRouter {
     subscriptions: HashMap<String, HashMap<SubscriptionId, EventTx>>,
