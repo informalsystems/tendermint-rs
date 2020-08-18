@@ -1,10 +1,13 @@
 use crate::{helpers::*, Generator};
+use ed25519_dalek::SecretKey as Ed25519SecretKey;
 use gumdrop::Options;
 use serde::Deserialize;
-use signatory::{ed25519, public_key::PublicKeyed};
-use signatory_dalek::{Ed25519Signer, Ed25519Verifier};
 use simple_error::*;
-use tendermint::{account, public_key::PublicKey, validator, vote};
+use tendermint::{
+    account, private_key,
+    public_key::{self, PublicKey},
+    validator, vote,
+};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Validator {
@@ -31,8 +34,8 @@ impl Validator {
     set_option!(voting_power, u64);
     set_option!(proposer_priority, i64);
 
-    /// Get a signer from this validator companion.
-    pub fn get_signer(&self) -> Result<Ed25519Signer, SimpleError> {
+    /// Get private key for this validator companion.
+    pub fn get_private_key(&self) -> Result<private_key::Ed25519, SimpleError> {
         let id = match &self.id {
             None => bail!("validator identifier is missing"),
             Some(id) => id,
@@ -45,19 +48,17 @@ impl Validator {
             bail!("validator identifier is too long")
         }
         bytes.extend(vec![0u8; 32 - bytes.len()].iter());
-        let seed = require_with!(
-            ed25519::Seed::from_bytes(bytes),
+        let secret = require_with!(
+            Ed25519SecretKey::from_bytes(&bytes).ok(),
             "failed to construct a seed from validator identifier"
         );
-        Ok(Ed25519Signer::from(&seed))
+        let public = public_key::Ed25519::from(&secret);
+        Ok(private_key::Ed25519 { secret, public })
     }
 
-    /// Get a verifier from this validator companion.
-    pub fn get_verifier(&self) -> Result<Ed25519Verifier, SimpleError> {
-        let signer = self.get_signer()?;
-        let public_key = try_with!(signer.public_key(), "failed to get public key");
-        let verifier = Ed25519Verifier::from(&public_key);
-        Ok(verifier)
+    /// Get public key for this validator companion.
+    pub fn get_public_key(&self) -> Result<public_key::Ed25519, SimpleError> {
+        self.get_private_key().map(|keypair| keypair.public)
     }
 }
 
@@ -89,11 +90,10 @@ impl Generator<validator::Info> for Validator {
     }
 
     fn generate(&self) -> Result<validator::Info, SimpleError> {
-        let signer = self.get_signer()?;
-        let pk = try_with!(signer.public_key(), "failed to get a public key");
+        let keypair = self.get_private_key()?;
         let info = validator::Info {
-            address: account::Id::from(pk),
-            pub_key: PublicKey::from(pk),
+            address: account::Id::from(keypair.public),
+            pub_key: PublicKey::from(keypair.public),
             voting_power: vote::Power::new(self.voting_power.unwrap_or(0)),
             proposer_priority: match self.proposer_priority {
                 None => None,
