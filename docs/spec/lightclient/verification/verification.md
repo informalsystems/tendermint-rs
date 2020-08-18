@@ -2,7 +2,7 @@
 
 
 
-The light client implements a read operatio of a
+The light client implements a read operation of a
 [header][TMBC-HEADER-link] from the [blockchain][TMBC-SEQ-link], by
 communicating with full nodes.  As some full nodes may be faulty, this
 functionality must be implemented in a fault-tolerant way.
