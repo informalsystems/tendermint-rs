@@ -15,7 +15,7 @@ authors    = [
 ]
 
 description = """
-    tenndermint-rpc contains the core types returned by a Tendermint node's RPC endpoint.
+    tendermint-rpc contains the core types returned by a Tendermint node's RPC endpoint.
     All networking related features are feature guarded to keep the dependencies small in
     cases where only the core types are needed.
     """
