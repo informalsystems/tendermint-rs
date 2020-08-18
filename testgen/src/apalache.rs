@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use std::{io};
-use crate::utils::command::*;
+use crate::command::*;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ApalacheTestBatch {
