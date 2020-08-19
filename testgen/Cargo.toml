@@ -12,6 +12,7 @@ gumdrop = "0.8.0"
 signatory = { version = "0.20", features = ["ed25519", "ecdsa"] }
 signatory-dalek = "0.20"
 simple-error = "0.2.1"
+tempfile = "3.1.0"
 
 [[bin]]
 name = "tendermint-testgen"
