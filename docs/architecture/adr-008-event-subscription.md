@@ -214,7 +214,7 @@ pub trait FullClient: MinimalClient {
 }
 ```
 
-### Transport Driver
+### Handle/Driver Concurrency Model
 
 Depending on the underlying transport, a client may need a **transport driver**
 running in an asynchronous context. As in the example of a WebSocket connection,
@@ -225,6 +225,10 @@ they necessarily need to run concurrently in different contexts.
 Implementation of such a transport driver is transport-specific. Short-lived
 request/response interactions (such as HTTP) would not require such a transport
 driver, whereas a WebSocket connection would.
+
+In cases where a driver is necessary, the client implementation would have to
+become a **handle** to the driver, facilitating communication with it across
+asynchronous tasks.
 
 ### Inter-Task Communication
 
