@@ -828,7 +828,6 @@ func ValidAndVerified(trusted LightBlock, untrusted LightBlock) Result
          checks [[block]]).
 - Error condition: 
    - if precondition violated 
-   - If *trusted.Header.Time > now - trustingPeriod* the blabla
 ----
 
 

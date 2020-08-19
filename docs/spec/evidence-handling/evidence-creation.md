@@ -107,21 +107,24 @@ type LightBlock struct {
 Once a correct full node receives a `LightNodeProofOfFork` it first validates it:
 
 ```go
-func Validate(pof LightNodeProofOfFork, bc Blockchain) boolean {
+func IsValid(pof LightNodeProofOfFork, bc Blockchain) boolean {
 
-    rootOfTrust = pof.Trace[0]
-    pointOfBifurkation = pof.Trace[len(pof.Trace)-1] 
-    // in valid proof of fork, trace starts with the header equal to the corresponding on chain, 
-    // and ends with the different header
-    if rootOfTrust.Header != bc[rootOfTrust.Header.Height] or 
-       poinOfBifurkation.Header == bc[poinOfBifurkation.Header.Height] {
+    trusted = pof.Trace[0].Header
+    pointOfBifurkation = pof.Trace[len(pof.Trace)-1].Header 
+    
+    // In valid proof of fork, trace starts with the header equal to the corresponding 
+    // header on chain and ends with the different header.
+    if trusted != bc[trusted.Height] or 
+       poinOfBifurkation == bc[poinOfBifurkation.Height].Header {
         return false    
     }
     
     for i in 1..len(pof.Trace)-1 {
-        lightBlock = pof.Trace[i]
-        if verifyToTarget(rootOfTrust.Header, lightBlock) {
-            roofOfTrust = lightBlock
+        untrusted = pof.Trace[i].Header
+        // Note that trustingPeriod in ValidAndVerified is set to UNBONDING_PERIOD
+        verdict = ValidAndVerified(trusted, untrusted) 
+        if verdict == OK {
+            trusted = untrusted
         }
         else return false   
     }
@@ -129,26 +132,208 @@ func Validate(pof LightNodeProofOfFork, bc Blockchain) boolean {
 }
 ```
 
+### Evidence creation
 
-- 
+```go
+type LunaticValidatorEvidence struct {
+	Header             types.Header
+	Vote               types.Vote
+}
+```
 
-When a full node receives a `ConflictingHeadersTrace`, it should
-a) validate it b) figure out if malicious behaviour is obvious (immediately
-slashable) or run the amnesia protocol.
+```go
+type DuplicateVoteEvidence struct {
+	VoteA             types.Vote
+	VoteB             types.Vote	
+}
+```
 
-### Validating headers
+```go
+type PotentialAmnesiaEvidence struct {
+	ConflictingBlock   LightBlock
+    ValidatorAddress   Address
+}
+```
 
-Check headers are valid (`ValidateBasic`), are in order of ascending height, and do not exceed the `MaxTraceSize`.
+```go
+func getMinBifurcationPoint(pof LightNodeProofOfFork, bc Blockchain) (int, LightBlock) {
+    trusted = pof.Trace[i].Header
+    conflicting = nil
+    for i in 1..len(pof.Trace)-1 {
+        header = pof.Trace[i].Header
+        if header != bc[header.Height].Header {
+            conflicting = header 
+            height = trusted.Height
+            return (height, pof.Trace[i])
+        }
+        else {
+            trusted = header
+        }
+    }
+    panic
+}    
+```
 
-### Finding Block Bifurcation
+```go
+type Commit struct {
+	Height     int64
+	Round      int
+	BlockID    BlockID
+	Signatures []CommitSig
+}
+```
 
-The node pulls the block ID's for the respective heights of the trace headers from its own block store.
+```go
+type BlockIDFlag byte
 
-First it checks to see that the first header hash matches its first `BlockID` else it can discard it. 
+const (
+	// BlockIDFlagAbsent - no vote was received from a validator.
+	BlockIDFlagAbsent BlockIDFlag = 0x01
+	// BlockIDFlagCommit - voted for the Commit.BlockID.
+	BlockIDFlagCommit = 0x02
+	// BlockIDFlagNil - voted for nil.
+	BlockIDFlagNil = 0x03
+)
 
-If the last header hash matches the nodes last `BlockID` then it can also discard it on the assumption that a fork can not remerge and hence this is just a trace of valid headers. 
+type CommitSig struct {
+	BlockIDFlag      BlockIDFlag
+	ValidatorAddress Address
+	Timestamp        time.Time
+	Signature        []byte
+}
+```
 
-The node then continues to loop in descending order checking that the headers hash doesn't match it's own blockID for that height. Once it reaches the height that the block ID matches the hash it then sends the common header, the trusted header and the diverged header (common header is needed for lunatic evidence) to determine if the divergence is a real offense to the tendermint protocol or if it is just fabricated.
+```go
+type Header struct {
+	// basic block info
+	Version  Version
+	ChainID  string
+	Height   int64
+	Time     Time
+
+	// prev block info
+	LastBlockID BlockID
+
+	// hashes of block data
+	LastCommitHash []byte // commit from validators from the last block
+	DataHash       []byte // MerkleRoot of transaction hashes
+
+	// hashes from the app output from the prev block
+	ValidatorsHash     []byte // validators for the current block
+	NextValidatorsHash []byte // validators for the next block
+	ConsensusHash      []byte // consensus params for current block
+	AppHash            []byte // state after txs from the previous block
+	LastResultsHash    []byte // root hash of BeginBlock events, root hash of all results from the txs from the previous block, and EndBlock events
+
+	// consensus info
+	EvidenceHash    []byte // evidence included in the block
+	ProposerAddress []byte // original proposer of the block
+```
+
+```go
+func createLunaticEvidences(height int, conflictingBlock LightBlock, bc Blockchain) []LunaticValidatorEvidence {
+   evidences = []LunaticValidatorEvidence
+   trusted = bc[conflicting.Header.Height].Header 
+   conflicting = conflictingBlock.Header
+   
+   if trusted.ValidatorsHash != conflicting.ValidatorsHash or
+      trusted.NextValidatorsHash != conflicting.NextValidatorsHash or 
+      trusted.ConsensusHash != conflicting.ConsensusHash or 
+      trusted.AppHash != conflicting.AppHash or 
+      trusted.LastResultsHash != conflicting.LastResultsHash {
+        // find validators that have signed this header and that were present in trusted valset
+        for (i, commitSig) in conflicting.Commit.Signatures {
+            if commitSig.BlockIDFlag == BlockIDFlagCommit and 
+            // TODO: think about this condition!   
+            commitSig.ValidatorAddress in getValidators(bc[height].ValidatorsHash) {
+                    evidence = LunaticValidatorEvidence { conflicting, createVote(commit, commitSig, i) }
+                    evidences.append(evidence)
+            }     
+        }
+   }
+   return evidences         
+} 
+
+type Vote struct {
+	Type             byte
+	Height           int64
+	Round            int
+	BlockID          BlockID
+	Timestamp        Time
+	ValidatorAddress []byte
+	ValidatorIndex   int
+	Signature        []byte
+}
+
+func createVote(commit Commit, commitSig CommitSig, validatorIndex int) Vote {
+    return Vote { 
+                Type: precommit,
+                Height: commit.Height,
+                Round: commit.Round,            
+                BlockID: commit.BlockID,
+                Timestamp: commitSig.Timestamp,
+                ValidatorAddress: commitSig.ValidatorAddress,
+                ValidatorIndex: validatorIndex,
+                Signature: commitSig.Signature                                      
+           }
+}
+
+func createVote(commit Commit, validatorAddress ValidatorAddress) Vote {
+    commitSig = nil
+    for (i, commitSig) in commit.Signatures {
+        if commitSig.validatorAddress == validatorAddress {
+            return Vote { 
+                            Type: precommit,
+                            Height: commit.Height,
+                            Round: commit.Round,            
+                            BlockID: commit.BlockID,
+                            Timestamp: commitSig.Timestamp,
+                            ValidatorAddress: commitSig.ValidatorAddress,
+                            ValidatorIndex: i,
+                            Signature: commitSig.Signature                                      
+                       }
+        }
+    }
+    panic
+}  
+```
+
+```go
+func createDuplicateVoteEvidences(conflictingBlock LightBlock, bc Blockchain) []DuplicateVoteEvidence {
+   evidences = []DuplicateVoteEvidence
+   trusted = bc[conflicting.Header.Height].Commit
+   conflicting = conflictingBlock.Commit
+
+   if trusted.Round == conflicting.Round {
+        for (i, commitSig) in conflicting.Signatures {
+            if commitSig.BlockIDFlag == BlockIDFlagCommit and 
+               commitSig.ValidatorAddress in getValidators(trusted) {
+                    evidence = DuplicateVoteEvidence { 
+                                    createVote(commit, commitSig.ValidatorAddress)
+                                    createVote(commit, commitSig, i) 
+                               }
+                    evidences.append(evidence)
+            }     
+        }     
+   } 
+   
+   if trusted.ValidatorsHash != conflicting.ValidatorsHash or
+      trusted.NextValidatorsHash != conflicting.NextValidatorsHash or 
+      trusted.ConsensusHash != conflicting.ConsensusHash or 
+      trusted.AppHash != conflicting.AppHash or 
+      trusted.LastResultsHash != conflicting.LastResultsHash {
+        // find validators that have signed this header and that were present in trusted valset
+        for (i, commitSig) in conflicting.Commit.Signatures {
+            if commitSig.BlockIDFlag == BlockIDFlagCommit {
+                evidence = LunaticValidatorEvidence { conflicting, createVote(commit, commitSig, i) }
+                evidences.append(evidence)
+            }     
+        }
+   }
+   return evidences         
+}
+
+
 
 ### Figuring out if malicious behaviour
 
@@ -181,13 +366,7 @@ Existing `DuplicateVoteEvidence` needs to be created and gossiped.
 
 ### F5. Lunatic validator
 
-```go
-type LunaticValidatorEvidence struct {
-	Header             types.Header
-	Vote               types.Vote
-	InvalidHeaderField string
-}
-```
+
 
 To punish this attack, we need support for a new Evidence type -
 `LunaticValidatorEvidence`. This type includes a vote and a header. The header
