@@ -1,14 +1,12 @@
 use serde::Deserialize;
-//use tempfile::tempdir;
-use tendermint::{block::signed_header::SignedHeader, lite, Time};
-use tendermint::block::{Header};
-use tendermint::lite::{TrustThresholdFraction, TrustedState};
-
-mod utils;
-use utils::{*, apalache::*, jsonatr::*, command::*, lite::*};
+use tendermint_light_client::{
+    tests::{Trusted, *},
+    types::{LightBlock, Time, TrustThreshold},
+};
+use std::time::Duration;
+use tendermint_testgen::{apalache::*, jsonatr::*, Command, Tester, TestEnv};
 use std::{fs, path::PathBuf};
 
-type Trusted = lite::TrustedState<SignedHeader, Header>;
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteTestKind {
@@ -32,7 +30,7 @@ pub enum LiteVerdict {
     CannotVerify
 }
 
-/// A single-step test case is a test for `lite::verify_single()` function.
+/// A single-step test case is a test for `Verifier::verify()` function.
 /// It contains an initial trusted block, plus a sequence of input blocks,
 /// each with the expected verdict.
 /// The trusted state is to be updated only if the verdict is "OK"
@@ -46,58 +44,39 @@ pub struct SingleStepTestCase {
 /// A LiteBlock together with the time when it's being checked, and the expected verdict
 #[derive(Deserialize, Clone, Debug)]
 pub struct BlockVerdict {
-    block: LiteBlock,
+    block: AnonLightBlock,
     now: Time,
     verdict: LiteVerdict,
 }
 
-const TEST_DIR: &str = "./tests/support/lite-model-based/";
-const RUN_DIR: &str = "./tests/support/lite-model-based/last-run";
-
-fn read_single_step_test(dir: &str, file: &str) -> Option<SingleStepTestCase> {
-    let file = read_file(dir, file);
-    parse_as::<SingleStepTestCase>(&file)
-}
-
-fn run_single_step_test(tc: &SingleStepTestCase) {
-    let trusted_next_vals = tc.initial.clone().next_validator_set;
-    let mut latest_trusted =
-        Trusted::new(tc.initial.signed_header.clone().into(), trusted_next_vals);
-    test_serialization_roundtrip(&latest_trusted);
-
-    let trusting_period: std::time::Duration = tc.initial.clone().trusting_period.into();
-
+fn single_step_test(tc: SingleStepTestCase) {
+    let mut latest_trusted = Trusted::new(
+        tc.initial.signed_header.clone(),
+        tc.initial.next_validator_set.clone(),
+    );
+    let clock_drift = Duration::from_secs(1);
+    let trusting_period: Duration = tc.initial.trusting_period.into();
     for (i, input) in tc.input.iter().enumerate() {
         println!("    > step {}, expecting {:?}", i, input.verdict);
-        let tm_now = input.now;
-        let now = tm_now.to_system_time().unwrap();
-        let untrusted_signed_header = &input.block.signed_header;
-        let untrusted_vals = &input.block.validator_set;
-        let untrusted_next_vals = &input.block.next_validator_set;
-
-        match lite::verify_single(
+        let now = input.now;
+        match verify_single(
             latest_trusted.clone(),
-            &untrusted_signed_header.into(),
-            untrusted_vals,
-            untrusted_next_vals,
-            TrustThresholdFraction::default(),
+            input.block.clone().into(),
+            TrustThreshold::default(),
             trusting_period,
+            clock_drift,
             now,
         ) {
-            Ok(new_state) => {
-                assert_eq!(input.verdict, LiteVerdict::OK);
-                let expected_state = TrustedState::new(
-                    untrusted_signed_header.clone().into(),
-                    untrusted_next_vals.clone(),
-                );
-                assert_eq!(new_state, expected_state);
-                latest_trusted = new_state.clone();
-                test_serialization_roundtrip(&latest_trusted);
-            }
-            Err(e) => {
-                eprintln!("      > lite: {}", e.to_string());
-                assert_ne!(input.verdict, LiteVerdict::OK);
-            }
+                    Ok(new_state) => {
+                        assert_eq!(input.verdict, LiteVerdict::OK);
+                        let expected_state: LightBlock = input.block.clone().into();
+                        assert_eq!(new_state, expected_state);
+                        latest_trusted = Trusted::new(new_state.signed_header, new_state.next_validators);
+                    }
+                    Err(e) => {
+                        eprintln!("      > lite: {:?}", e);
+                        assert_ne!(input.verdict, LiteVerdict::OK);
+                    }
         }
     }
 }
@@ -110,85 +89,67 @@ fn check_program(program: &str) -> bool {
     true
 }
 
-fn copy_into(file: &str) -> bool {
-    if !fs::copy(PathBuf::from(TEST_DIR).join(file),
-             PathBuf::from(RUN_DIR).join(file)).is_ok() {
-        println!("  > failed to copy file {} into the run directory", file);
-        return false
-    }
-    true
-}
-
-fn run_model_based_test(test: &ApalacheTestCase) {
+fn model_based_test(test: ApalacheTestCase, env: &TestEnv, root_env: &TestEnv, output_env: &TestEnv) {
     if !check_program("tendermint-testgen") ||
        !check_program("apalache-mc") ||
        !check_program("jsonatr") {
-        return
+       return
     }
-    if !copy_into(&test.model) ||
-       !copy_into("LiteTests.tla") ||
-       !copy_into("Lightclient_A_1.tla") ||
-       !copy_into("Blockchain_A_1.tla") {
-        return
-    }
+    output_env.cleanup();
+    env.copy_file_from_env(root_env, "Lightclient_A_1.tla");
+    env.copy_file_from_env(root_env, "Blockchain_A_1.tla");
+    env.copy_file_from_env(root_env, "LightTests.tla");
+    env.copy_file_from_env(root_env, &test.model);
     println!("  > running Apalache...");
-    let apalache_run = run_apalache_test(RUN_DIR, test);
+    let apalache_run = run_apalache_test(env.current_dir(), test);
     assert!(apalache_run.is_ok());
-    if !apalache_run.unwrap().stdout.contains("The outcome is: Error") {
-        println!("  > Apalache failed to generate a counterexample; please check the model, the test, and the length bound");
-    }
-    else {
-        let transform = JsonatrTransform {
-            input: "counterexample.json".to_string(),
-            include: vec!["../../../utils/jsonatr-lib/apalache_to_lite_test.json".to_string()],
-            output: "lite_test.json".to_string()
-        };
-        assert!(run_jsonatr_transform(RUN_DIR, transform).is_ok());
+    assert!(apalache_run.unwrap().stdout.contains("The outcome is: Error"),
+     "Apalache failed to generate a counterexample; please check the model, the test, and the length bound");
 
-        let tc= read_single_step_test(RUN_DIR, "lite_test.json");
-        assert!(tc.is_some());
-        println!("  > running auto-generated test...");
-        run_single_step_test(&tc.unwrap());
+    let transform_spec = root_env.full_canonical_path("_jsonatr-lib/apalache_to_lite_test.json").unwrap();
+    let transform = JsonatrTransform {
+        input: "counterexample.json".to_string(),
+        include: vec![transform_spec],
+        output: "test.json".to_string()
+    };
+    let jsonatr_run = run_jsonatr_transform(env.current_dir(), transform);
+    if let Err(e) = jsonatr_run {
+        println!("Error jsonatr: {}", e)
+    }
+
+
+    let tc = env.parse_file_as::<SingleStepTestCase>("test.json").unwrap();
+    println!("  > running auto-generated test...");
+    single_step_test(tc);
+    output_env.copy_file_from_env(env, "counterexample.tla");
+    output_env.copy_file_from_env(env, "counterexample.json");
+}
+
+fn model_based_test_batch(batch: ApalacheTestBatch, env: &TestEnv, root_env: &TestEnv, output_env: &TestEnv) {
+    for test in batch.tests {
+        let tc = ApalacheTestCase {
+            model: batch.model.clone(),
+            test: test.clone(),
+            length: batch.length,
+            timeout: batch.timeout
+        };
+        println!("  Running model-based single-step test case: {}", test);
+
+        model_based_test(tc, env, root_env, &output_env.push(&test).unwrap());
     }
 }
+
+const TEST_DIR: &str = "./tests/support/model_based";
 
 #[test]
 fn run_single_step_tests() {
-    let paths = fs::read_dir(PathBuf::from(TEST_DIR)).unwrap();
-    for path in paths {
-        if let Ok(entry) = path {
-            if let Ok(kind) = entry.file_type() {
-                if kind.is_file() || kind.is_symlink() {
-                    let path = format!("{}", entry.path().display());
-                    if !path.ends_with(".json") {
-                        continue
-                    }
-                    let file = read_file("", &path);
-                    if let Some(tc) = parse_as::<SingleStepTestCase>(&file) {
-                        println!("Running static single-step test case: {}", path);
-                        run_single_step_test(&tc);
-                    }
-                    else if let Some(tc) = parse_as::<ApalacheTestCase>(&file) {
-                        println!("Running model-based single-step test case: {}", path);
-                        run_model_based_test(&tc);
-                    }
-                    else if let Some(batch) = parse_as::<ApalacheTestBatch>(&file) {
-                        println!("Running model-based single-step test batch: {}", path);
-                        println!("{}", batch.description);
-                        for test in batch.tests {
-                            let tc = ApalacheTestCase {
-                                model: batch.model.clone(),
-                                test: test.clone(),
-                                length: batch.length,
-                                timeout: batch.timeout
-                            };
-                            println!("  Running model-based single-step test case: {}", test);
-                            run_model_based_test(&tc);
-                        }
-                    }
-                }
-            }
+    let mut tester = Tester::new("single_step", TEST_DIR);
+    tester.add_test("static model-based single-step test", single_step_test);
+    tester.add_test_with_env("full model-based single-step test", model_based_test);
+    tester.add_test_with_env("full model-based single-step test batch", model_based_test_batch);
 
-        }
-    }
+    //tester.run_for_file("first-model-based-test.json");
+    tester.run_foreach_in_dir("");
+    tester.print_results();
 }
+

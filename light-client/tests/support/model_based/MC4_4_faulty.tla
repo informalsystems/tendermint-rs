@@ -11,6 +11,6 @@ VARIABLES
   history, nprobes,
   now, blockchain, Faulty
 
-INSTANCE LiteTests
+INSTANCE LightTests
 
 ============================================================================
