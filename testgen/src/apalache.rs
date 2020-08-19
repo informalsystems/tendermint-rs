@@ -1,6 +1,6 @@
-use serde::Deserialize;
-use std::{io};
 use crate::command::*;
+use serde::Deserialize;
+use std::io;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ApalacheTestBatch {
@@ -19,14 +19,13 @@ pub struct ApalacheTestCase {
     pub timeout: Option<u64>,
 }
 
-pub fn run_apalache_test(dir: &str, test: &ApalacheTestCase) -> io::Result<CommandRun> {
+pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<CommandRun> {
     let mut cmd = Command::new();
     if let Some(timeout) = test.timeout {
         cmd.program("timeout");
         cmd.arg(&timeout.to_string());
         cmd.arg("apalache-mc");
-    }
-    else {
+    } else {
         cmd.program("apalache-mc");
     }
     cmd.arg("check");
@@ -42,11 +41,13 @@ pub fn run_apalache_test(dir: &str, test: &ApalacheTestCase) -> io::Result<Comma
         Ok(run) => {
             if run.status.success() {
                 Ok(run)
+            } else {
+                Err(io::Error::new(
+                    io::ErrorKind::Interrupted,
+                    run.stdout.to_string(),
+                ))
             }
-            else {
-                Err(io::Error::new(io::ErrorKind::Interrupted, run.stdout.to_string()))
-            }
-        },
-        Err(e) => Err(e)
+        }
+        Err(e) => Err(e),
     }
 }

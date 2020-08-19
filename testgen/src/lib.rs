@@ -17,7 +17,6 @@ pub use time::Time;
 pub use validator::Validator;
 pub use vote::Vote;
 
-
 /// Helpers for organizing and running the tests
 pub mod apalache;
 pub mod command;

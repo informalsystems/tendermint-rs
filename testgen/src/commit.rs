@@ -1,12 +1,12 @@
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
-use tendermint::block;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
+use tendermint::block;
 
-use crate::{helpers::*, Generator, Header, Validator, Vote};
 use crate::validator::sort_validators;
+use crate::{helpers::*, Generator, Header, Validator, Vote};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Commit {
@@ -115,9 +115,10 @@ impl Generator<block::Commit> for Commit {
         };
         let all_vals = header.validators.as_ref().unwrap();
         let mut all_vals: BTreeSet<&Validator> = BTreeSet::from_iter(all_vals);
-        let votes_vals: Vec<Validator> = votes.iter().map(|v| v.validator.clone().unwrap()).collect();
+        let votes_vals: Vec<Validator> =
+            votes.iter().map(|v| v.validator.clone().unwrap()).collect();
         all_vals.append(&mut BTreeSet::from_iter(&votes_vals));
-        let all_vals: Vec<Validator> = Vec::from_iter(all_vals.iter().map(|&x|x.clone()));
+        let all_vals: Vec<Validator> = Vec::from_iter(all_vals.iter().map(|&x| x.clone()));
         let all_vals = sort_validators(&all_vals);
         let vote_to_sig = |v: &Vote| -> Result<block::CommitSig, SimpleError> {
             let vote = v.generate()?;
@@ -128,10 +129,12 @@ impl Generator<block::Commit> for Commit {
             })
         };
         let val_to_sig = |val: &Validator| -> Result<block::CommitSig, SimpleError> {
-            if let Some(vote) = votes.iter().find(|&vote| vote.validator.as_ref().unwrap() == val) {
+            if let Some(vote) = votes
+                .iter()
+                .find(|&vote| vote.validator.as_ref().unwrap() == val)
+            {
                 vote_to_sig(vote)
-            }
-            else {
+            } else {
                 Ok(block::CommitSig::BlockIDFlagAbsent)
             }
         };

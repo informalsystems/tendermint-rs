@@ -82,8 +82,7 @@ impl Generator<block::Header> for Header {
         let proposer_index = self.proposer.unwrap_or(0);
         let proposer_address = if !vals.is_empty() {
             vals[proposer_index].address
-        }
-        else {
+        } else {
             Validator::new("a").generate().unwrap().address
         };
         let valset = validator::Set::new(vals.clone());
@@ -100,9 +99,11 @@ impl Generator<block::Header> for Header {
             Ok(id) => id,
             Err(_) => bail!("failed to construct header's chain_id"),
         };
-        let time =
-            if let Some(t) = self.time { get_time(t) }
-            else { tendermint::Time::now() };
+        let time = if let Some(t) = self.time {
+            get_time(t)
+        } else {
+            tendermint::Time::now()
+        };
         let header = block::Header {
             version: block::header::Version { block: 0, app: 0 },
             chain_id,

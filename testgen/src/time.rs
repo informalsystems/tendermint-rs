@@ -11,9 +11,7 @@ pub struct Time {
 
 impl Time {
     pub fn new(secs: u64) -> Self {
-        Time {
-            secs: Some(secs),
-        }
+        Time { secs: Some(secs) }
     }
     set_option!(secs, u64);
 }
@@ -51,7 +49,6 @@ mod tests {
 
     #[test]
     fn test_time() {
-
         let time = Time::new(0);
         assert_eq!(time.generate().unwrap(), tendermint::Time::unix_epoch());
     }

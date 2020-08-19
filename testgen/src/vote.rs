@@ -1,3 +1,4 @@
+use crate::{helpers::*, Generator, Header, Validator};
 use gumdrop::Options;
 use serde::Deserialize;
 use signatory::{
@@ -6,7 +7,6 @@ use signatory::{
 };
 use simple_error::*;
 use tendermint::{block, signature::Signature, vote};
-use crate::{helpers::*, Generator, Header, Validator};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Vote {
@@ -84,14 +84,22 @@ impl Generator<vote::Vote> for Vote {
         let block_id = block::Id::new(block_header.hash(), None);
         let validator_index = match self.index {
             Some(i) => i,
-            None => match header.validators.as_ref().unwrap().iter().position(|v| *v == *validator) {
+            None => match header
+                .validators
+                .as_ref()
+                .unwrap()
+                .iter()
+                .position(|v| *v == *validator)
+            {
                 Some(i) => i as u64,
-                None => 0 // bail!("failed to generate vote: no index given and validator not present in the header")
-            }
+                None => 0, // bail!("failed to generate vote: no index given and validator not present in the header")
+            },
         };
-        let timestamp =
-            if let Some(t) = self.time { get_time(t) }
-            else { block_header.time };
+        let timestamp = if let Some(t) = self.time {
+            get_time(t)
+        } else {
+            block_header.time
+        };
         let mut vote = vote::Vote {
             vote_type: if self.prevote.is_some() {
                 vote::Type::Prevote

@@ -1,18 +1,18 @@
-use std::{process, io};
 use std::io::Read;
+use std::{io, process};
 
 /// A thin wrapper around process::Command to facilitate running external commands.
 pub struct Command {
     program: Option<String>,
     args: Vec<String>,
-    dir: Option<String>
+    dir: Option<String>,
 }
 
 /// The result of a command execution if the child process managed to execute
 pub struct CommandRun {
     pub status: process::ExitStatus,
     pub stdout: String,
-    pub stderr: String
+    pub stderr: String,
 }
 
 impl Command {
@@ -25,7 +25,7 @@ impl Command {
         Command {
             program: None,
             args: vec![],
-            dir: None
+            dir: None,
         }
     }
     /// Set the program to run
@@ -58,7 +58,8 @@ impl Command {
             None => Err(io::Error::new(io::ErrorKind::InvalidInput, "")),
             Some(program) => {
                 let mut command = process::Command::new(program);
-                command.args(&self.args)
+                command
+                    .args(&self.args)
                     .stdout(process::Stdio::piped())
                     .stderr(process::Stdio::piped());
                 if let Some(dir) = &self.dir {
@@ -73,7 +74,7 @@ impl Command {
                 Ok(CommandRun {
                     status,
                     stdout,
-                    stderr
+                    stderr,
                 })
             }
         }
