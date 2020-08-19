@@ -1,11 +1,12 @@
 use gumdrop::Options;
 use serde::Deserialize;
-use signatory::{
-    ed25519,
-    signature::{Signature as _, Signer},
-};
 use simple_error::*;
-use tendermint::{block, signature::Signature, vote, Time};
+use std::convert::TryFrom;
+use tendermint::{
+    block,
+    signature::{self, Signature, Signer, ED25519_SIGNATURE_SIZE},
+    vote, Time,
+};
 
 use crate::{helpers::*, Generator, Header, Validator};
 
@@ -79,7 +80,7 @@ impl Generator<vote::Vote> for Vote {
             None => bail!("failed to generate vote: header is missing"),
             Some(h) => h,
         };
-        let signer = validator.get_signer()?;
+        let signer = validator.get_private_key()?;
         let block_validator = validator.generate()?;
         let block_header = header.generate()?;
         let block_id = block::Id::new(block_header.hash(), None);
@@ -103,12 +104,12 @@ impl Generator<vote::Vote> for Vote {
             validator_address: block_validator.address,
             validator_index,
             signature: Signature::Ed25519(try_with!(
-                ed25519::Signature::from_bytes(&[0_u8; ed25519::SIGNATURE_SIZE]),
+                signature::Ed25519::try_from(&[0_u8; ED25519_SIGNATURE_SIZE][..]),
                 "failed to construct empty ed25519 signature"
             )),
         };
         let sign_bytes = get_vote_sign_bytes(block_header.chain_id.as_str(), &vote);
-        vote.signature = Signature::Ed25519(signer.sign(sign_bytes.as_slice()));
+        vote.signature = signer.sign(sign_bytes.as_slice()).into();
         Ok(vote)
     }
 }
@@ -152,12 +153,12 @@ mod tests {
 
         let sign_bytes = get_vote_sign_bytes(block_header.chain_id.as_str(), &block_vote);
         assert!(!verify_signature(
-            &valset1[0].get_verifier().unwrap(),
+            &valset1[0].get_public_key().unwrap(),
             &sign_bytes,
             &block_vote.signature
         ));
         assert!(verify_signature(
-            &valset1[1].get_verifier().unwrap(),
+            &valset1[1].get_public_key().unwrap(),
             &sign_bytes,
             &block_vote.signature
         ));

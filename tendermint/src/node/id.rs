@@ -1,9 +1,12 @@
 //! Tendermint node IDs
 
-use crate::error::{Error, Kind};
+use crate::{
+    error::{Error, Kind},
+    public_key::Ed25519,
+};
+
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
-use signatory::ed25519;
 use std::{
     fmt::{self, Debug, Display},
     str::FromStr,
@@ -58,8 +61,8 @@ impl Debug for Id {
     }
 }
 
-impl From<ed25519::PublicKey> for Id {
-    fn from(pk: ed25519::PublicKey) -> Id {
+impl From<Ed25519> for Id {
+    fn from(pk: Ed25519) -> Id {
         let digest = Sha256::digest(pk.as_bytes());
         let mut bytes = [0u8; LENGTH];
         bytes.copy_from_slice(&digest[..LENGTH]);

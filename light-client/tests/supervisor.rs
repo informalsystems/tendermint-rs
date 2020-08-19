@@ -14,33 +14,16 @@ use tendermint_light_client::{
 };
 
 use std::collections::HashMap;
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::time::Duration;
 
 use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::tests::{
     AnonLightBlock, MockClock, MockEvidenceReporter, MockIo, TestBisection, TrustOptions,
 };
 
+use tendermint_testgen::Tester;
+
 const TEST_FILES_PATH: &str = "./tests/support/";
-
-fn read_json_fixture(file: impl AsRef<Path>) -> String {
-    fs::read_to_string(file).unwrap()
-}
-
-fn load_multi_peer_testcases(dir: &str) -> Vec<TestBisection<LightBlock>> {
-    let paths = fs::read_dir(PathBuf::from(TEST_FILES_PATH).join(dir)).unwrap();
-
-    paths
-        .flatten()
-        .map(|entry| read_json_fixture(entry.path()))
-        .map(|contents| serde_json::from_str::<TestBisection<AnonLightBlock>>(&contents).unwrap())
-        .map(|testcase| testcase.into())
-        .collect::<Vec<TestBisection<LightBlock>>>()
-}
 
 fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance {
     let trusted_height = trust_options.height;
@@ -71,7 +54,8 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
     Instance::new(light_client, state)
 }
 
-fn run_multipeer_test(tc: TestBisection<LightBlock>) {
+fn run_multipeer_test(tc: TestBisection<AnonLightBlock>) {
+    let tc: TestBisection<LightBlock> = tc.into();
     let primary = tc.primary.lite_blocks[0].provider;
 
     println!(
@@ -136,14 +120,9 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
 }
 
 #[test]
-fn deserialize_multi_peer_json() {
-    load_multi_peer_testcases("bisection/multi_peer");
-}
-
-#[test]
 fn run_multipeer_tests() {
-    let testcases = load_multi_peer_testcases("bisection/multi_peer");
-    for testcase in testcases {
-        run_multipeer_test(testcase);
-    }
+    let mut tester = Tester::new(TEST_FILES_PATH);
+    tester.add_test("multipeer test", run_multipeer_test);
+    tester.run_foreach_in_dir("bisection/multi_peer");
+    tester.print_results();
 }

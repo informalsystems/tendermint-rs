@@ -43,7 +43,7 @@ pub enum VerificationError {
         /// Signature as a byte array
         signature: Vec<u8>,
         /// Validator which provided the signature
-        validator: Validator,
+        validator: Box<Validator>,
         /// Bytes which were signed
         sign_bytes: Vec<u8>,
     },

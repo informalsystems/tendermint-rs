@@ -132,9 +132,7 @@ fn deserialize_commit_sig_commit_vote() {
         assert_eq!(timestamp, Time::unix_epoch());
         assert_eq!(
             signature,
-            crate::signature::Signature::Ed25519(signatory::ed25519::Signature::new(
-                EXAMPLE_SIGNATURE
-            ))
+            crate::signature::Signature::Ed25519(ed25519::Signature::new(EXAMPLE_SIGNATURE))
         );
     } else {
         panic!(format!("expected BlockIDFlagCommit, received {:?}", result));
@@ -169,9 +167,7 @@ fn deserialize_commit_sig_nil_vote() {
         assert_eq!(timestamp, Time::unix_epoch());
         assert_eq!(
             signature,
-            crate::signature::Signature::Ed25519(signatory::ed25519::Signature::new(
-                EXAMPLE_SIGNATURE
-            ))
+            crate::signature::Signature::Ed25519(ed25519::Signature::new(EXAMPLE_SIGNATURE))
         );
     } else {
         panic!(format!("expected BlockIDFlagNil, received {:?}", result));
