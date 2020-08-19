@@ -294,3 +294,36 @@ pub fn verify(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use tendermint_testgen::{Validator, Header, Generator};
+    use crate::predicates::{ProdPredicates, VerificationPredicates};
+
+    #[test]
+    fn test_is_monotonic_bft_time() {
+        let test_val = Validator::new("val-1");
+        let trusted_header = Header::new([test_val.clone()].as_ref())
+            .generate();
+        let untrusted_header = Header::new([test_val].as_ref())
+            .generate();
+
+        match (trusted_header, untrusted_header) {
+            (Ok(trusted), Ok(untrusted)) => {
+                let vp = ProdPredicates::default();
+                let case_positive = vp.is_monotonic_bft_time(
+                    &untrusted.clone(),
+                    &trusted.clone());
+                let case_negative = vp.is_monotonic_bft_time(
+                    &trusted,
+                    &untrusted);
+
+                assert!(case_positive.is_ok());
+                assert!(case_negative.is_err());
+
+            }
+            _ => println!("Error in generating header")
+        }
+
+    }
+}
