@@ -5,8 +5,7 @@ use tendermint_light_client::{
 };
 use std::time::Duration;
 use tendermint_testgen::{apalache::*, jsonatr::*, Command, Tester, TestEnv};
-use std::{fs, path::PathBuf};
-
+use tendermint_light_client::components::verifier::Verdict;
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteTestKind {
@@ -18,16 +17,17 @@ pub enum LiteTestKind {
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteVerdict {
     /// verified successfully
-    OK,
+    #[serde(rename = "SUCCESS")]
+    Success,
     /// outside of trusting period
     #[serde(rename = "FAILED_TRUSTING_PERIOD")]
     FailedTrustingPeriod,
     /// block verification based on the header and commit structure failed
-    #[serde(rename = "FAILED_VERIFICATION")]
-    FailedVerification,
+    #[serde(rename = "INVALID")]
+    Invalid,
     /// passed block verification, but the validator set is too different to verify it
-    #[serde(rename = "CANNOT_VERIFY")]
-    CannotVerify
+    #[serde(rename = "NOT_ENOUGH_TRUST")]
+    NotEnoughTrust
 }
 
 /// A single-step test case is a test for `Verifier::verify()` function.
@@ -68,14 +68,18 @@ fn single_step_test(tc: SingleStepTestCase) {
             now,
         ) {
                     Ok(new_state) => {
-                        assert_eq!(input.verdict, LiteVerdict::OK);
+                        assert_eq!(input.verdict, LiteVerdict::Success);
                         let expected_state: LightBlock = input.block.clone().into();
                         assert_eq!(new_state, expected_state);
                         latest_trusted = Trusted::new(new_state.signed_header, new_state.next_validators);
                     }
                     Err(e) => {
                         eprintln!("      > lite: {:?}", e);
-                        assert_ne!(input.verdict, LiteVerdict::OK);
+                        match e {
+                            Verdict::Invalid(_) => assert_eq!(input.verdict, LiteVerdict::Invalid),
+                            Verdict::NotEnoughTrust(_) => assert_eq!(input.verdict, LiteVerdict::NotEnoughTrust),
+                            Verdict::Success => panic!("verify_single() returned error with Verdict::Success")
+                        }
                     }
         }
     }
