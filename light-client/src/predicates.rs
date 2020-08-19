@@ -299,6 +299,8 @@ pub fn verify(
 mod tests {
     use tendermint_testgen::{Validator, Header, Generator};
     use crate::predicates::{ProdPredicates, VerificationPredicates};
+    use std::time::Duration;
+    use tendermint::Time;
 
     #[test]
     fn test_is_monotonic_bft_time() {
@@ -317,6 +319,38 @@ mod tests {
                 let case_negative = vp.is_monotonic_bft_time(
                     &trusted,
                     &untrusted);
+
+                assert!(case_positive.is_ok());
+                assert!(case_negative.is_err());
+
+            }
+            _ => println!("Error in generating header")
+        }
+
+    }
+
+    #[test]
+    fn test_is_within_trust_period() {
+        let val = Validator::new("val-1");
+        let header = Header::new([val.clone()].as_ref())
+            .generate();
+
+        match header {
+            Ok(header) => {
+                let vp = ProdPredicates::default();
+
+                let mut trusting_period = Duration::new(1000,0);
+                let case_positive = vp.is_within_trust_period(
+                    &header.clone(),
+                    trusting_period,
+                    Time::now()
+                );
+                trusting_period = Duration::new(0,1);
+                let case_negative = vp.is_within_trust_period(
+                    &header,
+                    trusting_period,
+                    Time::now()
+                );
 
                 assert!(case_positive.is_ok());
                 assert!(case_negative.is_err());
