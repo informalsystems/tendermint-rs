@@ -297,11 +297,16 @@ pub fn verify(
 
 #[cfg(test)]
 mod tests {
-    use tendermint_testgen::{Validator, Header, Generator};
+    use tendermint_testgen::{Validator, Header, Generator, Commit};
     use crate::predicates::{ProdPredicates, VerificationPredicates};
     use std::time::Duration;
     use tendermint::Time;
     use std::ops::Sub;
+    use crate::tests::default_peer_id;
+    use crate::types::{LightBlock, SignedHeader, ValidatorSet};
+    use tendermint_testgen::validator::generate_validators;
+    use crate::operations::{ProdHasher, Hasher};
+    use crate::predicates::errors::VerificationError;
 
     #[test]
     fn test_is_monotonic_bft_time() {
@@ -384,6 +389,67 @@ mod tests {
 
                 assert!(case_positive.is_ok());
                 assert!(case_negative.is_err());
+
+            }
+            _ => println!("Error in generating header")
+        }
+    }
+
+    #[test]
+    fn test_validator_sets_match() {
+        let val = [Validator::new("val-1")];
+        let validators = generate_validators(&val);
+
+        let raw_header = Header::new(&val);
+        let header = raw_header.generate();
+
+        let commit = Commit::new(raw_header, 1).generate();
+
+        let bad_val = [Validator::new("val-bad")];
+        let bad_validators = generate_validators(&bad_val);
+
+        match (header, commit, validators, bad_validators) {
+            (
+                Ok(header),
+                Ok(commit),
+                Ok(validators),
+                Ok(bad_validators)
+            ) => {
+
+                let validator_set = ValidatorSet::new(validators);
+                let mut light_block = LightBlock::new(
+                    SignedHeader{
+                        header,
+                        commit
+                    },
+                    validator_set.clone(),
+                    validator_set,
+                    default_peer_id()
+                );
+
+                let vp = ProdPredicates::default();
+                let hasher = ProdHasher::default();
+                let case_positive = vp.validator_sets_match(
+                    &light_block,
+                    &hasher
+                );
+
+                assert!(case_positive.is_ok());
+
+                let bad_validator_set = ValidatorSet::new(bad_validators);
+                light_block.validators = bad_validator_set;
+
+                let case_negative = vp.validator_sets_match(
+                    &light_block,
+                    &hasher
+                );
+
+                let error = VerificationError::InvalidValidatorSet {
+                    header_validators_hash: light_block.signed_header.header.validators_hash,
+                    validators_hash: hasher.hash_validator_set(&light_block.validators)
+                };
+                assert!(case_negative.is_err());
+                assert_eq!(case_negative.err().unwrap(), error);
 
             }
             _ => println!("Error in generating header")
