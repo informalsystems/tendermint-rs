@@ -1,11 +1,14 @@
 //! Helper functions
 
 use serde::de::DeserializeOwned;
-use signatory::signature::Verifier;
-use signatory_dalek::Ed25519Verifier;
 use simple_error::*;
 use std::io::{self, Read};
-use tendermint::{amino_types, signature::Signature, vote, Time};
+use tendermint::{
+    amino_types, public_key,
+    signature::{Signature, Verifier},
+    vote,
+    Time
+};
 
 /// A macro that generates a complete setter method from a one-liner with necessary information
 #[macro_export]
@@ -45,14 +48,15 @@ pub fn get_vote_sign_bytes(chain_id: &str, vote: &vote::Vote) -> Vec<u8> {
         amino_types::vote::Vote::from(vote),
         chain_id,
         vote.validator_address,
-        vote.signature.clone(),
+        vote.signature,
     );
     signed_vote.sign_bytes()
 }
 
-pub fn verify_signature(verifier: &Ed25519Verifier, msg: &[u8], signature: &Signature) -> bool {
+pub fn verify_signature(verifier: &public_key::Ed25519, msg: &[u8], signature: &Signature) -> bool {
     match signature {
         tendermint::signature::Signature::Ed25519(sig) => verifier.verify(msg, sig).is_ok(),
+        _ => false,
     }
 }
 

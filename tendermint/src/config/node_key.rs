@@ -2,9 +2,10 @@
 
 use crate::{
     error::{Error, Kind},
+    node,
     private_key::PrivateKey,
+    public_key::PublicKey,
 };
-use crate::{node, public_key::PublicKey};
 use anomaly::format_err;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
@@ -42,7 +43,7 @@ impl NodeKey {
     /// Get the public key for this keypair
     pub fn public_key(&self) -> PublicKey {
         match &self.priv_key {
-            PrivateKey::Ed25519(key) => key.public_key(),
+            PrivateKey::Ed25519(keypair) => keypair.public.into(),
         }
     }
 
@@ -50,7 +51,7 @@ impl NodeKey {
     pub fn node_id(&self) -> node::Id {
         #[allow(unreachable_patterns)]
         match &self.public_key() {
-            PublicKey::Ed25519(key) => node::Id::from(*key),
+            PublicKey::Ed25519(pubkey) => node::Id::from(*pubkey),
             _ => unreachable!(),
         }
     }

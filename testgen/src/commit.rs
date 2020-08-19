@@ -200,12 +200,12 @@ mod tests {
                     let sign_bytes =
                         get_vote_sign_bytes(block_header.chain_id.as_str(), &block_vote);
                     assert!(!verify_signature(
-                        &valset2[i].get_verifier().unwrap(),
+                        &valset2[i].get_public_key().unwrap(),
                         &sign_bytes,
                         signature
                     ));
                     assert!(verify_signature(
-                        &valset1[i].get_verifier().unwrap(),
+                        &valset1[i].get_public_key().unwrap(),
                         &sign_bytes,
                         signature
                     ));

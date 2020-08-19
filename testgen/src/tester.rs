@@ -86,7 +86,7 @@ impl TestEnv {
     }
 
     /// Convert a relative path to the full path from the test root
-    /// Returns None the full path can't be formed
+    /// Return None if the full path can't be formed
     pub fn full_path(&self, rel_path: &str) -> Option<String> {
         let full_path = PathBuf::from(&self.current_dir).join(rel_path);
         match full_path.to_str() {
@@ -270,21 +270,21 @@ impl Tester {
     fn add_result(&mut self, name: &str, path: &str, result: TestResult) {
         self.results
             .entry(name.to_string())
-            .or_insert(Vec::new())
+            .or_insert_with(Vec::new)
             .push((path.to_string(), result))
     }
 
     fn read_error(&mut self, path: &str) {
         self.results
             .entry("".to_string())
-            .or_insert(Vec::new())
+            .or_insert_with(Vec::new)
             .push((path.to_string(), TestResult::ReadError))
     }
 
     fn parse_error(&mut self, path: &str) {
         self.results
             .entry("".to_string())
-            .or_insert(Vec::new())
+            .or_insert_with(Vec::new)
             .push((path.to_string(), TestResult::ParseError))
     }
 

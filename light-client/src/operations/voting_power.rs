@@ -146,10 +146,13 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
 
             // Check vote is valid
             let sign_bytes = signed_vote.sign_bytes();
-            if !validator.verify_signature(&sign_bytes, signed_vote.signature()) {
+            if validator
+                .verify_signature(&sign_bytes, signed_vote.signature())
+                .is_err()
+            {
                 bail!(VerificationError::InvalidSignature {
-                    signature: signed_vote.signature().to_vec(),
-                    validator,
+                    signature: signed_vote.signature().to_bytes(),
+                    validator: Box::new(validator),
                     sign_bytes,
                 });
             }
@@ -186,14 +189,14 @@ fn non_absent_vote(commit_sig: &CommitSig, validator_index: u64, commit: &Commit
         } => (
             *validator_address,
             *timestamp,
-            signature.clone(),
+            signature,
             Some(commit.block_id.clone()),
         ),
         CommitSig::BlockIDFlagNil {
             validator_address,
             timestamp,
             signature,
-        } => (*validator_address, *timestamp, signature.clone(), None),
+        } => (*validator_address, *timestamp, signature, None),
     };
 
     Some(Vote {
@@ -204,7 +207,7 @@ fn non_absent_vote(commit_sig: &CommitSig, validator_index: u64, commit: &Commit
         timestamp,
         validator_address,
         validator_index,
-        signature,
+        signature: *signature,
     })
 }
 
