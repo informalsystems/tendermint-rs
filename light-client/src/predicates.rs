@@ -301,6 +301,7 @@ mod tests {
     use crate::predicates::{ProdPredicates, VerificationPredicates};
     use std::time::Duration;
     use tendermint::Time;
+    use std::ops::Sub;
 
     #[test]
     fn test_is_monotonic_bft_time() {
@@ -343,14 +344,43 @@ mod tests {
                 let case_positive = vp.is_within_trust_period(
                     &header.clone(),
                     trusting_period,
-                    Time::now()
-                );
+                    Time::now());
+
                 trusting_period = Duration::new(0,1);
                 let case_negative = vp.is_within_trust_period(
                     &header,
                     trusting_period,
-                    Time::now()
-                );
+                    Time::now());
+
+                assert!(case_positive.is_ok());
+                assert!(case_negative.is_err());
+
+            }
+            _ => println!("Error in generating header")
+        }
+
+    }
+
+    #[test]
+    fn test_is_header_from_past() {
+        let val = Validator::new("val-1");
+        let header = Header::new([val.clone()].as_ref())
+            .generate();
+
+        match header {
+            Ok(header) => {
+                let vp = ProdPredicates::default();
+
+                let one_second = Duration::new(1,0);
+                let case_positive = vp.is_header_from_past(
+                    &header.clone(),
+                    one_second,
+                    Time::now());
+
+                let case_negative = vp.is_header_from_past(
+                    &header,
+                    one_second,
+                    Time::now().sub(one_second * 5));
 
                 assert!(case_positive.is_ok());
                 assert!(case_negative.is_err());
