@@ -31,7 +31,7 @@ impl TestEnv {
     }
 
     /// Convert a relative path to the full path from the test root
-    /// Return None the full path can't be formed
+    /// Return None if the full path can't be formed
     pub fn full_path(&self, rel_path: &str) -> Option<String> {
         let full_path = PathBuf::from(&self.root_dir).join(rel_path);
         match full_path.to_str() {
@@ -53,9 +53,11 @@ impl TestEnv {
     }
 }
 
+type TestFn = Box<dyn Fn(&str) -> TestResult>;
+
 pub struct Tester {
     root_dir: String,
-    tests: Vec<(String, Box<dyn Fn(&str) -> TestResult>)>,
+    tests: Vec<(String, TestFn)>,
     results: std::collections::BTreeMap<String, Vec<(String, TestResult)>>,
 }
 
@@ -180,21 +182,21 @@ impl Tester {
     fn add_result(&mut self, name: &str, path: &str, result: TestResult) {
         self.results
             .entry(name.to_string())
-            .or_insert(Vec::new())
+            .or_insert_with(Vec::new)
             .push((path.to_string(), result))
     }
 
     fn read_error(&mut self, path: &str) {
         self.results
             .entry("".to_string())
-            .or_insert(Vec::new())
+            .or_insert_with(Vec::new)
             .push((path.to_string(), TestResult::ReadError))
     }
 
     fn parse_error(&mut self, path: &str) {
         self.results
             .entry("".to_string())
-            .or_insert(Vec::new())
+            .or_insert_with(Vec::new)
             .push((path.to_string(), TestResult::ParseError))
     }
 
