@@ -36,25 +36,53 @@ In order to achieve this, we need:
       terminate specific subscriptions).
 2. An appropriate concurrency model for drivers of the transport layer that
    allows the transport layer to operate independently of consumers of
-   subscriptions.
+   subscriptions. This is so that consumers don't block transport layer
+   activities and vice-versa.
 
 ## Decision
 
 ### Assumptions
 
-* All blocking operations that deal with I/O must be `async`
+* All blocking operations that deal with I/O must be `async`.
 * We will not be ["de-asyncifying" the RPC][issue-318] and will rather, in a
   future ADR, propose a synchronous architecture as well should we need one.
 
 ### Proposed Entities and Relationships
 
 The entities in the diagram below are described in the following subsections.
-The diagram also gives some indication as to the proposed concurrency model for
-the architecture and how the entities relate to each other.
 
-![](assets/rpc-client-subscription-rels.png)
+![](assets/rpc-client-erd.png)
 
-### Subscription
+### `Event`
+
+In terms of the subscription interface, this is ultimately what the end user is
+most interested in obtaining. The `Event` type's structure is dictated by the
+Tendermint RPC:
+
+```rust
+pub struct Event {
+    /// The query that produced the event.
+    pub query: String,
+    /// The data associated with the event (determines its `EventType`).
+    pub data: EventData,
+    /// Event type and attributes map.
+    pub events: Option<HashMap<String, Vec<String>>>,
+}
+
+pub enum EventData {
+    NewBlock {
+        block: Option<Block>,
+        result_begin_block: Option<BeginBlock>,
+        result_end_block: Option<EndBlock>,
+    },
+    Tx {
+        tx_result: TxResult,
+    },
+    // ...
+}
+```
+
+### `Subscription`
 
 A `Subscription` here is envisaged as an entity that implements the
 [Stream][futures-stream] trait, allowing its owner to asynchronously iterate
@@ -70,34 +98,46 @@ while let Some(result_event) = subscription.next().await {
 }
 ```
 
+For efficient routing of events to `Subscription`s, each `Subscription` should
+have some kind of unique identifier associated with it (a `SubscriptionId`).
+Each `Subscription` relates only to a single [`Query`](#query). Therefore, its
+publicly accessible fields may resemble the following:
+
+```rust
+pub struct Subscription {
+    pub id: SubscriptionId,
+    pub query: Query,
+    // ... other fields to help facilitate inter-task comms ...
+}
+```
+
+`Subscription`s are created by a client - described in the following sub-section.
+
 ### Client Model
 
-In certain cases, consumers of the Tendermint RPC client library may not want to
-make use of subscription functionality. Since such functionality comes with
-additional overhead in terms of resource usage and asynchronous task management,
-it would be optimal to define two different kinds of clients:
-
-1. A **minimal client**, that allows for interaction with all RPC endpoints
-   except those pertaining to subscription management. In our current
-   implementation, this client would only interact via the HTTP RPC endpoints.
-2. A **full client**, that provides access to *all* RPC endpoints, including
-   subscription functionality. In our current implementation, this client would
-   interact via the HTTP RPC endpoints for all types of requests except for
-   subscription, where it will use a WebSocket connection instead.
+Users of the Tendermint RPC library may or may not want access to subscription
+functionality. Since such functionality comes with additional overhead in terms
+of resource usage and asynchronous task management, it would be optimal to
+provide two separate client traits: one that only implements non-subscription
+functionality, and one that only implements subscription functionality (where
+clients could either implement one or both traits).
 
 The interfaces of the two types of clients are envisaged as follows.
 
-#### Minimal Client
+#### `Client`
+
+This type of client would allow for interaction with all RPC endpoints except
+those pertaining to subscription management. In our current implementation, this
+client would only interact via the HTTP RPC endpoints (the `HttpClient` in the
+entity diagram above).
 
 **Note**: All `async` traits are facilitated by the use of [async-trait].
 
 ```rust
 pub type Result<R> = std::result::Result<R, Error>;
 
-/// The primary methods to be implemented are just the `perform` and `close`
-/// methods. All other methods are just convenience interfaces to `perform`.
 #[async_trait]
-pub trait MinimalClient {
+pub trait Client {
     /// `/abci_info`: get information about the ABCI application.
     async fn abci_info(&self) -> Result<abci_info::AbciInfo>;
 
@@ -179,20 +219,25 @@ pub trait MinimalClient {
     async fn perform<R>(&self, request: R) -> Result<R::Response>
     where
         R: Request;
-
-    /// Gracefully terminate the underlying connection (if relevant - depends
-    /// on the underlying transport).
-    async fn close(self) -> Result<()>;
 }
 ```
 
-#### Full Client
+#### `SubscriptionClient`
+
+A `SubscriptionClient` would be one that only provides access to subscription
+functionality. In our current implementation, this client would interact with a
+WebSocket connection to provide subscription functionality (the
+`WebSocketSubscriptionClient` in the entity diagram above).
 
 ```rust
-pub trait FullClient: MinimalClient {
+#[async_trait]
+pub trait SubscriptionClient {
     /// `/subscribe`: subscribe to receive events produced by the given query,
     /// but specify how many event results can be buffered in the resulting
     /// subscription.
+    ///
+    /// Specifying a `buf_size` of zero should indicate to the transport that an
+    /// **unbounded** channel should be used.
     async fn subscribe_with_buf_size(
         &mut self,
         query: String,
@@ -201,7 +246,8 @@ pub trait FullClient: MinimalClient {
 
     /// `/subscribe`: subscribe to receive events produced by the given query.
     async fn subscribe(&mut self, query: String) -> Result<Subscription> {
-        self.subscribe_with_buf_size(query, DEFAULT_SUBSCRIPTION_BUF_SIZE)
+        // Use an unbounded channel by default
+        self.subscribe_with_buf_size(query, 0)
             .await
     }
 
@@ -214,7 +260,17 @@ pub trait FullClient: MinimalClient {
 }
 ```
 
-### Handle/Driver Concurrency Model
+### Client Implementations
+
+We envisage 3 distinct client implementations at this point:
+
+* `HttpClient`, which only implements [`Client`](#client) (over HTTP).
+* `WebSocketSubscriptionClient`, which only implements
+  [`SubscriptionClient`](#subscriptionclient) (over a WebSocket connection).
+* `HttpWebSocketClient`, which implements both [`Client`](#client) (over HTTP)
+  and [`SubscriptionClient`](#subscriptionclient) (over a WebSocket connection).
+
+#### Handle-Driver Concurrency Model
 
 Depending on the underlying transport, a client may need a **transport driver**
 running in an asynchronous context. As in the example of a WebSocket connection,
@@ -230,19 +286,92 @@ In cases where a driver is necessary, the client implementation would have to
 become a **handle** to the driver, facilitating communication with it across
 asynchronous tasks.
 
-### Inter-Task Communication
+### `SubscriptionRouter`
 
-Wherever there are asynchronous tasks communicating with each other, it is
-recommended to make use of [Tokio's synchronization primitives][tokio-sync].
-These come with the downside that, once one has selected a buffer size for a
-fixed-sized channel, one cannot alter that buffer size, and so buffer size
-selection becomes a challenge.
+All possible [`SubscriptionClient`](#subscriptionclient) implementations would
+need some form of subscription management and event/result routing. A
+`SubscriptionRouter` is proposed whose interface facilitates:
 
-Unfortunately, since the difference in the event processing rate (by the client)
-and event receive rate (from the remote node) is application-specific, tuning
-this parameter also becomes an application-specific concern.
+1. Immediate subscribe/unsubscribe request fulfilment.
+2. Two-stage subscribe/unsubscribe request management (where a
+   subscription/unsubscribe request can first be created in a "pending" state,
+   and then either confirmed or cancelled).
+3. Routing of incoming events to specific subscribers.
 
-### Query Interface
+The interface for such an entity could resemble the following:
+
+```rust
+pub struct SubscriptionRouter {
+    // ...
+}
+
+impl SubscriptionRouter {
+    // Publish the given event to all subscribers matching the query associated
+    // with the event.
+    pub async fn publish(&self, ev: Event) {
+        // ...
+    }
+
+    // Add a subscription with the specified parameters. The `event_tx`
+    // parameter provides a way to transmit events to a `Subscription`.
+    //
+    // Once added with this method, the subscription is instantly created
+    // (without first pending).
+    pub fn add(&mut self, id: SubscriptionId, query: Query, event_tx: EventTx) {
+        // ...
+    }
+
+    // Similar to `add`, but first creates a pending subscription. The
+    // `result_tx` parameter provides the `SubscriptionRouter` with a way to
+    // communicate to an async task about the result of the subscription
+    // (whether it was confirmed or cancelled).
+    pub fn add_pending(
+        &mut self,
+        id: SubscriptionId,
+        query: Query,
+        event_tx: EventTx,
+        result_tx: ResultTx,
+    ) {
+        // ...
+    }
+
+    // Confirm a pending subscription.
+    pub fn confirm_add(&mut self, id: &SubscriptionId) -> Result<()> {
+        // ...
+    }
+
+    // Cancel a pending subscription, returning `err` through the `result_tx`
+    // handle provided when calling `add_pending`.
+    pub fn cancel_add(&mut self, id: &SubscriptionId, err: Error) -> Result<()> {
+        // ...
+    }
+
+    // Remove the given subscription from the router.
+    pub fn remove(&mut self, subs: Subscription) {
+        // ...
+    }
+
+    // Initiate a pending subscription removal from the router. The `result_tx`
+    // handle will be used to return confirmation or cancellation of the pending
+    // removal.
+    pub fn remove_pending(&mut self, subs: Subscription, result_tx: ResultTx) {
+        // ...
+    }
+
+    // Confirm the removal of the subscription with the given ID.
+    pub fn confirm_remove(&mut self, id: &SubscriptionId) -> Result<()> {
+        // ...
+    }
+
+    // Cancel the pending removal, returning the given error through the
+    // `result_tx` interface provided when initially calling `remove_pending`.
+    pub fn cancel_remove(&mut self, id: &SubscriptionId, err: Error) -> Result<()> {
+        // ...
+    }
+}
+```
+
+### `Query`
 
 It is proposed that, using a *builder pattern*, we implement a subscription
 `Query` interface that implements the full [query PEG][query-peg] provided by
@@ -311,17 +440,6 @@ pub enum EventType {
     NewEvidence,
     Tx,
     ValidatorSetUpdates,
-    CompleteProposal,
-    Lock,
-    NewRound,
-    NewRoundStep,
-    Polka,
-    Relock,
-    TimeoutPropose,
-    TimeoutWait,
-    Unlock,
-    ValidBlock,
-    Vote,
 }
 
 pub struct Condition {
@@ -342,6 +460,9 @@ pub enum Operation {
 // According to https://docs.tendermint.com/master/rpc/#/Websocket/subscribe,
 // an operand can be a string, number, date or time. We differentiate here
 // between integer and floating point numbers.
+//
+// It would be most useful to implement `From` traits for each of the different
+// operand types to the `Operand` enum, as this would improve ergonomics.
 pub enum Operand {
     String(String),
     Integer(i64),
@@ -361,15 +482,18 @@ Proposed
 
 * Provides relatively intuitive developer ergonomics (`Subscription` iteration
   to produce `Event`s).
-* `MinimalClient` and `FullClient` traits allow for relatively easy swapping of
-  transports.
+* Mocking client functionality is relatively easy, allowing for a greater
+  variety of testing (including simulating transport-level failures).
 
 ### Negative
 
 * Requires an additional concurrent, potentially long-running `async` task to be
-  concerned about.
-* Requires careful selection of `Subscription` buffer size to avoid lost events
-  and terminated subscriptions.
+  concerned about (partially mitigated by the [handle-driver concurrency
+  model](#handle-driver-concurrency-model)).
+* Requires some knowledge of the use of unbounded and bounded channels for
+  inter-task communication - or at least an understanding of what these choices
+  mean for clients and how buffer size selection could impact cases where
+  bounded channels are used.
 
 ### Neutral
 
