@@ -19,7 +19,16 @@ pub struct ApalacheTestCase {
     pub timeout: Option<u64>,
 }
 
-pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<CommandRun> {
+pub enum ApalacheResult {
+    NoError(CommandRun),
+    Error(CommandRun),
+    Deadlock(CommandRun),
+    Unknown(CommandRun),
+    Timeout(CommandRun),
+    Failure(io::Error)
+}
+
+pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> ApalacheResult {
     let mut cmd = Command::new();
     if let Some(timeout) = test.timeout {
         cmd.program("timeout");
@@ -40,14 +49,22 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<Comman
     match cmd.spawn() {
         Ok(run) => {
             if run.status.success() {
-                Ok(run)
+                if run.stdout.contains("The outcome is: NoError") {
+                    ApalacheResult::NoError(run)
+                }
+                else if run.stdout.contains("The outcome is: Error") {
+                    ApalacheResult::Error(run)
+                }
+                else if run.stdout.contains("The outcome is: Deadlock") {
+                    ApalacheResult::Deadlock(run)
+                }
+                else {
+                    ApalacheResult::Unknown(run)
+                }
             } else {
-                Err(io::Error::new(
-                    io::ErrorKind::Interrupted,
-                    run.stdout.to_string(),
-                ))
+                ApalacheResult::Timeout(run)
             }
         }
-        Err(e) => Err(e),
+        Err(e) => ApalacheResult::Failure(e),
     }
 }

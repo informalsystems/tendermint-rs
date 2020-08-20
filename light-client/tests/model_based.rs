@@ -50,6 +50,7 @@ pub struct BlockVerdict {
 }
 
 fn single_step_test(tc: SingleStepTestCase) {
+    println!("  Running static model-based single-step test case: {}", tc.description);
     let mut latest_trusted = Trusted::new(
         tc.initial.signed_header.clone(),
         tc.initial.next_validator_set.clone(),
@@ -94,6 +95,7 @@ fn check_program(program: &str) -> bool {
 }
 
 fn model_based_test(test: ApalacheTestCase, env: &TestEnv, root_env: &TestEnv, output_env: &TestEnv) {
+    println!("  Running full model-based single-step test case: {}", test.test);
     if !check_program("tendermint-testgen") ||
        !check_program("apalache-mc") ||
        !check_program("jsonatr") {
@@ -105,10 +107,24 @@ fn model_based_test(test: ApalacheTestCase, env: &TestEnv, root_env: &TestEnv, o
     env.copy_file_from_env(root_env, "LightTests.tla");
     env.copy_file_from_env(root_env, &test.model);
     println!("  > running Apalache...");
-    let apalache_run = run_apalache_test(env.current_dir(), test);
-    assert!(apalache_run.is_ok());
-    assert!(apalache_run.unwrap().stdout.contains("The outcome is: Error"),
-     "Apalache failed to generate a counterexample; please check the model, the test, and the length bound");
+    match run_apalache_test(env.current_dir(), test) {
+        ApalacheResult::Failure(e) => {
+            panic!("failed to run Apalache; reason: {}", e)
+        },
+        ApalacheResult::Timeout(_) => {
+            panic!("Apalache failed to generate a counterexample within given time; consider increasing the timeout, or changing your test")
+        },
+        ApalacheResult::NoError(_) => {
+            panic!("Apalache failed to generate a counterexample; consider increasing the length bound, or changing your test")
+        },
+        ApalacheResult::Deadlock(_) => {
+            panic!("Apalache has found a deadlock; please inspect your model and test")
+        },
+        ApalacheResult::Unknown(_) => {
+            panic!("Apalache has generated an unknown outcome; please contact Apalache developers")
+        },
+        ApalacheResult::Error(_) => ()
+    }
 
     let transform_spec = root_env.full_canonical_path("_jsonatr-lib/apalache_to_lite_test.json").unwrap();
     let transform = JsonatrTransform {
@@ -120,7 +136,6 @@ fn model_based_test(test: ApalacheTestCase, env: &TestEnv, root_env: &TestEnv, o
     if let Err(e) = jsonatr_run {
         println!("Error jsonatr: {}", e)
     }
-
 
     let tc = env.parse_file_as::<SingleStepTestCase>("test.json").unwrap();
     println!("  > running auto-generated test...");
@@ -137,8 +152,6 @@ fn model_based_test_batch(batch: ApalacheTestBatch, env: &TestEnv, root_env: &Te
             length: batch.length,
             timeout: batch.timeout
         };
-        println!("  Running model-based single-step test case: {}", test);
-
         model_based_test(tc, env, root_env, &output_env.push(&test).unwrap());
     }
 }
@@ -151,8 +164,6 @@ fn run_single_step_tests() {
     tester.add_test("static model-based single-step test", single_step_test);
     tester.add_test_with_env("full model-based single-step test", model_based_test);
     tester.add_test_with_env("full model-based single-step test batch", model_based_test_batch);
-
-    //tester.run_for_file("first-model-based-test.json");
     tester.run_foreach_in_dir("");
     tester.print_results();
 }
