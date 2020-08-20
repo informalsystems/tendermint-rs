@@ -33,7 +33,7 @@ pub enum LiteVerdict {
 /// A single-step test case is a test for `Verifier::verify()` function.
 /// It contains an initial trusted block, plus a sequence of input blocks,
 /// each with the expected verdict.
-/// The trusted state is to be updated only if the verdict is "OK"
+/// The trusted state is to be updated only if the verdict is "Success"
 #[derive(Deserialize, Clone, Debug)]
 pub struct SingleStepTestCase {
     description: String,
@@ -49,7 +49,7 @@ pub struct BlockVerdict {
     verdict: LiteVerdict,
 }
 
-fn single_step_test(tc: SingleStepTestCase) {
+fn single_step_test(tc: SingleStepTestCase, _env: &TestEnv, _root_env: &TestEnv, output_env: &TestEnv) {
     let mut latest_trusted = Trusted::new(
         tc.initial.signed_header.clone(),
         tc.initial.next_validator_set.clone(),
@@ -57,7 +57,7 @@ fn single_step_test(tc: SingleStepTestCase) {
     let clock_drift = Duration::from_secs(1);
     let trusting_period: Duration = tc.initial.trusting_period.into();
     for (i, input) in tc.input.iter().enumerate() {
-        println!("    > step {}, expecting {:?}", i, input.verdict);
+        output_env.logln(&format!("    > step {}, expecting {:?}", i, input.verdict));
         let now = input.now;
         match verify_single(
             latest_trusted.clone(),
@@ -67,20 +67,20 @@ fn single_step_test(tc: SingleStepTestCase) {
             clock_drift,
             now,
         ) {
-                    Ok(new_state) => {
-                        assert_eq!(input.verdict, LiteVerdict::Success);
-                        let expected_state: LightBlock = input.block.clone().into();
-                        assert_eq!(new_state, expected_state);
-                        latest_trusted = Trusted::new(new_state.signed_header, new_state.next_validators);
-                    }
-                    Err(e) => {
-                        eprintln!("      > lite: {:?}", e);
-                        match e {
-                            Verdict::Invalid(_) => assert_eq!(input.verdict, LiteVerdict::Invalid),
-                            Verdict::NotEnoughTrust(_) => assert_eq!(input.verdict, LiteVerdict::NotEnoughTrust),
-                            Verdict::Success => panic!("verify_single() returned error with Verdict::Success")
-                        }
-                    }
+            Ok(new_state) => {
+                assert_eq!(input.verdict, LiteVerdict::Success);
+                let expected_state: LightBlock = input.block.clone().into();
+                assert_eq!(new_state, expected_state);
+                latest_trusted = Trusted::new(new_state.signed_header, new_state.next_validators);
+            }
+            Err(e) => {
+                output_env.logln(&format!("      > lite: {:?}", e));
+                match e {
+                    Verdict::Invalid(_) => assert_eq!(input.verdict, LiteVerdict::Invalid),
+                    Verdict::NotEnoughTrust(_) => assert_eq!(input.verdict, LiteVerdict::NotEnoughTrust),
+                    Verdict::Success => panic!("verify_single() returned error with Verdict::Success")
+                }
+            }
         }
     }
 }
@@ -143,10 +143,11 @@ fn model_based_test(test: ApalacheTestCase, env: &TestEnv, root_env: &TestEnv, o
         output: "test.json".to_string()
     };
     assert!(run_jsonatr_transform(env.current_dir(), transform).is_ok());
+    output_env.copy_file_from_env(env, "test.json");
 
     let tc = env.parse_file_as::<SingleStepTestCase>("test.json").unwrap();
     println!("  > running auto-generated test...");
-    single_step_test(tc);
+    single_step_test(tc, env, root_env, output_env);
     output_env.copy_file_from_env(env, "counterexample.tla");
     output_env.copy_file_from_env(env, "counterexample.json");
 }
@@ -170,7 +171,7 @@ const TEST_DIR: &str = "./tests/support/model_based";
 #[test]
 fn run_single_step_tests() {
     let mut tester = Tester::new("single_step", TEST_DIR);
-    tester.add_test("static model-based single-step test", single_step_test);
+    tester.add_test_with_env("static model-based single-step test", single_step_test);
     tester.add_test_with_env("full model-based single-step test", model_based_test);
     tester.add_test_batch(model_based_test_batch);
     tester.run_foreach_in_dir("");

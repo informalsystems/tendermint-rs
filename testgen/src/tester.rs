@@ -1,11 +1,11 @@
 use crate::helpers::*;
 use crate::tester::TestResult::{Failure, ParseError, ReadError, Success};
 use serde::de::DeserializeOwned;
-use std::panic::UnwindSafe;
-use std::path::Path;
-use std::{fs, path::PathBuf};
 use std::{
-    panic,
+    fs,
+    path::{Path, PathBuf},
+    io::Write,
+    panic::{self, UnwindSafe},
     sync::{Arc, Mutex},
 };
 use tempfile::TempDir;
@@ -14,7 +14,6 @@ use tempfile::TempDir;
 pub struct TestEnv {
     /// Directory where the test is being executed
     current_dir: String,
-    logs: Vec<String>,
 }
 
 impl TestEnv {
@@ -22,7 +21,6 @@ impl TestEnv {
         fs::create_dir_all(current_dir).ok().and_then(|_| {
             Some(TestEnv {
                 current_dir: current_dir.to_string(),
-                logs: vec![],
             })
         })
     }
@@ -43,8 +41,14 @@ impl TestEnv {
         &self.current_dir
     }
 
-    pub fn add_log(&mut self, log: &str) {
-        self.logs.push(log.to_string());
+
+    pub fn logln(& self, msg: &str) -> Option<()> {
+        println!("{}",msg);
+        self.full_path("_log").and_then(|full_path|
+            fs::OpenOptions::new().create(true).append(true).open(full_path).ok().and_then(|mut file|
+                file.write_all((String::from(msg) + "\n").as_bytes()).ok()
+            )
+        )
     }
 
     /// Read a file from a path relative to the environment current dir into a string
