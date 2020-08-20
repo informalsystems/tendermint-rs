@@ -191,7 +191,7 @@ fn run_single_step_tests() {
     let mut tester = Tester::new("single_step", TEST_FILES_PATH);
     tester.add_test("single-step test", single_step_test);
     tester.run_foreach_in_dir("single_step");
-    tester.print_results();
+    tester.finalize();
 }
 
 #[test]
@@ -200,5 +200,5 @@ fn run_bisection_tests() {
     tester.add_test("bisection test", bisection_test);
     tester.add_test("bisection lower test", bisection_lower_test);
     tester.run_foreach_in_dir("bisection/single_peer");
-    tester.print_results();
+    tester.finalize();
 }

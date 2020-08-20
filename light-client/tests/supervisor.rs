@@ -124,5 +124,5 @@ fn run_multipeer_tests() {
     let mut tester = Tester::new("bisection_multi_peer", TEST_FILES_PATH);
     tester.add_test("multipeer test", run_multipeer_test);
     tester.run_foreach_in_dir("bisection/multi_peer");
-    tester.print_results();
+    tester.finalize();
 }

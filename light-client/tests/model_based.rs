@@ -175,6 +175,6 @@ fn run_single_step_tests() {
     tester.add_test_with_env("full model-based single-step test", model_based_test);
     tester.add_test_batch(model_based_test_batch);
     tester.run_foreach_in_dir("");
-    tester.print_results();
+    tester.finalize();
 }
 

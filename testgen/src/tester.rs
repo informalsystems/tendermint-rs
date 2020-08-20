@@ -51,6 +51,15 @@ impl TestEnv {
         )
     }
 
+    pub fn logln_to(& self, msg: &str, rel_path: &str) -> Option<()> {
+        println!("{}",msg);
+        self.full_path(rel_path).and_then(|full_path|
+            fs::OpenOptions::new().create(true).append(true).open(full_path).ok().and_then(|mut file|
+                file.write_all((String::from(msg) + "\n").as_bytes()).ok()
+            )
+        )
+    }
+
     /// Read a file from a path relative to the environment current dir into a string
     pub fn read_file(&self, rel_path: &str) -> Option<String> {
         self.full_path(rel_path)
@@ -364,38 +373,49 @@ impl Tester {
         tests
     }
 
-    pub fn print_results(&mut self) {
+    pub fn finalize(&mut self) {
+        let env = self.output_env().unwrap();
+        env.write_file("_report", "");
+        let print = |msg: &str| {
+            env.logln_to(msg, "_report");
+        };
         let tests = self.unreadable_tests();
         if !tests.is_empty() {
-            println!("Unreadable tests:  ");
+            print("Unreadable tests:  ");
             for path in tests {
-                println!("  > {}", path)
+                print(&format!("  {}", path))
             }
             panic!("Some tests could not be read");
         }
         let tests = self.unparseable_tests();
         if !tests.is_empty() {
-            println!("Unparseable tests:  ");
+            print("Unparseable tests:  ");
             for path in tests {
-                println!("  > {}", path)
+                print(&format!("  {}", path))
             }
             panic!("Some tests could not be parsed");
         }
 
         for name in self.results.keys() {
-            println!("\nResults for '{}'", name);
+            print(&format!("\nResults for '{}'", name));
             let tests = self.successful_tests(name);
             if !tests.is_empty() {
-                println!("  Successful tests:  ");
+                print("  Successful tests:  ");
                 for path in tests {
-                    println!("    > {}", path)
+                    print(&format!("    {}", path));
+                    if let Some(logs) = env.read_file(&(path + "/_log")) {
+                        print(&logs)
+                    }
                 }
             }
             let tests = self.failed_tests(name);
             if !tests.is_empty() {
-                println!("  Failed tests:  ");
+                print("  Failed tests:  ");
                 for (path, message, location) in tests {
-                    println!("    > {}, '{}', {}", path, message, location)
+                    print(&format!("    {}, '{}', {}", path, message, location));
+                    if let Some(logs) = env.read_file(&(path + "/_log")) {
+                        print(&logs)
+                    }
                 }
                 panic!("Some tests failed");
             }
