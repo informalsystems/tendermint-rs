@@ -1,7 +1,7 @@
 use super::validate;
 use crate::{chain, consensus};
 use bytes::BufMut;
-use prost_amino::{DecodeError, EncodeError};
+use prost::{DecodeError, EncodeError};
 
 /// Amino messages which are signable within a Tendermint network
 pub trait SignableMsg {
@@ -20,36 +20,32 @@ pub trait SignableMsg {
     fn msg_type(&self) -> Option<SignedMsgType>;
 }
 
-/// Signed message types. This follows:
-/// <https://github.com/tendermint/tendermint/blob/455d34134cc53c334ebd3195ac22ea444c4b59bb/types/signed_msg_type.go#L3-L16>
-#[derive(Copy, Clone, Debug)]
+// Copied from use tendermint_proto::types::SignedMsgType
+/// SignedMsgType is a type of signed message in the consensus.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
 pub enum SignedMsgType {
+    Unknown = 0,
     /// Votes
-    PreVote,
-
-    /// Commits
-    PreCommit,
-
+    Prevote = 1,
+    Precommit = 2,
     /// Proposals
-    Proposal,
+    Proposal = 32,
+}
+
+impl PartialEq<SignedMsgType> for i32 {
+    fn eq(&self, other: &SignedMsgType) -> bool {
+        *self == *other as i32
+    }
 }
 
 impl SignedMsgType {
-    pub fn to_u32(self) -> u32 {
-        match self {
-            // Votes
-            SignedMsgType::PreVote => 0x01,
-            SignedMsgType::PreCommit => 0x02,
-            // Proposals
-            SignedMsgType::Proposal => 0x20,
-        }
-    }
-
     #[allow(dead_code)]
     fn from(data: u32) -> Result<SignedMsgType, DecodeError> {
         match data {
-            0x01 => Ok(SignedMsgType::PreVote),
-            0x02 => Ok(SignedMsgType::PreCommit),
+            0x00 => Ok(SignedMsgType::Unknown),
+            0x01 => Ok(SignedMsgType::Prevote),
+            0x02 => Ok(SignedMsgType::Precommit),
             0x20 => Ok(SignedMsgType::Proposal),
             _ => Err(DecodeError::new("Invalid vote type")),
         }

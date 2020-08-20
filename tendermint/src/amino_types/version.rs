@@ -1,14 +1,15 @@
 use crate::block::*;
-use prost_amino_derive::Message;
 
-#[derive(Clone, Message)]
+// Copied from tendermint_proto::version::Consensus
+// and renamed to ConsensusVersion for now
+/// Consensus captures the consensus rules for processing a block in the blockchain,
+/// including all blockchain data structures and the rules of the application's
+/// state transition machine.
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusVersion {
-    /// Block version
-    #[prost_amino(uint64, tag = "1")]
+    #[prost(uint64, tag = "1")]
     pub block: u64,
-
-    /// App version
-    #[prost_amino(uint64, tag = "2")]
+    #[prost(uint64, tag = "2")]
     pub app: u64,
 }
 
