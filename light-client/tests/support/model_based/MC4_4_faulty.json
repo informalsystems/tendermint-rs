@@ -5,7 +5,7 @@
   "tests": [
     "TestSuccessInv",
     "TestFailureInv",
-    "Test2CannotVerifySuccessInv",
-    "Test2CannotVerifyFailureInv"
+    "Test2NotEnoughTrustSuccessInv",
+    "Test2NotEnoughTrustFailureInv"
   ]
 }

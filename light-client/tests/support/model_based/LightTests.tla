@@ -22,32 +22,32 @@ TestFailedTrustingPeriod ==
 
 TestFailedTrustingPeriodInv == ~TestFailedTrustingPeriod
 
-Test2CannotVerifySuccess ==
+Test2NotEnoughTrustSuccess ==
     /\ state = "finishedSuccess"
     /\ \E s1, s2 \in DOMAIN history :
        /\ s1 /= s2
-       /\ history[s1].verdict = "CANNOT_VERIFY"
-       /\ history[s2].verdict = "CANNOT_VERIFY"
+       /\ history[s1].verdict = "NOT_ENOUGH_TRUST"
+       /\ history[s2].verdict = "NOT_ENOUGH_TRUST"
 
-Test2CannotVerifySuccessInv == ~Test2CannotVerifySuccess
+Test2NotEnoughTrustSuccessInv == ~Test2NotEnoughTrustSuccess
 
-Test2CannotVerifyFailure ==
+Test2NotEnoughTrustFailure ==
     /\ state = "finishedFailure"
     /\ \E s1, s2 \in DOMAIN history :
        /\ s1 /= s2
-       /\ history[s1].verdict = "CANNOT_VERIFY"
-       /\ history[s2].verdict = "CANNOT_VERIFY"
+       /\ history[s1].verdict = "NOT_ENOUGH_TRUST"
+       /\ history[s2].verdict = "NOT_ENOUGH_TRUST"
 
-Test2CannotVerifyFailureInv == ~Test2CannotVerifyFailure
+Test2NotEnoughTrustFailureInv == ~Test2NotEnoughTrustFailure
 
-Test3CannotVerifySuccess ==
+Test3NotEnoughTrustSuccess ==
     /\ state = "finishedSuccess"
     /\ \E s1, s2, s3 \in DOMAIN history :
        /\ s1 /= s2 /\ s2 /= s3 /\ s1 /= s3
-       /\ history[s1].verdict = "CANNOT_VERIFY"
-       /\ history[s2].verdict = "CANNOT_VERIFY"
-       /\ history[s3].verdict = "CANNOT_VERIFY"
+       /\ history[s1].verdict = "NOT_ENOUGH_TRUST"
+       /\ history[s2].verdict = "NOT_ENOUGH_TRUST"
+       /\ history[s3].verdict = "NOT_ENOUGH_TRUST"
 
-Test3CannotVerifySuccessInv == ~Test3CannotVerifySuccess
+Test3NotEnoughTrustSuccessInv == ~Test3NotEnoughTrustSuccess
 
 ============================================================================
