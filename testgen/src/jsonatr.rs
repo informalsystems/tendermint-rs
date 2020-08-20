@@ -30,7 +30,7 @@ pub fn run_jsonatr_transform(dir: &str, transform: JsonatrTransform) -> io::Resu
             } else {
                 Err(io::Error::new(
                     io::ErrorKind::Interrupted,
-                    run.stderr.to_string(),
+                    run.stderr,
                 ))
             }
         }

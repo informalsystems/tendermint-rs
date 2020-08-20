@@ -18,11 +18,11 @@ pub struct TestEnv {
 
 impl TestEnv {
     pub fn new(current_dir: &str) -> Option<Self> {
-        fs::create_dir_all(current_dir).ok().and_then(|_| {
-            Some(TestEnv {
+        fs::create_dir_all(current_dir).ok().map(|_|
+            TestEnv {
                 current_dir: current_dir.to_string(),
-            })
-        })
+            }
+        )
     }
 
     pub fn cleanup(&self) -> Option<()> {
@@ -95,7 +95,7 @@ impl TestEnv {
                 self.full_path(name).and_then(|dest| {
                     fs::copy(path, dest)
                         .ok()
-                        .and_then(|_| Some(name.to_string()))
+                        .map(|_| name.to_string())
                 })
             })
         })
@@ -172,7 +172,6 @@ pub struct Tester {
     tests: Vec<Test>,
     batches: Vec<BatchFn>,
     results: std::collections::BTreeMap<String, Vec<(String, TestResult)>>,
-    results_len: usize,
 }
 
 impl TestResult {
@@ -213,7 +212,6 @@ impl Tester {
             tests: vec![],
             batches: vec![],
             results: Default::default(),
-            results_len: 0,
         }
     }
 
@@ -318,7 +316,6 @@ impl Tester {
 
     fn add_result(&mut self, name: &str, path: &str, result: TestResult) {
         self.results_for(name).push((path.to_string(), result));
-        self.results_len = self.results_len + 1;
     }
 
     fn read_error(&mut self, path: &str) {
@@ -435,7 +432,7 @@ impl Tester {
                             // ignore path components starting with '_'
                             if let Some(last) = entry.path().iter().rev().next() {
                                 if let Some(last) = last.to_str() {
-                                    if last.starts_with("_") {
+                                    if last.starts_with('_') {
                                         continue;
                                     }
                                 }

@@ -66,16 +66,14 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> ApalacheResult {
                 } else {
                     ApalacheResult::Unknown(run)
                 }
-            } else {
-                if let Some(code) = run.status.code() {
-                    match code {
-                        99 => ApalacheResult::ModelError(run),
-                        124 => ApalacheResult::Timeout(run),
-                        _ => ApalacheResult::Unknown(run),
-                    }
-                } else {
-                    ApalacheResult::Timeout(run)
+            } else if let Some(code) = run.status.code() {
+                match code {
+                    99 => ApalacheResult::ModelError(run),
+                    124 => ApalacheResult::Timeout(run),
+                    _ => ApalacheResult::Unknown(run),
                 }
+            } else {
+                ApalacheResult::Timeout(run)
             }
         }
         Err(e) => ApalacheResult::Failure(e),

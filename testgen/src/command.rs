@@ -42,7 +42,7 @@ impl Command {
     pub fn arg_from_parts(&mut self, parts: Vec<&str>) -> &mut Self {
         let mut arg: String = String::new();
         for part in parts {
-            arg = arg + part;
+            arg += part;
         }
         self.args.push(arg);
         self
