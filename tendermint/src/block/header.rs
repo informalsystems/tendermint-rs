@@ -1,9 +1,10 @@
 //! Block headers
 
-use crate::amino_types::{message::AminoMessage, BlockId, ConsensusVersion, TimeMsg};
+use crate::amino_types::{message::AminoMessage, BlockId, ConsensusVersion};
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::serializers;
 use crate::{account, block, chain, Hash, Time};
+use prost_types::Timestamp;
 use serde::{Deserialize, Serialize};
 
 /// Block `Header` values contain metadata about the block and about the
@@ -76,7 +77,9 @@ impl Header {
         )));
         fields_bytes.push(encode_bytes(self.chain_id.as_bytes()));
         fields_bytes.push(encode_varint(self.height.value()));
-        fields_bytes.push(AminoMessage::bytes_vec(&TimeMsg::from(self.time)));
+        fields_bytes.push(AminoMessage::bytes_vec(&Timestamp::from(
+            self.time.to_system_time().unwrap(),
+        )));
         fields_bytes.push(
             self.last_block_id
                 .as_ref()
@@ -100,7 +103,7 @@ fn encode_bytes(bytes: &[u8]) -> Vec<u8> {
     let bytes_len = bytes.len();
     if bytes_len > 0 {
         let mut encoded = vec![];
-        prost_amino::encode_length_delimiter(bytes_len, &mut encoded).unwrap();
+        prost::encode_length_delimiter(bytes_len, &mut encoded).unwrap();
         encoded.append(&mut bytes.to_vec());
         encoded
     } else {
@@ -114,7 +117,7 @@ fn encode_hash(hash: &Hash) -> Vec<u8> {
 
 fn encode_varint(val: u64) -> Vec<u8> {
     let mut val_enc = vec![];
-    prost_amino::encoding::encode_varint(val, &mut val_enc);
+    prost::encoding::encode_varint(val, &mut val_enc);
     val_enc
 }
 

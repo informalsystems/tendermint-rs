@@ -1,6 +1,5 @@
 //! Tendermint validators
 
-use prost_amino_derive::Message;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use subtle_encoding::base64;
 
@@ -124,25 +123,32 @@ impl Info {
     }
 }
 
-/// InfoHashable is the form of the validator used for computing the Merkle tree.
+// Copied from tendermint_proto::types::SimpleValidator
+/// SimpleValidator is the form of the validator used for computing the Merkle tree.
 /// It does not include the address, as that is redundant with the pubkey,
 /// nor the proposer priority, as that changes with every block even if the validator set didn't.
 /// It contains only the pubkey and the voting power, and is amino encoded.
 /// TODO: currently only works for Ed25519 pubkeys
-#[derive(Clone, PartialEq, Message)]
-struct InfoHashable {
-    #[prost_amino(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
-    pub pub_key: Vec<u8>,
-    #[prost_amino(uint64, tag = "2")]
-    voting_power: u64,
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SimpleValidator {
+    ///
+    #[prost(message, optional, tag = "1")]
+    pub pub_key: ::std::option::Option<tendermint_proto::crypto::PublicKey>,
+    ///
+    #[prost(int64, tag = "2")]
+    pub voting_power: i64,
 }
 
-/// Info -> InfoHashable
-impl From<&Info> for InfoHashable {
-    fn from(info: &Info) -> InfoHashable {
-        InfoHashable {
-            pub_key: info.pub_key.to_bytes(),
-            voting_power: info.voting_power.value(),
+/// Info -> SimpleValidator
+impl From<&Info> for SimpleValidator {
+    fn from(info: &Info) -> SimpleValidator {
+        SimpleValidator {
+            pub_key: Some(tendermint_proto::crypto::PublicKey {
+                sum: Some(tendermint_proto::crypto::public_key::Sum::Ed25519(
+                    info.pub_key.to_bytes(),
+                )),
+            }),
+            voting_power: info.voting_power.value() as i64,
         }
     }
 }
@@ -152,7 +158,7 @@ impl Info {
     /// the leaves of the tree. this is an amino encoding of the
     /// pubkey and voting power, so it includes the pubkey's amino prefix.
     pub fn hash_bytes(&self) -> Vec<u8> {
-        AminoMessage::bytes_vec(&InfoHashable::from(self))
+        AminoMessage::bytes_vec(&SimpleValidator::from(self))
     }
 }
 

@@ -1,4 +1,4 @@
-use super::validate::{ConsensusMessage, Kind::InvalidHashSize, Kind::NegativeTotal};
+use super::validate::{ConsensusMessage, Kind::InvalidHashSize};
 use crate::block::parts;
 use crate::{
     block,
@@ -6,30 +6,34 @@ use crate::{
     hash,
     hash::{Hash, SHA256_HASH_SIZE},
 };
-use prost_amino_derive::Message;
 
-#[derive(Clone, PartialEq, Message)]
+// Copied from tendermint_proto::types::BlockId
+/// BlockID
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BlockId {
-    #[prost_amino(bytes, tag = "1")]
+    #[prost(bytes, tag = "1")]
     pub hash: Vec<u8>,
-    #[prost_amino(message, tag = "2")]
-    pub parts_header: Option<PartsSetHeader>,
+    #[prost(message, optional, tag = "2")]
+    pub part_set_header: ::std::option::Option<PartSetHeader>,
 }
 
 impl BlockId {
-    pub fn new(hash: Vec<u8>, parts_header: Option<PartsSetHeader>) -> Self {
-        BlockId { hash, parts_header }
+    pub fn new(hash: Vec<u8>, part_set_header: Option<PartSetHeader>) -> Self {
+        BlockId {
+            hash,
+            part_set_header,
+        }
     }
 }
 
 impl block::ParseId for BlockId {
     fn parse_block_id(&self) -> Result<block::Id, Error> {
         let hash = Hash::new(hash::Algorithm::Sha256, &self.hash)?;
-        let parts_header = self
-            .parts_header
+        let part_set_header = self
+            .part_set_header
             .as_ref()
-            .and_then(PartsSetHeader::parse_parts_header);
-        Ok(block::Id::new(hash, parts_header))
+            .and_then(PartSetHeader::parse_part_set_header);
+        Ok(block::Id::new(hash, part_set_header))
     }
 }
 
@@ -38,7 +42,7 @@ impl From<&block::Id> for BlockId {
         let bid_hash = bid.hash.as_bytes();
         BlockId::new(
             bid_hash.to_vec(),
-            bid.parts.as_ref().map(PartsSetHeader::from),
+            bid.parts.as_ref().map(PartSetHeader::from),
         )
     }
 }
@@ -49,64 +53,67 @@ impl ConsensusMessage for BlockId {
         if !self.hash.is_empty() && self.hash.len() != SHA256_HASH_SIZE {
             return Err(InvalidHashSize.into());
         }
-        self.parts_header
+        self.part_set_header
             .as_ref()
             .map_or(Ok(()), ConsensusMessage::validate_basic)
     }
 }
 
-#[derive(Clone, PartialEq, Message)]
+// Copied from tendermint_proto::types::CanonicalBlockId
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CanonicalBlockId {
-    #[prost_amino(bytes, tag = "1")]
+    #[prost(bytes, tag = "1")]
     pub hash: Vec<u8>,
-    #[prost_amino(message, tag = "2")]
-    pub parts_header: Option<CanonicalPartSetHeader>,
+    #[prost(message, optional, tag = "2")]
+    pub part_set_header: ::std::option::Option<CanonicalPartSetHeader>,
 }
 
 impl block::ParseId for CanonicalBlockId {
     fn parse_block_id(&self) -> Result<block::Id, Error> {
         let hash = Hash::new(hash::Algorithm::Sha256, &self.hash)?;
-        let parts_header = self
-            .parts_header
+        let part_set_header = self
+            .part_set_header
             .as_ref()
-            .and_then(CanonicalPartSetHeader::parse_parts_header);
-        Ok(block::Id::new(hash, parts_header))
+            .and_then(CanonicalPartSetHeader::parse_part_set_header);
+        Ok(block::Id::new(hash, part_set_header))
     }
 }
 
-#[derive(Clone, PartialEq, Message)]
-pub struct PartsSetHeader {
-    #[prost_amino(int64, tag = "1")]
-    pub total: i64,
-    #[prost_amino(bytes, tag = "2")]
+// Copied from tendermint_proto::types::PartSetHeader
+/// PartsetHeader
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PartSetHeader {
+    #[prost(uint32, tag = "1")]
+    pub total: u32,
+    #[prost(bytes, tag = "2")]
     pub hash: Vec<u8>,
 }
 
-impl PartsSetHeader {
+impl PartSetHeader {
     pub fn new(total: i64, hash: Vec<u8>) -> Self {
-        PartsSetHeader { total, hash }
+        PartSetHeader {
+            total: total as u32,
+            hash,
+        }
     }
 }
 
-impl From<&parts::Header> for PartsSetHeader {
+impl From<&parts::Header> for PartSetHeader {
     fn from(parts: &parts::Header) -> Self {
-        PartsSetHeader::new(parts.total as i64, parts.hash.as_bytes().to_vec())
+        PartSetHeader::new(parts.total as i64, parts.hash.as_bytes().to_vec())
     }
 }
 
-impl PartsSetHeader {
-    fn parse_parts_header(&self) -> Option<block::parts::Header> {
+impl PartSetHeader {
+    fn parse_part_set_header(&self) -> Option<block::parts::Header> {
         Hash::new(hash::Algorithm::Sha256, &self.hash)
             .map(|hash| block::parts::Header::new(self.total as u64, hash))
             .ok()
     }
 }
 
-impl ConsensusMessage for PartsSetHeader {
+impl ConsensusMessage for PartSetHeader {
     fn validate_basic(&self) -> Result<(), Error> {
-        if self.total < 0 {
-            return Err(NegativeTotal.into());
-        }
         // Hash can be empty in case of POLBlockID.PartsHeader in Proposal.
         if !self.hash.is_empty() && self.hash.len() != SHA256_HASH_SIZE {
             return Err(InvalidHashSize.into());
@@ -115,16 +122,17 @@ impl ConsensusMessage for PartsSetHeader {
     }
 }
 
-#[derive(Clone, PartialEq, Message)]
+// Copied from tendermint_proto::types::CanonicalPartSetHeader
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CanonicalPartSetHeader {
-    #[prost_amino(bytes, tag = "1")]
+    #[prost(uint32, tag = "1")]
+    pub total: u32,
+    #[prost(bytes, tag = "2")]
     pub hash: Vec<u8>,
-    #[prost_amino(int64, tag = "2")]
-    pub total: i64,
 }
 
 impl CanonicalPartSetHeader {
-    fn parse_parts_header(&self) -> Option<block::parts::Header> {
+    fn parse_part_set_header(&self) -> Option<block::parts::Header> {
         Hash::new(hash::Algorithm::Sha256, &self.hash)
             .map(|hash| block::parts::Header::new(self.total as u64, hash))
             .ok()
