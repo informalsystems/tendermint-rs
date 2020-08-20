@@ -122,7 +122,7 @@ impl TestEnv {
 pub enum TestResult {
     ReadError,
     ParseError,
-    Success(TestEnv),
+    Success,
     Failure { message: String, location: String },
 }
 
@@ -147,7 +147,7 @@ pub struct Tester {
 impl TestResult {
     pub fn is_success(&self) -> bool {
         match self {
-            TestResult::Success(_) => true,
+            TestResult::Success => true,
             _ => false,
         }
     }
@@ -196,7 +196,7 @@ impl Tester {
 
     fn capture_test<F>(test: F) -> TestResult
     where
-        F: FnOnce() -> TestEnv + UnwindSafe,
+        F: FnOnce() + UnwindSafe,
     {
         let test_result = Arc::new(Mutex::new(ParseError));
         let old_hook = panic::take_hook();
@@ -221,7 +221,7 @@ impl Tester {
         let result = panic::catch_unwind(|| test());
         panic::set_hook(old_hook);
         match result {
-            Ok(res) => Success(res),
+            Ok(_) => Success,
             Err(_) => (*test_result.lock().unwrap()).clone(),
         }
     }
@@ -230,11 +230,9 @@ impl Tester {
     where
         T: 'static + DeserializeOwned + UnwindSafe,
     {
-        let test_env = self.env().unwrap();
         let test_fn = move |_path: &str, input: &str| match parse_as::<T>(&input) {
             Ok(test_case) => Tester::capture_test(|| {
                 test(test_case);
-                test_env.clone()
             }),
             Err(_) => ParseError,
         };
@@ -256,8 +254,8 @@ impl Tester {
                 let env = TestEnv::new(dir.path().to_str().unwrap()).unwrap();
                 let output_dir = output_env.full_path(path).unwrap();
                 let output_env = TestEnv::new(&output_dir).unwrap();
+                output_env.cleanup();
                 test(test_case, &env, &test_env, &output_env);
-                env
             }),
             Err(_) => ParseError,
         };
@@ -288,12 +286,12 @@ impl Tester {
             .push((path.to_string(), TestResult::ParseError))
     }
 
-    pub fn successful_tests(&self, test: &str) -> Vec<(String, TestEnv)> {
+    pub fn successful_tests(&self, test: &str) -> Vec<String> {
         let mut tests = Vec::new();
         if let Some(results) = self.results.get(test) {
             for (path, res) in results {
-                if let Success(env) = res {
-                    tests.push((path.clone(), env.clone()))
+                if let Success = res {
+                    tests.push(path.clone())
                 }
             }
         }
@@ -359,7 +357,7 @@ impl Tester {
             let tests = self.successful_tests(name);
             if !tests.is_empty() {
                 println!("  Successful tests:  ");
-                for (path, _) in tests {
+                for path in tests {
                     println!("    > {}", path)
                 }
             }

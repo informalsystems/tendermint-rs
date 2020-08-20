@@ -101,7 +101,6 @@ fn model_based_test(test: ApalacheTestCase, env: &TestEnv, root_env: &TestEnv, o
        !check_program("jsonatr") {
        return
     }
-    output_env.cleanup();
     env.copy_file_from_env(root_env, "Lightclient_A_1.tla");
     env.copy_file_from_env(root_env, "Blockchain_A_1.tla");
     env.copy_file_from_env(root_env, "LightTests.tla");
