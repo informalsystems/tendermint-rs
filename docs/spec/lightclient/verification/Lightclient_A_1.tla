@@ -94,7 +94,7 @@ ValidAndVerifiedPre(trusted, untrusted) ==
   /\ BC!InTrustingPeriod(thdr)
   /\ thdr.height < uhdr.height
      \* the trusted block has been created earlier (no drift here)
-  /\ thdr.time <= uhdr.time
+  /\ thdr.time < uhdr.time
   /\ untrusted.Commits \subseteq uhdr.VS
   /\ LET TP == Cardinality(uhdr.VS)
          SP == Cardinality(untrusted.Commits)
