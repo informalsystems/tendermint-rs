@@ -4,7 +4,7 @@ use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
 use tendermint::consensus::state::Ordering;
-use tendermint::{account, public_key::PublicKey, validator, vote, private_key, public_key};
+use tendermint::{account, private_key, public_key, public_key::PublicKey, validator, vote};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Validator {

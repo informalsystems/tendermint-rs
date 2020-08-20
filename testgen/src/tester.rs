@@ -3,9 +3,9 @@ use crate::tester::TestResult::{Failure, ParseError, ReadError, Success};
 use serde::de::DeserializeOwned;
 use std::{
     fs,
-    path::{Path, PathBuf},
     io::Write,
     panic::{self, UnwindSafe},
+    path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
 use tempfile::TempDir;
@@ -41,23 +41,28 @@ impl TestEnv {
         &self.current_dir
     }
 
-
-    pub fn logln(& self, msg: &str) -> Option<()> {
-        println!("{}",msg);
-        self.full_path("_log").and_then(|full_path|
-            fs::OpenOptions::new().create(true).append(true).open(full_path).ok().and_then(|mut file|
-                file.write_all((String::from(msg) + "\n").as_bytes()).ok()
-            )
-        )
+    pub fn logln(&self, msg: &str) -> Option<()> {
+        println!("{}", msg);
+        self.full_path("_log").and_then(|full_path| {
+            fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(full_path)
+                .ok()
+                .and_then(|mut file| file.write_all((String::from(msg) + "\n").as_bytes()).ok())
+        })
     }
 
-    pub fn logln_to(& self, msg: &str, rel_path: &str) -> Option<()> {
-        println!("{}",msg);
-        self.full_path(rel_path).and_then(|full_path|
-            fs::OpenOptions::new().create(true).append(true).open(full_path).ok().and_then(|mut file|
-                file.write_all((String::from(msg) + "\n").as_bytes()).ok()
-            )
-        )
+    pub fn logln_to(&self, msg: &str, rel_path: &str) -> Option<()> {
+        println!("{}", msg);
+        self.full_path(rel_path).and_then(|full_path| {
+            fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(full_path)
+                .ok()
+                .and_then(|mut file| file.write_all((String::from(msg) + "\n").as_bytes()).ok())
+        })
     }
 
     /// Read a file from a path relative to the environment current dir into a string
@@ -154,7 +159,6 @@ type TestFn = Box<dyn Fn(&str, &str) -> TestResult>;
 /// or None if the batch could not be parsed
 type BatchFn = Box<dyn Fn(&str, &str) -> Option<Vec<(String, String)>>>;
 
-
 pub struct Test {
     /// test name
     pub name: String,
@@ -168,7 +172,7 @@ pub struct Tester {
     tests: Vec<Test>,
     batches: Vec<BatchFn>,
     results: std::collections::BTreeMap<String, Vec<(String, TestResult)>>,
-    results_len: usize
+    results_len: usize,
 }
 
 impl TestResult {
@@ -209,7 +213,7 @@ impl Tester {
             tests: vec![],
             batches: vec![],
             results: Default::default(),
-            results_len: 0
+            results_len: 0,
         }
     }
 
@@ -296,14 +300,14 @@ impl Tester {
     }
 
     pub fn add_test_batch<T>(&mut self, batch: fn(T) -> Vec<(String, String)>)
-        where
-            T: 'static + DeserializeOwned,
+    where
+        T: 'static + DeserializeOwned,
     {
         let batch_fn = move |_path: &str, input: &str| match parse_as::<T>(&input) {
             Ok(test_batch) => Some(batch(test_batch)),
             Err(_) => None,
         };
-        self.batches.push( Box::new(batch_fn));
+        self.batches.push(Box::new(batch_fn));
     }
 
     fn results_for(&mut self, name: &str) -> &mut Vec<(String, TestResult)> {
@@ -318,11 +322,13 @@ impl Tester {
     }
 
     fn read_error(&mut self, path: &str) {
-        self.results_for("").push((path.to_string(), TestResult::ReadError))
+        self.results_for("")
+            .push((path.to_string(), TestResult::ReadError))
     }
 
     fn parse_error(&mut self, path: &str) {
-        self.results_for("").push((path.to_string(), TestResult::ParseError))
+        self.results_for("")
+            .push((path.to_string(), TestResult::ParseError))
     }
 
     pub fn successful_tests(&self, test: &str) -> Vec<String> {
@@ -391,18 +397,19 @@ impl Tester {
             for batch in &self.batches {
                 match batch(path, input) {
                     None => continue,
-                    Some(tests) => for (name, input) in tests {
-                        let test_path = path.to_string() + "/" + &name;
-                        res_tests.push((test_path, input));
-                    },
+                    Some(tests) => {
+                        for (name, input) in tests {
+                            let test_path = path.to_string() + "/" + &name;
+                            res_tests.push((test_path, input));
+                        }
+                    }
                 }
             }
             if !res_tests.is_empty() {
                 for (path, input) in res_tests {
                     self.run_for_input(&path, &input);
                 }
-            }
-            else {
+            } else {
                 // parsing both as a test and as a batch failed
                 self.parse_error(path);
             }
@@ -412,7 +419,7 @@ impl Tester {
     pub fn run_for_file(&mut self, path: &str) {
         match self.env().unwrap().read_file(path) {
             None => self.read_error(path),
-            Some(input) => self.run_for_input(path, &input)
+            Some(input) => self.run_for_input(path, &input),
         }
     }
 
@@ -461,10 +468,13 @@ impl Tester {
         };
         let mut do_panic = false;
 
-        print(&format!("\n====== Report for '{}' tester run ======", &self.name));
+        print(&format!(
+            "\n====== Report for '{}' tester run ======",
+            &self.name
+        ));
         for name in self.results.keys() {
             if name.is_empty() {
-                continue
+                continue;
             }
             print(&format!("\nResults for '{}'", name));
             let tests = self.successful_tests(name);
@@ -505,7 +515,10 @@ impl Tester {
                 print(&format!("  {}", path))
             }
         }
-        print(&format!("\n====== End of report for '{}' tester run ======\n", &self.name));
+        print(&format!(
+            "\n====== End of report for '{}' tester run ======\n",
+            &self.name
+        ));
         if do_panic {
             panic!("Some tests failed or could not be read/parsed");
         }

@@ -9,15 +9,15 @@ use tendermint_rpc as rpc;
 use crate::components::clock::Clock;
 use crate::components::io::{AtHeight, Io, IoError};
 use crate::components::verifier::{ProdVerifier, Verdict, Verifier};
-use crate::light_client::{LightClient, Options};
-use crate::state::State;
 use crate::errors::Error;
 use crate::evidence::EvidenceReporter;
+use crate::light_client::{LightClient, Options};
+use crate::state::State;
 use contracts::contract_trait;
 use std::collections::HashMap;
+use std::time::Duration;
 use tendermint::block::Height as HeightStr;
 use tendermint::evidence::{Duration as DurationStr, Evidence};
-use std::time::Duration;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TestCases<LB> {

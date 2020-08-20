@@ -1,16 +1,16 @@
 use serde::Deserialize;
+use std::time::Duration;
+use tendermint_light_client::components::verifier::Verdict;
 use tendermint_light_client::{
     tests::{Trusted, *},
     types::{LightBlock, Time, TrustThreshold},
 };
-use std::time::Duration;
-use tendermint_testgen::{apalache::*, jsonatr::*, Command, Tester, TestEnv};
-use tendermint_light_client::components::verifier::Verdict;
+use tendermint_testgen::{apalache::*, jsonatr::*, Command, TestEnv, Tester};
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteTestKind {
     SingleStep,
-    Bisection
+    Bisection,
 }
 
 /// An abstraction of the LightClient verification verdict
@@ -27,7 +27,7 @@ pub enum LiteVerdict {
     Invalid,
     /// passed block verification, but the validator set is too different to verify it
     #[serde(rename = "NOT_ENOUGH_TRUST")]
-    NotEnoughTrust
+    NotEnoughTrust,
 }
 
 /// A single-step test case is a test for `Verifier::verify()` function.
@@ -49,7 +49,12 @@ pub struct BlockVerdict {
     verdict: LiteVerdict,
 }
 
-fn single_step_test(tc: SingleStepTestCase, _env: &TestEnv, _root_env: &TestEnv, output_env: &TestEnv) {
+fn single_step_test(
+    tc: SingleStepTestCase,
+    _env: &TestEnv,
+    _root_env: &TestEnv,
+    output_env: &TestEnv,
+) {
     let mut latest_trusted = Trusted::new(
         tc.initial.signed_header.clone(),
         tc.initial.next_validator_set.clone(),
@@ -77,8 +82,12 @@ fn single_step_test(tc: SingleStepTestCase, _env: &TestEnv, _root_env: &TestEnv,
                 output_env.logln(&format!("      > lite: {:?}", e));
                 match e {
                     Verdict::Invalid(_) => assert_eq!(input.verdict, LiteVerdict::Invalid),
-                    Verdict::NotEnoughTrust(_) => assert_eq!(input.verdict, LiteVerdict::NotEnoughTrust),
-                    Verdict::Success => panic!("verify_single() returned error with Verdict::Success")
+                    Verdict::NotEnoughTrust(_) => {
+                        assert_eq!(input.verdict, LiteVerdict::NotEnoughTrust)
+                    }
+                    Verdict::Success => {
+                        panic!("verify_single() returned error with Verdict::Success")
+                    }
                 }
             }
         }
@@ -88,17 +97,23 @@ fn single_step_test(tc: SingleStepTestCase, _env: &TestEnv, _root_env: &TestEnv,
 fn check_program(program: &str) -> bool {
     if !Command::exists_program(program) {
         println!("  > {} not found", program);
-        return false
+        return false;
     }
     true
 }
 
-fn model_based_test(test: ApalacheTestCase, env: &TestEnv, root_env: &TestEnv, output_env: &TestEnv) {
+fn model_based_test(
+    test: ApalacheTestCase,
+    env: &TestEnv,
+    root_env: &TestEnv,
+    output_env: &TestEnv,
+) {
     println!("  Running model-based single-step test case: {}", test.test);
-    if !check_program("tendermint-testgen") ||
-       !check_program("apalache-mc") ||
-       !check_program("jsonatr") {
-       return
+    if !check_program("tendermint-testgen")
+        || !check_program("apalache-mc")
+        || !check_program("jsonatr")
+    {
+        return;
     }
     env.copy_file_from_env(root_env, "Lightclient_A_1.tla");
     env.copy_file_from_env(root_env, "Blockchain_A_1.tla");
@@ -136,16 +151,20 @@ fn model_based_test(test: ApalacheTestCase, env: &TestEnv, root_env: &TestEnv, o
         ApalacheResult::Error(_) => ()
     }
 
-    let transform_spec = root_env.full_canonical_path("_jsonatr-lib/apalache_to_lite_test.json").unwrap();
+    let transform_spec = root_env
+        .full_canonical_path("_jsonatr-lib/apalache_to_lite_test.json")
+        .unwrap();
     let transform = JsonatrTransform {
         input: "counterexample.json".to_string(),
         include: vec![transform_spec],
-        output: "test.json".to_string()
+        output: "test.json".to_string(),
     };
     assert!(run_jsonatr_transform(env.current_dir(), transform).is_ok());
     output_env.copy_file_from_env(env, "test.json");
 
-    let tc = env.parse_file_as::<SingleStepTestCase>("test.json").unwrap();
+    let tc = env
+        .parse_file_as::<SingleStepTestCase>("test.json")
+        .unwrap();
     println!("  > running auto-generated test...");
     single_step_test(tc, env, root_env, output_env);
     output_env.copy_file_from_env(env, "counterexample.tla");
@@ -159,7 +178,7 @@ fn model_based_test_batch(batch: ApalacheTestBatch) -> Vec<(String, String)> {
             model: batch.model.clone(),
             test: test.clone(),
             length: batch.length,
-            timeout: batch.timeout
+            timeout: batch.timeout,
         };
         res.push((test.clone(), serde_json::to_string(&tc).unwrap()));
     }
@@ -177,4 +196,3 @@ fn run_single_step_tests() {
     tester.run_foreach_in_dir("");
     tester.finalize();
 }
-

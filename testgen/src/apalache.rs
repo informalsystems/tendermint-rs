@@ -1,5 +1,5 @@
 use crate::command::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::io;
 
 #[derive(Deserialize, Clone, Debug)]
@@ -33,7 +33,7 @@ pub enum ApalacheResult {
     /// The tool has reached the specified timeout without producing an answer
     Timeout(CommandRun),
     /// Failed to execute the tool
-    Failure(io::Error)
+    Failure(io::Error),
 }
 
 pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> ApalacheResult {
@@ -59,14 +59,11 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> ApalacheResult {
             if run.status.success() {
                 if run.stdout.contains("The outcome is: NoError") {
                     ApalacheResult::NoError(run)
-                }
-                else if run.stdout.contains("The outcome is: Error") {
+                } else if run.stdout.contains("The outcome is: Error") {
                     ApalacheResult::Error(run)
-                }
-                else if run.stdout.contains("The outcome is: Deadlock") {
+                } else if run.stdout.contains("The outcome is: Deadlock") {
                     ApalacheResult::Deadlock(run)
-                }
-                else {
+                } else {
                     ApalacheResult::Unknown(run)
                 }
             } else {
@@ -74,10 +71,9 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> ApalacheResult {
                     match code {
                         99 => ApalacheResult::ModelError(run),
                         124 => ApalacheResult::Timeout(run),
-                        _ => ApalacheResult::Unknown(run)
+                        _ => ApalacheResult::Unknown(run),
                     }
-                }
-                else {
+                } else {
                     ApalacheResult::Timeout(run)
                 }
             }

@@ -6,8 +6,7 @@ use std::io::{self, Read};
 use tendermint::{
     amino_types, public_key,
     signature::{Signature, Verifier},
-    vote,
-    Time
+    vote, Time,
 };
 
 /// A macro that generates a complete setter method from a one-liner with necessary information
