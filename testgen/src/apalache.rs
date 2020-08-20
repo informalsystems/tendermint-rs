@@ -20,11 +20,19 @@ pub struct ApalacheTestCase {
 }
 
 pub enum ApalacheResult {
+    /// Apalache has not found an error up to specified length bound
     NoError(CommandRun),
+    /// Apalache has found an error
     Error(CommandRun),
+    /// Apalache has found a deadlock
     Deadlock(CommandRun),
+    /// Apalache model checking run failed (e.g. a parsing error)
+    ModelError(CommandRun),
+    /// Apalache returned an unknown error code
     Unknown(CommandRun),
+    /// The tool has reached the specified timeout without producing an answer
     Timeout(CommandRun),
+    /// Failed to execute the tool
     Failure(io::Error)
 }
 
@@ -62,7 +70,16 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> ApalacheResult {
                     ApalacheResult::Unknown(run)
                 }
             } else {
-                ApalacheResult::Timeout(run)
+                if let Some(code) = run.status.code() {
+                    match code {
+                        99 => ApalacheResult::ModelError(run),
+                        124 => ApalacheResult::Timeout(run),
+                        _ => ApalacheResult::Unknown(run)
+                    }
+                }
+                else {
+                    ApalacheResult::Timeout(run)
+                }
             }
         }
         Err(e) => ApalacheResult::Failure(e),

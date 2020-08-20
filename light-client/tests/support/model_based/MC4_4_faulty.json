@@ -3,9 +3,9 @@
   "model": "MC4_4_faulty.tla",
   "timeout": 60,
   "tests": [
-    "TestSuccessInv",
-    "TestFailureInv",
-    "Test2NotEnoughTrustSuccessInv",
-    "Test2NotEnoughTrustFailureInv"
+    "TestSuccess",
+    "TestFailure",
+    "Test2NotEnoughTrustSuccess",
+    "Test2NotEnoughTrustFailure"
   ]
 }

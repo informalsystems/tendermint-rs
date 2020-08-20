@@ -104,23 +104,35 @@ fn model_based_test(test: ApalacheTestCase, env: &TestEnv, root_env: &TestEnv, o
     env.copy_file_from_env(root_env, "Blockchain_A_1.tla");
     env.copy_file_from_env(root_env, "LightTests.tla");
     env.copy_file_from_env(root_env, &test.model);
+
+    // Mutate the model: negate the test assertion to get the invariant to check
+    let model = env.read_file(&test.model).unwrap();
+    let mut new_model = String::new();
+    for line in model.lines() {
+        if line.starts_with("======") {
+            new_model += &(test.test.clone() + "Inv == ~" + &test.test + "\n")
+        }
+        new_model += line;
+        new_model += "\n";
+    }
+    env.write_file(&test.model, &new_model).unwrap();
+    let mut new_test = test.clone();
+    new_test.test = test.test.clone() + "Inv";
+
     println!("  > running Apalache...");
-    match run_apalache_test(env.current_dir(), test) {
-        ApalacheResult::Failure(e) => {
-            panic!("failed to run Apalache; reason: {}", e)
-        },
-        ApalacheResult::Timeout(_) => {
-            panic!("Apalache failed to generate a counterexample within given time; consider increasing the timeout, or changing your test")
-        },
-        ApalacheResult::NoError(_) => {
-            panic!("Apalache failed to generate a counterexample; consider increasing the length bound, or changing your test")
-        },
-        ApalacheResult::Deadlock(_) => {
-            panic!("Apalache has found a deadlock; please inspect your model and test")
-        },
-        ApalacheResult::Unknown(_) => {
-            panic!("Apalache has generated an unknown outcome; please contact Apalache developers")
-        },
+    match run_apalache_test(env.current_dir(), new_test) {
+        ApalacheResult::Failure(e) =>
+            panic!("failed to run Apalache; reason: {}", e),
+        ApalacheResult::Timeout(_) =>
+            panic!("Apalache failed to generate a counterexample within given time; consider increasing the timeout, or changing your test"),
+        ApalacheResult::NoError(_) =>
+            panic!("Apalache failed to generate a counterexample; consider increasing the length bound, or changing your test"),
+        ApalacheResult::Deadlock(_) =>
+            panic!("Apalache has found a deadlock; please inspect your model and test"),
+        ApalacheResult::ModelError(_) =>
+            panic!("Apalache failed to process the model; please check it"),
+        ApalacheResult::Unknown(_) =>
+            panic!("Apalache has generated an unknown outcome; please contact Apalache developers"),
         ApalacheResult::Error(_) => ()
     }
 
@@ -130,10 +142,7 @@ fn model_based_test(test: ApalacheTestCase, env: &TestEnv, root_env: &TestEnv, o
         include: vec![transform_spec],
         output: "test.json".to_string()
     };
-    let jsonatr_run = run_jsonatr_transform(env.current_dir(), transform);
-    if let Err(e) = jsonatr_run {
-        println!("Error jsonatr: {}", e)
-    }
+    assert!(run_jsonatr_transform(env.current_dir(), transform).is_ok());
 
     let tc = env.parse_file_as::<SingleStepTestCase>("test.json").unwrap();
     println!("  > running auto-generated test...");

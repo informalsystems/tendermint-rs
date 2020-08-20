@@ -53,6 +53,12 @@ impl TestEnv {
             .and_then(|full_path| fs::read_to_string(&full_path).ok())
     }
 
+    /// Write a file to a path relative to the environment current dir
+    pub fn write_file(&self, rel_path: &str, contents: &str) -> Option<()> {
+        self.full_path(rel_path)
+            .and_then(|full_path| fs::write(full_path, contents).ok())
+    }
+
     /// Parse a file from a path relative to the environment current dir as the given type
     pub fn parse_file_as<T: DeserializeOwned>(&self, rel_path: &str) -> Option<T> {
         self.read_file(rel_path)
