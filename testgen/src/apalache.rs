@@ -1,5 +1,5 @@
 use crate::command::*;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use std::io;
 
 #[derive(Deserialize, Clone, Debug)]
@@ -11,7 +11,7 @@ pub struct ApalacheTestBatch {
     pub tests: Vec<String>,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ApalacheTestCase {
     pub model: String,
     pub test: String,

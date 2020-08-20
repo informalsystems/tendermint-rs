@@ -130,6 +130,12 @@ pub enum TestResult {
 /// and returns the result of running the test on it
 type TestFn = Box<dyn Fn(&str, &str) -> TestResult>;
 
+/// A function that takes as input the batch file path and its content,
+/// and returns the vector of test names/contents for tests in the batch,
+/// or None if the batch could not be parsed
+type BatchFn = Box<dyn Fn(&str, &str) -> Option<Vec<(String, String)>>>;
+
+
 pub struct Test {
     /// test name
     pub name: String,
@@ -141,7 +147,9 @@ pub struct Tester {
     name: String,
     root_dir: String,
     tests: Vec<Test>,
+    batches: Vec<BatchFn>,
     results: std::collections::BTreeMap<String, Vec<(String, TestResult)>>,
+    results_len: usize
 }
 
 impl TestResult {
@@ -180,7 +188,9 @@ impl Tester {
             name: name.to_string(),
             root_dir: root_dir.to_string(),
             tests: vec![],
+            batches: vec![],
             results: Default::default(),
+            results_len: 0
         }
     }
 
@@ -250,6 +260,7 @@ impl Tester {
         let output_env = self.output_env().unwrap();
         let test_fn = move |path: &str, input: &str| match parse_as::<T>(&input) {
             Ok(test_case) => Tester::capture_test(|| {
+                // It is OK to unwrap() here: in case of unwrapping failure, the test will fail.
                 let dir = TempDir::new().unwrap();
                 let env = TestEnv::new(dir.path().to_str().unwrap()).unwrap();
                 let output_dir = output_env.full_path(path).unwrap();
@@ -265,25 +276,34 @@ impl Tester {
         });
     }
 
-    fn add_result(&mut self, name: &str, path: &str, result: TestResult) {
+    pub fn add_test_batch<T>(&mut self, batch: fn(T) -> Vec<(String, String)>)
+        where
+            T: 'static + DeserializeOwned,
+    {
+        let batch_fn = move |_path: &str, input: &str| match parse_as::<T>(&input) {
+            Ok(test_batch) => Some(batch(test_batch)),
+            Err(_) => None,
+        };
+        self.batches.push( Box::new(batch_fn));
+    }
+
+    fn results_for(&mut self, name: &str) -> &mut Vec<(String, TestResult)> {
         self.results
             .entry(name.to_string())
             .or_insert_with(Vec::new)
-            .push((path.to_string(), result))
+    }
+
+    fn add_result(&mut self, name: &str, path: &str, result: TestResult) {
+        self.results_for(name).push((path.to_string(), result));
+        self.results_len = self.results_len + 1;
     }
 
     fn read_error(&mut self, path: &str) {
-        self.results
-            .entry("".to_string())
-            .or_insert_with(Vec::new)
-            .push((path.to_string(), TestResult::ReadError))
+        self.results_for("").push((path.to_string(), TestResult::ReadError))
     }
 
     fn parse_error(&mut self, path: &str) {
-        self.results
-            .entry("".to_string())
-            .or_insert_with(Vec::new)
-            .push((path.to_string(), TestResult::ParseError))
+        self.results_for("").push((path.to_string(), TestResult::ParseError))
     }
 
     pub fn successful_tests(&self, test: &str) -> Vec<String> {
@@ -353,7 +373,7 @@ impl Tester {
         }
 
         for name in self.results.keys() {
-            println!("Results for '{}'", name);
+            println!("\nResults for '{}'", name);
             let tests = self.successful_tests(name);
             if !tests.is_empty() {
                 println!("  Successful tests:  ");
@@ -372,25 +392,46 @@ impl Tester {
         }
     }
 
+    fn run_for_input(&mut self, path: &str, input: &str) {
+        let mut results = Vec::new();
+        for Test { name, test } in &self.tests {
+            match test(path, input) {
+                TestResult::ParseError => continue,
+                res => results.push((name.to_string(), path, res)),
+            }
+        }
+        if !results.is_empty() {
+            for (name, path, res) in results {
+                self.add_result(&name, path, res)
+            }
+        } else {
+            // parsing as a test failed; try parse as a batch
+            let mut res_tests = Vec::new();
+            for batch in &self.batches {
+                match batch(path, input) {
+                    None => continue,
+                    Some(tests) => for (name, input) in tests {
+                        let test_path = path.to_string() + "/" + &name;
+                        res_tests.push((test_path, input));
+                    },
+                }
+            }
+            if !res_tests.is_empty() {
+                for (path, input) in res_tests {
+                    self.run_for_input(&path, &input);
+                }
+            }
+            else {
+                // parsing both as a test and as a batch failed
+                self.parse_error(path);
+            }
+        }
+    }
+
     pub fn run_for_file(&mut self, path: &str) {
         match self.env().unwrap().read_file(path) {
             None => self.read_error(path),
-            Some(input) => {
-                let mut results = Vec::new();
-                for Test { name, test } in &self.tests {
-                    match test(path, &input) {
-                        TestResult::ParseError => continue,
-                        res => results.push((name.to_string(), path, res)),
-                    }
-                }
-                if results.is_empty() {
-                    self.parse_error(path);
-                } else {
-                    for (name, path, res) in results {
-                        self.add_result(&name, path, res)
-                    }
-                }
-            }
+            Some(input) => self.run_for_input(path, &input)
         }
     }
 
