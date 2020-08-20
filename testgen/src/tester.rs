@@ -373,55 +373,6 @@ impl Tester {
         tests
     }
 
-    pub fn finalize(&mut self) {
-        let env = self.output_env().unwrap();
-        env.write_file("_report", "");
-        let print = |msg: &str| {
-            env.logln_to(msg, "_report");
-        };
-        let tests = self.unreadable_tests();
-        if !tests.is_empty() {
-            print("Unreadable tests:  ");
-            for path in tests {
-                print(&format!("  {}", path))
-            }
-            panic!("Some tests could not be read");
-        }
-        let tests = self.unparseable_tests();
-        if !tests.is_empty() {
-            print("Unparseable tests:  ");
-            for path in tests {
-                print(&format!("  {}", path))
-            }
-            panic!("Some tests could not be parsed");
-        }
-
-        for name in self.results.keys() {
-            print(&format!("\nResults for '{}'", name));
-            let tests = self.successful_tests(name);
-            if !tests.is_empty() {
-                print("  Successful tests:  ");
-                for path in tests {
-                    print(&format!("    {}", path));
-                    if let Some(logs) = env.read_file(&(path + "/_log")) {
-                        print(&logs)
-                    }
-                }
-            }
-            let tests = self.failed_tests(name);
-            if !tests.is_empty() {
-                print("  Failed tests:  ");
-                for (path, message, location) in tests {
-                    print(&format!("    {}, '{}', {}", path, message, location));
-                    if let Some(logs) = env.read_file(&(path + "/_log")) {
-                        print(&logs)
-                    }
-                }
-                panic!("Some tests failed");
-            }
-        }
-    }
-
     fn run_for_input(&mut self, path: &str, input: &str) {
         let mut results = Vec::new();
         for Test { name, test } in &self.tests {
@@ -499,6 +450,64 @@ impl Tester {
                     }
                 }
             },
+        }
+    }
+
+    pub fn finalize(&mut self) {
+        let env = self.output_env().unwrap();
+        env.write_file("_report", "");
+        let print = |msg: &str| {
+            env.logln_to(msg, "_report");
+        };
+        let mut do_panic = false;
+
+        print(&format!("\n====== Report for '{}' tester run ======", &self.name));
+        for name in self.results.keys() {
+            if name.is_empty() {
+                continue
+            }
+            print(&format!("\nResults for '{}'", name));
+            let tests = self.successful_tests(name);
+            if !tests.is_empty() {
+                print("  Successful tests:  ");
+                for path in tests {
+                    print(&format!("    {}", path));
+                    if let Some(logs) = env.read_file(&(path + "/_log")) {
+                        print(&logs)
+                    }
+                }
+            }
+            let tests = self.failed_tests(name);
+            if !tests.is_empty() {
+                do_panic = true;
+                print("  Failed tests:  ");
+                for (path, message, location) in tests {
+                    print(&format!("    {}, '{}', {}", path, message, location));
+                    if let Some(logs) = env.read_file(&(path + "/_log")) {
+                        print(&logs)
+                    }
+                }
+            }
+        }
+        let tests = self.unreadable_tests();
+        if !tests.is_empty() {
+            do_panic = true;
+            print("\nUnreadable tests:  ");
+            for path in tests {
+                print(&format!("  {}", path))
+            }
+        }
+        let tests = self.unparseable_tests();
+        if !tests.is_empty() {
+            do_panic = true;
+            print("\nUnparseable tests:  ");
+            for path in tests {
+                print(&format!("  {}", path))
+            }
+        }
+        print(&format!("\n====== End of report for '{}' tester run ======\n", &self.name));
+        if do_panic {
+            panic!("Some tests failed or could not be read/parsed");
         }
     }
 }
