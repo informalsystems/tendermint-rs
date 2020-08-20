@@ -50,7 +50,6 @@ pub struct BlockVerdict {
 }
 
 fn single_step_test(tc: SingleStepTestCase) {
-    println!("  Running static model-based single-step test case: {}", tc.description);
     let mut latest_trusted = Trusted::new(
         tc.initial.signed_header.clone(),
         tc.initial.next_validator_set.clone(),
@@ -95,7 +94,7 @@ fn check_program(program: &str) -> bool {
 }
 
 fn model_based_test(test: ApalacheTestCase, env: &TestEnv, root_env: &TestEnv, output_env: &TestEnv) {
-    println!("  Running full model-based single-step test case: {}", test.test);
+    println!("  Running model-based single-step test case: {}", test.test);
     if !check_program("tendermint-testgen") ||
        !check_program("apalache-mc") ||
        !check_program("jsonatr") {
@@ -143,7 +142,8 @@ fn model_based_test(test: ApalacheTestCase, env: &TestEnv, root_env: &TestEnv, o
     output_env.copy_file_from_env(env, "counterexample.json");
 }
 
-fn model_based_test_batch(batch: ApalacheTestBatch, env: &TestEnv, root_env: &TestEnv, output_env: &TestEnv) {
+fn model_based_test_batch(batch: ApalacheTestBatch) -> Vec<(String, String)> {
+    let mut res = Vec::new();
     for test in batch.tests {
         let tc = ApalacheTestCase {
             model: batch.model.clone(),
@@ -151,8 +151,9 @@ fn model_based_test_batch(batch: ApalacheTestBatch, env: &TestEnv, root_env: &Te
             length: batch.length,
             timeout: batch.timeout
         };
-        model_based_test(tc, env, root_env, &output_env.push(&test).unwrap());
+        res.push((test.clone(), serde_json::to_string(&tc).unwrap()));
     }
+    res
 }
 
 const TEST_DIR: &str = "./tests/support/model_based";
@@ -162,7 +163,7 @@ fn run_single_step_tests() {
     let mut tester = Tester::new("single_step", TEST_DIR);
     tester.add_test("static model-based single-step test", single_step_test);
     tester.add_test_with_env("full model-based single-step test", model_based_test);
-    tester.add_test_with_env("full model-based single-step test batch", model_based_test_batch);
+    tester.add_test_batch(model_based_test_batch);
     tester.run_foreach_in_dir("");
     tester.print_results();
 }
