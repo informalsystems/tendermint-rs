@@ -18,11 +18,9 @@ pub struct TestEnv {
 
 impl TestEnv {
     pub fn new(current_dir: &str) -> Option<Self> {
-        fs::create_dir_all(current_dir).ok().map(|_|
-            TestEnv {
-                current_dir: current_dir.to_string(),
-            }
-        )
+        fs::create_dir_all(current_dir).ok().map(|_| TestEnv {
+            current_dir: current_dir.to_string(),
+        })
     }
 
     pub fn cleanup(&self) -> Option<()> {
@@ -92,11 +90,8 @@ impl TestEnv {
         }
         path.file_name().and_then(|name| {
             name.to_str().and_then(|name| {
-                self.full_path(name).and_then(|dest| {
-                    fs::copy(path, dest)
-                        .ok()
-                        .map(|_| name.to_string())
-                })
+                self.full_path(name)
+                    .and_then(|dest| fs::copy(path, dest).ok().map(|_| name.to_string()))
             })
         })
     }

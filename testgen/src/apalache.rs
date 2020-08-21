@@ -51,7 +51,12 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<Apalac
     let inv = test.test.clone() + "Inv";
 
     // Mutate the model: negate the test assertion to get the invariant to check
-    let mutation_failed = || io::Error::new(io::ErrorKind::InvalidInput, "failed to mutate the model and add invariant");
+    let mutation_failed = || {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "failed to mutate the model and add invariant",
+        )
+    };
     let env = TestEnv::new(dir).ok_or_else(mutation_failed)?;
     let model = env.read_file(&test.model).unwrap();
     let mut new_model = String::new();
@@ -68,7 +73,8 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<Apalac
         new_model += "\n";
     }
     if !new_model.is_empty() {
-        env.write_file(&test.model, &new_model).ok_or_else(mutation_failed)?;
+        env.write_file(&test.model, &new_model)
+            .ok_or_else(mutation_failed)?;
     }
 
     // Run Apalache, and process the result

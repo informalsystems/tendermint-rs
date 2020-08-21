@@ -28,10 +28,7 @@ pub fn run_jsonatr_transform(dir: &str, transform: JsonatrTransform) -> io::Resu
             if run.status.success() {
                 Ok(run)
             } else {
-                Err(io::Error::new(
-                    io::ErrorKind::Interrupted,
-                    run.stderr,
-                ))
+                Err(io::Error::new(io::ErrorKind::Interrupted, run.stderr))
             }
         }
         Err(e) => Err(e),

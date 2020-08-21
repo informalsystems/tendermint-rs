@@ -124,8 +124,8 @@ fn model_based_test(
     match run_apalache_test(env.current_dir(), test) {
         Ok(run) => match run {
             ApalacheRun::Counterexample(_) => (),
-            run=> panic!(run.message().to_string())
-        }
+            run => panic!(run.message().to_string()),
+        },
         Err(e) => panic!("failed to run Apalache; reason: {}", e),
     }
 
