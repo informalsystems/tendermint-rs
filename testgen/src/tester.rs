@@ -10,6 +10,8 @@ use std::{
 };
 use tempfile::TempDir;
 
+/// A test environment, which is essentially a wrapper around some directory,
+/// with some utility functions operating relative to that directory.
 #[derive(Debug, Clone)]
 pub struct TestEnv {
     /// Directory where the test is being executed
@@ -161,6 +163,23 @@ pub struct Test {
     pub test: TestFn,
 }
 
+/// Tester allows you to easily run some test functions over a set of test files.
+/// You create a Tester instance with the reference to some specific directory, containing your test files.
+/// After a creation, you can add several types of tests there:
+///  * add_test() adds a simple test function, which can run on some test, deserilizable from a file.
+///  * add_test_with_env() allows your test function to receive several test environments,
+///    so that it can easily perform some operations on files when necessary
+///  * add_test_batch() adds a batch of test: a function that accepts a ceserializable batch description,
+///    and produces a set of test from it
+///
+///  After you have added all your test functions, you run Tester either on individual files
+///  using run_for_file(), or for whole directories, using run_foreach_in_dir();
+///  the directories will be traversed recursively top-down.
+///
+///  The last step involves calling the finalize() function, which will produce the test report
+///  and panic in case there was at least one failing test.
+///  When there are files in the directories you run Tester on, that could not be read/parsed,
+///  it is also considered an error, and leads to panic.
 pub struct Tester {
     name: String,
     root_dir: String,

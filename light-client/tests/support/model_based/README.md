@@ -55,7 +55,7 @@ We suggest the following workflow for running model-based tests:
 For that you might want to run your test in isolation, 
 as counterexample generation by Apalache may take a significant time. 
 In order to run only your test, just create a new test batch with your test, 
-and temporarily remove/rename other test batches.
+and temporarily remove/rename other test batches (files or diretories starting with `_` are ignored).
 2. After running your model-based test, inspect its report/logs. 
 3. If you find the test details interesting, simply copy the generated `test.json` file 
 into [single_step](single_step) directory, and rename it to reflect the model and model-based test you used to generate it.
