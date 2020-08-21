@@ -1,7 +1,7 @@
 ## Light Client model-based testing guide
 
 In this directory you will find the model-based tests for the light client. 
-They are "model-based" because they are based on the formal `TLA+` model of the Light Client: see [Lightclient_A_1.tla](Lightclient_A_1.tla).
+They are "model-based" because they are based on the formal `TLA+` model of the Light Client: see [Lightclient_A_1.tla](../../../../docs/spec/lightclient/verification/Lightclient_A_1.tla).
 The tests themselves are simple `TLA+` assertions, that describe the desired shape of the Light Client execution; 
 see [LightTests.tla](LightTests.tla) for some examples. 
 To be able to specify test assertions we have extended the Light Client model with `history` variable, 
