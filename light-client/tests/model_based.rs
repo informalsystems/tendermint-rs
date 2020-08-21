@@ -94,14 +94,6 @@ fn single_step_test(
     }
 }
 
-fn check_program(program: &str) -> bool {
-    if !Command::exists_program(program) {
-        println!("  > {} not found", program);
-        return false;
-    }
-    true
-}
-
 fn model_based_test(
     test: ApalacheTestCase,
     env: &TestEnv,
@@ -109,10 +101,18 @@ fn model_based_test(
     output_env: &TestEnv,
 ) {
     println!("  Running model-based single-step test case: {}", test.test);
+    let check_program = |program| {
+        if !Command::exists_program(program) {
+            output_env.logln(&format!("    > {} not found", program));
+            return false;
+        }
+        true
+    };
     if !check_program("tendermint-testgen")
         || !check_program("apalache-mc")
         || !check_program("jsonatr")
     {
+        output_env.logln("    failed to find necessary programs; consider adding them to your PATH. skipping the test");
         return;
     }
     env.copy_file_from_env(root_env, "Lightclient_A_1.tla");
@@ -120,35 +120,13 @@ fn model_based_test(
     env.copy_file_from_env(root_env, "LightTests.tla");
     env.copy_file_from_env(root_env, &test.model);
 
-    // Mutate the model: negate the test assertion to get the invariant to check
-    let model = env.read_file(&test.model).unwrap();
-    let mut new_model = String::new();
-    for line in model.lines() {
-        if line.starts_with("======") {
-            new_model += &(test.test.clone() + "Inv == ~" + &test.test + "\n")
-        }
-        new_model += line;
-        new_model += "\n";
-    }
-    env.write_file(&test.model, &new_model).unwrap();
-    let mut new_test = test.clone();
-    new_test.test = test.test.clone() + "Inv";
-
     println!("  > running Apalache...");
-    match run_apalache_test(env.current_dir(), new_test) {
-        ApalacheResult::Failure(e) =>
-            panic!("failed to run Apalache; reason: {}", e),
-        ApalacheResult::Timeout(_) =>
-            panic!("Apalache failed to generate a counterexample within given time; consider increasing the timeout, or changing your test"),
-        ApalacheResult::NoError(_) =>
-            panic!("Apalache failed to generate a counterexample; consider increasing the length bound, or changing your test"),
-        ApalacheResult::Deadlock(_) =>
-            panic!("Apalache has found a deadlock; please inspect your model and test"),
-        ApalacheResult::ModelError(_) =>
-            panic!("Apalache failed to process the model; please check it"),
-        ApalacheResult::Unknown(_) =>
-            panic!("Apalache has generated an unknown outcome; please contact Apalache developers"),
-        ApalacheResult::Error(_) => ()
+    match run_apalache_test(env.current_dir(), test) {
+        Ok(run) => match run {
+            ApalacheRun::Counterexample(_) => (),
+            run=> panic!(run.message().to_string())
+        }
+        Err(e) => panic!("failed to run Apalache; reason: {}", e),
     }
 
     let transform_spec = root_env
@@ -188,7 +166,7 @@ fn model_based_test_batch(batch: ApalacheTestBatch) -> Vec<(String, String)> {
 const TEST_DIR: &str = "./tests/support/model_based";
 
 #[test]
-fn run_single_step_tests() {
+fn run_model_based_single_step_tests() {
     let mut tester = Tester::new("single_step", TEST_DIR);
     tester.add_test_with_env("static model-based single-step test", single_step_test);
     tester.add_test_with_env("full model-based single-step test", model_based_test);

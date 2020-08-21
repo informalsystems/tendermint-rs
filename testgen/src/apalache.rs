@@ -1,4 +1,4 @@
-use crate::command::*;
+use crate::{command::*, tester::TestEnv};
 use serde::{Deserialize, Serialize};
 use std::io;
 
@@ -19,11 +19,11 @@ pub struct ApalacheTestCase {
     pub timeout: Option<u64>,
 }
 
-pub enum ApalacheResult {
-    /// Apalache has not found an error up to specified length bound
-    NoError(CommandRun),
-    /// Apalache has found an error
-    Error(CommandRun),
+pub enum ApalacheRun {
+    /// Apalache has found a counterexample
+    Counterexample(CommandRun),
+    /// Apalache has not found a counterexample up to specified length bound
+    NoCounterexample(CommandRun),
     /// Apalache has found a deadlock
     Deadlock(CommandRun),
     /// Apalache model checking run failed (e.g. a parsing error)
@@ -32,11 +32,46 @@ pub enum ApalacheResult {
     Unknown(CommandRun),
     /// The tool has reached the specified timeout without producing an answer
     Timeout(CommandRun),
-    /// Failed to execute the tool
-    Failure(io::Error),
 }
 
-pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> ApalacheResult {
+impl ApalacheRun {
+    pub fn message(&self) -> &str {
+        match self {
+            ApalacheRun::Counterexample(_) => "Apalache has generated a counterexample",
+            ApalacheRun::NoCounterexample(_) => "Apalache failed to generate a counterexample; consider increasing the length bound, or changing your test",
+            ApalacheRun::Deadlock(_) => "Apalache has found a deadlock; please inspect your model and test",
+            ApalacheRun::ModelError(_) => "Apalache failed to process the model; please check it",
+            ApalacheRun::Unknown(_) => "Apalache has generated an unknown outcome; please contact Apalache developers",
+            ApalacheRun::Timeout(_) => "Apalache failed to generate a counterexample within given time; consider increasing the timeout, or changing your test",
+        }
+    }
+}
+
+pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<ApalacheRun> {
+    let inv = test.test.clone() + "Inv";
+
+    // Mutate the model: negate the test assertion to get the invariant to check
+    let mutation_failed = || io::Error::new(io::ErrorKind::InvalidInput, "failed to mutate the model and add invariant");
+    let env = TestEnv::new(dir).ok_or_else(mutation_failed)?;
+    let model = env.read_file(&test.model).unwrap();
+    let mut new_model = String::new();
+    for line in model.lines() {
+        if line.starts_with(&inv) {
+            // invariant already present; skip mutation
+            new_model.clear();
+            break;
+        }
+        if line.starts_with("======") {
+            new_model += &(inv.clone() + " == ~" + &test.test + "\n")
+        }
+        new_model += line;
+        new_model += "\n";
+    }
+    if !new_model.is_empty() {
+        env.write_file(&test.model, &new_model).ok_or_else(mutation_failed)?;
+    }
+
+    // Run Apalache, and process the result
     let mut cmd = Command::new();
     if let Some(timeout) = test.timeout {
         cmd.program("timeout");
@@ -46,7 +81,7 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> ApalacheResult {
         cmd.program("apalache-mc");
     }
     cmd.arg("check");
-    cmd.arg_from_parts(vec!["--inv=", &test.test]);
+    cmd.arg_from_parts(vec!["--inv=", &inv]);
     if let Some(length) = test.length {
         cmd.arg_from_parts(vec!["--length=", &length.to_string()]);
     }
@@ -58,24 +93,24 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> ApalacheResult {
         Ok(run) => {
             if run.status.success() {
                 if run.stdout.contains("The outcome is: NoError") {
-                    ApalacheResult::NoError(run)
+                    Ok(ApalacheRun::NoCounterexample(run))
                 } else if run.stdout.contains("The outcome is: Error") {
-                    ApalacheResult::Error(run)
+                    Ok(ApalacheRun::Counterexample(run))
                 } else if run.stdout.contains("The outcome is: Deadlock") {
-                    ApalacheResult::Deadlock(run)
+                    Ok(ApalacheRun::Deadlock(run))
                 } else {
-                    ApalacheResult::Unknown(run)
+                    Ok(ApalacheRun::Unknown(run))
                 }
             } else if let Some(code) = run.status.code() {
                 match code {
-                    99 => ApalacheResult::ModelError(run),
-                    124 => ApalacheResult::Timeout(run),
-                    _ => ApalacheResult::Unknown(run),
+                    99 => Ok(ApalacheRun::ModelError(run)),
+                    124 => Ok(ApalacheRun::Timeout(run)),
+                    _ => Ok(ApalacheRun::Unknown(run)),
                 }
             } else {
-                ApalacheResult::Timeout(run)
+                Ok(ApalacheRun::Timeout(run))
             }
         }
-        Err(e) => ApalacheResult::Failure(e),
+        Err(e) => Err(e),
     }
 }
