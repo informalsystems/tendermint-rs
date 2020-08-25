@@ -40,6 +40,8 @@ pub struct State {
     /// immutable
     #[prost(string, tag="2")]
     pub chain_id: std::string::String,
+    #[prost(int64, tag="14")]
+    pub initial_height: i64,
     /// LastBlockHeight=0 at genesis (ie. block(H=0) does not exist)
     #[prost(int64, tag="3")]
     pub last_block_height: i64,
