@@ -8,6 +8,7 @@ pub mod header;
 pub mod tester;
 pub mod validator;
 pub mod vote;
+pub mod light_block;
 
 pub use commit::Commit;
 pub use generator::Generator;
