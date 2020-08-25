@@ -14,94 +14,91 @@ with the latest trusted block and ending with the point of bifurkation) is submi
 submit the corresponding trace obtained from the witness to a primary. Note that in case a witness is faulty
 he might not be cooperative and the bisection will time out or fail to terminate bisection successfully. 
 
-## Facts
-
-1. Starting from a trusted header (point of trust) there are two traces of light blocks that ends in a different
-header at bifurkation point. 
-2. As we assume that a witness is a correct full node, that implies that starting from a trusted header a 
-misbehavior has taken place (Tendermint security model is broken), i.e., there are at least +1/3 of faulty 
-validators that misbehaved and created a fork. 
-
-Example 1 
-
-1. point of trust is header at height 1 with valset p1, p2, p3 and p4
-2. at primary there is a header at height 4 with valset p1, p2, p5 and p6. We assume that
-p1 and p2 misbehaved and signed different header for height 4 at two branches. On the witness 
-there is a header at height 4 with a different header. It could have completely different 
-valset p7, p8, p9 and p10. 
-
-Main branch:
-
-at h1 we have (p1, p2, p3, p4) -> at h2 we have (p7, p8, p9, p10) -> at h3 we have (p7, p8, p9, p10) -> at h4 we have (p7, p8, p9, p10) 
- 
-Fork branch:
-
-at h1 we have (p1, p2, p3, p4) -> at h4 we have (p1, p2, p5, p6)
-
-This is an example of the lunatic attack by p1 and p2. In this case we will create 
-lunatic evidence for p1 and p2 as they are part of the trusted val set, but not for p5 and p6 as 
-we are not certain if they are bonded. 
-
-Example 2
-
-Main branch:
-
-at h1 we have (p1, p2, p3, p4) -> at h2 we have (p7, p8, p9, p10) -> at h3 we have (p7, p8, p9, p10) -> at h4 we have (p7, p8, p9, p10) 
- 
-Fork branch:
-
-at h1 we have (p1, p2, p3, p4) -> at h2 we have (p7, p8, p9, p10) -> at h3 we have (p11, p12, p13, p14) -> at h4 we have (p11, p12, p13, p14)
-
-p7 and p8 attacked the system at h2 that has led to a different valset being selected for the height 3. In the worst
-case none of these validators was bonded. At heights h3 and h4 no misbehaviour has been made and it is also not slashable.
-Therefore, we need to create evidence of misbehavior at the biforkation point. 
-
-
- 
 
 ### Data Structures
 
-Lightblocks and LightStores are
-defined at [LCV-DATA-LIGHTBLOCK.1] and [LCV-DATA-LIGHTSTORE.1]. See the [verification specification][verification] for details.
+Proof of fork consists of a conflicting light block and a common height. 
 
-> The following data structure [LCV-DATA-POF.1]
-> defines a **proof of fork**. Following
-> [TMBC-SIGN-FORK.1], we require two blocks *b* and *c* for the same
-> height that can both be verified from a common root block *a* (using
-> the skipping or the sequential method).
-
-> [LCV-DATA-POF.1] mirrors the definition [TMBC-SIGN-FORK.1]:
-> *TrustedBlock* corresponds to *a*, and *PrimaryTrace* and *SecondaryTrace*
-> are traces to two blocks *b* and *c*. The traces establish that both
-> *skip-root(a,b,t)* and *skip-root(a,c,t)* are satisfied.
-
-
-#### **[LCV-DATA-POF.1]**:
 ```go
-type LightNodeProofOfFork struct {
-    TrustedBlock      LightBlock
-    PrimaryTrace      []LightBlock
-    SecondaryTrace    []LightBlock
+type ProofOfFork struct {
+    ConflictingBlock   LightBlock
+    CommonHeight       int32
 }
 ```
 
-The trace will have the following data structure: 
+Full node can validate proof of fork by executing the following procedure:
 
 ```go
-type LightNodeProofOfFork struct {
-  Trace []LightBlock
+func IsValidProofOfFork(pof ProofOfFork, bc Blockchain) boolean {
+    trusted = GetLightBlock(bc, pof.CommonHeight)
+    if trusted == nil return false 
+    
+    verdict = ValidAndVerified(trusted, pof.ConflictingBlock)
+    conflictingHeight = pof.ConflictingBlock.Header.Height
+    return verdict == OK and bc[conflictingHeight].Header != pof.ConflictingBlock.Header     
 }
 ```
 
+### Proof of fork detection
+
+Given a trusted header `trusted`, a light node executes the bisection algorithm to verify header `untrusted` at some
+height `h`. If the bisection algorithm succeed, then the header `untrusted` is verified. Headers that are downloaded
+as part of the bisection algorithm are stored in a store and they are also in verified state. Therefore, after the 
+bisection algorithm successfully terminates we have a trace of the light blocks ([] LightBlock) we obtained from the 
+primary that we call primary trace.
+
+#### Primary trace 
+
+The following invariants hold for the primary trace:
+
+- Given a `trusted` light block, target height `h`, and `primary_trace` ([] LightBlock): 
+    *primary_trace[0] == trusted* and *primary_trace[len(primary_trace)-1].Height == h* and 
+    successive light blocks are passing light client verification logic. 
+
+TODO: Link right tags from the verification spec.          
+
+#### Witness with a conflicting header
+
+The verified header at height `h` is cross-checked with every witness as part of the fork detection algorithm 
+(TODO: add link). If a witness returns the conflicting header at the height `h` the following procedure is
+executed:
+
 ```go
-type LightBlock struct {
-		Header          Header
-		Commit          Commit
-		Validators      ValidatorSet
-		NextValidators  ValidatorSet
-		Provider        PeerID
+func DetectProofOfForks(primary PeerID, primary_trace []LightBlock, witness PeerID) (ProofOfFork, ProofOfFork) {
+    primary_pof, witness_trace = ExtractProofOfFork(primary_trace, witness)
+    witness_pof, _ = ExtractProofOfFork(witness_trace, primary)
+    return primary_pof, witness_pof
+}
+
+func ExtractProofOfFork(trace []LightBlock, peer PeerID) (ProofOfFork, alternative_trace) {
+
+    trusted = trace[0]
+    lightStore = new LightStore().Update(trusted, StateTrusted)
+
+    for i in 1..len(trace)-1 {
+        lightStore, result = VerifyToTarget(peer, lightStore , i)
+   
+        if result == ResultFailure then return (nil, nil)
+        
+        current = lightStore.Get(i)
+        
+        // if obtained header is the same as in the trace we continue with a next height
+        if current.Header == trace[i].Header continue
+        
+        // we have identified a conflicting header         
+        return (ProofOfFork { trace[i-1].Height, trace[i] }, lightStore.Trace(trace[i-1].Height, trace[i].Height))
+    } 
+    return (nil, nil)       
 }
 ```
+
+
+
+
+
+
+
+
 ### Validating Proof of Fork
 
 Once a correct full node receives a `LightNodeProofOfFork` it first validates it:
@@ -332,8 +329,43 @@ func createDuplicateVoteEvidences(conflictingBlock LightBlock, bc Blockchain) []
    }
    return evidences         
 }
+```
 
+```go
+func createDuplicateVoteEvidences(conflictingBlock LightBlock, bc Blockchain) []DuplicateVoteEvidence {
+   evidences = []DuplicateVoteEvidence
+   trusted = bc[conflicting.Header.Height].Commit
+   conflicting = conflictingBlock.Commit
 
+   if trusted.Round == conflicting.Round {
+        for (i, commitSig) in conflicting.Signatures {
+            if commitSig.BlockIDFlag == BlockIDFlagCommit and 
+               commitSig.ValidatorAddress in getValidators(trusted) {
+                    evidence = DuplicateVoteEvidence { 
+                                    createVote(commit, commitSig.ValidatorAddress)
+                                    createVote(commit, commitSig, i) 
+                               }
+                    evidences.append(evidence)
+            }     
+        }     
+   } 
+   
+   if trusted.ValidatorsHash != conflicting.ValidatorsHash or
+      trusted.NextValidatorsHash != conflicting.NextValidatorsHash or 
+      trusted.ConsensusHash != conflicting.ConsensusHash or 
+      trusted.AppHash != conflicting.AppHash or 
+      trusted.LastResultsHash != conflicting.LastResultsHash {
+        // find validators that have signed this header and that were present in trusted valset
+        for (i, commitSig) in conflicting.Commit.Signatures {
+            if commitSig.BlockIDFlag == BlockIDFlagCommit {
+                evidence = LunaticValidatorEvidence { conflicting, createVote(commit, commitSig, i) }
+                evidences.append(evidence)
+            }     
+        }
+   }
+   return evidences         
+}
+```
 
 ### Figuring out if malicious behaviour
 
