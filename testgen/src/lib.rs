@@ -5,10 +5,10 @@ pub mod commit;
 pub mod consensus;
 pub mod generator;
 pub mod header;
+pub mod light_block;
 pub mod tester;
 pub mod validator;
 pub mod vote;
-pub mod light_block;
 
 pub use commit::Commit;
 pub use generator::Generator;
