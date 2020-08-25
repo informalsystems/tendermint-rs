@@ -253,6 +253,7 @@ mod tests {
     use crate::amino_types::message::AminoMessage;
     use crate::amino_types::SignedMsgType;
     use chrono::{DateTime, Utc};
+    use crate::chain::Id;
 
     #[test]
     fn test_vote_serialization() {
@@ -286,28 +287,8 @@ mod tests {
         };
         let mut got = vec![];
 
-        // Simulating Go's ProposalSignBytes function. Shall we make this into a function too?
-        let canonical = CanonicalVote {
-            r#type: vote.r#type,
-            height: vote.height,
-            round: vote.round as i64,
-            block_id: Some(CanonicalBlockId {
-                hash: vote.block_id.clone().unwrap().hash,
-                part_set_header: Some(CanonicalPartSetHeader {
-                    total: vote
-                        .block_id
-                        .clone()
-                        .unwrap()
-                        .part_set_header
-                        .unwrap()
-                        .total,
-                    hash: vote.block_id.unwrap().part_set_header.unwrap().hash,
-                }),
-            }),
-            timestamp: vote.timestamp,
-            chain_id: "test_chain_id".to_string(),
-        };
-        canonical.encode_length_delimited(&mut got).unwrap();
+        let request = SignVoteRequest{ vote: Some(vote), chain_id: "test_chain_id".to_string() };
+        let _have = request.sign_bytes(Id::from("test_chain_id"),&mut got);
 
         // the following vector is generated via:
         /*
