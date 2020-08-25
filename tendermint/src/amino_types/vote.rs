@@ -252,8 +252,8 @@ mod tests {
     use super::*;
     use crate::amino_types::message::AminoMessage;
     use crate::amino_types::SignedMsgType;
-    use chrono::{DateTime, Utc};
     use crate::chain::Id;
+    use chrono::{DateTime, Utc};
 
     #[test]
     fn test_vote_serialization() {
@@ -287,8 +287,11 @@ mod tests {
         };
         let mut got = vec![];
 
-        let request = SignVoteRequest{ vote: Some(vote), chain_id: "test_chain_id".to_string() };
-        let _have = request.sign_bytes(Id::from("test_chain_id"),&mut got);
+        let request = SignVoteRequest {
+            vote: Some(vote),
+            chain_id: "test_chain_id".to_string(),
+        };
+        let _have = request.sign_bytes(Id::from("test_chain_id"), &mut got);
 
         // the following vector is generated via:
         /*
