@@ -65,7 +65,11 @@ $DIR/apalache-tests/scripts/parse-logs.py --human .
 ```
 
 The following table summarizes the experimental results. The TLA+ properties can be found in the
-[TLA+ specification](verification/Lightclient_A_1.tla).
+[TLA+ specification](verification/Lightclient_A_1.tla). 
+ The experiments were run in an AWS instance equipped with 32GB
+RAM and a 4-core Intel® Xeon® CPU E5-2686 v4 @ 2.30GHz CPU.
+We write “✗=k” when a bug is reported at depth k, and “✓<=k” when
+no bug is reported up to depth k.
 
 ![Experimental results](experiments.png)
 
