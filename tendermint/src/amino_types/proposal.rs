@@ -202,6 +202,7 @@ mod tests {
     use chrono::{DateTime, Utc};
     use prost::Message;
     use prost_types::Timestamp;
+    use crate::chain::Id;
 
     #[test]
     fn test_serialization() {
@@ -227,29 +228,8 @@ mod tests {
         };
         let mut got = vec![];
 
-        // Simulating Go's ProposalSignBytes function. Shall we make this into a function too?
-        let canonical = CanonicalProposal {
-            r#type: proposal.r#type,
-            height: proposal.height,
-            round: proposal.round as i64,
-            pol_round: proposal.pol_round as i64,
-            block_id: Some(CanonicalBlockId {
-                hash: proposal.block_id.clone().unwrap().hash,
-                part_set_header: Some(CanonicalPartSetHeader {
-                    total: proposal
-                        .block_id
-                        .clone()
-                        .unwrap()
-                        .part_set_header
-                        .unwrap()
-                        .total,
-                    hash: proposal.block_id.unwrap().part_set_header.unwrap().hash,
-                }),
-            }),
-            timestamp: proposal.timestamp,
-            chain_id: "test_chain_id".to_string(),
-        };
-        canonical.encode_length_delimited(&mut got).unwrap();
+        let request = SignProposalRequest{ proposal: Some(proposal), chain_id: "test_chain_id".to_string() };
+        let _have = request.sign_bytes(Id::from("test_chain_id"),&mut got);
 
         // the following vector is generated via:
         /*
