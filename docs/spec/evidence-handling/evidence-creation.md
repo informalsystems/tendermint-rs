@@ -33,6 +33,7 @@ func IsValidProofOfFork(pof ProofOfFork, bc Blockchain) boolean {
     trusted = GetLightBlock(bc, pof.CommonHeight)
     if trusted == nil return false 
     
+    // Note that trustingPeriod in ValidAndVerified is set to UNBONDING_PERIOD
     verdict = ValidAndVerified(trusted, pof.ConflictingBlock)
     conflictingHeight = pof.ConflictingBlock.Header.Height
     return verdict == OK and bc[conflictingHeight].Header != pof.ConflictingBlock.Header     
@@ -66,7 +67,11 @@ executed:
 ```go
 func DetectProofOfForks(primary PeerID, primary_trace []LightBlock, witness PeerID) (ProofOfFork, ProofOfFork) {
     primary_pof, witness_trace = ExtractProofOfFork(primary_trace, witness)
-    witness_pof, _ = ExtractProofOfFork(witness_trace, primary)
+    
+    witness_pof = nil
+    if witness_trace != nil {
+        witness_pof, _ = ExtractProofOfFork(witness_trace, primary)
+    }
     return primary_pof, witness_pof
 }
 
@@ -92,49 +97,12 @@ func ExtractProofOfFork(trace []LightBlock, peer PeerID) (ProofOfFork, alternati
 }
 ```
 
-
-
-
-
-
-
-
-### Validating Proof of Fork
-
-Once a correct full node receives a `LightNodeProofOfFork` it first validates it:
-
-```go
-func IsValid(pof LightNodeProofOfFork, bc Blockchain) boolean {
-
-    trusted = pof.Trace[0].Header
-    pointOfBifurkation = pof.Trace[len(pof.Trace)-1].Header 
-    
-    // In valid proof of fork, trace starts with the header equal to the corresponding 
-    // header on chain and ends with the different header.
-    if trusted != bc[trusted.Height] or 
-       poinOfBifurkation == bc[poinOfBifurkation.Height].Header {
-        return false    
-    }
-    
-    for i in 1..len(pof.Trace)-1 {
-        untrusted = pof.Trace[i].Header
-        // Note that trustingPeriod in ValidAndVerified is set to UNBONDING_PERIOD
-        verdict = ValidAndVerified(trusted, untrusted) 
-        if verdict == OK {
-            trusted = untrusted
-        }
-        else return false   
-    }
-    return true
-}
-```
-
 ### Evidence creation
 
 ```go
-type LunaticValidatorEvidence struct {
+type LunaticAttackEvidence struct {
 	Header             types.Header
-	Vote               types.Vote
+	Votes              []types.Vote
 }
 ```
 
@@ -150,25 +118,6 @@ type PotentialAmnesiaEvidence struct {
 	ConflictingBlock   LightBlock
     ValidatorAddress   Address
 }
-```
-
-```go
-func getMinBifurcationPoint(pof LightNodeProofOfFork, bc Blockchain) (int, LightBlock) {
-    trusted = pof.Trace[i].Header
-    conflicting = nil
-    for i in 1..len(pof.Trace)-1 {
-        header = pof.Trace[i].Header
-        if header != bc[header.Height].Header {
-            conflicting = header 
-            height = trusted.Height
-            return (height, pof.Trace[i])
-        }
-        else {
-            trusted = header
-        }
-    }
-    panic
-}    
 ```
 
 ```go
@@ -228,8 +177,81 @@ type Header struct {
 ```
 
 ```go
-func createLunaticEvidences(height int, conflictingBlock LightBlock, bc Blockchain) []LunaticValidatorEvidence {
-   evidences = []LunaticValidatorEvidence
+type LProofOfFork struct {
+    ConflictingBlock   LightBlock
+    TrustedBlock       LightBlock
+    CommonBlock        LightBlock
+}
+```
+
+```go
+func lcCreateLunaticEvidences(pof LProofOfFork) LunaticAttackEvidence {
+   votes = []Vote
+   trusted = pof.TrustedBlock.Header 
+   conflicting = pof.ConflictingBlock.Header
+   
+   conflictingCommit = pof.ConflictingBlock.Commit  
+   
+   if trusted.ValidatorsHash != conflicting.ValidatorsHash or
+      trusted.NextValidatorsHash != conflicting.NextValidatorsHash or 
+      trusted.ConsensusHash != conflicting.ConsensusHash or 
+      trusted.AppHash != conflicting.AppHash or 
+      trusted.LastResultsHash != conflicting.LastResultsHash {
+        
+        // find validators that have signed this header and that are bonded
+        for (i, commitSig) in conflictingCommit.Signatures {
+            if commitSig.BlockIDFlag == BlockIDFlagCommit and    
+               (commitSig.ValidatorAddress in pof.CommonBlock.Validators or
+                commitSig.ValidatorAddress in pof.CommonBlock.NextValidators or 
+                commitSig.ValidatorAddress in pof.TrustedBlock.Validators)
+                {
+                    vote = createVote(conflictingCommit, commitSig, i)
+                    votes.append(vote)
+                    
+                    evidences.append(evidence)
+                }     
+        }
+        return LunaticAttackEvidence { conflicting, votes }
+   }
+   return nil         
+}
+```
+
+```go
+type LunaticAttackEvidence struct {
+	Header             types.Header
+	Votes              []types.Vote
+    CommonHeight       int64 
+}
+
+func isValid(evidence LunaticAttackEvidence, bc Blockchain) boolean {
+    // NOTE: we don't check if Header comes from a valid fork. We could add this check by having LightBlock instead of Header
+    commonHeader = bc[evidence.CommonHeight].Header
+    commonValSet = getValidators(commonHeader.Height)
+    
+    trustedHeader = bc[evidence.Header.Height].Header
+    trustedValSet = getValidators(trustedHeader.Height)
+
+    if trustedHeader == evidence.Header return false
+    
+    signers = getSignerAddresses(evidence.Votes)
+    if signers not in commonValSet \union trustedValSet return false
+    for each vote in evidence.Votes {
+        if isValid(vote, evidence.Header) continue
+        return false
+    }
+    return true         
+} 
+```
+
+Valid lunatic evidence satisfies the following properties:
+
+- it comes from the valid fork
+- votes are signed by processes that are bonded
+
+```go
+func createLunaticEvidences(pof ProofOfFork, bc Blockchain) []LunaticAttackEvidence {
+   evidences = []LunaticAttackEvidence
    trusted = bc[conflicting.Header.Height].Header 
    conflicting = conflictingBlock.Header
    
@@ -296,10 +318,22 @@ func createVote(commit Commit, validatorAddress ValidatorAddress) Vote {
 ```
 
 ```go
-func createDuplicateVoteEvidences(conflictingBlock LightBlock, bc Blockchain) []DuplicateVoteEvidence {
+type LProofOfFork struct {
+    ConflictingBlock   LightBlock
+    TrustedBlock       LightBlock
+    CommonBlock        LightBlock
+}
+```
+
+```go
+func lcCreateLunaticEvidences(pof LProofOfFork) LunaticAttackEvidence {
+
+
+```go
+func lcCreateDuplicateVoteEvidences(pof LProofOfFork) []DuplicateVoteEvidence {
    evidences = []DuplicateVoteEvidence
-   trusted = bc[conflicting.Header.Height].Commit
-   conflicting = conflictingBlock.Commit
+   trusted = pof.TrustedBlock.Commit
+   conflicting = pof.ConflictingBlock.Commit
 
    if trusted.Round == conflicting.Round {
         for (i, commitSig) in conflicting.Signatures {
@@ -314,20 +348,19 @@ func createDuplicateVoteEvidences(conflictingBlock LightBlock, bc Blockchain) []
         }     
    } 
    
-   if trusted.ValidatorsHash != conflicting.ValidatorsHash or
-      trusted.NextValidatorsHash != conflicting.NextValidatorsHash or 
-      trusted.ConsensusHash != conflicting.ConsensusHash or 
-      trusted.AppHash != conflicting.AppHash or 
-      trusted.LastResultsHash != conflicting.LastResultsHash {
-        // find validators that have signed this header and that were present in trusted valset
-        for (i, commitSig) in conflicting.Commit.Signatures {
-            if commitSig.BlockIDFlag == BlockIDFlagCommit {
-                evidence = LunaticValidatorEvidence { conflicting, createVote(commit, commitSig, i) }
-                evidences.append(evidence)
-            }     
-        }
-   }
    return evidences         
+}
+```
+
+```go
+func isValid(evidence DuplicateVoteEvidence, bc Blockchain) boolean {
+    return evidence.VoteA.ValidatorAddress == evidence.VoteB.ValidatorAddress and
+           evidence.VoteA.Height == evidence.VoteB.Height and 
+           evidence.VoteA.Round == evidence.VoteB.Round and
+           evidence.VoteA.BlockID != evidence.VoteB.BlockID and 
+           evidence.VoteA.ValidatorAddress in getValidators(evidence.VoteA.Height) and
+           isValid(evidence.VoteA, getValidators(bc, evidence.VoteA.Height) and 
+           isValid(evidence.VoteB, getValidators(bc, evidence.VoteB.Height)     
 }
 ```
 
@@ -366,6 +399,143 @@ func createDuplicateVoteEvidences(conflictingBlock LightBlock, bc Blockchain) []
    return evidences         
 }
 ```
+
+```go
+type PotentialAmnesiaEvidence struct {
+	ProofOfFork        ProofOfFork
+    VoteA              Vote
+    VoteB              Vote
+}
+```
+
+```go
+func isValid(evidence PotentialAmnesiaEvidence, bc Blockchain) boolean {
+    return isValid(evidence.ProofOfFork) and
+           evidence.VoteA.ValidatorAddress == evidence.VoteB.ValidatorAddress and
+           evidence.VoteA.Height == evidence.VoteB.Height and 
+           evidence.VoteA.Round != evidence.VoteB.Round and
+           evidence.VoteA.BlockID != evidence.VoteB.BlockID and 
+           evidence.VoteA.ValidatorAddress in getValidators(evidence.VoteA.Height) and
+           isValid(evidence.VoteA, getValidators(bc, evidence.VoteA.Height) and 
+           isValid(evidence.VoteB, getValidators(bc, evidence.VoteB.Height)     
+}
+```
+
+```go
+func lcCreatePotentialAmnesiaEvidence(pof LProofOfFork) (LunaticAttackEvidence, 
+                                                         []DuplicateVoteEvidence,
+                                                         []PotentialAmnesiaEvidence) {
+   duplicateVoteEvidences = []DuplicateVoteEvidence
+   potentialAmnesiaEvidences = []PotentialAmnesiaEvidence
+   
+   if !isValid(pof) return (nil, nil, nil) 
+      
+   trustedHeader = pof.TrustedBlock.Header
+   conflictingCommit = pof.ConflictingBlock.Header
+
+   trustedCommit = pof.TrustedBlock.Commit
+   conflictingCommit = pof.ConflictingBlock.Commit
+    
+   if trustedHeader.Round == conflictingHeader.Round {
+      // there are two blocks for the same height and round, but different BlockID
+      // is signer of conflictingCommit is present in trustedCommit then we have equivocation attack
+      // else if signer is bonded then we have lunatic attack 
+   } else if trustedHeader.Round != conflictingHeader.Round {
+      // there are two blocks for the same height, but different round and different BlockID
+      // if signer of conflictingCommit is present in trustedCommit then we have potential amnesia attack
+      // else if signer is bonded then we have lunatic attack           
+   } 
+
+   // how we can decide if we should trigger amnesia protocol in case list of potential amnesia evidences is not empty?
+   // primary trace     h10 -> h15 -> h20 -> h35
+   // conflicting trace h10 -> h35
+   // if lunatic attack then we need +1/3 of voting power of h10 valset. No additional faults are needed
+   // Therefore if we can check if there are +1/3 of lunatics from the common header, we don't need to do additional checks
+
+   // if equivocation based attack we need +1/3 of voting power of h35 valset. 
+   // height and round are the same   
+ 
+
+   if trusted.Round != conflicting.Round {
+        for (i, commitSig) in conflicting.Signatures {
+            if commitSig.BlockIDFlag == BlockIDFlagCommit and 
+               commitSig.ValidatorAddress in getValidators(trusted) {
+                    evidence = PotentialAmnesiaEvidence { 
+                                    pof
+                                    createVote(commit, commitSig.ValidatorAddress)
+                                    createVote(commit, commitSig, i) 
+                               }
+                    evidences.append(evidence)
+            }     
+        }     
+   }    
+   return evidences         
+}
+```
+
+
+### Unifying evidence handling
+
+```go
+func extractEvidence(pof LProofOfFork, bc Blockchain) []PotentialAmnesiaEvidence {
+   duplicateVoteEvidences = []DuplicateVoteEvidence
+      potentialAmnesiaEvidences = []PotentialAmnesiaEvidence
+      
+      if !isValid(pof) return (nil, nil, nil) 
+         
+      trustedHeader = pof.TrustedBlock.Header
+      conflictingCommit = pof.ConflictingBlock.Header
+   
+      trustedCommit = pof.TrustedBlock.Commit
+      conflictingCommit = pof.ConflictingBlock.Commit
+       
+      if trustedHeader.Round == conflictingHeader.Round {
+         // there are two blocks for the same height and round, but different BlockID
+         // is signer of conflictingCommit is present in trustedCommit then we have equivocation attack
+         // else if signer is bonded then we have lunatic attack 
+      } else if trustedHeader.Round != conflictingHeader.Round {
+         // there are two blocks for the same height, but different round and different BlockID
+         // if signer of conflictingCommit is present in trustedCommit then we have potential amnesia attack
+         // else if signer is bonded then we have lunatic attack           
+      } 
+   
+      // how we can decide if we should trigger amnesia protocol in case list of potential amnesia evidences is not empty?
+      // primary trace     h10 -> h15 -> h20 -> h35
+      // conflicting trace h10 -> h35
+      // if lunatic attack then we need +1/3 of voting power of h10 valset. No additional faults are needed as they 
+      // modify values of values from the previous block  
+      // Therefore if we can check if there are +1/3 of lunatics from the common header, we don't need to do additional checks
+   
+      // if conflictingBlock.Header is valid (not lunatic) then we have the following options:
+      // precondition is +1/3 of voting power of h35 valset
+      // as block id is valid -> attack need to be executed by the validators that have signed trusted block
+      // if amnesia based attack they need +1/3 of voting power as they can rely on votes signed by correct 
+      // processes, but that are not decided.  
+         
+      // if equivocation based attack we need +1/3 of voting power of h35 valset. 
+      // height and round are the same   
+    
+
+   if trusted.Round != conflicting.Round {
+        for (i, commitSig) in conflicting.Signatures {
+            if commitSig.BlockIDFlag == BlockIDFlagCommit and 
+               commitSig.ValidatorAddress in getValidators(trusted) {
+                    evidence = PotentialAmnesiaEvidence { 
+                                    pof
+                                    createVote(commit, commitSig.ValidatorAddress)
+                                    createVote(commit, commitSig, i) 
+                               }
+                    evidences.append(evidence)
+            }     
+        }     
+   }    
+   return evidences         
+}
+```
+
+
+
+
 
 ### Figuring out if malicious behaviour
 
