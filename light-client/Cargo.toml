@@ -20,7 +20,7 @@ description = """
 
 [dependencies]
 tendermint = { version = "0.15.0", path = "../tendermint" }
-tendermint-rpc = { version = "0.15.0", path = "../rpc", features = ["client", "http_ws"] }
+tendermint-rpc = { version = "0.15.0", path = "../rpc", features = ["client", "transport_http"] }
 
 anomaly = { version = "0.2.0", features = ["serializer"] }
 contracts = "0.4.0"

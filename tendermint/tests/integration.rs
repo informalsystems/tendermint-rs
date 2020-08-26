@@ -11,7 +11,9 @@
 mod rpc {
     use std::cmp::min;
 
-    use tendermint_rpc::{FullClient, HttpClient, HttpWebSocketClient, MinimalClient};
+    use tendermint_rpc::{
+        Client, ClosableClient, HttpClient, SubscriptionClient, WebSocketSubscriptionClient,
+    };
 
     use futures::StreamExt;
     use tendermint::abci::Code;
@@ -149,7 +151,7 @@ mod rpc {
     #[tokio::test]
     #[ignore]
     async fn subscription_interface() {
-        let mut client = HttpWebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+        let mut client = WebSocketSubscriptionClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
         let mut subs = client
@@ -168,6 +170,7 @@ mod rpc {
             }
         }
 
+        subs.terminate().await.unwrap();
         client.close().await.unwrap();
     }
 }

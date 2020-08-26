@@ -12,7 +12,7 @@ use tendermint::{
 };
 
 use tendermint_rpc as rpc;
-use tendermint_rpc::MinimalClient;
+use tendermint_rpc::Client;
 
 use crate::{
     bail,

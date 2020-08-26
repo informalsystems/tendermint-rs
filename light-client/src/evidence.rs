@@ -4,7 +4,7 @@ use crate::{components::io::IoError, types::PeerId};
 
 use tendermint::abci::transaction::Hash;
 use tendermint_rpc as rpc;
-use tendermint_rpc::MinimalClient;
+use tendermint_rpc::Client;
 
 use contracts::{contract_trait, pre};
 use std::collections::HashMap;

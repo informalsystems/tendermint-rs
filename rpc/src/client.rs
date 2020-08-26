@@ -1,13 +1,21 @@
 //! Tendermint RPC client.
 
+#[cfg(feature = "subscription")]
 mod subscription;
-pub use subscription::{
-    EventRx, EventTx, PendingResultTx, Subscription, SubscriptionId, SubscriptionRouter,
-};
+#[cfg(feature = "subscription")]
+pub use subscription::{Subscription, SubscriptionClient, SubscriptionId, SubscriptionRouter};
+#[cfg(feature = "subscription")]
+pub mod sync;
 
 mod transport;
-#[cfg(feature = "http_ws")]
-pub use transport::{HttpClient, HttpWebSocketClient};
+#[cfg(feature = "transport_http")]
+pub use transport::http::HttpClient;
+#[cfg(all(feature = "subscription", feature = "transport_mock"))]
+pub use transport::mock::MockSubscriptionClient;
+#[cfg(feature = "transport_mock")]
+pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
+#[cfg(all(feature = "subscription", feature = "transport_websocket"))]
+pub use transport::websocket::WebSocketSubscriptionClient;
 
 use crate::endpoint::*;
 use crate::{Request, Result};
@@ -17,23 +25,15 @@ use tendermint::block::Height;
 use tendermint::evidence::Evidence;
 use tendermint::Genesis;
 
-/// The default number of events we buffer in a [`Subscription`] if you do not
-/// specify the buffer size when creating it.
-///
-/// [`Subscription`]: struct.Subscription.html
-///
-pub const DEFAULT_SUBSCRIPTION_BUF_SIZE: usize = 100;
-
 /// Provides lightweight access to the Tendermint RPC. It gives access to all
 /// endpoints with the exception of the event subscription-related ones.
 ///
-/// To access event subscription capabilities, rather use a client that
-/// implements the [`FullClient`] trait.
+/// To access event subscription capabilities, use a client that implements the
+/// [`SubscriptionClient`] trait.
 ///
-/// [`FullClient`]: trait.FullClient.html
-///
+/// [`SubscriptionClient`]: trait.SubscriptionClient.html
 #[async_trait]
-pub trait MinimalClient {
+pub trait Client: ClosableClient {
     /// `/abci_info`: get information about the ABCI application.
     async fn abci_info(&self) -> Result<abci_info::AbciInfo> {
         Ok(self.perform(abci_info::Request).await?.response)
@@ -168,53 +168,18 @@ pub trait MinimalClient {
     async fn perform<R>(&self, request: R) -> Result<R::Response>
     where
         R: Request;
-
-    /// Gracefully terminate the underlying connection (if relevant - depends
-    /// on the underlying transport).
-    async fn close(self) -> Result<()>;
 }
 
-/// A client that augments a [`MinimalClient`] functionality with subscription
-/// capabilities.
+/// A client that provides a self-consuming `close` method, to allow for
+/// graceful termination.
 ///
-/// [`MinimalClient`]: trait.MinimalClient.html
+/// This trait acts as a common trait to both the [`Client`] and
+/// [`SubscriptionClient`] traits.
 ///
+/// [`Client`]: trait.Client.html
+/// [`SubscriptionClient`]: trait.SubscriptionClient.html
 #[async_trait]
-pub trait FullClient: MinimalClient {
-    /// `/subscribe`: subscribe to receive events produced by the given query.
-    ///
-    /// Allows for specification of the `buf_size` parameter, which determines
-    /// how many events can be buffered in the resulting [`Subscription`]. The
-    /// size of this buffer must be tuned according to how quickly your
-    /// application can process the incoming events from this particular query.
-    /// The slower your application processes events, the larger this buffer
-    /// needs to be.
-    ///
-    /// [`Subscription`]: struct.Subscription.html
-    ///
-    async fn subscribe_with_buf_size(
-        &mut self,
-        query: String,
-        buf_size: usize,
-    ) -> Result<Subscription>;
-
-    /// `/subscribe`: subscribe to receive events produced by the given query.
-    ///
-    /// Uses [`DEFAULT_SUBSCRIPTION_BUF_SIZE`] as the buffer size for the
-    /// returned [`Subscription`].
-    ///
-    /// [`DEFAULT_SUBSCRIPTION_BUF_SIZE`]: constant.DEFAULT_SUBSCRIPTION_BUF_SIZE.html
-    /// [`Subscription`]: struct.Subscription.html
-    ///
-    async fn subscribe(&mut self, query: String) -> Result<Subscription> {
-        self.subscribe_with_buf_size(query, DEFAULT_SUBSCRIPTION_BUF_SIZE)
-            .await
-    }
-
-    /// `/unsubscribe`: unsubscribe from receiving events for the given
-    /// subscription.
-    ///
-    /// This terminates the given subscription and consumes it, since it is no
-    /// longer usable.
-    async fn unsubscribe(&mut self, subscription: Subscription) -> Result<()>;
+pub trait ClosableClient {
+    /// Gracefully close the client.
+    async fn close(self) -> Result<()>;
 }

@@ -1,6 +1,6 @@
 //! JSONRPC error types
 
-#[cfg(feature = "client")]
+#[cfg(all(feature = "client", feature = "transport_websocket"))]
 use async_tungstenite::tungstenite::Error as WSError;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -123,7 +123,7 @@ impl From<hyper::Error> for Error {
     }
 }
 
-#[cfg(feature = "client")]
+#[cfg(all(feature = "client", feature = "transport_websocket"))]
 impl From<WSError> for Error {
     fn from(websocket_error: WSError) -> Error {
         Error::websocket_error(websocket_error.to_string())
@@ -140,8 +140,8 @@ pub enum Code {
     #[error("HTTP error")]
     HttpError,
 
-    /// Low-level Websocket error
-    #[error("Websocket Error")]
+    /// Low-level WebSocket error
+    #[error("WebSocket Error")]
     WebSocketError,
 
     /// An internal error occurred within the client.
