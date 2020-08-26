@@ -5,6 +5,7 @@
 - Add missing documentation to all items ([#472])
 - Add major contributors as authors of the `light-client`, `light-node`, and `rpc` crate ([#472])
 - Remove and consolidate deprecated [lite] and [lite_impl] modules from the `tendermint` crate ([#500])
+- Dependency update: sled 0.34 ([#490])
 
 [#472]: https://github.com/informalsystems/tendermint-rs/pull/472
 [lite_impl]: https://github.com/informalsystems/tendermint-rs/tree/master/tendermint/src/lite_impl
