@@ -10,6 +10,8 @@ use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
 };
+use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
+use std::convert::TryFrom;
 
 /// Votes are signed messages from validators for a particular block which
 /// include information about the validator signing it.
@@ -104,7 +106,10 @@ impl SignedVote {
 
     /// Return the bytes (of the canonicalized vote) that were signed.
     pub fn sign_bytes(&self) -> Vec<u8> {
-        self.vote.bytes_vec_length_delimited()
+        // Todo: Greg cleanup, error handling
+        let raw_canonical_vote: RawCanonicalVote = RawCanonicalVote::try_from(self.vote.clone()).unwrap();
+        AminoMessage::bytes_vec_length_delimited(&raw_canonical_vote)
+        //self.vote.bytes_vec_length_delimited()
     }
 
     /// Return the actual signature on the canonicalized vote.

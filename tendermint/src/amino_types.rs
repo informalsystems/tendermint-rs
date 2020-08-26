@@ -9,7 +9,6 @@ pub mod message;
 pub mod proposal;
 pub mod signature;
 pub mod validate;
-pub mod version;
 pub mod vote;
 
 pub use self::{
@@ -18,6 +17,4 @@ pub use self::{
     proposal::{SignProposalRequest, SignedProposalResponse},
     signature::{SignableMsg, SignedMsgType},
     validate::ConsensusMessage,
-    version::ConsensusVersion,
-    vote::{SignVoteRequest, SignedVoteResponse},
 };

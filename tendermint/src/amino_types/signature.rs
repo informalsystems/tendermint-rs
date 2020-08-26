@@ -2,6 +2,7 @@ use super::validate;
 use crate::{chain, consensus};
 use bytes::BufMut;
 use prost::{DecodeError, EncodeError};
+use tendermint_proto::types::SignedMsgType as RawSignedMsgType;
 
 /// Amino messages which are signable within a Tendermint network
 pub trait SignableMsg {
@@ -20,10 +21,8 @@ pub trait SignableMsg {
     fn msg_type(&self) -> Option<SignedMsgType>;
 }
 
-// Copied from use tendermint_proto::types::SignedMsgType
 /// SignedMsgType is a type of signed message in the consensus.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SignedMsgType {
     Unknown = 0,
     /// Votes
@@ -33,9 +32,37 @@ pub enum SignedMsgType {
     Proposal = 32,
 }
 
+impl From<RawSignedMsgType> for SignedMsgType {
+    fn from(value: RawSignedMsgType) -> Self {
+        match value {
+            RawSignedMsgType::Unknown => SignedMsgType::Unknown,
+            RawSignedMsgType::Prevote => SignedMsgType::Prevote,
+            RawSignedMsgType::Precommit => SignedMsgType::Precommit,
+            RawSignedMsgType::Proposal => SignedMsgType::Proposal,
+        }
+    }
+}
+
+impl From<SignedMsgType> for RawSignedMsgType {
+    fn from(value: SignedMsgType) -> Self {
+        match value {
+            SignedMsgType::Unknown => RawSignedMsgType::Unknown,
+            SignedMsgType::Prevote => RawSignedMsgType::Prevote,
+            SignedMsgType::Precommit => RawSignedMsgType::Precommit,
+            SignedMsgType::Proposal => RawSignedMsgType::Proposal,
+        }
+    }
+}
+
 impl PartialEq<SignedMsgType> for i32 {
     fn eq(&self, other: &SignedMsgType) -> bool {
         *self == *other as i32
+    }
+}
+
+impl PartialEq<SignedMsgType> for u32 {
+    fn eq(&self, other: &SignedMsgType) -> bool {
+        *self == *other as u32
     }
 }
 

@@ -6,6 +6,8 @@ use crate::{
 use anomaly::format_err;
 use std::convert::TryFrom;
 use tendermint_proto::crypto::public_key::Sum;
+use tendermint_proto::privval::PubKeyRequest as RawPubKeyRequest;
+use tendermint_proto::privval::PubKeyResponse as RawPubKeyResponse;
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
 // github.com/tendermint/tendermint/crypto.PubKey
@@ -13,22 +15,51 @@ use tendermint_proto::crypto::public_key::Sum;
 // version.
 // TODO(ismail): make this more generic (by modifying prost and adding a trait for PubKey)
 
-// Copied from tendermint_proto::privval::PubKeyResponse;
 /// PubKeyResponse is a response message containing the public key.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq)]
 pub struct PubKeyResponse {
-    #[prost(message, optional, tag = "1")]
-    pub pub_key: ::std::option::Option<tendermint_proto::crypto::PublicKey>,
-    #[prost(message, optional, tag = "2")]
-    pub error: ::std::option::Option<tendermint_proto::privval::RemoteSignerError>,
+    pub pub_key: Option<tendermint_proto::crypto::PublicKey>,
+    pub error: Option<tendermint_proto::privval::RemoteSignerError>,
 }
 
-// Copied from tendermint_proto::privval::PubKeyRequest;
+impl From<RawPubKeyResponse> for PubKeyResponse {
+    fn from(value: RawPubKeyResponse) -> Self {
+        PubKeyResponse {
+            pub_key: value.pub_key,
+            error: value.error,
+        }
+    }
+}
+
+impl From<PubKeyResponse> for RawPubKeyResponse {
+    fn from(value: PubKeyResponse) -> Self {
+        RawPubKeyResponse {
+            pub_key: value.pub_key,
+            error: value.error,
+        }
+    }
+}
+
 /// PubKeyRequest requests the consensus public key from the remote signer.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq)]
 pub struct PubKeyRequest {
-    #[prost(string, tag = "1")]
     pub chain_id: String,
+}
+
+impl From<RawPubKeyRequest> for PubKeyRequest {
+    fn from(value: RawPubKeyRequest) -> Self {
+        PubKeyRequest {
+            chain_id: value.chain_id,
+        }
+    }
+}
+
+impl From<PubKeyRequest> for RawPubKeyRequest {
+    fn from(value: PubKeyRequest) -> Self {
+        RawPubKeyRequest {
+            chain_id: value.chain_id,
+        }
+    }
 }
 
 impl TryFrom<PubKeyResponse> for PublicKey {
@@ -97,7 +128,8 @@ mod tests {
             chain_id: "".to_string(),
         };
         let mut got = vec![];
-        let _have = msg.encode(&mut got);
+        let _have = Into::<RawPubKeyRequest>::into(msg).encode(&mut got);
+        //let _have = msg.encode(&mut got);
 
         assert_eq!(got, want);
 

@@ -12,26 +12,69 @@ use crate::{
 };
 use bytes::BufMut;
 use prost::{EncodeError, Message};
+use prost_types::Timestamp;
 use std::convert::TryFrom;
 use tendermint_proto::privval::RemoteSignerError;
+use tendermint_proto::privval::SignProposalRequest as RawSignProposalRequest;
+use tendermint_proto::privval::SignedProposalResponse as RawSignedProposalResponse;
+use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
+use tendermint_proto::types::Proposal as RawProposal;
+use crate::amino_types::validate::Kind::OverflowMessageType;
 
-// Copied from tendermint_proto::types::Proposal
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq)]
 pub struct Proposal {
-    #[prost(enumeration = "SignedMsgType", tag = "1")]
-    pub r#type: i32,
-    #[prost(int64, tag = "2")]
+    pub msg_type: u32,
     pub height: i64,
-    #[prost(int32, tag = "3")]
     pub round: i32,
-    #[prost(int32, tag = "4")]
     pub pol_round: i32,
-    #[prost(message, optional, tag = "5")]
     pub block_id: ::std::option::Option<BlockId>,
-    #[prost(message, optional, tag = "6")]
-    pub timestamp: ::std::option::Option<::prost_types::Timestamp>,
-    #[prost(bytes, tag = "7")]
+    pub timestamp: ::std::option::Option<Timestamp>,
     pub signature: Vec<u8>,
+}
+
+impl TryFrom<RawProposal> for Proposal {
+    type Error = validate::Error;
+
+    fn try_from(value: RawProposal) -> Result<Self, Self::Error> {
+        if value.r#type < 0 {
+            return Err(InvalidMessageType.into());
+        }
+        let result = Proposal {
+            msg_type: value.r#type as u32,
+            height: value.height,
+            round: value.round,
+            pol_round: value.pol_round,
+            block_id: match value.block_id {
+                None => None,
+                Some(raw_block_id) => Some(BlockId::from(raw_block_id)),
+            },
+            timestamp: value.timestamp,
+            signature: value.signature,
+        };
+        result.validate_basic().map(|_| result)
+    }
+}
+
+impl TryFrom<Proposal> for RawProposal {
+    type Error = validate::Error;
+
+    fn try_from(value: Proposal) -> Result<Self, Self::Error> {
+        if value.msg_type > i32::MAX as u32 {
+            return Err(OverflowMessageType.into());
+        }
+        Ok(RawProposal {
+            r#type: value.msg_type as i32,
+            height: value.height,
+            round: value.round,
+            pol_round: value.pol_round,
+            block_id: match value.block_id {
+                None => None,
+                Some(block_id) => Some(block_id.into()),
+            },
+            timestamp: value.timestamp,
+            signature: value.signature,
+        })
+    }
 }
 
 // TODO(tony): custom derive proc macro for this e.g. `derive(ParseBlockHeight)`
@@ -41,36 +84,92 @@ impl block::ParseHeight for Proposal {
     }
 }
 
-// Copied from tendermint_proto::privval::SignProposalRequest
 /// SignProposalRequest is a request to sign a proposal
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq)]
 pub struct SignProposalRequest {
-    #[prost(message, optional, tag = "1")]
-    pub proposal: ::std::option::Option<Proposal>,
-    #[prost(string, tag = "2")]
+    pub proposal: Option<Proposal>,
     pub chain_id: String,
 }
 
-// Copied from tendermint_proto::types::CanonicalProposal
-#[derive(Clone, PartialEq, ::prost::Message)]
+impl TryFrom<RawSignProposalRequest> for SignProposalRequest {
+    type Error = validate::Error;
+
+    fn try_from(value: RawSignProposalRequest) -> Result<Self,Self::Error> {
+        Ok(SignProposalRequest {
+            proposal: match value.proposal {
+                None => None,
+                Some(proposal) => Some(Proposal::try_from(proposal)?),
+            },
+            chain_id: value.chain_id,
+        })
+    }
+}
+
+impl TryFrom<SignProposalRequest> for RawSignProposalRequest {
+    type Error = validate::Error;
+
+    fn try_from(value: SignProposalRequest) -> Result<Self, Self::Error> {
+        Ok(RawSignProposalRequest {
+            proposal: match value.proposal {
+                None => None,
+                Some(proposal) => Some(RawProposal::try_from(proposal)?)
+            },
+            chain_id: value.chain_id,
+        })
+    }
+}
+
+#[derive(Clone, PartialEq)]
 pub struct CanonicalProposal {
     /// type alias for byte
-    #[prost(enumeration = "SignedMsgType", tag = "1")]
-    pub r#type: i32,
+    pub msg_type: u32,
     /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag = "2")]
     pub height: i64,
     /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag = "3")]
     pub round: i64,
-    #[prost(int64, tag = "4")]
     pub pol_round: i64,
-    #[prost(message, optional, tag = "5")]
-    pub block_id: ::std::option::Option<CanonicalBlockId>,
-    #[prost(message, optional, tag = "6")]
-    pub timestamp: ::std::option::Option<::prost_types::Timestamp>,
-    #[prost(string, tag = "7")]
+    pub block_id: Option<CanonicalBlockId>,
+    pub timestamp: Option<Timestamp>,
     pub chain_id: String,
+}
+
+impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
+    type Error = validate::Error;
+
+    fn try_from(value: RawCanonicalProposal) -> Result<Self, Self::Error> {
+        if value.r#type < 0 {
+            return Err(InvalidMessageType.into());
+        }
+        Ok(CanonicalProposal {
+            msg_type: value.r#type as u32,
+            height: value.height,
+            round: value.round,
+            pol_round: value.pol_round,
+            block_id: match value.block_id {
+                None => None,
+                Some(block_id) => Some(block_id.into()),
+            },
+            timestamp: value.timestamp,
+            chain_id: value.chain_id,
+        })
+    }
+}
+
+impl From<CanonicalProposal> for RawCanonicalProposal {
+    fn from(value: CanonicalProposal) -> Self {
+        RawCanonicalProposal {
+            r#type: value.msg_type as i32,
+            height: value.height,
+            round: value.round,
+            pol_round: value.pol_round,
+            block_id: match value.block_id {
+                None => None,
+                Some(block_id) => Some(block_id.into()),
+            },
+            timestamp: value.timestamp,
+            chain_id: value.chain_id,
+        }
+    }
 }
 
 impl chain::ParseId for CanonicalProposal {
@@ -85,14 +184,39 @@ impl block::ParseHeight for CanonicalProposal {
     }
 }
 
-// Copied from tendermint_proto::privval::SignedProposalResponse
 /// SignedProposalResponse is response containing a signed proposal or an error
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq)]
 pub struct SignedProposalResponse {
-    #[prost(message, optional, tag = "1")]
-    pub proposal: ::std::option::Option<Proposal>,
-    #[prost(message, optional, tag = "2")]
-    pub error: ::std::option::Option<RemoteSignerError>,
+    pub proposal: Option<Proposal>,
+    pub error: Option<RemoteSignerError>,
+}
+
+impl TryFrom<RawSignedProposalResponse> for SignedProposalResponse {
+    type Error = validate::Error;
+
+    fn try_from(value: RawSignedProposalResponse) -> Result<Self, Self::Error> {
+        Ok(SignedProposalResponse {
+            proposal: match value.proposal {
+                None => None,
+                Some(proposal) => Some(Proposal::try_from(proposal)?)
+            },
+            error: value.error,
+        })
+    }
+}
+
+impl TryFrom<SignedProposalResponse> for RawSignedProposalResponse {
+    type Error = validate::Error;
+
+    fn try_from(value: SignedProposalResponse) -> Result<Self, Self::Error> {
+        Ok(RawSignedProposalResponse {
+            proposal: match value.proposal {
+                None => None,
+                Some(proposal) => Some(RawProposal::try_from(proposal)?)
+            },
+            error: value.error
+        })
+    }
 }
 
 impl SignableMsg for SignProposalRequest {
@@ -107,7 +231,7 @@ impl SignableMsg for SignProposalRequest {
         let proposal = spr.proposal.unwrap();
         let cp = CanonicalProposal {
             chain_id: chain_id.to_string(),
-            r#type: SignedMsgType::Proposal as i32,
+            msg_type: SignedMsgType::Proposal as u32,
             height: proposal.height,
             block_id: match proposal.block_id {
                 Some(bid) => Some(CanonicalBlockId {
@@ -127,7 +251,7 @@ impl SignableMsg for SignProposalRequest {
             timestamp: proposal.timestamp,
         };
 
-        cp.encode_length_delimited(sign_bytes)?;
+        RawCanonicalProposal::from(cp).encode_length_delimited(sign_bytes)?;
         Ok(true)
     }
     fn set_signature(&mut self, sig: &ed25519::Signature) {
@@ -175,7 +299,7 @@ impl SignableMsg for SignProposalRequest {
 
 impl ConsensusMessage for Proposal {
     fn validate_basic(&self) -> Result<(), validate::Error> {
-        if self.r#type != SignedMsgType::Proposal {
+        if self.msg_type != SignedMsgType::Proposal {
             return Err(InvalidMessageType.into());
         }
         if self.height < 0 {
@@ -202,7 +326,7 @@ mod tests {
     use crate::chain::Id;
     use chrono::{DateTime, Utc};
     use prost::Message;
-    use prost_types::Timestamp;
+    use Timestamp;
 
     #[test]
     fn test_serialization() {
@@ -212,7 +336,7 @@ mod tests {
             nanos: dt.timestamp_subsec_nanos() as i32,
         };
         let proposal = Proposal {
-            r#type: SignedMsgType::Proposal as i32,
+            msg_type: SignedMsgType::Proposal as u32,
             height: 12345,
             round: 23456,
             pol_round: -1,
@@ -285,7 +409,7 @@ mod tests {
             nanos: dt.timestamp_subsec_nanos() as i32,
         };
         let proposal = Proposal {
-            r#type: SignedMsgType::Proposal as i32,
+            msg_type: SignedMsgType::Proposal as u32,
             height: 12345,
             round: 23456,
             timestamp: Some(t),
