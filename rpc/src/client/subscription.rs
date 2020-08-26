@@ -84,7 +84,7 @@ pub struct Subscription {
     // Our internal result event receiver for this subscription.
     event_rx: ChannelRx<Result<Event>>,
     // Allows us to gracefully terminate this subscription.
-    terminate_tx: ChannelTx<SubscriptionTermination>,
+    terminate_tx: ChannelTx<TerminateSubscription>,
 }
 
 impl Stream for Subscription {
@@ -100,7 +100,7 @@ impl Subscription {
         id: SubscriptionId,
         query: String,
         event_rx: ChannelRx<Result<Event>>,
-        terminate_tx: ChannelTx<SubscriptionTermination>,
+        terminate_tx: ChannelTx<TerminateSubscription>,
     ) -> Self {
         Self {
             id,
@@ -117,9 +117,9 @@ impl Subscription {
     pub async fn terminate(mut self) -> Result<()> {
         let (result_tx, mut result_rx) = unbounded();
         self.terminate_tx
-            .send(SubscriptionTermination {
-                query: self.query.clone(),
+            .send(TerminateSubscription {
                 id: self.id.clone(),
+                query: self.query.clone(),
                 result_tx,
             })
             .await?;
@@ -137,9 +137,9 @@ impl Subscription {
 /// We expect the driver to use the `result_tx` channel to communicate the
 /// result of the termination request to the original caller.
 #[derive(Debug, Clone)]
-pub struct SubscriptionTermination {
-    pub query: String,
+pub struct TerminateSubscription {
     pub id: SubscriptionId,
+    pub query: String,
     pub result_tx: ChannelTx<Result<()>>,
 }
 
@@ -186,14 +186,27 @@ impl TryInto<SubscriptionId> for Id {
             Id::Str(s) => Ok(SubscriptionId(s)),
             Id::Num(i) => Ok(SubscriptionId(format!("{}", i))),
             Id::None => Err(Error::client_internal_error(
-                "cannot convert an empty JSONRPC ID into a subscription ID",
+                "cannot convert an empty JSON-RPC ID into a subscription ID",
             )),
         }
     }
 }
 
+impl AsRef<str> for SubscriptionId {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
+impl From<&str> for SubscriptionId {
+    fn from(s: &str) -> Self {
+        Self(s.to_string())
+    }
+}
+
 #[derive(Debug)]
 struct PendingSubscribe {
+    id: SubscriptionId,
     query: String,
     event_tx: ChannelTx<Result<Event>>,
     result_tx: ChannelTx<Result<()>>,
@@ -201,6 +214,7 @@ struct PendingSubscribe {
 
 #[derive(Debug)]
 struct PendingUnsubscribe {
+    id: SubscriptionId,
     query: String,
     result_tx: ChannelTx<Result<()>>,
 }
@@ -222,8 +236,12 @@ pub enum SubscriptionState {
 #[derive(Debug)]
 pub struct SubscriptionRouter {
     subscriptions: HashMap<String, HashMap<SubscriptionId, ChannelTx<Result<Event>>>>,
-    pending_subscribe: HashMap<SubscriptionId, PendingSubscribe>,
-    pending_unsubscribe: HashMap<SubscriptionId, PendingUnsubscribe>,
+    // A map of JSON-RPC request IDs (for `/subscribe` requests) to pending
+    // subscription requests.
+    pending_subscribe: HashMap<String, PendingSubscribe>,
+    // A map of JSON-RPC request IDs (for the `/unsubscribe` requests) to pending
+    // unsubscribe requests.
+    pending_unsubscribe: HashMap<String, PendingUnsubscribe>,
 }
 
 impl SubscriptionRouter {
@@ -253,7 +271,7 @@ impl SubscriptionRouter {
 
     /// Immediately add a new subscription to the router without waiting for
     /// confirmation.
-    pub fn add(&mut self, id: SubscriptionId, query: String, event_tx: ChannelTx<Result<Event>>) {
+    pub fn add(&mut self, id: &SubscriptionId, query: String, event_tx: ChannelTx<Result<Event>>) {
         let subs_for_query = match self.subscriptions.get_mut(&query) {
             Some(s) => s,
             None => {
@@ -261,21 +279,27 @@ impl SubscriptionRouter {
                 self.subscriptions.get_mut(&query).unwrap()
             }
         };
-        subs_for_query.insert(id, event_tx);
+        subs_for_query.insert(id.clone(), event_tx);
     }
 
     /// Keep track of a pending subscription, which can either be confirmed or
     /// cancelled.
+    ///
+    /// `req_id` must be a unique identifier for this particular pending
+    /// subscription request operation, where `subs_id` must be the unique ID
+    /// of the subscription we eventually want added.
     pub fn pending_add(
         &mut self,
-        id: SubscriptionId,
+        req_id: &str,
+        subs_id: &SubscriptionId,
         query: String,
         event_tx: ChannelTx<Result<Event>>,
         result_tx: ChannelTx<Result<()>>,
     ) {
         self.pending_subscribe.insert(
-            id,
+            req_id.to_string(),
             PendingSubscribe {
+                id: subs_id.clone(),
                 query,
                 event_tx,
                 result_tx,
@@ -283,15 +307,15 @@ impl SubscriptionRouter {
         );
     }
 
-    /// Attempts to confirm the pending subscription with the given ID.
+    /// Attempts to confirm the pending subscription request with the given ID.
     ///
     /// Returns an error if it fails to respond to the original caller to
     /// indicate success.
-    pub async fn confirm_add(&mut self, id: &SubscriptionId) -> Result<()> {
-        match self.pending_subscribe.remove(id) {
+    pub async fn confirm_add(&mut self, req_id: &str) -> Result<()> {
+        match self.pending_subscribe.remove(req_id) {
             Some(mut pending_subscribe) => {
                 self.add(
-                    id.clone(),
+                    &pending_subscribe.id,
                     pending_subscribe.query.clone(),
                     pending_subscribe.event_tx,
                 );
@@ -304,8 +328,8 @@ impl SubscriptionRouter {
     /// Attempts to cancel the pending subscription with the given ID, sending
     /// the specified error to the original creator of the attempted
     /// subscription.
-    pub async fn cancel_add(&mut self, id: &SubscriptionId, err: impl Into<Error>) -> Result<()> {
-        match self.pending_subscribe.remove(id) {
+    pub async fn cancel_add(&mut self, req_id: &str, err: impl Into<Error>) -> Result<()> {
+        match self.pending_subscribe.remove(req_id) {
             Some(mut pending_subscribe) => Ok(pending_subscribe
                 .result_tx
                 .send(Err(err.into()))
@@ -313,7 +337,7 @@ impl SubscriptionRouter {
                 .map_err(|_| {
                     Error::client_internal_error(format!(
                         "failed to communicate result of pending subscription with ID: {}",
-                        id
+                        pending_subscribe.id,
                     ))
                 })?),
             None => Ok(()),
@@ -321,35 +345,40 @@ impl SubscriptionRouter {
     }
 
     /// Immediately remove the subscription with the given query and ID.
-    pub fn remove(&mut self, query: String, id: SubscriptionId) {
+    pub fn remove(&mut self, id: &SubscriptionId, query: String) {
         let subs_for_query = match self.subscriptions.get_mut(&query) {
             Some(s) => s,
             None => return,
         };
-        subs_for_query.remove(&id);
+        subs_for_query.remove(id);
     }
 
     /// Keeps track of a pending unsubscribe request, which can either be
     /// confirmed or cancelled.
     pub fn pending_remove(
         &mut self,
+        req_id: &str,
+        subs_id: &SubscriptionId,
         query: String,
-        id: SubscriptionId,
         result_tx: ChannelTx<Result<()>>,
     ) {
-        self.pending_unsubscribe
-            .insert(id, PendingUnsubscribe { query, result_tx });
+        self.pending_unsubscribe.insert(
+            req_id.to_string(),
+            PendingUnsubscribe {
+                id: subs_id.clone(),
+                query,
+                result_tx,
+            },
+        );
     }
 
     /// Confirm the pending unsubscribe request for the subscription with the
     /// given ID.
-    pub async fn confirm_remove(&mut self, id: &SubscriptionId) -> Result<()> {
-        match self.pending_unsubscribe.remove(id) {
-            Some(pending_unsubscribe) => {
-                let (query, mut result_tx) =
-                    (pending_unsubscribe.query, pending_unsubscribe.result_tx);
-                self.remove(query, id.clone());
-                Ok(result_tx.send(Ok(())).await?)
+    pub async fn confirm_remove(&mut self, req_id: &str) -> Result<()> {
+        match self.pending_unsubscribe.remove(req_id) {
+            Some(mut pending_unsubscribe) => {
+                self.remove(&pending_unsubscribe.id, pending_unsubscribe.query.clone());
+                Ok(pending_unsubscribe.result_tx.send(Ok(())).await?)
             }
             None => Ok(()),
         }
@@ -357,12 +386,8 @@ impl SubscriptionRouter {
 
     /// Cancel the pending unsubscribe request for the subscription with the
     /// given ID, responding with the given error.
-    pub async fn cancel_remove(
-        &mut self,
-        id: &SubscriptionId,
-        err: impl Into<Error>,
-    ) -> Result<()> {
-        match self.pending_unsubscribe.remove(id) {
+    pub async fn cancel_remove(&mut self, req_id: &str, err: impl Into<Error>) -> Result<()> {
+        match self.pending_unsubscribe.remove(req_id) {
             Some(mut pending_unsubscribe) => {
                 Ok(pending_unsubscribe.result_tx.send(Err(err.into())).await?)
             }
@@ -392,14 +417,14 @@ impl SubscriptionRouter {
 
     /// Utility method to determine the current state of the subscription with
     /// the given ID.
-    pub fn subscription_state(&self, id: &SubscriptionId) -> SubscriptionState {
-        if self.pending_subscribe.contains_key(id) {
+    pub fn subscription_state(&self, req_id: &str) -> SubscriptionState {
+        if self.pending_subscribe.contains_key(req_id) {
             return SubscriptionState::Pending;
         }
-        if self.pending_unsubscribe.contains_key(id) {
+        if self.pending_unsubscribe.contains_key(req_id) {
             return SubscriptionState::Cancelling;
         }
-        if self.is_active(id) {
+        if self.is_active(&SubscriptionId::from(req_id)) {
             return SubscriptionState::Active;
         }
         SubscriptionState::NotFound
@@ -471,10 +496,10 @@ mod test {
         let (subs3_event_tx, mut subs3_event_rx) = unbounded();
 
         // Two subscriptions with the same query
-        router.add(subs1_id.clone(), "query1".into(), subs1_event_tx);
-        router.add(subs2_id.clone(), "query1".into(), subs2_event_tx);
+        router.add(&subs1_id, "query1".into(), subs1_event_tx);
+        router.add(&subs2_id, "query1".into(), subs2_event_tx);
         // Another subscription with a different query
-        router.add(subs3_id.clone(), "query2".into(), subs3_event_tx);
+        router.add(&subs3_id, "query2".into(), subs3_event_tx);
 
         let mut ev = read_event("event_new_block_1").await;
         ev.query = "query1".into();
@@ -507,20 +532,26 @@ mod test {
 
         assert_eq!(
             SubscriptionState::NotFound,
-            router.subscription_state(&subs_id)
+            router.subscription_state(&subs_id.to_string())
         );
-        router.pending_add(subs_id.clone(), query.clone(), event_tx, result_tx);
+        router.pending_add(
+            subs_id.as_ref(),
+            &subs_id,
+            query.clone(),
+            event_tx,
+            result_tx,
+        );
         assert_eq!(
             SubscriptionState::Pending,
-            router.subscription_state(&subs_id)
+            router.subscription_state(subs_id.as_ref())
         );
         router.publish(ev.clone()).await;
         must_not_recv(&mut event_rx, 50).await;
 
-        router.confirm_add(&subs_id).await.unwrap();
+        router.confirm_add(subs_id.as_ref()).await.unwrap();
         assert_eq!(
             SubscriptionState::Active,
-            router.subscription_state(&subs_id)
+            router.subscription_state(subs_id.as_ref())
         );
         must_not_recv(&mut event_rx, 50).await;
         let _ = must_recv(&mut result_rx, 500).await;
@@ -530,16 +561,16 @@ mod test {
         assert_eq!(ev, received_ev);
 
         let (result_tx, mut result_rx) = unbounded();
-        router.pending_remove(query.clone(), subs_id.clone(), result_tx);
+        router.pending_remove(subs_id.as_ref(), &subs_id, query.clone(), result_tx);
         assert_eq!(
             SubscriptionState::Cancelling,
-            router.subscription_state(&subs_id),
+            router.subscription_state(subs_id.as_ref()),
         );
 
-        router.confirm_remove(&subs_id).await.unwrap();
+        router.confirm_remove(subs_id.as_ref()).await.unwrap();
         assert_eq!(
             SubscriptionState::NotFound,
-            router.subscription_state(&subs_id)
+            router.subscription_state(subs_id.as_ref())
         );
         router.publish(ev.clone()).await;
         if must_recv(&mut result_rx, 500).await.is_err() {
@@ -559,24 +590,24 @@ mod test {
 
         assert_eq!(
             SubscriptionState::NotFound,
-            router.subscription_state(&subs_id)
+            router.subscription_state(subs_id.as_ref())
         );
-        router.pending_add(subs_id.clone(), query, event_tx, result_tx);
+        router.pending_add(subs_id.as_ref(), &subs_id, query, event_tx, result_tx);
         assert_eq!(
             SubscriptionState::Pending,
-            router.subscription_state(&subs_id)
+            router.subscription_state(subs_id.as_ref())
         );
         router.publish(ev.clone()).await;
         must_not_recv(&mut event_rx, 50).await;
 
         let cancel_error = Error::client_internal_error("cancelled");
         router
-            .cancel_add(&subs_id, cancel_error.clone())
+            .cancel_add(subs_id.as_ref(), cancel_error.clone())
             .await
             .unwrap();
         assert_eq!(
             SubscriptionState::NotFound,
-            router.subscription_state(&subs_id)
+            router.subscription_state(subs_id.as_ref())
         );
         assert_eq!(Err(cancel_error), must_recv(&mut result_rx, 500).await);
 

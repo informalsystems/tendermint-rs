@@ -40,18 +40,15 @@ where
 {
     /// Create a new request wrapper from the given request.
     ///
-    /// By default this sets the ID of the request to a random [UUIDv4] value.
+    /// The ID of the request is set to a random [UUIDv4] value.
     ///
     /// [UUIDv4]: https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)
     pub fn new(request: R) -> Self {
-        Wrapper::new_with_id(Id::uuid_v4(), request)
-    }
-
-    /// Create a new request wrapper with a custom JSONRPC request ID.
-    pub fn new_with_id(id: Id, request: R) -> Self {
         Self {
             jsonrpc: Version::current(),
-            id,
+            // NB: The WebSocket client relies on this being some kind of UUID,
+            // and will break if it's not.
+            id: Id::uuid_v4(),
             method: request.method(),
             params: request,
         }

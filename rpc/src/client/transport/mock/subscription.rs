@@ -1,6 +1,6 @@
 //! Subscription functionality for the Tendermint RPC mock client.
 
-use crate::client::subscription::SubscriptionTermination;
+use crate::client::subscription::TerminateSubscription;
 use crate::client::sync::{bounded, unbounded, ChannelRx, ChannelTx};
 use crate::client::{ClosableClient, SubscriptionRouter};
 use crate::event::Event;
@@ -21,7 +21,7 @@ pub struct MockSubscriptionClient {
     driver_hdl: JoinHandle<Result<()>>,
     event_tx: ChannelTx<Event>,
     cmd_tx: ChannelTx<DriverCmd>,
-    terminate_tx: ChannelTx<SubscriptionTermination>,
+    terminate_tx: ChannelTx<TerminateSubscription>,
 }
 
 #[async_trait]
@@ -105,7 +105,7 @@ impl Default for MockSubscriptionClient {
 struct MockSubscriptionClientDriver {
     event_rx: ChannelRx<Event>,
     cmd_rx: ChannelRx<DriverCmd>,
-    terminate_rx: ChannelRx<SubscriptionTermination>,
+    terminate_rx: ChannelRx<TerminateSubscription>,
     router: SubscriptionRouter,
 }
 
@@ -113,7 +113,7 @@ impl MockSubscriptionClientDriver {
     fn new(
         event_rx: ChannelRx<Event>,
         cmd_rx: ChannelRx<DriverCmd>,
-        terminate_rx: ChannelRx<SubscriptionTermination>,
+        terminate_rx: ChannelRx<TerminateSubscription>,
     ) -> Self {
         Self {
             event_rx,
@@ -148,13 +148,12 @@ impl MockSubscriptionClientDriver {
         event_tx: ChannelTx<Result<Event>>,
         mut result_tx: ChannelTx<Result<()>>,
     ) -> Result<()> {
-        self.router.add(id, query, event_tx);
+        self.router.add(&id, query, event_tx);
         result_tx.send(Ok(())).await
     }
 
-    async fn unsubscribe(&mut self, mut subs_term: SubscriptionTermination) -> Result<()> {
-        self.router
-            .remove(subs_term.query.clone(), subs_term.id.clone());
+    async fn unsubscribe(&mut self, mut subs_term: TerminateSubscription) -> Result<()> {
+        self.router.remove(&subs_term.id, subs_term.query.clone());
         subs_term.result_tx.send(Ok(())).await
     }
 }
