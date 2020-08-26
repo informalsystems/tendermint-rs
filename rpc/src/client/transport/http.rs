@@ -16,10 +16,7 @@ use tendermint::net;
 ///
 /// ## Examples
 ///
-/// We don't test this example automatically at present, but it has and can
-/// been tested against a Tendermint node running on `localhost`.
-///
-/// ```ignore
+/// ```rust,ignore
 /// use tendermint_rpc::{HttpClient, Client};
 ///
 /// #[tokio::main]

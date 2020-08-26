@@ -73,6 +73,8 @@ impl<M: MockRequestMatcher> MockClient<M> {
 
 /// A trait required by the [`MockClient`] that allows for different approaches
 /// to mocking responses for specific requests.
+///
+/// [`MockClient`]: struct.MockClient.html
 pub trait MockRequestMatcher: Send + Sync {
     /// Provide the corresponding response for the given request (if any).
     fn response_for<R>(&self, request: R) -> Option<Result<R::Response>>

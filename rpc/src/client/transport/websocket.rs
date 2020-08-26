@@ -22,8 +22,8 @@ use tendermint::net;
 use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
 
-/// WebSocket-based Tendermint RPC client that only provides [`Event`]
-/// subscription capabilities.
+/// Tendermint RPC client that provides [`Event`] subscription capabilities
+/// over JSON-RPC over a WebSocket connection.
 ///
 /// In order to not block the calling task, this client spawns an asynchronous
 /// driver that continuously interacts with the actual WebSocket connection.
@@ -33,9 +33,6 @@ use tokio::task::JoinHandle;
 /// To terminate the client and the driver, simply use its [`close`] method.
 ///
 /// ## Examples
-///
-/// We don't test this example automatically at present, but it has and can
-/// been tested against a Tendermint node running on `localhost`.
 ///
 /// ```rust,ignore
 /// use tendermint_rpc::{WebSocketSubscriptionClient, SubscriptionClient, ClosableClient};
