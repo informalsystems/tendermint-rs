@@ -1,4 +1,4 @@
-//! Tendermint JSONRPC endpoints
+//! Tendermint JSON-RPC endpoints
 
 pub mod abci_info;
 pub mod abci_query;

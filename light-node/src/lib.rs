@@ -2,7 +2,7 @@
 //!
 //! The Tendermint light-node wraps the light-client crate into a command-line interface tool.
 //!
-//! It can be used to initialize and start a standalone light client daemon and exposes a JSONRPC
+//! It can be used to initialize and start a standalone light client daemon and exposes a JSON-RPC
 //! endpoint from which you can query the current state of the light node.
 
 // Tip: Deny warnings with `RUSTFLAGS="-D warnings"` environment variable in CI

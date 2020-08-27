@@ -1,4 +1,4 @@
-//! JSONRPC versions
+//! JSON-RPC versions
 
 use super::error::Error;
 use serde::{Deserialize, Serialize};
@@ -7,21 +7,21 @@ use std::{
     str::FromStr,
 };
 
-/// Supported JSONRPC version
+/// Supported JSON-RPC version
 const SUPPORTED_VERSION: &str = "2.0";
 
-/// JSONRPC version
+/// JSON-RPC version
 // TODO(tarcieri): add restrictions/validations on these formats? Use an `enum`?
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, PartialOrd, Ord, Serialize)]
 pub struct Version(String);
 
 impl Version {
-    /// Get the currently supported JSONRPC version
+    /// Get the currently supported JSON-RPC version
     pub fn current() -> Self {
         Version(SUPPORTED_VERSION.to_owned())
     }
 
-    /// Is this JSONRPC version supported?
+    /// Is this JSON-RPC version supported?
     pub fn is_supported(&self) -> bool {
         self.0.eq(SUPPORTED_VERSION)
     }

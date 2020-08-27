@@ -2,7 +2,7 @@
 //! Byzantine fault tolerant applications written in any programming language.
 //! This crate provides core types for representing information about Tendermint
 //! blockchain networks, including chain information types, secret connections,
-//! and remote procedure calls (JSONRPC).
+//! and remote procedure calls (JSON-RPC).
 
 #![deny(
     warnings,

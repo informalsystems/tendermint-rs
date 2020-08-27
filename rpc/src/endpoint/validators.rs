@@ -1,4 +1,4 @@
-//! `/validators` endpoint JSONRPC wrapper
+//! `/validators` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
 

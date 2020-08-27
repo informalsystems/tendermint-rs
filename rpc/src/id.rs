@@ -1,9 +1,9 @@
-//! JSONRPC IDs
+//! JSON-RPC IDs
 
 use getrandom::getrandom;
 use serde::{Deserialize, Serialize};
 
-/// JSONRPC ID: request-specific identifier
+/// JSON-RPC ID: request-specific identifier
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd)]
 #[serde(untagged)]
 pub enum Id {
@@ -16,7 +16,7 @@ pub enum Id {
 }
 
 impl Id {
-    /// Create a JSONRPC ID containing a UUID v4 (i.e. random)
+    /// Create a JSON-RPC ID containing a UUID v4 (i.e. random)
     pub fn uuid_v4() -> Self {
         let mut bytes = [0; 16];
         getrandom(&mut bytes).expect("RNG failure!");

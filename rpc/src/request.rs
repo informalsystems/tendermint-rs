@@ -1,10 +1,10 @@
-//! JSONRPC requests
+//! JSON-RPC requests
 
 use super::{Id, Method, Version};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fmt::Debug;
 
-/// JSONRPC requests
+/// JSON-RPC requests
 pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
     /// Response type for this command
     type Response: super::response::Response;
@@ -18,10 +18,10 @@ pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
     }
 }
 
-/// JSONRPC request wrapper (i.e. message envelope)
+/// JSON-RPC request wrapper (i.e. message envelope)
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Wrapper<R> {
-    /// JSONRPC version
+    /// JSON-RPC version
     jsonrpc: Version,
 
     /// Identifier included in request

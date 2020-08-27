@@ -1,4 +1,4 @@
-//! JSONRPC request methods
+//! JSON-RPC request methods
 
 use super::Error;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
@@ -7,9 +7,9 @@ use std::{
     str::FromStr,
 };
 
-/// JSONRPC request methods.
+/// JSON-RPC request methods.
 ///
-/// Serialized as the "method" field of JSONRPC/HTTP requests.
+/// Serialized as the "method" field of JSON-RPC/HTTP requests.
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum Method {
     /// Get ABCI info

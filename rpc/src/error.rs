@@ -1,4 +1,4 @@
-//! JSONRPC error types
+//! JSON-RPC error types
 
 #[cfg(all(feature = "client", feature = "transport_websocket"))]
 use async_tungstenite::tungstenite::Error as WSError;

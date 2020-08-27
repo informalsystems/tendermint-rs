@@ -1,4 +1,4 @@
-//! `/unsubscribe` endpoint JSONRPC wrapper
+//! `/unsubscribe` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
 use std::io::Read;

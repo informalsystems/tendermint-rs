@@ -23,7 +23,7 @@ pub struct Event {
 }
 impl Response for Event {}
 
-/// A JSONRPC-wrapped event.
+/// A JSON-RPC-wrapped event.
 pub type WrappedEvent = Wrapper<Event>;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
