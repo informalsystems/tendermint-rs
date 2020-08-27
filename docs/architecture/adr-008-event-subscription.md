@@ -121,6 +121,12 @@ pub struct Subscription {
 }
 ```
 
+#### Buffering of Events
+
+Since the rate at which events could be produced by the remote RPC endpoint may
+differ from the rate at which the client process them, we need to buffer
+incoming events in a `Subscription`.
+
 Under the hood, a `Subscription` is envisaged to make use of some kind of
 **unbounded channel** to buffer incoming `Event`s, such as that provided by
 [Tokio's `mpsc`][tokio-mpsc]. We don't propose the use of bounded channels yet
@@ -128,8 +134,6 @@ since they complicate the concurrency model significantly: we would need to
 cater for cases where we encounter full channels and provide for conventional or
 application-specific ways of dealing with those full channels (e.g. back-off, or
 back-pressure).
-
-`Subscription`s are created by a client - described in the following sub-section.
 
 ### Client Model
 
