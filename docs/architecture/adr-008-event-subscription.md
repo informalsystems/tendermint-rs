@@ -147,7 +147,7 @@ entity diagram above).
 pub type Result<R> = std::result::Result<R, Error>;
 
 #[async_trait]
-pub trait Client {
+pub trait Client: ClosableClient {
     /// `/abci_info`: get information about the ABCI application.
     async fn abci_info(&self) -> Result<abci_info::AbciInfo>;
 
@@ -180,9 +180,26 @@ WebSocket connection to provide subscription functionality (the
 
 ```rust
 #[async_trait]
-pub trait SubscriptionClient {
+pub trait SubscriptionClient: ClosableClient {
     /// `/subscribe`: subscribe to receive events produced by the given query.
     async fn subscribe(&mut self, query: String) -> Result<Subscription>;
+}
+```
+
+#### `ClosableClient`
+
+This is not really a client in and of itself, but a trait that both the `Client`
+and `SubscriptionClient` need to implement. The reason for this common trait is
+that, depending on the transport layer, both types of clients may need a `close`
+method to gracefully terminate the client. An example of this would be when we
+implement a `WebSocketClient` that implements both the `Client` and
+`SubscriptionClient` traits simultaneously.
+
+```rust
+#[async_trait]
+pub trait ClosableClient {
+    /// Attempt to gracefully terminate the client.
+    async fn close(self) -> Result<()>;
 }
 ```
 
