@@ -135,6 +135,30 @@ cater for cases where we encounter full channels and provide for conventional or
 application-specific ways of dealing with those full channels (e.g. back-off, or
 back-pressure).
 
+#### Managing Multiple Simultaneous Subscriptions
+
+There may come instances where clients would want to initiate multiple
+subscriptions to different event types and consume them all from the same
+context. Since the `Subscription` struct implements the
+[`Stream`][futures-stream] trait, all of the [stream-related
+functionality][futures-stream-mod] should enhance the ergonomics of working with
+`Subscription`s.
+
+For example, if you wanted to iterate through two subscriptions at the same
+time, processing events in the order in which they are received by the client:
+
+```rust
+use futures::stream::select_all;
+
+// `subs1` and `subs2` are `Subscription`s:
+while let Some(res) = select_all(vec![subs1, subs2]).next().await {
+    match res {
+        Ok(event) => { /* handle event */ },
+        Err(e) => { /* handle error */ },
+    }
+}
+```
+
 ### Client Model
 
 Users of the Tendermint RPC library may or may not want access to subscription
@@ -382,4 +406,5 @@ None
 [async-trait]: https://docs.rs/async-trait/*/async_trait/index.html
 [async-drop]: https://internals.rust-lang.org/t/asynchronous-destructors/11127
 [tokio-mpsc]: https://docs.rs/tokio/*/tokio/sync/mpsc/index.html
+[futures-stream-mod]: https://docs.rs/futures/*/futures/stream/index.html
 
