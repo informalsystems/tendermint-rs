@@ -9,7 +9,7 @@ tendermint = { version = "0.15.0", path = "../tendermint" }
 tendermint-light-client = { version = "0.15.0", path = "../light-client" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-ed25519-dalek = "= 1.0.0-pre.4"
+ed25519-dalek = "1"
 gumdrop = "0.8.0"
 simple-error = "0.2.1"
 
