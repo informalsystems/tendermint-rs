@@ -87,10 +87,10 @@ impl Subscription {
         }
     }
 
-    /// Gracefully terminate this subscription.
+    /// Gracefully terminate this subscription and consume it.
     ///
-    /// This can be called from any asynchronous context. It only returns once
-    /// it receives confirmation of termination.
+    /// The `Subscription` can be moved to any asynchronous context, and this
+    /// method provides a way to terminate it from that same context.
     pub async fn terminate(mut self) -> Result<()> {
         let (result_tx, mut result_rx) = unbounded();
         self.terminate_tx
