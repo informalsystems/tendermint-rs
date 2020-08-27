@@ -96,7 +96,17 @@ while let Some(result_event) = subscription.next().await {
       Err(e) => { /* terminate subscription and report error */ },
    }
 }
+
+// Terminate the subscription (i.e. unsubscribe and consume it).
+// Since a `Subscription` could be moved to and consumed in any asynchronous
+// context (and a distinct context to the original client entity that created
+// it), it would make sense that **unsubscribing** should be accessible from
+// that same context.
+subscription.terminate().await.unwrap();
 ```
+
+Once [asynchronous destructors][async-drop] are available in Rust, the
+`terminate` method should no longer be necessary.
 
 For efficient routing of events to `Subscription`s, each `Subscription` should
 have some kind of unique identifier associated with it (a `SubscriptionId`).
@@ -171,31 +181,8 @@ WebSocket connection to provide subscription functionality (the
 ```rust
 #[async_trait]
 pub trait SubscriptionClient {
-    /// `/subscribe`: subscribe to receive events produced by the given query,
-    /// but specify how many event results can be buffered in the resulting
-    /// subscription.
-    ///
-    /// Specifying a `buf_size` of zero should indicate to the transport that an
-    /// **unbounded** channel should be used.
-    async fn subscribe_with_buf_size(
-        &mut self,
-        query: String,
-        buf_size: usize,
-    ) -> Result<Subscription>;
-
     /// `/subscribe`: subscribe to receive events produced by the given query.
-    async fn subscribe(&mut self, query: String) -> Result<Subscription> {
-        // Use an unbounded channel by default
-        self.subscribe_with_buf_size(query, 0)
-            .await
-    }
-
-    /// `/unsubscribe`: unsubscribe from receiving events for the given
-    /// subscription.
-    ///
-    /// This terminates the given subscription and consumes it, since it is no
-    /// longer usable.
-    async fn unsubscribe(&mut self, subscription: Subscription) -> Result<()>;
+    async fn subscribe(&mut self, query: String) -> Result<Subscription>;
 }
 ```
 
@@ -455,4 +442,5 @@ None
 [issue-318]: https://github.com/informalsystems/tendermint-rs/issues/318
 [tokio-sync]: https://docs.rs/tokio/*/tokio/sync/index.html
 [async-trait]: https://docs.rs/async-trait/*/async_trait/index.html
+[async-drop]: https://internals.rust-lang.org/t/asynchronous-destructors/11127/49
 
