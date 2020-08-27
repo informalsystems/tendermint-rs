@@ -125,6 +125,33 @@ func detectMisbehavingProcesses(lcAttackEvidence LightClientAttackEvidence, bc B
 
 ### Amnesia attack evidence handling
 
+Detecting faulty processes in case of the amnesia attack is more complex and cannot be inferred 
+purely based on attack evidence data. In this case, in order to detect misbehaving processes we need
+access to votes processes sent during the conflicting height. Therefore, amnesia handling assumes that
+validators persist all votes received and sent during multi-round heights (as amnesia attack 
+is only possible in heights that executes over multiple rounds, i.e., commit round > 0).  
+
+To simplify description of the algorithm we assume existence of the trusted oracle called monitor that will 
+drive the algorithm and output faulty processes at the end. Monitor can be implemented in a
+distributed setting as on-chain module. The algorithm works as follows:
+    1) Monitor sends votesets request to validators of the conflicting height. Validators
+    are expected to send their votesets within predefined timeout.
+    2) Upon receiving votesets request, validators send their votesets to a monitor.  
+    2) Validators which have not sent its votesets within timeout are considered faulty.
+    3) The preprocessing of the votesets is done. That means that the received votesets are analyzed 
+    and each vote (valid) sent by process p is added to the voteset of the sender p. This phase ensures that
+    votes sent by faulty processes observed by at least one correct validator cannot be excluded from the analysis. 
+    4) Votesets of every validator is analyzed independently to decide whether the validator is correct or faulty.
+       A faulty validators is the one where at least one of those invalid transitions is found:
+            - More than one PREVOTE message is sent in a round 
+            - More than one PRECOMMIT message is sent in a round 
+            - PRECOMMIT message is sent without receiving +2/3 of voting-power equivalent 
+            appropriate PREVOTE messages 
+            - PREVOTE message is sent for the value V’ in round r’ and the PRECOMMIT message had 
+            been sent for the value V in round r by the same process (r’ > r) and there are no 
+            +2/3 of voting-power equivalent PREVOTE(vr, V’) messages (vr ≥ 0 and vr > r and vr < r’) 
+            as the justification for sending PREVOTE(r’, V’) 
+
 
 
 
