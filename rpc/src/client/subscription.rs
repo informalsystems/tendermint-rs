@@ -233,9 +233,6 @@ impl SubscriptionRouter {
         };
         let mut disconnected = Vec::<SubscriptionId>::new();
         for (id, event_tx) in subs_for_query {
-            // TODO(thane): Right now we automatically remove any disconnected
-            //              or full channels. We must handle full channels
-            //              differently to disconnected ones.
             if event_tx.send(Ok(ev.clone())).await.is_err() {
                 disconnected.push(id.clone());
             }
