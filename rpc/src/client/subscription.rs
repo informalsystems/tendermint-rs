@@ -15,19 +15,13 @@ use std::pin::Pin;
 /// A client that exclusively provides [`Event`] subscription capabilities,
 /// without any other RPC method support.
 ///
-/// To build a full-featured client, implement both this trait as well as the
-/// [`Client`] trait.
-///
 /// [`Event`]: event/struct.Event.html
-/// [`Client`]: trait.Client.html
 #[async_trait]
 pub trait SubscriptionClient: ClosableClient {
     /// `/subscribe`: subscribe to receive events produced by the given query.
     ///
-    /// Uses an unbounded buffer for the resulting [`Subscription`]. We do not
-    /// implement bounded buffers at present.
-    ///
-    /// [`Subscription`]: struct.Subscription.html
+    /// For query syntax details, see the
+    /// [Tendermint RPC docs](https://docs.tendermint.com/master/rpc/#/Websocket/subscribe).
     async fn subscribe(&mut self, query: String) -> Result<Subscription>;
 }
 
