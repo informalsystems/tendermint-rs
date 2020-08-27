@@ -80,6 +80,30 @@ func isPossibleBlock(trusted Header, conflicting Header) boolean {
 
 ## Light client attack creation
 
+Given a trusted header `trusted`, a light node executes the bisection algorithm to verify header `untrusted` at some
+height `h`. If the bisection algorithm succeed, then the header `untrusted` is verified. Headers that are downloaded
+as part of the bisection algorithm are stored in a store and they are also in verified state. Therefore, after the 
+bisection algorithm successfully terminates we have a trace of the light blocks ([] LightBlock) we obtained from the 
+primary that we call primary trace.
+
+#### Primary trace 
+
+The following invariants hold for the primary trace:
+
+- Given a `trusted` light block, target height `h`, and `primary_trace` ([] LightBlock): 
+    *primary_trace[0] == trusted* and *primary_trace[len(primary_trace)-1].Height == h* and 
+    successive light blocks are passing light client verification logic. 
+
+TODO: Link right tags from the verification spec.          
+
+#### Witness with a conflicting header
+
+The verified header at height `h` is cross-checked with every witness as part of the detection algorithm 
+(TODO: add link). If a witness returns the conflicting header at the height `h` the following procedure is
+executed to verify if the conflicting header comes from the valid trace and to create attack evidence 
+in this case:
+
+
 ```go
 func DetectLightClientAttacks(primary PeerID, 
                         primary_trace []LightBlock, 
