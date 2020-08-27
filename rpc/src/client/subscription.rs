@@ -18,7 +18,7 @@ use std::pin::Pin;
 /// To build a full-featured client, implement both this trait as well as the
 /// [`Client`] trait.
 ///
-/// [`Event`]: ./events/struct.Event.html
+/// [`Event`]: event/struct.Event.html
 /// [`Client`]: trait.Client.html
 #[async_trait]
 pub trait SubscriptionClient: ClosableClient {
