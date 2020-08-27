@@ -376,6 +376,6 @@ None
 [issue-318]: https://github.com/informalsystems/tendermint-rs/issues/318
 [tokio-sync]: https://docs.rs/tokio/*/tokio/sync/index.html
 [async-trait]: https://docs.rs/async-trait/*/async_trait/index.html
-[async-drop]: https://internals.rust-lang.org/t/asynchronous-destructors/11127/49
+[async-drop]: https://internals.rust-lang.org/t/asynchronous-destructors/11127
 [tokio-mpsc]: https://docs.rs/tokio/*/tokio/sync/mpsc/index.html
 
