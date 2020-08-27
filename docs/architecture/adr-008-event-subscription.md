@@ -205,13 +205,11 @@ pub trait ClosableClient {
 
 ### Client Implementations
 
-We envisage 3 distinct client implementations at this point:
+We envisage 2 distinct client implementations at this point:
 
 * `HttpClient`, which only implements [`Client`](#client) (over HTTP).
 * `WebSocketSubscriptionClient`, which only implements
   [`SubscriptionClient`](#subscriptionclient) (over a WebSocket connection).
-* `HttpWebSocketClient`, which implements both [`Client`](#client) (over HTTP)
-  and [`SubscriptionClient`](#subscriptionclient) (over a WebSocket connection).
 
 #### Handle-Driver Concurrency Model
 
