@@ -77,6 +77,57 @@ func isPossibleBlock(trusted Header, conflicting Header) boolean {
 }
 ```
 
+
+## Light client attack creation
+
+```go
+func DetectLightClientAttacks(primary PeerID, 
+                        primary_trace []LightBlock, 
+                        witness PeerID) (LightClientAttackEvidence, LightClientAttackEvidence) {
+    primary_lca, witness_trace = DetectLightClientAttack(primary_trace, witness)
+    
+    witness_lca = nil
+    if witness_trace != nil {
+        witness_lca, _ = DetectLightClientAttack(witness_trace, primary)
+    }
+    return primary_lca, witness_lca
+}
+
+func DetectLightClientAttack(trace []LightBlock, peer PeerID) (LightClientAttackEvidence, []LightBlock) {
+
+    trusted = trace[0]
+    lightStore = new LightStore().Update(trusted, StateTrusted)
+
+    for i in 1..len(trace)-1 {
+        lightStore, result = VerifyToTarget(peer, lightStore , i)
+   
+        if result == ResultFailure then return (nil, nil)
+        
+        current = lightStore.Get(i)
+        
+        // if obtained header is the same as in the trace we continue with a next height
+        if current.Header == trace[i].Header continue
+
+        // we have identified a conflicting header
+        attackType = nil
+        trustedBlock = trace[i-1]
+        conflictingBlock = trace[i]
+        
+        if !isPossibleBlock(trustedBlock, conflictingBlock) { 
+            attackType = LunaticAttack
+        } else if trustedBlock.Header.Round == conflictingBlock.Header.Round {
+            attackType = EquivocationAttack
+        } else {
+           attackType = AmnesiaAttack
+        }                                        
+                 
+        return (LightClientAttackEvidence { conflictingBlock, trustedBlock.Header.Height }, 
+                lightStore.Trace(trace[i-1].Height, trace[i].Height))
+    } 
+    return (nil, nil)       
+}
+```
+
 ## Evidence handling 
 
 As part of on chain evidence handling, full nodes identifies misbehaving processes and informs
