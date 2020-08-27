@@ -66,4 +66,14 @@ where
             ))
         }
     }
+
+    #[cfg(test)]
+    pub fn new_with_id(id: Id, result: Option<R>, error: Option<Error>) -> Self {
+        Self {
+            jsonrpc: Version::current(),
+            id,
+            result,
+            error,
+        }
+    }
 }

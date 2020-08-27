@@ -1,13 +1,14 @@
 //! WebSocket-based clients for accessing Tendermint RPC functionality.
 
 use crate::client::subscription::{SubscriptionState, TerminateSubscription};
-use crate::client::sync::{bounded, unbounded, ChannelRx, ChannelTx};
+use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
 use crate::client::transport::get_tcp_host_port;
 use crate::client::{ClosableClient, SubscriptionRouter};
 use crate::endpoint::{subscribe, unsubscribe};
 use crate::event::Event;
-use crate::request::Wrapper;
-use crate::{response, Error, Response, Result, Subscription, SubscriptionClient, SubscriptionId};
+use crate::{
+    request, response, Error, Response, Result, Subscription, SubscriptionClient, SubscriptionId,
+};
 use async_trait::async_trait;
 use async_tungstenite::tokio::{connect_async, TokioAdapter};
 use async_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
@@ -109,20 +110,12 @@ impl WebSocketSubscriptionClient {
 
 #[async_trait]
 impl SubscriptionClient for WebSocketSubscriptionClient {
-    async fn subscribe_with_buf_size(
-        &mut self,
-        query: String,
-        buf_size: usize,
-    ) -> Result<Subscription> {
-        let (event_tx, event_rx) = if buf_size == 0 {
-            unbounded()
-        } else {
-            bounded(buf_size)
-        };
+    async fn subscribe(&mut self, query: String) -> Result<Subscription> {
+        let (event_tx, event_rx) = unbounded();
         let (result_tx, mut result_rx) = unbounded::<Result<()>>();
         // NB: We assume here that the wrapper generates a unique ID for our
         // subscription.
-        let req = Wrapper::new(subscribe::Request::new(query.clone()));
+        let req = request::Wrapper::new(subscribe::Request::new(query.clone()));
         let id: SubscriptionId = req.id().clone().try_into()?;
         self.send_cmd(WebSocketDriverCmd::Subscribe {
             req,
@@ -219,7 +212,7 @@ impl WebSocketSubscriptionDriver {
 
     async fn subscribe(
         &mut self,
-        req: Wrapper<subscribe::Request>,
+        req: request::Wrapper<subscribe::Request>,
         event_tx: ChannelTx<Result<Event>>,
         mut result_tx: ChannelTx<Result<()>>,
     ) -> Result<()> {
@@ -238,7 +231,7 @@ impl WebSocketSubscriptionDriver {
     }
 
     async fn unsubscribe(&mut self, mut term: TerminateSubscription) -> Result<()> {
-        let req = Wrapper::new(unsubscribe::Request::new(term.query.clone()));
+        let req = request::Wrapper::new(unsubscribe::Request::new(term.query.clone()));
         let id: SubscriptionId = req.id().clone().try_into()?;
         if let Err(e) = self
             .send(Message::Text(serde_json::to_string_pretty(&req).unwrap()))
@@ -348,9 +341,363 @@ impl WebSocketSubscriptionDriver {
 #[derive(Debug)]
 enum WebSocketDriverCmd {
     Subscribe {
-        req: Wrapper<subscribe::Request>,
+        req: request::Wrapper<subscribe::Request>,
         event_tx: ChannelTx<Result<Event>>,
         result_tx: ChannelTx<Result<()>>,
     },
     Close,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{Id, Method};
+    use async_tungstenite::tokio::accept_async;
+    use futures::StreamExt;
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+    use std::str::FromStr;
+    use tokio::fs;
+    use tokio::net::TcpListener;
+
+    // Interface to a driver that manages all incoming WebSocket connections.
+    struct TestServer {
+        node_addr: net::Address,
+        driver_hdl: JoinHandle<Result<()>>,
+        terminate_tx: ChannelTx<Result<()>>,
+        event_tx: ChannelTx<Event>,
+    }
+
+    impl TestServer {
+        async fn new(addr: &str) -> Self {
+            let listener = TcpListener::bind(addr).await.unwrap();
+            let local_addr = listener.local_addr().unwrap();
+            let node_addr = net::Address::Tcp {
+                peer_id: None,
+                host: local_addr.ip().to_string(),
+                port: local_addr.port(),
+            };
+            let (terminate_tx, terminate_rx) = unbounded();
+            let (event_tx, event_rx) = unbounded();
+            let driver = TestServerDriver::new(listener, event_rx, terminate_rx);
+            let driver_hdl = tokio::spawn(async move { driver.run().await });
+            Self {
+                node_addr,
+                driver_hdl,
+                terminate_tx,
+                event_tx,
+            }
+        }
+
+        async fn publish_event(&mut self, ev: Event) -> Result<()> {
+            self.event_tx.send(ev).await
+        }
+
+        async fn terminate(mut self) -> Result<()> {
+            self.terminate_tx.send(Ok(())).await.unwrap();
+            self.driver_hdl.await.unwrap()
+        }
+    }
+
+    // Manages all incoming WebSocket connections.
+    struct TestServerDriver {
+        listener: TcpListener,
+        event_rx: ChannelRx<Event>,
+        terminate_rx: ChannelRx<Result<()>>,
+        handlers: Vec<TestServerHandler>,
+    }
+
+    impl TestServerDriver {
+        fn new(
+            listener: TcpListener,
+            event_rx: ChannelRx<Event>,
+            terminate_rx: ChannelRx<Result<()>>,
+        ) -> Self {
+            Self {
+                listener,
+                event_rx,
+                terminate_rx,
+                handlers: Vec::new(),
+            }
+        }
+
+        async fn run(mut self) -> Result<()> {
+            loop {
+                tokio::select! {
+                    Some(ev) = self.event_rx.recv() => self.publish_event(ev).await,
+                    Some(res) = self.listener.next() => self.handle_incoming(res.unwrap()).await,
+                    Some(res) = self.terminate_rx.recv() => {
+                        self.terminate().await;
+                        return res;
+                    },
+                }
+            }
+        }
+
+        // Publishes the given event to all subscribers for the query relating
+        // to the event.
+        async fn publish_event(&mut self, ev: Event) {
+            for handler in &mut self.handlers {
+                handler.publish_event(ev.clone()).await;
+            }
+        }
+
+        async fn handle_incoming(&mut self, stream: TcpStream) {
+            self.handlers.push(TestServerHandler::new(stream).await);
+        }
+
+        async fn terminate(&mut self) {
+            while self.handlers.len() > 0 {
+                let handler = match self.handlers.pop() {
+                    Some(h) => h,
+                    None => break,
+                };
+                let _ = handler.terminate().await;
+            }
+        }
+    }
+
+    // Interface to a driver that manages a single incoming WebSocket
+    // connection.
+    struct TestServerHandler {
+        driver_hdl: JoinHandle<Result<()>>,
+        terminate_tx: ChannelTx<Result<()>>,
+        event_tx: ChannelTx<Event>,
+    }
+
+    impl TestServerHandler {
+        async fn new(stream: TcpStream) -> Self {
+            let conn: WebSocketStream<TokioAdapter<TcpStream>> =
+                accept_async(stream).await.unwrap();
+            let (terminate_tx, terminate_rx) = unbounded();
+            let (event_tx, event_rx) = unbounded();
+            let driver = TestServerHandlerDriver::new(conn, event_rx, terminate_rx);
+            let driver_hdl = tokio::spawn(async move { driver.run().await });
+            Self {
+                driver_hdl,
+                terminate_tx,
+                event_tx,
+            }
+        }
+
+        async fn publish_event(&mut self, ev: Event) {
+            let _ = self.event_tx.send(ev).await;
+        }
+
+        async fn terminate(mut self) -> Result<()> {
+            self.terminate_tx.send(Ok(())).await?;
+            self.driver_hdl.await.unwrap()
+        }
+    }
+
+    // Manages interaction with a single incoming WebSocket connection.
+    struct TestServerHandlerDriver {
+        conn: WebSocketStream<TokioAdapter<TcpStream>>,
+        event_rx: ChannelRx<Event>,
+        terminate_rx: ChannelRx<Result<()>>,
+        // A mapping of subscription queries to subscription IDs for this
+        // connection.
+        subscriptions: HashMap<String, SubscriptionId>,
+    }
+
+    impl TestServerHandlerDriver {
+        fn new(
+            conn: WebSocketStream<TokioAdapter<TcpStream>>,
+            event_rx: ChannelRx<Event>,
+            terminate_rx: ChannelRx<Result<()>>,
+        ) -> Self {
+            Self {
+                conn,
+                event_rx,
+                terminate_rx,
+                subscriptions: HashMap::new(),
+            }
+        }
+
+        async fn run(mut self) -> Result<()> {
+            loop {
+                tokio::select! {
+                    Some(res) = self.conn.next() => {
+                        if let Some(ret) = self.handle_incoming_msg(res.unwrap()).await {
+                            return ret;
+                        }
+                    }
+                    Some(ev) = self.event_rx.recv() => self.publish_event(ev).await,
+                    Some(res) = self.terminate_rx.recv() => {
+                        self.terminate().await;
+                        return res;
+                    },
+                }
+            }
+        }
+
+        async fn publish_event(&mut self, ev: Event) {
+            let subs_id = match self.subscriptions.get(&ev.query) {
+                Some(id) => id.clone(),
+                None => return,
+            };
+            let _ = self.send(subs_id.into(), ev).await;
+        }
+
+        async fn handle_incoming_msg(&mut self, msg: Message) -> Option<Result<()>> {
+            match msg {
+                Message::Text(s) => self.handle_incoming_text_msg(s).await,
+                Message::Ping(v) => {
+                    let _ = self.conn.send(Message::Pong(v)).await;
+                    None
+                }
+                Message::Close(_) => {
+                    self.terminate().await;
+                    Some(Ok(()))
+                }
+                _ => None,
+            }
+        }
+
+        async fn handle_incoming_text_msg(&mut self, msg: String) -> Option<Result<()>> {
+            match serde_json::from_str::<serde_json::Value>(&msg) {
+                Ok(json_msg) => match json_msg.get("method") {
+                    Some(json_method) => match Method::from_str(json_method.as_str().unwrap()) {
+                        Ok(method) => match method {
+                            Method::Subscribe => {
+                                let req = serde_json::from_str::<
+                                    request::Wrapper<subscribe::Request>,
+                                >(&msg)
+                                .unwrap();
+
+                                self.add_subscription(
+                                    req.params().query.clone(),
+                                    req.id().clone().try_into().unwrap(),
+                                );
+                                self.send(req.id().clone(), subscribe::Response {}).await;
+                            }
+                            Method::Unsubscribe => {
+                                let req = serde_json::from_str::<
+                                    request::Wrapper<unsubscribe::Request>,
+                                >(&msg)
+                                .unwrap();
+
+                                self.remove_subscription(req.params().query.clone());
+                                self.send(req.id().clone(), unsubscribe::Response {}).await;
+                            }
+                            _ => {
+                                println!("Unsupported method in incoming request: {}", &method);
+                            }
+                        },
+                        Err(e) => {
+                            println!(
+                                "Unexpected method in incoming request: {} ({})",
+                                json_method, e
+                            );
+                        }
+                    },
+                    None => (),
+                },
+                Err(e) => {
+                    println!("Failed to parse incoming request: {} ({})", &msg, e);
+                }
+            }
+            None
+        }
+
+        fn add_subscription(&mut self, query: String, id: SubscriptionId) {
+            println!("Adding subscription with ID {} for query: {}", &id, &query);
+            self.subscriptions.insert(query, id);
+        }
+
+        fn remove_subscription(&mut self, query: String) {
+            if let Some(id) = self.subscriptions.remove(&query) {
+                println!("Removed subscription {} for query: {}", id, query);
+            }
+        }
+
+        async fn send<R>(&mut self, id: Id, res: R)
+        where
+            R: Response,
+        {
+            self.conn
+                .send(Message::Text(
+                    serde_json::to_string(&response::Wrapper::new_with_id(id, Some(res), None))
+                        .unwrap(),
+                ))
+                .await
+                .unwrap();
+        }
+
+        async fn terminate(&mut self) {
+            let _ = self
+                .conn
+                .close(Some(CloseFrame {
+                    code: CloseCode::Normal,
+                    reason: Default::default(),
+                }))
+                .await;
+        }
+    }
+
+    async fn read_json_fixture(name: &str) -> String {
+        fs::read_to_string(PathBuf::from("./tests/support/").join(name.to_owned() + ".json"))
+            .await
+            .unwrap()
+    }
+
+    async fn read_event(name: &str) -> Event {
+        Event::from_string(&read_json_fixture(name).await).unwrap()
+    }
+
+    #[tokio::test]
+    async fn websocket_client_happy_path() {
+        let test_events = vec![
+            read_event("event_new_block_1").await,
+            read_event("event_new_block_2").await,
+            read_event("event_new_block_3").await,
+        ];
+        println!("Starting WebSocket server...");
+        let mut server = TestServer::new("127.0.0.1:0").await;
+        println!("Creating client RPC WebSocket connection...");
+        let mut client = WebSocketSubscriptionClient::new(server.node_addr.clone())
+            .await
+            .unwrap();
+
+        println!("Initiating subscription for new blocks...");
+        let mut subs = client
+            .subscribe("tm.event='NewBlock'".to_string())
+            .await
+            .unwrap();
+
+        // Collect all the events from the subscription.
+        let subs_collector_hdl = tokio::spawn(async move {
+            let mut results = Vec::new();
+            while let Some(res) = subs.next().await {
+                results.push(res);
+                if results.len() == 3 {
+                    break;
+                }
+            }
+            println!("Terminating subscription...");
+            subs.terminate().await.unwrap();
+            results
+        });
+
+        println!("Publishing events");
+        // Publish the events from this context
+        for ev in &test_events {
+            server.publish_event(ev.clone()).await.unwrap();
+        }
+
+        println!("Collecting results from subscription...");
+        let collected_results = subs_collector_hdl.await.unwrap();
+
+        client.close().await.unwrap();
+        server.terminate().await.unwrap();
+        println!("Closed client and terminated server");
+
+        assert_eq!(3, collected_results.len());
+        for i in 0..3 {
+            assert_eq!(
+                test_events[i],
+                collected_results[i].as_ref().unwrap().clone()
+            );
+        }
+    }
 }

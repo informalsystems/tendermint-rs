@@ -1,7 +1,7 @@
 //! Subscription functionality for the Tendermint RPC mock client.
 
 use crate::client::subscription::TerminateSubscription;
-use crate::client::sync::{bounded, unbounded, ChannelRx, ChannelTx};
+use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
 use crate::client::{ClosableClient, SubscriptionRouter};
 use crate::event::Event;
 use crate::{Error, Result, Subscription, SubscriptionClient, SubscriptionId};
@@ -26,16 +26,8 @@ pub struct MockSubscriptionClient {
 
 #[async_trait]
 impl SubscriptionClient for MockSubscriptionClient {
-    async fn subscribe_with_buf_size(
-        &mut self,
-        query: String,
-        buf_size: usize,
-    ) -> Result<Subscription> {
-        let (event_tx, event_rx) = if buf_size == 0 {
-            unbounded()
-        } else {
-            bounded(buf_size)
-        };
+    async fn subscribe(&mut self, query: String) -> Result<Subscription> {
+        let (event_tx, event_rx) = unbounded();
         let (result_tx, mut result_rx) = unbounded();
         let id = SubscriptionId::default();
         self.send_cmd(DriverCmd::Subscribe {

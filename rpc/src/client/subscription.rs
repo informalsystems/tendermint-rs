@@ -24,28 +24,11 @@ use std::pin::Pin;
 pub trait SubscriptionClient: ClosableClient {
     /// `/subscribe`: subscribe to receive events produced by the given query.
     ///
-    /// Allows for specification of the `buf_size` parameter, which determines
-    /// how many events can be buffered in the resulting [`Subscription`]. Set
-    /// to 0 to use an unbounded buffer (i.e. the buffer size will only be
-    /// limited by the amount of memory available to your application).
+    /// Uses an unbounded buffer for the resulting [`Subscription`]. We do not
+    /// implement bounded buffers at present.
     ///
     /// [`Subscription`]: struct.Subscription.html
-    async fn subscribe_with_buf_size(
-        &mut self,
-        query: String,
-        buf_size: usize,
-    ) -> Result<Subscription>;
-
-    /// `/subscribe`: subscribe to receive events produced by the given query.
-    ///
-    /// Uses an unbounded buffer for the resulting [`Subscription`] (i.e. this
-    /// is the same as calling `subscribe_with_buf_size` with `buf_size` set to
-    /// 0).
-    ///
-    /// [`Subscription`]: struct.Subscription.html
-    async fn subscribe(&mut self, query: String) -> Result<Subscription> {
-        self.subscribe_with_buf_size(query, 0).await
-    }
+    async fn subscribe(&mut self, query: String) -> Result<Subscription>;
 }
 
 /// An interface that can be used to asynchronously receive [`Event`]s for a
