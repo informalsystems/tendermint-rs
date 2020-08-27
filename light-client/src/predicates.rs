@@ -310,24 +310,30 @@ mod tests {
 
     #[test]
     fn test_is_monotonic_bft_time() {
-        let test_val = Validator::new("val-1");
-        let trusted_header = Header::new([test_val.clone()].as_ref())
+        let test_val = vec![Validator::new("val-1")];
+        let trusted_header = Header::new(&test_val)
             .generate();
-        let untrusted_header = Header::new([test_val].as_ref())
+        let untrusted_header = Header::new(&test_val)
             .generate();
 
         match (trusted_header, untrusted_header) {
             (Ok(trusted), Ok(untrusted)) => {
                 let vp = ProdPredicates::default();
                 let case_positive = vp.is_monotonic_bft_time(
-                    &untrusted.clone(),
-                    &trusted.clone());
+                    &untrusted,
+                    &trusted);
+                assert!(case_positive.is_ok());
+
                 let case_negative = vp.is_monotonic_bft_time(
                     &trusted,
                     &untrusted);
-
-                assert!(case_positive.is_ok());
                 assert!(case_negative.is_err());
+
+                let error = VerificationError::NonMonotonicBftTime {
+                    header_bft_time: trusted.time,
+                    trusted_header_bft_time: untrusted.time,
+                };
+                assert_eq!(case_negative.err().unwrap(), error);
 
             }
             _ => println!("Error in generating header")
@@ -337,8 +343,8 @@ mod tests {
 
     #[test]
     fn test_is_within_trust_period() {
-        let val = Validator::new("val-1");
-        let header = Header::new([val.clone()].as_ref())
+        let val = vec![Validator::new("val-1")];
+        let header = Header::new(&val)
             .generate();
 
         match header {
@@ -350,14 +356,13 @@ mod tests {
                     &header.clone(),
                     trusting_period,
                     Time::now());
+                assert!(case_positive.is_ok());
 
                 trusting_period = Duration::new(0,1);
                 let case_negative = vp.is_within_trust_period(
                     &header,
                     trusting_period,
                     Time::now());
-
-                assert!(case_positive.is_ok());
                 assert!(case_negative.is_err());
 
             }
