@@ -121,6 +121,14 @@ pub struct Subscription {
 }
 ```
 
+Under the hood, a `Subscription` is envisaged to make use of some kind of
+**unbounded channel** to buffer incoming `Event`s, such as that provided by
+[Tokio's `mpsc`][tokio-mpsc]. We don't propose the use of bounded channels yet
+since they complicate the concurrency model significantly: we would need to
+cater for cases where we encounter full channels and provide for conventional or
+application-specific ways of dealing with those full channels (e.g. back-off, or
+back-pressure).
+
 `Subscription`s are created by a client - described in the following sub-section.
 
 ### Client Model
@@ -346,10 +354,6 @@ Proposed
 * Requires an additional concurrent, potentially long-running `async` task to be
   concerned about (partially mitigated by the [handle-driver concurrency
   model](#handle-driver-concurrency-model)).
-* Requires some knowledge of the use of unbounded and bounded channels for
-  inter-task communication - or at least an understanding of what these choices
-  mean for clients and how buffer size selection could impact cases where
-  bounded channels are used.
 
 ### Neutral
 
@@ -373,4 +377,5 @@ None
 [tokio-sync]: https://docs.rs/tokio/*/tokio/sync/index.html
 [async-trait]: https://docs.rs/async-trait/*/async_trait/index.html
 [async-drop]: https://internals.rust-lang.org/t/asynchronous-destructors/11127/49
+[tokio-mpsc]: https://docs.rs/tokio/*/tokio/sync/mpsc/index.html
 
