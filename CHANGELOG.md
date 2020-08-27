@@ -13,6 +13,34 @@
 
 - Created Rust structs from Tendermint Proto files ([#504])
 
+### RPC Client (`tendermint-rpc` crate)
+
+#### Changed
+- **BREAKING**: The entire RPC client interface has been refactored. The
+  `Client` struct has now been replaced by an `HttpClient` struct, which
+  implements all of the RPC methods except those relating to event
+  subscription. To access this struct, you now need to enable both the
+  `client` and `transport_http` features when using the `tendermint-rpc`
+  crate.
+  ([#516](https://github.com/informalsystems/tendermint-rs/pull/516))
+
+#### Added
+- A `WebSocketSubscriptionClient` is now provided to facilitate event
+  subscription for a limited range of RPC events over a WebSocket connection.
+  See the [Tendermint `/subscribe` endpoint's](https://docs.tendermint.com/master/rpc/#/Websocket/subscribe)
+  and the `tendermint-rpc` crate's docs for more details.
+  To access this struct you need to enable both the `client`, `subscription`
+  and `transport_websocket` features when using the `tendermint-rpc` crate.
+  ([#516](https://github.com/informalsystems/tendermint-rs/pull/516))
+- A `MockClient` and `MockSubscriptionClient` struct are available for use in
+  instances where you may want to interact with the Tendermint RPC from your
+  tests without integrating with an actual node. To access these structs you
+  need to enable the `client`, `subscription` and `transport_mock` features
+  when using the `tendermint-rpc` crate. If you only want to use the
+  `MockClient` struct, just enable features `client` and `transport_mock`.
+  See the crate docs for more details.
+  ([#516](https://github.com/informalsystems/tendermint-rs/pull/516))
+
 ## [0.15.0] (2020-07-17)
 
 This release is mostly about the revamped [light-client] library and the [light-node] command-line interface.
