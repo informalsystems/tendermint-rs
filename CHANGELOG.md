@@ -19,7 +19,7 @@ The release contains Rust API-breaking changes. The implementation is compatible
 
 ### FEATURES:
 
-- [tendermint/proto] A tendermint-proto crate was created that contains the Rust structs.
+- [tendermint/proto] A tendermint-proto crate was created that contains the Rust structs for protobuf.
 - [tendermint/proto-compiler] A tendermint-proto-compiler crate was created that generates the tendermint-proto structs from the Tendermint Core Protobuf definitions.
 
 ### IMPROVEMENTS:
