@@ -1,28 +1,69 @@
 ## Unreleased
 
-### Light Client
+## v0.16.0
 
-- Add missing documentation to all items ([#472])
-- Add major contributors as authors of the `light-client`, `light-node`, and `rpc` crate ([#472])
-- Remove and consolidate deprecated [lite] and [lite_impl] modules from the `tendermint` crate ([#500])
+*Aug 31, 2020*
 
-[#472]: https://github.com/informalsystems/tendermint-rs/pull/472
-[lite_impl]: https://github.com/informalsystems/tendermint-rs/tree/master/tendermint/src/lite_impl
+This release is the first release of the [testgen][testgen-dir] utility, 
+a generator for Tendermint types for unit and integration tests and and for model-based testing. 
+It is a utility for producing tendermint datastructures from minimal input, targeted for testing.
 
-### Proto crate
+The release also contains various Rust API-breaking changes. It remains compatible with v0.33 of Tendermint Core.
 
-- Created Rust structs from Tendermint Proto files ([#504])
+ ⚠️ ️Deprecation warning ⚠️ : The `lite` module was removed. Please take a look at the [light-client][light-client-dir] crate.
+
+### BREAKING CHANGES:
+
+- [repo] CHANGES.md renamed to CHANGELOG.md
+- [tendermint] Eliminate use of `signatory` wrapper crate in favour of underlying `ed25519-dalek` and `k256` crates. `ed25519-dalek` is now v1.0 and `k256` provides a pure Rust implementation of secp256k1 rather than wrapping the C library ([#522])
+- [tendermint] Remove `lite` and `lite_impl` modules. See the new `light-client`
+  crate ([#500])
+
+### FEATURES:
+
+- [tendermint/proto] A tendermint-proto crate was created that contains the Rust structs for protobuf,
+preparing for compatibility with Tendermint Core v0.34 ([#508])
+- [tendermint/proto-compiler] A tendermint-proto-compiler crate was created that generates the tendermint-proto structs from the Tendermint Core Protobuf definitions.
+- [testgen] Introduce the `testgen` crate for generating Tendermint types from
+  minimal input ([#468])
+
+### IMPROVEMENTS:
+
+- [light-client] Use the `testgen` for generating tests
+- [light-client] Use primary error as context of `NoWitnessLeft` error ([#477])
+- [repo] Various improvements to documentation and crate structure
+- [repo] Add CONTRIBUTING.md document ([#470])
+- [specs] Updates to fork detection English spec for evidence handling in
+  Tendermint and IBC ([#479])
+- [specs] Model checking results and updates for the fast sync TLA+ spec ([#466])
+
+### BUG FIXES:
+
+- [light-client] Fix to reject headers from the future ([#474])
+
+[light-client-dir]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
+[testgen-dir]: https://github.com/informalsystems/tendermint-rs/tree/master/testgen
+
+[#466]: https://github.com/informalsystems/tendermint-rs/pull/466
+[#468]: https://github.com/informalsystems/tendermint-rs/pull/468
+[#470]: https://github.com/informalsystems/tendermint-rs/pull/470
+[#474]: https://github.com/informalsystems/tendermint-rs/pull/474
+[#477]: https://github.com/informalsystems/tendermint-rs/pull/477
+[#479]: https://github.com/informalsystems/tendermint-rs/pull/479
+[#500]: https://github.com/informalsystems/tendermint-rs/pull/500
+[#508]: https://github.com/informalsystems/tendermint-rs/pull/508
+[#522]: https://github.com/informalsystems/tendermint-rs/pull/522
 
 ## v0.15.0
 
 *July 17, 2020*
 
-This release is the first official release of the revamped [light-client][light-client-dir] library and the [light-node] command-line interface.
+This release is the first official release of the revamped [light-client][light-client-dir] library and the [light-node][light-node-dir] command-line interface.
 Together they provide a complete Tendermint light client implementation that performs squential and skipping verification
 and attempts to detect forks across its peers. Complete TLA+ specifications for light client verification are included,
-along with work-in-progress on the specs for detection. The implementation is compatible with v0.33 of Tendermint Core.
+along with work-in-progress specs for fork detection. The implementation is compatible with v0.33 of Tendermint Core.
 
-Note that both the [light-client][light-client-dir]  and [light-node] crates are to be considered experimental software that will still undergo a 
+Note that both the [light-client][light-client-dir]  and [light-node][light-node-dir] crates are to be considered experimental software that will still undergo a 
 lot of improvements and iterations. The goal of releasing an early version of our Light Client is to make it accessible, to get people use it, and to receive feedback.
 
 An overview of the current design of the light client is provided in [ADR-006]
@@ -47,8 +88,6 @@ and [ADR-007].
   complete with an rpc server for querying the latest state of the light node
   while it syncs with the blockchain. See the [light-node][light-node-dir] crate
   for details.
-
-### IMPROVEMENTS:
 
 ### BUG FIXES:
 
@@ -85,7 +124,7 @@ This release mainly targets compatibility with Tendermint [v0.33.x] but contains
 Also noteworthy is that the rpc module was broken out into a separate crate ([tendermint-rpc]).
 
 ⚠️ ️Deprecation warning ⚠️ : This might be that last release containing the [lite] module.
-It will be replaced with the [light-client] crate (soon).
+It will be replaced with the [light-client][light-client-dir] crate (soon).
 
 CommitSig:
 - Refactored CommitSig into a more Rust-friendly enum. ([#247])
@@ -133,7 +172,7 @@ CI:
 [v0.33.x]: https://github.com/tendermint/tendermint/blob/v0.33.5/CHANGELOG.md#v0335
 [tendermint-rpc]: https://github.com/informalsystems/tendermint-rs/tree/master/rpc#tendermint-rpc
 [lite]: https://github.com/informalsystems/tendermint-rs/tree/master/tendermint/src/lite
-[light-client]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
+[light-client-dir]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
 
 ## [0.13.0] (2020-04-20)
 
