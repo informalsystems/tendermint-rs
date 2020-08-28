@@ -1,17 +1,44 @@
 ## Unreleased
 
-### Light Client
+## v0.16.0
 
-- Add missing documentation to all items ([#472])
-- Add major contributors as authors of the `light-client`, `light-node`, and `rpc` crate ([#472])
-- Remove and consolidate deprecated [lite] and [lite_impl] modules from the `tendermint` crate ([#500])
+*Aug 28, 2020*
 
-[#472]: https://github.com/informalsystems/tendermint-rs/pull/472
-[lite_impl]: https://github.com/informalsystems/tendermint-rs/tree/master/tendermint/src/lite_impl
+This release is the first release of the [testgen][testgen] utility, a generator for Tendermint types for unit, integration
+and model-based testing. It is a utility for producing tendermint datastructures from minimal input, targeted for testing.
 
-### Proto crate
+The release contains Rust API-breaking changes. The implementation is compatible with v0.33 of Tendermint Core.
 
-- Created Rust structs from Tendermint Proto files ([#504])
+ ⚠️ ️Deprecation warning ⚠️ : The [lite][lite-dir] module was removed. Please take a look at the [light-client][light-client-dir] crate.
+
+### BREAKING CHANGES:
+
+- [tendermint] The `ed25519-dalek` and `k256` crates now natively support signature traits, the `signatory` wrapper was eliminated.
+- [tendermint] Remove and consolidate deprecated [lite] and [lite_impl] modules
+- [light-client] Use primary error as context of `NoWitnessLeft` error [#477]
+
+### FEATURES:
+
+- [tendermint/proto] A tendermint-proto crate was created that contains the Rust structs.
+- [tendermint/proto-compiler] A tendermint-proto-compiler crate was created that generates the tendermint-proto structs from the Tendermint Core Protobuf definitions.
+
+### IMPROVEMENTS:
+
+- [light-client] and [light-node] Improved documentation, added major contributors as authors of the `light-client`, `light-node`, and `rpc` crate
+- [tendermint] fix broken links in documentation
+- [tendermint] Updated CONTRIBUTING.md document
+- [light-client] started using [testgen] in tests
+
+### BUG FIXES:
+
+- [light-client] Fix predicate bug [#474]
+
+[testgen]: https://github.com/informalsystems/tendermint-rs/tree/master/testgen
+[tendermint/proto]: https://github.com/informalsystems/tendermint-rs/tree/master/proto
+[tendermint/proto-compiler]: https://github.com/informalsystems/tendermint-rs/tree/master/proto-compiler
+[tendermint]: https://github.com/informalsystems/tendermint-rs
+[#474]: https://github.com/informalsystems/tendermint-rs/pull/474
+[#477]: https://github.com/informalsystems/tendermint-rs/pull/477
 
 ## v0.15.0
 
