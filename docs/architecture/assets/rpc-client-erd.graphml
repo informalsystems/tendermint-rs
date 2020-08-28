@@ -19,7 +19,7 @@
         <y:ShapeNode>
           <y:Geometry height="56.0" width="155.0" x="181.5" y="416.0"/>
           <y:Fill color="#DDDDDD" transparent="false"/>
-          <y:BorderStyle color="#444444" raised="false" type="line" width="3.0"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="39.79296875" x="57.603515625" xml:space="preserve" y="19.0">Client<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
         </y:ShapeNode>
@@ -30,7 +30,7 @@
         <y:ShapeNode>
           <y:Geometry height="56.0" width="238.0" x="653.5" y="416.0"/>
           <y:Fill color="#DDDDDD" transparent="false"/>
-          <y:BorderStyle color="#444444" raised="false" type="line" width="3.0"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="116.833984375" x="60.5830078125" xml:space="preserve" y="19.0">SubscriptionClient<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
         </y:ShapeNode>
@@ -41,7 +41,7 @@
         <y:ShapeNode>
           <y:Geometry height="56.0" width="155.0" x="181.5" y="299.0"/>
           <y:Fill color="#BBDCFC" transparent="false"/>
-          <y:BorderStyle color="#444444" raised="false" type="line" width="3.0"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="65.46875" x="44.765625" xml:space="preserve" y="19.0">HttpClient<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
         </y:ShapeNode>
@@ -52,7 +52,7 @@
         <y:ShapeNode>
           <y:Geometry height="56.0" width="238.0" x="653.5" y="299.0"/>
           <y:Fill color="#BBDCFC" transparent="false"/>
-          <y:BorderStyle color="#444444" raised="false" type="line" width="3.0"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="188.419921875" x="24.7900390625" xml:space="preserve" y="19.0">WebSocketSubscriptionClient<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
         </y:ShapeNode>
@@ -74,7 +74,7 @@
         <y:ShapeNode>
           <y:Geometry height="56.0" width="155.0" x="983.5" y="299.0"/>
           <y:Fill color="#BBDCFC" transparent="false"/>
-          <y:BorderStyle color="#444444" raised="false" type="line" width="3.0"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="81.041015625" x="36.9794921875" xml:space="preserve" y="19.0">Subscription<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
         </y:ShapeNode>
@@ -85,7 +85,7 @@
         <y:ShapeNode>
           <y:Geometry height="56.0" width="155.0" x="983.5" y="182.0"/>
           <y:Fill color="#BBDCFC" transparent="false"/>
-          <y:BorderStyle color="#444444" raised="false" type="line" width="3.0"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="39.7998046875" x="57.60009765625" xml:space="preserve" y="19.0">Event<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
         </y:ShapeNode>
@@ -95,7 +95,7 @@
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="56.0" width="155.0" x="417.5" y="182.0"/>
-          <y:Fill color="#BBDCFC" transparent="false"/>
+          <y:Fill color="#DFC0FF" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="dashed" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="123.0615234375" x="15.96923828125" xml:space="preserve" y="19.0">SubscriptionRouter<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
@@ -106,7 +106,7 @@
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="56.0" width="220.0" x="662.5" y="182.0"/>
-          <y:Fill color="#BBDCFC" transparent="false"/>
+          <y:Fill color="#DFC0FF" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="dashed" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="189.9580078125" x="15.02099609375" xml:space="preserve" y="19.0">WebSocketSubscriptionDriver<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
@@ -148,7 +148,8 @@
               <y:Geometry height="56.0" width="155.0" x="825.0" y="641.0"/>
               <y:Fill color="#BBDCFC" transparent="false"/>
               <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="95.8203125" x="29.58984375" xml:space="preserve" y="19.0">Concrete Type<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="32.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="102.8271484375" x="26.08642578125" xml:space="preserve" y="12.0">Public Concrete
+Type<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:Shape type="roundrectangle"/>
             </y:ShapeNode>
           </data>
@@ -168,23 +169,11 @@
           <data key="d6">
             <y:ShapeNode>
               <y:Geometry height="56.0" width="155.0" x="825.0" y="718.0"/>
-              <y:Fill hasColor="false" transparent="false"/>
-              <y:BorderStyle color="#444444" raised="false" type="line" width="2.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="46.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="109.8544921875" x="22.57275390625" xml:space="preserve" y="5.0">Exposed through
-tendermint-rpc
-crate public API<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
-              <y:Shape type="roundrectangle"/>
-            </y:ShapeNode>
-          </data>
-        </node>
-        <node id="n9::n3">
-          <data key="d6">
-            <y:ShapeNode>
-              <y:Geometry height="56.0" width="155.0" x="1010.0" y="718.0"/>
-              <y:Fill hasColor="false" transparent="false"/>
+              <y:Fill color="#DFC0FF" transparent="false"/>
               <y:BorderStyle color="#333333" raised="false" type="dashed" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="32.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="99.716796875" x="27.6416015625" xml:space="preserve" y="12.0">Implementation
-detail<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="46.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="139.392578125" x="7.8037109375" xml:space="preserve" y="5.0">Private Concrete
+Type (Implementation
+Detail)<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:Shape type="roundrectangle"/>
             </y:ShapeNode>
           </data>
@@ -196,7 +185,7 @@ detail<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mod
         <y:ShapeNode>
           <y:Geometry height="56.0" width="155.0" x="417.5" y="416.0"/>
           <y:Fill color="#BBDCFC" transparent="false"/>
-          <y:BorderStyle color="#444444" raised="false" type="line" width="3.0"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="42.1240234375" x="56.43798828125" xml:space="preserve" y="19.0">Query<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
         </y:ShapeNode>
@@ -207,7 +196,7 @@ detail<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mod
         <y:ShapeNode>
           <y:Geometry height="56.0" width="155.0" x="983.5" y="65.0"/>
           <y:Fill color="#BBDCFC" transparent="false"/>
-          <y:BorderStyle color="#444444" raised="false" type="line" width="3.0"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="70.923828125" x="42.0380859375" xml:space="preserve" y="19.0">EventType<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
         </y:ShapeNode>
@@ -218,7 +207,7 @@ detail<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mod
         <y:ShapeNode>
           <y:Geometry height="56.0" width="109.0" x="242.25" y="607.0"/>
           <y:Fill color="#BBDCFC" transparent="false"/>
-          <y:BorderStyle color="#444444" raised="false" type="line" width="3.0"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="63.1513671875" x="22.92431640625" xml:space="preserve" y="19.0">Condition<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
         </y:ShapeNode>
@@ -229,7 +218,7 @@ detail<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mod
         <y:ShapeNode>
           <y:Geometry height="56.0" width="109.0" x="429.5" y="607.0"/>
           <y:Fill color="#BBDCFC" transparent="false"/>
-          <y:BorderStyle color="#444444" raised="false" type="line" width="3.0"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="65.482421875" x="21.7587890625" xml:space="preserve" y="19.0">Operation<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
         </y:ShapeNode>
@@ -240,7 +229,7 @@ detail<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mod
         <y:ShapeNode>
           <y:Geometry height="56.0" width="109.0" x="616.75" y="607.0"/>
           <y:Fill color="#BBDCFC" transparent="false"/>
-          <y:BorderStyle color="#444444" raised="false" type="line" width="3.0"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="58.482421875" x="25.2587890625" xml:space="preserve" y="19.0">Operand<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
         </y:ShapeNode>
@@ -251,7 +240,7 @@ detail<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mod
         <y:ShapeNode>
           <y:Geometry height="56.0" width="155.0" x="1198.0" y="182.0"/>
           <y:Fill color="#BBDCFC" transparent="false"/>
-          <y:BorderStyle color="#444444" raised="false" type="line" width="3.0"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Helvetica" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="92.716796875" x="31.1416015625" xml:space="preserve" y="19.0">SubscriptionId<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:Shape type="roundrectangle"/>
         </y:ShapeNode>
