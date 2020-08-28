@@ -13,59 +13,64 @@
 
 - Created Rust structs from Tendermint Proto files ([#504])
 
-## [0.15.0] (2020-07-17)
+## v0.15.0
 
-This release is mostly about the revamped [light-client] library and the [light-node] command-line interface.
-Note that both crates are to be considered experimental software that will still undergo a lot of improvements and iterations.
-The goal of releasing an early version of our Light Client is to make it accessible, to get people use it, and to receive feedback.
+*July 17, 2020*
 
- ⚠️ ️Deprecation warning ⚠️ : This might be the last release containing the [lite] module. Please take a look at the [light-client] crate.
+This release is the first official release of the revamped [light-client][light-client-dir] library and the [light-node] command-line interface.
+Together they provide a complete Tendermint light client implementation that performs squential and skipping verification
+and attempts to detect forks across its peers. Complete TLA+ specifications for light client verification are included,
+along with work-in-progress on the specs for detection. The implementation is compatible with v0.33 of Tendermint Core.
 
-### Light Client:
+Note that both the [light-client][light-client-dir]  and [light-node] crates are to be considered experimental software that will still undergo a 
+lot of improvements and iterations. The goal of releasing an early version of our Light Client is to make it accessible, to get people use it, and to receive feedback.
 
-- Introduce a `Supervisor` to tie the `LightClient` and the `ForkDetector` together ([#302])
-- Add evidence reporting to the supervisor ([#336])
-- Move `ValidatorSet::hash` method over the `HeaderHasher` trait ([#360])
-- Simplify basic bisecting scheduler logic ([#364])
-- Fix exit condition in `verify_to_target` ([#365])
-- Multi-peer conformance tests ([#371])
-- Introduce a `Trusted` status for light blocks which passed fork detection ([#375])
-- Add JSON-based unit tests for VotingPowerCalculator ([#383])
-- Expose `latest_trusted` from supervisor `Handle` ([#394])
-- Rework the `PeerList`, improve its API, and fix a bug in `swap_primary` ([#397])
-- Turn `Handle` into a trait for ease of integration and testability ([#401])
-- Improve `Supervisor` ergonomics according to [ADR-007] ([#403])
-- Correctly handle blocks marked `Trusted` in accordance with the specification ([#407])
-- Treat `Trusted` status as a special case of `Verified` as per the spec ([#419])
-- Add integration test ([#431])
-- Rework light-node CLI to use `Supervisor` / `Handle` ([#430])
-- Add `latest_status` to the supervisor `Handle` ([#449])
-- Add JSONRPC endpoints to query the light-node ([#363], [#449])
+An overview of the current design of the light client is provided in [ADR-006]
+and [ADR-007].
 
-[0.15.0]: https://github.com/informalsystems/tendermint-rs/pull/454
 
-[#302]: https://github.com/informalsystems/tendermint-rs/pull/302
-[#336]: https://github.com/informalsystems/tendermint-rs/pull/336
-[#360]: https://github.com/informalsystems/tendermint-rs/pull/360
-[#363]: https://github.com/informalsystems/tendermint-rs/pull/363
-[#364]: https://github.com/informalsystems/tendermint-rs/pull/364
-[#365]: https://github.com/informalsystems/tendermint-rs/pull/365
-[#371]: https://github.com/informalsystems/tendermint-rs/pull/371
-[#375]: https://github.com/informalsystems/tendermint-rs/pull/375
-[#383]: https://github.com/informalsystems/tendermint-rs/pull/383
-[#394]: https://github.com/informalsystems/tendermint-rs/pull/394
-[#397]: https://github.com/informalsystems/tendermint-rs/pull/397
-[#401]: https://github.com/informalsystems/tendermint-rs/pull/401
-[#403]: https://github.com/informalsystems/tendermint-rs/pull/403
-[#407]: https://github.com/informalsystems/tendermint-rs/pull/407
-[#419]: https://github.com/informalsystems/tendermint-rs/pull/419
-[#430]: https://github.com/informalsystems/tendermint-rs/pull/430
-[#431]: https://github.com/informalsystems/tendermint-rs/pull/431
-[#449]: https://github.com/informalsystems/tendermint-rs/pull/449
+ ⚠️ ️Deprecation warning ⚠️ : This might be the last release containing the [lite][lite-dir] module. Please take a look at the [light-client][light-client-dir] crate.
 
+### BREAKING CHANGES:
+
+- [repo] make secp256k1 dependency optional ([#441])
+
+### FEATURES:
+
+- [light-client] Rewrite and expansion of `lite`, the prior light client
+  verification module, into a new fully-featured `light-client` crate. The crate provides a db, 
+  functions for complete light client verification, peer management, fork detection, and evidence reporting,
+  along with extensive testing. Components are composed via a `Supervisor`, which is run in its own thread, 
+  and exposes a Handle trait to broker access to underlying state and
+  functionality. See the [light-client][light-client-dir] crate for details.
+- [light-node] New binary crate with CLI for running the light client as a daemon,
+  complete with an rpc server for querying the latest state of the light node
+  while it syncs with the blockchain. See the [light-node][light-node-dir] crate
+  for details.
+
+### IMPROVEMENTS:
+
+### BUG FIXES:
+
+- [tendermint/validator] Sort validators by address on deserialization ([#410])
+- [tendermint/validator] Fix deserializing Update struct when power field is 0
+  ([#451])
+- [tendermint/abci] Fix DeliverTx response deserialization issues with
+  gasWanted, gasUsed, and data fields ([#432])
+- [tendermint/lite_impl] Fix header.hash for height 1 ([#438])
+
+[#410]: https://github.com/informalsystems/tendermint-rs/pull/410
+[#432]: https://github.com/informalsystems/tendermint-rs/pull/432
+[#438]: https://github.com/informalsystems/tendermint-rs/pull/438
+[#441]: https://github.com/informalsystems/tendermint-rs/pull/441
+[#451]: https://github.com/informalsystems/tendermint-rs/pull/451
+
+[ADR-006]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-006-light-client-refactor.md
 [ADR-007]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-007-light-client-supervisor-ergonomics.md
 
-[light-node]: ./light-node/README.md
+[lite-dir]: ./tendermint/src/lite
+[light-client-dir]: ./light-client
+[light-node-dir]: ./light-node/
 
 ## [0.14.1] (2020-06-23)
 
