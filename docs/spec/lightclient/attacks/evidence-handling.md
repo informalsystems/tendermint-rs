@@ -1,27 +1,28 @@
 
 # Light client attacks
 
-We define a light client attack as an observation of conflicting headers for a given height that can be verified
-starting from the common light block. A light client attack is defined in the context of interactions of light client
-with two peers. One of the peers (called primary) defines a trace of verified headers (primary trace) that are 
-being checked against trace (witness trace) from the other peer (called witness). 
+We define a light client attack as detection of conflicting headers for a given height that can be verified
+starting from the trusted light block. A light client attack is defined in the context of interactions of 
+light client with two peers. One of the peers (called primary) defines a trace of verified light blocks 
+(primary trace) that are being checked against trace of the other peer (called witness) that we call 
+witness trace. 
 
 A light client attack is defined by the primary and witness traces 
-that have a common root (the same header for a common height) but forms conflicting branches (end of traces is 
-for the same height but with different headers). As conflicting branches could be arbitrarily big (
-as branches continue do diverge after a bifurcation point), we define a valid light client attack
-as one where a primary trace is of height two (consist of a common header and a conflicting header) and 
-we don't constrain witness trace. The rational is the fact that we assume that the primary is under suspicion
-(therefore not trusted) and the witness plays support role to detect and process an attack (therefore trusted).
-Therefore, once a light client detect an attack, it needs to send to a witness only missing data (common height
-and conflicting light block) as it has its trace. Keeping light client attack data of constant size saves bandwidth and 
-reduces an attack surface. As we will explain below, although in the context of light client core verification
-(TODO: add reference) the roles of primary and witness are clearly defined, in case of the attack, we run 
-the same procedure attack detection procedure twice where the roles are swapped. The rationale is that 
-light client does not know what peer is correct (on a right main branch) so it tries to create and submit
-an attack evidence to both peers. 
+that have a common root (the same trusted light block for a common height) but forms 
+conflicting branches (end of traces is for the same height but with different headers). 
+Note that conflicting branches could be arbitrarily big as branches continue to diverge after 
+a bifurcation point. We propose an approach that allows us to define a valid light client attack
+only with a common light block and a single conflicting light block. We rely on the fact that 
+we assume that the primary is under suspicion (therefore not trusted) and that the witness plays 
+support role to detect and process an attack (therefore trusted). Therefore, once a light client 
+detects an attack, it needs to send to a witness only missing data (common height
+and conflicting light block) as it has its trace. Keeping light client attack data of constant size 
+saves bandwidth and reduces an attack surface. As we will explain below, although in the context of 
+light client core [verification](verification) the roles of primary and witness are clearly defined, 
+in case of the attack, we run the same attack detection procedure twice where the roles are swapped. 
+The rationale is that the light client does not know what peer is correct (on a right main branch) 
+so it tries to create and submit an attack evidence to both peers. 
    
-
 Light client attack evidence consists of a conflicting light block, a common height and an attack type. There are 
 three types of attacks that can be executed against Tendermint light client: 
     - lunatic attack
@@ -34,37 +35,37 @@ TODO: Add Callum's figures.
 ```go
 type LightClientAttackEvidence struct {
     ConflictingBlock   LightBlock
-    CommonHeight       int32
+    CommonHeight       int64
     Type               AttackType
 }
 
 enum AttackType {LunaticAttack, EquivocationAttack, AmnesiaAttack}
 ```
 
-Full node can validate a light client attack by executing the following procedure:
+Full node can validate a light client attack evidence by executing the following procedure:
 
 ```go
-func IsValid(lcAttack LightClientAttackEvidence, bc Blockchain) boolean {
-    commonBlock = GetLightBlock(bc, lcAttack.CommonHeight)
+func IsValid(lcaEvidence LightClientAttackEvidence, bc Blockchain) boolean {
+    commonBlock = GetLightBlock(bc, lcaEvidence.CommonHeight)
     if commonBlock == nil return false 
     
     // Note that trustingPeriod in ValidAndVerified is set to UNBONDING_PERIOD
     verdict = ValidAndVerified(commonBlock, lcAttack.ConflictingBlock)
-    conflictingHeight = lcAttack.ConflictingBlock.Header.Height
-    if verdict != OK or bc[conflictingHeight].Header == lcAttack.ConflictingBlock.Header {
+    conflictingHeight = lcaEvidence.ConflictingBlock.Header.Height
+    if verdict != OK or bc[conflictingHeight].Header == lcaEvidence.ConflictingBlock.Header {
         return false
     }
     
     trustedBlock = GetLightBlock(bc, conflictingHeight)
-    switch lcAttack.Type {
+    switch lcaEvidence.Type {
         
-        case LunaticAttack: return !isPossibleBlock(trustedBlock, lcAttack.ConflictingBlock)
+        case LunaticAttack: return !isPossibleBlock(trustedBlock, lcaEvidence.ConflictingBlock)
         
-        case EquivocationAttack: return isPossibleBlock(trustedBlock, lcAttack.ConflictingBlock) and 
-                                        trustedBlock.Header.Round == lcAttack.ConflictingBlock.Header.Round
+        case EquivocationAttack: return isPossibleBlock(trustedBlock, lcaEvidence.ConflictingBlock) and 
+                                        trustedBlock.Header.Round == lcaEvidence.ConflictingBlock.Header.Round
 
-        case AmnesiaAttack: return isPossibleBlock(trustedBlock, lcAttack.ConflictingBlock) and 
-                                   trustedBlock.Header.Round != lcAttack.ConflictingBlock.Header.Round
+        case AmnesiaAttack: return isPossibleBlock(trustedBlock, lcaEvidence.ConflictingBlock) and 
+                                   trustedBlock.Header.Round != lcaEvidence.ConflictingBlock.Header.Round
     } 
 }
 
@@ -80,41 +81,53 @@ func isPossibleBlock(trusted Header, conflicting Header) boolean {
 
 ## Light client attack creation
 
-Given a trusted header `trusted`, a light node executes the bisection algorithm to verify header `untrusted` at some
-height `h`. If the bisection algorithm succeed, then the header `untrusted` is verified. Headers that are downloaded
-as part of the bisection algorithm are stored in a store and they are also in verified state. Therefore, after the 
-bisection algorithm successfully terminates we have a trace of the light blocks ([] LightBlock) we obtained from the 
-primary that we call primary trace.
+Given a trusted light block `trusted`, a light node executes the bisection algorithm to verify header 
+`untrusted` at some height `h`. If the bisection algorithm succeeds, then the header `untrusted` is verified. 
+Headers that are downloaded as part of the bisection algorithm are stored in a store and they are also in 
+the verified state. Therefore, after the bisection algorithm successfully terminates we have a trace of 
+the light blocks ([] LightBlock) we obtained from the primary that we call primary trace.
 
-#### Primary trace 
+### Primary trace 
 
-The following invariants hold for the primary trace:
+The following invariant holds for the primary trace:
 
 - Given a `trusted` light block, target height `h`, and `primary_trace` ([] LightBlock): 
     *primary_trace[0] == trusted* and *primary_trace[len(primary_trace)-1].Height == h* and 
     successive light blocks are passing light client verification logic. 
+          
 
-TODO: Link right tags from the verification spec.          
+### Witness with a conflicting header
 
-#### Witness with a conflicting header
+The verified header at height `h` is cross-checked with every witness as part of 
+[detection](detection). If a witness returns the conflicting header 
+at the height `h` the following procedure is executed to verify if the conflicting header comes 
+from the valid trace and if that's the case to create an attack evidence:
 
-The verified header at height `h` is cross-checked with every witness as part of the detection algorithm 
-(TODO: add link). If a witness returns the conflicting header at the height `h` the following procedure is
-executed to verify if the conflicting header comes from the valid trace and to create attack evidence 
-in this case:
+
+#### Helper functions
+
+We assume the following helper functions:
+
+```go
+// Returns trace of verified light blocks starting from rootHeight and ending with targetHeight.
+trace(lightStore LightStore, rootHeight int64, targetHeight int64) LightBlock[]
+
+
+
+```
 
 
 ```go
 func DetectLightClientAttacks(primary PeerID, 
-                        primary_trace []LightBlock, 
-                        witness PeerID) (LightClientAttackEvidence, LightClientAttackEvidence) {
-    primary_lca, witness_trace = DetectLightClientAttack(primary_trace, witness)
+                              primary_trace []LightBlock, 
+                              witness PeerID) (LightClientAttackEvidence, LightClientAttackEvidence) {
+    primary_lca_evidence, witness_trace = DetectLightClientAttack(primary_trace, witness)
     
-    witness_lca = nil
+    witness_lca_evidence = nil
     if witness_trace != nil {
-        witness_lca, _ = DetectLightClientAttack(witness_trace, primary)
+        witness_lca_evidence, _ = DetectLightClientAttack(witness_trace, primary)
     }
-    return primary_lca, witness_lca
+    return primary_lca_evidence, witness_lca_evidence
 }
 
 func DetectLightClientAttack(trace []LightBlock, peer PeerID) (LightClientAttackEvidence, []LightBlock) {
@@ -123,7 +136,7 @@ func DetectLightClientAttack(trace []LightBlock, peer PeerID) (LightClientAttack
     lightStore = new LightStore().Update(trusted, StateTrusted)
 
     for i in 1..len(trace)-1 {
-        lightStore, result = VerifyToTarget(peer, lightStore , i)
+        lightStore, result = VerifyToTarget(peer, lightStore , i) 
    
         if result == ResultFailure then return (nil, nil)
         
@@ -145,8 +158,8 @@ func DetectLightClientAttack(trace []LightBlock, peer PeerID) (LightClientAttack
            attackType = AmnesiaAttack
         }                                        
                  
-        return (LightClientAttackEvidence { conflictingBlock, trustedBlock.Header.Height }, 
-                lightStore.Trace(trace[i-1].Height, trace[i].Height))
+        return (LightClientAttackEvidence { conflictingBlock, trustedBlock.Header.Height, attackType }, 
+                trace(lightStore, trace[i-1].Height, trace[i].Height))
     } 
     return (nil, nil)       
 }
@@ -227,9 +240,10 @@ distributed setting as on-chain module. The algorithm works as follows:
             +2/3 of voting-power equivalent PREVOTE(vr, V’) messages (vr ≥ 0 and vr > r and vr < r’) 
             as the justification for sending PREVOTE(r’, V’) 
 
+# References
 
-
-
+[verification]: https://github.com/informalsystems/tendermint-rs/tree/master/docs/spec/lightclient/verification
+[detection]: https://github.com/informalsystems/tendermint-rs/tree/master/docs/spec/lightclient/detection
  
 
 
