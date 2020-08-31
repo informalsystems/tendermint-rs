@@ -4,9 +4,11 @@
 /// the same chain as the predecessor light blocks.
 type FetchedStack = Vec<LightBlock>;
 
-/// Pair of light block and height of the light block which was the 
-/// highest one for which we believe originated from the same chain
-type ChainPair = (LightBlock, Height);
+/// Chain of verification with a starting root.
+enum Chain {
+    Root(LightBlock),
+    Link(LightBlock, Box<Chain>)
+}
 
 /// Traces the history of verify_to_target.
 trait Trace {
@@ -21,7 +23,7 @@ trait Trace {
 
     /// Returns the list of all LightBlock which were inserted through 
     /// insert with associated previous current_height().
-    fn chain(&self) -> LinkedList<ChainPair>;
+    fn chain(&self) -> Chain;
 }
 
 
@@ -48,24 +50,13 @@ pub fn verify_to_target(
         let lowest_unverified = fetch_stack.peek().unwrap().clone();
         
         // do the necessary checks
-        let verdict = valid_and_verified(trace.current(), &lowest_unverified);
-
-        match verdict {
-            // validated LightBlock, improve the verified_state
-            Valid => {
-                fetch_stack.pop();
-                trace.insert(lowest_unverified);
-                continue;
-            },
-            // invalid block stop
-            Invalid(error) => {
-                return error
-            },
-            Untrusted => {
-                // we need an intermediate LightBlock
-                current_height = 
-                    compute_height(trace.current_height(), lowest_unverified.height());
-            }
+        let outcome = try_verify(&trace, &lowest_unverified).map_err(|e| (lowest_unverified, e))?;
+        
+        if outcome {
+            fetch_stack.pop();
+            trace.insert(lowest_unverified)        
+        } else {
+            fetched_stack.push(compute_height(trace.current_height(), lowest_unverified.height()));
         }
     }
 
@@ -74,6 +65,26 @@ pub fn verify_to_target(
 
     return Ok(trace);
 }
+
+/// Tries to validate the light_block given an existing trace.
+pub fn try_verify(trace: &Trace, light_block: &LightBlock) -> Result<(), VerificationError> {
+    let verdict = valid_and_verified(trace.current(), light_block);
+
+    match verdict {
+        // validated LightBlock, improve the verified_state
+        Valid => {
+            Ok(true)
+        },
+        // invalid block stop
+        Invalid(error) => {
+            error
+        },
+        Untrusted => {
+            Ok(false)
+        }
+    }
+}
+
 
 /// LightStore no longer has notions of Trusted, Verified, Unverified and Failed.
 /// The LightBlocks which are stored are all assumed to have originated from the
@@ -84,24 +95,24 @@ trait LightStore {
     /// for which this store is associated with.
     fn highest(&self) -> LightBlock;
 
-    /// Stores the list of ChainPair, possibly changing the highest LightBlock;
+    /// Stores the list of Chain, possibly changing the highest LightBlock;
     /// Precondition is the existence of Light Block for which the chain can be linked
-    /// with the already stored ChainPair. Failing if the chain can not be linked with
+    /// with the already stored Chain. Failing if the chain can not be linked with
     /// existing history or if there is conflicting information.
-    fn store_chain(&mut self, chain: LinkedList<ChainPair>) -> Result<(), Error>;
+    fn store_chain(&mut self, chain: Chain) -> Result<(), Error>;
     
     /// Stores one ChainLink, failing if there is conflicting information in the store.
     /// (forks, etc.). Can be used when light blocks are received out of order.
     fn store_pair(&mut self, link: ChainLink) -> Result<(), Error>;
 
     /// Get verification chain of LightBlock ending at height high and starting starting from low.
-    fn get_chain(&self, low: Height, high: Height) -> LinkedList<ChainPair>;
+    fn get_chain(&self, low: Height, high: Height) -> Chain;
 
     /// In a case a fork is detected allows the light store to recover for a specified boundary
     /// height. Erases all light blocks from the store with height greater or equal to boundary.
     /// Returning the chain of light blocks which are removed. To be used if a fork is discovered
     /// after insertions of light blocks.
-    fn recover(&mut self, boundary: Height) -> Result<LinkedList<ChainPair>, LightStoreError>;
+    fn recover(&mut self, boundary: Height) -> Result<Chain, LightStoreError>;
 
     /// Returns the firsts LightBlock above if it exists.
     fn above(&self, height: Height) -> Result<&LightBlock, ListStoreError>;
