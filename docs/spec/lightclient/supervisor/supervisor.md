@@ -67,14 +67,23 @@ func InitLightClient (initData LCInitData) (LightStore, Error) {
         newblock := LCInitData.LightBlock
     }
     else {
-	    
-        get block b2 of height 2
-        validandverify against LCInitData.genesisDoc
-		//vhttps://github.com/tendermint/spec/blob/8dd2ed4c6fe12459edeb9b783bdaaaeb590ec15c/spec/core/data_structures.md
+	    genesisBlock := makeblock(initData.genesisDoc);
+	    current = FetchLightBlock(primary, 2)
+        
+		// https://github.com/tendermint/spec/blob/8dd2ed4c6fe12459edeb9b783bdaaaeb590ec15c/spec/core/data_structures.md
 		// how the initial verification works is not so clear from the spec
-
-        // cross-check. here I assume there is a genesisblock
-		// PoFs := Forkdetector(genesisblock, b2)
+        // TODO: remove "trusted.Commit is a commit for the header
+		// trusted.Header, i.e., it contains the correct hash of the
+		// header, and +2/3 of signatures" from validAndVerified
+        precondition
+        if CANNOT_VERIFY = ValidAndVerify(genesisBlock, current) {
+		   // genesis bad or primary faulty
+		   // TODO: retry within a loop
+		}
+		
+		
+        // cross-check
+		// PoFs := Forkdetector(genesisBlock, b2)
         if PoFs.Empty {
 		    newBlock := block
 	    }
