@@ -242,6 +242,9 @@ distributed setting as on-chain module. The algorithm works as follows:
 
 # References
 
+[[verification]] The specification of the light client core verification.
+[[detection]] The specification of the light client fork detector.
+
 [verification]: https://github.com/informalsystems/tendermint-rs/tree/master/docs/spec/lightclient/verification
 [detection]: https://github.com/informalsystems/tendermint-rs/tree/master/docs/spec/lightclient/detection
  
