@@ -64,10 +64,17 @@ type GenesisDoc struct {
 func InitLightClient (initData LCInitData) (LightStore, Error) {
 
     if LCInitData.LightBlock != nil {
+	    // TODO: make rational section on init
+	    // we trust the provided initial block. No cross checking 
+		// is necessary, can increase the trust. It would only open up
+		// a possibility for DOS attacks
         newblock := LCInitData.LightBlock
     }
     else {
 	    genesisBlock := makeblock(initData.genesisDoc);
+		// TODO: add section on rationale
+		// We want to populate the lightstore with a complete
+		// lightblock (no empty lastblockid, etc.)
 	    current = FetchLightBlock(primary, 2)
         
 		// https://github.com/tendermint/spec/blob/8dd2ed4c6fe12459edeb9b783bdaaaeb590ec15c/spec/core/data_structures.md
@@ -108,12 +115,15 @@ func InitLightClient (initData LCInitData) (LightStore, Error) {
 	- *LCInitData* contains either a genesis file of a lightblock 
 	- if genesis it passes `ValidateAndComplete()`
 - Expected postcondition
-    - *lightStore* initialized with trusted header
+    - *lightStore* initialized with trusted lightblock. It has either been
+      cross checked (from genesis) or it has initial trust from the
+      user.
+	  
 - Error condition
     - if precondition is violated
 ----
 
-#### **[LC-FUNC-MAIN-VERIF.1]:**
+#### **[LC-FUNC-MAIN-VERIF-DETECT.1]:**
 
 ```go
 func VerifyAndDetect (primary PeerID, 
@@ -128,22 +138,23 @@ func VerifyAndDetect (primary PeerID,
 
     if targetHeight > lightStore.LatestVerified.height {
 		// Verify
-		root := lightStore.heighest
+		root_of_trust := lightStore.heighest
 	else {
-        root, r2 = lightStore.LatestPrevious(targetHeight);
+        root_of_trust, r2 = lightStore.LatestPrevious(targetHeight);
 	}
     if r2 = false {
 	    // TODO
-		// No cross-check needed. We trust hashes.
-	    return Backwards(primary, lightStore, targetHeight)
+		// No cross-check needed. We trust hashes.		
+	    return Backwards(primary, lightStore.lowest, targetHeight)
 	}
 	else {
         // Forward verification + detection
         result := NoResult;
         while result != ResultSuccess {
 
-            verifiedLS,result := VerifyToTarget(primary, root,
-            nextHeight);
+            verifiedLS,result := VerifyToTarget(primary,
+			                                    root_of_trust, 
+												nextHeight);
 			//TODO: in verifytotarget return only verification chain
             if result == ResultFailure {				
 				// pick new primary (promote a secondary to primary)
@@ -155,13 +166,12 @@ func VerifyAndDetect (primary PeerID,
 		
 		// Cross-check
 		// TODO: fix parameters and functions
-        PoFs := Forkdetector(lightStore.heightest, verifiedLS.highest);
+        PoFs := Forkdetector(root_of_trust, verifiedLS.highest);
         if PoFs.Empty {
 		    // no fork detected with secondaries, we trust the new
 			// lightblock
             lightStore.store_chain(verifidLS);
-			//TODO storechain
-			//TODO verification_chain
+			return (lightStore, OK);
         } 
         else {
 		    // there is a fork, we submit the proofs and exit
@@ -169,7 +179,7 @@ func VerifyAndDetect (primary PeerID,
                 MinimizeAndSubmitProofOfFork(p);
 			    // TODO
             } 
-            return(ErrorFork);
+            return(nil, ErrorFork);
         }
 	}
 }
@@ -189,13 +199,14 @@ func Sequential-Supervisor (initdata LCInitData) (Error) {
         nextHeight := input();
 		
 		lightStore := VerifyAndDetect(primary, lightStore, nextHeight);
-		// TODO incorporate ibcmain.1
+		// TODO: only verified lightblocks in lightStore
 		
 		// QUESTION: generate output event.
 	}
 }
 ```
 **TODO:** finish conditions
+**TODO:** lightStore invariant, with pointers to previous block
 - Implementation remark
 - Expected precondition
     - *lightStore* initialized with trusted header
