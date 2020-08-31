@@ -18,7 +18,9 @@ support role to detect and process an attack (therefore trusted). Therefore, onc
 detects an attack, it needs to send to a witness only missing data (common height
 and conflicting light block) as it has its trace. Keeping light client attack data of constant size 
 saves bandwidth and reduces an attack surface. As we will explain below, although in the context of 
-light client core [verification](verification) the roles of primary and witness are clearly defined, 
+light client core 
+[verification](https://github.com/informalsystems/tendermint-rs/tree/master/docs/spec/lightclient/verification) 
+the roles of primary and witness are clearly defined, 
 in case of the attack, we run the same attack detection procedure twice where the roles are swapped. 
 The rationale is that the light client does not know what peer is correct (on a right main branch) 
 so it tries to create and submit an attack evidence to both peers. 
@@ -99,9 +101,9 @@ The following invariant holds for the primary trace:
 ### Witness with a conflicting header
 
 The verified header at height `h` is cross-checked with every witness as part of 
-[detection](detection). If a witness returns the conflicting header 
-at the height `h` the following procedure is executed to verify if the conflicting header comes 
-from the valid trace and if that's the case to create an attack evidence:
+[detection](https://github.com/informalsystems/tendermint-rs/tree/master/docs/spec/lightclient/detection). 
+If a witness returns the conflicting header at the height `h` the following procedure is executed to verify 
+if the conflicting header comes from the valid trace and if that's the case to create an attack evidence:
 
 
 #### Helper functions
@@ -242,11 +244,7 @@ distributed setting as on-chain module. The algorithm works as follows:
 
 # References
 
-[[verification]] The specification of the light client core verification.
-[[detection]] The specification of the light client fork detector.
 
-[verification]: https://github.com/informalsystems/tendermint-rs/tree/master/docs/spec/lightclient/verification
-[detection]: https://github.com/informalsystems/tendermint-rs/tree/master/docs/spec/lightclient/detection
  
 
 
