@@ -15,7 +15,7 @@ TODO:
    - new versions of `verifytotarget` and `backwards` that take as
      input a single lightblock and return a fully verified lightstore
    - update tags to ".2"
-
+   - lightstore.update: remove Unverified upon leaving verifyTotarget
  
 check that all is addressed:
 
@@ -43,20 +43,99 @@ Roughly, it alternates two phases namely:
      cross-checked with the secondaries. In case there is a fork we
      submit "proof of fork" and exit.
   
+  LCInitData
 
-
-#### **[LC-FUNC-SUPERVISOR.1]:**
+https://github.com/tendermint/tendermint/blob/master/types/genesis.go
 
 ```go
-func Sequential-Supervisor () (Error) {
-    loop {
-	    // get the next height
-        nextHeight := input();
-		
+type GenesisDoc struct {
+	GenesisTime     time.Time                `json:"genesis_time"`
+	ChainID         string                   `json:"chain_id"`
+	InitialHeight   int64                    `json:"initial_height"`
+	ConsensusParams *tmproto.ConsensusParams `json:"consensus_params,omitempty"`
+	Validators      []GenesisValidator       `json:"validators,omitempty"`
+	AppHash         tmbytes.HexBytes         `json:"app_hash"`
+	AppState        json.RawMessage          `json:"app_state,omitempty"`
+}
+```
+
+#### **[LC-FUNC-INIT.1]:**
+```go
+func InitLightClient (initData LCInitData) (LightStore, Error) {
+
+    if LCInitData.LightBlock != nil {
+        newblock := LCInitData.LightBlock
+    }
+    else {
+	    
+        get block b2 of height 2
+        validandverify against LCInitData.genesisDoc
+		//vhttps://github.com/tendermint/spec/blob/8dd2ed4c6fe12459edeb9b783bdaaaeb590ec15c/spec/core/data_structures.md
+		// how the initial verification works is not so clear from the spec
+
+        // cross-check. here I assume there is a genesisblock
+		// PoFs := Forkdetector(genesisblock, b2)
+        if PoFs.Empty {
+		    newBlock := block
+	    }
+		else {
+		    for i, p range PoFs {
+                MinimizeAndSubmitProofOfFork(p);
+                // TODO
+            } 
+            return(nil, ErrorFork);
+		}
+    }
+
+    lightStore := new LightStore;
+    lightStore.Update(newBlock);
+    return (lightStore, OK);
+}
+							
+```
+**TODO:** finish conditions
+- Implementation remark
+- Expected precondition
+	- *LCInitData* contains either a genesis file of a lightblock 
+	- if genesis it passes `ValidateAndComplete()`
+- Expected postcondition
+    - *lightStore* initialized with trusted header
+- Error condition
+    - if precondition is violated
+----
+
+#### **[LC-FUNC-MAIN-VERIF.1]:**
+
+```go
+func VerifyAndDetect (primary PeerID, 
+                        lightStore LightStore, 
+						targetHeight Height) (LightStore, Result) {
+
+    b1, r1 = lightStore.Get(targetHeight)
+    if r1 = true {
+        // block already there
+        return (lightStore, ResultSuccess)
+    }
+
+    if targetHeight > lightStore.LatestVerified.height {
 		// Verify
+		root := lightStore.heighest
+	else {
+        root, r2 = lightStore.LatestPrevious(targetHeight);
+	}
+    if r2 = false {
+	    // TODO
+		// No cross-check needed. We trust hashes.
+	    return Backwards(primary, lightStore, targetHeight)
+	}
+	else {
+        // Forward verification + detection
         result := NoResult;
         while result != ResultSuccess {
-            lightStore,result := VerifyToTarget(primary, lightStore, nextHeight);
+
+            verifiedLS,result := VerifyToTarget(primary, root,
+            nextHeight);
+			//TODO: in verifytotarget return only verification chain
             if result == ResultFailure {				
 				// pick new primary (promote a secondary to primary)
 				/// and delete all lightblocks above
@@ -66,20 +145,45 @@ func Sequential-Supervisor () (Error) {
         }
 		
 		// Cross-check
-        PoFs := Forkdetector(lightStore, PoFs);
+		// TODO: fix parameters and functions
+        PoFs := Forkdetector(lightStore.heightest, verifiedLS.highest);
         if PoFs.Empty {
 		    // no fork detected with secondaries, we trust the new
 			// lightblock
-            LightStore.Update(testedLB, StateTrusted);
+            lightStore.store_chain(verifidLS);
+			//TODO storechain
+			//TODO verification_chain
         } 
         else {
 		    // there is a fork, we submit the proofs and exit
             for i, p range PoFs {
-                SubmitProofOfFork(p);
+                MinimizeAndSubmitProofOfFork(p);
+			    // TODO
             } 
             return(ErrorFork);
         }
-    }
+	}
+}
+
+```
+
+#### **[LC-FUNC-SUPERVISOR.1]:**
+
+```go
+func Sequential-Supervisor (initdata LCInitData) (Error) {
+							
+	lightStore := InitLightClient(initData);
+	
+    loop {
+		
+	    // get the next height
+        nextHeight := input();
+		
+		lightStore := VerifyAndDetect(primary, lightStore, nextHeight);
+		// TODO incorporate ibcmain.1
+		
+		// QUESTION: generate output event.
+	}
 }
 ```
 **TODO:** finish conditions
@@ -92,7 +196,7 @@ func Sequential-Supervisor () (Error) {
 	- is terminated by user and satisfies LightStore invariant, or **TODO**
 	- has submitted proof of fork upon detecting a fork
 - Error condition
-    - none
+    - if `InitLightClient` fails
 ----
 
 # Semantics of the LightStore
