@@ -4,11 +4,11 @@ use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
 use tendermint::{
+    validator::Set,
     account, private_key,
     public_key::{self, PublicKey},
     validator, vote,
 };
-use tendermint_light_client::types::ValidatorSet;
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Validator {
@@ -34,6 +34,15 @@ impl Validator {
     set_option!(id, &str, Some(id.to_string()));
     set_option!(voting_power, u64);
     set_option!(proposer_priority, i64);
+
+    pub fn from_str_vec(ids: Vec<&str>) -> Vec<Validator> {
+        let mut vals: Vec<Validator> = Vec::new();
+
+        for id in ids {
+            vals.push(Validator::new(id))
+        }
+        vals
+    }
 
     /// Get private key for this validator companion.
     pub fn get_private_key(&self) -> Result<private_key::Ed25519, SimpleError> {
@@ -116,18 +125,14 @@ pub fn generate_validators(vals: &[Validator]) -> Result<Vec<validator::Info>, S
 /// A helper function to generate validator set from a list of validator ids.
 pub fn generate_validator_set(
     val_ids: Vec<&str>,
-) -> Result<(ValidatorSet, Vec<Validator>), SimpleError> {
-    let mut vals: Vec<Validator> = Vec::new();
-
-    for id in val_ids {
-        vals.push(Validator::new(id))
-    }
+) -> Result<(Set, Vec<Validator>), SimpleError> {
+    let vals = Validator::from_str_vec(val_ids);
 
     let validators = match generate_validators(&vals) {
         Err(e) => bail!("Failed to generate validators with error: {}", e),
         Ok(v) => v,
     };
-    Ok((ValidatorSet::new(validators), vals))
+    Ok((Set::new(validators), vals))
 }
 
 #[cfg(test)]
