@@ -39,7 +39,7 @@ tokio = "0.2.20"
 [dev-dependencies]
 serde_json = "1.0.51"
 gumdrop = "0.8.0"
-tendermint-testgen = { version = "0.1.0", path = "../testgen"}
+tendermint-testgen = { path = "../testgen"}
 
 [features]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
