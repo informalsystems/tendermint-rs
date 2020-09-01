@@ -5,7 +5,7 @@
 *Aug 31, 2020*
 
 This release is the first release of the [testgen][testgen-dir] utility, 
-a generator for Tendermint types for unit and integration tests and and for model-based testing. 
+a generator for Tendermint types for unit and integration tests and for model-based testing. 
 It is a utility for producing tendermint datastructures from minimal input, targeted for testing.
 
 The release also contains various Rust API-breaking changes. It remains compatible with v0.33 of Tendermint Core.
