@@ -52,7 +52,7 @@ func IsValid(lcaEvidence LightClientAttackEvidence, bc Blockchain) boolean {
     if commonBlock == nil return false 
     
     // Note that trustingPeriod in ValidAndVerified is set to UNBONDING_PERIOD
-    verdict = ValidAndVerified(commonBlock, lcAttack.ConflictingBlock)
+    verdict = ValidAndVerified(commonBlock, lcaEvidence.ConflictingBlock)
     conflictingHeight = lcaEvidence.ConflictingBlock.Header.Height
     if verdict != OK or bc[conflictingHeight].Header == lcaEvidence.ConflictingBlock.Header {
         return false
@@ -61,17 +61,18 @@ func IsValid(lcaEvidence LightClientAttackEvidence, bc Blockchain) boolean {
     trustedBlock = GetLightBlock(bc, conflictingHeight)
     switch lcaEvidence.Type {
         
-        case LunaticAttack: return !isPossibleBlock(trustedBlock, lcaEvidence.ConflictingBlock)
+        case LunaticAttack: return !isValidBlock(trustedBlock, lcaEvidence.ConflictingBlock)
         
-        case EquivocationAttack: return isPossibleBlock(trustedBlock, lcaEvidence.ConflictingBlock) and 
+        case EquivocationAttack: return isValidBlock(trustedBlock, lcaEvidence.ConflictingBlock) and 
                                         trustedBlock.Header.Round == lcaEvidence.ConflictingBlock.Header.Round
 
-        case AmnesiaAttack: return isPossibleBlock(trustedBlock, lcaEvidence.ConflictingBlock) and 
+        case AmnesiaAttack: return isValidBlock(trustedBlock, lcaEvidence.ConflictingBlock) and 
                                    trustedBlock.Header.Round != lcaEvidence.ConflictingBlock.Header.Round
     } 
 }
 
-func isPossibleBlock(trusted Header, conflicting Header) boolean {
+// Block validity in this context is defined by the trusted header.
+func isValidBlock(trusted Header, conflicting Header) boolean {
     return trusted.ValidatorsHash == conflicting.ValidatorsHash and
            trusted.NextValidatorsHash == conflicting.NextValidatorsHash and
            trusted.ConsensusHash == conflicting.ConsensusHash and 
@@ -114,8 +115,6 @@ We assume the following helper functions:
 // Returns trace of verified light blocks starting from rootHeight and ending with targetHeight.
 trace(lightStore LightStore, rootHeight int64, targetHeight int64) LightBlock[]
 
-
-
 ```
 
 
@@ -134,34 +133,33 @@ func DetectLightClientAttacks(primary PeerID,
 
 func DetectLightClientAttack(trace []LightBlock, peer PeerID) (LightClientAttackEvidence, []LightBlock) {
 
-    trusted = trace[0]
-    lightStore = new LightStore().Update(trusted, StateTrusted)
+    lightStore = new LightStore().Update(trace[0], StateTrusted)
 
     for i in 1..len(trace)-1 {
-        lightStore, result = VerifyToTarget(peer, lightStore , i) 
+        lightStore, result = VerifyToTarget(peer, lightStore, trace[i].Header.Height) 
    
         if result == ResultFailure then return (nil, nil)
         
-        current = lightStore.Get(i)
+        current = lightStore.Get(trace[i].Header.Height)
         
         // if obtained header is the same as in the trace we continue with a next height
         if current.Header == trace[i].Header continue
 
         // we have identified a conflicting header
         attackType = nil
-        trustedBlock = trace[i-1]
+        commonBlock = trace[i-1]
         conflictingBlock = trace[i]
         
-        if !isPossibleBlock(trustedBlock, conflictingBlock) { 
+        if !isValidBlock(current, conflictingBlock) { 
             attackType = LunaticAttack
-        } else if trustedBlock.Header.Round == conflictingBlock.Header.Round {
+        } else if current.Header.Round == conflictingBlock.Header.Round {
             attackType = EquivocationAttack
         } else {
            attackType = AmnesiaAttack
         }                                        
                  
-        return (LightClientAttackEvidence { conflictingBlock, trustedBlock.Header.Height, attackType }, 
-                trace(lightStore, trace[i-1].Height, trace[i].Height))
+        return (LightClientAttackEvidence { conflictingBlock, commonBlock.Header.Height, attackType }, 
+                trace(lightStore, trace[i-1].Header.Height, trace[i].Header.Height))
     } 
     return (nil, nil)       
 }
