@@ -55,18 +55,12 @@ impl CommitSig {
 
     /// Whether this signature is a commit  (validator voted for the Commit.BlockId)
     pub fn is_commit(&self) -> bool {
-        match self {
-            Self::BlockIDFlagCommit { .. } => true,
-            _ => false,
-        }
+        matches!(self, Self::BlockIDFlagCommit { .. })
     }
 
     /// Whether this signature is nil (validator voted for nil)
     pub fn is_nil(&self) -> bool {
-        match self {
-            Self::BlockIDFlagNil { .. } => true,
-            _ => false,
-        }
+        matches!(self,Self::BlockIDFlagNil { .. })
     }
 }
 

@@ -154,7 +154,7 @@ impl From<PartSetHeader> for RawPartSetHeader {
 
 impl PartSetHeader {
     pub fn new(total: i64, hash: Vec<u8>) -> Self {
-        PartSetHeader { total: total, hash }
+        PartSetHeader { total, hash }
     }
 }
 

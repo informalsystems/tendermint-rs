@@ -6,6 +6,7 @@ use super::{
         Kind::NegativeHeight, Kind::NegativePOLRound, Kind::NegativeRound,
     },
 };
+use crate::amino_types::validate::Kind::OverflowMessageType;
 use crate::{
     block::{self, ParseId},
     chain, consensus, error,
@@ -19,7 +20,6 @@ use tendermint_proto::privval::SignProposalRequest as RawSignProposalRequest;
 use tendermint_proto::privval::SignedProposalResponse as RawSignedProposalResponse;
 use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
 use tendermint_proto::types::Proposal as RawProposal;
-use crate::amino_types::validate::Kind::OverflowMessageType;
 
 #[derive(Clone, PartialEq)]
 pub struct Proposal {
@@ -94,7 +94,7 @@ pub struct SignProposalRequest {
 impl TryFrom<RawSignProposalRequest> for SignProposalRequest {
     type Error = validate::Error;
 
-    fn try_from(value: RawSignProposalRequest) -> Result<Self,Self::Error> {
+    fn try_from(value: RawSignProposalRequest) -> Result<Self, Self::Error> {
         Ok(SignProposalRequest {
             proposal: match value.proposal {
                 None => None,
@@ -112,7 +112,7 @@ impl TryFrom<SignProposalRequest> for RawSignProposalRequest {
         Ok(RawSignProposalRequest {
             proposal: match value.proposal {
                 None => None,
-                Some(proposal) => Some(RawProposal::try_from(proposal)?)
+                Some(proposal) => Some(RawProposal::try_from(proposal)?),
             },
             chain_id: value.chain_id,
         })
@@ -198,7 +198,7 @@ impl TryFrom<RawSignedProposalResponse> for SignedProposalResponse {
         Ok(SignedProposalResponse {
             proposal: match value.proposal {
                 None => None,
-                Some(proposal) => Some(Proposal::try_from(proposal)?)
+                Some(proposal) => Some(Proposal::try_from(proposal)?),
             },
             error: value.error,
         })
@@ -212,9 +212,9 @@ impl TryFrom<SignedProposalResponse> for RawSignedProposalResponse {
         Ok(RawSignedProposalResponse {
             proposal: match value.proposal {
                 None => None,
-                Some(proposal) => Some(RawProposal::try_from(proposal)?)
+                Some(proposal) => Some(RawProposal::try_from(proposal)?),
             },
-            error: value.error
+            error: value.error,
         })
     }
 }

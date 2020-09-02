@@ -16,10 +16,10 @@ use bytes::BufMut;
 use prost::{EncodeError, Message};
 use prost_types::Timestamp;
 use std::convert::TryFrom;
-use tendermint_proto::types::Vote as RawVote;
-use tendermint_proto::privval::{SignVoteRequest as RawSignVoteRequest, RemoteSignerError};
 use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
+use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
 use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
+use tendermint_proto::types::Vote as RawVote;
 
 const VALIDATOR_ADDR_SIZE: usize = 20;
 
@@ -42,17 +42,17 @@ impl TryFrom<RawVote> for Vote {
 
     fn try_from(value: RawVote) -> Result<Self, Self::Error> {
         if value.r#type < 0 {
-            return Err(InvalidMessageType.into())
+            return Err(InvalidMessageType.into());
         }
         Ok(Vote {
             vote_type: value.r#type as u32,
             height: value.height,
             round: value.round as i64,
-            block_id: value.block_id.map(|b|BlockId::from(b)),
+            block_id: value.block_id.map(BlockId::from),
             timestamp: value.timestamp,
             validator_address: value.validator_address,
             validator_index: value.validator_index as i64,
-            signature: value.signature
+            signature: value.signature,
         })
     }
 }
@@ -62,15 +62,15 @@ impl TryFrom<Vote> for RawVote {
 
     fn try_from(value: Vote) -> Result<Self, Self::Error> {
         if value.vote_type > i32::MAX as u32 {
-            return Err(InvalidMessageType.into())
+            return Err(InvalidMessageType.into());
         }
         if value.round > i32::MAX as i64 {
-            return Err(OverflowRound.into())
+            return Err(OverflowRound.into());
         }
         if value.validator_index > i32::MAX as i64 {
-            return Err(OverflowValidatorIndex.into())
+            return Err(OverflowValidatorIndex.into());
         }
-        Ok(RawVote{
+        Ok(RawVote {
             r#type: value.vote_type as i32,
             height: value.height,
             round: value.round as i32,
@@ -78,7 +78,7 @@ impl TryFrom<Vote> for RawVote {
             timestamp: value.timestamp,
             validator_address: value.validator_address,
             validator_index: value.validator_index as i32,
-            signature: value.signature
+            signature: value.signature,
         })
     }
 }
@@ -100,7 +100,7 @@ impl From<&vote::Vote> for Vote {
         Vote {
             vote_type: vote.vote_type.to_u32(),
             height: vote.height.value() as i64, // TODO potential overflow :-/
-            round: vote.round as i64, // TODO potential overflow :-/
+            round: vote.round as i64,           // TODO potential overflow :-/
             block_id: vote.block_id.as_ref().map(|block_id| BlockId {
                 hash: block_id.hash.as_bytes().to_vec(),
                 part_set_header: block_id.parts.as_ref().map(PartSetHeader::from),
@@ -130,21 +130,27 @@ impl TryFrom<RawSignVoteRequest> for SignVoteRequest {
     type Error = validate::Error;
 
     fn try_from(value: RawSignVoteRequest) -> Result<Self, Self::Error> {
-        Ok(SignVoteRequest{ vote: match value.vote {
-            None => None,
-            Some(vote) => Some(Vote::try_from(vote)?)
-        }, chain_id: value.chain_id })
+        Ok(SignVoteRequest {
+            vote: match value.vote {
+                None => None,
+                Some(vote) => Some(Vote::try_from(vote)?),
+            },
+            chain_id: value.chain_id,
+        })
     }
 }
 
 impl TryFrom<SignVoteRequest> for RawSignVoteRequest {
     type Error = validate::Error;
 
-    fn try_from(value: SignVoteRequest) -> Result<Self,Self::Error> {
-        Ok(RawSignVoteRequest{ vote: match value.vote {
-            None => None,
-            Some(vote) => Some(RawVote::try_from(vote)?)
-        }, chain_id: value.chain_id })
+    fn try_from(value: SignVoteRequest) -> Result<Self, Self::Error> {
+        Ok(RawSignVoteRequest {
+            vote: match value.vote {
+                None => None,
+                Some(vote) => Some(RawVote::try_from(vote)?),
+            },
+            chain_id: value.chain_id,
+        })
     }
 }
 
@@ -159,11 +165,12 @@ impl TryFrom<RawSignedVoteResponse> for SignedVoteResponse {
     type Error = validate::Error;
 
     fn try_from(value: RawSignedVoteResponse) -> Result<Self, Self::Error> {
-        Ok(SignedVoteResponse{ vote: match value.vote {
-            None => None,
-            Some(vote) => Some(Vote::try_from(vote)?)
-        },
-            error: value.error
+        Ok(SignedVoteResponse {
+            vote: match value.vote {
+                None => None,
+                Some(vote) => Some(Vote::try_from(vote)?),
+            },
+            error: value.error,
         })
     }
 }
@@ -171,11 +178,14 @@ impl TryFrom<RawSignedVoteResponse> for SignedVoteResponse {
 impl TryFrom<SignedVoteResponse> for RawSignedVoteResponse {
     type Error = validate::Error;
 
-    fn try_from(value: SignedVoteResponse) -> Result<Self,Self::Error> {
-        Ok(RawSignedVoteResponse{ vote: match value.vote {
-            None => None,
-            Some(vote) => Some(RawVote::try_from(vote)?)
-        }, error: value.error })
+    fn try_from(value: SignedVoteResponse) -> Result<Self, Self::Error> {
+        Ok(RawSignedVoteResponse {
+            vote: match value.vote {
+                None => None,
+                Some(vote) => Some(RawVote::try_from(vote)?),
+            },
+            error: value.error,
+        })
     }
 }
 
@@ -195,15 +205,15 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
 
     fn try_from(value: RawCanonicalVote) -> Result<Self, Self::Error> {
         if value.r#type < 0 {
-            return Err(InvalidMessageType.into())
+            return Err(InvalidMessageType.into());
         }
-        Ok(CanonicalVote{
+        Ok(CanonicalVote {
             vote_type: value.r#type as u32,
             height: value.height,
             round: value.round,
             block_id: value.block_id.map(|r| r.into()),
             timestamp: value.timestamp,
-            chain_id: value.chain_id
+            chain_id: value.chain_id,
         })
     }
 }
@@ -211,17 +221,17 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
 impl TryFrom<CanonicalVote> for RawCanonicalVote {
     type Error = validate::Error;
 
-    fn try_from(value: CanonicalVote) -> Result<Self,Self::Error> {
+    fn try_from(value: CanonicalVote) -> Result<Self, Self::Error> {
         if value.vote_type > i32::MAX as u32 {
-            return Err(OverflowMessageType.into())
+            return Err(OverflowMessageType.into());
         }
-        Ok(RawCanonicalVote{
+        Ok(RawCanonicalVote {
             r#type: value.vote_type as i32,
             height: value.height,
             round: value.round,
-            block_id: value.block_id.map(|b|b.into()),
+            block_id: value.block_id.map(|b| b.into()),
             timestamp: value.timestamp,
-            chain_id: value.chain_id
+            chain_id: value.chain_id,
         })
     }
 }
@@ -281,7 +291,9 @@ impl SignableMsg for SignVoteRequest {
         let vote = svr.vote.unwrap();
         let cv = CanonicalVote::new(vote, chain_id.as_str());
 
-        RawCanonicalVote::try_from(cv).unwrap().encode_length_delimited(sign_bytes)?; //Todo: Greg error handling
+        RawCanonicalVote::try_from(cv)
+            .unwrap()
+            .encode_length_delimited(sign_bytes)?; //Todo: Greg error handling
 
         Ok(true)
     }

@@ -6,8 +6,8 @@ use crate::serializers;
 use crate::{account, block, chain, Hash, Time};
 use prost_types::Timestamp;
 use serde::{Deserialize, Serialize};
-use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::types::BlockId as RawBlockId;
+use tendermint_proto::version::Consensus as RawConsensusVersion;
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -86,16 +86,16 @@ impl Header {
         fields_bytes.push(AminoMessage::bytes_vec(&Timestamp::from(
             self.time.to_system_time().unwrap(),
         )));
-//        fields_bytes.push(
-//            self.last_block_id
-//                .as_ref()
-//                .map_or(vec![], |id| AminoMessage::bytes_vec(&BlockId::from(id))),
-//        );
+        //        fields_bytes.push(
+        //            self.last_block_id
+        //                .as_ref()
+        //                .map_or(vec![], |id| AminoMessage::bytes_vec(&BlockId::from(id))),
+        //        );
         match &self.last_block_id {
             None => {
-                let raw_block_id: RawBlockId = BlockId::new(vec![],None).into();
+                let raw_block_id: RawBlockId = BlockId::new(vec![], None).into();
                 AminoMessage::bytes_vec(&raw_block_id);
-            },
+            }
             Some(id) => {
                 let raw_block_id: RawBlockId = BlockId::from(id).into();
                 AminoMessage::bytes_vec(&raw_block_id);
