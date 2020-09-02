@@ -72,4 +72,3 @@ mod prod {
             .block_on(f)
     }
 }
-
