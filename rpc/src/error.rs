@@ -237,4 +237,3 @@ mod tests {
         assert_eq!(res.data, Some("hello world".to_string()));
     }
 }
-

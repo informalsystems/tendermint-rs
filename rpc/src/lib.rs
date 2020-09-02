@@ -16,4 +16,3 @@ mod version;
 pub use self::{
     error::Error, id::Id, method::Method, request::Request, response::Response, version::Version,
 };
-
