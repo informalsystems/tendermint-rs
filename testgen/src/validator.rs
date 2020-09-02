@@ -3,11 +3,8 @@ use ed25519_dalek::SecretKey as Ed25519SecretKey;
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
-use tendermint::{
-    account, private_key,
-    public_key::{self, PublicKey},
-    validator, vote,
-};
+use tendermint::consensus::state::Ordering;
+use tendermint::{account, private_key, public_key, public_key::PublicKey, validator, vote};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Validator {
@@ -80,6 +77,21 @@ impl std::cmp::PartialEq for Validator {
 }
 impl std::cmp::Eq for Validator {}
 
+impl std::cmp::Ord for Validator {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.generate()
+            .unwrap()
+            .address
+            .cmp(&other.generate().unwrap().address)
+    }
+}
+
+impl std::cmp::PartialOrd for Validator {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl Generator<validator::Info> for Validator {
     fn merge_with_default(self, default: Self) -> Self {
         Validator {
@@ -106,10 +118,18 @@ impl Generator<validator::Info> for Validator {
 
 /// A helper function to generate multiple validators at once.
 pub fn generate_validators(vals: &[Validator]) -> Result<Vec<validator::Info>, SimpleError> {
-    Ok(vals
+    let sorted = sort_validators(vals);
+    Ok(sorted
         .iter()
         .map(|v| v.generate())
         .collect::<Result<Vec<validator::Info>, SimpleError>>()?)
+}
+
+/// A helper function to sort validators according to the Tendermint specs.
+pub fn sort_validators(vals: &[Validator]) -> Vec<Validator> {
+    let mut sorted = vals.clone().to_vec();
+    sorted.sort_by_key(|v| v.generate().unwrap().address);
+    sorted.to_vec()
 }
 
 #[cfg(test)]
