@@ -82,7 +82,7 @@ mod prod {
     use std::time::Duration;
 
     use crate::bail;
-    use contracts::{contract_trait, post, pre};
+    use contracts::{contract_trait, pre};
     use tendermint::{
         block::signed_header::SignedHeader as TMSignedHeader, validator::Set as TMValidatorSet,
     };
