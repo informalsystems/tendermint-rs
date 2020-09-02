@@ -1,39 +1,115 @@
 use crate::helpers::*;
 use crate::tester::TestResult::{Failure, ParseError, ReadError, Success};
 use serde::de::DeserializeOwned;
-use std::panic::UnwindSafe;
-use std::{fs, path::PathBuf};
 use std::{
-    panic,
+    fs,
+    io::Write,
+    panic::{self, UnwindSafe},
+    path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
+use tempfile::TempDir;
 
+/// A test environment, which is essentially a wrapper around some directory,
+/// with some utility functions operating relative to that directory.
 #[derive(Debug, Clone)]
 pub struct TestEnv {
-    root_dir: String,
-    logs: Vec<String>,
+    /// Directory where the test is being executed
+    current_dir: String,
 }
 
 impl TestEnv {
-    pub fn add_log(&mut self, log: &str) {
-        self.logs.push(log.to_string());
+    pub fn new(current_dir: &str) -> Option<Self> {
+        fs::create_dir_all(current_dir).ok().map(|_| TestEnv {
+            current_dir: current_dir.to_string(),
+        })
     }
 
-    /// Read a file from a path relative to the environment root into a string
-    pub fn read_file(&mut self, path: &str) -> Option<String> {
-        match self.full_path(path) {
-            None => None,
-            Some(full_path) => match fs::read_to_string(&full_path) {
-                Ok(file) => Some(file),
-                Err(_) => None,
-            },
+    pub fn cleanup(&self) -> Option<()> {
+        fs::remove_dir_all(&self.current_dir)
+            .ok()
+            .and(fs::create_dir_all(&self.current_dir).ok())
+    }
+
+    pub fn push(&self, child: &str) -> Option<Self> {
+        let mut path = PathBuf::from(&self.current_dir);
+        path.push(child);
+        path.to_str().and_then(|path| TestEnv::new(path))
+    }
+
+    pub fn current_dir(&self) -> &str {
+        &self.current_dir
+    }
+
+    pub fn logln(&self, msg: &str) -> Option<()> {
+        println!("{}", msg);
+        self.full_path("_log").and_then(|full_path| {
+            fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(full_path)
+                .ok()
+                .and_then(|mut file| file.write_all((String::from(msg) + "\n").as_bytes()).ok())
+        })
+    }
+
+    pub fn logln_to(&self, msg: &str, rel_path: &str) -> Option<()> {
+        println!("{}", msg);
+        self.full_path(rel_path).and_then(|full_path| {
+            fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(full_path)
+                .ok()
+                .and_then(|mut file| file.write_all((String::from(msg) + "\n").as_bytes()).ok())
+        })
+    }
+
+    /// Read a file from a path relative to the environment current dir into a string
+    pub fn read_file(&self, rel_path: &str) -> Option<String> {
+        self.full_path(rel_path)
+            .and_then(|full_path| fs::read_to_string(&full_path).ok())
+    }
+
+    /// Write a file to a path relative to the environment current dir
+    pub fn write_file(&self, rel_path: &str, contents: &str) -> Option<()> {
+        self.full_path(rel_path)
+            .and_then(|full_path| fs::write(full_path, contents).ok())
+    }
+
+    /// Parse a file from a path relative to the environment current dir as the given type
+    pub fn parse_file_as<T: DeserializeOwned>(&self, rel_path: &str) -> Option<T> {
+        self.read_file(rel_path)
+            .and_then(|input| serde_json::from_str(&input).ok())
+    }
+
+    /// Copy a file from the path outside environment into the environment current dir
+    /// Returns the relative path of the file, or None if copying was not successful
+    pub fn copy_file_from(&self, path: &str) -> Option<String> {
+        let path = Path::new(path);
+        if !path.is_file() {
+            return None;
         }
+        path.file_name().and_then(|name| {
+            name.to_str().and_then(|name| {
+                self.full_path(name)
+                    .and_then(|dest| fs::copy(path, dest).ok().map(|_| name.to_string()))
+            })
+        })
+    }
+
+    /// Copy a file from the path relative to the other environment into the environment current dir
+    /// Returns the relative path of the file, or None if copying was not successful
+    pub fn copy_file_from_env(&self, other: &TestEnv, path: &str) -> Option<String> {
+        other
+            .full_path(path)
+            .and_then(|full_path| self.copy_file_from(&full_path))
     }
 
     /// Convert a relative path to the full path from the test root
     /// Return None if the full path can't be formed
     pub fn full_path(&self, rel_path: &str) -> Option<String> {
-        let full_path = PathBuf::from(&self.root_dir).join(rel_path);
+        let full_path = PathBuf::from(&self.current_dir).join(rel_path);
         match full_path.to_str() {
             None => None,
             Some(full_path) => Some(full_path.to_string()),
@@ -41,9 +117,9 @@ impl TestEnv {
     }
 
     /// Convert a full path to the path relative to the test root
-    /// Return None if the full path doesn't contain test root as prefix
+    /// Returns None if the full path doesn't contain test root as prefix
     pub fn rel_path(&self, full_path: &str) -> Option<String> {
-        match PathBuf::from(full_path).strip_prefix(&self.root_dir) {
+        match PathBuf::from(full_path).strip_prefix(&self.current_dir) {
             Err(_) => None,
             Ok(rel_path) => match rel_path.to_str() {
                 None => None,
@@ -51,28 +127,71 @@ impl TestEnv {
             },
         }
     }
-}
 
-type TestFn = Box<dyn Fn(&str) -> TestResult>;
-
-pub struct Tester {
-    root_dir: String,
-    tests: Vec<(String, TestFn)>,
-    results: std::collections::BTreeMap<String, Vec<(String, TestResult)>>,
+    /// Convert a relative path to the full path from the test root, canonicalized
+    /// Returns None the full path can't be formed
+    pub fn full_canonical_path(&self, rel_path: &str) -> Option<String> {
+        let full_path = PathBuf::from(&self.current_dir).join(rel_path);
+        full_path
+            .canonicalize()
+            .ok()
+            .and_then(|p| p.to_str().map(|x| x.to_string()))
+    }
 }
 
 #[derive(Debug, Clone)]
 pub enum TestResult {
     ReadError,
     ParseError,
-    Success(TestEnv),
+    Success,
     Failure { message: String, location: String },
+}
+
+/// A function that takes as input the test file path and its content,
+/// and returns the result of running the test on it
+type TestFn = Box<dyn Fn(&str, &str) -> TestResult>;
+
+/// A function that takes as input the batch file path and its content,
+/// and returns the vector of test names/contents for tests in the batch,
+/// or None if the batch could not be parsed
+type BatchFn = Box<dyn Fn(&str, &str) -> Option<Vec<(String, String)>>>;
+
+pub struct Test {
+    /// test name
+    pub name: String,
+    /// test function
+    pub test: TestFn,
+}
+
+/// Tester allows you to easily run some test functions over a set of test files.
+/// You create a Tester instance with the reference to some specific directory, containing your test files.
+/// After a creation, you can add several types of tests there:
+///  * add_test() adds a simple test function, which can run on some test, deserilizable from a file.
+///  * add_test_with_env() allows your test function to receive several test environments,
+///    so that it can easily perform some operations on files when necessary
+///  * add_test_batch() adds a batch of test: a function that accepts a ceserializable batch description,
+///    and produces a set of test from it
+///
+///  After you have added all your test functions, you run Tester either on individual files
+///  using run_for_file(), or for whole directories, using run_foreach_in_dir();
+///  the directories will be traversed recursively top-down.
+///
+///  The last step involves calling the finalize() function, which will produce the test report
+///  and panic in case there was at least one failing test.
+///  When there are files in the directories you run Tester on, that could not be read/parsed,
+///  it is also considered an error, and leads to panic.
+pub struct Tester {
+    name: String,
+    root_dir: String,
+    tests: Vec<Test>,
+    batches: Vec<BatchFn>,
+    results: std::collections::BTreeMap<String, Vec<(String, TestResult)>>,
 }
 
 impl TestResult {
     pub fn is_success(&self) -> bool {
         match self {
-            TestResult::Success(_) => true,
+            TestResult::Success => true,
             _ => false,
         }
     }
@@ -100,24 +219,29 @@ impl TestResult {
 }
 
 impl Tester {
-    pub fn new(root_dir: &str) -> Tester {
+    pub fn new(name: &str, root_dir: &str) -> Tester {
         Tester {
+            name: name.to_string(),
             root_dir: root_dir.to_string(),
             tests: vec![],
+            batches: vec![],
             results: Default::default(),
         }
     }
 
-    pub fn env(&self) -> TestEnv {
-        TestEnv {
-            root_dir: self.root_dir.clone(),
-            logs: vec![],
-        }
+    pub fn env(&self) -> Option<TestEnv> {
+        TestEnv::new(&self.root_dir)
     }
 
-    fn capture_test<F>(env: TestEnv, test: F) -> TestResult
+    pub fn output_env(&self) -> Option<TestEnv> {
+        fs::create_dir_all(self.root_dir.clone() + "/_" + &self.name)
+            .ok()
+            .and(TestEnv::new(&(self.root_dir.clone() + "/_" + &self.name)))
+    }
+
+    fn capture_test<F>(test: F) -> TestResult
     where
-        F: FnOnce(TestEnv) -> TestEnv + UnwindSafe,
+        F: FnOnce() + UnwindSafe,
     {
         let test_result = Arc::new(Mutex::new(ParseError));
         let old_hook = panic::take_hook();
@@ -139,11 +263,10 @@ impl Tester {
                 *result = Failure { message, location };
             })
         });
-        let test_fun = || test(env.clone());
-        let result = panic::catch_unwind(test_fun);
+        let result = panic::catch_unwind(|| test());
         panic::set_hook(old_hook);
         match result {
-            Ok(res) => Success(res),
+            Ok(_) => Success,
             Err(_) => (*test_result.lock().unwrap()).clone(),
         }
     }
@@ -152,60 +275,79 @@ impl Tester {
     where
         T: 'static + DeserializeOwned + UnwindSafe,
     {
-        let test_env = self.env();
-        let test_fn = move |input: &str| match parse_as::<T>(&input) {
-            Ok(test_case) => Tester::capture_test(test_env.clone(), |env| {
+        let test_fn = move |_path: &str, input: &str| match parse_as::<T>(&input) {
+            Ok(test_case) => Tester::capture_test(|| {
                 test(test_case);
-                env
             }),
             Err(_) => ParseError,
         };
-        self.tests.push((name.to_string(), Box::new(test_fn)));
+        self.tests.push(Test {
+            name: name.to_string(),
+            test: Box::new(test_fn),
+        });
     }
 
-    pub fn add_test_with_env<T>(&mut self, name: &str, test: fn(T, &mut TestEnv))
+    pub fn add_test_with_env<T>(&mut self, name: &str, test: fn(T, &TestEnv, &TestEnv, &TestEnv))
     where
         T: 'static + DeserializeOwned + UnwindSafe,
     {
-        let test_env = self.env();
-        let test_fn = move |input: &str| match parse_as::<T>(&input) {
-            Ok(test_case) => Tester::capture_test(test_env.clone(), |env| {
-                let mut env = env;
-                test(test_case, &mut env);
-                env
+        let test_env = self.env().unwrap();
+        let output_env = self.output_env().unwrap();
+        let test_fn = move |path: &str, input: &str| match parse_as::<T>(&input) {
+            Ok(test_case) => Tester::capture_test(|| {
+                // It is OK to unwrap() here: in case of unwrapping failure, the test will fail.
+                let dir = TempDir::new().unwrap();
+                let env = TestEnv::new(dir.path().to_str().unwrap()).unwrap();
+                let output_dir = output_env.full_path(path).unwrap();
+                let output_env = TestEnv::new(&output_dir).unwrap();
+                output_env.cleanup();
+                test(test_case, &env, &test_env, &output_env);
             }),
             Err(_) => ParseError,
         };
-        self.tests.push((name.to_string(), Box::new(test_fn)));
+        self.tests.push(Test {
+            name: name.to_string(),
+            test: Box::new(test_fn),
+        });
     }
 
-    fn add_result(&mut self, name: &str, path: &str, result: TestResult) {
+    pub fn add_test_batch<T>(&mut self, batch: fn(T) -> Vec<(String, String)>)
+    where
+        T: 'static + DeserializeOwned,
+    {
+        let batch_fn = move |_path: &str, input: &str| match parse_as::<T>(&input) {
+            Ok(test_batch) => Some(batch(test_batch)),
+            Err(_) => None,
+        };
+        self.batches.push(Box::new(batch_fn));
+    }
+
+    fn results_for(&mut self, name: &str) -> &mut Vec<(String, TestResult)> {
         self.results
             .entry(name.to_string())
             .or_insert_with(Vec::new)
-            .push((path.to_string(), result))
+    }
+
+    fn add_result(&mut self, name: &str, path: &str, result: TestResult) {
+        self.results_for(name).push((path.to_string(), result));
     }
 
     fn read_error(&mut self, path: &str) {
-        self.results
-            .entry("".to_string())
-            .or_insert_with(Vec::new)
+        self.results_for("")
             .push((path.to_string(), TestResult::ReadError))
     }
 
     fn parse_error(&mut self, path: &str) {
-        self.results
-            .entry("".to_string())
-            .or_insert_with(Vec::new)
+        self.results_for("")
             .push((path.to_string(), TestResult::ParseError))
     }
 
-    pub fn successful_tests(&self, test: &str) -> Vec<(String, TestEnv)> {
+    pub fn successful_tests(&self, test: &str) -> Vec<String> {
         let mut tests = Vec::new();
         if let Some(results) = self.results.get(test) {
             for (path, res) in results {
-                if let Success(env) = res {
-                    tests.push((path.clone(), env.clone()))
+                if let Success = res {
+                    tests.push(path.clone())
                 }
             }
         }
@@ -248,63 +390,47 @@ impl Tester {
         tests
     }
 
-    pub fn print_results(&mut self) {
-        let tests = self.unreadable_tests();
-        if !tests.is_empty() {
-            println!("Unreadable tests:  ");
-            for path in tests {
-                println!("  > {}", path)
+    fn run_for_input(&mut self, path: &str, input: &str) {
+        let mut results = Vec::new();
+        for Test { name, test } in &self.tests {
+            match test(path, input) {
+                TestResult::ParseError => continue,
+                res => results.push((name.to_string(), path, res)),
             }
-            panic!("Some tests could not be read");
         }
-        let tests = self.unparseable_tests();
-        if !tests.is_empty() {
-            println!("Unparseable tests:  ");
-            for path in tests {
-                println!("  > {}", path)
+        if !results.is_empty() {
+            for (name, path, res) in results {
+                self.add_result(&name, path, res)
             }
-            panic!("Some tests could not be parsed");
-        }
-
-        for name in self.results.keys() {
-            println!("Results for '{}'", name);
-            let tests = self.successful_tests(name);
-            if !tests.is_empty() {
-                println!("  Successful tests:  ");
-                for (path, _) in tests {
-                    println!("    > {}", path)
+        } else {
+            // parsing as a test failed; try parse as a batch
+            let mut res_tests = Vec::new();
+            for batch in &self.batches {
+                match batch(path, input) {
+                    None => continue,
+                    Some(tests) => {
+                        for (name, input) in tests {
+                            let test_path = path.to_string() + "/" + &name;
+                            res_tests.push((test_path, input));
+                        }
+                    }
                 }
             }
-            let tests = self.failed_tests(name);
-            if !tests.is_empty() {
-                println!("  Failed tests:  ");
-                for (path, message, location) in tests {
-                    println!("    > {}, '{}', {}", path, message, location)
+            if !res_tests.is_empty() {
+                for (path, input) in res_tests {
+                    self.run_for_input(&path, &input);
                 }
-                panic!("Some tests failed");
+            } else {
+                // parsing both as a test and as a batch failed
+                self.parse_error(path);
             }
         }
     }
 
     pub fn run_for_file(&mut self, path: &str) {
-        match self.env().read_file(path) {
+        match self.env().unwrap().read_file(path) {
             None => self.read_error(path),
-            Some(input) => {
-                let mut results = Vec::new();
-                for (name, test) in &self.tests {
-                    match test(&input) {
-                        TestResult::ParseError => continue,
-                        res => results.push((name.to_string(), path, res)),
-                    }
-                }
-                if results.is_empty() {
-                    self.parse_error(path);
-                } else {
-                    for (name, path, res) in results {
-                        self.add_result(&name, path, res)
-                    }
-                }
-            }
+            Some(input) => self.run_for_input(path, &input),
         }
     }
 
@@ -317,9 +443,17 @@ impl Tester {
                 Ok(paths) => {
                     for path in paths {
                         if let Ok(entry) = path {
+                            // ignore path components starting with '_'
+                            if let Some(last) = entry.path().iter().rev().next() {
+                                if let Some(last) = last.to_str() {
+                                    if last.starts_with('_') {
+                                        continue;
+                                    }
+                                }
+                            }
                             if let Ok(kind) = entry.file_type() {
                                 let path = format!("{}", entry.path().display());
-                                let rel_path = self.env().rel_path(&path).unwrap();
+                                let rel_path = self.env().unwrap().rel_path(&path).unwrap();
                                 if kind.is_file() || kind.is_symlink() {
                                     if !rel_path.ends_with(".json") {
                                         continue;
@@ -334,6 +468,70 @@ impl Tester {
                     }
                 }
             },
+        }
+    }
+
+    pub fn finalize(&mut self) {
+        let env = self.output_env().unwrap();
+        env.write_file("_report", "");
+        let print = |msg: &str| {
+            env.logln_to(msg, "_report");
+        };
+        let mut do_panic = false;
+
+        print(&format!(
+            "\n====== Report for '{}' tester run ======",
+            &self.name
+        ));
+        for name in self.results.keys() {
+            if name.is_empty() {
+                continue;
+            }
+            print(&format!("\nResults for '{}'", name));
+            let tests = self.successful_tests(name);
+            if !tests.is_empty() {
+                print("  Successful tests:  ");
+                for path in tests {
+                    print(&format!("    {}", path));
+                    if let Some(logs) = env.read_file(&(path + "/_log")) {
+                        print(&logs)
+                    }
+                }
+            }
+            let tests = self.failed_tests(name);
+            if !tests.is_empty() {
+                do_panic = true;
+                print("  Failed tests:  ");
+                for (path, message, location) in tests {
+                    print(&format!("    {}, '{}', {}", path, message, location));
+                    if let Some(logs) = env.read_file(&(path + "/_log")) {
+                        print(&logs)
+                    }
+                }
+            }
+        }
+        let tests = self.unreadable_tests();
+        if !tests.is_empty() {
+            do_panic = true;
+            print("\nUnreadable tests:  ");
+            for path in tests {
+                print(&format!("  {}", path))
+            }
+        }
+        let tests = self.unparseable_tests();
+        if !tests.is_empty() {
+            do_panic = true;
+            print("\nUnparseable tests:  ");
+            for path in tests {
+                print(&format!("  {}", path))
+            }
+        }
+        print(&format!(
+            "\n====== End of report for '{}' tester run ======\n",
+            &self.name
+        ));
+        if do_panic {
+            panic!("Some tests failed or could not be read/parsed");
         }
     }
 }
