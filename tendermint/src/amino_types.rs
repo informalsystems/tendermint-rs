@@ -9,15 +9,12 @@ pub mod message;
 pub mod proposal;
 pub mod signature;
 pub mod validate;
-pub mod version;
 pub mod vote;
 
 pub use self::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader, PartSetHeader},
     ed25519::{PubKeyRequest, PubKeyResponse},
     proposal::{SignProposalRequest, SignedProposalResponse},
-    signature::{SignableMsg, SignedMsgType},
+    signature::SignableMsg,
     validate::ConsensusMessage,
-    version::ConsensusVersion,
-    vote::{SignVoteRequest, SignedVoteResponse},
 };

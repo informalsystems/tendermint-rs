@@ -6,15 +6,45 @@ use crate::{
     hash,
     hash::{Hash, SHA256_HASH_SIZE},
 };
+use std::convert::TryFrom;
+use tendermint_proto::types::BlockId as RawBlockId;
+use tendermint_proto::types::CanonicalBlockId as RawCanonicalBlockId;
+use tendermint_proto::types::CanonicalPartSetHeader as RawCanonicalPartSetHeader;
+use tendermint_proto::types::PartSetHeader as RawPartSetHeader;
+use tendermint_proto::DomainType;
 
-// Copied from tendermint_proto::types::BlockId
 /// BlockID
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Debug, DomainType)]
+#[rawtype(RawBlockId)]
 pub struct BlockId {
-    #[prost(bytes, tag = "1")]
     pub hash: Vec<u8>,
-    #[prost(message, optional, tag = "2")]
     pub part_set_header: ::std::option::Option<PartSetHeader>,
+}
+
+impl TryFrom<RawBlockId> for BlockId {
+    type Error = Error;
+
+    fn try_from(value: RawBlockId) -> Result<Self, Self::Error> {
+        Ok(BlockId {
+            hash: value.hash,
+            part_set_header: match value.part_set_header {
+                None => None,
+                Some(raw_part_set_header) => Some(PartSetHeader::try_from(raw_part_set_header)?),
+            },
+        })
+    }
+}
+
+impl From<BlockId> for RawBlockId {
+    fn from(value: BlockId) -> Self {
+        RawBlockId {
+            hash: value.hash,
+            part_set_header: match value.part_set_header {
+                None => None,
+                Some(part_set_header) => Some(RawPartSetHeader::from(part_set_header)),
+            },
+        }
+    }
 }
 
 impl BlockId {
@@ -59,13 +89,39 @@ impl ConsensusMessage for BlockId {
     }
 }
 
-// Copied from tendermint_proto::types::CanonicalBlockId
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, DomainType)]
+#[rawtype(RawCanonicalBlockId)]
 pub struct CanonicalBlockId {
-    #[prost(bytes, tag = "1")]
     pub hash: Vec<u8>,
-    #[prost(message, optional, tag = "2")]
-    pub part_set_header: ::std::option::Option<CanonicalPartSetHeader>,
+    pub part_set_header: Option<CanonicalPartSetHeader>,
+}
+
+impl TryFrom<RawCanonicalBlockId> for CanonicalBlockId {
+    type Error = Error;
+
+    fn try_from(value: RawCanonicalBlockId) -> Result<Self, Self::Error> {
+        Ok(CanonicalBlockId {
+            hash: value.hash,
+            part_set_header: match value.part_set_header {
+                None => None,
+                Some(raw_part_set_header) => {
+                    Some(CanonicalPartSetHeader::try_from(raw_part_set_header)?)
+                }
+            },
+        })
+    }
+}
+
+impl From<CanonicalBlockId> for RawCanonicalBlockId {
+    fn from(value: CanonicalBlockId) -> Self {
+        RawCanonicalBlockId {
+            hash: value.hash,
+            part_set_header: match value.part_set_header {
+                None => None,
+                Some(part_set_header) => Some(part_set_header.into()),
+            },
+        }
+    }
 }
 
 impl block::ParseId for CanonicalBlockId {
@@ -79,22 +135,37 @@ impl block::ParseId for CanonicalBlockId {
     }
 }
 
-// Copied from tendermint_proto::types::PartSetHeader
 /// PartsetHeader
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Debug, DomainType)]
+#[rawtype(RawPartSetHeader)]
 pub struct PartSetHeader {
-    #[prost(uint32, tag = "1")]
-    pub total: u32,
-    #[prost(bytes, tag = "2")]
+    pub total: i64,
     pub hash: Vec<u8>,
+}
+
+impl TryFrom<RawPartSetHeader> for PartSetHeader {
+    type Error = Error;
+
+    fn try_from(value: RawPartSetHeader) -> Result<Self, Self::Error> {
+        Ok(PartSetHeader {
+            total: value.total as i64,
+            hash: value.hash,
+        })
+    }
+}
+
+impl From<PartSetHeader> for RawPartSetHeader {
+    fn from(value: PartSetHeader) -> Self {
+        RawPartSetHeader {
+            total: value.total as u32,
+            hash: value.hash,
+        }
+    }
 }
 
 impl PartSetHeader {
     pub fn new(total: i64, hash: Vec<u8>) -> Self {
-        PartSetHeader {
-            total: total as u32,
-            hash,
-        }
+        PartSetHeader { total, hash }
     }
 }
 
@@ -122,13 +193,31 @@ impl ConsensusMessage for PartSetHeader {
     }
 }
 
-// Copied from tendermint_proto::types::CanonicalPartSetHeader
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, DomainType)]
+#[rawtype(RawCanonicalPartSetHeader)]
 pub struct CanonicalPartSetHeader {
-    #[prost(uint32, tag = "1")]
-    pub total: u32,
-    #[prost(bytes, tag = "2")]
+    pub total: i64,
     pub hash: Vec<u8>,
+}
+
+impl TryFrom<RawCanonicalPartSetHeader> for CanonicalPartSetHeader {
+    type Error = Error;
+
+    fn try_from(value: RawCanonicalPartSetHeader) -> Result<Self, Self::Error> {
+        Ok(CanonicalPartSetHeader {
+            total: value.total as i64,
+            hash: value.hash,
+        })
+    }
+}
+
+impl From<CanonicalPartSetHeader> for RawCanonicalPartSetHeader {
+    fn from(value: CanonicalPartSetHeader) -> Self {
+        RawCanonicalPartSetHeader {
+            total: value.total as u32,
+            hash: value.hash,
+        }
+    }
 }
 
 impl CanonicalPartSetHeader {

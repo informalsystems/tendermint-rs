@@ -16,6 +16,13 @@ description = """
 [package.metadata.docs.rs]
 all-features = true
 
+[features]
+default = ["tendermint-proto-derive"]
+
 [dependencies]
 prost = { version = "0.6" }
 prost-types = { version = "0.6" }
+tendermint-proto-derive = { path = "../proto-derive", optional = true }
+bytes = "0.5.6"
+anomaly = "0.2.0"
+thiserror = "1.0.20"

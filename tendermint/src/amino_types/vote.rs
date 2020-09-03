@@ -3,7 +3,6 @@ use super::{
     signature::SignableMsg,
     validate,
     validate::{ConsensusMessage, Kind::*},
-    SignedMsgType,
 };
 use crate::amino_types::PartSetHeader;
 use crate::{
@@ -15,40 +14,71 @@ use crate::{
 use bytes::BufMut;
 use prost::{EncodeError, Message};
 use prost_types::Timestamp;
-use std::convert::TryFrom;
-use tendermint_proto::privval::RemoteSignerError;
+use std::convert::{TryFrom, TryInto};
+use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
+use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
+use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
+use tendermint_proto::types::SignedMsgType;
+use tendermint_proto::types::Vote as RawVote;
+use tendermint_proto::DomainType;
 
 const VALIDATOR_ADDR_SIZE: usize = 20;
 
-// Copied from tendermint_proto::types::Vote
-/// Vote represents a prevote, precommit, or commit vote from validators for
-/// consensus.
-#[derive(Clone, PartialEq, ::prost::Message)]
+/// Vote represents a prevote, precommit, or commit vote from validators for consensus.
+#[derive(Clone, PartialEq, Default, Debug, DomainType)]
+#[rawtype(RawVote)]
 pub struct Vote {
-    #[prost(enumeration = "SignedMsgType", tag = "1")]
-    pub r#type: i32,
-    #[prost(int64, tag = "2")]
+    pub vote_type: u16,
     pub height: i64,
-    #[prost(int32, tag = "3")]
-    pub round: i32,
+    pub round: i64,
     /// zero if vote is nil.
-    #[prost(message, optional, tag = "4")]
     pub block_id: ::std::option::Option<BlockId>,
-    #[prost(message, optional, tag = "5")]
     pub timestamp: ::std::option::Option<::prost_types::Timestamp>,
-    #[prost(bytes, tag = "6")]
     pub validator_address: Vec<u8>,
-    #[prost(int32, tag = "7")]
     pub validator_index: i32,
-    #[prost(bytes, tag = "8")]
     pub signature: Vec<u8>,
+}
+
+impl TryFrom<RawVote> for Vote {
+    type Error = validate::Error;
+
+    fn try_from(value: RawVote) -> Result<Self, Self::Error> {
+        if value.r#type < 0 {
+            return Err(InvalidMessageType.into());
+        }
+        Ok(Vote {
+            vote_type: value.r#type as u16,
+            height: value.height,
+            round: value.round as i64,
+            block_id: value.block_id.map(|f| BlockId::try_from(f).unwrap()),
+            timestamp: value.timestamp,
+            validator_address: value.validator_address,
+            validator_index: value.validator_index,
+            signature: value.signature,
+        })
+    }
+}
+
+impl From<Vote> for RawVote {
+    fn from(value: Vote) -> Self {
+        RawVote {
+            r#type: value.vote_type as i32,
+            height: value.height,
+            round: value.round as i32,
+            block_id: value.block_id.map(|b| b.into()),
+            timestamp: value.timestamp,
+            validator_address: value.validator_address,
+            validator_index: value.validator_index,
+            signature: value.signature,
+        }
+    }
 }
 
 impl Vote {
     fn msg_type(&self) -> Option<SignedMsgType> {
-        if self.r#type == SignedMsgType::Prevote {
+        if self.vote_type == SignedMsgType::Prevote as u16 {
             Some(SignedMsgType::Prevote)
-        } else if self.r#type == SignedMsgType::Precommit {
+        } else if self.vote_type == SignedMsgType::Precommit as u16 {
             Some(SignedMsgType::Precommit)
         } else {
             None
@@ -59,9 +89,9 @@ impl Vote {
 impl From<&vote::Vote> for Vote {
     fn from(vote: &vote::Vote) -> Self {
         Vote {
-            r#type: vote.vote_type.to_u32() as i32,
+            vote_type: vote.vote_type.to_u16(),
             height: vote.height.value() as i64, // TODO potential overflow :-/
-            round: vote.round as i32,
+            round: vote.round as i64,           // TODO potential overflow :-/
             block_id: vote.block_id.as_ref().map(|block_id| BlockId {
                 hash: block_id.hash.as_bytes().to_vec(),
                 part_set_header: block_id.parts.as_ref().map(PartSetHeader::from),
@@ -80,44 +110,115 @@ impl block::ParseHeight for Vote {
     }
 }
 
-// Copied from tendermint_proto::privval::SignVoteRequest
 /// SignVoteRequest is a request to sign a vote
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Debug, DomainType)]
+#[rawtype(RawSignVoteRequest)]
 pub struct SignVoteRequest {
-    #[prost(message, optional, tag = "1")]
-    pub vote: ::std::option::Option<Vote>,
-    #[prost(string, tag = "2")]
+    pub vote: Option<Vote>,
     pub chain_id: String,
 }
 
-// Copied from tendermint_proto::privval::SignedVoteResponse
+impl TryFrom<RawSignVoteRequest> for SignVoteRequest {
+    type Error = validate::Error;
+
+    fn try_from(value: RawSignVoteRequest) -> Result<Self, Self::Error> {
+        Ok(SignVoteRequest {
+            vote: match value.vote {
+                None => None,
+                Some(vote) => Some(Vote::try_from(vote)?),
+            },
+            chain_id: value.chain_id,
+        })
+    }
+}
+
+impl From<SignVoteRequest> for RawSignVoteRequest {
+    fn from(value: SignVoteRequest) -> Self {
+        RawSignVoteRequest {
+            vote: match value.vote {
+                None => None,
+                Some(vote) => Some(vote.into()),
+            },
+            chain_id: value.chain_id,
+        }
+    }
+}
+
 /// SignedVoteResponse is a response containing a signed vote or an error
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq)]
 pub struct SignedVoteResponse {
-    #[prost(message, optional, tag = "1")]
-    pub vote: ::std::option::Option<Vote>,
-    #[prost(message, optional, tag = "2")]
-    pub error: ::std::option::Option<RemoteSignerError>,
+    pub vote: Option<Vote>,
+    pub error: Option<RemoteSignerError>,
 }
 
-// Copied from tendermint_proto::types::CanonicalVote
-#[derive(Clone, PartialEq, ::prost::Message)]
+impl TryFrom<RawSignedVoteResponse> for SignedVoteResponse {
+    type Error = validate::Error;
+
+    fn try_from(value: RawSignedVoteResponse) -> Result<Self, Self::Error> {
+        Ok(SignedVoteResponse {
+            vote: match value.vote {
+                None => None,
+                Some(vote) => Some(Vote::try_from(vote)?),
+            },
+            error: value.error,
+        })
+    }
+}
+
+impl TryFrom<SignedVoteResponse> for RawSignedVoteResponse {
+    type Error = validate::Error;
+
+    fn try_from(value: SignedVoteResponse) -> Result<Self, Self::Error> {
+        Ok(RawSignedVoteResponse {
+            vote: match value.vote {
+                None => None,
+                Some(vote) => Some(RawVote::try_from(vote)?),
+            },
+            error: value.error,
+        })
+    }
+}
+
+#[derive(Clone, PartialEq, DomainType)]
+#[rawtype(RawCanonicalVote)]
 pub struct CanonicalVote {
-    /// type alias for byte
-    #[prost(enumeration = "SignedMsgType", tag = "1")]
-    pub r#type: i32,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag = "2")]
+    pub vote_type: u16,
     pub height: i64,
-    /// canonicalization requires fixed size encoding here
-    #[prost(sfixed64, tag = "3")]
     pub round: i64,
-    #[prost(message, optional, tag = "4")]
-    pub block_id: ::std::option::Option<CanonicalBlockId>,
-    #[prost(message, optional, tag = "5")]
-    pub timestamp: ::std::option::Option<::prost_types::Timestamp>,
-    #[prost(string, tag = "6")]
+    pub block_id: Option<CanonicalBlockId>,
+    pub timestamp: Option<Timestamp>,
     pub chain_id: String,
+}
+
+impl TryFrom<RawCanonicalVote> for CanonicalVote {
+    type Error = validate::Error;
+
+    fn try_from(value: RawCanonicalVote) -> Result<Self, Self::Error> {
+        if value.r#type < 0 {
+            return Err(InvalidMessageType.into());
+        }
+        Ok(CanonicalVote {
+            vote_type: value.r#type as u16,
+            height: value.height,
+            round: value.round,
+            block_id: value.block_id.map(|r| r.try_into().unwrap()),
+            timestamp: value.timestamp,
+            chain_id: value.chain_id,
+        })
+    }
+}
+
+impl From<CanonicalVote> for RawCanonicalVote {
+    fn from(value: CanonicalVote) -> Self {
+        RawCanonicalVote {
+            r#type: value.vote_type as i32,
+            height: value.height,
+            round: value.round,
+            block_id: value.block_id.map(|b| b.into()),
+            timestamp: value.timestamp,
+            chain_id: value.chain_id,
+        }
+    }
 }
 
 impl chain::ParseId for CanonicalVote {
@@ -135,7 +236,7 @@ impl block::ParseHeight for CanonicalVote {
 impl CanonicalVote {
     pub fn new(vote: Vote, chain_id: &str) -> CanonicalVote {
         CanonicalVote {
-            r#type: vote.r#type,
+            vote_type: vote.vote_type,
             chain_id: chain_id.to_string(),
             block_id: match vote.block_id {
                 Some(bid) => Some(CanonicalBlockId {
@@ -151,7 +252,7 @@ impl CanonicalVote {
                 None => None,
             },
             height: vote.height,
-            round: vote.round as i64,
+            round: vote.round,
             timestamp: match vote.timestamp {
                 None => Some(Timestamp {
                     seconds: -62_135_596_800,
@@ -175,7 +276,9 @@ impl SignableMsg for SignVoteRequest {
         let vote = svr.vote.unwrap();
         let cv = CanonicalVote::new(vote, chain_id.as_str());
 
-        cv.encode_length_delimited(sign_bytes)?;
+        RawCanonicalVote::try_from(cv)
+            .unwrap()
+            .encode_length_delimited(sign_bytes)?; //Todo: Greg error handling
 
         Ok(true)
     }
@@ -197,7 +300,7 @@ impl SignableMsg for SignVoteRequest {
                     Ok(h) => h,
                     Err(_err) => return None, // TODO(tarcieri): return an error?
                 },
-                round: v.round as i64,
+                round: v.round,
                 step: 6,
                 block_id: {
                     match v.block_id {
@@ -250,10 +353,10 @@ impl ConsensusMessage for Vote {
 mod tests {
     use super::super::PartSetHeader;
     use super::*;
-    use crate::amino_types::message::AminoMessage;
-    use crate::amino_types::SignedMsgType;
     use crate::chain::Id;
     use chrono::{DateTime, Utc};
+    use tendermint_proto::types::SignedMsgType;
+    use tendermint_proto::DomainType;
 
     #[test]
     fn test_vote_serialization() {
@@ -263,7 +366,7 @@ mod tests {
             nanos: dt.timestamp_subsec_nanos() as i32,
         };
         let vote = Vote {
-            r#type: SignedMsgType::Prevote as i32,
+            vote_type: SignedMsgType::Prevote as u16,
             height: 12345,
             round: 2,
             timestamp: Some(t),
@@ -350,10 +453,13 @@ mod tests {
             let mut vt_precommit = Vote::default();
             vt_precommit.height = 1;
             vt_precommit.round = 1;
-            vt_precommit.r#type = SignedMsgType::Precommit as i32; // precommit
+            vt_precommit.vote_type = SignedMsgType::Precommit as u16; // precommit
             println!("{:?}", vt_precommit);
             let cv_precommit = CanonicalVote::new(vt_precommit, "");
-            let got = AminoMessage::bytes_vec(&cv_precommit);
+            //let got = AminoMessage::bytes_vec(&cv_precommit); //Todo: Greg reintroduce Vec<u8>
+            // converted encode/decode
+            let mut got = vec![];
+            cv_precommit.encode(&mut got).unwrap();
             let want = vec![
                 0x8,  // (field_number << 3) | wire_type
                 0x2,  // PrecommitType
@@ -372,11 +478,14 @@ mod tests {
             let mut vt_prevote = Vote::default();
             vt_prevote.height = 1;
             vt_prevote.round = 1;
-            vt_prevote.r#type = SignedMsgType::Prevote as i32;
+            vt_prevote.vote_type = SignedMsgType::Prevote as u16;
 
             let cv_prevote = CanonicalVote::new(vt_prevote, "");
 
-            let got = AminoMessage::bytes_vec(&cv_prevote);
+            //let got = AminoMessage::bytes_vec(&cv_prevote); // Todo: Greg reintroduce Vec<u8>
+            // encode.
+            let mut got = vec![];
+            cv_prevote.encode(&mut got).unwrap();
 
             let want = vec![
                 0x8,  // (field_number << 3) | wire_type
@@ -398,7 +507,9 @@ mod tests {
             vt_no_type.round = 1;
 
             let cv = CanonicalVote::new(vt_no_type, "");
-            let got = AminoMessage::bytes_vec(&cv);
+            //let got = AminoMessage::bytes_vec(&cv);
+            let mut got = vec![];
+            cv.encode(&mut got).unwrap();
 
             let want = vec![
                 0x11, // (field_number << 3) | wire_type
@@ -417,7 +528,10 @@ mod tests {
             no_vote_type2.round = 1;
 
             let with_chain_id = CanonicalVote::new(no_vote_type2, "test_chain_id");
-            got = AminoMessage::bytes_vec(&with_chain_id);
+            //got = AminoMessage::bytes_vec(&with_chain_id);
+            let mut got = vec![];
+            with_chain_id.encode(&mut got).unwrap();
+
             let want = vec![
                 0x11, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
@@ -451,7 +565,7 @@ mod tests {
             height: 12345,
             round: 2,
             timestamp: Some(t),
-            r#type: 0x01,
+            vote_type: 0x01,
             block_id: Some(BlockId {
                 hash: b"hash".to_vec(),
                 part_set_header: Some(PartSetHeader {
@@ -468,18 +582,18 @@ mod tests {
             ],
         };
         let mut got = vec![];
-        let _have = vote.encode(&mut got);
+        let _have = vote.clone().encode(&mut got);
         let v = Vote::decode(got.as_ref()).unwrap();
 
         assert_eq!(v, vote);
         // SignVoteRequest
         {
             let svr = SignVoteRequest {
-                vote: Some(vote),
+                vote: Some(vote.into()),
                 chain_id: "test_chain_id".to_string(),
             };
             let mut got = vec![];
-            let _have = svr.encode(&mut got);
+            let _have = svr.clone().encode(&mut got);
 
             let svr2 = SignVoteRequest::decode(got.as_ref()).unwrap();
             assert_eq!(svr, svr2);
@@ -511,7 +625,7 @@ mod tests {
             height: 12345,
             round: 2,
             timestamp: Some(t),
-            r#type: 0x01,
+            vote_type: 0x01,
             block_id: Some(BlockId {
                 hash: b"DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA".to_vec(),
                 part_set_header: Some(PartSetHeader {
@@ -522,7 +636,7 @@ mod tests {
             signature: vec![],
         };
         let want = SignVoteRequest {
-            vote: Some(vote),
+            vote: Some(vote.into()),
             chain_id: "test_chain_id".to_string(),
         };
         match SignVoteRequest::decode(encoded.as_ref()) {
