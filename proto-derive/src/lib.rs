@@ -83,6 +83,7 @@ fn expand_domaintype(input: &syn::DeriveInput) -> TokenStream {
                 use ::tendermint_proto::prost::Message;
                 #rawtype::from(self).encoded_len()
             }
+
         }
     };
     gen.into()

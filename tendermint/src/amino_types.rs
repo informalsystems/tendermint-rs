@@ -15,6 +15,6 @@ pub use self::{
     block_id::{BlockId, CanonicalBlockId, CanonicalPartSetHeader, PartSetHeader},
     ed25519::{PubKeyRequest, PubKeyResponse},
     proposal::{SignProposalRequest, SignedProposalResponse},
-    signature::{SignableMsg, SignedMsgType},
+    signature::SignableMsg,
     validate::ConsensusMessage,
 };
