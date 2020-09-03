@@ -2,14 +2,13 @@
 
 TODO:
 
-- initialization with genesis or light block
-   - lightblock: lightstore is just initialized with it. nothing can
-     be double-checked. Add explanation on that
-   - genesis: download height 1, do detection with it
-   
-- at the end of the initialization the lightstore should contain a
-  verified lightblock. 
-  
+- structure of this document?
+   - move part I of verification here (or copy)
+   - sequential statement: copy from verification
+   - distributed statement: 
+       - if TFM holds
+	   - if TFM might be violated
+ 
 
 - incorporate the structure of Stevan's Rust supervisor design
    - new versions of `verifytotarget` and `backwards` that take as
@@ -75,6 +74,7 @@ func InitLightClient (initData LCInitData) (LightStore, Error) {
 		// TODO: add section on rationale
 		// We want to populate the lightstore with a complete
 		// lightblock (no empty lastblockid, etc.)
+		// TODO: 1 or 2?
 	    current = FetchLightBlock(primary, 2)
         
 		// https://github.com/tendermint/spec/blob/8dd2ed4c6fe12459edeb9b783bdaaaeb590ec15c/spec/core/data_structures.md
@@ -90,15 +90,12 @@ func InitLightClient (initData LCInitData) (LightStore, Error) {
 		
 		
         // cross-check
-		// PoFs := Forkdetector(genesisBlock, b2)
-        if PoFs.Empty {
+		Evidences := Forkdetector(genesisBlock, b2)
+        if Evidences.Empty {
 		    newBlock := block
 	    }
 		else {
-		    for i, p range PoFs {
-                MinimizeAndSubmitProofOfFork(p);
-                // TODO
-            } 
+		    submitEvidence(Evidences);
             return(nil, ErrorFork);
 		}
     }
@@ -136,16 +133,14 @@ func VerifyAndDetect (primary PeerID,
         return (lightStore, ResultSuccess)
     }
 
-    if targetHeight > lightStore.LatestVerified.height {
-		// Verify
-		root_of_trust := lightStore.heighest
-	else {
-        root_of_trust, r2 = lightStore.LatestPrevious(targetHeight);
-	}
+    // get the lightblock with maximumheight smaller than targetHeight
+	// would typically be the heighest, if we always move forward
+    root_of_trust, r2 = lightStore.LatestPrevious(targetHeight);
     if r2 = false {
-	    // TODO
-		// No cross-check needed. We trust hashes.		
+		// Backwards verification. No cross-check needed. We trust hashes.		
 	    return Backwards(primary, lightStore.lowest, targetHeight)
+	    // TODO: in Backwards definition pointers need to be fixed to
+		//       predecessor
 	}
 	else {
         // Forward verification + detection
@@ -155,7 +150,7 @@ func VerifyAndDetect (primary PeerID,
             verifiedLS,result := VerifyToTarget(primary,
 			                                    root_of_trust, 
 												nextHeight);
-			//TODO: in verifytotarget return only verification chain
+			// TODO: in verifytotarget return only verification chain
             if result == ResultFailure {				
 				// pick new primary (promote a secondary to primary)
 				/// and delete all lightblocks above
@@ -166,8 +161,8 @@ func VerifyAndDetect (primary PeerID,
 		
 		// Cross-check
 		// TODO: fix parameters and functions
-        PoFs := Forkdetector(root_of_trust, verifiedLS.highest);
-        if PoFs.Empty {
+        Evidences := Forkdetector(root_of_trust, verifiedLS);
+        if Evidences.Empty {
 		    // no fork detected with secondaries, we trust the new
 			// lightblock
             lightStore.store_chain(verifidLS);
@@ -175,11 +170,8 @@ func VerifyAndDetect (primary PeerID,
         } 
         else {
 		    // there is a fork, we submit the proofs and exit
-            for i, p range PoFs {
-                MinimizeAndSubmitProofOfFork(p);
-			    // TODO
-            } 
-            return(nil, ErrorFork);
+            submitEvidence(Evidences);
+            return(lightStore, ErrorFork);
         }
 	}
 }
@@ -191,22 +183,31 @@ func VerifyAndDetect (primary PeerID,
 ```go
 func Sequential-Supervisor (initdata LCInitData) (Error) {
 							
-	lightStore := InitLightClient(initData);
+	lightStore,result := InitLightClient(initData);
+	if result != OK {
+	    return result;
+	}
 	
     loop {
-		
 	    // get the next height
         nextHeight := input();
 		
-		lightStore := VerifyAndDetect(primary, lightStore, nextHeight);
-		// TODO: only verified lightblocks in lightStore
+		lightStore,result := VerifyAndDetect(primary, lightStore, nextHeight);
 		
-		// QUESTION: generate output event.
+		if result == OK {
+		    output(LightStore)
+		}
+		else {
+		    return result
+		}
+		// QUESTION: is it OK to generate output event in normal case,
+	    // and terminate with failure in fork case?
 	}
 }
 ```
-**TODO:** finish conditions
-**TODO:** lightStore invariant, with pointers to previous block
+**TODO:** finish conditions  
+**TODO:** lightStore invariant, with pointers to previous block  
+**TODO:** only verified lightblocks in lightStore  
 - Implementation remark
 - Expected precondition
     - *lightStore* initialized with trusted header
