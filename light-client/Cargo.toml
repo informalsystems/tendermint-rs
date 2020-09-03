@@ -21,9 +21,14 @@ description = """
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[features]
+default = ["rpc-client"]
+rpc-client = ["tendermint-rpc/client"]
+secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
+
 [dependencies]
 tendermint = { version = "0.16.0", path = "../tendermint" }
-tendermint-rpc = { version = "0.16.0", path = "../rpc" }
+tendermint-rpc = { version = "0.16.0", path = "../rpc", default-features = false }
 
 anomaly = { version = "0.2.0", features = ["serializer"] }
 contracts = "0.4.0"
@@ -43,9 +48,3 @@ tokio = "0.2.20"
 serde_json = "1.0.51"
 gumdrop = "0.8.0"
 tendermint-testgen = { path = "../testgen"}
-
-[features]
-default = ["rpc-client"]
-
-rpc-client = ["tendermint-rpc/client"]
-secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
