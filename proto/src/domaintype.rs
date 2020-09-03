@@ -11,6 +11,7 @@ pub trait DomainType<T: Message + From<Self>>: Sized {
 
     /// Encodes the DomainType with a length-delimiter to a buffer.
     ///
+    /// The DomainType will be consumed.
     /// An error will be returned if the buffer does not have sufficient capacity.
     fn encode_length_delimited<B: BufMut>(self, buf: &mut B) -> Result<(), Error>;
 
@@ -20,8 +21,12 @@ pub trait DomainType<T: Message + From<Self>>: Sized {
     fn decode<B: Buf>(buf: B) -> Result<Self, Error>;
 
     /// Decodes a length-delimited instance of the message from the buffer.
+    ///
+    /// The entire buffer will be consumed.
     fn decode_length_delimited<B: Buf>(buf: B) -> Result<Self, Error>;
 
     /// Returns the encoded length of the message without a length delimiter.
+    ///
+    /// The DomainType will be consumed.
     fn encoded_len(self) -> usize;
 }

@@ -196,7 +196,7 @@ impl ConsensusMessage for PartSetHeader {
 #[derive(Clone, PartialEq, DomainType)]
 #[rawtype(RawCanonicalPartSetHeader)]
 pub struct CanonicalPartSetHeader {
-    pub total: i64,
+    pub total: u32,
     pub hash: Vec<u8>,
 }
 
@@ -205,7 +205,7 @@ impl TryFrom<RawCanonicalPartSetHeader> for CanonicalPartSetHeader {
 
     fn try_from(value: RawCanonicalPartSetHeader) -> Result<Self, Self::Error> {
         Ok(CanonicalPartSetHeader {
-            total: value.total as i64,
+            total: value.total,
             hash: value.hash,
         })
     }
@@ -214,7 +214,7 @@ impl TryFrom<RawCanonicalPartSetHeader> for CanonicalPartSetHeader {
 impl From<CanonicalPartSetHeader> for RawCanonicalPartSetHeader {
     fn from(value: CanonicalPartSetHeader) -> Self {
         RawCanonicalPartSetHeader {
-            total: value.total as u32,
+            total: value.total,
             hash: value.hash,
         }
     }
