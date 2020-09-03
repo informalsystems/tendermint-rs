@@ -61,12 +61,12 @@ func IsValid(lcaEvidence LightClientAttackEvidence, bc Blockchain) boolean {
     trustedBlock = GetLightBlock(bc, conflictingHeight)
     switch lcaEvidence.Type {
         
-        case LunaticAttack: return !isValidBlock(trustedBlock, lcaEvidence.ConflictingBlock)
+        case LunaticAttack: return !isValidBlock(trustedBlock.Header, lcaEvidence.ConflictingBlock.Header)
         
-        case EquivocationAttack: return isValidBlock(trustedBlock, lcaEvidence.ConflictingBlock) and 
+        case EquivocationAttack: return isValidBlock(trustedBlock.Header, lcaEvidence.ConflictingBlock.Header) and 
                                         trustedBlock.Header.Round == lcaEvidence.ConflictingBlock.Header.Round
 
-        case AmnesiaAttack: return isValidBlock(trustedBlock, lcaEvidence.ConflictingBlock) and 
+        case AmnesiaAttack: return isValidBlock(trustedBlock.Header, lcaEvidence.ConflictingBlock.Header) and 
                                    trustedBlock.Header.Round != lcaEvidence.ConflictingBlock.Header.Round
     } 
 }
@@ -113,8 +113,16 @@ We assume the following helper functions:
 
 ```go
 // Returns trace of verified light blocks starting from rootHeight and ending with targetHeight.
-trace(lightStore LightStore, rootHeight int64, targetHeight int64) LightBlock[]
+Trace(lightStore LightStore, rootHeight int64, targetHeight int64) LightBlock[]
 
+// Returns validator set for the given height 
+GetValidators(bc Blockchain, height int64) Validator[]
+
+// Returns validator set for the given height 
+GetValidators(bc Blockchain, height int64) Validator[]
+
+// Return validator addresses for the given validators
+GetAddresses(vals Validator[]) ValidatorAddress[]
 ```
 
 
@@ -150,7 +158,7 @@ func DetectLightClientAttack(trace []LightBlock, peer PeerID) (LightClientAttack
         commonBlock = trace[i-1]
         conflictingBlock = trace[i]
         
-        if !isValidBlock(current, conflictingBlock) { 
+        if !isValidBlock(current.Header, conflictingBlock.Header) { 
             attackType = LunaticAttack
         } else if current.Header.Round == conflictingBlock.Header.Round {
             attackType = EquivocationAttack
@@ -159,7 +167,7 @@ func DetectLightClientAttack(trace []LightBlock, peer PeerID) (LightClientAttack
         }                                        
                  
         return (LightClientAttackEvidence { conflictingBlock, commonBlock.Header.Height, attackType }, 
-                trace(lightStore, trace[i-1].Header.Height, trace[i].Header.Height))
+                Trace(lightStore, trace[i-1].Header.Height, trace[i].Header.Height))
     } 
     return (nil, nil)       
 }
@@ -168,22 +176,24 @@ func DetectLightClientAttack(trace []LightBlock, peer PeerID) (LightClientAttack
 ## Evidence handling 
 
 As part of on chain evidence handling, full nodes identifies misbehaving processes and informs
-the application, so they can be slashed. We now specify for each event type evidence handling logic.
+the application, so they can be slashed. Note that only bonded validators should 
+be reported to the application. We now specify for each event type evidence handling logic.
 
 ### Lunatic attack evidence handling
 
 ```go
 func detectMisbehavingProcesses(lcAttackEvidence LightClientAttackEvidence, bc Blockchain) []ValidatorAddress {
-   assume lcAttackEvidence.Type == LunaticAttack
+   assume IsValid(lcaEvidence, bc) and lcAttackEvidence.Type == LunaticAttack
    misbehavingValidators = []ValidatorAddress
 
    conflictingHeight = lcAttackEvidence.ConflictingBlock.Header.Height
    
-   bondedValidators = bc.GetValidators(lcAttackEvidence.CommonHeight) union 
-                      bc.GetNextValidators(lcAttackEvidence.CommonHeight) union
-                      bc.GetValidators(conflictingHeight)) 
+   bondedValidators = GetValidators(bc, lcAttackEvidence.CommonHeight) union 
+                      GetNextValidators(bc, lcAttackEvidence.CommonHeight) union
+                      GetValidators(bc, conflictingHeight)) 
    
-   return getSigners(lcAttackEvidence.ConflictingBlock.Commit) intersection bondedValidators        
+   return getSigners(lcAttackEvidence.ConflictingBlock.Commit) intersection 
+          GetAddresses(bondedValidators)        
 }
 
 func getSigners(commit Commit) []ValidatorAddress {
@@ -201,13 +211,12 @@ func getSigners(commit Commit) []ValidatorAddress {
 
 ```go
 func detectMisbehavingProcesses(lcAttackEvidence LightClientAttackEvidence, bc Blockchain) []ValidatorAddress {
-   assume lcAttackEvidence.Type == EquivocationAttack
+   assume IsValid(lcaEvidence, bc) and lcAttackEvidence.Type == EquivocationAttack
    
-   conflictingBlock = lcAttackEvidence.ConflictingBlock 
-   trusted = bc[conflictingBlock.Header.Height+1].LastCommit 
-   conflicting = conflictingBlock.Commit
+   conflictingCommit = lcAttackEvidence.ConflictingBlock.Commit 
+   trustedCommit = bc[conflictingBlock.Header.Height+1].LastCommit 
    
-   return getSigners(trusted) intersection getSigners(conflicting)      
+   return getSigners(trustedCommit) intersection getSigners(conflictingCommit)      
 }
 ```
 
@@ -215,7 +224,7 @@ func detectMisbehavingProcesses(lcAttackEvidence LightClientAttackEvidence, bc B
 
 Detecting faulty processes in case of the amnesia attack is more complex and cannot be inferred 
 purely based on attack evidence data. In this case, in order to detect misbehaving processes we need
-access to votes processes sent during the conflicting height. Therefore, amnesia handling assumes that
+access to votes processes sent/received during the conflicting height. Therefore, amnesia handling assumes that
 validators persist all votes received and sent during multi-round heights (as amnesia attack 
 is only possible in heights that executes over multiple rounds, i.e., commit round > 0).  
 
@@ -229,7 +238,7 @@ distributed setting as on-chain module. The algorithm works as follows:
     3) The preprocessing of the votesets is done. That means that the received votesets are analyzed 
     and each vote (valid) sent by process p is added to the voteset of the sender p. This phase ensures that
     votes sent by faulty processes observed by at least one correct validator cannot be excluded from the analysis. 
-    4) Votesets of every validator is analyzed independently to decide whether the validator is correct or faulty.
+    4) Votesets of every validator are analyzed independently to decide whether the validator is correct or faulty.
        A faulty validators is the one where at least one of those invalid transitions is found:
             - More than one PREVOTE message is sent in a round 
             - More than one PRECOMMIT message is sent in a round 
