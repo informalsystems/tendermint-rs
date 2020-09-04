@@ -190,7 +190,7 @@ pub struct Tester {
 
 impl TestResult {
     pub fn is_success(&self) -> bool {
-        matches!(self, TestResult::Success(_))
+        matches!(self, TestResult::Success)
     }
     pub fn is_failure(&self) -> bool {
         matches!(self, TestResult::Failure {
