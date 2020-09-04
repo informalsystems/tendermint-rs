@@ -4,42 +4,8 @@
 
 - light fork -> light client attack
 - primary / witness
-
-## context of this document
-
-### Light node
-
-- initialization
-
-- `verification.md` describes the verifier and gives specification in
-  case of TFM
-  
-- if TFM is violated, safety may be violated. That is, the primary
-  convinces us of a faulty block
-  
-- `detection.md`:
-   - we do cross checking with secondaries
-   - if we have a situation
-       - we compute a minimal evidence. 
-	   - the assumption is that one
-         peer is correct, and willing to cooperate
-	   - by cooperating we will generate minimal evidence  
-	     (it seems that cooperation is less fragile to DOS than
-         submitting unlimited data via traces)
-   - submit evidence [*]
-   
-### related components
-
-- IBC fork detection and submission at the relayer
-
-- evidence handling / attack isolation at a full node - the receiving
-  end of [*]
-
-## structure of this document?
-
-   - move part I of verification here (or copy)
-   - sequential statement: copy from verification
-   - distributed statement: 
+- move part I of verification here (or copy)
+- distributed statement: 
        - if TFM holds
 	   - if TFM might be violated
  
@@ -58,9 +24,6 @@ check that all is addressed:
 - https://github.com/informalsystems/tendermint-rs/issues/461
 
 
-- put computation and submission if "minimal" PoF into a function that
-  hides floating details
-  
 - links to verification and detection specs
 
 
@@ -124,6 +87,10 @@ In this document we specify
 
 The details of these two protocols are captured in their own
 documents, as is the [accountability](TODO) protocol.
+
+> Another related line is IBC attack detection and submission at the
+> relayer, as well as attack verification at the IBC handler. This
+> will call for yet another spec.
 
 
 # Status
