@@ -1,5 +1,9 @@
 ## Unreleased
 
+- Add spec for the light client attack evidence handling ([#544])
+
+[#544]: https://github.com/informalsystems/tendermint-rs/pull/544
+
 ## v0.16.0
 
 *Aug 31, 2020*
