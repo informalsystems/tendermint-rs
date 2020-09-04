@@ -80,3 +80,9 @@ impl Command {
         }
     }
 }
+
+impl Default for Command {
+    fn default() -> Self {
+        Self::new()
+    }
+}
