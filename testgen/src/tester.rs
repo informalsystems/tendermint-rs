@@ -190,31 +190,19 @@ pub struct Tester {
 
 impl TestResult {
     pub fn is_success(&self) -> bool {
-        match self {
-            TestResult::Success => true,
-            _ => false,
-        }
+        matches!(self, TestResult::Success(_))
     }
     pub fn is_failure(&self) -> bool {
-        match self {
-            TestResult::Failure {
-                message: _,
-                location: _,
-            } => true,
-            _ => false,
-        }
+        matches!(self, TestResult::Failure {
+            message: _,
+            location: _,
+        })
     }
     pub fn is_readerror(&self) -> bool {
-        match self {
-            TestResult::ReadError => true,
-            _ => false,
-        }
+        matches!(self, TestResult::ReadError)
     }
     pub fn is_parseerror(&self) -> bool {
-        match self {
-            TestResult::ParseError => true,
-            _ => false,
-        }
+        matches!(self, TestResult::ParseError)
     }
 }
 
