@@ -1,8 +1,42 @@
 
 
-TODO:
+# TODO:
 
-- structure of this document?
+- light fork -> light client attack
+- primary / witness
+
+## context of this document
+
+### Light node
+
+- initialization
+
+- `verification.md` describes the verifier and gives specification in
+  case of TFM
+  
+- if TFM is violated, safety may be violated. That is, the primary
+  convinces us of a faulty block
+  
+- `detection.md`:
+   - we do cross checking with secondaries
+   - if we have a situation
+       - we compute a minimal evidence. 
+	   - the assumption is that one
+         peer is correct, and willing to cooperate
+	   - by cooperating we will generate minimal evidence  
+	     (it seems that cooperation is less fragile to DOS than
+         submitting unlimited data via traces)
+   - submit evidence [*]
+   
+### related components
+
+- IBC fork detection and submission at the relayer
+
+- evidence handling / attack isolation at a full node - the receiving
+  end of [*]
+
+## structure of this document?
+
    - move part I of verification here (or copy)
    - sequential statement: copy from verification
    - distributed statement: 
@@ -33,16 +67,155 @@ check that all is addressed:
 
 # Light Client Sequential Supervisor
 
+The light client implements a read operation of a
+[header][TMBC-HEADER-link] from the [blockchain][TMBC-SEQ-link], by
+communicating with full nodes, a so-called primary and several
+so-called witnesses. As some full nodes may be faulty, this
+functionality must be implemented in a fault-tolerant way.
+
+In the Tendermint blockchain, the validator set may change with every
+new block.  The staking and unbonding mechanism induces a [security
+model][TMBC-FM-2THIRDS-link]: starting at time *Time* of the
+[header][TMBC-HEADER-link],
+more than two-thirds of the next validators of a new block are correct
+for the duration of *TrustedPeriod*. 
+
+[Light Client Verification](TODO) implements the fault-tolerant read
+operation designed for this security model. That is, it is safe if the
+model assumptions are satisfied and makes progress if it communicates
+to a correct primary.
+
+However, if the [security model][TMBC-FM-2THIRDS-link] is violated,
+faulty peers (that have been validators at some point in the past) may
+launch attacks on the Tendermint network, and on the light
+client. These attacks as well as an axiomatization of blocks in
+general are defined in [a document that contains the definitions that
+are currently in detection.md](TODO). 
+
+If there is a light client attack (but no
+successful attack on the network), the safety of the verification step
+may be violated (as we operate outside its basic assumption).
+The light client also
+contains a defense mechanism against light clients attacks, called detection.
+
+[Light Client Detection](TODO) implements a cross check of the result
+of the verification step. If there is a light client attack, and the
+light client is connected to a correct peer, the light client as a
+whole is safe, that is, it will not operate on invalid
+blocks. However, in this case it cannot successfully read, as
+inconsistent blocks are in the system. However, in this case the
+detection performs a distributed computation that results in so-called
+evidence. Evidence can be used to prove
+to a correct full node that there has been a
+light client attack.
+
+[Light Client Evidence Accountability](TODO) is a protocol run on a
+full node to check whether submitted evidence indeed proves the
+existence of a light client attack. Further, from the evidence and its
+own knowledge about the blockchain, the full node computes a set of
+bonded full nodes (that at some point had more than one third of the
+voting power) that participated in the attack that will be reported
+via ABCI to the application.
+
+In this document we specify
+
+- Initialization of the Light Client
+- The interaction of [verification](TODO) and [detection](TODO)
+
+The details of these two protocols are captured in their own
+documents, as is the [accountability](TODO) protocol.
 
 
-Roughly, it alternates two phases namely:
-   - Light Client Verification. As a result, a header of the required
-     height has been downloaded from and verified with the primary.
-   - Light Client Fork Detections. As a result the header has been
-     cross-checked with the secondaries. In case there is a fork we
-     submit "proof of fork" and exit.
-  
-  LCInitData
+# Status
+
+This document is work in progress. In order to develop the
+specification step-by-step,
+it assumes certain details of [verification](TODO) and
+[detection](TODO) that are not specified in the respective current
+versions yet. This inconsistencies will be addresses over several
+upcoming PRs.
+
+
+# Outline
+
+TODO
+
+# Part I - Tendermint Blockchain
+
+TODO
+
+# Part II - Sequential Problem Definition 
+
+
+
+#### **[LC-SEQ-INIT-LIVE.1]**: 
+Upon initialization, the light client gets as input a header of the
+blockchain, or the genesis file of the blockchain, and eventually
+stores a header of the blockchain.
+
+#### **[LC-SEQ-LIVE.1]**: 
+The light client gets a sequence of heights as inputs. For each input
+height *targetHeight*, it eventually stores the header of height
+*targetHeight* of the blockchain.
+
+#### **[LC-SEQ-SAFE.1]**:
+
+The light client never stores a header which is not in the blockchain.
+
+# Part III - Light Client as Distributed System
+
+## Computational Model
+
+TODO: primary, witness from detection
+
+TODO: always connected to a correct peer
+
+TODO: no main chain attack, that is, we assume all correct peers have
+knowledge of the blockchain
+
+## Distributed Problem Statement
+
+### Two Kinds of Liveness
+
+TODO: light client attack or no light client attack
+
+#### **[LCV-DIST-TERM.1]**:
+
+*Core Verification* either runs forever or it *terminates on attack*.
+
+### Design choices
+
+#### [LC-DIST-STORE.1]:
+The light client has a local data structure called LightStore 
+that contains light blocks (that contain a header). 
+
+
+#### [LCV-DIST-PRIMARY.1]:
+The light client
+has a local variable primary that contains the PeerID of a full node.
+
+TODO: secondaries?
+
+#### **[LC-DIST-SAFE.1]**:
+It is always the case that every header in *LightStore* was 
+generated by an instance of Tendermint consensus.
+
+#### **[LCV-DIST-LIVE.1]**:
+
+From time to time, a new instance of *Core Verification* is called with a
+height *targetHeight* greater than the height of any header in *LightStore*. 
+Each instance must eventually terminate. 
+  - If
+     - the  *primary* is correct (and locally has the block of
+       *targetHeight*), and 
+     - *LightStore* always contains a verified header whose age is less than the
+        trusting period,  
+    then *Core Verification* adds a verified header *hd* with height
+    *targetHeight* to *LightStore* and it **terminates successfully**
+ 
+
+
+### Design choices
 
 https://github.com/tendermint/tendermint/blob/master/types/genesis.go
 
