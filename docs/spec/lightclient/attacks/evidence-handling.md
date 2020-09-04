@@ -25,23 +25,13 @@ in case of the attack, we run the same attack detection procedure twice where th
 The rationale is that the light client does not know what peer is correct (on a right main branch) 
 so it tries to create and submit an attack evidence to both peers. 
    
-Light client attack evidence consists of a conflicting light block, a common height and an attack type. There are 
-three types of attacks that can be executed against Tendermint light client: 
-    - lunatic attack
-    - equivocation attack and 
-    - amnesia attack. 
-
-TODO: Add references to attack definitions.     
-TODO: Add Callum's figures.
+Light client attack evidence consists of a conflicting light block and a common height. 
     
 ```go
 type LightClientAttackEvidence struct {
     ConflictingBlock   LightBlock
     CommonHeight       int64
-    Type               AttackType
 }
-
-enum AttackType {LunaticAttack, EquivocationAttack, AmnesiaAttack}
 ```
 
 Full node can validate a light client attack evidence by executing the following procedure:
@@ -54,30 +44,8 @@ func IsValid(lcaEvidence LightClientAttackEvidence, bc Blockchain) boolean {
     // Note that trustingPeriod in ValidAndVerified is set to UNBONDING_PERIOD
     verdict = ValidAndVerified(commonBlock, lcaEvidence.ConflictingBlock)
     conflictingHeight = lcaEvidence.ConflictingBlock.Header.Height
-    if verdict != OK or bc[conflictingHeight].Header == lcaEvidence.ConflictingBlock.Header {
-        return false
-    }
     
-    trustedBlock = GetLightBlock(bc, conflictingHeight)
-    switch lcaEvidence.Type {
-        
-        case LunaticAttack: return !isValidBlock(trustedBlock.Header, lcaEvidence.ConflictingBlock.Header)
-        
-        case EquivocationAttack: return isValidBlock(trustedBlock.Header, lcaEvidence.ConflictingBlock.Header) and 
-                                        trustedBlock.Header.Round == lcaEvidence.ConflictingBlock.Header.Round
-
-        case AmnesiaAttack: return isValidBlock(trustedBlock.Header, lcaEvidence.ConflictingBlock.Header) and 
-                                   trustedBlock.Header.Round != lcaEvidence.ConflictingBlock.Header.Round
-    } 
-}
-
-// Block validity in this context is defined by the trusted header.
-func isValidBlock(trusted Header, conflicting Header) boolean {
-    return trusted.ValidatorsHash == conflicting.ValidatorsHash and
-           trusted.NextValidatorsHash == conflicting.NextValidatorsHash and
-           trusted.ConsensusHash == conflicting.ConsensusHash and 
-           trusted.AppHash == conflicting.AppHash and 
-           trusted.LastResultsHash == conflicting.LastResultsHash 
+    return verdict == OK and bc[conflictingHeight].Header != lcaEvidence.ConflictingBlock.Header     
 }
 ```
 
@@ -154,19 +122,10 @@ func DetectLightClientAttack(trace []LightBlock, peer PeerID) (LightClientAttack
         if current.Header == trace[i].Header continue
 
         // we have identified a conflicting header
-        attackType = nil
         commonBlock = trace[i-1]
         conflictingBlock = trace[i]
-        
-        if !isValidBlock(current.Header, conflictingBlock.Header) { 
-            attackType = LunaticAttack
-        } else if current.Header.Round == conflictingBlock.Header.Round {
-            attackType = EquivocationAttack
-        } else {
-           attackType = AmnesiaAttack
-        }                                        
                  
-        return (LightClientAttackEvidence { conflictingBlock, commonBlock.Header.Height, attackType }, 
+        return (LightClientAttackEvidence { conflictingBlock, commonBlock.Header.Height }, 
                 Trace(lightStore, trace[i-1].Header.Height, trace[i].Header.Height))
     } 
     return (nil, nil)       
@@ -177,23 +136,43 @@ func DetectLightClientAttack(trace []LightBlock, peer PeerID) (LightClientAttack
 
 As part of on chain evidence handling, full nodes identifies misbehaving processes and informs
 the application, so they can be slashed. Note that only bonded validators should 
-be reported to the application. We now specify for each event type evidence handling logic.
-
-### Lunatic attack evidence handling
+be reported to the application. There are three types of attacks that can be executed against 
+Tendermint light client: 
+  - lunatic attack
+  - equivocation attack and 
+  - amnesia attack.  
+    
+We now specify the evidence handling logic.
 
 ```go
 func detectMisbehavingProcesses(lcAttackEvidence LightClientAttackEvidence, bc Blockchain) []ValidatorAddress {
-   assume IsValid(lcaEvidence, bc) and lcAttackEvidence.Type == LunaticAttack
-   misbehavingValidators = []ValidatorAddress
+   assume IsValid(lcaEvidence, bc) 
 
-   conflictingHeight = lcAttackEvidence.ConflictingBlock.Header.Height
-   
-   bondedValidators = GetValidators(bc, lcAttackEvidence.CommonHeight) union 
-                      GetNextValidators(bc, lcAttackEvidence.CommonHeight) union
-                      GetValidators(bc, conflictingHeight)) 
-   
-   return getSigners(lcAttackEvidence.ConflictingBlock.Commit) intersection 
-          GetAddresses(bondedValidators)        
+   // lunatic light client attack
+   if !isValidBlock(current.Header, conflictingBlock.Header) { 
+        conflictingCommit = lcAttackEvidence.ConflictingBlock.Commit
+        bondedValidators = GetNextValidators(bc, lcAttackEvidence.CommonHeight) 
+        
+        return getSigners(conflictingCommit) intersection GetAddresses(bondedValidators)                   
+   // equivocation light client attack
+   } else if current.Header.Round == conflictingBlock.Header.Round {
+        conflictingCommit = lcAttackEvidence.ConflictingBlock.Commit 
+        trustedCommit = bc[conflictingBlock.Header.Height+1].LastCommit 
+           
+        return getSigners(trustedCommit) intersection getSigners(conflictingCommit)       
+   // amnesia light client attack
+   } else {
+        HandleAmnesiaAttackEvidence(lcAttackEvidence, bc)      
+   }                    
+}
+
+// Block validity in this context is defined by the trusted header.
+func isValidBlock(trusted Header, conflicting Header) boolean {
+    return trusted.ValidatorsHash == conflicting.ValidatorsHash and
+           trusted.NextValidatorsHash == conflicting.NextValidatorsHash and
+           trusted.ConsensusHash == conflicting.ConsensusHash and 
+           trusted.AppHash == conflicting.AppHash and 
+           trusted.LastResultsHash == conflicting.LastResultsHash 
 }
 
 func getSigners(commit Commit) []ValidatorAddress {
@@ -206,19 +185,9 @@ func getSigners(commit Commit) []ValidatorAddress {
     return signers
 }
 ```
-
-### Equivocation attack evidence handling
-
-```go
-func detectMisbehavingProcesses(lcAttackEvidence LightClientAttackEvidence, bc Blockchain) []ValidatorAddress {
-   assume IsValid(lcaEvidence, bc) and lcAttackEvidence.Type == EquivocationAttack
-   
-   conflictingCommit = lcAttackEvidence.ConflictingBlock.Commit 
-   trustedCommit = bc[conflictingBlock.Header.Height+1].LastCommit 
-   
-   return getSigners(trustedCommit) intersection getSigners(conflictingCommit)      
-}
-```
+Note that amnesia attack evidence handling involves more complex processing, i.e., cannot be 
+defined simply on amnesia attack evidence. We explain in the following section a protocol 
+for handling amnesia attack evidence. 
 
 ### Amnesia attack evidence handling
 
@@ -249,7 +218,7 @@ distributed setting as on-chain module. The algorithm works as follows:
             +2/3 of voting-power equivalent PREVOTE(vr, V’) messages (vr ≥ 0 and vr > r and vr < r’) 
             as the justification for sending PREVOTE(r’, V’) 
 
-# References
+
 
 
  
