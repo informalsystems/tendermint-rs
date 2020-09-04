@@ -1,5 +1,7 @@
 ## Unreleased
 
+[#504] and [#535] Protobuf encoding with domain types
+
 ## v0.16.0
 
 *Aug 31, 2020*
