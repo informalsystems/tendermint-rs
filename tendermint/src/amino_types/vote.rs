@@ -19,7 +19,6 @@ use bytes::BufMut;
 use once_cell::sync::Lazy;
 use prost_amino::{error::EncodeError, Message};
 use prost_amino_derive::Message;
-use signatory::ed25519;
 use std::convert::TryFrom;
 
 const VALIDATOR_ADDR_SIZE: usize = 20;
