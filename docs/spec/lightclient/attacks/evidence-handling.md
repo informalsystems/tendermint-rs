@@ -154,12 +154,14 @@ func detectMisbehavingProcesses(lcAttackEvidence LightClientAttackEvidence, bc B
         bondedValidators = GetNextValidators(bc, lcAttackEvidence.CommonHeight) 
         
         return getSigners(conflictingCommit) intersection GetAddresses(bondedValidators)                   
+   
    // equivocation light client attack
    } else if current.Header.Round == conflictingBlock.Header.Round {
         conflictingCommit = lcAttackEvidence.ConflictingBlock.Commit 
         trustedCommit = bc[conflictingBlock.Header.Height+1].LastCommit 
            
         return getSigners(trustedCommit) intersection getSigners(conflictingCommit)       
+   
    // amnesia light client attack
    } else {
         HandleAmnesiaAttackEvidence(lcAttackEvidence, bc)      
