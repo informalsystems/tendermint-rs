@@ -1,7 +1,7 @@
 ## Unreleased
 
 - [wasm] The `tendermint`, `tendermint-rpc`, and `tendermint-light-client` crates
-         now compile to WASM on the `wasm32-unknown-unknown` and `wasm32-wasi` targets.
+         now compile to WASM on the `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#553])
 
 ## v0.16.0
 
