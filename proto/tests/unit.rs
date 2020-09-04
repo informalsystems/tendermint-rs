@@ -56,7 +56,7 @@ pub fn domaintype_struct_example() {
     let new_domain_type = BlockId::decode(wire.as_ref()).unwrap();
     assert_eq!(new_domain_type.hash, "Hello world!".to_string());
     assert_eq!(new_domain_type.part_set_header_exists, false);
-    assert_eq!(my_domain_type.clone().encoded_len(), 14);
+    assert_eq!(my_domain_type.encoded_len(), 14);
 }
 
 #[test]

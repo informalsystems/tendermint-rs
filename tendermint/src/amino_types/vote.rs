@@ -12,7 +12,7 @@ use crate::{
     vote,
 };
 use bytes::BufMut;
-use prost::{EncodeError, Message};
+use prost::EncodeError;
 use prost_types::Timestamp;
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
@@ -29,13 +29,13 @@ const VALIDATOR_ADDR_SIZE: usize = 20;
 #[rawtype(RawVote)]
 pub struct Vote {
     pub vote_type: u16,
-    pub height: i64,
-    pub round: i64,
+    pub height: u32,
+    pub round: u16,
     /// zero if vote is nil.
     pub block_id: ::std::option::Option<BlockId>,
     pub timestamp: ::std::option::Option<::prost_types::Timestamp>,
     pub validator_address: Vec<u8>,
-    pub validator_index: i32,
+    pub validator_index: u16,
     pub signature: Vec<u8>,
 }
 
@@ -46,14 +46,23 @@ impl TryFrom<RawVote> for Vote {
         if value.r#type < 0 {
             return Err(InvalidMessageType.into());
         }
+        if value.height < 0 {
+            return Err(NegativeHeight.into());
+        }
+        if value.round < 0 {
+            return Err(NegativeRound.into());
+        }
+        if value.validator_index < 0 {
+            return Err(NegativeValidatorIndex.into());
+        }
         Ok(Vote {
             vote_type: value.r#type as u16,
-            height: value.height,
-            round: value.round as i64,
+            height: value.height as u32,
+            round: value.round as u16,
             block_id: value.block_id.map(|f| BlockId::try_from(f).unwrap()),
             timestamp: value.timestamp,
             validator_address: value.validator_address,
-            validator_index: value.validator_index,
+            validator_index: value.validator_index as u16,
             signature: value.signature,
         })
     }
@@ -63,12 +72,12 @@ impl From<Vote> for RawVote {
     fn from(value: Vote) -> Self {
         RawVote {
             r#type: value.vote_type as i32,
-            height: value.height,
+            height: value.height as i64,
             round: value.round as i32,
             block_id: value.block_id.map(|b| b.into()),
             timestamp: value.timestamp,
             validator_address: value.validator_address,
-            validator_index: value.validator_index,
+            validator_index: value.validator_index as i32,
             signature: value.signature,
         }
     }
@@ -89,16 +98,16 @@ impl Vote {
 impl From<&vote::Vote> for Vote {
     fn from(vote: &vote::Vote) -> Self {
         Vote {
-            vote_type: vote.vote_type.to_u16(),
-            height: vote.height.value() as i64, // TODO potential overflow :-/
-            round: vote.round as i64,           // TODO potential overflow :-/
+            vote_type: vote.vote_type as u16,
+            height: vote.height.value() as u32, // TODO potential overflow :-/
+            round: vote.round as u16,           // TODO potential overflow :-/
             block_id: vote.block_id.as_ref().map(|block_id| BlockId {
                 hash: block_id.hash.as_bytes().to_vec(),
                 part_set_header: block_id.parts.as_ref().map(PartSetHeader::from),
             }),
             timestamp: Some(Timestamp::from(vote.timestamp.to_system_time().unwrap())),
             validator_address: vote.validator_address.as_bytes().to_vec(),
-            validator_index: vote.validator_index as i32, // TODO potential overflow :-/
+            validator_index: vote.validator_index,
             signature: vote.signature.as_bytes().to_vec(),
         }
     }
@@ -106,7 +115,7 @@ impl From<&vote::Vote> for Vote {
 
 impl block::ParseHeight for Vote {
     fn parse_block_height(&self) -> Result<block::Height, Error> {
-        block::Height::try_from(self.height)
+        Ok(block::Height::from(self.height as u64))
     }
 }
 
@@ -244,15 +253,15 @@ impl CanonicalVote {
                     part_set_header: match bid.part_set_header {
                         Some(psh) => Some(CanonicalPartSetHeader {
                             hash: psh.hash,
-                            total: psh.total,
+                            total: psh.total as u32,
                         }),
                         None => None,
                     },
                 }),
                 None => None,
             },
-            height: vote.height,
-            round: vote.round,
+            height: vote.height as i64,
+            round: vote.round as i64,
             timestamp: match vote.timestamp {
                 None => Some(Timestamp {
                     seconds: -62_135_596_800,
@@ -276,10 +285,7 @@ impl SignableMsg for SignVoteRequest {
         let vote = svr.vote.unwrap();
         let cv = CanonicalVote::new(vote, chain_id.as_str());
 
-        RawCanonicalVote::try_from(cv)
-            .unwrap()
-            .encode_length_delimited(sign_bytes)?; //Todo: Greg error handling
-
+        cv.encode_length_delimited(sign_bytes).unwrap(); // Todo: Handle the single "EncodeError"
         Ok(true)
     }
     fn set_signature(&mut self, sig: &ed25519::Signature) {
@@ -296,11 +302,8 @@ impl SignableMsg for SignVoteRequest {
     fn consensus_state(&self) -> Option<consensus::State> {
         match self.vote {
             Some(ref v) => Some(consensus::State {
-                height: match block::Height::try_from(v.height) {
-                    Ok(h) => h,
-                    Err(_err) => return None, // TODO(tarcieri): return an error?
-                },
-                round: v.round,
+                height: block::Height::from(v.height as u64),
+                round: v.round as i64,
                 step: 6,
                 block_id: {
                     match v.block_id {
@@ -316,7 +319,7 @@ impl SignableMsg for SignVoteRequest {
         }
     }
     fn height(&self) -> Option<i64> {
-        self.vote.as_ref().map(|vote| vote.height)
+        self.vote.as_ref().map(|vote| vote.height as i64)
     }
     fn msg_type(&self) -> Option<SignedMsgType> {
         self.vote.as_ref().and_then(|vote| vote.msg_type())
@@ -327,15 +330,6 @@ impl ConsensusMessage for Vote {
     fn validate_basic(&self) -> Result<(), validate::Error> {
         if self.msg_type().is_none() {
             return Err(InvalidMessageType.into());
-        }
-        if self.height < 0 {
-            return Err(NegativeHeight.into());
-        }
-        if self.round < 0 {
-            return Err(NegativeRound.into());
-        }
-        if self.validator_index < 0 {
-            return Err(NegativeValidatorIndex.into());
         }
         if self.validator_address.len() != VALIDATOR_ADDR_SIZE {
             return Err(InvalidValidatorAddressSize.into());
@@ -589,7 +583,7 @@ mod tests {
         // SignVoteRequest
         {
             let svr = SignVoteRequest {
-                vote: Some(vote.into()),
+                vote: Some(vote),
                 chain_id: "test_chain_id".to_string(),
             };
             let mut got = vec![];
@@ -636,7 +630,7 @@ mod tests {
             signature: vec![],
         };
         let want = SignVoteRequest {
-            vote: Some(vote.into()),
+            vote: Some(vote),
             chain_id: "test_chain_id".to_string(),
         };
         match SignVoteRequest::decode(encoded.as_ref()) {

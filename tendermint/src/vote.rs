@@ -106,11 +106,9 @@ impl SignedVote {
 
     /// Return the bytes (of the canonicalized vote) that were signed.
     pub fn sign_bytes(&self) -> Vec<u8> {
-        // Todo: Greg cleanup, error handling
         let raw_canonical_vote: RawCanonicalVote =
             RawCanonicalVote::try_from(self.vote.clone()).unwrap();
         AminoMessage::bytes_vec_length_delimited(&raw_canonical_vote)
-        //self.vote.bytes_vec_length_delimited()
     }
 
     /// Return the actual signature on the canonicalized vote.
@@ -143,11 +141,6 @@ impl Type {
     /// Serialize this type as a byte
     pub fn to_u8(self) -> u8 {
         self as u8
-    }
-
-    /// Serialize this type as a 16-bit unsigned integer
-    pub fn to_u16(self) -> u16 {
-        self as u16
     }
 }
 

@@ -87,7 +87,7 @@ impl Generator<vote::Vote> for Vote {
         let validator_index = match self.index {
             Some(i) => i,
             None => match header.validators.as_ref().unwrap().iter().position(|v| *v == *validator) {
-                Some(i) => i as u16,
+                Some(i) => i as u16, // Todo: possible overflow
                 None => bail!("failed to generate vote: no index given and validator not present in the header")
             }
         };

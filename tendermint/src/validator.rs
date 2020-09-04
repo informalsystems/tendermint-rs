@@ -6,6 +6,10 @@ use subtle_encoding::base64;
 use crate::amino_types::message::AminoMessage;
 use crate::{account, hash::Hash, merkle, vote, Error, PublicKey, Signature};
 
+use std::convert::TryFrom;
+use tendermint_proto::types::SimpleValidator as RawSimpleValidator;
+use tendermint_proto::DomainType;
+
 /// Validator set contains a vector of validators
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Set {
@@ -123,20 +127,38 @@ impl Info {
     }
 }
 
-// Copied from tendermint_proto::types::SimpleValidator
 /// SimpleValidator is the form of the validator used for computing the Merkle tree.
 /// It does not include the address, as that is redundant with the pubkey,
 /// nor the proposer priority, as that changes with every block even if the validator set didn't.
 /// It contains only the pubkey and the voting power, and is amino encoded.
 /// TODO: currently only works for Ed25519 pubkeys
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, DomainType)]
+#[rawtype(RawSimpleValidator)]
 pub struct SimpleValidator {
-    ///
-    #[prost(message, optional, tag = "1")]
-    pub pub_key: ::std::option::Option<tendermint_proto::crypto::PublicKey>,
-    ///
-    #[prost(int64, tag = "2")]
+    /// Public key
+    pub pub_key: Option<tendermint_proto::crypto::PublicKey>,
+    /// Voting power
     pub voting_power: i64,
+}
+
+impl TryFrom<RawSimpleValidator> for SimpleValidator {
+    type Error = Error;
+
+    fn try_from(value: RawSimpleValidator) -> Result<Self, Self::Error> {
+        Ok(SimpleValidator {
+            pub_key: value.pub_key,
+            voting_power: value.voting_power,
+        })
+    }
+}
+
+impl From<SimpleValidator> for RawSimpleValidator {
+    fn from(value: SimpleValidator) -> Self {
+        RawSimpleValidator {
+            pub_key: value.pub_key,
+            voting_power: value.voting_power,
+        }
+    }
 }
 
 /// Info -> SimpleValidator
@@ -158,7 +180,8 @@ impl Info {
     /// the leaves of the tree. this is an amino encoding of the
     /// pubkey and voting power, so it includes the pubkey's amino prefix.
     pub fn hash_bytes(&self) -> Vec<u8> {
-        AminoMessage::bytes_vec(&SimpleValidator::from(self))
+        let raw_simple_validator: RawSimpleValidator = SimpleValidator::from(self).into();
+        AminoMessage::bytes_vec(&raw_simple_validator)
     }
 }
 

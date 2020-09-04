@@ -25,13 +25,22 @@ use tendermint_proto::DomainType;
 #[derive(Clone, PartialEq, Debug, DomainType)]
 #[rawtype(RawProposal)]
 pub struct Proposal {
-    pub msg_type: u64,
-    pub height: i64,
-    pub round: i32,
-    pub pol_round: i32,
-    pub block_id: ::std::option::Option<BlockId>,
-    pub timestamp: ::std::option::Option<Timestamp>,
+    pub msg_type: u16,
+    pub height: u32,
+    pub round: u16,
+    pub pol_round: Option<u16>,
+    pub block_id: Option<BlockId>,
+    pub timestamp: Option<Timestamp>,
     pub signature: Vec<u8>,
+}
+
+impl Proposal {
+    pub fn pol_round_to_i32(&self) -> i32 {
+        match &self.pol_round {
+            Some(u) => *u as i32,
+            None => -1,
+        }
+    }
 }
 
 impl TryFrom<RawProposal> for Proposal {
@@ -41,11 +50,24 @@ impl TryFrom<RawProposal> for Proposal {
         if value.r#type < 0 {
             return Err(InvalidMessageType.into());
         }
+        if value.height < 0 {
+            return Err(NegativeHeight.into());
+        }
+        if value.round < 0 {
+            return Err(NegativeRound.into());
+        }
+        if value.pol_round < -1 {
+            return Err(NegativePOLRound.into());
+        }
+        let pol_round = match value.pol_round {
+            -1 => None,
+            n => Some(n as u16),
+        };
         let result = Proposal {
-            msg_type: value.r#type as u64,
-            height: value.height,
-            round: value.round,
-            pol_round: value.pol_round,
+            msg_type: value.r#type as u16,
+            height: value.height as u32,
+            round: value.round as u16,
+            pol_round,
             block_id: match value.block_id {
                 None => None,
                 Some(raw_block_id) => Some(BlockId::try_from(raw_block_id).unwrap()),
@@ -61,9 +83,9 @@ impl From<Proposal> for RawProposal {
     fn from(value: Proposal) -> Self {
         RawProposal {
             r#type: value.msg_type as i32,
-            height: value.height,
-            round: value.round,
-            pol_round: value.pol_round,
+            height: value.height as i64,
+            round: value.round as i32,
+            pol_round: value.pol_round_to_i32(),
             block_id: match value.block_id {
                 None => None,
                 Some(block_id) => Some(block_id.into()),
@@ -77,7 +99,7 @@ impl From<Proposal> for RawProposal {
 // TODO(tony): custom derive proc macro for this e.g. `derive(ParseBlockHeight)`
 impl block::ParseHeight for Proposal {
     fn parse_block_height(&self) -> Result<block::Height, error::Error> {
-        block::Height::try_from(self.height)
+        Ok(block::Height::from(self.height))
     }
 }
 
@@ -119,15 +141,24 @@ impl From<SignProposalRequest> for RawSignProposalRequest {
 #[rawtype(RawCanonicalProposal)]
 pub struct CanonicalProposal {
     /// type alias for byte
-    pub msg_type: u32,
+    pub msg_type: u16,
     /// canonicalization requires fixed size encoding here
-    pub height: i64,
+    pub height: u32,
     /// canonicalization requires fixed size encoding here
-    pub round: i64,
-    pub pol_round: i64,
+    pub round: u32,
+    pub pol_round: Option<u32>,
     pub block_id: Option<CanonicalBlockId>,
     pub timestamp: Option<Timestamp>,
     pub chain_id: String,
+}
+
+impl CanonicalProposal {
+    pub fn pol_round_to_i64(&self) -> i64 {
+        match &self.pol_round {
+            None => -1,
+            Some(u) => *u as i64,
+        }
+    }
 }
 
 impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
@@ -137,11 +168,24 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
         if value.r#type < 0 {
             return Err(InvalidMessageType.into());
         }
+        if value.height < 0 {
+            return Err(NegativeHeight.into());
+        }
+        if value.round < 0 {
+            return Err(NegativeRound.into());
+        }
+        if value.pol_round < -1 {
+            return Err(NegativePOLRound.into());
+        }
+        let pol_round = match value.pol_round {
+            -1 => None,
+            n => Some(n as u32),
+        };
         Ok(CanonicalProposal {
-            msg_type: value.r#type as u32,
-            height: value.height,
-            round: value.round,
-            pol_round: value.pol_round,
+            msg_type: value.r#type as u16,
+            height: value.height as u32,
+            round: value.round as u32,
+            pol_round,
             block_id: match value.block_id {
                 None => None,
                 Some(block_id) => Some(block_id.try_into()?),
@@ -156,9 +200,9 @@ impl From<CanonicalProposal> for RawCanonicalProposal {
     fn from(value: CanonicalProposal) -> Self {
         RawCanonicalProposal {
             r#type: value.msg_type as i32,
-            height: value.height,
-            round: value.round,
-            pol_round: value.pol_round,
+            height: value.height as i64,
+            round: value.round as i64,
+            pol_round: value.pol_round_to_i64(),
             block_id: match value.block_id {
                 None => None,
                 Some(block_id) => Some(block_id.into()),
@@ -177,7 +221,7 @@ impl chain::ParseId for CanonicalProposal {
 
 impl block::ParseHeight for CanonicalProposal {
     fn parse_block_height(&self) -> Result<block::Height, error::Error> {
-        block::Height::try_from(self.height)
+        Ok(block::Height::from(self.height))
     }
 }
 
@@ -227,7 +271,7 @@ impl SignableMsg for SignProposalRequest {
         let proposal = spr.proposal.unwrap();
         let cp = CanonicalProposal {
             chain_id: chain_id.to_string(),
-            msg_type: SignedMsgType::Proposal as u32,
+            msg_type: SignedMsgType::Proposal as u16,
             height: proposal.height,
             block_id: match proposal.block_id {
                 Some(bid) => Some(CanonicalBlockId {
@@ -235,15 +279,15 @@ impl SignableMsg for SignProposalRequest {
                     part_set_header: match bid.part_set_header {
                         Some(psh) => Some(CanonicalPartSetHeader {
                             hash: psh.hash,
-                            total: psh.total,
+                            total: psh.total as u32,
                         }),
                         None => None,
                     },
                 }),
                 None => None,
             },
-            pol_round: proposal.pol_round as i64,
-            round: proposal.round as i64,
+            pol_round: proposal.pol_round.map(|n| n as u32),
+            round: proposal.round as u32,
             timestamp: proposal.timestamp,
         };
 
@@ -264,10 +308,7 @@ impl SignableMsg for SignProposalRequest {
     fn consensus_state(&self) -> Option<consensus::State> {
         match self.proposal {
             Some(ref p) => Some(consensus::State {
-                height: match block::Height::try_from(p.height) {
-                    Ok(h) => h,
-                    Err(_err) => return None, // TODO(tarcieri): return an error?
-                },
+                height: block::Height::from(p.height),
                 round: p.round as i64,
                 step: 3,
                 block_id: {
@@ -285,7 +326,9 @@ impl SignableMsg for SignProposalRequest {
     }
 
     fn height(&self) -> Option<i64> {
-        self.proposal.as_ref().map(|proposal| proposal.height)
+        self.proposal
+            .as_ref()
+            .map(|proposal| proposal.height as i64)
     }
 
     fn msg_type(&self) -> Option<SignedMsgType> {
@@ -295,17 +338,8 @@ impl SignableMsg for SignProposalRequest {
 
 impl ConsensusMessage for Proposal {
     fn validate_basic(&self) -> Result<(), validate::Error> {
-        if self.msg_type != SignedMsgType::Proposal as u64 {
+        if self.msg_type != SignedMsgType::Proposal as u16 {
             return Err(InvalidMessageType.into());
-        }
-        if self.height < 0 {
-            return Err(NegativeHeight.into());
-        }
-        if self.round < 0 {
-            return Err(NegativeRound.into());
-        }
-        if self.pol_round < -1 {
-            return Err(NegativePOLRound.into());
         }
         // TODO validate proposal's block_id
 
@@ -321,7 +355,6 @@ mod tests {
     use crate::amino_types::block_id::{BlockId, PartSetHeader};
     use crate::chain::Id;
     use chrono::{DateTime, Utc};
-    use Timestamp;
 
     #[test]
     fn test_serialization() {
@@ -331,10 +364,10 @@ mod tests {
             nanos: dt.timestamp_subsec_nanos() as i32,
         };
         let proposal = Proposal {
-            msg_type: SignedMsgType::Proposal as u64,
+            msg_type: SignedMsgType::Proposal as u16,
             height: 12345,
             round: 23456,
-            pol_round: -1,
+            pol_round: None,
             block_id: Some(BlockId {
                 hash: b"DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA".to_vec(),
                 part_set_header: Some(PartSetHeader {
@@ -404,12 +437,12 @@ mod tests {
             nanos: dt.timestamp_subsec_nanos() as i32,
         };
         let proposal = Proposal {
-            msg_type: SignedMsgType::Proposal as u64,
+            msg_type: SignedMsgType::Proposal as u16,
             height: 12345,
             round: 23456,
             timestamp: Some(t),
 
-            pol_round: -1,
+            pol_round: None,
             block_id: Some(BlockId {
                 hash: b"DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA".to_vec(),
                 part_set_header: Some(PartSetHeader {
