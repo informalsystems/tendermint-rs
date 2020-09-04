@@ -5,9 +5,11 @@
 - Add missing documentation to all items ([#472])
 - Add major contributors as authors of the `light-client`, `light-node`, and `rpc` crate ([#472])
 - Remove and consolidate deprecated [lite] and [lite_impl] modules from the `tendermint` crate ([#500])
+- Add spec for the light client attack evidence handling ([#544])
 
 [#472]: https://github.com/informalsystems/tendermint-rs/pull/472
 [lite_impl]: https://github.com/informalsystems/tendermint-rs/tree/master/tendermint/src/lite_impl
+[#544]: https://github.com/informalsystems/tendermint-rs/pull/544
 
 ### Proto crate
 
