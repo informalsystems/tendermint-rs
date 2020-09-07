@@ -1,8 +1,7 @@
+# Draft of Light Client Supervisor for discussion
 
+## TODOs:
 
-# TODO:
-
-- light fork -> light client attack
 - primary / witness
 - move part I of verification here (or copy)
 - distributed statement: 
@@ -103,10 +102,6 @@ versions yet. This inconsistencies will be addresses over several
 upcoming PRs.
 
 
-# Outline
-
-TODO
-
 # Part I - Tendermint Blockchain
 
 TODO
@@ -114,17 +109,17 @@ TODO
 # Part II - Sequential Problem Definition 
 
 
-
 #### **[LC-SEQ-INIT-LIVE.1]**: 
 Upon initialization, the light client gets as input a header of the
 blockchain, or the genesis file of the blockchain, and eventually
-stores a header of the blockchain. TODO: in case of genesis and attack
-we don't
+stores a header of the blockchain.
+
+> TODO: be more precise about heights in spec above
 
 #### **[LC-SEQ-LIVE.1]**: 
 The light client gets a sequence of heights as inputs. For each input
 height *targetHeight*, it eventually stores the header of height
-*targetHeight* of the blockchain.
+*targetHeight*.
 
 #### **[LC-SEQ-SAFE.1]**:
 
@@ -134,22 +129,27 @@ The light client never stores a header which is not in the blockchain.
 
 ## Computational Model
 
-TODO: primary, witness from detection
+TODO: primary, witness (should be mainly discussed in detection spec)
 
-TODO: always connected to a correct peer
+TODO: always connected to a correct peer (should be mainly discussed in detection spec)
 
 TODO: no main chain attack, that is, we assume all correct peers have
-knowledge of the blockchain
+knowledge of the blockchain (should be mainly discussed in
+verification and detection specs)
 
 ## Distributed Problem Statement
 
 ### Two Kinds of Liveness
 
-TODO: light client attack or no light client attack
+In case of light client attacks, the sequential problem statement
+cannot always be satisfied. For the liveness case, we add the
+possibility that instead of add a lightblock, we also might terminate
+in case there is an attack.
 
-#### **[LCV-DIST-TERM.1]**:
 
-*Core Verification* either runs forever or it *terminates on attack*.
+#### **[LC-DIST-TERM.1]**:
+
+The light client either runs forever or it *terminates on attack*.
 
 ### Design choices
 
@@ -157,12 +157,6 @@ TODO: light client attack or no light client attack
 The light client has a local data structure called LightStore 
 that contains light blocks (that contain a header). 
 
-
-#### [LCV-DIST-PRIMARY.1]:
-The light client
-has a local variable primary that contains the PeerID of a full node.
-
-TODO: secondaries?
 
 #### **[LC-DIST-SAFE.1]**:
 It is always the case that every header in *LightStore* was 
@@ -439,7 +433,7 @@ func InitLightClient (initData LCInitData) (LightStore, Error) {
 	    }
 		else {
 		    submitEvidence(Evidences);
-            return(nil, ErrorFork);
+            return(nil, ErrorAttack);
 		}
     }
 
@@ -523,8 +517,8 @@ func VerifyAndDetect (lightStore LightStore, targetHeight Height)
 			return (lightStore, OK);
         } 
         else {
-		    // there is a fork, we exit
-            return(lightStore, ErrorFork);
+		    // there is an attack, we exit
+            return(lightStore, ErrorAttack);
         }
 	}
 }
