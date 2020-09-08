@@ -1,8 +1,10 @@
 ## Unreleased
 
 - Add spec for the light client attack evidence handling ([#544])
+- return rfc6962 hash for empty merkle tree ([#498])
 
 [#544]: https://github.com/informalsystems/tendermint-rs/pull/544
+[#498]: https://github.com/informalsystems/tendermint-rs/issues/498
 
 ## v0.16.0
 
