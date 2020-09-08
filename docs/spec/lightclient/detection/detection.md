@@ -1,6 +1,6 @@
 ***This an unfinished draft. Comments are welcome!***
 
-
+Evidences := AttackDetector(root_of_trust, verifiedLS);
 
 # Light Client Attack Detector
 
@@ -62,7 +62,11 @@ light blocks that led to it) with the
 secondaries using this specification.
 
 
-### Tendermint Consensus and Forks
+## Tendermint Consensus and Forks
+
+**TODO:** explain difference between fork concept below that is based
+on the existence of blocks, and attacks and main-chain forks that are
+based on who receives such blocks.
 
 #### **[TMBC-GENESIS.1]**
 Let *Genesis* be the agreed-upon initial block (file).
@@ -124,25 +128,60 @@ Let *a*, *b*, *c*, be light blocks and *t* a time, we define
 implies *b = c*.
 
 
-#### **[TMBC-SIGN-FORK.1]**
+#### **[TMBC-ATTACK.1]**
 
 If there exists three light blocks a, b, and c, with 
 *sign-skip-match(a,b,c,t) =
-false* then we have a *slashable fork*.  
+false* then we have an *attack*.  
 We call *a* a bifurcation block of the fork.  
-We say we have **a fork at height** *b.Header.Height*.
+We say we have **an attack at height** *b.Header.Height* and write
+*attack(a,b,c,t)*. 
 
 > The lightblock *a* need not be unique, that is, a there may be
 > several blocks that satisfy the above requirement for blocks *b* and
 > *c*.
 
+[TMBC-ATTACK.1] is a formalization of the violation of the agreement
+property based on the result of consensus, that is, the generated
+blocks. From then on there are different ways to characterize forks
+and attack scenarios. This specification uses the "node-based
+characterization of attacks" which focuses on what nodes are
+affected. For future reference and discussion we also provide a
+"block-based characterization of attacks". 
 
-> **TODO:** I think the following definition is
-> the intuition behind **main chain forks**
-> in the document on [forks][tendermintfork]. However, main chain
-> forks were defined more operational "forks that are observed by
-> full nodes as part of normal Tendermint consensus protocol". Please
-> confirm! 
+
+### Node-based characterization of attacks
+
+#### **[TMBC-MC-FORK.1]**
+We say there is a (main chain) fork at time *t* if 
+- there are two correct full nodes *i* and *j* and
+- *i* is different from *j* and
+- *i* has decided on *a* and
+- *j* has decided on *b* and
+- there exist *a* such that *attack(a,b,c,t)*.
+
+
+#### **[TMBC-LC-ATTACK.1]**
+We say there is a light client attack at time *t*, if 
+- there is **no** (main chain) fork and
+- there exist nodes that have computed light blocks *b* and *c* and
+- there exist *a* such that *attack(a,b,c,t)*.
+
+> In this specification we consider detection of light client
+> attacks. Intuitively, the case we consider is that 
+> light block *b* is the one from the
+> blockchain, and some attacker has computed *c* and tries to wrongly
+> convince
+> the light client that *c* is the block from the chain.
+
+#### **[TMBC-ATTACKERS.1]**
+If *attack(a,b,c,t)* then find validators from *a'*
+s.t. *attack(a',b,c,t)* and +1/3 of the validators misbehaved
+
+
+### Block-based characterization of attacks
+
+> **TODO:** fix text or remove section altogether
   
 #### **[TMBC-SIGN-UNIQUE.1]**
 Let *b* and *c* be  light blocks, we define *sign-unique(b,c) =
@@ -184,23 +223,49 @@ Let *b* be a light block and *t* a time. We define *bogus(b,t)* iff
   - *sequ-rooted(b) = false* and
   - for all *a*, *sequ-rooted(a)* implies *skip-root(a,b,t) = false*
   
-  
-  
 
 > Relation to [fork accountability][accountability]: F1, F2, and F3
 > (equivocation, amnesia, back to the past) can lead to a fork on the
-> chain and to a light client fork.  
+> chain and to a light client attack.  
 > F4 and F5 (phantom validators, lunatic) cannot lead to a fork on the
 > chain but to a light client
-> fork if *t+1 < f < 2t+1*.  
+> attack if *t+1 < f < 2t+1*.  
 > F4 and F5 can also lead to bogus blocks
+
+
 
 
 
 ### Informal Problem statement
 
-> We put tags to informal problem statements as there is no sequential
-> specification.
+There is no sequential specification: the detector only makes sense
+in a distributed systems where some nodes misbehave.
+
+
+We work under the assumption that full nodes and validators are
+responsible for detecting attacks on the main chain, and the evidence
+reactor takes care of broadcasting evidence to communicate
+misbehaving nodes via ABCI to the application, and halt the chain in
+case of a fork. The point of this specification is to shield a light
+clients against attacks that cannot be detected by full nodes, and
+are fully addressed at light clients (and consequently IBC relayers
+that use the light client protocols to observe the state of a
+blockchain. In order to provide full nodes the incentive to follow
+the protocols when communicating with the light client, this
+specification also considers the generation of evidence that will
+also be processes by the Tendermint blockchain.
+
+
+#### **[LCD-IP-MODEL.1]**
+
+The detector is designed under the assumption that
+
+- [TMBC-FM-2THIRDS] may be violated
+- there is no fork on the main chain.
+
+> As a result some faulty full node launch an attack on a light client.
+
+
 
 The following requirements are operational in that they describe how
 things should be done, rather than what should be done. However, they
@@ -208,7 +273,6 @@ do not constitute temporal logic verification conditions. For those,
 see [LCD-DIST-*] below.
 
 
-#### **[LCD-IP-STATE.1]**
 
 The detector works on a LightStore that contains LightBlocks in one of 
 the state `StateUnverified`, ` StateVerified`, `StateFailed`, or
