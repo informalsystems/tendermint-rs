@@ -31,9 +31,9 @@ impl Set {
     }
 
     /// Sort the validators according to the current Tendermint requirements
-    /// (v. 0.33 -> by validator address, ascending)
+    /// (v. 0.34 -> by validator power, descending)
     fn sort_validators(vals: &mut Vec<Info>) {
-        vals.sort_by_key(|v| v.address);
+        vals.sort_by(|a, b| b.voting_power.cmp(&a.voting_power));
     }
 
     /// Returns the validator with the given Id if its in the Set.
@@ -321,16 +321,14 @@ mod tests {
             ],
             770_561_664_770_006_272,
         );
-        let _hash_expect = vec![
+        let hash_expect = vec![
             11, 64, 107, 4, 234, 81, 232, 75, 204, 199, 160, 114, 229, 97, 243, 95, 118, 213, 17,
             22, 57, 84, 71, 122, 200, 169, 192, 252, 41, 148, 223, 180,
         ];
 
         let val_set = Set::new(vec![v1, v2, v3]);
-        let _hash = val_set.hash();
-        // Todo: Greg Issue #506. The expected hash is correct, but Rust doesn't implement yet the
-        // correct   ordering of the validators. Hence this assertion fails.
-        //assert_eq!(hash_expect, hash.as_bytes().to_vec());
+        let hash = val_set.hash();
+        assert_eq!(hash_expect, hash.as_bytes().to_vec());
 
         let not_in_set = make_validator(
             vec![

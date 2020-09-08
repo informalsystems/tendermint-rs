@@ -1,6 +1,7 @@
 ## Unreleased
 
 [#504] and [#535] Protobuf encoding with domain types
+[#506] Sort validators by voting power
 
 ## v0.16.0
 
