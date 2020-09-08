@@ -301,12 +301,25 @@ mod tests {
     use crate::predicates::errors::VerificationError;
     use crate::predicates::{ProdPredicates, VerificationPredicates};
     use crate::tests::default_peer_id;
-    use std::ops::Sub;
-    use std::time::Duration;
-    use tendermint::Time;
+    use crate::types::LightBlock;
+    // use std::ops::Sub;
+    // use std::time::Duration;
+    // use tendermint::Time;
     use tendermint_testgen::light_block::generate_default_light_block;
+    use tendermint_testgen::light_block::LightBlock as TestGenLightBlock;
     use tendermint_testgen::validator::generate_validator_set;
-    use tendermint_testgen::{Commit, Generator, Header, Validator};
+    // use tendermint_testgen::{Commit, Generator, Header, Validator};
+
+    impl From<TestGenLightBlock> for LightBlock {
+        fn from(lb: TestGenLightBlock) -> Self {
+            LightBlock {
+                signed_header: lb.signed_header,
+                validators: lb.validators,
+                next_validators: lb.next_validators,
+                provider: lb.provider,
+            }
+        }
+    }
 
     #[test]
     fn test_validator_sets_match() {
@@ -315,7 +328,10 @@ mod tests {
         let val_set_result = generate_validator_set(vec!["bad-val"]);
 
         match (light_block, val_set_result) {
-            (Ok(mut light_block), Ok((bad_validator_set))) => {
+            (Ok(light_block), Ok((bad_validator_set, _validators))) => {
+                // Convert the testgen LightBlock to the light client LightBlock
+                let mut light_block: LightBlock = light_block.into();
+
                 let vp = ProdPredicates::default();
                 let hasher = ProdHasher::default();
                 let case_positive = vp.validator_sets_match(&light_block, &hasher);
