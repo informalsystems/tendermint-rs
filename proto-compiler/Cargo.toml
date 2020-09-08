@@ -3,7 +3,7 @@ name = "tendermint-proto-compiler"
 version = "0.1.0"
 authors = ["Greg Szabo <greg@informal.systems>"]
 edition = "2018"
-
+publish = false
 
 [dependencies]
 walkdir = { version = "2.3" }
