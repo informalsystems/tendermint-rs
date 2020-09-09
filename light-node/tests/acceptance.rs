@@ -62,7 +62,7 @@ fn start_with_config_and_args() {
 
 /// Example of a test which matches a regular expression
 #[test]
-#[ignore]
+#[ignore] // Ignored because of https://github.com/informalsystems/tendermint-rs/issues/560
 fn version_no_args() {
     let mut runner = RUNNER.clone();
     let mut cmd = runner.arg("version").capture_stdout().run();
