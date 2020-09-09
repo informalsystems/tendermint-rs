@@ -1,7 +1,12 @@
 ## Unreleased
 
-- [wasm] The `tendermint`, `tendermint-rpc`, and `tendermint-light-client` crates
-         now compile to WASM on the `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#553])
+- The `tendermint`, `tendermint-rpc`, and `tendermint-light-client` crates now compile to WASM on the `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#553])
+- Add spec for the light client attack evidence handling ([#544])
+- Return RFC6962 hash for empty merkle tree ([#498])
+
+[#553]: https://github.com/informalsystems/tendermint-rs/pull/553
+[#544]: https://github.com/informalsystems/tendermint-rs/pull/544
+[#498]: https://github.com/informalsystems/tendermint-rs/issues/498
 
 ## v0.16.0
 
