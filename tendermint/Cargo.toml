@@ -29,6 +29,9 @@ authors = [
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 anomaly = "0.2"
 async-trait = "0.1"
