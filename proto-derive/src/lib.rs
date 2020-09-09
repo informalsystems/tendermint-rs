@@ -1,3 +1,8 @@
+//! The DomainType derive macro implements the tendermint_proto::DomainType trait.
+//! This implementation uses the Prost library to convert between Raw types and byte streams.
+//!
+//! Read more about how to use this macro in the DomainType trait definition.
+
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::spanned::Spanned;
