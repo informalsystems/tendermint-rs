@@ -1,7 +1,18 @@
 ## Unreleased
 
-[#504] and [#535] Protobuf encoding with domain types
-[#506] Sort validators by voting power
+- Add spec for the light client attack evidence handling ([#526])
+- Return RFC6962 hash for empty merkle tree ([#498])
+- The `tendermint`, `tendermint-rpc`, and `tendermint-light-client` crates now compile to WASM on the `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#463])
+- Implement protobuf encoding/decoding of Tendermint Proto types ([#504])
+- Separate protobuf types from Rust domain types using the DomainType trait ([#535])
+- Changed validator sorting order to sort by voting power. ([#506])
+
+[#526]: https://github.com/informalsystems/tendermint-rs/issues/526
+[#498]: https://github.com/informalsystems/tendermint-rs/issues/498
+[#463]: https://github.com/informalsystems/tendermint-rs/issues/463
+[#504]: https://github.com/informalsystems/tendermint-rs/issues/504
+[#535]: https://github.com/informalsystems/tendermint-rs/issues/535
+[#506]: https://github.com/informalsystems/tendermint-rs/issues/506
 
 ## v0.16.0
 
