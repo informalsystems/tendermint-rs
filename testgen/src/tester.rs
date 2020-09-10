@@ -42,7 +42,7 @@ impl TestEnv {
             .append(true)
             .open(self.full_path("log"))
             .ok()
-            .and_then(|mut file| write!(file, "{}\n", msg).ok())
+            .and_then(|mut file| writeln!(file, "{}", msg).ok())
     }
 
     pub fn logln_to(&self, msg: &str, rel_path: impl AsRef<Path>) -> Option<()> {
@@ -52,7 +52,7 @@ impl TestEnv {
             .append(true)
             .open(self.full_path(rel_path))
             .ok()
-            .and_then(|mut file| write!(file, "{}\n", msg).ok())
+            .and_then(|mut file| writeln!(file, "{}", msg).ok())
     }
 
     /// Read a file from a path relative to the environment current dir into a string
@@ -74,7 +74,7 @@ impl TestEnv {
     /// Copy a file from the path outside environment into the environment current dir
     /// Returns None if copying was not successful
     pub fn copy_file_from(&self, path: impl AsRef<Path>) -> Option<()> {
-        let path = path.as_ref().clone();
+        let path = path.as_ref();
         if !path.is_file() {
             return None;
         }
@@ -414,7 +414,7 @@ impl Tester {
                     }
                 }
             }
-            return false;
+            false
         };
         match full_dir.to_str() {
             None => self.read_error(dir),
