@@ -18,7 +18,7 @@ pub struct Vote {
     )]
     pub validator: Option<Validator>,
     #[options(help = "validator index (default: from commit header)")]
-    pub index: Option<u64>,
+    pub index: Option<u16>,
     #[options(help = "header to sign (default: commit header)")]
     pub header: Option<Header>,
     #[options(help = "vote type; 'prevote' if set, otherwise 'precommit' (default)")]
@@ -28,7 +28,7 @@ pub struct Vote {
     #[options(help = "time (default: from header)")]
     pub time: Option<Time>,
     #[options(help = "commit round (default: from commit)")]
-    pub round: Option<u64>,
+    pub round: Option<u32>,
 }
 
 impl Vote {
@@ -43,12 +43,12 @@ impl Vote {
             round: None,
         }
     }
-    set_option!(index, u64);
+    set_option!(index, u16);
     set_option!(header, Header);
     set_option!(prevote, bool, if prevote { Some(()) } else { None });
     set_option!(height, u64);
     set_option!(time, Time);
-    set_option!(round, u64);
+    set_option!(round, u32);
 }
 
 impl std::str::FromStr for Vote {
@@ -87,7 +87,7 @@ impl Generator<vote::Vote> for Vote {
         let validator_index = match self.index {
             Some(i) => i,
             None => match header.validators.as_ref().unwrap().iter().position(|v| *v == *validator) {
-                Some(i) => i as u64,
+                Some(i) => i as u16, // Todo: possible overflow
                 None => bail!("failed to generate vote: no index given and validator not present in the header")
             }
         };
