@@ -9,6 +9,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use tempfile::TempDir;
+use std::fs::DirEntry;
 
 /// A test environment, which is essentially a wrapper around some directory,
 /// with some utility functions operating relative to that directory.
@@ -408,6 +409,16 @@ impl Tester {
 
     pub fn run_foreach_in_dir(&mut self, dir: &str) {
         let full_dir = PathBuf::from(&self.root_dir).join(dir);
+        let starts_with_underscore = |entry: &DirEntry| {
+            if let Some(last) = entry.path().iter().rev().next() {
+                if let Some(last) = last.to_str() {
+                    if last.starts_with('_') {
+                        return true
+                    }
+                }
+            }
+            return false
+        };
         match full_dir.to_str() {
             None => self.read_error(dir),
             Some(full_dir) => match fs::read_dir(full_dir) {
@@ -416,12 +427,8 @@ impl Tester {
                     for path in paths {
                         if let Ok(entry) = path {
                             // ignore path components starting with '_'
-                            if let Some(last) = entry.path().iter().rev().next() {
-                                if let Some(last) = last.to_str() {
-                                    if last.starts_with('_') {
-                                        continue;
-                                    }
-                                }
+                            if starts_with_underscore(&entry) {
+                                continue;
                             }
                             if let Ok(kind) = entry.file_type() {
                                 let path = format!("{}", entry.path().display());
