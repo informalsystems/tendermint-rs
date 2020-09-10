@@ -53,7 +53,7 @@ impl TestEnv {
         })
     }
 
-    pub fn logln_to(&self, msg: &str, rel_path: &str) -> Option<()> {
+    pub fn logln_to(&self, msg: &str, rel_path: impl AsRef<Path>) -> Option<()> {
         println!("{}", msg);
         self.full_path(rel_path).and_then(|full_path| {
             fs::OpenOptions::new()
@@ -66,41 +66,41 @@ impl TestEnv {
     }
 
     /// Read a file from a path relative to the environment current dir into a string
-    pub fn read_file(&self, rel_path: &str) -> Option<String> {
+    pub fn read_file(&self, rel_path: impl AsRef<Path>) -> Option<String> {
         self.full_path(rel_path)
             .and_then(|full_path| fs::read_to_string(&full_path).ok())
     }
 
     /// Write a file to a path relative to the environment current dir
-    pub fn write_file(&self, rel_path: &str, contents: &str) -> Option<()> {
+    pub fn write_file(&self, rel_path: impl AsRef<Path>, contents: &str) -> Option<()> {
         self.full_path(rel_path)
             .and_then(|full_path| fs::write(full_path, contents).ok())
     }
 
     /// Parse a file from a path relative to the environment current dir as the given type
-    pub fn parse_file_as<T: DeserializeOwned>(&self, rel_path: &str) -> Option<T> {
+    pub fn parse_file<T: DeserializeOwned>(&self, rel_path: impl AsRef<Path>) -> Option<T> {
         self.read_file(rel_path)
             .and_then(|input| serde_json::from_str(&input).ok())
     }
 
     /// Copy a file from the path outside environment into the environment current dir
     /// Returns the relative path of the file, or None if copying was not successful
-    pub fn copy_file_from(&self, path: &str) -> Option<String> {
-        let path = Path::new(path);
+    pub fn copy_file_from(&self, path: impl AsRef<Path>) -> Option<()> {
+        let path = path.as_ref().clone();
         if !path.is_file() {
             return None;
         }
         path.file_name().and_then(|name| {
             name.to_str().and_then(|name| {
                 self.full_path(name)
-                    .and_then(|dest| fs::copy(path, dest).ok().map(|_| name.to_string()))
+                    .and_then(|dest| fs::copy(path, dest).ok().map(|_| ()))
             })
         })
     }
 
     /// Copy a file from the path relative to the other environment into the environment current dir
     /// Returns the relative path of the file, or None if copying was not successful
-    pub fn copy_file_from_env(&self, other: &TestEnv, path: &str) -> Option<String> {
+    pub fn copy_file_from_env(&self, other: &TestEnv, path: impl AsRef<Path>) -> Option<()> {
         other
             .full_path(path)
             .and_then(|full_path| self.copy_file_from(&full_path))
@@ -108,7 +108,7 @@ impl TestEnv {
 
     /// Convert a relative path to the full path from the test root
     /// Return None if the full path can't be formed
-    pub fn full_path(&self, rel_path: &str) -> Option<String> {
+    pub fn full_path(&self, rel_path: impl AsRef<Path>) -> Option<String> {
         let full_path = PathBuf::from(&self.current_dir).join(rel_path);
         match full_path.to_str() {
             None => None,
@@ -118,8 +118,8 @@ impl TestEnv {
 
     /// Convert a full path to the path relative to the test root
     /// Returns None if the full path doesn't contain test root as prefix
-    pub fn rel_path(&self, full_path: &str) -> Option<String> {
-        match PathBuf::from(full_path).strip_prefix(&self.current_dir) {
+    pub fn rel_path(&self, full_path: impl AsRef<Path>) -> Option<String> {
+        match PathBuf::from(full_path.as_ref()).strip_prefix(&self.current_dir) {
             Err(_) => None,
             Ok(rel_path) => match rel_path.to_str() {
                 None => None,
@@ -130,7 +130,7 @@ impl TestEnv {
 
     /// Convert a relative path to the full path from the test root, canonicalized
     /// Returns None the full path can't be formed
-    pub fn full_canonical_path(&self, rel_path: &str) -> Option<String> {
+    pub fn full_canonical_path(&self, rel_path: impl AsRef<Path>) -> Option<String> {
         let full_path = PathBuf::from(&self.current_dir).join(rel_path);
         full_path
             .canonicalize()
