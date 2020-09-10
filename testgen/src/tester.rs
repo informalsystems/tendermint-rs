@@ -43,38 +43,32 @@ impl TestEnv {
 
     pub fn logln(&self, msg: &str) -> Option<()> {
         println!("{}", msg);
-        self.full_path("_log").and_then(|full_path| {
-            fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(full_path)
-                .ok()
-                .and_then(|mut file| file.write_all((String::from(msg) + "\n").as_bytes()).ok())
-        })
+        fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(self.full_path("_log"))
+            .ok()
+            .and_then(|mut file| file.write_all((String::from(msg) + "\n").as_bytes()).ok())
     }
 
     pub fn logln_to(&self, msg: &str, rel_path: impl AsRef<Path>) -> Option<()> {
         println!("{}", msg);
-        self.full_path(rel_path).and_then(|full_path| {
-            fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(full_path)
-                .ok()
-                .and_then(|mut file| file.write_all((String::from(msg) + "\n").as_bytes()).ok())
-        })
+        fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(self.full_path(rel_path))
+            .ok()
+            .and_then(|mut file| file.write_all((String::from(msg) + "\n").as_bytes()).ok())
     }
 
     /// Read a file from a path relative to the environment current dir into a string
     pub fn read_file(&self, rel_path: impl AsRef<Path>) -> Option<String> {
-        self.full_path(rel_path)
-            .and_then(|full_path| fs::read_to_string(&full_path).ok())
+        fs::read_to_string(self.full_path(rel_path)).ok()
     }
 
     /// Write a file to a path relative to the environment current dir
     pub fn write_file(&self, rel_path: impl AsRef<Path>, contents: &str) -> Option<()> {
-        self.full_path(rel_path)
-            .and_then(|full_path| fs::write(full_path, contents).ok())
+        fs::write(self.full_path(rel_path), contents).ok()
     }
 
     /// Parse a file from a path relative to the environment current dir as the given type
@@ -84,7 +78,7 @@ impl TestEnv {
     }
 
     /// Copy a file from the path outside environment into the environment current dir
-    /// Returns the relative path of the file, or None if copying was not successful
+    /// Returns None if copying was not successful
     pub fn copy_file_from(&self, path: impl AsRef<Path>) -> Option<()> {
         let path = path.as_ref().clone();
         if !path.is_file() {
@@ -92,28 +86,21 @@ impl TestEnv {
         }
         path.file_name().and_then(|name| {
             name.to_str().and_then(|name| {
-                self.full_path(name)
-                    .and_then(|dest| fs::copy(path, dest).ok().map(|_| ()))
+                fs::copy(path, self.full_path(name)).ok().map(|_| ())
             })
         })
     }
 
     /// Copy a file from the path relative to the other environment into the environment current dir
-    /// Returns the relative path of the file, or None if copying was not successful
+    /// Returns None if copying was not successful
     pub fn copy_file_from_env(&self, other: &TestEnv, path: impl AsRef<Path>) -> Option<()> {
-        other
-            .full_path(path)
-            .and_then(|full_path| self.copy_file_from(&full_path))
+        self.copy_file_from(other.full_path(path))
     }
 
     /// Convert a relative path to the full path from the test root
     /// Return None if the full path can't be formed
-    pub fn full_path(&self, rel_path: impl AsRef<Path>) -> Option<String> {
-        let full_path = PathBuf::from(&self.current_dir).join(rel_path);
-        match full_path.to_str() {
-            None => None,
-            Some(full_path) => Some(full_path.to_string()),
-        }
+    pub fn full_path(&self, rel_path: impl AsRef<Path>) -> PathBuf {
+        PathBuf::from(&self.current_dir).join(rel_path)
     }
 
     /// Convert a full path to the path relative to the test root
@@ -286,8 +273,8 @@ impl Tester {
                 // It is OK to unwrap() here: in case of unwrapping failure, the test will fail.
                 let dir = TempDir::new().unwrap();
                 let env = TestEnv::new(dir.path().to_str().unwrap()).unwrap();
-                let output_dir = output_env.full_path(path).unwrap();
-                let output_env = TestEnv::new(&output_dir).unwrap();
+                let output_dir = output_env.full_path(path);
+                let output_env = TestEnv::new(output_dir.to_str().unwrap()).unwrap();
                 output_env.cleanup();
                 test(test_case, &env, &test_env, &output_env);
             }),
