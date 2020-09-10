@@ -115,7 +115,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
 
         // Get non-absent votes from the signatures
         let non_absent_votes = signatures.iter().enumerate().flat_map(|(idx, signature)| {
-            if let Some(vote) = non_absent_vote(signature, idx as u64, &signed_header.commit) {
+            if let Some(vote) = non_absent_vote(signature, idx as u16, &signed_header.commit) {
                 Some((signature, vote))
             } else {
                 None
@@ -179,7 +179,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
     }
 }
 
-fn non_absent_vote(commit_sig: &CommitSig, validator_index: u64, commit: &Commit) -> Option<Vote> {
+fn non_absent_vote(commit_sig: &CommitSig, validator_index: u16, commit: &Commit) -> Option<Vote> {
     let (validator_address, timestamp, signature, block_id) = match commit_sig {
         CommitSig::BlockIDFlagAbsent { .. } => return None,
         CommitSig::BlockIDFlagCommit {

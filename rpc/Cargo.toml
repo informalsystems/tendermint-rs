@@ -24,8 +24,8 @@ description = """
 all-features = true
 
 [features]
-default = []
-client = [ "async-tungstenite", "futures", "http", "hyper", "tokio" ]
+default = ["client"]
+client = ["async-tungstenite", "futures", "http", "hyper", "tokio"]
 secp256k1 = ["tendermint/secp256k1"]
 
 [dependencies]
