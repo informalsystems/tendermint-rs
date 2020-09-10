@@ -33,7 +33,7 @@ impl Set {
     /// Sort the validators according to the current Tendermint requirements
     /// (v. 0.34 -> by validator power, descending)
     fn sort_validators(vals: &mut Vec<Info>) {
-        vals.sort_by(|a, b| b.voting_power.cmp(&a.voting_power));
+        vals.sort_by_key(|v| std::cmp::Reverse(v.voting_power));
     }
 
     /// Returns the validator with the given Id if its in the Set.
