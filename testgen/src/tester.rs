@@ -48,7 +48,7 @@ impl TestEnv {
             .append(true)
             .open(self.full_path("_log"))
             .ok()
-            .and_then(|mut file| file.write_all((String::from(msg) + "\n").as_bytes()).ok())
+            .and_then(|mut file| write!(file, "{}\n", msg).ok())
     }
 
     pub fn logln_to(&self, msg: &str, rel_path: impl AsRef<Path>) -> Option<()> {
@@ -58,7 +58,7 @@ impl TestEnv {
             .append(true)
             .open(self.full_path(rel_path))
             .ok()
-            .and_then(|mut file| file.write_all((String::from(msg) + "\n").as_bytes()).ok())
+            .and_then(|mut file| write!(file, "{}\n", msg).ok())
     }
 
     /// Read a file from a path relative to the environment current dir into a string
@@ -84,11 +84,8 @@ impl TestEnv {
         if !path.is_file() {
             return None;
         }
-        path.file_name().and_then(|name| {
-            name.to_str().and_then(|name| {
-                fs::copy(path, self.full_path(name)).ok().map(|_| ())
-            })
-        })
+        let name = path.file_name()?.to_str()?;
+        fs::copy(path, self.full_path(name)).ok().map(|_| ())
     }
 
     /// Copy a file from the path relative to the other environment into the environment current dir
