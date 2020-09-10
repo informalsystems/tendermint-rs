@@ -5,14 +5,14 @@ use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
         scheduler,
-        verifier::{ProdVerifier, Verdict, Verifier},
+        verifier::ProdVerifier,
     },
     errors::{Error, ErrorKind},
     light_client::{LightClient, Options},
     state::State,
     store::{memory::MemoryStore, LightStore},
     tests::{Trusted, *},
-    types::{Height, LightBlock, Status, Time, TrustThreshold},
+    types::{LightBlock, Status, TrustThreshold},
 };
 
 use tendermint_testgen::Tester;
@@ -20,47 +20,6 @@ use tendermint_testgen::Tester;
 // Link to JSON test files repo:
 // https://github.com/informalsystems/conformance-tests
 const TEST_FILES_PATH: &str = "./tests/support/";
-
-fn verify_single(
-    trusted_state: Trusted,
-    input: LightBlock,
-    trust_threshold: TrustThreshold,
-    trusting_period: Duration,
-    clock_drift: Duration,
-    now: Time,
-) -> Result<LightBlock, Verdict> {
-    let verifier = ProdVerifier::default();
-
-    let trusted_state = LightBlock::new(
-        trusted_state.signed_header,
-        trusted_state.next_validators.clone(),
-        trusted_state.next_validators,
-        default_peer_id(),
-    );
-
-    let options = Options {
-        trust_threshold,
-        trusting_period,
-        clock_drift,
-    };
-
-    let result = verifier.verify(&input, &trusted_state, &options, now);
-
-    match result {
-        Verdict::Success => Ok(input),
-        error => Err(error),
-    }
-}
-
-fn verify_bisection(
-    untrusted_height: Height,
-    light_client: &mut LightClient,
-    state: &mut State,
-) -> Result<Vec<LightBlock>, Error> {
-    light_client
-        .verify_to_target(untrusted_height, state)
-        .map(|_| state.get_trace(untrusted_height))
-}
 
 struct BisectionTestResult {
     untrusted_light_block: LightBlock,
@@ -229,17 +188,17 @@ fn bisection_lower_test(tc: TestBisection<AnonLightBlock>) {
 
 #[test]
 fn run_single_step_tests() {
-    let mut tester = Tester::new(TEST_FILES_PATH);
+    let mut tester = Tester::new("single_step", TEST_FILES_PATH);
     tester.add_test("single-step test", single_step_test);
     tester.run_foreach_in_dir("single_step");
-    tester.print_results();
+    tester.finalize();
 }
 
 #[test]
 fn run_bisection_tests() {
-    let mut tester = Tester::new(TEST_FILES_PATH);
+    let mut tester = Tester::new("bisection", TEST_FILES_PATH);
     tester.add_test("bisection test", bisection_test);
     tester.add_test("bisection lower test", bisection_lower_test);
     tester.run_foreach_in_dir("bisection/single_peer");
-    tester.print_results();
+    tester.finalize();
 }
