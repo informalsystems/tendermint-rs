@@ -2,14 +2,13 @@ use crate::helpers::*;
 use crate::tester::TestResult::{Failure, ParseError, ReadError, Success};
 use serde::de::DeserializeOwned;
 use std::{
-    fs,
+    fs::{self, DirEntry},
     io::Write,
-    panic::{self, UnwindSafe},
+    panic::{self, RefUnwindSafe, UnwindSafe},
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
 use tempfile::TempDir;
-use std::fs::DirEntry;
 
 /// A test environment, which is essentially a wrapper around some directory,
 /// with some utility functions operating relative to that directory.
@@ -256,9 +255,10 @@ impl Tester {
         }
     }
 
-    pub fn add_test<T>(&mut self, name: &str, test: fn(T))
+    pub fn add_test<T, F>(&mut self, name: &str, test: F)
     where
         T: 'static + DeserializeOwned + UnwindSafe,
+        F: Fn(T) + UnwindSafe + RefUnwindSafe + 'static,
     {
         let test_fn = move |_path: &str, input: &str| match parse_as::<T>(&input) {
             Ok(test_case) => Tester::capture_test(|| {
@@ -272,9 +272,10 @@ impl Tester {
         });
     }
 
-    pub fn add_test_with_env<T>(&mut self, name: &str, test: fn(T, &TestEnv, &TestEnv, &TestEnv))
+    pub fn add_test_with_env<T, F>(&mut self, name: &str, test: F)
     where
         T: 'static + DeserializeOwned + UnwindSafe,
+        F: Fn(T, &TestEnv, &TestEnv, &TestEnv) + UnwindSafe + RefUnwindSafe + 'static,
     {
         let test_env = self.env().unwrap();
         let output_env = self.output_env().unwrap();
@@ -296,9 +297,10 @@ impl Tester {
         });
     }
 
-    pub fn add_test_batch<T>(&mut self, batch: fn(T) -> Vec<(String, String)>)
+    pub fn add_test_batch<T, F>(&mut self, batch: F)
     where
         T: 'static + DeserializeOwned,
+        F: Fn(T) -> Vec<(String, String)> + 'static,
     {
         let batch_fn = move |_path: &str, input: &str| match parse_as::<T>(&input) {
             Ok(test_batch) => Some(batch(test_batch)),
@@ -425,11 +427,11 @@ impl Tester {
             if let Some(last) = entry.path().iter().rev().next() {
                 if let Some(last) = last.to_str() {
                     if last.starts_with('_') {
-                        return true
+                        return true;
                     }
                 }
             }
-            return false
+            return false;
         };
         match full_dir.to_str() {
             None => self.read_error(dir),
