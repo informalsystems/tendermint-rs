@@ -15,12 +15,12 @@ pub struct Commit {
     )]
     pub votes: Option<Vec<Vote>>,
     #[options(help = "commit round (default: 1)")]
-    pub round: Option<u64>,
+    pub round: Option<u32>,
 }
 
 impl Commit {
     /// Make a new commit using default votes produced from the header.
-    pub fn new(header: Header, round: u64) -> Self {
+    pub fn new(header: Header, round: u32) -> Self {
         let commit = Commit {
             header: Some(header),
             round: Some(round),
@@ -29,7 +29,7 @@ impl Commit {
         commit.generate_default_votes()
     }
     /// Make a new commit using explicit votes.
-    pub fn new_with_votes(header: Header, round: u64, votes: Vec<Vote>) -> Self {
+    pub fn new_with_votes(header: Header, round: u32, votes: Vec<Vote>) -> Self {
         Commit {
             header: Some(header),
             round: Some(round),
@@ -38,7 +38,7 @@ impl Commit {
     }
     set_option!(header, Header);
     set_option!(votes, Vec<Vote>);
-    set_option!(round, u64);
+    set_option!(round, u32);
 
     /// Generate commit votes from all validators in the header.
     /// This function will panic if the header is not present
@@ -46,7 +46,7 @@ impl Commit {
         let header = self.header.as_ref().unwrap();
         let val_to_vote = |(i, v): (usize, &Validator)| -> Vote {
             Vote::new(v.clone(), header.clone())
-                .index(i as u64)
+                .index(i as u16)
                 .round(self.round.unwrap_or(1))
         };
         let votes = header
