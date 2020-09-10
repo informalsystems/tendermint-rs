@@ -25,12 +25,6 @@ impl TestEnv {
         })
     }
 
-    pub fn cleanup(&self) -> Option<()> {
-        fs::remove_dir_all(&self.current_dir)
-            .ok()
-            .and(fs::create_dir_all(&self.current_dir).ok())
-    }
-
     pub fn push(&self, child: &str) -> Option<Self> {
         let mut path = PathBuf::from(&self.current_dir);
         path.push(child);
@@ -46,7 +40,7 @@ impl TestEnv {
         fs::OpenOptions::new()
             .create(true)
             .append(true)
-            .open(self.full_path("_log"))
+            .open(self.full_path("log"))
             .ok()
             .and_then(|mut file| write!(file, "{}\n", msg).ok())
     }
@@ -218,9 +212,10 @@ impl Tester {
     }
 
     pub fn output_env(&self) -> Option<TestEnv> {
-        fs::create_dir_all(self.root_dir.clone() + "/_" + &self.name)
+        let output_dir = self.root_dir.clone() + "/_" + &self.name;
+        fs::create_dir_all(&output_dir)
             .ok()
-            .and(TestEnv::new(&(self.root_dir.clone() + "/_" + &self.name)))
+            .and(TestEnv::new(&output_dir))
     }
 
     fn capture_test<F>(test: F) -> TestResult
@@ -286,7 +281,7 @@ impl Tester {
                 let env = TestEnv::new(dir.path().to_str().unwrap()).unwrap();
                 let output_dir = output_env.full_path(path);
                 let output_env = TestEnv::new(output_dir.to_str().unwrap()).unwrap();
-                output_env.cleanup();
+                fs::remove_dir_all(&output_dir).unwrap();
                 test(test_case, &env, &test_env, &output_env);
             }),
             Err(_) => ParseError,
@@ -466,9 +461,9 @@ impl Tester {
 
     pub fn finalize(&mut self) {
         let env = self.output_env().unwrap();
-        env.write_file("_report", "");
+        env.write_file("report", "");
         let print = |msg: &str| {
-            env.logln_to(msg, "_report");
+            env.logln_to(msg, "report");
         };
         let mut do_panic = false;
 
@@ -486,7 +481,7 @@ impl Tester {
                 print("  Successful tests:  ");
                 for path in tests {
                     print(&format!("    {}", path));
-                    if let Some(logs) = env.read_file(&(path + "/_log")) {
+                    if let Some(logs) = env.read_file(&(path + "/log")) {
                         print(&logs)
                     }
                 }
@@ -497,7 +492,7 @@ impl Tester {
                 print("  Failed tests:  ");
                 for (path, message, location) in tests {
                     print(&format!("    {}, '{}', {}", path, message, location));
-                    if let Some(logs) = env.read_file(&(path + "/_log")) {
+                    if let Some(logs) = env.read_file(&(path + "/log")) {
                         print(&logs)
                     }
                 }
