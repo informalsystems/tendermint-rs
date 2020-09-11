@@ -140,9 +140,7 @@ fn model_based_test(
     assert!(run_jsonatr_transform(env.current_dir(), transform).is_ok());
     output_env.copy_file_from_env(env, "test.json");
 
-    let tc: SingleStepTestCase = env
-        .parse_file("test.json")
-        .unwrap();
+    let tc: SingleStepTestCase = env.parse_file("test.json").unwrap();
     println!("  > running auto-generated test...");
     single_step_test(tc, env, root_env, output_env);
     output_env.copy_file_from_env(env, "counterexample.tla");
