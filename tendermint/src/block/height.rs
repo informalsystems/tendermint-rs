@@ -55,6 +55,12 @@ impl TryFrom<i64> for Height {
     }
 }
 
+impl From<u32> for Height {
+    fn from(n: u32) -> Height {
+        Height(n as u64)
+    }
+}
+
 impl From<u64> for Height {
     fn from(n: u64) -> Height {
         Height(n)

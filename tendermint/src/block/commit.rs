@@ -18,7 +18,7 @@ pub struct Commit {
 
     /// Round
     #[serde(with = "serializers::from_str")]
-    pub round: u64,
+    pub round: u32,
 
     /// Block ID
     pub block_id: Id,
