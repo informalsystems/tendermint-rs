@@ -1,8 +1,11 @@
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
+use std::collections::BTreeSet;
+use std::iter::FromIterator;
 use tendermint::block;
 
+use crate::validator::sort_validators;
 use crate::{helpers::*, Generator, Header, Validator, Vote};
 
 #[derive(Debug, Options, Deserialize, Clone)]
@@ -104,13 +107,19 @@ impl Generator<block::Commit> for Commit {
             None => bail!("failed to generate commit: header is missing"),
             Some(h) => h,
         };
+        let block_header = header.generate()?;
+        let block_id = block::Id::new(block_header.hash(), None);
         let votes = match &self.votes {
             None => self.clone().generate_default_votes().votes.unwrap(),
             Some(vs) => vs.to_vec(),
         };
-        let block_header = header.generate()?;
-        let block_id = block::Id::new(block_header.hash(), None);
-
+        let all_vals = header.validators.as_ref().unwrap();
+        let mut all_vals: BTreeSet<&Validator> = BTreeSet::from_iter(all_vals);
+        let votes_vals: Vec<Validator> =
+            votes.iter().map(|v| v.validator.clone().unwrap()).collect();
+        all_vals.append(&mut BTreeSet::from_iter(&votes_vals));
+        let all_vals: Vec<Validator> = Vec::from_iter(all_vals.iter().map(|&x| x.clone()));
+        let all_vals = sort_validators(&all_vals);
         let vote_to_sig = |v: &Vote| -> Result<block::CommitSig, SimpleError> {
             let vote = v.generate()?;
             Ok(block::CommitSig::BlockIDFlagCommit {
@@ -119,9 +128,18 @@ impl Generator<block::Commit> for Commit {
                 signature: vote.signature,
             })
         };
-        let sigs = votes
+        let val_to_sig = |val: &Validator| -> Result<block::CommitSig, SimpleError> {
+            let vote = votes
+                .iter()
+                .find(|&vote| vote.validator.as_ref().unwrap() == val);
+            match vote {
+                Some(vote) => vote_to_sig(vote),
+                None => Ok(block::CommitSig::BlockIDFlagAbsent),
+            }
+        };
+        let sigs = all_vals
             .iter()
-            .map(vote_to_sig)
+            .map(val_to_sig)
             .collect::<Result<Vec<block::CommitSig>, SimpleError>>()?;
         let commit = block::Commit {
             height: block_header.height,
@@ -137,26 +155,24 @@ impl Generator<block::Commit> for Commit {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tendermint::Time;
 
     #[test]
     fn test_commit() {
-        let valset1 = [
+        let valset1 = sort_validators(&vec![
             Validator::new("a"),
             Validator::new("b"),
             Validator::new("c"),
-        ];
-        let valset2 = [
-            Validator::new("b"),
-            Validator::new("c"),
+        ]);
+        let valset2 = sort_validators(&vec![
             Validator::new("d"),
-        ];
+            Validator::new("e"),
+            Validator::new("f"),
+        ]);
 
-        let now = Time::now();
         let header = Header::new(&valset1)
             .next_validators(&valset2)
             .height(10)
-            .time(now);
+            .time(11);
 
         let commit = Commit::new(header.clone(), 3);
 
@@ -168,7 +184,7 @@ mod tests {
 
         let mut commit = commit;
         assert_eq!(commit.vote_at_index(1).round, Some(3));
-        assert_eq!(commit.vote_of_validator("a").index, Some(0));
+        assert_eq!(commit.vote_of_validator("b").index, Some(0));
 
         let votes = commit.votes.as_ref().unwrap();
 
