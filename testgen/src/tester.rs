@@ -2,9 +2,9 @@ use crate::helpers::*;
 use crate::tester::TestResult::{Failure, ParseError, ReadError, Success};
 use serde::de::DeserializeOwned;
 use std::{
-    fs,
+    fs::{self, DirEntry},
     io::Write,
-    panic::{self, UnwindSafe},
+    panic::{self, RefUnwindSafe, UnwindSafe},
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
@@ -25,12 +25,6 @@ impl TestEnv {
         })
     }
 
-    pub fn cleanup(&self) -> Option<()> {
-        fs::remove_dir_all(&self.current_dir)
-            .ok()
-            .and(fs::create_dir_all(&self.current_dir).ok())
-    }
-
     pub fn push(&self, child: &str) -> Option<Self> {
         let mut path = PathBuf::from(&self.current_dir);
         path.push(child);
@@ -43,83 +37,67 @@ impl TestEnv {
 
     pub fn logln(&self, msg: &str) -> Option<()> {
         println!("{}", msg);
-        self.full_path("_log").and_then(|full_path| {
-            fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(full_path)
-                .ok()
-                .and_then(|mut file| file.write_all((String::from(msg) + "\n").as_bytes()).ok())
-        })
+        fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(self.full_path("log"))
+            .ok()
+            .and_then(|mut file| writeln!(file, "{}", msg).ok())
     }
 
-    pub fn logln_to(&self, msg: &str, rel_path: &str) -> Option<()> {
+    pub fn logln_to(&self, msg: &str, rel_path: impl AsRef<Path>) -> Option<()> {
         println!("{}", msg);
-        self.full_path(rel_path).and_then(|full_path| {
-            fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(full_path)
-                .ok()
-                .and_then(|mut file| file.write_all((String::from(msg) + "\n").as_bytes()).ok())
-        })
+        fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(self.full_path(rel_path))
+            .ok()
+            .and_then(|mut file| writeln!(file, "{}", msg).ok())
     }
 
     /// Read a file from a path relative to the environment current dir into a string
-    pub fn read_file(&self, rel_path: &str) -> Option<String> {
-        self.full_path(rel_path)
-            .and_then(|full_path| fs::read_to_string(&full_path).ok())
+    pub fn read_file(&self, rel_path: impl AsRef<Path>) -> Option<String> {
+        fs::read_to_string(self.full_path(rel_path)).ok()
     }
 
     /// Write a file to a path relative to the environment current dir
-    pub fn write_file(&self, rel_path: &str, contents: &str) -> Option<()> {
-        self.full_path(rel_path)
-            .and_then(|full_path| fs::write(full_path, contents).ok())
+    pub fn write_file(&self, rel_path: impl AsRef<Path>, contents: &str) -> Option<()> {
+        fs::write(self.full_path(rel_path), contents).ok()
     }
 
     /// Parse a file from a path relative to the environment current dir as the given type
-    pub fn parse_file_as<T: DeserializeOwned>(&self, rel_path: &str) -> Option<T> {
+    pub fn parse_file<T: DeserializeOwned>(&self, rel_path: impl AsRef<Path>) -> Option<T> {
         self.read_file(rel_path)
             .and_then(|input| serde_json::from_str(&input).ok())
     }
 
     /// Copy a file from the path outside environment into the environment current dir
-    /// Returns the relative path of the file, or None if copying was not successful
-    pub fn copy_file_from(&self, path: &str) -> Option<String> {
-        let path = Path::new(path);
+    /// Returns None if copying was not successful
+    pub fn copy_file_from(&self, path: impl AsRef<Path>) -> Option<()> {
+        let path = path.as_ref();
         if !path.is_file() {
             return None;
         }
-        path.file_name().and_then(|name| {
-            name.to_str().and_then(|name| {
-                self.full_path(name)
-                    .and_then(|dest| fs::copy(path, dest).ok().map(|_| name.to_string()))
-            })
-        })
+        let name = path.file_name()?.to_str()?;
+        fs::copy(path, self.full_path(name)).ok().map(|_| ())
     }
 
     /// Copy a file from the path relative to the other environment into the environment current dir
-    /// Returns the relative path of the file, or None if copying was not successful
-    pub fn copy_file_from_env(&self, other: &TestEnv, path: &str) -> Option<String> {
-        other
-            .full_path(path)
-            .and_then(|full_path| self.copy_file_from(&full_path))
+    /// Returns None if copying was not successful
+    pub fn copy_file_from_env(&self, other: &TestEnv, path: impl AsRef<Path>) -> Option<()> {
+        self.copy_file_from(other.full_path(path))
     }
 
     /// Convert a relative path to the full path from the test root
     /// Return None if the full path can't be formed
-    pub fn full_path(&self, rel_path: &str) -> Option<String> {
-        let full_path = PathBuf::from(&self.current_dir).join(rel_path);
-        match full_path.to_str() {
-            None => None,
-            Some(full_path) => Some(full_path.to_string()),
-        }
+    pub fn full_path(&self, rel_path: impl AsRef<Path>) -> PathBuf {
+        PathBuf::from(&self.current_dir).join(rel_path)
     }
 
     /// Convert a full path to the path relative to the test root
     /// Returns None if the full path doesn't contain test root as prefix
-    pub fn rel_path(&self, full_path: &str) -> Option<String> {
-        match PathBuf::from(full_path).strip_prefix(&self.current_dir) {
+    pub fn rel_path(&self, full_path: impl AsRef<Path>) -> Option<String> {
+        match PathBuf::from(full_path.as_ref()).strip_prefix(&self.current_dir) {
             Err(_) => None,
             Ok(rel_path) => match rel_path.to_str() {
                 None => None,
@@ -130,7 +108,7 @@ impl TestEnv {
 
     /// Convert a relative path to the full path from the test root, canonicalized
     /// Returns None the full path can't be formed
-    pub fn full_canonical_path(&self, rel_path: &str) -> Option<String> {
+    pub fn full_canonical_path(&self, rel_path: impl AsRef<Path>) -> Option<String> {
         let full_path = PathBuf::from(&self.current_dir).join(rel_path);
         full_path
             .canonicalize()
@@ -222,9 +200,10 @@ impl Tester {
     }
 
     pub fn output_env(&self) -> Option<TestEnv> {
-        fs::create_dir_all(self.root_dir.clone() + "/_" + &self.name)
+        let output_dir = self.root_dir.clone() + "/_" + &self.name;
+        fs::create_dir_all(&output_dir)
             .ok()
-            .and(TestEnv::new(&(self.root_dir.clone() + "/_" + &self.name)))
+            .and(TestEnv::new(&output_dir))
     }
 
     fn capture_test<F>(test: F) -> TestResult
@@ -259,9 +238,10 @@ impl Tester {
         }
     }
 
-    pub fn add_test<T>(&mut self, name: &str, test: fn(T))
+    pub fn add_test<T, F>(&mut self, name: &str, test: F)
     where
         T: 'static + DeserializeOwned + UnwindSafe,
+        F: Fn(T) + UnwindSafe + RefUnwindSafe + 'static,
     {
         let test_fn = move |_path: &str, input: &str| match parse_as::<T>(&input) {
             Ok(test_case) => Tester::capture_test(|| {
@@ -275,9 +255,10 @@ impl Tester {
         });
     }
 
-    pub fn add_test_with_env<T>(&mut self, name: &str, test: fn(T, &TestEnv, &TestEnv, &TestEnv))
+    pub fn add_test_with_env<T, F>(&mut self, name: &str, test: F)
     where
         T: 'static + DeserializeOwned + UnwindSafe,
+        F: Fn(T, &TestEnv, &TestEnv, &TestEnv) + UnwindSafe + RefUnwindSafe + 'static,
     {
         let test_env = self.env().unwrap();
         let output_env = self.output_env().unwrap();
@@ -286,9 +267,9 @@ impl Tester {
                 // It is OK to unwrap() here: in case of unwrapping failure, the test will fail.
                 let dir = TempDir::new().unwrap();
                 let env = TestEnv::new(dir.path().to_str().unwrap()).unwrap();
-                let output_dir = output_env.full_path(path).unwrap();
-                let output_env = TestEnv::new(&output_dir).unwrap();
-                output_env.cleanup();
+                let output_dir = output_env.full_path(path);
+                let output_env = TestEnv::new(output_dir.to_str().unwrap()).unwrap();
+                fs::remove_dir_all(&output_dir).unwrap();
                 test(test_case, &env, &test_env, &output_env);
             }),
             Err(_) => ParseError,
@@ -299,9 +280,10 @@ impl Tester {
         });
     }
 
-    pub fn add_test_batch<T>(&mut self, batch: fn(T) -> Vec<(String, String)>)
+    pub fn add_test_batch<T, F>(&mut self, batch: F)
     where
         T: 'static + DeserializeOwned,
+        F: Fn(T) -> Vec<(String, String)> + 'static,
     {
         let batch_fn = move |_path: &str, input: &str| match parse_as::<T>(&input) {
             Ok(test_batch) => Some(batch(test_batch)),
@@ -424,6 +406,16 @@ impl Tester {
 
     pub fn run_foreach_in_dir(&mut self, dir: &str) {
         let full_dir = PathBuf::from(&self.root_dir).join(dir);
+        let starts_with_underscore = |entry: &DirEntry| {
+            if let Some(last) = entry.path().iter().rev().next() {
+                if let Some(last) = last.to_str() {
+                    if last.starts_with('_') {
+                        return true;
+                    }
+                }
+            }
+            false
+        };
         match full_dir.to_str() {
             None => self.read_error(dir),
             Some(full_dir) => match fs::read_dir(full_dir) {
@@ -432,12 +424,8 @@ impl Tester {
                     for path in paths {
                         if let Ok(entry) = path {
                             // ignore path components starting with '_'
-                            if let Some(last) = entry.path().iter().rev().next() {
-                                if let Some(last) = last.to_str() {
-                                    if last.starts_with('_') {
-                                        continue;
-                                    }
-                                }
+                            if starts_with_underscore(&entry) {
+                                continue;
                             }
                             if let Ok(kind) = entry.file_type() {
                                 let path = format!("{}", entry.path().display());
@@ -461,9 +449,9 @@ impl Tester {
 
     pub fn finalize(&mut self) {
         let env = self.output_env().unwrap();
-        env.write_file("_report", "");
+        env.write_file("report", "");
         let print = |msg: &str| {
-            env.logln_to(msg, "_report");
+            env.logln_to(msg, "report");
         };
         let mut do_panic = false;
 
@@ -481,7 +469,7 @@ impl Tester {
                 print("  Successful tests:  ");
                 for path in tests {
                     print(&format!("    {}", path));
-                    if let Some(logs) = env.read_file(&(path + "/_log")) {
+                    if let Some(logs) = env.read_file(&(path + "/log")) {
                         print(&logs)
                     }
                 }
@@ -492,7 +480,7 @@ impl Tester {
                 print("  Failed tests:  ");
                 for (path, message, location) in tests {
                     print(&format!("    {}, '{}', {}", path, message, location));
-                    if let Some(logs) = env.read_file(&(path + "/_log")) {
+                    if let Some(logs) = env.read_file(&(path + "/log")) {
                         print(&logs)
                     }
                 }

@@ -48,7 +48,7 @@ impl ApalacheRun {
 }
 
 pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<ApalacheRun> {
-    let inv = test.test.clone() + "Inv";
+    let inv = format!("{}Inv", test.test);
 
     // Mutate the model: negate the test assertion to get the invariant to check
     let mutation_failed = || {
@@ -67,7 +67,7 @@ pub fn run_apalache_test(dir: &str, test: ApalacheTestCase) -> io::Result<Apalac
             break;
         }
         if line.starts_with("======") {
-            new_model += &(inv.clone() + " == ~" + &test.test + "\n")
+            new_model += &format!("{} == ~{}\n", inv, test.test);
         }
         new_model += line;
         new_model += "\n";
