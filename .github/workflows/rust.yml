@@ -42,7 +42,7 @@ jobs:
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features
+          args: --all-features --all-targets
 
   test-stable:
     runs-on: ubuntu-latest
@@ -157,3 +157,17 @@ jobs:
           file: ${{ steps.coverage.outputs.report }}
           yml: ./codecov.yml
           fail_ci_if_error: true
+
+  light-client-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          target: wasm32-unknown-unknown
+      - name: Build Tendermint for WASM
+        run: cd tendermint && cargo build --target wasm32-unknown-unknown --release --no-default-features
+      - name: Build Light Client for WASM
+        run: cd light-client && cargo build --target wasm32-unknown-unknown --release --no-default-features
