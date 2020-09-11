@@ -36,43 +36,43 @@ impl LightBlock {
             provider,
         }
     }
-}
 
-pub fn generate_default_light_block(
-    val_ids: Vec<&str>,
-    peer_id: PeerId,
-) -> Result<LightBlock, SimpleError> {
-    let (validator_set, raw_vals) = match generate_validator_set(val_ids) {
-        Err(e) => bail!("Failed to generate validator set with error: {}", e),
-        Ok(v) => v,
-    };
+    pub fn generate_default(
+        val_ids: Vec<&str>,
+        peer_id: PeerId,
+    ) -> Result<LightBlock, SimpleError> {
+        let (validator_set, raw_vals) = match generate_validator_set(val_ids) {
+            Err(e) => bail!("Failed to generate validator set with error: {}", e),
+            Ok(v) => v,
+        };
 
-    let raw_header = Header::new(&raw_vals);
-    let raw_commit = Commit::new(raw_header.clone(), 1);
-    let signed_header = match generate_signed_header(raw_header, raw_commit) {
-        Err(e) => bail!("Failed to generate signed header with error: {}", e),
-        Ok(sh) => sh,
-    };
+        let raw_header = Header::new(&raw_vals);
+        let raw_commit = Commit::new(raw_header.clone(), 1);
+        let signed_header = match generate_signed_header(raw_header, raw_commit) {
+            Err(e) => bail!("Failed to generate signed header with error: {}", e),
+            Ok(sh) => sh,
+        };
 
-    let light_block = LightBlock::new(signed_header, validator_set.clone(), validator_set, peer_id);
-    Ok(light_block)
-}
+        let light_block = LightBlock::new(signed_header, validator_set.clone(), validator_set, peer_id);
+        Ok(light_block)
+    }
 
-pub fn generate_light_block_with(
-    raw_header: Header,
-    raw_commit: Commit,
-    raw_vals: Vec<Info>,
-    peer_id: PeerId,
-) -> Result<LightBlock, SimpleError> {
-    let signed_header = match generate_signed_header(raw_header, raw_commit) {
-        Err(e) => bail!("Failed to generate signed header with error: {}", e),
-        Ok(sh) => sh,
-    };
+    pub fn generate_with(
+        raw_header: Header,
+        raw_commit: Commit,
+        raw_vals: Vec<Info>,
+        peer_id: PeerId,
+    ) -> Result<LightBlock, SimpleError> {
+        let signed_header = match generate_signed_header(raw_header, raw_commit) {
+            Err(e) => bail!("Failed to generate signed header with error: {}", e),
+            Ok(sh) => sh,
+        };
 
-    let validator_set = ValidatorSet::new(raw_vals);
+        let validator_set = ValidatorSet::new(raw_vals);
 
-    let light_block = LightBlock::new(signed_header, validator_set.clone(), validator_set, peer_id);
-    Ok(light_block)
+        let light_block = LightBlock::new(signed_header, validator_set.clone(), validator_set, peer_id);
+        Ok(light_block)
+    }
 }
 
 pub fn generate_signed_header(
