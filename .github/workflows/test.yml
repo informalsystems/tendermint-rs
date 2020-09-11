@@ -1,0 +1,186 @@
+name: Test
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+  push:
+    paths-ignore:
+      - "docs/**"
+    branches:
+      - master
+jobs:
+  cleanup-runs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: rokroskar/workflow-run-cleanup-action@master
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
+
+  # TODO(shonfeder): remove duplication once GitHub addresses one of these
+  #  - https://github.community/t/support-for-yaml-anchors/16128/15
+  #  - https://github.community/t/reusing-sharing-inheriting-steps-between-jobs-declarations/16851/13
+  #  - https://github.community/t/using-matrix-variable-in-docker-image-name/17296
+  tendermint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --no-fail-fast -p tendermint
+  tendermint-rpc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --no-fail-fast -p tendermint-rpc
+  tendermint-proto:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --no-fail-fast -p tendermint-proto
+  tendermint-light-client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --no-fail-fast -p tendermint-light-client
+  tendermint-light-node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --no-fail-fast -p tendermint-light-node
+  tendermint-testgen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --no-fail-fast -p tendermint-testgen
+
+  # Todo: Update the docker image version as soon as Tendermint Core v0.34 is released.
+  tendermint-integration:
+    runs-on: ubuntu-latest
+    services:
+      tendermint:
+        image: tendermint/tendermint:latest
+        ports:
+          - 26656:26656
+          - 26657:26657
+          - 26660:26660
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p tendermint --test integration --no-fail-fast -- --ignored
+
+  # Todo: Update the docker image version as soon as Tendermint Core v0.34 is released.
+  tendermint-light-client-integration:
+    runs-on: ubuntu-latest
+    services:
+      tendermint:
+        image: tendermint/tendermint:latest
+        ports:
+          - 26656:26656
+          - 26657:26657
+          - 26660:26660
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p tendermint-light-client --test integration --no-fail-fast -- --ignored
+
+  integration-latest:
+    runs-on: ubuntu-latest
+    services:
+      tendermint:
+        image: tendermint/tendermint:latest
+        ports:
+          - 26656:26656
+          - 26657:26657
+          - 26660:26660
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        # Don't fail CI due to integration failures on unstable/unreleased versions
+        continue-on-error: true
+        with:
+          command: test
+          args: -p tendermint --test integration --no-fail-fast -- --ignored
+
+  nightly-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clean
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --no-fail-fast
+        env:
+          CARGO_INCREMENTAL: "0"
+          RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=unwind -Zpanic_abort_tests"
+      - uses: actions-rs/grcov@v0.1
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ${{ steps.coverage.outputs.report }}
+          yml: ./codecov.yml
+          fail_ci_if_error: true
