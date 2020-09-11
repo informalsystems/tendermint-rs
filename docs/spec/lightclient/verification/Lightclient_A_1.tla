@@ -95,6 +95,8 @@ ValidAndVerifiedPre(trusted, untrusted) ==
   /\ thdr.height < uhdr.height
      \* the trusted block has been created earlier (no drift here)
   /\ thdr.time < uhdr.time
+     \* the untrusted block is not from the future
+  /\ uhdr.time <= now
   /\ untrusted.Commits \subseteq uhdr.VS
   /\ LET TP == Cardinality(uhdr.VS)
          SP == Cardinality(untrusted.Commits)
