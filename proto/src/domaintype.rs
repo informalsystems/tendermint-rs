@@ -1,10 +1,10 @@
 //! DomainType trait
 //!
 //! The DomainType trait allows separation of the data sent on the wire (currently encoded using
-//! protobuf) from the structures used in Rust. The structures used to encode/decode from/to the wire
-//! are called "Raw" types (they mirror the definitions in the specifications) and the Rust types
-//! we use internally are called the "Domain" types. These Domain types can implement additional
-//! checks and conversions to consume the incoming data easier for a Rust developer.
+//! protobuf) from the structures used in Rust. The structures used to encode/decode from/to the
+//! wire are called "Raw" types (they mirror the definitions in the specifications) and the Rust
+//! types we use internally are called the "Domain" types. These Domain types can implement
+//! additional checks and conversions to consume the incoming data easier for a Rust developer.
 //!
 //! The benefits include decoding the wire into a struct that is inherently valid as well as hiding
 //! the encoding and decoding details from the developer. This latter is important if/when we decide

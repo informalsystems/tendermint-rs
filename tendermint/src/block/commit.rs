@@ -2,7 +2,6 @@
 
 use crate::block::commit_sig::CommitSig;
 use crate::block::{Height, Id};
-use crate::serializers;
 use serde::{Deserialize, Serialize};
 use std::{ops::Deref, slice};
 
@@ -17,7 +16,6 @@ pub struct Commit {
     pub height: Height,
 
     /// Round
-    #[serde(with = "serializers::from_str")]
     pub round: u32,
 
     /// Block ID
