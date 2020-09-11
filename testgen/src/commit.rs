@@ -129,13 +129,12 @@ impl Generator<block::Commit> for Commit {
             })
         };
         let val_to_sig = |val: &Validator| -> Result<block::CommitSig, SimpleError> {
-            if let Some(vote) = votes
+            let vote = votes
                 .iter()
-                .find(|&vote| vote.validator.as_ref().unwrap() == val)
-            {
-                vote_to_sig(vote)
-            } else {
-                Ok(block::CommitSig::BlockIDFlagAbsent)
+                .find(|&vote| vote.validator.as_ref().unwrap() == val);
+            match vote {
+                Some(vote) => vote_to_sig(vote),
+                None => Ok(block::CommitSig::BlockIDFlagAbsent),
             }
         };
         let sigs = all_vals

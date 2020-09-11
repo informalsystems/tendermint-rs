@@ -85,9 +85,17 @@ impl Generator<vote::Vote> for Vote {
         let block_id = block::Id::new(block_header.hash(), None);
         let validator_index = match self.index {
             Some(i) => i,
-            None => match header.validators.as_ref().unwrap().iter().position(|v| *v == *validator) {
-                Some(i) => i as u16, // Todo: possible overflow
-                None => 0, // bail!("failed to generate vote: no index given and validator not present in the header")
+            None => {
+                let position = header
+                    .validators
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .position(|v| *v == *validator);
+                match position {
+                    Some(i) => i as u16, // Todo: possible overflow
+                    None => 0,           // we allow non-present validators for testing purposes
+                }
             }
         };
         let timestamp = if let Some(t) = self.time {
