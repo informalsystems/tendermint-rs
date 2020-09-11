@@ -1,4 +1,4 @@
-name: Rust
+name: Build
 on:
   pull_request:
     paths-ignore:
@@ -17,7 +17,7 @@ jobs:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
     if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
 
-  fmt:
+  tendermint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -27,19 +27,20 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          command: fmt
-          args: --all -- --check
+          command: build
+          args: --workspace --all-targets
 
-  clippy_check:
+  # At the time of writing `--no-default-features` does not work with the `-p` flag, hence we avoid the Cargo GitHub Action.
+  light-client-wasm:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          components: clippy
           override: true
-      - uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features --all-targets
+          target: wasm32-unknown-unknown
+      - name: Build Tendermint for WASM
+        run: cd tendermint && cargo build --target wasm32-unknown-unknown --release --no-default-features
+      - name: Build Light Client for WASM
+        run: cd light-client && cargo build --target wasm32-unknown-unknown --release --no-default-features
