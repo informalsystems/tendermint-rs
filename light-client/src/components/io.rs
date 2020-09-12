@@ -172,8 +172,7 @@ mod prod {
             }
         }
 
-        // FIXME: Cannot enable precondition because of "autoref lifetime" issue
-        // #[pre(self.peer_map.contains_key(&peer))]
+        #[pre(self.peer_map.contains_key(&peer))]
         fn rpc_client_for(&self, peer: PeerId) -> rpc::Client {
             let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
             rpc::Client::new(peer_addr)

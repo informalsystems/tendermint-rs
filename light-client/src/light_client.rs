@@ -118,25 +118,15 @@ impl LightClient {
     /// - [LCV-POST-LS.1]
     /// - [LCV-INV-TP.1]
     ///
-    /// ## Precondition
-    /// - The light store contains a light block within the trusting period [LCV-PRE-TP.1]
-    ///
     /// ## Postcondition
     /// - The light store contains a light block that corresponds to a block of the blockchain of
     ///   height `target_height` [LCV-POST-LS.1]
     ///
     /// ## Error conditions
-    /// - If the precondition is violated [LVC-PRE-TP.1]
+    /// - The light store does not contains a trusted light block within the trusting period [LCV-PRE-TP.1]
     /// - If the core verification loop invariant is violated [LCV-INV-TP.1]
     /// - If verification of a light block fails
-    /// - If it cannot fetch a block from the blockchain
-    // #[pre(
-    //     light_store_contains_block_within_trusting_period(
-    //         state.light_store.as_ref(),
-    //         self.options.trusting_period,
-    //         self.clock.now(),
-    //     )
-    // )]
+    /// - If the fetching a light block from the primary node fails
     #[post(
         ret.is_ok() ==> trusted_store_contains_block_at_target_height(
             state.light_store.as_ref(),
