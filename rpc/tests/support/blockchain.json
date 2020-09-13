@@ -8,7 +8,7 @@
         "block_id": {
           "hash": "0BC81BF032E1251D2BF45FB7FAD70BA1333080FD6DC52FE8A18A09C3859DB99D",
           "parts": {
-            "total": "1",
+            "total": 1,
             "hash": "5E97E2B494BF58C02BE385AE80F08A7DDBFAE922ED0363C892D17DB549DAF4AA"
           }
         },
@@ -25,7 +25,7 @@
           "last_block_id": {
             "hash": "B6F22387BD2A7A012BFF88ACE131E871660A8D7CAD756D22B911FA408C9B9FB0",
             "parts": {
-              "total": "1",
+              "total": 1,
               "hash": "99043B16957F2BFF5C1A24B290AD44CBCD95B0DC164E18063FA566240B7B3AFC"
             }
           },
@@ -44,7 +44,7 @@
         "block_id": {
           "hash": "B6F22387BD2A7A012BFF88ACE131E871660A8D7CAD756D22B911FA408C9B9FB0",
           "parts": {
-            "total": "1",
+            "total": 1,
             "hash": "99043B16957F2BFF5C1A24B290AD44CBCD95B0DC164E18063FA566240B7B3AFC"
           }
         },
@@ -61,7 +61,7 @@
           "last_block_id": {
             "hash": "C1D3D762700AD5CDDCB724A55CA239B92FC934C4AD163FFDCAC476A42A97320A",
             "parts": {
-              "total": "1",
+              "total": 1,
               "hash": "C5FAA5B7738D7010CA712FBC2B2355605D388990DE0FDE731A854FE279325C1A"
             }
           },
@@ -80,7 +80,7 @@
         "block_id": {
           "hash": "C1D3D762700AD5CDDCB724A55CA239B92FC934C4AD163FFDCAC476A42A97320A",
           "parts": {
-            "total": "1",
+            "total": 1,
             "hash": "C5FAA5B7738D7010CA712FBC2B2355605D388990DE0FDE731A854FE279325C1A"
           }
         },
@@ -97,7 +97,7 @@
           "last_block_id": {
             "hash": "954B81C860ABF508F272C2A402AC81BFBBDA8BA4B2A627A60730FA36915C53AF",
             "parts": {
-              "total": "1",
+              "total": 1,
               "hash": "842ADFA93717FDBE551BDAB96BED2E50D67FCA216421C97DE1A47BC61FF50E58"
             }
           },
@@ -116,7 +116,7 @@
         "block_id": {
           "hash": "954B81C860ABF508F272C2A402AC81BFBBDA8BA4B2A627A60730FA36915C53AF",
           "parts": {
-            "total": "1",
+            "total": 1,
             "hash": "842ADFA93717FDBE551BDAB96BED2E50D67FCA216421C97DE1A47BC61FF50E58"
           }
         },
@@ -133,7 +133,7 @@
           "last_block_id": {
             "hash": "A5873B845F3CD93203D8E1306F756F3BD93E1E3828A2343FD9B898D4DD66BD55",
             "parts": {
-              "total": "1",
+              "total": 1,
               "hash": "3E5A9C4ACC1C217DAEBD68E29B99B013603D2902BF974F9695FCA08E1E4E8867"
             }
           },
@@ -152,7 +152,7 @@
         "block_id": {
           "hash": "A5873B845F3CD93203D8E1306F756F3BD93E1E3828A2343FD9B898D4DD66BD55",
           "parts": {
-            "total": "1",
+            "total": 1,
             "hash": "3E5A9C4ACC1C217DAEBD68E29B99B013603D2902BF974F9695FCA08E1E4E8867"
           }
         },
@@ -169,7 +169,7 @@
           "last_block_id": {
             "hash": "5EE242F6FF4EF8D2BD2EBD7428100848438E4D3FD0C9BF01109ACF2338352AD2",
             "parts": {
-              "total": "1",
+              "total": 1,
               "hash": "21ED492846DFF04D65E445A56C38AAAE6151F0099B09C9FC9498EF154C46A8AD"
             }
           },
@@ -188,7 +188,7 @@
         "block_id": {
           "hash": "5EE242F6FF4EF8D2BD2EBD7428100848438E4D3FD0C9BF01109ACF2338352AD2",
           "parts": {
-            "total": "1",
+            "total": 1,
             "hash": "21ED492846DFF04D65E445A56C38AAAE6151F0099B09C9FC9498EF154C46A8AD"
           }
         },
@@ -205,7 +205,7 @@
           "last_block_id": {
             "hash": "C764D3F013CAFBF9CDCCB718DAFDF15C1B23C3D8ADC5EE811C6CC45E0711F04B",
             "parts": {
-              "total": "1",
+              "total": 1,
               "hash": "2B51E708767543A566AA1FDBC279E06FB59C3F7658D2389DCAF389A95242E623"
             }
           },
@@ -224,7 +224,7 @@
         "block_id": {
           "hash": "C764D3F013CAFBF9CDCCB718DAFDF15C1B23C3D8ADC5EE811C6CC45E0711F04B",
           "parts": {
-            "total": "1",
+            "total": 1,
             "hash": "2B51E708767543A566AA1FDBC279E06FB59C3F7658D2389DCAF389A95242E623"
           }
         },
@@ -241,7 +241,7 @@
           "last_block_id": {
             "hash": "9E0DF66B93354C474987ED69ADEDD5B2B1DC557A71A391B002E8BEE558C397F1",
             "parts": {
-              "total": "1",
+              "total": 1,
               "hash": "529D1FFB543793F8B999AC4E801C8A14CA2DC6E873DC7759945C4B960CAC77DC"
             }
           },
@@ -260,7 +260,7 @@
         "block_id": {
           "hash": "9E0DF66B93354C474987ED69ADEDD5B2B1DC557A71A391B002E8BEE558C397F1",
           "parts": {
-            "total": "1",
+            "total": 1,
             "hash": "529D1FFB543793F8B999AC4E801C8A14CA2DC6E873DC7759945C4B960CAC77DC"
           }
         },
@@ -277,7 +277,7 @@
           "last_block_id": {
             "hash": "F7888681D07FB5AEAF416D00C22E06CFD9A25DBD65519E97823F979206163CF1",
             "parts": {
-              "total": "1",
+              "total": 1,
               "hash": "3D4BB2D494CF343011AF2ADE01D6CC88BE6FE26CE5756840931507554BF64F0B"
             }
           },
@@ -296,7 +296,7 @@
         "block_id": {
           "hash": "F7888681D07FB5AEAF416D00C22E06CFD9A25DBD65519E97823F979206163CF1",
           "parts": {
-            "total": "1",
+            "total": 1,
             "hash": "3D4BB2D494CF343011AF2ADE01D6CC88BE6FE26CE5756840931507554BF64F0B"
           }
         },
@@ -313,7 +313,7 @@
           "last_block_id": {
             "hash": "0D9BB9FA6EB9D64E80CF920EB917B1124F298B12C92BE7FD5328564C6D85D087",
             "parts": {
-              "total": "1",
+              "total": 1,
               "hash": "E110DA5AEC7F6D8285F2F8A5CE732D8995E6B35C7B685BA819D3CBD903CB2330"
             }
           },
@@ -332,7 +332,7 @@
         "block_id": {
           "hash": "0D9BB9FA6EB9D64E80CF920EB917B1124F298B12C92BE7FD5328564C6D85D087",
           "parts": {
-            "total": "1",
+            "total": 1,
             "hash": "E110DA5AEC7F6D8285F2F8A5CE732D8995E6B35C7B685BA819D3CBD903CB2330"
           }
         },
@@ -349,7 +349,7 @@
           "last_block_id": {
             "hash": "",
             "parts": {
-              "total": "0",
+              "total": 0,
               "hash": ""
             }
           },
