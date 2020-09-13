@@ -136,7 +136,6 @@ fn bisection_test(tc: TestBisection<AnonLightBlock>) {
         None => false,
     };
 
-    dbg!(&tc.description);
     let test_result = run_bisection_test(tc);
     let expected_state = test_result.untrusted_light_block;
 
