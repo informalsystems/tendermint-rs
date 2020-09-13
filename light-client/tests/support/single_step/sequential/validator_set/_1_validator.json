@@ -1,5 +1,5 @@
 {
-	"description": "Case: one lite block, wrong last commit hash in header, with error",
+	"description": "Case: one lite block to fetch, one validator in the set, expects no error",
 	"initial": {
 		"signed_header": {
 			"header": {
@@ -13,7 +13,7 @@
 				"last_block_id": {
 					"hash": "",
 					"parts": {
-						"total": 0,
+						"total": "0",
 						"hash": ""
 					}
 				},
@@ -29,11 +29,11 @@
 			},
 			"commit": {
 				"height": "1",
-				"round": 1,
+				"round": "1",
 				"block_id": {
 					"hash": "9FF0F7C1F18374545CBC009BD6E59566AA568324D542050B5683615ADCAC6A47",
 					"parts": {
-						"total": 1,
+						"total": "1",
 						"hash": "5DEAF7B76F7C379B7850946013451BF2BA23EA01CB81BB320889782B2A6E7BD3"
 					}
 				},
@@ -86,11 +86,11 @@
 					"last_block_id": {
 						"hash": "9FF0F7C1F18374545CBC009BD6E59566AA568324D542050B5683615ADCAC6A47",
 						"parts": {
-							"total": 1,
+							"total": "1",
 							"hash": "5DEAF7B76F7C379B7850946013451BF2BA23EA01CB81BB320889782B2A6E7BD3"
 						}
 					},
-					"last_commit_hash": "77726F6E672068617368",
+					"last_commit_hash": "A07B92432C2504E8C869B2E9853FDAE071BC364C222FE8520C112E645962325A",
 					"data_hash": "",
 					"validators_hash": "75B9F27F25F3515EF7CA61DD42C272CCC280C537E6A9ED493710EB361CB90B0D",
 					"next_validators_hash": "75B9F27F25F3515EF7CA61DD42C272CCC280C537E6A9ED493710EB361CB90B0D",
@@ -102,11 +102,11 @@
 				},
 				"commit": {
 					"height": "2",
-					"round": 1,
+					"round": "1",
 					"block_id": {
 						"hash": "5B769D15E38158CBE7CD657DACC5505C857C0290951CD364A232DBF611024B22",
 						"parts": {
-							"total": 1,
+							"total": "1",
 							"hash": "9CE8DAB030B30FFC52D03E03ADA6310AD1A3F03E3423493F2388B4575F53FEEE"
 						}
 					},
@@ -166,5 +166,5 @@
 			}
 		}
 	],
-	"expected_output": "error"
+	"expected_output": "no error"
  }
