@@ -123,7 +123,8 @@ impl LightClient {
     ///   height `target_height` [LCV-POST-LS.1]
     ///
     /// ## Error conditions
-    /// - The light store does not contains a trusted light block within the trusting period [LCV-PRE-TP.1]
+    /// - The light store does not contains a trusted light block within the trusting period
+    ///   [LCV-PRE-TP.1]
     /// - If the core verification loop invariant is violated [LCV-INV-TP.1]
     /// - If verification of a light block fails
     /// - If the fetching a light block from the primary node fails

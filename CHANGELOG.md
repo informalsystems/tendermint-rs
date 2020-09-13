@@ -6,6 +6,7 @@
 - The `tendermint`, `tendermint-rpc`, and `tendermint-light-client` crates now compile to WASM on the `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#463])
 - Implement protobuf encoding/decoding of Tendermint Proto types ([#504])
 - Separate protobuf types from Rust domain types using the DomainType trait ([#535])
+- Changed validator sorting order to sort by voting power. ([#506])
 
 [#524]: https://github.com/informalsystems/tendermint-rs/issues/524
 [#526]: https://github.com/informalsystems/tendermint-rs/issues/526
@@ -13,6 +14,7 @@
 [#463]: https://github.com/informalsystems/tendermint-rs/issues/463
 [#504]: https://github.com/informalsystems/tendermint-rs/issues/504
 [#535]: https://github.com/informalsystems/tendermint-rs/issues/535
+[#506]: https://github.com/informalsystems/tendermint-rs/issues/506
 
 ## v0.16.0
 
