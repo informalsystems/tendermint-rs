@@ -8,9 +8,14 @@ use tendermint_rpc as rpc;
 
 use crate::components::clock::Clock;
 use crate::components::io::{AtHeight, Io, IoError};
+use crate::components::verifier::{ProdVerifier, Verdict, Verifier};
+use crate::errors::Error;
 use crate::evidence::EvidenceReporter;
+use crate::light_client::{LightClient, Options};
+use crate::state::State;
 use contracts::contract_trait;
 use std::collections::HashMap;
+use std::time::Duration;
 use tendermint::block::Height as HeightStr;
 use tendermint::evidence::{Duration as DurationStr, Evidence};
 
@@ -146,6 +151,47 @@ impl MockEvidenceReporter {
     pub fn new() -> Self {
         Self
     }
+}
+
+pub fn verify_single(
+    trusted_state: Trusted,
+    input: LightBlock,
+    trust_threshold: TrustThreshold,
+    trusting_period: Duration,
+    clock_drift: Duration,
+    now: Time,
+) -> Result<LightBlock, Verdict> {
+    let verifier = ProdVerifier::default();
+
+    let trusted_state = LightBlock::new(
+        trusted_state.signed_header,
+        trusted_state.next_validators.clone(),
+        trusted_state.next_validators,
+        default_peer_id(),
+    );
+
+    let options = Options {
+        trust_threshold,
+        trusting_period,
+        clock_drift,
+    };
+
+    let result = verifier.verify(&input, &trusted_state, &options, now);
+
+    match result {
+        Verdict::Success => Ok(input),
+        error => Err(error),
+    }
+}
+
+pub fn verify_bisection(
+    untrusted_height: Height,
+    light_client: &mut LightClient,
+    state: &mut State,
+) -> Result<Vec<LightBlock>, Error> {
+    light_client
+        .verify_to_target(untrusted_height, state)
+        .map(|_| state.get_trace(untrusted_height))
 }
 
 // -----------------------------------------------------------------------------

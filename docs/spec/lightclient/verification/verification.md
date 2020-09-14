@@ -2,7 +2,7 @@
 
 
 
-The light client implements a read operatio of a
+The light client implements a read operation of a
 [header][TMBC-HEADER-link] from the [blockchain][TMBC-SEQ-link], by
 communicating with full nodes.  As some full nodes may be faulty, this
 functionality must be implemented in a fault-tolerant way.
@@ -828,7 +828,6 @@ func ValidAndVerified(trusted LightBlock, untrusted LightBlock) Result
          checks [[block]]).
 - Error condition: 
    - if precondition violated 
-   - If *trusted.Header.Time > now - trustingPeriod* the blabla
 ----
 
 
@@ -1179,15 +1178,15 @@ func Main (primary PeerID, lightStore LightStore, targetHeight Height)
 
 [block]: https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md
 
-[TMBC-HEADER-link]: #tmbc-header.1
-[TMBC-SEQ-link]: #tmbc-seq.1
-[TMBC-CorrFull-link]: #tmbc-corr-full.1
-[TMBC-Auth-Byz-link]: #tmbc-auth-byz.1
-[TMBC-TIME_PARAMS-link]: tmbc-time-params.1
-[TMBC-FM-2THIRDS-link]: #tmbc-fm-2thirds.1
-[TMBC-VAL-CONTAINS-CORR-link]: tmbc-val-contains-corr.1
-[TMBC-VAL-COMMIT-link]: #tmbc-val-commit.1
-[TMBC-SOUND-DISTR-POSS-COMMIT-link]: #tmbc-sound-distr-poss-commit.1
+[TMBC-HEADER-link]: #tmbc-header1
+[TMBC-SEQ-link]: #tmbc-seq1
+[TMBC-CorrFull-link]: #tmbc-corr-full1
+[TMBC-Auth-Byz-link]: #tmbc-auth-byz1
+[TMBC-TIME_PARAMS-link]: tmbc-time-params1
+[TMBC-FM-2THIRDS-link]: #tmbc-fm-2thirds1
+[TMBC-VAL-CONTAINS-CORR-link]: tmbc-val-contains-corr1
+[TMBC-VAL-COMMIT-link]: #tmbc-val-commit1
+[TMBC-SOUND-DISTR-POSS-COMMIT-link]: #tmbc-sound-distr-poss-commit1
 
 [lightclient]: https://github.com/interchainio/tendermint-rs/blob/e2cb9aca0b95430fca2eac154edddc9588038982/docs/architecture/adr-002-lite-client.md
 [fork-detector]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/detection.md

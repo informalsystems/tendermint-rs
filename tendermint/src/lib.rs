@@ -4,6 +4,7 @@
 //! blockchain networks, including chain information types, secret connections,
 //! and remote procedure calls (JSON-RPC).
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(
     warnings,
     missing_docs,
@@ -14,8 +15,8 @@
 )]
 #![forbid(unsafe_code)]
 #![doc(
-    html_root_url = "https://docs.rs/tendermint/0.15.0",
-    html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs.png"
+    html_root_url = "https://docs.rs/tendermint/0.16.0",
+    html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs_3961x4001.png"
 )]
 
 #[macro_use]
@@ -50,12 +51,13 @@ pub mod vote;
 #[cfg(test)]
 mod test;
 
-pub use crate::genesis::Genesis;
 pub use crate::{
     block::Block,
     error::{Error, Kind},
+    genesis::Genesis,
     hash::Hash,
     moniker::Moniker,
+    private_key::PrivateKey,
     public_key::{PublicKey, TendermintKey},
     signature::Signature,
     time::Time,
@@ -63,4 +65,3 @@ pub use crate::{
     version::Version,
     vote::Vote,
 };
-pub use private_key::PrivateKey;

@@ -1,6 +1,6 @@
 {
   "jsonrpc": "2.0",
-  "id": "de2b057f-445d-4f4b-9f3d-8701de6b3c44",
+  "id": "06c893ae-2c80-4a42-8332-8380bf24fcde",
   "result": {
     "query": "tm.event='NewBlock'",
     "data": {
@@ -9,51 +9,51 @@
         "block": {
           "header": {
             "version": {
-              "block": "10",
+              "block": "11",
               "app": "1"
             },
-            "chain_id": "test-chain-WKiDTw",
-            "height": "165",
-            "time": "2020-08-14T14:50:32.869147Z",
+            "chain_id": "dockerchain",
+            "height": "1608",
+            "time": "2020-09-14T16:33:54.21191421Z",
             "last_block_id": {
-              "hash": "EB6DF76F960C1A19DCAC661E47BA93E91FF6F09C983C97EC3D7CFBA07F01179C",
+              "hash": "D3B2CC7EDAFF87433A5DBCDCDF4077A56AACDE3606034262B0CDB120F62EB40B",
               "parts": {
-                "total": "1",
-                "hash": "F09DA4A56C431530BA30BC9C7A8D320944F40818988C124D7528CB0F4DCF7C63"
+                "total": 1,
+                "hash": "3AB411EAFE9A3B7AC013B0214990E5653112A39909289E3EA9211F07B8CD6EED"
               }
             },
-            "last_commit_hash": "B6D6C589FB7FF5FFA0BB025D68770283452A9337D193EF42E0AE6864E6B12B90",
-            "data_hash": "",
-            "validators_hash": "ABF17FC49D88F55BA29D8BA7890EF44F9684C825483A95666670320CECC60448",
-            "next_validators_hash": "ABF17FC49D88F55BA29D8BA7890EF44F9684C825483A95666670320CECC60448",
+            "last_commit_hash": "47071B86EFC28BEC17543967975F35191BA9BEC9C2AD77E86F63B149528D71A1",
+            "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "validators_hash": "5E20520EC80B84044B64BA0C55B1C06D543BBD57955C27B8A9999EC526BF703C",
+            "next_validators_hash": "5E20520EC80B84044B64BA0C55B1C06D543BBD57955C27B8A9999EC526BF703C",
             "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
             "app_hash": "0000000000000000",
-            "last_results_hash": "",
-            "evidence_hash": "",
-            "proposer_address": "F19E2E909675C8461B2CE4D0051255C1FC08E0E3"
+            "last_results_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "proposer_address": "C8657A30D20C3BAD414624A1A963373DD500CCD3"
           },
           "data": {
-            "txs": null
+            "txs": []
           },
           "evidence": {
-            "evidence": null
+            "evidence": []
           },
           "last_commit": {
-            "height": "164",
-            "round": "0",
+            "height": "1607",
+            "round": 0,
             "block_id": {
-              "hash": "EB6DF76F960C1A19DCAC661E47BA93E91FF6F09C983C97EC3D7CFBA07F01179C",
+              "hash": "D3B2CC7EDAFF87433A5DBCDCDF4077A56AACDE3606034262B0CDB120F62EB40B",
               "parts": {
-                "total": "1",
-                "hash": "F09DA4A56C431530BA30BC9C7A8D320944F40818988C124D7528CB0F4DCF7C63"
+                "total": 1,
+                "hash": "3AB411EAFE9A3B7AC013B0214990E5653112A39909289E3EA9211F07B8CD6EED"
               }
             },
             "signatures": [
               {
                 "block_id_flag": 2,
-                "validator_address": "F19E2E909675C8461B2CE4D0051255C1FC08E0E3",
-                "timestamp": "2020-08-14T14:50:32.869147Z",
-                "signature": "xPtUT2ihJb22E6/i/PW75m5SuKM05xjrh7PeeAxmXRsW7YGBbszP2VPNCyXO3KHNZmFatkrjy+9rXIwl9wyNCA=="
+                "validator_address": "C8657A30D20C3BAD414624A1A963373DD500CCD3",
+                "timestamp": "2020-09-14T16:33:54.21191421Z",
+                "signature": "orOooZN8Rjtf6Uwh6ZTRGLjAActgmgZtFXgBSSpKgPLz9EYhLpS4e8IwydrEY+6YeTVk48wiOjdWleYMYvmGCQ=="
               }
             ]
           }

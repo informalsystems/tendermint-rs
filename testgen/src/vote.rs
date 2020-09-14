@@ -1,13 +1,13 @@
+use crate::{helpers::*, Generator, Header, Validator};
 use gumdrop::Options;
 use serde::Deserialize;
-use signatory::{
-    ed25519,
-    signature::{Signature as _, Signer},
-};
 use simple_error::*;
-use tendermint::{block, signature::Signature, vote, Time};
-
-use crate::{helpers::*, Generator, Header, Validator};
+use std::convert::TryFrom;
+use tendermint::{
+    block,
+    signature::{self, Signature, Signer, ED25519_SIGNATURE_SIZE},
+    vote,
+};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Vote {
@@ -17,7 +17,7 @@ pub struct Vote {
     )]
     pub validator: Option<Validator>,
     #[options(help = "validator index (default: from commit header)")]
-    pub index: Option<u64>,
+    pub index: Option<u16>,
     #[options(help = "header to sign (default: commit header)")]
     pub header: Option<Header>,
     #[options(help = "vote type; 'prevote' if set, otherwise 'precommit' (default)")]
@@ -25,9 +25,9 @@ pub struct Vote {
     #[options(help = "block height (default: from header)")]
     pub height: Option<u64>,
     #[options(help = "time (default: from header)")]
-    pub time: Option<Time>,
+    pub time: Option<u64>,
     #[options(help = "commit round (default: from commit)")]
-    pub round: Option<u64>,
+    pub round: Option<u32>,
 }
 
 impl Vote {
@@ -42,12 +42,12 @@ impl Vote {
             round: None,
         }
     }
-    set_option!(index, u64);
+    set_option!(index, u16);
     set_option!(header, Header);
     set_option!(prevote, bool, if prevote { Some(()) } else { None });
     set_option!(height, u64);
-    set_option!(time, Time);
-    set_option!(round, u64);
+    set_option!(time, u64);
+    set_option!(round, u32);
 }
 
 impl std::str::FromStr for Vote {
@@ -79,16 +79,29 @@ impl Generator<vote::Vote> for Vote {
             None => bail!("failed to generate vote: header is missing"),
             Some(h) => h,
         };
-        let signer = validator.get_signer()?;
+        let signer = validator.get_private_key()?;
         let block_validator = validator.generate()?;
         let block_header = header.generate()?;
         let block_id = block::Id::new(block_header.hash(), None);
         let validator_index = match self.index {
             Some(i) => i,
-            None => match header.validators.as_ref().unwrap().iter().position(|v| *v == *validator) {
-                Some(i) => i as u64,
-                None => bail!("failed to generate vote: no index given and validator not present in the header")
+            None => {
+                let position = header
+                    .validators
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .position(|v| *v == *validator);
+                match position {
+                    Some(i) => i as u16, // Todo: possible overflow
+                    None => 0,           // we allow non-present validators for testing purposes
+                }
             }
+        };
+        let timestamp = if let Some(t) = self.time {
+            get_time(t)
+        } else {
+            block_header.time
         };
         let mut vote = vote::Vote {
             vote_type: if self.prevote.is_some() {
@@ -99,16 +112,16 @@ impl Generator<vote::Vote> for Vote {
             height: block_header.height,
             round: self.round.unwrap_or(1),
             block_id: Some(block_id),
-            timestamp: block_header.time,
+            timestamp,
             validator_address: block_validator.address,
             validator_index,
             signature: Signature::Ed25519(try_with!(
-                ed25519::Signature::from_bytes(&[0_u8; ed25519::SIGNATURE_SIZE]),
+                signature::Ed25519::try_from(&[0_u8; ED25519_SIGNATURE_SIZE][..]),
                 "failed to construct empty ed25519 signature"
             )),
         };
         let sign_bytes = get_vote_sign_bytes(block_header.chain_id.as_str(), &vote);
-        vote.signature = Signature::Ed25519(signer.sign(sign_bytes.as_slice()));
+        vote.signature = signer.sign(sign_bytes.as_slice()).into();
         Ok(vote)
     }
 }
@@ -116,6 +129,7 @@ impl Generator<vote::Vote> for Vote {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Time;
 
     #[test]
     fn test_vote() {
@@ -130,11 +144,11 @@ mod tests {
             Validator::new("d"),
         ];
 
-        let now = Time::now();
+        let now = Time::new(10).generate().unwrap();
         let header = Header::new(&valset1)
             .next_validators(&valset2)
             .height(10)
-            .time(now);
+            .time(10);
 
         let val = &valset1[1];
         let vote = Vote::new(val.clone(), header.clone()).round(2);
@@ -152,12 +166,12 @@ mod tests {
 
         let sign_bytes = get_vote_sign_bytes(block_header.chain_id.as_str(), &block_vote);
         assert!(!verify_signature(
-            &valset1[0].get_verifier().unwrap(),
+            &valset1[0].get_public_key().unwrap(),
             &sign_bytes,
             &block_vote.signature
         ));
         assert!(verify_signature(
-            &valset1[1].get_verifier().unwrap(),
+            &valset1[1].get_public_key().unwrap(),
             &sign_bytes,
             &block_vote.signature
         ));

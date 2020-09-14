@@ -8,6 +8,8 @@ pub struct RemoteSignerError {
 /// PubKeyRequest requests the consensus public key from the remote signer.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PubKeyRequest {
+    #[prost(string, tag="1")]
+    pub chain_id: std::string::String,
 }
 /// PubKeyResponse is a response message containing the public key.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -22,6 +24,8 @@ pub struct PubKeyResponse {
 pub struct SignVoteRequest {
     #[prost(message, optional, tag="1")]
     pub vote: ::std::option::Option<super::types::Vote>,
+    #[prost(string, tag="2")]
+    pub chain_id: std::string::String,
 }
 /// SignedVoteResponse is a response containing a signed vote or an error
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -36,6 +40,8 @@ pub struct SignedVoteResponse {
 pub struct SignProposalRequest {
     #[prost(message, optional, tag="1")]
     pub proposal: ::std::option::Option<super::types::Proposal>,
+    #[prost(string, tag="2")]
+    pub chain_id: std::string::String,
 }
 /// SignedProposalResponse is response containing a signed proposal or an error
 #[derive(Clone, PartialEq, ::prost::Message)]

@@ -82,6 +82,8 @@ pub struct RequestInitChain {
     pub validators: ::std::vec::Vec<ValidatorUpdate>,
     #[prost(bytes, tag="5")]
     pub app_state_bytes: std::vec::Vec<u8>,
+    #[prost(int64, tag="6")]
+    pub initial_height: i64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestQuery {
@@ -248,6 +250,8 @@ pub struct ResponseInitChain {
     pub consensus_params: ::std::option::Option<ConsensusParams>,
     #[prost(message, repeated, tag="2")]
     pub validators: ::std::vec::Vec<ValidatorUpdate>,
+    #[prost(bytes, tag="3")]
+    pub app_hash: std::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseQuery {

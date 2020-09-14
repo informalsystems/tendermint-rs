@@ -1,17 +1,14 @@
 //! Tendermint validators
 
-use prost_amino_derive::Message;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use signatory::{
-    ed25519,
-    signature::{Signature, Verifier},
-};
-use signatory_dalek::Ed25519Verifier;
 use subtle_encoding::base64;
 
 use crate::amino_types::message::AminoMessage;
-use crate::hash::Hash;
-use crate::{account, merkle, vote, PublicKey};
+use crate::{account, hash::Hash, merkle, vote, Error, PublicKey, Signature};
+
+use std::convert::TryFrom;
+use tendermint_proto::types::SimpleValidator as RawSimpleValidator;
+use tendermint_proto::DomainType;
 
 /// Validator set contains a vector of validators
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -34,9 +31,9 @@ impl Set {
     }
 
     /// Sort the validators according to the current Tendermint requirements
-    /// (v. 0.33 -> by validator address, ascending)
+    /// (v. 0.34 -> by validator power, descending)
     fn sort_validators(vals: &mut Vec<Info>) {
-        vals.sort_by_key(|v| v.address);
+        vals.sort_by_key(|v| std::cmp::Reverse(v.voting_power));
     }
 
     /// Returns the validator with the given Id if its in the Set.
@@ -103,14 +100,8 @@ impl Info {
 
     /// Verify the given signature against the given sign_bytes using the validators
     /// public key.
-    pub fn verify_signature(&self, sign_bytes: &[u8], signature: &[u8]) -> bool {
-        if let Some(pk) = &self.pub_key.ed25519() {
-            let verifier = Ed25519Verifier::from(pk);
-            if let Ok(sig) = ed25519::Signature::from_bytes(signature) {
-                return verifier.verify(sign_bytes, &sig).is_ok();
-            }
-        }
-        false
+    pub fn verify_signature(&self, sign_bytes: &[u8], signature: &Signature) -> Result<(), Error> {
+        self.pub_key.verify(sign_bytes, signature)
     }
 }
 
@@ -136,25 +127,50 @@ impl Info {
     }
 }
 
-/// InfoHashable is the form of the validator used for computing the Merkle tree.
+/// SimpleValidator is the form of the validator used for computing the Merkle tree.
 /// It does not include the address, as that is redundant with the pubkey,
 /// nor the proposer priority, as that changes with every block even if the validator set didn't.
 /// It contains only the pubkey and the voting power, and is amino encoded.
 /// TODO: currently only works for Ed25519 pubkeys
-#[derive(Clone, PartialEq, Message)]
-struct InfoHashable {
-    #[prost_amino(bytes, tag = "1", amino_name = "tendermint/PubKeyEd25519")]
-    pub pub_key: Vec<u8>,
-    #[prost_amino(uint64, tag = "2")]
-    voting_power: u64,
+#[derive(Clone, PartialEq, DomainType)]
+#[rawtype(RawSimpleValidator)]
+pub struct SimpleValidator {
+    /// Public key
+    pub pub_key: Option<tendermint_proto::crypto::PublicKey>,
+    /// Voting power
+    pub voting_power: i64,
 }
 
-/// Info -> InfoHashable
-impl From<&Info> for InfoHashable {
-    fn from(info: &Info) -> InfoHashable {
-        InfoHashable {
-            pub_key: info.pub_key.as_bytes(),
-            voting_power: info.voting_power.value(),
+impl TryFrom<RawSimpleValidator> for SimpleValidator {
+    type Error = Error;
+
+    fn try_from(value: RawSimpleValidator) -> Result<Self, Self::Error> {
+        Ok(SimpleValidator {
+            pub_key: value.pub_key,
+            voting_power: value.voting_power,
+        })
+    }
+}
+
+impl From<SimpleValidator> for RawSimpleValidator {
+    fn from(value: SimpleValidator) -> Self {
+        RawSimpleValidator {
+            pub_key: value.pub_key,
+            voting_power: value.voting_power,
+        }
+    }
+}
+
+/// Info -> SimpleValidator
+impl From<&Info> for SimpleValidator {
+    fn from(info: &Info) -> SimpleValidator {
+        SimpleValidator {
+            pub_key: Some(tendermint_proto::crypto::PublicKey {
+                sum: Some(tendermint_proto::crypto::public_key::Sum::Ed25519(
+                    info.pub_key.to_bytes(),
+                )),
+            }),
+            voting_power: info.voting_power.value() as i64,
         }
     }
 }
@@ -164,7 +180,8 @@ impl Info {
     /// the leaves of the tree. this is an amino encoding of the
     /// pubkey and voting power, so it includes the pubkey's amino prefix.
     pub fn hash_bytes(&self) -> Vec<u8> {
-        AminoMessage::bytes_vec(&InfoHashable::from(self))
+        let raw_simple_validator: RawSimpleValidator = SimpleValidator::from(self).into();
+        AminoMessage::bytes_vec(&raw_simple_validator)
     }
 }
 
@@ -248,42 +265,79 @@ where
 
 #[cfg(test)]
 mod tests {
-    use subtle_encoding::hex;
 
     use super::*;
 
-    // make a validator from a hex ed25519 pubkey and a voting power
-    fn make_validator(pk_string: &str, vp: u64) -> Info {
-        let pk = PublicKey::from_raw_ed25519(&hex::decode_upper(pk_string).unwrap()).unwrap();
+    // make a validator
+    fn make_validator(pk: Vec<u8>, vp: u64) -> Info {
+        let pk = PublicKey::from_raw_ed25519(&pk).unwrap();
         Info::new(pk, vote::Power::new(vp))
     }
 
     #[test]
     fn test_validator_set() {
         // test vector generated by Go code
+        /*
+           import (
+               "fmt"
+               "github.com/tendermint/tendermint/crypto/ed25519"
+               "github.com/tendermint/tendermint/types"
+               "strings"
+           )
+           func testValSet() {
+               pk1 := ed25519.GenPrivKeyFromSecret([]byte{4, 211, 14, 157, 10, 0, 205, 9, 10, 116, 207, 161, 4, 211, 190, 37, 108, 88, 202, 168, 63, 135, 0, 141, 53, 55, 254, 57, 40, 184, 20, 242})
+               pk2 := ed25519.GenPrivKeyFromSecret([]byte{99, 231, 126, 151, 159, 236, 2, 229, 33, 44, 200, 248, 147, 176, 13, 127, 105, 76, 49, 83, 25, 101, 44, 57, 20, 215, 166, 188, 134, 94, 56, 165})
+               pk3 := ed25519.GenPrivKeyFromSecret([]byte{54, 253, 151, 16, 182, 114, 125, 12, 74, 101, 54, 253, 174, 153, 121, 74, 145, 180, 111, 16, 214, 48, 193, 109, 104, 134, 55, 162, 151, 16, 182, 114})
+               not_in_set := ed25519.GenPrivKeyFromSecret([]byte{121, 74, 145, 180, 111, 16, 214, 48, 193, 109, 35, 68, 19, 27, 173, 69, 92, 204, 127, 218, 234, 81, 232, 75, 204, 199, 48, 163, 55, 132, 231, 147})
+               fmt.Println("pk1: ", strings.Join(strings.Split(fmt.Sprintf("%v", pk1.PubKey().Bytes()), " "), ", "))
+               fmt.Println("pk2:", strings.Join(strings.Split(fmt.Sprintf("%v", pk2.PubKey().Bytes()), " "), ", "))
+               fmt.Println("pk3: ", strings.Join(strings.Split(fmt.Sprintf("%v", pk3.PubKey().Bytes()), " "), ", "))
+               fmt.Println("not_in_set: ", strings.Join(strings.Split(fmt.Sprintf("%v", not_in_set.PubKey().Bytes()), " "), ", "))
+               v1 := types.NewValidator(pk1.PubKey(), 148151478422287875)
+               v2 := types.NewValidator(pk2.PubKey(), 158095448483785107)
+               v3 := types.NewValidator(pk3.PubKey(), 770561664770006272)
+               set := types.NewValidatorSet([]*types.Validator{v1, v2, v3})
+               fmt.Println("Hash:", strings.Join(strings.Split(fmt.Sprintf("%v", set.Hash()), " "), ", "))
+           }
+        */
         let v1 = make_validator(
-            "F349539C7E5EF7C49549B09C4BFC2335318AB0FE51FBFAA2433B4F13E816F4A7",
+            vec![
+                48, 163, 55, 132, 231, 147, 230, 163, 56, 158, 127, 218, 179, 139, 212, 103, 218,
+                89, 122, 126, 229, 88, 84, 48, 32, 0, 185, 174, 63, 72, 203, 52,
+            ],
             148_151_478_422_287_875,
         );
         let v2 = make_validator(
-            "5646AA4C706B7AF73768903E77D117487D2584B76D83EB8FF287934EE7758AFC",
+            vec![
+                54, 253, 174, 153, 121, 74, 145, 180, 111, 16, 214, 48, 193, 109, 104, 134, 55,
+                162, 151, 16, 182, 114, 125, 135, 32, 195, 236, 248, 64, 112, 74, 101,
+            ],
             158_095_448_483_785_107,
         );
         let v3 = make_validator(
-            "EB6B732C4BD86B5FA3F3BC3DB688DA0ED182A7411F81C2D405506B298FC19E52",
+            vec![
+                182, 205, 13, 86, 147, 27, 65, 49, 160, 118, 11, 180, 117, 35, 206, 35, 68, 19, 27,
+                173, 69, 92, 204, 224, 200, 51, 249, 81, 105, 128, 112, 244,
+            ],
             770_561_664_770_006_272,
         );
-        let hash_string = "B92B4474567A1B57969375C13CF8129AA70230642BD7FB9FB2CC316E87CE01D7";
-        let hash_expect = &hex::decode_upper(hash_string).unwrap();
+        let hash_expect = vec![
+            11, 64, 107, 4, 234, 81, 232, 75, 204, 199, 160, 114, 229, 97, 243, 95, 118, 213, 17,
+            22, 57, 84, 71, 122, 200, 169, 192, 252, 41, 148, 223, 180,
+        ];
 
         let val_set = Set::new(vec![v1, v2, v3]);
         let hash = val_set.hash();
-        assert_eq!(hash_expect, &hash.as_bytes().to_vec());
+        assert_eq!(hash_expect, hash.as_bytes().to_vec());
 
         let not_in_set = make_validator(
-            "EB6B732C5BD86B5FA3F3BC3DB688DA0ED182A7411F81C2D405506B298FC19E52",
-            1,
+            vec![
+                110, 147, 87, 120, 27, 218, 66, 209, 81, 4, 169, 153, 64, 163, 137, 89, 168, 97,
+                219, 233, 42, 119, 24, 61, 47, 59, 76, 31, 182, 60, 13, 4,
+            ],
+            10_000_000_000_000_000,
         );
+
         assert_eq!(val_set.validator(v1.address).unwrap(), v1);
         assert_eq!(val_set.validator(v2.address).unwrap(), v2);
         assert_eq!(val_set.validator(v3.address).unwrap(), v3);

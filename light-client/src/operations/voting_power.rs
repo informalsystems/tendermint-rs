@@ -115,7 +115,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
 
         // Get non-absent votes from the signatures
         let non_absent_votes = signatures.iter().enumerate().flat_map(|(idx, signature)| {
-            if let Some(vote) = non_absent_vote(signature, idx as u64, &signed_header.commit) {
+            if let Some(vote) = non_absent_vote(signature, idx as u16, &signed_header.commit) {
                 Some((signature, vote))
             } else {
                 None
@@ -146,10 +146,13 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
 
             // Check vote is valid
             let sign_bytes = signed_vote.sign_bytes();
-            if !validator.verify_signature(&sign_bytes, signed_vote.signature()) {
+            if validator
+                .verify_signature(&sign_bytes, signed_vote.signature())
+                .is_err()
+            {
                 bail!(VerificationError::InvalidSignature {
-                    signature: signed_vote.signature().to_vec(),
-                    validator,
+                    signature: signed_vote.signature().to_bytes(),
+                    validator: Box::new(validator),
                     sign_bytes,
                 });
             }
@@ -176,7 +179,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
     }
 }
 
-fn non_absent_vote(commit_sig: &CommitSig, validator_index: u64, commit: &Commit) -> Option<Vote> {
+fn non_absent_vote(commit_sig: &CommitSig, validator_index: u16, commit: &Commit) -> Option<Vote> {
     let (validator_address, timestamp, signature, block_id) = match commit_sig {
         CommitSig::BlockIDFlagAbsent { .. } => return None,
         CommitSig::BlockIDFlagCommit {
@@ -186,14 +189,14 @@ fn non_absent_vote(commit_sig: &CommitSig, validator_index: u64, commit: &Commit
         } => (
             *validator_address,
             *timestamp,
-            signature.clone(),
+            signature,
             Some(commit.block_id.clone()),
         ),
         CommitSig::BlockIDFlagNil {
             validator_address,
             timestamp,
             signature,
-        } => (*validator_address, *timestamp, signature.clone(), None),
+        } => (*validator_address, *timestamp, signature, None),
     };
 
     Some(Vote {
@@ -204,7 +207,7 @@ fn non_absent_vote(commit_sig: &CommitSig, validator_index: u64, commit: &Commit
         timestamp,
         validator_address,
         validator_index,
-        signature,
+        signature: *signature,
     })
 }
 

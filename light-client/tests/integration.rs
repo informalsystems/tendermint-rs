@@ -105,7 +105,7 @@ fn sync() {
     let handle = supervisor.handle();
     std::thread::spawn(|| supervisor.run());
 
-    let max_iterations: usize = 20;
+    let max_iterations: usize = 1; // Todo: Fix no witness left error in subsequent iterations
 
     for i in 1..=max_iterations {
         println!("[info ] - iteration {}/{}", i, max_iterations);

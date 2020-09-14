@@ -300,6 +300,8 @@ pub struct DuplicateVoteEvidence {
     pub vote_a: ::std::option::Option<Vote>,
     #[prost(message, optional, tag="2")]
     pub vote_b: ::std::option::Option<Vote>,
+    #[prost(message, optional, tag="3")]
+    pub timestamp: ::std::option::Option<::prost_types::Timestamp>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PotentialAmnesiaEvidence {
@@ -309,6 +311,8 @@ pub struct PotentialAmnesiaEvidence {
     pub vote_b: ::std::option::Option<Vote>,
     #[prost(int64, tag="3")]
     pub height_stamp: i64,
+    #[prost(message, optional, tag="4")]
+    pub timestamp: ::std::option::Option<::prost_types::Timestamp>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AmnesiaEvidence {
@@ -332,6 +336,8 @@ pub struct LunaticValidatorEvidence {
     pub vote: ::std::option::Option<Vote>,
     #[prost(string, tag="3")]
     pub invalid_header_field: std::string::String,
+    #[prost(message, optional, tag="4")]
+    pub timestamp: ::std::option::Option<::prost_types::Timestamp>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Evidence {

@@ -1,0 +1,46 @@
+name: Build
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+  push:
+    paths-ignore:
+      - "docs/**"
+    branches:
+      - master
+jobs:
+  cleanup-runs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: rokroskar/workflow-run-cleanup-action@master
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
+
+  tendermint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --workspace --all-targets
+
+  # At the time of writing `--no-default-features` does not work with the `-p` flag, hence we avoid the Cargo GitHub Action.
+  light-client-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          target: wasm32-unknown-unknown
+      - name: Build Tendermint for WASM
+        run: cd tendermint && cargo build --target wasm32-unknown-unknown --release --no-default-features
+      - name: Build Light Client for WASM
+        run: cd light-client && cargo build --target wasm32-unknown-unknown --release --no-default-features

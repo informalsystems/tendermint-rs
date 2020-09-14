@@ -1,10 +1,13 @@
 //! Block headers
 
-use crate::amino_types::{message::AminoMessage, BlockId, ConsensusVersion, TimeMsg};
+use crate::amino_types::{message::AminoMessage, BlockId};
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::serializers;
 use crate::{account, block, chain, Hash, Time};
+use prost_types::Timestamp;
 use serde::{Deserialize, Serialize};
+use tendermint_proto::types::BlockId as RawBlockId;
+use tendermint_proto::version::Consensus as RawConsensusVersion;
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -70,18 +73,25 @@ impl Header {
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/block.go#L393
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
 
+        let raw_consensus_version: RawConsensusVersion = self.version.clone().into();
+
         let mut fields_bytes: Vec<Vec<u8>> = Vec::with_capacity(16);
-        fields_bytes.push(AminoMessage::bytes_vec(&ConsensusVersion::from(
-            &self.version,
-        )));
+        fields_bytes.push(AminoMessage::bytes_vec(&raw_consensus_version));
         fields_bytes.push(encode_bytes(self.chain_id.as_bytes()));
         fields_bytes.push(encode_varint(self.height.value()));
-        fields_bytes.push(AminoMessage::bytes_vec(&TimeMsg::from(self.time)));
-        fields_bytes.push(
-            self.last_block_id
-                .as_ref()
-                .map_or(vec![], |id| AminoMessage::bytes_vec(&BlockId::from(id))),
-        );
+        fields_bytes.push(AminoMessage::bytes_vec(&Timestamp::from(
+            self.time.to_system_time().unwrap(),
+        )));
+        match &self.last_block_id {
+            None => {
+                let raw_block_id: RawBlockId = BlockId::new(vec![], None).into();
+                AminoMessage::bytes_vec(&raw_block_id);
+            }
+            Some(id) => {
+                let raw_block_id: RawBlockId = BlockId::from(id).into();
+                AminoMessage::bytes_vec(&raw_block_id);
+            }
+        }
         fields_bytes.push(self.last_commit_hash.as_ref().map_or(vec![], encode_hash));
         fields_bytes.push(self.data_hash.as_ref().map_or(vec![], encode_hash));
         fields_bytes.push(encode_hash(&self.validators_hash));
@@ -100,7 +110,7 @@ fn encode_bytes(bytes: &[u8]) -> Vec<u8> {
     let bytes_len = bytes.len();
     if bytes_len > 0 {
         let mut encoded = vec![];
-        prost_amino::encode_length_delimiter(bytes_len, &mut encoded).unwrap();
+        prost::encode_length_delimiter(bytes_len, &mut encoded).unwrap();
         encoded.append(&mut bytes.to_vec());
         encoded
     } else {
@@ -114,7 +124,7 @@ fn encode_hash(hash: &Hash) -> Vec<u8> {
 
 fn encode_varint(val: u64) -> Vec<u8> {
     let mut val_enc = vec![];
-    prost_amino::encoding::encode_varint(val, &mut val_enc);
+    prost::encoding::encode_varint(val, &mut val_enc);
     val_enc
 }
 
@@ -131,6 +141,24 @@ pub struct Version {
     /// App version
     #[serde(with = "serializers::from_str")]
     pub app: u64,
+}
+
+impl From<RawConsensusVersion> for Version {
+    fn from(value: RawConsensusVersion) -> Self {
+        Version {
+            block: value.block,
+            app: value.app,
+        }
+    }
+}
+
+impl From<Version> for RawConsensusVersion {
+    fn from(value: Version) -> Self {
+        RawConsensusVersion {
+            block: value.block,
+            app: value.app,
+        }
+    }
 }
 
 #[cfg(test)]

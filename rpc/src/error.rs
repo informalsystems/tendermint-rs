@@ -109,14 +109,14 @@ impl Display for Error {
     }
 }
 
-#[cfg(feature = "client")]
+#[cfg(all(feature = "client", feature = "transport_http"))]
 impl From<http::Error> for Error {
     fn from(http_error: http::Error) -> Error {
         Error::http_error(http_error.to_string())
     }
 }
 
-#[cfg(feature = "client")]
+#[cfg(all(feature = "client", feature = "transport_http"))]
 impl From<hyper::Error> for Error {
     fn from(hyper_error: hyper::Error) -> Error {
         Error::http_error(hyper_error.to_string())
