@@ -1,7 +1,7 @@
 use simple_error::*;
 
-use crate::validator::generate_validator_set;
-use crate::{Commit, Generator, Header};
+use crate::validator::{generate_validator_set, generate_validators};
+use crate::{Commit, Generator, Header, Validator};
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::node::Id as PeerId;
 use tendermint::validator::Info;
@@ -38,29 +38,24 @@ impl LightBlock {
     }
 
     pub fn generate_default(
-        val_ids: Vec<&str>,
+        raw_vals: Vec<Validator>,
         peer_id: PeerId,
     ) -> Result<LightBlock, SimpleError> {
-        let (validator_set, raw_vals) = match generate_validator_set(val_ids) {
-            Err(e) => bail!("Failed to generate validator set with error: {}", e),
-            Ok(v) => v,
-        };
-
         let raw_header = Header::new(&raw_vals);
         let raw_commit = Commit::new(raw_header.clone(), 1);
-        let signed_header = match generate_signed_header(raw_header, raw_commit) {
-            Err(e) => bail!("Failed to generate signed header with error: {}", e),
-            Ok(sh) => sh,
-        };
 
-        let light_block = LightBlock::new(signed_header, validator_set.clone(), validator_set, peer_id);
-        Ok(light_block)
+        LightBlock::generate_with(
+            raw_header,
+            raw_commit,
+            raw_vals,
+            peer_id,
+        )
     }
 
     pub fn generate_with(
         raw_header: Header,
         raw_commit: Commit,
-        raw_vals: Vec<Info>,
+        raw_vals: Vec<Validator>,
         peer_id: PeerId,
     ) -> Result<LightBlock, SimpleError> {
         let signed_header = match generate_signed_header(raw_header, raw_commit) {
