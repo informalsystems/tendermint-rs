@@ -4,7 +4,6 @@ use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
 use tendermint::{
-    validator::Set,
     account, private_key,
     public_key::{self, PublicKey},
     validator, vote,
@@ -125,14 +124,14 @@ pub fn generate_validators(vals: &[Validator]) -> Result<Vec<validator::Info>, S
 /// A helper function to generate validator set from a list of validator ids.
 pub fn generate_validator_set(
     val_ids: Vec<&str>,
-) -> Result<(Set, Vec<Validator>), SimpleError> {
+) -> Result<(validator::Set, Vec<Validator>), SimpleError> {
     let vals = Validator::from_str_vec(val_ids);
 
     let validators = match generate_validators(&vals) {
         Err(e) => bail!("Failed to generate validators with error: {}", e),
         Ok(v) => v,
     };
-    Ok((Set::new(validators), vals))
+    Ok((validator::Set::new(validators), vals))
 }
 
 #[cfg(test)]

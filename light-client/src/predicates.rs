@@ -309,6 +309,17 @@ mod tests {
     use crate::types::{PeerId, LightBlock, ValidatorSet, SignedHeader};
     use tendermint::block::{CommitSigs, CommitSig};
 
+    impl From<TestGenLightBlock> for LightBlock {
+        fn from(lb: TestGenLightBlock) -> Self {
+            LightBlock {
+                signed_header: lb.signed_header,
+                validators: lb.validators,
+                next_validators: lb.next_validators,
+                provider: lb.provider,
+            }
+        }
+    }
+
     #[test]
     fn test_is_monotonic_bft_time() {
         let test_val = vec![Validator::new("val-1")];
@@ -708,5 +719,58 @@ mod tests {
         }
 
 
+    }
+}
+#[cfg(test)]
+mod tests {
+    use crate::operations::{Hasher, ProdHasher};
+    use crate::predicates::errors::VerificationError;
+    use crate::predicates::{ProdPredicates, VerificationPredicates};
+    use crate::tests::default_peer_id;
+    use crate::types::LightBlock;
+    use tendermint_testgen::light_block::generate_default_light_block;
+    use tendermint_testgen::light_block::LightBlock as TestGenLightBlock;
+    use tendermint_testgen::validator::generate_validator_set;
+
+    impl From<TestGenLightBlock> for LightBlock {
+        fn from(lb: TestGenLightBlock) -> Self {
+            LightBlock {
+                signed_header: lb.signed_header,
+                validators: lb.validators,
+                next_validators: lb.next_validators,
+                provider: lb.provider,
+            }
+        }
+    }
+
+    #[test]
+    fn test_validator_sets_match() {
+        let light_block = generate_default_light_block(vec!["val-1"], default_peer_id());
+
+        let val_set_result = generate_validator_set(vec!["bad-val"]);
+
+        match (light_block, val_set_result) {
+            (Ok(light_block), Ok((bad_validator_set, _validators))) => {
+                // Convert the testgen LightBlock to the light client LightBlock
+                let mut light_block: LightBlock = light_block.into();
+
+                let vp = ProdPredicates::default();
+                let hasher = ProdHasher::default();
+                let case_positive = vp.validator_sets_match(&light_block, &hasher);
+
+                assert!(case_positive.is_ok());
+
+                light_block.validators = bad_validator_set;
+
+                let case_negative = vp.validator_sets_match(&light_block, &hasher);
+                let error = VerificationError::InvalidValidatorSet {
+                    header_validators_hash: light_block.signed_header.header.validators_hash,
+                    validators_hash: hasher.hash_validator_set(&light_block.validators),
+                };
+                assert!(case_negative.is_err());
+                assert_eq!(case_negative.err().unwrap(), error);
+            }
+            _ => println!("Error in generating light block"),
+        }
     }
 }
