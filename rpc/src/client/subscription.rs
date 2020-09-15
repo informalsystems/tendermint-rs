@@ -242,6 +242,9 @@ impl SubscriptionRouter {
                 disconnected.push(id.clone());
             }
         }
+        // Obtain a mutable reference because the previous reference was
+        // consumed in the above for loop. We should panic if there are no
+        // longer any subscriptions for this query.
         let subs_for_query = self.subscriptions.get_mut(&ev.query).unwrap();
         for id in disconnected {
             subs_for_query.remove(&id);
