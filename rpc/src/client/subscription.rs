@@ -233,6 +233,9 @@ impl SubscriptionRouter {
             Some(s) => s,
             None => return,
         };
+        // We assume here that any failure to publish an event is an indication
+        // that the receiver end of the channel has been dropped, which allows
+        // us to safely stop tracking the subscription.
         let mut disconnected = Vec::<SubscriptionId>::new();
         for (id, event_tx) in subs_for_query {
             if event_tx.send(Ok(ev.clone())).await.is_err() {
