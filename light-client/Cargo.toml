@@ -23,12 +23,12 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["rpc-client"]
-rpc-client = ["tendermint-rpc/client"]
+rpc-client = ["tendermint-rpc/client", "tendermint-rpc/transport_http"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 
 [dependencies]
 tendermint = { version = "0.16.0", path = "../tendermint" }
-tendermint-rpc = { version = "0.16.0", path = "../rpc", features = ["client", "transport_http"] }
+tendermint-rpc = { version = "0.16.0", path = "../rpc", default-features = false }
 
 anomaly = { version = "0.2.0", features = ["serializer"] }
 contracts = "0.4.0"
