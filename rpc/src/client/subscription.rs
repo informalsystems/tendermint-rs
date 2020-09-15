@@ -202,7 +202,6 @@ pub enum SubscriptionState {
     Pending,
     Active,
     Cancelling,
-    NotFound,
 }
 
 /// Provides a mechanism for tracking [`Subscription`]s and routing [`Event`]s
@@ -391,17 +390,16 @@ impl SubscriptionRouter {
 
     /// Utility method to determine the current state of the subscription with
     /// the given ID.
-    pub fn subscription_state(&self, req_id: &str) -> SubscriptionState {
+    pub fn subscription_state(&self, req_id: &str) -> Option<SubscriptionState> {
         if self.pending_subscribe.contains_key(req_id) {
-            return SubscriptionState::Pending;
+            Some(SubscriptionState::Pending)
+        } else if self.pending_unsubscribe.contains_key(req_id) {
+            Some(SubscriptionState::Cancelling)
+        } else if self.is_active(&SubscriptionId::from(req_id)) {
+            Some(SubscriptionState::Active)
+        } else {
+            None
         }
-        if self.pending_unsubscribe.contains_key(req_id) {
-            return SubscriptionState::Cancelling;
-        }
-        if self.is_active(&SubscriptionId::from(req_id)) {
-            return SubscriptionState::Active;
-        }
-        SubscriptionState::NotFound
     }
 }
 
@@ -504,10 +502,7 @@ mod test {
         let mut ev = read_event("event_new_block_1").await;
         ev.query = query.clone();
 
-        assert_eq!(
-            SubscriptionState::NotFound,
-            router.subscription_state(&subs_id.to_string())
-        );
+        assert!(router.subscription_state(&subs_id.to_string()).is_none());
         router.pending_add(
             subs_id.as_ref(),
             &subs_id,
@@ -517,7 +512,7 @@ mod test {
         );
         assert_eq!(
             SubscriptionState::Pending,
-            router.subscription_state(subs_id.as_ref())
+            router.subscription_state(subs_id.as_ref()).unwrap()
         );
         router.publish(ev.clone()).await;
         must_not_recv(&mut event_rx, 50).await;
@@ -525,7 +520,7 @@ mod test {
         router.confirm_add(subs_id.as_ref()).await.unwrap();
         assert_eq!(
             SubscriptionState::Active,
-            router.subscription_state(subs_id.as_ref())
+            router.subscription_state(subs_id.as_ref()).unwrap()
         );
         must_not_recv(&mut event_rx, 50).await;
         let _ = must_recv(&mut result_rx, 500).await;
@@ -538,14 +533,11 @@ mod test {
         router.pending_remove(subs_id.as_ref(), &subs_id, query.clone(), result_tx);
         assert_eq!(
             SubscriptionState::Cancelling,
-            router.subscription_state(subs_id.as_ref()),
+            router.subscription_state(subs_id.as_ref()).unwrap(),
         );
 
         router.confirm_remove(subs_id.as_ref()).await.unwrap();
-        assert_eq!(
-            SubscriptionState::NotFound,
-            router.subscription_state(subs_id.as_ref())
-        );
+        assert!(router.subscription_state(subs_id.as_ref()).is_none());
         router.publish(ev.clone()).await;
         if must_recv(&mut result_rx, 500).await.is_err() {
             panic!("we should have received successful confirmation of the unsubscribe request")
@@ -562,14 +554,11 @@ mod test {
         let mut ev = read_event("event_new_block_1").await;
         ev.query = query.clone();
 
-        assert_eq!(
-            SubscriptionState::NotFound,
-            router.subscription_state(subs_id.as_ref())
-        );
+        assert!(router.subscription_state(subs_id.as_ref()).is_none());
         router.pending_add(subs_id.as_ref(), &subs_id, query, event_tx, result_tx);
         assert_eq!(
             SubscriptionState::Pending,
-            router.subscription_state(subs_id.as_ref())
+            router.subscription_state(subs_id.as_ref()).unwrap()
         );
         router.publish(ev.clone()).await;
         must_not_recv(&mut event_rx, 50).await;
@@ -579,10 +568,7 @@ mod test {
             .cancel_add(subs_id.as_ref(), cancel_error.clone())
             .await
             .unwrap();
-        assert_eq!(
-            SubscriptionState::NotFound,
-            router.subscription_state(subs_id.as_ref())
-        );
+        assert!(router.subscription_state(subs_id.as_ref()).is_none());
         assert_eq!(Err(cancel_error), must_recv(&mut result_rx, 500).await);
 
         router.publish(ev.clone()).await;

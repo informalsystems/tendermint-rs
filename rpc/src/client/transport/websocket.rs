@@ -248,74 +248,71 @@ impl WebSocketSubscriptionDriver {
     async fn handle_incoming_msg(&mut self, msg: Message) -> Result<()> {
         match msg {
             Message::Text(s) => self.handle_text_msg(s).await,
-            Message::Ping(v) => self.pong(v).await,
-            Message::Pong(_) | Message::Binary(_) => Ok(()),
-            Message::Close(_) => Ok(()),
+            Message::Ping(v) => self.pong(v).await?,
+            _ => (),
         }
+        Ok(())
     }
 
-    async fn handle_text_msg(&mut self, msg: String) -> Result<()> {
+    async fn handle_text_msg(&mut self, msg: String) {
         match Event::from_string(&msg) {
             Ok(ev) => {
                 self.router.publish(ev).await;
-                Ok(())
             }
-            Err(_) => match serde_json::from_str::<response::Wrapper<GenericJSONResponse>>(&msg) {
-                Ok(wrapper) => self.handle_generic_response(wrapper).await,
-                _ => Ok(()),
-            },
+            Err(_) => {
+                if let Ok(wrapper) =
+                    serde_json::from_str::<response::Wrapper<GenericJSONResponse>>(&msg)
+                {
+                    self.handle_generic_response(wrapper).await;
+                }
+            }
         }
     }
 
-    async fn handle_generic_response(
-        &mut self,
-        wrapper: response::Wrapper<GenericJSONResponse>,
-    ) -> Result<()> {
+    async fn handle_generic_response(&mut self, wrapper: response::Wrapper<GenericJSONResponse>) {
         let subs_id: SubscriptionId = match wrapper.id().clone().try_into() {
             Ok(id) => id,
             // Just ignore the message if it doesn't have an intelligible ID.
-            Err(_) => return Ok(()),
+            Err(_) => return,
         };
-        match wrapper.into_result() {
-            Ok(_) => match self.router.subscription_state(subs_id.as_ref()) {
-                SubscriptionState::Pending => {
-                    let _ = self.router.confirm_add(subs_id.as_ref()).await;
-                }
-                SubscriptionState::Cancelling => {
-                    let _ = self.router.confirm_remove(subs_id.as_ref()).await;
-                }
-                SubscriptionState::Active => {
-                    if let Some(event_tx) = self.router.get_active_subscription_mut(&subs_id) {
-                        let _ = event_tx.send(
-                            Err(Error::websocket_error(
-                                "failed to parse incoming response from remote WebSocket endpoint - does this client support the remote's RPC version?",
-                            )),
-                        ).await;
+        if let Some(state) = self.router.subscription_state(subs_id.as_ref()) {
+            match wrapper.into_result() {
+                Ok(_) => match state {
+                    SubscriptionState::Pending => {
+                        let _ = self.router.confirm_add(subs_id.as_ref()).await;
                     }
-                }
-                SubscriptionState::NotFound => (),
-            },
-            Err(e) => match self.router.subscription_state(subs_id.as_ref()) {
-                SubscriptionState::Pending => {
-                    let _ = self.router.cancel_add(subs_id.as_ref(), e).await;
-                }
-                SubscriptionState::Cancelling => {
-                    let _ = self.router.cancel_remove(subs_id.as_ref(), e).await;
-                }
-                // This is important to allow the remote endpoint to
-                // arbitrarily send error responses back to specific
-                // subscriptions.
-                SubscriptionState::Active => {
-                    if let Some(event_tx) = self.router.get_active_subscription_mut(&subs_id) {
-                        // TODO(thane): Does an error here warrant terminating the subscription, or the driver?
-                        let _ = event_tx.send(Err(e)).await;
+                    SubscriptionState::Cancelling => {
+                        let _ = self.router.confirm_remove(subs_id.as_ref()).await;
                     }
-                }
-                SubscriptionState::NotFound => (),
-            },
+                    SubscriptionState::Active => {
+                        if let Some(event_tx) = self.router.get_active_subscription_mut(&subs_id) {
+                            let _ = event_tx.send(
+                                Err(Error::websocket_error(
+                                    "failed to parse incoming response from remote WebSocket endpoint - does this client support the remote's RPC version?",
+                                )),
+                            ).await;
+                        }
+                    }
+                },
+                Err(e) => match state {
+                    SubscriptionState::Pending => {
+                        let _ = self.router.cancel_add(subs_id.as_ref(), e).await;
+                    }
+                    SubscriptionState::Cancelling => {
+                        let _ = self.router.cancel_remove(subs_id.as_ref(), e).await;
+                    }
+                    // This is important to allow the remote endpoint to
+                    // arbitrarily send error responses back to specific
+                    // subscriptions.
+                    SubscriptionState::Active => {
+                        if let Some(event_tx) = self.router.get_active_subscription_mut(&subs_id) {
+                            // TODO(thane): Does an error here warrant terminating the subscription, or the driver?
+                            let _ = event_tx.send(Err(e)).await;
+                        }
+                    }
+                },
+            }
         }
-
-        Ok(())
     }
 
     async fn pong(&mut self, v: Vec<u8>) -> Result<()> {
