@@ -13,7 +13,6 @@ pub mod vote;
 
 pub use commit::Commit;
 pub use fuzzer::Fuzzer;
-pub use fuzzer::FuzzIter;
 pub use generator::Generator;
 pub use header::Header;
 pub use time::Time;

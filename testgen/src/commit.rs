@@ -102,7 +102,7 @@ impl Generator<block::Commit> for Commit {
         }
     }
 
-    fn generate_fuzz<'a>(&self, _fuzzer: impl Fuzzer<'a>) -> Result<block::Commit, SimpleError> {
+    fn generate_fuzz(&self, mut _fuzzer: impl Fuzzer) -> Result<block::Commit, SimpleError> {
         let header = match &self.header {
             None => bail!("failed to generate commit: header is missing"),
             Some(h) => h,

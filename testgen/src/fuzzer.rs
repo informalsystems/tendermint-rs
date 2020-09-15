@@ -1,24 +1,42 @@
 /// A Fuzzer is anything that can produce an infinite random sequence of numbers.
 /// 0 means no fuzzing, and any other number means fuzzing depending on the number.
-pub trait Fuzzer<'a>: Iterator<Item = u64> {
+pub trait Fuzzer {
+    fn next(&mut self) -> u64;
 }
 
-pub struct FuzzIter<'a> {
-    iter: &'a mut dyn Iterator<Item = u64>
+pub struct NoFuzz {
 }
 
-impl<'a> FuzzIter<'a> {
-    pub fn from<T: 'a + Iterator<Item=u64>>(iter: &'a mut T) -> Self {
-        Self {
-            iter
+impl NoFuzz {
+    pub fn new() -> Self {
+        NoFuzz {}
+    }
+}
+
+impl Fuzzer for NoFuzz {
+    fn next(&mut self) -> u64 {
+        0
+    }
+}
+
+pub struct LogFuzzer {
+    fuzzer: Box<dyn Fuzzer>,
+    log: Vec<u64>
+}
+
+impl LogFuzzer {
+    pub fn new(fuzzer: impl Fuzzer + 'static) -> Self {
+        LogFuzzer {
+            fuzzer: Box::new(fuzzer),
+            log: vec![]
         }
     }
 }
 
-impl Iterator for FuzzIter<'_> {
-    type Item = u64;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+impl Fuzzer for LogFuzzer {
+    fn next(&mut self) -> u64 {
+        let next = self.fuzzer.next();
+        self.log.push(next);
+        next
     }
 }
-impl<'a> Fuzzer<'a> for FuzzIter<'a> {}

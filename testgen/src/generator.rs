@@ -1,4 +1,4 @@
-use crate::{Fuzzer, FuzzIter};
+use crate::{fuzzer, Fuzzer};
 use serde::Serialize;
 use simple_error::*;
 use std::str::FromStr;
@@ -12,10 +12,10 @@ pub trait Generator<Output: Serialize>: FromStr<Err = SimpleError> + Clone {
 
     /// Generate the complex object from this companion object.
     fn generate(&self) -> Result<Output, SimpleError> {
-        self.generate_fuzz(FuzzIter::from(&mut std::iter::repeat(0u64)))
+        self.generate_fuzz(fuzzer::NoFuzz::new())
     }
 
-    /// Generate the complex object from this companion object.
+    /// Generate and encode the complex object from this companion object.
     fn encode(&self) -> Result<String, SimpleError> {
         let res = self.generate()?;
         Ok(try_with!(
@@ -25,5 +25,5 @@ pub trait Generator<Output: Serialize>: FromStr<Err = SimpleError> + Clone {
     }
 
     /// Generate and fuzz the complex object from this companion object.
-    fn generate_fuzz<'a>(&self, fuzzer: impl Fuzzer<'a>) -> Result<Output, SimpleError>;
+    fn generate_fuzz(&self, fuzzer: impl Fuzzer) -> Result<Output, SimpleError>;
 }

@@ -34,7 +34,7 @@ impl Generator<tendermint::Time> for Time {
         }
     }
 
-    fn generate_fuzz<'a>(&self, _fuzzer: impl Fuzzer<'a>) -> Result<tendermint::Time, SimpleError> {
+    fn generate_fuzz(&self, mut _fuzzer: impl Fuzzer) -> Result<tendermint::Time, SimpleError> {
         let time = match &self.secs {
             None => bail!("time is missing"),
             Some(secs) => *secs,
