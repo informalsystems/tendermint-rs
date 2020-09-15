@@ -211,6 +211,9 @@ pub enum SubscriptionState {
 /// [`Event`]: ./event/struct.Event.html
 #[derive(Debug)]
 pub struct SubscriptionRouter {
+    // A map of subscription queries to collections of subscription IDs and
+    // their result channels. Used for publishing events relating to a specific
+    // query.
     subscriptions: HashMap<String, HashMap<SubscriptionId, ChannelTx<Result<Event>>>>,
     // A map of JSON-RPC request IDs (for `/subscribe` requests) to pending
     // subscription requests.
