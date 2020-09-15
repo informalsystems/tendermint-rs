@@ -2,11 +2,12 @@
 
 use contracts::{contract_trait, post};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "rpc-client")]
-use tendermint_rpc as rpc;
+use thiserror::Error;
+
 #[cfg(feature = "rpc-client")]
 use tendermint_rpc::Client;
-use thiserror::Error;
+
+use tendermint_rpc as rpc;
 
 use crate::types::{Height, LightBlock, PeerId};
 
@@ -31,7 +32,6 @@ impl From<Height> for AtHeight {
 /// I/O errors
 #[derive(Clone, Debug, Error, PartialEq, Serialize, Deserialize)]
 pub enum IoError {
-    #[cfg(feature = "rpc-client")]
     /// Wrapper for a `tendermint::rpc::Error`.
     #[error(transparent)]
     IoError(#[from] rpc::Error),
