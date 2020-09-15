@@ -1,4 +1,4 @@
-use crate::{helpers::*, validator::generate_validators, Generator, Validator};
+use crate::{helpers::*, validator::generate_validators, Fuzzer, Generator, Validator};
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
@@ -73,7 +73,7 @@ impl Generator<block::Header> for Header {
         }
     }
 
-    fn generate(&self) -> Result<block::Header, SimpleError> {
+    fn generate_fuzz<'a>(&self, _fuzzer: impl Fuzzer<'a>) -> Result<block::Header, SimpleError> {
         let vals = match &self.validators {
             None => bail!("validator array is missing"),
             Some(vals) => vals,

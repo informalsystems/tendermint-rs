@@ -6,7 +6,7 @@ use std::iter::FromIterator;
 use tendermint::block;
 
 use crate::validator::sort_validators;
-use crate::{helpers::*, Generator, Header, Validator, Vote};
+use crate::{helpers::*, Fuzzer, Generator, Header, Validator, Vote};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Commit {
@@ -102,7 +102,7 @@ impl Generator<block::Commit> for Commit {
         }
     }
 
-    fn generate(&self) -> Result<block::Commit, SimpleError> {
+    fn generate_fuzz<'a>(&self, _fuzzer: impl Fuzzer<'a>) -> Result<block::Commit, SimpleError> {
         let header = match &self.header {
             None => bail!("failed to generate commit: header is missing"),
             Some(h) => h,

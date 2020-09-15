@@ -4,6 +4,7 @@ pub mod helpers;
 /// Helper types for generating Tendermint datastructures
 pub mod commit;
 pub mod consensus;
+pub mod fuzzer;
 pub mod generator;
 pub mod header;
 pub mod time;
@@ -11,6 +12,8 @@ pub mod validator;
 pub mod vote;
 
 pub use commit::Commit;
+pub use fuzzer::Fuzzer;
+pub use fuzzer::FuzzIter;
 pub use generator::Generator;
 pub use header::Header;
 pub use time::Time;

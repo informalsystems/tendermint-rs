@@ -1,10 +1,11 @@
-use crate::{helpers::*, Generator};
+use crate::{helpers::*, Fuzzer, Generator};
 use ed25519_dalek::SecretKey as Ed25519SecretKey;
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
 use tendermint::consensus::state::Ordering;
 use tendermint::{account, private_key, public_key, public_key::PublicKey, validator, vote};
+use tendermint::validator::Info;
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Validator {
@@ -101,7 +102,7 @@ impl Generator<validator::Info> for Validator {
         }
     }
 
-    fn generate(&self) -> Result<validator::Info, SimpleError> {
+    fn generate_fuzz<'a>(&self, _fuzzer: impl Fuzzer<'a>) -> Result<Info, SimpleError> {
         let keypair = self.get_private_key()?;
         let info = validator::Info {
             address: account::Id::from(keypair.public),
