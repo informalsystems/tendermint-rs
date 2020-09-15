@@ -34,7 +34,7 @@ impl From<Height> for AtHeight {
 pub enum IoError {
     /// Wrapper for a `tendermint::rpc::Error`.
     #[error(transparent)]
-    IoError(#[from] rpc::Error),
+    RpcError(#[from] rpc::Error),
 
     /// Given height is invalid
     #[error("invalid height: {0}")]
@@ -146,7 +146,7 @@ mod prod {
 
             match res {
                 Ok(response) => Ok(response.signed_header),
-                Err(err) => Err(IoError::IoError(err)),
+                Err(err) => Err(IoError::RpcError(err)),
             }
         }
 
@@ -171,7 +171,7 @@ mod prod {
 
             match res {
                 Ok(response) => Ok(TMValidatorSet::new(response.validators)),
-                Err(err) => Err(IoError::IoError(err)),
+                Err(err) => Err(IoError::RpcError(err)),
             }
         }
 

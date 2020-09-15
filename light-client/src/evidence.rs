@@ -43,7 +43,7 @@ mod prod {
 
             match res {
                 Ok(response) => Ok(response.hash),
-                Err(err) => Err(IoError::IoError(err)),
+                Err(err) => Err(IoError::RpcError(err)),
             }
         }
     }
