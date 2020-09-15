@@ -447,7 +447,7 @@ mod test {
         }
 
         async fn terminate(&mut self) {
-            while self.handlers.len() > 0 {
+            while !self.handlers.is_empty() {
                 let handler = match self.handlers.pop() {
                     Some(h) => h,
                     None => break,
@@ -556,43 +556,44 @@ mod test {
 
         async fn handle_incoming_text_msg(&mut self, msg: String) -> Option<Result<()>> {
             match serde_json::from_str::<serde_json::Value>(&msg) {
-                Ok(json_msg) => match json_msg.get("method") {
-                    Some(json_method) => match Method::from_str(json_method.as_str().unwrap()) {
-                        Ok(method) => match method {
-                            Method::Subscribe => {
-                                let req = serde_json::from_str::<
-                                    request::Wrapper<subscribe::Request>,
-                                >(&msg)
-                                .unwrap();
+                Ok(json_msg) => {
+                    if let Some(json_method) = json_msg.get("method") {
+                        match Method::from_str(json_method.as_str().unwrap()) {
+                            Ok(method) => match method {
+                                Method::Subscribe => {
+                                    let req = serde_json::from_str::<
+                                        request::Wrapper<subscribe::Request>,
+                                    >(&msg)
+                                    .unwrap();
 
-                                self.add_subscription(
-                                    req.params().query.clone(),
-                                    req.id().clone().try_into().unwrap(),
+                                    self.add_subscription(
+                                        req.params().query.clone(),
+                                        req.id().clone().try_into().unwrap(),
+                                    );
+                                    self.send(req.id().clone(), subscribe::Response {}).await;
+                                }
+                                Method::Unsubscribe => {
+                                    let req = serde_json::from_str::<
+                                        request::Wrapper<unsubscribe::Request>,
+                                    >(&msg)
+                                    .unwrap();
+
+                                    self.remove_subscription(req.params().query.clone());
+                                    self.send(req.id().clone(), unsubscribe::Response {}).await;
+                                }
+                                _ => {
+                                    println!("Unsupported method in incoming request: {}", &method);
+                                }
+                            },
+                            Err(e) => {
+                                println!(
+                                    "Unexpected method in incoming request: {} ({})",
+                                    json_method, e
                                 );
-                                self.send(req.id().clone(), subscribe::Response {}).await;
                             }
-                            Method::Unsubscribe => {
-                                let req = serde_json::from_str::<
-                                    request::Wrapper<unsubscribe::Request>,
-                                >(&msg)
-                                .unwrap();
-
-                                self.remove_subscription(req.params().query.clone());
-                                self.send(req.id().clone(), unsubscribe::Response {}).await;
-                            }
-                            _ => {
-                                println!("Unsupported method in incoming request: {}", &method);
-                            }
-                        },
-                        Err(e) => {
-                            println!(
-                                "Unexpected method in incoming request: {} ({})",
-                                json_method, e
-                            );
                         }
-                    },
-                    None => (),
-                },
+                    }
+                }
                 Err(e) => {
                     println!("Failed to parse incoming request: {} ({})", &msg, e);
                 }
@@ -647,11 +648,11 @@ mod test {
 
     #[tokio::test]
     async fn websocket_client_happy_path() {
-        let test_events = vec![
-            read_event("event_new_block_1").await,
-            read_event("event_new_block_2").await,
-            read_event("event_new_block_3").await,
-        ];
+        let event1 = read_event("event_new_block_1").await;
+        let event2 = read_event("event_new_block_2").await;
+        let event3 = read_event("event_new_block_3").await;
+        let test_events = vec![event1, event2, event3];
+
         println!("Starting WebSocket server...");
         let mut server = TestServer::new("127.0.0.1:0").await;
         println!("Creating client RPC WebSocket connection...");

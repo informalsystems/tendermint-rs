@@ -199,11 +199,10 @@ mod test {
     #[tokio::test]
     async fn mock_subscription_client() {
         let mut client = MockSubscriptionClient::default();
-        let events = vec![
-            read_event("event_new_block_1").await,
-            read_event("event_new_block_2").await,
-            read_event("event_new_block_3").await,
-        ];
+        let event1 = read_event("event_new_block_1").await;
+        let event2 = read_event("event_new_block_2").await;
+        let event3 = read_event("event_new_block_3").await;
+        let events = vec![event1, event2, event3];
 
         let subs1 = client
             .subscribe("tm.event='NewBlock'".to_string())
@@ -221,8 +220,8 @@ mod test {
             client.publish(ev.clone()).await.unwrap();
         }
 
-        let (subs1_events, subs2_events) =
-            (subs1_events.await.unwrap(), subs2_events.await.unwrap());
+        let subs1_events = subs1_events.await.unwrap();
+        let subs2_events = subs2_events.await.unwrap();
 
         assert_eq!(3, subs1_events.len());
         assert_eq!(3, subs2_events.len());

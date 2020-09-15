@@ -139,9 +139,11 @@ mod test {
 
     #[tokio::test]
     async fn mock_client() {
+        let abci_info_fixture = read_json_fixture("abci_info").await;
+        let block_fixture = read_json_fixture("block").await;
         let matcher = MockRequestMethodMatcher::default()
-            .map(Method::AbciInfo, Ok(read_json_fixture("abci_info").await))
-            .map(Method::Block, Ok(read_json_fixture("block").await));
+            .map(Method::AbciInfo, Ok(abci_info_fixture))
+            .map(Method::Block, Ok(block_fixture));
         let client = MockClient::new(matcher);
 
         let abci_info = client.abci_info().await.unwrap();
