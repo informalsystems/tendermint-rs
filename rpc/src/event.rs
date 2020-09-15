@@ -37,23 +37,23 @@ pub enum EventData {
     },
     #[serde(alias = "tendermint/event/Tx")]
     Tx {
-        tx_result: TxResult,
+        tx_result: TxInfo,
     },
     GenericJSONEvent(serde_json::Value),
 }
 
-/// Tx Result
+/// Transaction result info.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct TxResult {
+pub struct TxInfo {
     pub height: String,
     pub index: i64,
     pub tx: String,
-    pub result: TxResultResult,
+    pub result: TxResult,
 }
 
-/// TX Results Results
+/// Transaction result.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct TxResultResult {
+pub struct TxResult {
     pub log: String,
     pub gas_wanted: String,
     pub gas_used: String,
