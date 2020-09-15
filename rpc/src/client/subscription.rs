@@ -169,15 +169,15 @@ impl TryInto<SubscriptionId> for Id {
     }
 }
 
-impl AsRef<str> for SubscriptionId {
-    fn as_ref(&self) -> &str {
-        self.0.as_ref()
-    }
-}
-
 impl From<&str> for SubscriptionId {
     fn from(s: &str) -> Self {
         Self(s.to_string())
+    }
+}
+
+impl SubscriptionId {
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
     }
 }
 
@@ -504,7 +504,7 @@ mod test {
 
         assert!(router.subscription_state(&subs_id.to_string()).is_none());
         router.pending_add(
-            subs_id.as_ref(),
+            subs_id.as_str(),
             &subs_id,
             query.clone(),
             event_tx,
@@ -512,15 +512,15 @@ mod test {
         );
         assert_eq!(
             SubscriptionState::Pending,
-            router.subscription_state(subs_id.as_ref()).unwrap()
+            router.subscription_state(subs_id.as_str()).unwrap()
         );
         router.publish(ev.clone()).await;
         must_not_recv(&mut event_rx, 50).await;
 
-        router.confirm_add(subs_id.as_ref()).await.unwrap();
+        router.confirm_add(subs_id.as_str()).await.unwrap();
         assert_eq!(
             SubscriptionState::Active,
-            router.subscription_state(subs_id.as_ref()).unwrap()
+            router.subscription_state(subs_id.as_str()).unwrap()
         );
         must_not_recv(&mut event_rx, 50).await;
         let _ = must_recv(&mut result_rx, 500).await;
@@ -530,14 +530,14 @@ mod test {
         assert_eq!(ev, received_ev);
 
         let (result_tx, mut result_rx) = unbounded();
-        router.pending_remove(subs_id.as_ref(), &subs_id, query.clone(), result_tx);
+        router.pending_remove(subs_id.as_str(), &subs_id, query.clone(), result_tx);
         assert_eq!(
             SubscriptionState::Cancelling,
-            router.subscription_state(subs_id.as_ref()).unwrap(),
+            router.subscription_state(subs_id.as_str()).unwrap(),
         );
 
-        router.confirm_remove(subs_id.as_ref()).await.unwrap();
-        assert!(router.subscription_state(subs_id.as_ref()).is_none());
+        router.confirm_remove(subs_id.as_str()).await.unwrap();
+        assert!(router.subscription_state(subs_id.as_str()).is_none());
         router.publish(ev.clone()).await;
         if must_recv(&mut result_rx, 500).await.is_err() {
             panic!("we should have received successful confirmation of the unsubscribe request")
@@ -554,21 +554,21 @@ mod test {
         let mut ev = read_event("event_new_block_1").await;
         ev.query = query.clone();
 
-        assert!(router.subscription_state(subs_id.as_ref()).is_none());
-        router.pending_add(subs_id.as_ref(), &subs_id, query, event_tx, result_tx);
+        assert!(router.subscription_state(subs_id.as_str()).is_none());
+        router.pending_add(subs_id.as_str(), &subs_id, query, event_tx, result_tx);
         assert_eq!(
             SubscriptionState::Pending,
-            router.subscription_state(subs_id.as_ref()).unwrap()
+            router.subscription_state(subs_id.as_str()).unwrap()
         );
         router.publish(ev.clone()).await;
         must_not_recv(&mut event_rx, 50).await;
 
         let cancel_error = Error::client_internal_error("cancelled");
         router
-            .cancel_add(subs_id.as_ref(), cancel_error.clone())
+            .cancel_add(subs_id.as_str(), cancel_error.clone())
             .await
             .unwrap();
-        assert!(router.subscription_state(subs_id.as_ref()).is_none());
+        assert!(router.subscription_state(subs_id.as_str()).is_none());
         assert_eq!(Err(cancel_error), must_recv(&mut result_rx, 500).await);
 
         router.publish(ev.clone()).await;

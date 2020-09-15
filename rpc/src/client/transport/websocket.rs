@@ -226,7 +226,7 @@ impl WebSocketSubscriptionDriver {
             return Ok(());
         }
         self.router
-            .pending_add(id.as_ref(), &id, query, event_tx, result_tx);
+            .pending_add(id.as_str(), &id, query, event_tx, result_tx);
         Ok(())
     }
 
@@ -241,7 +241,7 @@ impl WebSocketSubscriptionDriver {
             return Ok(());
         }
         self.router
-            .pending_remove(id.as_ref(), &id, term.query.clone(), term.result_tx);
+            .pending_remove(id.as_str(), &id, term.query.clone(), term.result_tx);
         Ok(())
     }
 
@@ -275,14 +275,14 @@ impl WebSocketSubscriptionDriver {
             // Just ignore the message if it doesn't have an intelligible ID.
             Err(_) => return,
         };
-        if let Some(state) = self.router.subscription_state(subs_id.as_ref()) {
+        if let Some(state) = self.router.subscription_state(subs_id.as_str()) {
             match wrapper.into_result() {
                 Ok(_) => match state {
                     SubscriptionState::Pending => {
-                        let _ = self.router.confirm_add(subs_id.as_ref()).await;
+                        let _ = self.router.confirm_add(subs_id.as_str()).await;
                     }
                     SubscriptionState::Cancelling => {
-                        let _ = self.router.confirm_remove(subs_id.as_ref()).await;
+                        let _ = self.router.confirm_remove(subs_id.as_str()).await;
                     }
                     SubscriptionState::Active => {
                         if let Some(event_tx) = self.router.get_active_subscription_mut(&subs_id) {
@@ -296,10 +296,10 @@ impl WebSocketSubscriptionDriver {
                 },
                 Err(e) => match state {
                     SubscriptionState::Pending => {
-                        let _ = self.router.cancel_add(subs_id.as_ref(), e).await;
+                        let _ = self.router.cancel_add(subs_id.as_str(), e).await;
                     }
                     SubscriptionState::Cancelling => {
-                        let _ = self.router.cancel_remove(subs_id.as_ref(), e).await;
+                        let _ = self.router.cancel_remove(subs_id.as_str(), e).await;
                     }
                     // This is important to allow the remote endpoint to
                     // arbitrarily send error responses back to specific
