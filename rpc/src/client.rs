@@ -1,46 +1,55 @@
-//! Tendermint RPC client
+//! Tendermint RPC client.
 
-use bytes::buf::ext::BufExt;
-use hyper::header;
+#[cfg(feature = "subscription")]
+mod subscription;
+#[cfg(feature = "subscription")]
+pub use subscription::{Subscription, SubscriptionClient, SubscriptionId, SubscriptionRouter};
+#[cfg(feature = "subscription")]
+pub mod sync;
 
+mod transport;
+#[cfg(feature = "transport_http")]
+pub use transport::http::HttpClient;
+#[cfg(all(feature = "subscription", feature = "transport_mock"))]
+pub use transport::mock::MockSubscriptionClient;
+#[cfg(feature = "transport_mock")]
+pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
+#[cfg(all(feature = "subscription", feature = "transport_websocket"))]
+pub use transport::websocket::WebSocketClient;
+
+use crate::endpoint::*;
+use crate::{Request, Result};
+use async_trait::async_trait;
 use tendermint::abci::{self, Transaction};
 use tendermint::block::Height;
 use tendermint::evidence::Evidence;
-use tendermint::net;
 use tendermint::Genesis;
 
-use crate::{endpoint::*, Error, Request, Response};
-
-pub mod event_listener;
-
-/// Tendermint RPC client.
+/// Provides lightweight access to the Tendermint RPC. It gives access to all
+/// endpoints with the exception of the event subscription-related ones.
 ///
-/// Presently supports JSONRPC via HTTP.
-#[derive(Clone, Debug)]
-pub struct Client {
-    /// Address of the RPC server
-    address: net::Address,
-}
-
-impl Client {
-    /// Create a new Tendermint RPC client, connecting to the given address
-    pub fn new(address: net::Address) -> Self {
-        Self { address }
-    }
-
+/// To access event subscription capabilities, use a client that implements the
+/// [`SubscriptionClient`] trait.
+///
+/// [`SubscriptionClient`]: trait.SubscriptionClient.html
+#[async_trait]
+pub trait Client: ClosableClient {
     /// `/abci_info`: get information about the ABCI application.
-    pub async fn abci_info(&self) -> Result<abci_info::AbciInfo, Error> {
+    async fn abci_info(&self) -> Result<abci_info::AbciInfo> {
         Ok(self.perform(abci_info::Request).await?.response)
     }
 
     /// `/abci_query`: query the ABCI application
-    pub async fn abci_query(
+    async fn abci_query<V>(
         &self,
         path: Option<abci::Path>,
-        data: impl Into<Vec<u8>>,
+        data: V,
         height: Option<Height>,
         prove: bool,
-    ) -> Result<abci_query::AbciQuery, Error> {
+    ) -> Result<abci_query::AbciQuery>
+    where
+        V: Into<Vec<u8>> + Send,
+    {
         Ok(self
             .perform(abci_query::Request::new(path, data, height, prove))
             .await?
@@ -48,26 +57,29 @@ impl Client {
     }
 
     /// `/block`: get block at a given height.
-    pub async fn block(&self, height: impl Into<Height>) -> Result<block::Response, Error> {
+    async fn block<H>(&self, height: H) -> Result<block::Response>
+    where
+        H: Into<Height> + Send,
+    {
         self.perform(block::Request::new(height.into())).await
     }
 
     /// `/block`: get the latest block.
-    pub async fn latest_block(&self) -> Result<block::Response, Error> {
+    async fn latest_block(&self) -> Result<block::Response> {
         self.perform(block::Request::default()).await
     }
 
     /// `/block_results`: get ABCI results for a block at a particular height.
-    pub async fn block_results<H>(&self, height: H) -> Result<block_results::Response, Error>
+    async fn block_results<H>(&self, height: H) -> Result<block_results::Response>
     where
-        H: Into<Height>,
+        H: Into<Height> + Send,
     {
         self.perform(block_results::Request::new(height.into()))
             .await
     }
 
     /// `/block_results`: get ABCI results for the latest block.
-    pub async fn latest_block_results(&self) -> Result<block_results::Response, Error> {
+    async fn latest_block_results(&self) -> Result<block_results::Response> {
         self.perform(block_results::Request::default()).await
     }
 
@@ -76,124 +88,98 @@ impl Client {
     /// Block headers are returned in descending order (highest first).
     ///
     /// Returns at most 20 items.
-    pub async fn blockchain(
-        &self,
-        min: impl Into<Height>,
-        max: impl Into<Height>,
-    ) -> Result<blockchain::Response, Error> {
+    async fn blockchain<H>(&self, min: H, max: H) -> Result<blockchain::Response>
+    where
+        H: Into<Height> + Send,
+    {
         // TODO(tarcieri): return errors for invalid params before making request?
         self.perform(blockchain::Request::new(min.into(), max.into()))
             .await
     }
 
     /// `/broadcast_tx_async`: broadcast a transaction, returning immediately.
-    pub async fn broadcast_tx_async(
-        &self,
-        tx: Transaction,
-    ) -> Result<broadcast::tx_async::Response, Error> {
+    async fn broadcast_tx_async(&self, tx: Transaction) -> Result<broadcast::tx_async::Response> {
         self.perform(broadcast::tx_async::Request::new(tx)).await
     }
 
     /// `/broadcast_tx_sync`: broadcast a transaction, returning the response
     /// from `CheckTx`.
-    pub async fn broadcast_tx_sync(
-        &self,
-        tx: Transaction,
-    ) -> Result<broadcast::tx_sync::Response, Error> {
+    async fn broadcast_tx_sync(&self, tx: Transaction) -> Result<broadcast::tx_sync::Response> {
         self.perform(broadcast::tx_sync::Request::new(tx)).await
     }
 
     /// `/broadcast_tx_sync`: broadcast a transaction, returning the response
     /// from `CheckTx`.
-    pub async fn broadcast_tx_commit(
-        &self,
-        tx: Transaction,
-    ) -> Result<broadcast::tx_commit::Response, Error> {
+    async fn broadcast_tx_commit(&self, tx: Transaction) -> Result<broadcast::tx_commit::Response> {
         self.perform(broadcast::tx_commit::Request::new(tx)).await
     }
 
     /// `/commit`: get block commit at a given height.
-    pub async fn commit(&self, height: impl Into<Height>) -> Result<commit::Response, Error> {
+    async fn commit<H>(&self, height: H) -> Result<commit::Response>
+    where
+        H: Into<Height> + Send,
+    {
         self.perform(commit::Request::new(height.into())).await
     }
 
     /// `/validators`: get validators a given height.
-    pub async fn validators<H>(&self, height: H) -> Result<validators::Response, Error>
+    async fn validators<H>(&self, height: H) -> Result<validators::Response>
     where
-        H: Into<Height>,
+        H: Into<Height> + Send,
     {
         self.perform(validators::Request::new(height.into())).await
     }
 
     /// `/commit`: get the latest block commit
-    pub async fn latest_commit(&self) -> Result<commit::Response, Error> {
+    async fn latest_commit(&self) -> Result<commit::Response> {
         self.perform(commit::Request::default()).await
     }
 
     /// `/health`: get node health.
     ///
     /// Returns empty result (200 OK) on success, no response in case of an error.
-    pub async fn health(&self) -> Result<(), Error> {
+    async fn health(&self) -> Result<()> {
         self.perform(health::Request).await?;
         Ok(())
     }
 
     /// `/genesis`: get genesis file.
-    pub async fn genesis(&self) -> Result<Genesis, Error> {
+    async fn genesis(&self) -> Result<Genesis> {
         Ok(self.perform(genesis::Request).await?.genesis)
     }
 
     /// `/net_info`: obtain information about P2P and other network connections.
-    pub async fn net_info(&self) -> Result<net_info::Response, Error> {
+    async fn net_info(&self) -> Result<net_info::Response> {
         self.perform(net_info::Request).await
     }
 
     /// `/status`: get Tendermint status including node info, pubkey, latest
     /// block hash, app hash, block height and time.
-    pub async fn status(&self) -> Result<status::Response, Error> {
+    async fn status(&self) -> Result<status::Response> {
         self.perform(status::Request).await
     }
 
     /// `/broadcast_evidence`: broadcast an evidence.
-    pub async fn broadcast_evidence(&self, e: Evidence) -> Result<evidence::Response, Error> {
+    async fn broadcast_evidence(&self, e: Evidence) -> Result<evidence::Response> {
         self.perform(evidence::Request::new(e)).await
     }
 
     /// Perform a request against the RPC endpoint
-    pub async fn perform<R>(&self, request: R) -> Result<R::Response, Error>
+    async fn perform<R>(&self, request: R) -> Result<R::Response>
     where
-        R: Request,
-    {
-        let request_body = request.into_json();
+        R: Request;
+}
 
-        let (host, port) = match &self.address {
-            net::Address::Tcp { host, port, .. } => (host, port),
-            other => {
-                return Err(Error::invalid_params(&format!(
-                    "invalid RPC address: {:?}",
-                    other
-                )))
-            }
-        };
-
-        let mut request = hyper::Request::builder()
-            .method("POST")
-            .uri(&format!("http://{}:{}/", host, port))
-            .body(hyper::Body::from(request_body.into_bytes()))?;
-
-        {
-            let headers = request.headers_mut();
-            headers.insert(header::CONTENT_TYPE, "application/json".parse().unwrap());
-            headers.insert(
-                header::USER_AGENT,
-                format!("tendermint.rs/{}", env!("CARGO_PKG_VERSION"))
-                    .parse()
-                    .unwrap(),
-            );
-        }
-        let http_client = hyper::Client::builder().build_http();
-        let response = http_client.request(request).await?;
-        let response_body = hyper::body::aggregate(response.into_body()).await?;
-        R::Response::from_reader(response_body.reader())
-    }
+/// A client that provides a self-consuming `close` method, to allow for
+/// graceful termination.
+///
+/// This trait acts as a common trait to both the [`Client`] and
+/// [`SubscriptionClient`] traits.
+///
+/// [`Client`]: trait.Client.html
+/// [`SubscriptionClient`]: trait.SubscriptionClient.html
+#[async_trait]
+pub trait ClosableClient {
+    /// Gracefully close the client.
+    async fn close(self) -> Result<()>;
 }

@@ -2,7 +2,7 @@
 //! Byzantine fault tolerant applications written in any programming language.
 //! This crate provides core types for representing information about Tendermint
 //! blockchain networks, including chain information types, secret connections,
-//! and remote procedure calls (JSONRPC).
+//! and remote procedure calls (JSON-RPC).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(
@@ -15,8 +15,8 @@
 )]
 #![forbid(unsafe_code)]
 #![doc(
-    html_root_url = "https://docs.rs/tendermint/0.15.0",
-    html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs.png"
+    html_root_url = "https://docs.rs/tendermint/0.16.0",
+    html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs_3961x4001.png"
 )]
 
 #[macro_use]

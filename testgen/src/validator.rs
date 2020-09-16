@@ -3,12 +3,8 @@ use ed25519_dalek::SecretKey as Ed25519SecretKey;
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
-use tendermint::{
-    account, private_key,
-    public_key::{self, PublicKey},
-    validator, vote,
-};
-use tendermint_light_client::types::ValidatorSet;
+use tendermint::consensus::state::Ordering;
+use tendermint::{account, private_key, public_key, public_key::PublicKey, validator, vote};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Validator {
@@ -81,6 +77,21 @@ impl std::cmp::PartialEq for Validator {
 }
 impl std::cmp::Eq for Validator {}
 
+impl std::cmp::Ord for Validator {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.generate()
+            .unwrap()
+            .address
+            .cmp(&other.generate().unwrap().address)
+    }
+}
+
+impl std::cmp::PartialOrd for Validator {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl Generator<validator::Info> for Validator {
     fn merge_with_default(self, default: Self) -> Self {
         Validator {
@@ -107,27 +118,18 @@ impl Generator<validator::Info> for Validator {
 
 /// A helper function to generate multiple validators at once.
 pub fn generate_validators(vals: &[Validator]) -> Result<Vec<validator::Info>, SimpleError> {
-    Ok(vals
+    let sorted = sort_validators(vals);
+    Ok(sorted
         .iter()
         .map(|v| v.generate())
         .collect::<Result<Vec<validator::Info>, SimpleError>>()?)
 }
 
-/// A helper function to generate validator set from a list of validator ids.
-pub fn generate_validator_set(
-    val_ids: Vec<&str>,
-) -> Result<(ValidatorSet, Vec<Validator>), SimpleError> {
-    let mut vals: Vec<Validator> = Vec::new();
-
-    for id in val_ids {
-        vals.push(Validator::new(id))
-    }
-
-    let validators = match generate_validators(&vals) {
-        Err(e) => bail!("Failed to generate validators with error: {}", e),
-        Ok(v) => v,
-    };
-    Ok((ValidatorSet::new(validators), vals))
+/// A helper function to sort validators according to the Tendermint specs.
+pub fn sort_validators(vals: &[Validator]) -> Vec<Validator> {
+    let mut sorted = vals.to_owned();
+    sorted.sort_by_key(|v| v.generate().unwrap().address);
+    sorted
 }
 
 #[cfg(test)]

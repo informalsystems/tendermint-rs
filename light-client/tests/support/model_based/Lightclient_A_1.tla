@@ -1,0 +1,1 @@
+../../../../docs/spec/lightclient/verification/Lightclient_A_1.tla

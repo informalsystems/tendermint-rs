@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-node"
-version    = "0.15.0"
+version    = "0.16.0"
 edition    = "2018"
 license    = "Apache-2.0"
 repository = "https://github.com/informalsystems/tendermint-rs"
@@ -18,7 +18,7 @@ description = """
     The Tendermint light-node wraps the light-client crate into a command-line
     interface tool.
     It can be used to initialize and start a standalone light client daemon and
-    exposes a JSONRPC endpoint from which you can query the current state of the
+    exposes a JSON-RPC endpoint from which you can query the current state of the
     light node.
     """
 
@@ -38,9 +38,9 @@ jsonrpc-derive = "14.2"
 serde = { version = "1", features = ["serde_derive"] }
 serde_json = "1.0"
 sled = "0.34.3"
-tendermint = { version = "0.15.0", path = "../tendermint" }
-tendermint-light-client = { version = "0.15.0", path = "../light-client" }
-tendermint-rpc = { version = "0.15.0", path = "../rpc", features = [ "client" ] }
+tendermint = { version = "0.16.0", path = "../tendermint" }
+tendermint-light-client = { version = "0.16.0", path = "../light-client" }
+tendermint-rpc = { version = "0.16.0", path = "../rpc", features = [ "client" ] }
 thiserror = "1.0"
 tokio = { version = "0.2", features = ["full"] }
 

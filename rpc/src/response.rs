@@ -1,29 +1,29 @@
-//! JSONRPC response types
+//! JSON-RPC response types
 
 use super::{Error, Id, Version};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::io::Read;
 
-/// JSONRPC responses
+/// JSON-RPC responses
 pub trait Response: Serialize + DeserializeOwned + Sized {
-    /// Parse a JSONRPC response from a JSON string
+    /// Parse a JSON-RPC response from a JSON string
     fn from_string(response: impl AsRef<[u8]>) -> Result<Self, Error> {
         let wrapper: Wrapper<Self> =
             serde_json::from_slice(response.as_ref()).map_err(Error::parse_error)?;
         wrapper.into_result()
     }
 
-    /// Parse a JSONRPC response from an `io::Reader`
+    /// Parse a JSON-RPC response from an `io::Reader`
     fn from_reader(reader: impl Read) -> Result<Self, Error> {
         let wrapper: Wrapper<Self> = serde_json::from_reader(reader).map_err(Error::parse_error)?;
         wrapper.into_result()
     }
 }
 
-/// JSONRPC response wrapper (i.e. message envelope)
+/// JSON-RPC response wrapper (i.e. message envelope)
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Wrapper<R> {
-    /// JSONRPC version
+    /// JSON-RPC version
     jsonrpc: Version,
 
     /// Identifier included in request
@@ -40,12 +40,12 @@ impl<R> Wrapper<R>
 where
     R: Response,
 {
-    /// Get JSONRPC version
+    /// Get JSON-RPC version
     pub fn version(&self) -> &Version {
         &self.jsonrpc
     }
 
-    /// Get JSONRPC ID
+    /// Get JSON-RPC ID
     #[allow(dead_code)]
     pub fn id(&self) -> &Id {
         &self.id
@@ -64,6 +64,16 @@ where
             Err(Error::server_error(
                 "server returned malformatted JSON (no 'result' or 'error')",
             ))
+        }
+    }
+
+    #[cfg(test)]
+    pub fn new_with_id(id: Id, result: Option<R>, error: Option<Error>) -> Self {
+        Self {
+            jsonrpc: Version::current(),
+            id,
+            result,
+            error,
         }
     }
 }

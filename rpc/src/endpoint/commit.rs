@@ -1,4 +1,4 @@
-//! `/commit` endpoint JSONRPC wrapper
+//! `/commit` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
 

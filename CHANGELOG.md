@@ -1,72 +1,160 @@
 ## Unreleased
 
-### Light Client
-
-- Add missing documentation to all items ([#472])
-- Add major contributors as authors of the `light-client`, `light-node`, and `rpc` crate ([#472])
-- Remove and consolidate deprecated [lite] and [lite_impl] modules from the `tendermint` crate ([#500])
+- Add testgen tester to factor out test execution from integration tests ([#524])
+- Add spec for the light client attack evidence handling ([#526])
+- Return RFC6962 hash for empty merkle tree ([#498])
+- The `tendermint`, `tendermint-rpc`, and `tendermint-light-client` crates now compile to WASM on the `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#463])
+- Implement protobuf encoding/decoding of Tendermint Proto types ([#504])
+- Separate protobuf types from Rust domain types using the DomainType trait ([#535])
+- Changed validator sorting order to sort by voting power. ([#506])
 - Dependency update: sled 0.34 ([#490])
 
-[#472]: https://github.com/informalsystems/tendermint-rs/pull/472
-[lite_impl]: https://github.com/informalsystems/tendermint-rs/tree/master/tendermint/src/lite_impl
+### BREAKING CHANGES:
 
-### Proto crate
+- `[rpc]` The entire RPC client interface has been refactored. The
+  `Client` struct has now been replaced by an `HttpClient` struct, which
+  implements all of the RPC methods except those relating to event
+  subscription. To access this struct, you now need to enable both the
+  `client` and `transport_http` features when using the `tendermint-rpc`
+  crate. ([#516])
 
-- Created Rust structs from Tendermint Proto files ([#504])
+### IMPROVEMENTS:
 
-## [0.15.0] (2020-07-17)
+- `[rpc]` A `WebSocketClient` is now provided to facilitate event
+  subscription for a limited range of RPC events over a WebSocket connection.
+  See the [Tendermint `/subscribe` endpoint's](https://docs.tendermint.com/master/rpc/#/Websocket/subscribe)
+  and the `tendermint-rpc` crate's docs for more details.
+  To access this struct you need to enable both the `client`, `subscription`
+  and `transport_websocket` features when using the `tendermint-rpc` crate.
+  ([#516])
+- `[rpc]` A `MockClient` and `MockSubscriptionClient` struct are available for use in
+  instances where you may want to interact with the Tendermint RPC from your
+  tests without integrating with an actual node. To access these structs you
+  need to enable the `client`, `subscription` and `transport_mock` features
+  when using the `tendermint-rpc` crate. If you only want to use the
+  `MockClient` struct, just enable features `client` and `transport_mock`.
+  See the crate docs for more details.
+  ([#516])
 
-This release is mostly about the revamped [light-client] library and the [light-node] command-line interface.
-Note that both crates are to be considered experimental software that will still undergo a lot of improvements and iterations.
-The goal of releasing an early version of our Light Client is to make it accessible, to get people use it, and to receive feedback.
+[#524]: https://github.com/informalsystems/tendermint-rs/issues/524
+[#526]: https://github.com/informalsystems/tendermint-rs/issues/526
+[#498]: https://github.com/informalsystems/tendermint-rs/issues/498
+[#463]: https://github.com/informalsystems/tendermint-rs/issues/463
+[#504]: https://github.com/informalsystems/tendermint-rs/issues/504
+[#535]: https://github.com/informalsystems/tendermint-rs/issues/535
+[#506]: https://github.com/informalsystems/tendermint-rs/issues/506
+[#516]: https://github.com/informalsystems/tendermint-rs/pull/516
 
- ⚠️ ️Deprecation warning ⚠️ : This might be the last release containing the [lite] module. Please take a look at the [light-client] crate.
+## v0.16.0
 
-### Light Client:
+*Aug 31, 2020*
 
-- Introduce a `Supervisor` to tie the `LightClient` and the `ForkDetector` together ([#302])
-- Add evidence reporting to the supervisor ([#336])
-- Move `ValidatorSet::hash` method over the `HeaderHasher` trait ([#360])
-- Simplify basic bisecting scheduler logic ([#364])
-- Fix exit condition in `verify_to_target` ([#365])
-- Multi-peer conformance tests ([#371])
-- Introduce a `Trusted` status for light blocks which passed fork detection ([#375])
-- Add JSON-based unit tests for VotingPowerCalculator ([#383])
-- Expose `latest_trusted` from supervisor `Handle` ([#394])
-- Rework the `PeerList`, improve its API, and fix a bug in `swap_primary` ([#397])
-- Turn `Handle` into a trait for ease of integration and testability ([#401])
-- Improve `Supervisor` ergonomics according to [ADR-007] ([#403])
-- Correctly handle blocks marked `Trusted` in accordance with the specification ([#407])
-- Treat `Trusted` status as a special case of `Verified` as per the spec ([#419])
-- Add integration test ([#431])
-- Rework light-node CLI to use `Supervisor` / `Handle` ([#430])
-- Add `latest_status` to the supervisor `Handle` ([#449])
-- Add JSONRPC endpoints to query the light-node ([#363], [#449])
+This release is the first release of the [testgen][testgen-dir] utility, 
+a generator for Tendermint types for unit and integration tests and for model-based testing. 
+It is a utility for producing tendermint datastructures from minimal input, targeted for testing.
 
-[0.15.0]: https://github.com/informalsystems/tendermint-rs/pull/454
+The release also contains various Rust API-breaking changes. It remains compatible with v0.33 of Tendermint Core.
 
-[#302]: https://github.com/informalsystems/tendermint-rs/pull/302
-[#336]: https://github.com/informalsystems/tendermint-rs/pull/336
-[#360]: https://github.com/informalsystems/tendermint-rs/pull/360
-[#363]: https://github.com/informalsystems/tendermint-rs/pull/363
-[#364]: https://github.com/informalsystems/tendermint-rs/pull/364
-[#365]: https://github.com/informalsystems/tendermint-rs/pull/365
-[#371]: https://github.com/informalsystems/tendermint-rs/pull/371
-[#375]: https://github.com/informalsystems/tendermint-rs/pull/375
-[#383]: https://github.com/informalsystems/tendermint-rs/pull/383
-[#394]: https://github.com/informalsystems/tendermint-rs/pull/394
-[#397]: https://github.com/informalsystems/tendermint-rs/pull/397
-[#401]: https://github.com/informalsystems/tendermint-rs/pull/401
-[#403]: https://github.com/informalsystems/tendermint-rs/pull/403
-[#407]: https://github.com/informalsystems/tendermint-rs/pull/407
-[#419]: https://github.com/informalsystems/tendermint-rs/pull/419
-[#430]: https://github.com/informalsystems/tendermint-rs/pull/430
-[#431]: https://github.com/informalsystems/tendermint-rs/pull/431
-[#449]: https://github.com/informalsystems/tendermint-rs/pull/449
+ ⚠️ ️Deprecation warning ⚠️ : The `lite` module was removed. Please take a look at the [light-client][light-client-dir] crate.
 
+### BREAKING CHANGES:
+
+- [repo] CHANGES.md renamed to CHANGELOG.md
+- [tendermint] Eliminate use of `signatory` wrapper crate in favour of underlying `ed25519-dalek` and `k256` crates. `ed25519-dalek` is now v1.0 and `k256` provides a pure Rust implementation of secp256k1 rather than wrapping the C library ([#522])
+- [tendermint] Remove `lite` and `lite_impl` modules. See the new `light-client`
+  crate ([#500])
+
+### FEATURES:
+
+- [tendermint/proto] A tendermint-proto crate was created that contains the Rust structs for protobuf,
+preparing for compatibility with Tendermint Core v0.34 ([#508])
+- [tendermint/proto-compiler] A tendermint-proto-compiler crate was created that generates the tendermint-proto structs from the Tendermint Core Protobuf definitions.
+- [testgen] Introduce the `testgen` crate for generating Tendermint types from
+  minimal input ([#468])
+
+### IMPROVEMENTS:
+
+- [light-client] Use the `testgen` for generating tests
+- [light-client] Use primary error as context of `NoWitnessLeft` error ([#477])
+- [repo] Various improvements to documentation and crate structure
+- [repo] Add CONTRIBUTING.md document ([#470])
+- [specs] Updates to fork detection English spec for evidence handling in
+  Tendermint and IBC ([#479])
+- [specs] Model checking results and updates for the fast sync TLA+ spec ([#466])
+
+### BUG FIXES:
+
+- [light-client] Fix to reject headers from the future ([#474])
+
+[light-client-dir]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
+[testgen-dir]: https://github.com/informalsystems/tendermint-rs/tree/master/testgen
+
+[#466]: https://github.com/informalsystems/tendermint-rs/pull/466
+[#468]: https://github.com/informalsystems/tendermint-rs/pull/468
+[#470]: https://github.com/informalsystems/tendermint-rs/pull/470
+[#474]: https://github.com/informalsystems/tendermint-rs/pull/474
+[#477]: https://github.com/informalsystems/tendermint-rs/pull/477
+[#479]: https://github.com/informalsystems/tendermint-rs/pull/479
+[#500]: https://github.com/informalsystems/tendermint-rs/pull/500
+[#508]: https://github.com/informalsystems/tendermint-rs/pull/508
+[#522]: https://github.com/informalsystems/tendermint-rs/pull/522
+
+## v0.15.0
+
+*July 17, 2020*
+
+This release is the first official release of the revamped [light-client][light-client-dir] library and the [light-node][light-node-dir] command-line interface.
+Together they provide a complete Tendermint light client implementation that performs squential and skipping verification
+and attempts to detect forks across its peers. Complete TLA+ specifications for light client verification are included,
+along with work-in-progress specs for fork detection. The implementation is compatible with v0.33 of Tendermint Core.
+
+Note that both the [light-client][light-client-dir]  and [light-node][light-node-dir] crates are to be considered experimental software that will still undergo a 
+lot of improvements and iterations. The goal of releasing an early version of our Light Client is to make it accessible, to get people use it, and to receive feedback.
+
+An overview of the current design of the light client is provided in [ADR-006]
+and [ADR-007].
+
+
+ ⚠️ ️Deprecation warning ⚠️ : This might be the last release containing the [lite][lite-dir] module. Please take a look at the [light-client][light-client-dir] crate.
+
+### BREAKING CHANGES:
+
+- [repo] make secp256k1 dependency optional ([#441])
+
+### FEATURES:
+
+- [light-client] Rewrite and expansion of `lite`, the prior light client
+  verification module, into a new fully-featured `light-client` crate. The crate provides a db, 
+  functions for complete light client verification, peer management, fork detection, and evidence reporting,
+  along with extensive testing. Components are composed via a `Supervisor`, which is run in its own thread, 
+  and exposes a Handle trait to broker access to underlying state and
+  functionality. See the [light-client][light-client-dir] crate for details.
+- [light-node] New binary crate with CLI for running the light client as a daemon,
+  complete with an rpc server for querying the latest state of the light node
+  while it syncs with the blockchain. See the [light-node][light-node-dir] crate
+  for details.
+
+### BUG FIXES:
+
+- [tendermint/validator] Sort validators by address on deserialization ([#410])
+- [tendermint/validator] Fix deserializing Update struct when power field is 0
+  ([#451])
+- [tendermint/abci] Fix DeliverTx response deserialization issues with
+  gasWanted, gasUsed, and data fields ([#432])
+- [tendermint/lite_impl] Fix header.hash for height 1 ([#438])
+
+[#410]: https://github.com/informalsystems/tendermint-rs/pull/410
+[#432]: https://github.com/informalsystems/tendermint-rs/pull/432
+[#438]: https://github.com/informalsystems/tendermint-rs/pull/438
+[#441]: https://github.com/informalsystems/tendermint-rs/pull/441
+[#451]: https://github.com/informalsystems/tendermint-rs/pull/451
+
+[ADR-006]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-006-light-client-refactor.md
 [ADR-007]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/adr-007-light-client-supervisor-ergonomics.md
 
-[light-node]: ./light-node/README.md
+[lite-dir]: ./tendermint/src/lite
+[light-client-dir]: ./light-client
+[light-node-dir]: ./light-node/
 
 ## [0.14.1] (2020-06-23)
 
@@ -81,7 +169,7 @@ This release mainly targets compatibility with Tendermint [v0.33.x] but contains
 Also noteworthy is that the rpc module was broken out into a separate crate ([tendermint-rpc]).
 
 ⚠️ ️Deprecation warning ⚠️ : This might be that last release containing the [lite] module.
-It will be replaced with the [light-client] crate (soon).
+It will be replaced with the [light-client][light-client-dir] crate (soon).
 
 CommitSig:
 - Refactored CommitSig into a more Rust-friendly enum. ([#247])
@@ -129,7 +217,7 @@ CI:
 [v0.33.x]: https://github.com/tendermint/tendermint/blob/v0.33.5/CHANGELOG.md#v0335
 [tendermint-rpc]: https://github.com/informalsystems/tendermint-rs/tree/master/rpc#tendermint-rpc
 [lite]: https://github.com/informalsystems/tendermint-rs/tree/master/tendermint/src/lite
-[light-client]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
+[light-client-dir]: https://github.com/informalsystems/tendermint-rs/tree/master/light-client
 
 ## [0.13.0] (2020-04-20)
 
