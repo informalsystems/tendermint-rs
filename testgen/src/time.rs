@@ -1,4 +1,4 @@
-use crate::{helpers::*, fuzzer, Generator};
+use crate::{fuzzer, helpers::*, Generator};
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
@@ -37,7 +37,7 @@ impl Generator<TMTime> for Time {
 
     fn generate_fuzz(&self, fuzzer: &mut impl fuzzer::Fuzzer) -> Result<TMTime, SimpleError> {
         fuzzer.next();
-        let time = if fuzzer.is_from(1,1) {
+        let time = if fuzzer.is_from(1, 1) {
             fuzzer.get_u64(0)
         } else {
             match &self.secs {
@@ -63,6 +63,9 @@ mod tests {
     fn test_time_fuzz() {
         let mut fuzzer = fuzzer::RepeatFuzzer::new(&[1]);
         let time = Time::new(0);
-        assert_ne!(time.generate_fuzz(&mut fuzzer).unwrap(), tendermint::Time::unix_epoch());
+        assert_ne!(
+            time.generate_fuzz(&mut fuzzer).unwrap(),
+            tendermint::Time::unix_epoch()
+        );
     }
 }

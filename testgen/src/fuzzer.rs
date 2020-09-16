@@ -110,17 +110,17 @@ impl RepeatFuzzer {
     pub fn new(repeat: &[u64]) -> Self {
         RepeatFuzzer {
             repeat: repeat.to_vec(),
-            current: 0
+            current: 0,
         }
     }
 }
 
 impl Fuzzer for RepeatFuzzer {
     fn next(&mut self) -> u64 {
-        if self.current < self.repeat.len()-1 {
+        if self.current < self.repeat.len() - 1 {
             self.current += 1;
         } else {
-            self.current = 0 ;
+            self.current = 0;
         }
         self.current()
     }
