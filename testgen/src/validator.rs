@@ -1,4 +1,4 @@
-use crate::{helpers::*, Fuzzer, Generator};
+use crate::{helpers::*, fuzzer, Fuzzer, Generator};
 use ed25519_dalek::SecretKey as Ed25519SecretKey;
 use gumdrop::Options;
 use serde::Deserialize;
@@ -104,34 +104,25 @@ impl Generator<validator::Info> for Validator {
 
     fn generate_fuzz(&self, fuzzer: &mut impl Fuzzer) -> Result<Info, SimpleError> {
         fuzzer.next();
-        let address = if fuzzer.is_from(1, 4) {
-            Validator::new(&fuzzer.get_string())
-                .get_private_key()?
-                .public
-        } else {
-            self.get_private_key()?.public
-        };
-        let pub_key = if fuzzer.get_bool() {
-            // match the address, mutated or not
-            address
-        } else {
-            // independently mutate or not
-            if fuzzer.is_from(2, 4) {
-                Validator::new(&fuzzer.get_string())
-                    .get_private_key()?
-                    .public
+        let (address, pub_key) = if fuzzer.is_from(1, 3) {
+            let pk0 = Validator::new(&fuzzer.get_string(0)).get_public_key()?;
+            let pk1 = Validator::new(&fuzzer.get_string(1)).get_public_key()?;
+            if fuzzer.get_bool(0) {
+                (pk0,pk0)
             } else {
-                self.get_private_key()?.public
+                (pk0,pk1)
             }
+        } else {
+            (self.get_public_key()?, self.get_public_key()?)
         };
-        let voting_power = if fuzzer.is_from(3, 4) {
-            fuzzer.get_u64()
+        let voting_power = if fuzzer.is_from(2, 3) {
+            fuzzer.get_u64(0)
         } else {
             self.voting_power.unwrap_or(0)
         };
-        let proposer_priority = if fuzzer.is_from(4, 4) {
-            if fuzzer.get_bool() {
-                Some(fuzzer.get_i64())
+        let proposer_priority = if fuzzer.is_from(3, 3) {
+            if self.proposer_priority.is_none() {
+                Some(fuzzer.get_i64(0))
             } else {
                 None
             }
@@ -232,5 +223,25 @@ mod tests {
 
         let val = val.proposer_priority(1000);
         assert_eq!(val.generate().unwrap(), block_val);
+    }
+
+    #[test]
+    fn test_validator_fuzz() {
+        let mut fuzzer = fuzzer::RepeatFuzzer::new(&[0,1,2,3]);
+        let val = Validator::new("a").voting_power(10);
+
+        let orig = val.generate().unwrap();
+
+        let fuzz = val.generate_fuzz(&mut fuzzer).unwrap();
+        assert_ne!(orig.address, fuzz.address);
+
+        let fuzz = val.generate_fuzz(&mut fuzzer).unwrap();
+        assert_ne!(orig.voting_power, fuzz.voting_power);
+
+        let fuzz = val.generate_fuzz(&mut fuzzer).unwrap();
+        assert_ne!(orig.proposer_priority, fuzz.proposer_priority);
+
+        let fuzz = val.generate_fuzz(&mut fuzzer).unwrap();
+        assert_eq!(orig, fuzz);
     }
 }
