@@ -4,8 +4,8 @@ use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
 use tendermint::consensus::state::Ordering;
-use tendermint::{account, private_key, public_key, public_key::PublicKey, validator, vote};
 use tendermint::validator::Info;
+use tendermint::{account, private_key, public_key, public_key::PublicKey, validator, vote};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Validator {
@@ -102,13 +102,43 @@ impl Generator<validator::Info> for Validator {
         }
     }
 
-    fn generate_fuzz(&self, _fuzzer: &mut impl Fuzzer) -> Result<Info, SimpleError> {
-        let keypair = self.get_private_key()?;
+    fn generate_fuzz(&self, fuzzer: &mut impl Fuzzer) -> Result<Info, SimpleError> {
+        fuzzer.next();
+        let address = if fuzzer.is_from(1, 4) {
+            Validator::new(&fuzzer.get_string()).get_private_key()?.public
+        } else {
+            self.get_private_key()?.public
+        };
+        let pub_key = if fuzzer.get_bool() {
+            // match the address, mutated or not
+            address.clone()
+        } else {
+            // independently mutate or not
+            if fuzzer.is_from(2, 4) {
+                Validator::new(&fuzzer.get_string()).get_private_key()?.public
+            } else {
+                self.get_private_key()?.public
+            }
+        };
+        let voting_power = if fuzzer.is_from(3, 4) {
+            fuzzer.get_u64()
+        } else {
+            self.voting_power.unwrap_or(0)
+        };
+        let proposer_priority = if fuzzer.is_from(4, 4) {
+            if fuzzer.get_bool() {
+                Some(fuzzer.get_i64())
+            } else {
+                None
+            }
+        } else {
+            self.proposer_priority
+        };
         let info = validator::Info {
-            address: account::Id::from(keypair.public),
-            pub_key: PublicKey::from(keypair.public),
-            voting_power: vote::Power::new(self.voting_power.unwrap_or(0)),
-            proposer_priority: match self.proposer_priority {
+            address: account::Id::from(address),
+            pub_key: PublicKey::from(pub_key),
+            voting_power: vote::Power::new(voting_power),
+            proposer_priority: match proposer_priority {
                 None => None,
                 Some(p) => Some(validator::ProposerPriority::new(p)),
             },
