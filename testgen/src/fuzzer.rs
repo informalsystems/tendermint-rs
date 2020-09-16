@@ -12,22 +12,26 @@ pub trait Fuzzer {
     /// If the current number is non-zero, then at least one of the alternatives will hold.
     /// If the current number is zero, none of the alternatives should hold.
     fn is_from(&self, alt: u64, total: u64) -> bool {
-        self.current() % total == (alt + 1)
+        if self.current() == 0 {
+            false
+        } else {
+            (self.current() - 1) % total == alt - 1
+        }
     }
 
-    /// Get the random bool value encoded in the current state
-    fn get_bool(&self) -> bool {
-        self.current() % 2 == 1
+    /// Get indexed random bool value from the current state
+    fn get_bool(&self, index: u64) -> bool {
+        self.current() + index % 2 == 1
     }
 
-    /// Get the random u64 value encoded in the current state
-    fn get_u64(&self) -> u64 {
-        self.current()
+    /// Get indexed random i64 value from the current state
+    fn get_u64(&self, index: u64) -> u64 {
+        self.current() + index
     }
 
-    /// Get the random i64 value encoded in the current state
-    fn get_i64(&self) -> i64 {
-        let cur = self.current();
+    /// Get indexed random i64 value from the current state
+    fn get_i64(&self, index: u64) -> i64 {
+        let cur = self.current() + index;
         let max = u64::MAX / 2;
         if cur >= max {
             -((cur % max) as i64)
@@ -36,8 +40,8 @@ pub trait Fuzzer {
         }
     }
 
-    /// Get the random string encoded in the current state
-    fn get_string(&self) -> String;
+    /// Get the indexed random string from the current state
+    fn get_string(&self, index: u64) -> String;
 }
 
 /// A Fuzzer that doesn't do any fuzzing (always returns 0).
@@ -56,8 +60,8 @@ impl Fuzzer for NoFuzz {
     fn current(&self) -> u64 {
         0
     }
-    fn get_string(&self) -> String {
-        String::new()
+    fn get_string(&self, index: u64) -> String {
+        index.to_string()
     }
 }
 
@@ -92,7 +96,40 @@ impl Fuzzer for LogFuzzer {
         self.fuzzer.current()
     }
 
-    fn get_string(&self) -> String {
-        self.fuzzer.get_string()
+    fn get_string(&self, index: u64) -> String {
+        self.fuzzer.get_string(index)
+    }
+}
+
+pub struct RepeatFuzzer {
+    repeat: Vec<u64>,
+    current: usize,
+}
+
+impl RepeatFuzzer {
+    pub fn new(repeat: &[u64]) -> Self {
+        RepeatFuzzer {
+            repeat: repeat.to_vec(),
+            current: 0
+        }
+    }
+}
+
+impl Fuzzer for RepeatFuzzer {
+    fn next(&mut self) -> u64 {
+        if self.current < self.repeat.len()-1 {
+            self.current += 1;
+        } else {
+            self.current = 0 ;
+        }
+        self.current()
+    }
+
+    fn current(&self) -> u64 {
+        self.repeat[self.current]
+    }
+
+    fn get_string(&self, index: u64) -> String {
+        (self.current() + index).to_string()
     }
 }
