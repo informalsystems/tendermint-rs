@@ -1,7 +1,8 @@
-use crate::{helpers::*, Fuzzer, Generator};
+use crate::{helpers::*, fuzzer, Generator};
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
+use tendermint::Time as TMTime;
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Time {
@@ -27,20 +28,22 @@ impl std::str::FromStr for Time {
     }
 }
 
-impl Generator<tendermint::Time> for Time {
+impl Generator<TMTime> for Time {
     fn merge_with_default(self, default: Self) -> Self {
         Time {
             secs: self.secs.or(default.secs),
         }
     }
 
-    fn generate_fuzz(
-        &self,
-        mut _fuzzer: &mut impl Fuzzer,
-    ) -> Result<tendermint::Time, SimpleError> {
-        let time = match &self.secs {
-            None => bail!("time is missing"),
-            Some(secs) => *secs,
+    fn generate_fuzz(&self, fuzzer: &mut impl fuzzer::Fuzzer) -> Result<TMTime, SimpleError> {
+        fuzzer.next();
+        let time = if fuzzer.is_from(1,1) {
+            fuzzer.get_u64(0)
+        } else {
+            match &self.secs {
+                None => bail!("time is missing"),
+                Some(secs) => *secs,
+            }
         };
         Ok(get_time(time))
     }
@@ -54,5 +57,12 @@ mod tests {
     fn test_time() {
         let time = Time::new(0);
         assert_eq!(time.generate().unwrap(), tendermint::Time::unix_epoch());
+    }
+
+    #[test]
+    fn test_time_fuzz() {
+        let mut fuzzer = fuzzer::RepeatFuzzer::new(&[1]);
+        let time = Time::new(0);
+        assert_ne!(time.generate_fuzz(&mut fuzzer).unwrap(), tendermint::Time::unix_epoch());
     }
 }
