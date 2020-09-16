@@ -1,20 +1,17 @@
 //! Tendermint RPC client.
 
-#[cfg(feature = "subscription")]
 mod subscription;
-#[cfg(feature = "subscription")]
 pub use subscription::{Subscription, SubscriptionClient, SubscriptionId, SubscriptionRouter};
-#[cfg(feature = "subscription")]
 pub mod sync;
 
 mod transport;
-#[cfg(feature = "transport_http")]
+pub use transport::mock::{
+    MockClient, MockRequestMatcher, MockRequestMethodMatcher, MockSubscriptionClient,
+};
+
+#[cfg(feature = "http-client")]
 pub use transport::http::HttpClient;
-#[cfg(all(feature = "subscription", feature = "transport_mock"))]
-pub use transport::mock::MockSubscriptionClient;
-#[cfg(feature = "transport_mock")]
-pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
-#[cfg(all(feature = "subscription", feature = "transport_websocket"))]
+#[cfg(feature = "websocket-client")]
 pub use transport::websocket::WebSocketClient;
 
 use crate::endpoint::*;

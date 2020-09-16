@@ -1,8 +1,6 @@
 //! Mock client implementation for use in testing.
 
-#[cfg(feature = "subscription")]
 mod subscription;
-#[cfg(feature = "subscription")]
 pub use subscription::MockSubscriptionClient;
 
 use crate::client::ClosableClient;

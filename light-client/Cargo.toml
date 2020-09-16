@@ -23,7 +23,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["rpc-client"]
-rpc-client = ["tendermint-rpc/client", "tendermint-rpc/transport_http"]
+rpc-client = ["tendermint-rpc/http-client"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 
 [dependencies]
