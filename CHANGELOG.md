@@ -19,7 +19,7 @@
 
 ### IMPROVEMENTS:
 
-- `[rpc]` A `WebSocketSubscriptionClient` is now provided to facilitate event
+- `[rpc]` A `WebSocketClient` is now provided to facilitate event
   subscription for a limited range of RPC events over a WebSocket connection.
   See the [Tendermint `/subscribe` endpoint's](https://docs.tendermint.com/master/rpc/#/Websocket/subscribe)
   and the `tendermint-rpc` crate's docs for more details.

@@ -212,7 +212,7 @@ pub trait Client: ClosableClient {
 A `SubscriptionClient` would be one that only provides access to subscription
 functionality. In our current implementation, this client would interact with a
 WebSocket connection to provide subscription functionality (the
-`WebSocketSubscriptionClient` in the entity diagram above).
+`WebSocketClient` in the entity diagram above).
 
 ```rust
 #[async_trait]
@@ -244,7 +244,7 @@ pub trait ClosableClient {
 We envisage 2 distinct client implementations at this point:
 
 * `HttpClient`, which only implements [`Client`](#client) (over HTTP).
-* `WebSocketSubscriptionClient`, which only implements
+* `WebSocketClient`, which only implements
   [`SubscriptionClient`](#subscriptionclient) (over a WebSocket connection).
 
 #### Handle-Driver Concurrency Model
