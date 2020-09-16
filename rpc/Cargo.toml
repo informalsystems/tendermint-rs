@@ -25,9 +25,18 @@ all-features = true
 
 [features]
 default = []
-http-client = [ "async-trait", "futures", "http", "hyper", "tokio" ]
+http-client = [ "async-trait", "futures", "http", "hyper", "tokio/fs", "tokio/macros" ]
 secp256k1 = [ "tendermint/secp256k1" ]
-websocket-client = [ "async-trait", "async-tungstenite", "futures", "tokio" ]
+websocket-client = [
+  "async-trait",
+  "async-tungstenite",
+  "futures",
+  "tokio/fs",
+  "tokio/macros",
+  "tokio/stream",
+  "tokio/sync",
+  "tokio/time"
+]
 
 [dependencies]
 bytes = "0.5"
@@ -44,4 +53,4 @@ async-tungstenite = { version="0.8", features = ["tokio-runtime"], optional = tr
 futures = { version = "0.3", optional = true }
 http = { version = "0.2", optional = true }
 hyper = { version = "0.13", optional = true }
-tokio = { version = "0.2", features = ["macros", "fs", "sync"], optional = true }
+tokio = { version = "0.2", optional = true }
