@@ -11,7 +11,7 @@
 mod rpc {
     use std::cmp::min;
 
-    use tendermint_rpc::{Client, ClosableClient, HttpClient, SubscriptionClient, WebSocketClient};
+    use tendermint_rpc::{Client, HttpClient, SubscriptionClient, WebSocketClient};
 
     use futures::StreamExt;
     use tendermint::abci::Code;

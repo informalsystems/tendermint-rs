@@ -1,7 +1,6 @@
 //! Subscription- and subscription management-related functionality.
 
 use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
-use crate::client::ClosableClient;
 use crate::event::Event;
 use crate::{Error, Id, Result};
 use async_trait::async_trait;
@@ -17,7 +16,7 @@ use std::pin::Pin;
 ///
 /// [`Event`]: event/struct.Event.html
 #[async_trait]
-pub trait SubscriptionClient: ClosableClient {
+pub trait SubscriptionClient {
     /// `/subscribe`: subscribe to receive events produced by the given query.
     ///
     /// For query syntax details, see the

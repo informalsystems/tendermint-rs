@@ -2,7 +2,7 @@
 
 use crate::client::subscription::TerminateSubscription;
 use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
-use crate::client::{ClosableClient, SubscriptionRouter};
+use crate::client::SubscriptionRouter;
 use crate::event::Event;
 use crate::{Error, Result, Subscription, SubscriptionClient, SubscriptionId};
 use async_trait::async_trait;
@@ -52,19 +52,6 @@ impl SubscriptionClient for MockSubscriptionClient {
     }
 }
 
-#[async_trait]
-impl ClosableClient for MockSubscriptionClient {
-    async fn close(mut self) -> Result<()> {
-        self.send_cmd(DriverCmd::Close).await?;
-        self.driver_hdl.await.map_err(|e| {
-            Error::client_internal_error(format!(
-                "failed to terminate mock client driver task: {}",
-                e
-            ))
-        })?
-    }
-}
-
 impl MockSubscriptionClient {
     /// Publish the given event to all subscribers whose queries match that of
     /// the event.
@@ -74,6 +61,17 @@ impl MockSubscriptionClient {
 
     async fn send_cmd(&mut self, cmd: DriverCmd) -> Result<()> {
         self.cmd_tx.send(cmd).await
+    }
+
+    /// Attempt to gracefully close this client.
+    pub async fn close(mut self) -> Result<()> {
+        self.send_cmd(DriverCmd::Close).await?;
+        self.driver_hdl.await.map_err(|e| {
+            Error::client_internal_error(format!(
+                "failed to terminate mock client driver task: {}",
+                e
+            ))
+        })?
     }
 }
 

@@ -3,7 +3,7 @@
 use crate::client::subscription::{SubscriptionState, TerminateSubscription};
 use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
 use crate::client::transport::get_tcp_host_port;
-use crate::client::{ClosableClient, SubscriptionRouter};
+use crate::client::SubscriptionRouter;
 use crate::endpoint::{subscribe, unsubscribe};
 use crate::event::Event;
 use crate::{
@@ -36,7 +36,7 @@ use tokio::task::JoinHandle;
 /// ## Examples
 ///
 /// ```rust,ignore
-/// use tendermint_rpc::{WebSocketClient, SubscriptionClient, ClosableClient};
+/// use tendermint_rpc::{WebSocketClient, SubscriptionClient};
 /// use futures::StreamExt;
 ///
 /// #[tokio::main]
@@ -106,6 +106,17 @@ impl WebSocketClient {
             Error::client_internal_error(format!("failed to send command to client driver: {}", e))
         })
     }
+
+    /// Attempt to gracefully close the WebSocket connection.
+    pub async fn close(mut self) -> Result<()> {
+        self.cmd_tx.send(WebSocketDriverCmd::Close).await?;
+        self.driver_handle.await.map_err(|e| {
+            Error::client_internal_error(format!(
+                "failed while waiting for WebSocket driver task to terminate: {}",
+                e
+            ))
+        })?
+    }
 }
 
 #[async_trait]
@@ -134,20 +145,6 @@ impl SubscriptionClient for WebSocketClient {
             event_rx,
             self.terminate_tx.clone(),
         ))
-    }
-}
-
-#[async_trait]
-impl ClosableClient for WebSocketClient {
-    /// Attempt to gracefully close the WebSocket connection.
-    async fn close(mut self) -> Result<()> {
-        self.cmd_tx.send(WebSocketDriverCmd::Close).await?;
-        self.driver_handle.await.map_err(|e| {
-            Error::client_internal_error(format!(
-                "failed while waiting for WebSocket driver task to terminate: {}",
-                e
-            ))
-        })?
     }
 }
 

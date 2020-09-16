@@ -34,8 +34,8 @@
 mod client;
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub use client::{
-    Client, ClosableClient, MockClient, MockRequestMatcher, MockRequestMethodMatcher,
-    MockSubscriptionClient, Subscription, SubscriptionClient, SubscriptionId,
+    Client, MockClient, MockRequestMatcher, MockRequestMethodMatcher, MockSubscriptionClient,
+    Subscription, SubscriptionClient, SubscriptionId,
 };
 
 #[cfg(feature = "http-client")]
