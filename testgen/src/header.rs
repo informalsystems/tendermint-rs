@@ -1,9 +1,9 @@
-use crate::{helpers::*, validator::generate_validators, Fuzzer, Generator, Validator};
+use crate::{fuzzer, helpers::*, validator::generate_validators, Generator, Validator};
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
 use std::str::FromStr;
-use tendermint::{block, chain, validator};
+use tendermint::{block, block::Header as TMHeader, chain, validator};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Header {
@@ -61,7 +61,7 @@ impl std::str::FromStr for Header {
     }
 }
 
-impl Generator<block::Header> for Header {
+impl Generator<TMHeader> for Header {
     fn merge_with_default(self, default: Self) -> Self {
         Header {
             validators: self.validators.or(default.validators),
@@ -73,7 +73,42 @@ impl Generator<block::Header> for Header {
         }
     }
 
-    fn generate_fuzz(&self, mut _fuzzer: &mut impl Fuzzer) -> Result<block::Header, SimpleError> {
+    fn generate_fuzz(&self, fuzzer: &mut impl fuzzer::Fuzzer) -> Result<TMHeader, SimpleError> {
+        fuzzer.next();
+        let fmax = 4u64;
+        let version = if fuzzer.is_from(1, fmax) {
+            block::header::Version {
+                block: fuzzer.get_u64(0),
+                app: fuzzer.get_u64(1),
+            }
+        } else {
+            block::header::Version { block: 0, app: 0 }
+        };
+        let chain_id = if fuzzer.is_from(2, fmax) {
+            fuzzer.get_string(0)
+        } else {
+            self.chain_id
+                .clone()
+                .unwrap_or_else(|| "test-chain".to_string())
+        };
+        let chain_id = match chain::Id::from_str(&chain_id) {
+            Ok(id) => id,
+            Err(_) => bail!("failed to construct header's chain_id"),
+        };
+        let height = block::Height(if fuzzer.is_from(3, fmax) {
+            fuzzer.get_u64(0)
+        } else {
+            self.height.unwrap_or(1)
+        });
+        let time = if fuzzer.is_from(4, fmax) {
+            get_time(fuzzer.get_u64(0))
+        } else {
+            if let Some(t) = self.time {
+                get_time(t)
+            } else {
+                tendermint::Time::now()
+            }
+        };
         let vals = match &self.validators {
             None => bail!("validator array is missing"),
             Some(vals) => vals,
@@ -90,24 +125,10 @@ impl Generator<block::Header> for Header {
             Some(next_vals) => validator::Set::new(generate_validators(next_vals)?),
             None => valset.clone(),
         };
-        let chain_id = match chain::Id::from_str(
-            self.chain_id
-                .clone()
-                .unwrap_or_else(|| "test-chain".to_string())
-                .as_str(),
-        ) {
-            Ok(id) => id,
-            Err(_) => bail!("failed to construct header's chain_id"),
-        };
-        let time = if let Some(t) = self.time {
-            get_time(t)
-        } else {
-            tendermint::Time::now()
-        };
-        let header = block::Header {
-            version: block::header::Version { block: 0, app: 0 },
+        let header = TMHeader {
+            version,
             chain_id,
-            height: block::Height(self.height.unwrap_or(1)),
+            height,
             time,
             last_block_id: None,
             last_commit_hash: None,
