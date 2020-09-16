@@ -12,7 +12,7 @@ pub trait Generator<Output: Serialize>: FromStr<Err = SimpleError> + Clone {
 
     /// Generate the complex object from this companion object.
     fn generate(&self) -> Result<Output, SimpleError> {
-        self.generate_fuzz(fuzzer::NoFuzz::new())
+        self.generate_fuzz(&mut fuzzer::NoFuzz::new())
     }
 
     /// Generate and encode the complex object from this companion object.
@@ -25,5 +25,5 @@ pub trait Generator<Output: Serialize>: FromStr<Err = SimpleError> + Clone {
     }
 
     /// Generate and fuzz the complex object from this companion object.
-    fn generate_fuzz(&self, fuzzer: impl Fuzzer) -> Result<Output, SimpleError>;
+    fn generate_fuzz(&self, fuzzer: &mut impl Fuzzer) -> Result<Output, SimpleError>;
 }

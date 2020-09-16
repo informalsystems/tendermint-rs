@@ -73,7 +73,7 @@ impl Generator<block::Header> for Header {
         }
     }
 
-    fn generate_fuzz(&self, mut _fuzzer: impl Fuzzer) -> Result<block::Header, SimpleError> {
+    fn generate_fuzz(&self, mut _fuzzer: &mut impl Fuzzer) -> Result<block::Header, SimpleError> {
         let vals = match &self.validators {
             None => bail!("validator array is missing"),
             Some(vals) => vals,

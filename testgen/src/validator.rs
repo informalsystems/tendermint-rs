@@ -102,7 +102,7 @@ impl Generator<validator::Info> for Validator {
         }
     }
 
-    fn generate_fuzz(&self, mut _fuzzer: impl Fuzzer) -> Result<Info, SimpleError> {
+    fn generate_fuzz(&self, _fuzzer: &mut impl Fuzzer) -> Result<Info, SimpleError> {
         let keypair = self.get_private_key()?;
         let info = validator::Info {
             address: account::Id::from(keypair.public),
