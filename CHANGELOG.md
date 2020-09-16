@@ -8,6 +8,33 @@
 - Separate protobuf types from Rust domain types using the DomainType trait ([#535])
 - Changed validator sorting order to sort by voting power. ([#506])
 
+### BREAKING CHANGES:
+
+- `[rpc]` The entire RPC client interface has been refactored. The
+  `Client` struct has now been replaced by an `HttpClient` struct, which
+  implements all of the RPC methods except those relating to event
+  subscription. To access this struct, you now need to enable both the
+  `client` and `transport_http` features when using the `tendermint-rpc`
+  crate. ([#516])
+
+### IMPROVEMENTS:
+
+- `[rpc]` A `WebSocketSubscriptionClient` is now provided to facilitate event
+  subscription for a limited range of RPC events over a WebSocket connection.
+  See the [Tendermint `/subscribe` endpoint's](https://docs.tendermint.com/master/rpc/#/Websocket/subscribe)
+  and the `tendermint-rpc` crate's docs for more details.
+  To access this struct you need to enable both the `client`, `subscription`
+  and `transport_websocket` features when using the `tendermint-rpc` crate.
+  ([#516])
+- `[rpc]` A `MockClient` and `MockSubscriptionClient` struct are available for use in
+  instances where you may want to interact with the Tendermint RPC from your
+  tests without integrating with an actual node. To access these structs you
+  need to enable the `client`, `subscription` and `transport_mock` features
+  when using the `tendermint-rpc` crate. If you only want to use the
+  `MockClient` struct, just enable features `client` and `transport_mock`.
+  See the crate docs for more details.
+  ([#516])
+
 [#524]: https://github.com/informalsystems/tendermint-rs/issues/524
 [#526]: https://github.com/informalsystems/tendermint-rs/issues/526
 [#498]: https://github.com/informalsystems/tendermint-rs/issues/498
@@ -15,6 +42,7 @@
 [#504]: https://github.com/informalsystems/tendermint-rs/issues/504
 [#535]: https://github.com/informalsystems/tendermint-rs/issues/535
 [#506]: https://github.com/informalsystems/tendermint-rs/issues/506
+[#516]: https://github.com/informalsystems/tendermint-rs/pull/516
 
 ## v0.16.0
 

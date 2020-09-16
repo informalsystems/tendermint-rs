@@ -26,7 +26,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 /// evidence of malfeasance (i.e. signing conflicting votes).
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#block>
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct Block {
     /// Block header
     pub header: Header,

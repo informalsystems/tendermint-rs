@@ -1,4 +1,4 @@
-//! `/abci_info` endpoint JSONRPC wrapper
+//! `/abci_info` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
 

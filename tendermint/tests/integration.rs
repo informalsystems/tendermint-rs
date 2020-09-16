@@ -11,14 +11,17 @@
 mod rpc {
     use std::cmp::min;
 
-    use tendermint_rpc::{event_listener, Client};
+    use tendermint_rpc::{
+        Client, ClosableClient, HttpClient, SubscriptionClient, WebSocketSubscriptionClient,
+    };
 
+    use futures::StreamExt;
     use tendermint::abci::Code;
     use tendermint::abci::Log;
 
     /// Get the address of the local node
-    pub fn localhost_rpc_client() -> Client {
-        Client::new("tcp://127.0.0.1:26657".parse().unwrap())
+    pub fn localhost_rpc_client() -> HttpClient {
+        HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap()
     }
 
     /// `/health` endpoint
@@ -147,33 +150,27 @@ mod rpc {
 
     #[tokio::test]
     #[ignore]
-    async fn event_subscription() {
-        let mut client =
-            event_listener::EventListener::connect("tcp://127.0.0.1:26657".parse().unwrap())
-                .await
-                .unwrap();
-        client
-            .subscribe(event_listener::EventSubscription::BlockSubscription)
+    async fn subscription_interface() {
+        let mut client = WebSocketSubscriptionClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
-        // client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
+        let mut subs = client
+            .subscribe("tm.event='NewBlock'".to_string())
+            .await
+            .unwrap();
+        let mut ev_count = 5_i32;
 
-        // Loop here is helpful when debugging parsing of JSON events
-        // loop{
-        let maybe_result_event = client.get_event().await.unwrap();
-        dbg!(&maybe_result_event);
-        // }
-        let result_event = maybe_result_event.expect("unexpected msg read");
-        match result_event.data {
-            event_listener::TMEventData::EventDataNewBlock(nb) => {
-                dbg!("got EventDataNewBlock: {:?}", nb);
-            }
-            event_listener::TMEventData::EventDataTx(tx) => {
-                dbg!("got EventDataTx: {:?}", tx);
-            }
-            event_listener::TMEventData::GenericJSONEvent(v) => {
-                panic!("got a GenericJSONEvent: {:?}", v);
+        println!("Attempting to grab {} new blocks", ev_count);
+        while let Some(res) = subs.next().await {
+            let ev = res.unwrap();
+            println!("Got event: {:?}", ev);
+            ev_count -= 1;
+            if ev_count < 0 {
+                break;
             }
         }
+
+        subs.terminate().await.unwrap();
+        client.close().await.unwrap();
     }
 }

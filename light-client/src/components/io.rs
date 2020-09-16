@@ -4,6 +4,9 @@ use contracts::{contract_trait, post};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+#[cfg(feature = "rpc-client")]
+use tendermint_rpc::Client;
+
 use tendermint_rpc as rpc;
 
 use crate::types::{Height, LightBlock, PeerId};
@@ -31,7 +34,7 @@ impl From<Height> for AtHeight {
 pub enum IoError {
     /// Wrapper for a `tendermint::rpc::Error`.
     #[error(transparent)]
-    IoError(#[from] rpc::Error),
+    RpcError(#[from] rpc::Error),
 
     /// Given height is invalid
     #[error("invalid height: {0}")]
@@ -128,7 +131,7 @@ mod prod {
             peer: PeerId,
             height: AtHeight,
         ) -> Result<TMSignedHeader, IoError> {
-            let rpc_client = self.rpc_client_for(peer);
+            let rpc_client = self.rpc_client_for(peer)?;
 
             let res = block_on(
                 async {
@@ -143,7 +146,7 @@ mod prod {
 
             match res {
                 Ok(response) => Ok(response.signed_header),
-                Err(err) => Err(IoError::IoError(err)),
+                Err(err) => Err(IoError::RpcError(err)),
             }
         }
 
@@ -161,21 +164,22 @@ mod prod {
             };
 
             let res = block_on(
-                self.rpc_client_for(peer).validators(height),
+                self.rpc_client_for(peer)?.validators(height),
                 peer,
                 self.timeout,
             )?;
 
             match res {
                 Ok(response) => Ok(TMValidatorSet::new(response.validators)),
-                Err(err) => Err(IoError::IoError(err)),
+                Err(err) => Err(IoError::RpcError(err)),
             }
         }
 
+        // TODO(thane): Generalize over client transport (instead of using HttpClient directly).
         #[pre(self.peer_map.contains_key(&peer))]
-        fn rpc_client_for(&self, peer: PeerId) -> rpc::Client {
+        fn rpc_client_for(&self, peer: PeerId) -> Result<rpc::HttpClient, IoError> {
             let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
-            rpc::Client::new(peer_addr)
+            Ok(rpc::HttpClient::new(peer_addr).map_err(IoError::from)?)
         }
     }
 

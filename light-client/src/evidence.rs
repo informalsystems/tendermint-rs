@@ -26,6 +26,7 @@ mod prod {
     use contracts::pre;
     use std::collections::HashMap;
     use tendermint_rpc as rpc;
+    use tendermint_rpc::Client;
 
     /// Production implementation of the EvidenceReporter component, which reports evidence to full
     /// nodes via RPC.
@@ -38,11 +39,11 @@ mod prod {
     impl EvidenceReporter for ProdEvidenceReporter {
         #[pre(self.peer_map.contains_key(&peer))]
         fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
-            let res = block_on(self.rpc_client_for(peer).broadcast_evidence(e));
+            let res = block_on(self.rpc_client_for(peer)?.broadcast_evidence(e));
 
             match res {
                 Ok(response) => Ok(response.hash),
-                Err(err) => Err(IoError::IoError(err)),
+                Err(err) => Err(IoError::RpcError(err)),
             }
         }
     }
@@ -56,9 +57,9 @@ mod prod {
         }
 
         #[pre(self.peer_map.contains_key(&peer))]
-        fn rpc_client_for(&self, peer: PeerId) -> rpc::Client {
+        fn rpc_client_for(&self, peer: PeerId) -> Result<rpc::HttpClient, IoError> {
             let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
-            rpc::Client::new(peer_addr)
+            Ok(rpc::HttpClient::new(peer_addr).map_err(IoError::from)?)
         }
     }
 
