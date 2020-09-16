@@ -15,7 +15,7 @@ pub use transport::mock::MockSubscriptionClient;
 #[cfg(feature = "transport_mock")]
 pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
 #[cfg(all(feature = "subscription", feature = "transport_websocket"))]
-pub use transport::websocket::WebSocketSubscriptionClient;
+pub use transport::websocket::WebSocketClient;
 
 use crate::endpoint::*;
 use crate::{Request, Result};

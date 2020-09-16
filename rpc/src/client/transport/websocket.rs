@@ -28,20 +28,20 @@ use tokio::task::JoinHandle;
 ///
 /// In order to not block the calling task, this client spawns an asynchronous
 /// driver that continuously interacts with the actual WebSocket connection.
-/// The `WebSocketSubscriptionClient` itself is effectively just a handle to
-/// this driver. This driver is spawned as the client is created.
+/// The `WebSocketClient` itself is effectively just a handle to this driver.
+/// This driver is spawned as the client is created.
 ///
 /// To terminate the client and the driver, simply use its [`close`] method.
 ///
 /// ## Examples
 ///
 /// ```rust,ignore
-/// use tendermint_rpc::{WebSocketSubscriptionClient, SubscriptionClient, ClosableClient};
+/// use tendermint_rpc::{WebSocketClient, SubscriptionClient, ClosableClient};
 /// use futures::StreamExt;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let mut client = WebSocketSubscriptionClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+///     let mut client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
 ///         .await
 ///         .unwrap();
 ///
@@ -71,9 +71,9 @@ use tokio::task::JoinHandle;
 /// ```
 ///
 /// [`Event`]: ./event/struct.Event.html
-/// [`close`]: struct.WebSocketSubscriptionClient.html#method.close
+/// [`close`]: struct.WebSocketClient.html#method.close
 #[derive(Debug)]
-pub struct WebSocketSubscriptionClient {
+pub struct WebSocketClient {
     host: String,
     port: u16,
     driver_handle: JoinHandle<Result<()>>,
@@ -81,7 +81,7 @@ pub struct WebSocketSubscriptionClient {
     terminate_tx: ChannelTx<TerminateSubscription>,
 }
 
-impl WebSocketSubscriptionClient {
+impl WebSocketClient {
     /// Construct a WebSocket client. Immediately attempts to open a WebSocket
     /// connection to the node with the given address.
     pub async fn new(address: net::Address) -> Result<Self> {
@@ -109,7 +109,7 @@ impl WebSocketSubscriptionClient {
 }
 
 #[async_trait]
-impl SubscriptionClient for WebSocketSubscriptionClient {
+impl SubscriptionClient for WebSocketClient {
     async fn subscribe(&mut self, query: String) -> Result<Subscription> {
         let (event_tx, event_rx) = unbounded();
         let (result_tx, mut result_rx) = unbounded::<Result<()>>();
@@ -138,7 +138,7 @@ impl SubscriptionClient for WebSocketSubscriptionClient {
 }
 
 #[async_trait]
-impl ClosableClient for WebSocketSubscriptionClient {
+impl ClosableClient for WebSocketClient {
     /// Attempt to gracefully close the WebSocket connection.
     async fn close(mut self) -> Result<()> {
         self.cmd_tx.send(WebSocketDriverCmd::Close).await?;
@@ -653,7 +653,7 @@ mod test {
         println!("Starting WebSocket server...");
         let mut server = TestServer::new("127.0.0.1:0").await;
         println!("Creating client RPC WebSocket connection...");
-        let mut client = WebSocketSubscriptionClient::new(server.node_addr.clone())
+        let mut client = WebSocketClient::new(server.node_addr.clone())
             .await
             .unwrap();
 

@@ -10,9 +10,8 @@ use tendermint::net;
 
 /// A JSON-RPC/HTTP Tendermint RPC client (implements [`Client`]).
 ///
-/// Does not provide [`Event`] subscription facilities (see
-/// [`WebSocketSubscriptionClient`] for a client that does provide [`Event`]
-/// subscription facilities).
+/// Does not provide [`Event`] subscription facilities (see [`WebSocketClient`]
+/// for a client that does provide [`Event`] subscription facilities).
 ///
 /// ## Examples
 ///
@@ -34,7 +33,7 @@ use tendermint::net;
 ///
 /// [`Client`]: trait.Client.html
 /// [`Event`]: ./event/struct.Event.html
-/// [`WebSocketSubscriptionClient`]: struct.WebSocketSubscriptionClient.html
+/// [`WebSocketClient`]: struct.WebSocketClient.html
 ///
 #[derive(Debug, Clone)]
 pub struct HttpClient {
