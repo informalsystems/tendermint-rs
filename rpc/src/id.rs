@@ -30,6 +30,16 @@ impl Id {
     }
 }
 
+impl ToString for Id {
+    fn to_string(&self) -> String {
+        match self {
+            Id::Num(i) => format!("{}", i),
+            Id::Str(s) => s.clone(),
+            Id::None => "none".to_string(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde::{de::DeserializeOwned, Serialize};

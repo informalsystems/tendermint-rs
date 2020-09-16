@@ -1,6 +1,6 @@
 //! Subscription functionality for the Tendermint RPC mock client.
 
-use crate::client::subscription::TerminateSubscription;
+use crate::client::subscription::SubscriptionDriverCmd;
 use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
 use crate::client::SubscriptionRouter;
 use crate::event::Event;
@@ -20,8 +20,7 @@ use tokio::task::JoinHandle;
 pub struct MockSubscriptionClient {
     driver_hdl: JoinHandle<Result<()>>,
     event_tx: ChannelTx<Event>,
-    cmd_tx: ChannelTx<DriverCmd>,
-    terminate_tx: ChannelTx<TerminateSubscription>,
+    cmd_tx: ChannelTx<SubscriptionDriverCmd>,
 }
 
 #[async_trait]
@@ -30,7 +29,7 @@ impl SubscriptionClient for MockSubscriptionClient {
         let (event_tx, event_rx) = unbounded();
         let (result_tx, mut result_rx) = unbounded();
         let id = SubscriptionId::default();
-        self.send_cmd(DriverCmd::Subscribe {
+        self.send_cmd(SubscriptionDriverCmd::Subscribe {
             id: id.clone(),
             query: query.clone(),
             event_tx,
@@ -43,12 +42,7 @@ impl SubscriptionClient for MockSubscriptionClient {
             )
         })??;
 
-        Ok(Subscription::new(
-            id,
-            query,
-            event_rx,
-            self.terminate_tx.clone(),
-        ))
+        Ok(Subscription::new(id, query, event_rx, self.cmd_tx.clone()))
     }
 }
 
@@ -59,13 +53,13 @@ impl MockSubscriptionClient {
         self.event_tx.send(ev).await
     }
 
-    async fn send_cmd(&mut self, cmd: DriverCmd) -> Result<()> {
+    async fn send_cmd(&mut self, cmd: SubscriptionDriverCmd) -> Result<()> {
         self.cmd_tx.send(cmd).await
     }
 
     /// Attempt to gracefully close this client.
     pub async fn close(mut self) -> Result<()> {
-        self.send_cmd(DriverCmd::Close).await?;
+        self.send_cmd(SubscriptionDriverCmd::Terminate).await?;
         self.driver_hdl.await.map_err(|e| {
             Error::client_internal_error(format!(
                 "failed to terminate mock client driver task: {}",
@@ -79,14 +73,12 @@ impl Default for MockSubscriptionClient {
     fn default() -> Self {
         let (event_tx, event_rx) = unbounded();
         let (cmd_tx, cmd_rx) = unbounded();
-        let (terminate_tx, terminate_rx) = unbounded();
-        let driver = MockSubscriptionClientDriver::new(event_rx, cmd_rx, terminate_rx);
+        let driver = MockSubscriptionClientDriver::new(event_rx, cmd_rx);
         let driver_hdl = tokio::spawn(async move { driver.run().await });
         Self {
             driver_hdl,
             event_tx,
             cmd_tx,
-            terminate_tx,
         }
     }
 }
@@ -94,21 +86,15 @@ impl Default for MockSubscriptionClient {
 #[derive(Debug)]
 struct MockSubscriptionClientDriver {
     event_rx: ChannelRx<Event>,
-    cmd_rx: ChannelRx<DriverCmd>,
-    terminate_rx: ChannelRx<TerminateSubscription>,
+    cmd_rx: ChannelRx<SubscriptionDriverCmd>,
     router: SubscriptionRouter,
 }
 
 impl MockSubscriptionClientDriver {
-    fn new(
-        event_rx: ChannelRx<Event>,
-        cmd_rx: ChannelRx<DriverCmd>,
-        terminate_rx: ChannelRx<TerminateSubscription>,
-    ) -> Self {
+    fn new(event_rx: ChannelRx<Event>, cmd_rx: ChannelRx<SubscriptionDriverCmd>) -> Self {
         Self {
             event_rx,
             cmd_rx,
-            terminate_rx,
             router: SubscriptionRouter::default(),
         }
     }
@@ -118,15 +104,19 @@ impl MockSubscriptionClientDriver {
             tokio::select! {
                 Some(ev) = self.event_rx.recv() => self.router.publish(ev).await,
                 Some(cmd) = self.cmd_rx.recv() => match cmd {
-                    DriverCmd::Subscribe {
+                    SubscriptionDriverCmd::Subscribe {
                         id,
                         query,
                         event_tx,
                         result_tx,
                     } => self.subscribe(id, query, event_tx, result_tx).await?,
-                    DriverCmd::Close => return Ok(()),
+                    SubscriptionDriverCmd::Unsubscribe {
+                        id,
+                        query,
+                        result_tx,
+                    } => self.unsubscribe(id, query, result_tx).await?,
+                    SubscriptionDriverCmd::Terminate => return Ok(()),
                 },
-                Some(subs_term) = self.terminate_rx.recv() => self.unsubscribe(subs_term).await?,
             }
         }
     }
@@ -142,21 +132,15 @@ impl MockSubscriptionClientDriver {
         result_tx.send(Ok(())).await
     }
 
-    async fn unsubscribe(&mut self, mut subs_term: TerminateSubscription) -> Result<()> {
-        self.router.remove(&subs_term.id, subs_term.query.clone());
-        subs_term.result_tx.send(Ok(())).await
-    }
-}
-
-#[derive(Debug)]
-pub enum DriverCmd {
-    Subscribe {
+    async fn unsubscribe(
+        &mut self,
         id: SubscriptionId,
         query: String,
-        event_tx: ChannelTx<Result<Event>>,
-        result_tx: ChannelTx<Result<()>>,
-    },
-    Close,
+        mut result_tx: ChannelTx<Result<()>>,
+    ) -> Result<()> {
+        self.router.remove(&id, query);
+        result_tx.send(Ok(())).await
+    }
 }
 
 #[cfg(test)]
