@@ -105,17 +105,21 @@ impl Generator<validator::Info> for Validator {
     fn generate_fuzz(&self, fuzzer: &mut impl Fuzzer) -> Result<Info, SimpleError> {
         fuzzer.next();
         let address = if fuzzer.is_from(1, 4) {
-            Validator::new(&fuzzer.get_string()).get_private_key()?.public
+            Validator::new(&fuzzer.get_string())
+                .get_private_key()?
+                .public
         } else {
             self.get_private_key()?.public
         };
         let pub_key = if fuzzer.get_bool() {
             // match the address, mutated or not
-            address.clone()
+            address
         } else {
             // independently mutate or not
             if fuzzer.is_from(2, 4) {
-                Validator::new(&fuzzer.get_string()).get_private_key()?.public
+                Validator::new(&fuzzer.get_string())
+                    .get_private_key()?
+                    .public
             } else {
                 self.get_private_key()?.public
             }

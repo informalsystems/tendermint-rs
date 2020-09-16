@@ -5,7 +5,7 @@ pub trait Fuzzer {
     fn next(&mut self) -> u64;
 
     /// Get the current (latest) number from the sequence; also refered to as the current state.
-    fn current(& self) -> u64;
+    fn current(&self) -> u64;
 
     /// Check if the current number is alternative 'alt' from 'total' number of alternatives.
     /// It is expected that 0 < alt <= total.
@@ -30,7 +30,7 @@ pub trait Fuzzer {
         let cur = self.current();
         let max = u64::MAX / 2;
         if cur >= max {
-             - ((cur % max) as i64)
+            -((cur % max) as i64)
         } else {
             cur as i64
         }
@@ -41,8 +41,7 @@ pub trait Fuzzer {
 }
 
 /// A Fuzzer that doesn't do any fuzzing (always returns 0).
-pub struct NoFuzz {
-}
+pub struct NoFuzz {}
 
 impl NoFuzz {
     pub fn new() -> Self {
@@ -62,16 +61,22 @@ impl Fuzzer for NoFuzz {
     }
 }
 
+impl Default for NoFuzz {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct LogFuzzer {
     fuzzer: Box<dyn Fuzzer>,
-    log: Vec<u64>
+    log: Vec<u64>,
 }
 
 impl LogFuzzer {
     pub fn new(fuzzer: impl Fuzzer + 'static) -> Self {
         LogFuzzer {
             fuzzer: Box::new(fuzzer),
-            log: vec![]
+            log: vec![],
         }
     }
 }
