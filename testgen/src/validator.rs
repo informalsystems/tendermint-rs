@@ -1,4 +1,4 @@
-use crate::{fuzzer, helpers::*, Generator};
+use crate::{fuzzer, helpers::*, Generator, Fuzzer};
 use ed25519_dalek::SecretKey as Ed25519SecretKey;
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
@@ -102,41 +102,49 @@ impl Generator<validator::Info> for Validator {
         }
     }
 
+    fn fuzz(&self, fuzzer: &mut impl Fuzzer) -> Self {
+        fuzzer.next();
+        let mut fuzz = self.clone();
+        if fuzzer.is_from(1, 3) {
+            fuzz.id = Some(fuzzer.get_string(0))
+        }
+        if fuzzer.is_from(2, 3) {
+            fuzz.voting_power = Some(fuzzer.get_u64(0))
+        }
+        if fuzzer.is_from(3, 3) {
+            if fuzz.proposer_priority.is_none() || fuzzer.get_bool(0) {
+                fuzz.proposer_priority = Some(fuzzer.get_i64(0))
+            } else {
+                fuzz.proposer_priority = None
+            }
+        }
+        fuzz
+    }
+
     fn generate_fuzz(&self, fuzzer: &mut impl fuzzer::Fuzzer) -> Result<Info, SimpleError> {
         fuzzer.next();
-        let (address, pub_key) = if fuzzer.is_from(1, 3) {
-            let pk0 = Validator::new(&fuzzer.get_string(0)).get_public_key()?;
-            let pk1 = Validator::new(&fuzzer.get_string(1)).get_public_key()?;
+        // here we fuzz only at the generated datastructure level:
+        // whether the address and the pub_key are as expected, or fuzzed
+        let pk0 = self.get_public_key()?;
+        let (address, pub_key) = if fuzzer.is_from(1, 1) {
+            let pk1 = Validator::new(&fuzzer.get_string(0)).get_public_key()?;
             if fuzzer.get_bool(0) {
-                (pk0, pk0)
-            } else {
                 (pk0, pk1)
-            }
-        } else {
-            (self.get_public_key()?, self.get_public_key()?)
-        };
-        let voting_power = if fuzzer.is_from(2, 3) {
-            fuzzer.get_u64(0)
-        } else {
-            self.voting_power.unwrap_or(0)
-        };
-        let proposer_priority = if fuzzer.is_from(3, 3) {
-            if self.proposer_priority.is_none() {
-                Some(fuzzer.get_i64(0))
             } else {
-                None
+                if fuzzer.get_bool(1) {
+                    (pk1, pk0)
+                } else {
+                    (pk1, pk1)
+                }
             }
         } else {
-            self.proposer_priority
+            (pk0, pk0)
         };
         let info = validator::Info {
             address: account::Id::from(address),
             pub_key: PublicKey::from(pub_key),
-            voting_power: vote::Power::new(voting_power),
-            proposer_priority: match proposer_priority {
-                None => None,
-                Some(p) => Some(validator::ProposerPriority::new(p)),
-            },
+            voting_power: vote::Power::new(self.voting_power.unwrap_or(0)),
+            proposer_priority: self.proposer_priority.and_then(|p| Some(validator::ProposerPriority::new(p))),
         };
         Ok(info)
     }
@@ -227,21 +235,22 @@ mod tests {
 
     #[test]
     fn test_validator_fuzz() {
-        let mut fuzzer = fuzzer::RepeatFuzzer::new(&[0, 1, 2, 3]);
+        let mut fuzzer = fuzzer::RepeatFuzzer::new(&[0, 1, 2, 3, 4]);
+
         let val = Validator::new("a").voting_power(10);
+
+        let fuzz = val.fuzz(&mut fuzzer);
+        assert_ne!(val.id, fuzz.id);
+
+        let fuzz = val.fuzz(&mut fuzzer);
+        assert_ne!(val.voting_power, fuzz.voting_power);
+
+        let fuzz = val.fuzz(&mut fuzzer);
+        assert_ne!(val.proposer_priority, fuzz.proposer_priority);
 
         let orig = val.generate().unwrap();
 
         let fuzz = val.generate_fuzz(&mut fuzzer).unwrap();
-        assert_ne!(orig.address, fuzz.address);
-
-        let fuzz = val.generate_fuzz(&mut fuzzer).unwrap();
-        assert_ne!(orig.voting_power, fuzz.voting_power);
-
-        let fuzz = val.generate_fuzz(&mut fuzzer).unwrap();
-        assert_ne!(orig.proposer_priority, fuzz.proposer_priority);
-
-        let fuzz = val.generate_fuzz(&mut fuzzer).unwrap();
-        assert_eq!(orig, fuzz);
+        assert_ne!((orig.address, orig.pub_key), (fuzz.address, fuzz.pub_key));
     }
 }

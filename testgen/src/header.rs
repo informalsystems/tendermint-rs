@@ -73,6 +73,10 @@ impl Generator<TMHeader> for Header {
         }
     }
 
+    fn fuzz(&self, _fuzzer: &mut impl fuzzer::Fuzzer) -> Self {
+        self.clone()
+    }
+
     fn generate_fuzz(&self, fuzzer: &mut impl fuzzer::Fuzzer) -> Result<TMHeader, SimpleError> {
         fuzzer.next();
         let fmax = 6;

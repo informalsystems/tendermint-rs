@@ -70,6 +70,10 @@ impl Generator<vote::Vote> for Vote {
         }
     }
 
+    fn fuzz(&self, _fuzzer: &mut impl Fuzzer) -> Self {
+        self.clone()
+    }
+
     fn generate_fuzz(&self, mut _fuzzer: &mut impl Fuzzer) -> Result<vote::Vote, SimpleError> {
         let validator = match &self.validator {
             None => bail!("failed to generate vote: validator is missing"),
