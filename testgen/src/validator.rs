@@ -1,4 +1,4 @@
-use crate::{fuzzer, helpers::*, Generator, Fuzzer};
+use crate::{fuzzer, helpers::*, Fuzzer, Generator};
 use ed25519_dalek::SecretKey as Ed25519SecretKey;
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
@@ -130,12 +130,10 @@ impl Generator<validator::Info> for Validator {
             let pk1 = Validator::new(&fuzzer.get_string(0)).get_public_key()?;
             if fuzzer.get_bool(0) {
                 (pk0, pk1)
+            } else if fuzzer.get_bool(1) {
+                (pk1, pk0)
             } else {
-                if fuzzer.get_bool(1) {
-                    (pk1, pk0)
-                } else {
-                    (pk1, pk1)
-                }
+                (pk1, pk1)
             }
         } else {
             (pk0, pk0)
@@ -144,7 +142,7 @@ impl Generator<validator::Info> for Validator {
             address: account::Id::from(address),
             pub_key: PublicKey::from(pub_key),
             voting_power: vote::Power::new(self.voting_power.unwrap_or(0)),
-            proposer_priority: self.proposer_priority.and_then(|p| Some(validator::ProposerPriority::new(p))),
+            proposer_priority: self.proposer_priority.map(validator::ProposerPriority::new),
         };
         Ok(info)
     }

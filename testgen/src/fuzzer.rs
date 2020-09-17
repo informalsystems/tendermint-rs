@@ -44,6 +44,15 @@ pub trait Fuzzer {
     fn get_string(&self, index: u64) -> String;
 }
 
+pub fn fuzz_vector<T>(fuzzer: &impl Fuzzer, vec: &mut Vec<T>, val: T) {
+    if fuzzer.get_bool(0) {
+        vec.push(val)
+    } else if !vec.is_empty() {
+        let i = (fuzzer.get_u64(0) as usize) % vec.len();
+        vec.remove(i);
+    }
+}
+
 /// A Fuzzer that doesn't do any fuzzing (always returns 0).
 pub struct NoFuzz {}
 

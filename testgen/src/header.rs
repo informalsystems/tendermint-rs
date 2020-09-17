@@ -1,3 +1,4 @@
+use crate::fuzzer::fuzz_vector;
 use crate::{fuzzer, helpers::*, validator::generate_validators, Generator, Validator};
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
@@ -73,14 +74,38 @@ impl Generator<TMHeader> for Header {
         }
     }
 
-    fn fuzz(&self, _fuzzer: &mut impl fuzzer::Fuzzer) -> Self {
-        self.clone()
+    fn fuzz(&self, fuzzer: &mut impl fuzzer::Fuzzer) -> Self {
+        fuzzer.next();
+        let fmax = 5;
+        let mut fuzz = self.clone();
+        if fuzz.next_validators.is_none() {
+            fuzz.next_validators = fuzz.validators.clone()
+        }
+        if fuzzer.is_from(1, fmax) {
+            fuzz.chain_id = Some(fuzzer.get_string(0))
+        }
+        if fuzzer.is_from(2, fmax) {
+            fuzz.height = Some(fuzzer.get_u64(0))
+        }
+        if fuzzer.is_from(3, fmax) {
+            fuzz.time = Some(fuzzer.get_u64(0))
+        }
+        if fuzzer.is_from(4, fmax) {
+            let mut vals = fuzz.validators.unwrap_or_default();
+            fuzz_vector(fuzzer, &mut vals, Validator::new(&fuzzer.get_string(0)));
+            fuzz.validators = Some(vals);
+        }
+        if fuzzer.is_from(5, fmax) {
+            let mut vals = fuzz.next_validators.unwrap_or_default();
+            fuzz_vector(fuzzer, &mut vals, Validator::new(&fuzzer.get_string(1)));
+            fuzz.next_validators = Some(vals);
+        }
+        fuzz
     }
 
     fn generate_fuzz(&self, fuzzer: &mut impl fuzzer::Fuzzer) -> Result<TMHeader, SimpleError> {
         fuzzer.next();
-        let fmax = 6;
-        let version = if fuzzer.is_from(1, fmax) {
+        let version = if fuzzer.is_from(1, 1) {
             block::header::Version {
                 block: fuzzer.get_u64(0),
                 app: fuzzer.get_u64(1),
@@ -88,43 +113,27 @@ impl Generator<TMHeader> for Header {
         } else {
             block::header::Version { block: 0, app: 0 }
         };
-        let chain_id = if fuzzer.is_from(2, fmax) {
-            fuzzer.get_string(0)
-        } else {
-            self.chain_id
-                .clone()
-                .unwrap_or_else(|| "test-chain".to_string())
-        };
+        let chain_id = self
+            .chain_id
+            .clone()
+            .unwrap_or_else(|| "test-chain".to_string());
         let chain_id = match chain::Id::from_str(&chain_id) {
             Ok(id) => id,
             Err(_) => bail!("failed to construct header's chain_id"),
         };
-        let height = block::Height(if fuzzer.is_from(3, fmax) {
-            fuzzer.get_u64(0)
-        } else {
-            self.height.unwrap_or(1)
-        });
-        let time = if fuzzer.is_from(4, fmax) {
-            get_time(fuzzer.get_u64(0))
-        } else if let Some(t) = self.time {
+        let time = if let Some(t) = self.time {
             get_time(t)
         } else {
             tendermint::Time::now()
         };
-        let mut vals = match &self.validators {
+        let vals = match &self.validators {
             None => bail!("validator array is missing"),
             Some(vals) => vals.clone(),
         };
-        if fuzzer.is_from(5, fmax) {
-            vals.push(Validator::new(&fuzzer.get_string(0)))
-        }
-        let mut next_vals = match &self.next_validators {
+        let next_vals = match &self.next_validators {
             None => vals.clone(),
             Some(vals) => vals.clone(),
         };
-        if fuzzer.is_from(6, fmax) {
-            next_vals.push(Validator::new(&fuzzer.get_string(1)))
-        }
         let vals = generate_validators(&vals)?;
         let proposer_index = self.proposer.unwrap_or(0);
         let proposer_address = if !vals.is_empty() {
@@ -137,7 +146,7 @@ impl Generator<TMHeader> for Header {
         let header = TMHeader {
             version,
             chain_id,
-            height,
+            height: block::Height(self.height.unwrap_or(1)),
             time,
             last_block_id: None,
             last_commit_hash: None,
@@ -230,25 +239,25 @@ mod tests {
             .height(10)
             .time(now);
 
+        let fuzz = header.fuzz(&mut fuzzer);
+        assert_ne!(header.chain_id, fuzz.chain_id);
+
+        let fuzz = header.fuzz(&mut fuzzer);
+        assert_ne!(header.height, fuzz.height);
+
+        let fuzz = header.fuzz(&mut fuzzer);
+        assert_ne!(header.time, fuzz.time);
+
+        let fuzz = header.fuzz(&mut fuzzer);
+        assert_ne!(header.validators, fuzz.validators);
+
+        let fuzz = header.fuzz(&mut fuzzer);
+        assert_ne!(header.next_validators, fuzz.next_validators);
+
         let orig = header.generate().unwrap();
 
         let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
         assert_ne!(orig.version, fuzz.version);
-
-        let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
-        assert_ne!(orig.chain_id, fuzz.chain_id);
-
-        let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
-        assert_ne!(orig.height, fuzz.height);
-
-        let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
-        assert_ne!(orig.time, fuzz.time);
-
-        let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
-        assert_ne!(orig.validators_hash, fuzz.validators_hash);
-
-        let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
-        assert_ne!(orig.next_validators_hash, fuzz.next_validators_hash);
 
         let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
         assert_eq!(orig, fuzz);
