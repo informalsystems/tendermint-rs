@@ -1,11 +1,8 @@
 //! Mock client implementation for use in testing.
 
-#[cfg(feature = "subscription")]
 mod subscription;
-#[cfg(feature = "subscription")]
 pub use subscription::MockSubscriptionClient;
 
-use crate::client::ClosableClient;
 use crate::{Client, Error, Method, Request, Response, Result};
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -54,13 +51,6 @@ impl<M: MockRequestMatcher> Client for MockClient<M> {
         self.matcher.response_for(request).ok_or_else(|| {
             Error::client_internal_error("no matching response for incoming request")
         })?
-    }
-}
-
-#[async_trait]
-impl<M: MockRequestMatcher> ClosableClient for MockClient<M> {
-    async fn close(self) -> Result<()> {
-        Ok(())
     }
 }
 

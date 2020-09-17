@@ -1,10 +1,10 @@
 //! Tendermint RPC client implementations for different transports.
 
-#[cfg(feature = "transport_http")]
-pub mod http;
-#[cfg(any(test, feature = "transport_mock"))]
 pub mod mock;
-#[cfg(feature = "transport_websocket")]
+
+#[cfg(feature = "http-client")]
+pub mod http;
+#[cfg(feature = "websocket-client")]
 pub mod websocket;
 
 use crate::{Error, Result};

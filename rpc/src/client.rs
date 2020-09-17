@@ -1,20 +1,17 @@
 //! Tendermint RPC client.
 
-#[cfg(feature = "subscription")]
 mod subscription;
-#[cfg(feature = "subscription")]
 pub use subscription::{Subscription, SubscriptionClient, SubscriptionId, SubscriptionRouter};
-#[cfg(feature = "subscription")]
 pub mod sync;
 
 mod transport;
-#[cfg(feature = "transport_http")]
+pub use transport::mock::{
+    MockClient, MockRequestMatcher, MockRequestMethodMatcher, MockSubscriptionClient,
+};
+
+#[cfg(feature = "http-client")]
 pub use transport::http::HttpClient;
-#[cfg(all(feature = "subscription", feature = "transport_mock"))]
-pub use transport::mock::MockSubscriptionClient;
-#[cfg(feature = "transport_mock")]
-pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
-#[cfg(all(feature = "subscription", feature = "transport_websocket"))]
+#[cfg(feature = "websocket-client")]
 pub use transport::websocket::WebSocketClient;
 
 use crate::endpoint::*;
@@ -33,7 +30,7 @@ use tendermint::Genesis;
 ///
 /// [`SubscriptionClient`]: trait.SubscriptionClient.html
 #[async_trait]
-pub trait Client: ClosableClient {
+pub trait Client {
     /// `/abci_info`: get information about the ABCI application.
     async fn abci_info(&self) -> Result<abci_info::AbciInfo> {
         Ok(self.perform(abci_info::Request).await?.response)
@@ -168,18 +165,4 @@ pub trait Client: ClosableClient {
     async fn perform<R>(&self, request: R) -> Result<R::Response>
     where
         R: Request;
-}
-
-/// A client that provides a self-consuming `close` method, to allow for
-/// graceful termination.
-///
-/// This trait acts as a common trait to both the [`Client`] and
-/// [`SubscriptionClient`] traits.
-///
-/// [`Client`]: trait.Client.html
-/// [`SubscriptionClient`]: trait.SubscriptionClient.html
-#[async_trait]
-pub trait ClosableClient {
-    /// Gracefully close the client.
-    async fn close(self) -> Result<()>;
 }

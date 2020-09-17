@@ -60,7 +60,7 @@ zeroize = { version = "1.1", features = ["zeroize_derive"] }
 ripemd160 = { version = "0.9", optional = true }
 
 [dev-dependencies]
-tendermint-rpc = { path = "../rpc", features = [ "client", "subscription", "transport_http", "transport_websocket" ] }
+tendermint-rpc = { path = "../rpc", features = [ "http-client", "websocket-client" ] }
 tokio = { version = "0.2", features = [ "macros" ] }
 
 [features]

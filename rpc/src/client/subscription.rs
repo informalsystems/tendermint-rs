@@ -1,7 +1,6 @@
 //! Subscription- and subscription management-related functionality.
 
 use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
-use crate::client::ClosableClient;
 use crate::event::Event;
 use crate::{Error, Id, Result};
 use async_trait::async_trait;
@@ -11,13 +10,14 @@ use getrandom::getrandom;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::pin::Pin;
+use std::str::FromStr;
 
 /// A client that exclusively provides [`Event`] subscription capabilities,
 /// without any other RPC method support.
 ///
 /// [`Event`]: event/struct.Event.html
 #[async_trait]
-pub trait SubscriptionClient: ClosableClient {
+pub trait SubscriptionClient {
     /// `/subscribe`: subscribe to receive events produced by the given query.
     ///
     /// For query syntax details, see the
@@ -60,8 +60,9 @@ pub struct Subscription {
     pub id: SubscriptionId,
     // Our internal result event receiver for this subscription.
     event_rx: ChannelRx<Result<Event>>,
-    // Allows us to gracefully terminate this subscription.
-    terminate_tx: ChannelTx<TerminateSubscription>,
+    // Allows us to interact with the subscription driver (exclusively to
+    // terminate this subscription).
+    cmd_tx: ChannelTx<SubscriptionDriverCmd>,
 }
 
 impl Stream for Subscription {
@@ -77,13 +78,13 @@ impl Subscription {
         id: SubscriptionId,
         query: String,
         event_rx: ChannelRx<Result<Event>>,
-        terminate_tx: ChannelTx<TerminateSubscription>,
+        cmd_tx: ChannelTx<SubscriptionDriverCmd>,
     ) -> Self {
         Self {
             id,
             query,
             event_rx,
-            terminate_tx,
+            cmd_tx,
         }
     }
 
@@ -93,8 +94,8 @@ impl Subscription {
     /// method provides a way to terminate it from that same context.
     pub async fn terminate(mut self) -> Result<()> {
         let (result_tx, mut result_rx) = unbounded();
-        self.terminate_tx
-            .send(TerminateSubscription {
+        self.cmd_tx
+            .send(SubscriptionDriverCmd::Unsubscribe {
                 id: self.id.clone(),
                 query: self.query.clone(),
                 result_tx,
@@ -108,16 +109,37 @@ impl Subscription {
     }
 }
 
-/// A message sent to the subscription driver to terminate the subscription
-/// with the given parameters.
+/// A command that can be sent to the subscription driver.
 ///
-/// We expect the driver to use the `result_tx` channel to communicate the
-/// result of the termination request to the original caller.
+/// It is assumed that all [`SubscriptionClient`] implementations will follow a
+/// handle/driver concurrency model, where the client itself will just be a
+/// handle to a driver that runs in a separate coroutine.
+///
+/// [`SubscriptionClient`]: trait.SubscriptionClient.html
 #[derive(Debug, Clone)]
-pub struct TerminateSubscription {
-    pub id: SubscriptionId,
-    pub query: String,
-    pub result_tx: ChannelTx<Result<()>>,
+pub enum SubscriptionDriverCmd {
+    /// Initiate a new subscription.
+    Subscribe {
+        /// The desired ID for the new subscription.
+        id: SubscriptionId,
+        /// The query for which to initiate the subscription.
+        query: String,
+        /// Where to send events received for this subscription.
+        event_tx: ChannelTx<Result<Event>>,
+        /// Where to send the result of this subscription command.
+        result_tx: ChannelTx<Result<()>>,
+    },
+    /// Terminate an existing subscription.
+    Unsubscribe {
+        /// The ID of the subscription to terminate.
+        id: SubscriptionId,
+        /// The query associated with the subscription we want to terminate.
+        query: String,
+        /// Where to send the result of this unsubscribe command.
+        result_tx: ChannelTx<Result<()>>,
+    },
+    /// Terminate the subscription driver entirely.
+    Terminate,
 }
 
 /// Each new subscription is automatically assigned an ID.
@@ -169,9 +191,11 @@ impl TryInto<SubscriptionId> for Id {
     }
 }
 
-impl From<&str> for SubscriptionId {
-    fn from(s: &str) -> Self {
-        Self(s.to_string())
+impl FromStr for SubscriptionId {
+    type Err = ();
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(Self(s.to_string()))
     }
 }
 
@@ -404,7 +428,7 @@ impl SubscriptionRouter {
             Some(SubscriptionState::Pending)
         } else if self.pending_unsubscribe.contains_key(req_id) {
             Some(SubscriptionState::Cancelling)
-        } else if self.is_active(&SubscriptionId::from(req_id)) {
+        } else if self.is_active(&SubscriptionId::from_str(req_id).unwrap()) {
             Some(SubscriptionState::Active)
         } else {
             None

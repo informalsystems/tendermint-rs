@@ -1,7 +1,6 @@
 //! HTTP-based transport for Tendermint RPC Client.
 
 use crate::client::transport::get_tcp_host_port;
-use crate::client::ClosableClient;
 use crate::{Client, Request, Response, Result};
 use async_trait::async_trait;
 use bytes::buf::BufExt;
@@ -48,13 +47,6 @@ impl Client for HttpClient {
         R: Request,
     {
         http_request(&self.host, self.port, request).await
-    }
-}
-
-#[async_trait]
-impl ClosableClient for HttpClient {
-    async fn close(self) -> Result<()> {
-        Ok(())
     }
 }
 
