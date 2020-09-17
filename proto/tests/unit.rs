@@ -3,9 +3,10 @@ use tendermint_proto::types::BlockId as RawBlockId;
 use tendermint_proto::types::PartSetHeader as RawPartSetHeader;
 use tendermint_proto::DomainType;
 
+impl DomainType<RawBlockId> for BlockId {}
+
 // Example implementation of a protobuf struct using DomainType.
-#[derive(DomainType, Clone, Debug)]
-#[rawtype(RawBlockId)]
+#[derive(Clone, Debug)]
 pub struct BlockId {
     hash: String,
     part_set_header_exists: bool,
