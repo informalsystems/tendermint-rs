@@ -193,14 +193,12 @@ mod rpc {
         let broadcast_tx_values = expected_tx_values.clone();
 
         tokio::spawn(async move {
-            let mut tx_count = 0_u32;
-            for val in broadcast_tx_values {
+            for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
                 let tx = format!("tx{}={}", tx_count, val);
                 rpc_client
                     .broadcast_tx_async(Transaction::new(tx.as_bytes()))
                     .await
                     .unwrap();
-                tx_count += 1;
             }
         });
 
@@ -213,7 +211,7 @@ mod rpc {
         expected_tx_values.reverse();
         let mut cur_tx_id = 0_u32;
 
-        while expected_tx_values.len() > 0 {
+        while !expected_tx_values.is_empty() {
             let mut delay = tokio::time::delay_for(Duration::from_secs(3));
             tokio::select! {
                 Some(res) = subs.next() => {
@@ -224,15 +222,17 @@ mod rpc {
                         EventData::Tx { tx_result } => match base64::decode(tx_result.tx) {
                             Ok(decoded_tx) => match String::from_utf8(decoded_tx) {
                                 Ok(decoded_tx_str) => {
-                                    let decoded_tx_split =
-                                        decoded_tx_str.split("=").into_iter().collect::<Vec<&str>>();
+                                    let decoded_tx_split = decoded_tx_str
+                                        .split('=')
+                                        .map(|s| s.to_string())
+                                        .collect::<Vec<String>>();
                                     assert_eq!(2, decoded_tx_split.len());
 
-                                    let key = decoded_tx_split.get(0).unwrap().to_string();
-                                    let val = decoded_tx_split.get(1).unwrap().to_string();
+                                    let key = decoded_tx_split.get(0).unwrap();
+                                    let val = decoded_tx_split.get(1).unwrap();
                                     println!("Got tx: {}={}", key, val);
-                                    assert_eq!(format!("tx{}", cur_tx_id), key,);
-                                    assert_eq!(next_val, val);
+                                    assert_eq!(format!("tx{}", cur_tx_id), *key);
+                                    assert_eq!(next_val, *val);
                                 }
                                 Err(e) => panic!("Failed to convert decoded tx to string: {}", e),
                             },
