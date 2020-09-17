@@ -127,13 +127,14 @@ impl Info {
     }
 }
 
+impl DomainType<RawSimpleValidator> for SimpleValidator {}
+
 /// SimpleValidator is the form of the validator used for computing the Merkle tree.
 /// It does not include the address, as that is redundant with the pubkey,
 /// nor the proposer priority, as that changes with every block even if the validator set didn't.
 /// It contains only the pubkey and the voting power, and is amino encoded.
 /// TODO: currently only works for Ed25519 pubkeys
-#[derive(Clone, PartialEq, DomainType)]
-#[rawtype(RawSimpleValidator)]
+#[derive(Clone, PartialEq)]
 pub struct SimpleValidator {
     /// Public key
     pub pub_key: Option<tendermint_proto::crypto::PublicKey>,

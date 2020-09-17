@@ -4,7 +4,6 @@ members = [
     "light-client",
     "light-node",
     "proto",
-    "proto-derive",
     "rpc",
     "tendermint",
     "testgen"

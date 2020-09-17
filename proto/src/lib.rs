@@ -93,12 +93,6 @@ pub use domaintype::DomainType;
 mod error;
 pub use error::{Error, Kind};
 
-// Re-export the bytes and prost crates for use within derived code.
-#[doc(hidden)]
-pub use bytes;
-#[doc(hidden)]
-pub use prost;
-
 // Re-export the DomainType derive macro #[derive(DomainType)]
 #[cfg(feature = "tendermint-proto-derive")]
 #[doc(hidden)]

@@ -24,9 +24,10 @@ use tendermint_proto::DomainType;
 
 const VALIDATOR_ADDR_SIZE: usize = 20;
 
+impl DomainType<RawVote> for Vote {}
+
 /// Vote represents a prevote, precommit, or commit vote from validators for consensus.
-#[derive(Clone, PartialEq, Default, Debug, DomainType)]
-#[rawtype(RawVote)]
+#[derive(Clone, PartialEq, Default, Debug)]
 pub struct Vote {
     pub vote_type: u16,
     pub height: u32,
@@ -119,9 +120,10 @@ impl block::ParseHeight for Vote {
     }
 }
 
+impl DomainType<RawSignVoteRequest> for SignVoteRequest {}
+
 /// SignVoteRequest is a request to sign a vote
-#[derive(Clone, PartialEq, Debug, DomainType)]
-#[rawtype(RawSignVoteRequest)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SignVoteRequest {
     pub vote: Option<Vote>,
     pub chain_id: String,
@@ -188,8 +190,9 @@ impl TryFrom<SignedVoteResponse> for RawSignedVoteResponse {
     }
 }
 
-#[derive(Clone, PartialEq, DomainType)]
-#[rawtype(RawCanonicalVote)]
+impl DomainType<RawCanonicalVote> for CanonicalVote {}
+
+#[derive(Clone, PartialEq)]
 pub struct CanonicalVote {
     pub vote_type: u16,
     pub height: i64,
@@ -576,7 +579,7 @@ mod tests {
             ],
         };
         let mut got = vec![];
-        let _have = vote.clone().encode(&mut got);
+        let _have = vote.encode(&mut got);
         let v = Vote::decode(got.as_ref()).unwrap();
 
         assert_eq!(v, vote);
@@ -587,7 +590,7 @@ mod tests {
                 chain_id: "test_chain_id".to_string(),
             };
             let mut got = vec![];
-            let _have = svr.clone().encode(&mut got);
+            let _have = svr.encode(&mut got);
 
             let svr2 = SignVoteRequest::decode(got.as_ref()).unwrap();
             assert_eq!(svr, svr2);
