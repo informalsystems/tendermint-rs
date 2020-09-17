@@ -262,9 +262,6 @@ impl WebSocketSubscriptionDriver {
             .split("}\n{")
             .map(|m| m.to_string())
             .collect::<Vec<String>>();
-        if msgs.is_empty() {
-            return;
-        }
         for mut msg in msgs {
             if !msg.starts_with('{') {
                 msg.insert(0, '{');
