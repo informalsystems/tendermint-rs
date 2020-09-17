@@ -135,7 +135,7 @@ mod tests {
             chain_id: "".to_string(),
         };
         let mut got = vec![];
-        let _have = msg.clone().encode(&mut got);
+        let _have = msg.encode(&mut got);
 
         assert_eq!(got, want);
 
@@ -190,7 +190,7 @@ mod tests {
             error: None,
         };
         let mut got = vec![];
-        let _have = msg.clone().encode(&mut got);
+        let _have = msg.encode(&mut got);
 
         assert_eq!(got, encoded);
 

@@ -576,7 +576,7 @@ mod tests {
             ],
         };
         let mut got = vec![];
-        let _have = vote.clone().encode(&mut got);
+        let _have = vote.encode(&mut got);
         let v = Vote::decode(got.as_ref()).unwrap();
 
         assert_eq!(v, vote);
@@ -587,7 +587,7 @@ mod tests {
                 chain_id: "test_chain_id".to_string(),
             };
             let mut got = vec![];
-            let _have = svr.clone().encode(&mut got);
+            let _have = svr.encode(&mut got);
 
             let svr2 = SignVoteRequest::decode(got.as_ref()).unwrap();
             assert_eq!(svr, svr2);
