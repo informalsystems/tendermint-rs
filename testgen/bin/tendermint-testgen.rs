@@ -74,7 +74,7 @@ enum Command {
 fn encode<Opts: Generator<T> + Options, T: serde::Serialize>(
     cli: Opts,
     stdin: bool,
-    input: bool
+    input: bool,
 ) -> Result<String, SimpleError> {
     let producer = if stdin {
         let stdin = read_stdin()?;
@@ -85,8 +85,7 @@ fn encode<Opts: Generator<T> + Options, T: serde::Serialize>(
     };
     if input {
         producer.encode_input()
-    }
-    else {
+    } else {
         producer.encode()
     }
 }

@@ -1,6 +1,6 @@
 use crate::{fuzzer, helpers::*, Generator};
 use gumdrop::Options;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use simple_error::*;
 use tendermint::Time as TMTime;
 

@@ -1,5 +1,5 @@
 use gumdrop::Options;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use simple_error::*;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;

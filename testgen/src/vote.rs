@@ -1,6 +1,6 @@
 use crate::{helpers::*, Fuzzer, Generator, Header, Validator};
 use gumdrop::Options;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use simple_error::*;
 use std::convert::TryFrom;
 use tendermint::{

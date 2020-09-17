@@ -1,6 +1,6 @@
 use crate::{fuzzer, helpers::*, validator::generate_validators, Generator, Validator};
 use gumdrop::Options;
-use serde::{ Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use simple_error::*;
 use std::str::FromStr;
 use tendermint::{block, block::Header as TMHeader, chain, validator};
@@ -102,12 +102,10 @@ impl Generator<TMHeader> for Header {
         });
         let time = if fuzzer.is_from(4, fmax) {
             get_time(fuzzer.get_u64(0))
+        } else if let Some(t) = self.time {
+            get_time(t)
         } else {
-            if let Some(t) = self.time {
-                get_time(t)
-            } else {
-                tendermint::Time::now()
-            }
+            tendermint::Time::now()
         };
         let mut vals = match &self.validators {
             None => bail!("validator array is missing"),

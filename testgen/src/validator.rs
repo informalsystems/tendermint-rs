@@ -1,7 +1,7 @@
 use crate::{fuzzer, helpers::*, Generator};
 use ed25519_dalek::SecretKey as Ed25519SecretKey;
 use gumdrop::Options;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use simple_error::*;
 use tendermint::consensus::state::Ordering;
 use tendermint::validator::Info;
