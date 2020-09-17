@@ -1,11 +1,10 @@
 use simple_error::*;
 
-use crate::validator::{generate_validator_set, generate_validators};
 use crate::{Commit, Generator, Header, Validator};
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::node::Id as PeerId;
-use tendermint::validator::Info;
 use tendermint::validator::Set as ValidatorSet;
+use crate::validator::generate_validators;
 
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
@@ -58,19 +57,27 @@ impl LightBlock {
         raw_vals: Vec<Validator>,
         peer_id: PeerId,
     ) -> Result<LightBlock, SimpleError> {
-        let signed_header = match generate_signed_header(raw_header, raw_commit) {
+        let signed_header = match generate_signed_header_with(raw_header, raw_commit) {
             Err(e) => bail!("Failed to generate signed header with error: {}", e),
             Ok(sh) => sh,
         };
 
-        let validator_set = ValidatorSet::new(raw_vals);
+        let validators = match generate_validators(&raw_vals) {
+            Err(e) => bail!("Failed to generate validators with error: {}", e),
+            Ok(vals) => vals,
+        };
+        let validator_set = ValidatorSet::new(validators);
 
-        let light_block = LightBlock::new(signed_header, validator_set.clone(), validator_set, peer_id);
+        let light_block = LightBlock::new(
+            signed_header,
+            validator_set.clone(),
+            validator_set,
+            peer_id);
         Ok(light_block)
     }
 }
 
-pub fn generate_signed_header(
+pub fn generate_signed_header_with(
     raw_header: Header,
     raw_commit: Commit,
 ) -> Result<SignedHeader, SimpleError> {
@@ -85,4 +92,13 @@ pub fn generate_signed_header(
     };
 
     Ok(SignedHeader { header, commit })
+}
+
+pub fn generate_default_signed_header(
+    raw_vals: Vec<Validator>
+) -> Result<SignedHeader, SimpleError> {
+    let raw_header = Header::new(&raw_vals);
+    let raw_commit = Commit::new(raw_header.clone(), 1);
+
+    generate_signed_header_with(raw_header, raw_commit)
 }
