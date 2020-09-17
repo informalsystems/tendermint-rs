@@ -11,11 +11,13 @@
 mod rpc {
     use std::cmp::min;
 
-    use tendermint_rpc::{Client, HttpClient, SubscriptionClient, WebSocketClient};
+    use tendermint_rpc::{Client, HttpClient, Id, SubscriptionClient, WebSocketClient};
 
     use futures::StreamExt;
-    use tendermint::abci::Code;
+    use subtle_encoding::base64;
     use tendermint::abci::Log;
+    use tendermint::abci::{Code, Transaction};
+    use tendermint_rpc::event::EventData;
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> HttpClient {
@@ -170,5 +172,77 @@ mod rpc {
 
         subs.terminate().await.unwrap();
         client.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn transaction_subscription() {
+        let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
+        let mut subs_client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+            .await
+            .unwrap();
+        let mut subs = subs_client
+            .subscribe("tm.event='Tx'".to_string())
+            .await
+            .unwrap();
+        // We use Id::uuid_v4() here as a quick hack to generate a random value.
+        let mut expected_tx_values = (0..10_u32)
+            .map(|_| Id::uuid_v4().to_string())
+            .collect::<Vec<String>>();
+        let broadcast_tx_values = expected_tx_values.clone();
+
+        tokio::spawn(async move {
+            let mut tx_count = 0_u32;
+            for val in broadcast_tx_values {
+                let tx = format!("tx{}={}", tx_count, val);
+                rpc_client
+                    .broadcast_tx_async(Transaction::new(tx.as_bytes()))
+                    .await
+                    .unwrap();
+                tx_count += 1;
+            }
+        });
+
+        println!(
+            "Attempting to grab {} transaction events",
+            expected_tx_values.len()
+        );
+        // We reverse the expected tx values because we're popping them off the
+        // array as we check the received events.
+        expected_tx_values.reverse();
+        let mut cur_tx_id = 0_u32;
+
+        while let Some(res) = subs.next().await {
+            let ev = res.unwrap();
+            //println!("Got event: {:?}", ev);
+            let next_val = expected_tx_values.pop().unwrap();
+            match ev.data {
+                EventData::Tx { tx_result } => match base64::decode(tx_result.tx) {
+                    Ok(decoded_tx) => match String::from_utf8(decoded_tx) {
+                        Ok(decoded_tx_str) => {
+                            let decoded_tx_split =
+                                decoded_tx_str.split("=").into_iter().collect::<Vec<&str>>();
+                            assert_eq!(2, decoded_tx_split.len());
+
+                            let key = decoded_tx_split.get(0).unwrap().to_string();
+                            let val = decoded_tx_split.get(1).unwrap().to_string();
+                            println!("Got tx: {}={}", key, val);
+                            assert_eq!(format!("tx{}", cur_tx_id), key,);
+                            assert_eq!(next_val, val);
+                        }
+                        Err(e) => panic!("Failed to convert decoded tx to string: {}", e),
+                    },
+                    Err(e) => panic!("Failed to base64 decode tx from event: {}", e),
+                },
+                _ => panic!("Unexpected event type: {:?}", ev),
+            }
+            if expected_tx_values.is_empty() {
+                break;
+            }
+            cur_tx_id += 1;
+        }
+
+        subs.terminate().await.unwrap();
+        subs_client.close().await.unwrap();
     }
 }
