@@ -257,15 +257,31 @@ impl WebSocketSubscriptionDriver {
     }
 
     async fn handle_text_msg(&mut self, msg: String) {
-        match Event::from_string(&msg) {
-            Ok(ev) => {
-                self.router.publish(ev).await;
+        // See https://github.com/tendermint/tendermint/issues/5373
+        let msgs = msg
+            .split("}\n{")
+            .map(|m| m.to_string())
+            .collect::<Vec<String>>();
+        if msgs.is_empty() {
+            return;
+        }
+        for mut msg in msgs {
+            if !msg.starts_with('{') {
+                msg.insert(0, '{');
             }
-            Err(_) => {
-                if let Ok(wrapper) =
-                    serde_json::from_str::<response::Wrapper<GenericJSONResponse>>(&msg)
-                {
-                    self.handle_generic_response(wrapper).await;
+            if !msg.ends_with('}') {
+                msg.push('}');
+            }
+            match Event::from_string(&msg) {
+                Ok(ev) => {
+                    self.router.publish(ev).await;
+                }
+                Err(_) => {
+                    if let Ok(wrapper) =
+                        serde_json::from_str::<response::Wrapper<GenericJSONResponse>>(&msg)
+                    {
+                        self.handle_generic_response(wrapper).await;
+                    }
                 }
             }
         }
