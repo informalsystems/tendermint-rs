@@ -18,6 +18,7 @@ mod rpc {
     use tendermint::abci::Log;
     use tendermint::abci::{Code, Transaction};
     use tendermint_rpc::event::EventData;
+    use tokio::time::Duration;
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> HttpClient {
@@ -212,34 +213,37 @@ mod rpc {
         expected_tx_values.reverse();
         let mut cur_tx_id = 0_u32;
 
-        while let Some(res) = subs.next().await {
-            let ev = res.unwrap();
-            //println!("Got event: {:?}", ev);
-            let next_val = expected_tx_values.pop().unwrap();
-            match ev.data {
-                EventData::Tx { tx_result } => match base64::decode(tx_result.tx) {
-                    Ok(decoded_tx) => match String::from_utf8(decoded_tx) {
-                        Ok(decoded_tx_str) => {
-                            let decoded_tx_split =
-                                decoded_tx_str.split("=").into_iter().collect::<Vec<&str>>();
-                            assert_eq!(2, decoded_tx_split.len());
+        while expected_tx_values.len() > 0 {
+            let mut delay = tokio::time::delay_for(Duration::from_secs(3));
+            tokio::select! {
+                Some(res) = subs.next() => {
+                    let ev = res.unwrap();
+                    //println!("Got event: {:?}", ev);
+                    let next_val = expected_tx_values.pop().unwrap();
+                    match ev.data {
+                        EventData::Tx { tx_result } => match base64::decode(tx_result.tx) {
+                            Ok(decoded_tx) => match String::from_utf8(decoded_tx) {
+                                Ok(decoded_tx_str) => {
+                                    let decoded_tx_split =
+                                        decoded_tx_str.split("=").into_iter().collect::<Vec<&str>>();
+                                    assert_eq!(2, decoded_tx_split.len());
 
-                            let key = decoded_tx_split.get(0).unwrap().to_string();
-                            let val = decoded_tx_split.get(1).unwrap().to_string();
-                            println!("Got tx: {}={}", key, val);
-                            assert_eq!(format!("tx{}", cur_tx_id), key,);
-                            assert_eq!(next_val, val);
-                        }
-                        Err(e) => panic!("Failed to convert decoded tx to string: {}", e),
-                    },
-                    Err(e) => panic!("Failed to base64 decode tx from event: {}", e),
+                                    let key = decoded_tx_split.get(0).unwrap().to_string();
+                                    let val = decoded_tx_split.get(1).unwrap().to_string();
+                                    println!("Got tx: {}={}", key, val);
+                                    assert_eq!(format!("tx{}", cur_tx_id), key,);
+                                    assert_eq!(next_val, val);
+                                }
+                                Err(e) => panic!("Failed to convert decoded tx to string: {}", e),
+                            },
+                            Err(e) => panic!("Failed to base64 decode tx from event: {}", e),
+                        },
+                        _ => panic!("Unexpected event type: {:?}", ev),
+                    }
+                    cur_tx_id += 1;
                 },
-                _ => panic!("Unexpected event type: {:?}", ev),
+                _ = &mut delay => panic!("Timed out waiting for an event"),
             }
-            if expected_tx_values.is_empty() {
-                break;
-            }
-            cur_tx_id += 1;
         }
 
         subs.terminate().await.unwrap();
