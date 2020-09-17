@@ -161,11 +161,13 @@ mod tests {
         let valset1 = sort_validators(&[
             Validator::new("a"),
             Validator::new("b"),
-            Validator::new("c")]);
+            Validator::new("c"),
+        ]);
         let valset2 = sort_validators(&[
             Validator::new("d"),
             Validator::new("e"),
-            Validator::new("f")]);
+            Validator::new("f"),
+        ]);
 
         let header = Header::new(&valset1)
             .next_validators(&valset2)
