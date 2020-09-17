@@ -55,41 +55,9 @@ fn expand_domaintype(input: &syn::DeriveInput) -> TokenStream {
         }
     };
 
+    // This is what all the hubbub is about.
     let gen = quote! {
-        impl ::tendermint_proto::DomainType<#rawtype> for #ident {
-
-            fn encode<B: ::tendermint_proto::bytes::BufMut>(self, buf: &mut B) -> ::std::result::Result<(), ::tendermint_proto::Error> {
-                use ::tendermint_proto::prost::Message;
-                #rawtype::from(self).encode(buf).map_err(|e| ::tendermint_proto::Kind::EncodeMessage.context(e).into())
-            }
-
-            fn encode_length_delimited<B: ::tendermint_proto::bytes::BufMut>(self, buf: &mut B) -> ::std::result::Result<(), ::tendermint_proto::Error> {
-                use ::tendermint_proto::prost::Message;
-                #rawtype::from(self).encode_length_delimited(buf).map_err(|e| ::tendermint_proto::Kind::EncodeMessage.context(e).into())
-            }
-
-            fn decode<B: ::tendermint_proto::bytes::Buf>(buf: B) -> Result<Self, ::tendermint_proto::Error> {
-                use ::tendermint_proto::prost::Message;
-                #rawtype::decode(buf).map_or_else(
-                    |e| ::std::result::Result::Err(::tendermint_proto::Kind::DecodeMessage.context(e).into()),
-                    |t| Self::try_from(t).map_err(|e| ::tendermint_proto::Kind::TryIntoDomainType.context(e).into())
-                )
-            }
-
-            fn decode_length_delimited<B: ::tendermint_proto::bytes::Buf>(buf: B) -> Result<Self, ::tendermint_proto::Error> {
-                use ::tendermint_proto::prost::Message;
-                #rawtype::decode_length_delimited(buf).map_or_else(
-                    |e| ::std::result::Result::Err(::tendermint_proto::Kind::DecodeMessage.context(e).into()),
-                    |t| Self::try_from(t).map_err(|e| ::tendermint_proto::Kind::TryIntoDomainType.context(e).into())
-                )
-            }
-
-            fn encoded_len(self) -> usize {
-                use ::tendermint_proto::prost::Message;
-                #rawtype::from(self).encoded_len()
-            }
-
-        }
+        impl ::tendermint_proto::DomainType<#rawtype> for #ident {}
     };
     gen.into()
 }
