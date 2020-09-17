@@ -1,4 +1,4 @@
-//! `/net_info` endpoint JSONRPC wrapper
+//! `/net_info` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};

@@ -1,6 +1,6 @@
 use gumdrop::Options;
 use simple_error::SimpleError;
-use tendermint_testgen::{helpers::*, Commit, Generator, Header, Validator, Vote};
+use tendermint_testgen::{helpers::*, Commit, Generator, Header, Time, Validator, Vote};
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -65,6 +65,8 @@ enum Command {
     Vote(Vote),
     #[options(help = "produce commit from validator array and other parameters")]
     Commit(Commit),
+    #[options(help = "produce timestamp from number of seconds since epoch")]
+    Time(Time),
 }
 
 fn encode_with_stdin<Opts: Generator<T> + Options, T: serde::Serialize>(
@@ -129,5 +131,6 @@ fn main() {
         Some(Command::Header(cli)) => run_command(cli, opts.stdin),
         Some(Command::Vote(cli)) => run_command(cli, opts.stdin),
         Some(Command::Commit(cli)) => run_command(cli, opts.stdin),
+        Some(Command::Time(cli)) => run_command(cli, opts.stdin),
     }
 }

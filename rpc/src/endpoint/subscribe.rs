@@ -1,16 +1,17 @@
-//! `/subscribe` endpoint JSONRPC wrapper
+//! `/subscribe` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
 use std::io::Read;
 
-/// Subscribe request for events on websocket
+/// Subscription request for events.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
-    query: String,
+    pub query: String,
 }
 
 impl Request {
-    /// Query the Tendermint nodes event and stream events over web socket
+    /// Query the Tendermint nodes event and stream events (by default over a
+    /// WebSocket connection).
     pub fn new(query: String) -> Self {
         Self { query }
     }
@@ -28,9 +29,7 @@ impl crate::Request for Request {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {}
 
-/// Subcribe is weird RPC endpoint. It's only meaningful at websocket response and there isn't a
-/// synchronous reponse offered. It there is an error it's asynchronous and we don't try and stich
-/// the async response back together with the request.
+/// Subscribe does not have a meaningful response at the moment.
 impl crate::Response for Response {
     /// We throw away response data JSON string so swallow errors and return the empty Response
     fn from_string(_response: impl AsRef<[u8]>) -> Result<Self, crate::Error> {
