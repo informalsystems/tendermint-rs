@@ -158,16 +158,14 @@ mod tests {
 
     #[test]
     fn test_commit() {
-        let valset1 = sort_validators(&vec![
+        let valset1 = sort_validators(&[
             Validator::new("a"),
             Validator::new("b"),
-            Validator::new("c"),
-        ]);
-        let valset2 = sort_validators(&vec![
+            Validator::new("c")]);
+        let valset2 = sort_validators(&[
             Validator::new("d"),
             Validator::new("e"),
-            Validator::new("f"),
-        ]);
+            Validator::new("f")]);
 
         let header = Header::new(&valset1)
             .next_validators(&valset2)
