@@ -72,16 +72,16 @@ enum Command {
 }
 
 fn encode<Opts: Generator<T> + Options, T: serde::Serialize>(
-    cli: &Opts,
+    cli: Opts,
     stdin: bool,
     input: bool
 ) -> Result<String, SimpleError> {
     let producer = if stdin {
         let stdin = read_stdin()?;
         let default = Opts::from_str(&stdin)?;
-        cli.clone().merge_with_default(default)
+        cli.merge_with_default(default)
     } else {
-        cli.clone()
+        cli
     };
     if input {
         producer.encode_input()
@@ -96,13 +96,14 @@ where
     Opts: Generator<T> + Options,
     T: serde::Serialize,
 {
-    let res = encode(&cli, read_stdin, input);
+    let usage = cli.self_usage();
+    let res = encode(cli, read_stdin, input);
     match res {
         Ok(res) => println!("{}", res),
         Err(e) => {
             eprintln!("Error: {}\n", e);
             eprintln!("Supported parameters for this command are: ");
-            print_params(cli.self_usage());
+            print_params(usage);
             std::process::exit(1);
         }
     }
