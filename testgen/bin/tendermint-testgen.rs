@@ -50,6 +50,8 @@ struct CliOptions {
     usage: bool,
     #[options(help = "read input from STDIN (default: no)")]
     stdin: bool,
+    #[options(help = "reproduce input in JSON format (default: no)")]
+    input: bool,
 
     #[options(command)]
     command: Option<Command>,
@@ -69,25 +71,32 @@ enum Command {
     Time(Time),
 }
 
-fn encode_with_stdin<Opts: Generator<T> + Options, T: serde::Serialize>(
+fn encode<Opts: Generator<T> + Options, T: serde::Serialize>(
     cli: &Opts,
+    stdin: bool,
+    input: bool
 ) -> Result<String, SimpleError> {
-    let stdin = read_stdin()?;
-    let default = Opts::from_str(&stdin)?;
-    let producer = cli.clone().merge_with_default(default);
-    producer.encode()
+    let producer = if stdin {
+        let stdin = read_stdin()?;
+        let default = Opts::from_str(&stdin)?;
+        cli.clone().merge_with_default(default)
+    } else {
+        cli.clone()
+    };
+    if input {
+        producer.encode_input()
+    }
+    else {
+        producer.encode()
+    }
 }
 
-fn run_command<Opts, T>(cli: Opts, read_stdin: bool)
+fn run_command<Opts, T>(cli: Opts, read_stdin: bool, input: bool)
 where
     Opts: Generator<T> + Options,
     T: serde::Serialize,
 {
-    let res = if read_stdin {
-        encode_with_stdin(&cli)
-    } else {
-        cli.encode()
-    };
+    let res = encode(&cli, read_stdin, input);
     match res {
         Ok(res) => println!("{}", res),
         Err(e) => {
@@ -127,10 +136,10 @@ fn main() {
             }
             std::process::exit(1);
         }
-        Some(Command::Validator(cli)) => run_command(cli, opts.stdin),
-        Some(Command::Header(cli)) => run_command(cli, opts.stdin),
-        Some(Command::Vote(cli)) => run_command(cli, opts.stdin),
-        Some(Command::Commit(cli)) => run_command(cli, opts.stdin),
-        Some(Command::Time(cli)) => run_command(cli, opts.stdin),
+        Some(Command::Validator(cli)) => run_command(cli, opts.stdin, opts.input),
+        Some(Command::Header(cli)) => run_command(cli, opts.stdin, opts.input),
+        Some(Command::Vote(cli)) => run_command(cli, opts.stdin, opts.input),
+        Some(Command::Commit(cli)) => run_command(cli, opts.stdin, opts.input),
+        Some(Command::Time(cli)) => run_command(cli, opts.stdin, opts.input),
     }
 }
