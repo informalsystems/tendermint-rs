@@ -13,9 +13,10 @@ use tendermint_proto::types::CanonicalPartSetHeader as RawCanonicalPartSetHeader
 use tendermint_proto::types::PartSetHeader as RawPartSetHeader;
 use tendermint_proto::DomainType;
 
+impl DomainType<RawBlockId> for BlockId {}
+
 /// BlockID
-#[derive(Clone, PartialEq, Debug, DomainType)]
-#[rawtype(RawBlockId)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct BlockId {
     pub hash: Vec<u8>,
     pub part_set_header: ::std::option::Option<PartSetHeader>,
@@ -89,8 +90,9 @@ impl ConsensusMessage for BlockId {
     }
 }
 
-#[derive(Clone, PartialEq, DomainType)]
-#[rawtype(RawCanonicalBlockId)]
+impl DomainType<RawCanonicalBlockId> for CanonicalBlockId {}
+
+#[derive(Clone, PartialEq)]
 pub struct CanonicalBlockId {
     pub hash: Vec<u8>,
     pub part_set_header: Option<CanonicalPartSetHeader>,
@@ -124,6 +126,8 @@ impl From<CanonicalBlockId> for RawCanonicalBlockId {
     }
 }
 
+impl DomainType<RawPartSetHeader> for PartSetHeader {}
+
 impl block::ParseId for CanonicalBlockId {
     fn parse_block_id(&self) -> Result<block::Id, Error> {
         let hash = Hash::new(hash::Algorithm::Sha256, &self.hash)?;
@@ -134,10 +138,8 @@ impl block::ParseId for CanonicalBlockId {
         Ok(block::Id::new(hash, part_set_header))
     }
 }
-
 /// PartsetHeader
-#[derive(Clone, PartialEq, Debug, DomainType)]
-#[rawtype(RawPartSetHeader)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct PartSetHeader {
     pub total: i64,
     pub hash: Vec<u8>,
@@ -193,8 +195,8 @@ impl ConsensusMessage for PartSetHeader {
     }
 }
 
-#[derive(Clone, PartialEq, DomainType)]
-#[rawtype(RawCanonicalPartSetHeader)]
+impl DomainType<RawCanonicalPartSetHeader> for CanonicalPartSetHeader {}
+#[derive(Clone, PartialEq)]
 pub struct CanonicalPartSetHeader {
     pub total: u32,
     pub hash: Vec<u8>,

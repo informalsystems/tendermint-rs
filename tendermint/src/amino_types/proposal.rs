@@ -22,8 +22,8 @@ use tendermint_proto::types::Proposal as RawProposal;
 use tendermint_proto::types::SignedMsgType;
 use tendermint_proto::DomainType;
 
-#[derive(Clone, PartialEq, Debug, DomainType)]
-#[rawtype(RawProposal)]
+impl DomainType<RawProposal> for Proposal {}
+#[derive(Clone, PartialEq, Debug)]
 pub struct Proposal {
     pub msg_type: u16,
     pub height: u32,
@@ -103,9 +103,9 @@ impl block::ParseHeight for Proposal {
     }
 }
 
+impl DomainType<RawSignProposalRequest> for SignProposalRequest {}
 /// SignProposalRequest is a request to sign a proposal
-#[derive(Clone, PartialEq, Debug, DomainType)]
-#[rawtype(RawSignProposalRequest)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SignProposalRequest {
     pub proposal: Option<Proposal>,
     pub chain_id: String,
@@ -137,8 +137,9 @@ impl From<SignProposalRequest> for RawSignProposalRequest {
     }
 }
 
-#[derive(Clone, PartialEq, DomainType)]
-#[rawtype(RawCanonicalProposal)]
+impl DomainType<RawCanonicalProposal> for CanonicalProposal {}
+
+#[derive(Clone, PartialEq)]
 pub struct CanonicalProposal {
     /// type alias for byte
     pub msg_type: u16,
@@ -225,9 +226,10 @@ impl block::ParseHeight for CanonicalProposal {
     }
 }
 
+impl DomainType<RawSignedProposalResponse> for SignedProposalResponse {}
+
 /// SignedProposalResponse is response containing a signed proposal or an error
-#[derive(Clone, PartialEq, DomainType)]
-#[rawtype(RawSignedProposalResponse)]
+#[derive(Clone, PartialEq)]
 pub struct SignedProposalResponse {
     pub proposal: Option<Proposal>,
     pub error: Option<RemoteSignerError>,

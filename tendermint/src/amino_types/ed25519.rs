@@ -16,9 +16,9 @@ use tendermint_proto::DomainType;
 // version.
 // TODO(ismail): make this more generic (by modifying prost and adding a trait for PubKey)
 
+impl DomainType<RawPubKeyResponse> for PubKeyResponse {}
 /// PubKeyResponse is a response message containing the public key.
-#[derive(Clone, PartialEq, Debug, DomainType)]
-#[rawtype(RawPubKeyResponse)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct PubKeyResponse {
     pub pub_key: Option<tendermint_proto::crypto::PublicKey>,
     pub error: Option<tendermint_proto::privval::RemoteSignerError>,
@@ -44,9 +44,9 @@ impl From<PubKeyResponse> for RawPubKeyResponse {
     }
 }
 
+impl DomainType<RawPubKeyRequest> for PubKeyRequest {}
 /// PubKeyRequest requests the consensus public key from the remote signer.
-#[derive(Clone, PartialEq, Debug, DomainType)]
-#[rawtype(RawPubKeyRequest)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct PubKeyRequest {
     pub chain_id: String,
 }
