@@ -12,6 +12,9 @@ ed25519-dalek = "1"
 gumdrop = "0.8.0"
 simple-error = "0.2.1"
 tempfile = "3.1.0"
+rand = "0.7.3"
+rand_pcg = "0.2.1"
+
 
 [[bin]]
 name = "tendermint-testgen"

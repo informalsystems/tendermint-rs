@@ -1,3 +1,8 @@
+use serde::{Serialize};
+use rand_pcg::Pcg64;
+use rand::{SeedableRng, Rng, RngCore};
+use rand::distributions::{Alphanumeric};
+
 /// A Fuzzer is anything that can produce an infinite random sequence of numbers.
 /// 0 means no fuzzing, and any other number means fuzzing depending on the number.
 pub trait Fuzzer {
@@ -5,6 +10,7 @@ pub trait Fuzzer {
     fn next(&mut self) -> u64;
 
     /// Get the current (latest) number from the sequence; also refered to as the current state.
+    /// This is valid only after calling next() at least once!
     fn current(&self) -> u64;
 
     /// Check if the current number is alternative 'alt' from 'total' number of alternatives.
@@ -142,3 +148,42 @@ impl Fuzzer for RepeatFuzzer {
         (self.current() + index).to_string()
     }
 }
+
+#[derive(Debug, Serialize, Clone)]
+pub struct PcgFuzzer {
+    seed: u64,
+    step: u64,
+    #[serde(skip)]
+    current: u64,
+    #[serde(skip)]
+    rng: Pcg64,
+}
+
+impl  PcgFuzzer {
+    fn new(seed: u64) -> Self {
+        Self {
+            seed,
+            step: 0,
+            current: 0,
+            rng: Pcg64::seed_from_u64(seed),
+        }
+    }
+}
+
+impl Fuzzer for PcgFuzzer {
+    fn next(&mut self) -> u64 {
+        self.current = self.rng.next_u64();
+        self.step += 1;
+        self.current
+    }
+
+    fn current(&self) -> u64 {
+        self.current
+    }
+
+    fn get_string(&self, index: u64) -> String {
+        let mut rng = Pcg64::new(self.current as u128, index as u128);
+        rng.sample_iter(Alphanumeric).take(10).collect()
+    }
+}
+
