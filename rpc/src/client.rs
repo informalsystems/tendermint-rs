@@ -1,7 +1,7 @@
 //! Tendermint RPC client.
 
 mod subscription;
-pub use subscription::{Subscription, SubscriptionClient, SubscriptionId, SubscriptionRouter};
+pub use subscription::{Subscription, SubscriptionClient, SubscriptionId};
 pub mod sync;
 
 mod transport;

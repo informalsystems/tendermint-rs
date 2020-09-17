@@ -1,9 +1,8 @@
 //! WebSocket-based clients for accessing Tendermint RPC functionality.
 
-use crate::client::subscription::{SubscriptionDriverCmd, SubscriptionState};
+use crate::client::subscription::{SubscriptionDriverCmd, SubscriptionRouter, SubscriptionState};
 use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
 use crate::client::transport::get_tcp_host_port;
-use crate::client::SubscriptionRouter;
 use crate::endpoint::{subscribe, unsubscribe};
 use crate::event::Event;
 use crate::{

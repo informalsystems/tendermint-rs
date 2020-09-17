@@ -1,8 +1,7 @@
 //! Subscription functionality for the Tendermint RPC mock client.
 
-use crate::client::subscription::SubscriptionDriverCmd;
+use crate::client::subscription::{SubscriptionDriverCmd, SubscriptionRouter};
 use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
-use crate::client::SubscriptionRouter;
 use crate::event::Event;
 use crate::{Error, Result, Subscription, SubscriptionClient, SubscriptionId};
 use async_trait::async_trait;

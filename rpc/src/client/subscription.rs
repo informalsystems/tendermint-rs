@@ -221,6 +221,7 @@ struct PendingUnsubscribe {
 }
 
 /// The current state of a subscription.
+#[cfg(feature = "websocket-client")]
 #[derive(Debug, Clone, PartialEq)]
 pub enum SubscriptionState {
     Pending,
@@ -241,9 +242,11 @@ pub struct SubscriptionRouter {
     subscriptions: HashMap<String, HashMap<SubscriptionId, ChannelTx<Result<Event>>>>,
     // A map of JSON-RPC request IDs (for `/subscribe` requests) to pending
     // subscription requests.
+    #[cfg(feature = "websocket-client")]
     pending_subscribe: HashMap<String, PendingSubscribe>,
     // A map of JSON-RPC request IDs (for the `/unsubscribe` requests) to pending
     // unsubscribe requests.
+    #[cfg(feature = "websocket-client")]
     pending_unsubscribe: HashMap<String, PendingUnsubscribe>,
 }
 
@@ -294,6 +297,7 @@ impl SubscriptionRouter {
     /// `req_id` must be a unique identifier for this particular pending
     /// subscription request operation, where `subs_id` must be the unique ID
     /// of the subscription we eventually want added.
+    #[cfg(feature = "websocket-client")]
     pub fn pending_add(
         &mut self,
         req_id: &str,
@@ -317,6 +321,7 @@ impl SubscriptionRouter {
     ///
     /// Returns an error if it fails to respond to the original caller to
     /// indicate success.
+    #[cfg(feature = "websocket-client")]
     pub async fn confirm_add(&mut self, req_id: &str) -> Result<()> {
         match self.pending_subscribe.remove(req_id) {
             Some(mut pending_subscribe) => {
@@ -334,6 +339,7 @@ impl SubscriptionRouter {
     /// Attempts to cancel the pending subscription with the given ID, sending
     /// the specified error to the original creator of the attempted
     /// subscription.
+    #[cfg(feature = "websocket-client")]
     pub async fn cancel_add(&mut self, req_id: &str, err: impl Into<Error>) -> Result<()> {
         match self.pending_subscribe.remove(req_id) {
             Some(mut pending_subscribe) => Ok(pending_subscribe
@@ -361,6 +367,7 @@ impl SubscriptionRouter {
 
     /// Keeps track of a pending unsubscribe request, which can either be
     /// confirmed or cancelled.
+    #[cfg(feature = "websocket-client")]
     pub fn pending_remove(
         &mut self,
         req_id: &str,
@@ -380,6 +387,7 @@ impl SubscriptionRouter {
 
     /// Confirm the pending unsubscribe request for the subscription with the
     /// given ID.
+    #[cfg(feature = "websocket-client")]
     pub async fn confirm_remove(&mut self, req_id: &str) -> Result<()> {
         match self.pending_unsubscribe.remove(req_id) {
             Some(mut pending_unsubscribe) => {
@@ -392,6 +400,7 @@ impl SubscriptionRouter {
 
     /// Cancel the pending unsubscribe request for the subscription with the
     /// given ID, responding with the given error.
+    #[cfg(feature = "websocket-client")]
     pub async fn cancel_remove(&mut self, req_id: &str, err: impl Into<Error>) -> Result<()> {
         match self.pending_unsubscribe.remove(req_id) {
             Some(mut pending_unsubscribe) => {
@@ -403,6 +412,7 @@ impl SubscriptionRouter {
 
     /// Helper to check whether the subscription with the given ID is
     /// currently active.
+    #[cfg(feature = "websocket-client")]
     pub fn is_active(&self, id: &SubscriptionId) -> bool {
         self.subscriptions
             .iter()
@@ -411,6 +421,7 @@ impl SubscriptionRouter {
 
     /// Obtain a mutable reference to the subscription with the given ID (if it
     /// exists).
+    #[cfg(feature = "websocket-client")]
     pub fn get_active_subscription_mut(
         &mut self,
         id: &SubscriptionId,
@@ -423,6 +434,7 @@ impl SubscriptionRouter {
 
     /// Utility method to determine the current state of the subscription with
     /// the given ID.
+    #[cfg(feature = "websocket-client")]
     pub fn subscription_state(&self, req_id: &str) -> Option<SubscriptionState> {
         if self.pending_subscribe.contains_key(req_id) {
             Some(SubscriptionState::Pending)
@@ -440,7 +452,9 @@ impl Default for SubscriptionRouter {
     fn default() -> Self {
         Self {
             subscriptions: HashMap::new(),
+            #[cfg(feature = "websocket-client")]
             pending_subscribe: HashMap::new(),
+            #[cfg(feature = "websocket-client")]
             pending_unsubscribe: HashMap::new(),
         }
     }
@@ -525,6 +539,7 @@ mod test {
         assert_eq!(ev, subs3_ev);
     }
 
+    #[cfg(feature = "websocket-client")]
     #[tokio::test]
     async fn router_pending_subscription() {
         let mut router = SubscriptionRouter::default();
@@ -577,6 +592,7 @@ mod test {
         }
     }
 
+    #[cfg(feature = "websocket-client")]
     #[tokio::test]
     async fn router_cancel_pending_subscription() {
         let mut router = SubscriptionRouter::default();
