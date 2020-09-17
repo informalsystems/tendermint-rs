@@ -61,9 +61,13 @@ mod tests {
 
     #[test]
     fn test_time_fuzz() {
-        let mut fuzzer = fuzzer::RepeatFuzzer::new(&[1]);
+        let mut fuzzer = fuzzer::RepeatFuzzer::new(&[0, 1]);
         let time = Time::new(0);
         assert_ne!(
+            time.generate_fuzz(&mut fuzzer).unwrap(),
+            tendermint::Time::unix_epoch()
+        );
+        assert_eq!(
             time.generate_fuzz(&mut fuzzer).unwrap(),
             tendermint::Time::unix_epoch()
         );

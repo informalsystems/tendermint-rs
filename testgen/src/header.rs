@@ -75,7 +75,7 @@ impl Generator<TMHeader> for Header {
 
     fn generate_fuzz(&self, fuzzer: &mut impl fuzzer::Fuzzer) -> Result<TMHeader, SimpleError> {
         fuzzer.next();
-        let fmax = 4u64;
+        let fmax = 6;
         let version = if fuzzer.is_from(1, fmax) {
             block::header::Version {
                 block: fuzzer.get_u64(0),
@@ -109,11 +109,21 @@ impl Generator<TMHeader> for Header {
                 tendermint::Time::now()
             }
         };
-        let vals = match &self.validators {
+        let mut vals = match &self.validators {
             None => bail!("validator array is missing"),
-            Some(vals) => vals,
+            Some(vals) => vals.clone(),
         };
-        let vals = generate_validators(vals)?;
+        if fuzzer.is_from(5, fmax) {
+            vals.push(Validator::new(&fuzzer.get_string(0)))
+        }
+        let mut next_vals = match &self.next_validators {
+            None => vals.clone(),
+            Some(vals) => vals.clone(),
+        };
+        if fuzzer.is_from(6, fmax) {
+            next_vals.push(Validator::new(&fuzzer.get_string(1)))
+        }
+        let vals = generate_validators(&vals)?;
         let proposer_index = self.proposer.unwrap_or(0);
         let proposer_address = if !vals.is_empty() {
             vals[proposer_index].address
@@ -121,10 +131,7 @@ impl Generator<TMHeader> for Header {
             Validator::new("a").generate().unwrap().address
         };
         let valset = validator::Set::new(vals);
-        let next_valset = match &self.next_validators {
-            Some(next_vals) => validator::Set::new(generate_validators(next_vals)?),
-            None => valset.clone(),
-        };
+        let next_valset = validator::Set::new(generate_validators(&next_vals)?);
         let header = TMHeader {
             version,
             chain_id,
@@ -198,5 +205,50 @@ mod tests {
 
         let header = header.proposer(1);
         assert_eq!(header.generate().unwrap(), block_header);
+    }
+
+    #[test]
+    fn test_header_fuzz() {
+        let mut fuzzer = fuzzer::RepeatFuzzer::new(&[0, 1, 2, 3, 4, 5, 6]);
+
+        let valset1 = [
+            Validator::new("a"),
+            Validator::new("b"),
+            Validator::new("c"),
+        ];
+        let valset2 = [
+            Validator::new("b"),
+            Validator::new("c"),
+            Validator::new("d"),
+        ];
+
+        let now: u64 = 100;
+        let header = Header::new(&valset1)
+            .next_validators(&valset2)
+            .height(10)
+            .time(now);
+
+        let orig = header.generate().unwrap();
+
+        let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
+        assert_ne!(orig.version, fuzz.version);
+
+        let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
+        assert_ne!(orig.chain_id, fuzz.chain_id);
+
+        let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
+        assert_ne!(orig.height, fuzz.height);
+
+        let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
+        assert_ne!(orig.time, fuzz.time);
+
+        let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
+        assert_ne!(orig.validators_hash, fuzz.validators_hash);
+
+        let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
+        assert_ne!(orig.next_validators_hash, fuzz.next_validators_hash);
+
+        let fuzz = header.generate_fuzz(&mut fuzzer).unwrap();
+        assert_eq!(orig, fuzz);
     }
 }
