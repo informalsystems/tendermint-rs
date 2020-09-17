@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 /// A trait that allows to generate complex objects from simple companion objects.
 /// A companion type should have a simple API, leaving most fields optional.
-pub trait Generator<Output: Serialize>: FromStr<Err = SimpleError> + Clone {
+pub trait Generator<Output: Serialize>: FromStr<Err = SimpleError> + Clone + Serialize {
     /// Merge this companion with the another, default one.
     /// The options present in this object will override those in the default one.
     fn merge_with_default(self, default: Self) -> Self;
@@ -15,11 +15,19 @@ pub trait Generator<Output: Serialize>: FromStr<Err = SimpleError> + Clone {
         self.generate_fuzz(&mut fuzzer::NoFuzz::new())
     }
 
-    /// Generate and encode the complex object from this companion object.
+    /// Generate the complex object from this companion object, and encode it into JSON.
     fn encode(&self) -> Result<String, SimpleError> {
         let res = self.generate()?;
         Ok(try_with!(
             serde_json::to_string_pretty(&res),
+            "failed to serialize into JSON"
+        ))
+    }
+
+    /// Encode this companion object into JSON.
+    fn encode_input(&self) -> Result<String, SimpleError> {
+        Ok(try_with!(
+            serde_json::to_string_pretty(self),
             "failed to serialize into JSON"
         ))
     }
