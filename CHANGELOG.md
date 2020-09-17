@@ -7,6 +7,7 @@
 - Implement protobuf encoding/decoding of Tendermint Proto types ([#504])
 - Separate protobuf types from Rust domain types using the DomainType trait ([#535])
 - Changed validator sorting order to sort by voting power. ([#506])
+- Dependency update: sled 0.34 ([#490])
 
 ### BREAKING CHANGES:
 
