@@ -53,8 +53,6 @@ struct CliOptions {
     stdin: bool,
     #[options(help = "reproduce input in JSON format (default: no)")]
     input: bool,
-    #[options(help = "seed fuzzing using SEED number (unsigned; give 0 to use random seed)", meta = "SEED")]
-    seed: Option<u64>,
     #[options(help = "fuzz produced values")]
     fuzz: bool,
 
@@ -74,6 +72,14 @@ enum Command {
     Commit(Commit),
     #[options(help = "produce timestamp from number of seconds since epoch")]
     Time(Time),
+    #[options(help = "seed random number generator for fuzzing")]
+    Seed(Seed)
+}
+
+#[derive(Debug, Options, Clone)]
+pub struct Seed {
+    #[options(free, help = "unsigned number to use as a seed; omit to use random seed")]
+    pub number: Option<u64>,
 }
 
 const FUZZER_STATE: &str = ".tendermint_testgen_fuzzer";
@@ -127,21 +133,26 @@ fn print_params(options: &str) {
     }
 }
 
+fn seed_fuzzing(seed: u64) {
+    let seed = if seed == 0 {
+        rand::thread_rng().gen()
+    } else {
+        seed
+    };
+    let fuzzer = RandomFuzzer::new(seed);
+    fuzzer.write_to_file(FUZZER_STATE);
+    eprintln!("Seeded fuzzing with:");
+    println!("{}", seed)
+}
+
+
 fn main() {
     let opts = CliOptions::parse_args_default_or_exit();
     if opts.usage {
         eprintln!("{}", USAGE);
         std::process::exit(1);
     }
-    if let Some(seed) = opts.seed {
-        let seed = if seed == 0 {
-            rand::thread_rng().gen()
-        } else {
-            seed
-        };
-        let fuzzer = RandomFuzzer::new(seed);
-        fuzzer.write_to_file(FUZZER_STATE);
-    }
+
     match &opts.command {
         None => {
             eprintln!("Produce tendermint datastructures for testing from minimal input\n");
@@ -163,5 +174,6 @@ fn main() {
         Some(Command::Vote(cli)) => run_command(cli, &opts),
         Some(Command::Commit(cli)) => run_command(cli, &opts),
         Some(Command::Time(cli)) => run_command(cli, &opts),
+        Some(Command::Seed(seed)) => seed_fuzzing(seed.number.unwrap_or_default()),
     }
 }
