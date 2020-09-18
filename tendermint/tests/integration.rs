@@ -206,9 +206,6 @@ mod rpc {
             "Attempting to grab {} transaction events",
             expected_tx_values.len()
         );
-        // We reverse the expected tx values because we're popping them off the
-        // array as we check the received events.
-        expected_tx_values.reverse();
         let mut cur_tx_id = 0_u32;
 
         while !expected_tx_values.is_empty() {
@@ -217,7 +214,7 @@ mod rpc {
                 Some(res) = subs.next() => {
                     let ev = res.unwrap();
                     //println!("Got event: {:?}", ev);
-                    let next_val = expected_tx_values.pop().unwrap();
+                    let next_val = expected_tx_values.remove(0);
                     match ev.data {
                         EventData::Tx { tx_result } => match base64::decode(tx_result.tx) {
                             Ok(decoded_tx) => match String::from_utf8(decoded_tx) {
