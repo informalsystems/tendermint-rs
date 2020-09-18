@@ -1,7 +1,9 @@
-use serde::{Serialize};
+use serde::{Serialize, Deserialize};
 use rand_pcg::Pcg64 as Pcg;
 use rand::{SeedableRng, Rng, RngCore};
 use rand::distributions::{Alphanumeric};
+use std::path::Path;
+use std::fs;
 
 /// A Fuzzer is anything that can produce an infinite random sequence of numbers.
 /// 0 means no fuzzing, and any other number means fuzzing depending on the number.
@@ -31,7 +33,7 @@ pub trait Fuzzer {
         Pcg::new(self.current() as u128, index as u128)
     }
 
-    /// Get the random number generator seeded from the current state and the index
+    /// Get the default current random number generator
     fn current_rng_default(&self) -> Pcg {
         self.current_rng(0xcafef00dd15ea5e5)
     }
@@ -181,6 +183,25 @@ impl RandomFuzzer {
             self.next();
         }
     }
+
+    pub fn read_from_file(path: impl AsRef<Path>) -> Option<Self> {
+        let str= fs::read_to_string(path).ok()?;
+        println!("{}", str);
+        let state: RandomFuzzerState = serde_json::from_str(&str).ok()?;
+        println!("2");
+        let mut rng = RandomFuzzer::new(state.seed);
+        rng.goto(state.step);
+        Some(rng)
+    }
+
+    pub fn write_to_file(&self, path: impl AsRef<Path>) -> Option<()> {
+        let file = fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(path)
+            .ok()?;
+        serde_json::to_writer_pretty(file, self).ok()
+    }
 }
 
 impl Fuzzer for RandomFuzzer {
@@ -193,6 +214,12 @@ impl Fuzzer for RandomFuzzer {
     fn current(&self) -> u64 {
         self.current
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct RandomFuzzerState {
+    pub seed: u64,
+    pub step: u64,
 }
 
 #[cfg(test)]
