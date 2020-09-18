@@ -1,5 +1,8 @@
-use crate::fuzzer::fuzz_vector;
-use crate::{fuzzer, helpers::*, validator::generate_validators, Generator, Validator};
+use crate::{
+    fuzzer::{self, fuzz_vector},
+    helpers::*,
+    validator::{MAX_ID_LENGTH, generate_validators},
+    Generator, Validator};
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
@@ -82,7 +85,7 @@ impl Generator<TMHeader> for Header {
             fuzz.next_validators = fuzz.validators.clone()
         }
         if fuzzer.is_from(1, fmax) {
-            fuzz.chain_id = Some(fuzzer.get_string(0))
+            fuzz.chain_id = Some(fuzzer.get_string(0, chain::id::MAX_LENGTH))
         }
         if fuzzer.is_from(2, fmax) {
             fuzz.height = Some(fuzzer.get_u64(0))
@@ -92,12 +95,12 @@ impl Generator<TMHeader> for Header {
         }
         if fuzzer.is_from(4, fmax) {
             let mut vals = fuzz.validators.unwrap_or_default();
-            fuzz_vector(fuzzer, &mut vals, Validator::new(&fuzzer.get_string(0)));
+            fuzz_vector(fuzzer, &mut vals, Validator::new(&fuzzer.get_string(0, MAX_ID_LENGTH)));
             fuzz.validators = Some(vals);
         }
         if fuzzer.is_from(5, fmax) {
             let mut vals = fuzz.next_validators.unwrap_or_default();
-            fuzz_vector(fuzzer, &mut vals, Validator::new(&fuzzer.get_string(1)));
+            fuzz_vector(fuzzer, &mut vals, Validator::new(&fuzzer.get_string(1, MAX_ID_LENGTH)));
             fuzz.next_validators = Some(vals);
         }
         fuzz

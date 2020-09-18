@@ -1,5 +1,6 @@
 use crate::{fuzzer, helpers::*, Fuzzer, Generator};
 use ed25519_dalek::SecretKey as Ed25519SecretKey;
+pub use ed25519_dalek::SECRET_KEY_LENGTH as MAX_ID_LENGTH;
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
@@ -106,7 +107,7 @@ impl Generator<validator::Info> for Validator {
         fuzzer.next();
         let mut fuzz = self.clone();
         if fuzzer.is_from(1, 3) {
-            fuzz.id = Some(fuzzer.get_string(0))
+            fuzz.id = Some(fuzzer.get_string(0, MAX_ID_LENGTH))
         }
         if fuzzer.is_from(2, 3) {
             fuzz.voting_power = Some(fuzzer.get_u64(0))
@@ -127,7 +128,7 @@ impl Generator<validator::Info> for Validator {
         // whether the address and the pub_key are as expected, or fuzzed
         let pk0 = self.get_public_key()?;
         let (address, pub_key) = if fuzzer.is_from(1, 1) {
-            let pk1 = Validator::new(&fuzzer.get_string(0)).get_public_key()?;
+            let pk1 = Validator::new(&fuzzer.get_string(0, MAX_ID_LENGTH)).get_public_key()?;
             if fuzzer.get_bool(0) {
                 (pk0, pk1)
             } else if fuzzer.get_bool(1) {

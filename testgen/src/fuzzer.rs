@@ -1,5 +1,5 @@
 use serde::{Serialize};
-use rand_pcg::Pcg64;
+use rand_pcg::Pcg64 as Pcg;
 use rand::{SeedableRng, Rng, RngCore};
 use rand::distributions::{Alphanumeric};
 
@@ -9,7 +9,7 @@ pub trait Fuzzer {
     /// Get the next random number from the sequence
     fn next(&mut self) -> u64;
 
-    /// Get the current (latest) number from the sequence; also refered to as the current state.
+    /// Get the current (latest) number from the sequence; also referred to as the current state.
     /// This is valid only after calling next() at least once!
     fn current(&self) -> u64;
 
@@ -18,6 +18,7 @@ pub trait Fuzzer {
     /// If the current number is non-zero, then at least one of the alternatives will hold.
     /// If the current number is zero, none of the alternatives should hold.
     fn is_from(&self, alt: u64, total: u64) -> bool {
+        let _rng = self.current_rng_default();
         if self.current() == 0 {
             false
         } else {
@@ -25,29 +26,30 @@ pub trait Fuzzer {
         }
     }
 
+    /// Get the random number generator seeded from the current state and the index
+    fn current_rng(&self, index: u64) -> Pcg {
+        Pcg::new(self.current() as u128, index as u128)
+    }
+
+    /// Get the random number generator seeded from the current state and the index
+    fn current_rng_default(&self) -> Pcg {
+        self.current_rng(0xcafef00dd15ea5e5)
+    }
+
+
     /// Get indexed random bool value from the current state
-    fn get_bool(&self, index: u64) -> bool {
-        self.current() + index % 2 == 1
-    }
+    fn get_bool(&self, index: u64) -> bool { self.current_rng(index).gen() }
+
+    /// Get indexed random u64 value from the current state
+    fn get_u64(&self, index: u64) -> u64 { self.current_rng(index).gen() }
 
     /// Get indexed random i64 value from the current state
-    fn get_u64(&self, index: u64) -> u64 {
-        self.current() + index
-    }
-
-    /// Get indexed random i64 value from the current state
-    fn get_i64(&self, index: u64) -> i64 {
-        let cur = self.current() + index;
-        let max = u64::MAX / 2;
-        if cur >= max {
-            -((cur % max) as i64)
-        } else {
-            cur as i64
-        }
-    }
+    fn get_i64(&self, index: u64) -> i64 { self.current_rng(index).gen() }
 
     /// Get the indexed random string from the current state
-    fn get_string(&self, index: u64) -> String;
+    fn get_string(&self, index: u64, length: usize) -> String {
+        self.current_rng(index).sample_iter(Alphanumeric).take(length).collect()
+    }
 }
 
 pub fn fuzz_vector<T>(fuzzer: &impl Fuzzer, vec: &mut Vec<T>, val: T) {
@@ -74,9 +76,6 @@ impl Fuzzer for NoFuzz {
     }
     fn current(&self) -> u64 {
         0
-    }
-    fn get_string(&self, index: u64) -> String {
-        index.to_string()
     }
 }
 
@@ -110,10 +109,6 @@ impl Fuzzer for LogFuzzer {
     fn current(&self) -> u64 {
         self.fuzzer.current()
     }
-
-    fn get_string(&self, index: u64) -> String {
-        self.fuzzer.get_string(index)
-    }
 }
 
 pub struct RepeatFuzzer {
@@ -143,34 +138,42 @@ impl Fuzzer for RepeatFuzzer {
     fn current(&self) -> u64 {
         self.repeat[self.current]
     }
-
-    fn get_string(&self, index: u64) -> String {
-        (self.current() + index).to_string()
-    }
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct PcgFuzzer {
+pub struct RandomFuzzer {
     seed: u64,
     step: u64,
     #[serde(skip)]
     current: u64,
     #[serde(skip)]
-    rng: Pcg64,
+    rng: Pcg,
 }
 
-impl  PcgFuzzer {
+impl RandomFuzzer {
     fn new(seed: u64) -> Self {
         Self {
             seed,
             step: 0,
             current: 0,
-            rng: Pcg64::seed_from_u64(seed),
+            rng: Pcg::seed_from_u64(seed),
         }
+    }
+
+    fn goto(&self, step: u64) -> Self {
+        let mut rng = if step >= self.step {
+            self.clone()
+        } else {
+            Self::new(self.seed)
+        };
+        for _i in 0..(step - self.step) {
+            rng.next();
+        }
+        rng
     }
 }
 
-impl Fuzzer for PcgFuzzer {
+impl Fuzzer for RandomFuzzer {
     fn next(&mut self) -> u64 {
         self.current = self.rng.next_u64();
         self.step += 1;
@@ -179,11 +182,6 @@ impl Fuzzer for PcgFuzzer {
 
     fn current(&self) -> u64 {
         self.current
-    }
-
-    fn get_string(&self, index: u64) -> String {
-        let mut rng = Pcg64::new(self.current as u128, index as u128);
-        rng.sample_iter(Alphanumeric).take(10).collect()
     }
 }
 
