@@ -151,7 +151,7 @@ pub struct RandomFuzzer {
 }
 
 impl RandomFuzzer {
-    fn new(seed: u64) -> Self {
+    pub fn new(seed: u64) -> Self {
         Self {
             seed,
             step: 0,
@@ -160,16 +160,26 @@ impl RandomFuzzer {
         }
     }
 
-    fn goto(&self, step: u64) -> Self {
-        let mut rng = if step >= self.step {
-            self.clone()
+    pub fn reset(&mut self) {
+        self.rng = Pcg::seed_from_u64(self.seed);
+        self.step = 0;
+        self.current = 0;
+    }
+
+    pub fn step(&self) -> u64 {
+        self.step
+    }
+
+    pub fn goto(&mut self, step: u64) {
+        let steps = if step >= self.step {
+            step - self.step
         } else {
-            Self::new(self.seed)
+            self.reset();
+            step
         };
-        for _i in 0..(step - self.step) {
-            rng.next();
+        for _i in 0..steps {
+            self.next();
         }
-        rng
     }
 }
 
@@ -185,3 +195,54 @@ impl Fuzzer for RandomFuzzer {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_repeat_fuzzer() {
+        let mut fuzzer = RepeatFuzzer::new(&[0, 1, 2]);
+        assert_eq!(fuzzer.next(), 1);
+        assert_eq!(fuzzer.current(), 1);
+        assert_eq!(fuzzer.next(), 2);
+        assert_eq!(fuzzer.current(), 2);
+        assert_eq!(fuzzer.next(), 0);
+        assert_eq!(fuzzer.current(), 0);
+    }
+
+    #[test]
+    fn test_random_fuzzer() {
+        let mut fuzzer = RandomFuzzer::new(0);
+        let s1 = fuzzer.next();
+        assert_eq!(fuzzer.current(), s1);
+        let s2 = fuzzer.next();
+        assert_eq!(fuzzer.current(), s2);
+        let s3 = fuzzer.next();
+        assert_eq!(fuzzer.current(), s3);
+        assert_eq!(fuzzer.step(), 3);
+
+        let s30u64 = fuzzer.get_u64(0);
+        let s31u64 = fuzzer.get_u64(1);
+        assert_ne!(s30u64, s31u64);
+
+        let s30string = fuzzer.get_string(0, 10);
+        assert_eq!(s30string.len(), 10);
+        let s31string = fuzzer.get_string(1, 20);
+        assert_eq!(s31string.len(), 20);
+
+        // test reproducibility of results
+        fuzzer.next();
+        fuzzer.goto(3);
+        assert_eq!(fuzzer.get_u64(0), s30u64);
+        assert_eq!(fuzzer.get_u64(1), s31u64);
+        assert_eq!(fuzzer.get_string(0, 10), s30string);
+        assert_eq!(fuzzer.get_string(1, 20), s31string);
+        let mut fuzzer = RandomFuzzer::new(0);
+        fuzzer.goto(3);
+        assert_eq!(fuzzer.get_u64(0), s30u64);
+        assert_eq!(fuzzer.get_u64(1), s31u64);
+        assert_eq!(fuzzer.get_string(0, 10), s30string);
+        assert_eq!(fuzzer.get_string(1, 20), s31string);
+    }
+
+}
