@@ -1,6 +1,7 @@
 use gumdrop::Options;
-use simple_error::SimpleError;
-use tendermint_testgen::{helpers::*, Commit, Generator, Header, Time, Validator, Vote};
+use simple_error::*;
+use tendermint_testgen::{fuzzer::RandomFuzzer, helpers::*, Commit, Generator, Header, Time, Validator, Vote};
+use rand::{self, Rng};
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -52,6 +53,10 @@ struct CliOptions {
     stdin: bool,
     #[options(help = "reproduce input in JSON format (default: no)")]
     input: bool,
+    #[options(help = "seed fuzzing using SEED number (unsigned; give 0 to use random seed)", meta = "SEED")]
+    seed: Option<u64>,
+    #[options(help = "fuzz produced values")]
+    fuzz: bool,
 
     #[options(command)]
     command: Option<Command>,
@@ -71,22 +76,31 @@ enum Command {
     Time(Time),
 }
 
+const FUZZER_STATE: &str = ".tendermint_testgen_fuzzer";
+
 fn encode<Gen: Generator<T> + Options, T: serde::Serialize>(
     cli: &Gen,
     opts: &CliOptions,
 ) -> Result<String, SimpleError> {
-    let producer = if opts.stdin {
+    let mut producer = if opts.stdin {
         let stdin = read_stdin()?;
         let default = Gen::from_str(&stdin)?;
         cli.clone().merge_with_default(default)
     } else {
         cli.clone()
     };
+    if opts.fuzz {
+        let mut fuzzer = require_with!(RandomFuzzer::read_from_file(FUZZER_STATE),
+            "failed to read fuzzer state; please initialize using --seed.");
+        producer = producer.fuzz(&mut fuzzer);
+        fuzzer.write_to_file(FUZZER_STATE);
+    }
     if opts.input {
         producer.encode_input()
     } else {
         producer.encode()
     }
+
 }
 
 fn run_command<Gen, T>(cli: &Gen, opts: &CliOptions)
@@ -118,6 +132,15 @@ fn main() {
     if opts.usage {
         eprintln!("{}", USAGE);
         std::process::exit(1);
+    }
+    if let Some(seed) = opts.seed {
+        let seed = if seed == 0 {
+            rand::thread_rng().gen()
+        } else {
+            seed
+        };
+        let fuzzer = RandomFuzzer::new(seed);
+        fuzzer.write_to_file(FUZZER_STATE);
     }
     match &opts.command {
         None => {
