@@ -103,7 +103,7 @@ impl Generator<validator::Info> for Validator {
         }
     }
 
-    fn fuzz(&self, fuzzer: &mut impl Fuzzer) -> Self {
+    fn fuzz(&self, fuzzer: &mut dyn Fuzzer) -> Self {
         fuzzer.next();
         let mut fuzz = self.clone();
         if fuzzer.is_from(1, 3) {
@@ -122,7 +122,7 @@ impl Generator<validator::Info> for Validator {
         fuzz
     }
 
-    fn generate_fuzz(&self, fuzzer: &mut impl fuzzer::Fuzzer) -> Result<Info, SimpleError> {
+    fn generate_fuzz(&self, fuzzer: &mut dyn fuzzer::Fuzzer) -> Result<Info, SimpleError> {
         fuzzer.next();
         // here we fuzz only at the generated datastructure level:
         // whether the address and the pub_key are as expected, or fuzzed

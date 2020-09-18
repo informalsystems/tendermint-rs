@@ -54,7 +54,7 @@ pub trait Fuzzer {
     }
 }
 
-pub fn fuzz_vector<T>(fuzzer: &impl Fuzzer, vec: &mut Vec<T>, val: T) {
+pub fn fuzz_vector<T>(fuzzer: &dyn Fuzzer, vec: &mut Vec<T>, val: T) {
     if fuzzer.get_bool(0) {
         vec.push(val)
     } else if !vec.is_empty() {
@@ -186,9 +186,7 @@ impl RandomFuzzer {
 
     pub fn read_from_file(path: impl AsRef<Path>) -> Option<Self> {
         let str= fs::read_to_string(path).ok()?;
-        println!("{}", str);
         let state: RandomFuzzerState = serde_json::from_str(&str).ok()?;
-        println!("2");
         let mut rng = RandomFuzzer::new(state.seed);
         rng.goto(state.step);
         Some(rng)
@@ -196,8 +194,9 @@ impl RandomFuzzer {
 
     pub fn write_to_file(&self, path: impl AsRef<Path>) -> Option<()> {
         let file = fs::OpenOptions::new()
-            .create_new(true)
+            .create(true)
             .write(true)
+            .truncate(true)
             .open(path)
             .ok()?;
         serde_json::to_writer_pretty(file, self).ok()

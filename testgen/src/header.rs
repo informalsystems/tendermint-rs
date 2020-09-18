@@ -77,7 +77,7 @@ impl Generator<TMHeader> for Header {
         }
     }
 
-    fn fuzz(&self, fuzzer: &mut impl fuzzer::Fuzzer) -> Self {
+    fn fuzz(&self, fuzzer: &mut dyn fuzzer::Fuzzer) -> Self {
         fuzzer.next();
         let fmax = 5;
         let mut fuzz = self.clone();
@@ -106,7 +106,7 @@ impl Generator<TMHeader> for Header {
         fuzz
     }
 
-    fn generate_fuzz(&self, fuzzer: &mut impl fuzzer::Fuzzer) -> Result<TMHeader, SimpleError> {
+    fn generate_fuzz(&self, fuzzer: &mut dyn fuzzer::Fuzzer) -> Result<TMHeader, SimpleError> {
         fuzzer.next();
         let version = if fuzzer.is_from(1, 1) {
             block::header::Version {

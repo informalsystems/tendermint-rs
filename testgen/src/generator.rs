@@ -33,8 +33,8 @@ pub trait Generator<Output: Serialize>: FromStr<Err = SimpleError> + Clone + Ser
     }
 
     /// Fuzz this companion object.
-    fn fuzz(&self, fuzzer: &mut impl Fuzzer) -> Self;
+    fn fuzz(&self, fuzzer: &mut dyn Fuzzer) -> Self;
 
     /// Generate the complex object from this companion object, and fuzz its representation.
-    fn generate_fuzz(&self, fuzzer: &mut impl Fuzzer) -> Result<Output, SimpleError>;
+    fn generate_fuzz(&self, fuzzer: &mut dyn Fuzzer) -> Result<Output, SimpleError>;
 }

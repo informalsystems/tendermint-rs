@@ -35,11 +35,11 @@ impl Generator<TMTime> for Time {
         }
     }
 
-    fn fuzz(&self, _fuzzer: &mut impl fuzzer::Fuzzer) -> Self {
+    fn fuzz(&self, _fuzzer: &mut dyn fuzzer::Fuzzer) -> Self {
         self.clone()
     }
 
-    fn generate_fuzz(&self, fuzzer: &mut impl fuzzer::Fuzzer) -> Result<TMTime, SimpleError> {
+    fn generate_fuzz(&self, fuzzer: &mut dyn fuzzer::Fuzzer) -> Result<TMTime, SimpleError> {
         fuzzer.next();
         let time = if fuzzer.is_from(1, 1) {
             fuzzer.get_u64(0)
