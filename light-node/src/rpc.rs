@@ -34,7 +34,7 @@ where
 }
 
 mod sealed {
-    use jsonrpc_core::futures::future::{self, Future, FutureResult};
+    use jsonrpc_core::futures::future::{self, FutureResult};
     use jsonrpc_core::types::Error;
     use jsonrpc_derive::rpc;
 
