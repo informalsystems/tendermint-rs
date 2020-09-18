@@ -1,5 +1,8 @@
 //! Subscription- and subscription management-related functionality.
 
+#[cfg(feature = "websocket-client")]
+pub use two_phase_router::{SubscriptionState, TwoPhaseSubscriptionRouter};
+
 use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
 use crate::event::Event;
 use crate::{Error, Id, Result};
@@ -205,30 +208,6 @@ impl SubscriptionId {
     }
 }
 
-#[derive(Debug)]
-struct PendingSubscribe {
-    id: SubscriptionId,
-    query: String,
-    event_tx: ChannelTx<Result<Event>>,
-    result_tx: ChannelTx<Result<()>>,
-}
-
-#[derive(Debug)]
-struct PendingUnsubscribe {
-    id: SubscriptionId,
-    query: String,
-    result_tx: ChannelTx<Result<()>>,
-}
-
-/// The current state of a subscription.
-#[cfg(feature = "websocket-client")]
-#[derive(Debug, Clone, PartialEq)]
-pub enum SubscriptionState {
-    Pending,
-    Active,
-    Cancelling,
-}
-
 /// Provides a mechanism for tracking [`Subscription`]s and routing [`Event`]s
 /// to those subscriptions.
 ///
@@ -240,14 +219,6 @@ pub struct SubscriptionRouter {
     // their result channels. Used for publishing events relating to a specific
     // query.
     subscriptions: HashMap<String, HashMap<SubscriptionId, ChannelTx<Result<Event>>>>,
-    // A map of JSON-RPC request IDs (for `/subscribe` requests) to pending
-    // subscription requests.
-    #[cfg(feature = "websocket-client")]
-    pending_subscribe: HashMap<String, PendingSubscribe>,
-    // A map of JSON-RPC request IDs (for the `/unsubscribe` requests) to pending
-    // unsubscribe requests.
-    #[cfg(feature = "websocket-client")]
-    pending_unsubscribe: HashMap<String, PendingUnsubscribe>,
 }
 
 impl SubscriptionRouter {
@@ -291,71 +262,6 @@ impl SubscriptionRouter {
         subs_for_query.insert(id.clone(), event_tx);
     }
 
-    /// Keep track of a pending subscription, which can either be confirmed or
-    /// cancelled.
-    ///
-    /// `req_id` must be a unique identifier for this particular pending
-    /// subscription request operation, where `subs_id` must be the unique ID
-    /// of the subscription we eventually want added.
-    #[cfg(feature = "websocket-client")]
-    pub fn pending_add(
-        &mut self,
-        req_id: &str,
-        subs_id: &SubscriptionId,
-        query: String,
-        event_tx: ChannelTx<Result<Event>>,
-        result_tx: ChannelTx<Result<()>>,
-    ) {
-        self.pending_subscribe.insert(
-            req_id.to_string(),
-            PendingSubscribe {
-                id: subs_id.clone(),
-                query,
-                event_tx,
-                result_tx,
-            },
-        );
-    }
-
-    /// Attempts to confirm the pending subscription request with the given ID.
-    ///
-    /// Returns an error if it fails to respond to the original caller to
-    /// indicate success.
-    #[cfg(feature = "websocket-client")]
-    pub async fn confirm_add(&mut self, req_id: &str) -> Result<()> {
-        match self.pending_subscribe.remove(req_id) {
-            Some(mut pending_subscribe) => {
-                self.add(
-                    &pending_subscribe.id,
-                    pending_subscribe.query.clone(),
-                    pending_subscribe.event_tx,
-                );
-                Ok(pending_subscribe.result_tx.send(Ok(())).await?)
-            }
-            None => Ok(()),
-        }
-    }
-
-    /// Attempts to cancel the pending subscription with the given ID, sending
-    /// the specified error to the original creator of the attempted
-    /// subscription.
-    #[cfg(feature = "websocket-client")]
-    pub async fn cancel_add(&mut self, req_id: &str, err: impl Into<Error>) -> Result<()> {
-        match self.pending_subscribe.remove(req_id) {
-            Some(mut pending_subscribe) => Ok(pending_subscribe
-                .result_tx
-                .send(Err(err.into()))
-                .await
-                .map_err(|_| {
-                    Error::client_internal_error(format!(
-                        "failed to communicate result of pending subscription with ID: {}",
-                        pending_subscribe.id,
-                    ))
-                })?),
-            None => Ok(()),
-        }
-    }
-
     /// Immediately remove the subscription with the given query and ID.
     pub fn remove(&mut self, id: &SubscriptionId, query: String) {
         let subs_for_query = match self.subscriptions.get_mut(&query) {
@@ -364,99 +270,221 @@ impl SubscriptionRouter {
         };
         subs_for_query.remove(id);
     }
-
-    /// Keeps track of a pending unsubscribe request, which can either be
-    /// confirmed or cancelled.
-    #[cfg(feature = "websocket-client")]
-    pub fn pending_remove(
-        &mut self,
-        req_id: &str,
-        subs_id: &SubscriptionId,
-        query: String,
-        result_tx: ChannelTx<Result<()>>,
-    ) {
-        self.pending_unsubscribe.insert(
-            req_id.to_string(),
-            PendingUnsubscribe {
-                id: subs_id.clone(),
-                query,
-                result_tx,
-            },
-        );
-    }
-
-    /// Confirm the pending unsubscribe request for the subscription with the
-    /// given ID.
-    #[cfg(feature = "websocket-client")]
-    pub async fn confirm_remove(&mut self, req_id: &str) -> Result<()> {
-        match self.pending_unsubscribe.remove(req_id) {
-            Some(mut pending_unsubscribe) => {
-                self.remove(&pending_unsubscribe.id, pending_unsubscribe.query.clone());
-                Ok(pending_unsubscribe.result_tx.send(Ok(())).await?)
-            }
-            None => Ok(()),
-        }
-    }
-
-    /// Cancel the pending unsubscribe request for the subscription with the
-    /// given ID, responding with the given error.
-    #[cfg(feature = "websocket-client")]
-    pub async fn cancel_remove(&mut self, req_id: &str, err: impl Into<Error>) -> Result<()> {
-        match self.pending_unsubscribe.remove(req_id) {
-            Some(mut pending_unsubscribe) => {
-                Ok(pending_unsubscribe.result_tx.send(Err(err.into())).await?)
-            }
-            None => Ok(()),
-        }
-    }
-
-    /// Helper to check whether the subscription with the given ID is
-    /// currently active.
-    #[cfg(feature = "websocket-client")]
-    pub fn is_active(&self, id: &SubscriptionId) -> bool {
-        self.subscriptions
-            .iter()
-            .any(|(_query, subs_for_query)| subs_for_query.contains_key(id))
-    }
-
-    /// Obtain a mutable reference to the subscription with the given ID (if it
-    /// exists).
-    #[cfg(feature = "websocket-client")]
-    pub fn get_active_subscription_mut(
-        &mut self,
-        id: &SubscriptionId,
-    ) -> Option<&mut ChannelTx<Result<Event>>> {
-        self.subscriptions
-            .iter_mut()
-            .find(|(_query, subs_for_query)| subs_for_query.contains_key(id))
-            .and_then(|(_query, subs_for_query)| subs_for_query.get_mut(id))
-    }
-
-    /// Utility method to determine the current state of the subscription with
-    /// the given ID.
-    #[cfg(feature = "websocket-client")]
-    pub fn subscription_state(&self, req_id: &str) -> Option<SubscriptionState> {
-        if self.pending_subscribe.contains_key(req_id) {
-            Some(SubscriptionState::Pending)
-        } else if self.pending_unsubscribe.contains_key(req_id) {
-            Some(SubscriptionState::Cancelling)
-        } else if self.is_active(&SubscriptionId::from_str(req_id).unwrap()) {
-            Some(SubscriptionState::Active)
-        } else {
-            None
-        }
-    }
 }
 
 impl Default for SubscriptionRouter {
     fn default() -> Self {
         Self {
             subscriptions: HashMap::new(),
-            #[cfg(feature = "websocket-client")]
-            pending_subscribe: HashMap::new(),
-            #[cfg(feature = "websocket-client")]
-            pending_unsubscribe: HashMap::new(),
         }
+    }
+}
+
+#[cfg(feature = "websocket-client")]
+mod two_phase_router {
+    use super::*;
+
+    /// A subscription router that can manage pending subscribe and unsubscribe
+    /// requests, as well as their confirmation/cancellation.
+    ///
+    /// This is useful in instances where the underlying transport is complex,
+    /// e.g. WebSocket connections, where many messages are multiplexed on the
+    /// same communication line. In such cases, a response from the remote
+    /// endpoint immediately after a subscribe/unsubscribe request may not be
+    /// relevant to that request.
+    #[derive(Debug)]
+    pub struct TwoPhaseSubscriptionRouter {
+        // The underlying router that exclusively keeps track of confirmed and
+        // active subscriptions.
+        router: SubscriptionRouter,
+        // A map of JSON-RPC request IDs (for `/subscribe` requests) to pending
+        // subscription requests.
+        pending_subscribe: HashMap<String, PendingSubscribe>,
+        // A map of JSON-RPC request IDs (for the `/unsubscribe` requests) to pending
+        // unsubscribe requests.
+        pending_unsubscribe: HashMap<String, PendingUnsubscribe>,
+    }
+
+    impl Default for TwoPhaseSubscriptionRouter {
+        fn default() -> Self {
+            Self {
+                router: SubscriptionRouter::default(),
+                pending_subscribe: HashMap::new(),
+                pending_unsubscribe: HashMap::new(),
+            }
+        }
+    }
+
+    impl TwoPhaseSubscriptionRouter {
+        /// Publishes the given event to all of the subscriptions to which the
+        /// event is relevant.
+        pub async fn publish(&mut self, ev: Event) {
+            self.router.publish(ev).await
+        }
+
+        /// Keep track of a pending subscription, which can either be confirmed or
+        /// cancelled.
+        ///
+        /// `req_id` must be a unique identifier for this particular pending
+        /// subscription request operation, where `subs_id` must be the unique ID
+        /// of the subscription we eventually want added.
+        pub fn pending_add(
+            &mut self,
+            req_id: &str,
+            subs_id: &SubscriptionId,
+            query: String,
+            event_tx: ChannelTx<Result<Event>>,
+            result_tx: ChannelTx<Result<()>>,
+        ) {
+            self.pending_subscribe.insert(
+                req_id.to_string(),
+                PendingSubscribe {
+                    id: subs_id.clone(),
+                    query,
+                    event_tx,
+                    result_tx,
+                },
+            );
+        }
+
+        /// Attempts to confirm the pending subscription request with the given ID.
+        ///
+        /// Returns an error if it fails to respond to the original caller to
+        /// indicate success.
+        pub async fn confirm_add(&mut self, req_id: &str) -> Result<()> {
+            match self.pending_subscribe.remove(req_id) {
+                Some(mut pending_subscribe) => {
+                    self.router.add(
+                        &pending_subscribe.id,
+                        pending_subscribe.query.clone(),
+                        pending_subscribe.event_tx,
+                    );
+                    Ok(pending_subscribe.result_tx.send(Ok(())).await?)
+                }
+                None => Ok(()),
+            }
+        }
+
+        /// Attempts to cancel the pending subscription with the given ID, sending
+        /// the specified error to the original creator of the attempted
+        /// subscription.
+        pub async fn cancel_add(&mut self, req_id: &str, err: impl Into<Error>) -> Result<()> {
+            match self.pending_subscribe.remove(req_id) {
+                Some(mut pending_subscribe) => Ok(pending_subscribe
+                    .result_tx
+                    .send(Err(err.into()))
+                    .await
+                    .map_err(|_| {
+                        Error::client_internal_error(format!(
+                            "failed to communicate result of pending subscription with ID: {}",
+                            pending_subscribe.id,
+                        ))
+                    })?),
+                None => Ok(()),
+            }
+        }
+
+        /// Keeps track of a pending unsubscribe request, which can either be
+        /// confirmed or cancelled.
+        pub fn pending_remove(
+            &mut self,
+            req_id: &str,
+            subs_id: &SubscriptionId,
+            query: String,
+            result_tx: ChannelTx<Result<()>>,
+        ) {
+            self.pending_unsubscribe.insert(
+                req_id.to_string(),
+                PendingUnsubscribe {
+                    id: subs_id.clone(),
+                    query,
+                    result_tx,
+                },
+            );
+        }
+
+        /// Confirm the pending unsubscribe request for the subscription with the
+        /// given ID.
+        pub async fn confirm_remove(&mut self, req_id: &str) -> Result<()> {
+            match self.pending_unsubscribe.remove(req_id) {
+                Some(mut pending_unsubscribe) => {
+                    self.router
+                        .remove(&pending_unsubscribe.id, pending_unsubscribe.query.clone());
+                    Ok(pending_unsubscribe.result_tx.send(Ok(())).await?)
+                }
+                None => Ok(()),
+            }
+        }
+
+        /// Cancel the pending unsubscribe request for the subscription with the
+        /// given ID, responding with the given error.
+        pub async fn cancel_remove(&mut self, req_id: &str, err: impl Into<Error>) -> Result<()> {
+            match self.pending_unsubscribe.remove(req_id) {
+                Some(mut pending_unsubscribe) => {
+                    Ok(pending_unsubscribe.result_tx.send(Err(err.into())).await?)
+                }
+                None => Ok(()),
+            }
+        }
+
+        /// Helper to check whether the subscription with the given ID is
+        /// currently active.
+        pub fn is_active(&self, id: &SubscriptionId) -> bool {
+            self.router
+                .subscriptions
+                .iter()
+                .any(|(_query, subs_for_query)| subs_for_query.contains_key(id))
+        }
+
+        /// Obtain a mutable reference to the subscription with the given ID (if it
+        /// exists).
+        pub fn get_active_subscription_mut(
+            &mut self,
+            id: &SubscriptionId,
+        ) -> Option<&mut ChannelTx<Result<Event>>> {
+            self.router
+                .subscriptions
+                .iter_mut()
+                .find(|(_query, subs_for_query)| subs_for_query.contains_key(id))
+                .and_then(|(_query, subs_for_query)| subs_for_query.get_mut(id))
+        }
+
+        /// Utility method to determine the current state of the subscription with
+        /// the given ID.
+        pub fn subscription_state(&self, req_id: &str) -> Option<SubscriptionState> {
+            if self.pending_subscribe.contains_key(req_id) {
+                Some(SubscriptionState::Pending)
+            } else if self.pending_unsubscribe.contains_key(req_id) {
+                Some(SubscriptionState::Cancelling)
+            } else if self.is_active(&SubscriptionId::from_str(req_id).unwrap()) {
+                Some(SubscriptionState::Active)
+            } else {
+                None
+            }
+        }
+    }
+
+    #[derive(Debug)]
+    struct PendingSubscribe {
+        id: SubscriptionId,
+        query: String,
+        event_tx: ChannelTx<Result<Event>>,
+        result_tx: ChannelTx<Result<()>>,
+    }
+
+    #[derive(Debug)]
+    struct PendingUnsubscribe {
+        id: SubscriptionId,
+        query: String,
+        result_tx: ChannelTx<Result<()>>,
+    }
+
+    /// The current state of a subscription.
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum SubscriptionState {
+        Pending,
+        Active,
+        Cancelling,
     }
 }
 
@@ -542,7 +570,7 @@ mod test {
     #[cfg(feature = "websocket-client")]
     #[tokio::test]
     async fn router_pending_subscription() {
-        let mut router = SubscriptionRouter::default();
+        let mut router = TwoPhaseSubscriptionRouter::default();
         let subs_id = SubscriptionId::default();
         let (event_tx, mut event_rx) = unbounded();
         let (result_tx, mut result_rx) = unbounded();
@@ -595,7 +623,7 @@ mod test {
     #[cfg(feature = "websocket-client")]
     #[tokio::test]
     async fn router_cancel_pending_subscription() {
-        let mut router = SubscriptionRouter::default();
+        let mut router = TwoPhaseSubscriptionRouter::default();
         let subs_id = SubscriptionId::default();
         let (event_tx, mut event_rx) = unbounded::<Result<Event>>();
         let (result_tx, mut result_rx) = unbounded::<Result<()>>();

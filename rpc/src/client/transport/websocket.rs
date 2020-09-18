@@ -1,6 +1,8 @@
 //! WebSocket-based clients for accessing Tendermint RPC functionality.
 
-use crate::client::subscription::{SubscriptionDriverCmd, SubscriptionRouter, SubscriptionState};
+use crate::client::subscription::{
+    SubscriptionDriverCmd, SubscriptionState, TwoPhaseSubscriptionRouter,
+};
 use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
 use crate::client::transport::get_tcp_host_port;
 use crate::endpoint::{subscribe, unsubscribe};
@@ -145,7 +147,7 @@ impl Response for GenericJSONResponse {}
 #[derive(Debug)]
 struct WebSocketSubscriptionDriver {
     stream: WebSocketStream<TokioAdapter<TcpStream>>,
-    router: SubscriptionRouter,
+    router: TwoPhaseSubscriptionRouter,
     cmd_rx: ChannelRx<SubscriptionDriverCmd>,
 }
 
@@ -156,7 +158,7 @@ impl WebSocketSubscriptionDriver {
     ) -> Self {
         Self {
             stream,
-            router: SubscriptionRouter::default(),
+            router: TwoPhaseSubscriptionRouter::default(),
             cmd_rx,
         }
     }
