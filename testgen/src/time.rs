@@ -42,10 +42,7 @@ impl Generator<TMTime> for Time {
     fn generate_fuzz(&self, fuzzer: &mut impl fuzzer::Fuzzer) -> Result<TMTime, SimpleError> {
         fuzzer.next();
         let time = if fuzzer.is_from(1, 1) {
-            let x = fuzzer.get_u64(0);
-            println!("x = {}", x);
-            x
-
+            fuzzer.get_u64(0)
         } else {
             match &self.secs {
                 None => bail!("time is missing"),
