@@ -71,32 +71,31 @@ enum Command {
     Time(Time),
 }
 
-fn encode<Opts: Generator<T> + Options, T: serde::Serialize>(
-    cli: Opts,
-    stdin: bool,
-    input: bool,
+fn encode<Gen: Generator<T> + Options, T: serde::Serialize>(
+    cli: &Gen,
+    opts: &CliOptions,
 ) -> Result<String, SimpleError> {
-    let producer = if stdin {
+    let producer = if opts.stdin {
         let stdin = read_stdin()?;
-        let default = Opts::from_str(&stdin)?;
-        cli.merge_with_default(default)
+        let default = Gen::from_str(&stdin)?;
+        cli.clone().merge_with_default(default)
     } else {
-        cli
+        cli.clone()
     };
-    if input {
+    if opts.input {
         producer.encode_input()
     } else {
         producer.encode()
     }
 }
 
-fn run_command<Opts, T>(cli: Opts, read_stdin: bool, input: bool)
+fn run_command<Gen, T>(cli: &Gen, opts: &CliOptions)
 where
-    Opts: Generator<T> + Options,
+    Gen: Generator<T> + Options,
     T: serde::Serialize,
 {
     let usage = cli.self_usage();
-    let res = encode(cli, read_stdin, input);
+    let res = encode(cli, opts);
     match res {
         Ok(res) => println!("{}", res),
         Err(e) => {
@@ -120,7 +119,7 @@ fn main() {
         eprintln!("{}", USAGE);
         std::process::exit(1);
     }
-    match opts.command {
+    match &opts.command {
         None => {
             eprintln!("Produce tendermint datastructures for testing from minimal input\n");
             eprintln!("Please specify a command:");
@@ -136,10 +135,10 @@ fn main() {
             }
             std::process::exit(1);
         }
-        Some(Command::Validator(cli)) => run_command(cli, opts.stdin, opts.input),
-        Some(Command::Header(cli)) => run_command(cli, opts.stdin, opts.input),
-        Some(Command::Vote(cli)) => run_command(cli, opts.stdin, opts.input),
-        Some(Command::Commit(cli)) => run_command(cli, opts.stdin, opts.input),
-        Some(Command::Time(cli)) => run_command(cli, opts.stdin, opts.input),
+        Some(Command::Validator(cli)) => run_command(cli, &opts),
+        Some(Command::Header(cli)) => run_command(cli, &opts),
+        Some(Command::Vote(cli)) => run_command(cli, &opts),
+        Some(Command::Commit(cli)) => run_command(cli, &opts),
+        Some(Command::Time(cli)) => run_command(cli, &opts),
     }
 }
