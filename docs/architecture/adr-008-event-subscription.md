@@ -51,7 +51,7 @@ In order to achieve this, we need:
 
 The entities in the diagram below are described in the following subsections.
 
-![](assets/rpc-client-erd.png)
+![RPC client ERD](assets/rpc-client-erd.png)
 
 ### `Event`
 
@@ -227,7 +227,7 @@ pub trait SubscriptionClient {
 We envisage 2 distinct client implementations at this point:
 
 * `HttpClient`, which only implements [`Client`](#client) (over HTTP).
-* `WebSocketClient`, which only implements
+* `WebSocketClient`, which will implement [`Client`](#client) and
   [`SubscriptionClient`](#subscriptionclient) (over a WebSocket connection).
 
 #### Handle-Driver Concurrency Model
@@ -347,6 +347,41 @@ pub enum Operand {
 }
 ```
 
+### Subscription Tracking and Routing
+
+Internally, a `SubscriptionRouter` is proposed that uses a `HashMap` to keep
+track of all of the queries relating to a particular client.
+
+```rust
+pub struct SubscriptionRouter {
+    // A map of queries -> (map of subscription IDs -> result event tx channels)
+    subscriptions: HashMap<Query, HashMap<SubscriptionId, ChannelTx<Result<Event>>>>,
+}
+```
+
+At present, Tendermint includes the ID of the subscription relating to a
+particular event in the JSON-RPC message, and so this data structure is optimal
+for such a configuration. This will necessarily change if Tendermint's WebSocket
+server [drops subscription IDs from events][tendermint-2949], which is likely if
+we want to conform more strictly to the [JSON-RPC standard for
+notifications][jsonrpc-notifications].
+
+#### Two-Phase Subscribe/Unsubscribe
+
+Due to the fact that a WebSocket connection lacks request/response semantics,
+when managing multiple subscriptions from a single client we need to implement a
+**two-phase subscription creation/removal process**:
+
+1. An outgoing, but unconfirmed, subscribe/unsubscribe request is tracked.
+2. The subscribe/unsubscribe request is confirmed or cancelled by a response
+   from the remote WebSocket server.
+
+The need for this two-phase subscribe/unsubscribe process is more clearly
+illustrated in the following sequence diagram:
+
+![RPC client two-phase
+subscribe/unsubscribe](./assets/rpc-client-two-phase-subscribe.png)
+
 ## Status
 
 Proposed
@@ -390,4 +425,6 @@ None
 [async-drop]: https://internals.rust-lang.org/t/asynchronous-destructors/11127
 [tokio-mpsc]: https://docs.rs/tokio/*/tokio/sync/mpsc/index.html
 [futures-stream-mod]: https://docs.rs/futures/*/futures/stream/index.html
+[tendermint-2949]: https://github.com/tendermint/tendermint/issues/2949
+[jsonrpc-notifications]: https://www.jsonrpc.org/specification#notification
 
