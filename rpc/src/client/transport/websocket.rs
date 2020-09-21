@@ -258,31 +258,15 @@ impl WebSocketSubscriptionDriver {
     }
 
     async fn handle_text_msg(&mut self, msg: String) {
-        // See https://github.com/tendermint/tendermint/issues/5373
-        let msgs = msg
-            // TODO(thane): Find a better way of dealing with this. This is
-            //              brittle and will break if there's even just one
-            //              string in the message that contains the same pattern.
-            .split("}\n{")
-            .map(|m| m.to_string())
-            .collect::<Vec<String>>();
-        for mut msg in msgs {
-            if !msg.starts_with('{') {
-                msg.insert(0, '{');
+        match Event::from_string(&msg) {
+            Ok(ev) => {
+                self.router.publish(ev).await;
             }
-            if !msg.ends_with('}') {
-                msg.push('}');
-            }
-            match Event::from_string(&msg) {
-                Ok(ev) => {
-                    self.router.publish(ev).await;
-                }
-                Err(_) => {
-                    if let Ok(wrapper) =
-                        serde_json::from_str::<response::Wrapper<GenericJSONResponse>>(&msg)
-                    {
-                        self.handle_generic_response(wrapper).await;
-                    }
+            Err(_) => {
+                if let Ok(wrapper) =
+                    serde_json::from_str::<response::Wrapper<GenericJSONResponse>>(&msg)
+                {
+                    self.handle_generic_response(wrapper).await;
                 }
             }
         }
