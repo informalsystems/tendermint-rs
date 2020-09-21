@@ -246,6 +246,12 @@ In cases where a driver is necessary, the client implementation would have to
 become a **handle** to the driver, facilitating communication with it across
 asynchronous tasks.
 
+A rough sketch of the interaction model between the different components
+envisaged to make up the subscription subsystem is shown in the following
+sequence diagram.
+
+![RPC client concurrency model](./assets/rpc-client-concurrency.png)
+
 ### `Query`
 
 It is proposed that, using a *builder pattern*, we implement a subscription
