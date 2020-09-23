@@ -202,9 +202,7 @@ impl Tester {
 
     pub fn output_env(&self) -> Option<TestEnv> {
         let output_dir = self.root_dir.clone() + "/_" + &self.name;
-        fs::create_dir_all(&output_dir)
-            .ok()
-            .and(TestEnv::new(&output_dir))
+        TestEnv::new(&output_dir)
     }
 
     fn capture_test<F>(test: F) -> TestResult
@@ -270,8 +268,8 @@ impl Tester {
                 let env = TestEnv::new(dir.path().to_str().unwrap()).unwrap();
                 let output_dir = output_env.full_path(path);
                 let output_env = TestEnv::new(output_dir.to_str().unwrap()).unwrap();
-                fs::remove_dir_all(&output_dir).unwrap();
                 test(test_case, &env, &test_env, &output_env);
+                fs::remove_dir_all(&env.current_dir()).unwrap();
             }),
             Err(_) => ParseError,
         };
