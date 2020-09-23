@@ -57,7 +57,7 @@ impl Runnable for StartCmd {
     fn run(&self) {
         if let Err(err) = abscissa_tokio::run(&APPLICATION, async {
             StartCmd::assert_init_was_run();
-            let mut supervisor = self.construct_supervisor();
+            let supervisor = self.construct_supervisor();
 
             let rpc_handler = supervisor.handle();
             StartCmd::start_rpc_server(rpc_handler);
