@@ -32,24 +32,24 @@ VARIABLES
 (* the variables of the lite client *)
 lcvars == <<state, nextHeight, fetchedLightBlocks, lightBlockStatus, latestVerified>>
 
-(* The light client history, which is the function mapping states (0 .. nprobes) to the record with fields:
-   - verified: the latest verified block in this state
-   - current: the block that is being checked in this state
-   - now: the time point in this state
-   - verdict: the light client verdict for the `current` block in this state
-*)
-VARIABLE
-  history
+(* the variables used by the light client in the previous state *)
+VARIABLES
+  prevVerified,
+  prevCurrent,
+  prevNow,
+  prevVerdict
 
 InitHistory(verified, current, now, verdict) ==
-  LET first == [ verified |-> verified, current |-> current, now |-> now, verdict |-> verdict ]
-  IN history = [ n \in {0} |-> first ]
+  /\ prevVerified = verified
+  /\ prevCurrent = current
+  /\ prevNow = now
+  /\ prevVerdict = verdict
 
 NextHistory(verified, current, now, verdict) ==
-  LET last == [ verified |-> verified, current |-> current, now |-> now, verdict |-> verdict ]
-      np == nprobes+1
-  IN history' = [ n \in DOMAIN history \union {np} |->
-      IF n = np THEN last ELSE history[n]]
+  /\ prevVerified' = verified
+  /\ prevCurrent' = current
+  /\ prevNow' = now
+  /\ prevVerdict' = verdict
 
 
 (******************* Blockchain instance ***********************************)
@@ -96,7 +96,7 @@ ValidAndVerifiedPre(trusted, untrusted) ==
      \* the trusted block has been created earlier (no drift here)
   /\ thdr.time < uhdr.time
      \* the untrusted block is not from the future
-  /\ uhdr.time <= now
+  /\ uhdr.time < now
   /\ untrusted.Commits \subseteq uhdr.VS
   /\ LET TP == Cardinality(uhdr.VS)
          SP == Cardinality(untrusted.Commits)
@@ -269,7 +269,7 @@ VerifyToTargetDone ==
     /\ latestVerified.header.height >= TARGET_HEIGHT
     /\ state' = "finishedSuccess"
     /\ UNCHANGED <<nextHeight, nprobes, fetchedLightBlocks, lightBlockStatus, latestVerified>>
-    /\ UNCHANGED <<history>>
+    /\ UNCHANGED <<prevVerified, prevCurrent, prevNow, prevVerdict>>
             
 (********************* Lite client + Blockchain *******************)
 Init ==
