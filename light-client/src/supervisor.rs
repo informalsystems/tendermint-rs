@@ -16,29 +16,19 @@ use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
 /// Provides an interface to the supervisor for use in downstream code.
 pub trait Handle: Send + Sync {
     /// Get latest trusted block.
-    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
-        todo!()
-    }
+    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error>;
 
     /// Get the latest status.
-    fn latest_status(&self) -> Result<LatestStatus, Error> {
-        todo!()
-    }
+    fn latest_status(&self) -> Result<LatestStatus, Error>;
 
     /// Verify to the highest block.
-    fn verify_to_highest(&self) -> Result<LightBlock, Error> {
-        todo!()
-    }
+    fn verify_to_highest(&self) -> Result<LightBlock, Error>;
 
     /// Verify to the block at the given height.
-    fn verify_to_target(&self, _height: Height) -> Result<LightBlock, Error> {
-        todo!()
-    }
+    fn verify_to_target(&self, _height: Height) -> Result<LightBlock, Error>;
 
     /// Terminate the underlying [`Supervisor`].
-    fn terminate(&self) -> Result<(), Error> {
-        todo!()
-    }
+    fn terminate(&self) -> Result<(), Error>;
 }
 
 /// Input events sent by the [`Handle`]s to the [`Supervisor`]. They carry a [`Callback`] which is
