@@ -128,6 +128,8 @@ fn model_based_test(
         },
         Err(e) => panic!("failed to run Apalache; reason: {}", e),
     }
+    output_env.copy_file_from_env(env, "counterexample.tla");
+    output_env.copy_file_from_env(env, "counterexample.json");
 
     let transform_spec = root_env
         .full_canonical_path("_jsonatr-lib/apalache_to_lite_test.json")
@@ -140,13 +142,11 @@ fn model_based_test(
     assert!(run_jsonatr_transform(env.current_dir(), transform).is_ok());
     output_env.copy_file_from_env(env, "test.json");
 
-    let tc = env
-        .parse_file_as::<SingleStepTestCase>("test.json")
+    let tc: SingleStepTestCase = env
+        .parse_file("test.json")
         .unwrap();
     println!("  > running auto-generated test...");
     single_step_test(tc, env, root_env, output_env);
-    output_env.copy_file_from_env(env, "counterexample.tla");
-    output_env.copy_file_from_env(env, "counterexample.json");
 }
 
 fn model_based_test_batch(batch: ApalacheTestBatch) -> Vec<(String, String)> {
