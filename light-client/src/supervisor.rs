@@ -358,7 +358,8 @@ impl Supervisor {
 
 /// A [`Handle`] to the [`Supervisor`] which allows to communicate with
 /// the supervisor across thread boundaries via message passing.
-struct SupervisorHandle {
+#[derive(Clone)]
+pub struct SupervisorHandle {
     sender: channel::Sender<HandleInput>,
 }
 
