@@ -37,12 +37,16 @@ pub trait Handle: Send + Sync {
 enum HandleInput {
     /// Terminate the supervisor process
     Terminate(channel::Sender<()>),
+
     /// Verify to the highest height, call the provided callback with result
     VerifyToHighest(channel::Sender<Result<LightBlock, Error>>),
+
     /// Verify to the given height, call the provided callback with result
     VerifyToTarget(Height, channel::Sender<Result<LightBlock, Error>>),
+
     /// Get the latest trusted block.
     LatestTrusted(channel::Sender<Option<LightBlock>>),
+
     /// Get the current status of the LightClient
     GetStatus(channel::Sender<LatestStatus>),
 }
@@ -377,6 +381,7 @@ impl SupervisorHandle {
         receiver.recv().map_err(ErrorKind::from)?
     }
 }
+
 impl Handle for SupervisorHandle {
     fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
         let (sender, receiver) = channel::bounded::<Option<LightBlock>>(1);
