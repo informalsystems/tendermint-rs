@@ -153,7 +153,7 @@ fn sync_cmd(opts: SyncOpts) {
         .witness(witness, witness_instance)
         .build();
 
-    let mut supervisor = Supervisor::new(
+    let supervisor = Supervisor::new(
         peer_list,
         ProdForkDetector::default(),
         ProdEvidenceReporter::new(peer_addr),

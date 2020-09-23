@@ -82,7 +82,7 @@ fn run_multipeer_test(tc: TestBisection<AnonLightBlock>) {
         peer_list = peer_list.witness(peer_id, instance);
     }
 
-    let mut supervisor = Supervisor::new(
+    let supervisor = Supervisor::new(
         peer_list.build(),
         ProdForkDetector::default(),
         MockEvidenceReporter::new(),

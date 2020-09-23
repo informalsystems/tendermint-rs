@@ -99,8 +99,7 @@ fn sync() {
         .witness(witness, witness_instance)
         .build();
 
-    let mut supervisor =
-        Supervisor::new(peer_list, ProdForkDetector::default(), TestEvidenceReporter);
+    let supervisor = Supervisor::new(peer_list, ProdForkDetector::default(), TestEvidenceReporter);
 
     let handle = supervisor.handle();
     std::thread::spawn(|| supervisor.run());

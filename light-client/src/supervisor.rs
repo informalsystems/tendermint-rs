@@ -160,7 +160,7 @@ impl Supervisor {
     }
 
     /// Create a new handle to this supervisor.
-    pub fn handle(&mut self) -> impl Handle {
+    pub fn handle(&self) -> SupervisorHandle {
         SupervisorHandle::new(self.sender.clone())
     }
 
