@@ -1,4 +1,4 @@
-//! `/status` endpoint JSONRPC wrapper
+//! `/status` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
 

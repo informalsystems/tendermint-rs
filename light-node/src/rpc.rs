@@ -1,4 +1,4 @@
-//! JSONRPC Server and Client for the light-node RPC endpoint.
+//! JSON-RPC Server and Client for the light-node RPC endpoint.
 use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::{AccessControlAllowOrigin, DomainsValidation, ServerBuilder};
 
@@ -34,7 +34,7 @@ where
 }
 
 mod sealed {
-    use jsonrpc_core::futures::future::{self, Future, FutureResult};
+    use jsonrpc_core::futures::future::{self, FutureResult};
     use jsonrpc_core::types::Error;
     use jsonrpc_derive::rpc;
 
@@ -173,7 +173,7 @@ mod test {
                     "last_block_id": {
                             "hash": "",
                             "parts": {
-                                    "total": "0",
+                                    "total": 0,
                                     "hash": ""
                             }
                     },
@@ -189,11 +189,11 @@ mod test {
             },
             "commit": {
                     "height": "1",
-                    "round": "1",
+                    "round": 1,
                     "block_id": {
                             "hash": "76B0FB738138A2C934300D7B23C280B65965D7427DA4D5414B41C75EBC4AD4C3",
                             "parts": {
-                                    "total": "1",
+                                    "total": 1,
                                     "hash": "073CE26981DF93820595E602CE63B810BC8F1003D6BB28DEDFF5B2F4F09811A1"
                             }
                     },

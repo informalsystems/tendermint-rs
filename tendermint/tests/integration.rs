@@ -11,14 +11,18 @@
 mod rpc {
     use std::cmp::min;
 
-    use tendermint_rpc::{event_listener, Client};
+    use tendermint_rpc::{Client, HttpClient, Id, SubscriptionClient, WebSocketClient};
 
-    use tendermint::abci::Code;
+    use futures::StreamExt;
+    use subtle_encoding::base64;
     use tendermint::abci::Log;
+    use tendermint::abci::{Code, Transaction};
+    use tendermint_rpc::event::EventData;
+    use tokio::time::Duration;
 
     /// Get the address of the local node
-    pub fn localhost_rpc_client() -> Client {
-        Client::new("tcp://127.0.0.1:26657".parse().unwrap())
+    pub fn localhost_rpc_client() -> HttpClient {
+        HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap()
     }
 
     /// `/health` endpoint
@@ -147,33 +151,99 @@ mod rpc {
 
     #[tokio::test]
     #[ignore]
-    async fn event_subscription() {
-        let mut client =
-            event_listener::EventListener::connect("tcp://127.0.0.1:26657".parse().unwrap())
-                .await
-                .unwrap();
-        client
-            .subscribe(event_listener::EventSubscription::BlockSubscription)
+    async fn subscription_interface() {
+        let mut client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
-        // client.subscribe("tm.event='NewBlock'".to_owned()).await.unwrap();
+        let mut subs = client
+            .subscribe("tm.event='NewBlock'".to_string())
+            .await
+            .unwrap();
+        let mut ev_count = 5_i32;
 
-        // Loop here is helpful when debugging parsing of JSON events
-        // loop{
-        let maybe_result_event = client.get_event().await.unwrap();
-        dbg!(&maybe_result_event);
-        // }
-        let result_event = maybe_result_event.expect("unexpected msg read");
-        match result_event.data {
-            event_listener::TMEventData::EventDataNewBlock(nb) => {
-                dbg!("got EventDataNewBlock: {:?}", nb);
-            }
-            event_listener::TMEventData::EventDataTx(tx) => {
-                dbg!("got EventDataTx: {:?}", tx);
-            }
-            event_listener::TMEventData::GenericJSONEvent(v) => {
-                panic!("got a GenericJSONEvent: {:?}", v);
+        println!("Attempting to grab {} new blocks", ev_count);
+        while let Some(res) = subs.next().await {
+            let ev = res.unwrap();
+            println!("Got event: {:?}", ev);
+            ev_count -= 1;
+            if ev_count < 0 {
+                break;
             }
         }
+
+        subs.terminate().await.unwrap();
+        client.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn transaction_subscription() {
+        let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
+        let mut subs_client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+            .await
+            .unwrap();
+        let mut subs = subs_client
+            .subscribe("tm.event='Tx'".to_string())
+            .await
+            .unwrap();
+        // We use Id::uuid_v4() here as a quick hack to generate a random value.
+        let mut expected_tx_values = (0..10_u32)
+            .map(|_| Id::uuid_v4().to_string())
+            .collect::<Vec<String>>();
+        let broadcast_tx_values = expected_tx_values.clone();
+
+        tokio::spawn(async move {
+            for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
+                let tx = format!("tx{}={}", tx_count, val);
+                rpc_client
+                    .broadcast_tx_async(Transaction::new(tx.as_bytes()))
+                    .await
+                    .unwrap();
+            }
+        });
+
+        println!(
+            "Attempting to grab {} transaction events",
+            expected_tx_values.len()
+        );
+        let mut cur_tx_id = 0_u32;
+
+        while !expected_tx_values.is_empty() {
+            let mut delay = tokio::time::delay_for(Duration::from_secs(3));
+            tokio::select! {
+                Some(res) = subs.next() => {
+                    let ev = res.unwrap();
+                    //println!("Got event: {:?}", ev);
+                    let next_val = expected_tx_values.remove(0);
+                    match ev.data {
+                        EventData::Tx { tx_result } => match base64::decode(tx_result.tx) {
+                            Ok(decoded_tx) => match String::from_utf8(decoded_tx) {
+                                Ok(decoded_tx_str) => {
+                                    let decoded_tx_split = decoded_tx_str
+                                        .split('=')
+                                        .map(|s| s.to_string())
+                                        .collect::<Vec<String>>();
+                                    assert_eq!(2, decoded_tx_split.len());
+
+                                    let key = decoded_tx_split.get(0).unwrap();
+                                    let val = decoded_tx_split.get(1).unwrap();
+                                    println!("Got tx: {}={}", key, val);
+                                    assert_eq!(format!("tx{}", cur_tx_id), *key);
+                                    assert_eq!(next_val, *val);
+                                }
+                                Err(e) => panic!("Failed to convert decoded tx to string: {}", e),
+                            },
+                            Err(e) => panic!("Failed to base64 decode tx from event: {}", e),
+                        },
+                        _ => panic!("Unexpected event type: {:?}", ev),
+                    }
+                    cur_tx_id += 1;
+                },
+                _ = &mut delay => panic!("Timed out waiting for an event"),
+            }
+        }
+
+        subs.terminate().await.unwrap();
+        subs_client.close().await.unwrap();
     }
 }

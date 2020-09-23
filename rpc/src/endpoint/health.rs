@@ -1,4 +1,4 @@
-//! `/health` endpoint JSONRPC wrapper
+//! `/health` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
 

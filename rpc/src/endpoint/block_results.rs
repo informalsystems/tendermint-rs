@@ -1,4 +1,4 @@
-//! `/block_results` endpoint JSONRPC wrapper
+//! `/block_results` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
 

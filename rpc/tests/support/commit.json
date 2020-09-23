@@ -14,7 +14,7 @@
         "last_block_id": {
           "hash": "760E050B2404A4BC661635CA552FF45876BCD927C367ADF88961E389C01D32FF",
           "parts": {
-            "total": "1",
+            "total": 1,
             "hash": "485070D01F9543827B3F9BAF11BDCFFBFD2BDED0B63D7192FA55649B94A1D5DE"
           }
         },
@@ -30,11 +30,11 @@
       },
       "commit": {
         "height": "10",
-        "round": "0",
+        "round": 0,
         "block_id": {
-          "hash": "4FFD15F274758E474898498A191EB8CA6FC6C466576255DA132908A12AC1674C",
+          "hash": "6DFCE2EB94FB52CE538E84ADB43568C05FD954AB92F1E2CAA95F79BAF9BE77EA",
           "parts": {
-            "total": "1",
+            "total": 1,
             "hash": "BBA710736635FA20CDB4F48732563869E90871D31FE9E7DE3D900CD4334D8775"
           }
         },

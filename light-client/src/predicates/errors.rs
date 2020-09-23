@@ -113,19 +113,11 @@ impl VerificationError {
 
 impl ErrorExt for VerificationError {
     fn not_enough_trust(&self) -> bool {
-        if let Self::NotEnoughTrust { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Self::NotEnoughTrust { .. })
     }
 
     fn has_expired(&self) -> bool {
-        if let Self::NotWithinTrustPeriod { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Self::NotWithinTrustPeriod { .. })
     }
 
     fn is_timeout(&self) -> bool {

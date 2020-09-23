@@ -28,7 +28,6 @@ where
 {
     #[derive(Deserialize)]
     struct Parts {
-        #[serde(with = "super::from_str")]
         total: u64,
         hash: String,
     }
