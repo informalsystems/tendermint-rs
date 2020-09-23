@@ -14,7 +14,7 @@ use crate::state::State;
 use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
 
 /// Provides an interface to the supervisor for use in downstream code.
-pub trait Handle {
+pub trait Handle: Send + Sync {
     /// Get latest trusted block.
     fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
         todo!()
