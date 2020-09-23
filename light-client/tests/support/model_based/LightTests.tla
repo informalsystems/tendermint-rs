@@ -2,6 +2,29 @@
 
 EXTENDS Lightclient_A_1
 
+(* The light client history, which is the function mapping states 1..nprobes to the record with fields:
+   - verified: the latest verified block in the previous state
+   - current: the block that is being checked in the previous state
+   - now: the time point in the previous state
+   - verdict: the light client verdict in the previous state
+*)
+VARIABLE
+  history
+
+historyState ==
+  [ verified |-> prevVerified, current |-> prevCurrent, now |-> prevNow, verdict |-> prevVerdict ]
+
+(* APALACHE annotations *)
+a <: b == a \* type annotation
+
+InitTest ==
+  /\ Init
+  /\ history = [ n \in {} <: {Int} |-> historyState ]
+
+NextTest ==
+  /\ Next
+  /\ history' = [ n \in DOMAIN history \union {nprobes} |-> IF n = nprobes THEN historyState ELSE history[n]]
+
 TestFailure ==
     /\ state = "finishedFailure"
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
