@@ -13,6 +13,8 @@ use crate::components::scheduler::{self, Scheduler};
 use crate::components::verifier::{ProdVerifier, Verifier};
 use crate::light_client::{LightClient, Options};
 use crate::operations::{Hasher, ProdHasher};
+use crate::predicates::ProdPredicates;
+use crate::predicates::VerificationPredicates;
 use crate::state::{State, VerificationTrace};
 use crate::store::LightStore;
 use crate::supervisor::Instance;
@@ -28,13 +30,15 @@ pub struct HasTrustedState;
 #[must_use]
 pub struct LightClientBuilder<State> {
     peer_id: PeerId,
-    hasher: Box<dyn Hasher>,
-    io: Box<dyn Io>,
-    verifier: Box<dyn Verifier>,
-    light_store: Box<dyn LightStore>,
-    clock: Box<dyn Clock>,
-    scheduler: Box<dyn Scheduler>,
     options: Options,
+    io: Box<dyn Io>,
+    clock: Box<dyn Clock>,
+    hasher: Box<dyn Hasher>,
+    verifier: Box<dyn Verifier>,
+    scheduler: Box<dyn Scheduler>,
+    predicates: Box<dyn VerificationPredicates>,
+    light_store: Box<dyn LightStore>,
+
     #[allow(dead_code)]
     state: State,
 }
@@ -45,12 +49,13 @@ impl<Current> LightClientBuilder<Current> {
         LightClientBuilder {
             peer_id: self.peer_id,
             options: self.options,
-            light_store: self.light_store,
-            hasher: self.hasher,
             io: self.io,
-            verifier: self.verifier,
             clock: self.clock,
+            hasher: self.hasher,
+            verifier: self.verifier,
             scheduler: self.scheduler,
+            predicates: self.predicates,
+            light_store: self.light_store,
             state,
         }
     }
@@ -69,11 +74,12 @@ impl LightClientBuilder<NoTrustedState> {
             peer_id,
             options,
             light_store,
-            Box::new(ProdHasher),
             Box::new(ProdIo::new(peer_id, rpc_client, timeout)),
-            Box::new(ProdVerifier::default()),
+            Box::new(ProdHasher),
             Box::new(SystemClock),
+            Box::new(ProdVerifier::default()),
             Box::new(scheduler::basic_bisecting_schedule),
+            Box::new(ProdPredicates),
         )
     }
 
@@ -83,11 +89,12 @@ impl LightClientBuilder<NoTrustedState> {
         peer_id: PeerId,
         options: Options,
         light_store: Box<dyn LightStore>,
-        hasher: Box<dyn Hasher>,
         io: Box<dyn Io>,
-        verifier: Box<dyn Verifier>,
+        hasher: Box<dyn Hasher>,
         clock: Box<dyn Clock>,
+        verifier: Box<dyn Verifier>,
         scheduler: Box<dyn Scheduler>,
+        predicates: Box<dyn VerificationPredicates>,
     ) -> Self {
         Self {
             peer_id,
@@ -98,6 +105,7 @@ impl LightClientBuilder<NoTrustedState> {
             clock,
             scheduler,
             options,
+            predicates,
             state: NoTrustedState,
         }
     }
@@ -106,9 +114,13 @@ impl LightClientBuilder<NoTrustedState> {
     pub fn trust_light_block(
         mut self,
         trusted_state: LightBlock,
-    ) -> LightClientBuilder<HasTrustedState> {
+    ) -> Result<LightClientBuilder<HasTrustedState>, Error> {
+        self.validate(&trusted_state)?;
+
+        // TODO(liamsi, romac): it is unclear if this should be Trusted or only Verified
         self.light_store.insert(trusted_state, Status::Trusted);
-        self.with_state(HasTrustedState)
+
+        Ok(self.with_state(HasTrustedState))
     }
 
     /// Set the latest block from the primary peer as the trusted state.
@@ -117,6 +129,8 @@ impl LightClientBuilder<NoTrustedState> {
             .io
             .fetch_light_block(AtHeight::Highest)
             .map_err(error::Kind::Io)?;
+
+        self.validate(&trusted_state)?;
 
         self.light_store.insert(trusted_state, Status::Trusted);
 
@@ -150,9 +164,21 @@ impl LightClientBuilder<NoTrustedState> {
             });
         }
 
+        self.validate(&trusted_state)?;
+
         self.light_store.insert(trusted_state, Status::Trusted);
 
         Ok(self.with_state(HasTrustedState))
+    }
+
+    fn validate(&self, light_block: &LightBlock) -> Result<(), Error> {
+        // TODO(ismail, romac): actually verify more predicates of light block?
+
+        self.predicates
+            .validator_sets_match(light_block, &*self.hasher)
+            .map_err(|e| error::Kind::InvalidLightBlock.context(e))?;
+
+        Ok(())
     }
 }
 

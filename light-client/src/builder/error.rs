@@ -1,5 +1,7 @@
 //! Errors raised by the builder DSL
 
+use anomaly::BoxError;
+use anomaly::Context;
 use tendermint::block::Height;
 use tendermint::Hash;
 use thiserror::Error;
@@ -33,4 +35,16 @@ pub enum Kind {
         /// hash of fetched header
         found: Hash,
     },
+
+    /// Invalid light block
+    #[error("invalid light block")]
+    InvalidLightBlock,
+}
+
+impl Kind {
+    /// Add additional context (i.e. include a source error and capture a backtrace).
+    /// You can convert the resulting `Context` into an `Error` by calling `.into()`.
+    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
+        Context::new(self, Some(source.into()))
+    }
 }

@@ -102,7 +102,7 @@ fn make_instance(
     if let (Some(height), Some(hash)) = (opts.trusted_height, opts.trusted_hash) {
         builder.trust_primary_at(height, hash).unwrap().build()
     } else if let Some(trusted_state) = trusted_state {
-        builder.trust_light_block(trusted_state).build()
+        builder.trust_light_block(trusted_state).unwrap().build()
     } else {
         eprintln!("[ error ] no trusted state in database, please specify a trusted header");
         std::process::exit(1)
