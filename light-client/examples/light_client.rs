@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::{
     path::{Path, PathBuf},
     time::Duration,
@@ -6,23 +5,15 @@ use std::{
 
 use gumdrop::Options;
 
+use tendermint::Hash;
 use tendermint_rpc as rpc;
 
-use tendermint_light_client::supervisor::{Handle as _, Instance, Supervisor};
+use tendermint_light_client::supervisor::{Handle as _, Instance};
 use tendermint_light_client::{
-    components::{
-        clock::SystemClock,
-        io::{AtHeight, Io, ProdIo},
-        scheduler,
-        verifier::ProdVerifier,
-    },
-    evidence::ProdEvidenceReporter,
-    fork_detector::ProdForkDetector,
-    light_client::{self, LightClient},
-    peer_list::PeerList,
-    state::State,
+    builder::{LightClientBuilder, SupervisorBuilder},
+    light_client,
     store::{sled::SledStore, LightStore},
-    types::{Height, PeerId, Status, TrustThreshold},
+    types::{Height, PeerId, TrustThreshold},
 };
 
 #[derive(Debug, Options)]
@@ -58,6 +49,11 @@ struct SyncOpts {
     )]
     trusted_height: Option<Height>,
     #[options(
+        help = "hash of the initial trusted state (optional if store already initialized)",
+        meta = "HASH"
+    )]
+    trusted_hash: Option<Hash>,
+    #[options(
         help = "path to the database folder",
         meta = "PATH",
         default = "./lightstore"
@@ -84,81 +80,52 @@ fn make_instance(
     db_path: impl AsRef<Path>,
     opts: &SyncOpts,
 ) -> Instance {
-    let rpc_client = rpc::HttpClient::new(addr).unwrap();
-
-    let timeout = Duration::from_secs(10);
-    let io = ProdIo::new(peer_id, rpc_client, Some(timeout));
-
     let db = sled::open(db_path).unwrap_or_else(|e| {
         println!("[ error ] could not open database: {}", e);
         std::process::exit(1);
     });
 
-    let mut light_store = SledStore::new(db);
+    let light_store = SledStore::new(db);
+    let trusted_state = light_store.latest_trusted_or_verified();
 
-    if let Some(height) = opts.trusted_height {
-        let trusted_state = io
-            .fetch_light_block(AtHeight::At(height))
-            .unwrap_or_else(|e| {
-                println!("[ error ] could not retrieve trusted header: {}", e);
-                std::process::exit(1);
-            });
-
-        light_store.insert(trusted_state, Status::Verified);
-    } else if light_store.latest(Status::Verified).is_none() {
-        println!("[ error ] no trusted state in database, please specify a trusted header");
-        std::process::exit(1);
-    }
-
-    let state = State {
-        light_store: Box::new(light_store),
-        verification_trace: HashMap::new(),
-    };
+    let rpc_client = rpc::HttpClient::new(addr).unwrap();
 
     let options = light_client::Options {
-        trust_threshold: TrustThreshold {
-            numerator: 1,
-            denominator: 3,
-        },
+        trust_threshold: TrustThreshold::default(),
         trusting_period: Duration::from_secs(36000),
         clock_drift: Duration::from_secs(1),
     };
 
-    let verifier = ProdVerifier::default();
-    let clock = SystemClock;
-    let scheduler = scheduler::basic_bisecting_schedule;
+    let builder =
+        LightClientBuilder::prod(peer_id, rpc_client, Box::new(light_store), options, None);
 
-    let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, io);
-
-    Instance::new(light_client, state)
+    if let (Some(height), Some(hash)) = (opts.trusted_height, opts.trusted_hash) {
+        builder.trust_primary_at(height, hash).unwrap().build()
+    } else if let Some(trusted_state) = trusted_state {
+        builder.trust_light_block(trusted_state).build()
+    } else {
+        eprintln!("[ error ] no trusted state in database, please specify a trusted header");
+        std::process::exit(1)
+    }
 }
 
 fn sync_cmd(opts: SyncOpts) {
-    let addr = opts.address.clone();
-
     let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
     let witness: PeerId = "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF".parse().unwrap();
+
+    let primary_addr = opts.address.clone();
+    let witness_addr = opts.address.clone();
 
     let primary_path = opts.db_path.join(primary.to_string());
     let witness_path = opts.db_path.join(witness.to_string());
 
-    let primary_instance = make_instance(primary, addr.clone(), primary_path, &opts);
-    let witness_instance = make_instance(witness, addr.clone(), witness_path, &opts);
+    let primary_instance = make_instance(primary, primary_addr.clone(), primary_path, &opts);
+    let witness_instance = make_instance(witness, witness_addr.clone(), witness_path, &opts);
 
-    let mut peer_addr = HashMap::new();
-    peer_addr.insert(primary, addr.clone());
-    peer_addr.insert(witness, addr);
-
-    let peer_list = PeerList::builder()
-        .primary(primary, primary_instance)
-        .witness(witness, witness_instance)
-        .build();
-
-    let supervisor = Supervisor::new(
-        peer_list,
-        ProdForkDetector::default(),
-        ProdEvidenceReporter::new(peer_addr),
-    );
+    let supervisor = SupervisorBuilder::new()
+        .primary(primary, primary_addr, primary_instance)
+        .witness(witness, witness_addr, witness_instance)
+        .build_prod();
 
     let handle = supervisor.handle();
 
