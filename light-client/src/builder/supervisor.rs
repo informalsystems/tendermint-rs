@@ -1,10 +1,14 @@
 use tendermint::net;
 
-use crate::evidence::ProdEvidenceReporter;
-use crate::fork_detector::ProdForkDetector;
 use crate::peer_list::{PeerList, PeerListBuilder};
-use crate::supervisor::{Instance, Supervisor};
+use crate::supervisor::Instance;
 use crate::types::PeerId;
+
+#[cfg(feature = "rpc-client")]
+use {
+    crate::evidence::ProdEvidenceReporter, crate::fork_detector::ProdForkDetector,
+    crate::supervisor::Supervisor,
+};
 
 pub struct Init;
 pub struct HasPrimary;
@@ -91,6 +95,7 @@ impl SupervisorBuilder<HasPrimary> {
 impl SupervisorBuilder<Done> {
     /// Build a production (non-mock) [`Supervisor`].
     #[must_use]
+    #[cfg(feature = "rpc-client")]
     pub fn build_prod(self) -> Supervisor {
         let (instances, addresses) = self.unwrap();
 

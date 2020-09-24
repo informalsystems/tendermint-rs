@@ -1,24 +1,28 @@
 //! DSL for building a light client [`Instance`]
 
-use std::time::Duration;
-
 use tendermint::{block::Height, Hash};
-use tendermint_rpc as rpc;
 
 use crate::bail;
 use crate::builder::error::{self, Error};
-use crate::components::clock::{Clock, SystemClock};
-use crate::components::io::{AtHeight, Io, ProdIo};
-use crate::components::scheduler::{self, Scheduler};
-use crate::components::verifier::{ProdVerifier, Verifier};
+use crate::components::clock::Clock;
+use crate::components::io::{AtHeight, Io};
+use crate::components::scheduler::Scheduler;
+use crate::components::verifier::Verifier;
 use crate::light_client::{LightClient, Options};
-use crate::operations::{Hasher, ProdHasher};
-use crate::predicates::ProdPredicates;
+use crate::operations::Hasher;
 use crate::predicates::VerificationPredicates;
 use crate::state::{State, VerificationTrace};
 use crate::store::LightStore;
 use crate::supervisor::Instance;
 use crate::types::{LightBlock, PeerId, Status};
+
+#[cfg(feature = "rpc-client")]
+use {
+    crate::components::clock::SystemClock, crate::components::io::ProdIo,
+    crate::components::scheduler, crate::components::verifier::ProdVerifier,
+    crate::operations::ProdHasher, crate::predicates::ProdPredicates, std::time::Duration,
+    tendermint_rpc as rpc,
+};
 
 /// No trusted state has been set yet
 pub struct NoTrustedState;
@@ -63,6 +67,7 @@ impl<Current> LightClientBuilder<Current> {
 
 impl LightClientBuilder<NoTrustedState> {
     /// Initialize a builder for a production (non-mock) light client.
+    #[cfg(feature = "rpc-client")]
     pub fn prod(
         peer_id: PeerId,
         rpc_client: rpc::HttpClient,
