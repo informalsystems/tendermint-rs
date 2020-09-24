@@ -72,14 +72,14 @@ fn run_multipeer_test(tc: TestBisection<AnonLightBlock>) {
     let primary_instance = make_instance(primary, tc.trust_options.clone(), io.clone(), tc.now);
 
     let mut peer_list = PeerList::builder();
-    peer_list = peer_list.primary(primary, primary_instance);
+    peer_list.primary(primary, primary_instance);
 
     for provider in tc.witnesses.into_iter() {
         let peer_id = provider.value.lite_blocks[0].provider;
         println!("Witness: {}", peer_id);
         let io = MockIo::new(provider.value.chain_id, provider.value.lite_blocks);
         let instance = make_instance(peer_id, tc.trust_options.clone(), io.clone(), tc.now);
-        peer_list = peer_list.witness(peer_id, instance);
+        peer_list.witness(peer_id, instance);
     }
 
     let supervisor = Supervisor::new(

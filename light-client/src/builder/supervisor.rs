@@ -53,8 +53,8 @@ impl SupervisorBuilder<Init> {
         address: net::Address,
         instance: Instance,
     ) -> SupervisorBuilder<HasPrimary> {
-        self.instances = self.instances.primary(peer_id, instance);
-        self.addresses = self.addresses.primary(peer_id, address);
+        self.instances.primary(peer_id, instance);
+        self.addresses.primary(peer_id, address);
 
         self.with_state(HasPrimary)
     }
@@ -68,8 +68,8 @@ impl SupervisorBuilder<HasPrimary> {
         address: net::Address,
         instance: Instance,
     ) -> SupervisorBuilder<Done> {
-        self.instances = self.instances.witness(peer_id, instance);
-        self.addresses = self.addresses.witness(peer_id, address);
+        self.instances.witness(peer_id, instance);
+        self.addresses.witness(peer_id, address);
 
         self.with_state(Done)
     }

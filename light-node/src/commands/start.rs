@@ -161,23 +161,21 @@ impl StartCmd {
 
     fn construct_supervisor(&self) -> Result<Supervisor, String> {
         let conf = app_config().deref().clone();
+        let timeout = app_config().rpc_config.request_timeout;
         let options: light_client::Options = conf.into();
 
-        let timeout = app_config().rpc_config.request_timeout;
-
         let mut peer_list: PeerListBuilder<Instance> = PeerList::builder();
+
         for (i, light_conf) in app_config().light_clients.iter().enumerate() {
             let instance = self.make_instance(light_conf, options, Some(timeout))?;
 
             if i == 0 {
                 // primary instance
-                peer_list = peer_list.primary(instance.light_client.peer, instance);
+                peer_list.primary(instance.light_client.peer, instance);
             } else {
-                peer_list = peer_list.witness(instance.light_client.peer, instance);
+                peer_list.witness(instance.light_client.peer, instance);
             }
         }
-
-        let peer_list = peer_list.build();
 
         let peer_map: HashMap<_, _> = app_config()
             .light_clients
@@ -186,7 +184,7 @@ impl StartCmd {
             .collect();
 
         Ok(Supervisor::new(
-            peer_list,
+            peer_list.build(),
             ProdForkDetector::default(),
             ProdEvidenceReporter::new(peer_map),
         ))

@@ -193,33 +193,30 @@ impl<T> Default for PeerListBuilder<T> {
 impl<T> PeerListBuilder<T> {
     /// Register the given peer id and instance as the primary.
     /// Overrides the previous primary if it was already set.
-    pub fn primary(mut self, peer_id: PeerId, value: T) -> Self {
+    pub fn primary(&mut self, peer_id: PeerId, value: T) {
         self.primary = Some(peer_id);
         self.values.insert(peer_id, value);
-        self
     }
 
     /// Register the given peer id and value as a witness.
     #[pre(self.primary != Some(peer_id))]
-    pub fn witness(mut self, peer_id: PeerId, value: T) -> Self {
+    pub fn witness(&mut self, peer_id: PeerId, value: T) {
         self.values.insert(peer_id, value);
         self.witnesses.insert(peer_id);
-        self
     }
 
     /// Register the given peer id and value as a full node.
     #[pre(self.primary != Some(peer_id))]
-    pub fn full_node(mut self, peer_id: PeerId, value: T) -> Self {
+    pub fn full_node(&mut self, peer_id: PeerId, value: T) {
         self.values.insert(peer_id, value);
         self.full_nodes.insert(peer_id);
-        self
     }
+
     /// Register the given peer id and value as a faulty node.
     #[pre(self.primary != Some(peer_id))]
-    pub fn faulty_node(mut self, peer_id: PeerId, value: T) -> Self {
+    pub fn faulty_node(&mut self, peer_id: PeerId, value: T) {
         self.values.insert(peer_id, value);
         self.faulty_nodes.insert(peer_id);
-        self
     }
 
     /// Builds the `PeerList`.
@@ -266,12 +263,11 @@ mod tests {
         "da918eef62d986812b4e6271de78db4ec52594eb".parse().unwrap()
     }
     fn dummy_peer_list() -> PeerList<u32> {
-        let builder = PeerList::builder();
-        builder
-            .primary(a(), 1_u32)
-            .witness(b(), 2_u32)
-            .full_node(c(), 3_u32)
-            .build()
+        let mut builder = PeerList::builder();
+        builder.primary(a(), 1_u32);
+        builder.witness(b(), 2_u32);
+        builder.full_node(c(), 3_u32);
+        builder.build()
     }
 
     #[test]
@@ -289,8 +285,10 @@ mod tests {
     #[test]
     #[should_panic(expected = "Pre-condition of build violated")]
     fn builder_fails_if_no_primary() {
-        let builder = PeerList::builder();
-        let _ = builder.witness(b(), 2_u32).full_node(c(), 3_u32).build();
+        let mut builder = PeerList::builder();
+        builder.witness(b(), 2_u32);
+        builder.full_node(c(), 3_u32);
+        let _ = builder.build();
         unreachable!();
     }
 

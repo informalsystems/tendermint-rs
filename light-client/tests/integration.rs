@@ -93,10 +93,12 @@ fn sync() {
     let primary_instance = make_instance(primary, options, primary_io);
     let witness_instance = make_instance(witness, options, witness_io);
 
-    let peer_list = PeerList::builder()
-        .primary(primary, primary_instance)
-        .witness(witness, witness_instance)
-        .build();
+    let peer_list = {
+        let mut builder = PeerList::builder();
+        builder.primary(primary, primary_instance);
+        builder.witness(witness, witness_instance);
+        builder.build()
+    };
 
     let supervisor = Supervisor::new(peer_list, ProdForkDetector::default(), TestEvidenceReporter);
 
