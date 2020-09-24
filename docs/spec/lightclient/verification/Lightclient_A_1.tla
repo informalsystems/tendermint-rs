@@ -29,28 +29,8 @@ VARIABLES
   lightBlockStatus,   (* a function from heights to block statuses *)
   latestVerified      (* the latest verified block *)
 
-(* the variables of the lite client *)
-lcvars == <<state, nextHeight, fetchedLightBlocks, lightBlockStatus, latestVerified>>
-
-(* the light client previous state components, used for monitoring *)
-VARIABLES
-  prevVerified,
-  prevCurrent,
-  prevNow,
-  prevVerdict
-
-InitMonitor(verified, current, now, verdict) ==
-  /\ prevVerified = verified
-  /\ prevCurrent = current
-  /\ prevNow = now
-  /\ prevVerdict = verdict
-
-NextMonitor(verified, current, now, verdict) ==
-  /\ prevVerified' = verified
-  /\ prevCurrent' = current
-  /\ prevNow' = now
-  /\ prevVerdict' = verdict
-
+(* the variables of the lite client *)  
+lcvars == <<state, nextHeight, fetchedLightBlocks, lightBlockStatus, latestVerified>>  
 
 (******************* Blockchain instance ***********************************)
 
@@ -94,9 +74,7 @@ ValidAndVerifiedPre(trusted, untrusted) ==
   /\ BC!InTrustingPeriod(thdr)
   /\ thdr.height < uhdr.height
      \* the trusted block has been created earlier (no drift here)
-  /\ thdr.time < uhdr.time
-     \* the untrusted block is not from the future
-  /\ uhdr.time < now
+  /\ thdr.time <= uhdr.time
   /\ untrusted.Commits \subseteq uhdr.VS
   /\ LET TP == Cardinality(uhdr.VS)
          SP == Cardinality(untrusted.Commits)
@@ -128,7 +106,7 @@ SignedByOneThirdOfTrusted(trusted, untrusted) ==
  *)   
 ValidAndVerified(trusted, untrusted) ==
     IF ~ValidAndVerifiedPre(trusted, untrusted)
-    THEN "INVALID"
+    THEN "FAILED_VERIFICATION"
     ELSE IF ~BC!InTrustingPeriod(untrusted.header)
     (* We leave the following test for the documentation purposes.
        The implementation should do this test, as signature verification may be slow.
@@ -137,8 +115,8 @@ ValidAndVerified(trusted, untrusted) ==
     THEN "FAILED_TRUSTING_PERIOD" 
     ELSE IF untrusted.header.height = trusted.header.height + 1
              \/ SignedByOneThirdOfTrusted(trusted, untrusted)
-         THEN "SUCCESS"
-         ELSE "NOT_ENOUGH_TRUST"
+         THEN "OK"
+         ELSE "CANNOT_VERIFY"
 
 (*
  Initial states of the light client.
@@ -157,7 +135,6 @@ LCInit ==
         /\ lightBlockStatus = [h \in {TRUSTED_HEIGHT} |-> "StateVerified"]
         \* the latest verified block the the trusted block
         /\ latestVerified = trustedLightBlock
-        /\ InitHistory(trustedLightBlock, trustedLightBlock, now, "SUCCESS")
 
 \* block should contain a copy of the block from the reference chain, with a matching commit
 CopyLightBlockFromChain(block, height) ==
@@ -230,9 +207,8 @@ VerifyToTargetLoop ==
         /\ nprobes' = nprobes + 1
         \* Verify the current block
         /\ LET verdict == ValidAndVerified(latestVerified, current) IN
-           NextHistory(latestVerified, current, now, verdict) /\
            \* Decide whether/how to continue
-           CASE verdict = "SUCCESS" ->
+           CASE verdict = "OK" ->
               /\ lightBlockStatus' = LightStoreUpdateStates(lightBlockStatus, nextHeight, "StateVerified")
               /\ latestVerified' = current
               /\ state' =
@@ -243,7 +219,7 @@ VerifyToTargetLoop ==
                  /\ CanScheduleTo(newHeight, current, nextHeight, TARGET_HEIGHT)
                  /\ nextHeight' = newHeight
                   
-           [] verdict = "NOT_ENOUGH_TRUST" ->
+           [] verdict = "CANNOT_VERIFY" ->
               (*
                 do nothing: the light block current passed validation, but the validator
                 set is too different to verify it. We keep the state of
@@ -268,8 +244,7 @@ VerifyToTargetLoop ==
 VerifyToTargetDone ==
     /\ latestVerified.header.height >= TARGET_HEIGHT
     /\ state' = "finishedSuccess"
-    /\ UNCHANGED <<nextHeight, nprobes, fetchedLightBlocks, lightBlockStatus, latestVerified>>
-    /\ UNCHANGED <<prevVerified, prevCurrent, prevNow, prevVerdict>>
+    /\ UNCHANGED <<nextHeight, nprobes, fetchedLightBlocks, lightBlockStatus, latestVerified>>  
             
 (********************* Lite client + Blockchain *******************)
 Init ==
@@ -335,7 +310,7 @@ CorrectnessInv ==
             fetchedLightBlocks[h].header = blockchain[h]
 
 (**
- Check that the sequence of the headers in storedLightBlocks satisfies ValidAndVerified = "SUCCESS" pairwise
+ Check that the sequence of the headers in storedLightBlocks satisfies ValidAndVerified = "OK" pairwise
  This property is easily violated, whenever a header cannot be trusted anymore.
  *)
 StoredHeadersAreVerifiedInv ==
@@ -347,7 +322,7 @@ StoredHeadersAreVerifiedInv ==
             \/ \E mh \in DOMAIN fetchedLightBlocks:
                 lh < mh /\ mh < rh
                \* or we can verify the right one using the left one
-            \/ "SUCCESS" = ValidAndVerified(fetchedLightBlocks[lh], fetchedLightBlocks[rh])
+            \/ "OK" = ValidAndVerified(fetchedLightBlocks[lh], fetchedLightBlocks[rh])
 
 \* An improved version of StoredHeadersAreSound, assuming that a header may be not trusted.
 \* This invariant candidate is also violated,
@@ -361,7 +336,7 @@ StoredHeadersAreVerifiedOrNotTrustedInv ==
             \/ \E mh \in DOMAIN fetchedLightBlocks:
                 lh < mh /\ mh < rh
                \* or we can verify the right one using the left one
-            \/ "SUCCESS" = ValidAndVerified(fetchedLightBlocks[lh], fetchedLightBlocks[rh])
+            \/ "OK" = ValidAndVerified(fetchedLightBlocks[lh], fetchedLightBlocks[rh])
                \* or the left header is outside the trusting period, so no guarantees
             \/ ~BC!InTrustingPeriod(fetchedLightBlocks[lh].header) 
 
@@ -384,7 +359,7 @@ ProofOfChainOfTrustInv ==
                \* or the left header is outside the trusting period, so no guarantees
             \/ ~(BC!InTrustingPeriod(fetchedLightBlocks[lh].header))
                \* or we can verify the right one using the left one
-            \/ "SUCCESS" = ValidAndVerified(fetchedLightBlocks[lh], fetchedLightBlocks[rh])
+            \/ "OK" = ValidAndVerified(fetchedLightBlocks[lh], fetchedLightBlocks[rh])
 
 (**
  * When the light client terminates, there are no failed blocks. (Otherwise, someone lied to us.) 
