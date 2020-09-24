@@ -128,7 +128,10 @@ pub fn generate_validators(vals: &[Validator]) -> Result<Vec<validator::Info>, S
 /// A helper function to sort validators according to the Tendermint specs.
 pub fn sort_validators(vals: &[Validator]) -> Vec<Validator> {
     let mut sorted = vals.to_owned();
-    sorted.sort_by_key(|v| v.generate().unwrap().address);
+    sorted.sort_by_key(|v| {
+        let v = v.generate().unwrap();
+        (std::cmp::Reverse(v.voting_power), v.address)
+    });
     sorted
 }
 
