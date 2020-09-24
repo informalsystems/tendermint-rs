@@ -37,7 +37,7 @@ use tokio::task::JoinHandle;
 ///
 /// ## Examples
 ///
-/// ```rust
+/// ```rust,ignore
 /// use tendermint_rpc::{WebSocketClient, SubscriptionClient};
 /// use tendermint_rpc::query::EventType;
 /// use futures::StreamExt;
