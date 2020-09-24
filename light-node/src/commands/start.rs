@@ -16,18 +16,13 @@ use abscissa_core::FrameworkError;
 use abscissa_core::Options;
 use abscissa_core::Runnable;
 
-use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::ops::Deref;
 use std::time::Duration;
 
-use tendermint_light_client::builder::LightClientBuilder;
-use tendermint_light_client::evidence::ProdEvidenceReporter;
-use tendermint_light_client::fork_detector::ProdForkDetector;
+use tendermint_light_client::builder::{LightClientBuilder, SupervisorBuilder};
 use tendermint_light_client::light_client;
-use tendermint_light_client::peer_list::{PeerList, PeerListBuilder};
-use tendermint_light_client::store::sled::SledStore;
-use tendermint_light_client::store::LightStore;
+use tendermint_light_client::store::{sled::SledStore, LightStore};
 use tendermint_light_client::supervisor::{Handle, Instance, Supervisor};
 
 /// `start` subcommand
@@ -164,29 +159,30 @@ impl StartCmd {
         let timeout = app_config().rpc_config.request_timeout;
         let options: light_client::Options = conf.into();
 
-        let mut peer_list: PeerListBuilder<Instance> = PeerList::builder();
-
-        for (i, light_conf) in app_config().light_clients.iter().enumerate() {
-            let instance = self.make_instance(light_conf, options, Some(timeout))?;
-
-            if i == 0 {
-                // primary instance
-                peer_list.primary(instance.light_client.peer, instance);
-            } else {
-                peer_list.witness(instance.light_client.peer, instance);
-            }
+        let light_confs = &app_config().light_clients;
+        if light_confs.len() < 2 {
+            return Err(format!("configuration incomplete: not enough light clients configued, minimum: 2, found: {}", light_confs.len()));
         }
 
-        let peer_map: HashMap<_, _> = app_config()
-            .light_clients
-            .iter()
-            .map(|lc| (lc.peer_id, lc.address.clone()))
-            .collect();
+        let primary_conf = &light_confs[0]; // Safe, see check above
+        let witness_confs = &light_confs[1..]; // Safe, see check above
 
-        Ok(Supervisor::new(
-            peer_list.build(),
-            ProdForkDetector::default(),
-            ProdEvidenceReporter::new(peer_map),
-        ))
+        let builder = SupervisorBuilder::new();
+
+        let primary_instance = self.make_instance(primary_conf, options, Some(timeout))?;
+        let builder = builder.primary(
+            primary_conf.peer_id,
+            primary_conf.address.clone(),
+            primary_instance,
+        );
+
+        let mut witnesses = Vec::with_capacity(witness_confs.len());
+        for witness_conf in witness_confs {
+            let instance = self.make_instance(witness_conf, options, Some(timeout))?;
+            witnesses.push((witness_conf.peer_id, witness_conf.address.clone(), instance));
+        }
+
+        let builder = builder.witnesses(witnesses);
+        Ok(builder.build_prod())
     }
 }

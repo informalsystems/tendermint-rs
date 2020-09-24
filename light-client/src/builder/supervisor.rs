@@ -73,6 +73,19 @@ impl SupervisorBuilder<HasPrimary> {
 
         self.with_state(Done)
     }
+
+    /// Add mulitple witnesses at once.
+    pub fn witnesses(
+        mut self,
+        witnesses: impl IntoIterator<Item = (PeerId, net::Address, Instance)>,
+    ) -> SupervisorBuilder<Done> {
+        for (peer_id, address, instance) in witnesses.into_iter() {
+            self.instances.witness(peer_id, instance);
+            self.addresses.witness(peer_id, address);
+        }
+
+        self.with_state(Done)
+    }
 }
 
 impl SupervisorBuilder<Done> {
