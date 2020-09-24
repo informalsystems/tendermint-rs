@@ -1,0 +1,31 @@
+{
+  "description": "Transformers for generating Tendermint datastructures",
+  "prerequisites": "add tendermint-testgen to your $PATH",
+  "input": [
+    {
+      "name": "tendermint_validator",
+      "kind": "COMMAND",
+      "source": "tendermint-testgen --stdin validator"
+    },
+    {
+      "name": "tendermint_header",
+      "kind": "COMMAND",
+      "source": "tendermint-testgen --stdin header"
+    },
+    {
+      "name": "tendermint_commit",
+      "kind": "COMMAND",
+      "source": "tendermint-testgen --stdin commit"
+    },
+    {
+      "name": "tendermint_vote",
+      "kind": "COMMAND",
+      "source": "tendermint-testgen --stdin vote"
+    },
+    {
+      "name": "tendermint_time",
+      "kind": "COMMAND",
+      "source": "tendermint-testgen --stdin time"
+    }
+  ]
+}

@@ -51,7 +51,7 @@ In order to achieve this, we need:
 
 The entities in the diagram below are described in the following subsections.
 
-![](assets/rpc-client-erd.png)
+![RPC client ERD](assets/rpc-client-erd.png)
 
 ### `Event`
 
@@ -183,7 +183,7 @@ entity diagram above).
 pub type Result<R> = std::result::Result<R, Error>;
 
 #[async_trait]
-pub trait Client: ClosableClient {
+pub trait Client {
     /// `/abci_info`: get information about the ABCI application.
     async fn abci_info(&self) -> Result<abci_info::AbciInfo>;
 
@@ -212,30 +212,13 @@ pub trait Client: ClosableClient {
 A `SubscriptionClient` would be one that only provides access to subscription
 functionality. In our current implementation, this client would interact with a
 WebSocket connection to provide subscription functionality (the
-`WebSocketSubscriptionClient` in the entity diagram above).
+`WebSocketClient` in the entity diagram above).
 
 ```rust
 #[async_trait]
-pub trait SubscriptionClient: ClosableClient {
+pub trait SubscriptionClient {
     /// `/subscribe`: subscribe to receive events produced by the given query.
     async fn subscribe(&mut self, query: String) -> Result<Subscription>;
-}
-```
-
-#### `ClosableClient`
-
-This is not really a client in and of itself, but a trait that both the `Client`
-and `SubscriptionClient` need to implement. The reason for this common trait is
-that, depending on the transport layer, both types of clients may need a `close`
-method to gracefully terminate the client. An example of this would be when we
-implement a `WebSocketClient` that implements both the `Client` and
-`SubscriptionClient` traits simultaneously.
-
-```rust
-#[async_trait]
-pub trait ClosableClient {
-    /// Attempt to gracefully terminate the client.
-    async fn close(self) -> Result<()>;
 }
 ```
 
@@ -244,7 +227,7 @@ pub trait ClosableClient {
 We envisage 2 distinct client implementations at this point:
 
 * `HttpClient`, which only implements [`Client`](#client) (over HTTP).
-* `WebSocketSubscriptionClient`, which only implements
+* `WebSocketClient`, which will implement [`Client`](#client) and
   [`SubscriptionClient`](#subscriptionclient) (over a WebSocket connection).
 
 #### Handle-Driver Concurrency Model
@@ -262,6 +245,12 @@ driver, whereas a WebSocket connection would.
 In cases where a driver is necessary, the client implementation would have to
 become a **handle** to the driver, facilitating communication with it across
 asynchronous tasks.
+
+A rough sketch of the interaction model between the different components
+envisaged to make up the subscription subsystem is shown in the following
+sequence diagram.
+
+![RPC client concurrency model](./assets/rpc-client-concurrency.png)
 
 ### `Query`
 
@@ -364,6 +353,41 @@ pub enum Operand {
 }
 ```
 
+### Subscription Tracking and Routing
+
+Internally, a `SubscriptionRouter` is proposed that uses a `HashMap` to keep
+track of all of the queries relating to a particular client.
+
+```rust
+pub struct SubscriptionRouter {
+    // A map of queries -> (map of subscription IDs -> result event tx channels)
+    subscriptions: HashMap<Query, HashMap<SubscriptionId, ChannelTx<Result<Event>>>>,
+}
+```
+
+At present, Tendermint includes the ID of the subscription relating to a
+particular event in the JSON-RPC message, and so this data structure is optimal
+for such a configuration. This will necessarily change if Tendermint's WebSocket
+server [drops subscription IDs from events][tendermint-2949], which is likely if
+we want to conform more strictly to the [JSON-RPC standard for
+notifications][jsonrpc-notifications].
+
+#### Two-Phase Subscribe/Unsubscribe
+
+Due to the fact that a WebSocket connection lacks request/response semantics,
+when managing multiple subscriptions from a single client we need to implement a
+**two-phase subscription creation/removal process**:
+
+1. An outgoing, but unconfirmed, subscribe/unsubscribe request is tracked.
+2. The subscribe/unsubscribe request is confirmed or cancelled by a response
+   from the remote WebSocket server.
+
+The need for this two-phase subscribe/unsubscribe process is more clearly
+illustrated in the following sequence diagram:
+
+![RPC client two-phase
+subscribe/unsubscribe](./assets/rpc-client-two-phase-subscribe.png)
+
 ## Status
 
 Proposed
@@ -407,4 +431,6 @@ None
 [async-drop]: https://internals.rust-lang.org/t/asynchronous-destructors/11127
 [tokio-mpsc]: https://docs.rs/tokio/*/tokio/sync/mpsc/index.html
 [futures-stream-mod]: https://docs.rs/futures/*/futures/stream/index.html
+[tendermint-2949]: https://github.com/tendermint/tendermint/issues/2949
+[jsonrpc-notifications]: https://www.jsonrpc.org/specification#notification
 

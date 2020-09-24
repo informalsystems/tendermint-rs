@@ -6,7 +6,7 @@ See the [repo root] for build status, license, rust version, etc.
 # Light-Node
 
 The [Tendermint] light-node wraps the [light-client] crate into a command-line interface tool. 
-It can be used as a standalone light client daemon and exposes a JSONRPC endpoint 
+It can be used as a standalone light client daemon and exposes a JSON-RPC endpoint 
 from which you can query the current state of the light node. 
 
 ## Getting Started
@@ -103,7 +103,7 @@ Or on a specific sub-command, e.g.:
 $ cargo run --  help start
  ```
 
-### JSONRPC Endpoint(s)
+### JSON-RPC Endpoint(s)
 
 When you have a light-node running you can query its current state via:
 ```

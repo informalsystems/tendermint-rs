@@ -1,11 +1,11 @@
-//! JSONRPC requests
+//! JSON-RPC requests
 
 use super::{Id, Method, Version};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fmt::Debug;
 
-/// JSONRPC requests
-pub trait Request: Debug + DeserializeOwned + Serialize + Sized {
+/// JSON-RPC requests
+pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
     /// Response type for this command
     type Response: super::response::Response;
 
@@ -18,10 +18,10 @@ pub trait Request: Debug + DeserializeOwned + Serialize + Sized {
     }
 }
 
-/// JSONRPC request wrapper (i.e. message envelope)
+/// JSON-RPC request wrapper (i.e. message envelope)
 #[derive(Debug, Deserialize, Serialize)]
-struct Wrapper<R> {
-    /// JSONRPC version
+pub struct Wrapper<R> {
+    /// JSON-RPC version
     jsonrpc: Version,
 
     /// Identifier included in request
@@ -38,13 +38,29 @@ impl<R> Wrapper<R>
 where
     R: Request,
 {
-    /// Create a new request wrapper from the given request
+    /// Create a new request wrapper from the given request.
+    ///
+    /// The ID of the request is set to a random [UUIDv4] value.
+    ///
+    /// [UUIDv4]: https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)
     pub fn new(request: R) -> Self {
+        Self::new_with_id(Id::uuid_v4(), request)
+    }
+
+    pub(crate) fn new_with_id(id: Id, request: R) -> Self {
         Self {
             jsonrpc: Version::current(),
-            id: Id::uuid_v4(),
+            id,
             method: request.method(),
             params: request,
         }
+    }
+
+    pub fn id(&self) -> &Id {
+        &self.id
+    }
+
+    pub fn params(&self) -> &R {
+        &self.params
     }
 }

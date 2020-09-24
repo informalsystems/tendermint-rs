@@ -33,7 +33,7 @@ impl State {
     /// Record that the block at `height` was needed to verify the block at `target_height`.
     ///
     /// ## Preconditions
-    /// - `height` < `target_height`
+    /// - `height` <= `target_height`
     #[pre(height <= target_height)]
     pub fn trace_block(&mut self, target_height: Height, height: Height) {
         self.verification_trace

@@ -1,4 +1,4 @@
-//! `/broadcast_tx_*` endpoint JSONRPC wrappers
+//! `/broadcast_tx_*` endpoint JSON-RPC wrappers
 
 pub mod tx_async;
 pub mod tx_commit;
