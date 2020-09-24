@@ -32,20 +32,20 @@ VARIABLES
 (* the variables of the lite client *)
 lcvars == <<state, nextHeight, fetchedLightBlocks, lightBlockStatus, latestVerified>>
 
-(* the variables used by the light client in the previous state *)
+(* the light client previous state components, used for monitoring *)
 VARIABLES
   prevVerified,
   prevCurrent,
   prevNow,
   prevVerdict
 
-InitHistory(verified, current, now, verdict) ==
+InitMonitor(verified, current, now, verdict) ==
   /\ prevVerified = verified
   /\ prevCurrent = current
   /\ prevNow = now
   /\ prevVerdict = verdict
 
-NextHistory(verified, current, now, verdict) ==
+NextMonitor(verified, current, now, verdict) ==
   /\ prevVerified' = verified
   /\ prevCurrent' = current
   /\ prevNow' = now
