@@ -3,7 +3,7 @@
 pub use ed25519_dalek::PublicKey as Ed25519;
 
 #[cfg(feature = "secp256k1")]
-pub use k256::PublicKey as Secp256k1;
+pub use k256::EncodedPoint as Secp256k1;
 
 use crate::{
     error::{self, Error},
@@ -44,7 +44,7 @@ impl PublicKey {
     #[cfg(feature = "secp256k1")]
     #[cfg_attr(docsrs, doc(cfg(feature = "secp256k1")))]
     pub fn from_raw_secp256k1(bytes: &[u8]) -> Option<PublicKey> {
-        Some(PublicKey::Secp256k1(Secp256k1::from_bytes(bytes)?))
+        Secp256k1::from_bytes(bytes).ok().map(PublicKey::Secp256k1)
     }
 
     /// From raw Ed25519 public key bytes
@@ -312,7 +312,7 @@ where
     use de::Error;
     let encoded = String::deserialize(deserializer)?;
     let bytes = base64::decode(&encoded).map_err(D::Error::custom)?;
-    Secp256k1::from_bytes(&bytes).ok_or_else(|| D::Error::custom("invalid secp256k1 key"))
+    Secp256k1::from_bytes(&bytes).map_err(|_| D::Error::custom("invalid secp256k1 key"))
 }
 
 #[cfg(test)]
