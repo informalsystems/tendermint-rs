@@ -115,8 +115,8 @@ fn model_based_test(
         output_env.logln("    failed to find necessary programs; consider adding them to your PATH. skipping the test");
         return;
     }
-    env.copy_file_from_env(root_env, "Lightclient_A_1.tla");
-    env.copy_file_from_env(root_env, "Blockchain_A_1.tla");
+    env.copy_file_from_env(root_env, "Lightclient_002_draft.tla");
+    env.copy_file_from_env(root_env, "Blockchain_002_draft.tla");
     env.copy_file_from_env(root_env, "LightTests.tla");
     env.copy_file_from_env(root_env, &test.model);
 

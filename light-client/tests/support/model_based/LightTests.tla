@@ -1,6 +1,6 @@
 ------------------------- MODULE LightTests ---------------------------
 
-EXTENDS Lightclient_A_1
+EXTENDS Lightclient_002_draft
 
 (* The light client history, which is the function mapping states 1..nprobes to the record with fields:
    - verified: the latest verified block in the previous state
