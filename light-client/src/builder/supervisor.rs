@@ -1,6 +1,5 @@
 use tendermint::net;
 
-use crate::builder::error::Error;
 use crate::evidence::ProdEvidenceReporter;
 use crate::fork_detector::ProdForkDetector;
 use crate::peer_list::{PeerList, PeerListBuilder};
@@ -53,11 +52,11 @@ impl SupervisorBuilder<Init> {
         peer_id: PeerId,
         address: net::Address,
         instance: Instance,
-    ) -> Result<SupervisorBuilder<HasPrimary>, Error> {
+    ) -> SupervisorBuilder<HasPrimary> {
         self.instances = self.instances.primary(peer_id, instance);
         self.addresses = self.addresses.primary(peer_id, address);
 
-        Ok(self.with_state(HasPrimary))
+        self.with_state(HasPrimary)
     }
 }
 
@@ -68,11 +67,11 @@ impl SupervisorBuilder<HasPrimary> {
         peer_id: PeerId,
         address: net::Address,
         instance: Instance,
-    ) -> Result<SupervisorBuilder<Done>, Error> {
+    ) -> SupervisorBuilder<Done> {
         self.instances = self.instances.witness(peer_id, instance);
         self.addresses = self.addresses.witness(peer_id, address);
 
-        Ok(self.with_state(Done))
+        self.with_state(Done)
     }
 }
 
