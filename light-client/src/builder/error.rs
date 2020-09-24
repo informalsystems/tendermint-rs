@@ -39,6 +39,10 @@ pub enum Kind {
     /// Invalid light block
     #[error("invalid light block")]
     InvalidLightBlock,
+
+    /// No trusted state as found in the store
+    #[error("no trusted state in store")]
+    NoTrustedStateInStore,
 }
 
 impl Kind {
