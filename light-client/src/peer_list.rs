@@ -14,7 +14,7 @@ use std::collections::{BTreeSet, HashMap};
 /// and faulty nodes. Provides lifecycle methods to swap the primary,
 /// mark witnesses as faulty, and maintains an `invariant` for
 /// correctness.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct PeerList<T> {
     values: HashMap<PeerId, T>,
     primary: PeerId,
@@ -147,18 +147,26 @@ impl<T> PeerList<T> {
         if let Some(new_primary) = self.witnesses.iter().next().copied() {
             self.primary = new_primary;
             self.witnesses.remove(&new_primary);
-            return Ok(new_primary);
-        }
-
-        if let Some(err) = primary_error {
+            Ok(new_primary)
+        } else if let Some(err) = primary_error {
             bail!(ErrorKind::NoWitnessLeft.context(err))
         } else {
             bail!(ErrorKind::NoWitnessLeft)
         }
     }
+
+    /// Get a reference to the underlying `HashMap`
+    pub fn values(&self) -> &HashMap<PeerId, T> {
+        &self.values
+    }
+    /// Consume into the underlying `HashMap`
+    pub fn into_values(self) -> HashMap<PeerId, T> {
+        self.values
+    }
 }
 
 /// A builder of `PeerList` with a fluent API.
+#[must_use]
 pub struct PeerListBuilder<T> {
     values: HashMap<PeerId, T>,
     primary: Option<PeerId>,

@@ -88,6 +88,25 @@ impl LightClient {
         }
     }
 
+    /// Constructs a new light client from boxed components
+    pub fn from_boxed(
+        peer: PeerId,
+        options: Options,
+        clock: Box<dyn Clock>,
+        scheduler: Box<dyn Scheduler>,
+        verifier: Box<dyn Verifier>,
+        io: Box<dyn Io>,
+    ) -> Self {
+        Self {
+            peer,
+            options,
+            clock,
+            scheduler,
+            verifier,
+            io,
+        }
+    }
+
     /// Attempt to update the light client to the highest block of the primary node.
     ///
     /// Note: This function delegates the actual work to `verify_to_target`.

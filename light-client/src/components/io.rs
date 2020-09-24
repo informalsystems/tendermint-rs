@@ -87,14 +87,14 @@ mod prod {
     use crate::bail;
     use contracts::{contract_trait, pre};
     use tendermint::{
-        block::signed_header::SignedHeader as TMSignedHeader, validator::Set as TMValidatorSet,
+        block::signed_header::SignedHeader as TMSignedHeader, net, validator::Set as TMValidatorSet,
     };
 
     /// Production implementation of the Io component, which fetches
     /// light blocks from full nodes via RPC.
     #[derive(Clone, Debug)]
     pub struct ProdIo {
-        peer_map: HashMap<PeerId, tendermint::net::Address>,
+        peer_map: HashMap<PeerId, net::Address>,
         timeout: Option<Duration>,
     }
 
@@ -118,10 +118,7 @@ mod prod {
         /// Constructs a new ProdIo component.
         ///
         /// A peer map which maps peer IDS to their network address must be supplied.
-        pub fn new(
-            peer_map: HashMap<PeerId, tendermint::net::Address>,
-            timeout: Option<Duration>,
-        ) -> Self {
+        pub fn new(peer_map: HashMap<PeerId, net::Address>, timeout: Option<Duration>) -> Self {
             Self { peer_map, timeout }
         }
 
