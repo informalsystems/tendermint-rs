@@ -121,9 +121,14 @@ impl StartCmd {
     fn make_instance(
         &self,
         light_config: &LightClientConfig,
-        io: ProdIo,
         options: light_client::Options,
+        timeout: Option<Duration>,
     ) -> Instance {
+        let rpc_client = tendermint_rpc::HttpClient::new(light_config.address.clone())
+            .expect("invalid peer address");
+
+        let io = ProdIo::new(light_config.peer_id, rpc_client, timeout);
+
         let peer_id = light_config.peer_id;
         let db_path = light_config.db_path.clone();
 
@@ -162,21 +167,15 @@ impl StartCmd {
 
 impl StartCmd {
     fn construct_supervisor(&self) -> Supervisor {
-        // TODO(ismail): we need to verify the addr <-> peerId mappings somewhere!
-        let mut peer_map = HashMap::new();
-        for light_conf in &app_config().light_clients {
-            peer_map.insert(light_conf.peer_id, light_conf.address.clone());
-        }
-        let io = ProdIo::new(
-            peer_map.clone(),
-            Some(app_config().rpc_config.request_timeout),
-        );
         let conf = app_config().deref().clone();
         let options: light_client::Options = conf.into();
 
+        let timeout = app_config().rpc_config.request_timeout;
+
         let mut peer_list: PeerListBuilder<Instance> = PeerList::builder();
         for (i, light_conf) in app_config().light_clients.iter().enumerate() {
-            let instance = self.make_instance(light_conf, io.clone(), options);
+            let instance = self.make_instance(light_conf, options, Some(timeout));
+
             if i == 0 {
                 // primary instance
                 peer_list = peer_list.primary(instance.light_client.peer, instance);
@@ -184,7 +183,14 @@ impl StartCmd {
                 peer_list = peer_list.witness(instance.light_client.peer, instance);
             }
         }
+
         let peer_list = peer_list.build();
+
+        let peer_map: HashMap<_, _> = app_config()
+            .light_clients
+            .iter()
+            .map(|lc| (lc.peer_id, lc.address.clone()))
+            .collect();
 
         Supervisor::new(
             peer_list,

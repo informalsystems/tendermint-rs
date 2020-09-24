@@ -122,9 +122,8 @@ impl MockIo {
     }
 }
 
-#[contract_trait]
 impl Io for MockIo {
-    fn fetch_light_block(&self, _peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
+    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
         let height = match height {
             AtHeight::Highest => self.latest_height,
             AtHeight::At(height) => height,

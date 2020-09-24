@@ -6,6 +6,8 @@ use std::{
 
 use gumdrop::Options;
 
+use tendermint_rpc as rpc;
+
 use tendermint_light_client::supervisor::{Handle as _, Instance, Supervisor};
 use tendermint_light_client::{
     components::{
@@ -82,11 +84,10 @@ fn make_instance(
     db_path: impl AsRef<Path>,
     opts: &SyncOpts,
 ) -> Instance {
-    let mut peer_map = HashMap::new();
-    peer_map.insert(peer_id, addr);
+    let rpc_client = rpc::HttpClient::new(addr).unwrap();
 
     let timeout = Duration::from_secs(10);
-    let io = ProdIo::new(peer_map, Some(timeout));
+    let io = ProdIo::new(peer_id, rpc_client, Some(timeout));
 
     let db = sled::open(db_path).unwrap_or_else(|e| {
         println!("[ error ] could not open database: {}", e);
@@ -97,7 +98,7 @@ fn make_instance(
 
     if let Some(height) = opts.trusted_height {
         let trusted_state = io
-            .fetch_light_block(peer_id, AtHeight::At(height))
+            .fetch_light_block(AtHeight::At(height))
             .unwrap_or_else(|e| {
                 println!("[ error ] could not retrieve trusted header: {}", e);
                 std::process::exit(1);

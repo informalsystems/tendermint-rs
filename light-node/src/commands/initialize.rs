@@ -3,8 +3,6 @@
 use crate::application::app_config;
 use crate::config::LightClientConfig;
 
-use std::collections::HashMap;
-
 use abscissa_core::status_err;
 use abscissa_core::status_warn;
 use abscissa_core::Command;
@@ -19,6 +17,8 @@ use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates
 use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
 use tendermint_light_client::types::{Height, Status};
+
+use tendermint_rpc as rpc;
 
 /// `initialize` subcommand
 #[derive(Command, Debug, Default, Options)]
@@ -43,11 +43,13 @@ impl Runnable for InitCmd {
         let app_cfg = app_config();
 
         let lc = app_cfg.light_clients.first().unwrap();
+        let rpc_client = rpc::HttpClient::new(lc.address.clone()).expect("invalid peer address");
 
-        let mut peer_map = HashMap::new();
-        peer_map.insert(lc.peer_id, lc.address.clone());
-
-        let io = ProdIo::new(peer_map, Some(app_cfg.rpc_config.request_timeout));
+        let io = ProdIo::new(
+            lc.peer_id,
+            rpc_client,
+            Some(app_cfg.rpc_config.request_timeout),
+        );
 
         initialize_subjectively(self.height.into(), subjective_header_hash, &lc, &io);
     }
@@ -80,7 +82,7 @@ fn initialize_subjectively(
     }
 
     let trusted_state = io
-        .fetch_light_block(l_conf.peer_id, AtHeight::At(height))
+        .fetch_light_block(AtHeight::At(height))
         .unwrap_or_else(|e| {
             status_err!("could not retrieve trusted header: {}", e);
             std::process::exit(1);

@@ -1,6 +1,5 @@
 //! Provides an interface and a default implementation of the `Io` component
 
-use contracts::{contract_trait, post};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -53,24 +52,18 @@ impl IoError {
 }
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
-#[contract_trait]
 #[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
 pub trait Io: Send {
-    /// Fetch a light block at the given height from the peer with the given peer ID.
-    ///
-    /// ## Postcondition
-    /// - The provider of the returned light block matches the given peer [LCV-IO-POST-PROVIDER]
-    #[post(ret.as_ref().map(|lb| lb.provider == peer).unwrap_or(true))]
-    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError>;
+    /// Fetch a light block at the given height from a peer
+    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError>;
 }
 
-#[contract_trait]
 impl<F: Send> Io for F
 where
-    F: Fn(PeerId, AtHeight) -> Result<LightBlock, IoError>,
+    F: Fn(AtHeight) -> Result<LightBlock, IoError>,
 {
-    fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
-        self(peer, height)
+    fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
+        self(height)
     }
 }
 
@@ -81,34 +74,35 @@ pub use self::prod::ProdIo;
 mod prod {
     use super::*;
 
-    use std::collections::HashMap;
     use std::time::Duration;
 
     use crate::bail;
-    use contracts::{contract_trait, pre};
-    use tendermint::{
-        block::signed_header::SignedHeader as TMSignedHeader, net, validator::Set as TMValidatorSet,
-    };
+    use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
+    use tendermint::validator::Set as TMValidatorSet;
 
     /// Production implementation of the Io component, which fetches
     /// light blocks from full nodes via RPC.
     #[derive(Clone, Debug)]
     pub struct ProdIo {
-        peer_map: HashMap<PeerId, net::Address>,
+        peer_id: PeerId,
+        rpc_client: rpc::HttpClient,
         timeout: Option<Duration>,
     }
 
-    #[contract_trait]
     impl Io for ProdIo {
-        fn fetch_light_block(&self, peer: PeerId, height: AtHeight) -> Result<LightBlock, IoError> {
-            let signed_header = self.fetch_signed_header(peer, height)?;
+        fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
+            let signed_header = self.fetch_signed_header(height)?;
             let height = signed_header.header.height;
 
-            let validator_set = self.fetch_validator_set(peer, height.into())?;
-            let next_validator_set = self.fetch_validator_set(peer, height.increment().into())?;
+            let validator_set = self.fetch_validator_set(height.into())?;
+            let next_validator_set = self.fetch_validator_set(height.increment().into())?;
 
-            let light_block =
-                LightBlock::new(signed_header, validator_set, next_validator_set, peer);
+            let light_block = LightBlock::new(
+                signed_header,
+                validator_set,
+                next_validator_set,
+                self.peer_id,
+            );
 
             Ok(light_block)
         }
@@ -118,26 +112,27 @@ mod prod {
         /// Constructs a new ProdIo component.
         ///
         /// A peer map which maps peer IDS to their network address must be supplied.
-        pub fn new(peer_map: HashMap<PeerId, net::Address>, timeout: Option<Duration>) -> Self {
-            Self { peer_map, timeout }
+        pub fn new(
+            peer_id: PeerId,
+            rpc_client: rpc::HttpClient,
+            timeout: Option<Duration>,
+        ) -> Self {
+            Self {
+                peer_id,
+                rpc_client,
+                timeout,
+            }
         }
 
-        #[pre(self.peer_map.contains_key(&peer))]
-        fn fetch_signed_header(
-            &self,
-            peer: PeerId,
-            height: AtHeight,
-        ) -> Result<TMSignedHeader, IoError> {
-            let rpc_client = self.rpc_client_for(peer)?;
-
+        fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
             let res = block_on(
                 async {
                     match height {
-                        AtHeight::Highest => rpc_client.latest_commit().await,
-                        AtHeight::At(height) => rpc_client.commit(height).await,
+                        AtHeight::Highest => self.rpc_client.latest_commit().await,
+                        AtHeight::At(height) => self.rpc_client.commit(height).await,
                     }
                 },
-                peer,
+                self.peer_id,
                 self.timeout,
             )?;
 
@@ -147,12 +142,7 @@ mod prod {
             }
         }
 
-        #[pre(self.peer_map.contains_key(&peer))]
-        fn fetch_validator_set(
-            &self,
-            peer: PeerId,
-            height: AtHeight,
-        ) -> Result<TMValidatorSet, IoError> {
+        fn fetch_validator_set(&self, height: AtHeight) -> Result<TMValidatorSet, IoError> {
             let height = match height {
                 AtHeight::Highest => bail!(IoError::InvalidHeight(
                     "given height must be greater than 0".to_string()
@@ -161,8 +151,8 @@ mod prod {
             };
 
             let res = block_on(
-                self.rpc_client_for(peer)?.validators(height),
-                peer,
+                self.rpc_client.validators(height),
+                self.peer_id,
                 self.timeout,
             )?;
 
@@ -170,13 +160,6 @@ mod prod {
                 Ok(response) => Ok(TMValidatorSet::new(response.validators)),
                 Err(err) => Err(IoError::RpcError(err)),
             }
-        }
-
-        // TODO(thane): Generalize over client transport (instead of using HttpClient directly).
-        #[pre(self.peer_map.contains_key(&peer))]
-        fn rpc_client_for(&self, peer: PeerId) -> Result<rpc::HttpClient, IoError> {
-            let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
-            Ok(rpc::HttpClient::new(peer_addr).map_err(IoError::from)?)
         }
     }
 

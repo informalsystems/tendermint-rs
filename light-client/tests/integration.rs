@@ -25,13 +25,14 @@ use tendermint_light_client::{
 };
 
 use tendermint::abci::transaction::Hash as TransactionHash;
+use tendermint_rpc as rpc;
 
 use std::collections::HashMap;
 use std::time::Duration;
 
 fn make_instance(peer_id: PeerId, options: light_client::Options, io: ProdIo) -> Instance {
     let trusted_state = io
-        .fetch_light_block(peer_id, AtHeight::Highest)
+        .fetch_light_block(AtHeight::Highest)
         .expect("could not request latest light block");
 
     let mut light_store = MemoryStore::new();
@@ -69,18 +70,12 @@ fn sync() {
     let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
     let witness: PeerId = "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF".parse().unwrap();
 
-    let node_address: tendermint::net::Address = "tcp://127.0.0.1:26657".parse().unwrap();
-
     // Because our CI infrastructure can only spawn a single Tendermint node at the moment,
     // we run this test against this very node as both the primary and witness.
     // In a production environment, one should make sure that the primary and witness are
     // different nodes, and check that the configured peer IDs match the ones returned
     // by the nodes.
-    let mut peer_map = HashMap::new();
-    peer_map.insert(primary, node_address.clone());
-    peer_map.insert(witness, node_address);
-
-    let io = ProdIo::new(peer_map, Some(Duration::from_secs(2)));
+    let node_address: tendermint::net::Address = "tcp://127.0.0.1:26657".parse().unwrap();
 
     let options = light_client::Options {
         trust_threshold: TrustThreshold {
@@ -91,8 +86,12 @@ fn sync() {
         clock_drift: Duration::from_secs(5 * 60),      // 5 minutes
     };
 
-    let primary_instance = make_instance(primary, options, io.clone());
-    let witness_instance = make_instance(witness, options, io);
+    let rpc_client = rpc::HttpClient::new(node_address).unwrap();
+    let primary_io = ProdIo::new(primary, rpc_client.clone(), Some(Duration::from_secs(2)));
+    let witness_io = ProdIo::new(witness, rpc_client, Some(Duration::from_secs(2)));
+
+    let primary_instance = make_instance(primary, options, primary_io);
+    let witness_instance = make_instance(witness, options, witness_io);
 
     let peer_list = PeerList::builder()
         .primary(primary, primary_instance)

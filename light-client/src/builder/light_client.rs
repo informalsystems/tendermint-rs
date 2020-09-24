@@ -2,7 +2,8 @@
 
 use std::time::Duration;
 
-use tendermint::{block::Height, net, Hash};
+use tendermint::{block::Height, Hash};
+use tendermint_rpc as rpc;
 
 use crate::bail;
 use crate::builder::error::{self, Error};
@@ -12,7 +13,6 @@ use crate::components::scheduler::{self, Scheduler};
 use crate::components::verifier::{ProdVerifier, Verifier};
 use crate::light_client::{LightClient, Options};
 use crate::operations::{Hasher, ProdHasher};
-use crate::peer_list::PeerList;
 use crate::state::{State, VerificationTrace};
 use crate::store::LightStore;
 use crate::supervisor::Instance;
@@ -28,7 +28,6 @@ pub struct HasTrustedState;
 #[must_use]
 pub struct LightClientBuilder<State> {
     peer_id: PeerId,
-    peers: PeerList<net::Address>,
     hasher: Box<dyn Hasher>,
     io: Box<dyn Io>,
     verifier: Box<dyn Verifier>,
@@ -44,7 +43,6 @@ impl<Current> LightClientBuilder<Current> {
     fn with_state<Next>(self, state: Next) -> LightClientBuilder<Next> {
         LightClientBuilder {
             peer_id: self.peer_id,
-            peers: self.peers,
             options: self.options,
             light_store: self.light_store,
             hasher: self.hasher,
@@ -61,20 +59,17 @@ impl LightClientBuilder<NoTrustedState> {
     /// TODO
     pub fn prod(
         peer_id: PeerId,
-        peers: PeerList<net::Address>,
+        rpc_client: rpc::HttpClient,
         light_store: Box<dyn LightStore>,
         options: Options,
         timeout: Option<Duration>,
     ) -> Self {
-        let peer_map = peers.values().clone();
-
         Self::custom(
             peer_id,
-            peers,
             options,
             light_store,
             Box::new(ProdHasher),
-            Box::new(ProdIo::new(peer_map, timeout)),
+            Box::new(ProdIo::new(peer_id, rpc_client, timeout)),
             Box::new(ProdVerifier::default()),
             Box::new(SystemClock),
             Box::new(scheduler::basic_bisecting_schedule),
@@ -84,7 +79,6 @@ impl LightClientBuilder<NoTrustedState> {
     #[allow(clippy::too_many_arguments)]
     pub fn custom(
         peer_id: PeerId,
-        peers: PeerList<net::Address>,
         options: Options,
         light_store: Box<dyn LightStore>,
         hasher: Box<dyn Hasher>,
@@ -95,7 +89,6 @@ impl LightClientBuilder<NoTrustedState> {
     ) -> Self {
         Self {
             peer_id,
-            peers,
             hasher,
             io,
             verifier,
@@ -120,7 +113,7 @@ impl LightClientBuilder<NoTrustedState> {
     pub fn trust_primary_latest(mut self) -> Result<LightClientBuilder<HasTrustedState>, Error> {
         let trusted_state = self
             .io
-            .fetch_light_block(self.peer_id, AtHeight::Highest)
+            .fetch_light_block(AtHeight::Highest)
             .map_err(error::Kind::Io)?;
 
         self.light_store.insert(trusted_state, Status::Trusted);
@@ -136,7 +129,7 @@ impl LightClientBuilder<NoTrustedState> {
     ) -> Result<LightClientBuilder<HasTrustedState>, Error> {
         let trusted_state = self
             .io
-            .fetch_light_block(self.peer_id, AtHeight::At(trusted_height))
+            .fetch_light_block(AtHeight::At(trusted_height))
             .map_err(error::Kind::Io)?;
 
         if trusted_state.height() != trusted_height {
