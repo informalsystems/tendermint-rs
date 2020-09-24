@@ -2,7 +2,7 @@
   "jsonrpc": "2.0",
   "id": "06c893ae-2c80-4a42-8332-8380bf24fcde",
   "result": {
-    "query": "tm.event='NewBlock'",
+    "query": "tm.event = 'NewBlock'",
     "data": {
       "type": "tendermint/event/NewBlock",
       "value": {

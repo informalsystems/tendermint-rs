@@ -18,6 +18,7 @@ mod rpc {
     use tendermint::abci::Log;
     use tendermint::abci::{Code, Transaction};
     use tendermint_rpc::event::EventData;
+    use tendermint_rpc::query::EventType;
     use tokio::time::Duration;
 
     /// Get the address of the local node
@@ -155,10 +156,7 @@ mod rpc {
         let mut client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
-        let mut subs = client
-            .subscribe("tm.event='NewBlock'".to_string())
-            .await
-            .unwrap();
+        let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
         let mut ev_count = 5_i32;
 
         println!("Attempting to grab {} new blocks", ev_count);
@@ -182,10 +180,7 @@ mod rpc {
         let mut subs_client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
-        let mut subs = subs_client
-            .subscribe("tm.event='Tx'".to_string())
-            .await
-            .unwrap();
+        let mut subs = subs_client.subscribe(EventType::Tx.into()).await.unwrap();
         // We use Id::uuid_v4() here as a quick hack to generate a random value.
         let mut expected_tx_values = (0..10_u32)
             .map(|_| Id::uuid_v4().to_string())

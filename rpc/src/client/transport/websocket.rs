@@ -7,6 +7,7 @@ use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
 use crate::client::transport::get_tcp_host_port;
 use crate::endpoint::{subscribe, unsubscribe};
 use crate::event::Event;
+use crate::query::Query;
 use crate::{
     request, response, Error, Response, Result, Subscription, SubscriptionClient, SubscriptionId,
 };
@@ -36,8 +37,9 @@ use tokio::task::JoinHandle;
 ///
 /// ## Examples
 ///
-/// ```rust,ignore
+/// ```rust
 /// use tendermint_rpc::{WebSocketClient, SubscriptionClient};
+/// use tendermint_rpc::query::EventType;
 /// use futures::StreamExt;
 ///
 /// #[tokio::main]
@@ -46,7 +48,7 @@ use tokio::task::JoinHandle;
 ///         .await
 ///         .unwrap();
 ///
-///     let mut subs = client.subscribe("tm.event='NewBlock'".to_string())
+///     let mut subs = client.subscribe(EventType::Tx.into())
 ///         .await
 ///         .unwrap();
 ///
@@ -119,7 +121,7 @@ impl WebSocketClient {
 
 #[async_trait]
 impl SubscriptionClient for WebSocketClient {
-    async fn subscribe(&mut self, query: String) -> Result<Subscription> {
+    async fn subscribe(&mut self, query: Query) -> Result<Subscription> {
         let (event_tx, event_rx) = unbounded();
         let (result_tx, mut result_rx) = unbounded::<Result<()>>();
         let id = SubscriptionId::default();
@@ -221,10 +223,11 @@ impl WebSocketSubscriptionDriver {
     async fn subscribe(
         &mut self,
         id: SubscriptionId,
-        query: String,
+        query: impl ToString,
         event_tx: ChannelTx<Result<Event>>,
         mut result_tx: ChannelTx<Result<()>>,
     ) -> Result<()> {
+        let query = query.to_string();
         let req = request::Wrapper::new_with_id(
             id.clone().into(),
             subscribe::Request::new(query.clone()),
@@ -238,9 +241,10 @@ impl WebSocketSubscriptionDriver {
     async fn unsubscribe(
         &mut self,
         id: SubscriptionId,
-        query: String,
+        query: impl ToString,
         mut result_tx: ChannelTx<Result<()>>,
     ) -> Result<()> {
+        let query = query.to_string();
         let req = request::Wrapper::new(unsubscribe::Request::new(query.clone()));
         let req_id = req.id().to_string();
         let _ = self.send_request(req, &mut result_tx).await;
@@ -341,6 +345,7 @@ impl WebSocketSubscriptionDriver {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::query::EventType;
     use crate::{Id, Method};
     use async_tungstenite::tokio::accept_async;
     use futures::StreamExt;
@@ -652,10 +657,7 @@ mod test {
             .unwrap();
 
         println!("Initiating subscription for new blocks...");
-        let mut subs = client
-            .subscribe("tm.event='NewBlock'".to_string())
-            .await
-            .unwrap();
+        let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
 
         // Collect all the events from the subscription.
         let subs_collector_hdl = tokio::spawn(async move {
