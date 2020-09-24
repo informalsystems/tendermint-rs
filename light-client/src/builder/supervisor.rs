@@ -14,8 +14,8 @@ pub struct Done;
 /// TODO
 #[must_use]
 pub struct SupervisorBuilder<State> {
-    peers: PeerList<net::Address>,
     instances: PeerListBuilder<Instance>,
+    addresses: PeerListBuilder<net::Address>,
     #[allow(dead_code)]
     state: State,
 }
@@ -23,19 +23,25 @@ pub struct SupervisorBuilder<State> {
 impl<Current> SupervisorBuilder<Current> {
     fn with_state<Next>(self, state: Next) -> SupervisorBuilder<Next> {
         SupervisorBuilder {
-            peers: self.peers,
             instances: self.instances,
+            addresses: self.addresses,
             state,
         }
     }
 }
 
+impl Default for SupervisorBuilder<Init> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SupervisorBuilder<Init> {
     /// TODO
-    pub fn new(peers: PeerList<net::Address>) -> Self {
+    pub fn new() -> Self {
         Self {
-            peers,
             instances: PeerListBuilder::default(),
+            addresses: PeerListBuilder::default(),
             state: Init,
         }
     }
@@ -43,12 +49,12 @@ impl SupervisorBuilder<Init> {
     /// TODO
     pub fn primary(
         mut self,
-        make_instance: impl FnOnce(PeerId, PeerList<net::Address>) -> Result<Instance, Error>,
+        peer_id: PeerId,
+        address: net::Address,
+        instance: Instance,
     ) -> Result<SupervisorBuilder<HasPrimary>, Error> {
-        let primary_id = self.peers.primary_id();
-        let instance = make_instance(primary_id, self.peers.clone())?;
-
-        self.instances = self.instances.primary(primary_id, instance);
+        self.instances = self.instances.primary(peer_id, instance);
+        self.addresses = self.addresses.primary(peer_id, address);
 
         Ok(self.with_state(HasPrimary))
     }
@@ -58,12 +64,12 @@ impl SupervisorBuilder<HasPrimary> {
     /// TODO
     pub fn witness(
         mut self,
-        make_instance: impl Fn(PeerId, PeerList<net::Address>) -> Result<Instance, Error>,
+        peer_id: PeerId,
+        address: net::Address,
+        instance: Instance,
     ) -> Result<SupervisorBuilder<Done>, Error> {
-        for witness_id in self.peers.witnesses_ids().iter().copied() {
-            let instance = make_instance(witness_id, self.peers.clone())?;
-            self.instances = self.instances.witness(witness_id, instance);
-        }
+        self.instances = self.instances.witness(peer_id, instance);
+        self.addresses = self.addresses.witness(peer_id, address);
 
         Ok(self.with_state(Done))
     }
@@ -73,11 +79,11 @@ impl SupervisorBuilder<Done> {
     /// TODO
     #[must_use]
     pub fn build_prod(self) -> Supervisor {
-        self.build_custom(|instances, peers| {
+        self.build_custom(|instances, addresses| {
             Supervisor::new(
                 instances,
                 ProdForkDetector::default(),
-                ProdEvidenceReporter::new(peers.into_values()),
+                ProdEvidenceReporter::new(addresses.into_values()),
             )
         })
     }
@@ -88,6 +94,6 @@ impl SupervisorBuilder<Done> {
         self,
         build: impl FnOnce(PeerList<Instance>, PeerList<net::Address>) -> Supervisor,
     ) -> Supervisor {
-        build(self.instances.build(), self.peers)
+        build(self.instances.build(), self.addresses.build())
     }
 }
