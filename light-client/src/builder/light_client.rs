@@ -1,4 +1,4 @@
-//! DSL for building a light client
+//! DSL for building a light client [`Instance`]
 
 use std::time::Duration;
 
@@ -18,13 +18,13 @@ use crate::store::LightStore;
 use crate::supervisor::Instance;
 use crate::types::{LightBlock, PeerId, Status};
 
-/// TODO
+/// No trusted state has been set yet
 pub struct NoTrustedState;
 
-/// TODO
+/// A trusted state has been set and validated
 pub struct HasTrustedState;
 
-/// Builder for light clients
+/// Builder for a light client [`Instance`]
 #[must_use]
 pub struct LightClientBuilder<State> {
     peer_id: PeerId,
@@ -40,6 +40,7 @@ pub struct LightClientBuilder<State> {
 }
 
 impl<Current> LightClientBuilder<Current> {
+    /// Private method to move from one state to another
     fn with_state<Next>(self, state: Next) -> LightClientBuilder<Next> {
         LightClientBuilder {
             peer_id: self.peer_id,
@@ -56,7 +57,7 @@ impl<Current> LightClientBuilder<Current> {
 }
 
 impl LightClientBuilder<NoTrustedState> {
-    /// TODO
+    /// Initialize a builder for a production (non-mock) light client.
     pub fn prod(
         peer_id: PeerId,
         rpc_client: rpc::HttpClient,
@@ -75,7 +76,8 @@ impl LightClientBuilder<NoTrustedState> {
             Box::new(scheduler::basic_bisecting_schedule),
         )
     }
-    /// TODO
+
+    /// Initialize a builder for a custom light client, by providing all dependencies upfront.
     #[allow(clippy::too_many_arguments)]
     pub fn custom(
         peer_id: PeerId,
@@ -100,7 +102,7 @@ impl LightClientBuilder<NoTrustedState> {
         }
     }
 
-    /// TODO
+    /// Set the given light block as the initial trusted state.
     pub fn trust_light_block(
         mut self,
         trusted_state: LightBlock,
@@ -109,7 +111,7 @@ impl LightClientBuilder<NoTrustedState> {
         self.with_state(HasTrustedState)
     }
 
-    /// TODO
+    /// Set the latest block from the primary peer as the trusted state.
     pub fn trust_primary_latest(mut self) -> Result<LightClientBuilder<HasTrustedState>, Error> {
         let trusted_state = self
             .io
@@ -121,7 +123,7 @@ impl LightClientBuilder<NoTrustedState> {
         Ok(self.with_state(HasTrustedState))
     }
 
-    /// TODO
+    /// Set the block from the primary peer at the given height as the trusted state.
     pub fn trust_primary_at(
         mut self,
         trusted_height: Height,
@@ -155,7 +157,7 @@ impl LightClientBuilder<NoTrustedState> {
 }
 
 impl LightClientBuilder<HasTrustedState> {
-    /// TODO
+    /// Build the light client [`Instance`].
     #[must_use]
     pub fn build(self) -> Instance {
         let state = State {

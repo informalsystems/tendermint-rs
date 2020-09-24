@@ -11,7 +11,7 @@ pub struct Init;
 pub struct HasPrimary;
 pub struct Done;
 
-/// TODO
+/// Builder for the [`Supervisor`]
 #[must_use]
 pub struct SupervisorBuilder<State> {
     instances: PeerListBuilder<Instance>,
@@ -21,6 +21,7 @@ pub struct SupervisorBuilder<State> {
 }
 
 impl<Current> SupervisorBuilder<Current> {
+    /// Private method to move from one state to another
     fn with_state<Next>(self, state: Next) -> SupervisorBuilder<Next> {
         SupervisorBuilder {
             instances: self.instances,
@@ -37,7 +38,7 @@ impl Default for SupervisorBuilder<Init> {
 }
 
 impl SupervisorBuilder<Init> {
-    /// TODO
+    /// Create an empty builder
     pub fn new() -> Self {
         Self {
             instances: PeerListBuilder::default(),
@@ -46,7 +47,7 @@ impl SupervisorBuilder<Init> {
         }
     }
 
-    /// TODO
+    /// Set the primary [`Instance`].
     pub fn primary(
         mut self,
         peer_id: PeerId,
@@ -61,7 +62,7 @@ impl SupervisorBuilder<Init> {
 }
 
 impl SupervisorBuilder<HasPrimary> {
-    /// TODO
+    /// Add a witness [`Instance`].
     pub fn witness(
         mut self,
         peer_id: PeerId,
@@ -76,24 +77,21 @@ impl SupervisorBuilder<HasPrimary> {
 }
 
 impl SupervisorBuilder<Done> {
-    /// TODO
+    /// Build a production (non-mock) [`Supervisor`].
     #[must_use]
     pub fn build_prod(self) -> Supervisor {
-        self.build_custom(|instances, addresses| {
-            Supervisor::new(
-                instances,
-                ProdForkDetector::default(),
-                ProdEvidenceReporter::new(addresses.into_values()),
-            )
-        })
+        let (instances, addresses) = self.unwrap();
+
+        Supervisor::new(
+            instances,
+            ProdForkDetector::default(),
+            ProdEvidenceReporter::new(addresses.into_values()),
+        )
     }
 
-    /// TODO
+    /// Get the underlying list of instances and addresses.
     #[must_use]
-    pub fn build_custom(
-        self,
-        build: impl FnOnce(PeerList<Instance>, PeerList<net::Address>) -> Supervisor,
-    ) -> Supervisor {
-        build(self.instances.build(), self.addresses.build())
+    pub fn unwrap(self) -> (PeerList<Instance>, PeerList<net::Address>) {
+        (self.instances.build(), self.addresses.build())
     }
 }

@@ -56,7 +56,7 @@ impl<T> PeerList<T> {
     /// - [LCD-INV-NODES]
     pub fn transition_invariant(_prev: &PeerList<T>, _next: &PeerList<T>) -> bool {
         true
-        // TODO
+        // TODO: Implement transition invariant
         // &next.full_nodes | &next.witnesses | &next.faulty_nodes
         //     == &prev.full_nodes | &prev.witnesses | &prev.faulty_nodes
     }
