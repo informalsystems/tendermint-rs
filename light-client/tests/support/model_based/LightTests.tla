@@ -24,8 +24,8 @@ InitTest ==
 
 NextTest ==
   /\ Next
-  /\ history' = [ n \in DOMAIN history \union {nprobes} |->
-       IF n = nprobes THEN
+  /\ history' = [ n \in DOMAIN history \union {nprobes'} |->
+       IF n = nprobes' THEN
          [ verified |-> prevVerified', current |-> prevCurrent', now |-> prevNow', verdict |-> prevVerdict' ]
        ELSE history[n]
      ]
