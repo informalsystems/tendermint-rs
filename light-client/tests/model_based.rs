@@ -56,7 +56,10 @@ fn single_step_test(
     output_env: &TestEnv,
 ) {
     output_env.clear_log();
-    println!("  > running static model-based single-step test: {}", &tc.description);
+    println!(
+        "  > running static model-based single-step test: {}",
+        &tc.description
+    );
     let mut latest_trusted = Trusted::new(
         tc.initial.signed_header.clone(),
         tc.initial.next_validator_set.clone(),
