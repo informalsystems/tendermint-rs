@@ -2,7 +2,7 @@
 
 EXTENDS Lightclient_002_draft
 
-(* The light client history, which is the function mapping states 1..nprobes to the record with fields:
+(* The light client history, which is the function mapping states 0..nprobes to the record with fields:
    - verified: the latest verified block in the previous state
    - current: the block that is being checked in the previous state
    - now: the time point in the previous state
@@ -19,11 +19,16 @@ a <: b == a \* type annotation
 
 InitTest ==
   /\ Init
-  /\ history = [ n \in {} <: {Int} |-> historyState ]
+  /\ history = [ n \in {0} <: {Int} |->
+     [ verified |-> prevVerified, current |-> prevCurrent, now |-> prevNow, verdict |-> prevVerdict ]]
 
 NextTest ==
   /\ Next
-  /\ history' = [ n \in DOMAIN history \union {nprobes} |-> IF n = nprobes THEN historyState ELSE history[n]]
+  /\ history' = [ n \in DOMAIN history \union {nprobes} |->
+       IF n = nprobes THEN
+         [ verified |-> prevVerified', current |-> prevCurrent', now |-> prevNow', verdict |-> prevVerdict' ]
+       ELSE history[n]
+     ]
 
 TestFailure ==
     /\ state = "finishedFailure"
