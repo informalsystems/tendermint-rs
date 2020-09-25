@@ -101,6 +101,13 @@ fn model_based_test(
     output_env: &TestEnv,
 ) {
     println!("  Running model-based single-step test case: {}", test.test);
+    // Cleanup possible previous runs
+    output_env.clear_log();
+    output_env.remove_file("counterexample.tla");
+    output_env.remove_file("counterexample.json");
+    output_env.remove_file("test.json");
+
+    // Check for the necessary programs
     let check_program = |program| {
         if !Command::exists_program(program) {
             output_env.logln(&format!("    > {} not found", program));
