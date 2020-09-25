@@ -164,7 +164,8 @@ impl Supervisor {
         SupervisorHandle::new(self.sender.clone())
     }
 
-    fn latest_trusted(&self) -> Option<LightBlock> {
+    /// Get the latest trusted state of the primary peer, if any
+    pub fn latest_trusted(&self) -> Option<LightBlock> {
         self.peers.primary().latest_trusted()
     }
 
