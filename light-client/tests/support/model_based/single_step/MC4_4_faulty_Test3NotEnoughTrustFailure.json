@@ -1,5 +1,5 @@
 {
-  "description": "auto-generated from Apalache counterexample",
+  "description": "MC4_4_faulty_Test3NotEnoughTrustFailure.json; auto-generated from Apalache counterexample",
   "initial": {
     "signed_header": {
       "header": {
