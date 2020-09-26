@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Start using model-based testing for Light Client ([#414])
 - Add testgen tester to factor out test execution from integration tests ([#524])
 - Add spec for the light client attack evidence handling ([#526])
 - Return RFC6962 hash for empty merkle tree ([#498])
@@ -36,6 +37,7 @@
   See the crate docs for more details.
   ([#516])
 
+[#414]: https://github.com/informalsystems/tendermint-rs/issues/414
 [#524]: https://github.com/informalsystems/tendermint-rs/issues/524
 [#526]: https://github.com/informalsystems/tendermint-rs/issues/526
 [#498]: https://github.com/informalsystems/tendermint-rs/issues/498

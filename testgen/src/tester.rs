@@ -35,6 +35,10 @@ impl TestEnv {
         &self.current_dir
     }
 
+    pub fn clear_log(&self) -> Option<()> {
+        fs::remove_file(self.full_path("log")).ok()
+    }
+
     pub fn logln(&self, msg: &str) -> Option<()> {
         println!("{}", msg);
         fs::OpenOptions::new()
@@ -86,6 +90,11 @@ impl TestEnv {
     /// Returns None if copying was not successful
     pub fn copy_file_from_env(&self, other: &TestEnv, path: impl AsRef<Path>) -> Option<()> {
         self.copy_file_from(other.full_path(path))
+    }
+
+    /// Remove a file from a path relative to the environment current dir
+    pub fn remove_file(&self, rel_path: impl AsRef<Path>) -> Option<()> {
+        fs::remove_file(self.full_path(rel_path)).ok()
     }
 
     /// Convert a relative path to the full path from the test root
