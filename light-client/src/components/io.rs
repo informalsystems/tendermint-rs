@@ -76,7 +76,7 @@ mod prod {
 
     use std::time::Duration;
 
-    use crate::bail;
+    use crate::{bail, utils::block_on};
     use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
     use tendermint::validator::Set as TMValidatorSet;
 
@@ -125,11 +125,12 @@ mod prod {
         }
 
         fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
+            let client = self.rpc_client.clone();
             let res = block_on(
-                async {
+                async move {
                     match height {
-                        AtHeight::Highest => self.rpc_client.latest_commit().await,
-                        AtHeight::At(height) => self.rpc_client.commit(height).await,
+                        AtHeight::Highest => client.latest_commit().await,
+                        AtHeight::At(height) => client.commit(height).await,
                     }
                 },
                 self.peer_id,
@@ -150,35 +151,14 @@ mod prod {
                 AtHeight::At(height) => height,
             };
 
-            let res = block_on(
-                self.rpc_client.validators(height),
-                self.peer_id,
-                self.timeout,
-            )?;
+            let client = self.rpc_client.clone();
+            let task = async move { client.validators(height).await };
+            let res = block_on(task, self.peer_id, self.timeout)?;
 
             match res {
                 Ok(response) => Ok(TMValidatorSet::new(response.validators)),
                 Err(err) => Err(IoError::RpcError(err)),
             }
-        }
-    }
-
-    fn block_on<F: std::future::Future>(
-        f: F,
-        peer: PeerId,
-        timeout: Option<Duration>,
-    ) -> Result<F::Output, IoError> {
-        let mut rt = tokio::runtime::Builder::new()
-            .basic_scheduler()
-            .enable_all()
-            .build()
-            .unwrap();
-
-        if let Some(timeout) = timeout {
-            rt.block_on(async { tokio::time::timeout(timeout, f).await })
-                .map_err(|_| IoError::Timeout(peer))
-        } else {
-            Ok(rt.block_on(f))
         }
     }
 }

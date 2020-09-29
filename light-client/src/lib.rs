@@ -31,6 +31,8 @@ pub mod store;
 pub mod supervisor;
 pub mod types;
 
+pub(crate) mod utils;
+
 mod macros;
 mod std_ext;
 
