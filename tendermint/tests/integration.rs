@@ -17,6 +17,7 @@ mod rpc {
     use subtle_encoding::base64;
     use tendermint::abci::Log;
     use tendermint::abci::{Code, Transaction};
+    use tendermint::merkle::simple_hash_from_byte_vectors;
     use tendermint_rpc::event::EventData;
     use tokio::time::Duration;
 
@@ -78,6 +79,21 @@ mod rpc {
 
         assert!(block_info.block.last_commit.is_none());
         assert_eq!(block_info.block.header.height.value(), height);
+
+        // Check for empty merkle root.
+        // See: https://github.com/informalsystems/tendermint-rs/issues/562
+        let computed_data_hash = simple_hash_from_byte_vectors(
+            block_info
+                .block
+                .data
+                .iter()
+                .map(|t| t.to_owned().into_vec())
+                .collect(),
+        );
+        assert_eq!(
+            computed_data_hash,
+            block_info.block.header.data_hash.unwrap().as_bytes()
+        );
     }
 
     /// `/block_results` endpoint
