@@ -116,7 +116,7 @@ impl LightClientBuilder<NoTrustedState> {
     }
 
     /// Set the given light block as the initial trusted state.
-    pub fn trust_light_block(
+    fn trust_light_block(
         mut self,
         trusted_state: LightBlock,
     ) -> Result<LightClientBuilder<HasTrustedState>, Error> {

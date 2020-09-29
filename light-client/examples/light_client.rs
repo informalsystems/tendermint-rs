@@ -3,6 +3,7 @@ use std::{
     time::Duration,
 };
 
+use anomaly::BoxError;
 use gumdrop::Options;
 
 use tendermint::Hash;
@@ -12,7 +13,7 @@ use tendermint_light_client::supervisor::{Handle as _, Instance};
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
     light_client,
-    store::{sled::SledStore, LightStore},
+    store::sled::SledStore,
     types::{Height, PeerId, TrustThreshold},
 };
 
@@ -63,6 +64,7 @@ struct SyncOpts {
 
 fn main() {
     let opts = CliOptions::parse_args_default_or_exit();
+
     match opts.command {
         None => {
             eprintln!("Please specify a command:");
@@ -70,7 +72,10 @@ fn main() {
             eprintln!("{}\n", CliOptions::usage());
             std::process::exit(1);
         }
-        Some(Command::Sync(sync_opts)) => sync_cmd(sync_opts),
+        Some(Command::Sync(sync_opts)) => sync_cmd(sync_opts).unwrap_or_else(|e| {
+            eprintln!("Command failed: {}", e);
+            std::process::exit(1);
+        }),
     }
 }
 
@@ -79,17 +84,11 @@ fn make_instance(
     addr: tendermint::net::Address,
     db_path: impl AsRef<Path>,
     opts: &SyncOpts,
-) -> Instance {
-    let db = sled::open(db_path).unwrap_or_else(|e| {
-        println!("[ error ] could not open database: {}", e);
-        std::process::exit(1);
-    });
+) -> Result<Instance, BoxError> {
+    let db = sled::open(db_path)?;
 
     let light_store = SledStore::new(db);
-    let trusted_state = light_store.latest_trusted_or_verified();
-
     let rpc_client = rpc::HttpClient::new(addr).unwrap();
-
     let options = light_client::Options {
         trust_threshold: TrustThreshold::default(),
         trusting_period: Duration::from_secs(36000),
@@ -99,17 +98,16 @@ fn make_instance(
     let builder =
         LightClientBuilder::prod(peer_id, rpc_client, Box::new(light_store), options, None);
 
-    if let (Some(height), Some(hash)) = (opts.trusted_height, opts.trusted_hash) {
-        builder.trust_primary_at(height, hash).unwrap().build()
-    } else if let Some(trusted_state) = trusted_state {
-        builder.trust_light_block(trusted_state).unwrap().build()
+    let builder = if let (Some(height), Some(hash)) = (opts.trusted_height, opts.trusted_hash) {
+        builder.trust_primary_at(height, hash)
     } else {
-        eprintln!("[ error ] no trusted state in database, please specify a trusted header");
-        std::process::exit(1)
-    }
+        builder.trust_from_store()
+    }?;
+
+    Ok(builder.build())
 }
 
-fn sync_cmd(opts: SyncOpts) {
+fn sync_cmd(opts: SyncOpts) -> Result<(), BoxError> {
     let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
     let witness: PeerId = "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF".parse().unwrap();
 
@@ -119,8 +117,8 @@ fn sync_cmd(opts: SyncOpts) {
     let primary_path = opts.db_path.join(primary.to_string());
     let witness_path = opts.db_path.join(witness.to_string());
 
-    let primary_instance = make_instance(primary, primary_addr.clone(), primary_path, &opts);
-    let witness_instance = make_instance(witness, witness_addr.clone(), witness_path, &opts);
+    let primary_instance = make_instance(primary, primary_addr.clone(), primary_path, &opts)?;
+    let witness_instance = make_instance(witness, witness_addr.clone(), witness_path, &opts)?;
 
     let supervisor = SupervisorBuilder::new()
         .primary(primary, primary_addr, primary_instance)
