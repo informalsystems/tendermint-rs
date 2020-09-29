@@ -170,10 +170,23 @@ impl LightClientBuilder<NoTrustedState> {
     }
 
     fn validate(&self, light_block: &LightBlock) -> Result<(), Error> {
-        // TODO(ismail, romac): actually verify more predicates of light block?
+        let header = &light_block.signed_header.header;
+        let now = self.clock.now();
+
+        self.predicates
+            .is_within_trust_period(header, self.options.trusting_period, now)
+            .map_err(|e| error::Kind::InvalidLightBlock.context(e))?;
+
+        self.predicates
+            .is_header_from_past(header, self.options.clock_drift, now)
+            .map_err(|e| error::Kind::InvalidLightBlock.context(e))?;
 
         self.predicates
             .validator_sets_match(light_block, &*self.hasher)
+            .map_err(|e| error::Kind::InvalidLightBlock.context(e))?;
+
+        self.predicates
+            .next_validators_match(light_block, &*self.hasher)
             .map_err(|e| error::Kind::InvalidLightBlock.context(e))?;
 
         Ok(())
