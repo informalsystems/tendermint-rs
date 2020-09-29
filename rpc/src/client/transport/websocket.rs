@@ -49,6 +49,23 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 ///
 /// To terminate the client and the driver, simply use its [`close`] method.
 ///
+/// ### Timeouts
+///
+/// The WebSocket client connection times out after 30 seconds if it does not
+/// receive anything at all from the server. This will automatically return
+/// errors to all active subscriptions and terminate them.
+///
+/// This is not configurable at present.
+///
+/// ### Keep-Alive
+///
+/// The WebSocket client implements a keep-alive mechanism whereby it sends a
+/// PING message to the server every 27 seconds, matching the PING cadence of
+/// the Tendermint server (see [this code](tendermint-websocket-ping) for
+/// details).
+///
+/// This is not configurable at present.
+///
 /// ## Examples
 ///
 /// ```rust,ignore
@@ -88,6 +105,7 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 ///
 /// [`Event`]: ./event/struct.Event.html
 /// [`close`]: struct.WebSocketClient.html#method.close
+/// [tendermint-websocket-ping]: https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L28
 #[derive(Debug)]
 pub struct WebSocketClient {
     host: String,
