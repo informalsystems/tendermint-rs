@@ -17,9 +17,9 @@ mod rpc {
     use subtle_encoding::base64;
     use tendermint::abci::Log;
     use tendermint::abci::{Code, Transaction};
+    use tendermint::merkle::simple_hash_from_byte_vectors;
     use tendermint_rpc::event::EventData;
     use tokio::time::Duration;
-    use tendermint::merkle::simple_hash_from_byte_vectors;
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> HttpClient {
@@ -83,9 +83,17 @@ mod rpc {
         // Check for empty merkle root.
         // See: https://github.com/informalsystems/tendermint-rs/issues/562
         let computed_data_hash = simple_hash_from_byte_vectors(
-            block_info.block.data.iter().map(|t| t.to_owned().into_vec()).collect()
+            block_info
+                .block
+                .data
+                .iter()
+                .map(|t| t.to_owned().into_vec())
+                .collect(),
         );
-        assert_eq!(computed_data_hash, block_info.block.header.data_hash.unwrap().as_bytes());
+        assert_eq!(
+            computed_data_hash,
+            block_info.block.header.data_hash.unwrap().as_bytes()
+        );
     }
 
     /// `/block_results` endpoint
