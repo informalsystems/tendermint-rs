@@ -1,5 +1,6 @@
 use tendermint::net;
 
+use crate::builder::error::{self, Error};
 use crate::peer_list::{PeerList, PeerListBuilder};
 use crate::supervisor::Instance;
 use crate::types::PeerId;
@@ -82,13 +83,18 @@ impl SupervisorBuilder<HasPrimary> {
     pub fn witnesses(
         mut self,
         witnesses: impl IntoIterator<Item = (PeerId, net::Address, Instance)>,
-    ) -> SupervisorBuilder<Done> {
-        for (peer_id, address, instance) in witnesses.into_iter() {
+    ) -> Result<SupervisorBuilder<Done>, Error> {
+        let mut iter = witnesses.into_iter().peekable();
+        if iter.peek().is_none() {
+            return Err(error::Kind::EmptyWitnessList.into());
+        }
+
+        for (peer_id, address, instance) in iter {
             self.instances.witness(peer_id, instance);
             self.addresses.witness(peer_id, address);
         }
 
-        self.with_state(Done)
+        Ok(self.with_state(Done))
     }
 }
 

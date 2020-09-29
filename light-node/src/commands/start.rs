@@ -182,7 +182,10 @@ impl StartCmd {
             witnesses.push((witness_conf.peer_id, witness_conf.address.clone(), instance));
         }
 
-        let builder = builder.witnesses(witnesses);
+        let builder = builder
+            .witnesses(witnesses)
+            .map_err(|e| format!("failed to set witnesses: {}", e))?;
+
         Ok(builder.build_prod())
     }
 }

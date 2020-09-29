@@ -130,18 +130,13 @@ impl LightClientBuilder<NoTrustedState> {
 
     /// Keep using the latest verified or trusted block in the light store.
     /// Such a block must exists otherwise this will fail.
-    pub fn trust_from_store(mut self) -> Result<LightClientBuilder<HasTrustedState>, Error> {
+    pub fn trust_from_store(self) -> Result<LightClientBuilder<HasTrustedState>, Error> {
         let trusted_state = self
             .light_store
             .latest_trusted_or_verified()
             .ok_or_else(|| error::Kind::NoTrustedStateInStore)?;
 
-        self.validate(&trusted_state)?;
-
-        // TODO(liamsi, romac): it is unclear if this should be Trusted or only Verified
-        self.light_store.insert(trusted_state, Status::Trusted);
-
-        Ok(self.with_state(HasTrustedState))
+        self.trust_light_block(trusted_state)
     }
 
     /// Fetch and set the latest block from the primary peer as the trusted state.

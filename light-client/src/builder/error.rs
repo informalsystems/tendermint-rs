@@ -43,6 +43,10 @@ pub enum Kind {
     /// No trusted state as found in the store
     #[error("no trusted state in store")]
     NoTrustedStateInStore,
+
+    /// An empty witness list was given
+    #[error("empty witness list")]
+    EmptyWitnessList,
 }
 
 impl Kind {
