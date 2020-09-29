@@ -103,7 +103,7 @@ impl SupervisorBuilder<Done> {
     #[must_use]
     #[cfg(feature = "rpc-client")]
     pub fn build_prod(self) -> Supervisor {
-        let (instances, addresses) = self.unwrap();
+        let (instances, addresses) = self.inner();
 
         Supervisor::new(
             instances,
@@ -114,7 +114,7 @@ impl SupervisorBuilder<Done> {
 
     /// Get the underlying list of instances and addresses.
     #[must_use]
-    pub fn unwrap(self) -> (PeerList<Instance>, PeerList<net::Address>) {
+    pub fn inner(self) -> (PeerList<Instance>, PeerList<net::Address>) {
         (self.instances.build(), self.addresses.build())
     }
 }
