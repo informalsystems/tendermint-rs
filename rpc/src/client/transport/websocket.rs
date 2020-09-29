@@ -19,10 +19,25 @@ use async_tungstenite::WebSocketStream;
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+use std::ops::Add;
 use std::str::FromStr;
 use tendermint::net;
 use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
+use tokio::time::{Duration, Instant};
+
+// WebSocket connection times out if we haven't heard anything at all from the
+// server in this long.
+//
+// Taken from https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L27
+const RECV_TIMEOUT_SECONDS: u64 = 30;
+
+const RECV_TIMEOUT: Duration = Duration::from_secs(RECV_TIMEOUT_SECONDS);
+
+// How frequently to send ping messages to the WebSocket server.
+//
+// Taken from https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L28
+const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) / 10);
 
 /// Tendermint RPC client that provides [`Event`] subscription capabilities
 /// over JSON-RPC over a WebSocket connection.
@@ -164,12 +179,16 @@ impl WebSocketSubscriptionDriver {
     }
 
     async fn run(mut self) -> Result<()> {
-        // TODO(thane): Should this loop initiate a keepalive (ping) to the
-        //              server on a regular basis?
+        let mut ping_interval =
+            tokio::time::interval_at(Instant::now().add(PING_INTERVAL), PING_INTERVAL);
+        let mut recv_timeout = tokio::time::delay_for(PING_INTERVAL);
         loop {
             tokio::select! {
                 Some(res) = self.stream.next() => match res {
-                    Ok(msg) => self.handle_incoming_msg(msg).await?,
+                    Ok(msg) => {
+                        recv_timeout.reset(Instant::now().add(PING_INTERVAL));
+                        self.handle_incoming_msg(msg).await?
+                    },
                     Err(e) => return Err(
                         Error::websocket_error(
                             format!("failed to read from WebSocket connection: {}", e),
@@ -190,6 +209,13 @@ impl WebSocketSubscriptionDriver {
                     } => self.unsubscribe(id, query, result_tx).await?,
                     SubscriptionDriverCmd::Terminate => return self.close().await,
                 },
+                _ = ping_interval.next() => self.ping().await?,
+                _ = &mut recv_timeout => {
+                    return Err(Error::websocket_error(format!(
+                        "reading from WebSocket connection timed out after {} seconds",
+                        RECV_TIMEOUT.as_secs()
+                    )));
+                }
             }
         }
     }
@@ -309,7 +335,6 @@ impl WebSocketSubscriptionDriver {
                         if let Some(event_tx) = self.router.get_active_subscription_mut(
                             &SubscriptionId::from_str(&req_id).unwrap(),
                         ) {
-                            // TODO(thane): Does an error here warrant terminating the subscription, or the driver?
                             let _ = event_tx.send(Err(e)).await;
                         }
                     }
@@ -320,6 +345,10 @@ impl WebSocketSubscriptionDriver {
 
     async fn pong(&mut self, v: Vec<u8>) -> Result<()> {
         self.send_msg(Message::Pong(v)).await
+    }
+
+    async fn ping(&mut self) -> Result<()> {
+        self.send_msg(Message::Ping(Vec::new())).await
     }
 
     async fn close(mut self) -> Result<()> {
