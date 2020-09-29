@@ -14,7 +14,7 @@ mod rpc {
     use tendermint_rpc::{Client, HttpClient, Id, SubscriptionClient, WebSocketClient};
 
     use futures::StreamExt;
-    use subtle_encoding::{base64, hex};
+    use subtle_encoding::base64;
     use tendermint::abci::Log;
     use tendermint::abci::{Code, Transaction};
     use tendermint_rpc::event::EventData;
