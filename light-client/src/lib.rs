@@ -33,8 +33,8 @@ pub mod types;
 
 pub(crate) mod utils;
 
+#[doc(hidden)]
 mod macros;
-mod std_ext;
 
 #[doc(hidden)]
 pub mod tests;
