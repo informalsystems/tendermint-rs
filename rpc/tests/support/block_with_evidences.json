@@ -43,10 +43,6 @@
           {
             "type": "tendermint/DuplicateVoteEvidence",
             "value": {
-              "PubKey": {
-                "type": "tendermint/PubKeyEd25519",
-                "value": "MjQn17Z4VocTjeHm60JVjPV9A6hUTKYSNDTpQiglXlY="
-              },
               "VoteA": {
                 "type": 1,
                 "height": "21",
