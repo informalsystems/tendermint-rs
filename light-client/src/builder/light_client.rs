@@ -139,16 +139,6 @@ impl LightClientBuilder<NoTrustedState> {
         self.trust_light_block(trusted_state)
     }
 
-    /// Fetch and set the latest block from the primary peer as the trusted state.
-    pub fn trust_primary_latest(self) -> Result<LightClientBuilder<HasTrustedState>, Error> {
-        let trusted_state = self
-            .io
-            .fetch_light_block(AtHeight::Highest)
-            .map_err(error::Kind::Io)?;
-
-        self.trust_light_block(trusted_state)
-    }
-
     /// Set the block from the primary peer at the given height as the trusted state.
     pub fn trust_primary_at(
         self,
