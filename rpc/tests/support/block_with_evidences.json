@@ -43,7 +43,7 @@
           {
             "type": "tendermint/DuplicateVoteEvidence",
             "value": {
-              "VoteA": {
+              "vote_a": {
                 "type": 1,
                 "height": "21",
                 "round": "0",
@@ -59,7 +59,7 @@
                 "validator_index": "0",
                 "signature": "JDVzUjWVP9qWZJpKmN14FvmS4mXoLnwW7C1UjFtNQrVTQpL+ONg+IkYKGzVTDQtpOcGDbOLC2dbKvY/OToaWDA=="
               },
-              "VoteB": {
+              "vote_b": {
                 "type": 1,
                 "height": "21",
                 "round": "0",

@@ -26,9 +26,7 @@ pub enum Evidence {
 /// Duplicate vote evidence
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct DuplicateVoteEvidence {
-    #[serde(rename = "VoteA")]
     vote_a: Vote,
-    #[serde(rename = "VoteB")]
     vote_b: Vote,
 }
 
