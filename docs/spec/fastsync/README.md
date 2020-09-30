@@ -1,5 +1,13 @@
 # Fast Sync Subprotocol Specification
 
+## Disclaimer
+
+This specification is not maintained. See
+[tendermint/spec](https://github.com/tendermint/spec/blob/master/rust-spec/fastsync/)
+for the most recent version.
+
+## Abstract
+
 This directory contains English and TLA+ specifications for the FastSync
 protocol as it is currently implemented in the Tendermint Core codebase.
 

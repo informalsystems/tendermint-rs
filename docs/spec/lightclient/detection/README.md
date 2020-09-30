@@ -1,6 +1,13 @@
 
 # Tendermint fork detection and IBC fork detection
 
+## Disclaimer
+
+This directory is not maintained. See
+[tendermint/spec](https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/detection/)
+for the most recent version.
+
+
 ## Status
 
 This is a work in progress.
