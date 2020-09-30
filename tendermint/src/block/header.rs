@@ -5,6 +5,7 @@ use crate::serializers;
 use crate::{account, block, chain, Hash, Time};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
+use tendermint_proto::types::BlockId;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::DomainType;
 
@@ -72,54 +73,60 @@ impl Header {
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/block.go#L393
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
 
-        let mut fields_bytes: Vec<Vec<u8>> = Vec::with_capacity(16);
+        let mut fields_bytes: Vec<Vec<u8>> = Vec::with_capacity(14);
         fields_bytes.push(self.version.encode_vec().unwrap());
-        fields_bytes.push(encode_bytes(self.chain_id.as_bytes()));
-        fields_bytes.push(encode_varint(self.height.value()));
+        fields_bytes.push(encode_to_vec(&self.chain_id.to_string()));
+        fields_bytes.push(encode_to_vec(&self.height.value()));
         fields_bytes.push(self.time.encode_vec().unwrap());
-        // Todo: It seems a few things are missing here. We need to test it when tests are fixed.
-        /*match &self.last_block_id {
-            None => {
-                BlockId::new(vec![], None).encode_vec()
-            }
-            Some(id) => {
-                BlockId::from(id).encode_vec()
-            }
-        }*/
-        fields_bytes.push(self.last_commit_hash.as_ref().map_or(vec![], encode_hash));
-        fields_bytes.push(self.data_hash.as_ref().map_or(vec![], encode_hash));
-        fields_bytes.push(encode_hash(&self.validators_hash));
-        fields_bytes.push(encode_hash(&self.next_validators_hash));
-        fields_bytes.push(encode_hash(&self.consensus_hash));
-        fields_bytes.push(encode_bytes(&self.app_hash));
-        fields_bytes.push(self.last_results_hash.as_ref().map_or(vec![], encode_hash));
-        fields_bytes.push(self.evidence_hash.as_ref().map_or(vec![], encode_hash));
-        fields_bytes.push(encode_bytes(self.proposer_address.as_bytes()));
+        fields_bytes.push(encode_optional(
+            &self
+                .last_block_id
+                .as_ref()
+                .map(|id| BlockId::try_from(id.clone()).unwrap()),
+        ));
+        fields_bytes.push(encode_optional(
+            &self
+                .last_commit_hash
+                .as_ref()
+                .map(|hash| hash.as_bytes().to_vec()),
+        ));
+        fields_bytes.push(encode_optional(
+            &self.data_hash.as_ref().map(|hash| hash.as_bytes().to_vec()),
+        ));
+        fields_bytes.push(encode_to_vec(&self.validators_hash.as_bytes().to_vec()));
+        fields_bytes.push(encode_to_vec(
+            &self.next_validators_hash.as_bytes().to_vec(),
+        ));
+        fields_bytes.push(encode_to_vec(&self.consensus_hash.as_bytes().to_vec()));
+        fields_bytes.push(encode_to_vec(&self.app_hash));
+        fields_bytes.push(encode_optional(
+            &self
+                .last_results_hash
+                .as_ref()
+                .map(|hash| hash.as_bytes().to_vec()),
+        ));
+        fields_bytes.push(encode_optional(
+            &self
+                .evidence_hash
+                .as_ref()
+                .map(|hash| hash.as_bytes().to_vec()),
+        ));
+        fields_bytes.push(encode_to_vec(&self.proposer_address.as_bytes().to_vec()));
 
         Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
     }
 }
 
-fn encode_bytes(bytes: &[u8]) -> Vec<u8> {
-    let bytes_len = bytes.len();
-    if bytes_len > 0 {
-        let mut encoded = vec![];
-        prost::encode_length_delimiter(bytes_len, &mut encoded).unwrap();
-        encoded.append(&mut bytes.to_vec());
-        encoded
-    } else {
-        vec![]
+fn encode_to_vec<T: prost::Message>(val: &T) -> Vec<u8> {
+    let mut buf: Vec<u8> = Vec::new();
+    prost::Message::encode(val, &mut buf).map(|_| buf).unwrap()
+}
+
+fn encode_optional<T: prost::Message>(val: &Option<T>) -> Vec<u8> {
+    match val {
+        Some(inner) => encode_to_vec(inner),
+        None => vec![],
     }
-}
-
-fn encode_hash(hash: &Hash) -> Vec<u8> {
-    encode_bytes(hash.as_bytes())
-}
-
-fn encode_varint(val: u64) -> Vec<u8> {
-    let mut val_enc = vec![];
-    prost::encoding::encode_varint(val, &mut val_enc);
-    val_enc
 }
 
 /// `Version` contains the protocol version for the blockchain and the
@@ -162,11 +169,27 @@ impl From<Version> for RawConsensusVersion {
 #[cfg(test)]
 mod tests {
     use super::Header;
+    use crate::hash::Algorithm;
     use crate::test::test_serialization_roundtrip;
+    use crate::Hash;
 
     #[test]
     fn serialization_roundtrip() {
         let json_data = include_str!("../../tests/support/serialization/block/header.json");
         test_serialization_roundtrip::<Header>(json_data);
+    }
+
+    #[test]
+    fn header_hashing() {
+        let expected_hash = Hash::from_hex_upper(
+            Algorithm::Sha256,
+            "F30A71F2409FB15AACAEDB6CC122DFA2525BEE9CAE521721B06BFDCA291B8D56",
+        )
+        .unwrap();
+        let header: Header = serde_json::from_str(include_str!(
+            "../../tests/support/serialization/block/header_with_known_hash.json"
+        ))
+        .unwrap();
+        assert_eq!(expected_hash, header.hash());
     }
 }
