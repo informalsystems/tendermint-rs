@@ -4,8 +4,8 @@
 //! - a transient, in-memory implementation for testing purposes
 //! - a persistent, on-disk, sled-backed implementation for production
 
-use crate::std_ext;
 use crate::types::{Height, LightBlock, Status};
+use crate::utils::std_ext;
 
 pub mod memory;
 pub mod sled;

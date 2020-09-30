@@ -22,9 +22,11 @@ pub use self::prod::ProdEvidenceReporter;
 #[cfg(feature = "rpc-client")]
 mod prod {
     use super::*;
+    use crate::utils::block_on;
 
     use contracts::pre;
     use std::collections::HashMap;
+
     use tendermint_rpc as rpc;
     use tendermint_rpc::Client;
 
@@ -39,7 +41,9 @@ mod prod {
     impl EvidenceReporter for ProdEvidenceReporter {
         #[pre(self.peer_map.contains_key(&peer))]
         fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
-            let res = block_on(self.rpc_client_for(peer)?.broadcast_evidence(e));
+            let client = self.rpc_client_for(peer)?;
+            let task = async move { client.broadcast_evidence(e).await };
+            let res = block_on(task, peer, None)?;
 
             match res {
                 Ok(response) => Ok(response.hash),
@@ -61,14 +65,5 @@ mod prod {
             let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
             Ok(rpc::HttpClient::new(peer_addr).map_err(IoError::from)?)
         }
-    }
-
-    fn block_on<F: std::future::Future>(f: F) -> F::Output {
-        tokio::runtime::Builder::new()
-            .basic_scheduler()
-            .enable_all()
-            .build()
-            .unwrap()
-            .block_on(f)
     }
 }
