@@ -119,7 +119,7 @@ impl Header {
 
 fn encode_to_vec<T: prost::Message>(val: &T) -> Vec<u8> {
     let mut buf: Vec<u8> = Vec::new();
-    prost::Message::encode(val, &mut buf).map(|_| buf).unwrap()
+    val.encode(&mut buf).map(|_| buf).unwrap()
 }
 
 fn encode_optional<T: prost::Message>(val: &Option<T>) -> Vec<u8> {
