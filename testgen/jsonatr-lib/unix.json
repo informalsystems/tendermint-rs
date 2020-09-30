@@ -9,8 +9,8 @@
     },
     {
       "name": "utc_timestamp",
-      "kind": "COMMAND",
-      "source": "date --utc +%FT%H:%M:%S.%NZ",
+      "kind": "INLINE",
+      "source": "2020-09-25T08:18:04.996061145Z",
       "stdin": false
     },
     {
