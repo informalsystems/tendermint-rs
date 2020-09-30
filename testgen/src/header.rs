@@ -2,6 +2,7 @@ use crate::{helpers::*, validator::generate_validators, Generator, Validator};
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
+use std::convert::TryFrom;
 use std::str::FromStr;
 use tendermint::{block, chain, validator};
 
@@ -107,7 +108,8 @@ impl Generator<block::Header> for Header {
         let header = block::Header {
             version: block::header::Version { block: 0, app: 0 },
             chain_id,
-            height: block::Height(self.height.unwrap_or(1)),
+            height: block::Height::try_from(self.height.unwrap_or(1)).unwrap(), /* TODO: might
+                                                                                 * overflow */
             time,
             last_block_id: None,
             last_commit_hash: None,

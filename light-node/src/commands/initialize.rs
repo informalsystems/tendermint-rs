@@ -13,6 +13,7 @@ use abscissa_core::Runnable;
 
 use tendermint::{hash, Hash};
 
+use std::convert::TryInto;
 use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
 use tendermint_light_client::operations::ProdHasher;
 use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
@@ -49,7 +50,12 @@ impl Runnable for InitCmd {
 
         let io = ProdIo::new(peer_map, Some(app_cfg.rpc_config.request_timeout));
 
-        initialize_subjectively(self.height.into(), subjective_header_hash, &lc, &io);
+        initialize_subjectively(
+            self.height.try_into().unwrap(),
+            subjective_header_hash,
+            &lc,
+            &io,
+        );
     }
 }
 

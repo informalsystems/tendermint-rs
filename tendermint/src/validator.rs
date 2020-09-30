@@ -3,7 +3,6 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use subtle_encoding::base64;
 
-use crate::amino_types::message::AminoMessage;
 use crate::{account, hash::Hash, merkle, vote, Error, PublicKey, Signature};
 
 use std::convert::TryFrom;
@@ -181,8 +180,7 @@ impl Info {
     /// the leaves of the tree. this is an amino encoding of the
     /// pubkey and voting power, so it includes the pubkey's amino prefix.
     pub fn hash_bytes(&self) -> Vec<u8> {
-        let raw_simple_validator: RawSimpleValidator = SimpleValidator::from(self).into();
-        AminoMessage::bytes_vec(&raw_simple_validator)
+        SimpleValidator::from(self).encode_vec().unwrap()
     }
 }
 

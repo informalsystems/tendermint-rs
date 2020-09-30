@@ -24,7 +24,6 @@ pub mod error;
 
 pub mod abci;
 pub mod account;
-pub mod amino_types;
 pub mod block;
 pub mod chain;
 pub mod channel;

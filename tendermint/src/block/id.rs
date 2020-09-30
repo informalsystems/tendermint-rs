@@ -4,10 +4,13 @@ use crate::{
     hash::{Algorithm, Hash},
 };
 use serde::{Deserialize, Serialize};
+use std::convert::{TryFrom, TryInto};
 use std::{
     fmt::{self, Display},
     str::{self, FromStr},
 };
+use tendermint_proto::types::{BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId};
+use tendermint_proto::DomainType;
 
 /// Length of a block ID prefix displayed for debugging purposes
 pub const PREFIX_LENGTH: usize = 10;
@@ -35,6 +38,61 @@ pub struct Id {
     ///
     /// <https://github.com/tendermint/tendermint/wiki/Block-Structure#partset>
     pub parts: Option<parts::Header>,
+}
+
+impl DomainType<RawBlockId> for Id {}
+impl DomainType<RawCanonicalBlockId> for Id {}
+
+impl TryFrom<RawBlockId> for Id {
+    type Error = Error;
+
+    fn try_from(value: RawBlockId) -> Result<Self, Self::Error> {
+        Ok(Self {
+            hash: value.hash.try_into()?,
+            parts: match value.part_set_header {
+                None => None,
+                Some(p) => Some(p.try_into()?),
+            },
+        })
+    }
+}
+
+impl From<Id> for RawBlockId {
+    fn from(value: Id) -> Self {
+        RawBlockId {
+            hash: value.hash.into(),
+            part_set_header: match value.parts {
+                None => None,
+                Some(h) => Some(h.into()),
+            },
+        }
+    }
+}
+
+impl TryFrom<RawCanonicalBlockId> for Id {
+    type Error = Error;
+
+    fn try_from(value: RawCanonicalBlockId) -> Result<Self, Self::Error> {
+        Ok(Self {
+            hash: value.hash.try_into()?,
+            parts: match value.part_set_header {
+                None => None,
+                Some(p) => Some(p.try_into()?),
+            },
+        })
+    }
+}
+
+impl From<Id> for RawCanonicalBlockId {
+    fn from(value: Id) -> Self {
+        RawCanonicalBlockId {
+            hash: value.hash.as_bytes().to_vec(),
+            part_set_header: match value.parts {
+                None => None,
+                Some(h) => Some(h.into()),
+            },
+        }
+    }
 }
 
 impl Id {

@@ -124,7 +124,7 @@ impl Generator<block::Commit> for Commit {
             let vote = v.generate()?;
             Ok(block::CommitSig::BlockIDFlagCommit {
                 validator_address: vote.validator_address,
-                timestamp: vote.timestamp,
+                timestamp: vote.timestamp.unwrap(),
                 signature: vote.signature,
             })
         };
@@ -196,8 +196,7 @@ mod tests {
                     signature,
                 } => {
                     let block_vote = votes[i].generate().unwrap();
-                    let sign_bytes =
-                        get_vote_sign_bytes(block_header.chain_id.as_str(), &block_vote);
+                    let sign_bytes = get_vote_sign_bytes(block_header.chain_id, &block_vote);
                     assert!(!verify_signature(
                         &valset2[i].get_public_key().unwrap(),
                         &sign_bytes,

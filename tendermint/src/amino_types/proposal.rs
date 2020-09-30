@@ -99,7 +99,7 @@ impl From<Proposal> for RawProposal {
 // TODO(tony): custom derive proc macro for this e.g. `derive(ParseBlockHeight)`
 impl block::ParseHeight for Proposal {
     fn parse_block_height(&self) -> Result<block::Height, error::Error> {
-        Ok(block::Height::from(self.height))
+        Ok(block::Height::try_from(self.height as u64).unwrap())
     }
 }
 
@@ -222,7 +222,7 @@ impl chain::ParseId for CanonicalProposal {
 
 impl block::ParseHeight for CanonicalProposal {
     fn parse_block_height(&self) -> Result<block::Height, error::Error> {
-        Ok(block::Height::from(self.height))
+        Ok(block::Height::try_from(self.height as u64).unwrap())
     }
 }
 
@@ -310,7 +310,7 @@ impl SignableMsg for SignProposalRequest {
     fn consensus_state(&self) -> Option<consensus::State> {
         match self.proposal {
             Some(ref p) => Some(consensus::State {
-                height: block::Height::from(p.height),
+                height: block::Height::try_from(p.height as u64).unwrap(),
                 round: p.round as i64,
                 step: 3,
                 block_id: {

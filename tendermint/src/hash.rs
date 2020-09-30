@@ -2,6 +2,7 @@
 
 use crate::error::{Error, Kind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use std::convert::TryFrom;
 use std::{
     fmt::{self, Debug, Display},
     str::FromStr,
@@ -23,6 +24,23 @@ pub enum Algorithm {
 pub enum Hash {
     /// SHA-256 hashes
     Sha256([u8; SHA256_HASH_SIZE]),
+}
+
+/// Default conversion from Vec<u8> is SHA256 Hash
+impl TryFrom<Vec<u8>> for Hash {
+    type Error = Error;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        Hash::new(Algorithm::Sha256, &value)
+    }
+}
+
+impl From<Hash> for Vec<u8> {
+    fn from(value: Hash) -> Self {
+        match value {
+            Hash::Sha256(s) => s.to_vec(),
+        }
+    }
 }
 
 impl Hash {

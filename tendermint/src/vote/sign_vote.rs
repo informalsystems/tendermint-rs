@@ -1,0 +1,384 @@
+use crate::chain;
+use crate::consensus::State;
+use crate::signature::SignableMsg;
+use crate::signature::Signature::Ed25519;
+use crate::vote::CanonicalVote;
+use crate::Error;
+use crate::Signature;
+use crate::Vote;
+use bytes::BufMut;
+use ed25519::{Signature as Ed25519Signature, SIGNATURE_LENGTH};
+use std::convert::{TryFrom, TryInto};
+use std::str::FromStr;
+use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
+use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
+use tendermint_proto::DomainType;
+use tendermint_proto::Error as DomainTypeError;
+/// SignVoteRequest is a request to sign a vote
+#[derive(Clone, PartialEq, Debug)]
+pub struct SignVoteRequest {
+    /// Optional Vote
+    pub vote: Option<Vote>,
+    /// Chain ID
+    pub chain_id: chain::Id,
+}
+
+impl DomainType<RawSignVoteRequest> for SignVoteRequest {}
+
+impl TryFrom<RawSignVoteRequest> for SignVoteRequest {
+    type Error = Error;
+
+    fn try_from(value: RawSignVoteRequest) -> Result<Self, Self::Error> {
+        Ok(SignVoteRequest {
+            vote: match value.vote {
+                None => None,
+                Some(vote) => Some(vote.try_into()?),
+            },
+            chain_id: chain::Id::from_str(value.chain_id.as_str())?,
+        })
+    }
+}
+
+impl From<SignVoteRequest> for RawSignVoteRequest {
+    fn from(value: SignVoteRequest) -> Self {
+        RawSignVoteRequest {
+            vote: value.vote.map(|v| v.into()),
+            chain_id: value.chain_id.as_str().to_string(),
+        }
+    }
+}
+
+impl SignableMsg for SignVoteRequest {
+    fn sign_bytes<B>(&self, chain_id: chain::Id, sign_bytes: &mut B) -> Result<bool, Error>
+    where
+        B: BufMut,
+    {
+        let mut svr = self.clone();
+        if let Some(ref mut vo) = svr.vote {
+            vo.signature = Ed25519(Ed25519Signature::new([0; SIGNATURE_LENGTH]));
+        }
+        let vote = svr.vote.unwrap();
+        let cv = CanonicalVote::new(vote, chain_id);
+
+        cv.encode_length_delimited(sign_bytes).unwrap(); // Todo: Handle the single "EncodeError"
+        Ok(true)
+    }
+
+    fn sign_vec(&self, chain_id: chain::Id) -> Result<Vec<u8>, DomainTypeError> {
+        CanonicalVote::new(self.vote.clone().unwrap(), chain_id).encode_length_delimited_vec()
+    }
+
+    fn set_signature(&mut self, sig: Signature) {
+        if let Some(ref mut vt) = self.vote {
+            vt.signature = sig;
+        }
+    }
+
+    fn consensus_state(&self) -> Option<State> {
+        self.vote.clone().map(|ref v| State {
+            height: v.height,
+            round: v.round,
+            step: 6,
+            block_id: v.block_id.clone(),
+        })
+    }
+}
+
+/// SignedVoteResponse is a response containing a signed vote or an error
+#[derive(Clone, PartialEq)]
+pub struct SignedVoteResponse {
+    /// Optional Vote
+    pub vote: Option<Vote>,
+    /// Optional error
+    pub error: Option<RemoteSignerError>,
+}
+
+impl DomainType<RawSignedVoteResponse> for SignedVoteResponse {}
+
+impl TryFrom<RawSignedVoteResponse> for SignedVoteResponse {
+    type Error = Error;
+
+    fn try_from(value: RawSignedVoteResponse) -> Result<Self, Self::Error> {
+        Ok(SignedVoteResponse {
+            vote: match value.vote {
+                None => None,
+                Some(vote) => Some(Vote::try_from(vote)?),
+            },
+            error: value.error,
+        })
+    }
+}
+
+impl From<SignedVoteResponse> for RawSignedVoteResponse {
+    fn from(value: SignedVoteResponse) -> Self {
+        RawSignedVoteResponse {
+            vote: value.vote.map(|v| v.into()),
+            error: value.error,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::account::Id as AccountId;
+    use crate::block::parts::Header;
+    use crate::block::Height;
+    use crate::block::Id as BlockId;
+    use crate::block::Round;
+    use crate::chain::Id as ChainId;
+    use crate::hash::Algorithm;
+    use crate::signature::{SignableMsg, Signature, ED25519_SIGNATURE_SIZE};
+    use crate::vote::{CanonicalVote, ValidatorIndex};
+    use crate::vote::{SignVoteRequest, Type};
+    use crate::Hash;
+    use crate::Vote;
+    use chrono::{DateTime, Utc};
+    use std::convert::TryFrom;
+    use std::str::FromStr;
+    use tendermint_proto::DomainType;
+
+    #[test]
+    fn test_vote_serialization() {
+        let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
+        let vote = Vote {
+            vote_type: Type::Prevote,
+            height: Height::try_from(12345_i64).unwrap(),
+            round: Round::try_from(2).unwrap(),
+            timestamp: Some(dt.into()),
+            block_id: Some(BlockId {
+                hash: Hash::try_from(b"DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA".to_vec()).unwrap(),
+                parts: Some(Header {
+                    total: 1_000_000,
+                    hash: Hash::try_from(b"0022446688AACCEE1133557799BBDDFF".to_vec()).unwrap(),
+                }),
+            }),
+            validator_address: AccountId::try_from(vec![
+                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+            ])
+            .unwrap(),
+            validator_index: ValidatorIndex::try_from(56789).unwrap(),
+            signature: Signature::try_from(vec![
+                130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233,
+                100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6,
+                184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118,
+                192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10,
+            ])
+            .unwrap(),
+        };
+        let mut got = vec![];
+
+        let request = SignVoteRequest {
+            vote: Some(vote),
+            chain_id: ChainId::from_str("test_chain_id").unwrap(),
+        };
+
+        // Option 1 using bytes:
+        let _have = request.sign_bytes(ChainId::from("test_chain_id"), &mut got);
+        // Option 2 using Vec<u8>:
+        let got2 = request.sign_vec(ChainId::from("test_chain_id")).unwrap();
+
+        // the following vector is generated via:
+        /*
+           import (
+               "fmt"
+               prototypes "github.com/tendermint/tendermint/proto/tendermint/types"
+               "github.com/tendermint/tendermint/types"
+               "strings"
+               "time"
+           )
+           func voteSerialize() {
+               stamp, _ := time.Parse(time.RFC3339Nano, "2017-12-25T03:00:01.234Z")
+               vote := &types.Vote{
+                   Type:      prototypes.PrevoteType, // pre-vote
+                   Height:    12345,
+                   Round:     2,
+                   Timestamp: stamp,
+                   BlockID: types.BlockID{
+                       Hash: []byte("DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA"),
+                       PartSetHeader: types.PartSetHeader{
+                           Total: 1000000,
+                           Hash:  []byte("0022446688AACCEE1133557799BBDDFF"),
+                       },
+                   },
+                   ValidatorAddress: []byte{0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21,
+                       0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35}, ValidatorIndex: 56789}
+               signBytes := types.VoteSignBytes("test_chain_id", vote.ToProto())
+               fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v", signBytes), " "), ", "))
+           }
+        */
+
+        let want = vec![
+            124, 8, 1, 17, 57, 48, 0, 0, 0, 0, 0, 0, 25, 2, 0, 0, 0, 0, 0, 0, 0, 34, 74, 10, 32,
+            68, 69, 65, 68, 66, 69, 69, 70, 68, 69, 65, 68, 66, 69, 69, 70, 66, 65, 70, 66, 65, 70,
+            66, 65, 70, 66, 65, 70, 66, 65, 70, 65, 18, 38, 8, 192, 132, 61, 18, 32, 48, 48, 50,
+            50, 52, 52, 54, 54, 56, 56, 65, 65, 67, 67, 69, 69, 49, 49, 51, 51, 53, 53, 55, 55, 57,
+            57, 66, 66, 68, 68, 70, 70, 42, 11, 8, 177, 211, 129, 210, 5, 16, 128, 157, 202, 111,
+            50, 13, 116, 101, 115, 116, 95, 99, 104, 97, 105, 110, 95, 105, 100,
+        ];
+        assert_eq!(got, want);
+        assert_eq!(got2, want);
+    }
+
+    #[test]
+    fn test_sign_bytes_compatibility() {
+        let cv = CanonicalVote::new(Vote::default(), ChainId::from("A"));
+        let mut got = vec![];
+        // SignBytes are encoded using MarshalBinary and not MarshalBinaryBare
+        cv.encode_length_delimited(&mut got).unwrap();
+        let want = vec![
+            0xe, 0x8, 0x1, 0x11, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x32, 0x1, 0x41,
+        ]; // Todo: Get these bytes from Go. During protobuf upgrade we didn't get to generate them.
+        assert_eq!(got, want);
+
+        // with proper (fixed size) height and round (Precommit):
+        {
+            let mut vt_precommit = Vote::default();
+            vt_precommit.height = Height::try_from(1_i64).unwrap();
+            vt_precommit.round = Round::try_from(1).unwrap();
+            vt_precommit.vote_type = Type::Precommit; // precommit
+            println!("{:?}", vt_precommit);
+            let cv_precommit = CanonicalVote::new(vt_precommit, ChainId::from("A"));
+            let got = cv_precommit.encode_vec().unwrap();
+            let want = vec![
+                0x8,  // (field_number << 3) | wire_type
+                0x2,  // PrecommitType
+                0x11, // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
+                0x19, // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
+                0x32, // (field_number << 3) | wire_type
+                // remaining fields (chain ID):
+                0x1, 0x41,
+            ];
+            assert_eq!(got, want);
+        }
+        // with proper (fixed size) height and round (Prevote):
+        {
+            let mut vt_prevote = Vote::default();
+            vt_prevote.height = Height::try_from(1_u64).unwrap();
+            vt_prevote.round = Round::try_from(1).unwrap();
+            vt_prevote.vote_type = Type::Prevote;
+
+            let cv_prevote = CanonicalVote::new(vt_prevote, ChainId::from("A"));
+
+            let got = cv_prevote.encode_vec().unwrap();
+
+            let want = vec![
+                0x8,  // (field_number << 3) | wire_type
+                0x1,  // PrevoteType
+                0x11, // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
+                0x19, // (field_number << 3) | wire_type
+                0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
+                0x32, // (field_number << 3) | wire_type
+                // remaining fields (chain ID):
+                0x1, 0x41,
+            ];
+            assert_eq!(got, want);
+        }
+    }
+
+    #[test]
+    fn test_vote_rountrip_with_sig() {
+        let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
+        let vote = Vote {
+            validator_address: AccountId::try_from(vec![
+                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+            ])
+            .unwrap(),
+            validator_index: ValidatorIndex::try_from(56789).unwrap(),
+            height: Height::try_from(12345_i64).unwrap(),
+            round: Round::try_from(2).unwrap(),
+            timestamp: Some(dt.into()),
+            vote_type: Type::Prevote,
+            block_id: Some(BlockId {
+                hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
+                    .unwrap(), //Hash::new(Algorithm::Sha256,
+                // b"hash".to_vec().as_slice()).unwrap(),
+                parts: Some(Header {
+                    total: 1_000_000,
+                    hash: Hash::from_hex_upper(
+                        Algorithm::Sha256,
+                        "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA",
+                    )
+                    .unwrap(), /* Hash::new(Algorithm::Sha256,
+                                * b"parts_hash".to_vec().as_slice()).unwrap(), */
+                }),
+            }),
+            // signature: None,
+            signature: Signature::try_from(vec![
+                130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233,
+                100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6,
+                184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118,
+                192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10,
+            ])
+            .unwrap(),
+        };
+        let got = vote.encode_vec().unwrap();
+        let v = Vote::decode_vec(&got).unwrap();
+
+        assert_eq!(v, vote);
+        // SignVoteRequest
+        {
+            let svr = SignVoteRequest {
+                vote: Some(vote),
+                chain_id: ChainId::from_str("test_chain_id").unwrap(),
+            };
+            let mut got = vec![];
+            let _have = svr.encode(&mut got);
+
+            let svr2 = SignVoteRequest::decode(got.as_ref()).unwrap();
+            assert_eq!(svr, svr2);
+        }
+    }
+
+    #[test]
+    fn test_deserialization() {
+        let encoded = vec![
+            10, 188, 1, 8, 1, 16, 185, 96, 24, 2, 34, 74, 10, 32, 222, 173, 190, 239, 222, 173,
+            190, 239, 186, 251, 175, 186, 251, 175, 186, 250, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 18, 38, 8, 192, 132, 61, 18, 32, 0, 34, 68, 102, 136, 170, 204, 238, 17,
+            51, 85, 119, 153, 187, 221, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42,
+            11, 8, 177, 211, 129, 210, 5, 16, 128, 157, 202, 111, 50, 20, 163, 178, 204, 221, 113,
+            134, 241, 104, 95, 33, 242, 72, 42, 244, 251, 52, 70, 168, 75, 53, 56, 213, 187, 3, 66,
+            64, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 18, 13, 116, 101, 115, 116, 95, 99, 104, 97, 105, 110, 95, 105,
+            100,
+        ]; // Todo: Double-check the Go implementation, this was self-generated.
+        let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
+        let vote = Vote {
+            validator_address: AccountId::try_from(vec![
+                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+            ])
+            .unwrap(),
+            validator_index: ValidatorIndex::try_from(56789).unwrap(),
+            height: Height::try_from(12345_u64).unwrap(),
+            round: Round::try_from(2).unwrap(),
+            timestamp: Some(dt.into()),
+            vote_type: Type::Prevote,
+            block_id: Some(BlockId {
+                hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
+                    .unwrap(),
+                parts: Some(Header {
+                    total: 1_000_000,
+                    hash: Hash::from_hex_upper(
+                        Algorithm::Sha256,
+                        "0022446688AACCEE1133557799BBDDFF",
+                    )
+                    .unwrap(),
+                }),
+            }),
+            signature: Signature::try_from(vec![1; ED25519_SIGNATURE_SIZE]).unwrap(),
+        };
+        let want = SignVoteRequest {
+            vote: Some(vote),
+            chain_id: ChainId::from_str("test_chain_id").unwrap(),
+        };
+        let got = SignVoteRequest::decode_vec(&encoded).unwrap();
+        assert_eq!(got, want);
+    }
+}

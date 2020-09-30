@@ -309,7 +309,8 @@ impl WebSocketSubscriptionDriver {
                         if let Some(event_tx) = self.router.get_active_subscription_mut(
                             &SubscriptionId::from_str(&req_id).unwrap(),
                         ) {
-                            // TODO(thane): Does an error here warrant terminating the subscription, or the driver?
+                            // TODO(thane): Does an error here warrant terminating the subscription,
+                            // or the driver?
                             let _ = event_tx.send(Err(e)).await;
                         }
                     }

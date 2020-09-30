@@ -52,7 +52,6 @@ sha2 = { version = "0.9", default-features = false }
 signature = "1.2"
 subtle = "2"
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
-tai64 = { version = "3", features = ["chrono"] }
 thiserror = "1"
 tendermint-proto = { path = "../proto" }
 toml = { version = "0.5" }

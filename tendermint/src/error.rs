@@ -40,6 +40,38 @@ pub enum Kind {
     /// Signature invalid
     #[error("bad signature")]
     SignatureInvalid,
+
+    /// invalid Vote type
+    #[error("invalid Type")]
+    InvalidMessageType,
+
+    /// Negative block height
+    #[error("negative height")]
+    NegativeHeight,
+
+    /// Negative voting round
+    #[error("negative round")]
+    NegativeRound,
+
+    /// Negative validator index in vote
+    #[error("negative ValidatorIndex")]
+    NegativeValidatorIndex,
+
+    /// Wrong hash size in part_set_header
+    #[error("Wrong hash: expected Hash size to be 32 bytes")]
+    InvalidHashSize,
+
+    /// No timestamp in vote
+    #[error("no timestamp")]
+    NoTimestamp,
+
+    /// Invalid account ID or signature ID length
+    #[error("invalid ID length")]
+    InvalidIDLength,
+
+    /// Overflow during conversion
+    #[error("Integer overflow")]
+    IntegerOverflow,
 }
 
 impl Kind {

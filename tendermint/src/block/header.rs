@@ -1,13 +1,12 @@
 //! Block headers
 
-use crate::amino_types::{message::AminoMessage, BlockId};
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::serializers;
 use crate::{account, block, chain, Hash, Time};
-use prost_types::Timestamp;
 use serde::{Deserialize, Serialize};
-use tendermint_proto::types::BlockId as RawBlockId;
+use std::convert::TryFrom;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
+use tendermint_proto::DomainType;
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -73,25 +72,20 @@ impl Header {
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/block.go#L393
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
 
-        let raw_consensus_version: RawConsensusVersion = self.version.clone().into();
-
         let mut fields_bytes: Vec<Vec<u8>> = Vec::with_capacity(16);
-        fields_bytes.push(AminoMessage::bytes_vec(&raw_consensus_version));
+        fields_bytes.push(self.version.encode_vec().unwrap());
         fields_bytes.push(encode_bytes(self.chain_id.as_bytes()));
         fields_bytes.push(encode_varint(self.height.value()));
-        fields_bytes.push(AminoMessage::bytes_vec(&Timestamp::from(
-            self.time.to_system_time().unwrap(),
-        )));
-        match &self.last_block_id {
+        fields_bytes.push(self.time.encode_vec().unwrap());
+        // Todo: It seems a few things are missing here. We need to test it when tests are fixed.
+        /*match &self.last_block_id {
             None => {
-                let raw_block_id: RawBlockId = BlockId::new(vec![], None).into();
-                AminoMessage::bytes_vec(&raw_block_id);
+                BlockId::new(vec![], None).encode_vec()
             }
             Some(id) => {
-                let raw_block_id: RawBlockId = BlockId::from(id).into();
-                AminoMessage::bytes_vec(&raw_block_id);
+                BlockId::from(id).encode_vec()
             }
-        }
+        }*/
         fields_bytes.push(self.last_commit_hash.as_ref().map_or(vec![], encode_hash));
         fields_bytes.push(self.data_hash.as_ref().map_or(vec![], encode_hash));
         fields_bytes.push(encode_hash(&self.validators_hash));
@@ -143,12 +137,16 @@ pub struct Version {
     pub app: u64,
 }
 
-impl From<RawConsensusVersion> for Version {
-    fn from(value: RawConsensusVersion) -> Self {
-        Version {
+impl DomainType<RawConsensusVersion> for Version {}
+
+impl TryFrom<RawConsensusVersion> for Version {
+    type Error = anomaly::BoxError;
+
+    fn try_from(value: RawConsensusVersion) -> Result<Self, Self::Error> {
+        Ok(Version {
             block: value.block,
             app: value.app,
-        }
+        })
     }
 }
 

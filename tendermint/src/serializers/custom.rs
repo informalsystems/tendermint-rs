@@ -47,7 +47,7 @@ where
                     None
                 } else {
                     Some(block::parts::Header {
-                        total: tmp_id.parts.total,
+                        total: tmp_id.parts.total as u32, // Todo: manage overflow
                         hash: Hash::from_str(&tmp_id.parts.hash)
                             .map_err(|err| D::Error::custom(format!("{}", err)))?,
                     })

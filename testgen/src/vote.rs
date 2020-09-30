@@ -7,6 +7,7 @@ use tendermint::{
     block,
     signature::{self, Signature, Signer, ED25519_SIGNATURE_SIZE},
     vote,
+    vote::ValidatorIndex,
 };
 
 #[derive(Debug, Options, Deserialize, Clone)]
@@ -110,17 +111,17 @@ impl Generator<vote::Vote> for Vote {
                 vote::Type::Precommit
             },
             height: block_header.height,
-            round: self.round.unwrap_or(1),
+            round: block::Round::try_from(self.round.unwrap_or(1)).unwrap(),
             block_id: Some(block_id),
-            timestamp,
+            timestamp: Some(timestamp),
             validator_address: block_validator.address,
-            validator_index,
+            validator_index: ValidatorIndex::try_from(validator_index as u32).unwrap(),
             signature: Signature::Ed25519(try_with!(
-                signature::Ed25519::try_from(&[0_u8; ED25519_SIGNATURE_SIZE][..]),
+                signature::Ed25519Signature::try_from(&[0_u8; ED25519_SIGNATURE_SIZE][..]),
                 "failed to construct empty ed25519 signature"
             )),
         };
-        let sign_bytes = get_vote_sign_bytes(block_header.chain_id.as_str(), &vote);
+        let sign_bytes = get_vote_sign_bytes(block_header.chain_id, &vote);
         vote.signature = signer.sign(sign_bytes.as_slice()).into();
         Ok(vote)
     }
@@ -159,12 +160,12 @@ mod tests {
 
         assert_eq!(block_vote.validator_address, block_val.address);
         assert_eq!(block_vote.height, block_header.height);
-        assert_eq!(block_vote.round, 2);
-        assert_eq!(block_vote.timestamp, now);
-        assert_eq!(block_vote.validator_index, 1);
+        assert_eq!(block_vote.round.value(), 2);
+        assert_eq!(block_vote.timestamp.unwrap(), now);
+        assert_eq!(block_vote.validator_index.value(), 1);
         assert_eq!(block_vote.vote_type, vote::Type::Precommit);
 
-        let sign_bytes = get_vote_sign_bytes(block_header.chain_id.as_str(), &block_vote);
+        let sign_bytes = get_vote_sign_bytes(block_header.chain_id, &block_vote);
         assert!(!verify_signature(
             &valset1[0].get_public_key().unwrap(),
             &sign_bytes,

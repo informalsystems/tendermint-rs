@@ -7,6 +7,7 @@ mod height;
 mod id;
 mod meta;
 pub mod parts;
+mod round;
 pub mod signed_header;
 mod size;
 
@@ -17,6 +18,7 @@ pub use self::{
     height::*,
     id::{Id, ParseId},
     meta::Meta,
+    round::*,
     size::Size,
 };
 use crate::{abci::transaction, evidence, serializers};
