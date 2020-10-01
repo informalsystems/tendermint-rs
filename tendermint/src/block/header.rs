@@ -79,21 +79,25 @@ impl Header {
         fields_bytes.push(encode_to_vec(&self.height.value()));
         fields_bytes.push(self.time.encode_vec().unwrap());
         // https://github.com/tendermint/tendermint/blob/1635d1339c73ae6a82e062cd2dc7191b029efa14/types/block.go#L1204
-        let last_block_id_encoded = encode_optional(
-            &self
-                .last_block_id
-                .as_ref()
-                .map(|id| BlockId::try_from(id.clone()).unwrap()),
+        let last_block_id = self.last_block_id.as_ref().map_or_else(
+            || BlockId {
+                hash: vec![],
+                part_set_header: None,
+            },
+            |id| BlockId::try_from(id.clone()).unwrap(),
         );
+        let last_block_id_encoded = encode_to_vec(&last_block_id);
         // TODO(thane): Fix this encoding workaround.
-        // There seems to be an encoding idiosyncrasy with prost such that,
-        // when an empty BlockId is supplied, it encodes it to an empty vector
-        // of bytes. Go's encoding, however, encodes it to the bytes [18, 0].
-        if last_block_id_encoded.is_empty() {
-            fields_bytes.push(vec![18, 0]);
+        fields_bytes.push(if last_block_id_encoded.is_empty() {
+            // There seems to be an encoding idiosyncrasy with prost such that,
+            // when an empty BlockId is supplied, it encodes it to an empty vector
+            // of bytes. Go's encoding, however, encodes it to the bytes [18, 0].
+            // Technically, we should never get to this branch of the if
+            // statement if last_block_id_encoded was correctly encoded.
+            vec![18, 0]
         } else {
-            fields_bytes.push(last_block_id_encoded);
-        }
+            last_block_id_encoded
+        });
         fields_bytes.push(encode_optional(
             &self
                 .last_commit_hash
