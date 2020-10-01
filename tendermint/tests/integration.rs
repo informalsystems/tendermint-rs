@@ -130,6 +130,10 @@ mod rpc {
 
         assert_eq!(commit_info.signed_header.header.height.value(), height);
         assert_eq!(commit_info.canonical, true);
+        assert_eq!(
+            commit_info.signed_header.header.hash(),
+            commit_info.signed_header.commit.block_id.hash
+        );
     }
 
     /// `/genesis` endpoint
