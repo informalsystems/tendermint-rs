@@ -78,12 +78,22 @@ impl Header {
         fields_bytes.push(encode_to_vec(&self.chain_id.to_string()));
         fields_bytes.push(encode_to_vec(&self.height.value()));
         fields_bytes.push(self.time.encode_vec().unwrap());
-        fields_bytes.push(encode_optional(
+        // https://github.com/tendermint/tendermint/blob/1635d1339c73ae6a82e062cd2dc7191b029efa14/types/block.go#L1204
+        let last_block_id_encoded = encode_optional(
             &self
                 .last_block_id
                 .as_ref()
                 .map(|id| BlockId::try_from(id.clone()).unwrap()),
-        ));
+        );
+        // TODO(thane): Fix this encoding workaround.
+        // There seems to be an encoding idiosyncrasy with prost such that,
+        // when an empty BlockId is supplied, it encodes it to an empty vector
+        // of bytes. Go's encoding, however, encodes it to the bytes [18, 0].
+        if last_block_id_encoded.is_empty() {
+            fields_bytes.push(vec![18, 0]);
+        } else {
+            fields_bytes.push(last_block_id_encoded);
+        }
         fields_bytes.push(encode_optional(
             &self
                 .last_commit_hash
