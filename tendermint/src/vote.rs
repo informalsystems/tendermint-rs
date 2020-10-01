@@ -10,18 +10,22 @@ pub use self::power::Power;
 pub use self::sign_vote::*;
 pub use self::validator_index::ValidatorIndex;
 use crate::chain::Id as ChainId;
+use crate::consensus::State;
 use crate::hash;
 use crate::{account, block, Signature, Time};
 use crate::{Error, Kind::*};
+use bytes::BufMut;
 use ed25519::Signature as ed25519Signature;
 use ed25519::SIGNATURE_LENGTH as ed25519SignatureLength;
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Vote as RawVote;
-use tendermint_proto::DomainType;
+use tendermint_proto::{DomainType, Error as DomainTypeError};
 use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
 };
+
+use crate::signature::Signature::Ed25519;
 
 /// Votes are signed messages from validators for a particular block which
 /// include information about the validator signing it.
@@ -120,9 +124,38 @@ impl Vote {
 
     /// Returns block_id.hash
     pub fn header_hash(&self) -> Option<hash::Hash> {
-        match &self.block_id {
-            Some(b) => Some(b.hash),
-            None => None,
+        self.block_id.clone().map(|b| b.hash)
+    }
+
+    /// Create signable bytes from Vote.
+    pub fn to_signable_bytes<B>(
+        &self,
+        chain_id: ChainId,
+        sign_bytes: &mut B,
+    ) -> Result<bool, DomainTypeError>
+    where
+        B: BufMut,
+    {
+        CanonicalVote::new(self.clone(), chain_id).encode_length_delimited(sign_bytes)?;
+        Ok(true)
+    }
+
+    /// Create signable vector from Vote.
+    pub fn to_signable_vec(&self, chain_id: ChainId) -> Result<Vec<u8>, DomainTypeError> {
+        CanonicalVote::new(self.clone(), chain_id).encode_length_delimited_vec()
+    }
+
+    /// Consensus state from this vote - This doesn't seem to be used anywhere.
+    #[deprecated(
+        since = "0.17.0",
+        note = "This seems unnecessary, please raise it to the team, if you need it."
+    )]
+    pub fn consensus_state(&self) -> State {
+        State {
+            height: self.height,
+            round: self.round,
+            step: 6,
+            block_id: self.block_id.clone(),
         }
     }
 }
@@ -138,7 +171,7 @@ impl Default for Vote {
             timestamp: None,
             validator_address: account::Id::new([0; account::LENGTH]),
             validator_index: ValidatorIndex::try_from(0_i32).unwrap(),
-            signature: Signature::Ed25519(ed25519Signature::new([0; ed25519SignatureLength])),
+            signature: Ed25519(ed25519Signature::new([0; ed25519SignatureLength])),
         }
     }
 }

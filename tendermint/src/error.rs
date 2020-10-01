@@ -80,6 +80,14 @@ pub enum Kind {
     /// Overflow during conversion
     #[error("Integer overflow")]
     IntegerOverflow,
+
+    /// No Vote found during conversion
+    #[error("No vote found")]
+    NoVoteFound,
+
+    /// No Proposal found during conversion
+    #[error("No proposal found")]
+    NoProposalFound,
 }
 
 impl Kind {

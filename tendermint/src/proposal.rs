@@ -9,12 +9,15 @@ pub use msg_type::Type;
 pub use sign_proposal::{SignProposalRequest, SignedProposalResponse};
 
 use crate::block::{Height, Id as BlockId, Round};
+use crate::chain::Id as ChainId;
+use crate::consensus::State;
 use crate::Signature;
 use crate::Time;
 use crate::{Error, Kind};
+use bytes::BufMut;
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Proposal as RawProposal;
-use tendermint_proto::DomainType;
+use tendermint_proto::{DomainType, Error as DomainTypeError};
 
 /// Proposal
 #[derive(Clone, PartialEq, Debug)]
@@ -80,6 +83,40 @@ impl From<Proposal> for RawProposal {
     }
 }
 
+impl Proposal {
+    /// Create signable bytes from Proposal.
+    pub fn to_signable_bytes<B>(
+        &self,
+        chain_id: ChainId,
+        sign_bytes: &mut B,
+    ) -> Result<bool, DomainTypeError>
+    where
+        B: BufMut,
+    {
+        CanonicalProposal::new(self.clone(), chain_id).encode_length_delimited(sign_bytes)?;
+        Ok(true)
+    }
+
+    /// Create signable vector from Proposal.
+    pub fn to_signable_vec(&self, chain_id: ChainId) -> Result<Vec<u8>, DomainTypeError> {
+        CanonicalProposal::new(self.clone(), chain_id).encode_length_delimited_vec()
+    }
+
+    /// Consensus state from this proposal - This doesn't seem to be used anywhere.
+    #[deprecated(
+        since = "0.17.0",
+        note = "This seems unnecessary, please raise it to the team, if you need it."
+    )]
+    pub fn consensus_state(&self) -> State {
+        State {
+            height: self.height,
+            round: self.round,
+            step: 3,
+            block_id: self.block_id.clone(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::block::parts::Header;
@@ -88,7 +125,7 @@ mod tests {
     use crate::chain::Id as ChainId;
     use crate::hash::{Algorithm, Hash};
     use crate::proposal::SignProposalRequest;
-    use crate::signature::{Ed25519Signature, SignableMsg, ED25519_SIGNATURE_SIZE};
+    use crate::signature::{Ed25519Signature, ED25519_SIGNATURE_SIZE};
     use crate::{proposal::Type, Proposal, Signature};
     use chrono::{DateTime, Utc};
     use std::convert::TryFrom;
@@ -122,11 +159,11 @@ mod tests {
         let mut got = vec![];
 
         let request = SignProposalRequest {
-            proposal: Some(proposal),
+            proposal,
             chain_id: ChainId::from_str("test_chain_id").unwrap(),
         };
 
-        let _have = request.sign_bytes(ChainId::from_str("test_chain_id").unwrap(), &mut got);
+        let _have = request.to_signable_bytes(&mut got);
 
         // the following vector is generated via:
         /*
@@ -196,7 +233,7 @@ mod tests {
             signature: Signature::Ed25519(Ed25519Signature::new([0; ED25519_SIGNATURE_SIZE])),
         };
         let want = SignProposalRequest {
-            proposal: Some(proposal),
+            proposal,
             chain_id: ChainId::from_str("test_chain_id").unwrap(),
         };
 

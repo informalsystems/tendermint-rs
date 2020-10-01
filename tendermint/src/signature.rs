@@ -7,15 +7,11 @@ pub use signature::{Signer, Verifier};
 #[cfg(feature = "secp256k1")]
 pub use k256::ecdsa::Signature as Secp256k1;
 
-use crate::chain;
-use crate::consensus::State;
 use crate::{Error, Kind};
-use bytes::BufMut;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
 use subtle_encoding::base64;
 use tendermint_proto::DomainType;
-use tendermint_proto::Error as DomainTypeError;
 
 /// Signatures
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -113,17 +109,4 @@ pub enum Algorithm {
 
     /// EdDSA over Curve25519
     Ed25519,
-}
-
-/// Messages which are signable within a Tendermint network
-pub trait SignableMsg {
-    /// Sign this message as bytes
-    fn sign_bytes<B: BufMut>(&self, chain_id: chain::Id, sign_bytes: &mut B)
-        -> Result<bool, Error>;
-    /// Sign this message and return Vec<u8>
-    fn sign_vec(&self, chain_id: chain::Id) -> Result<Vec<u8>, DomainTypeError>;
-    /// Set the Ed25519 signature on the underlying message
-    fn set_signature(&mut self, sig: Signature);
-    /// Get consensus state // Todo: Do we need this? It used to be implemented for Amino.
-    fn consensus_state(&self) -> Option<State>;
 }

@@ -1,24 +1,19 @@
 use crate::chain;
-use crate::consensus::State;
-use crate::signature::SignableMsg;
-use crate::signature::Signature::Ed25519;
-use crate::vote::CanonicalVote;
-use crate::Error;
-use crate::Signature;
+use crate::{Error, Kind};
 use crate::Vote;
-use bytes::BufMut;
-use ed25519::{Signature as Ed25519Signature, SIGNATURE_LENGTH};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use std::str::FromStr;
 use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
 use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
 use tendermint_proto::DomainType;
 use tendermint_proto::Error as DomainTypeError;
+use bytes::BufMut;
+
 /// SignVoteRequest is a request to sign a vote
 #[derive(Clone, PartialEq, Debug)]
 pub struct SignVoteRequest {
-    /// Optional Vote
-    pub vote: Option<Vote>,
+    /// Vote
+    pub vote: Vote,
     /// Chain ID
     pub chain_id: chain::Id,
 }
@@ -29,11 +24,11 @@ impl TryFrom<RawSignVoteRequest> for SignVoteRequest {
     type Error = Error;
 
     fn try_from(value: RawSignVoteRequest) -> Result<Self, Self::Error> {
+        if value.vote.is_none() {
+            return Err(Kind::NoVoteFound.into());
+        }
         Ok(SignVoteRequest {
-            vote: match value.vote {
-                None => None,
-                Some(vote) => Some(vote.try_into()?),
-            },
+            vote: Vote::try_from(value.vote.unwrap())?,
             chain_id: chain::Id::from_str(value.chain_id.as_str())?,
         })
     }
@@ -42,45 +37,27 @@ impl TryFrom<RawSignVoteRequest> for SignVoteRequest {
 impl From<SignVoteRequest> for RawSignVoteRequest {
     fn from(value: SignVoteRequest) -> Self {
         RawSignVoteRequest {
-            vote: value.vote.map(|v| v.into()),
+            vote: Some(value.vote.into()),
             chain_id: value.chain_id.as_str().to_string(),
         }
     }
 }
 
-impl SignableMsg for SignVoteRequest {
-    fn sign_bytes<B>(&self, chain_id: chain::Id, sign_bytes: &mut B) -> Result<bool, Error>
-    where
-        B: BufMut,
+impl SignVoteRequest {
+    /// Create signable bytes from Vote.
+    pub fn to_signable_bytes<B>(
+        &self,
+        sign_bytes: &mut B,
+    ) -> Result<bool, DomainTypeError>
+        where
+            B: BufMut,
     {
-        let mut svr = self.clone();
-        if let Some(ref mut vo) = svr.vote {
-            vo.signature = Ed25519(Ed25519Signature::new([0; SIGNATURE_LENGTH]));
-        }
-        let vote = svr.vote.unwrap();
-        let cv = CanonicalVote::new(vote, chain_id);
-
-        cv.encode_length_delimited(sign_bytes).unwrap(); // Todo: Handle the single "EncodeError"
-        Ok(true)
+        self.vote.to_signable_bytes(self.chain_id, sign_bytes)
     }
 
-    fn sign_vec(&self, chain_id: chain::Id) -> Result<Vec<u8>, DomainTypeError> {
-        CanonicalVote::new(self.vote.clone().unwrap(), chain_id).encode_length_delimited_vec()
-    }
-
-    fn set_signature(&mut self, sig: Signature) {
-        if let Some(ref mut vt) = self.vote {
-            vt.signature = sig;
-        }
-    }
-
-    fn consensus_state(&self) -> Option<State> {
-        self.vote.clone().map(|ref v| State {
-            height: v.height,
-            round: v.round,
-            step: 6,
-            block_id: v.block_id.clone(),
-        })
+    /// Create signable vector from Vote.
+    pub fn to_signable_vec(&self) -> Result<Vec<u8>, DomainTypeError> {
+        self.vote.to_signable_vec(self.chain_id)
     }
 }
 
@@ -127,7 +104,7 @@ mod tests {
     use crate::block::Round;
     use crate::chain::Id as ChainId;
     use crate::hash::Algorithm;
-    use crate::signature::{SignableMsg, Signature, ED25519_SIGNATURE_SIZE};
+    use crate::signature::{Signature, ED25519_SIGNATURE_SIZE};
     use crate::vote::{CanonicalVote, ValidatorIndex};
     use crate::vote::{SignVoteRequest, Type};
     use crate::Hash;
@@ -169,14 +146,14 @@ mod tests {
         let mut got = vec![];
 
         let request = SignVoteRequest {
-            vote: Some(vote),
+            vote,
             chain_id: ChainId::from_str("test_chain_id").unwrap(),
         };
 
         // Option 1 using bytes:
-        let _have = request.sign_bytes(ChainId::from("test_chain_id"), &mut got);
+        let _have = request.to_signable_bytes(&mut got);
         // Option 2 using Vec<u8>:
-        let got2 = request.sign_vec(ChainId::from("test_chain_id")).unwrap();
+        let got2 = request.to_signable_vec().unwrap();
 
         // the following vector is generated via:
         /*
@@ -323,7 +300,7 @@ mod tests {
         // SignVoteRequest
         {
             let svr = SignVoteRequest {
-                vote: Some(vote),
+                vote,
                 chain_id: ChainId::from_str("test_chain_id").unwrap(),
             };
             let mut got = vec![];
@@ -375,7 +352,7 @@ mod tests {
             signature: Signature::try_from(vec![1; ED25519_SIGNATURE_SIZE]).unwrap(),
         };
         let want = SignVoteRequest {
-            vote: Some(vote),
+            vote,
             chain_id: ChainId::from_str("test_chain_id").unwrap(),
         };
         let got = SignVoteRequest::decode_vec(&encoded).unwrap();
