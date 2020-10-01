@@ -5,7 +5,7 @@ use crate::serializers;
 use crate::{account, block, chain, Hash, Time};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
-use tendermint_proto::types::BlockId;
+use tendermint_proto::types::{BlockId, PartSetHeader};
 use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::DomainType;
 
@@ -82,22 +82,14 @@ impl Header {
         let last_block_id = self.last_block_id.as_ref().map_or_else(
             || BlockId {
                 hash: vec![],
-                part_set_header: None,
+                part_set_header: Some(PartSetHeader {
+                    total: 0,
+                    hash: vec![],
+                }),
             },
             |id| BlockId::try_from(id.clone()).unwrap(),
         );
-        let last_block_id_encoded = encode_to_vec(&last_block_id);
-        // TODO(thane): Fix this encoding workaround.
-        fields_bytes.push(if last_block_id_encoded.is_empty() {
-            // There seems to be an encoding idiosyncrasy with prost such that,
-            // when an empty BlockId is supplied, it encodes it to an empty vector
-            // of bytes. Go's encoding, however, encodes it to the bytes [18, 0].
-            // Technically, we should never get to this branch of the if
-            // statement if last_block_id_encoded was correctly encoded.
-            vec![18, 0]
-        } else {
-            last_block_id_encoded
-        });
+        fields_bytes.push(encode_to_vec(&last_block_id));
         fields_bytes.push(encode_optional(
             &self
                 .last_commit_hash
