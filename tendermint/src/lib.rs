@@ -37,6 +37,7 @@ mod moniker;
 pub mod net;
 pub mod node;
 pub mod private_key;
+pub mod proposal;
 pub mod public_key;
 pub mod serializers;
 pub mod signature;
@@ -57,6 +58,7 @@ pub use crate::{
     hash::Hash,
     moniker::Moniker,
     private_key::PrivateKey,
+    proposal::Proposal,
     public_key::{PublicKey, TendermintKey},
     signature::Signature,
     time::Time,

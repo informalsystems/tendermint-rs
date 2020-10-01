@@ -53,6 +53,10 @@ pub enum Kind {
     #[error("negative round")]
     NegativeRound,
 
+    /// Negative POL round
+    #[error("negative pol round")]
+    NegativePOLRound,
+
     /// Negative validator index in vote
     #[error("negative ValidatorIndex")]
     NegativeValidatorIndex,
@@ -65,9 +69,13 @@ pub enum Kind {
     #[error("no timestamp")]
     NoTimestamp,
 
-    /// Invalid account ID or signature ID length
-    #[error("invalid ID length")]
-    InvalidIDLength,
+    /// Invalid account ID length
+    #[error("invalid account ID length")]
+    InvalidAccountIDLength,
+
+    /// Invalid signature ID length
+    #[error("invalid signature ID length")]
+    InvalidSignatureIDLength,
 
     /// Overflow during conversion
     #[error("Integer overflow")]

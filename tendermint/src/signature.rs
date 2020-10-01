@@ -32,7 +32,7 @@ impl TryFrom<Vec<u8>> for Signature {
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         if value.len() != ED25519_SIGNATURE_SIZE {
-            return Err(Kind::InvalidIDLength.into());
+            return Err(Kind::InvalidSignatureIDLength.into());
         }
         let mut slice: [u8; ED25519_SIGNATURE_SIZE] = [0; ED25519_SIGNATURE_SIZE];
         slice.copy_from_slice(&value[..]);
