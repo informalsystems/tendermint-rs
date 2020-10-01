@@ -13,7 +13,7 @@
         "signed_header": "$ | block_to_signed_header",
         "next_validator_set": "$ | block_next_validators | ids_to_validator_set",
         "trusting_period": "1400000000000",
-        "now": "2020-09-25T08:18:04.996061145Z"
+        "now": "$utc_timestamp"
       }
     },
     {
