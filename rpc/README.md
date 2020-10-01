@@ -45,10 +45,7 @@ https://docs.tendermint.com/master/rpc/
 
 ## Testing
 
-The RPC types themselves require minimal testing, as the compiler asserts their
-validity.
-
-The RPC client is directly tested primarily through the [integration
+The RPC types are directly tested through the [integration
 tests](./tests/integration.rs). These tests use fixtures taken from running
 Tendermint nodes to ensure compatibility without needing access to a running
 node during testing. To run these tests locally:
