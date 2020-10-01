@@ -1,8 +1,8 @@
-use tendermint_proto::DomainType;
-use std::convert::TryFrom;
 use crate::{Error, Kind};
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use serde::de::Error as _;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::convert::TryFrom;
+use tendermint_proto::DomainType;
 
 /// Types of proposals
 #[repr(u8)]
@@ -40,6 +40,7 @@ impl Serialize for Type {
 impl<'de> Deserialize<'de> for Type {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let byte = i32::deserialize(deserializer)?;
-        Type::try_from(byte).map_err(|_| D::Error::custom(format!("invalid proposal type: {}", byte)))
+        Type::try_from(byte)
+            .map_err(|_| D::Error::custom(format!("invalid proposal type: {}", byte)))
     }
 }

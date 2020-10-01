@@ -1,14 +1,14 @@
 use super::Proposal;
+use crate::chain::Id as ChainId;
 use crate::{Error, Kind};
-use tendermint_proto::DomainType;
+use bytes::BufMut;
 use std::convert::TryFrom;
-use tendermint_proto::Error as DomainTypeError;
+use std::str::FromStr;
 use tendermint_proto::privval::RemoteSignerError;
 use tendermint_proto::privval::SignProposalRequest as RawSignProposalRequest;
 use tendermint_proto::privval::SignedProposalResponse as RawSignedProposalResponse;
-use crate::chain::Id as ChainId;
-use std::str::FromStr;
-use bytes::BufMut;
+use tendermint_proto::DomainType;
+use tendermint_proto::Error as DomainTypeError;
 
 /// SignProposalRequest is a request to sign a proposal
 #[derive(Clone, PartialEq, Debug)]
@@ -47,12 +47,9 @@ impl From<SignProposalRequest> for RawSignProposalRequest {
 
 impl SignProposalRequest {
     /// Create signable bytes from Proposal.
-    pub fn to_signable_bytes<B>(
-        &self,
-        sign_bytes: &mut B,
-    ) -> Result<bool, DomainTypeError>
-        where
-            B: BufMut,
+    pub fn to_signable_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, DomainTypeError>
+    where
+        B: BufMut,
     {
         self.proposal.to_signable_bytes(self.chain_id, sign_bytes)
     }

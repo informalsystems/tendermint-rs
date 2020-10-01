@@ -1,13 +1,13 @@
 use crate::chain;
-use crate::{Error, Kind};
 use crate::Vote;
+use crate::{Error, Kind};
+use bytes::BufMut;
 use std::convert::TryFrom;
 use std::str::FromStr;
 use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
 use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
 use tendermint_proto::DomainType;
 use tendermint_proto::Error as DomainTypeError;
-use bytes::BufMut;
 
 /// SignVoteRequest is a request to sign a vote
 #[derive(Clone, PartialEq, Debug)]
@@ -45,12 +45,9 @@ impl From<SignVoteRequest> for RawSignVoteRequest {
 
 impl SignVoteRequest {
     /// Create signable bytes from Vote.
-    pub fn to_signable_bytes<B>(
-        &self,
-        sign_bytes: &mut B,
-    ) -> Result<bool, DomainTypeError>
-        where
-            B: BufMut,
+    pub fn to_signable_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, DomainTypeError>
+    where
+        B: BufMut,
     {
         self.vote.to_signable_bytes(self.chain_id, sign_bytes)
     }
