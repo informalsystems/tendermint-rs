@@ -1,6 +1,12 @@
 # Light Client Verification
 
+## Disclaimer
 
+This specification is not maintained. See
+[tendermint/spec](https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/verification/)
+for the most recent version.
+
+## Abstract
 
 The light client implements a read operation of a
 [header][TMBC-HEADER-link] from the [blockchain][TMBC-SEQ-link], by
