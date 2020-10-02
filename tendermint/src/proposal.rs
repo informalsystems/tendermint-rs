@@ -141,13 +141,16 @@ mod tests {
             round: Round::try_from(23456).unwrap(),
             pol_round: None,
             block_id: Some(BlockId {
-                hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
-                    .unwrap(),
+                hash: Hash::from_hex_upper(
+                    Algorithm::Sha256,
+                    "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFADEADBEEFDEADBEEFBAFBAFBAFBAFBAFA",
+                )
+                .unwrap(),
                 parts: Some(Header {
                     total: 65535,
                     hash: Hash::from_hex_upper(
                         Algorithm::Sha256,
-                        "0022446688AACCEE1133557799BBDDFF",
+                        "0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF",
                     )
                     .unwrap(),
                 }),
@@ -167,45 +170,50 @@ mod tests {
 
         // the following vector is generated via:
         /*
-           import (
-               "fmt"
-               prototypes "github.com/tendermint/tendermint/proto/tendermint/types"
-               "github.com/tendermint/tendermint/types"
-               "strings"
-               "time"
-           )
-           func proposalSerialize() {
-               stamp, _ := time.Parse(time.RFC3339Nano, "2018-02-11T07:09:22.765Z")
-               proposal := &types.Proposal{
-                   Type:     prototypes.SignedMsgType(prototypes.ProposalType),
-                   Height:   12345,
-                   Round:    23456,
-                   POLRound: -1,
-                   BlockID: types.BlockID{
-                       Hash: []byte("DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA"),
-                       PartSetHeader: types.PartSetHeader{
-                           Hash:  []byte("0022446688AACCEE1133557799BBDDFF"),
-                           Total: 65535,
-                       },
-                   },
-                   Timestamp: stamp,
-               }
-               signBytes := types.ProposalSignBytes("test_chain_id",proposal.ToProto())
-               fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v", signBytes), " "), ", "))
-           }
+            import (
+                "encoding/hex"
+                "fmt"
+                prototypes "github.com/tendermint/tendermint/proto/tendermint/types"
+                "github.com/tendermint/tendermint/types"
+                "strings"
+                "time"
+            )
+
+            func proposalSerialize() {
+                stamp, _ := time.Parse(time.RFC3339Nano, "2018-02-11T07:09:22.765Z")
+                block_hash, _ := hex.DecodeString("DEADBEEFDEADBEEFBAFBAFBAFBAFBAFADEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
+                part_hash, _ := hex.DecodeString("0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF")
+                proposal := &types.Proposal{
+                    Type:     prototypes.SignedMsgType(prototypes.ProposalType),
+                    Height:   12345,
+                    Round:    23456,
+                    POLRound: -1,
+                    BlockID: types.BlockID{
+                        Hash: block_hash,
+                        PartSetHeader: types.PartSetHeader{
+                            Hash:  part_hash,
+                            Total: 65535,
+                        },
+                    },
+                    Timestamp: stamp,
+                }
+                signBytes := types.ProposalSignBytes("test_chain_id", proposal.ToProto())
+                fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v", signBytes), " "), ", "))
+            }
         */
 
         let want = vec![
             136, 1, 8, 32, 17, 57, 48, 0, 0, 0, 0, 0, 0, 25, 160, 91, 0, 0, 0, 0, 0, 0, 32, 255,
-            255, 255, 255, 255, 255, 255, 255, 255, 1, 42, 74, 10, 32, 68, 69, 65, 68, 66, 69, 69,
-            70, 68, 69, 65, 68, 66, 69, 69, 70, 66, 65, 70, 66, 65, 70, 66, 65, 70, 66, 65, 70, 66,
-            65, 70, 65, 18, 38, 8, 255, 255, 3, 18, 32, 48, 48, 50, 50, 52, 52, 54, 54, 56, 56, 65,
-            65, 67, 67, 69, 69, 49, 49, 51, 51, 53, 53, 55, 55, 57, 57, 66, 66, 68, 68, 70, 70, 50,
-            12, 8, 162, 216, 255, 211, 5, 16, 192, 242, 227, 236, 2, 58, 13, 116, 101, 115, 116,
-            95, 99, 104, 97, 105, 110, 95, 105, 100,
+            255, 255, 255, 255, 255, 255, 255, 255, 1, 42, 74, 10, 32, 222, 173, 190, 239, 222,
+            173, 190, 239, 186, 251, 175, 186, 251, 175, 186, 250, 222, 173, 190, 239, 222, 173,
+            190, 239, 186, 251, 175, 186, 251, 175, 186, 250, 18, 38, 8, 255, 255, 3, 18, 32, 0,
+            34, 68, 102, 136, 170, 204, 238, 17, 51, 85, 119, 153, 187, 221, 255, 0, 34, 68, 102,
+            136, 170, 204, 238, 17, 51, 85, 119, 153, 187, 221, 255, 50, 12, 8, 162, 216, 255, 211,
+            5, 16, 192, 242, 227, 236, 2, 58, 13, 116, 101, 115, 116, 95, 99, 104, 97, 105, 110,
+            95, 105, 100,
         ];
 
-        assert_eq!(got, want) // Todo: this fails, fix it before merging (want is correct)
+        assert_eq!(got, want)
     }
 
     #[test]
@@ -219,13 +227,16 @@ mod tests {
 
             pol_round: None,
             block_id: Some(BlockId {
-                hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
-                    .unwrap(),
+                hash: Hash::from_hex_upper(
+                    Algorithm::Sha256,
+                    "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFADEADBEEFDEADBEEFBAFBAFBAFBAFBAFA",
+                )
+                .unwrap(),
                 parts: Some(Header {
                     total: 65535,
                     hash: Hash::from_hex_upper(
                         Algorithm::Sha256,
-                        "0022446688AACCEE1133557799BBDDFF",
+                        "0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF",
                     )
                     .unwrap(),
                 }),
@@ -238,16 +249,19 @@ mod tests {
         };
 
         let data = vec![
-            10, 110, 8, 32, 16, 185, 96, 24, 160, 183, 1, 32, 255, 255, 255, 255, 255, 255, 255,
-            255, 255, 1, 42, 74, 10, 32, 68, 69, 65, 68, 66, 69, 69, 70, 68, 69, 65, 68, 66, 69,
-            69, 70, 66, 65, 70, 66, 65, 70, 66, 65, 70, 66, 65, 70, 66, 65, 70, 65, 18, 38, 8, 255,
-            255, 3, 18, 32, 48, 48, 50, 50, 52, 52, 54, 54, 56, 56, 65, 65, 67, 67, 69, 69, 49, 49,
-            51, 51, 53, 53, 55, 55, 57, 57, 66, 66, 68, 68, 70, 70, 50, 12, 8, 162, 216, 255, 211,
-            5, 16, 192, 242, 227, 236, 2, 18, 13, 116, 101, 115, 116, 95, 99, 104, 97, 105, 110,
-            95, 105, 100,
+            10, 176, 1, 8, 32, 16, 185, 96, 24, 160, 183, 1, 32, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 1, 42, 74, 10, 32, 222, 173, 190, 239, 222, 173, 190, 239, 186, 251, 175,
+            186, 251, 175, 186, 250, 222, 173, 190, 239, 222, 173, 190, 239, 186, 251, 175, 186,
+            251, 175, 186, 250, 18, 38, 8, 255, 255, 3, 18, 32, 0, 34, 68, 102, 136, 170, 204, 238,
+            17, 51, 85, 119, 153, 187, 221, 255, 0, 34, 68, 102, 136, 170, 204, 238, 17, 51, 85,
+            119, 153, 187, 221, 255, 50, 12, 8, 162, 216, 255, 211, 5, 16, 192, 242, 227, 236, 2,
+            58, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 13, 116, 101, 115, 116, 95, 99, 104, 97, 105, 110, 95,
+            105, 100,
         ];
 
         let have = SignProposalRequest::decode_vec(&data).unwrap();
-        assert_eq!(have, want); // Todo: this fails, fix before merging. Possibly data is bad.
+        assert_eq!(have, want);
     }
 }
