@@ -302,13 +302,9 @@ mod tests {
     use crate::predicates::{ProdPredicates, VerificationPredicates};
     use crate::tests::default_peer_id;
     use crate::types::LightBlock;
-    // use std::ops::Sub;
-    // use std::time::Duration;
-    // use tendermint::Time;
     use tendermint_testgen::light_block::generate_default_light_block;
     use tendermint_testgen::light_block::LightBlock as TestGenLightBlock;
     use tendermint_testgen::validator::generate_validator_set;
-    // use tendermint_testgen::{Commit, Generator, Header, Validator};
 
     impl From<TestGenLightBlock> for LightBlock {
         fn from(lb: TestGenLightBlock) -> Self {

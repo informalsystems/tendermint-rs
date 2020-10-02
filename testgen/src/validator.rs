@@ -150,7 +150,6 @@ pub fn sort_validators(vals: &[Validator]) -> Vec<Validator> {
         (std::cmp::Reverse(v.voting_power), v.address)
     });
     sorted
-
 }
 
 #[cfg(test)]
