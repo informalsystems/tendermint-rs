@@ -16,9 +16,6 @@ use abscissa_core::Runnable;
 use tendermint::{hash, Hash};
 
 use std::convert::TryInto;
-use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
-use tendermint_light_client::operations::ProdHasher;
-use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
 use tendermint_light_client::builder::LightClientBuilder;
 use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;

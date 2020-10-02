@@ -112,7 +112,7 @@ impl Proposal {
             height: self.height,
             round: self.round,
             step: 3,
-            block_id: self.block_id.clone(),
+            block_id: self.block_id,
         }
     }
 }

@@ -199,7 +199,7 @@ fn non_absent_vote(
             *validator_address,
             *timestamp,
             signature,
-            Some(commit.block_id.clone()),
+            Some(commit.block_id),
         ),
         CommitSig::BlockIDFlagNil {
             validator_address,

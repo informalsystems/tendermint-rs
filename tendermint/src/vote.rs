@@ -155,7 +155,7 @@ impl Vote {
             height: self.height,
             round: self.round,
             step: 6,
-            block_id: self.block_id.clone(),
+            block_id: self.block_id,
         }
     }
 }
