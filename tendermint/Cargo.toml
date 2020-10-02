@@ -57,7 +57,6 @@ tendermint-proto = { path = "../proto" }
 toml = { version = "0.5" }
 zeroize = { version = "1.1", features = ["zeroize_derive"] }
 ripemd160 = { version = "0.9", optional = true }
-base64 = "0.13.0"
 [dev-dependencies]
 tendermint-rpc = { path = "../rpc", features = [ "http-client", "websocket-client" ] }
 tokio = { version = "0.2", features = [ "macros" ] }
