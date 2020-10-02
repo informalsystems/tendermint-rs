@@ -1,5 +1,14 @@
 # Draft of Functions for Fork detection and Proof of Fork Submisstion
 
+
+## Disclaimer
+
+This specification is not maintained. See
+[tendermint/spec](https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/detection/)
+for the most recent version.
+
+## Abstract 
+
 This document collects drafts of function for generating and
 submitting proof of fork in the IBC context
 

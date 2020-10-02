@@ -39,18 +39,18 @@ impl From<Time> for Timestamp {
 }
 
 impl Time {
-    /// Get a `Timestamp` representing the current wall clock time
+    /// Get [`Time`] value representing the current wall clock time
     pub fn now() -> Self {
         Time(Utc::now())
     }
 
-    /// Get the `UNIX_EPOCH` time ("1970-01-01 00:00:00 UTC") as a `Timestamp`
+    /// Get the [`UNIX_EPOCH`] time ("1970-01-01 00:00:00 UTC") as a [`Time`]
     pub fn unix_epoch() -> Self {
         UNIX_EPOCH.into()
     }
 
-    /// Calculate the amount of time which has passed since another `Timestamp`
-    /// as a `std::time::Duration`
+    /// Calculate the amount of time which has passed since another [`Time`]
+    /// as a [`std::time::Duration`]
     pub fn duration_since(&self, other: Time) -> Result<Duration, Error> {
         self.0
             .signed_duration_since(other.0)
@@ -58,7 +58,7 @@ impl Time {
             .map_err(|_| Kind::OutOfRange.into())
     }
 
-    /// Parse a timestamp from an RFC 3339 date
+    /// Parse [`Time`] from an RFC 3339 date
     pub fn parse_from_rfc3339(s: &str) -> Result<Time, Error> {
         Ok(Time(DateTime::parse_from_rfc3339(s)?.with_timezone(&Utc)))
     }
@@ -68,7 +68,7 @@ impl Time {
         self.0.to_rfc3339_opts(SecondsFormat::Nanos, true)
     }
 
-    /// Convert this timestamp to a `SystemTime`
+    /// Convert [`Time`] to [`SystemTime`]
     pub fn to_system_time(&self) -> Result<SystemTime, Error> {
         let duration_since_epoch = self.duration_since(Self::unix_epoch())?;
         Ok(UNIX_EPOCH + duration_since_epoch)
@@ -131,8 +131,8 @@ impl Sub<Duration> for Time {
     }
 }
 
-/// Parse `Timestamp` from a type
+/// Parse [`Time`] from a type
 pub trait ParseTimestamp {
-    /// Parse `Timestamp`, or return an `Error` if parsing failed
+    /// Parse [`Time`], or return an [`Error`] if parsing failed
     fn parse_timestamp(&self) -> Result<Time, Error>;
 }

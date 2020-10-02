@@ -10,7 +10,7 @@
     {
       "name": "utc_timestamp",
       "kind": "COMMAND",
-      "source": "date --utc +%FT%H:%M:%S.%NZ",
+      "source": "date -u +%FT%H:%M:%S.%sZ",
       "stdin": false
     },
     {

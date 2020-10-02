@@ -1,5 +1,14 @@
 # Light Client Specification
 
+## Disclaimer
+
+This specification is not maintained. See
+[tendermint/spec](https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/)
+for the most recent version.
+
+## Abstract
+
+
 This directory contains work-in-progress English and TLA+ specifications for the Light Client
 protocol. Implementations of the light client can be found in
 [Rust](https://github.com/informalsystems/tendermint-rs/tree/master/light-client) and
