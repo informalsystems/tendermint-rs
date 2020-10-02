@@ -2,7 +2,7 @@
 
 use std::slice;
 use {
-    crate::{block::signed_header::SignedHeader, serializers, PublicKey, Vote},
+    crate::{block::signed_header::SignedHeader, serializers, Vote},
     serde::{Deserialize, Serialize},
 };
 
@@ -26,11 +26,7 @@ pub enum Evidence {
 /// Duplicate vote evidence
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct DuplicateVoteEvidence {
-    #[serde(rename = "PubKey")]
-    pub_key: PublicKey,
-    #[serde(rename = "VoteA")]
     vote_a: Vote,
-    #[serde(rename = "VoteB")]
     vote_b: Vote,
 }
 
@@ -53,7 +49,7 @@ impl ConflictingHeadersEvidence {
 /// Evidence data is a wrapper for a list of `Evidence`.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidencedata>
-#[derive(Deserialize, Serialize, Clone, Debug, Default)]
+#[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
 pub struct Data {
     evidence: Option<Vec<Evidence>>,
 }

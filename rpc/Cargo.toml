@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-rpc"
-version    = "0.15.0"
+version    = "0.16.0"
 edition    = "2018"
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
@@ -15,7 +15,7 @@ authors    = [
 ]
 
 description = """
-    tenndermint-rpc contains the core types returned by a Tendermint node's RPC endpoint.
+    tendermint-rpc contains the core types returned by a Tendermint node's RPC endpoint.
     All networking related features are feature guarded to keep the dependencies small in
     cases where only the core types are needed.
     """
@@ -25,8 +25,18 @@ all-features = true
 
 [features]
 default = []
-client = [ "async-tungstenite", "futures", "http", "hyper", "tokio" ]
-secp256k1 = ["tendermint/secp256k1"]
+http-client = [ "async-trait", "futures", "http", "hyper", "tokio/fs", "tokio/macros" ]
+secp256k1 = [ "tendermint/secp256k1" ]
+websocket-client = [
+  "async-trait",
+  "async-tungstenite",
+  "futures",
+  "tokio/fs",
+  "tokio/macros",
+  "tokio/stream",
+  "tokio/sync",
+  "tokio/time"
+]
 
 [dependencies]
 bytes = "0.5"
@@ -34,12 +44,13 @@ getrandom = "0.1"
 serde = { version = "1", features = [ "derive" ] }
 serde_bytes = "0.11"
 serde_json = "1"
-tendermint = { version = "0.15.0", path = "../tendermint" }
+tendermint = { version = "0.16.0", path = "../tendermint" }
 thiserror = "1"
 uuid = { version = "0.8", default-features = false }
 
-async-tungstenite = { version="0.5", features = ["tokio-runtime"], optional = true }
+async-trait = { version = "0.1", optional = true }
+async-tungstenite = { version="0.8", features = ["tokio-runtime"], optional = true }
 futures = { version = "0.3", optional = true }
 http = { version = "0.2", optional = true }
 hyper = { version = "0.13", optional = true }
-tokio = { version = "0.2", features = ["macros"], optional = true }
+tokio = { version = "0.2", optional = true }

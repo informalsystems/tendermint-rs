@@ -1,4 +1,4 @@
-//! JSONRPC request methods
+//! JSON-RPC request methods
 
 use super::Error;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
@@ -7,9 +7,9 @@ use std::{
     str::FromStr,
 };
 
-/// JSONRPC request methods.
+/// JSON-RPC request methods.
 ///
-/// Serialized as the "method" field of JSONRPC/HTTP requests.
+/// Serialized as the "method" field of JSON-RPC/HTTP requests.
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
 pub enum Method {
     /// Get ABCI info
@@ -54,8 +54,11 @@ pub enum Method {
     /// Get validator info for a block
     Validators,
 
-    /// Subscribe to events over the websocket
+    /// Subscribe to events
     Subscribe,
+
+    /// Unsubscribe from events
+    Unsubscribe,
 
     /// Broadcast evidence
     BroadcastEvidence,
@@ -81,6 +84,7 @@ impl Method {
             Method::Validators => "validators",
             Method::Subscribe => "subscribe",
             Method::BroadcastEvidence => "broadcast_evidence",
+            Method::Unsubscribe => "unsubscribe",
         }
     }
 }
@@ -105,6 +109,7 @@ impl FromStr for Method {
             "status" => Method::Status,
             "validators" => Method::Validators,
             "subscribe" => Method::Subscribe,
+            "unsubscribe" => Method::Unsubscribe,
             "broadcast_evidence" => Method::BroadcastEvidence,
             other => return Err(Error::method_not_found(other)),
         })

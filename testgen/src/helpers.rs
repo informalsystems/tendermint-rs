@@ -6,7 +6,7 @@ use std::io::{self, Read};
 use tendermint::{
     amino_types, public_key,
     signature::{Signature, Verifier},
-    vote,
+    vote, Time,
 };
 
 /// A macro that generates a complete setter method from a one-liner with necessary information
@@ -57,4 +57,8 @@ pub fn verify_signature(verifier: &public_key::Ed25519, msg: &[u8], signature: &
         tendermint::signature::Signature::Ed25519(sig) => verifier.verify(msg, sig).is_ok(),
         _ => false,
     }
+}
+
+pub fn get_time(abs: u64) -> Time {
+    (std::time::UNIX_EPOCH + std::time::Duration::from_secs(abs)).into()
 }

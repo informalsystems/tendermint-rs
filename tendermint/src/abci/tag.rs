@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
 /// Tags
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Tag {
     /// Key
     pub key: Key,

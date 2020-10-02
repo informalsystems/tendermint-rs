@@ -6,6 +6,8 @@ pub use self::power::Power;
 use crate::amino_types::message::AminoMessage;
 use crate::{account, block, Signature, Time};
 use crate::{amino_types, hash};
+use std::convert::TryFrom;
+use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
 use {
     crate::serializers,
     serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
@@ -26,7 +28,7 @@ pub struct Vote {
 
     /// Round
     #[serde(with = "serializers::from_str")]
-    pub round: u64,
+    pub round: u32,
 
     /// Block ID
     #[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
@@ -40,7 +42,7 @@ pub struct Vote {
 
     /// Validator index
     #[serde(with = "serializers::from_str")]
-    pub validator_index: u64,
+    pub validator_index: u16,
 
     /// Signature
     pub signature: Signature,
@@ -104,7 +106,9 @@ impl SignedVote {
 
     /// Return the bytes (of the canonicalized vote) that were signed.
     pub fn sign_bytes(&self) -> Vec<u8> {
-        self.vote.bytes_vec_length_delimited()
+        let raw_canonical_vote: RawCanonicalVote =
+            RawCanonicalVote::try_from(self.vote.clone()).unwrap();
+        AminoMessage::bytes_vec_length_delimited(&raw_canonical_vote)
     }
 
     /// Return the actual signature on the canonicalized vote.
@@ -137,11 +141,6 @@ impl Type {
     /// Serialize this type as a byte
     pub fn to_u8(self) -> u8 {
         self as u8
-    }
-
-    /// Serialize this type as a 32-bit unsigned integer
-    pub fn to_u32(self) -> u32 {
-        self as u32
     }
 }
 

@@ -1,4 +1,8 @@
+## Disclaimer
 
+This document is not maintained. See
+[tendermint/spec](https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/detection/)
+for the most recent version.
 
 
 ## Results of Discussions and Decisions 
