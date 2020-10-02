@@ -144,7 +144,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
 
             let signed_vote = SignedVote::new(
                 vote.clone(),
-                signed_header.header.chain_id,
+                signed_header.header.chain_id.clone(),
                 vote.validator_address,
                 vote.signature,
             );

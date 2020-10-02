@@ -2,12 +2,14 @@
 
 use crate::error::{Error, Kind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use std::convert::TryFrom;
 use std::{
     cmp::Ordering,
     fmt::{self, Debug, Display},
     hash::{Hash, Hasher},
     str::{self, FromStr},
 };
+use tendermint_proto::DomainType;
 
 /// Maximum length of a `chain::Id` name. Matches `MaxChainIDLen` from:
 /// <https://github.com/tendermint/tendermint/blob/develop/types/genesis.go>
@@ -15,49 +17,71 @@ use std::{
 pub const MAX_LENGTH: usize = 50;
 
 /// Chain identifier (e.g. 'gaia-9000')
-#[derive(Copy, Clone)]
-pub struct Id([u8; MAX_LENGTH]);
+#[derive(Clone)]
+pub struct Id(String);
+
+impl DomainType<String> for Id {}
+
+impl TryFrom<String> for Id {
+    type Error = Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.is_empty() || value.len() > MAX_LENGTH {
+            return Err(Kind::Length.into());
+        }
+
+        for byte in value.as_bytes() {
+            match byte {
+                b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' => (),
+                _ => return Err(Kind::Parse.into()),
+            }
+        }
+
+        Ok(Id(value))
+    }
+}
+
+impl From<Id> for String {
+    fn from(value: Id) -> Self {
+        value.0
+    }
+}
 
 impl Id {
     /// Get the chain ID as a `str`
     pub fn as_str(&self) -> &str {
-        let byte_slice = match self.0.as_ref().iter().position(|b| *b == b'\0') {
-            Some(pos) => &self.0[..pos],
-            None => self.0.as_ref(),
-        };
-
-        // We assert above the ID only has characters in the valid UTF-8 range,
-        // so in theory this should never panic
-        str::from_utf8(byte_slice).unwrap()
+        self.0.as_str()
     }
 
     /// Get the chain ID as a raw bytes.
     pub fn as_bytes(&self) -> &[u8] {
-        &self.as_str().as_bytes()
+        &self.0.as_str().as_bytes()
     }
 }
 
 impl AsRef<str> for Id {
     fn as_ref(&self) -> &str {
-        self.as_str()
+        self.0.as_str()
     }
 }
 
 impl Debug for Id {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "chain::Id({})", self.as_str())
+        write!(f, "chain::Id({})", self.0.as_str())
     }
 }
 
 impl Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.as_str())
+        write!(f, "{}", self.0)
     }
 }
 
-impl<'a> From<&'a str> for Id {
-    fn from(s: &str) -> Id {
-        Self::from_str(s).unwrap()
+impl<'a> TryFrom<&'a str> for Id {
+    type Error = Error;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        Self::try_from(s.to_string())
     }
 }
 
@@ -65,26 +89,13 @@ impl FromStr for Id {
     type Err = Error;
     /// Parses string to create a new chain ID
     fn from_str(name: &str) -> Result<Self, Error> {
-        if name.is_empty() || name.len() > MAX_LENGTH {
-            return Err(Kind::Length.into());
-        }
-
-        for byte in name.as_bytes() {
-            match byte {
-                b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' => (),
-                _ => return Err(Kind::Parse.into()),
-            }
-        }
-
-        let mut bytes = [0u8; MAX_LENGTH];
-        bytes[..name.as_bytes().len()].copy_from_slice(name.as_bytes());
-        Ok(Id(bytes))
+        Self::try_from(name.to_string())
     }
 }
 
 impl Hash for Id {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.as_str().hash(state)
+        self.0.as_str().hash(state)
     }
 }
 
@@ -96,13 +107,13 @@ impl PartialOrd for Id {
 
 impl Ord for Id {
     fn cmp(&self, other: &Id) -> Ordering {
-        self.as_str().cmp(other.as_str())
+        self.0.as_str().cmp(other.as_str())
     }
 }
 
 impl PartialEq for Id {
     fn eq(&self, other: &Id) -> bool {
-        self.as_str() == other.as_str()
+        self.0.as_str() == other.as_str()
     }
 }
 
@@ -110,7 +121,7 @@ impl Eq for Id {}
 
 impl Serialize for Id {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.as_str().serialize(serializer)
+        self.0.as_str().serialize(serializer)
     }
 }
 
@@ -119,12 +130,6 @@ impl<'de> Deserialize<'de> for Id {
         Self::from_str(&String::deserialize(deserializer)?)
             .map_err(|e| D::Error::custom(format!("{}", e)))
     }
-}
-
-/// Parse `chain::Id` from a type
-pub trait ParseId {
-    /// Parse `chain::Id`, or return an `Error` if parsing failed
-    fn parse_chain_id(&self) -> Result<Id, Error>;
 }
 
 #[cfg(test)]

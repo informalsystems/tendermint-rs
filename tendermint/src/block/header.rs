@@ -2,10 +2,9 @@
 
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::serializers;
-use crate::{account, block, chain, Hash, Time};
+use crate::{account, block, chain, AppHash, Hash, Time};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
-use tendermint_proto::types::{BlockId, PartSetHeader};
 use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::DomainType;
 
@@ -50,8 +49,7 @@ pub struct Header {
     pub consensus_hash: Hash,
 
     /// State after txs from the previous block
-    #[serde(with = "serializers::bytes::hexstring")]
-    pub app_hash: Vec<u8>,
+    pub app_hash: AppHash,
 
     /// Root hash of all results from the txs from the previous block
     #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
@@ -75,63 +73,31 @@ impl Header {
 
         let mut fields_bytes: Vec<Vec<u8>> = Vec::with_capacity(14);
         fields_bytes.push(self.version.encode_vec().unwrap());
-        fields_bytes.push(encode_to_vec(&self.chain_id.to_string()));
-        fields_bytes.push(encode_to_vec(&self.height.value()));
+        fields_bytes.push(self.chain_id.encode_vec().unwrap());
+        fields_bytes.push(self.height.encode_vec().unwrap());
         fields_bytes.push(self.time.encode_vec().unwrap());
-        // https://github.com/tendermint/tendermint/blob/1635d1339c73ae6a82e062cd2dc7191b029efa14/types/block.go#L1204
-        let last_block_id = self.last_block_id.as_ref().map_or_else(
-            || BlockId {
-                hash: vec![],
-                part_set_header: Some(PartSetHeader {
-                    total: 0,
-                    hash: vec![],
-                }),
-            },
-            |id| BlockId::try_from(id.clone()).unwrap(),
+        fields_bytes.push(self.last_block_id.unwrap_or_default().encode_vec().unwrap());
+        fields_bytes.push(
+            self.last_commit_hash
+                .unwrap_or_default()
+                .encode_vec()
+                .unwrap(),
         );
-        fields_bytes.push(encode_to_vec(&last_block_id));
-        fields_bytes.push(encode_optional(
-            &self
-                .last_commit_hash
-                .as_ref()
-                .map(|hash| hash.as_bytes().to_vec()),
-        ));
-        fields_bytes.push(encode_optional(
-            &self.data_hash.as_ref().map(|hash| hash.as_bytes().to_vec()),
-        ));
-        fields_bytes.push(encode_to_vec(&self.validators_hash.as_bytes().to_vec()));
-        fields_bytes.push(encode_to_vec(
-            &self.next_validators_hash.as_bytes().to_vec(),
-        ));
-        fields_bytes.push(encode_to_vec(&self.consensus_hash.as_bytes().to_vec()));
-        fields_bytes.push(encode_to_vec(&self.app_hash));
-        fields_bytes.push(encode_optional(
-            &self
-                .last_results_hash
-                .as_ref()
-                .map(|hash| hash.as_bytes().to_vec()),
-        ));
-        fields_bytes.push(encode_optional(
-            &self
-                .evidence_hash
-                .as_ref()
-                .map(|hash| hash.as_bytes().to_vec()),
-        ));
-        fields_bytes.push(encode_to_vec(&self.proposer_address.as_bytes().to_vec()));
+        fields_bytes.push(self.data_hash.unwrap_or_default().encode_vec().unwrap());
+        fields_bytes.push(self.validators_hash.encode_vec().unwrap());
+        fields_bytes.push(self.next_validators_hash.encode_vec().unwrap());
+        fields_bytes.push(self.consensus_hash.encode_vec().unwrap());
+        fields_bytes.push(self.app_hash.encode_vec().unwrap());
+        fields_bytes.push(
+            self.last_results_hash
+                .unwrap_or_default()
+                .encode_vec()
+                .unwrap(),
+        );
+        fields_bytes.push(self.evidence_hash.unwrap_or_default().encode_vec().unwrap());
+        fields_bytes.push(self.proposer_address.encode_vec().unwrap());
 
         Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
-    }
-}
-
-fn encode_to_vec<T: prost::Message>(val: &T) -> Vec<u8> {
-    let mut buf: Vec<u8> = Vec::new();
-    val.encode(&mut buf).map(|_| buf).unwrap()
-}
-
-fn encode_optional<T: prost::Message>(val: &Option<T>) -> Vec<u8> {
-    match val {
-        Some(inner) => encode_to_vec(inner),
-        None => vec![],
     }
 }
 

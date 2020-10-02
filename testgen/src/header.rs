@@ -4,7 +4,7 @@ use serde::Deserialize;
 use simple_error::*;
 use std::convert::TryFrom;
 use std::str::FromStr;
-use tendermint::{block, chain, validator};
+use tendermint::{block, chain, validator, AppHash};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Header {
@@ -117,7 +117,7 @@ impl Generator<block::Header> for Header {
             validators_hash: valset.hash(),
             next_validators_hash: next_valset.hash(),
             consensus_hash: valset.hash(), // TODO: currently not clear how to produce a valid hash
-            app_hash: vec![],
+            app_hash: AppHash::from_hex_upper("").unwrap(),
             last_results_hash: None,
             evidence_hash: None,
             proposer_address,

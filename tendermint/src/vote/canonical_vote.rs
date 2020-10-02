@@ -3,7 +3,6 @@ use crate::chain::Id as ChainId;
 use crate::{block, Time};
 use crate::{Error, Kind::*};
 use std::convert::{TryFrom, TryInto};
-use std::str::FromStr;
 use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
 use tendermint_proto::DomainType;
 use {
@@ -61,7 +60,7 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
                 None => None,
                 Some(t) => Some(t.try_into()?),
             },
-            chain_id: chain::Id::from_str(value.chain_id.as_str())?,
+            chain_id: chain::Id::try_from(value.chain_id)?,
         })
     }
 }

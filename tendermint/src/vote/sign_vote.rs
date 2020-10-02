@@ -3,7 +3,6 @@ use crate::Vote;
 use crate::{Error, Kind};
 use bytes::BufMut;
 use std::convert::TryFrom;
-use std::str::FromStr;
 use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
 use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
 use tendermint_proto::DomainType;
@@ -29,7 +28,7 @@ impl TryFrom<RawSignVoteRequest> for SignVoteRequest {
         }
         Ok(SignVoteRequest {
             vote: Vote::try_from(value.vote.unwrap())?,
-            chain_id: chain::Id::from_str(value.chain_id.as_str())?,
+            chain_id: chain::Id::try_from(value.chain_id)?,
         })
     }
 }
@@ -49,12 +48,13 @@ impl SignVoteRequest {
     where
         B: BufMut,
     {
-        self.vote.to_signable_bytes(self.chain_id, sign_bytes)
+        self.vote
+            .to_signable_bytes(self.chain_id.clone(), sign_bytes)
     }
 
     /// Create signable vector from Vote.
     pub fn to_signable_vec(&self) -> Result<Vec<u8>, DomainTypeError> {
-        self.vote.to_signable_vec(self.chain_id)
+        self.vote.to_signable_vec(self.chain_id.clone())
     }
 }
 
@@ -196,7 +196,7 @@ mod tests {
 
     #[test]
     fn test_sign_bytes_compatibility() {
-        let cv = CanonicalVote::new(Vote::default(), ChainId::from("A"));
+        let cv = CanonicalVote::new(Vote::default(), ChainId::try_from("A").unwrap());
         let mut got = vec![];
         // SignBytes are encoded using MarshalBinary and not MarshalBinaryBare
         cv.encode_length_delimited(&mut got).unwrap();
@@ -212,7 +212,7 @@ mod tests {
             vt_precommit.round = Round::try_from(1).unwrap();
             vt_precommit.vote_type = Type::Precommit; // precommit
             println!("{:?}", vt_precommit);
-            let cv_precommit = CanonicalVote::new(vt_precommit, ChainId::from("A"));
+            let cv_precommit = CanonicalVote::new(vt_precommit, ChainId::try_from("A").unwrap());
             let got = cv_precommit.encode_vec().unwrap();
             let want = vec![
                 0x8,  // (field_number << 3) | wire_type
@@ -234,7 +234,7 @@ mod tests {
             vt_prevote.round = Round::try_from(1).unwrap();
             vt_prevote.vote_type = Type::Prevote;
 
-            let cv_prevote = CanonicalVote::new(vt_prevote, ChainId::from("A"));
+            let cv_prevote = CanonicalVote::new(vt_prevote, ChainId::try_from("A").unwrap());
 
             let got = cv_prevote.encode_vec().unwrap();
 

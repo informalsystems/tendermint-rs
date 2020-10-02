@@ -196,7 +196,8 @@ mod tests {
                     signature,
                 } => {
                     let block_vote = votes[i].generate().unwrap();
-                    let sign_bytes = get_vote_sign_bytes(block_header.chain_id, &block_vote);
+                    let sign_bytes =
+                        get_vote_sign_bytes(block_header.chain_id.clone(), &block_vote);
                     assert!(!verify_signature(
                         &valset2[i].get_public_key().unwrap(),
                         &sign_bytes,

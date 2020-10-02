@@ -88,6 +88,10 @@ pub enum Kind {
     /// No Proposal found during conversion
     #[error("No proposal found")]
     NoProposalFound,
+
+    /// Invalid AppHash length found during conversion
+    #[error("Invalid AppHash Length")]
+    InvalidAppHashLength,
 }
 
 impl Kind {

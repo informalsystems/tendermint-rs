@@ -12,7 +12,7 @@ use tendermint_proto::types::{
 use tendermint_proto::DomainType;
 
 /// Block parts header
-#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Header {
     /// Number of parts in this block
     pub total: u32,

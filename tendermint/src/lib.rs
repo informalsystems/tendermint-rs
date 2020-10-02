@@ -55,6 +55,7 @@ pub use crate::{
     block::Block,
     error::{Error, Kind},
     genesis::Genesis,
+    hash::AppHash,
     hash::Hash,
     moniker::Moniker,
     private_key::PrivateKey,

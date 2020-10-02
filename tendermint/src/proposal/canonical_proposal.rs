@@ -6,7 +6,6 @@ use crate::chain::Id as ChainId;
 use crate::Time;
 use crate::{Error, Kind};
 use std::convert::{TryFrom, TryInto};
-use std::str::FromStr;
 use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
 use tendermint_proto::DomainType;
 
@@ -60,7 +59,7 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
                 None => None,
                 Some(t) => Some(t.try_into()?),
             },
-            chain_id: ChainId::from_str(value.chain_id.as_str()).unwrap(),
+            chain_id: ChainId::try_from(value.chain_id).unwrap(),
         })
     }
 }

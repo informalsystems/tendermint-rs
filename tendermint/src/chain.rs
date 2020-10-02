@@ -3,7 +3,4 @@
 pub mod id;
 mod info;
 
-pub use self::{
-    id::{Id, ParseId},
-    info::*,
-};
+pub use self::{id::Id, info::Info};

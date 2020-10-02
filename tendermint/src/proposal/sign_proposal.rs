@@ -3,7 +3,6 @@ use crate::chain::Id as ChainId;
 use crate::{Error, Kind};
 use bytes::BufMut;
 use std::convert::TryFrom;
-use std::str::FromStr;
 use tendermint_proto::privval::RemoteSignerError;
 use tendermint_proto::privval::SignProposalRequest as RawSignProposalRequest;
 use tendermint_proto::privval::SignedProposalResponse as RawSignedProposalResponse;
@@ -31,7 +30,7 @@ impl TryFrom<RawSignProposalRequest> for SignProposalRequest {
         }
         Ok(SignProposalRequest {
             proposal: Proposal::try_from(value.proposal.unwrap())?,
-            chain_id: ChainId::from_str(value.chain_id.as_str()).unwrap(),
+            chain_id: ChainId::try_from(value.chain_id).unwrap(),
         })
     }
 }
@@ -40,7 +39,7 @@ impl From<SignProposalRequest> for RawSignProposalRequest {
     fn from(value: SignProposalRequest) -> Self {
         RawSignProposalRequest {
             proposal: Some(value.proposal.into()),
-            chain_id: value.chain_id.as_str().to_string(),
+            chain_id: value.chain_id.to_string(),
         }
     }
 }
@@ -51,12 +50,13 @@ impl SignProposalRequest {
     where
         B: BufMut,
     {
-        self.proposal.to_signable_bytes(self.chain_id, sign_bytes)
+        self.proposal
+            .to_signable_bytes(self.chain_id.clone(), sign_bytes)
     }
 
     /// Create signable vector from Proposal.
     pub fn to_signable_vec(&self) -> Result<Vec<u8>, DomainTypeError> {
-        self.proposal.to_signable_vec(self.chain_id)
+        self.proposal.to_signable_vec(self.chain_id.clone())
     }
 }
 

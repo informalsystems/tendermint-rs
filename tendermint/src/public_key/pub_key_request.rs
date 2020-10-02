@@ -1,7 +1,6 @@
 use crate::chain::Id as ChainId;
 use crate::Error;
 use std::convert::TryFrom;
-use std::str::FromStr;
 use tendermint_proto::privval::PubKeyRequest as RawPubKeyRequest;
 use tendermint_proto::DomainType;
 
@@ -19,7 +18,7 @@ impl TryFrom<RawPubKeyRequest> for PubKeyRequest {
 
     fn try_from(value: RawPubKeyRequest) -> Result<Self, Self::Error> {
         Ok(PubKeyRequest {
-            chain_id: ChainId::from_str(value.chain_id.as_str())?,
+            chain_id: ChainId::try_from(value.chain_id)?,
         })
     }
 }

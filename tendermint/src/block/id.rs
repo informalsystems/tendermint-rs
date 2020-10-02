@@ -1,7 +1,7 @@
-use super::parts;
 use crate::{
+    block::parts::Header as PartSetHeader,
     error::Error,
-    hash::{Algorithm, Hash},
+    hash::{Algorithm, Hash, SHA256_HASH_SIZE},
 };
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
@@ -9,7 +9,10 @@ use std::{
     fmt::{self, Display},
     str::{self, FromStr},
 };
-use tendermint_proto::types::{BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId};
+use tendermint_proto::types::{
+    BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId,
+    PartSetHeader as RawPartSetHeader,
+};
 use tendermint_proto::DomainType;
 
 /// Length of a block ID prefix displayed for debugging purposes
@@ -19,7 +22,7 @@ pub const PREFIX_LENGTH: usize = 10;
 /// as well as the number of parts in the block.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#blockid>
-#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Id {
     /// The block's main hash is the Merkle root of all the fields in the
     /// block header.
@@ -37,11 +40,10 @@ pub struct Id {
     /// way to propagate a large file over a gossip network.
     ///
     /// <https://github.com/tendermint/tendermint/wiki/Block-Structure#partset>
-    pub parts: Option<parts::Header>,
+    pub parts: Option<PartSetHeader>,
 }
 
 impl DomainType<RawBlockId> for Id {}
-impl DomainType<RawCanonicalBlockId> for Id {}
 
 impl TryFrom<RawBlockId> for Id {
     type Error = Error;
@@ -59,12 +61,23 @@ impl TryFrom<RawBlockId> for Id {
 
 impl From<Id> for RawBlockId {
     fn from(value: Id) -> Self {
-        RawBlockId {
-            hash: value.hash.into(),
-            part_set_header: match value.parts {
-                None => None,
-                Some(h) => Some(h.into()),
-            },
+        // https://github.com/tendermint/tendermint/blob/1635d1339c73ae6a82e062cd2dc7191b029efa14/types/block.go#L1204
+        // The Go implementation encodes a nil value into an empty struct. We try our best to
+        // anticipate an empty struct by using the default implementation which would otherwise be
+        // invalid.
+        if value == Id::default() {
+            RawBlockId {
+                hash: vec![],
+                part_set_header: Some(RawPartSetHeader {
+                    total: 0,
+                    hash: vec![],
+                }),
+            }
+        } else {
+            RawBlockId {
+                hash: value.hash.into(),
+                part_set_header: value.parts.map(|p| p.into()),
+            }
         }
     }
 }
@@ -84,6 +97,7 @@ impl TryFrom<RawCanonicalBlockId> for Id {
 }
 
 impl From<Id> for RawCanonicalBlockId {
+    // Todo: it's possible that an empty CanonicalBlockId is encoded differently. Test this.
     fn from(value: Id) -> Self {
         RawCanonicalBlockId {
             hash: value.hash.as_bytes().to_vec(),
@@ -95,9 +109,23 @@ impl From<Id> for RawCanonicalBlockId {
     }
 }
 
+/// Default implementation is an empty Id as defined by the Go implementation in
+/// https://github.com/tendermint/tendermint/blob/1635d1339c73ae6a82e062cd2dc7191b029efa14/types/block.go#L1204 .
+impl Default for Id {
+    fn default() -> Self {
+        Id {
+            hash: Hash::new(Algorithm::Sha256, &[0; SHA256_HASH_SIZE]).unwrap(),
+            parts: Some(PartSetHeader {
+                total: 0,
+                hash: Hash::new(Algorithm::Sha256, &[0; SHA256_HASH_SIZE]).unwrap(),
+            }),
+        }
+    }
+}
+
 impl Id {
     /// Create a new `Id` from a hash byte slice
-    pub fn new(hash: Hash, parts: Option<parts::Header>) -> Self {
+    pub fn new(hash: Hash, parts: Option<PartSetHeader>) -> Self {
         Self { hash, parts }
     }
 
