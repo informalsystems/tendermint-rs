@@ -46,7 +46,6 @@
 [#463]: https://github.com/informalsystems/tendermint-rs/issues/463
 [#504]: https://github.com/informalsystems/tendermint-rs/issues/504
 [#535]: https://github.com/informalsystems/tendermint-rs/issues/535
-[#504]: https://github.com/informalsystems/tendermint-rs/issues/504
 [#506]: https://github.com/informalsystems/tendermint-rs/issues/506
 [#516]: https://github.com/informalsystems/tendermint-rs/pull/516
 [#535]: https://github.com/informalsystems/tendermint-rs/issues/535
