@@ -125,23 +125,6 @@ pub fn generate_validators(vals: &[Validator]) -> Result<Vec<validator::Info>, S
         .collect::<Result<Vec<validator::Info>, SimpleError>>()?)
 }
 
-/// A helper function to generate validator set from a list of validator ids.
-pub fn generate_validator_set(
-    val_ids: Vec<&str>,
-) -> Result<(validator::Set, Vec<Validator>), SimpleError> {
-    let mut vals: Vec<Validator> = Vec::new();
-
-    for id in val_ids {
-        vals.push(Validator::new(id))
-    }
-
-    let validators = match generate_validators(&vals) {
-        Err(e) => bail!("Failed to generate validators with error: {}", e),
-        Ok(v) => v,
-    };
-    Ok((validator::Set::new(validators), vals))
-}
-
 /// A helper function to sort validators according to the Tendermint specs.
 pub fn sort_validators(vals: &[Validator]) -> Vec<Validator> {
     let mut sorted = vals.to_owned();
