@@ -88,11 +88,30 @@ impl LightClient {
         }
     }
 
+    /// Constructs a new light client from boxed components
+    pub fn from_boxed(
+        peer: PeerId,
+        options: Options,
+        clock: Box<dyn Clock>,
+        scheduler: Box<dyn Scheduler>,
+        verifier: Box<dyn Verifier>,
+        io: Box<dyn Io>,
+    ) -> Self {
+        Self {
+            peer,
+            options,
+            clock,
+            scheduler,
+            verifier,
+            io,
+        }
+    }
+
     /// Attempt to update the light client to the highest block of the primary node.
     ///
     /// Note: This function delegates the actual work to `verify_to_target`.
     pub fn verify_to_highest(&mut self, state: &mut State) -> Result<LightBlock, Error> {
-        let target_block = match self.io.fetch_light_block(self.peer, AtHeight::Highest) {
+        let target_block = match self.io.fetch_light_block(AtHeight::Highest) {
             Ok(last_block) => last_block,
             Err(io_error) => bail!(ErrorKind::Io(io_error)),
         };
@@ -118,25 +137,16 @@ impl LightClient {
     /// - [LCV-POST-LS.1]
     /// - [LCV-INV-TP.1]
     ///
-    /// ## Precondition
-    /// - The light store contains a light block within the trusting period [LCV-PRE-TP.1]
-    ///
     /// ## Postcondition
     /// - The light store contains a light block that corresponds to a block of the blockchain of
     ///   height `target_height` [LCV-POST-LS.1]
     ///
     /// ## Error conditions
-    /// - If the precondition is violated [LVC-PRE-TP.1]
+    /// - The light store does not contains a trusted light block within the trusting period
+    ///   [LCV-PRE-TP.1]
     /// - If the core verification loop invariant is violated [LCV-INV-TP.1]
     /// - If verification of a light block fails
-    /// - If it cannot fetch a block from the blockchain
-    // #[pre(
-    //     light_store_contains_block_within_trusting_period(
-    //         state.light_store.as_ref(),
-    //         self.options.trusting_period,
-    //         self.clock.now(),
-    //     )
-    // )]
+    /// - If the fetching a light block from the primary node fails
     #[post(
         ret.is_ok() ==> trusted_store_contains_block_at_target_height(
             state.light_store.as_ref(),
@@ -251,7 +261,7 @@ impl LightClient {
 
         let block = self
             .io
-            .fetch_light_block(self.peer, AtHeight::At(height))
+            .fetch_light_block(AtHeight::At(height))
             .map_err(ErrorKind::Io)?;
 
         state.light_store.insert(block.clone(), Status::Unverified);

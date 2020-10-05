@@ -1,4 +1,4 @@
-//! `/genesis` endpoint JSONRPC wrapper
+//! `/genesis` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
 

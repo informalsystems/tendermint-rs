@@ -1,4 +1,4 @@
-//! `/block` endpoint JSONRPC wrapper
+//! `/block` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
 use std::ops::Range;

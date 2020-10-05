@@ -9,6 +9,10 @@ use tendermint::validator::Set as ValidatorSet;
 
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
+/// NOTE: This struct & associated `impl` below are a copy of light-client's `types.rs`.
+/// The copy is necessary here to avoid a circular dependency.
+/// Cf. https://github.com/informalsystems/tendermint-rs/issues/605
+/// TODO: fix redundant code without introducing cyclic dependency.
 #[derive(Clone, Debug, PartialEq)]
 pub struct LightBlock {
     /// Header and commit of this block

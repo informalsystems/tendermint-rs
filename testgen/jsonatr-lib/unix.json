@@ -1,0 +1,29 @@
+{
+  "description": "Useful external commands",
+  "input": [
+    {
+      "name": "date",
+      "kind": "COMMAND",
+      "source": "date -I",
+      "stdin": false
+    },
+    {
+      "name": "utc_timestamp",
+      "kind": "COMMAND",
+      "source": "date -u +%FT%H:%M:%S.%sZ",
+      "stdin": false
+    },
+    {
+      "name": "utc_timestamp_hour_ago",
+      "kind": "COMMAND",
+      "source": "date --utc +%FT%H:%M:%S.%NZ --date '-1 hour'",
+      "stdin": false
+    },
+    {
+      "name": "utc_timestamp_2hours_ago",
+      "kind": "COMMAND",
+      "source": "date --utc +%FT%H:%M:%S.%NZ --date '-2 hour'",
+      "stdin": false
+    }
+  ]
+}

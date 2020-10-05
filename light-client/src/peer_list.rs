@@ -14,7 +14,7 @@ use std::collections::{BTreeSet, HashMap};
 /// and faulty nodes. Provides lifecycle methods to swap the primary,
 /// mark witnesses as faulty, and maintains an `invariant` for
 /// correctness.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct PeerList<T> {
     values: HashMap<PeerId, T>,
     primary: PeerId,
@@ -56,7 +56,7 @@ impl<T> PeerList<T> {
     /// - [LCD-INV-NODES]
     pub fn transition_invariant(_prev: &PeerList<T>, _next: &PeerList<T>) -> bool {
         true
-        // TODO
+        // TODO: Implement transition invariant
         // &next.full_nodes | &next.witnesses | &next.faulty_nodes
         //     == &prev.full_nodes | &prev.witnesses | &prev.faulty_nodes
     }
@@ -147,18 +147,26 @@ impl<T> PeerList<T> {
         if let Some(new_primary) = self.witnesses.iter().next().copied() {
             self.primary = new_primary;
             self.witnesses.remove(&new_primary);
-            return Ok(new_primary);
-        }
-
-        if let Some(err) = primary_error {
+            Ok(new_primary)
+        } else if let Some(err) = primary_error {
             bail!(ErrorKind::NoWitnessLeft.context(err))
         } else {
             bail!(ErrorKind::NoWitnessLeft)
         }
     }
+
+    /// Get a reference to the underlying `HashMap`
+    pub fn values(&self) -> &HashMap<PeerId, T> {
+        &self.values
+    }
+    /// Consume into the underlying `HashMap`
+    pub fn into_values(self) -> HashMap<PeerId, T> {
+        self.values
+    }
 }
 
 /// A builder of `PeerList` with a fluent API.
+#[must_use]
 pub struct PeerListBuilder<T> {
     values: HashMap<PeerId, T>,
     primary: Option<PeerId>,
@@ -185,33 +193,30 @@ impl<T> Default for PeerListBuilder<T> {
 impl<T> PeerListBuilder<T> {
     /// Register the given peer id and instance as the primary.
     /// Overrides the previous primary if it was already set.
-    pub fn primary(mut self, peer_id: PeerId, value: T) -> Self {
+    pub fn primary(&mut self, peer_id: PeerId, value: T) {
         self.primary = Some(peer_id);
         self.values.insert(peer_id, value);
-        self
     }
 
     /// Register the given peer id and value as a witness.
     #[pre(self.primary != Some(peer_id))]
-    pub fn witness(mut self, peer_id: PeerId, value: T) -> Self {
+    pub fn witness(&mut self, peer_id: PeerId, value: T) {
         self.values.insert(peer_id, value);
         self.witnesses.insert(peer_id);
-        self
     }
 
     /// Register the given peer id and value as a full node.
     #[pre(self.primary != Some(peer_id))]
-    pub fn full_node(mut self, peer_id: PeerId, value: T) -> Self {
+    pub fn full_node(&mut self, peer_id: PeerId, value: T) {
         self.values.insert(peer_id, value);
         self.full_nodes.insert(peer_id);
-        self
     }
+
     /// Register the given peer id and value as a faulty node.
     #[pre(self.primary != Some(peer_id))]
-    pub fn faulty_node(mut self, peer_id: PeerId, value: T) -> Self {
+    pub fn faulty_node(&mut self, peer_id: PeerId, value: T) {
         self.values.insert(peer_id, value);
         self.faulty_nodes.insert(peer_id);
-        self
     }
 
     /// Builds the `PeerList`.
@@ -258,12 +263,11 @@ mod tests {
         "da918eef62d986812b4e6271de78db4ec52594eb".parse().unwrap()
     }
     fn dummy_peer_list() -> PeerList<u32> {
-        let builder = PeerList::builder();
-        builder
-            .primary(a(), 1_u32)
-            .witness(b(), 2_u32)
-            .full_node(c(), 3_u32)
-            .build()
+        let mut builder = PeerList::builder();
+        builder.primary(a(), 1_u32);
+        builder.witness(b(), 2_u32);
+        builder.full_node(c(), 3_u32);
+        builder.build()
     }
 
     #[test]
@@ -281,8 +285,10 @@ mod tests {
     #[test]
     #[should_panic(expected = "Pre-condition of build violated")]
     fn builder_fails_if_no_primary() {
-        let builder = PeerList::builder();
-        let _ = builder.witness(b(), 2_u32).full_node(c(), 3_u32).build();
+        let mut builder = PeerList::builder();
+        builder.witness(b(), 2_u32);
+        builder.full_node(c(), 3_u32);
+        let _ = builder.build();
         unreachable!();
     }
 

@@ -1,4 +1,4 @@
-//! Tendermint JSONRPC endpoints
+//! Tendermint JSON-RPC endpoints
 
 pub mod abci_info;
 pub mod abci_query;
@@ -13,4 +13,5 @@ pub mod health;
 pub mod net_info;
 pub mod status;
 pub mod subscribe;
+pub mod unsubscribe;
 pub mod validators;

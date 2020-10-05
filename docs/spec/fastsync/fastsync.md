@@ -1,5 +1,12 @@
 # Fastsync
 
+## Disclaimer
+
+This specification is not maintained. See
+[tendermint/spec](https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/)
+for the most recent version.
+
+## Abstract
 
 Fastsync is a protocol that is used by a node to catch-up to the
 current state of a Tendermint blockchain. Its typical use case is a

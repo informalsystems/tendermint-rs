@@ -1,5 +1,9 @@
 ------------------------------- MODULE scheduler -------------------------------
 (*
+ This specification is not maintained anymore. The most recent version can be found at:
+
+ https://github.com/tendermint/spec/tree/master/rust-spec/fastsync
+
  A specification of the fast sync scheduler that is introduced in blockchain/v2:
  
  https://github.com/tendermint/tendermint/tree/brapse/blockchain-v2-riri-reactor-2

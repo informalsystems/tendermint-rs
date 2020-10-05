@@ -10,12 +10,13 @@
     nonstandard_style
 )]
 #![doc(
-    html_root_url = "https://docs.rs/tendermint-light-client/0.15.0",
-    html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs.png"
+    html_root_url = "https://docs.rs/tendermint-light-client/0.16.0",
+    html_logo_url = "https://raw.githubusercontent.com/informalsystems/tendermint-rs/master/img/logo-tendermint-rs_3961x4001.png"
 )]
 
 //! See the `light_client` module for the main documentation.
 
+pub mod builder;
 pub mod components;
 pub mod contracts;
 pub mod errors;
@@ -26,11 +27,13 @@ pub mod operations;
 pub mod peer_list;
 pub mod predicates;
 pub mod state;
-mod std_ext;
 pub mod store;
 pub mod supervisor;
 pub mod types;
 
+pub(crate) mod utils;
+
+#[doc(hidden)]
 mod macros;
 
 #[doc(hidden)]
