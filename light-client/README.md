@@ -72,6 +72,7 @@ which encode an initial trusted state, a target block to verify, and the
 expected result of the core verification algorithm.
 
 These tests come in two flavours:
+
 - `skipping` tests, where there is a gap between the initial trusted state and the target block.
 - `sequential` tests, where there the initial trusted state and the target block are adjacent.
 
@@ -81,34 +82,37 @@ The following command can be used to run only these tests:
 $ cargo test -p tendermint-light-client --test light_client single_step
 ```
 
-### Bisection & Fork Detection
+### Bisection
 
 Similarly to the core verification logic, the algorithm for performing bisecting
-verification is exercised in a family of tests called `bisection` via a set
-of [JSON fixtures](./tests/support/bisection) which encode an initial trusted state,
-a target block to verify, a set of intermediary blocks, and the expected result of
-the bisection algorithm.
+verification is exercised via a set of [JSON fixtures](./tests/support/bisection/single_peer)
+which encode an initial trusted state, a target block to verify, a set of intermediary blocks,
+and the expected result of the bisection algorithm.
 
-These tests come in two flavours:
-- `single_peer` tests, which only includes blocks from a single peer,
-   and where only the bisection logic is exercised.
-   These tests can target the [`light_client`](./src/light_client.rs) module,
-   and can be found in the [`tests/light_client.rs`](./tests/light_client.rs) file.
-   These tests can be run with the following command:
+These tests target the [`light_client`](./src/light_client.rs) module,
+and can be found in the [`tests/light_client.rs`](./tests/light_client.rs) file.
 
-   ```bash
-   $ cargo test -p tendermint-light-client --test light_client bisection
-   ```
+To run the tests:
 
-- `multi_peer` tests, which include blocks from multiple peers,
-  and where both the bisection and fork detection algorithms are exercised.
-  These tests target the [`supervisor`](./src/supervisor.rs) module,
-  and can be found in the [`tests/supervisor.rs`](./tests/supervisor.rs) file.
-   These tests can be run with the following command:
+```bash
+$ cargo test -p tendermint-light-client --test light_client bisection
+```
 
-   ```bash
-   $ cargo test -p tendermint-light-client --test supervisor
-   ```
+### Fork Detection
+
+Similarly to the bisection algorithm, the fork detection algorithm is tested via a set
+of [JSON fixtures](./tests/support/bisection/single_peer) which encode an initial trusted
+state, a target block to verify, a set of intermediary blocks, and the expected result
+of the fork detection algorithm.
+
+These tests target the [`supervisor`](./src/supervisor.rs) module,
+and can be found in the [`tests/supervisor.rs`](./tests/supervisor.rs) file.
+
+To run the tests:
+
+```bash
+$ cargo test -p tendermint-light-client --test supervisor
+```
 
 ### Voting Power Calculator
 
