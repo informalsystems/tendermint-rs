@@ -82,6 +82,23 @@ The following command can be used to run only these tests:
 $ cargo test -p tendermint-light-client --test light_client single_step
 ```
 
+#### Model-based tests
+
+We started to employ model-based testing (MBT), which is currently limited 
+to the core verification. In MBT, the testing procedure is based on the
+[Light Client formal model](./tests/support/model_based/Lightclient_002_draft.tla),
+and the tests themselves are simple assertions in the modeling language TLA+.
+The current set of [TLA+ tests](./tests/support/model_based/LightTests.tla) is translated
+ automatically into the set of [JSON fixtures](./tests/support/model_based/single_step).
+ Please refer to the [MBT Guide](./tests/support/model_based/README.md),
+ and the [MBT Abstract](./tests/support/model_based/Abstract.md) for further information.
+
+The following command can be used to run only these tests:
+
+```bash
+$ cargo test -p tendermint-light-client --test model_based
+```
+
 ### Bisection
 
 Similarly to the core verification logic, the algorithm for performing bisecting
