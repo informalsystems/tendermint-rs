@@ -14,6 +14,7 @@ pub mod vote;
 pub use commit::Commit;
 pub use fuzzer::Fuzzer;
 pub use generator::Generator;
+pub use fuzzer::Mutator;
 pub use header::Header;
 pub use time::Time;
 pub use validator::Validator;

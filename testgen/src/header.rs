@@ -1,5 +1,5 @@
 use crate::{
-    fuzzer::{self, fuzz_vector},
+    fuzzer::{self, fuzz_vector, Fuzzer, Mutator},
     helpers::*,
     validator::{MAX_ID_LENGTH, generate_validators},
     Generator, Validator};
@@ -79,6 +79,10 @@ impl Generator<TMHeader> for Header {
 
     fn fuzz(&self, fuzzer: &mut dyn fuzzer::Fuzzer) -> Self {
         fuzzer.next();
+        let mut fuzz = self.clone();
+        fuzzer.mutate_string_option("header.chain_id", &mut fuzz.chain_id);
+        fuzzer.mutate_value("header.chain_id", &mut fuzz.chain_id);
+
         let fmax = 5;
         let mut fuzz = self.clone();
         if fuzz.next_validators.is_none() {

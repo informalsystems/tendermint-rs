@@ -1,9 +1,11 @@
 use serde::{Serialize, Deserialize};
 use rand_pcg::Pcg64 as Pcg;
 use rand::{SeedableRng, Rng, RngCore};
-use rand::distributions::{Alphanumeric};
+use rand::distributions::{Alphanumeric, Standard, Distribution};
 use std::path::Path;
 use std::fs;
+use std::hash::Hash;
+
 
 /// A Fuzzer is anything that can produce an infinite random sequence of numbers.
 /// 0 means no fuzzing, and any other number means fuzzing depending on the number.
@@ -14,6 +16,19 @@ pub trait Fuzzer {
     /// Get the current (latest) number from the sequence; also referred to as the current state.
     /// This is valid only after calling next() at least once!
     fn current(&self) -> u64;
+
+    /// Start descending into level
+    fn start_level(&mut self, _level: &str) {}
+
+    /// Exit from level
+    fn exit_level(&mut self, _level: &str) {}
+
+    /// Should the name at the current level be mutated?
+    fn should_mutate(&self, _name: &str) -> bool { true }
+
+    /// Get the random number generator for the given name
+    fn get_rng(&self, _name: &str) -> Box<dyn RngCore> { self.current_rng_default() }
+
 
     /// Check if the current number is alternative 'alt' from 'total' number of alternatives.
     /// It is expected that 0 < alt <= total.
@@ -29,28 +44,48 @@ pub trait Fuzzer {
     }
 
     /// Get the random number generator seeded from the current state and the index
-    fn current_rng(&self, index: u64) -> Pcg {
-        Pcg::new(self.current() as u128, index as u128)
+    fn current_rng(&self, index: u64) -> Box<dyn RngCore> {
+        Box::new(Pcg::new(self.current() as u128, index as u128))
     }
 
     /// Get the default current random number generator
-    fn current_rng_default(&self) -> Pcg {
-        self.current_rng(0xcafef00dd15ea5e5)
+    fn current_rng_default(&self) -> Box<dyn RngCore> {
+        Box::new(self.current_rng(0xcafef00dd15ea5e5))
+    }
+}
+
+
+pub trait Mutator: Fuzzer {
+    fn mutate<F>(&self, name: &str, mut f: F)
+    where F: FnMut() {
+        if self.should_mutate(name) {
+            f();
+        }
     }
 
+    fn mutate_value<T>(&self, name: &str, value: &mut T)
+        where Standard: Distribution<T> {
+        self.mutate(name, || *value = self.get_rng(name).gen());
+    }
 
-    /// Get indexed random bool value from the current state
-    fn get_bool(&self, index: u64) -> bool { self.current_rng(index).gen() }
+    fn mutate_string(&self, name: &str, value: &mut String, length: usize) {
+        let length = self.get_rng(name).gen_range(0, length + 1);
+        self.mutate(name, ||
+            *value = self.get_rng(name).sample_iter(Alphanumeric).take(length).collect()
+        );
+    }
 
-    /// Get indexed random u64 value from the current state
-    fn get_u64(&self, index: u64) -> u64 { self.current_rng(index).gen() }
-
-    /// Get indexed random i64 value from the current state
-    fn get_i64(&self, index: u64) -> i64 { self.current_rng(index).gen() }
-
-    /// Get the indexed random string from the current state
-    fn get_string(&self, index: u64, length: usize) -> String {
-        self.current_rng(index).sample_iter(Alphanumeric).take(length).collect()
+    fn mutate_string_option(&self, name: &str, value: &mut Option<String>, length: usize) {
+        self.mutate(name, || {
+            let mut rng = self.get_rng(name);
+            if value.is_none() || rng.gen_bool(0.5) {
+                let mut rng = self.get_rng(name);
+                let length = rng.gen_range(0, length + 1);
+                *value = Some(rng.sample_iter(Alphanumeric).take(length).collect())
+            } else {
+                *value = None
+            }
+        });
     }
 }
 
@@ -63,6 +98,15 @@ pub fn fuzz_vector<T>(fuzzer: &dyn Fuzzer, vec: &mut Vec<T>, val: T) {
     }
 }
 
+impl<F: Fuzzer + ?Sized> Mutator for F {}
+
+fn test() {
+    let f = NoFuzz::new();
+    let mut x = 1;
+    //x.push(1);
+    f.mutate_value("x", &mut x);
+   // fuzz_vector(&f, &mut x, 0);
+}
 /// A Fuzzer that doesn't do any fuzzing (always returns 0).
 pub struct NoFuzz {}
 

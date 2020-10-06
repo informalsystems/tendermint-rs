@@ -1,4 +1,4 @@
-use crate::{fuzzer, helpers::*, Generator};
+use crate::{fuzzer, helpers::*, Generator, Mutator};
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
@@ -35,19 +35,17 @@ impl Generator<TMTime> for Time {
         }
     }
 
-    fn fuzz(&self, _fuzzer: &mut dyn fuzzer::Fuzzer) -> Self {
-        self.clone()
+    fn fuzz(&self, fuzzer: &mut dyn fuzzer::Fuzzer) -> Self {
+        fuzzer.next();
+        let mut fuzz = self.clone();
+        fuzzer.mutate_value("time.secs", &mut fuzz.secs);
+        fuzz
     }
 
     fn generate_fuzz(&self, fuzzer: &mut dyn fuzzer::Fuzzer) -> Result<TMTime, SimpleError> {
-        fuzzer.next();
-        let time = if fuzzer.is_from(1, 1) {
-            fuzzer.get_u64(0)
-        } else {
-            match &self.secs {
-                None => bail!("time is missing"),
-                Some(secs) => *secs,
-            }
+        let time = match &self.secs {
+            None => bail!("time is missing"),
+            Some(secs) => *secs,
         };
         Ok(get_time(time))
     }
