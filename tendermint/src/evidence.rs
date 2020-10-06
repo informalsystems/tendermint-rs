@@ -2,7 +2,7 @@
 
 use std::slice;
 use {
-    crate::{block::signed_header::SignedHeader, serializers, PublicKey, Vote},
+    crate::{block::signed_header::SignedHeader, serializers, Vote},
     serde::{Deserialize, Serialize},
 };
 
@@ -26,11 +26,7 @@ pub enum Evidence {
 /// Duplicate vote evidence
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct DuplicateVoteEvidence {
-    #[serde(rename = "PubKey")]
-    pub_key: PublicKey,
-    #[serde(rename = "VoteA")]
     vote_a: Vote,
-    #[serde(rename = "VoteB")]
     vote_b: Vote,
 }
 

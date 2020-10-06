@@ -14,12 +14,19 @@ mod rpc {
     use tendermint_rpc::{Client, HttpClient, Id, SubscriptionClient, WebSocketClient};
 
     use futures::StreamExt;
+    use lazy_static::lazy_static;
+    use std::sync::{Arc, Mutex};
     use subtle_encoding::base64;
     use tendermint::abci::Log;
     use tendermint::abci::{Code, Transaction};
-    use tendermint_rpc::event::EventData;
+    use tendermint::merkle::simple_hash_from_byte_vectors;
+    use tendermint_rpc::event::{Event, EventData};
     use tendermint_rpc::query::EventType;
     use tokio::time::Duration;
+
+    lazy_static! {
+        static ref TX_SUBSCRIPTION_GUARD: Arc<Mutex<usize>> = Arc::new(Mutex::new(0));
+    }
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> HttpClient {
@@ -79,6 +86,21 @@ mod rpc {
 
         assert!(block_info.block.last_commit.is_none());
         assert_eq!(block_info.block.header.height.value(), height);
+
+        // Check for empty merkle root.
+        // See: https://github.com/informalsystems/tendermint-rs/issues/562
+        let computed_data_hash = simple_hash_from_byte_vectors(
+            block_info
+                .block
+                .data
+                .iter()
+                .map(|t| t.to_owned().into_vec())
+                .collect(),
+        );
+        assert_eq!(
+            computed_data_hash,
+            block_info.block.header.data_hash.unwrap().as_bytes()
+        );
     }
 
     /// `/block_results` endpoint
@@ -176,6 +198,9 @@ mod rpc {
     #[tokio::test]
     #[ignore]
     async fn transaction_subscription() {
+        let tx_subscription_guard = TX_SUBSCRIPTION_GUARD.clone();
+        let _guard = tx_subscription_guard.lock().unwrap();
+
         let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
         let mut subs_client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
@@ -239,6 +264,73 @@ mod rpc {
         }
 
         subs.terminate().await.unwrap();
+        subs_client.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn concurrent_subscriptions() {
+        let tx_subscription_guard = TX_SUBSCRIPTION_GUARD.clone();
+        let _guard = tx_subscription_guard.lock().unwrap();
+
+        let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
+        let mut subs_client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+            .await
+            .unwrap();
+        let new_block_subs = subs_client
+            .subscribe(EventType::NewBlock.into())
+            .await
+            .unwrap();
+        let tx_subs = subs_client.subscribe(EventType::Tx.into()).await.unwrap();
+
+        // We use Id::uuid_v4() here as a quick hack to generate a random value.
+        let mut expected_tx_values = (0..10_u32)
+            .map(|_| Id::uuid_v4().to_string())
+            .collect::<Vec<String>>();
+        let broadcast_tx_values = expected_tx_values.clone();
+        let mut expected_new_blocks = 5_i32;
+
+        tokio::spawn(async move {
+            for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
+                let tx = format!("tx{}={}", tx_count, val);
+                rpc_client
+                    .broadcast_tx_async(Transaction::new(tx.as_bytes()))
+                    .await
+                    .unwrap();
+                tokio::time::delay_for(Duration::from_millis(100)).await;
+            }
+        });
+
+        let mut combined_subs = futures::stream::select_all(vec![new_block_subs, tx_subs]);
+
+        println!(
+            "Attempting to receive {} transactions and {} new blocks",
+            expected_tx_values.len(),
+            expected_new_blocks
+        );
+
+        while expected_new_blocks > 0 && !expected_tx_values.is_empty() {
+            let mut timeout = tokio::time::delay_for(Duration::from_secs(3));
+            tokio::select! {
+                Some(res) = combined_subs.next() => {
+                    let ev: Event = res.unwrap();
+                    println!("Got event: {:?}", ev);
+                    match ev.data {
+                        EventData::NewBlock { .. } => {
+                            println!("Got new block event");
+                            expected_new_blocks -= 1;
+                        },
+                        EventData::Tx { .. } => {
+                            println!("Got new transaction event");
+                            let _ = expected_tx_values.pop();
+                        },
+                        _ => panic!("Unexpected event received: {:?}", ev),
+                    }
+                },
+                _ = &mut timeout => panic!("Timed out waiting for an event"),
+            }
+        }
+
         subs_client.close().await.unwrap();
     }
 }

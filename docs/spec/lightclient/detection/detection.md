@@ -1,4 +1,9 @@
-***This an unfinished draft. Comments are welcome!***
+
+# Disclaimer
+
+This specification is  an unfinished draft and not maintained. See
+[tendermint/spec](https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/detection/)
+for the most recent version.
 
 
 

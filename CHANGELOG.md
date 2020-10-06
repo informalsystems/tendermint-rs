@@ -1,12 +1,13 @@
 ## Unreleased
 
+- Start using model-based testing for Light Client ([#414])
 - Add testgen tester to factor out test execution from integration tests ([#524])
 - Add spec for the light client attack evidence handling ([#526])
 - Return RFC6962 hash for empty merkle tree ([#498])
 - The `tendermint`, `tendermint-rpc`, and `tendermint-light-client` crates now compile to WASM on the `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#463])
 - Implement protobuf encoding/decoding of Tendermint Proto types ([#504])
 - Separate protobuf types from Rust domain types using the DomainType trait ([#535])
-- Changed validator sorting order to sort by voting power. ([#506])
+- Changed validator sorting order to sort by voting power (descending) and address (ascending). ([#506])
 - Dependency update: sled 0.34 ([#490])
 
 ### BREAKING CHANGES:
@@ -36,6 +37,7 @@
   See the crate docs for more details.
   ([#516])
 
+[#414]: https://github.com/informalsystems/tendermint-rs/issues/414
 [#524]: https://github.com/informalsystems/tendermint-rs/issues/524
 [#526]: https://github.com/informalsystems/tendermint-rs/issues/526
 [#498]: https://github.com/informalsystems/tendermint-rs/issues/498

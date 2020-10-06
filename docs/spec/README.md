@@ -1,11 +1,9 @@
 # Specification
 
-The primary English specifications for Tendermint data structures can be found in the
-[tendermint/spec repository](https://github.com/tendermint/spec).
+This directory served as location for English and TLA+
+specifications of the Tendermint protocols "fast sync" and "light
+client". The corresponding specification work is not happening in this directory
+anymore but in the [tendermint/spec](https://github.com/tendermint/spec)
+repository. The most recent versions of the specifications can be found
+there.
 
-This repository contains English and TLA+ specifications for the following
-protocols:
-
-- [Fast Sync](./fastsync) - Block synchronization protocol
-- [Light Client](./lightclient) - Light client verification, fork detection, and
-  fork accountability protocols 

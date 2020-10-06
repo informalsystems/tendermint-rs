@@ -28,15 +28,22 @@ to run the latter two you need to locally clone the repositories, and then,
 after building them, just add their `target/debug` directories into your `PATH`. 
 If any of the programs is not found, execution of a model-based test will be skipped.
 
+Please note that the above programs should be present as executables; e.g. having a Bash `alias` won't be enough. For example, to wrap Apalache docker image into an executable you might create the following executable bash script `apalache-mc`:
+
+```bash
+#!/bin/bash
+docker run --rm -v $(pwd):/var/apalache apalache/mc $@
+```    
+
 After you run your model-based tests with `cargo test`, the results will be printed to screen, 
 and also saved to disk in the [_single_step](_single_step) directory.
 Results include:
-* [Report](_single_step/_report) on which tests were run, and what is the outcome
+* [Report](_single_step/report) on which tests were run, and what is the outcome
 * For each test, it's relevant files are also saved in a subdirectory of [_single_step](_single_step). 
   E.g. For the test `TestSuccess`, which is referenced in [MC4_4_faulty.json](MC4_4_faulty.json), 
   the results of it's execution will be saved into [_single_step/MC4_4_faulty.json/TestSuccess](_single_step/MC4_4_faulty.json/TestSuccess).
   These results include, for a successful test:
-  * [log file](_single_step/MC4_4_faulty.json/TestSuccess/_log), where test logs are stored
+  * [log file](_single_step/MC4_4_faulty.json/TestSuccess/log), where test logs are stored
   * [counterexample.tla](_single_step/MC4_4_faulty.json/TestSuccess/counterexample.tla), 
   the counterexample produced by Apalache in `TLA+` format
   * [counterexample.json](_single_step/MC4_4_faulty.json/TestSuccess/counterexample.json), 
@@ -55,7 +62,7 @@ We suggest the following workflow for running model-based tests:
 For that you might want to run your test in isolation, 
 as counterexample generation by Apalache may take a significant time. 
 In order to run only your test, just create a new test batch with your test, 
-and temporarily remove/rename other test batches (files or diretories starting with `_` are ignored).
+and temporarily remove/rename other test batches (files or directories starting with `_` are ignored).
 2. After running your model-based test, inspect its report/logs. 
 3. If you find the test details interesting, simply copy the generated `test.json` file 
 into [single_step](single_step) directory, and rename it to reflect the model and model-based test you used to generate it.

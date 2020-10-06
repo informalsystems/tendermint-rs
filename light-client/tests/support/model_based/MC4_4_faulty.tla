@@ -8,8 +8,9 @@ IS_PRIMARY_CORRECT == FALSE
 
 VARIABLES
   state, nextHeight, fetchedLightBlocks, lightBlockStatus, latestVerified,
-  history, nprobes,
-  now, blockchain, Faulty
+  nprobes, now, blockchain, Faulty,
+  prevVerified, prevCurrent, prevNow, prevVerdict,
+  history
 
 INSTANCE LightTests
 

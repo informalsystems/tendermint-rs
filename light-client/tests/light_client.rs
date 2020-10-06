@@ -50,7 +50,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
 
     let trusted_height = tc.trust_options.height;
     let trusted_state = io
-        .fetch_light_block(primary, AtHeight::At(trusted_height))
+        .fetch_light_block(AtHeight::At(trusted_height))
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
@@ -75,7 +75,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
     let result = verify_bisection(untrusted_height, &mut light_client, &mut state);
 
     let untrusted_light_block = io
-        .fetch_light_block(primary, AtHeight::At(untrusted_height))
+        .fetch_light_block(AtHeight::At(untrusted_height))
         .expect("header at untrusted height not found");
 
     BisectionTestResult {

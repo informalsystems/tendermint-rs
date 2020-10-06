@@ -1,5 +1,9 @@
 -------------------------- MODULE Lightclient_A_1 ----------------------------
 (**
+ * This specification is not maintained anymore. The most recent version can be found at:
+
+ * https://github.com/tendermint/spec/tree/master/rust-spec/lightclient/verification
+
  * A state-machine specification of the lite client, following the English spec:
  *
  * https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification.md

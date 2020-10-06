@@ -16,25 +16,14 @@ use abscissa_core::FrameworkError;
 use abscissa_core::Options;
 use abscissa_core::Runnable;
 
-use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::ops::Deref;
 use std::time::Duration;
 
-use tendermint_light_client::components::clock::SystemClock;
-use tendermint_light_client::components::io::ProdIo;
-use tendermint_light_client::components::scheduler;
-use tendermint_light_client::components::verifier::ProdVerifier;
-use tendermint_light_client::evidence::ProdEvidenceReporter;
-use tendermint_light_client::fork_detector::ProdForkDetector;
+use tendermint_light_client::builder::{LightClientBuilder, SupervisorBuilder};
 use tendermint_light_client::light_client;
-use tendermint_light_client::light_client::LightClient;
-use tendermint_light_client::peer_list::{PeerList, PeerListBuilder};
-use tendermint_light_client::state::State;
-use tendermint_light_client::store::sled::SledStore;
-use tendermint_light_client::store::LightStore;
-use tendermint_light_client::supervisor::Handle;
-use tendermint_light_client::supervisor::{Instance, Supervisor};
+use tendermint_light_client::store::{sled::SledStore, LightStore};
+use tendermint_light_client::supervisor::{Handle, Instance, Supervisor};
 
 /// `start` subcommand
 #[derive(Command, Debug, Options)]
@@ -56,8 +45,18 @@ impl Runnable for StartCmd {
     /// Start the application.
     fn run(&self) {
         if let Err(err) = abscissa_tokio::run(&APPLICATION, async {
-            StartCmd::assert_init_was_run();
-            let mut supervisor = self.construct_supervisor();
+            if let Err(e) = StartCmd::assert_init_was_run() {
+                status_err!(&e);
+                panic!(e);
+            }
+
+            let supervisor = match self.construct_supervisor() {
+                Ok(supervisor) => supervisor,
+                Err(e) => {
+                    status_err!(&e);
+                    panic!(e);
+                }
+            };
 
             let rpc_handler = supervisor.handle();
             StartCmd::start_rpc_server(rpc_handler);
@@ -74,6 +73,7 @@ impl Runnable for StartCmd {
                         status_err!("sync failed: {}", err);
                     }
                 }
+
                 // TODO(liamsi): use ticks and make this configurable:
                 std::thread::sleep(Duration::from_millis(800));
             }
@@ -100,52 +100,18 @@ impl config::Override<LightNodeConfig> for StartCmd {
         Ok(config)
     }
 }
+
 impl StartCmd {
-    fn assert_init_was_run() {
-        // TODO(liamsi): handle errors properly:
-        let primary_db_path = app_config().light_clients.first().unwrap().db_path.clone();
-        let db = sled::open(primary_db_path).unwrap_or_else(|e| {
-            status_err!("could not open database: {}", e);
-            std::process::exit(1);
-        });
+    fn assert_init_was_run() -> Result<(), String> {
+        let db_path = app_config().light_clients.first().unwrap().db_path.clone();
+        let db = sled::open(db_path).map_err(|e| format!("could not open database: {}", e))?;
 
         let primary_store = SledStore::new(db);
-
         if primary_store.latest_trusted_or_verified().is_none() {
-            status_err!("no trusted or verified state in store for primary, please initialize with the `initialize` subcommand first");
-            std::process::exit(1);
+            return Err("no trusted or verified state in store for primary, please initialize with the `initialize` subcommand first".to_string());
         }
-    }
-    // TODO: this should do proper error handling, be gerneralized
-    // then moved to to the light-client crate.
-    fn make_instance(
-        &self,
-        light_config: &LightClientConfig,
-        io: ProdIo,
-        options: light_client::Options,
-    ) -> Instance {
-        let peer_id = light_config.peer_id;
-        let db_path = light_config.db_path.clone();
 
-        let db = sled::open(db_path).unwrap_or_else(|e| {
-            status_err!("could not open database: {}", e);
-            std::process::exit(1);
-        });
-
-        let light_store = SledStore::new(db);
-
-        let state = State {
-            light_store: Box::new(light_store),
-            verification_trace: HashMap::new(),
-        };
-
-        let verifier = ProdVerifier::default();
-        let clock = SystemClock;
-        let scheduler = scheduler::basic_bisecting_schedule;
-
-        let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, io);
-
-        Instance::new(light_client, state)
+        Ok(())
     }
 
     fn start_rpc_server<H>(h: H)
@@ -158,38 +124,68 @@ impl StartCmd {
         std::thread::spawn(move || rpc::run(server, &laddr.to_string()));
         status_info!("started RPC server:", laddr.to_string());
     }
-}
 
-impl StartCmd {
-    fn construct_supervisor(&self) -> Supervisor {
-        // TODO(ismail): we need to verify the addr <-> peerId mappings somewhere!
-        let mut peer_map = HashMap::new();
-        for light_conf in &app_config().light_clients {
-            peer_map.insert(light_conf.peer_id, light_conf.address.clone());
-        }
-        let io = ProdIo::new(
-            peer_map.clone(),
-            Some(app_config().rpc_config.request_timeout),
+    fn make_instance(
+        &self,
+        light_config: &LightClientConfig,
+        options: light_client::Options,
+        timeout: Option<Duration>,
+    ) -> Result<Instance, String> {
+        let rpc_client = tendermint_rpc::HttpClient::new(light_config.address.clone())
+            .map_err(|e| format!("failed to create HTTP client: {}", e))?;
+
+        let db_path = light_config.db_path.clone();
+        let db = sled::open(db_path).map_err(|e| format!("could not open database: {}", e))?;
+
+        let light_store = SledStore::new(db);
+
+        let builder = LightClientBuilder::prod(
+            light_config.peer_id,
+            rpc_client,
+            Box::new(light_store),
+            options,
+            timeout,
         );
+
+        let builder = builder
+            .trust_from_store()
+            .map_err(|e| format!("could not set initial trusted state: {}", e))?;
+
+        Ok(builder.build())
+    }
+
+    fn construct_supervisor(&self) -> Result<Supervisor, String> {
         let conf = app_config().deref().clone();
+        let timeout = app_config().rpc_config.request_timeout;
         let options: light_client::Options = conf.into();
 
-        let mut peer_list: PeerListBuilder<Instance> = PeerList::builder();
-        for (i, light_conf) in app_config().light_clients.iter().enumerate() {
-            let instance = self.make_instance(light_conf, io.clone(), options);
-            if i == 0 {
-                // primary instance
-                peer_list = peer_list.primary(instance.light_client.peer, instance);
-            } else {
-                peer_list = peer_list.witness(instance.light_client.peer, instance);
-            }
+        let light_confs = &app_config().light_clients;
+        if light_confs.len() < 2 {
+            return Err(format!("configuration incomplete: not enough light clients configued, minimum: 2, found: {}", light_confs.len()));
         }
-        let peer_list = peer_list.build();
 
-        Supervisor::new(
-            peer_list,
-            ProdForkDetector::default(),
-            ProdEvidenceReporter::new(peer_map),
-        )
+        let primary_conf = &light_confs[0]; // Safe, see check above
+        let witness_confs = &light_confs[1..]; // Safe, see check above
+
+        let builder = SupervisorBuilder::new();
+
+        let primary_instance = self.make_instance(primary_conf, options, Some(timeout))?;
+        let builder = builder.primary(
+            primary_conf.peer_id,
+            primary_conf.address.clone(),
+            primary_instance,
+        );
+
+        let mut witnesses = Vec::with_capacity(witness_confs.len());
+        for witness_conf in witness_confs {
+            let instance = self.make_instance(witness_conf, options, Some(timeout))?;
+            witnesses.push((witness_conf.peer_id, witness_conf.address.clone(), instance));
+        }
+
+        let builder = builder
+            .witnesses(witnesses)
+            .map_err(|e| format!("failed to set witnesses: {}", e))?;
+
+        Ok(builder.build_prod())
     }
 }

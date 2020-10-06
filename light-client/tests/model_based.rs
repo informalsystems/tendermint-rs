@@ -55,6 +55,11 @@ fn single_step_test(
     _root_env: &TestEnv,
     output_env: &TestEnv,
 ) {
+    output_env.clear_log();
+    println!(
+        "  > running static model-based single-step test: {}",
+        &tc.description
+    );
     let mut latest_trusted = Trusted::new(
         tc.initial.signed_header.clone(),
         tc.initial.next_validator_set.clone(),
@@ -100,7 +105,14 @@ fn model_based_test(
     root_env: &TestEnv,
     output_env: &TestEnv,
 ) {
-    println!("  Running model-based single-step test case: {}", test.test);
+    println!("  Running model-based single-step test: {}", test.test);
+    // Cleanup possible previous runs
+    output_env.clear_log();
+    output_env.remove_file("counterexample.tla");
+    output_env.remove_file("counterexample.json");
+    output_env.remove_file("test.json");
+
+    // Check for the necessary programs
     let check_program = |program| {
         if !Command::exists_program(program) {
             output_env.logln(&format!("    > {} not found", program));
@@ -115,8 +127,8 @@ fn model_based_test(
         output_env.logln("    failed to find necessary programs; consider adding them to your PATH. skipping the test");
         return;
     }
-    env.copy_file_from_env(root_env, "Lightclient_A_1.tla");
-    env.copy_file_from_env(root_env, "Blockchain_A_1.tla");
+    env.copy_file_from_env(root_env, "Lightclient_002_draft.tla");
+    env.copy_file_from_env(root_env, "Blockchain_002_draft.tla");
     env.copy_file_from_env(root_env, "LightTests.tla");
     env.copy_file_from_env(root_env, &test.model);
 
@@ -128,6 +140,8 @@ fn model_based_test(
         },
         Err(e) => panic!("failed to run Apalache; reason: {}", e),
     }
+    output_env.copy_file_from_env(env, "counterexample.tla");
+    output_env.copy_file_from_env(env, "counterexample.json");
 
     let transform_spec = root_env
         .full_canonical_path("_jsonatr-lib/apalache_to_lite_test.json")
@@ -141,10 +155,7 @@ fn model_based_test(
     output_env.copy_file_from_env(env, "test.json");
 
     let tc: SingleStepTestCase = env.parse_file("test.json").unwrap();
-    println!("  > running auto-generated test...");
     single_step_test(tc, env, root_env, output_env);
-    output_env.copy_file_from_env(env, "counterexample.tla");
-    output_env.copy_file_from_env(env, "counterexample.json");
 }
 
 fn model_based_test_batch(batch: ApalacheTestBatch) -> Vec<(String, String)> {

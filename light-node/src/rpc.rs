@@ -152,10 +152,26 @@ mod test {
 
             Ok(Some(block))
         }
+
         fn latest_status(&self) -> Result<LatestStatus, Error> {
             let status: LatestStatus = serde_json::from_str(STATUS_JSON).unwrap();
 
             Ok(status)
+        }
+
+        fn verify_to_highest(&self) -> Result<LightBlock, Error> {
+            todo!()
+        }
+
+        fn verify_to_target(
+            &self,
+            _height: tendermint::block::Height,
+        ) -> Result<LightBlock, Error> {
+            todo!()
+        }
+
+        fn terminate(&self) -> Result<(), Error> {
+            todo!()
         }
     }
 
