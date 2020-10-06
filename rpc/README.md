@@ -48,7 +48,10 @@ https://docs.tendermint.com/master/rpc/
 The RPC types are directly tested through the [integration
 tests](./tests/integration.rs). These tests use fixtures taken from running
 Tendermint nodes to ensure compatibility without needing access to a running
-node during testing. To run these tests locally:
+node during testing. All of these fixtures were generated manually, and
+automatic regeneration of the fixtures is [on our roadmap][autogen-fixtures].
+
+To run these tests locally:
 
 ```bash
 # From within the rpc crate
@@ -91,3 +94,4 @@ cargo test --all-features -- --ignored
 [tendermint.rs]: https://crates.io/crates/tendermint
 [Tendermint RPC]: https://docs.tendermint.com/master/rpc/
 [`/subscribe` endpoint]: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
+[autogen-fixtures]: https://github.com/informalsystems/tendermint-rs/issues/612
