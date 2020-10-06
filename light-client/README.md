@@ -137,6 +137,12 @@ Because this test requires a running Tendermint node, it is ignored by default.
 To run this test locally:
 
 ```bash
+# In one terminal
+$ mkdir -p /tmp/tendermint
+$ docker run -it --rm -v "/tmp/tendermint:/tendermint" tendermint/tendermint init
+$ docker run -it --rm -v "/tmp/tendermint:/tendermint" -p 26657:26657 tendermint/tendermint node --proxy_app=kvstore
+
+# In another terminal
 $ cargo test -p tendermint-light-client --test integration -- --ignored --nocapture
 ```
 
