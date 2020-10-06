@@ -40,7 +40,11 @@ impl AsRef<[u8]> for Transaction {
 
 impl fmt::UpperHex for Transaction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:X?}", self.as_bytes())
+        for byte in self.as_bytes() {
+            write!(f, "{:02X}", byte)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -95,5 +99,17 @@ impl Data {
 impl AsRef<[Transaction]> for Data {
     fn as_ref(&self) -> &[Transaction] {
         self.txs.as_deref().unwrap_or_else(|| &[])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Transaction;
+
+    #[test]
+    fn upper_hex_serialization() {
+        let tx = Transaction::new(vec![0xFF, 0x01, 0xFE, 0x02]);
+        let tx_hex = format!("{:X}", &tx);
+        assert_eq!(&tx_hex, "FF01FE02");
     }
 }
