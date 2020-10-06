@@ -1,12 +1,14 @@
 use simple_error::*;
+use gumdrop::Options;
+use serde::{Deserialize, Serialize};
 
-use crate::validator::{generate_validator_set, generate_validators};
+use crate::validator::generate_validators;
 use crate::{Commit, Generator, Header, Validator};
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::node::Id as PeerId;
-use tendermint::validator::Info;
 use tendermint::validator::Set as ValidatorSet;
 use tendermint::validator;
+use crate::helpers::parse_as;
 
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
@@ -14,7 +16,7 @@ use tendermint::validator;
 /// The copy is necessary here to avoid a circular dependency.
 /// Cf. https://github.com/informalsystems/tendermint-rs/issues/605
 /// TODO: fix redundant code without introducing cyclic dependency.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LightBlock {
     /// Header and commit of this block
     pub signed_header: SignedHeader,
@@ -43,6 +45,7 @@ impl LightBlock {
     }
 }
 
+#[derive(Debug, Options, Deserialize, Clone)]
 pub struct TestgenLightBlock {
     #[options(help = "header (required)", parse(try_from_str = "parse_as::<Header>"))]
     pub header: Option<Header>,
@@ -65,27 +68,6 @@ pub struct TestgenLightBlock {
 impl TestgenLightBlock {
     /// Constructs a new Testgen-specific light block
     pub fn new(
-        validators: &[Validator],
-        provider: PeerId,
-    ) -> Self {
-        let header = Header::new(validators);
-        let commit = Commit::new(header.clone(), 1);
-
-        Self {
-            header: Some(header),
-            commit: Some(commit),
-            validators: Some(validators.to_vec()),
-            next_validators: None,
-            provider: Some(provider),
-        }
-    }
-    set_option!(
-        next_validators,
-        &[Validator],
-        Some(next_validators.to_vec())
-    );
-
-    pub fn new_with(
         header: Header,
         commit: Commit,
         validators: Vec<Validator>,
@@ -99,6 +81,48 @@ impl TestgenLightBlock {
             next_validators: Some(next_validators),
             provider: Some(provider),
         }
+    }
+
+    pub fn new_default(validators: &[Validator], height: u64) -> Self {
+        let header = Header::new(validators).height(height).chain_id("test-chain");
+        let commit = Commit::new(header.clone(), 1);
+
+        Self {
+            header: Some(header),
+            commit: Some(commit),
+            validators: Some(validators.to_vec()),
+            next_validators: None,
+            provider: Some(peer_id()),
+        }
+    }
+    set_option!(
+        next_validators,
+        &[Validator],
+        Some(next_validators.to_vec())
+    );
+    set_option!(provider, PeerId);
+
+
+    /// Produces a subsequent testgen light block to the supplied one
+    // TODO: figure how to represent the currently ignored details in header and commit like last_block_id and other hashes
+    pub fn next(&self) -> Self {
+        let validators = self.validators.as_ref().expect("validator array is missing");
+        let height = self
+            .header.as_ref().expect("header is missing")
+            .height.expect("height is missing")
+            + 1;
+        TestgenLightBlock::new_default(validators.as_ref(), height)
+    }
+}
+
+impl std::str::FromStr for TestgenLightBlock {
+    type Err = SimpleError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let testgen_light_block = match parse_as::<TestgenLightBlock>(s) {
+            Ok(input) => input,
+            Err(_) => TestgenLightBlock::new_default(parse_as::<Vec<Validator>>(s)?.as_ref(), 1),
+        };
+        Ok(testgen_light_block)
     }
 }
 
@@ -134,7 +158,7 @@ impl Generator<LightBlock> for TestgenLightBlock {
 
         let next_validators = match &self.next_validators {
             Some(next_vals) => validator::Set::new(generate_validators(next_vals)?),
-            None => valset.clone(),
+            None => validators.clone(),
         };
 
         let provider = self.provider.unwrap_or(peer_id());
