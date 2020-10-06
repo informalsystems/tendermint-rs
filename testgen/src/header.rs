@@ -108,8 +108,8 @@ impl Generator<block::Header> for Header {
         let header = block::Header {
             version: block::header::Version { block: 0, app: 0 },
             chain_id,
-            height: block::Height::try_from(self.height.unwrap_or(1)).unwrap(), /* TODO: might
-                                                                                 * overflow */
+            height: block::Height::try_from(self.height.unwrap_or(1))
+                .map_err(|_| SimpleError::new("height out of bounds"))?,
             time,
             last_block_id: None,
             last_commit_hash: None,
