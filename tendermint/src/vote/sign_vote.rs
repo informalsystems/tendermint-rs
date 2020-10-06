@@ -121,10 +121,10 @@ mod tests {
             timestamp: Some(dt.into()),
             block_id: Some(BlockId {
                 hash: Hash::try_from(b"DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA".to_vec()).unwrap(),
-                parts: Some(Header {
+                parts: Header {
                     total: 1_000_000,
                     hash: Hash::try_from(b"0022446688AACCEE1133557799BBDDFF".to_vec()).unwrap(),
-                }),
+                },
             }),
             validator_address: AccountId::try_from(vec![
                 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
@@ -271,7 +271,7 @@ mod tests {
                 hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
                     .unwrap(), //Hash::new(Algorithm::Sha256,
                 // b"hash".to_vec().as_slice()).unwrap(),
-                parts: Some(Header {
+                parts: Header {
                     total: 1_000_000,
                     hash: Hash::from_hex_upper(
                         Algorithm::Sha256,
@@ -279,7 +279,7 @@ mod tests {
                     )
                     .unwrap(), /* Hash::new(Algorithm::Sha256,
                                 * b"parts_hash".to_vec().as_slice()).unwrap(), */
-                }),
+                },
             }),
             // signature: None,
             signature: Signature::try_from(vec![
@@ -337,14 +337,14 @@ mod tests {
             block_id: Some(BlockId {
                 hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
                     .unwrap(),
-                parts: Some(Header {
+                parts: Header {
                     total: 1_000_000,
                     hash: Hash::from_hex_upper(
                         Algorithm::Sha256,
                         "0022446688AACCEE1133557799BBDDFF",
                     )
                     .unwrap(),
-                }),
+                },
             }),
             signature: Signature::try_from(vec![1; ED25519_SIGNATURE_SIZE]).unwrap(),
         };

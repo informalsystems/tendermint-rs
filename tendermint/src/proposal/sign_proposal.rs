@@ -86,10 +86,7 @@ impl TryFrom<RawSignedProposalResponse> for SignedProposalResponse {
 impl From<SignedProposalResponse> for RawSignedProposalResponse {
     fn from(value: SignedProposalResponse) -> Self {
         RawSignedProposalResponse {
-            proposal: match value.proposal {
-                None => None,
-                Some(proposal) => Some(proposal.into()),
-            },
+            proposal: value.proposal.map(|p| p.into()),
             error: value.error,
         }
     }

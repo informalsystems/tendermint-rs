@@ -34,7 +34,7 @@ impl TryFrom<Vec<u8>> for Hash {
     type Error = Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        Hash::new(Algorithm::Sha256, &value)
+        Hash::from_bytes(Algorithm::Sha256, &value)
     }
 }
 
@@ -50,9 +50,8 @@ impl From<Hash> for Vec<u8> {
 }
 
 impl Hash {
-    #[allow(clippy::new_ret_no_self)]
     /// Create a new `Hash` with the given algorithm type
-    pub fn new(alg: Algorithm, bytes: &[u8]) -> Result<Hash, Error> {
+    pub fn from_bytes(alg: Algorithm, bytes: &[u8]) -> Result<Hash, Error> {
         match alg {
             Algorithm::Sha256 => {
                 if bytes.len() == SHA256_HASH_SIZE {
@@ -102,7 +101,7 @@ impl Debug for Hash {
 
 impl Default for Hash {
     fn default() -> Self {
-        Hash::new(Algorithm::Sha256, &[0; SHA256_HASH_SIZE]).unwrap()
+        Hash::from_bytes(Algorithm::Sha256, &[0; SHA256_HASH_SIZE]).unwrap()
     }
 }
 

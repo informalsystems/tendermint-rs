@@ -41,8 +41,8 @@ pub enum Kind {
     #[error("bad signature")]
     SignatureInvalid,
 
-    /// invalid Vote type
-    #[error("invalid Type")]
+    /// invalid message type
+    #[error("invalid message type")]
     InvalidMessageType,
 
     /// Negative block height
@@ -54,15 +54,15 @@ pub enum Kind {
     NegativeRound,
 
     /// Negative POL round
-    #[error("negative pol round")]
-    NegativePOLRound,
+    #[error("negative POL round")]
+    NegativePolRound,
 
     /// Negative validator index in vote
-    #[error("negative ValidatorIndex")]
+    #[error("negative validator index")]
     NegativeValidatorIndex,
 
-    /// Wrong hash size in part_set_header
-    #[error("Wrong hash: expected Hash size to be 32 bytes")]
+    /// Invalid hash size in part_set_header
+    #[error("invalid hash: expected hash size to be 32 bytes")]
     InvalidHashSize,
 
     /// No timestamp in vote
@@ -71,27 +71,31 @@ pub enum Kind {
 
     /// Invalid account ID length
     #[error("invalid account ID length")]
-    InvalidAccountIDLength,
+    InvalidAccountIdLength,
 
     /// Invalid signature ID length
     #[error("invalid signature ID length")]
-    InvalidSignatureIDLength,
+    InvalidSignatureIdLength,
 
     /// Overflow during conversion
-    #[error("Integer overflow")]
+    #[error("integer overflow")]
     IntegerOverflow,
 
     /// No Vote found during conversion
-    #[error("No vote found")]
+    #[error("no vote found")]
     NoVoteFound,
 
     /// No Proposal found during conversion
-    #[error("No proposal found")]
+    #[error("no proposal found")]
     NoProposalFound,
 
     /// Invalid AppHash length found during conversion
-    #[error("Invalid AppHash Length")]
+    #[error("invalid app hash Length")]
     InvalidAppHashLength,
+
+    /// Invalid PartSetHeader
+    #[error("invalid part set header")]
+    InvalidPartSetHeader,
 }
 
 impl Kind {

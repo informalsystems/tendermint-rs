@@ -12,7 +12,9 @@ use tendermint_proto::types::{
 use tendermint_proto::DomainType;
 
 /// Block parts header
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(
+    Serialize, Deserialize, Clone, Copy, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord,
+)]
 pub struct Header {
     /// Number of parts in this block
     pub total: u32,
@@ -33,7 +35,7 @@ impl TryFrom<RawPartSetHeader> for Header {
         }
         Ok(Self {
             total: value.total,
-            hash: Hash::new(Algorithm::Sha256, &value.hash)?,
+            hash: Hash::from_bytes(Algorithm::Sha256, &value.hash)?,
         })
     }
 }
@@ -56,7 +58,7 @@ impl TryFrom<RawCanonicalPartSetHeader> for Header {
         }
         Ok(Self {
             total: value.total,
-            hash: Hash::new(Algorithm::Sha256, &value.hash)?,
+            hash: Hash::from_bytes(Algorithm::Sha256, &value.hash)?,
         })
     }
 }

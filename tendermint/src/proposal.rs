@@ -45,7 +45,7 @@ impl TryFrom<RawProposal> for Proposal {
 
     fn try_from(value: RawProposal) -> Result<Self, Self::Error> {
         if value.pol_round < -1 {
-            return Err(Kind::NegativePOLRound.into());
+            return Err(Kind::NegativePolRound.into());
         }
         let pol_round = match value.pol_round {
             -1 => None,
@@ -58,7 +58,7 @@ impl TryFrom<RawProposal> for Proposal {
             pol_round,
             block_id: match value.block_id {
                 None => None,
-                Some(raw_block_id) => Some(BlockId::try_from(raw_block_id).unwrap()),
+                Some(raw_block_id) => Some(BlockId::try_from(raw_block_id)?),
             },
             timestamp: match value.timestamp {
                 None => None,
@@ -146,14 +146,14 @@ mod tests {
                     "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFADEADBEEFDEADBEEFBAFBAFBAFBAFBAFA",
                 )
                 .unwrap(),
-                parts: Some(Header {
+                parts: Header {
                     total: 65535,
                     hash: Hash::from_hex_upper(
                         Algorithm::Sha256,
                         "0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF",
                     )
                     .unwrap(),
-                }),
+                },
             }),
             timestamp: Some(dt.into()),
             signature: Signature::Ed25519(Ed25519Signature::new([0; ED25519_SIGNATURE_SIZE])),
@@ -232,14 +232,14 @@ mod tests {
                     "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFADEADBEEFDEADBEEFBAFBAFBAFBAFBAFA",
                 )
                 .unwrap(),
-                parts: Some(Header {
+                parts: Header {
                     total: 65535,
                     hash: Hash::from_hex_upper(
                         Algorithm::Sha256,
                         "0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF",
                     )
                     .unwrap(),
-                }),
+                },
             }),
             signature: Signature::Ed25519(Ed25519Signature::new([0; ED25519_SIGNATURE_SIZE])),
         };

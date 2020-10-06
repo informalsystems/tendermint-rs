@@ -35,7 +35,7 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
 
     fn try_from(value: RawCanonicalProposal) -> Result<Self, Self::Error> {
         if value.pol_round < -1 {
-            return Err(Kind::NegativePOLRound.into());
+            return Err(Kind::NegativePolRound.into());
         }
         let round = Round::try_from(
             i32::try_from(value.round).map_err(|e| Kind::IntegerOverflow.context(e))?,

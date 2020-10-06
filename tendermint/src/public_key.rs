@@ -55,19 +55,15 @@ impl DomainType<RawPubKeyResponse> for PublicKey {}
 impl TryFrom<RawPubKeyResponse> for PublicKey {
     type Error = Error;
 
-    // This does not check if the underlying pub_key_ed25519 has the right size.
-    // The caller needs to make sure that this is actually the case.
     fn try_from(value: RawPubKeyResponse) -> Result<Self, Self::Error> {
-        match &value
+        let Sum::Ed25519(b) = &value
             .pub_key
             .ok_or_else(|| format_err!(error::Kind::InvalidKey, "empty pubkey"))?
             .sum
-            .ok_or_else(|| format_err!(error::Kind::InvalidKey, "empty sum"))?
-        {
-            Sum::Ed25519(b) => Ed25519::from_bytes(b),
-        }
-        .map(Into::into)
-        .map_err(|_| format_err!(error::Kind::InvalidKey, "malformed key").into())
+            .ok_or_else(|| format_err!(error::Kind::InvalidKey, "empty sum"))?;
+        Ed25519::from_bytes(b)
+            .map(Into::into)
+            .map_err(|_| format_err!(error::Kind::InvalidKey, "malformed key").into())
     }
 }
 

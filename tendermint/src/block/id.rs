@@ -1,7 +1,7 @@
 use crate::{
     block::parts::Header as PartSetHeader,
-    error::Error,
-    hash::{Algorithm, Hash, SHA256_HASH_SIZE},
+    error::{Error, Kind},
+    hash::{Algorithm, Hash},
 };
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
@@ -22,7 +22,12 @@ pub const PREFIX_LENGTH: usize = 10;
 /// as well as the number of parts in the block.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#blockid>
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
+///
+/// Default implementation is an empty Id as defined by the Go implementation in
+/// https://github.com/tendermint/tendermint/blob/1635d1339c73ae6a82e062cd2dc7191b029efa14/types/block.go#L1204 .
+#[derive(
+    Serialize, Deserialize, Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord,
+)]
 pub struct Id {
     /// The block's main hash is the Merkle root of all the fields in the
     /// block header.
@@ -40,7 +45,11 @@ pub struct Id {
     /// way to propagate a large file over a gossip network.
     ///
     /// <https://github.com/tendermint/tendermint/wiki/Block-Structure#partset>
-    pub parts: Option<PartSetHeader>,
+    ///
+    /// PartSetHeader in protobuf is defined as never nil using the gogoproto
+    /// annotations. This does not translate to Rust, but we can indicate this
+    /// in the DomainType.
+    pub parts: PartSetHeader,
 }
 
 impl DomainType<RawBlockId> for Id {}
@@ -49,12 +58,12 @@ impl TryFrom<RawBlockId> for Id {
     type Error = Error;
 
     fn try_from(value: RawBlockId) -> Result<Self, Self::Error> {
+        if value.part_set_header.is_none() {
+            return Err(Kind::InvalidPartSetHeader.into());
+        }
         Ok(Self {
             hash: value.hash.try_into()?,
-            parts: match value.part_set_header {
-                None => None,
-                Some(p) => Some(p.try_into()?),
-            },
+            parts: value.part_set_header.unwrap().try_into()?,
         })
     }
 }
@@ -76,7 +85,7 @@ impl From<Id> for RawBlockId {
         } else {
             RawBlockId {
                 hash: value.hash.into(),
-                part_set_header: value.parts.map(|p| p.into()),
+                part_set_header: Some(value.parts.into()),
             }
         }
     }
@@ -86,49 +95,26 @@ impl TryFrom<RawCanonicalBlockId> for Id {
     type Error = Error;
 
     fn try_from(value: RawCanonicalBlockId) -> Result<Self, Self::Error> {
+        if value.part_set_header.is_none() {
+            return Err(Kind::InvalidPartSetHeader.into());
+        }
         Ok(Self {
             hash: value.hash.try_into()?,
-            parts: match value.part_set_header {
-                None => None,
-                Some(p) => Some(p.try_into()?),
-            },
+            parts: value.part_set_header.unwrap().try_into()?,
         })
     }
 }
 
 impl From<Id> for RawCanonicalBlockId {
-    // Todo: it's possible that an empty CanonicalBlockId is encoded differently. Test this.
     fn from(value: Id) -> Self {
         RawCanonicalBlockId {
             hash: value.hash.as_bytes().to_vec(),
-            part_set_header: match value.parts {
-                None => None,
-                Some(h) => Some(h.into()),
-            },
-        }
-    }
-}
-
-/// Default implementation is an empty Id as defined by the Go implementation in
-/// https://github.com/tendermint/tendermint/blob/1635d1339c73ae6a82e062cd2dc7191b029efa14/types/block.go#L1204 .
-impl Default for Id {
-    fn default() -> Self {
-        Id {
-            hash: Hash::new(Algorithm::Sha256, &[0; SHA256_HASH_SIZE]).unwrap(),
-            parts: Some(PartSetHeader {
-                total: 0,
-                hash: Hash::new(Algorithm::Sha256, &[0; SHA256_HASH_SIZE]).unwrap(),
-            }),
+            part_set_header: Some(value.parts.into()),
         }
     }
 }
 
 impl Id {
-    /// Create a new `Id` from a hash byte slice
-    pub fn new(hash: Hash, parts: Option<PartSetHeader>) -> Self {
-        Self { hash, parts }
-    }
-
     /// Get a shortened 12-character prefix of a block ID (ala git)
     pub fn prefix(&self) -> String {
         let mut result = self.to_string();
@@ -149,7 +135,10 @@ impl FromStr for Id {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(Self::new(Hash::from_hex_upper(Algorithm::Sha256, s)?, None))
+        Ok(Self {
+            hash: Hash::from_hex_upper(Algorithm::Sha256, s)?,
+            parts: PartSetHeader::default(),
+        })
     }
 }
 

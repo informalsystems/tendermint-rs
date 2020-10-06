@@ -28,7 +28,7 @@ where
 {
     #[derive(Deserialize)]
     struct Parts {
-        total: u64,
+        total: u32,
         hash: String,
     }
     #[derive(Deserialize)]
@@ -43,14 +43,10 @@ where
             Ok(Some(block::Id {
                 hash: Hash::from_str(&tmp_id.hash)
                     .map_err(|err| D::Error::custom(format!("{}", err)))?,
-                parts: if tmp_id.parts.hash.is_empty() {
-                    None
-                } else {
-                    Some(block::parts::Header {
-                        total: tmp_id.parts.total as u32, // Todo: manage overflow
-                        hash: Hash::from_str(&tmp_id.parts.hash)
-                            .map_err(|err| D::Error::custom(format!("{}", err)))?,
-                    })
+                parts: block::parts::Header {
+                    total: tmp_id.parts.total,
+                    hash: Hash::from_str(&tmp_id.parts.hash)
+                        .map_err(|err| D::Error::custom(format!("{}", err)))?,
                 },
             }))
         }

@@ -4,7 +4,7 @@ use serde::Deserialize;
 use simple_error::*;
 use std::convert::TryFrom;
 use tendermint::{
-    block,
+    block::{self, parts::Header as PartSetHeader},
     signature::{self, Signature, Signer, ED25519_SIGNATURE_SIZE},
     vote,
     vote::ValidatorIndex,
@@ -83,7 +83,10 @@ impl Generator<vote::Vote> for Vote {
         let signer = validator.get_private_key()?;
         let block_validator = validator.generate()?;
         let block_header = header.generate()?;
-        let block_id = block::Id::new(block_header.hash(), None);
+        let block_id = block::Id {
+            hash: block_header.hash(),
+            parts: PartSetHeader::default(),
+        };
         let validator_index = match self.index {
             Some(i) => i,
             None => {
