@@ -146,6 +146,17 @@ $ docker run -it --rm -v "/tmp/tendermint:/tendermint" -p 26657:26657 tendermint
 $ cargo test -p tendermint-light-client --test integration -- --ignored --nocapture
 ```
 
+### Other tests
+
+A few core datastructures, such as the [`PeerList`](./src/peer_list.rs) implementation,
+come with unit tests located in the same module as the implementation.
+
+To run these tests together with all tests described above:
+
+```rust
+$ cargo test -p tendermint-light-client --all-features
+```
+
 [//]: # (badges)
 
 [crate-image]: https://img.shields.io/crates/v/tendermint-light-client.svg
