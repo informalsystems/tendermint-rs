@@ -278,7 +278,8 @@ impl ToString for Operation {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Operand {
     String(String),
-    Integer(i64),
+    Signed(i64),
+    Unsigned(u64),
     Float(f64),
     Date(Date<Utc>),
     DateTime(DateTime<Utc>),
@@ -288,7 +289,8 @@ impl ToString for Operand {
     fn to_string(&self) -> String {
         match self {
             Operand::String(s) => single_quote_string(s.clone()),
-            Operand::Integer(i) => format!("{}", i),
+            Operand::Signed(i) => format!("{}", i),
+            Operand::Unsigned(u) => format!("{}", u),
             Operand::Float(f) => format!("{}", f),
             Operand::Date(d) => single_quote_string(d.format("%Y-%m-%d").to_string()),
             Operand::DateTime(dt) => single_quote_string(dt.to_rfc3339()),
@@ -310,7 +312,13 @@ impl Into<Operand> for &str {
 
 impl Into<Operand> for i64 {
     fn into(self) -> Operand {
-        Operand::Integer(self)
+        Operand::Signed(self)
+    }
+}
+
+impl Into<Operand> for u64 {
+    fn into(self) -> Operand {
+        Operand::Unsigned(self)
     }
 }
 
@@ -381,6 +389,9 @@ mod test {
         assert_eq!("key = '\\\\\\'value\\''", query.to_string());
 
         let query = Query::lt("key", 42_i64);
+        assert_eq!("key < 42", query.to_string());
+
+        let query = Query::lt("key", 42_u64);
         assert_eq!("key < 42", query.to_string());
 
         let query = Query::lte("key", 42_i64);
