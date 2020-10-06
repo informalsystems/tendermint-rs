@@ -80,7 +80,7 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 ///         .await
 ///         .unwrap();
 ///
-///     let mut subs = client.subscribe(EventType::Tx.into())
+///     let mut subs = client.subscribe(EventType::NewBlock.into())
 ///         .await
 ///         .unwrap();
 ///
