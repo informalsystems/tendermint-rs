@@ -304,6 +304,12 @@ impl Into<Operand> for String {
     }
 }
 
+impl Into<Operand> for char {
+    fn into(self) -> Operand {
+        Operand::String(self.to_string())
+    }
+}
+
 impl Into<Operand> for &str {
     fn into(self) -> Operand {
         Operand::String(self.to_string())
@@ -316,15 +322,63 @@ impl Into<Operand> for i64 {
     }
 }
 
+impl Into<Operand> for i32 {
+    fn into(self) -> Operand {
+        Operand::Signed(self as i64)
+    }
+}
+
+impl Into<Operand> for i16 {
+    fn into(self) -> Operand {
+        Operand::Signed(self as i64)
+    }
+}
+
+impl Into<Operand> for i8 {
+    fn into(self) -> Operand {
+        Operand::Signed(self as i64)
+    }
+}
+
 impl Into<Operand> for u64 {
     fn into(self) -> Operand {
         Operand::Unsigned(self)
     }
 }
 
+impl Into<Operand> for u32 {
+    fn into(self) -> Operand {
+        Operand::Unsigned(self as u64)
+    }
+}
+
+impl Into<Operand> for u16 {
+    fn into(self) -> Operand {
+        Operand::Unsigned(self as u64)
+    }
+}
+
+impl Into<Operand> for u8 {
+    fn into(self) -> Operand {
+        Operand::Unsigned(self as u64)
+    }
+}
+
+impl Into<Operand> for usize {
+    fn into(self) -> Operand {
+        Operand::Unsigned(self as u64)
+    }
+}
+
 impl Into<Operand> for f64 {
     fn into(self) -> Operand {
         Operand::Float(self)
+    }
+}
+
+impl Into<Operand> for f32 {
+    fn into(self) -> Operand {
+        Operand::Float(self as f64)
     }
 }
 
@@ -382,6 +436,9 @@ mod test {
         let query = Query::eq("key", "value");
         assert_eq!("key = 'value'", query.to_string());
 
+        let query = Query::eq("key", 'v');
+        assert_eq!("key = 'v'", query.to_string());
+
         let query = Query::eq("key", "'value'");
         assert_eq!("key = '\\'value\\''", query.to_string());
 
@@ -402,6 +459,9 @@ mod test {
 
         let query = Query::gte("key", 42_i64);
         assert_eq!("key >= 42", query.to_string());
+
+        let query = Query::eq("key", 42_u8);
+        assert_eq!("key = 42", query.to_string());
 
         let query = Query::contains("key", "some-substring");
         assert_eq!("key CONTAINS 'some-substring'", query.to_string());
