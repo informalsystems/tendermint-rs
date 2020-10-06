@@ -61,7 +61,6 @@ ripemd160 = { version = "0.9", optional = true }
 [dev-dependencies]
 tendermint-rpc = { path = "../rpc", features = [ "http-client", "websocket-client" ] }
 tokio = { version = "0.2", features = [ "macros" ] }
-lazy_static = "1.4"
 
 [features]
 secp256k1 = ["k256", "ripemd160"]

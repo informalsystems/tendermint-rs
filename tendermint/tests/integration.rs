@@ -14,8 +14,6 @@ mod rpc {
     use tendermint_rpc::{Client, HttpClient, Id, SubscriptionClient, WebSocketClient};
 
     use futures::StreamExt;
-    use lazy_static::lazy_static;
-    use std::sync::{Arc, Mutex};
     use subtle_encoding::base64;
     use tendermint::abci::Log;
     use tendermint::abci::{Code, Transaction};
@@ -23,10 +21,6 @@ mod rpc {
     use tendermint_rpc::event::{Event, EventData};
     use tendermint_rpc::query::EventType;
     use tokio::time::Duration;
-
-    lazy_static! {
-        static ref TX_SUBSCRIPTION_GUARD: Arc<Mutex<usize>> = Arc::new(Mutex::new(0));
-    }
 
     /// Get the address of the local node
     pub fn localhost_rpc_client() -> HttpClient {
@@ -49,10 +43,7 @@ mod rpc {
         let abci_info = localhost_rpc_client().abci_info().await.unwrap();
 
         assert_eq!(abci_info.app_version, 1u64);
-        // the kvstore app's reply will contain "{\"size\":0}" as data right from the start
-        assert_eq!(&abci_info.data, "{\"size\":0}");
         assert_eq!(abci_info.data.is_empty(), false);
-        assert_eq!(abci_info.last_block_app_hash[0], 65);
     }
 
     /// `/abci_query` endpoint
@@ -198,9 +189,15 @@ mod rpc {
     #[tokio::test]
     #[ignore]
     async fn transaction_subscription() {
-        let tx_subscription_guard = TX_SUBSCRIPTION_GUARD.clone();
-        let _guard = tx_subscription_guard.lock().unwrap();
+        // We run these sequentially wrapped within a single test to ensure
+        // that Tokio doesn't execute them simultaneously. If they are executed
+        // simultaneously, their submitted transactions interfere with each
+        // other and one of them will (incorrectly) fail.
+        simple_transaction_subscription().await;
+        concurrent_subscriptions().await;
+    }
 
+    async fn simple_transaction_subscription() {
         let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
         let mut subs_client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
@@ -267,12 +264,7 @@ mod rpc {
         subs_client.close().await.unwrap();
     }
 
-    #[tokio::test]
-    #[ignore]
     async fn concurrent_subscriptions() {
-        let tx_subscription_guard = TX_SUBSCRIPTION_GUARD.clone();
-        let _guard = tx_subscription_guard.lock().unwrap();
-
         let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
         let mut subs_client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
