@@ -51,14 +51,8 @@ impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
             height: value.height.try_into()?,
             round,
             pol_round,
-            block_id: match value.block_id {
-                None => None,
-                Some(block_id) => Some(block_id.try_into()?),
-            },
-            timestamp: match value.timestamp {
-                None => None,
-                Some(t) => Some(t.try_into()?),
-            },
+            block_id: value.block_id.map(TryInto::try_into).transpose()?,
+            timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
             chain_id: ChainId::try_from(value.chain_id).unwrap(),
         })
     }
@@ -74,11 +68,8 @@ impl From<CanonicalProposal> for RawCanonicalProposal {
                 None => -1,
                 Some(p) => i32::from(p) as i64,
             },
-            block_id: match value.block_id {
-                None => None,
-                Some(block_id) => Some(block_id.into()),
-            },
-            timestamp: value.timestamp.map(|t| t.into()),
+            block_id: value.block_id.map(Into::into),
+            timestamp: value.timestamp.map(Into::into),
             chain_id: value.chain_id.as_str().to_string(),
         }
     }

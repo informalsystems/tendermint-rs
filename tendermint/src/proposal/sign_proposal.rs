@@ -2,7 +2,7 @@ use super::Proposal;
 use crate::chain::Id as ChainId;
 use crate::{Error, Kind};
 use bytes::BufMut;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use tendermint_proto::privval::RemoteSignerError;
 use tendermint_proto::privval::SignProposalRequest as RawSignProposalRequest;
 use tendermint_proto::privval::SignedProposalResponse as RawSignedProposalResponse;
@@ -74,10 +74,7 @@ impl TryFrom<RawSignedProposalResponse> for SignedProposalResponse {
 
     fn try_from(value: RawSignedProposalResponse) -> Result<Self, Self::Error> {
         Ok(SignedProposalResponse {
-            proposal: match value.proposal {
-                None => None,
-                Some(proposal) => Some(Proposal::try_from(proposal)?),
-            },
+            proposal: value.proposal.map(TryInto::try_into).transpose()?,
             error: value.error,
         })
     }
@@ -86,7 +83,7 @@ impl TryFrom<RawSignedProposalResponse> for SignedProposalResponse {
 impl From<SignedProposalResponse> for RawSignedProposalResponse {
     fn from(value: SignedProposalResponse) -> Self {
         RawSignedProposalResponse {
-            proposal: value.proposal.map(|p| p.into()),
+            proposal: value.proposal.map(Into::into),
             error: value.error,
         }
     }

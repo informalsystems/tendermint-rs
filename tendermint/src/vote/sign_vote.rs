@@ -74,10 +74,7 @@ impl TryFrom<RawSignedVoteResponse> for SignedVoteResponse {
 
     fn try_from(value: RawSignedVoteResponse) -> Result<Self, Self::Error> {
         Ok(SignedVoteResponse {
-            vote: match value.vote {
-                None => None,
-                Some(vote) => Some(Vote::try_from(vote)?),
-            },
+            vote: value.vote.map(TryFrom::try_from).transpose()?,
             error: value.error,
         })
     }
@@ -86,7 +83,7 @@ impl TryFrom<RawSignedVoteResponse> for SignedVoteResponse {
 impl From<SignedVoteResponse> for RawSignedVoteResponse {
     fn from(value: SignedVoteResponse) -> Self {
         RawSignedVoteResponse {
-            vote: value.vote.map(|v| v.into()),
+            vote: value.vote.map(Into::into),
             error: value.error,
         }
     }

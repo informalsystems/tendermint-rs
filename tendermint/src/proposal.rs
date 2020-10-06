@@ -56,14 +56,8 @@ impl TryFrom<RawProposal> for Proposal {
             height: value.height.try_into()?,
             round: value.round.try_into()?,
             pol_round,
-            block_id: match value.block_id {
-                None => None,
-                Some(raw_block_id) => Some(BlockId::try_from(raw_block_id)?),
-            },
-            timestamp: match value.timestamp {
-                None => None,
-                Some(t) => Some(t.try_into()?),
-            },
+            block_id: value.block_id.map(TryInto::try_into).transpose()?,
+            timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
             signature: value.signature.try_into()?,
         })
     }
@@ -75,9 +69,9 @@ impl From<Proposal> for RawProposal {
             r#type: value.msg_type.into(),
             height: value.height.into(),
             round: value.round.into(),
-            pol_round: value.pol_round.map_or(-1, |p| p.into()),
-            block_id: value.block_id.map(|b| b.into()),
-            timestamp: value.timestamp.map(|t| t.into()),
+            pol_round: value.pol_round.map_or(-1, Into::into),
+            block_id: value.block_id.map(Into::into),
+            timestamp: value.timestamp.map(Into::into),
             signature: value.signature.into(),
         }
     }

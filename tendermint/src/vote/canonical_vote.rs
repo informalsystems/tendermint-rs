@@ -52,14 +52,8 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
             vote_type: value.r#type.try_into()?,
             height: value.height.try_into()?,
             round: (value.round as i32).try_into()?,
-            block_id: match value.block_id {
-                None => None,
-                Some(b) => Some(b.try_into()?),
-            },
-            timestamp: match value.timestamp {
-                None => None,
-                Some(t) => Some(t.try_into()?),
-            },
+            block_id: value.block_id.map(TryInto::try_into).transpose()?,
+            timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
             chain_id: chain::Id::try_from(value.chain_id)?,
         })
     }
@@ -71,14 +65,8 @@ impl From<CanonicalVote> for RawCanonicalVote {
             r#type: value.vote_type.into(),
             height: value.height.into(),
             round: value.round.value().into(),
-            block_id: match value.block_id {
-                None => None,
-                Some(b) => Some(b.into()),
-            },
-            timestamp: match value.timestamp {
-                None => None,
-                Some(t) => Some(t.into()),
-            },
+            block_id: value.block_id.map(Into::into),
+            timestamp: value.timestamp.map(Into::into),
             chain_id: value.chain_id.to_string(),
         }
     }
