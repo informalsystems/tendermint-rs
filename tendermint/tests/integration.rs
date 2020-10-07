@@ -19,6 +19,7 @@ mod rpc {
     use tendermint::abci::{Code, Transaction};
     use tendermint::merkle::simple_hash_from_byte_vectors;
     use tendermint_rpc::event::{Event, EventData};
+    use tendermint_rpc::query::EventType;
     use tokio::time::Duration;
 
     /// Get the address of the local node
@@ -42,10 +43,7 @@ mod rpc {
         let abci_info = localhost_rpc_client().abci_info().await.unwrap();
 
         assert_eq!(abci_info.app_version, 1u64);
-        // the kvstore app's reply will contain "{\"size\":0}" as data right from the start
-        assert_eq!(&abci_info.data, "{\"size\":0}");
         assert_eq!(abci_info.data.is_empty(), false);
-        assert_eq!(abci_info.last_block_app_hash[0], 65);
     }
 
     /// `/abci_query` endpoint
@@ -171,10 +169,7 @@ mod rpc {
         let mut client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
-        let mut subs = client
-            .subscribe("tm.event='NewBlock'".to_string())
-            .await
-            .unwrap();
+        let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
         let mut ev_count = 5_i32;
 
         println!("Attempting to grab {} new blocks", ev_count);
@@ -194,14 +189,20 @@ mod rpc {
     #[tokio::test]
     #[ignore]
     async fn transaction_subscription() {
+        // We run these sequentially wrapped within a single test to ensure
+        // that Tokio doesn't execute them simultaneously. If they are executed
+        // simultaneously, their submitted transactions interfere with each
+        // other and one of them will (incorrectly) fail.
+        simple_transaction_subscription().await;
+        concurrent_subscriptions().await;
+    }
+
+    async fn simple_transaction_subscription() {
         let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
         let mut subs_client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
-        let mut subs = subs_client
-            .subscribe("tm.event='Tx'".to_string())
-            .await
-            .unwrap();
+        let mut subs = subs_client.subscribe(EventType::Tx.into()).await.unwrap();
         // We use Id::uuid_v4() here as a quick hack to generate a random value.
         let mut expected_tx_values = (0..10_u32)
             .map(|_| Id::uuid_v4().to_string())
@@ -263,21 +264,16 @@ mod rpc {
         subs_client.close().await.unwrap();
     }
 
-    #[tokio::test]
-    #[ignore]
     async fn concurrent_subscriptions() {
         let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
         let mut subs_client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
         let new_block_subs = subs_client
-            .subscribe("tm.event='NewBlock'".to_string())
+            .subscribe(EventType::NewBlock.into())
             .await
             .unwrap();
-        let tx_subs = subs_client
-            .subscribe("tm.event='Tx'".to_string())
-            .await
-            .unwrap();
+        let tx_subs = subs_client.subscribe(EventType::Tx.into()).await.unwrap();
 
         // We use Id::uuid_v4() here as a quick hack to generate a random value.
         let mut expected_tx_values = (0..10_u32)
