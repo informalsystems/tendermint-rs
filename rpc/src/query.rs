@@ -45,7 +45,7 @@ impl Query {
     pub fn eq(key: impl ToString, value: impl Into<Operand>) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::new(key.to_string(), Operation::Eq(value.into()))],
+            conditions: vec![Condition::Eq(key.to_string(), value.into())],
         }
     }
 
@@ -53,7 +53,7 @@ impl Query {
     pub fn lt(key: impl ToString, value: impl Into<Operand>) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::new(key.to_string(), Operation::Lt(value.into()))],
+            conditions: vec![Condition::Lt(key.to_string(), value.into())],
         }
     }
 
@@ -61,10 +61,7 @@ impl Query {
     pub fn lte(key: impl ToString, value: impl Into<Operand>) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::new(
-                key.to_string(),
-                Operation::Lte(value.into()),
-            )],
+            conditions: vec![Condition::Lte(key.to_string(), value.into())],
         }
     }
 
@@ -72,7 +69,7 @@ impl Query {
     pub fn gt(key: impl ToString, value: impl Into<Operand>) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::new(key.to_string(), Operation::Gt(value.into()))],
+            conditions: vec![Condition::Gt(key.to_string(), value.into())],
         }
     }
 
@@ -80,10 +77,7 @@ impl Query {
     pub fn gte(key: impl ToString, value: impl Into<Operand>) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::new(
-                key.to_string(),
-                Operation::Gte(value.into()),
-            )],
+            conditions: vec![Condition::Gte(key.to_string(), value.into())],
         }
     }
 
@@ -93,10 +87,7 @@ impl Query {
     pub fn contains(key: impl ToString, value: impl ToString) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::new(
-                key.to_string(),
-                Operation::Contains(value.to_string()),
-            )],
+            conditions: vec![Condition::Contains(key.to_string(), value.to_string())],
         }
     }
 
@@ -104,62 +95,55 @@ impl Query {
     pub fn exists(key: impl ToString) -> Self {
         Self {
             event_type: None,
-            conditions: vec![Condition::new(key.to_string(), Operation::Exists)],
+            conditions: vec![Condition::Exists(key.to_string())],
         }
     }
 
     /// Add the condition `<key> = <value>` to the query.
     pub fn and_eq(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
         self.conditions
-            .push(Condition::new(key.to_string(), Operation::Eq(value.into())));
+            .push(Condition::Eq(key.to_string(), value.into()));
         self
     }
 
     /// Add the condition `<key> < <value>` to the query.
     pub fn and_lt(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
         self.conditions
-            .push(Condition::new(key.to_string(), Operation::Lt(value.into())));
+            .push(Condition::Lt(key.to_string(), value.into()));
         self
     }
 
     /// Add the condition `<key> <= <value>` to the query.
     pub fn and_lte(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
-        self.conditions.push(Condition::new(
-            key.to_string(),
-            Operation::Lte(value.into()),
-        ));
+        self.conditions
+            .push(Condition::Lte(key.to_string(), value.into()));
         self
     }
 
     /// Add the condition `<key> > <value>` to the query.
     pub fn and_gt(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
         self.conditions
-            .push(Condition::new(key.to_string(), Operation::Gt(value.into())));
+            .push(Condition::Gt(key.to_string(), value.into()));
         self
     }
 
     /// Add the condition `<key> >= <value>` to the query.
     pub fn and_gte(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
-        self.conditions.push(Condition::new(
-            key.to_string(),
-            Operation::Gte(value.into()),
-        ));
+        self.conditions
+            .push(Condition::Gte(key.to_string(), value.into()));
         self
     }
 
     /// Add the condition `<key> CONTAINS <value>` to the query.
     pub fn and_contains(mut self, key: impl ToString, value: impl ToString) -> Self {
-        self.conditions.push(Condition::new(
-            key.to_string(),
-            Operation::Contains(value.to_string()),
-        ));
+        self.conditions
+            .push(Condition::Contains(key.to_string(), value.to_string()));
         self
     }
 
     /// Add the condition `<key> EXISTS` to the query.
     pub fn and_exists(mut self, key: impl ToString) -> Self {
-        self.conditions
-            .push(Condition::new(key.to_string(), Operation::Exists));
+        self.conditions.push(Condition::Exists(key.to_string()));
         self
     }
 }
@@ -235,63 +219,37 @@ impl fmt::Display for EventType {
     }
 }
 
-/// A `Condition` takes the form of `<key> <operation>` in a [`Query`].
-///
-/// See [`Operation`] for the types of operations supported.
+/// The different types of conditions supported by a [`Query`].
 ///
 /// [`Query`]: struct.Query.html
-/// [`Operation`]: enum.Operation.html
 #[derive(Debug, Clone, PartialEq)]
-pub struct Condition {
-    key: String,
-    op: Operation,
-}
-
-impl Condition {
-    fn new(key: String, op: Operation) -> Self {
-        Self { key, op }
-    }
+pub enum Condition {
+    /// Equals
+    Eq(String, Operand),
+    /// Less than
+    Lt(String, Operand),
+    /// Less than or equal to
+    Lte(String, Operand),
+    /// Greater than
+    Gt(String, Operand),
+    /// Greater than or equal to
+    Gte(String, Operand),
+    /// Contains (to check if a key contains a certain sub-string)
+    Contains(String, String),
+    /// Exists (to check if a key exists)
+    Exists(String),
 }
 
 impl fmt::Display for Condition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}", self.key, self.op)
-    }
-}
-
-/// The different types of operations supported by a [`Condition`] in a
-/// [`Query`].
-///
-/// [`Condition`]: struct.Condition.html
-/// [`Query`]: struct.Query.html
-#[derive(Debug, Clone, PartialEq)]
-pub enum Operation {
-    /// Equals
-    Eq(Operand),
-    /// Less than
-    Lt(Operand),
-    /// Less than or equal to
-    Lte(Operand),
-    /// Greater than
-    Gt(Operand),
-    /// Greater than or equal to
-    Gte(Operand),
-    /// Contains (to check if a string contains a certain sub-string)
-    Contains(String),
-    /// Exists
-    Exists,
-}
-
-impl fmt::Display for Operation {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Operation::Eq(op) => write!(f, "= {}", op),
-            Operation::Lt(op) => write!(f, "< {}", op),
-            Operation::Lte(op) => write!(f, "<= {}", op),
-            Operation::Gt(op) => write!(f, "> {}", op),
-            Operation::Gte(op) => write!(f, ">= {}", op),
-            Operation::Contains(op) => write!(f, "CONTAINS {}", escape(op)),
-            Operation::Exists => write!(f, "EXISTS"),
+            Condition::Eq(key, op) => write!(f, "{} = {}", key, op),
+            Condition::Lt(key, op) => write!(f, "{} < {}", key, op),
+            Condition::Lte(key, op) => write!(f, "{} <= {}", key, op),
+            Condition::Gt(key, op) => write!(f, "{} > {}", key, op),
+            Condition::Gte(key, op) => write!(f, "{} >= {}", key, op),
+            Condition::Contains(key, op) => write!(f, "{} CONTAINS {}", key, escape(op)),
+            Condition::Exists(key) => write!(f, "{} EXISTS", key),
         }
     }
 }
