@@ -254,13 +254,13 @@ impl fmt::Display for Condition {
     }
 }
 
-/// A typed operand for use in an [`Operation`].
+/// A typed operand for use in an [`Condition`].
 ///
 /// According to the [Tendermint RPC subscribe docs][tm-subscribe],
 /// an operand can be a string, number, date or time. We differentiate here
 /// between integer and floating point numbers.
 ///
-/// [`Operation`]: enum.Operation.html
+/// [`Condition`]: enum.Condition.html
 /// [tm-subscribe]: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
 #[derive(Debug, Clone, PartialEq)]
 pub enum Operand {
