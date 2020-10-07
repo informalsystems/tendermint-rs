@@ -106,18 +106,21 @@ impl Query {
         }
     }
 
+    /// Add the condition `<key> = <value>` to the query.
     pub fn and_eq(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
         self.conditions
             .push(Condition::new(key.to_string(), Operation::Eq(value.into())));
         self
     }
 
+    /// Add the condition `<key> < <value>` to the query.
     pub fn and_lt(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
         self.conditions
             .push(Condition::new(key.to_string(), Operation::Lt(value.into())));
         self
     }
 
+    /// Add the condition `<key> <= <value>` to the query.
     pub fn and_lte(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
         self.conditions.push(Condition::new(
             key.to_string(),
@@ -126,12 +129,14 @@ impl Query {
         self
     }
 
+    /// Add the condition `<key> > <value>` to the query.
     pub fn and_gt(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
         self.conditions
             .push(Condition::new(key.to_string(), Operation::Gt(value.into())));
         self
     }
 
+    /// Add the condition `<key> >= <value>` to the query.
     pub fn and_gte(mut self, key: impl ToString, value: impl Into<Operand>) -> Self {
         self.conditions.push(Condition::new(
             key.to_string(),
@@ -140,6 +145,7 @@ impl Query {
         self
     }
 
+    /// Add the condition `<key> CONTAINS <value>` to the query.
     pub fn and_contains(mut self, key: impl ToString, value: impl ToString) -> Self {
         self.conditions.push(Condition::new(
             key.to_string(),
@@ -148,6 +154,7 @@ impl Query {
         self
     }
 
+    /// Add the condition `<key> EXISTS` to the query.
     pub fn and_exists(mut self, key: impl ToString) -> Self {
         self.conditions
             .push(Condition::new(key.to_string(), Operation::Exists));
