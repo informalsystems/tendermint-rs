@@ -327,105 +327,105 @@ impl fmt::Display for Operand {
     }
 }
 
-impl Into<Operand> for String {
-    fn into(self) -> Operand {
-        Operand::String(self)
+impl From<String> for Operand {
+    fn from(source: String) -> Self {
+        Operand::String(source)
     }
 }
 
-impl Into<Operand> for char {
-    fn into(self) -> Operand {
-        Operand::String(self.to_string())
+impl From<char> for Operand {
+    fn from(source: char) -> Self {
+        Operand::String(source.to_string())
     }
 }
 
-impl Into<Operand> for &str {
-    fn into(self) -> Operand {
-        Operand::String(self.to_string())
+impl From<&str> for Operand {
+    fn from(source: &str) -> Self {
+        Operand::String(source.to_string())
     }
 }
 
-impl Into<Operand> for i64 {
-    fn into(self) -> Operand {
-        Operand::Signed(self)
+impl From<i64> for Operand {
+    fn from(source: i64) -> Self {
+        Operand::Signed(source)
     }
 }
 
-impl Into<Operand> for i32 {
-    fn into(self) -> Operand {
-        Operand::Signed(self as i64)
+impl From<i32> for Operand {
+    fn from(source: i32) -> Self {
+        Operand::Signed(source as i64)
     }
 }
 
-impl Into<Operand> for i16 {
-    fn into(self) -> Operand {
-        Operand::Signed(self as i64)
+impl From<i16> for Operand {
+    fn from(source: i16) -> Self {
+        Operand::Signed(source as i64)
     }
 }
 
-impl Into<Operand> for i8 {
-    fn into(self) -> Operand {
-        Operand::Signed(self as i64)
+impl From<i8> for Operand {
+    fn from(source: i8) -> Self {
+        Operand::Signed(source as i64)
     }
 }
 
-impl Into<Operand> for u64 {
-    fn into(self) -> Operand {
-        Operand::Unsigned(self)
+impl From<u64> for Operand {
+    fn from(source: u64) -> Self {
+        Operand::Unsigned(source)
     }
 }
 
-impl Into<Operand> for u32 {
-    fn into(self) -> Operand {
-        Operand::Unsigned(self as u64)
+impl From<u32> for Operand {
+    fn from(source: u32) -> Self {
+        Operand::Unsigned(source as u64)
     }
 }
 
-impl Into<Operand> for u16 {
-    fn into(self) -> Operand {
-        Operand::Unsigned(self as u64)
+impl From<u16> for Operand {
+    fn from(source: u16) -> Self {
+        Operand::Unsigned(source as u64)
     }
 }
 
-impl Into<Operand> for u8 {
-    fn into(self) -> Operand {
-        Operand::Unsigned(self as u64)
+impl From<u8> for Operand {
+    fn from(source: u8) -> Self {
+        Operand::Unsigned(source as u64)
     }
 }
 
-impl Into<Operand> for usize {
-    fn into(self) -> Operand {
-        Operand::Unsigned(self as u64)
+impl From<usize> for Operand {
+    fn from(source: usize) -> Self {
+        Operand::Unsigned(source as u64)
     }
 }
 
-impl Into<Operand> for f64 {
-    fn into(self) -> Operand {
-        Operand::Float(self)
+impl From<f64> for Operand {
+    fn from(source: f64) -> Self {
+        Operand::Float(source)
     }
 }
 
-impl Into<Operand> for f32 {
-    fn into(self) -> Operand {
-        Operand::Float(self as f64)
+impl From<f32> for Operand {
+    fn from(source: f32) -> Self {
+        Operand::Float(source as f64)
     }
 }
 
-impl Into<Operand> for Date<Utc> {
-    fn into(self) -> Operand {
-        Operand::Date(self)
+impl From<Date<Utc>> for Operand {
+    fn from(source: Date<Utc>) -> Self {
+        Operand::Date(source)
     }
 }
 
-impl Into<Operand> for DateTime<Utc> {
-    fn into(self) -> Operand {
-        Operand::DateTime(self)
+impl From<DateTime<Utc>> for Operand {
+    fn from(source: DateTime<Utc>) -> Self {
+        Operand::DateTime(source)
     }
 }
 
-impl Into<Operand> for DateTime<FixedOffset> {
-    fn into(self) -> Operand {
-        Operand::DateTime(self.into())
+impl From<DateTime<FixedOffset>> for Operand {
+    fn from(source: DateTime<FixedOffset>) -> Self {
+        Operand::DateTime(source.into())
     }
 }
 
