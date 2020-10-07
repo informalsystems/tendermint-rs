@@ -3,11 +3,9 @@
 mod hash;
 
 pub use self::hash::Hash;
-use std::slice;
-use {
-    serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
-    subtle_encoding::base64,
-};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use std::{fmt, slice};
+use subtle_encoding::base64;
 
 /// Transactions are arbitrary byte arrays whose contents are validated by the
 /// underlying Tendermint application.
@@ -37,6 +35,16 @@ impl Transaction {
 impl AsRef<[u8]> for Transaction {
     fn as_ref(&self) -> &[u8] {
         self.as_bytes()
+    }
+}
+
+impl fmt::UpperHex for Transaction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for byte in self.as_bytes() {
+            write!(f, "{:02X}", byte)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -91,5 +99,17 @@ impl Data {
 impl AsRef<[Transaction]> for Data {
     fn as_ref(&self) -> &[Transaction] {
         self.txs.as_deref().unwrap_or_else(|| &[])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Transaction;
+
+    #[test]
+    fn upper_hex_serialization() {
+        let tx = Transaction::new(vec![0xFF, 0x01, 0xFE, 0x02]);
+        let tx_hex = format!("{:X}", &tx);
+        assert_eq!(&tx_hex, "FF01FE02");
     }
 }

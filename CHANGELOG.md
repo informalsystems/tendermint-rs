@@ -38,6 +38,9 @@
   `MockClient` struct, just enable features `client` and `transport_mock`.
   See the crate docs for more details.
   ([#516])
+- `[rpc]` The subscription client interface provides a structured `Query`
+  mechanism to help ensure compile-time validity of subscription queries.
+  See the crate docs and [#584] for details.
 
 [#414]: https://github.com/informalsystems/tendermint-rs/issues/414
 [#524]: https://github.com/informalsystems/tendermint-rs/issues/524
@@ -50,6 +53,7 @@
 [#516]: https://github.com/informalsystems/tendermint-rs/pull/516
 [#536]: https://github.com/informalsystems/tendermint-rs/issues/536
 [#585]: https://github.com/informalsystems/tendermint-rs/issues/585
+[#584]: https://github.com/informalsystems/tendermint-rs/pull/584
 
 ## v0.16.0
 

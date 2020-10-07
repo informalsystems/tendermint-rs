@@ -40,6 +40,7 @@ websocket-client = [
 
 [dependencies]
 bytes = "0.5"
+chrono = "0.4"
 getrandom = "0.1"
 serde = { version = "1", features = [ "derive" ] }
 serde_bytes = "0.11"

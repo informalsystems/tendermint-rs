@@ -53,6 +53,7 @@ pub mod error;
 pub mod event;
 mod id;
 mod method;
+pub mod query;
 pub mod request;
 pub mod response;
 mod result;
