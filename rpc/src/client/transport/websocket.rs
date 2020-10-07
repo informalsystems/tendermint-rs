@@ -110,7 +110,7 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 /// [`Event`]: ./event/struct.Event.html
 /// [`close`]: struct.WebSocketClient.html#method.close
 /// [tendermint-websocket-ping]: https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L28
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WebSocketClient {
     cmd_tx: ChannelTx<SubscriptionDriverCmd>,
 }
