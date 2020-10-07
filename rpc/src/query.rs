@@ -4,6 +4,8 @@
 //!
 //! [`Query`]: struct.Query.html
 
+use std::fmt;
+
 use chrono::{Date, DateTime, FixedOffset, Utc};
 
 /// A structured query for use in interacting with the Tendermint RPC event
@@ -183,17 +185,38 @@ impl From<EventType> for Query {
     }
 }
 
-impl ToString for Query {
-    fn to_string(&self) -> String {
-        let mut conditions: Vec<String> = Vec::new();
+impl fmt::Display for Query {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(t) = &self.event_type {
-            conditions.push(format!("tm.event = '{}'", t.to_string()));
+            write!(f, "tm.event = '{}'", t)?;
+
+            if !self.conditions.is_empty() {
+                write!(f, " AND ")?;
+            }
         }
-        self.conditions
-            .iter()
-            .for_each(|c| conditions.push(c.to_string()));
-        conditions.join(" AND ")
+
+        join(f, " AND ", &self.conditions)?;
+
+        Ok(())
     }
+}
+
+fn join<S, I>(f: &mut fmt::Formatter<'_>, separator: S, iterable: I) -> fmt::Result
+where
+    S: fmt::Display,
+    I: IntoIterator,
+    I::Item: fmt::Display,
+{
+    let mut iter = iterable.into_iter();
+    if let Some(first) = iter.next() {
+        write!(f, "{}", first)?;
+    }
+
+    for item in iter {
+        write!(f, "{}{}", separator, item)?;
+    }
+
+    Ok(())
 }
 
 /// The types of Tendermint events for which we can query at present.
@@ -203,13 +226,12 @@ pub enum EventType {
     Tx,
 }
 
-impl ToString for EventType {
-    fn to_string(&self) -> String {
+impl fmt::Display for EventType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            EventType::NewBlock => "NewBlock",
-            EventType::Tx => "Tx",
+            EventType::NewBlock => write!(f, "NewBlock"),
+            EventType::Tx => write!(f, "Tx"),
         }
-        .to_string()
     }
 }
 
@@ -231,9 +253,9 @@ impl Condition {
     }
 }
 
-impl ToString for Condition {
-    fn to_string(&self) -> String {
-        format!("{} {}", self.key, self.op.to_string())
+impl fmt::Display for Condition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {}", self.key, self.op)
     }
 }
 
@@ -260,16 +282,16 @@ pub enum Operation {
     Exists,
 }
 
-impl ToString for Operation {
-    fn to_string(&self) -> String {
+impl fmt::Display for Operation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Operation::Eq(op) => format!("= {}", op.to_string()),
-            Operation::Lt(op) => format!("< {}", op.to_string()),
-            Operation::Lte(op) => format!("<= {}", op.to_string()),
-            Operation::Gt(op) => format!("> {}", op.to_string()),
-            Operation::Gte(op) => format!(">= {}", op.to_string()),
-            Operation::Contains(op) => format!("CONTAINS {}", single_quote_string(op.clone())),
-            Operation::Exists => "EXISTS".to_string(),
+            Operation::Eq(op) => write!(f, "= {}", op),
+            Operation::Lt(op) => write!(f, "< {}", op),
+            Operation::Lte(op) => write!(f, "<= {}", op),
+            Operation::Gt(op) => write!(f, "> {}", op),
+            Operation::Gte(op) => write!(f, ">= {}", op),
+            Operation::Contains(op) => write!(f, "CONTAINS {}", escape(op)),
+            Operation::Exists => write!(f, "EXISTS"),
         }
     }
 }
@@ -292,15 +314,15 @@ pub enum Operand {
     DateTime(DateTime<Utc>),
 }
 
-impl ToString for Operand {
-    fn to_string(&self) -> String {
+impl fmt::Display for Operand {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Operand::String(s) => single_quote_string(s.clone()),
-            Operand::Signed(i) => format!("{}", i),
-            Operand::Unsigned(u) => format!("{}", u),
-            Operand::Float(f) => format!("{}", f),
-            Operand::Date(d) => single_quote_string(d.format("%Y-%m-%d").to_string()),
-            Operand::DateTime(dt) => single_quote_string(dt.to_rfc3339()),
+            Operand::String(s) => write!(f, "{}", escape(s)),
+            Operand::Signed(i) => write!(f, "{}", i),
+            Operand::Unsigned(u) => write!(f, "{}", u),
+            Operand::Float(h) => write!(f, "{}", h),
+            Operand::Date(d) => write!(f, "{}", escape(&d.format("%Y-%m-%d").to_string())),
+            Operand::DateTime(dt) => write!(f, "{}", escape(&dt.to_rfc3339())),
         }
     }
 }
@@ -407,7 +429,8 @@ impl Into<Operand> for DateTime<FixedOffset> {
     }
 }
 
-fn single_quote_string(s: String) -> String {
+/// Escape backslashes and single quotes within the given string with a backslash.
+fn escape(s: &str) -> String {
     let mut result = String::new();
     for ch in s.chars() {
         if ch == '\\' || ch == '\'' {
