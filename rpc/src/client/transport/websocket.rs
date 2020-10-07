@@ -24,7 +24,6 @@ use std::ops::Add;
 use std::str::FromStr;
 use tendermint::net;
 use tokio::net::TcpStream;
-use tokio::task::JoinHandle;
 use tokio::time::{Duration, Instant};
 
 // WebSocket connection times out if we haven't heard anything at all from the
@@ -76,9 +75,10 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let mut client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+///     let (mut client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
 ///         .await
 ///         .unwrap();
+///     let driver_handle = tokio::spawn(async move { driver.run().await });
 ///
 ///     let mut subs = client.subscribe(EventType::NewBlock.into())
 ///         .await
@@ -100,8 +100,10 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 ///     // the connection open.
 ///     subs.terminate().await.unwrap();
 ///
-///     // Attempt to gracefully terminate the WebSocket connection.
+///     // Signal to the driver to terminate.
 ///     client.close().await.unwrap();
+///     // Await the driver's termination to ensure proper connection closure.
+///     let _ = driver_handle.await.unwrap();
 /// }
 /// ```
 ///
@@ -110,28 +112,25 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 /// [tendermint-websocket-ping]: https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L28
 #[derive(Debug)]
 pub struct WebSocketClient {
-    host: String,
-    port: u16,
-    driver_handle: JoinHandle<Result<()>>,
     cmd_tx: ChannelTx<SubscriptionDriverCmd>,
 }
 
 impl WebSocketClient {
     /// Construct a WebSocket client. Immediately attempts to open a WebSocket
     /// connection to the node with the given address.
-    pub async fn new(address: net::Address) -> Result<Self> {
+    ///
+    /// On success, this returns both a client handle (a `WebSocketClient`
+    /// instance) as well as the WebSocket connection driver. The execution of
+    /// this driver becomes the responsibility of the client owner, and must be
+    /// executed in a separate asynchronous context to the client to ensure it
+    /// doesn't block the client.
+    pub async fn new(address: net::Address) -> Result<(Self, WebSocketClientDriver)> {
         let (host, port) = get_tcp_host_port(address)?;
         let (stream, _response) =
             connect_async(&format!("ws://{}:{}/websocket", &host, port)).await?;
         let (cmd_tx, cmd_rx) = unbounded();
-        let driver = WebSocketSubscriptionDriver::new(stream, cmd_rx);
-        let driver_handle = tokio::spawn(async move { driver.run().await });
-        Ok(Self {
-            host,
-            port,
-            driver_handle,
-            cmd_tx,
-        })
+        let driver = WebSocketClientDriver::new(stream, cmd_rx);
+        Ok((Self { cmd_tx }, driver))
     }
 
     async fn send_cmd(&mut self, cmd: SubscriptionDriverCmd) -> Result<()> {
@@ -140,15 +139,9 @@ impl WebSocketClient {
         })
     }
 
-    /// Attempt to gracefully close the WebSocket connection.
+    /// Signals to the driver that it must terminate.
     pub async fn close(mut self) -> Result<()> {
-        self.send_cmd(SubscriptionDriverCmd::Terminate).await?;
-        self.driver_handle.await.map_err(|e| {
-            Error::client_internal_error(format!(
-                "failed while waiting for WebSocket driver task to terminate: {}",
-                e
-            ))
-        })?
+        self.send_cmd(SubscriptionDriverCmd::Terminate).await
     }
 }
 
@@ -179,14 +172,18 @@ struct GenericJSONResponse(serde_json::Value);
 
 impl Response for GenericJSONResponse {}
 
+/// Drives the WebSocket connection for a `WebSocketClient` instance.
+///
+/// This is the primary component responsible for transport-level interaction
+/// with the remote WebSocket endpoint.
 #[derive(Debug)]
-struct WebSocketSubscriptionDriver {
+pub struct WebSocketClientDriver {
     stream: WebSocketStream<TokioAdapter<TcpStream>>,
     router: TwoPhaseSubscriptionRouter,
     cmd_rx: ChannelRx<SubscriptionDriverCmd>,
 }
 
-impl WebSocketSubscriptionDriver {
+impl WebSocketClientDriver {
     fn new(
         stream: WebSocketStream<TokioAdapter<TcpStream>>,
         cmd_rx: ChannelRx<SubscriptionDriverCmd>,
@@ -198,7 +195,9 @@ impl WebSocketSubscriptionDriver {
         }
     }
 
-    async fn run(mut self) -> Result<()> {
+    /// Executes the WebSocket driver, which manages the underlying WebSocket
+    /// transport.
+    pub async fn run(mut self) -> Result<()> {
         let mut ping_interval =
             tokio::time::interval_at(Instant::now().add(PING_INTERVAL), PING_INTERVAL);
         let mut recv_timeout = tokio::time::delay_for(PING_INTERVAL);
@@ -402,6 +401,7 @@ mod test {
     use std::str::FromStr;
     use tokio::fs;
     use tokio::net::TcpListener;
+    use tokio::task::JoinHandle;
 
     // Interface to a driver that manages all incoming WebSocket connections.
     struct TestServer {
@@ -699,9 +699,10 @@ mod test {
         println!("Starting WebSocket server...");
         let mut server = TestServer::new("127.0.0.1:0").await;
         println!("Creating client RPC WebSocket connection...");
-        let mut client = WebSocketClient::new(server.node_addr.clone())
+        let (mut client, driver) = WebSocketClient::new(server.node_addr.clone())
             .await
             .unwrap();
+        let driver_handle = tokio::spawn(async move { driver.run().await });
 
         println!("Initiating subscription for new blocks...");
         let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
@@ -731,6 +732,7 @@ mod test {
 
         client.close().await.unwrap();
         server.terminate().await.unwrap();
+        let _ = driver_handle.await.unwrap();
         println!("Closed client and terminated server");
 
         assert_eq!(3, collected_results.len());
