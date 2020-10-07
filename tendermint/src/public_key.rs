@@ -2,7 +2,7 @@
 
 pub use ed25519_dalek::PublicKey as Ed25519;
 mod pub_key_request;
-
+pub use pub_key_request::PubKeyRequest;
 #[cfg(feature = "secp256k1")]
 pub use k256::EncodedPoint as Secp256k1;
 
