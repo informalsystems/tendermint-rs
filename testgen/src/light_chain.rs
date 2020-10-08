@@ -1,26 +1,29 @@
 use tendermint::chain::Info;
 use tendermint::block::Height;
-use crate::light_block::TestgenLightBlock;
+use crate::light_block::LightBlock;
 use crate::Validator;
 
 pub struct LightChain {
     pub info: Info,
-    pub light_blocks: Vec<TestgenLightBlock>,
+    pub light_blocks: Vec<LightBlock>,
 }
 
 impl LightChain {
     pub fn new(
         info: Info,
-        light_blocks: Vec<TestgenLightBlock>,
+        light_blocks: Vec<LightBlock>,
     ) -> Self {
         LightChain{
             info,
             light_blocks,
         }
     }
+
+    // TODO: make this fn more usable
+    // TODO: like how does someone generate a chain with different validators at each height
     pub fn default_with_length(num: u64) -> Self {
         let vals = Validator::new("val-1");
-        let testgen_light_block = TestgenLightBlock::new_default(&[vals], 1);
+        let testgen_light_block = LightBlock::new_default(&[vals], 1);
         let mut light_blocks = Vec::new();
 
         for _i in 2..num {
@@ -77,7 +80,7 @@ mod tests {
     #[test]
     fn test_advance_chain() {
         let vals = Validator::new("val-1");
-        let light_blocks = vec![TestgenLightBlock::new_default(&[vals], 1)];
+        let light_blocks = vec![LightBlock::new_default(&[vals], 1)];
         let info = Info{
             id: light_blocks[0]
                 .header

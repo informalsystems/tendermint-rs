@@ -10,7 +10,7 @@ pub mod light_block;
 pub mod time;
 pub mod validator;
 pub mod vote;
-pub mod chain;
+pub mod light_chain;
 
 pub use commit::Commit;
 pub use generator::Generator;
@@ -18,7 +18,7 @@ pub use header::Header;
 pub use time::Time;
 pub use validator::Validator;
 pub use vote::Vote;
-pub use chain::LightChain;
+pub use light_chain::LightChain;
 
 /// Helpers for organizing and running the tests
 pub mod apalache;
