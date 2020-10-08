@@ -112,7 +112,10 @@ pub struct Version {
     pub block: u64,
 
     /// App version
-    #[serde(with = "serializers::from_str")]
+    ///
+    /// If this field is not supplied when deserializing from JSON, it is set
+    /// to `Default::default()` for `u64` (i.e. 0).
+    #[serde(with = "serializers::from_str", default)]
     pub app: u64,
 }
 
@@ -140,7 +143,7 @@ impl From<Version> for RawConsensusVersion {
 
 #[cfg(test)]
 mod tests {
-    use super::Header;
+    use super::{Header, Version};
     use crate::hash::Algorithm;
     use crate::test::test_serialization_roundtrip;
     use crate::Hash;
@@ -163,5 +166,13 @@ mod tests {
         ))
         .unwrap();
         assert_eq!(expected_hash, header.hash());
+    }
+
+    #[test]
+    fn empty_header_version_app_field() {
+        let json_data = r#"{"block": "11"}"#;
+        let version: Version = serde_json::from_str(json_data).unwrap();
+        assert_eq!(11, version.block);
+        assert_eq!(0, version.app);
     }
 }
