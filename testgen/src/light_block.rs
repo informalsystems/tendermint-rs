@@ -12,12 +12,12 @@ use crate::helpers::parse_as;
 
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
-/// NOTE: This struct & associated `impl` below are a copy of light-client's `types.rs`.
+/// NOTE: This struct & associated `impl` below are a copy of light-client's `LightBlock`.
 /// The copy is necessary here to avoid a circular dependency.
 /// Cf. https://github.com/informalsystems/tendermint-rs/issues/605
 /// TODO: fix redundant code without introducing cyclic dependency.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct LightBlock {
+pub struct TMLightBlock {
     /// Header and commit of this block
     pub signed_header: SignedHeader,
     /// Validator set at the block height
@@ -28,14 +28,14 @@ pub struct LightBlock {
     pub provider: PeerId,
 }
 
-impl LightBlock {
+impl TMLightBlock {
     /// Constructs a new light block
     pub fn new(
         signed_header: SignedHeader,
         validators: ValidatorSet,
         next_validators: ValidatorSet,
         provider: PeerId,
-    ) -> LightBlock {
+    ) -> Self {
         Self {
             signed_header,
             validators,
@@ -45,8 +45,10 @@ impl LightBlock {
     }
 }
 
+
+/// We use this data structure as a simplistic representation of LightClient's LightBlock
 #[derive(Debug, Options, Deserialize, Clone)]
-pub struct TestgenLightBlock {
+pub struct LightBlock {
     #[options(help = "header (required)", parse(try_from_str = "parse_as::<Header>"))]
     pub header: Option<Header>,
     #[options(help = "commit (required)", parse(try_from_str = "parse_as::<Commit>"))]
@@ -65,7 +67,7 @@ pub struct TestgenLightBlock {
     pub provider: Option<PeerId>,
 }
 
-impl TestgenLightBlock {
+impl LightBlock {
     /// Constructs a new Testgen-specific light block
     pub fn new(
         header: Header,
@@ -111,22 +113,22 @@ impl TestgenLightBlock {
             .header.as_ref().expect("header is missing")
             .height.expect("height is missing")
             + 1;
-        TestgenLightBlock::new_default(validators.as_ref(), height)
+        LightBlock::new_default(validators.as_ref(), height)
     }
 }
 
-impl std::str::FromStr for TestgenLightBlock {
+impl std::str::FromStr for LightBlock {
     type Err = SimpleError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let testgen_light_block = match parse_as::<TestgenLightBlock>(s) {
+        let testgen_light_block = match parse_as::<LightBlock>(s) {
             Ok(input) => input,
-            Err(_) => TestgenLightBlock::new_default(parse_as::<Vec<Validator>>(s)?.as_ref(), 1),
+            Err(_) => LightBlock::new_default(parse_as::<Vec<Validator>>(s)?.as_ref(), 1),
         };
         Ok(testgen_light_block)
     }
 }
 
-impl Generator<LightBlock> for TestgenLightBlock {
+impl Generator<LightBlock> for LightBlock {
     fn merge_with_default(self, default: Self) -> Self {
         Self{
             header: self.header.or(default.header),
@@ -137,7 +139,7 @@ impl Generator<LightBlock> for TestgenLightBlock {
         }
     }
 
-    fn generate(&self) -> Result<LightBlock, SimpleError> {
+    fn generate(&self) -> Result<TMLightBlock, SimpleError> {
         let header = match &self.header {
             None => bail!("header is missing"),
             Some(h) => h,
@@ -163,7 +165,7 @@ impl Generator<LightBlock> for TestgenLightBlock {
 
         let provider = self.provider.unwrap_or(peer_id());
 
-        let light_block = LightBlock{
+        let light_block = TMLightBlock{
             signed_header,
             validators,
             next_validators,
