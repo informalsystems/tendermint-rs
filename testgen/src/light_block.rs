@@ -1,15 +1,15 @@
-use simple_error::*;
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
+use simple_error::*;
 
+use crate::helpers::parse_as;
 use crate::validator::generate_validators;
 use crate::{Commit, Generator, Header, Validator};
+use std::str::FromStr;
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::node::Id as PeerId;
-use tendermint::validator::Set as ValidatorSet;
 use tendermint::validator;
-use crate::helpers::parse_as;
-use std::str::FromStr;
+use tendermint::validator::Set as ValidatorSet;
 
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
@@ -46,7 +46,6 @@ impl TMLightBlock {
     }
 }
 
-
 /// We use this data structure as a simplistic representation of LightClient's LightBlock
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct LightBlock {
@@ -77,7 +76,7 @@ impl LightBlock {
         next_validators: Vec<Validator>,
         provider: &str,
     ) -> Self {
-        Self{
+        Self {
             header: Some(header),
             commit: Some(commit),
             validators: Some(validators),
@@ -87,7 +86,9 @@ impl LightBlock {
     }
 
     pub fn new_default(validators: &[Validator], height: u64) -> Self {
-        let header = Header::new(validators).height(height).chain_id("test-chain");
+        let header = Header::new(validators)
+            .height(height)
+            .chain_id("test-chain");
         let commit = Commit::new(header.clone(), 1);
 
         Self {
@@ -105,14 +106,19 @@ impl LightBlock {
     );
     set_option!(provider, String);
 
-
     /// Produces a subsequent testgen light block to the supplied one
     // TODO: figure how to represent the currently ignored details in header and commit like last_block_id and other hashes
     pub fn next(&self) -> Self {
-        let validators = self.validators.as_ref().expect("validator array is missing");
+        let validators = self
+            .validators
+            .as_ref()
+            .expect("validator array is missing");
         let height = self
-            .header.as_ref().expect("header is missing")
-            .height.expect("height is missing")
+            .header
+            .as_ref()
+            .expect("header is missing")
+            .height
+            .expect("height is missing")
             + 1;
         LightBlock::new_default(validators.as_ref(), height)
     }
@@ -131,7 +137,7 @@ impl std::str::FromStr for LightBlock {
 
 impl Generator<TMLightBlock> for LightBlock {
     fn merge_with_default(self, default: Self) -> Self {
-        Self{
+        Self {
             header: self.header.or(default.header),
             commit: self.commit.or(default.commit),
             validators: self.validators.or(default.validators),
@@ -149,10 +155,8 @@ impl Generator<TMLightBlock> for LightBlock {
             None => bail!("commit is missing"),
             Some(c) => c,
         };
-        let signed_header = generate_signed_header(
-            header,
-            commit,
-        ).expect("Could not generate signed header");
+        let signed_header =
+            generate_signed_header(header, commit).expect("Could not generate signed header");
 
         let validators = match &self.validators {
             None => bail!("validator array is missing"),
@@ -174,7 +178,7 @@ impl Generator<TMLightBlock> for LightBlock {
             Err(_) => bail!("failed to construct light block's peer_id"),
         };
 
-        let light_block = TMLightBlock{
+        let light_block = TMLightBlock {
             signed_header,
             validators,
             next_validators,

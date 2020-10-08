@@ -7,18 +7,18 @@ pub mod consensus;
 pub mod generator;
 pub mod header;
 pub mod light_block;
+pub mod light_chain;
 pub mod time;
 pub mod validator;
 pub mod vote;
-pub mod light_chain;
 
 pub use commit::Commit;
 pub use generator::Generator;
 pub use header::Header;
+pub use light_chain::LightChain;
 pub use time::Time;
 pub use validator::Validator;
 pub use vote::Vote;
-pub use light_chain::LightChain;
 
 /// Helpers for organizing and running the tests
 pub mod apalache;
