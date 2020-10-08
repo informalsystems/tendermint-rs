@@ -131,9 +131,6 @@ fn encode_varint(val: u64) -> Vec<u8> {
 /// `Version` contains the protocol version for the blockchain and the
 /// application.
 ///
-/// When deserializing from JSON, if the `app` field is not supplied it is
-/// automatically set to 0.
-///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#version>
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Version {
@@ -142,18 +139,11 @@ pub struct Version {
     pub block: u64,
 
     /// App version
-    #[serde(
-        with = "serializers::from_str",
-        default = "Version::default_app_version"
-    )]
+    ///
+    /// If this field is not supplied when deserializing from JSON, it is set
+    /// to `Default::default()` for `u64` (i.e. 0).
+    #[serde(with = "serializers::from_str", default)]
     pub app: u64,
-}
-
-impl Version {
-    // We explicitly set the app version to 0 if it's not supplied in the JSON.
-    fn default_app_version() -> u64 {
-        0
-    }
 }
 
 impl From<RawConsensusVersion> for Version {
