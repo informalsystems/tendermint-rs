@@ -59,7 +59,7 @@ impl SignVoteRequest {
 }
 
 /// SignedVoteResponse is a response containing a signed vote or an error
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SignedVoteResponse {
     /// Optional Vote
     pub vote: Option<Vote>,
