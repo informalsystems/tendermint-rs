@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tendermint_light_client::components::verifier::Verdict;
 use tendermint_light_client::{
@@ -14,7 +14,7 @@ pub enum LiteTestKind {
 }
 
 /// An abstraction of the LightClient verification verdict
-#[derive(Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteVerdict {
     /// verified successfully
     #[serde(rename = "SUCCESS")]
@@ -34,7 +34,7 @@ pub enum LiteVerdict {
 /// It contains an initial trusted block, plus a sequence of input blocks,
 /// each with the expected verdict.
 /// The trusted state is to be updated only if the verdict is "Success"
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SingleStepTestCase {
     description: String,
     initial: Initial,
@@ -42,7 +42,7 @@ pub struct SingleStepTestCase {
 }
 
 /// A LiteBlock together with the time when it's being checked, and the expected verdict
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlockVerdict {
     block: AnonLightBlock,
     now: Time,
