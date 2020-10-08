@@ -132,7 +132,7 @@ fn encode_varint(val: u64) -> Vec<u8> {
 /// application.
 ///
 /// When deserializing from JSON, if the `app` field is not supplied it is
-/// automatically to 0.
+/// automatically set to 0.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#version>
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
