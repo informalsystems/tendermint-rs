@@ -402,8 +402,8 @@ impl Tester {
                 match batch(path, input) {
                     None => continue,
                     Some(tests) => {
-                        for (name, input) in tests {
-                            let test_path = path.to_string() + "/" + &name;
+                        for (_name, input) in tests {
+                            let test_path = path.to_string(); //  for separate subdirs + "/" + &name
                             res_tests.push((test_path, input));
                         }
                     }

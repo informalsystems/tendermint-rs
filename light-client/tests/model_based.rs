@@ -177,7 +177,7 @@ const TEST_DIR: &str = "./tests/support/model_based";
 
 #[test]
 fn run_model_based_single_step_tests() {
-    let mut tester = Tester::new("single_step", TEST_DIR);
+    let mut tester = Tester::new("test_run", TEST_DIR);
     tester.add_test_with_env("static model-based single-step test", single_step_test);
     tester.add_test_with_env("full model-based single-step test", model_based_test);
     tester.add_test_batch(model_based_test_batch);
