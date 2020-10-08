@@ -131,6 +131,9 @@ fn encode_varint(val: u64) -> Vec<u8> {
 /// `Version` contains the protocol version for the blockchain and the
 /// application.
 ///
+/// When deserializing from JSON, if the `app` field is not supplied it is
+/// automatically set to 0.
+///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#version>
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Version {
@@ -139,8 +142,18 @@ pub struct Version {
     pub block: u64,
 
     /// App version
-    #[serde(with = "serializers::from_str")]
+    #[serde(
+        with = "serializers::from_str",
+        default = "Version::default_app_version"
+    )]
     pub app: u64,
+}
+
+impl Version {
+    // We explicitly set the app version to 0 if it's not supplied in the JSON.
+    fn default_app_version() -> u64 {
+        0
+    }
 }
 
 impl From<RawConsensusVersion> for Version {
@@ -163,12 +176,20 @@ impl From<Version> for RawConsensusVersion {
 
 #[cfg(test)]
 mod tests {
-    use super::Header;
+    use super::{Header, Version};
     use crate::test::test_serialization_roundtrip;
 
     #[test]
     fn serialization_roundtrip() {
         let json_data = include_str!("../../tests/support/serialization/block/header.json");
         test_serialization_roundtrip::<Header>(json_data);
+    }
+
+    #[test]
+    fn empty_header_version_app_field() {
+        let json_data = r#"{"block": "11"}"#;
+        let version: Version = serde_json::from_str(json_data).unwrap();
+        assert_eq!(11, version.block);
+        assert_eq!(0, version.app);
     }
 }
