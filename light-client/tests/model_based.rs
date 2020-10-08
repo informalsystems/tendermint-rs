@@ -155,7 +155,9 @@ fn model_based_test(
     assert!(run_jsonatr_transform(env.current_dir(), transform).is_ok());
     output_env.copy_file_from_env_as(env, "test.json", &json_test);
 
-    let tc: SingleStepTestCase = env.parse_file("test.json").unwrap();
+    let mut tc: SingleStepTestCase = env.parse_file("test.json").unwrap();
+    tc.description = json_test.clone();
+    output_env.write_file(json_test, &serde_json::to_string_pretty(&tc).unwrap());
     single_step_test(tc, env, root_env, output_env);
 }
 
