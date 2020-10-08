@@ -3,7 +3,6 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use subtle_encoding::base64;
 
-use crate::amino_types::message::AminoMessage;
 use crate::{account, hash::Hash, merkle, vote, Error, PublicKey, Signature};
 
 use std::convert::TryFrom;
@@ -132,7 +131,7 @@ impl DomainType<RawSimpleValidator> for SimpleValidator {}
 /// SimpleValidator is the form of the validator used for computing the Merkle tree.
 /// It does not include the address, as that is redundant with the pubkey,
 /// nor the proposer priority, as that changes with every block even if the validator set didn't.
-/// It contains only the pubkey and the voting power, and is amino encoded.
+/// It contains only the pubkey and the voting power.
 /// TODO: currently only works for Ed25519 pubkeys
 #[derive(Clone, PartialEq)]
 pub struct SimpleValidator {
@@ -178,11 +177,9 @@ impl From<&Info> for SimpleValidator {
 
 impl Info {
     /// Returns the bytes to be hashed into the Merkle tree -
-    /// the leaves of the tree. this is an amino encoding of the
-    /// pubkey and voting power, so it includes the pubkey's amino prefix.
+    /// the leaves of the tree.
     pub fn hash_bytes(&self) -> Vec<u8> {
-        let raw_simple_validator: RawSimpleValidator = SimpleValidator::from(self).into();
-        AminoMessage::bytes_vec(&raw_simple_validator)
+        SimpleValidator::from(self).encode_vec().unwrap()
     }
 }
 

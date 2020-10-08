@@ -114,7 +114,8 @@ mod prod {
         /// A peer map which maps peer IDS to their network address must be supplied.
         pub fn new(
             peer_id: PeerId,
-            rpc_client: rpc::HttpClient, // TODO(thane): Generalize over client transport (instead of using HttpClient directly)
+            rpc_client: rpc::HttpClient, /* TODO(thane): Generalize over client transport
+                                          * (instead of using HttpClient directly) */
             timeout: Option<Duration>,
         ) -> Self {
             Self {

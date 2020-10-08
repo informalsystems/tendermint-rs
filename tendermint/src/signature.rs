@@ -1,21 +1,45 @@
 //! Cryptographic (a.k.a. digital) signatures
 
-pub use ed25519::{Signature as Ed25519, SIGNATURE_LENGTH as ED25519_SIGNATURE_SIZE};
+pub use ed25519::{Signature as Ed25519Signature, SIGNATURE_LENGTH as ED25519_SIGNATURE_SIZE};
+use signature::Signature as SignatureTrait;
 pub use signature::{Signer, Verifier};
 
 #[cfg(feature = "secp256k1")]
 pub use k256::ecdsa::Signature as Secp256k1;
 
+use crate::{Error, Kind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use signature::Signature as _;
+use std::convert::TryFrom;
 use subtle_encoding::base64;
+use tendermint_proto::DomainType;
 
 /// Signatures
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Signature {
     /// Ed25519 block signature
-    Ed25519(Ed25519),
+    Ed25519(Ed25519Signature),
+}
+
+impl DomainType<Vec<u8>> for Signature {}
+
+impl TryFrom<Vec<u8>> for Signature {
+    type Error = Error;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        if value.len() != ED25519_SIGNATURE_SIZE {
+            return Err(Kind::InvalidSignatureIdLength.into());
+        }
+        let mut slice: [u8; ED25519_SIGNATURE_SIZE] = [0; ED25519_SIGNATURE_SIZE];
+        slice.copy_from_slice(&value[..]);
+        Ok(Signature::Ed25519(Ed25519Signature::new(slice)))
+    }
+}
+
+impl From<Signature> for Vec<u8> {
+    fn from(value: Signature) -> Self {
+        value.as_bytes().to_vec()
+    }
 }
 
 impl Signature {
@@ -27,7 +51,7 @@ impl Signature {
     }
 
     /// Get Ed25519 signature
-    pub fn ed25519(self) -> Option<Ed25519> {
+    pub fn ed25519(self) -> Option<Ed25519Signature> {
         match self {
             Signature::Ed25519(sig) => Some(sig),
         }
@@ -52,8 +76,8 @@ impl AsRef<[u8]> for Signature {
     }
 }
 
-impl From<Ed25519> for Signature {
-    fn from(pk: Ed25519) -> Signature {
+impl From<Ed25519Signature> for Signature {
+    fn from(pk: Ed25519Signature) -> Signature {
         Signature::Ed25519(pk)
     }
 }
@@ -63,7 +87,7 @@ impl<'de> Deserialize<'de> for Signature {
         let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
             .map_err(D::Error::custom)?;
 
-        Ed25519::from_bytes(&bytes)
+        Ed25519Signature::from_bytes(&bytes)
             .map(Into::into)
             .map_err(D::Error::custom)
     }

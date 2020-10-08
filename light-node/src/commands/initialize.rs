@@ -15,6 +15,7 @@ use abscissa_core::Runnable;
 
 use tendermint::{hash, Hash};
 
+use std::convert::TryInto;
 use tendermint_light_client::builder::LightClientBuilder;
 use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
@@ -48,7 +49,7 @@ impl Runnable for InitCmd {
         let light_client_config = node_config.light_clients.first().unwrap();
 
         if let Err(e) = initialize_subjectively(
-            self.height.into(),
+            self.height.try_into().unwrap(),
             subjective_header_hash,
             &node_config,
             &light_client_config,

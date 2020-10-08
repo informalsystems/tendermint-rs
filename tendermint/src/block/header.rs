@@ -1,13 +1,12 @@
 //! Block headers
 
-use crate::amino_types::{message::AminoMessage, BlockId};
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::serializers;
-use crate::{account, block, chain, Hash, Time};
-use prost_types::Timestamp;
+use crate::{account, block, chain, AppHash, Hash, Time};
 use serde::{Deserialize, Serialize};
-use tendermint_proto::types::BlockId as RawBlockId;
+use std::convert::TryFrom;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
+use tendermint_proto::DomainType;
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -50,8 +49,7 @@ pub struct Header {
     pub consensus_hash: Hash,
 
     /// State after txs from the previous block
-    #[serde(with = "serializers::bytes::hexstring")]
-    pub app_hash: Vec<u8>,
+    pub app_hash: AppHash,
 
     /// Root hash of all results from the txs from the previous block
     #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
@@ -73,59 +71,34 @@ impl Header {
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/block.go#L393
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
 
-        let raw_consensus_version: RawConsensusVersion = self.version.clone().into();
-
-        let mut fields_bytes: Vec<Vec<u8>> = Vec::with_capacity(16);
-        fields_bytes.push(AminoMessage::bytes_vec(&raw_consensus_version));
-        fields_bytes.push(encode_bytes(self.chain_id.as_bytes()));
-        fields_bytes.push(encode_varint(self.height.value()));
-        fields_bytes.push(AminoMessage::bytes_vec(&Timestamp::from(
-            self.time.to_system_time().unwrap(),
-        )));
-        match &self.last_block_id {
-            None => {
-                let raw_block_id: RawBlockId = BlockId::new(vec![], None).into();
-                AminoMessage::bytes_vec(&raw_block_id);
-            }
-            Some(id) => {
-                let raw_block_id: RawBlockId = BlockId::from(id).into();
-                AminoMessage::bytes_vec(&raw_block_id);
-            }
-        }
-        fields_bytes.push(self.last_commit_hash.as_ref().map_or(vec![], encode_hash));
-        fields_bytes.push(self.data_hash.as_ref().map_or(vec![], encode_hash));
-        fields_bytes.push(encode_hash(&self.validators_hash));
-        fields_bytes.push(encode_hash(&self.next_validators_hash));
-        fields_bytes.push(encode_hash(&self.consensus_hash));
-        fields_bytes.push(encode_bytes(&self.app_hash));
-        fields_bytes.push(self.last_results_hash.as_ref().map_or(vec![], encode_hash));
-        fields_bytes.push(self.evidence_hash.as_ref().map_or(vec![], encode_hash));
-        fields_bytes.push(encode_bytes(self.proposer_address.as_bytes()));
+        let mut fields_bytes: Vec<Vec<u8>> = Vec::with_capacity(14);
+        fields_bytes.push(self.version.encode_vec().unwrap());
+        fields_bytes.push(self.chain_id.encode_vec().unwrap());
+        fields_bytes.push(self.height.encode_vec().unwrap());
+        fields_bytes.push(self.time.encode_vec().unwrap());
+        fields_bytes.push(self.last_block_id.unwrap_or_default().encode_vec().unwrap());
+        fields_bytes.push(
+            self.last_commit_hash
+                .unwrap_or_default()
+                .encode_vec()
+                .unwrap(),
+        );
+        fields_bytes.push(self.data_hash.unwrap_or_default().encode_vec().unwrap());
+        fields_bytes.push(self.validators_hash.encode_vec().unwrap());
+        fields_bytes.push(self.next_validators_hash.encode_vec().unwrap());
+        fields_bytes.push(self.consensus_hash.encode_vec().unwrap());
+        fields_bytes.push(self.app_hash.encode_vec().unwrap());
+        fields_bytes.push(
+            self.last_results_hash
+                .unwrap_or_default()
+                .encode_vec()
+                .unwrap(),
+        );
+        fields_bytes.push(self.evidence_hash.unwrap_or_default().encode_vec().unwrap());
+        fields_bytes.push(self.proposer_address.encode_vec().unwrap());
 
         Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
     }
-}
-
-fn encode_bytes(bytes: &[u8]) -> Vec<u8> {
-    let bytes_len = bytes.len();
-    if bytes_len > 0 {
-        let mut encoded = vec![];
-        prost::encode_length_delimiter(bytes_len, &mut encoded).unwrap();
-        encoded.append(&mut bytes.to_vec());
-        encoded
-    } else {
-        vec![]
-    }
-}
-
-fn encode_hash(hash: &Hash) -> Vec<u8> {
-    encode_bytes(hash.as_bytes())
-}
-
-fn encode_varint(val: u64) -> Vec<u8> {
-    let mut val_enc = vec![];
-    prost::encoding::encode_varint(val, &mut val_enc);
-    val_enc
 }
 
 /// `Version` contains the protocol version for the blockchain and the
@@ -146,12 +119,16 @@ pub struct Version {
     pub app: u64,
 }
 
-impl From<RawConsensusVersion> for Version {
-    fn from(value: RawConsensusVersion) -> Self {
-        Version {
+impl DomainType<RawConsensusVersion> for Version {}
+
+impl TryFrom<RawConsensusVersion> for Version {
+    type Error = anomaly::BoxError;
+
+    fn try_from(value: RawConsensusVersion) -> Result<Self, Self::Error> {
+        Ok(Version {
             block: value.block,
             app: value.app,
-        }
+        })
     }
 }
 
@@ -167,12 +144,28 @@ impl From<Version> for RawConsensusVersion {
 #[cfg(test)]
 mod tests {
     use super::{Header, Version};
+    use crate::hash::Algorithm;
     use crate::test::test_serialization_roundtrip;
+    use crate::Hash;
 
     #[test]
     fn serialization_roundtrip() {
         let json_data = include_str!("../../tests/support/serialization/block/header.json");
         test_serialization_roundtrip::<Header>(json_data);
+    }
+
+    #[test]
+    fn header_hashing() {
+        let expected_hash = Hash::from_hex_upper(
+            Algorithm::Sha256,
+            "F30A71F2409FB15AACAEDB6CC122DFA2525BEE9CAE521721B06BFDCA291B8D56",
+        )
+        .unwrap();
+        let header: Header = serde_json::from_str(include_str!(
+            "../../tests/support/serialization/block/header_with_known_hash.json"
+        ))
+        .unwrap();
+        assert_eq!(expected_hash, header.hash());
     }
 
     #[test]

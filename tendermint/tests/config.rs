@@ -219,7 +219,7 @@ mod files {
         let priv_validator_key = PrivValidatorKey::parse_json(&raw_priv_validator_key).unwrap();
         assert_eq!(
             priv_validator_key.consensus_pubkey().to_hex(),
-            "1624DE6420F26BF4B2A2E84CEB7A53C3F1AE77408779B20064782FBADBDF0E365959EE4534"
+            "F26BF4B2A2E84CEB7A53C3F1AE77408779B20064782FBADBDF0E365959EE4534"
         );
     }
 }

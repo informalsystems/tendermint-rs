@@ -1,27 +1,62 @@
 use crate::error::{Error, Kind};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use std::convert::TryInto;
 use std::{
     convert::TryFrom,
     fmt::{self, Debug, Display},
     str::FromStr,
 };
+use tendermint_proto::DomainType;
 
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)
 ///
 /// A height of 0 represents a chain which has not yet produced a block.
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct Height(pub u64);
+pub struct Height(u64);
+
+impl DomainType<i64> for Height {}
+
+impl TryFrom<i64> for Height {
+    type Error = Error;
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        Ok(Height(value.try_into().map_err(|_| Kind::NegativeHeight)?))
+    }
+}
+
+impl From<Height> for i64 {
+    fn from(value: Height) -> Self {
+        value.value() as i64 // does not overflow. The value is <= i64::MAX
+    }
+}
+
+impl TryFrom<u64> for Height {
+    type Error = Error;
+
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        if value > i64::MAX as u64 {
+            return Err(Kind::IntegerOverflow.into());
+        }
+        Ok(Height(value))
+    }
+}
+
+impl From<Height> for u64 {
+    fn from(value: Height) -> Self {
+        value.value()
+    }
+}
 
 impl Height {
     /// Get inner integer value. Alternative to `.0` or `.into()`
-    pub fn value(self) -> u64 {
+    pub fn value(&self) -> u64 {
         self.0
     }
 
     /// Increment the block height by 1
     pub fn increment(self) -> Self {
-        Height(self.0.checked_add(1).expect("height overflow"))
+        Height::try_from(self.0.checked_add(1).expect("height overflow")).unwrap()
     }
 }
 
@@ -43,47 +78,11 @@ impl Display for Height {
     }
 }
 
-impl TryFrom<i64> for Height {
-    type Error = Error;
-
-    fn try_from(n: i64) -> Result<Height, Error> {
-        if n >= 0 {
-            Ok(Height(n as u64))
-        } else {
-            Err(Kind::OutOfRange.into())
-        }
-    }
-}
-
-impl From<u32> for Height {
-    fn from(n: u32) -> Height {
-        Height(n as u64)
-    }
-}
-
-impl From<u64> for Height {
-    fn from(n: u64) -> Height {
-        Height(n)
-    }
-}
-
-impl From<Height> for u64 {
-    fn from(height: Height) -> u64 {
-        height.0
-    }
-}
-
-impl From<Height> for i64 {
-    fn from(height: Height) -> i64 {
-        height.0 as i64
-    }
-}
-
 impl FromStr for Height {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Ok(s.parse::<u64>().map_err(|_| Kind::Parse)?.into())
+        Height::try_from(s.parse::<u64>().map_err(|_| Kind::Parse)?)
     }
 }
 

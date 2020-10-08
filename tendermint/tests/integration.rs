@@ -14,9 +14,11 @@ mod rpc {
     use tendermint_rpc::{Client, HttpClient, Id, SubscriptionClient, WebSocketClient};
 
     use futures::StreamExt;
+    use std::convert::TryFrom;
     use subtle_encoding::base64;
     use tendermint::abci::Log;
     use tendermint::abci::{Code, Transaction};
+    use tendermint::block::Height;
     use tendermint::merkle::simple_hash_from_byte_vectors;
     use tendermint_rpc::event::{Event, EventData};
     use tendermint_rpc::query::EventType;
@@ -73,7 +75,10 @@ mod rpc {
     #[ignore]
     async fn block() {
         let height = 1u64;
-        let block_info = localhost_rpc_client().block(height).await.unwrap();
+        let block_info = localhost_rpc_client()
+            .block(Height::try_from(height).unwrap())
+            .await
+            .unwrap();
 
         assert!(block_info.block.last_commit.is_none());
         assert_eq!(block_info.block.header.height.value(), height);
@@ -99,7 +104,10 @@ mod rpc {
     #[ignore]
     async fn block_results() {
         let height = 1u64;
-        let block_results = localhost_rpc_client().block_results(height).await.unwrap();
+        let block_results = localhost_rpc_client()
+            .block_results(Height::try_from(height).unwrap())
+            .await
+            .unwrap();
 
         assert_eq!(block_results.height.value(), height);
         assert!(block_results.txs_results.is_none());
@@ -111,7 +119,10 @@ mod rpc {
     async fn blockchain() {
         let max_height = 10u64;
         let blockchain_info = localhost_rpc_client()
-            .blockchain(1u64, max_height)
+            .blockchain(
+                Height::try_from(1u64).unwrap(),
+                Height::try_from(max_height).unwrap(),
+            )
             .await
             .unwrap();
 
@@ -126,10 +137,17 @@ mod rpc {
     #[ignore]
     async fn commit() {
         let height = 1u64;
-        let commit_info = localhost_rpc_client().commit(height).await.unwrap();
+        let commit_info = localhost_rpc_client()
+            .commit(Height::try_from(height).unwrap())
+            .await
+            .unwrap();
 
         assert_eq!(commit_info.signed_header.header.height.value(), height);
         assert_eq!(commit_info.canonical, true);
+        assert_eq!(
+            commit_info.signed_header.header.hash(),
+            commit_info.signed_header.commit.block_id.hash
+        );
     }
 
     /// `/genesis` endpoint

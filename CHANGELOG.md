@@ -5,9 +5,6 @@
 - Add spec for the light client attack evidence handling ([#526])
 - Return RFC6962 hash for empty merkle tree ([#498])
 - The `tendermint`, `tendermint-rpc`, and `tendermint-light-client` crates now compile to WASM on the `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#463])
-- Implement protobuf encoding/decoding of Tendermint Proto types ([#504])
-- Separate protobuf types from Rust domain types using the DomainType trait ([#535])
-- Changed validator sorting order to sort by voting power (descending) and address (ascending). ([#506])
 - Dependency update: sled 0.34 ([#490])
 
 ### BREAKING CHANGES:
@@ -18,6 +15,11 @@
   subscription. To access this struct, you now need to enable both the
   `client` and `transport_http` features when using the `tendermint-rpc`
   crate. ([#516])
+- `[tendermint]` Removed Amino types. All types are now `DomainType`s
+  implementing Protobuf-encoding using Prost. ([#504], [#535], [#536],
+  [#585])
+- `[tendermint]` Changed validator sorting order to sort by voting power
+  (descending) and address (ascending). ([#506])
 
 ### IMPROVEMENTS:
 
@@ -49,6 +51,8 @@
 [#535]: https://github.com/informalsystems/tendermint-rs/issues/535
 [#506]: https://github.com/informalsystems/tendermint-rs/issues/506
 [#516]: https://github.com/informalsystems/tendermint-rs/pull/516
+[#536]: https://github.com/informalsystems/tendermint-rs/issues/536
+[#585]: https://github.com/informalsystems/tendermint-rs/issues/585
 [#584]: https://github.com/informalsystems/tendermint-rs/pull/584
 
 ## v0.16.0
