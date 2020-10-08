@@ -1,6 +1,6 @@
 use gumdrop::Options;
 use simple_error::SimpleError;
-use tendermint_testgen::{helpers::*, Commit, Generator, Header, Time, Validator, Vote};
+use tendermint_testgen::{helpers::*, Commit, Generator, HeaderBuilder, Time, Validator, Vote};
 
 const USAGE: &str = r#"
 This is a small utility for producing tendermint datastructures
@@ -60,7 +60,7 @@ enum Command {
     #[options(help = "produce validator from identifier and other parameters")]
     Validator(Validator),
     #[options(help = "produce header from validator array and other parameters")]
-    Header(Header),
+    Header(HeaderBuilder),
     #[options(help = "produce vote from validator and other parameters")]
     Vote(Vote),
     #[options(help = "produce commit from validator array and other parameters")]

@@ -1,4 +1,4 @@
-use crate::{helpers::*, Generator, Header, Validator};
+use crate::{helpers::*, Generator, HeaderBuilder, Validator};
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
@@ -20,7 +20,7 @@ pub struct Vote {
     #[options(help = "validator index (default: from commit header)")]
     pub index: Option<u16>,
     #[options(help = "header to sign (default: commit header)")]
-    pub header: Option<Header>,
+    pub header: Option<HeaderBuilder>,
     #[options(help = "vote type; 'prevote' if set, otherwise 'precommit' (default)")]
     pub prevote: Option<()>,
     #[options(help = "block height (default: from header)")]
@@ -32,7 +32,7 @@ pub struct Vote {
 }
 
 impl Vote {
-    pub fn new(validator: Validator, header: Header) -> Self {
+    pub fn new(validator: Validator, header: HeaderBuilder) -> Self {
         Vote {
             validator: Some(validator),
             index: None,
@@ -44,7 +44,7 @@ impl Vote {
         }
     }
     set_option!(index, u16);
-    set_option!(header, Header);
+    set_option!(header, HeaderBuilder);
     set_option!(prevote, bool, if prevote { Some(()) } else { None });
     set_option!(height, u64);
     set_option!(time, u64);
@@ -149,7 +149,7 @@ mod tests {
         ];
 
         let now = Time::new(10).generate().unwrap();
-        let header = Header::new(&valset1)
+        let header = HeaderBuilder::new(&valset1)
             .next_validators(&valset2)
             .height(10)
             .time(10);

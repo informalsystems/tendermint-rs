@@ -4,10 +4,10 @@ use serde::Deserialize;
 use simple_error::*;
 use std::convert::TryFrom;
 use std::str::FromStr;
-use tendermint::{block, chain, validator, AppHash};
+use tendermint::{block, chain, validator, AppHash, chain::Id as ChainId, block::Height};
 
 #[derive(Debug, Options, Deserialize, Clone)]
-pub struct Header {
+pub struct HeaderBuilder {
     #[options(
         help = "validators (required), encoded as array of 'validator' parameters",
         parse(try_from_str = "parse_as::<Vec<Validator>>")
@@ -19,18 +19,18 @@ pub struct Header {
     )]
     pub next_validators: Option<Vec<Validator>>,
     #[options(help = "chain id (default: test-chain)")]
-    pub chain_id: Option<String>,
+    pub chain_id: Option<ChainId>,
     #[options(help = "block height (default: 1)")]
-    pub height: Option<u64>,
+    pub height: Option<Height>,
     #[options(help = "time (default: now)")]
     pub time: Option<u64>,
     #[options(help = "proposer index (default: 0)")]
     pub proposer: Option<usize>,
 }
 
-impl Header {
+impl HeaderBuilder {
     pub fn new(validators: &[Validator]) -> Self {
-        Header {
+        HeaderBuilder {
             validators: Some(validators.to_vec()),
             next_validators: None,
             chain_id: None,
@@ -45,26 +45,26 @@ impl Header {
         &[Validator],
         Some(next_validators.to_vec())
     );
-    set_option!(chain_id, &str, Some(chain_id.to_string()));
-    set_option!(height, u64);
+    set_option!(chain_id, ChainId, Some(chain_id));
+    set_option!(height, Height);
     set_option!(time, u64);
     set_option!(proposer, usize);
 }
 
-impl std::str::FromStr for Header {
+impl std::str::FromStr for HeaderBuilder {
     type Err = SimpleError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let header = match parse_as::<Header>(s) {
+        let header = match parse_as::<HeaderBuilder>(s) {
             Ok(input) => input,
-            Err(_) => Header::new(&parse_as::<Vec<Validator>>(s)?),
+            Err(_) => HeaderBuilder::new(&parse_as::<Vec<Validator>>(s)?),
         };
         Ok(header)
     }
 }
 
-impl Generator<block::Header> for Header {
+impl Generator<block::Header> for HeaderBuilder {
     fn merge_with_default(self, default: Self) -> Self {
-        Header {
+        HeaderBuilder {
             validators: self.validators.or(default.validators),
             next_validators: self.next_validators.or(default.next_validators),
             chain_id: self.chain_id.or(default.chain_id),
@@ -94,7 +94,7 @@ impl Generator<block::Header> for Header {
         let chain_id = match chain::Id::from_str(
             self.chain_id
                 .clone()
-                .unwrap_or_else(|| "test-chain".to_string())
+                .unwrap_or_else(|| ChainId::try_from("test-chain").unwrap())
                 .as_str(),
         ) {
             Ok(id) => id,
@@ -108,7 +108,7 @@ impl Generator<block::Header> for Header {
         let header = block::Header {
             version: block::header::Version { block: 0, app: 0 },
             chain_id,
-            height: block::Height::try_from(self.height.unwrap_or(1))
+            height: block::Height::try_from(self.height.unwrap_or_default())
                 .map_err(|_| SimpleError::new("height out of bounds"))?,
             time,
             last_block_id: None,
@@ -144,13 +144,13 @@ mod tests {
         ];
 
         let now1: u64 = 100;
-        let header1 = Header::new(&valset1)
+        let header1 = HeaderBuilder::new(&valset1)
             .next_validators(&valset2)
             .height(10)
             .time(now1);
 
         let now2 = now1 + 1;
-        let header2 = Header::new(&valset1)
+        let header2 = HeaderBuilder::new(&valset1)
             .next_validators(&valset2)
             .height(10)
             .time(now2);

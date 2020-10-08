@@ -12,7 +12,7 @@ pub mod vote;
 
 pub use commit::Commit;
 pub use generator::Generator;
-pub use header::Header;
+pub use header::HeaderBuilder;
 pub use time::Time;
 pub use validator::Validator;
 pub use vote::Vote;

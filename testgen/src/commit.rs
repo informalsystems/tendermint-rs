@@ -6,12 +6,12 @@ use std::iter::FromIterator;
 use tendermint::block::{self, parts::Header as PartSetHeader};
 
 use crate::validator::sort_validators;
-use crate::{helpers::*, Generator, Header, Validator, Vote};
+use crate::{helpers::*, Generator, HeaderBuilder, Validator, Vote};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Commit {
-    #[options(help = "header (required)", parse(try_from_str = "parse_as::<Header>"))]
-    pub header: Option<Header>,
+    #[options(help = "header (required)", parse(try_from_str = "parse_as::<HeaderBuilder>"))]
+    pub header: Option<HeaderBuilder>,
     #[options(
         help = "votes in this commit (default: from header)",
         parse(try_from_str = "parse_as::<Vec<Vote>>")
@@ -23,7 +23,7 @@ pub struct Commit {
 
 impl Commit {
     /// Make a new commit using default votes produced from the header.
-    pub fn new(header: Header, round: u32) -> Self {
+    pub fn new(header: HeaderBuilder, round: u32) -> Self {
         let commit = Commit {
             header: Some(header),
             round: Some(round),
@@ -32,14 +32,14 @@ impl Commit {
         commit.generate_default_votes()
     }
     /// Make a new commit using explicit votes.
-    pub fn new_with_votes(header: Header, round: u32, votes: Vec<Vote>) -> Self {
+    pub fn new_with_votes(header: HeaderBuilder, round: u32, votes: Vec<Vote>) -> Self {
         Commit {
             header: Some(header),
             round: Some(round),
             votes: Some(votes),
         }
     }
-    set_option!(header, Header);
+    set_option!(header, HeaderBuilder);
     set_option!(votes, Vec<Vote>);
     set_option!(round, u32);
 
@@ -87,7 +87,7 @@ impl std::str::FromStr for Commit {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let commit = match parse_as::<Commit>(s) {
             Ok(input) => input,
-            Err(_) => Commit::new(parse_as::<Header>(s)?, 1),
+            Err(_) => Commit::new(parse_as::<HeaderBuilder>(s)?, 1),
         };
         Ok(commit)
     }
@@ -172,7 +172,7 @@ mod tests {
             Validator::new("f"),
         ]);
 
-        let header = Header::new(&valset1)
+        let header = HeaderBuilder::new(&valset1)
             .next_validators(&valset2)
             .height(10)
             .time(11);
