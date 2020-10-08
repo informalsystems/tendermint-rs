@@ -103,7 +103,12 @@ impl TestEnv {
     /// Copy a file from the path relative to the other environment into the environment current dir
     /// Assigns the file a new_name in the current environment
     /// Returns None if copying was not successful
-    pub fn copy_file_from_env_as(&self, other: &TestEnv, path: impl AsRef<Path>, new_name: &str) -> Option<()> {
+    pub fn copy_file_from_env_as(
+        &self,
+        other: &TestEnv,
+        path: impl AsRef<Path>,
+        new_name: &str,
+    ) -> Option<()> {
         self.copy_file_from_as(other.full_path(path), new_name)
     }
 

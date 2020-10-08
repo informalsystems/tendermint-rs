@@ -106,8 +106,16 @@ fn model_based_test(
     output_env: &TestEnv,
 ) {
     println!("  Running model-based single-step test: {}", test.test);
-    let tla_test = format!("{}_{}.tla", test.model.strip_suffix(".tla").unwrap(), &test.test);
-    let json_test = format!("{}_{}.json", test.model.strip_suffix(".tla").unwrap(), &test.test);
+    let tla_test = format!(
+        "{}_{}.tla",
+        test.model.strip_suffix(".tla").unwrap(),
+        &test.test
+    );
+    let json_test = format!(
+        "{}_{}.json",
+        test.model.strip_suffix(".tla").unwrap(),
+        &test.test
+    );
 
     // Cleanup possible previous runs
     output_env.clear_log();
