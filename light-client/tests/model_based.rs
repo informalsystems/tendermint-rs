@@ -106,11 +106,13 @@ fn model_based_test(
     output_env: &TestEnv,
 ) {
     println!("  Running model-based single-step test: {}", test.test);
+    let tla_test = format!("{}_{}.tla", test.model.strip_suffix(".tla").unwrap(), &test.test);
+    let json_test = format!("{}_{}.json", test.model.strip_suffix(".tla").unwrap(), &test.test);
+
     // Cleanup possible previous runs
     output_env.clear_log();
-    output_env.remove_file("counterexample.tla");
-    output_env.remove_file("counterexample.json");
-    output_env.remove_file("test.json");
+    output_env.remove_file(&tla_test);
+    output_env.remove_file(&json_test);
 
     // Check for the necessary programs
     let check_program = |program| {
@@ -140,8 +142,7 @@ fn model_based_test(
         },
         Err(e) => panic!("failed to run Apalache; reason: {}", e),
     }
-    output_env.copy_file_from_env(env, "counterexample.tla");
-    output_env.copy_file_from_env(env, "counterexample.json");
+    output_env.copy_file_from_env_as(env, "counterexample.tla", &tla_test);
 
     let transform_spec = root_env
         .full_canonical_path("_jsonatr-lib/apalache_to_lite_test.json")
@@ -152,7 +153,7 @@ fn model_based_test(
         output: "test.json".to_string(),
     };
     assert!(run_jsonatr_transform(env.current_dir(), transform).is_ok());
-    output_env.copy_file_from_env(env, "test.json");
+    output_env.copy_file_from_env_as(env, "test.json", &json_test);
 
     let tc: SingleStepTestCase = env.parse_file("test.json").unwrap();
     single_step_test(tc, env, root_env, output_env);
