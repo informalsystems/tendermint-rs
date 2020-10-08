@@ -9,6 +9,7 @@ use tendermint::node::Id as PeerId;
 use tendermint::validator::Set as ValidatorSet;
 use tendermint::validator;
 use crate::helpers::parse_as;
+use std::str::FromStr;
 
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
@@ -64,7 +65,7 @@ pub struct LightBlock {
     )]
     pub next_validators: Option<Vec<Validator>>,
     #[options(help = "peer id (default: peer_id())")]
-    pub provider: Option<PeerId>,
+    pub provider: Option<String>,
 }
 
 impl LightBlock {
@@ -74,14 +75,14 @@ impl LightBlock {
         commit: Commit,
         validators: Vec<Validator>,
         next_validators: Vec<Validator>,
-        provider: PeerId,
+        provider: &str,
     ) -> Self {
         Self{
             header: Some(header),
             commit: Some(commit),
             validators: Some(validators),
             next_validators: Some(next_validators),
-            provider: Some(provider),
+            provider: Some(provider.to_string()),
         }
     }
 
@@ -94,7 +95,7 @@ impl LightBlock {
             commit: Some(commit),
             validators: Some(validators.to_vec()),
             next_validators: None,
-            provider: Some(peer_id()),
+            provider: Some("peer-1".to_string()),
         }
     }
     set_option!(
@@ -102,7 +103,7 @@ impl LightBlock {
         &[Validator],
         Some(next_validators.to_vec())
     );
-    set_option!(provider, PeerId);
+    set_option!(provider, String);
 
 
     /// Produces a subsequent testgen light block to the supplied one
@@ -128,7 +129,7 @@ impl std::str::FromStr for LightBlock {
     }
 }
 
-impl Generator<LightBlock> for LightBlock {
+impl Generator<TMLightBlock> for LightBlock {
     fn merge_with_default(self, default: Self) -> Self {
         Self{
             header: self.header.or(default.header),
@@ -163,7 +164,15 @@ impl Generator<LightBlock> for LightBlock {
             None => validators.clone(),
         };
 
-        let provider = self.provider.unwrap_or(peer_id());
+        let provider = match PeerId::from_str(
+            self.provider
+                .clone()
+                .unwrap_or_else(|| "peer-1".to_string())
+                .as_str(),
+        ) {
+            Ok(id) => id,
+            Err(_) => bail!("failed to construct light block's peer_id"),
+        };
 
         let light_block = TMLightBlock{
             signed_header,
@@ -176,6 +185,7 @@ impl Generator<LightBlock> for LightBlock {
     }
 }
 
+/// A helper function to generate SignedHeader used by TMLightBlock
 pub fn generate_signed_header(
     raw_header: &Header,
     raw_commit: &Commit,
@@ -191,8 +201,4 @@ pub fn generate_signed_header(
     };
 
     Ok(SignedHeader { header, commit })
-}
-
-pub fn peer_id() -> PeerId {
-    "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap()
 }

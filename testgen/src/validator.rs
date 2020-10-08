@@ -27,6 +27,7 @@ impl Validator {
             proposer_priority: None,
         }
     }
+    // Question: Why do we need this option since we're already initializing id with fn new()??
     set_option!(id, &str, Some(id.to_string()));
     set_option!(voting_power, u64);
     set_option!(proposer_priority, i64);
