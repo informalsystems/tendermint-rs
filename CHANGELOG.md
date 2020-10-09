@@ -74,7 +74,6 @@ formal model of the protocol in TLA+.
   To access this struct you need to enable both the `client`, `subscription`
   and `transport_websocket` features when using the `tendermint-rpc` crate.
   ([#516])
-- `[rpc]` WebSocket keepalive  ... TODO #591
 
 - `[tendermint | rpc | light-client]` Crates now compile to WASM on the `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#463])
 - Dependency updates: 
