@@ -122,7 +122,6 @@ mod tests {
     use crate::signature::{Ed25519Signature, ED25519_SIGNATURE_SIZE};
     use crate::{proposal::Type, Proposal, Signature};
     use chrono::{DateTime, Utc};
-    use std::convert::TryFrom;
     use std::str::FromStr;
     use tendermint_proto::DomainType;
 
@@ -132,7 +131,7 @@ mod tests {
         let proposal = Proposal {
             msg_type: Type::Proposal,
             height: Height::from(12345_u32),
-            round: Round::try_from(23456).unwrap(),
+            round: Round::from(23456_u16),
             pol_round: None,
             block_id: Some(BlockId {
                 hash: Hash::from_hex_upper(
@@ -216,7 +215,7 @@ mod tests {
         let proposal = Proposal {
             msg_type: Type::Proposal,
             height: Height::from(12345_u32),
-            round: Round::try_from(23456).unwrap(),
+            round: Round::from(23456_u16),
             timestamp: Some(dt.into()),
 
             pol_round: None,

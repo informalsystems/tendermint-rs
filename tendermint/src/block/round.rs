@@ -42,6 +42,18 @@ impl From<Round> for u32 {
     }
 }
 
+impl From<u16> for Round {
+    fn from(value: u16) -> Self {
+        Round(value as u32)
+    }
+}
+
+impl From<u8> for Round {
+    fn from(value: u8) -> Self {
+        Round(value as u32)
+    }
+}
+
 impl Round {
     /// Get inner integer value. Alternative to `.0` or `.into()`
     pub fn value(&self) -> u32 {
@@ -100,5 +112,13 @@ mod tests {
     #[test]
     fn increment_by_one() {
         assert_eq!(Round::default().increment().value(), 1);
+    }
+
+    #[test]
+    fn avoid_try_unwrap_dance() {
+        assert_eq!(
+            Round::try_from(2_u32).unwrap().value(),
+            Round::from(2_u16).value()
+        );
     }
 }
