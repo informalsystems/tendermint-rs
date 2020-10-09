@@ -8,7 +8,7 @@ To be able to specify test assertions we have extended the Light Client model wi
 which records the whole execution history. 
 So, by way of referring to `history` you simply specify declaratively what execution history you want to see.
 
-After you have specified your `TLA+` test, list among tests of a _test batch_, such as [MC4_4_faulty.json](MC4_4_faulty.json). 
+After you have specified your `TLA+` test, list it among the tests of a _test batch_, such as [MC4_4_faulty.json](MC4_4_faulty.json). 
 Such test batches are then executed automatically when you run `cargo test`.
 
 When you run `cargo test` some machinery will run under the hood, namely:
@@ -21,10 +21,12 @@ When you run `cargo test` some machinery will run under the hood, namely:
     performs the translation by executing this [transformation spec](_jsonatr-lib/apalache_to_lite_test.json);
   * [Tendermint Testgen](https://github.com/informalsystems/tendermint-rs/tree/master/testgen)
   takes care of translating abstract values from the model into the concrete implementation values.
-  * timeout command: should be present by default on all Linux distributions, but may be absent on Macs. In that case can be installed using `brew install coreutils`. 
+* `timeout` command is used to limit the test execution time; it should be present by default on all Linux distributions, but may be absent on Macs. In that case it can be installed using `brew install coreutils`. 
   
-So, for the model-based test to run, the programs `apalache-mc`, `jsonatr`, and `tendermint-testgen` 
-should be present in your `PATH`. The easiest way to run Apalache is by [using a Docker image](https://github.com/informalsystems/apalache/blob/unstable/docs/manual.md#useDocker); 
+So, for the model-based test to run, the programs `apalache-mc`, `jsonatr`, 
+`tendermint-testgen`, and `timeout`
+should be present in your `PATH`. The easiest way to run Apalache is by 
+[using a Docker image](https://github.com/informalsystems/apalache/blob/unstable/docs/manual.md#useDocker); 
 to run the latter two you need to locally clone the repositories, and then, 
 after building them, just add their `target/debug` directories into your `PATH`. 
 If any of the programs is not found, execution of a model-based test will be skipped.
@@ -42,8 +44,8 @@ To run your model-based tests, use this command:
  $ cargo test -p tendermint-light-client --test model_based -- --nocapture
  ```
 
-The results will be printed to screen, 
-and also saved to disk in the [_test_run](_test_run) directory.
+The results will be printed to the screen, 
+and also saved to the disk in the [_test_run](_test_run) directory.
 Results include:
 * [Report](_test_run/report) on which tests were run, and what is the outcome
 * For each test, it's relevant files are also saved in the subdirectory of [_test_run](_test_run). 
