@@ -7,6 +7,7 @@ use tendermint_light_client::{
     types::{LightBlock, Time, TrustThreshold},
 };
 use tendermint_testgen::{apalache::*, jsonatr::*, Command, TestEnv, Tester};
+use std::str::FromStr;
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteTestKind {
@@ -55,7 +56,7 @@ trait SingleStepTestFuzzer {
     fn fuzz(tc: &SingleStepTestCase) -> Option<SingleStepTestCase>;
 
     /// get the block to mutate, if possible
-    fn fuzzable_input(tc: &mut SingleStepTestCase) -> Option<&mut BlockVerdict> {
+    fn fuzzable_input(tc: &mut SingleStepTestCase) -> Option<(usize, &mut BlockVerdict)> {
         let mut indices = Vec::new();
         for (i, input) in tc.input.iter_mut().enumerate() {
             if input.verdict != LiteVerdict::Invalid {
@@ -67,7 +68,7 @@ trait SingleStepTestFuzzer {
         } else {
             let mut rng = rand::thread_rng();
             let i = rng.gen_range(0, indices.len());
-            tc.input.get_mut(i)
+            Some((i,tc.input.get_mut(i).unwrap()))
         }
     }
 }
@@ -77,7 +78,7 @@ struct HeightFuzzer {}
 impl SingleStepTestFuzzer for HeightFuzzer {
     fn fuzz(tc: &SingleStepTestCase) -> Option<SingleStepTestCase> {
         let mut fuzz = tc.clone();
-        if let Some(input) = Self::fuzzable_input(&mut fuzz) {
+        if let Some((i,input)) = Self::fuzzable_input(&mut fuzz) {
             let mut rng = rand::thread_rng();
             let tendermint::block::Height(h) = input.block.signed_header.header.height;
             let mut height: u64 = rng.gen();
@@ -86,10 +87,45 @@ impl SingleStepTestFuzzer for HeightFuzzer {
             }
             input.block.signed_header.header.height = tendermint::block::Height(height);
             input.verdict = LiteVerdict::Invalid;
+            fuzz.input.truncate(i+1);
             fuzz.description = format!(
                 "Fuzzed height from {} into {} for {}",
                 h, height, &fuzz.description
             );
+            return Some(fuzz);
+        }
+        None
+    }
+}
+
+/// A trivial fuzzer that mutates validators_hash for one of the test case headers
+struct ValHashFuzzer {}
+impl SingleStepTestFuzzer for ValHashFuzzer {
+    fn fuzz(tc: &SingleStepTestCase) -> Option<SingleStepTestCase> {
+        let mut fuzz = tc.clone();
+        if let Some((i, input)) = Self::fuzzable_input(&mut fuzz) {
+            let hash = tendermint::hash::Hash::from_str("AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419").unwrap();
+            input.block.signed_header.header.validators_hash = hash;
+            input.verdict = LiteVerdict::Invalid;
+            fuzz.description = format!("Fuzzed validators_hash for {}", &fuzz.description);
+            fuzz.input.truncate(i+1);
+            return Some(fuzz);
+        }
+        None
+    }
+}
+
+/// A trivial fuzzer that mutates next_validators_hash for one of the test case headers
+struct NextValHashFuzzer {}
+impl SingleStepTestFuzzer for NextValHashFuzzer {
+    fn fuzz(tc: &SingleStepTestCase) -> Option<SingleStepTestCase> {
+        let mut fuzz = tc.clone();
+        if let Some((i, input)) = Self::fuzzable_input(&mut fuzz) {
+            let hash = tendermint::hash::Hash::from_str("AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419").unwrap();
+            input.block.signed_header.header.next_validators_hash = hash;
+            input.verdict = LiteVerdict::Invalid;
+            fuzz.description = format!("Fuzzed next_validators_hash for {}", &fuzz.description);
+            fuzz.input.truncate(i+1);
             return Some(fuzz);
         }
         None
@@ -157,6 +193,8 @@ fn fuzz_single_step_test(
     };
     run_test(tc.clone());
     HeightFuzzer::fuzz(&tc).and_then(run_test);
+    ValHashFuzzer::fuzz(&tc).and_then(run_test);
+    NextValHashFuzzer::fuzz(&tc).and_then(run_test);
 }
 
 fn model_based_test(
