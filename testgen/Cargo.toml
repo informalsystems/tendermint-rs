@@ -5,7 +5,7 @@ authors = ["Andrey Kuprianov <andrey@informal.systems>"]
 edition = "2018"
 
 [dependencies]
-tendermint = { version = "0.16.0", path = "../tendermint" }
+tendermint = { version = "0.17.0", path = "../tendermint" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 ed25519-dalek = "1"
