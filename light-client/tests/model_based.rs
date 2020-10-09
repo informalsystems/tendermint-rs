@@ -1,3 +1,4 @@
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tendermint_light_client::components::verifier::Verdict;
@@ -49,17 +50,58 @@ pub struct BlockVerdict {
     verdict: LiteVerdict,
 }
 
+/// A primitive fuzzer that mutates one of the test case input blocks
+trait SingleStepTestFuzzer {
+    fn fuzz(tc: &SingleStepTestCase) -> Option<SingleStepTestCase>;
+
+    /// get the block to mutate, if possible
+    fn fuzzable_input(tc: &mut SingleStepTestCase) -> Option<&mut BlockVerdict> {
+        let mut indices = Vec::new();
+        for (i, input) in tc.input.iter_mut().enumerate() {
+            if input.verdict != LiteVerdict::Invalid {
+                indices.push(i)
+            }
+        }
+        if indices.is_empty() {
+            None
+        } else {
+            let mut rng = rand::thread_rng();
+            let i = rng.gen_range(0, indices.len());
+            tc.input.get_mut(i)
+        }
+    }
+}
+
+/// A trivial fuzzer that mutates height for one of the test case headers
+struct HeightFuzzer {}
+impl SingleStepTestFuzzer for HeightFuzzer {
+    fn fuzz(tc: &SingleStepTestCase) -> Option<SingleStepTestCase> {
+        let mut fuzz = tc.clone();
+        if let Some(input) = Self::fuzzable_input(&mut fuzz) {
+            let mut rng = rand::thread_rng();
+            let tendermint::block::Height(h) = input.block.signed_header.header.height;
+            let mut height: u64 = rng.gen();
+            while height == h {
+                height = rng.gen();
+            }
+            input.block.signed_header.header.height = tendermint::block::Height(height);
+            input.verdict = LiteVerdict::Invalid;
+            fuzz.description = format!(
+                "Fuzzed height from {} into {} for {}",
+                h, height, &fuzz.description
+            );
+            return Some(fuzz);
+        }
+        None
+    }
+}
+
 fn single_step_test(
     tc: SingleStepTestCase,
     _env: &TestEnv,
     _root_env: &TestEnv,
     output_env: &TestEnv,
 ) {
-    output_env.clear_log();
-    println!(
-        "  > running static model-based single-step test: {}",
-        &tc.description
-    );
     let mut latest_trusted = Trusted::new(
         tc.initial.signed_header.clone(),
         tc.initial.next_validator_set.clone(),
@@ -97,6 +139,24 @@ fn single_step_test(
             }
         }
     }
+}
+
+fn fuzz_single_step_test(
+    tc: SingleStepTestCase,
+    _env: &TestEnv,
+    _root_env: &TestEnv,
+    output_env: &TestEnv,
+) {
+    output_env.clear_log();
+    let run_test = |tc: SingleStepTestCase| {
+        output_env.logln(&format!("  > running static model-based single-step test: {}",
+                                  &tc.description
+        ));
+        single_step_test(tc, _env, _root_env, output_env);
+        Some(())
+    };
+    run_test(tc.clone());
+    HeightFuzzer::fuzz(&tc).and_then(run_test);
 }
 
 fn model_based_test(
@@ -166,7 +226,7 @@ fn model_based_test(
     let mut tc: SingleStepTestCase = env.parse_file("test.json").unwrap();
     tc.description = json_test.clone();
     output_env.write_file(json_test, &serde_json::to_string_pretty(&tc).unwrap());
-    single_step_test(tc, env, root_env, output_env);
+    fuzz_single_step_test(tc, env, root_env, output_env);
 }
 
 fn model_based_test_batch(batch: ApalacheTestBatch) -> Vec<(String, String)> {
@@ -188,7 +248,7 @@ const TEST_DIR: &str = "./tests/support/model_based";
 #[test]
 fn run_model_based_single_step_tests() {
     let mut tester = Tester::new("test_run", TEST_DIR);
-    tester.add_test_with_env("static model-based single-step test", single_step_test);
+    tester.add_test_with_env("static model-based single-step test", fuzz_single_step_test);
     tester.add_test_with_env("full model-based single-step test", model_based_test);
     tester.add_test_batch(model_based_test_batch);
     tester.run_foreach_in_dir("");
