@@ -113,7 +113,7 @@ mod tests {
         let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
         let vote = Vote {
             vote_type: Type::Prevote,
-            height: Height::try_from(12345_i64).unwrap(),
+            height: Height::from(12345_u32),
             round: Round::try_from(2).unwrap(),
             timestamp: Some(dt.into()),
             block_id: Some(BlockId {
@@ -205,7 +205,7 @@ mod tests {
         // with proper (fixed size) height and round (Precommit):
         {
             let mut vt_precommit = Vote::default();
-            vt_precommit.height = Height::try_from(1_i64).unwrap();
+            vt_precommit.height = Height::from(1_u32);
             vt_precommit.round = Round::try_from(1).unwrap();
             vt_precommit.vote_type = Type::Precommit; // precommit
             println!("{:?}", vt_precommit);
@@ -227,7 +227,7 @@ mod tests {
         // with proper (fixed size) height and round (Prevote):
         {
             let mut vt_prevote = Vote::default();
-            vt_prevote.height = Height::try_from(1_u64).unwrap();
+            vt_prevote.height = Height::from(1_u32);
             vt_prevote.round = Round::try_from(1).unwrap();
             vt_prevote.vote_type = Type::Prevote;
 
@@ -260,7 +260,7 @@ mod tests {
             ])
             .unwrap(),
             validator_index: ValidatorIndex::try_from(56789).unwrap(),
-            height: Height::try_from(12345_i64).unwrap(),
+            height: Height::from(12345_u32),
             round: Round::try_from(2).unwrap(),
             timestamp: Some(dt.into()),
             vote_type: Type::Prevote,
@@ -327,7 +327,7 @@ mod tests {
             ])
             .unwrap(),
             validator_index: ValidatorIndex::try_from(56789).unwrap(),
-            height: Height::try_from(12345_u64).unwrap(),
+            height: Height::from(12345_u32),
             round: Round::try_from(2).unwrap(),
             timestamp: Some(dt.into()),
             vote_type: Type::Prevote,

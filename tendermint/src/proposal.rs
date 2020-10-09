@@ -131,7 +131,7 @@ mod tests {
         let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
         let proposal = Proposal {
             msg_type: Type::Proposal,
-            height: Height::try_from(12345_i64).unwrap(),
+            height: Height::from(12345_u32),
             round: Round::try_from(23456).unwrap(),
             pol_round: None,
             block_id: Some(BlockId {
@@ -215,7 +215,7 @@ mod tests {
         let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
         let proposal = Proposal {
             msg_type: Type::Proposal,
-            height: Height::try_from(12345_u64).unwrap(),
+            height: Height::from(12345_u32),
             round: Round::try_from(23456).unwrap(),
             timestamp: Some(dt.into()),
 
