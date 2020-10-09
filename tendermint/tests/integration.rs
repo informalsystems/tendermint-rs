@@ -119,10 +119,7 @@ mod rpc {
     async fn blockchain() {
         let max_height = 10u64;
         let blockchain_info = localhost_rpc_client()
-            .blockchain(
-                Height::try_from(1u64).unwrap(),
-                Height::try_from(max_height).unwrap(),
-            )
+            .blockchain(Height::from(1u32), Height::try_from(max_height).unwrap())
             .await
             .unwrap();
 

@@ -48,6 +48,24 @@ impl From<Height> for u64 {
     }
 }
 
+impl From<u32> for Height {
+    fn from(value: u32) -> Self {
+        Height(value as u64)
+    }
+}
+
+impl From<u16> for Height {
+    fn from(value: u16) -> Self {
+        Height(value as u64)
+    }
+}
+
+impl From<u8> for Height {
+    fn from(value: u8) -> Self {
+        Height(value as u64)
+    }
+}
+
 impl Height {
     /// Get inner integer value. Alternative to `.0` or `.into()`
     pub fn value(&self) -> u64 {
@@ -112,5 +130,13 @@ mod tests {
     #[test]
     fn increment_by_one() {
         assert_eq!(Height::default().increment().value(), 2);
+    }
+
+    #[test]
+    fn avoid_try_unwrap_dance() {
+        assert_eq!(
+            Height::try_from(2_u64).unwrap().value(),
+            Height::from(2_u32).value()
+        );
     }
 }
