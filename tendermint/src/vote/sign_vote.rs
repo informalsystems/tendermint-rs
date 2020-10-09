@@ -114,7 +114,7 @@ mod tests {
         let vote = Vote {
             vote_type: Type::Prevote,
             height: Height::from(12345_u32),
-            round: Round::try_from(2).unwrap(),
+            round: Round::from(2_u16),
             timestamp: Some(dt.into()),
             block_id: Some(BlockId {
                 hash: Hash::try_from(b"DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA".to_vec()).unwrap(),
@@ -206,7 +206,7 @@ mod tests {
         {
             let mut vt_precommit = Vote::default();
             vt_precommit.height = Height::from(1_u32);
-            vt_precommit.round = Round::try_from(1).unwrap();
+            vt_precommit.round = Round::from(1_u16);
             vt_precommit.vote_type = Type::Precommit; // precommit
             println!("{:?}", vt_precommit);
             let cv_precommit = CanonicalVote::new(vt_precommit, ChainId::try_from("A").unwrap());
@@ -228,7 +228,7 @@ mod tests {
         {
             let mut vt_prevote = Vote::default();
             vt_prevote.height = Height::from(1_u32);
-            vt_prevote.round = Round::try_from(1).unwrap();
+            vt_prevote.round = Round::from(1_u16);
             vt_prevote.vote_type = Type::Prevote;
 
             let cv_prevote = CanonicalVote::new(vt_prevote, ChainId::try_from("A").unwrap());
@@ -261,7 +261,7 @@ mod tests {
             .unwrap(),
             validator_index: ValidatorIndex::try_from(56789).unwrap(),
             height: Height::from(12345_u32),
-            round: Round::try_from(2).unwrap(),
+            round: Round::from(2_u16),
             timestamp: Some(dt.into()),
             vote_type: Type::Prevote,
             block_id: Some(BlockId {
@@ -328,7 +328,7 @@ mod tests {
             .unwrap(),
             validator_index: ValidatorIndex::try_from(56789).unwrap(),
             height: Height::from(12345_u32),
-            round: Round::try_from(2).unwrap(),
+            round: Round::from(2_u16),
             timestamp: Some(dt.into()),
             vote_type: Type::Prevote,
             block_id: Some(BlockId {
