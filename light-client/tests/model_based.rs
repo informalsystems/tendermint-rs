@@ -53,7 +53,20 @@ pub struct BlockVerdict {
 
 /// A primitive fuzzer that mutates one of the test case input blocks
 trait SingleStepTestFuzzer {
-    fn fuzz(tc: &SingleStepTestCase) -> Option<SingleStepTestCase>;
+    fn fuzz(tc: &SingleStepTestCase) -> Option<SingleStepTestCase> {
+        let mut fuzz = tc.clone();
+        if let Some((i, input)) = Self::fuzzable_input(&mut fuzz) {
+            let what = Self::fuzz_input(input);
+            fuzz.input.truncate(i+1);
+            fuzz.description = format!("Fuzzed {} for {}", what, &fuzz.description);
+            return Some(fuzz);
+        }
+        None
+    }
+
+    /// Fuzzes the input block and returns the description of what was changed
+    fn fuzz_input(input: &mut BlockVerdict) -> String;
+
 
     /// get the block to mutate, if possible
     fn fuzzable_input(tc: &mut SingleStepTestCase) -> Option<(usize, &mut BlockVerdict)> {
@@ -76,59 +89,38 @@ trait SingleStepTestFuzzer {
 /// A trivial fuzzer that mutates height for one of the test case headers
 struct HeightFuzzer {}
 impl SingleStepTestFuzzer for HeightFuzzer {
-    fn fuzz(tc: &SingleStepTestCase) -> Option<SingleStepTestCase> {
-        let mut fuzz = tc.clone();
-        if let Some((i,input)) = Self::fuzzable_input(&mut fuzz) {
-            let mut rng = rand::thread_rng();
-            let tendermint::block::Height(h) = input.block.signed_header.header.height;
-            let mut height: u64 = rng.gen();
-            while height == h {
-                height = rng.gen();
-            }
-            input.block.signed_header.header.height = tendermint::block::Height(height);
-            input.verdict = LiteVerdict::Invalid;
-            fuzz.input.truncate(i+1);
-            fuzz.description = format!(
-                "Fuzzed height from {} into {} for {}",
-                h, height, &fuzz.description
-            );
-            return Some(fuzz);
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        let mut rng = rand::thread_rng();
+        let tendermint::block::Height(h) = input.block.signed_header.header.height;
+        let mut height: u64 = rng.gen();
+        while height == h {
+            height = rng.gen();
         }
-        None
+        input.block.signed_header.header.height = tendermint::block::Height(height);
+        input.verdict = LiteVerdict::Invalid;
+        format!("height from {} into {}", h, height)
     }
 }
 
 /// A trivial fuzzer that mutates validators_hash for one of the test case headers
 struct ValHashFuzzer {}
 impl SingleStepTestFuzzer for ValHashFuzzer {
-    fn fuzz(tc: &SingleStepTestCase) -> Option<SingleStepTestCase> {
-        let mut fuzz = tc.clone();
-        if let Some((i, input)) = Self::fuzzable_input(&mut fuzz) {
-            let hash = tendermint::hash::Hash::from_str("AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419").unwrap();
-            input.block.signed_header.header.validators_hash = hash;
-            input.verdict = LiteVerdict::Invalid;
-            fuzz.description = format!("Fuzzed validators_hash for {}", &fuzz.description);
-            fuzz.input.truncate(i+1);
-            return Some(fuzz);
-        }
-        None
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        let hash = tendermint::hash::Hash::from_str("AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419").unwrap();
+        input.block.signed_header.header.validators_hash = hash;
+        input.verdict = LiteVerdict::Invalid;
+        String::from("validators_hash")
     }
 }
 
 /// A trivial fuzzer that mutates next_validators_hash for one of the test case headers
 struct NextValHashFuzzer {}
 impl SingleStepTestFuzzer for NextValHashFuzzer {
-    fn fuzz(tc: &SingleStepTestCase) -> Option<SingleStepTestCase> {
-        let mut fuzz = tc.clone();
-        if let Some((i, input)) = Self::fuzzable_input(&mut fuzz) {
-            let hash = tendermint::hash::Hash::from_str("AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419").unwrap();
-            input.block.signed_header.header.next_validators_hash = hash;
-            input.verdict = LiteVerdict::Invalid;
-            fuzz.description = format!("Fuzzed next_validators_hash for {}", &fuzz.description);
-            fuzz.input.truncate(i+1);
-            return Some(fuzz);
-        }
-        None
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        let hash = tendermint::hash::Hash::from_str("AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419").unwrap();
+        input.block.signed_header.header.next_validators_hash = hash;
+        input.verdict = LiteVerdict::Invalid;
+        String::from("next_validators_hash")
     }
 }
 
