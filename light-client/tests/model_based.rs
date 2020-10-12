@@ -95,7 +95,7 @@ impl SingleStepTestFuzzer for HeaderHeightFuzzer {
         while height == h {
             height = rng.gen();
         }
-        input.block.signed_header.header.height = tendermint::block::Height::from(height);
+        input.block.signed_header.header.height = tendermint::block::Height(height);
         input.verdict = LiteVerdict::Invalid;
         format!("height from {} into {}", h, height)
     }
