@@ -1,5 +1,6 @@
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use std::time::Duration;
 use tendermint_light_client::components::verifier::Verdict;
 use tendermint_light_client::{
@@ -7,7 +8,6 @@ use tendermint_light_client::{
     types::{LightBlock, Time, TrustThreshold},
 };
 use tendermint_testgen::{apalache::*, jsonatr::*, Command, TestEnv, Tester};
-use std::str::FromStr;
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteTestKind {
@@ -57,7 +57,7 @@ trait SingleStepTestFuzzer {
         let mut fuzz = tc.clone();
         if let Some((i, input)) = Self::fuzzable_input(&mut fuzz) {
             let what = Self::fuzz_input(input);
-            fuzz.input.truncate(i+1);
+            fuzz.input.truncate(i + 1);
             fuzz.description = format!("Fuzzed {} for {}", what, &fuzz.description);
             return Some(fuzz);
         }
@@ -66,7 +66,6 @@ trait SingleStepTestFuzzer {
 
     /// Fuzzes the input block and returns the description of what was changed
     fn fuzz_input(input: &mut BlockVerdict) -> String;
-
 
     /// get the block to mutate, if possible
     fn fuzzable_input(tc: &mut SingleStepTestCase) -> Option<(usize, &mut BlockVerdict)> {
@@ -81,7 +80,7 @@ trait SingleStepTestFuzzer {
         } else {
             let mut rng = rand::thread_rng();
             let i = rng.gen_range(0, indices.len());
-            Some((i,tc.input.get_mut(i).unwrap()))
+            Some((i, tc.input.get_mut(i).unwrap()))
         }
     }
 }
@@ -106,7 +105,10 @@ impl SingleStepTestFuzzer for HeaderHeightFuzzer {
 struct HeaderValHashFuzzer {}
 impl SingleStepTestFuzzer for HeaderValHashFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
-        let hash = tendermint::hash::Hash::from_str("AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419").unwrap();
+        let hash = tendermint::hash::Hash::from_str(
+            "AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419",
+        )
+        .unwrap();
         input.block.signed_header.header.validators_hash = hash;
         input.verdict = LiteVerdict::Invalid;
         String::from("validators_hash")
@@ -117,19 +119,22 @@ impl SingleStepTestFuzzer for HeaderValHashFuzzer {
 struct HeaderNextValHashFuzzer {}
 impl SingleStepTestFuzzer for HeaderNextValHashFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
-        let hash = tendermint::hash::Hash::from_str("AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419").unwrap();
+        let hash = tendermint::hash::Hash::from_str(
+            "AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419",
+        )
+        .unwrap();
         input.block.signed_header.header.next_validators_hash = hash;
         input.verdict = LiteVerdict::Invalid;
         String::from("next_validators_hash")
     }
 }
 
-
 /// A trivial fuzzer that mutates chain_id for one of the test case headers
 struct HeaderChainIdFuzzer {}
 impl SingleStepTestFuzzer for HeaderChainIdFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
-        input.block.signed_header.header.chain_id = tendermint::chain::Id::from_str("AAAAAAAAAAAAAAAAAA").unwrap();
+        input.block.signed_header.header.chain_id =
+            tendermint::chain::Id::from_str("AAAAAAAAAAAAAAAAAA").unwrap();
         input.verdict = LiteVerdict::Invalid;
         String::from("chain_id")
     }
@@ -140,9 +145,13 @@ struct HeaderTimeFuzzer {}
 impl SingleStepTestFuzzer for HeaderTimeFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         let mut rng = rand::thread_rng();
-        let secs = tendermint::Time::now().duration_since(tendermint::Time::unix_epoch()).unwrap().as_secs();
+        let secs = tendermint::Time::now()
+            .duration_since(tendermint::Time::unix_epoch())
+            .unwrap()
+            .as_secs();
         let rand_secs = rng.gen_range(0, secs);
-        input.block.signed_header.header.time = tendermint::Time::unix_epoch() + std::time::Duration::from_secs(rand_secs);
+        input.block.signed_header.header.time =
+            tendermint::Time::unix_epoch() + std::time::Duration::from_secs(rand_secs);
         // TODO: the fuzzing below fails with one of:
         //   - 'overflow when adding duration to instant', src/libstd/time.rs:549:31
         //   - 'No such local time', /home/andrey/.cargo/registry/src/github.com-1ecc6299db9ec823/chrono-0.4.11/src/offset/mod.rs:173:34
@@ -206,8 +215,9 @@ fn fuzz_single_step_test(
 ) {
     output_env.clear_log();
     let run_test = |tc: SingleStepTestCase| {
-        output_env.logln(&format!("  > running static model-based single-step test: {}",
-                                  &tc.description
+        output_env.logln(&format!(
+            "  > running static model-based single-step test: {}",
+            &tc.description
         ));
         single_step_test(tc, _env, _root_env, output_env);
         Some(())
