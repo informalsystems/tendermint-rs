@@ -87,8 +87,8 @@ trait SingleStepTestFuzzer {
 }
 
 /// A trivial fuzzer that mutates height for one of the test case headers
-struct HeightFuzzer {}
-impl SingleStepTestFuzzer for HeightFuzzer {
+struct HeaderHeightFuzzer {}
+impl SingleStepTestFuzzer for HeaderHeightFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         let mut rng = rand::thread_rng();
         let tendermint::block::Height(h) = input.block.signed_header.header.height;
@@ -103,8 +103,8 @@ impl SingleStepTestFuzzer for HeightFuzzer {
 }
 
 /// A trivial fuzzer that mutates validators_hash for one of the test case headers
-struct ValHashFuzzer {}
-impl SingleStepTestFuzzer for ValHashFuzzer {
+struct HeaderValHashFuzzer {}
+impl SingleStepTestFuzzer for HeaderValHashFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         let hash = tendermint::hash::Hash::from_str("AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419").unwrap();
         input.block.signed_header.header.validators_hash = hash;
@@ -114,13 +114,42 @@ impl SingleStepTestFuzzer for ValHashFuzzer {
 }
 
 /// A trivial fuzzer that mutates next_validators_hash for one of the test case headers
-struct NextValHashFuzzer {}
-impl SingleStepTestFuzzer for NextValHashFuzzer {
+struct HeaderNextValHashFuzzer {}
+impl SingleStepTestFuzzer for HeaderNextValHashFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         let hash = tendermint::hash::Hash::from_str("AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419").unwrap();
         input.block.signed_header.header.next_validators_hash = hash;
         input.verdict = LiteVerdict::Invalid;
         String::from("next_validators_hash")
+    }
+}
+
+
+/// A trivial fuzzer that mutates chain_id for one of the test case headers
+struct HeaderChainIdFuzzer {}
+impl SingleStepTestFuzzer for HeaderChainIdFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        input.block.signed_header.header.chain_id = tendermint::chain::Id::from_str("AAAAAAAAAAAAAAAAAA").unwrap();
+        input.verdict = LiteVerdict::Invalid;
+        String::from("chain_id")
+    }
+}
+
+/// A trivial fuzzer that mutates time for one of the test case headers
+struct HeaderTimeFuzzer {}
+impl SingleStepTestFuzzer for HeaderTimeFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        let mut rng = rand::thread_rng();
+        let secs = tendermint::Time::now().duration_since(tendermint::Time::unix_epoch()).unwrap().as_secs();
+        let rand_secs = rng.gen_range(0, secs);
+        input.block.signed_header.header.time = tendermint::Time::unix_epoch() + std::time::Duration::from_secs(rand_secs);
+        // TODO: the fuzzing below fails with one of:
+        //   - 'overflow when adding duration to instant', src/libstd/time.rs:549:31
+        //   - 'No such local time', /home/andrey/.cargo/registry/src/github.com-1ecc6299db9ec823/chrono-0.4.11/src/offset/mod.rs:173:34
+        // let secs: u64 = rng.gen();
+        // input.block.signed_header.header.time = tendermint::Time::unix_epoch() + std::time::Duration::from_secs(secs);
+        input.verdict = LiteVerdict::Invalid;
+        String::from("time")
     }
 }
 
@@ -184,9 +213,11 @@ fn fuzz_single_step_test(
         Some(())
     };
     run_test(tc.clone());
-    HeightFuzzer::fuzz(&tc).and_then(run_test);
-    ValHashFuzzer::fuzz(&tc).and_then(run_test);
-    NextValHashFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderHeightFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderValHashFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderNextValHashFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderChainIdFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderTimeFuzzer::fuzz(&tc).and_then(run_test);
 }
 
 fn model_based_test(
