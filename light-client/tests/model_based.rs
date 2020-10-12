@@ -1,5 +1,6 @@
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use std::str::FromStr;
 use std::time::Duration;
 use tendermint_light_client::components::verifier::Verdict;
@@ -90,12 +91,13 @@ struct HeaderHeightFuzzer {}
 impl SingleStepTestFuzzer for HeaderHeightFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         let mut rng = rand::thread_rng();
-        let h = input.block.signed_header.header.height.0;
-        let mut height: u64 = rng.gen();
+        let h: u64 = input.block.signed_header.header.height.into();
+        let mut height: u64 = rng.gen_range(0u64, i64::MAX as u64);
         while height == h {
             height = rng.gen();
         }
-        input.block.signed_header.header.height = tendermint::block::Height(height);
+        input.block.signed_header.header.height =
+            tendermint::block::Height::try_from(height).unwrap();
         input.verdict = LiteVerdict::Invalid;
         format!("height from {} into {}", h, height)
     }
