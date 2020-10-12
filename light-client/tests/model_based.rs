@@ -90,12 +90,12 @@ struct HeaderHeightFuzzer {}
 impl SingleStepTestFuzzer for HeaderHeightFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         let mut rng = rand::thread_rng();
-        let tendermint::block::Height(h) = input.block.signed_header.header.height;
+        let h = input.block.signed_header.header.height.0;
         let mut height: u64 = rng.gen();
         while height == h {
             height = rng.gen();
         }
-        input.block.signed_header.header.height = tendermint::block::Height(height);
+        input.block.signed_header.header.height = tendermint::block::Height::from(height);
         input.verdict = LiteVerdict::Invalid;
         format!("height from {} into {}", h, height)
     }
