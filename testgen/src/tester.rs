@@ -128,10 +128,7 @@ impl TestEnv {
     pub fn rel_path(&self, full_path: impl AsRef<Path>) -> Option<String> {
         match PathBuf::from(full_path.as_ref()).strip_prefix(&self.current_dir) {
             Err(_) => None,
-            Ok(rel_path) => match rel_path.to_str() {
-                None => None,
-                Some(rel_path) => Some(rel_path.to_string()),
-            },
+            Ok(rel_path) => rel_path.to_str().map(|rp| rp.to_string()),
         }
     }
 

@@ -107,10 +107,7 @@ impl Generator<validator::Info> for Validator {
             address: account::Id::from(keypair.public),
             pub_key: PublicKey::from(keypair.public),
             voting_power: vote::Power::new(self.voting_power.unwrap_or(0)),
-            proposer_priority: match self.proposer_priority {
-                None => None,
-                Some(p) => Some(validator::ProposerPriority::new(p)),
-            },
+            proposer_priority: self.proposer_priority.map(validator::ProposerPriority::new),
         };
         Ok(info)
     }
@@ -146,10 +143,7 @@ mod tests {
     // make a validator from a pubkey, a voting power, and a proposer priority
     fn make_validator(pk: PublicKey, vp: u64, pp: Option<i64>) -> validator::Info {
         let mut info = validator::Info::new(pk, vote::Power::new(vp));
-        info.proposer_priority = match pp {
-            None => None,
-            Some(pp) => Some(validator::ProposerPriority::new(pp)),
-        };
+        info.proposer_priority = pp.map(validator::ProposerPriority::new);
         info
     }
 
