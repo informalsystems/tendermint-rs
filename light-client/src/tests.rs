@@ -2,7 +2,7 @@
 
 use crate::types::{Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tendermint::abci::transaction::Hash;
 use tendermint_rpc as rpc;
 
@@ -33,7 +33,7 @@ pub struct TestCase<LB> {
     pub expected_output: Option<String>,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Initial {
     pub signed_header: SignedHeader,
     pub next_validator_set: ValidatorSet,
@@ -198,7 +198,7 @@ pub fn verify_bisection(
 // in the light blocks serialized in the JSON fixtures.
 // -----------------------------------------------------------------------------
 
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct AnonLightBlock {
     pub signed_header: SignedHeader,
     #[serde(rename = "validator_set")]

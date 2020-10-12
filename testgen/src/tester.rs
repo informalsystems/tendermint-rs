@@ -79,17 +79,37 @@ impl TestEnv {
     /// Returns None if copying was not successful
     pub fn copy_file_from(&self, path: impl AsRef<Path>) -> Option<()> {
         let path = path.as_ref();
+        let new_name = path.file_name()?.to_str()?;
+        self.copy_file_from_as(path, new_name)
+    }
+
+    /// Copy a file from the path outside environment into the environment current dir
+    /// Assigns the file a new_name in the current environment
+    /// Returns None if copying was not successful
+    pub fn copy_file_from_as(&self, path: impl AsRef<Path>, new_name: &str) -> Option<()> {
+        let path = path.as_ref();
         if !path.is_file() {
             return None;
         }
-        let name = path.file_name()?.to_str()?;
-        fs::copy(path, self.full_path(name)).ok().map(|_| ())
+        fs::copy(path, self.full_path(new_name)).ok().map(|_| ())
     }
 
     /// Copy a file from the path relative to the other environment into the environment current dir
     /// Returns None if copying was not successful
     pub fn copy_file_from_env(&self, other: &TestEnv, path: impl AsRef<Path>) -> Option<()> {
         self.copy_file_from(other.full_path(path))
+    }
+
+    /// Copy a file from the path relative to the other environment into the environment current dir
+    /// Assigns the file a new_name in the current environment
+    /// Returns None if copying was not successful
+    pub fn copy_file_from_env_as(
+        &self,
+        other: &TestEnv,
+        path: impl AsRef<Path>,
+        new_name: &str,
+    ) -> Option<()> {
+        self.copy_file_from_as(other.full_path(path), new_name)
     }
 
     /// Remove a file from a path relative to the environment current dir
