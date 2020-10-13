@@ -8,7 +8,7 @@ use tendermint_light_client::{
     tests::{Trusted, *},
     types::{LightBlock, Time, TrustThreshold},
 };
-use tendermint_testgen::{apalache::*, jsonatr::*, Command, TestEnv, Tester, Validator, Generator};
+use tendermint_testgen::{apalache::*, jsonatr::*, Command, Generator, TestEnv, Tester, Validator};
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteTestKind {
@@ -108,7 +108,8 @@ impl SingleStepTestFuzzer for HeaderVersionFuzzer {
         while app == input.block.signed_header.header.version.app {
             app = rng.gen();
         }
-        input.block.signed_header.header.version = tendermint::block::header::Version{ block, app };
+        input.block.signed_header.header.version =
+            tendermint::block::header::Version { block, app };
         String::from("header version")
     }
 }
@@ -150,9 +151,12 @@ impl SingleStepTestFuzzer for HeaderTimeFuzzer {
             tendermint::Time::unix_epoch() + std::time::Duration::from_secs(rand_secs);
         // TODO: the fuzzing below fails with one of:
         //   - 'overflow when adding duration to instant', src/libstd/time.rs:549:31
-        //   - 'No such local time', /home/andrey/.cargo/registry/src/github.com-1ecc6299db9ec823/chrono-0.4.11/src/offset/mod.rs:173:34
+        //   - 'No such local time',
+        //     /home/andrey/.cargo/registry/src/github.com-1ecc6299db9ec823/chrono-0.4.11/src/
+        //     offset/mod.rs:173:34
         // let secs: u64 = rng.gen();
-        // input.block.signed_header.header.time = tendermint::Time::unix_epoch() + std::time::Duration::from_secs(secs);
+        // input.block.signed_header.header.time = tendermint::Time::unix_epoch() +
+        // std::time::Duration::from_secs(secs);
         String::from("header time")
     }
 }
@@ -160,11 +164,10 @@ impl SingleStepTestFuzzer for HeaderTimeFuzzer {
 struct HeaderLastBlockIdFuzzer {}
 impl SingleStepTestFuzzer for HeaderLastBlockIdFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
-        input.block.signed_header.header.last_block_id =
-            Some(tendermint::block::Id {
-                hash: Self::random_hash(),
-                parts: Default::default()
-            });
+        input.block.signed_header.header.last_block_id = Some(tendermint::block::Id {
+            hash: Self::random_hash(),
+            parts: Default::default(),
+        });
         String::from("header last_block_id")
     }
 }
@@ -213,7 +216,7 @@ struct HeaderAppHashFuzzer {}
 impl SingleStepTestFuzzer for HeaderAppHashFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         input.block.signed_header.header.app_hash =
-            tendermint::hash::AppHash::try_from(vec![0,1,2,3,4,5]).unwrap();
+            tendermint::hash::AppHash::try_from(vec![0, 1, 2, 3, 4, 5]).unwrap();
         String::from("header app_hash")
     }
 }
@@ -248,12 +251,11 @@ impl SingleStepTestFuzzer for CommitHeightFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         let mut rng = rand::thread_rng();
         let h: u64 = input.block.signed_header.commit.height.into();
-        let mut height: u64 = h  - 2; // rng.gen_range(0u64, i64::MAX as u64);
+        let mut height: u64 = h - 2; // rng.gen_range(0u64, i64::MAX as u64);
         while height == h {
             height = rng.gen();
         }
-        input.block.signed_header.commit.height =
-            tendermint::block::Height::try_from(h).unwrap();
+        input.block.signed_header.commit.height = tendermint::block::Height::try_from(h).unwrap();
         String::from("commit height")
     }
 }
@@ -275,11 +277,10 @@ impl SingleStepTestFuzzer for CommitRoundFuzzer {
 struct CommitBlockIdFuzzer {}
 impl SingleStepTestFuzzer for CommitBlockIdFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
-        input.block.signed_header.commit.block_id =
-            tendermint::block::Id {
-                hash: Self::random_hash(),
-                parts: Default::default()
-            };
+        input.block.signed_header.commit.block_id = tendermint::block::Id {
+            hash: Self::random_hash(),
+            parts: Default::default(),
+        };
         String::from("commit block_id")
     }
 }
@@ -359,7 +360,8 @@ fn fuzz_single_step_test(
     HeaderLastResultsHashFuzzer::fuzz(&tc).and_then(run_test);
     HeaderEvidenceHashFuzzer::fuzz(&tc).and_then(run_test);
     HeaderProposerAddressFuzzer::fuzz(&tc).and_then(run_test);
-    // The two tests below fail -- seems that there is not enough validation between the header and the commit
+    // The two tests below fail -- seems that there is not enough validation between the header and
+    // the commit
     CommitHeightFuzzer::fuzz(&tc).and_then(run_test);
     CommitRoundFuzzer::fuzz(&tc).and_then(run_test);
     CommitBlockIdFuzzer::fuzz(&tc).and_then(run_test);
