@@ -19,6 +19,9 @@ use tendermint_proto::DomainType;
 pub enum Signature {
     /// Ed25519 block signature
     Ed25519(Ed25519Signature),
+    /// No signature present
+    None, /* This could have been implemented as an `Option<>` but then handling it would be
+           * outside the scope of this enum. */
 }
 
 impl DomainType<Vec<u8>> for Signature {}
@@ -27,6 +30,9 @@ impl TryFrom<Vec<u8>> for Signature {
     type Error = Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        if value.is_empty() {
+            return Ok(Self::default())
+        }
         if value.len() != ED25519_SIGNATURE_SIZE {
             return Err(Kind::InvalidSignatureIdLength.into());
         }
@@ -42,11 +48,18 @@ impl From<Signature> for Vec<u8> {
     }
 }
 
+impl Default for Signature {
+    fn default() -> Self {
+        Signature::None
+    }
+}
+
 impl Signature {
     /// Return the algorithm used to create this particular signature
     pub fn algorithm(&self) -> Algorithm {
         match self {
             Signature::Ed25519(_) => Algorithm::Ed25519,
+            Signature::None => Algorithm::Ed25519, // It doesn't matter what algorithm an empty signature has.
         }
     }
 
@@ -54,6 +67,7 @@ impl Signature {
     pub fn ed25519(self) -> Option<Ed25519Signature> {
         match self {
             Signature::Ed25519(sig) => Some(sig),
+            Signature::None => None,
         }
     }
 
@@ -72,6 +86,7 @@ impl AsRef<[u8]> for Signature {
     fn as_ref(&self) -> &[u8] {
         match self {
             Signature::Ed25519(sig) => sig.as_ref(),
+            Signature::None => &[],
         }
     }
 }
