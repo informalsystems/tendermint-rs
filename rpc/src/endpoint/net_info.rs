@@ -105,37 +105,37 @@ pub struct Monitor {
 
     /// Bytes
     #[serde(rename = "Bytes", with = "serializers::from_str")]
-    bytes: u64,
+    pub bytes: u64,
 
     /// Samples
     #[serde(rename = "Samples", with = "serializers::from_str")]
-    samples: u64,
+    pub samples: u64,
 
     /// Instant rate
     #[serde(rename = "InstRate", with = "serializers::from_str")]
-    inst_rate: u64,
+    pub inst_rate: u64,
 
     /// Current rate
     #[serde(rename = "CurRate", with = "serializers::from_str")]
-    cur_rate: u64,
+    pub cur_rate: u64,
 
     /// Average rate
     #[serde(rename = "AvgRate", with = "serializers::from_str")]
-    avg_rate: u64,
+    pub avg_rate: u64,
 
     /// Peak rate
     #[serde(rename = "PeakRate", with = "serializers::from_str")]
-    peak_rate: u64,
+    pub peak_rate: u64,
 
     /// Bytes remaining
     #[serde(rename = "BytesRem", with = "serializers::from_str")]
-    bytes_rem: u64,
+    pub bytes_rem: u64,
 
     /// Time remaining
     #[serde(rename = "TimeRem", with = "serializers::from_str")]
-    time_rem: u64,
+    pub time_rem: u64,
 
     /// Progress
     #[serde(rename = "Progress")]
-    progress: u64,
+    pub progress: u64,
 }
