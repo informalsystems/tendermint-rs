@@ -7,6 +7,7 @@ use tendermint::{
     Block,
 };
 
+use crate::query::EventType;
 use crate::{response::Wrapper, Response};
 
 /// An incoming event produced by a [`Subscription`].
@@ -25,6 +26,19 @@ impl Response for Event {}
 
 /// A JSON-RPC-wrapped event.
 pub type WrappedEvent = Wrapper<Event>;
+
+impl Event {
+    /// Returns the type associated with this event, if we recognize it.
+    ///
+    /// Returns `None` if we don't yet support this event type.
+    pub fn event_type(&self) -> Option<EventType> {
+        match self.data {
+            EventData::NewBlock { .. } => Some(EventType::NewBlock),
+            EventData::Tx { .. } => Some(EventType::Tx),
+            _ => None,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "value")]

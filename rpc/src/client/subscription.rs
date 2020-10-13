@@ -5,6 +5,7 @@ pub use two_phase_router::{SubscriptionState, TwoPhaseSubscriptionRouter};
 
 use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
 use crate::event::Event;
+use crate::query::Query;
 use crate::{Error, Id, Result};
 use async_trait::async_trait;
 use futures::task::{Context, Poll};
@@ -22,10 +23,7 @@ use std::str::FromStr;
 #[async_trait]
 pub trait SubscriptionClient {
     /// `/subscribe`: subscribe to receive events produced by the given query.
-    ///
-    /// For query syntax details, see the
-    /// [Tendermint RPC docs](https://docs.tendermint.com/master/rpc/#/Websocket/subscribe).
-    async fn subscribe(&mut self, query: String) -> Result<Subscription>;
+    async fn subscribe(&mut self, query: Query) -> Result<Subscription>;
 }
 
 /// An interface that can be used to asynchronously receive [`Event`]s for a
@@ -58,7 +56,7 @@ pub trait SubscriptionClient {
 #[derive(Debug)]
 pub struct Subscription {
     /// The query for which events will be produced.
-    pub query: String,
+    pub query: Query,
     /// The ID of this subscription (automatically assigned).
     pub id: SubscriptionId,
     // Our internal result event receiver for this subscription.
@@ -79,7 +77,7 @@ impl Stream for Subscription {
 impl Subscription {
     pub(crate) fn new(
         id: SubscriptionId,
-        query: String,
+        query: Query,
         event_rx: ChannelRx<Result<Event>>,
         cmd_tx: ChannelTx<SubscriptionDriverCmd>,
     ) -> Self {
@@ -126,7 +124,7 @@ pub enum SubscriptionDriverCmd {
         /// The desired ID for the new subscription.
         id: SubscriptionId,
         /// The query for which to initiate the subscription.
-        query: String,
+        query: Query,
         /// Where to send events received for this subscription.
         event_tx: ChannelTx<Result<Event>>,
         /// Where to send the result of this subscription command.
@@ -137,7 +135,7 @@ pub enum SubscriptionDriverCmd {
         /// The ID of the subscription to terminate.
         id: SubscriptionId,
         /// The query associated with the subscription we want to terminate.
-        query: String,
+        query: Query,
         /// Where to send the result of this unsubscribe command.
         result_tx: ChannelTx<Result<()>>,
     },

@@ -24,7 +24,6 @@ pub mod error;
 
 pub mod abci;
 pub mod account;
-pub mod amino_types;
 pub mod block;
 pub mod chain;
 pub mod channel;
@@ -38,6 +37,7 @@ mod moniker;
 pub mod net;
 pub mod node;
 pub mod private_key;
+pub mod proposal;
 pub mod public_key;
 pub mod serializers;
 pub mod signature;
@@ -55,9 +55,11 @@ pub use crate::{
     block::Block,
     error::{Error, Kind},
     genesis::Genesis,
+    hash::AppHash,
     hash::Hash,
     moniker::Moniker,
     private_key::PrivateKey,
+    proposal::Proposal,
     public_key::{PublicKey, TendermintKey},
     signature::Signature,
     time::Time,
