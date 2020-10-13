@@ -109,7 +109,7 @@ impl SingleStepTestFuzzer for HeaderVersionFuzzer {
             app = rng.gen();
         }
         input.block.signed_header.header.version = tendermint::block::header::Version{ block, app };
-        String::from("version")
+        String::from("header version")
     }
 }
 
@@ -118,7 +118,7 @@ impl SingleStepTestFuzzer for HeaderChainIdFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         input.block.signed_header.header.chain_id =
             tendermint::chain::Id::from_str("AAAAAAAAAAAAAAAAAA").unwrap();
-        String::from("chain_id")
+        String::from("header chain_id")
     }
 }
 
@@ -133,7 +133,7 @@ impl SingleStepTestFuzzer for HeaderHeightFuzzer {
         }
         input.block.signed_header.header.height =
             tendermint::block::Height::try_from(height).unwrap();
-        String::from("height")
+        String::from("header height")
     }
 }
 
@@ -153,7 +153,7 @@ impl SingleStepTestFuzzer for HeaderTimeFuzzer {
         //   - 'No such local time', /home/andrey/.cargo/registry/src/github.com-1ecc6299db9ec823/chrono-0.4.11/src/offset/mod.rs:173:34
         // let secs: u64 = rng.gen();
         // input.block.signed_header.header.time = tendermint::Time::unix_epoch() + std::time::Duration::from_secs(secs);
-        String::from("time")
+        String::from("header time")
     }
 }
 
@@ -165,7 +165,7 @@ impl SingleStepTestFuzzer for HeaderLastBlockIdFuzzer {
                 hash: Self::random_hash(),
                 parts: Default::default()
             });
-        String::from("last_block_id")
+        String::from("header last_block_id")
     }
 }
 
@@ -173,7 +173,7 @@ struct HeaderLastCommitHashFuzzer {}
 impl SingleStepTestFuzzer for HeaderLastCommitHashFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         input.block.signed_header.header.last_commit_hash = Some(Self::random_hash());
-        String::from("last_commit_hash")
+        String::from("header last_commit_hash")
     }
 }
 
@@ -181,7 +181,7 @@ struct HeaderDataHashFuzzer {}
 impl SingleStepTestFuzzer for HeaderDataHashFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         input.block.signed_header.header.data_hash = Some(Self::random_hash());
-        String::from("data_hash")
+        String::from("header data_hash")
     }
 }
 
@@ -189,7 +189,7 @@ struct HeaderValHashFuzzer {}
 impl SingleStepTestFuzzer for HeaderValHashFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         input.block.signed_header.header.validators_hash = Self::random_hash();
-        String::from("validators_hash")
+        String::from("header validators_hash")
     }
 }
 
@@ -197,7 +197,7 @@ struct HeaderNextValHashFuzzer {}
 impl SingleStepTestFuzzer for HeaderNextValHashFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         input.block.signed_header.header.next_validators_hash = Self::random_hash();
-        String::from("next_validators_hash")
+        String::from("header next_validators_hash")
     }
 }
 
@@ -205,7 +205,7 @@ struct HeaderConsensusHashFuzzer {}
 impl SingleStepTestFuzzer for HeaderConsensusHashFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         input.block.signed_header.header.consensus_hash = Self::random_hash();
-        String::from("consensus_hash")
+        String::from("header consensus_hash")
     }
 }
 
@@ -214,7 +214,7 @@ impl SingleStepTestFuzzer for HeaderAppHashFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         input.block.signed_header.header.app_hash =
             tendermint::hash::AppHash::try_from(vec![0,1,2,3,4,5]).unwrap();
-        String::from("app_hash")
+        String::from("header app_hash")
     }
 }
 
@@ -222,7 +222,7 @@ struct HeaderLastResultsHashFuzzer {}
 impl SingleStepTestFuzzer for HeaderLastResultsHashFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         input.block.signed_header.header.last_results_hash = Some(Self::random_hash());
-        String::from("last_results_hash")
+        String::from("header last_results_hash")
     }
 }
 
@@ -230,7 +230,7 @@ struct HeaderEvidenceHashFuzzer {}
 impl SingleStepTestFuzzer for HeaderEvidenceHashFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         input.block.signed_header.header.evidence_hash = Some(Self::random_hash());
-        String::from("evidence_hash")
+        String::from("header evidence_hash")
     }
 }
 
@@ -239,7 +239,36 @@ impl SingleStepTestFuzzer for HeaderProposerAddressFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         let val = Validator::new("AAAAAAAAAAAAAAAA");
         input.block.signed_header.header.proposer_address = val.generate().unwrap().address;
-        String::from("proposer_address")
+        String::from("header proposer_address")
+    }
+}
+
+struct CommitHeightFuzzer {}
+impl SingleStepTestFuzzer for CommitHeightFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        let mut rng = rand::thread_rng();
+        let h: u64 = input.block.signed_header.commit.height.into();
+        let mut height: u64 = h  - 2; // rng.gen_range(0u64, i64::MAX as u64);
+        while height == h {
+            height = rng.gen();
+        }
+        input.block.signed_header.commit.height =
+            tendermint::block::Height::try_from(h).unwrap();
+        String::from("commit height")
+    }
+}
+
+struct CommitRoundFuzzer {}
+impl SingleStepTestFuzzer for CommitRoundFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        let mut rng = rand::thread_rng();
+        let r: u32 = input.block.signed_header.commit.round.into();
+        let mut round: u32 = rng.gen();
+        while round == r {
+            round = rng.gen();
+        }
+        input.block.signed_header.commit.round = round;
+        format!("commit round from {} into {}", r, round)
     }
 }
 
@@ -318,6 +347,9 @@ fn fuzz_single_step_test(
     HeaderLastResultsHashFuzzer::fuzz(&tc).and_then(run_test);
     HeaderEvidenceHashFuzzer::fuzz(&tc).and_then(run_test);
     HeaderProposerAddressFuzzer::fuzz(&tc).and_then(run_test);
+    // The tests below fail -- seems that there is not enough validation between the header and the commit
+    //CommitHeightFuzzer::fuzz(&tc).and_then(run_test);
+    //CommitRoundFuzzer::fuzz(&tc).and_then(run_test);
 }
 
 fn model_based_test(
