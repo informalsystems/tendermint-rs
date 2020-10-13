@@ -1,11 +1,8 @@
 //! Tendermint consensus state
 
 pub use crate::block;
+use serde::{Deserialize, Serialize};
 pub use std::{cmp::Ordering, fmt};
-use {
-    crate::serializers,
-    serde::{Deserialize, Serialize},
-};
 
 /// Placeholder string to show when block ID is absent. Syntax from:
 /// <https://tendermint.com/docs/spec/consensus/consensus.html>
@@ -18,8 +15,7 @@ pub struct State {
     pub height: block::Height,
 
     /// Current consensus round
-    #[serde(with = "serializers::from_str")]
-    pub round: i64,
+    pub round: block::Round,
 
     /// Current consensus step
     pub step: i8,
@@ -72,29 +68,29 @@ mod tests {
     #[test]
     fn state_ord_test() {
         let new = State {
-            height: block::Height::from(9001u64),
-            round: 0,
+            height: block::Height::from(9001_u32),
+            round: block::Round::default(),
             step: 0,
             block_id: None,
         };
 
         let old = State {
-            height: block::Height::from(1001u64),
-            round: 1,
+            height: block::Height::from(1001_u32),
+            round: block::Round::from(1_u16),
             step: 0,
             block_id: None,
         };
 
         let older = State {
-            height: block::Height::from(1001u64),
-            round: 0,
+            height: block::Height::from(1001_u32),
+            round: block::Round::default(),
             step: 0,
             block_id: None,
         };
 
         let oldest = State {
             height: block::Height::default(),
-            round: 0,
+            round: block::Round::default(),
             step: 0,
             block_id: None,
         };

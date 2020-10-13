@@ -10,9 +10,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
 
+use std::convert::{TryFrom, TryInto};
 use tendermint::block::CommitSig;
 use tendermint::trust_threshold::TrustThreshold as _;
-use tendermint::vote::{SignedVote, Vote};
+use tendermint::vote::{SignedVote, ValidatorIndex, Vote};
 
 /// Tally for the voting power computed by the `VotingPowerCalculator`
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -115,7 +116,11 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
 
         // Get non-absent votes from the signatures
         let non_absent_votes = signatures.iter().enumerate().flat_map(|(idx, signature)| {
-            if let Some(vote) = non_absent_vote(signature, idx as u16, &signed_header.commit) {
+            if let Some(vote) = non_absent_vote(
+                signature,
+                ValidatorIndex::try_from(idx).unwrap(),
+                &signed_header.commit,
+            ) {
                 Some((signature, vote))
             } else {
                 None
@@ -138,8 +143,8 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
             };
 
             let signed_vote = SignedVote::new(
-                (&vote).into(),
-                signed_header.header.chain_id.as_str(),
+                vote.clone(),
+                signed_header.header.chain_id.clone(),
                 vote.validator_address,
                 vote.signature,
             );
@@ -179,7 +184,11 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
     }
 }
 
-fn non_absent_vote(commit_sig: &CommitSig, validator_index: u16, commit: &Commit) -> Option<Vote> {
+fn non_absent_vote(
+    commit_sig: &CommitSig,
+    validator_index: ValidatorIndex,
+    commit: &Commit,
+) -> Option<Vote> {
     let (validator_address, timestamp, signature, block_id) = match commit_sig {
         CommitSig::BlockIDFlagAbsent { .. } => return None,
         CommitSig::BlockIDFlagCommit {
@@ -190,7 +199,7 @@ fn non_absent_vote(commit_sig: &CommitSig, validator_index: u16, commit: &Commit
             *validator_address,
             *timestamp,
             signature,
-            Some(commit.block_id.clone()),
+            Some(commit.block_id),
         ),
         CommitSig::BlockIDFlagNil {
             validator_address,
@@ -202,9 +211,9 @@ fn non_absent_vote(commit_sig: &CommitSig, validator_index: u16, commit: &Commit
     Some(Vote {
         vote_type: tendermint::vote::Type::Precommit,
         height: commit.height,
-        round: commit.round,
+        round: commit.round.try_into().unwrap(),
         block_id,
-        timestamp,
+        timestamp: Some(timestamp),
         validator_address,
         validator_index,
         signature: *signature,

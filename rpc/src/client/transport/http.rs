@@ -33,7 +33,6 @@ use tendermint::net;
 /// [`Client`]: trait.Client.html
 /// [`Event`]: ./event/struct.Event.html
 /// [`WebSocketClient`]: struct.WebSocketClient.html
-///
 #[derive(Debug, Clone)]
 pub struct HttpClient {
     host: String,

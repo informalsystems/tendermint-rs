@@ -4,6 +4,7 @@ use contracts::*;
 
 use crate::store::LightStore;
 use crate::types::Height;
+use std::convert::TryInto;
 
 /// The scheduler decides what block to verify next given the current and target heights.
 ///
@@ -122,5 +123,7 @@ pub fn valid_schedule(
 #[pre(low <= high)]
 #[post(low <= ret && ret <= high)]
 fn midpoint(low: Height, high: Height) -> Height {
-    (low.value() + (high.value() + 1 - low.value()) / 2).into()
+    (low.value() + (high.value() + 1 - low.value()) / 2)
+        .try_into()
+        .unwrap() // Will panic if midpoint is higher than i64::MAX
 }

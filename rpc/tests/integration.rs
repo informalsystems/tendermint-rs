@@ -208,7 +208,7 @@ fn broadcast_tx_commit_null_data() {
 fn commit() {
     let response = endpoint::commit::Response::from_string(&read_json_fixture("commit")).unwrap();
     let header = response.signed_header.header;
-    assert_eq!(header.chain_id.as_ref(), EXAMPLE_CHAIN);
+    assert_eq!(header.chain_id.as_ref(), "dockerchain");
     // For now we just want to make sure the commit including precommits and a block_id exist
     // in SignedHeader; later we should verify some properties: e.g. block_id.hash matches the
     // header etc:
