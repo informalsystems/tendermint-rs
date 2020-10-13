@@ -8,7 +8,7 @@ use tendermint_light_client::{
     tests::{Trusted, *},
     types::{LightBlock, Time, TrustThreshold},
 };
-use tendermint_testgen::{apalache::*, jsonatr::*, Command, TestEnv, Tester};
+use tendermint_testgen::{apalache::*, jsonatr::*, Command, TestEnv, Tester, Validator, Generator};
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteTestKind {
@@ -58,6 +58,7 @@ trait SingleStepTestFuzzer {
         let mut fuzz = tc.clone();
         if let Some((i, input)) = Self::fuzzable_input(&mut fuzz) {
             let what = Self::fuzz_input(input);
+            input.verdict = LiteVerdict::Invalid;
             fuzz.input.truncate(i + 1);
             fuzz.description = format!("Fuzzed {} for {}", what, &fuzz.description);
             return Some(fuzz);
@@ -67,6 +68,15 @@ trait SingleStepTestFuzzer {
 
     /// Fuzzes the input block and returns the description of what was changed
     fn fuzz_input(input: &mut BlockVerdict) -> String;
+
+    /// Get a random hash value
+    fn random_hash() -> tendermint::hash::Hash {
+        // not really random, but should be different from whatever hash is there
+        tendermint::hash::Hash::from_str(
+            "AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419",
+        )
+        .unwrap()
+    }
 
     /// get the block to mutate, if possible
     fn fuzzable_input(tc: &mut SingleStepTestCase) -> Option<(usize, &mut BlockVerdict)> {
@@ -86,7 +96,32 @@ trait SingleStepTestFuzzer {
     }
 }
 
-/// A trivial fuzzer that mutates height for one of the test case headers
+struct HeaderVersionFuzzer {}
+impl SingleStepTestFuzzer for HeaderVersionFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        let mut rng = rand::thread_rng();
+        let mut block = input.block.signed_header.header.version.block;
+        while block == input.block.signed_header.header.version.block {
+            block = rng.gen();
+        }
+        let mut app = input.block.signed_header.header.version.app;
+        while app == input.block.signed_header.header.version.app {
+            app = rng.gen();
+        }
+        input.block.signed_header.header.version = tendermint::block::header::Version{ block, app };
+        String::from("version")
+    }
+}
+
+struct HeaderChainIdFuzzer {}
+impl SingleStepTestFuzzer for HeaderChainIdFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        input.block.signed_header.header.chain_id =
+            tendermint::chain::Id::from_str("AAAAAAAAAAAAAAAAAA").unwrap();
+        String::from("chain_id")
+    }
+}
+
 struct HeaderHeightFuzzer {}
 impl SingleStepTestFuzzer for HeaderHeightFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
@@ -98,51 +133,10 @@ impl SingleStepTestFuzzer for HeaderHeightFuzzer {
         }
         input.block.signed_header.header.height =
             tendermint::block::Height::try_from(height).unwrap();
-        input.verdict = LiteVerdict::Invalid;
-        format!("height from {} into {}", h, height)
+        String::from("height")
     }
 }
 
-/// A trivial fuzzer that mutates validators_hash for one of the test case headers
-struct HeaderValHashFuzzer {}
-impl SingleStepTestFuzzer for HeaderValHashFuzzer {
-    fn fuzz_input(input: &mut BlockVerdict) -> String {
-        let hash = tendermint::hash::Hash::from_str(
-            "AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419",
-        )
-        .unwrap();
-        input.block.signed_header.header.validators_hash = hash;
-        input.verdict = LiteVerdict::Invalid;
-        String::from("validators_hash")
-    }
-}
-
-/// A trivial fuzzer that mutates next_validators_hash for one of the test case headers
-struct HeaderNextValHashFuzzer {}
-impl SingleStepTestFuzzer for HeaderNextValHashFuzzer {
-    fn fuzz_input(input: &mut BlockVerdict) -> String {
-        let hash = tendermint::hash::Hash::from_str(
-            "AAAAAAAAAA1BA22917BBE036BA9D58A40918E93983B57BD0DC465301E10B5419",
-        )
-        .unwrap();
-        input.block.signed_header.header.next_validators_hash = hash;
-        input.verdict = LiteVerdict::Invalid;
-        String::from("next_validators_hash")
-    }
-}
-
-/// A trivial fuzzer that mutates chain_id for one of the test case headers
-struct HeaderChainIdFuzzer {}
-impl SingleStepTestFuzzer for HeaderChainIdFuzzer {
-    fn fuzz_input(input: &mut BlockVerdict) -> String {
-        input.block.signed_header.header.chain_id =
-            tendermint::chain::Id::from_str("AAAAAAAAAAAAAAAAAA").unwrap();
-        input.verdict = LiteVerdict::Invalid;
-        String::from("chain_id")
-    }
-}
-
-/// A trivial fuzzer that mutates time for one of the test case headers
 struct HeaderTimeFuzzer {}
 impl SingleStepTestFuzzer for HeaderTimeFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
@@ -159,8 +153,93 @@ impl SingleStepTestFuzzer for HeaderTimeFuzzer {
         //   - 'No such local time', /home/andrey/.cargo/registry/src/github.com-1ecc6299db9ec823/chrono-0.4.11/src/offset/mod.rs:173:34
         // let secs: u64 = rng.gen();
         // input.block.signed_header.header.time = tendermint::Time::unix_epoch() + std::time::Duration::from_secs(secs);
-        input.verdict = LiteVerdict::Invalid;
         String::from("time")
+    }
+}
+
+struct HeaderLastBlockIdFuzzer {}
+impl SingleStepTestFuzzer for HeaderLastBlockIdFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        input.block.signed_header.header.last_block_id =
+            Some(tendermint::block::Id {
+                hash: Self::random_hash(),
+                parts: Default::default()
+            });
+        String::from("last_block_id")
+    }
+}
+
+struct HeaderLastCommitHashFuzzer {}
+impl SingleStepTestFuzzer for HeaderLastCommitHashFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        input.block.signed_header.header.last_commit_hash = Some(Self::random_hash());
+        String::from("last_commit_hash")
+    }
+}
+
+struct HeaderDataHashFuzzer {}
+impl SingleStepTestFuzzer for HeaderDataHashFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        input.block.signed_header.header.data_hash = Some(Self::random_hash());
+        String::from("data_hash")
+    }
+}
+
+struct HeaderValHashFuzzer {}
+impl SingleStepTestFuzzer for HeaderValHashFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        input.block.signed_header.header.validators_hash = Self::random_hash();
+        String::from("validators_hash")
+    }
+}
+
+struct HeaderNextValHashFuzzer {}
+impl SingleStepTestFuzzer for HeaderNextValHashFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        input.block.signed_header.header.next_validators_hash = Self::random_hash();
+        String::from("next_validators_hash")
+    }
+}
+
+struct HeaderConsensusHashFuzzer {}
+impl SingleStepTestFuzzer for HeaderConsensusHashFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        input.block.signed_header.header.consensus_hash = Self::random_hash();
+        String::from("consensus_hash")
+    }
+}
+
+struct HeaderAppHashFuzzer {}
+impl SingleStepTestFuzzer for HeaderAppHashFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        input.block.signed_header.header.app_hash =
+            tendermint::hash::AppHash::try_from(vec![0,1,2,3,4,5]).unwrap();
+        String::from("app_hash")
+    }
+}
+
+struct HeaderLastResultsHashFuzzer {}
+impl SingleStepTestFuzzer for HeaderLastResultsHashFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        input.block.signed_header.header.last_results_hash = Some(Self::random_hash());
+        String::from("last_results_hash")
+    }
+}
+
+struct HeaderEvidenceHashFuzzer {}
+impl SingleStepTestFuzzer for HeaderEvidenceHashFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        input.block.signed_header.header.evidence_hash = Some(Self::random_hash());
+        String::from("evidence_hash")
+    }
+}
+
+struct HeaderProposerAddressFuzzer {}
+impl SingleStepTestFuzzer for HeaderProposerAddressFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        let val = Validator::new("AAAAAAAAAAAAAAAA");
+        input.block.signed_header.header.proposer_address = val.generate().unwrap().address;
+        String::from("proposer_address")
     }
 }
 
@@ -225,11 +304,20 @@ fn fuzz_single_step_test(
         Some(())
     };
     run_test(tc.clone());
+    HeaderVersionFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderChainIdFuzzer::fuzz(&tc).and_then(run_test);
     HeaderHeightFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderTimeFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderLastBlockIdFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderLastCommitHashFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderDataHashFuzzer::fuzz(&tc).and_then(run_test);
     HeaderValHashFuzzer::fuzz(&tc).and_then(run_test);
     HeaderNextValHashFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderChainIdFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderTimeFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderConsensusHashFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderAppHashFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderLastResultsHashFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderEvidenceHashFuzzer::fuzz(&tc).and_then(run_test);
+    HeaderProposerAddressFuzzer::fuzz(&tc).and_then(run_test);
 }
 
 fn model_based_test(
