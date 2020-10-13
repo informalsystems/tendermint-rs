@@ -272,6 +272,18 @@ impl SingleStepTestFuzzer for CommitRoundFuzzer {
     }
 }
 
+struct CommitBlockIdFuzzer {}
+impl SingleStepTestFuzzer for CommitBlockIdFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> String {
+        input.block.signed_header.commit.block_id =
+            tendermint::block::Id {
+                hash: Self::random_hash(),
+                parts: Default::default()
+            };
+        String::from("commit block_id")
+    }
+}
+
 fn single_step_test(
     tc: SingleStepTestCase,
     _env: &TestEnv,
@@ -347,9 +359,10 @@ fn fuzz_single_step_test(
     HeaderLastResultsHashFuzzer::fuzz(&tc).and_then(run_test);
     HeaderEvidenceHashFuzzer::fuzz(&tc).and_then(run_test);
     HeaderProposerAddressFuzzer::fuzz(&tc).and_then(run_test);
-    // The tests below fail -- seems that there is not enough validation between the header and the commit
-    //CommitHeightFuzzer::fuzz(&tc).and_then(run_test);
-    //CommitRoundFuzzer::fuzz(&tc).and_then(run_test);
+    // The two tests below fail -- seems that there is not enough validation between the header and the commit
+    CommitHeightFuzzer::fuzz(&tc).and_then(run_test);
+    CommitRoundFuzzer::fuzz(&tc).and_then(run_test);
+    CommitBlockIdFuzzer::fuzz(&tc).and_then(run_test);
 }
 
 fn model_based_test(
