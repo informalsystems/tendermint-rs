@@ -31,7 +31,7 @@ impl TryFrom<Vec<u8>> for Signature {
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         if value.is_empty() {
-            return Ok(Self::default())
+            return Ok(Self::default());
         }
         if value.len() != ED25519_SIGNATURE_SIZE {
             return Err(Kind::InvalidSignatureIdLength.into());
@@ -59,7 +59,8 @@ impl Signature {
     pub fn algorithm(&self) -> Algorithm {
         match self {
             Signature::Ed25519(_) => Algorithm::Ed25519,
-            Signature::None => Algorithm::Ed25519, // It doesn't matter what algorithm an empty signature has.
+            Signature::None => Algorithm::Ed25519, /* It doesn't matter what algorithm an empty
+                                                    * signature has. */
         }
     }
 
