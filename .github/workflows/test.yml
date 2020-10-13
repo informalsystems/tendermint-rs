@@ -155,7 +155,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p tendermint-rpc --test integration --no-fail-fast -- --ignored
+          args: -p tendermint-rpc --no-fail-fast -- --ignored
 
   integration-latest:
     runs-on: ubuntu-latest
