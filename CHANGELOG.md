@@ -41,6 +41,8 @@
 - `[rpc]` The subscription client interface provides a structured `Query`
   mechanism to help ensure compile-time validity of subscription queries.
   See the crate docs and [#584] for details.
+- `[rpc]` The RPC request and response types' fields are now all publicly
+  accessible ([#636]).
 
 [#414]: https://github.com/informalsystems/tendermint-rs/issues/414
 [#524]: https://github.com/informalsystems/tendermint-rs/issues/524
@@ -54,6 +56,7 @@
 [#536]: https://github.com/informalsystems/tendermint-rs/issues/536
 [#585]: https://github.com/informalsystems/tendermint-rs/issues/585
 [#584]: https://github.com/informalsystems/tendermint-rs/pull/584
+[#636]: https://github.com/informalsystems/tendermint-rs/pull/636
 
 ## v0.16.0
 
