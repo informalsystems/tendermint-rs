@@ -3,8 +3,10 @@
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::serializers;
 use crate::{account, block, chain, AppHash, Hash, Time};
+use crate::{Error, Kind};
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
+use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::DomainType;
 
@@ -61,6 +63,75 @@ pub struct Header {
 
     /// Original proposer of the block
     pub proposer_address: account::Id,
+}
+
+impl DomainType<RawHeader> for Header {}
+
+impl TryFrom<RawHeader> for Header {
+    type Error = Error;
+
+    fn try_from(value: RawHeader) -> Result<Self, Self::Error> {
+        if value.version.is_none() {
+            return Err(Kind::InvalidHeader.into());
+        }
+        if value.time.is_none() {
+            return Err(Kind::InvalidHeader.into());
+        }
+
+        Ok(Self {
+            version: value.version.unwrap().try_into()?,
+            chain_id: value.chain_id.try_into()?,
+            height: value.height.try_into()?,
+            time: value.time.unwrap().try_into()?,
+            last_block_id: value.last_block_id.map(TryInto::try_into).transpose()?,
+            last_commit_hash: if value.last_commit_hash.is_empty() {
+                None
+            } else {
+                Some(value.last_commit_hash.try_into()?)
+            },
+            data_hash: if value.data_hash.is_empty() {
+                None
+            } else {
+                Some(value.data_hash.try_into()?)
+            },
+            validators_hash: value.validators_hash.try_into()?,
+            next_validators_hash: value.next_validators_hash.try_into()?,
+            consensus_hash: value.consensus_hash.try_into()?,
+            app_hash: value.app_hash.try_into()?,
+            last_results_hash: if value.last_results_hash.is_empty() {
+                None
+            } else {
+                Some(value.last_results_hash.try_into()?)
+            },
+            evidence_hash: if value.evidence_hash.is_empty() {
+                None
+            } else {
+                Some(value.evidence_hash.try_into()?)
+            },
+            proposer_address: value.proposer_address.try_into()?,
+        })
+    }
+}
+
+impl From<Header> for RawHeader {
+    fn from(value: Header) -> Self {
+        Self {
+            version: Some(value.version.into()),
+            chain_id: value.chain_id.into(),
+            height: value.height.into(),
+            time: Some(value.time.into()),
+            last_block_id: value.last_block_id.map(Into::into),
+            last_commit_hash: value.last_commit_hash.map(Into::into).unwrap_or(vec![]),
+            data_hash: value.data_hash.map(Into::into).unwrap_or(vec![]),
+            validators_hash: value.validators_hash.into(),
+            next_validators_hash: value.next_validators_hash.into(),
+            consensus_hash: value.consensus_hash.into(),
+            app_hash: value.app_hash.into(),
+            last_results_hash: value.last_results_hash.map(Into::into).unwrap_or(vec![]),
+            evidence_hash: value.evidence_hash.map(Into::into).unwrap_or(vec![]),
+            proposer_address: value.proposer_address.into(),
+        }
+    }
 }
 
 impl Header {

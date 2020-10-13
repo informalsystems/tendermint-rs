@@ -96,6 +96,14 @@ pub enum Kind {
     /// Invalid PartSetHeader
     #[error("invalid part set header")]
     InvalidPartSetHeader,
+
+    /// Invalid SignedHeader
+    #[error("invalid signed header")]
+    InvalidSignedHeader,
+
+    /// Invalid Header
+    #[error("invalid header")]
+    InvalidHeader,
 }
 
 impl Kind {
