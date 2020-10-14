@@ -1,6 +1,7 @@
 /// NewRoundStep is sent for every step taken in the ConsensusState.
 /// For every height/round/step transition
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct NewRoundStep {
     #[prost(int64, tag="1")]
     pub height: i64,
@@ -17,6 +18,7 @@ pub struct NewRoundStep {
 ///i.e., there is a Proposal for block B and 2/3+ prevotes for the block B in the round r.
 /// In case the block is also committed, then IsCommit flag is set to true.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct NewValidBlock {
     #[prost(int64, tag="1")]
     pub height: i64,
@@ -31,12 +33,14 @@ pub struct NewValidBlock {
 }
 /// Proposal is sent when a new block is proposed.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Proposal {
     #[prost(message, optional, tag="1")]
     pub proposal: ::std::option::Option<super::types::Proposal>,
 }
 /// ProposalPOL is sent when a previous proposal is re-proposed.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ProposalPol {
     #[prost(int64, tag="1")]
     pub height: i64,
@@ -47,6 +51,7 @@ pub struct ProposalPol {
 }
 /// BlockPart is sent when gossipping a piece of the proposed block.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct BlockPart {
     #[prost(int64, tag="1")]
     pub height: i64,
@@ -57,12 +62,14 @@ pub struct BlockPart {
 }
 /// Vote is sent when voting for a proposal (or lack thereof).
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Vote {
     #[prost(message, optional, tag="1")]
     pub vote: ::std::option::Option<super::types::Vote>,
 }
 /// HasVote is sent to indicate that a particular vote has been received.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct HasVote {
     #[prost(int64, tag="1")]
     pub height: i64,
@@ -75,6 +82,7 @@ pub struct HasVote {
 }
 /// VoteSetMaj23 is sent to indicate that a given BlockID has seen +2/3 votes.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct VoteSetMaj23 {
     #[prost(int64, tag="1")]
     pub height: i64,
@@ -87,6 +95,7 @@ pub struct VoteSetMaj23 {
 }
 /// VoteSetBits is sent to communicate the bit-array of votes seen for the BlockID.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct VoteSetBits {
     #[prost(int64, tag="1")]
     pub height: i64,
@@ -100,12 +109,14 @@ pub struct VoteSetBits {
     pub votes: ::std::option::Option<super::libs::bits::BitArray>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Message {
     #[prost(oneof="message::Sum", tags="1, 2, 3, 4, 5, 6, 7, 8, 9")]
     pub sum: ::std::option::Option<message::Sum>,
 }
 pub mod message {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum Sum {
         #[prost(message, tag="1")]
         NewRoundStep(super::NewRoundStep),
@@ -129,6 +140,7 @@ pub mod message {
 }
 /// MsgInfo are msgs from the reactor which may update the state
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct MsgInfo {
     #[prost(message, optional, tag="1")]
     pub msg: ::std::option::Option<Message>,
@@ -137,9 +149,10 @@ pub struct MsgInfo {
 }
 /// TimeoutInfo internally generated messages which may update the state
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct TimeoutInfo {
     #[prost(message, optional, tag="1")]
-    pub duration: ::std::option::Option<::prost_types::Duration>,
+    pub duration: ::std::option::Option<super::super::google::protobuf::Duration>,
     #[prost(int64, tag="2")]
     pub height: i64,
     #[prost(int32, tag="3")]
@@ -150,17 +163,20 @@ pub struct TimeoutInfo {
 /// EndHeight marks the end of the given height inside WAL.
 /// @internal used by scripts/wal2json util.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct EndHeight {
     #[prost(int64, tag="1")]
     pub height: i64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct WalMessage {
     #[prost(oneof="wal_message::Sum", tags="1, 2, 3, 4")]
     pub sum: ::std::option::Option<wal_message::Sum>,
 }
 pub mod wal_message {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum Sum {
         #[prost(message, tag="1")]
         EventDataRoundState(super::super::types::EventDataRoundState),
@@ -174,9 +190,10 @@ pub mod wal_message {
 }
 /// TimedWALMessage wraps WALMessage and adds Time for debugging purposes.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct TimedWalMessage {
     #[prost(message, optional, tag="1")]
-    pub time: ::std::option::Option<::prost_types::Timestamp>,
+    pub time: ::std::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(message, optional, tag="2")]
     pub msg: ::std::option::Option<WalMessage>,
 }

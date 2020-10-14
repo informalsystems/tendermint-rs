@@ -2,6 +2,7 @@
 /// This information is included in ResponseInfo. The App.Protocol can be
 /// updated in ResponseEndBlock.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct App {
     #[prost(uint64, tag="1")]
     pub protocol: u64,
@@ -12,6 +13,7 @@ pub struct App {
 /// including all blockchain data structures and the rules of the application's
 /// state transition machine.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Consensus {
     #[prost(uint64, tag="1")]
     pub block: u64,

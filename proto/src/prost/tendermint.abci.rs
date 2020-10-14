@@ -6,12 +6,14 @@
 // Request types
 
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Request {
-    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15")]
+    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14")]
     pub value: ::std::option::Option<request::Value>,
 }
 pub mod request {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum Value {
         #[prost(message, tag="1")]
         Echo(super::RequestEcho),
@@ -20,40 +22,41 @@ pub mod request {
         #[prost(message, tag="3")]
         Info(super::RequestInfo),
         #[prost(message, tag="4")]
-        SetOption(super::RequestSetOption),
-        #[prost(message, tag="5")]
         InitChain(super::RequestInitChain),
-        #[prost(message, tag="6")]
+        #[prost(message, tag="5")]
         Query(super::RequestQuery),
-        #[prost(message, tag="7")]
+        #[prost(message, tag="6")]
         BeginBlock(super::RequestBeginBlock),
-        #[prost(message, tag="8")]
+        #[prost(message, tag="7")]
         CheckTx(super::RequestCheckTx),
-        #[prost(message, tag="9")]
+        #[prost(message, tag="8")]
         DeliverTx(super::RequestDeliverTx),
-        #[prost(message, tag="10")]
+        #[prost(message, tag="9")]
         EndBlock(super::RequestEndBlock),
-        #[prost(message, tag="11")]
+        #[prost(message, tag="10")]
         Commit(super::RequestCommit),
-        #[prost(message, tag="12")]
+        #[prost(message, tag="11")]
         ListSnapshots(super::RequestListSnapshots),
-        #[prost(message, tag="13")]
+        #[prost(message, tag="12")]
         OfferSnapshot(super::RequestOfferSnapshot),
-        #[prost(message, tag="14")]
+        #[prost(message, tag="13")]
         LoadSnapshotChunk(super::RequestLoadSnapshotChunk),
-        #[prost(message, tag="15")]
+        #[prost(message, tag="14")]
         ApplySnapshotChunk(super::RequestApplySnapshotChunk),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestEcho {
     #[prost(string, tag="1")]
     pub message: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestFlush {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestInfo {
     #[prost(string, tag="1")]
     pub version: std::string::String,
@@ -62,18 +65,11 @@ pub struct RequestInfo {
     #[prost(uint64, tag="3")]
     pub p2p_version: u64,
 }
-/// nondeterministic
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RequestSetOption {
-    #[prost(string, tag="1")]
-    pub key: std::string::String,
-    #[prost(string, tag="2")]
-    pub value: std::string::String,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestInitChain {
     #[prost(message, optional, tag="1")]
-    pub time: ::std::option::Option<::prost_types::Timestamp>,
+    pub time: ::std::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(string, tag="2")]
     pub chain_id: std::string::String,
     #[prost(message, optional, tag="3")]
@@ -86,6 +82,7 @@ pub struct RequestInitChain {
     pub initial_height: i64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestQuery {
     #[prost(bytes, tag="1")]
     pub data: std::vec::Vec<u8>,
@@ -97,6 +94,7 @@ pub struct RequestQuery {
     pub prove: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestBeginBlock {
     #[prost(bytes, tag="1")]
     pub hash: std::vec::Vec<u8>,
@@ -108,6 +106,7 @@ pub struct RequestBeginBlock {
     pub byzantine_validators: ::std::vec::Vec<Evidence>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestCheckTx {
     #[prost(bytes, tag="1")]
     pub tx: std::vec::Vec<u8>,
@@ -115,24 +114,29 @@ pub struct RequestCheckTx {
     pub r#type: i32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestDeliverTx {
     #[prost(bytes, tag="1")]
     pub tx: std::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestEndBlock {
     #[prost(int64, tag="1")]
     pub height: i64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestCommit {
 }
 /// lists available snapshots
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestListSnapshots {
 }
 /// offers a snapshot to the application
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestOfferSnapshot {
     /// snapshot offered by peers
     #[prost(message, optional, tag="1")]
@@ -143,6 +147,7 @@ pub struct RequestOfferSnapshot {
 }
 /// loads a snapshot chunk
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestLoadSnapshotChunk {
     #[prost(uint64, tag="1")]
     pub height: u64,
@@ -153,6 +158,7 @@ pub struct RequestLoadSnapshotChunk {
 }
 /// Applies a snapshot chunk
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct RequestApplySnapshotChunk {
     #[prost(uint32, tag="1")]
     pub index: u32,
@@ -165,12 +171,14 @@ pub struct RequestApplySnapshotChunk {
 // Response types
 
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Response {
-    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16")]
+    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15")]
     pub value: ::std::option::Option<response::Value>,
 }
 pub mod response {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum Value {
         #[prost(message, tag="1")]
         Exception(super::ResponseException),
@@ -181,46 +189,48 @@ pub mod response {
         #[prost(message, tag="4")]
         Info(super::ResponseInfo),
         #[prost(message, tag="5")]
-        SetOption(super::ResponseSetOption),
-        #[prost(message, tag="6")]
         InitChain(super::ResponseInitChain),
-        #[prost(message, tag="7")]
+        #[prost(message, tag="6")]
         Query(super::ResponseQuery),
-        #[prost(message, tag="8")]
+        #[prost(message, tag="7")]
         BeginBlock(super::ResponseBeginBlock),
-        #[prost(message, tag="9")]
+        #[prost(message, tag="8")]
         CheckTx(super::ResponseCheckTx),
-        #[prost(message, tag="10")]
+        #[prost(message, tag="9")]
         DeliverTx(super::ResponseDeliverTx),
-        #[prost(message, tag="11")]
+        #[prost(message, tag="10")]
         EndBlock(super::ResponseEndBlock),
-        #[prost(message, tag="12")]
+        #[prost(message, tag="11")]
         Commit(super::ResponseCommit),
-        #[prost(message, tag="13")]
+        #[prost(message, tag="12")]
         ListSnapshots(super::ResponseListSnapshots),
-        #[prost(message, tag="14")]
+        #[prost(message, tag="13")]
         OfferSnapshot(super::ResponseOfferSnapshot),
-        #[prost(message, tag="15")]
+        #[prost(message, tag="14")]
         LoadSnapshotChunk(super::ResponseLoadSnapshotChunk),
-        #[prost(message, tag="16")]
+        #[prost(message, tag="15")]
         ApplySnapshotChunk(super::ResponseApplySnapshotChunk),
     }
 }
 /// nondeterministic
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseException {
     #[prost(string, tag="1")]
     pub error: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseEcho {
     #[prost(string, tag="1")]
     pub message: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseFlush {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseInfo {
     #[prost(string, tag="1")]
     pub data: std::string::String,
@@ -233,18 +243,8 @@ pub struct ResponseInfo {
     #[prost(bytes, tag="5")]
     pub last_block_app_hash: std::vec::Vec<u8>,
 }
-/// nondeterministic
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ResponseSetOption {
-    #[prost(uint32, tag="1")]
-    pub code: u32,
-    /// bytes data = 2;
-    #[prost(string, tag="3")]
-    pub log: std::string::String,
-    #[prost(string, tag="4")]
-    pub info: std::string::String,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseInitChain {
     #[prost(message, optional, tag="1")]
     pub consensus_params: ::std::option::Option<ConsensusParams>,
@@ -254,6 +254,7 @@ pub struct ResponseInitChain {
     pub app_hash: std::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseQuery {
     #[prost(uint32, tag="1")]
     pub code: u32,
@@ -279,11 +280,13 @@ pub struct ResponseQuery {
     pub codespace: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseBeginBlock {
     #[prost(message, repeated, tag="1")]
     pub events: ::std::vec::Vec<Event>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseCheckTx {
     #[prost(uint32, tag="1")]
     pub code: u32,
@@ -305,6 +308,7 @@ pub struct ResponseCheckTx {
     pub codespace: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseDeliverTx {
     #[prost(uint32, tag="1")]
     pub code: u32,
@@ -326,6 +330,7 @@ pub struct ResponseDeliverTx {
     pub codespace: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseEndBlock {
     #[prost(message, repeated, tag="1")]
     pub validator_updates: ::std::vec::Vec<ValidatorUpdate>,
@@ -335,6 +340,7 @@ pub struct ResponseEndBlock {
     pub events: ::std::vec::Vec<Event>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseCommit {
     /// reserve 1
     #[prost(bytes, tag="2")]
@@ -343,11 +349,13 @@ pub struct ResponseCommit {
     pub retain_height: i64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseListSnapshots {
     #[prost(message, repeated, tag="1")]
     pub snapshots: ::std::vec::Vec<Snapshot>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseOfferSnapshot {
     #[prost(enumeration="response_offer_snapshot::Result", tag="1")]
     pub result: i32,
@@ -355,6 +363,7 @@ pub struct ResponseOfferSnapshot {
 pub mod response_offer_snapshot {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum Result {
         /// Unknown result, abort all snapshot restoration
         Unknown = 0,
@@ -371,11 +380,13 @@ pub mod response_offer_snapshot {
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseLoadSnapshotChunk {
     #[prost(bytes, tag="1")]
     pub chunk: std::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseApplySnapshotChunk {
     #[prost(enumeration="response_apply_snapshot_chunk::Result", tag="1")]
     pub result: i32,
@@ -389,6 +400,7 @@ pub struct ResponseApplySnapshotChunk {
 pub mod response_apply_snapshot_chunk {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum Result {
         /// Unknown result, abort all snapshot restoration
         Unknown = 0,
@@ -410,6 +422,7 @@ pub mod response_apply_snapshot_chunk {
 /// ConsensusParams contains all consensus-relevant parameters
 /// that can be adjusted by the abci app
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ConsensusParams {
     #[prost(message, optional, tag="1")]
     pub block: ::std::option::Option<BlockParams>,
@@ -422,6 +435,7 @@ pub struct ConsensusParams {
 }
 /// BlockParams contains limits on the block size.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct BlockParams {
     /// Note: must be greater than 0
     #[prost(int64, tag="1")]
@@ -431,6 +445,7 @@ pub struct BlockParams {
     pub max_gas: i64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct LastCommitInfo {
     #[prost(int32, tag="1")]
     pub round: i32,
@@ -441,6 +456,7 @@ pub struct LastCommitInfo {
 /// ResponseBeginBlock, ResponseEndBlock, ResponseCheckTx and ResponseDeliverTx.
 /// Later, transactions may be queried using these events.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Event {
     #[prost(string, tag="1")]
     pub r#type: std::string::String,
@@ -449,6 +465,7 @@ pub struct Event {
 }
 /// EventAttribute is a single key-value pair, associated with an event.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct EventAttribute {
     #[prost(bytes, tag="1")]
     pub key: std::vec::Vec<u8>,
@@ -462,6 +479,7 @@ pub struct EventAttribute {
 ///
 /// One usage is indexing transaction results.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct TxResult {
     #[prost(int64, tag="1")]
     pub height: i64,
@@ -477,6 +495,7 @@ pub struct TxResult {
 
 /// Validator
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Validator {
     /// The first 20 bytes of SHA256(public key)
     #[prost(bytes, tag="1")]
@@ -489,6 +508,7 @@ pub struct Validator {
 }
 /// ValidatorUpdate
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ValidatorUpdate {
     #[prost(message, optional, tag="1")]
     pub pub_key: ::std::option::Option<super::crypto::PublicKey>,
@@ -497,6 +517,7 @@ pub struct ValidatorUpdate {
 }
 /// VoteInfo
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct VoteInfo {
     #[prost(message, optional, tag="1")]
     pub validator: ::std::option::Option<Validator>,
@@ -504,18 +525,19 @@ pub struct VoteInfo {
     pub signed_last_block: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Evidence {
-    #[prost(string, tag="1")]
-    pub r#type: std::string::String,
+    #[prost(enumeration="EvidenceType", tag="1")]
+    pub r#type: i32,
     /// The offending validator
     #[prost(message, optional, tag="2")]
     pub validator: ::std::option::Option<Validator>,
-    /// The height when the offense occurred 
+    /// The height when the offense occurred
     #[prost(int64, tag="3")]
     pub height: i64,
     /// The corresponding time where the offense occurred
     #[prost(message, optional, tag="4")]
-    pub time: ::std::option::Option<::prost_types::Timestamp>,
+    pub time: ::std::option::Option<super::super::google::protobuf::Timestamp>,
     /// Total voting power of the validator set in case the ABCI application does
     /// not store historical validators.
     /// https://github.com/tendermint/tendermint/issues/4581
@@ -526,6 +548,7 @@ pub struct Evidence {
 // State Sync Types
 
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Snapshot {
     /// The height at which the snapshot was taken
     #[prost(uint64, tag="1")]
@@ -545,7 +568,16 @@ pub struct Snapshot {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub enum CheckTxType {
     New = 0,
     Recheck = 1,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+pub enum EvidenceType {
+    Unknown = 0,
+    DuplicateVote = 1,
+    LightClientAttack = 2,
 }
