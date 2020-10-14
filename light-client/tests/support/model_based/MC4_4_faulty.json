@@ -11,6 +11,9 @@
     "Test3NotEnoughTrustFailure",
     "TestValsetDifferentAllSteps",
     "TestHeaderFromFuture",
-    "TestUntrustedBeforeTrusted"
+    "TestUntrustedBeforeTrusted",
+    "TestHalfValsetChanges",
+    "TestHalfValsetChangesVerdictSuccess",
+    "TestHalfValsetChangesVerdictNotEnoughTrust"
   ]
 }

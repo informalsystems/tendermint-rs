@@ -29,6 +29,11 @@ NextTest ==
        ELSE history[n]
      ]
 
+\* Some useful operators for writing tests
+
+Valset(st) == history[st].current.header.VS
+
+
 \* Test an execution that finishes with failure
 TestFailure ==
     /\ state = "finishedFailure"
@@ -78,14 +83,6 @@ Test3NotEnoughTrustFailure ==
     /\ state = "finishedFailure"
     /\ ThreeNotEnoughTrust
 
-\* Test an execution where the validator sets differ at each step
-TestValsetDifferentAllSteps ==
-    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
-    /\ \A s1, s2 \in DOMAIN history :
-       s1 /= s2  =>
-       history[s1].current.header.VS /= history[s2].current.header.VS
-
-
 \* Time-related tests
 
 \* Test an execution where a header is received from the future
@@ -98,5 +95,37 @@ TestUntrustedBeforeTrusted ==
     /\ \E s \in DOMAIN history :
        history[s].current.header.time < history[s].verified.header.time
 
+
+\* Validator set tests
+
+\* Test an execution where the validator sets differ at each step
+TestValsetDifferentAllSteps ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \A s1, s2 \in DOMAIN history :
+       s1 /= s2  =>
+       history[s1].current.header.VS /= history[s2].current.header.VS
+
+TestHalfValsetChanges ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s1, s2 \in DOMAIN history :
+        /\ s2 = s1 + 1
+        /\ Cardinality(Valset(s1)) >= 3
+        /\ 2 * Cardinality(Valset(s1) \intersect Valset(s2)) < Cardinality(Valset(s1))
+
+TestHalfValsetChangesVerdictSuccess ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s1, s2 \in DOMAIN history :
+        /\ s2 = s1 + 1
+        /\ history[s2].verdict = "SUCCESS"
+        /\ Cardinality(Valset(s1)) >= 3
+        /\ 2 * Cardinality(Valset(s1) \intersect Valset(s2)) < Cardinality(Valset(s1))
+
+TestHalfValsetChangesVerdictNotEnoughTrust ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s1, s2 \in DOMAIN history :
+        /\ s2 = s1 + 1
+        /\ history[s2].verdict = "NOT_ENOUGH_TRUST"
+        /\ Cardinality(Valset(s1)) >= 3
+        /\ 2 * Cardinality(Valset(s1) \intersect Valset(s2)) < Cardinality(Valset(s1))
 
 ============================================================================
