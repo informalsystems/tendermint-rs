@@ -30,8 +30,7 @@ impl TryFrom<Vec<u8>> for Signature {
     type Error = Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        // Tendermint Go v0.34 compatibility: vec![0u8] is considered an empty Signature.
-        if value == vec![0u8] {
+        if value.is_empty() {
             return Ok(Self::default());
         }
         if value.len() != ED25519_SIGNATURE_SIZE {
@@ -88,7 +87,7 @@ impl AsRef<[u8]> for Signature {
     fn as_ref(&self) -> &[u8] {
         match self {
             Signature::Ed25519(sig) => sig.as_ref(),
-            Signature::None => &[0u8], // This is for Tendermint Go v0.34 compatibility.
+            Signature::None => &[],
         }
     }
 }
