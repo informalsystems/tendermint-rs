@@ -14,6 +14,8 @@
     "TestUntrustedBeforeTrusted",
     "TestHalfValsetChanges",
     "TestHalfValsetChangesVerdictSuccess",
-    "TestHalfValsetChangesVerdictNotEnoughTrust"
+    "TestHalfValsetChangesVerdictNotEnoughTrust",
+    "TestValsetDoubles",
+    "TestValsetHalves"
   ]
 }

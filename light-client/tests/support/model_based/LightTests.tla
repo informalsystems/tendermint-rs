@@ -128,4 +128,18 @@ TestHalfValsetChangesVerdictNotEnoughTrust ==
         /\ Cardinality(Valset(s1)) >= 3
         /\ 2 * Cardinality(Valset(s1) \intersect Valset(s2)) < Cardinality(Valset(s1))
 
+TestValsetDoubles ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s1, s2 \in DOMAIN history :
+        /\ s2 = s1 + 1
+        /\ Cardinality(Valset(s1)) >= 2
+        /\ Cardinality(Valset(s2)) = 2 * Cardinality(Valset(s1))
+
+TestValsetHalves ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s1, s2 \in DOMAIN history :
+        /\ s2 = s1 + 1
+        /\ Cardinality(Valset(s1)) >= 4
+        /\ Cardinality(Valset(s1)) = 2 * Cardinality(Valset(s2))
+
 ============================================================================
