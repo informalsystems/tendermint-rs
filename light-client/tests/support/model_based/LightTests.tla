@@ -142,4 +142,11 @@ TestValsetHalves ==
         /\ Cardinality(Valset(s1)) >= 4
         /\ Cardinality(Valset(s1)) = 2 * Cardinality(Valset(s2))
 
+TestValsetChangesFully ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s1, s2 \in DOMAIN history :
+        /\ s2 = s1 + 1
+        /\ Cardinality(Valset(s1)) >= 2
+        /\ Valset(s1) \intersect Valset(s2) = ({} <: {STRING})
+
 ============================================================================
