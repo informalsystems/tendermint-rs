@@ -1,6 +1,6 @@
 [package]
 name = "tendermint-testgen"
-version = "0.1.0"
+version = "0.17.0-rc1"
 authors = ["Andrey Kuprianov <andrey@informal.systems>"]
 edition = "2018"
 
