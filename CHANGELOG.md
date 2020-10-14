@@ -1,6 +1,6 @@
-## v0.17.0
+## v0.17.0-rc1
 
-*Oct 9, 2020*
+*Oct 15, 2020*
 
 This release is primarily about upgrading for compatibility with 
 [Tendermint Core
@@ -11,17 +11,21 @@ see the new [proto crate](./proto) for all protobuf files and generated types.
 The protobuf files were duplicated from [Tendermint
 Core](https://github.com/tendermint/tendermint/tree/v0.34.0-rc5/proto/tendermint).
 
-To improve developer ergonimcs and reduce future impact on the codebase from
+To improve developer ergonomics and reduce future impact on the codebase from
 serialization, the generated protobuf types are not used directly in public
 APIs; rather, we introduce the notion of `DomainTypes` for each type to be used
 in Rust APIs, and implement conversions to and from the
-correpsonding generated protobuf type for binary serialization.
+corresponding generated protobuf type for binary serialization.
 
 Other improvements in this release include a new and improved WebSocket client,
 a new light-client initialization API,
 and the introduction of Model Based Testing for the light client, which allows
 us to automatically generate complex tests for the light client based on a
 formal model of the protocol in TLA+.
+
+Since this is a pretty big release with many breaking changes, we currently aim
+to ship additional release candidates where the focus will be on additional
+testing and greater compatibility with dependent projects.
 
 ### BREAKING CHANGES:
 
@@ -85,7 +89,7 @@ formal model of the protocol in TLA+.
 
 - `[rpc]` Correctly handles control and keep-alive messages ([#516], [#590])
 - `[rpc]` More robust handling of concurrency issues ([#311], [#313])
-  
+
 
 
 [#305]: https://github.com/informalsystems/tendermint-rs/issues/305

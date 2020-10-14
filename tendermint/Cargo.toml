@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint"
-version    = "0.17.0" # Also update `html_root_url` in lib.rs and
+version    = "0.17.0-rc1" # Also update `html_root_url` in lib.rs and
                       # depending crates (rpc, light-node, ..) when bumping this
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
@@ -22,7 +22,7 @@ authors = [
     "Ismail Khoffi <Ismail.Khoffi@gmail.com>",
     "ValarDragon <dojha12@gmail.com>",
     "Tony Arcieri <tony@iqlusion.io>",
-    "Thane Thomson <thane@interchain.io>"
+    "Thane Thomson <thane@informal.systems>"
 ]
 
 [package.metadata.docs.rs]
@@ -57,8 +57,9 @@ tendermint-proto = { path = "../proto" }
 toml = { version = "0.5" }
 zeroize = { version = "1.1", features = ["zeroize_derive"] }
 ripemd160 = { version = "0.9", optional = true }
+
 [dev-dependencies]
-tendermint-rpc = { path = "../rpc", features = [ "http-client", "websocket-client" ] }
+tendermint-rpc = { version = "0.17.0-rc1", path = "../rpc", features = [ "http-client", "websocket-client" ] }
 tokio = { version = "0.2", features = [ "macros" ] }
 
 [features]
