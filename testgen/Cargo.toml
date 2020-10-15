@@ -3,6 +3,7 @@ name = "tendermint-testgen"
 version = "0.17.0-rc1"
 authors = ["Andrey Kuprianov <andrey@informal.systems>"]
 edition = "2018"
+publish = false
 
 [dependencies]
 tendermint = { version = "0.17.0-rc1", path = "../tendermint" }
