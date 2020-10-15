@@ -199,6 +199,7 @@ fn run_bisection_tests() {
     let mut tester = Tester::new("bisection", TEST_FILES_PATH);
     tester.add_test("bisection test", bisection_test);
     tester.add_test("bisection lower test", bisection_lower_test);
-    tester.run_foreach_in_dir("bisection/single_peer");
+    tester.run_for_file("bisection/single_peer/happy_path.json");
+  //  tester.run_foreach_in_dir("bisection/single_peer");
     tester.finalize();
 }

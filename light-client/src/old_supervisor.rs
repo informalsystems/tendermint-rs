@@ -323,12 +323,10 @@ impl Supervisor {
             .witnesses_ids()
             .iter()
             .filter_map(|id| self.peers.get(id))
-            .collect();    
-
-        let primary = self.peers.primary();
+            .collect();
 
         self.fork_detector
-            .detect_forks(verified_block,  &trusted_block, primary, witnesses)
+            .detect_forks(verified_block, &trusted_block, witnesses)
     }
 
     /// Run the supervisor event loop in the same thread.
