@@ -11,7 +11,7 @@
     unused_import_braces
 )]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/tendermint-proto/0.1.0")]
+#![doc(html_root_url = "https://docs.rs/tendermint-proto/0.17.0-rc1")]
 
 mod tendermint {
     pub mod abci {
