@@ -15,6 +15,7 @@ use tendermint_light_client::{
     types::{LightBlock, Status, TrustThreshold},
 };
 
+use std::convert::TryInto;
 use tendermint_testgen::Tester;
 
 // Link to JSON test files repo:
@@ -50,7 +51,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
 
     let trusted_height = tc.trust_options.height;
     let trusted_state = io
-        .fetch_light_block(primary, AtHeight::At(trusted_height))
+        .fetch_light_block(AtHeight::At(trusted_height))
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
@@ -75,7 +76,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
     let result = verify_bisection(untrusted_height, &mut light_client, &mut state);
 
     let untrusted_light_block = io
-        .fetch_light_block(primary, AtHeight::At(untrusted_height))
+        .fetch_light_block(AtHeight::At(untrusted_height))
         .expect("header at untrusted height not found");
 
     BisectionTestResult {
@@ -169,7 +170,7 @@ fn bisection_lower_test(tc: TestBisection<AnonLightBlock>) {
         trusted_height = trusted_height.increment();
     }
 
-    tc.height_to_verify = (trusted_height.value() - 1).into();
+    tc.height_to_verify = (trusted_height.value() - 1).try_into().unwrap();
 
     let test_result = run_bisection_test(tc);
     match test_result.new_states {

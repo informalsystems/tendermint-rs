@@ -1,14 +1,14 @@
 ## Light Client model-based testing guide
 
 In this directory you will find the model-based tests for the light client. 
-They are "model-based" because they are based on the formal `TLA+` model of the Light Client: see [Lightclient_A_1.tla](../../../../docs/spec/lightclient/verification/Lightclient_A_1.tla).
+They are "model-based" because they are based on the formal `TLA+` model of the Light Client: see [Lightclient.tla](Lightclient_002_draft.tla).
 The tests themselves are simple `TLA+` assertions, that describe the desired shape of the Light Client execution; 
 see [LightTests.tla](LightTests.tla) for some examples. 
 To be able to specify test assertions we have extended the Light Client model with `history` variable, 
 which records the whole execution history. 
 So, by way of referring to `history` you simply specify declaratively what execution history you want to see.
 
-After you have specified your `TLA+` test, list among tests of a _test batch_, such as [MC4_4_faulty.json](MC4_4_faulty.json). 
+After you have specified your `TLA+` test, list it among the tests of a _test batch_, such as [MC4_4_faulty.json](MC4_4_faulty.json). 
 Such test batches are then executed automatically when you run `cargo test`.
 
 When you run `cargo test` some machinery will run under the hood, namely:
@@ -21,27 +21,41 @@ When you run `cargo test` some machinery will run under the hood, namely:
     performs the translation by executing this [transformation spec](_jsonatr-lib/apalache_to_lite_test.json);
   * [Tendermint Testgen](https://github.com/informalsystems/tendermint-rs/tree/master/testgen)
   takes care of translating abstract values from the model into the concrete implementation values.
+* `timeout` command is used to limit the test execution time; it should be present by default on all Linux distributions, but may be absent on Macs. In that case it can be installed using `brew install coreutils`. 
   
-So, for the model-based test to run, the programs `apalache-mc`, `jsonatr`, and `tendermint-testgen` 
-should be present in your `PATH`. The easiest way to run Apalache is by [using a Docker image](https://github.com/informalsystems/apalache/blob/unstable/docs/manual.md#useDocker); 
+So, for the model-based test to run, the programs `apalache-mc`, `jsonatr`, 
+`tendermint-testgen`, and `timeout`
+should be present in your `PATH`. The easiest way to run Apalache is by 
+[using a Docker image](https://github.com/informalsystems/apalache/blob/unstable/docs/manual.md#useDocker); 
 to run the latter two you need to locally clone the repositories, and then, 
 after building them, just add their `target/debug` directories into your `PATH`. 
 If any of the programs is not found, execution of a model-based test will be skipped.
 
-After you run your model-based tests with `cargo test`, the results will be printed to screen, 
-and also saved to disk in the [_single_step](_single_step) directory.
+Please note that the above programs should be present as executables; e.g. having a Bash `alias` won't be enough. For example, to wrap Apalache docker image into an executable you might create the following executable bash script `apalache-mc`:
+
+```bash
+#!/bin/bash
+docker run --rm -v $(pwd):/var/apalache apalache/mc $@
+```    
+
+To run your model-based tests, use this command:
+ 
+ ```bash
+ $ cargo test -p tendermint-light-client --test model_based -- --nocapture
+ ```
+
+The results will be printed to the screen, 
+and also saved to the disk in the [_test_run](_test_run) directory.
 Results include:
-* [Report](_single_step/_report) on which tests were run, and what is the outcome
-* For each test, it's relevant files are also saved in a subdirectory of [_single_step](_single_step). 
+* [Report](_test_run/report) on which tests were run, and what is the outcome
+* For each test, it's relevant files are also saved in the subdirectory of [_test_run](_test_run). 
   E.g. For the test `TestSuccess`, which is referenced in [MC4_4_faulty.json](MC4_4_faulty.json), 
-  the results of it's execution will be saved into [_single_step/MC4_4_faulty.json/TestSuccess](_single_step/MC4_4_faulty.json/TestSuccess).
+  the results of it's execution will be saved into [_test_run/MC4_4_faulty.json/TestSuccess](_test_run/MC4_4_faulty.json/TestSuccess).
   These results include, for a successful test:
-  * [log file](_single_step/MC4_4_faulty.json/TestSuccess/_log), where test logs are stored
-  * [counterexample.tla](_single_step/MC4_4_faulty.json/TestSuccess/counterexample.tla), 
+  * [log file](_test_run/MC4_4_faulty.json/TestSuccess/log), where test logs are stored
+  * [TLA+ counterexample](_test_run/MC4_4_faulty.json/TestSuccess/MC4_4_faulty_TestSuccess.tla), 
   the counterexample produced by Apalache in `TLA+` format
-  * [counterexample.json](_single_step/MC4_4_faulty.json/TestSuccess/counterexample.json), 
-  the counterexample produced by Apalache in `JSON` format
-  * [test.json](_single_step/MC4_4_faulty.json/TestSuccess/test.json), 
+  * [JSON test fixture](_test_run/MC4_4_faulty.json/TestSuccess/MC4_4_faulty_TestSuccess.json), 
   the actual static Light Client test, generated by Jsonatr from the counterexample.
        
 One important feature of the model-based testing is that each time you run a model-based test, 
@@ -55,12 +69,10 @@ We suggest the following workflow for running model-based tests:
 For that you might want to run your test in isolation, 
 as counterexample generation by Apalache may take a significant time. 
 In order to run only your test, just create a new test batch with your test, 
-and temporarily remove/rename other test batches (files or diretories starting with `_` are ignored).
+and temporarily remove/rename other test batches (files or directories starting with `_` are ignored).
 2. After running your model-based test, inspect its report/logs. 
-3. If you find the test details interesting, simply copy the generated `test.json` file 
-into [single_step](single_step) directory, and rename it to reflect the model and model-based test you used to generate it.
-For example, [single_step/MC4_4_faulty_TestSuccess.json](single_step/MC4_4_faulty_TestSuccess.json) 
-was auto-generated from the model [MC4_4_faulty.tla](MC4_4_faulty.tla) and the test `TestSuccess`.
-4. Next time you run `cargo test` this static test will be picked up and executed automatically.
+3. If you find the test details interesting, simply copy the auto-generated `.json` and `.tla` 
+files into the [single_step](single_step) directory.
+4. Next time you run `cargo test` these static tests will be picked up and executed automatically.
 
  

@@ -14,31 +14,21 @@ use crate::state::State;
 use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
 
 /// Provides an interface to the supervisor for use in downstream code.
-pub trait Handle {
+pub trait Handle: Send + Sync {
     /// Get latest trusted block.
-    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
-        todo!()
-    }
+    fn latest_trusted(&self) -> Result<Option<LightBlock>, Error>;
 
     /// Get the latest status.
-    fn latest_status(&self) -> Result<LatestStatus, Error> {
-        todo!()
-    }
+    fn latest_status(&self) -> Result<LatestStatus, Error>;
 
     /// Verify to the highest block.
-    fn verify_to_highest(&self) -> Result<LightBlock, Error> {
-        todo!()
-    }
+    fn verify_to_highest(&self) -> Result<LightBlock, Error>;
 
     /// Verify to the block at the given height.
-    fn verify_to_target(&self, _height: Height) -> Result<LightBlock, Error> {
-        todo!()
-    }
+    fn verify_to_target(&self, _height: Height) -> Result<LightBlock, Error>;
 
     /// Terminate the underlying [`Supervisor`].
-    fn terminate(&self) -> Result<(), Error> {
-        todo!()
-    }
+    fn terminate(&self) -> Result<(), Error>;
 }
 
 /// Input events sent by the [`Handle`]s to the [`Supervisor`]. They carry a [`Callback`] which is
@@ -47,12 +37,16 @@ pub trait Handle {
 enum HandleInput {
     /// Terminate the supervisor process
     Terminate(channel::Sender<()>),
+
     /// Verify to the highest height, call the provided callback with result
     VerifyToHighest(channel::Sender<Result<LightBlock, Error>>),
+
     /// Verify to the given height, call the provided callback with result
     VerifyToTarget(Height, channel::Sender<Result<LightBlock, Error>>),
+
     /// Get the latest trusted block.
     LatestTrusted(channel::Sender<Option<LightBlock>>),
+
     /// Get the current status of the LightClient
     GetStatus(channel::Sender<LatestStatus>),
 }
@@ -166,11 +160,12 @@ impl Supervisor {
     }
 
     /// Create a new handle to this supervisor.
-    pub fn handle(&mut self) -> impl Handle {
+    pub fn handle(&self) -> SupervisorHandle {
         SupervisorHandle::new(self.sender.clone())
     }
 
-    fn latest_trusted(&self) -> Option<LightBlock> {
+    /// Get the latest trusted state of the primary peer, if any
+    pub fn latest_trusted(&self) -> Option<LightBlock> {
         self.peers.primary().latest_trusted()
     }
 
@@ -366,7 +361,8 @@ impl Supervisor {
 
 /// A [`Handle`] to the [`Supervisor`] which allows to communicate with
 /// the supervisor across thread boundaries via message passing.
-struct SupervisorHandle {
+#[derive(Clone)]
+pub struct SupervisorHandle {
     sender: channel::Sender<HandleInput>,
 }
 
@@ -389,6 +385,7 @@ impl SupervisorHandle {
         receiver.recv().map_err(ErrorKind::from)?
     }
 }
+
 impl Handle for SupervisorHandle {
     fn latest_trusted(&self) -> Result<Option<LightBlock>, Error> {
         let (sender, receiver) = channel::bounded::<Option<LightBlock>>(1);

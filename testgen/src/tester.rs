@@ -35,6 +35,10 @@ impl TestEnv {
         &self.current_dir
     }
 
+    pub fn clear_log(&self) -> Option<()> {
+        fs::remove_file(self.full_path("log")).ok()
+    }
+
     pub fn logln(&self, msg: &str) -> Option<()> {
         println!("{}", msg);
         fs::OpenOptions::new()
@@ -75,17 +79,42 @@ impl TestEnv {
     /// Returns None if copying was not successful
     pub fn copy_file_from(&self, path: impl AsRef<Path>) -> Option<()> {
         let path = path.as_ref();
+        let new_name = path.file_name()?.to_str()?;
+        self.copy_file_from_as(path, new_name)
+    }
+
+    /// Copy a file from the path outside environment into the environment current dir
+    /// Assigns the file a new_name in the current environment
+    /// Returns None if copying was not successful
+    pub fn copy_file_from_as(&self, path: impl AsRef<Path>, new_name: &str) -> Option<()> {
+        let path = path.as_ref();
         if !path.is_file() {
             return None;
         }
-        let name = path.file_name()?.to_str()?;
-        fs::copy(path, self.full_path(name)).ok().map(|_| ())
+        fs::copy(path, self.full_path(new_name)).ok().map(|_| ())
     }
 
     /// Copy a file from the path relative to the other environment into the environment current dir
     /// Returns None if copying was not successful
     pub fn copy_file_from_env(&self, other: &TestEnv, path: impl AsRef<Path>) -> Option<()> {
         self.copy_file_from(other.full_path(path))
+    }
+
+    /// Copy a file from the path relative to the other environment into the environment current dir
+    /// Assigns the file a new_name in the current environment
+    /// Returns None if copying was not successful
+    pub fn copy_file_from_env_as(
+        &self,
+        other: &TestEnv,
+        path: impl AsRef<Path>,
+        new_name: &str,
+    ) -> Option<()> {
+        self.copy_file_from_as(other.full_path(path), new_name)
+    }
+
+    /// Remove a file from a path relative to the environment current dir
+    pub fn remove_file(&self, rel_path: impl AsRef<Path>) -> Option<()> {
+        fs::remove_file(self.full_path(rel_path)).ok()
     }
 
     /// Convert a relative path to the full path from the test root
@@ -99,10 +128,7 @@ impl TestEnv {
     pub fn rel_path(&self, full_path: impl AsRef<Path>) -> Option<String> {
         match PathBuf::from(full_path.as_ref()).strip_prefix(&self.current_dir) {
             Err(_) => None,
-            Ok(rel_path) => match rel_path.to_str() {
-                None => None,
-                Some(rel_path) => Some(rel_path.to_string()),
-            },
+            Ok(rel_path) => rel_path.to_str().map(|rp| rp.to_string()),
         }
     }
 
@@ -202,9 +228,7 @@ impl Tester {
 
     pub fn output_env(&self) -> Option<TestEnv> {
         let output_dir = self.root_dir.clone() + "/_" + &self.name;
-        fs::create_dir_all(&output_dir)
-            .ok()
-            .and(TestEnv::new(&output_dir))
+        TestEnv::new(&output_dir)
     }
 
     fn capture_test<F>(test: F) -> TestResult
@@ -270,8 +294,8 @@ impl Tester {
                 let env = TestEnv::new(dir.path().to_str().unwrap()).unwrap();
                 let output_dir = output_env.full_path(path);
                 let output_env = TestEnv::new(output_dir.to_str().unwrap()).unwrap();
-                fs::remove_dir_all(&output_dir).unwrap();
                 test(test_case, &env, &test_env, &output_env);
+                fs::remove_dir_all(&env.current_dir()).unwrap();
             }),
             Err(_) => ParseError,
         };

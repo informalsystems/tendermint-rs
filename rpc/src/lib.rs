@@ -41,13 +41,14 @@ pub use client::{
 #[cfg(feature = "http-client")]
 pub use client::HttpClient;
 #[cfg(feature = "websocket-client")]
-pub use client::WebSocketClient;
+pub use client::{WebSocketClient, WebSocketClientDriver};
 
 pub mod endpoint;
 pub mod error;
 pub mod event;
 mod id;
 mod method;
+pub mod query;
 pub mod request;
 pub mod response;
 mod result;

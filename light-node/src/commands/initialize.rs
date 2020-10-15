@@ -1,9 +1,11 @@
 //! `intialize` subcommand
 
+use std::ops::Deref;
+use std::time::Duration;
+
 use crate::application::app_config;
 use crate::config::LightClientConfig;
-
-use std::collections::HashMap;
+use crate::config::LightNodeConfig;
 
 use abscissa_core::status_err;
 use abscissa_core::status_warn;
@@ -13,12 +15,14 @@ use abscissa_core::Runnable;
 
 use tendermint::{hash, Hash};
 
-use tendermint_light_client::components::io::{AtHeight, Io, ProdIo};
-use tendermint_light_client::operations::ProdHasher;
-use tendermint_light_client::predicates::{ProdPredicates, VerificationPredicates};
+use std::convert::TryInto;
+use tendermint_light_client::builder::LightClientBuilder;
 use tendermint_light_client::store::sled::SledStore;
 use tendermint_light_client::store::LightStore;
-use tendermint_light_client::types::{Height, Status};
+use tendermint_light_client::supervisor::Instance;
+use tendermint_light_client::types::Height;
+
+use tendermint_rpc as rpc;
 
 /// `initialize` subcommand
 #[derive(Command, Debug, Default, Options)]
@@ -40,69 +44,61 @@ impl Runnable for InitCmd {
     fn run(&self) {
         let subjective_header_hash =
             Hash::from_hex_upper(hash::Algorithm::Sha256, &self.header_hash).unwrap();
-        let app_cfg = app_config();
 
-        let lc = app_cfg.light_clients.first().unwrap();
+        let node_config = app_config().deref().clone();
+        let light_client_config = node_config.light_clients.first().unwrap();
 
-        let mut peer_map = HashMap::new();
-        peer_map.insert(lc.peer_id, lc.address.clone());
-
-        let io = ProdIo::new(peer_map, Some(app_cfg.rpc_config.request_timeout));
-
-        initialize_subjectively(self.height.into(), subjective_header_hash, &lc, &io);
+        if let Err(e) = initialize_subjectively(
+            self.height.try_into().unwrap(),
+            subjective_header_hash,
+            &node_config,
+            &light_client_config,
+            Some(node_config.rpc_config.request_timeout),
+        ) {
+            status_err!("failed to initialize light client: {}", e);
+            // TODO: Set exit code to 1
+        }
     }
 }
 
-// TODO(ismail): sth along these lines should live in the light-client crate / library
-// instead of here.
-// TODO(ismail): additionally here and everywhere else, we should return errors
-// instead of std::process::exit because no destructors will be run.
 fn initialize_subjectively(
     height: Height,
     subjective_header_hash: Hash,
-    l_conf: &LightClientConfig,
-    io: &ProdIo,
-) {
-    let db = sled::open(l_conf.db_path.clone()).unwrap_or_else(|e| {
-        status_err!("could not open database: {}", e);
-        std::process::exit(1);
-    });
+    node_config: &LightNodeConfig,
+    config: &LightClientConfig,
+    timeout: Option<Duration>,
+) -> Result<Instance, String> {
+    let db = sled::open(config.db_path.clone())
+        .map_err(|e| format!("could not open database: {}", e))?;
 
-    let mut light_store = SledStore::new(db);
+    let light_store = SledStore::new(db);
 
-    if light_store.latest_trusted_or_verified().is_some() {
-        let lb = light_store.latest_trusted_or_verified().unwrap();
+    if let Some(trusted_state) = light_store.latest_trusted_or_verified() {
         status_warn!(
             "already existing trusted or verified state of height {} in database: {:?}",
-            lb.signed_header.header.height,
-            l_conf.db_path
+            trusted_state.signed_header.header.height,
+            config.db_path
         );
     }
 
-    let trusted_state = io
-        .fetch_light_block(l_conf.peer_id, AtHeight::At(height))
-        .unwrap_or_else(|e| {
-            status_err!("could not retrieve trusted header: {}", e);
-            std::process::exit(1);
-        });
+    let rpc_client = rpc::HttpClient::new(config.address.clone()).map_err(|e| e.to_string())?;
 
-    let predicates = ProdPredicates;
-    let hasher = ProdHasher;
-    if let Err(err) = predicates.validator_sets_match(&trusted_state, &hasher) {
-        status_err!("invalid light block: {}", err);
-        std::process::exit(1);
-    }
-    // TODO(ismail): actually verify more predicates of light block before storing!?
-    let got_header_hash = trusted_state.signed_header.header.hash();
-    if got_header_hash != subjective_header_hash {
-        status_err!(
-            "received LightBlock's header hash: {} does not match the subjective hash: {}",
-            got_header_hash,
-            subjective_header_hash
-        );
-        std::process::exit(1);
-    }
-    // TODO(liamsi): it is unclear if this should be Trusted or only Verified
-    //  - update the spec first and then use library method instead of this:
-    light_store.insert(trusted_state, Status::Verified);
+    let builder = LightClientBuilder::prod(
+        config.peer_id,
+        rpc_client,
+        Box::new(light_store),
+        node_config.clone().into(),
+        timeout,
+    );
+
+    let builder = builder
+        .trust_primary_at(height, subjective_header_hash)
+        .map_err(|e| {
+            format!(
+                "could not trust header at height {} and hash {}. Reason: {}",
+                height, subjective_header_hash, e
+            )
+        })?;
+
+    Ok(builder.build())
 }

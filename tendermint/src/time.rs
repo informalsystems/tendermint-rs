@@ -4,31 +4,53 @@ use crate::error::{Error, Kind};
 
 use chrono::{DateTime, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
-use tai64::TAI64N;
 
+use prost_types::Timestamp;
+use std::convert::TryFrom;
 use std::fmt;
 use std::ops::{Add, Sub};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tendermint_proto::DomainType;
 
 /// Tendermint timestamps
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#time>
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Time(DateTime<Utc>);
 
+impl DomainType<Timestamp> for Time {}
+
+impl TryFrom<Timestamp> for Time {
+    type Error = anomaly::BoxError;
+
+    fn try_from(value: Timestamp) -> Result<Self, Self::Error> {
+        Ok(SystemTime::try_from(value)
+            .map_err(|e| {
+                Kind::OutOfRange.context(format!("time before EPOCH by {} seconds", e.as_secs()))
+            })?
+            .into())
+    }
+}
+
+impl From<Time> for Timestamp {
+    fn from(value: Time) -> Self {
+        Timestamp::from(value.to_system_time().unwrap())
+    }
+}
+
 impl Time {
-    /// Get a `Timestamp` representing the current wall clock time
+    /// Get [`Time`] value representing the current wall clock time
     pub fn now() -> Self {
         Time(Utc::now())
     }
 
-    /// Get the `UNIX_EPOCH` time ("1970-01-01 00:00:00 UTC") as a `Timestamp`
+    /// Get the [`UNIX_EPOCH`] time ("1970-01-01 00:00:00 UTC") as a [`Time`]
     pub fn unix_epoch() -> Self {
         UNIX_EPOCH.into()
     }
 
-    /// Calculate the amount of time which has passed since another `Timestamp`
-    /// as a `std::time::Duration`
+    /// Calculate the amount of time which has passed since another [`Time`]
+    /// as a [`std::time::Duration`]
     pub fn duration_since(&self, other: Time) -> Result<Duration, Error> {
         self.0
             .signed_duration_since(other.0)
@@ -36,7 +58,7 @@ impl Time {
             .map_err(|_| Kind::OutOfRange.into())
     }
 
-    /// Parse a timestamp from an RFC 3339 date
+    /// Parse [`Time`] from an RFC 3339 date
     pub fn parse_from_rfc3339(s: &str) -> Result<Time, Error> {
         Ok(Time(DateTime::parse_from_rfc3339(s)?.with_timezone(&Utc)))
     }
@@ -46,7 +68,7 @@ impl Time {
         self.0.to_rfc3339_opts(SecondsFormat::Nanos, true)
     }
 
-    /// Convert this timestamp to a `SystemTime`
+    /// Convert [`Time`] to [`SystemTime`]
     pub fn to_system_time(&self) -> Result<SystemTime, Error> {
         let duration_since_epoch = self.duration_since(Self::unix_epoch())?;
         Ok(UNIX_EPOCH + duration_since_epoch)
@@ -91,18 +113,6 @@ impl From<Time> for SystemTime {
     }
 }
 
-impl From<TAI64N> for Time {
-    fn from(t: TAI64N) -> Time {
-        Time(t.to_datetime_utc())
-    }
-}
-
-impl From<Time> for TAI64N {
-    fn from(t: Time) -> TAI64N {
-        TAI64N::from_datetime_utc(&t.0)
-    }
-}
-
 impl Add<Duration> for Time {
     type Output = Self;
 
@@ -121,8 +131,8 @@ impl Sub<Duration> for Time {
     }
 }
 
-/// Parse `Timestamp` from a type
+/// Parse [`Time`] from a type
 pub trait ParseTimestamp {
-    /// Parse `Timestamp`, or return an `Error` if parsing failed
+    /// Parse [`Time`], or return an [`Error`] if parsing failed
     fn parse_timestamp(&self) -> Result<Time, Error>;
 }

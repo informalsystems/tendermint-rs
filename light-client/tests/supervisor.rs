@@ -28,7 +28,7 @@ const TEST_FILES_PATH: &str = "./tests/support/";
 fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance {
     let trusted_height = trust_options.height;
     let trusted_state = io
-        .fetch_light_block(peer_id, AtHeight::At(trusted_height))
+        .fetch_light_block(AtHeight::At(trusted_height))
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
@@ -72,17 +72,17 @@ fn run_multipeer_test(tc: TestBisection<AnonLightBlock>) {
     let primary_instance = make_instance(primary, tc.trust_options.clone(), io.clone(), tc.now);
 
     let mut peer_list = PeerList::builder();
-    peer_list = peer_list.primary(primary, primary_instance);
+    peer_list.primary(primary, primary_instance);
 
     for provider in tc.witnesses.into_iter() {
         let peer_id = provider.value.lite_blocks[0].provider;
         println!("Witness: {}", peer_id);
         let io = MockIo::new(provider.value.chain_id, provider.value.lite_blocks);
         let instance = make_instance(peer_id, tc.trust_options.clone(), io.clone(), tc.now);
-        peer_list = peer_list.witness(peer_id, instance);
+        peer_list.witness(peer_id, instance);
     }
 
-    let mut supervisor = Supervisor::new(
+    let supervisor = Supervisor::new(
         peer_list.build(),
         ProdForkDetector::default(),
         MockEvidenceReporter::new(),
@@ -99,7 +99,7 @@ fn run_multipeer_test(tc: TestBisection<AnonLightBlock>) {
         Ok(new_state) => {
             // Check that the expected state and new_state match
             let untrusted_light_block = io
-                .fetch_light_block(primary, AtHeight::At(target_height))
+                .fetch_light_block(AtHeight::At(target_height))
                 .expect("header at untrusted height not found");
 
             let expected_state = untrusted_light_block;

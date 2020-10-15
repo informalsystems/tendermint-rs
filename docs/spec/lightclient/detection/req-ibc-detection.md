@@ -1,5 +1,10 @@
 # Requirements for Fork Detection in the IBC Context
 
+## Disclaimer
+
+This specification is not maintained. See
+[tendermint/spec](https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/detection/)
+for the most recent version.
 
 ## What you need to know about IBC
 

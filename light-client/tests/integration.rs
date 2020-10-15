@@ -8,54 +8,55 @@
 //! ```
 
 use tendermint_light_client::{
-    components::{
-        clock::SystemClock,
-        io::{AtHeight, Io, IoError, ProdIo},
-        scheduler,
-        verifier::ProdVerifier,
-    },
+    builder::LightClientBuilder,
+    builder::SupervisorBuilder,
+    components::io::AtHeight,
+    components::io::Io,
+    components::io::IoError,
+    components::io::ProdIo,
     evidence::{Evidence, EvidenceReporter},
-    fork_detector::ProdForkDetector,
-    light_client::{self, LightClient},
-    peer_list::PeerList,
-    state::State,
-    store::{memory::MemoryStore, LightStore},
-    supervisor::{Handle, Instance, Supervisor},
+    light_client,
+    store::memory::MemoryStore,
+    store::LightStore,
+    supervisor::{Handle, Instance},
     types::{PeerId, Status, TrustThreshold},
 };
 
-use tendermint::abci::transaction::Hash as TransactionHash;
+use tendermint::abci::transaction::Hash as TxHash;
+use tendermint::net;
+use tendermint_rpc as rpc;
 
-use std::collections::HashMap;
 use std::time::Duration;
 
-fn make_instance(peer_id: PeerId, options: light_client::Options, io: ProdIo) -> Instance {
-    let trusted_state = io
-        .fetch_light_block(peer_id, AtHeight::Highest)
-        .expect("could not request latest light block");
+fn make_instance(
+    peer_id: PeerId,
+    options: light_client::Options,
+    address: net::Address,
+) -> Instance {
+    let rpc_client = rpc::HttpClient::new(address).unwrap();
+    let io = ProdIo::new(peer_id, rpc_client.clone(), Some(Duration::from_secs(2)));
+    let latest_block = io.fetch_light_block(AtHeight::Highest).unwrap();
 
-    let mut light_store = MemoryStore::new();
-    light_store.insert(trusted_state, Status::Trusted);
+    let mut light_store = Box::new(MemoryStore::new());
+    light_store.insert(latest_block, Status::Trusted);
 
-    let state = State {
-        light_store: Box::new(light_store),
-        verification_trace: HashMap::new(),
-    };
-
-    let verifier = ProdVerifier::default();
-    let clock = SystemClock;
-    let scheduler = scheduler::basic_bisecting_schedule;
-
-    let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, io);
-
-    Instance::new(light_client, state)
+    LightClientBuilder::prod(
+        peer_id,
+        rpc_client,
+        light_store,
+        options,
+        Some(Duration::from_secs(2)),
+    )
+    .trust_from_store()
+    .unwrap()
+    .build()
 }
 
 struct TestEvidenceReporter;
 
 #[contracts::contract_trait]
 impl EvidenceReporter for TestEvidenceReporter {
-    fn report(&self, evidence: Evidence, peer: PeerId) -> Result<TransactionHash, IoError> {
+    fn report(&self, evidence: Evidence, peer: PeerId) -> Result<TxHash, IoError> {
         panic!(
             "unexpected fork detected for peer {} with evidence: {:?}",
             peer, evidence
@@ -69,18 +70,12 @@ fn sync() {
     let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
     let witness: PeerId = "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF".parse().unwrap();
 
-    let node_address: tendermint::net::Address = "tcp://127.0.0.1:26657".parse().unwrap();
-
     // Because our CI infrastructure can only spawn a single Tendermint node at the moment,
     // we run this test against this very node as both the primary and witness.
     // In a production environment, one should make sure that the primary and witness are
     // different nodes, and check that the configured peer IDs match the ones returned
     // by the nodes.
-    let mut peer_map = HashMap::new();
-    peer_map.insert(primary, node_address.clone());
-    peer_map.insert(witness, node_address);
-
-    let io = ProdIo::new(peer_map, Some(Duration::from_secs(2)));
+    let node_address: tendermint::net::Address = "tcp://127.0.0.1:26657".parse().unwrap();
 
     let options = light_client::Options {
         trust_threshold: TrustThreshold {
@@ -91,21 +86,18 @@ fn sync() {
         clock_drift: Duration::from_secs(5 * 60),      // 5 minutes
     };
 
-    let primary_instance = make_instance(primary, options, io.clone());
-    let witness_instance = make_instance(witness, options, io);
+    let primary_instance = make_instance(primary, options, node_address.clone());
+    let witness_instance = make_instance(witness, options, node_address.clone());
 
-    let peer_list = PeerList::builder()
-        .primary(primary, primary_instance)
-        .witness(witness, witness_instance)
-        .build();
-
-    let mut supervisor =
-        Supervisor::new(peer_list, ProdForkDetector::default(), TestEvidenceReporter);
+    let supervisor = SupervisorBuilder::new()
+        .primary(primary, node_address.clone(), primary_instance)
+        .witness(witness, node_address, witness_instance)
+        .build_prod();
 
     let handle = supervisor.handle();
     std::thread::spawn(|| supervisor.run());
 
-    let max_iterations: usize = 1; // Todo: Fix no witness left error in subsequent iterations
+    let max_iterations: usize = 10;
 
     for i in 1..=max_iterations {
         println!("[info ] - iteration {}/{}", i, max_iterations);

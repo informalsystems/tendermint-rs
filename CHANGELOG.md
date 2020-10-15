@@ -1,12 +1,10 @@
 ## Unreleased
 
+- Start using model-based testing for Light Client ([#414])
 - Add testgen tester to factor out test execution from integration tests ([#524])
 - Add spec for the light client attack evidence handling ([#526])
 - Return RFC6962 hash for empty merkle tree ([#498])
 - The `tendermint`, `tendermint-rpc`, and `tendermint-light-client` crates now compile to WASM on the `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#463])
-- Implement protobuf encoding/decoding of Tendermint Proto types ([#504])
-- Separate protobuf types from Rust domain types using the DomainType trait ([#535])
-- Changed validator sorting order to sort by voting power. ([#506])
 - Dependency update: sled 0.34 ([#490])
 
 ### BREAKING CHANGES:
@@ -17,6 +15,11 @@
   subscription. To access this struct, you now need to enable both the
   `client` and `transport_http` features when using the `tendermint-rpc`
   crate. ([#516])
+- `[tendermint]` Removed Amino types. All types are now `DomainType`s
+  implementing Protobuf-encoding using Prost. ([#504], [#535], [#536],
+  [#585])
+- `[tendermint]` Changed validator sorting order to sort by voting power
+  (descending) and address (ascending). ([#506])
 
 ### IMPROVEMENTS:
 
@@ -35,7 +38,13 @@
   `MockClient` struct, just enable features `client` and `transport_mock`.
   See the crate docs for more details.
   ([#516])
+- `[rpc]` The subscription client interface provides a structured `Query`
+  mechanism to help ensure compile-time validity of subscription queries.
+  See the crate docs and [#584] for details.
+- `[rpc]` The RPC request and response types' fields are now all publicly
+  accessible ([#636]).
 
+[#414]: https://github.com/informalsystems/tendermint-rs/issues/414
 [#524]: https://github.com/informalsystems/tendermint-rs/issues/524
 [#526]: https://github.com/informalsystems/tendermint-rs/issues/526
 [#498]: https://github.com/informalsystems/tendermint-rs/issues/498
@@ -44,6 +53,10 @@
 [#535]: https://github.com/informalsystems/tendermint-rs/issues/535
 [#506]: https://github.com/informalsystems/tendermint-rs/issues/506
 [#516]: https://github.com/informalsystems/tendermint-rs/pull/516
+[#536]: https://github.com/informalsystems/tendermint-rs/issues/536
+[#585]: https://github.com/informalsystems/tendermint-rs/issues/585
+[#584]: https://github.com/informalsystems/tendermint-rs/pull/584
+[#636]: https://github.com/informalsystems/tendermint-rs/pull/636
 
 ## v0.16.0
 

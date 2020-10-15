@@ -6,6 +6,11 @@
     "TestSuccess",
     "TestFailure",
     "Test2NotEnoughTrustSuccess",
-    "Test2NotEnoughTrustFailure"
+    "Test2NotEnoughTrustFailure",
+    "Test3NotEnoughTrustSuccess",
+    "Test3NotEnoughTrustFailure",
+    "TestValsetDifferentAllSteps",
+    "TestHeaderFromFuture",
+    "TestUntrustedBeforeTrusted"
   ]
 }

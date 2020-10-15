@@ -7,6 +7,7 @@ use tendermint::{
     Block,
 };
 
+use crate::query::EventType;
 use crate::{response::Wrapper, Response};
 
 /// An incoming event produced by a [`Subscription`].
@@ -26,6 +27,19 @@ impl Response for Event {}
 /// A JSON-RPC-wrapped event.
 pub type WrappedEvent = Wrapper<Event>;
 
+impl Event {
+    /// Returns the type associated with this event, if we recognize it.
+    ///
+    /// Returns `None` if we don't yet support this event type.
+    pub fn event_type(&self) -> Option<EventType> {
+        match self.data {
+            EventData::NewBlock { .. } => Some(EventType::NewBlock),
+            EventData::Tx { .. } => Some(EventType::Tx),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "value")]
 pub enum EventData {
@@ -37,6 +51,7 @@ pub enum EventData {
     },
     #[serde(alias = "tendermint/event/Tx")]
     Tx {
+        #[serde(rename = "TxResult")]
         tx_result: TxInfo,
     },
     GenericJSONEvent(serde_json::Value),
@@ -46,7 +61,7 @@ pub enum EventData {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct TxInfo {
     pub height: String,
-    pub index: i64,
+    pub index: Option<i64>,
     pub tx: String,
     pub result: TxResult,
 }
@@ -54,9 +69,9 @@ pub struct TxInfo {
 /// Transaction result.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct TxResult {
-    pub log: String,
-    pub gas_wanted: String,
-    pub gas_used: String,
+    pub log: Option<String>,
+    pub gas_wanted: Option<String>,
+    pub gas_used: Option<String>,
     pub events: Vec<TmEvent>,
 }
 

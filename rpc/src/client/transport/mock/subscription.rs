@@ -1,9 +1,9 @@
 //! Subscription functionality for the Tendermint RPC mock client.
 
-use crate::client::subscription::SubscriptionDriverCmd;
+use crate::client::subscription::{SubscriptionDriverCmd, SubscriptionRouter};
 use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
-use crate::client::SubscriptionRouter;
 use crate::event::Event;
+use crate::query::Query;
 use crate::{Error, Result, Subscription, SubscriptionClient, SubscriptionId};
 use async_trait::async_trait;
 use tokio::task::JoinHandle;
@@ -25,7 +25,7 @@ pub struct MockSubscriptionClient {
 
 #[async_trait]
 impl SubscriptionClient for MockSubscriptionClient {
-    async fn subscribe(&mut self, query: String) -> Result<Subscription> {
+    async fn subscribe(&mut self, query: Query) -> Result<Subscription> {
         let (event_tx, event_rx) = unbounded();
         let (result_tx, mut result_rx) = unbounded();
         let id = SubscriptionId::default();
@@ -124,21 +124,21 @@ impl MockSubscriptionClientDriver {
     async fn subscribe(
         &mut self,
         id: SubscriptionId,
-        query: String,
+        query: impl ToString,
         event_tx: ChannelTx<Result<Event>>,
         mut result_tx: ChannelTx<Result<()>>,
     ) -> Result<()> {
-        self.router.add(&id, query, event_tx);
+        self.router.add(&id, query.to_string(), event_tx);
         result_tx.send(Ok(())).await
     }
 
     async fn unsubscribe(
         &mut self,
         id: SubscriptionId,
-        query: String,
+        query: impl ToString,
         mut result_tx: ChannelTx<Result<()>>,
     ) -> Result<()> {
-        self.router.remove(&id, query);
+        self.router.remove(&id, query.to_string());
         result_tx.send(Ok(())).await
     }
 }
@@ -146,6 +146,7 @@ impl MockSubscriptionClientDriver {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::query::EventType;
     use crate::Response;
     use futures::StreamExt;
     use std::path::PathBuf;
@@ -186,14 +187,8 @@ mod test {
         let event3 = read_event("event_new_block_3").await;
         let events = vec![event1, event2, event3];
 
-        let subs1 = client
-            .subscribe("tm.event='NewBlock'".to_string())
-            .await
-            .unwrap();
-        let subs2 = client
-            .subscribe("tm.event='NewBlock'".to_string())
-            .await
-            .unwrap();
+        let subs1 = client.subscribe(EventType::NewBlock.into()).await.unwrap();
+        let subs2 = client.subscribe(EventType::NewBlock.into()).await.unwrap();
         assert_ne!(subs1.id, subs2.id);
 
         let subs1_events = take_from_subs_and_terminate(subs1, 3);

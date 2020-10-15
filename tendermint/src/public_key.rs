@@ -1,9 +1,11 @@
 //! Public keys used in Tendermint networks
 
 pub use ed25519_dalek::PublicKey as Ed25519;
-
 #[cfg(feature = "secp256k1")]
-pub use k256::PublicKey as Secp256k1;
+pub use k256::EncodedPoint as Secp256k1;
+
+mod pub_key_request;
+pub use pub_key_request::PubKeyRequest;
 
 use crate::{
     error::{self, Error},
@@ -12,8 +14,18 @@ use crate::{
 use anomaly::{fail, format_err};
 use serde::{de, ser, Deserialize, Serialize};
 use signature::Verifier as _;
+use std::convert::TryFrom;
 use std::{cmp::Ordering, fmt, ops::Deref, str::FromStr};
 use subtle_encoding::{base64, bech32, hex};
+use tendermint_proto::crypto::public_key::Sum;
+use tendermint_proto::privval::PubKeyResponse as RawPubKeyResponse;
+use tendermint_proto::DomainType;
+
+// Note:On the golang side this is generic in the sense that it could everything that implements
+// github.com/tendermint/tendermint/crypto.PubKey
+// While this is meant to be used with different key-types, it currently only uses a PubKeyEd25519
+// version.
+// TODO(ismail): make this more generic (by modifying prost and adding a trait for PubKey)
 
 /// Public keys allowed in Tendermint protocols
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -39,12 +51,46 @@ pub enum PublicKey {
     Secp256k1(Secp256k1),
 }
 
+impl DomainType<RawPubKeyResponse> for PublicKey {}
+
+impl TryFrom<RawPubKeyResponse> for PublicKey {
+    type Error = Error;
+
+    fn try_from(value: RawPubKeyResponse) -> Result<Self, Self::Error> {
+        let Sum::Ed25519(b) = &value
+            .pub_key
+            .ok_or_else(|| format_err!(error::Kind::InvalidKey, "empty pubkey"))?
+            .sum
+            .ok_or_else(|| format_err!(error::Kind::InvalidKey, "empty sum"))?;
+        Ed25519::from_bytes(b)
+            .map(Into::into)
+            .map_err(|_| format_err!(error::Kind::InvalidKey, "malformed key").into())
+    }
+}
+
+impl From<PublicKey> for RawPubKeyResponse {
+    fn from(value: PublicKey) -> Self {
+        match value {
+            PublicKey::Ed25519(ref pk) => RawPubKeyResponse {
+                pub_key: Some(tendermint_proto::crypto::PublicKey {
+                    sum: Some(tendermint_proto::crypto::public_key::Sum::Ed25519(
+                        pk.as_bytes().to_vec(),
+                    )),
+                }),
+                error: None,
+            },
+            #[cfg(feature = "secp256k1")]
+            PublicKey::Secp256k1(_) => panic!("secp256k1 PubKeyResponse unimplemented"),
+        }
+    }
+}
+
 impl PublicKey {
     /// From raw secp256k1 public key bytes
     #[cfg(feature = "secp256k1")]
     #[cfg_attr(docsrs, doc(cfg(feature = "secp256k1")))]
     pub fn from_raw_secp256k1(bytes: &[u8]) -> Option<PublicKey> {
-        Some(PublicKey::Secp256k1(Secp256k1::from_bytes(bytes)?))
+        Secp256k1::from_bytes(bytes).ok().map(PublicKey::Secp256k1)
     }
 
     /// From raw Ed25519 public key bytes
@@ -82,6 +128,9 @@ impl PublicKey {
                     )
                     .into()
                 }),
+                Signature::None => {
+                    Err(format_err!(error::Kind::SignatureInvalid, "missing signature").into())
+                }
             },
             #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(_) => fail!(
@@ -105,32 +154,14 @@ impl PublicKey {
         self.as_bytes().to_vec()
     }
 
-    /// Serialize this key as amino bytes
-    pub fn to_amino_bytes(self) -> Vec<u8> {
-        match self {
-            PublicKey::Ed25519(ref pk) => {
-                //Amino prefix for Pubkey
-                let mut key_bytes = vec![0x16, 0x24, 0xDE, 0x64, 0x20];
-                key_bytes.extend(pk.as_bytes());
-                key_bytes
-            }
-            #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(ref pk) => {
-                let mut key_bytes = vec![0xEB, 0x5A, 0xE9, 0x87, 0x21];
-                key_bytes.extend(pk.as_bytes());
-                key_bytes
-            }
-        }
-    }
-
     /// Serialize this key as Bech32 with the given human readable prefix
     pub fn to_bech32(self, hrp: &str) -> String {
-        bech32::encode(hrp, self.to_amino_bytes())
+        bech32::encode(hrp, self.as_bytes())
     }
 
     /// Serialize this key as hexadecimal
     pub fn to_hex(self) -> String {
-        String::from_utf8(hex::encode_upper(self.to_amino_bytes())).unwrap()
+        String::from_utf8(hex::encode_upper(self.as_bytes())).unwrap()
     }
 }
 
@@ -312,13 +343,16 @@ where
     use de::Error;
     let encoded = String::deserialize(deserializer)?;
     let bytes = base64::decode(&encoded).map_err(D::Error::custom)?;
-    Secp256k1::from_bytes(&bytes).ok_or_else(|| D::Error::custom("invalid secp256k1 key"))
+    Secp256k1::from_bytes(&bytes).map_err(|_| D::Error::custom("invalid secp256k1 key"))
 }
 
 #[cfg(test)]
 mod tests {
     use super::{PublicKey, TendermintKey};
+    use crate::public_key::PublicKey::Ed25519;
+    pub use ed25519_dalek::PublicKey as Ed25519PublicKey;
     use subtle_encoding::hex;
+    use tendermint_proto::DomainType;
 
     const EXAMPLE_CONSENSUS_KEY: &str =
         "4A25C6640A1F72B9C975338294EF51B6D1C33158BB6ECBA69FBC3FB5A33C9DCE";
@@ -329,10 +363,21 @@ mod tests {
             PublicKey::from_raw_ed25519(&hex::decode_upper(EXAMPLE_CONSENSUS_KEY).unwrap())
                 .unwrap(),
         );
+        /* Key created from:
+        import (
+            "encoding/hex"
+            "fmt"
+            "github.com/cosmos/cosmos-sdk/types/bech32"
+        )
 
+        func key_check() {
+            key, _ := hex.DecodeString("4A25C6640A1F72B9C975338294EF51B6D1C33158BB6ECBA69FBC3FB5A33C9DCE")
+            fmt.Println(bech32.ConvertAndEncode("cosmosvalconspub",key))
+        }
+         */
         assert_eq!(
             example_key.to_bech32("cosmosvalconspub"),
-            "cosmosvalconspub1zcjduepqfgjuveq2raetnjt4xwpffm63kmguxv2chdhvhf5lhslmtgeunh8qmf7exk"
+            "cosmosvalconspub1fgjuveq2raetnjt4xwpffm63kmguxv2chdhvhf5lhslmtgeunh8q538xyw"
         );
     }
 
@@ -345,10 +390,21 @@ mod tests {
             PublicKey::from_raw_secp256k1(&hex::decode_upper(EXAMPLE_ACCOUNT_KEY).unwrap())
                 .unwrap(),
         );
+        /* Key created from:
+        import (
+            "encoding/hex"
+            "fmt"
+            "github.com/cosmos/cosmos-sdk/types/bech32"
+        )
 
+        func key_check() {
+            key, _ := hex.DecodeString("02A1633CAFCC01EBFB6D78E39F687A1F0995C62FC95F51EAD10A02EE0BE551B5DC")
+            fmt.Println(bech32.ConvertAndEncode("cosmospub",key))
+        }
+         */
         assert_eq!(
             example_key.to_bech32("cosmospub"),
-            "cosmospub1addwnpepq2skx090esq7h7md0r3e76r6ruyet330e904r6k3pgpwuzl92x6actrt4uq"
+            "cosmospub1q2skx090esq7h7md0r3e76r6ruyet330e904r6k3pgpwuzl92x6acjw74az"
         );
     }
 
@@ -367,5 +423,50 @@ mod tests {
 
         let reserialized_json = serde_json::to_string(&pubkey).unwrap();
         assert_eq!(reserialized_json.as_str(), json_string);
+    }
+
+    #[test]
+    fn test_ed25519_pubkey_msg() {
+        // test-vector generated from Go
+        /*
+           import (
+               "fmt"
+               "github.com/tendermint/tendermint/proto/tendermint/crypto"
+               "github.com/tendermint/tendermint/proto/tendermint/privval"
+           )
+
+            func ed25519_key() {
+                pkr := &privval.PubKeyResponse{
+                    PubKey: &crypto.PublicKey{
+                        Sum: &crypto.PublicKey_Ed25519{Ed25519: []byte{
+                            215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58,
+                            14, 225, 114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
+                        },
+                        },
+                    },
+                    Error: nil,
+                }
+                pbpk, _ := pkr.Marshal()
+                fmt.Printf("%#v\n", pbpk)
+
+            }
+        */
+        let encoded = vec![
+            0xa, 0x22, 0xa, 0x20, 0xd7, 0x5a, 0x98, 0x1, 0x82, 0xb1, 0xa, 0xb7, 0xd5, 0x4b, 0xfe,
+            0xd3, 0xc9, 0x64, 0x7, 0x3a, 0xe, 0xe1, 0x72, 0xf3, 0xda, 0xa6, 0x23, 0x25, 0xaf, 0x2,
+            0x1a, 0x68, 0xf7, 0x7, 0x51, 0x1a,
+        ];
+
+        let msg = Ed25519(
+            Ed25519PublicKey::from_bytes(&[
+                215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58, 14, 225,
+                114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
+            ])
+            .unwrap(),
+        );
+        let got = msg.encode_vec().unwrap();
+
+        assert_eq!(got, encoded);
+        assert_eq!(PublicKey::decode_vec(&encoded).unwrap(), msg);
     }
 }

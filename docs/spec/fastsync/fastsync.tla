@@ -1,5 +1,9 @@
 ----------------------------- MODULE fastsync -----------------------------
 (*
+ This specification is not maintained anymore. The most recent version can be found at:
+
+ https://github.com/tendermint/spec/tree/master/rust-spec/fastsync
+
  In this document we give the high level specification of the fast sync
  protocol as implemented here:
  https://github.com/tendermint/tendermint/tree/master/blockchain/v2.
