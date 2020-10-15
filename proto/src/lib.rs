@@ -70,7 +70,7 @@ mod tendermint {
 
 pub use tendermint::*;
 
-// Prost allows prost_types to be rebuilt, for so we can add JSON serialization annotations
+// Prost allows prost_types to be rebuilt, so we can add JSON serialization annotations
 pub use google::protobuf::Timestamp;
 
 mod domaintype;
@@ -78,3 +78,5 @@ pub use domaintype::DomainType;
 
 mod error;
 pub use error::{Error, Kind};
+
+pub(crate) mod serializers;

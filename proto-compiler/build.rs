@@ -4,8 +4,37 @@ use std::env::var;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
+/// Tendermint protobuf version
 const TENDERMINT_COMMITISH: &str = "tags/v0.34.0-rc5";
 
+/// Predefined custom attributes for annotations
+const FROM_STR: &str = r#"#[serde(with = "crate::serializers::from_str")]"#;
+const VEC_SKIP_IF_EMPTY: &str =
+    r#"#[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]"#;
+
+// Custom type/field attributes:
+// The first item in the tuple defines the message or field where the annotation should apply and
+// the second item is the string that should be added on top of it.
+// The first item is a path as defined in the prost_build::Config::btree_map here:
+// https://docs.rs/prost-build/0.6.1/prost_build/struct.Config.html#method.btree_map
+
+/// Custom type attributes applied on top of protobuf structs
+static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
+    (".", "#[derive(::serde::Deserialize, ::serde::Serialize)]"), /* All types should be
+                                                                   * serializable */
+];
+
+/// Custom field attributes applied on top of protobuf fields in (a) struct(s)
+static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
+    (".tendermint.abci.ResponseInfo.app_version", FROM_STR),
+    (".tendermint.abci.ResponseInfo.last_block_height", FROM_STR),
+    (
+        ".tendermint.abci.ResponseInfo.last_block_app_hash",
+        VEC_SKIP_IF_EMPTY,
+    ),
+];
+
+/// Clone/open, fetch and check out a specific commitish
 fn git_commitish(dir: &Path, url: &str, commitish: &str) {
     // Open repo
     let repo = match dir.exists() {
@@ -84,9 +113,7 @@ fn main() {
         TENDERMINT_COMMITISH,
     );
 
-    let proto_paths = [
-        format!("{}/proto", tendermint_dir),
-    ];
+    let proto_paths = [format!("{}/proto", tendermint_dir)];
     let proto_includes_paths = [
         format!("{}/proto", tendermint_dir),
         format!("{}/third_party/proto", tendermint_dir),
@@ -112,9 +139,14 @@ fn main() {
     // List available paths for dependencies
     let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
-    // Compile all proto files
+    // Compile proto files, including well-known types (like Timestamp), with added annotations
     let mut pb = prost_build::Config::new();
     pb.compile_well_known_types();
-    pb.type_attribute(".", "#[derive(::serde::Deserialize, ::serde::Serialize)]");
+    for type_attribute in CUSTOM_TYPE_ATTRIBUTES {
+        pb.type_attribute(type_attribute.0, type_attribute.1);
+    }
+    for field_attribute in CUSTOM_FIELD_ATTRIBUTES {
+        pb.field_attribute(field_attribute.0, field_attribute.1);
+    }
     pb.compile_protos(&protos, &includes).unwrap();
 }

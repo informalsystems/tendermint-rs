@@ -237,10 +237,13 @@ pub struct ResponseInfo {
     #[prost(string, tag="2")]
     pub version: std::string::String,
     #[prost(uint64, tag="3")]
+    #[serde(with = "crate::serializers::from_str")]
     pub app_version: u64,
     #[prost(int64, tag="4")]
+    #[serde(with = "crate::serializers::from_str")]
     pub last_block_height: i64,
     #[prost(bytes, tag="5")]
+    #[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]
     pub last_block_app_hash: std::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
