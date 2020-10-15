@@ -116,7 +116,6 @@ impl MockRequestMethodMatcher {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::convert::TryFrom;
     use std::path::PathBuf;
     use tendermint::block::Height;
     use tendermint::chain::Id;
@@ -139,17 +138,10 @@ mod test {
 
         let abci_info = client.abci_info().await.unwrap();
         assert_eq!("GaiaApp".to_string(), abci_info.data);
-        assert_eq!(
-            Height::try_from(488120_u64).unwrap(),
-            abci_info.last_block_height
-        );
+        assert_eq!(Height::from(488120_u32), abci_info.last_block_height);
 
-        let block = client
-            .block(Height::try_from(10_u64).unwrap())
-            .await
-            .unwrap()
-            .block;
-        assert_eq!(Height::try_from(10_u64).unwrap(), block.header.height);
+        let block = client.block(Height::from(10_u32)).await.unwrap().block;
+        assert_eq!(Height::from(10_u32), block.header.height);
         assert_eq!("cosmoshub-2".parse::<Id>().unwrap(), block.header.chain_id);
     }
 }

@@ -78,6 +78,11 @@ testing and greater compatibility with dependent projects.
   To access this struct you need to enable both the `client`, `subscription`
   and `transport_websocket` features when using the `tendermint-rpc` crate.
   ([#516])
+- `[rpc]` The subscription client interface provides a structured `Query`
+  mechanism to help ensure compile-time validity of subscription queries.
+  See the crate docs and [#584] for details.
+- `[rpc]` The RPC request and response types' fields are now all publicly
+  accessible ([#636]).
 
 - `[tendermint | rpc | light-client]` Crates now compile to WASM on the `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#463])
 - Dependency updates: 
@@ -115,6 +120,7 @@ testing and greater compatibility with dependent projects.
 [#585]: https://github.com/informalsystems/tendermint-rs/issues/585
 [#590]: https://github.com/informalsystems/tendermint-rs/issues/590
 [#603]: https://github.com/informalsystems/tendermint-rs/pull/603
+[#636]: https://github.com/informalsystems/tendermint-rs/pull/636
 
 ## v0.16.0
 

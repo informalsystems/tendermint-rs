@@ -12,7 +12,7 @@ pub use transport::mock::{
 #[cfg(feature = "http-client")]
 pub use transport::http::HttpClient;
 #[cfg(feature = "websocket-client")]
-pub use transport::websocket::WebSocketClient;
+pub use transport::websocket::{WebSocketClient, WebSocketClientDriver};
 
 use crate::endpoint::*;
 use crate::{Request, Result};

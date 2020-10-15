@@ -95,7 +95,12 @@ mod rpc {
         );
         assert_eq!(
             computed_data_hash,
-            block_info.block.header.data_hash.unwrap().as_bytes()
+            block_info
+                .block
+                .header
+                .data_hash
+                .unwrap_or_default()
+                .as_bytes()
         );
     }
 
@@ -119,10 +124,7 @@ mod rpc {
     async fn blockchain() {
         let max_height = 10u64;
         let blockchain_info = localhost_rpc_client()
-            .blockchain(
-                Height::try_from(1u64).unwrap(),
-                Height::try_from(max_height).unwrap(),
-            )
+            .blockchain(Height::from(1u32), Height::try_from(max_height).unwrap())
             .await
             .unwrap();
 
@@ -184,9 +186,10 @@ mod rpc {
     #[tokio::test]
     #[ignore]
     async fn subscription_interface() {
-        let mut client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+        let (mut client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
+        let driver_handle = tokio::spawn(async move { driver.run().await });
         let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
         let mut ev_count = 5_i32;
 
@@ -200,8 +203,8 @@ mod rpc {
             }
         }
 
-        subs.terminate().await.unwrap();
         client.close().await.unwrap();
+        let _ = driver_handle.await.unwrap();
     }
 
     #[tokio::test]
@@ -217,9 +220,11 @@ mod rpc {
 
     async fn simple_transaction_subscription() {
         let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
-        let mut subs_client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
-            .await
-            .unwrap();
+        let (mut subs_client, driver) =
+            WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+                .await
+                .unwrap();
+        let driver_handle = tokio::spawn(async move { driver.run().await });
         let mut subs = subs_client.subscribe(EventType::Tx.into()).await.unwrap();
         // We use Id::uuid_v4() here as a quick hack to generate a random value.
         let mut expected_tx_values = (0..10_u32)
@@ -278,15 +283,17 @@ mod rpc {
             }
         }
 
-        subs.terminate().await.unwrap();
         subs_client.close().await.unwrap();
+        let _ = driver_handle.await.unwrap();
     }
 
     async fn concurrent_subscriptions() {
         let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
-        let mut subs_client = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
-            .await
-            .unwrap();
+        let (mut subs_client, driver) =
+            WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+                .await
+                .unwrap();
+        let driver_handle = tokio::spawn(async move { driver.run().await });
         let new_block_subs = subs_client
             .subscribe(EventType::NewBlock.into())
             .await
@@ -342,5 +349,6 @@ mod rpc {
         }
 
         subs_client.close().await.unwrap();
+        let _ = driver_handle.await.unwrap();
     }
 }
