@@ -5,7 +5,7 @@
 [![Build Status][build-image]][build-link]
 [![Audit Status][audit-image]][audit-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
-![Rust 1.39+][rustc-image]
+![Rust 1.47+][rustc-image]
 
 Crate for interacting with Tendermint [proto structs][tendermint-go-proto-link].
 
@@ -13,7 +13,7 @@ Crate for interacting with Tendermint [proto structs][tendermint-go-proto-link].
 
 ## Requirements
 
-- Rust 1.39+
+- Rust 1.47+
 
 ## License
 
@@ -43,7 +43,7 @@ limitations under the License.
 [audit-link]: https://github.com/informalsystems/tendermint-rs/actions?query=workflow%3AAudit-Check
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
 [license-link]: https://github.com/informalsystems/tendermint-rs/blob/master/LICENSE
-[rustc-image]: https://img.shields.io/badge/rustc-1.39+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.47+-blue.svg
 
 [//]: # (general links)
 
