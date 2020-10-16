@@ -9,7 +9,7 @@ use tendermint_rpc::Client;
 
 use tendermint_rpc as rpc;
 
-use crate::types::{Height, LightBlock, PeerId};
+use crate::types::{Height, LightBlock};
 
 /// Type for selecting either a specific height or the latest one
 pub enum AtHeight {
@@ -76,7 +76,10 @@ mod prod {
 
     use std::time::Duration;
 
-    use crate::{bail, utils::block_on};
+    use crate::bail;
+    use crate::types::PeerId;
+    use crate::utils::block_on;
+
     use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
     use tendermint::validator::Set as TMValidatorSet;
 
