@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use tendermint::net;
 
 use crate::builder::error::{self, Error};
@@ -20,6 +22,7 @@ pub struct Done;
 pub struct SupervisorBuilder<State> {
     instances: PeerListBuilder<Instance>,
     addresses: PeerListBuilder<net::Address>,
+    evidence_reporting_timeout: Option<Duration>,
     #[allow(dead_code)]
     state: State,
 }
@@ -30,8 +33,15 @@ impl<Current> SupervisorBuilder<Current> {
         SupervisorBuilder {
             instances: self.instances,
             addresses: self.addresses,
+            evidence_reporting_timeout: self.evidence_reporting_timeout,
             state,
         }
+    }
+
+    /// Set the timeout for fork evidence submission
+    pub fn evidence_reporting_timeout(mut self, timeout: Option<Duration>) -> Self {
+        self.evidence_reporting_timeout = timeout;
+        self
     }
 }
 
@@ -47,6 +57,7 @@ impl SupervisorBuilder<Init> {
         Self {
             instances: PeerListBuilder::default(),
             addresses: PeerListBuilder::default(),
+            evidence_reporting_timeout: None,
             state: Init,
         }
     }
@@ -103,12 +114,13 @@ impl SupervisorBuilder<Done> {
     #[must_use]
     #[cfg(feature = "rpc-client")]
     pub fn build_prod(self) -> Supervisor {
+        let timeout = self.evidence_reporting_timeout;
         let (instances, addresses) = self.inner();
 
         Supervisor::new(
             instances,
             ProdForkDetector::default(),
-            ProdEvidenceReporter::new(addresses.into_values()),
+            ProdEvidenceReporter::new(addresses.into_values(), timeout),
         )
     }
 

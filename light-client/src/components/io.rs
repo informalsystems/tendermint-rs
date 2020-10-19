@@ -1,6 +1,7 @@
 //! Provides an interface and a default implementation of the `Io` component
 
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 use thiserror::Error;
 
 #[cfg(feature = "rpc-client")]
@@ -8,7 +9,7 @@ use tendermint_rpc::Client;
 
 use tendermint_rpc as rpc;
 
-use crate::types::{Height, LightBlock, PeerId};
+use crate::types::{Height, LightBlock};
 
 /// Type for selecting either a specific height or the latest one
 pub enum AtHeight {
@@ -39,9 +40,9 @@ pub enum IoError {
     #[error("invalid height: {0}")]
     InvalidHeight(String),
 
-    /// The request timed out.
-    #[error("request to peer {0} timed out")]
-    Timeout(PeerId),
+    /// Task timed out.
+    #[error("task timed out after {} ms", .0.as_millis())]
+    Timeout(Duration),
 }
 
 impl IoError {
@@ -52,7 +53,6 @@ impl IoError {
 }
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
-#[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
 pub trait Io: Send {
     /// Fetch a light block at the given height from a peer
     fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError>;
@@ -76,7 +76,10 @@ mod prod {
 
     use std::time::Duration;
 
-    use crate::{bail, utils::block_on};
+    use crate::bail;
+    use crate::types::PeerId;
+    use crate::utils::block_on;
+
     use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
     use tendermint::validator::Set as TMValidatorSet;
 
@@ -127,16 +130,12 @@ mod prod {
 
         fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
             let client = self.rpc_client.clone();
-            let res = block_on(
-                async move {
-                    match height {
-                        AtHeight::Highest => client.latest_commit().await,
-                        AtHeight::At(height) => client.commit(height).await,
-                    }
-                },
-                self.peer_id,
-                self.timeout,
-            )?;
+            let res = block_on(self.timeout, async move {
+                match height {
+                    AtHeight::Highest => client.latest_commit().await,
+                    AtHeight::At(height) => client.commit(height).await,
+                }
+            })?;
 
             match res {
                 Ok(response) => Ok(response.signed_header),
@@ -153,8 +152,7 @@ mod prod {
             };
 
             let client = self.rpc_client.clone();
-            let task = async move { client.validators(height).await };
-            let res = block_on(task, self.peer_id, self.timeout)?;
+            let res = block_on(self.timeout, async move { client.validators(height).await })?;
 
             match res {
                 Ok(response) => Ok(TMValidatorSet::new(response.validators)),

@@ -25,7 +25,7 @@ mod prod {
     use crate::utils::block_on;
 
     use contracts::pre;
-    use std::collections::HashMap;
+    use std::{collections::HashMap, time::Duration};
 
     use tendermint_rpc as rpc;
     use tendermint_rpc::Client;
@@ -35,6 +35,7 @@ mod prod {
     #[derive(Clone, Debug)]
     pub struct ProdEvidenceReporter {
         peer_map: HashMap<PeerId, tendermint::net::Address>,
+        timeout: Option<Duration>,
     }
 
     #[contract_trait]
@@ -42,8 +43,11 @@ mod prod {
         #[pre(self.peer_map.contains_key(&peer))]
         fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
             let client = self.rpc_client_for(peer)?;
-            let task = async move { client.broadcast_evidence(e).await };
-            let res = block_on(task, peer, None)?;
+
+            let res = block_on(
+                self.timeout,
+                async move { client.broadcast_evidence(e).await },
+            )?;
 
             match res {
                 Ok(response) => Ok(response.hash),
@@ -56,8 +60,11 @@ mod prod {
         /// Constructs a new ProdEvidenceReporter component.
         ///
         /// A peer map which maps peer IDS to their network address must be supplied.
-        pub fn new(peer_map: HashMap<PeerId, tendermint::net::Address>) -> Self {
-            Self { peer_map }
+        pub fn new(
+            peer_map: HashMap<PeerId, tendermint::net::Address>,
+            timeout: Option<Duration>,
+        ) -> Self {
+            Self { peer_map, timeout }
         }
 
         #[pre(self.peer_map.contains_key(&peer))]
