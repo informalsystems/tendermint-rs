@@ -22,7 +22,7 @@ pub mod hexstring {
         S: Serializer,
         T: AsRef<[u8]>,
     {
-        let hex_bytes = hex::encode(value.as_ref());
+        let hex_bytes = hex::encode_upper(value.as_ref());
         let hex_string = String::from_utf8(hex_bytes).map_err(serde::ser::Error::custom)?;
         serializer.serialize_str(&hex_string)
     }

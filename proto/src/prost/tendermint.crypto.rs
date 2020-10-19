@@ -1,5 +1,4 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Proof {
     #[prost(int64, tag="1")]
     pub total: i64,
@@ -11,7 +10,6 @@ pub struct Proof {
     pub aunts: ::std::vec::Vec<std::vec::Vec<u8>>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ValueOp {
     /// Encoded in ProofOp.Key.
     #[prost(bytes, tag="1")]
@@ -21,7 +19,6 @@ pub struct ValueOp {
     pub proof: ::std::option::Option<Proof>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct DominoOp {
     #[prost(string, tag="1")]
     pub key: std::string::String,
@@ -34,7 +31,6 @@ pub struct DominoOp {
 /// The data could be arbitrary format, providing nessecary data
 /// for example neighbouring node hash
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ProofOp {
     #[prost(string, tag="1")]
     pub r#type: std::string::String,
@@ -45,7 +41,6 @@ pub struct ProofOp {
 }
 /// ProofOps is Merkle proof defined by the list of ProofOps
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ProofOps {
     #[prost(message, repeated, tag="1")]
     pub ops: ::std::vec::Vec<ProofOp>,

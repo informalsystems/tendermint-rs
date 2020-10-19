@@ -87,7 +87,7 @@ impl ForkDetector for ProdForkDetector {
     ) -> Result<ForkDetection, Error> {
         let primary_hash = self
             .hasher
-            .hash_header(&verified_block.signed_header.header);
+            .hash_header(&verified_block.signed_header.header());
 
         let mut forks = Vec::with_capacity(witnesses.len());
 
@@ -98,7 +98,7 @@ impl ForkDetector for ProdForkDetector {
                 .light_client
                 .get_or_fetch_block(verified_block.height(), &mut state)?;
 
-            let witness_hash = self.hasher.hash_header(&witness_block.signed_header.header);
+            let witness_hash = self.hasher.hash_header(&witness_block.signed_header.header());
 
             if primary_hash == witness_hash {
                 // Hashes match, continue with next witness, if any.

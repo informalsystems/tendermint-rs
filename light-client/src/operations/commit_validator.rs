@@ -55,16 +55,16 @@ impl CommitValidator for ProdCommitValidator {
     ) -> Result<(), VerificationError> {
         // TODO: `self.commit.block_id` cannot be zero in the same way as in Go
         //       Clarify if this another encoding related issue
-        if signed_header.commit.signatures.len() == 0 {
+        if signed_header.commit().signatures.len() == 0 {
             bail!(VerificationError::ImplementationSpecific(
                 "no signatures for commit".to_string()
             ));
         }
 
-        if signed_header.commit.signatures.len() != validator_set.validators().len() {
+        if signed_header.commit().signatures.len() != validator_set.validators().len() {
             bail!(VerificationError::ImplementationSpecific(format!(
                 "pre-commit length: {} doesn't match validator length: {}",
-                signed_header.commit.signatures.len(),
+                signed_header.commit().signatures.len(),
                 validator_set.validators().len()
             )));
         }
@@ -83,7 +83,7 @@ impl CommitValidator for ProdCommitValidator {
         signed_header: &SignedHeader,
         validator_set: &ValidatorSet,
     ) -> Result<(), VerificationError> {
-        for commit_sig in signed_header.commit.signatures.iter() {
+        for commit_sig in signed_header.commit().signatures.iter() {
             let validator_address = match commit_sig {
                 CommitSig::BlockIDFlagAbsent => continue,
                 CommitSig::BlockIDFlagCommit {

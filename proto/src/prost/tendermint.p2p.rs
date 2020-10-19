@@ -1,5 +1,4 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct NetAddress {
     #[prost(string, tag="1")]
     pub id: std::string::String,
@@ -9,7 +8,6 @@ pub struct NetAddress {
     pub port: u32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ProtocolVersion {
     #[prost(uint64, tag="1")]
     pub p2p: u64,
@@ -19,7 +17,6 @@ pub struct ProtocolVersion {
     pub app: u64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct DefaultNodeInfo {
     #[prost(message, optional, tag="1")]
     pub protocol_version: ::std::option::Option<ProtocolVersion>,
@@ -39,7 +36,6 @@ pub struct DefaultNodeInfo {
     pub other: ::std::option::Option<DefaultNodeInfoOther>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct DefaultNodeInfoOther {
     #[prost(string, tag="1")]
     pub tx_index: std::string::String,
@@ -47,15 +43,12 @@ pub struct DefaultNodeInfoOther {
     pub rpc_address: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct PacketPing {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct PacketPong {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct PacketMsg {
     #[prost(int32, tag="1")]
     pub channel_id: i32,
@@ -65,14 +58,12 @@ pub struct PacketMsg {
     pub data: std::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Packet {
     #[prost(oneof="packet::Sum", tags="1, 2, 3")]
     pub sum: ::std::option::Option<packet::Sum>,
 }
 pub mod packet {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum Sum {
         #[prost(message, tag="1")]
         PacketPing(super::PacketPing),
@@ -83,7 +74,6 @@ pub mod packet {
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct AuthSigMessage {
     #[prost(message, optional, tag="1")]
     pub pub_key: ::std::option::Option<super::crypto::PublicKey>,
@@ -91,24 +81,20 @@ pub struct AuthSigMessage {
     pub sig: std::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct PexRequest {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct PexAddrs {
     #[prost(message, repeated, tag="1")]
     pub addrs: ::std::vec::Vec<NetAddress>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Message {
     #[prost(oneof="message::Sum", tags="1, 2")]
     pub sum: ::std::option::Option<message::Sum>,
 }
 pub mod message {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum Sum {
         #[prost(message, tag="1")]
         PexRequest(super::PexRequest),

@@ -2,7 +2,6 @@
 /// of the various ABCI calls during block processing.
 /// It is persisted to disk for each height before calling Commit.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct AbciResponses {
     #[prost(message, repeated, tag="1")]
     pub deliver_txs: ::std::vec::Vec<super::abci::ResponseDeliverTx>,
@@ -13,7 +12,6 @@ pub struct AbciResponses {
 }
 /// ValidatorsInfo represents the latest validator set, or the last height it changed
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ValidatorsInfo {
     #[prost(message, optional, tag="1")]
     pub validator_set: ::std::option::Option<super::types::ValidatorSet>,
@@ -22,7 +20,6 @@ pub struct ValidatorsInfo {
 }
 /// ConsensusParamsInfo represents the latest consensus params, or the last height it changed
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ConsensusParamsInfo {
     #[prost(message, optional, tag="1")]
     pub consensus_params: ::std::option::Option<super::types::ConsensusParams>,
@@ -30,7 +27,6 @@ pub struct ConsensusParamsInfo {
     pub last_height_changed: i64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Version {
     #[prost(message, optional, tag="1")]
     pub consensus: ::std::option::Option<super::version::Consensus>,
@@ -38,7 +34,6 @@ pub struct Version {
     pub software: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct State {
     #[prost(message, optional, tag="1")]
     pub version: ::std::option::Option<Version>,

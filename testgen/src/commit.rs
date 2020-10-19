@@ -3,10 +3,11 @@ use serde::Deserialize;
 use simple_error::*;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
-use tendermint::block::{self, parts::Header as PartSetHeader};
+use tendermint::block::{self, parts::Header as PartSetHeader, Round};
 
 use crate::validator::sort_validators;
 use crate::{helpers::*, Generator, Header, Validator, Vote};
+use std::convert::TryFrom;
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Commit {
@@ -146,10 +147,10 @@ impl Generator<block::Commit> for Commit {
             .collect::<Result<Vec<block::CommitSig>, SimpleError>>()?;
         let commit = block::Commit {
             height: block_header.height,
-            round: self.round.unwrap_or(1),
+            round: Round::try_from(self.round.unwrap_or(1)).unwrap(),
             block_id, /* TODO do we need at least one part?
                        * //block::Id::new(hasher.hash_header(&block_header), None), // */
-            signatures: block::CommitSigs::new(sigs),
+            signatures: sigs,
         };
         Ok(commit)
     }
@@ -182,7 +183,7 @@ mod tests {
         let block_header = header.generate().unwrap();
         let block_commit = commit.generate().unwrap();
 
-        assert_eq!(block_commit.round, 3);
+        assert_eq!(block_commit.round.value(), 3);
         assert_eq!(block_commit.height, block_header.height);
 
         let mut commit = commit;

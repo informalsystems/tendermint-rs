@@ -28,6 +28,7 @@ pub const PREFIX_LENGTH: usize = 10;
 #[derive(
     Serialize, Deserialize, Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord,
 )]
+#[serde(try_from = "RawBlockId", into = "RawBlockId")]
 pub struct Id {
     /// The block's main hash is the Merkle root of all the fields in the
     /// block header.

@@ -115,7 +115,7 @@ impl LightBlock {
     /// ## Note
     /// This is a shorthand for `block.signed_header.header.height`.
     pub fn height(&self) -> Height {
-        self.signed_header.header.height
+        self.signed_header.header().height
     }
 }
 

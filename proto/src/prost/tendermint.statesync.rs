@@ -1,12 +1,10 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Message {
     #[prost(oneof="message::Sum", tags="1, 2, 3, 4")]
     pub sum: ::std::option::Option<message::Sum>,
 }
 pub mod message {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum Sum {
         #[prost(message, tag="1")]
         SnapshotsRequest(super::SnapshotsRequest),
@@ -19,11 +17,9 @@ pub mod message {
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct SnapshotsRequest {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct SnapshotsResponse {
     #[prost(uint64, tag="1")]
     pub height: u64,
@@ -37,7 +33,6 @@ pub struct SnapshotsResponse {
     pub metadata: std::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ChunkRequest {
     #[prost(uint64, tag="1")]
     pub height: u64,
@@ -47,7 +42,6 @@ pub struct ChunkRequest {
     pub index: u32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ChunkResponse {
     #[prost(uint64, tag="1")]
     pub height: u64,

@@ -21,7 +21,6 @@ pub struct Validator {
     pub proposer_priority: i64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct SimpleValidator {
     #[prost(message, optional, tag="1")]
     pub pub_key: ::std::option::Option<super::crypto::PublicKey>,
@@ -35,10 +34,10 @@ pub struct PartSetHeader {
     #[prost(uint32, tag="1")]
     pub total: u32,
     #[prost(bytes, tag="2")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub hash: std::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Part {
     #[prost(uint32, tag="1")]
     pub index: u32,
@@ -52,8 +51,10 @@ pub struct Part {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct BlockId {
     #[prost(bytes, tag="1")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub hash: std::vec::Vec<u8>,
     #[prost(message, optional, tag="2")]
+    #[serde(rename = "parts")]
     pub part_set_header: ::std::option::Option<PartSetHeader>,
 }
 // --------------------------------
@@ -68,6 +69,7 @@ pub struct Header {
     #[prost(string, tag="2")]
     pub chain_id: std::string::String,
     #[prost(int64, tag="3")]
+    #[serde(with = "crate::serializers::from_str")]
     pub height: i64,
     #[prost(message, optional, tag="4")]
     pub time: ::std::option::Option<super::super::google::protobuf::Timestamp>,
@@ -168,7 +170,6 @@ pub struct CommitSig {
     pub signature: std::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Proposal {
     #[prost(enumeration="SignedMsgType", tag="1")]
     pub r#type: i32,
@@ -202,7 +203,6 @@ pub struct LightBlock {
     pub validator_set: ::std::option::Option<ValidatorSet>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct BlockMeta {
     #[prost(message, optional, tag="1")]
     pub block_id: ::std::option::Option<BlockId>,
@@ -215,7 +215,6 @@ pub struct BlockMeta {
 }
 /// TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct TxProof {
     #[prost(bytes, tag="1")]
     pub root_hash: std::vec::Vec<u8>,
@@ -227,7 +226,7 @@ pub struct TxProof {
 /// BlockIdFlag indicates which BlcokID the signature is for
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
+#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]
 pub enum BlockIdFlag {
     Unknown = 0,
     Absent = 1,
@@ -237,7 +236,6 @@ pub enum BlockIdFlag {
 /// SignedMsgType is a type of signed message in the consensus.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub enum SignedMsgType {
     Unknown = 0,
     /// Votes
@@ -247,7 +245,6 @@ pub enum SignedMsgType {
     Proposal = 32,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct EventDataRoundState {
     #[prost(int64, tag="1")]
     pub height: i64,
@@ -259,7 +256,6 @@ pub struct EventDataRoundState {
 /// ConsensusParams contains consensus critical parameters that determine the
 /// validity of blocks.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ConsensusParams {
     #[prost(message, optional, tag="1")]
     pub block: ::std::option::Option<BlockParams>,
@@ -272,7 +268,6 @@ pub struct ConsensusParams {
 }
 /// BlockParams contains limits on the block size.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct BlockParams {
     /// Max block size, in bytes.
     /// Note: must be greater than 0
@@ -291,7 +286,6 @@ pub struct BlockParams {
 }
 /// EvidenceParams determine how we handle evidence of malfeasance.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct EvidenceParams {
     /// Max age of evidence, in blocks.
     ///
@@ -315,14 +309,12 @@ pub struct EvidenceParams {
 /// ValidatorParams restrict the public key types validators can use.
 /// NOTE: uses ABCI pubkey naming, not Amino names.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ValidatorParams {
     #[prost(string, repeated, tag="1")]
     pub pub_key_types: ::std::vec::Vec<std::string::String>,
 }
 /// VersionParams contains the ABCI application version.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct VersionParams {
     #[prost(uint64, tag="1")]
     pub app_version: u64,
@@ -331,7 +323,6 @@ pub struct VersionParams {
 ///
 /// It is hashed into the Header.ConsensusHash.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct HashedParams {
     #[prost(int64, tag="1")]
     pub block_max_bytes: i64,
@@ -396,7 +387,6 @@ pub struct CanonicalPartSetHeader {
     pub hash: std::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct CanonicalProposal {
     /// type alias for byte
     #[prost(enumeration="SignedMsgType", tag="1")]

@@ -2,7 +2,6 @@
 /// This information is included in ResponseInfo. The App.Protocol can be
 /// updated in ResponseEndBlock.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct App {
     #[prost(uint64, tag="1")]
     pub protocol: u64,
@@ -16,7 +15,9 @@ pub struct App {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Consensus {
     #[prost(uint64, tag="1")]
+    #[serde(with = "crate::serializers::from_str")]
     pub block: u64,
     #[prost(uint64, tag="2")]
+    #[serde(with = "crate::serializers::from_str", default)]
     pub app: u64,
 }

@@ -1,11 +1,9 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct List {
     #[prost(message, repeated, tag="1")]
     pub evidence: ::std::vec::Vec<super::types::Evidence>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Info {
     #[prost(message, optional, tag="1")]
     pub evidence: ::std::option::Option<super::types::Evidence>,

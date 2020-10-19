@@ -183,8 +183,8 @@ impl Supervisor {
 
         match latest_trusted {
             Some(trusted) => LatestStatus::new(
-                Some(trusted.signed_header.header.height.value()),
-                Some(trusted.signed_header.header.hash()),
+                Some(trusted.signed_header.header().height.value()),
+                Some(trusted.signed_header.header().hash()),
                 Some(trusted.next_validators.hash()),
                 connected_nodes,
             ),

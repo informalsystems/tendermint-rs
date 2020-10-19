@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
 
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use tendermint::block::CommitSig;
 use tendermint::trust_threshold::TrustThreshold as _;
 use tendermint::vote::{SignedVote, ValidatorIndex, Vote};
@@ -109,7 +109,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
         validator_set: &ValidatorSet,
         trust_threshold: TrustThreshold,
     ) -> Result<VotingPowerTally, VerificationError> {
-        let signatures = &signed_header.commit.signatures;
+        let signatures = &signed_header.commit().signatures;
 
         let mut tallied_voting_power = 0_u64;
         let mut seen_validators = HashSet::new();
@@ -119,7 +119,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
             if let Some(vote) = non_absent_vote(
                 signature,
                 ValidatorIndex::try_from(idx).unwrap(),
-                &signed_header.commit,
+                &signed_header.commit(),
             ) {
                 Some((signature, vote))
             } else {
@@ -144,7 +144,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
 
             let signed_vote = SignedVote::new(
                 vote.clone(),
-                signed_header.header.chain_id.clone(),
+                signed_header.header().chain_id.clone(),
                 vote.validator_address,
                 vote.signature,
             );
@@ -211,7 +211,7 @@ fn non_absent_vote(
     Some(Vote {
         vote_type: tendermint::vote::Type::Precommit,
         height: commit.height,
-        round: commit.round.try_into().unwrap(),
+        round: commit.round,
         block_id,
         timestamp: Some(timestamp),
         validator_address,

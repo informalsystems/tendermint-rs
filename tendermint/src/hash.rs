@@ -7,7 +7,7 @@ use std::{
     fmt::{self, Debug, Display},
     str::FromStr,
 };
-use subtle_encoding::{Encoding, Hex};
+use subtle_encoding::{hex, Encoding, Hex};
 use tendermint_proto::DomainType;
 
 /// Output size for the SHA-256 hash function
@@ -25,26 +25,29 @@ pub enum Algorithm {
 pub enum Hash {
     /// SHA-256 hashes
     Sha256([u8; SHA256_HASH_SIZE]),
+    /// Empty hash
+    None,
 }
 
 impl DomainType<Vec<u8>> for Hash {}
 
-/// Default conversion from Vec<u8> is SHA256 Hash
+/// Default conversion from Vec<u8> is SHA256 Hash or None
 impl TryFrom<Vec<u8>> for Hash {
     type Error = Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        if value.is_empty() {
+            return Ok(Hash::None);
+        }
         Hash::from_bytes(Algorithm::Sha256, &value)
     }
 }
 
 impl From<Hash> for Vec<u8> {
     fn from(value: Hash) -> Self {
-        if value == Hash::default() {
-            return vec![];
-        }
         match value {
             Hash::Sha256(s) => s.to_vec(),
+            Hash::None => vec![],
         }
     }
 }
@@ -52,6 +55,9 @@ impl From<Hash> for Vec<u8> {
 impl Hash {
     /// Create a new `Hash` with the given algorithm type
     pub fn from_bytes(alg: Algorithm, bytes: &[u8]) -> Result<Hash, Error> {
+        if bytes.is_empty() {
+            return Ok(Hash::None);
+        }
         match alg {
             Algorithm::Sha256 => {
                 if bytes.len() == SHA256_HASH_SIZE {
@@ -67,6 +73,9 @@ impl Hash {
 
     /// Decode a `Hash` from upper-case hexadecimal
     pub fn from_hex_upper(alg: Algorithm, s: &str) -> Result<Hash, Error> {
+        if s.is_empty() {
+            return Ok(Hash::None);
+        }
         match alg {
             Algorithm::Sha256 => {
                 let mut h = [0u8; SHA256_HASH_SIZE];
@@ -80,6 +89,7 @@ impl Hash {
     pub fn algorithm(self) -> Algorithm {
         match self {
             Hash::Sha256(_) => Algorithm::Sha256,
+            Hash::None => Algorithm::Sha256,
         }
     }
 
@@ -87,7 +97,13 @@ impl Hash {
     pub fn as_bytes(&self) -> &[u8] {
         match self {
             Hash::Sha256(ref h) => h.as_ref(),
+            Hash::None => &[],
         }
+    }
+
+    /// Convenience function to check for Hash::None
+    pub fn is_empty(&self) -> bool {
+        self == &Hash::None
     }
 }
 
@@ -95,13 +111,14 @@ impl Debug for Hash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Hash::Sha256(_) => write!(f, "Hash::Sha256({})", self),
+            Hash::None => write!(f, "Hash::None"),
         }
     }
 }
 
 impl Default for Hash {
     fn default() -> Self {
-        Hash::from_bytes(Algorithm::Sha256, &[0; SHA256_HASH_SIZE]).unwrap()
+        Hash::None
     }
 }
 
@@ -109,6 +126,7 @@ impl Display for Hash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let hex = match self {
             Hash::Sha256(ref h) => Hex::upper_case().encode_to_string(h).unwrap(),
+            Hash::None => String::new(),
         };
 
         write!(f, "{}", hex)
@@ -125,19 +143,18 @@ impl FromStr for Hash {
 
 impl<'de> Deserialize<'de> for Hash {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let hex = String::deserialize(deserializer)?;
-
-        if hex.is_empty() {
-            Err(D::Error::custom("empty hash"))
-        } else {
-            Ok(Self::from_str(&hex).map_err(|e| D::Error::custom(format!("{}", e)))?)
-        }
+        let hex_string = String::deserialize(deserializer)?;
+        let hex_bytes = hex::decode(hex_string).map_err(|e| D::Error::custom(format!("{}", e)))?;
+        Ok(Self::try_from(hex_bytes).map_err(|e| D::Error::custom(format!("{}", e)))?)
     }
 }
 
 impl Serialize for Hash {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.to_string().serialize(serializer)
+        serializer.serialize_str(
+            &String::from_utf8(hex::encode_upper(Vec::<u8>::from(self.clone())))
+                .map_err(serde::ser::Error::custom)?,
+        )
     }
 }
 
@@ -215,13 +232,17 @@ impl FromStr for AppHash {
 
 impl<'de> Deserialize<'de> for AppHash {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let hex = String::deserialize(deserializer)?;
-        Ok(Self::from_str(&hex).map_err(|e| D::Error::custom(format!("{}", e)))?)
+        let hex_string = String::deserialize(deserializer)?;
+        let hex_bytes = hex::decode(hex_string).map_err(|e| D::Error::custom(format!("{}", e)))?;
+        Ok(Self::try_from(hex_bytes).map_err(|e| D::Error::custom(format!("{}", e)))?)
     }
 }
 
 impl Serialize for AppHash {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.to_string().serialize(serializer)
+        serializer.serialize_str(
+            &String::from_utf8(hex::encode_upper(Vec::<u8>::from(self.clone())))
+                .map_err(serde::ser::Error::custom)?,
+        )
     }
 }

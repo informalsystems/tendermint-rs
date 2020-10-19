@@ -24,7 +24,6 @@ pub struct Header {
 }
 
 impl DomainType<RawPartSetHeader> for Header {}
-impl DomainType<RawCanonicalPartSetHeader> for Header {}
 
 impl TryFrom<RawPartSetHeader> for Header {
     type Error = Error;

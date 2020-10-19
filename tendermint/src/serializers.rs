@@ -46,10 +46,6 @@ pub mod bytes;
 pub mod from_str;
 pub mod time_duration;
 
-mod raw_commit_sig;
-pub(crate) use raw_commit_sig::BlockIDFlag;
-pub(crate) use raw_commit_sig::RawCommitSig;
-
 #[cfg(test)]
 mod tests;
 

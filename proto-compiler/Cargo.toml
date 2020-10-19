@@ -6,11 +6,9 @@ edition = "2018"
 publish = false
 
 [dependencies]
-walkdir = { version = "2.3" }
-
-[build-dependencies]
+walkdir     = { version = "2.3" }
 prost-build = { version = "0.6" }
-walkdir = { version = "2.3" }
-git2 = { version = "0.13" }
+git2        = { version = "0.13" }
+tempdir     = { version = "0.3" }
 
 [workspace]

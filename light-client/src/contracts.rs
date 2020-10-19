@@ -24,7 +24,7 @@ pub fn is_within_trust_period(
     trusting_period: Duration,
     now: Time,
 ) -> bool {
-    let header_time = light_block.signed_header.header.time;
+    let header_time = light_block.signed_header.header().time;
     header_time > now - trusting_period
 }
 

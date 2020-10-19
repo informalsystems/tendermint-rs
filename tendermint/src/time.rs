@@ -10,8 +10,8 @@ use std::fmt;
 use std::ops::{Add, Sub};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tendermint_proto::google::protobuf::Timestamp;
 use tendermint_proto::DomainType;
-use tendermint_proto::Timestamp;
 
 /// Tendermint timestamps
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#time>

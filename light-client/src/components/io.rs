@@ -92,7 +92,7 @@ mod prod {
     impl Io for ProdIo {
         fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
             let signed_header = self.fetch_signed_header(height)?;
-            let height = signed_header.header.height;
+            let height = signed_header.header().height;
 
             let validator_set = self.fetch_validator_set(height.into())?;
             let next_validator_set = self.fetch_validator_set(height.increment().into())?;

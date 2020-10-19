@@ -35,19 +35,12 @@ fn abci_query() {
 fn block() {
     let response = endpoint::block::Response::from_string(&read_json_fixture("block")).unwrap();
 
-    let tendermint::Block {
-        header,
-        data,
-        evidence,
-        last_commit,
-    } = response.block;
-
-    assert_eq!(header.version.block, 10);
-    assert_eq!(header.chain_id.as_str(), EXAMPLE_CHAIN);
-    assert_eq!(header.height.value(), 10);
-    assert_eq!(data.iter().len(), 0);
-    assert_eq!(evidence.iter().len(), 0);
-    assert_eq!(last_commit.unwrap().signatures.len(), 1);
+    assert_eq!(response.block.header().version.block, 10);
+    assert_eq!(response.block.header().chain_id.as_str(), EXAMPLE_CHAIN);
+    assert_eq!(response.block.header().height.value(), 10);
+    assert_eq!(response.block.data().iter().len(), 0);
+    assert_eq!(response.block.evidence().iter().len(), 0);
+    assert_eq!(response.block.last_commit().as_ref().unwrap().signatures.len(), 1);
 }
 
 #[test]
@@ -55,8 +48,7 @@ fn block_with_evidences() {
     let response =
         endpoint::block::Response::from_string(&read_json_fixture("block_with_evidences")).unwrap();
 
-    let tendermint::Block { evidence, .. } = response.block;
-    let evidence = evidence.iter().next().unwrap();
+    let evidence = response.block.evidence().iter().next().unwrap();
 
     match evidence {
         tendermint::evidence::Evidence::DuplicateVote(_) => (),
@@ -86,21 +78,14 @@ fn first_block() {
     let response =
         endpoint::block::Response::from_string(&read_json_fixture("first_block")).unwrap();
 
-    let tendermint::Block {
-        header,
-        data,
-        evidence,
-        last_commit,
-    } = response.block;
+    assert_eq!(response.block.header().version.block, 10);
+    assert_eq!(response.block.header().chain_id.as_str(), EXAMPLE_CHAIN);
+    assert_eq!(response.block.header().height.value(), 10);
+    assert!(response.block.header().last_block_id.is_none());
 
-    assert_eq!(header.version.block, 10);
-    assert_eq!(header.chain_id.as_str(), EXAMPLE_CHAIN);
-    assert_eq!(header.height.value(), 1);
-    assert!(header.last_block_id.is_none());
-
-    assert_eq!(data.iter().len(), 0);
-    assert_eq!(evidence.iter().len(), 0);
-    assert!(last_commit.is_none());
+    assert_eq!(response.block.data().iter().len(), 0);
+    assert_eq!(response.block.evidence().iter().len(), 0);
+    assert!(response.block.last_commit().is_none());
 }
 #[test]
 fn block_results() {
@@ -207,22 +192,22 @@ fn broadcast_tx_commit_null_data() {
 #[test]
 fn commit() {
     let response = endpoint::commit::Response::from_string(&read_json_fixture("commit")).unwrap();
-    let header = response.signed_header.header;
+    let header = response.signed_header.header();
     assert_eq!(header.chain_id.as_ref(), "dockerchain");
     // For now we just want to make sure the commit including precommits and a block_id exist
     // in SignedHeader; later we should verify some properties: e.g. block_id.hash matches the
     // header etc:
-    let commit = response.signed_header.commit;
+    let commit = response.signed_header.commit();
     let block_id = commit.block_id;
-    let _signatures = commit.signatures;
+    let _signatures = &commit.signatures;
     assert_eq!(header.hash(), block_id.hash);
 }
 
 #[test]
 fn commit_height_1() {
     let response = endpoint::commit::Response::from_string(&read_json_fixture("commit_1")).unwrap();
-    let header = response.signed_header.header;
-    let commit = response.signed_header.commit;
+    let header = response.signed_header.header();
+    let commit = response.signed_header.commit();
     let block_id = commit.block_id;
     assert_eq!(header.hash(), block_id.hash);
 }

@@ -1,17 +1,18 @@
 //! CommitSig within Commit
 
-use crate::serializers::BlockIDFlag;
-use crate::serializers::RawCommitSig;
 use crate::{account, Signature, Time};
+use crate::{Error, Kind};
+use num_traits::ToPrimitive;
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
+use tendermint_proto::types::BlockIdFlag;
+use tendermint_proto::types::CommitSig as RawCommitSig;
 
 /// CommitSig represents a signature of a validator.
 /// It's a part of the Commit and can be used to reconstruct the vote set given the validator set.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(try_from = "RawCommitSig", into = "RawCommitSig")]
 pub enum CommitSig {
-    // TODO: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
     /// no vote was received from a validator.
     BlockIDFlagAbsent,
     /// voted for the Commit.BlockID.
@@ -67,53 +68,48 @@ impl CommitSig {
 // Todo: https://github.com/informalsystems/tendermint-rs/issues/259 - CommitSig Timestamp can be zero time
 // Todo: https://github.com/informalsystems/tendermint-rs/issues/260 - CommitSig validator address missing in Absent vote
 impl TryFrom<RawCommitSig> for CommitSig {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(value: RawCommitSig) -> Result<Self, Self::Error> {
-        match value.block_id_flag {
-            BlockIDFlag::Absent => {
-                if value.timestamp.is_some()
-                    && value.timestamp.unwrap()
-                        != Time::parse_from_rfc3339("0001-01-01T00:00:00Z").unwrap()
-                {
-                    return Err("timestamp is present for BlockIDFlagAbsent CommitSig");
-                }
-                if value.signature.is_some() {
-                    return Err("signature is present for BlockIDFlagAbsent CommitSig");
-                }
-                Ok(CommitSig::BlockIDFlagAbsent)
-            }
-            BlockIDFlag::Commit => {
-                if value.timestamp.is_none() {
-                    Err("timestamp is missing for BlockIDFlagCommit CommitSig")
-                } else if value.signature.is_none() {
-                    Err("signature is missing for BlockIDFlagCommit CommitSig")
-                } else if value.validator_address.is_none() {
-                    Err("validator_address is missing for BlockIDFlagCommit CommitSig")
-                } else {
-                    Ok(CommitSig::BlockIDFlagCommit {
-                        validator_address: value.validator_address.unwrap(),
-                        timestamp: value.timestamp.unwrap(),
-                        signature: value.signature.unwrap(),
-                    })
+        if value.block_id_flag == BlockIdFlag::Absent.to_i32().unwrap() {
+            if value.timestamp.is_some() {
+                let timestamp = value.timestamp.unwrap();
+                if timestamp.nanos != 0 || timestamp.seconds != 0 {
+                    return Err(Kind::InvalidTimestamp.into());
                 }
             }
-            BlockIDFlag::Nil => {
-                if value.timestamp.is_none() {
-                    Err("timestamp is missing for BlockIDFlagNil CommitSig")
-                } else if value.signature.is_none() {
-                    Err("signature is missing for BlockIDFlagNil CommitSig")
-                } else if value.validator_address.is_none() {
-                    Err("validator_address is missing for BlockIDFlagNil CommitSig")
-                } else {
-                    Ok(CommitSig::BlockIDFlagNil {
-                        validator_address: value.validator_address.unwrap(),
-                        timestamp: value.timestamp.unwrap(),
-                        signature: value.signature.unwrap(),
-                    })
-                }
+            if !value.signature.is_empty() {
+                return Err(Kind::InvalidSignature.into());
             }
+            return Ok(CommitSig::BlockIDFlagAbsent);
         }
+        if value.block_id_flag == BlockIdFlag::Commit.to_i32().unwrap() {
+            if value.signature.is_empty() {
+                return Err(Kind::InvalidSignature.into());
+            }
+            if value.validator_address.is_empty() {
+                return Err(Kind::InvalidValidatorAddress.into());
+            }
+            return Ok(CommitSig::BlockIDFlagCommit {
+                validator_address: value.validator_address.try_into()?,
+                timestamp: value.timestamp.ok_or(Kind::NoTimestamp)?.try_into()?,
+                signature: value.signature.try_into()?,
+            });
+        }
+        if value.block_id_flag == BlockIdFlag::Nil.to_i32().unwrap() {
+            if value.signature.is_empty() {
+                return Err(Kind::InvalidSignature.into());
+            }
+            if value.validator_address.is_empty() {
+                return Err(Kind::InvalidValidatorAddress.into());
+            }
+            return Ok(CommitSig::BlockIDFlagNil {
+                validator_address: value.validator_address.try_into()?,
+                timestamp: value.timestamp.ok_or(Kind::NoTimestamp)?.try_into()?,
+                signature: value.signature.try_into()?,
+            });
+        }
+        Err(Kind::BlockIdFlag.into())
     }
 }
 
@@ -121,30 +117,30 @@ impl From<CommitSig> for RawCommitSig {
     fn from(commit: CommitSig) -> RawCommitSig {
         match commit {
             CommitSig::BlockIDFlagAbsent => RawCommitSig {
-                block_id_flag: BlockIDFlag::Absent,
-                validator_address: None,
+                block_id_flag: BlockIdFlag::Absent.to_i32().unwrap(),
+                validator_address: Vec::new(),
                 timestamp: None,
-                signature: None,
+                signature: Vec::new(),
             },
             CommitSig::BlockIDFlagNil {
                 validator_address,
                 timestamp,
                 signature,
             } => RawCommitSig {
-                block_id_flag: BlockIDFlag::Nil,
-                validator_address: Some(validator_address),
-                timestamp: Some(timestamp),
-                signature: Some(signature),
+                block_id_flag: BlockIdFlag::Nil.to_i32().unwrap(),
+                validator_address: validator_address.into(),
+                timestamp: Some(timestamp.into()),
+                signature: signature.into(),
             },
             CommitSig::BlockIDFlagCommit {
                 validator_address,
                 timestamp,
                 signature,
             } => RawCommitSig {
-                block_id_flag: BlockIDFlag::Commit,
-                validator_address: Some(validator_address),
-                timestamp: Some(timestamp),
-                signature: Some(signature),
+                block_id_flag: BlockIdFlag::Commit.to_i32().unwrap(),
+                validator_address: validator_address.into(),
+                timestamp: Some(timestamp.into()),
+                signature: signature.into(),
             },
         }
     }

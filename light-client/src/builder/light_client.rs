@@ -157,7 +157,7 @@ impl LightClientBuilder<NoTrustedState> {
             });
         }
 
-        let header_hash = self.hasher.hash_header(&trusted_state.signed_header.header);
+        let header_hash = self.hasher.hash_header(&trusted_state.signed_header.header());
 
         if header_hash != trusted_hash {
             bail!(error::Kind::HashMismatch {
@@ -170,7 +170,7 @@ impl LightClientBuilder<NoTrustedState> {
     }
 
     fn validate(&self, light_block: &LightBlock) -> Result<(), Error> {
-        let header = &light_block.signed_header.header;
+        let header = &light_block.signed_header.header();
         let now = self.clock.now();
 
         self.predicates

@@ -35,9 +35,9 @@ pub trait VerificationPredicates: Send {
         let validators_hash = hasher.hash_validator_set(&light_block.validators);
 
         ensure!(
-            light_block.signed_header.header.validators_hash == validators_hash,
+            light_block.signed_header.header().validators_hash == validators_hash,
             VerificationError::InvalidValidatorSet {
-                header_validators_hash: light_block.signed_header.header.validators_hash,
+                header_validators_hash: light_block.signed_header.header().validators_hash,
                 validators_hash,
             }
         );
@@ -54,9 +54,9 @@ pub trait VerificationPredicates: Send {
         let next_validators_hash = hasher.hash_validator_set(&light_block.next_validators);
 
         ensure!(
-            light_block.signed_header.header.next_validators_hash == next_validators_hash,
+            light_block.signed_header.header().next_validators_hash == next_validators_hash,
             VerificationError::InvalidNextValidatorSet {
-                header_next_validators_hash: light_block.signed_header.header.next_validators_hash,
+                header_next_validators_hash: light_block.signed_header.header().next_validators_hash,
                 next_validators_hash,
             }
         );
@@ -70,13 +70,13 @@ pub trait VerificationPredicates: Send {
         signed_header: &SignedHeader,
         hasher: &dyn Hasher,
     ) -> Result<(), VerificationError> {
-        let header_hash = hasher.hash_header(&signed_header.header);
+        let header_hash = hasher.hash_header(&signed_header.header());
 
         ensure!(
-            header_hash == signed_header.commit.block_id.hash,
+            header_hash == signed_header.commit().block_id.hash,
             VerificationError::InvalidCommitValue {
                 header_hash,
-                commit_hash: signed_header.commit.block_id.hash,
+                commit_hash: signed_header.commit().block_id.hash,
             }
         );
 
@@ -199,11 +199,11 @@ pub trait VerificationPredicates: Send {
         trusted_state: &LightBlock,
     ) -> Result<(), VerificationError> {
         ensure!(
-            light_block.signed_header.header.validators_hash
-                == trusted_state.signed_header.header.next_validators_hash,
+            light_block.signed_header.header().validators_hash
+                == trusted_state.signed_header.header().next_validators_hash,
             VerificationError::InvalidNextValidatorSet {
-                header_next_validators_hash: light_block.signed_header.header.validators_hash,
-                next_validators_hash: trusted_state.signed_header.header.next_validators_hash,
+                header_next_validators_hash: light_block.signed_header.header().validators_hash,
+                next_validators_hash: trusted_state.signed_header.header().next_validators_hash,
             }
         );
 
@@ -234,10 +234,10 @@ pub fn verify(
     now: Time,
 ) -> Result<(), VerificationError> {
     // Ensure the latest trusted header hasn't expired
-    vp.is_within_trust_period(&trusted.signed_header.header, options.trusting_period, now)?;
+    vp.is_within_trust_period(&trusted.signed_header.header(), options.trusting_period, now)?;
 
     // Ensure the header isn't from a future time
-    vp.is_header_from_past(&untrusted.signed_header.header, options.clock_drift, now)?;
+    vp.is_header_from_past(&untrusted.signed_header.header(), options.clock_drift, now)?;
 
     // Ensure the header validator hashes match the given validators
     vp.validator_sets_match(&untrusted, &*hasher)?;
@@ -257,8 +257,8 @@ pub fn verify(
 
     // Check that the untrusted block is more recent than the trusted state
     vp.is_monotonic_bft_time(
-        &untrusted.signed_header.header,
-        &trusted.signed_header.header,
+        &untrusted.signed_header.header(),
+        &trusted.signed_header.header(),
     )?;
 
     let trusted_next_height = trusted.height().increment();
@@ -271,8 +271,8 @@ pub fn verify(
         // Otherwise, ensure that the untrusted block has a greater height than
         // the trusted block.
         vp.is_monotonic_height(
-            &untrusted.signed_header.header,
-            &trusted.signed_header.header,
+            &untrusted.signed_header.header(),
+            &trusted.signed_header.header(),
         )?;
 
         // Check there is enough overlap between the validator sets of

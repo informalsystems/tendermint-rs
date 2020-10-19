@@ -1,14 +1,12 @@
 /// The protocol compiler can output a FileDescriptorSet containing the .proto
 /// files it parses.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct FileDescriptorSet {
     #[prost(message, repeated, tag="1")]
     pub file: ::std::vec::Vec<FileDescriptorProto>,
 }
 /// Describes a complete .proto file.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct FileDescriptorProto {
     /// file name, relative to root of source tree
     #[prost(string, optional, tag="1")]
@@ -50,7 +48,6 @@ pub struct FileDescriptorProto {
 }
 /// Describes a message type.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct DescriptorProto {
     #[prost(string, optional, tag="1")]
     pub name: ::std::option::Option<std::string::String>,
@@ -77,7 +74,6 @@ pub struct DescriptorProto {
 }
 pub mod descriptor_proto {
     #[derive(Clone, PartialEq, ::prost::Message)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub struct ExtensionRange {
         /// Inclusive.
         #[prost(int32, optional, tag="1")]
@@ -92,7 +88,6 @@ pub mod descriptor_proto {
     /// fields or extension ranges in the same message. Reserved ranges may
     /// not overlap.
     #[derive(Clone, PartialEq, ::prost::Message)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub struct ReservedRange {
         /// Inclusive.
         #[prost(int32, optional, tag="1")]
@@ -103,7 +98,6 @@ pub mod descriptor_proto {
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ExtensionRangeOptions {
     /// The parser stores options it doesn't recognize here. See above.
     #[prost(message, repeated, tag="999")]
@@ -111,7 +105,6 @@ pub struct ExtensionRangeOptions {
 }
 /// Describes a field within a message.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct FieldDescriptorProto {
     #[prost(string, optional, tag="1")]
     pub name: ::std::option::Option<std::string::String>,
@@ -157,7 +150,6 @@ pub struct FieldDescriptorProto {
 pub mod field_descriptor_proto {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum Type {
         /// 0 is reserved for errors.
         /// Order is weird for historical reasons.
@@ -194,7 +186,6 @@ pub mod field_descriptor_proto {
     }
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum Label {
         /// 0 is reserved for errors
         Optional = 1,
@@ -204,7 +195,6 @@ pub mod field_descriptor_proto {
 }
 /// Describes a oneof.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct OneofDescriptorProto {
     #[prost(string, optional, tag="1")]
     pub name: ::std::option::Option<std::string::String>,
@@ -213,7 +203,6 @@ pub struct OneofDescriptorProto {
 }
 /// Describes an enum type.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct EnumDescriptorProto {
     #[prost(string, optional, tag="1")]
     pub name: ::std::option::Option<std::string::String>,
@@ -239,7 +228,6 @@ pub mod enum_descriptor_proto {
     /// is inclusive such that it can appropriately represent the entire int32
     /// domain.
     #[derive(Clone, PartialEq, ::prost::Message)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub struct EnumReservedRange {
         /// Inclusive.
         #[prost(int32, optional, tag="1")]
@@ -251,7 +239,6 @@ pub mod enum_descriptor_proto {
 }
 /// Describes a value within an enum.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct EnumValueDescriptorProto {
     #[prost(string, optional, tag="1")]
     pub name: ::std::option::Option<std::string::String>,
@@ -262,7 +249,6 @@ pub struct EnumValueDescriptorProto {
 }
 /// Describes a service.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ServiceDescriptorProto {
     #[prost(string, optional, tag="1")]
     pub name: ::std::option::Option<std::string::String>,
@@ -273,7 +259,6 @@ pub struct ServiceDescriptorProto {
 }
 /// Describes a method of a service.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct MethodDescriptorProto {
     #[prost(string, optional, tag="1")]
     pub name: ::std::option::Option<std::string::String>,
@@ -325,7 +310,6 @@ pub struct MethodDescriptorProto {
 //   to automatically assign option numbers.
 
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct FileOptions {
     /// Sets the Java package where classes generated from this .proto will be
     /// placed.  By default, the proto package is used, but this is often
@@ -437,7 +421,6 @@ pub mod file_options {
     /// Generated classes can be optimized for speed or code size.
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum OptimizeMode {
         /// Generate complete code for parsing, serialization,
         Speed = 1,
@@ -450,7 +433,6 @@ pub mod file_options {
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct MessageOptions {
     /// Set true to use the old proto1 MessageSet wire format for extensions.
     /// This is provided for backwards-compatibility with the MessageSet wire
@@ -511,7 +493,6 @@ pub struct MessageOptions {
     pub uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct FieldOptions {
     /// The ctype option instructs the C++ code generator to use a different
     /// representation of the field than it normally would.  See the specific
@@ -585,7 +566,6 @@ pub struct FieldOptions {
 pub mod field_options {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum CType {
         /// Default mode.
         String = 0,
@@ -594,7 +574,6 @@ pub mod field_options {
     }
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum JsType {
         /// Use the default type.
         JsNormal = 0,
@@ -605,14 +584,12 @@ pub mod field_options {
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct OneofOptions {
     /// The parser stores options it doesn't recognize here. See above.
     #[prost(message, repeated, tag="999")]
     pub uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct EnumOptions {
     /// Set this option to true to allow mapping different tag names to the same
     /// value.
@@ -629,7 +606,6 @@ pub struct EnumOptions {
     pub uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct EnumValueOptions {
     /// Is this enum value deprecated?
     /// Depending on the target platform, this can emit Deprecated annotations
@@ -642,7 +618,6 @@ pub struct EnumValueOptions {
     pub uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ServiceOptions {
     // Note:  Field numbers 1 through 32 are reserved for Google's internal RPC
     //   framework.  We apologize for hoarding these numbers to ourselves, but
@@ -660,7 +635,6 @@ pub struct ServiceOptions {
     pub uninterpreted_option: ::std::vec::Vec<UninterpretedOption>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct MethodOptions {
     // Note:  Field numbers 1 through 32 are reserved for Google's internal RPC
     //   framework.  We apologize for hoarding these numbers to ourselves, but
@@ -685,7 +659,6 @@ pub mod method_options {
     /// methods, and PUT verb for idempotent methods instead of the default POST.
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub enum IdempotencyLevel {
         IdempotencyUnknown = 0,
         /// implies idempotent
@@ -701,7 +674,6 @@ pub mod method_options {
 /// or produced by Descriptor::CopyTo()) will never have UninterpretedOptions
 /// in them.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct UninterpretedOption {
     #[prost(message, repeated, tag="2")]
     pub name: ::std::vec::Vec<uninterpreted_option::NamePart>,
@@ -727,7 +699,6 @@ pub mod uninterpreted_option {
     /// E.g.,{ ["foo", false], ["bar.baz", true], ["qux", false] } represents
     /// "foo.(bar.baz).qux".
     #[derive(Clone, PartialEq, ::prost::Message)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub struct NamePart {
         #[prost(string, required, tag="1")]
         pub name_part: std::string::String,
@@ -741,7 +712,6 @@ pub mod uninterpreted_option {
 /// Encapsulates information about the original source file from which a
 /// FileDescriptorProto was generated.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct SourceCodeInfo {
     /// A Location identifies a piece of source code in a .proto file which
     /// corresponds to a particular definition.  This information is intended
@@ -791,7 +761,6 @@ pub struct SourceCodeInfo {
 }
 pub mod source_code_info {
     #[derive(Clone, PartialEq, ::prost::Message)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub struct Location {
         /// Identifies which part of the FileDescriptorProto was defined at this
         /// location.
@@ -884,7 +853,6 @@ pub mod source_code_info {
 /// file. A GeneratedCodeInfo message is associated with only one generated
 /// source file, but may contain references to different source .proto files.
 #[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct GeneratedCodeInfo {
     /// An Annotation connects some span of text in generated code to an element
     /// of its generating .proto file.
@@ -893,7 +861,6 @@ pub struct GeneratedCodeInfo {
 }
 pub mod generated_code_info {
     #[derive(Clone, PartialEq, ::prost::Message)]
-    #[derive(::serde::Deserialize, ::serde::Serialize)]
     pub struct Annotation {
         /// Identifies the element in the original source .proto file. This field
         /// is formatted the same as SourceCodeInfo.Location.path.
@@ -912,180 +879,4 @@ pub mod generated_code_info {
         #[prost(int32, optional, tag="4")]
         pub end: ::std::option::Option<i32>,
     }
-}
-/// A Timestamp represents a point in time independent of any time zone or local
-/// calendar, encoded as a count of seconds and fractions of seconds at
-/// nanosecond resolution. The count is relative to an epoch at UTC midnight on
-/// January 1, 1970, in the proleptic Gregorian calendar which extends the
-/// Gregorian calendar backwards to year one.
-///
-/// All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-/// second table is needed for interpretation, using a [24-hour linear
-/// smear](https://developers.google.com/time/smear).
-///
-/// The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-/// restricting to that range, we ensure that we can convert to and from [RFC
-/// 3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-///
-/// # Examples
-///
-/// Example 1: Compute Timestamp from POSIX `time()`.
-///
-///     Timestamp timestamp;
-///     timestamp.set_seconds(time(NULL));
-///     timestamp.set_nanos(0);
-///
-/// Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-///
-///     struct timeval tv;
-///     gettimeofday(&tv, NULL);
-///
-///     Timestamp timestamp;
-///     timestamp.set_seconds(tv.tv_sec);
-///     timestamp.set_nanos(tv.tv_usec * 1000);
-///
-/// Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-///
-///     FILETIME ft;
-///     GetSystemTimeAsFileTime(&ft);
-///     UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-///
-///     // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-///     // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-///     Timestamp timestamp;
-///     timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-///     timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-///
-/// Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-///
-///     long millis = System.currentTimeMillis();
-///
-///     Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-///         .setNanos((int) ((millis % 1000) * 1000000)).build();
-///
-///
-/// Example 5: Compute Timestamp from current time in Python.
-///
-///     timestamp = Timestamp()
-///     timestamp.GetCurrentTime()
-///
-/// # JSON Mapping
-///
-/// In JSON format, the Timestamp type is encoded as a string in the
-/// [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-/// format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-/// where {year} is always expressed using four digits while {month}, {day},
-/// {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-/// seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-/// are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-/// is required. A proto3 JSON serializer should always use UTC (as indicated by
-/// "Z") when printing the Timestamp type and a proto3 JSON parser should be
-/// able to accept both UTC and other timezones (as indicated by an offset).
-///
-/// For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-/// 01:30 UTC on January 15, 2017.
-///
-/// In JavaScript, one can convert a Date object to this format using the
-/// standard
-/// [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-/// method. In Python, a standard `datetime.datetime` object can be converted
-/// to this format using
-/// [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-/// the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-/// the Joda Time's [`ISODateTimeFormat.dateTime()`](
-/// http://www.joda.org/joda-time/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime%2D%2D
-/// ) to obtain a formatter capable of generating timestamps in this format.
-///
-///
-#[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-pub struct Timestamp {
-    /// Represents seconds of UTC time since Unix epoch
-    /// 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
-    /// 9999-12-31T23:59:59Z inclusive.
-    #[prost(int64, tag="1")]
-    pub seconds: i64,
-    /// Non-negative fractions of a second at nanosecond resolution. Negative
-    /// second values with fractions must still have non-negative nanos values
-    /// that count forward in time. Must be from 0 to 999,999,999
-    /// inclusive.
-    #[prost(int32, tag="2")]
-    pub nanos: i32,
-}
-/// A Duration represents a signed, fixed-length span of time represented
-/// as a count of seconds and fractions of seconds at nanosecond
-/// resolution. It is independent of any calendar and concepts like "day"
-/// or "month". It is related to Timestamp in that the difference between
-/// two Timestamp values is a Duration and it can be added or subtracted
-/// from a Timestamp. Range is approximately +-10,000 years.
-///
-/// # Examples
-///
-/// Example 1: Compute Duration from two Timestamps in pseudo code.
-///
-///     Timestamp start = ...;
-///     Timestamp end = ...;
-///     Duration duration = ...;
-///
-///     duration.seconds = end.seconds - start.seconds;
-///     duration.nanos = end.nanos - start.nanos;
-///
-///     if (duration.seconds < 0 && duration.nanos > 0) {
-///       duration.seconds += 1;
-///       duration.nanos -= 1000000000;
-///     } else if (duration.seconds > 0 && duration.nanos < 0) {
-///       duration.seconds -= 1;
-///       duration.nanos += 1000000000;
-///     }
-///
-/// Example 2: Compute Timestamp from Timestamp + Duration in pseudo code.
-///
-///     Timestamp start = ...;
-///     Duration duration = ...;
-///     Timestamp end = ...;
-///
-///     end.seconds = start.seconds + duration.seconds;
-///     end.nanos = start.nanos + duration.nanos;
-///
-///     if (end.nanos < 0) {
-///       end.seconds -= 1;
-///       end.nanos += 1000000000;
-///     } else if (end.nanos >= 1000000000) {
-///       end.seconds += 1;
-///       end.nanos -= 1000000000;
-///     }
-///
-/// Example 3: Compute Duration from datetime.timedelta in Python.
-///
-///     td = datetime.timedelta(days=3, minutes=10)
-///     duration = Duration()
-///     duration.FromTimedelta(td)
-///
-/// # JSON Mapping
-///
-/// In JSON format, the Duration type is encoded as a string rather than an
-/// object, where the string ends in the suffix "s" (indicating seconds) and
-/// is preceded by the number of seconds, with nanoseconds expressed as
-/// fractional seconds. For example, 3 seconds with 0 nanoseconds should be
-/// encoded in JSON format as "3s", while 3 seconds and 1 nanosecond should
-/// be expressed in JSON format as "3.000000001s", and 3 seconds and 1
-/// microsecond should be expressed in JSON format as "3.000001s".
-///
-///
-#[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-pub struct Duration {
-    /// Signed seconds of the span of time. Must be from -315,576,000,000
-    /// to +315,576,000,000 inclusive. Note: these bounds are computed from:
-    /// 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years
-    #[prost(int64, tag="1")]
-    pub seconds: i64,
-    /// Signed fractions of a second at nanosecond resolution of the span
-    /// of time. Durations less than one second are represented with a 0
-    /// `seconds` field and a positive or negative `nanos` field. For durations
-    /// of one second or more, a non-zero value for the `nanos` field must be
-    /// of the same sign as the `seconds` field. Must be from -999,999,999
-    /// to +999,999,999 inclusive.
-    #[prost(int32, tag="2")]
-    pub nanos: i32,
 }

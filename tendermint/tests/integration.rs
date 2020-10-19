@@ -20,6 +20,7 @@ mod rpc {
     use tendermint::abci::{Code, Transaction};
     use tendermint::block::Height;
     use tendermint::merkle::simple_hash_from_byte_vectors;
+    use tendermint::vote::CanonicalVote;
     use tendermint_rpc::endpoint::abci_info::AbciInfo;
     use tendermint_rpc::event::{Event, EventData};
     use tendermint_rpc::query::EventType;
@@ -47,6 +48,62 @@ mod rpc {
 
         assert_eq!(abci_info.app_version, 1u64);
         assert_eq!(abci_info.data.is_empty(), false);
+    }
+
+    /// custom CanonicalVote test
+    #[tokio::test]
+    #[ignore]
+    async fn custom_canonical() {
+        use chrono::{DateTime, Utc};
+        use serde_json::json;
+        use std::convert::TryFrom;
+        use tendermint::account::Id as AccountId;
+        use tendermint::block::parts::Header;
+        use tendermint::block::{Height, Id as BlockId, Round};
+        use tendermint::vote::{Type, ValidatorIndex};
+        use tendermint::{Hash, Signature, Time, Vote};
+
+        let mytime: DateTime<Utc> = DateTime::parse_from_rfc3339("2020-10-15T21:10:01-00:00")
+            .unwrap()
+            .into();
+        let vote = Vote {
+            vote_type: Type::Prevote,
+            height: Height::from(1_u32),
+            round: Round::from(0_u16),
+            block_id: Some(BlockId {
+                /*                hash: Hash::try_from(vec![
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                    23, 24, 25, 26, 27, 28, 29, 30, 31,
+                ])
+                    .unwrap(),*/
+                hash: Hash::default(),
+                parts: Header {
+                    total: 0,
+                    hash: Hash::default(),
+                },
+            }),
+            timestamp: Some(Time::from(mytime)),
+            validator_address: AccountId::try_from(vec![
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+            ])
+            .unwrap(),
+            validator_index: ValidatorIndex::try_from(1).unwrap(),
+            signature: Signature::try_from(vec![0; 64]).unwrap(),
+        };
+        let wanna1 = r#"{"block_id":{"hash":"000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F","parts":{"hash":"0000000000000000000000000000000000000000000000000000000000000001","total":0}},"height":"1","round":"0","signature":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==","timestamp":"2020-10-15T21:10:01Z","type":1,"validator_address":"000102030405060708090A0B0C0D0E0F10111213","validator_index":"1"}"#;
+        let wanna2 = r#"{"block_id":{"hash":"000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F","parts":{"hash":"","total":0}},"height":"1","round":"0","signature":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==","timestamp":"2020-10-15T21:10:01Z","type":1,"validator_address":"000102030405060708090A0B0C0D0E0F10111213","validator_index":"1"}"#;
+        //assert_eq!(wanna2, json!(vote).to_string());
+
+        let deser1: Vote = serde_json::from_str(wanna1).unwrap();
+        println!("hash zeroes: {:?}", deser1);
+        let deser2: Vote = serde_json::from_str(wanna2).unwrap();
+        println!("hash empty : {:?}", deser2);
+        println!("hash emptyJ: {}", json!(deser2));
+        assert_eq!(wanna2, json!(deser2).to_string());
+        println!("---");
+        use tendermint::chain::Id as ChainId;
+        let c1 = CanonicalVote::new(vote, ChainId::try_from("mychain").unwrap());
+        println!("{}", json!(c1));
     }
 
     /// `/abci_info` endpoint JSON serialization test
@@ -179,24 +236,24 @@ mod rpc {
             .await
             .unwrap();
 
-        assert!(block_info.block.last_commit.is_none());
-        assert_eq!(block_info.block.header.height.value(), height);
+        assert!(block_info.block.last_commit().is_none());
+        assert_eq!(block_info.block.header().height.value(), height);
 
         // Check for empty merkle root.
         // See: https://github.com/informalsystems/tendermint-rs/issues/562
         let computed_data_hash = simple_hash_from_byte_vectors(
             block_info
                 .block
-                .data
+                .data()
                 .iter()
-                .map(|t| t.to_owned().into_vec())
+                .map(|t| t.to_owned().into())
                 .collect(),
         );
         assert_eq!(
             computed_data_hash,
             block_info
                 .block
-                .header
+                .header()
                 .data_hash
                 .unwrap_or_default()
                 .as_bytes()
@@ -243,11 +300,11 @@ mod rpc {
             .await
             .unwrap();
 
-        assert_eq!(commit_info.signed_header.header.height.value(), height);
+        assert_eq!(commit_info.signed_header.header().height.value(), height);
         assert_eq!(commit_info.canonical, true);
         assert_eq!(
-            commit_info.signed_header.header.hash(),
-            commit_info.signed_header.commit.block_id.hash
+            commit_info.signed_header.header().hash(),
+            commit_info.signed_header.commit().block_id.hash
         );
     }
 
@@ -335,7 +392,7 @@ mod rpc {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
                 let tx = format!("tx{}={}", tx_count, val);
                 rpc_client
-                    .broadcast_tx_async(Transaction::new(tx.as_bytes()))
+                    .broadcast_tx_async(Transaction::from(tx.into_bytes()))
                     .await
                     .unwrap();
             }
@@ -410,7 +467,7 @@ mod rpc {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
                 let tx = format!("tx{}={}", tx_count, val);
                 rpc_client
-                    .broadcast_tx_async(Transaction::new(tx.as_bytes()))
+                    .broadcast_tx_async(Transaction::from(tx.into_bytes()))
                     .await
                     .unwrap();
                 tokio::time::delay_for(Duration::from_millis(100)).await;
