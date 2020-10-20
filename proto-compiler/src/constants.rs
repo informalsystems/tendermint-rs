@@ -3,16 +3,20 @@ pub const TENDERMINT_REPO: &str = "https://github.com/tendermint/tendermint";
 pub const TENDERMINT_COMMITISH: &str = "tags/v0.34.0-rc5";
 
 /// Predefined custom attributes for field annotations
-const FROM_STR: &str = r#"#[serde(with = "crate::serializers::from_str")]"#;
-const FROM_STR_DEFAULT: &str = r#"#[serde(with = "crate::serializers::from_str", default)]"#;
+const QUOTED: &str = r#"#[serde(with = "crate::serializers::from_str")]"#;
+const QUOTED_WITH_DEFAULT: &str = r#"#[serde(with = "crate::serializers::from_str", default)]"#;
 const HEXSTRING: &str = r#"#[serde(with = "crate::serializers::bytes::hexstring")]"#;
+const BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::base64string")]"#;
+const TIMESTAMP: &str = r#"#[serde(with = "crate::serializers::option_timestamp")]"#;
 const VEC_SKIP_IF_EMPTY: &str =
     r#"#[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]"#;
 const RENAME_PARTS: &str = r#"#[serde(rename = "parts")]"#;
+const NULLABLEVECARRAY: &str = r#"#[serde(with = "crate::serializers::txs")]"#;
+const NULLABLE: &str = r#"#[serde(with = "crate::serializers::nullable")]"#;
 
 /// Predefined custom attributes for message annotations
 const PRIMITIVE_ENUM: &str = r#"#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]"#;
-const SERIALIZE: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"#;
+const SERIALIZED: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"#;
 
 /// Custom type attributes applied on top of protobuf structs
 /// The first item in the tuple defines the message where the annotation should apply and
@@ -21,31 +25,31 @@ const SERIALIZE: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"#
 /// https://docs.rs/prost-build/0.6.1/prost_build/struct.Config.html#method.btree_map
 pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.BlockIDFlag", PRIMITIVE_ENUM),
-    (".tendermint.types.Block", SERIALIZE),
-    (".tendermint.types.Data", SERIALIZE),
-    (".tendermint.types.EvidenceData", SERIALIZE),
-    (".tendermint.types.Evidence", SERIALIZE),
-    (".tendermint.types.evidence.Sum", SERIALIZE),
-    (".tendermint.types.DuplicateVoteEvidence", SERIALIZE),
-    (".tendermint.types.Vote", SERIALIZE),
-    (".tendermint.types.BlockID", SERIALIZE),
-    (".tendermint.types.PartSetHeader", SERIALIZE),
-    (".google.protobuf.Timestamp", SERIALIZE),
-    (".tendermint.types.LightClientAttackEvidence", SERIALIZE),
-    (".tendermint.types.LightBlock", SERIALIZE),
-    (".tendermint.types.SignedHeader", SERIALIZE),
-    (".tendermint.types.Header", SERIALIZE),
-    (".tendermint.version.Consensus", SERIALIZE),
-    (".tendermint.types.Commit", SERIALIZE),
-    (".tendermint.types.CommitSig", SERIALIZE),
-    (".tendermint.types.ValidatorSet", SERIALIZE),
-    (".tendermint.crypto.PublicKey", SERIALIZE),
+    (".tendermint.types.Block", SERIALIZED),
+    (".tendermint.types.Data", SERIALIZED),
+    (".tendermint.types.EvidenceData", SERIALIZED),
+    (".tendermint.types.Evidence", SERIALIZED),
+    (".tendermint.types.evidence.Sum", SERIALIZED),
+    (".tendermint.types.DuplicateVoteEvidence", SERIALIZED),
+    (".tendermint.types.Vote", SERIALIZED),
+    (".tendermint.types.BlockID", SERIALIZED),
+    (".tendermint.types.PartSetHeader", SERIALIZED),
+    (".google.protobuf.Timestamp", SERIALIZED),
+    (".tendermint.types.LightClientAttackEvidence", SERIALIZED),
+    (".tendermint.types.LightBlock", SERIALIZED),
+    (".tendermint.types.SignedHeader", SERIALIZED),
+    (".tendermint.types.Header", SERIALIZED),
+    (".tendermint.version.Consensus", SERIALIZED),
+    (".tendermint.types.Commit", SERIALIZED),
+    (".tendermint.types.CommitSig", SERIALIZED),
+    (".tendermint.types.ValidatorSet", SERIALIZED),
+    (".tendermint.crypto.PublicKey", SERIALIZED),
 
-    (".tendermint.abci.ResponseInfo", SERIALIZE),
-    (".tendermint.types.CanonicalBlockID", SERIALIZE),
-    (".tendermint.types.CanonicalPartSetHeader", SERIALIZE),
-    (".tendermint.types.Validator", SERIALIZE),
-    (".tendermint.types.CanonicalVote", SERIALIZE),
+    (".tendermint.abci.ResponseInfo", SERIALIZED),
+    (".tendermint.types.CanonicalBlockID", SERIALIZED),
+    (".tendermint.types.CanonicalPartSetHeader", SERIALIZED),
+    (".tendermint.types.Validator", SERIALIZED),
+    (".tendermint.types.CanonicalVote", SERIALIZED),
 ];
 
 /// Custom field attributes applied on top of protobuf fields in (a) struct(s)
@@ -54,9 +58,9 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
 /// The first item is a path as defined in the prost_build::Config::btree_map here:
 /// https://docs.rs/prost-build/0.6.1/prost_build/struct.Config.html#method.btree_map
 pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
-    (".tendermint.abci.ResponseInfo.last_block_height", FROM_STR),
-    (".tendermint.version.Consensus.block", FROM_STR),
-    (".tendermint.version.Consensus.app", FROM_STR_DEFAULT),
+    (".tendermint.abci.ResponseInfo.last_block_height", QUOTED),
+    (".tendermint.version.Consensus.block", QUOTED),
+    (".tendermint.version.Consensus.app", QUOTED_WITH_DEFAULT),
     (
         ".tendermint.abci.ResponseInfo.last_block_app_hash",
         VEC_SKIP_IF_EMPTY,
@@ -65,19 +69,26 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.BlockID.hash", HEXSTRING),
     (".tendermint.types.BlockID.part_set_header", RENAME_PARTS), // https://github.com/tendermint/tendermint/issues/5522
     (".tendermint.types.PartSetHeader.hash", HEXSTRING),
-    (".tendermint.types.Header.height", FROM_STR),
-    //(".tendermint.types.Header.time", ???), <- implement a serializer that converts from String to Option<Timestamp>
+    (".tendermint.types.Header.height", QUOTED),
+    (".tendermint.types.Header.time", TIMESTAMP),
+    (".tendermint.types.Header.last_commit_hash", HEXSTRING),
+    (".tendermint.types.Header.data_hash", HEXSTRING),
+    (".tendermint.types.Header.validators_hash", HEXSTRING),
+    (".tendermint.types.Header.next_validators_hash", HEXSTRING),
+    (".tendermint.types.Header.consensus_hash", HEXSTRING),
+    (".tendermint.types.Header.app_hash", HEXSTRING),
+    (".tendermint.types.Header.last_results_hash", HEXSTRING),
+    (".tendermint.types.Header.evidence_hash", HEXSTRING),
+    (".tendermint.types.Header.proposer_address", HEXSTRING),
+    (".tendermint.types.Data.txs", NULLABLEVECARRAY),
+    (".tendermint.types.EvidenceData.evidence", NULLABLE),
+    (".tendermint.types.Commit.height", QUOTED),
+    (".tendermint.types.CommitSig.validator_address", HEXSTRING),
+    (".tendermint.types.CommitSig.timestamp", TIMESTAMP),
+    (".tendermint.types.CommitSig.signature", BASE64STRING),
+
     // Let's implement these one-by-one for now. If it becomes cumbersome, we can return to relative paths.
     //("app_version", FROM_STR),
     //("round", FROM_STR),
-    //("hash", HEXSTRING),
-    //("app_hash", HEXSTRING),
-
-    //("last_results_hash", HEXSTRING),
-    //("last_commit_hash", HEXSTRING),
     //("data_hash", HEXSTRING),
-    //("validators_hash", HEXSTRING),
-    //("next_validators_hash", HEXSTRING),
-    //("consensus_hash", HEXSTRING),
-    //("evidence_hash", HEXSTRING),
 ];

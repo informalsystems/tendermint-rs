@@ -72,6 +72,7 @@ pub struct Header {
     #[serde(with = "crate::serializers::from_str")]
     pub height: i64,
     #[prost(message, optional, tag="4")]
+    #[serde(with = "crate::serializers::option_timestamp")]
     pub time: ::std::option::Option<super::super::google::protobuf::Timestamp>,
     /// prev block info
     #[prost(message, optional, tag="5")]
@@ -80,34 +81,43 @@ pub struct Header {
     ///
     /// commit from validators from the last block
     #[prost(bytes, tag="6")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub last_commit_hash: std::vec::Vec<u8>,
     /// transactions
     #[prost(bytes, tag="7")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub data_hash: std::vec::Vec<u8>,
     /// hashes from the app output from the prev block
     ///
     /// validators for the current block
     #[prost(bytes, tag="8")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub validators_hash: std::vec::Vec<u8>,
     /// validators for the next block
     #[prost(bytes, tag="9")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub next_validators_hash: std::vec::Vec<u8>,
     /// consensus params for current block
     #[prost(bytes, tag="10")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub consensus_hash: std::vec::Vec<u8>,
     /// state after txs from the previous block
     #[prost(bytes, tag="11")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub app_hash: std::vec::Vec<u8>,
     /// root hash of all results from the txs from the previous block
     #[prost(bytes, tag="12")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub last_results_hash: std::vec::Vec<u8>,
     /// consensus info
     ///
     /// evidence included in the block
     #[prost(bytes, tag="13")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub evidence_hash: std::vec::Vec<u8>,
     /// original proposer of the block
     #[prost(bytes, tag="14")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub proposer_address: std::vec::Vec<u8>,
 }
 /// Data contains the set of transactions included in the block
@@ -118,6 +128,7 @@ pub struct Data {
     /// NOTE: not all txs here are valid.  We're just agreeing on the order first.
     /// This means that block.AppHash does not include these txs.
     #[prost(bytes, repeated, tag="1")]
+    #[serde(with = "crate::serializers::txs")]
     pub txs: ::std::vec::Vec<std::vec::Vec<u8>>,
 }
 /// Vote represents a prevote, precommit, or commit vote from validators for
@@ -148,6 +159,7 @@ pub struct Vote {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Commit {
     #[prost(int64, tag="1")]
+    #[serde(with = "crate::serializers::from_str")]
     pub height: i64,
     #[prost(int32, tag="2")]
     pub round: i32,
@@ -163,10 +175,13 @@ pub struct CommitSig {
     #[prost(enumeration="BlockIdFlag", tag="1")]
     pub block_id_flag: i32,
     #[prost(bytes, tag="2")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub validator_address: std::vec::Vec<u8>,
     #[prost(message, optional, tag="3")]
+    #[serde(with = "crate::serializers::option_timestamp")]
     pub timestamp: ::std::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(bytes, tag="4")]
+    #[serde(with = "crate::serializers::bytes::base64string")]
     pub signature: std::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -368,6 +383,7 @@ pub mod evidence {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct EvidenceData {
     #[prost(message, repeated, tag="1")]
+    #[serde(with = "crate::serializers::nullable")]
     pub evidence: ::std::vec::Vec<Evidence>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
