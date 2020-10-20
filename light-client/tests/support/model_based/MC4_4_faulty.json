@@ -17,6 +17,8 @@
     "TestHalfValsetChangesVerdictNotEnoughTrust",
     "TestValsetDoubles",
     "TestValsetHalves",
-    "TestValsetChangesFully"
+    "TestValsetChangesFully",
+    "TestLessThanThirdValsetChanges",
+    "TestOneThirdValsetChanges"
   ]
 }

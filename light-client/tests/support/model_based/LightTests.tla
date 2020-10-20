@@ -149,6 +149,35 @@ TestValsetChangesFully ==
         /\ Cardinality(Valset(s1)) >= 2
         /\ Valset(s1) \intersect Valset(s2) = ({} <: {STRING})
 
+TestLessThanThirdValsetChanges ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s1, s2 \in DOMAIN history :
+        /\ s2 = s1 + 1
+        /\ Cardinality(Valset(s1)) >= 4
+        /\ Valset(s2) /= Valset(s1)
+        /\ 3 * Cardinality(Valset(s2) \ Valset(s1)) < Cardinality(Valset(s1))
+
+TestMoreThanTwoThirdsValsetChanges ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s1, s2 \in DOMAIN history :
+        /\ s2 = s1 + 1
+        /\ Cardinality(Valset(s1)) >= 4
+        /\ 3 * Cardinality(Valset(s2) \ Valset(s1)) > 2 * Cardinality(Valset(s1))
+
+TestOneThirdValsetChanges ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s1, s2 \in DOMAIN history :
+        /\ s2 = s1 + 1
+        /\ Cardinality(Valset(s1)) >= 3
+        /\ 3 * Cardinality(Valset(s2) \ Valset(s1)) = Cardinality(Valset(s1))
+
+TestTwoThirdsValsetChanges ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s1, s2 \in DOMAIN history :
+        /\ s2 = s1 + 1
+        /\ Cardinality(Valset(s1)) >= 3
+        /\ 3 * Cardinality(Valset(s2) \ Valset(s1)) = 2 * Cardinality(Valset(s1))
+
 ============================================================================
 
 \* When Apalache is fixed to work with operator params, we should rewrite the validator set tests as shown below
