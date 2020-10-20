@@ -17,6 +17,8 @@
     "TestLessThanThirdValsetChanges",
     "TestOneThirdValsetChanges",
     "TestMoreThanTwoThirdsValsetChanges",
-    "TestTwoThirdsValsetChanges"
+    "TestTwoThirdsValsetChanges",
+    "TestNonMonotonicHeight",
+    "TestEmptyCommit"
   ]
 }

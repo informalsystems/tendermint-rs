@@ -1,6 +1,6 @@
 ------------------------- MODULE LightTests ---------------------------
 
-EXTENDS Lightclient_002_draft
+EXTENDS Lightclient_003_draft
 
 (* The light client history, which is the function mapping states 0..nprobes to the record with fields:
    - verified: the latest verified block in the previous state
@@ -82,6 +82,29 @@ Test3NotEnoughTrustSuccess ==
 Test3NotEnoughTrustFailure ==
     /\ state = "finishedFailure"
     /\ ThreeNotEnoughTrust
+
+TestNonMonotonicHeight ==
+    /\ \E s \in DOMAIN history :
+       \* this is wrong
+       /\ history[s].current.header.height <= history[s].verified.header.height
+       \* everything else is correct
+       /\ history[s].current.header /= history[s].verified.header
+       /\ history[s].current.header.time > history[s].verified.header.time
+       /\ history[s].current.header.time < history[s].now
+       /\ history[s].verified.header.time + TRUSTING_PERIOD > history[s].now
+       /\ history[s].current.Commits /= ({} <: {STRING})
+       /\ history[s].current.Commits \subseteq  history[s].current.header.VS
+
+TestEmptyCommit ==
+    /\ \E s \in DOMAIN history :
+       \* this is wrong
+       /\ history[s].current.Commits = ({} <: {STRING})
+       \* everything else is correct
+       /\ history[s].current.header /= history[s].verified.header
+       /\ history[s].current.header.height > history[s].verified.header.height
+       /\ history[s].current.header.time > history[s].verified.header.time
+       /\ history[s].current.header.time < history[s].now
+       /\ history[s].verified.header.time + TRUSTING_PERIOD > history[s].now
 
 \* Time-related tests
 

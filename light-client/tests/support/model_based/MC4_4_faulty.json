@@ -19,6 +19,8 @@
     "TestValsetHalves",
     "TestValsetChangesFully",
     "TestLessThanThirdValsetChanges",
-    "TestOneThirdValsetChanges"
+    "TestOneThirdValsetChanges",
+    "TestNonMonotonicHeight",
+    "TestEmptyCommit"
   ]
 }

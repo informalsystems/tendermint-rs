@@ -1,8 +1,8 @@
--------------------------- MODULE Lightclient_002_draft ----------------------------
+-------------------------- MODULE Lightclient_003_draft ----------------------------
 (**
  * A state-machine specification of the lite client, following the English spec:
  *
- * https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification.md
+ * https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/verification/verification.md
  *) 
 
 EXTENDS Integers, FiniteSets
@@ -71,7 +71,7 @@ bcvars == <<now, blockchain, Faulty>>
  *) 
 ULTIMATE_HEIGHT == TARGET_HEIGHT + 1 
  
-BC == INSTANCE Blockchain_002_draft WITH
+BC == INSTANCE Blockchain_003_draft WITH
   now <- now, blockchain <- blockchain, Faulty <- Faulty
 
 (************************** Lite client ************************************)
@@ -461,5 +461,6 @@ Complexity ==
 *)
 =============================================================================
 \* Modification History
+\* Last modified Fri Oct 16 15:10:35 CEST 2020 by andrey
 \* Last modified Fri Jun 26 12:08:28 CEST 2020 by igor
 \* Created Wed Oct 02 16:39:42 CEST 2019 by igor
