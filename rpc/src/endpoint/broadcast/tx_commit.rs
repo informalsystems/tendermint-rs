@@ -34,6 +34,8 @@ impl crate::Request for Request {
     }
 }
 
+impl crate::SimpleRequest for Request {}
+
 /// Response from `/broadcast_tx_commit`.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {

@@ -1,7 +1,8 @@
 //! JSON-RPC IDs
 
-use getrandom::getrandom;
+use crate::utils::uuid_str;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 /// JSON-RPC ID: request-specific identifier
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd)]
@@ -18,24 +19,16 @@ pub enum Id {
 impl Id {
     /// Create a JSON-RPC ID containing a UUID v4 (i.e. random)
     pub fn uuid_v4() -> Self {
-        let mut bytes = [0; 16];
-        getrandom(&mut bytes).expect("RNG failure!");
-
-        let uuid = uuid::Builder::from_bytes(bytes)
-            .set_variant(uuid::Variant::RFC4122)
-            .set_version(uuid::Version::Random)
-            .build();
-
-        Id::Str(uuid.to_string())
+        Self::Str(uuid_str())
     }
 }
 
-impl ToString for Id {
-    fn to_string(&self) -> String {
+impl fmt::Display for Id {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Id::Num(i) => format!("{}", i),
-            Id::Str(s) => s.clone(),
-            Id::None => "none".to_string(),
+            Id::Num(i) => write!(f, "{}", i),
+            Id::Str(s) => write!(f, "{}", s),
+            Id::None => write!(f, ""),
         }
     }
 }

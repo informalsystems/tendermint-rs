@@ -49,6 +49,8 @@ impl crate::Request for Request {
     }
 }
 
+impl crate::SimpleRequest for Request {}
+
 /// ABCI query response wrapper
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {

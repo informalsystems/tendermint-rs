@@ -1,9 +1,11 @@
 //! Mock client implementation for use in testing.
 
-mod subscription;
-pub use subscription::MockSubscriptionClient;
-
-use crate::{Client, Error, Method, Request, Response, Result};
+use crate::client::sync::unbounded;
+use crate::client::transport::router::SubscriptionRouter;
+use crate::event::Event;
+use crate::query::Query;
+use crate::utils::uuid_str;
+use crate::{Client, Error, Method, Request, Response, Result, Subscription, SubscriptionClient};
 use async_trait::async_trait;
 use std::collections::HashMap;
 
@@ -30,7 +32,7 @@ use std::collections::HashMap;
 /// async fn main() {
 ///     let matcher = MockRequestMethodMatcher::default()
 ///         .map(Method::AbciInfo, Ok(ABCI_INFO_RESPONSE.to_string()));
-///     let client = MockClient::new(matcher);
+///     let mut client = MockClient::new(matcher);
 ///
 ///     let abci_info = client.abci_info().await.unwrap();
 ///     println!("Got mock ABCI info: {:?}", abci_info);
@@ -40,11 +42,12 @@ use std::collections::HashMap;
 #[derive(Debug)]
 pub struct MockClient<M: MockRequestMatcher> {
     matcher: M,
+    router: SubscriptionRouter,
 }
 
 #[async_trait]
 impl<M: MockRequestMatcher> Client for MockClient<M> {
-    async fn perform<R>(&self, request: R) -> Result<R::Response>
+    async fn perform<R>(&mut self, request: R) -> Result<R::Response>
     where
         R: Request,
     {
@@ -57,7 +60,31 @@ impl<M: MockRequestMatcher> Client for MockClient<M> {
 impl<M: MockRequestMatcher> MockClient<M> {
     /// Create a new mock RPC client using the given request matcher.
     pub fn new(matcher: M) -> Self {
-        Self { matcher }
+        Self {
+            matcher,
+            router: SubscriptionRouter::default(),
+        }
+    }
+
+    /// Publishes the given event to all subscribers whose query exactly
+    /// matches that of the event.
+    pub async fn publish(&mut self, ev: &Event) {
+        let _ = self.router.publish(ev).await;
+    }
+}
+
+#[async_trait]
+impl<M: MockRequestMatcher> SubscriptionClient for MockClient<M> {
+    async fn subscribe(&mut self, query: Query) -> Result<Subscription> {
+        let id = uuid_str();
+        let (subs_tx, subs_rx) = unbounded();
+        self.router.add(id.clone(), query.clone(), subs_tx);
+        Ok(Subscription::new(id, query, subs_rx))
+    }
+
+    async fn unsubscribe(&mut self, query: Query) -> Result<()> {
+        self.router.remove_by_query(query);
+        Ok(())
     }
 }
 
@@ -116,6 +143,8 @@ impl MockRequestMethodMatcher {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::query::EventType;
+    use futures::StreamExt;
     use std::path::PathBuf;
     use tendermint::block::Height;
     use tendermint::chain::Id;
@@ -127,6 +156,10 @@ mod test {
             .unwrap()
     }
 
+    async fn read_event(name: &str) -> Event {
+        Event::from_string(&read_json_fixture(name).await).unwrap()
+    }
+
     #[tokio::test]
     async fn mock_client() {
         let abci_info_fixture = read_json_fixture("abci_info").await;
@@ -134,7 +167,7 @@ mod test {
         let matcher = MockRequestMethodMatcher::default()
             .map(Method::AbciInfo, Ok(abci_info_fixture))
             .map(Method::Block, Ok(block_fixture));
-        let client = MockClient::new(matcher);
+        let mut client = MockClient::new(matcher);
 
         let abci_info = client.abci_info().await.unwrap();
         assert_eq!("GaiaApp".to_string(), abci_info.data);
@@ -143,5 +176,37 @@ mod test {
         let block = client.block(Height::from(10_u32)).await.unwrap().block;
         assert_eq!(Height::from(10_u32), block.header.height);
         assert_eq!("cosmoshub-2".parse::<Id>().unwrap(), block.header.chain_id);
+    }
+
+    #[tokio::test]
+    async fn mock_subscription_client() {
+        let mut client = MockClient::new(MockRequestMethodMatcher::default());
+        let event1 = read_event("event_new_block_1").await;
+        let event2 = read_event("event_new_block_2").await;
+        let event3 = read_event("event_new_block_3").await;
+        let events = vec![event1, event2, event3];
+
+        let subs1 = client.subscribe(EventType::NewBlock.into()).await.unwrap();
+        let subs2 = client.subscribe(EventType::NewBlock.into()).await.unwrap();
+        assert_ne!(subs1.id().to_string(), subs2.id().to_string());
+
+        // We can do this because the underlying channels can buffer the
+        // messages as we publish them.
+        let subs1_events = subs1.take(3);
+        let subs2_events = subs2.take(3);
+        for ev in &events {
+            client.publish(ev).await;
+        }
+
+        // Here each subscription's channel is drained.
+        let subs1_events = subs1_events.collect::<Vec<Result<Event>>>().await;
+        let subs2_events = subs2_events.collect::<Vec<Result<Event>>>().await;
+
+        assert_eq!(3, subs1_events.len());
+        assert_eq!(3, subs2_events.len());
+
+        for i in 0..3 {
+            assert!(events[i].eq(subs1_events[i].as_ref().unwrap()));
+        }
     }
 }

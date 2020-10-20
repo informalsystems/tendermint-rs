@@ -1,7 +1,7 @@
 //! HTTP-based transport for Tendermint RPC Client.
 
-use crate::client::transport::get_tcp_host_port;
-use crate::{Client, Request, Response, Result};
+use crate::client::transport::utils::get_tcp_host_port;
+use crate::{Client, Response, Result, SimpleRequest};
 use async_trait::async_trait;
 use bytes::buf::BufExt;
 use hyper::header;
@@ -41,11 +41,31 @@ pub struct HttpClient {
 
 #[async_trait]
 impl Client for HttpClient {
-    async fn perform<R>(&self, request: R) -> Result<R::Response>
+    async fn perform<R>(&mut self, request: R) -> Result<R::Response>
     where
-        R: Request,
+        R: SimpleRequest,
     {
-        http_request(&self.host, self.port, request).await
+        let request_body = request.into_json();
+
+        let mut request = hyper::Request::builder()
+            .method("POST")
+            .uri(&format!("http://{}:{}/", self.host, self.port))
+            .body(hyper::Body::from(request_body.into_bytes()))?;
+
+        {
+            let headers = request.headers_mut();
+            headers.insert(header::CONTENT_TYPE, "application/json".parse().unwrap());
+            headers.insert(
+                header::USER_AGENT,
+                format!("tendermint.rs/{}", env!("CARGO_PKG_VERSION"))
+                    .parse()
+                    .unwrap(),
+            );
+        }
+        let http_client = hyper::Client::builder().build_http();
+        let response = http_client.request(request).await?;
+        let response_body = hyper::body::aggregate(response.into_body()).await?;
+        R::Response::from_reader(response_body.reader())
     }
 }
 
@@ -55,31 +75,4 @@ impl HttpClient {
         let (host, port) = get_tcp_host_port(address)?;
         Ok(HttpClient { host, port })
     }
-}
-
-pub async fn http_request<R>(host: &str, port: u16, request: R) -> Result<R::Response>
-where
-    R: Request,
-{
-    let request_body = request.into_json();
-
-    let mut request = hyper::Request::builder()
-        .method("POST")
-        .uri(&format!("http://{}:{}/", host, port))
-        .body(hyper::Body::from(request_body.into_bytes()))?;
-
-    {
-        let headers = request.headers_mut();
-        headers.insert(header::CONTENT_TYPE, "application/json".parse().unwrap());
-        headers.insert(
-            header::USER_AGENT,
-            format!("tendermint.rs/{}", env!("CARGO_PKG_VERSION"))
-                .parse()
-                .unwrap(),
-        );
-    }
-    let http_client = hyper::Client::builder().build_http();
-    let response = http_client.request(request).await?;
-    let response_body = hyper::body::aggregate(response.into_body()).await?;
-    R::Response::from_reader(response_body.reader())
 }

@@ -26,6 +26,8 @@ impl crate::Request for Request {
     }
 }
 
+impl crate::SimpleRequest for Request {}
+
 /// Response from either an async or sync transaction broadcast request.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {

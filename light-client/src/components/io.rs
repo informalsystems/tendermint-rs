@@ -126,7 +126,7 @@ mod prod {
         }
 
         fn fetch_signed_header(&self, height: AtHeight) -> Result<TMSignedHeader, IoError> {
-            let client = self.rpc_client.clone();
+            let mut client = self.rpc_client.clone();
             let res = block_on(
                 async move {
                     match height {
@@ -152,7 +152,7 @@ mod prod {
                 AtHeight::At(height) => height,
             };
 
-            let client = self.rpc_client.clone();
+            let mut client = self.rpc_client.clone();
             let task = async move { client.validators(height).await };
             let res = block_on(task, self.peer_id, self.timeout)?;
 

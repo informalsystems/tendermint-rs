@@ -14,9 +14,19 @@ pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
 
     /// Serialize this request as JSON
     fn into_json(self) -> String {
-        serde_json::to_string_pretty(&Wrapper::new(self)).unwrap()
+        Wrapper::new(self).into_json()
     }
 }
+
+/// Simple JSON-RPC requests which correlate with a single response from the
+/// remote endpoint.
+///
+/// An example of a request which is not simple would be the event subscription
+/// request, which, on success, returns a [`Subscription`] and not just a
+/// simple, singular response.
+///
+/// [`Subscription`]: struct.Subscription.html
+pub trait SimpleRequest: Request {}
 
 /// JSON-RPC request wrapper (i.e. message envelope)
 #[derive(Debug, Deserialize, Serialize)]
@@ -62,5 +72,9 @@ where
 
     pub fn params(&self) -> &R {
         &self.params
+    }
+
+    pub fn into_json(self) -> String {
+        serde_json::to_string_pretty(&self).unwrap()
     }
 }

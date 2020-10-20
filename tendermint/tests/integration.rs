@@ -219,7 +219,7 @@ mod rpc {
     }
 
     async fn simple_transaction_subscription() {
-        let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
+        let mut rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
         let (mut subs_client, driver) =
             WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
                 .await
@@ -288,7 +288,7 @@ mod rpc {
     }
 
     async fn concurrent_subscriptions() {
-        let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
+        let mut rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
         let (mut subs_client, driver) =
             WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
                 .await

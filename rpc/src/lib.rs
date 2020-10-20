@@ -34,8 +34,8 @@
 mod client;
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub use client::{
-    Client, MockClient, MockRequestMatcher, MockRequestMethodMatcher, MockSubscriptionClient,
-    Subscription, SubscriptionClient, SubscriptionId,
+    Client, MockClient, MockRequestMatcher, MockRequestMethodMatcher, Subscription,
+    SubscriptionClient,
 };
 
 #[cfg(feature = "http-client")]
@@ -52,9 +52,10 @@ pub mod query;
 pub mod request;
 pub mod response;
 mod result;
+mod utils;
 mod version;
 
 pub use self::{
-    error::Error, id::Id, method::Method, request::Request, response::Response, result::Result,
-    version::Version,
+    error::Error, id::Id, method::Method, request::Request, request::SimpleRequest,
+    response::Response, result::Result, version::Version,
 };

@@ -41,7 +41,7 @@ mod prod {
     impl EvidenceReporter for ProdEvidenceReporter {
         #[pre(self.peer_map.contains_key(&peer))]
         fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
-            let client = self.rpc_client_for(peer)?;
+            let mut client = self.rpc_client_for(peer)?;
             let task = async move { client.broadcast_evidence(e).await };
             let res = block_on(task, peer, None)?;
 

@@ -30,6 +30,8 @@ impl crate::Request for Request {
     }
 }
 
+impl crate::SimpleRequest for Request {}
+
 /// Block responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
