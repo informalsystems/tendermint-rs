@@ -84,19 +84,19 @@ impl TryFrom<RawHeader> for Header {
         let height: block::Height = value.height.try_into()?;
 
         if last_block_id.is_none() && height.value() != 1 {
-            return Err(Kind::InvalidHeader.into());
+            return Err(Kind::InvalidHeader.context("last_block_id is null on non-first block").into());
         }
         if last_block_id.is_some() && height.value() == 1 {
             return Err(Kind::InvalidFirstHeader.into());
         }
         if last_commit_hash.is_none() && height.value() != 1 {
-            return Err(Kind::InvalidHeader.into());
+            return Err(Kind::InvalidHeader.context("last_commit_hash is null on non-first block").into());
         }
         if last_commit_hash.is_some() && height.value() == 1 {
             return Err(Kind::InvalidFirstHeader.into());
         }
         if last_results_hash.is_none() && height.value() != 1 {
-            return Err(Kind::InvalidHeader.into());
+            return Err(Kind::InvalidHeader.context("last_results_hash is null on non-first block").into());
         }
         if last_results_hash.is_some() && height.value() == 1 {
             return Err(Kind::InvalidFirstHeader.into());
