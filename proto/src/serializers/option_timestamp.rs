@@ -2,7 +2,7 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::google::protobuf::Timestamp;
-use chrono::{DateTime, LocalResult, SecondsFormat, TimeZone, Utc};
+use chrono::{DateTime, Datelike, LocalResult, TimeZone, Timelike, Utc};
 use serde::ser::Error;
 
 /// Deserialize string into Timestamp
@@ -30,10 +30,27 @@ where
     }
     match Utc.timestamp_opt(value.seconds, value.nanos as u32) {
         LocalResult::None => Err(S::Error::custom("invalid time")),
-        LocalResult::Single(t) => Ok(t.to_rfc3339_opts(SecondsFormat::AutoSi, true)),
+        LocalResult::Single(t) => Ok(to_rfc3999(t)),
         LocalResult::Ambiguous(_, _) => Err(S::Error::custom("ambiguous time")),
     }?
     .serialize(serializer)
+}
+
+// Due to incompatibilities between the way that `chrono` serializes timestamps
+// and the way that Go does for RFC3339, we unfortunately need to define our
+// own timestamp serialization mechanism.
+fn to_rfc3999(t: DateTime<Utc>) -> String {
+    let nanos = format!(".{}", t.nanosecond());
+    format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}{}Z",
+        t.year(),
+        t.month(),
+        t.day(),
+        t.hour(),
+        t.minute(),
+        t.second(),
+        nanos.trim_end_matches('0').trim_end_matches('.'),
+    )
 }
 
 #[cfg(test)]
@@ -42,15 +59,54 @@ mod test {
     use serde::{Deserialize, Serialize};
     use serde_json;
 
+    // The Go code with which the following timestamps were tested is as
+    // follows:
+    //
+    // ```go
+    // package main
+    //
+    // import (
+    // 	"fmt"
+    // 	"time"
+    // )
+    //
+    // func main() {
+    // 	timestamps := []string{
+    // 		"2020-09-14T16:33:54.21191421Z",
+    // 		"2020-09-14T16:33:00Z",
+    // 		"2020-09-14T16:33:00.1Z",
+    // 		"2020-09-14T16:33:00.211914212Z",
+    // 	}
+    // 	for _, timestamp := range timestamps {
+    // 		ts, err := time.Parse(time.RFC3339Nano, timestamp)
+    // 		if err != nil {
+    // 			panic(err)
+    // 		}
+    // 		tss := ts.Format(time.RFC3339Nano)
+    // 		if timestamp != tss {
+    // 			panic(fmt.Sprintf("\nExpected : %s\nActual   : %s", timestamp, tss))
+    // 		}
+    // 	}
+    // 	fmt.Println("All good!")
+    // }
+    // ```
     #[test]
     fn json_timestamp_precision() {
         #[derive(Serialize, Deserialize)]
-        struct Outer {
+        struct TimestampWrapper {
             #[serde(with = "crate::serializers::option_timestamp")]
             timestamp: Option<Timestamp>,
         }
-        let json = r#"{"timestamp":"2020-09-14T16:33:54.21191421Z"}"#;
-        let outer = serde_json::from_str::<Outer>(json).unwrap();
-        assert_eq!(json, serde_json::to_string(&outer).unwrap());
+        let test_timestamps = vec![
+            "2020-09-14T16:33:54.21191421Z",
+            "2020-09-14T16:33:00Z",
+            "2020-09-14T16:33:00.1Z",
+            "2020-09-14T16:33:00.211914212Z",
+        ];
+        for timestamp in test_timestamps {
+            let json = "{\"timestamp\":\"".to_owned() + timestamp + "\"}";
+            let wrapper = serde_json::from_str::<TimestampWrapper>(&json).unwrap();
+            assert_eq!(json, serde_json::to_string(&wrapper).unwrap());
+        }
     }
 }
