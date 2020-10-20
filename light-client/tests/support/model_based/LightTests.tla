@@ -150,3 +150,36 @@ TestValsetChangesFully ==
         /\ Valset(s1) \intersect Valset(s2) = ({} <: {STRING})
 
 ============================================================================
+
+\* When Apalache is fixed to work with operator params, we should rewrite the validator set tests as shown below
+
+\* A configurable test for two neighbor valsets
+TestNeighborValsets(test(_,_)) ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s1, s2 \in DOMAIN history :
+        /\ s2 = s1 + 1
+        /\ test(Valset(s1), Valset(s2))
+
+\* A configurable test for two neighbor valsets and expected verdict
+TestNeighborValsetsVerdict(test(_,_), want_verdict) ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s1, s2 \in DOMAIN history :
+        /\ s2 = s1 + 1
+        /\ test(Valset(s1), Valset(s2))
+        /\ history[s2].verdict = want_verdict
+
+HalfValsetChanges(vs1, vs2) ==
+    /\ Cardinality(vs1) >= 3
+    /\ 2 * Cardinality(vs1 \intersect vs2) < Cardinality(vs1)
+
+TestHalfValsetChanges == TestNeighborValsets(HalfValsetChanges)
+TestHalfValsetChangesVerdictSuccess == TestNeighborValsetsVerdict(HalfValsetChanges, "SUCCESS")
+TestHalfValsetChangesVerdictNotEnoughTrust == TestNeighborValsetsVerdict(HalfValsetChanges, "NOT_ENOUGH_TRUST")
+
+ValsetDoubles(vs1, vs2) ==
+    /\ Cardinality(vs1) >= 2
+    /\ Cardinality(vs2) = 2 * Cardinality(vs1)
+
+TestValsetDoubles == TestNeighborValsets(ValsetDoubles)
+TestValsetDoublesVerdictSuccess == TestNeighborValsetsVerdict(ValsetDoubles, "SUCCESS")
+TestValsetDoublesVerdictNotEnoughTrust == TestNeighborValsetsVerdict(ValsetDoubles, "NOT_ENOUGH_TRUST")
