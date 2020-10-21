@@ -19,7 +19,7 @@ use tendermint::net;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+///     let mut client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap())
 ///         .unwrap();
 ///
 ///     let abci_info = client.abci_info()
