@@ -139,7 +139,7 @@ mod tests {
                     "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFADEADBEEFDEADBEEFBAFBAFBAFBAFBAFA",
                 )
                 .unwrap(),
-                parts: Header {
+                part_set_header: Header {
                     total: 65535,
                     hash: Hash::from_hex_upper(
                         Algorithm::Sha256,
@@ -225,7 +225,7 @@ mod tests {
                     "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFADEADBEEFDEADBEEFBAFBAFBAFBAFBAFA",
                 )
                 .unwrap(),
-                parts: Header {
+                part_set_header: Header {
                     total: 65535,
                     hash: Hash::from_hex_upper(
                         Algorithm::Sha256,
