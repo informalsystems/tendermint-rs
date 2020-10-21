@@ -20,7 +20,7 @@ pub struct Meta {
     pub header: Header,
 
     /// Number of transactions - Todo: make this robust (u63)
-    pub num_txs: i64
+    pub num_txs: i64,
 }
 
 impl TryFrom<RawMeta> for Meta {
@@ -30,12 +30,12 @@ impl TryFrom<RawMeta> for Meta {
         Ok(Meta {
             block_id: value
                 .block_id
-                .ok_or(Kind::InvalidBlock.context("no block_id"))?
+                .ok_or_else(|| Error::from(Kind::InvalidBlock.context("no block_id")))?
                 .try_into()?,
             block_size: value.block_size,
             header: value
                 .header
-                .ok_or(Kind::InvalidBlock.context("no header"))?
+                .ok_or_else(|| Error::from(Kind::InvalidBlock.context("no header")))?
                 .try_into()?,
             num_txs: value.num_txs,
         })
@@ -44,7 +44,7 @@ impl TryFrom<RawMeta> for Meta {
 
 impl From<Meta> for RawMeta {
     fn from(value: Meta) -> Self {
-        RawMeta{
+        RawMeta {
             block_id: Some(value.block_id.into()),
             block_size: value.block_size,
             header: Some(value.header.into()),

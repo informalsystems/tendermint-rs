@@ -2,6 +2,7 @@
 
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::{account, block, chain, AppHash, Error, Hash, Kind, Time};
+use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
@@ -12,7 +13,8 @@ use tendermint_proto::DomainType;
 /// previous block, and the results returned by the application.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#header>
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(try_from = "RawHeader", into = "RawHeader")]
 pub struct Header {
     /// Header version
     pub version: Version,
@@ -255,5 +257,4 @@ mod tests {
         .unwrap();
         assert_eq!(expected_hash, header.hash());
     }
-
 }
