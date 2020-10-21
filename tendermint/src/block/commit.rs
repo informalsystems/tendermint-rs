@@ -3,9 +3,9 @@
 use crate::block::commit_sig::CommitSig;
 use crate::block::{Height, Id, Round};
 use crate::{Error, Kind};
+use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Commit as RawCommit;
-use serde::{Serialize, Deserialize};
 
 /// Commit contains the justification (ie. a set of signatures) that a block was committed by a set
 /// of validators.
@@ -53,6 +53,18 @@ impl From<Commit> for RawCommit {
             round: value.round.into(),
             block_id: Some(value.block_id.into()),
             signatures: value.signatures.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl Default for Commit {
+    fn default() -> Self {
+        Commit {
+            // The default Height is 1, but the default commit is an empty commit with height = 0.
+            height: Height::from(0_u32),
+            round: Default::default(),
+            block_id: Default::default(),
+            signatures: vec![],
         }
     }
 }

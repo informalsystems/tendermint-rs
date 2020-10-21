@@ -44,7 +44,6 @@ pub struct Block {
     evidence: evidence::Data,
 
     /// Last commit
-    //#[serde(deserialize_with = "parse_non_empty_commit")]
     last_commit: Option<Commit>,
 }
 
@@ -55,13 +54,22 @@ impl TryFrom<RawBlock> for Block {
 
     fn try_from(value: RawBlock) -> Result<Self, Self::Error> {
         let header: Header = value.header.ok_or(Kind::MissingHeader)?.try_into()?;
-        let last_commit: Option<Commit> = value.last_commit.map(TryInto::try_into).transpose()?;
+        // if last_commit is Commit::Default, it is considered nil by Go.
+        let last_commit: Option<Commit> = value
+            .last_commit
+            .map(TryInto::try_into)
+            .transpose()?
+            .filter(|c| c != &Commit::default());
         if last_commit.is_none() && header.height.value() != 1 {
-            return Err(Kind::InvalidBlock.into());
+            return Err(Kind::InvalidBlock
+                .context("last_commit is empty on non-first block")
+                .into());
         }
-        if last_commit.is_some() && header.height.value() == 1 {
-            return Err(Kind::InvalidFirstBlock.into());
-        }
+        // Todo: Figure out requirements.
+        //if last_commit.is_some() && header.height.value() == 1 {
+        //    return Err(Kind::InvalidFirstBlock.context("last_commit is not null on first
+        // height").into());
+        //}
         Ok(Block {
             header,
             data: value.data.ok_or(Kind::MissingData)?.try_into()?,
@@ -84,18 +92,23 @@ impl From<Block> for RawBlock {
 
 impl Block {
     /// constructor
-    pub fn new(header: Header, data: transaction::Data, evidence: evidence::Data, last_commit: Option<Commit>) -> Result<Self, Error> {
+    pub fn new(
+        header: Header,
+        data: transaction::Data,
+        evidence: evidence::Data,
+        last_commit: Option<Commit>,
+    ) -> Result<Self, Error> {
         if last_commit.is_none() && header.height.value() != 1 {
             return Err(Kind::InvalidBlock.into());
         }
         if last_commit.is_some() && header.height.value() == 1 {
             return Err(Kind::InvalidBlock.into());
         }
-        Ok(Block{
+        Ok(Block {
             header,
             data,
             evidence,
-            last_commit
+            last_commit,
         })
     }
 

@@ -1,7 +1,6 @@
 //! Block headers
 
 use crate::merkle::simple_hash_from_byte_vectors;
-use crate::serializers;
 use crate::{account, block, chain, AppHash, Error, Hash, Kind, Time};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
@@ -15,6 +14,7 @@ use tendermint_proto::DomainType;
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#header>
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(try_from = "RawHeader", into = "RawHeader")]
 pub struct Header {
     /// Header version
     pub version: Version,
@@ -29,15 +29,12 @@ pub struct Header {
     pub time: Time,
 
     /// Previous block info
-    #[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
     pub last_block_id: Option<block::Id>,
 
     /// Commit from validators from the last block
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
     pub last_commit_hash: Option<Hash>,
 
     /// Merkle root of transaction hashes
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
     pub data_hash: Option<Hash>,
 
     /// Validators for the current block
@@ -53,11 +50,9 @@ pub struct Header {
     pub app_hash: AppHash,
 
     /// Root hash of all results from the txs from the previous block
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
     pub last_results_hash: Option<Hash>,
 
     /// Hash of evidence included in the block
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
     pub evidence_hash: Option<Hash>,
 
     /// Original proposer of the block
@@ -70,7 +65,12 @@ impl TryFrom<RawHeader> for Header {
     type Error = Error;
 
     fn try_from(value: RawHeader) -> Result<Self, Self::Error> {
-        let last_block_id = value.last_block_id.map(TryInto::try_into).transpose()?;
+        // If last block id is unfilled, it is considered nil by Go.
+        let last_block_id = value
+            .last_block_id
+            .map(TryInto::try_into)
+            .transpose()?
+            .filter(|l| l != &block::Id::default());
         let last_commit_hash = if value.last_commit_hash.is_empty() {
             None
         } else {
@@ -83,24 +83,33 @@ impl TryFrom<RawHeader> for Header {
         };
         let height: block::Height = value.height.try_into()?;
 
-        if last_block_id.is_none() && height.value() != 1 {
-            return Err(Kind::InvalidHeader.context("last_block_id is null on non-first block").into());
-        }
+        // Todo: fix domain logic
+        //if last_block_id.is_none() && height.value() != 1 {
+        //    return Err(Kind::InvalidHeader.context("last_block_id is null on non-first
+        // height").into());
+        //}
         if last_block_id.is_some() && height.value() == 1 {
-            return Err(Kind::InvalidFirstHeader.into());
+            return Err(Kind::InvalidFirstHeader
+                .context("last_block_id is not null on first height")
+                .into());
         }
-        if last_commit_hash.is_none() && height.value() != 1 {
-            return Err(Kind::InvalidHeader.context("last_commit_hash is null on non-first block").into());
-        }
-        if last_commit_hash.is_some() && height.value() == 1 {
-            return Err(Kind::InvalidFirstHeader.into());
-        }
-        if last_results_hash.is_none() && height.value() != 1 {
-            return Err(Kind::InvalidHeader.context("last_results_hash is null on non-first block").into());
-        }
-        if last_results_hash.is_some() && height.value() == 1 {
-            return Err(Kind::InvalidFirstHeader.into());
-        }
+        //if last_commit_hash.is_none() && height.value() != 1 {
+        //    return Err(Kind::InvalidHeader.context("last_commit_hash is null on non-first
+        // height").into());
+        //}
+        //if height.value() == 1 && last_commit_hash.is_some() &&
+        // last_commit_hash.as_ref().unwrap() != simple_hash_from_byte_vectors(Vec::new()) {
+        //    return Err(Kind::InvalidFirstHeader.context("last_commit_hash is not empty Merkle tree
+        // on first height").into());
+        //}
+        //if last_results_hash.is_none() && height.value() != 1 {
+        //    return Err(Kind::InvalidHeader.context("last_results_hash is null on non-first
+        // height").into());
+        //}
+        //if last_results_hash.is_some() && height.value() == 1 {
+        //    return Err(Kind::InvalidFirstHeader.context("last_results_hash is not ull on first
+        // height").into());
+        //}
         Ok(Header {
             version: value.version.ok_or(Kind::MissingVersion)?.try_into()?,
             chain_id: value.chain_id.try_into()?,

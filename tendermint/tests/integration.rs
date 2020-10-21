@@ -21,7 +21,6 @@ mod rpc {
     use tendermint::block::Height;
     use tendermint::merkle::simple_hash_from_byte_vectors;
     use tendermint::vote::CanonicalVote;
-    use tendermint_rpc::endpoint::abci_info::AbciInfo;
     use tendermint_rpc::event::{Event, EventData};
     use tendermint_rpc::query::EventType;
     use tokio::time::Duration;
@@ -104,104 +103,6 @@ mod rpc {
         use tendermint::chain::Id as ChainId;
         let c1 = CanonicalVote::new(vote, ChainId::try_from("mychain").unwrap());
         println!("{}", json!(c1));
-    }
-
-    /// `/abci_info` endpoint JSON serialization test
-    #[tokio::test]
-    #[ignore]
-    async fn fake_abci_info() {
-        use serde::{Deserialize, Serialize};
-        use std::convert::TryInto;
-        use tendermint::Error;
-        use tendermint_proto::abci::ResponseInfo;
-        use tendermint_proto::DomainType;
-
-        // A domain type that has a new type of JSON serialization:
-        // * The default Serialize and Deserialize traits are derived
-        // * serde is told to use a Raw type for serialization called "ResponseInfo"
-        // * The TryFrom/Into traits are implemented for this Raw type, because of protobuf
-        //   encoding.
-        // * Custom serializers were completely removed from here and moved into tendermint-proto
-        #[derive(Clone, Debug, Deserialize, Serialize, Default)]
-        #[serde(default, try_from = "ResponseInfo", into = "ResponseInfo")]
-        pub struct FakeAbciInfo {
-            /// Name of the application
-            pub data: String,
-
-            /// Version
-            pub version: String,
-
-            /// App version
-            //Previously: #[serde(with = "serializers::from_str")]
-            //Now: moved to tendermint-proto
-            pub app_version: u64,
-
-            /// Last block height
-            pub last_block_height: tendermint::block::Height,
-
-            /// Last app hash for the block
-            //Previously: #[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]
-            //Now: moved to tendermint-proto
-            pub last_block_app_hash: Vec<u8>,
-        }
-
-        // The below DomainType, TryFrom and From traits are already implemented for all domain
-        // types.
-        impl DomainType<ResponseInfo> for FakeAbciInfo {}
-
-        impl TryFrom<ResponseInfo> for FakeAbciInfo {
-            type Error = Error;
-
-            fn try_from(value: ResponseInfo) -> Result<Self, Self::Error> {
-                Ok(FakeAbciInfo {
-                    data: value.data,
-                    version: value.version,
-                    app_version: value.app_version,
-                    last_block_height: value.last_block_height.try_into()?,
-                    last_block_app_hash: value.last_block_app_hash,
-                })
-            }
-        }
-
-        impl From<FakeAbciInfo> for ResponseInfo {
-            fn from(value: FakeAbciInfo) -> Self {
-                ResponseInfo {
-                    data: value.data,
-                    version: value.version,
-                    app_version: value.app_version,
-                    last_block_height: value.last_block_height.into(),
-                    last_block_app_hash: value.last_block_app_hash,
-                }
-            }
-        }
-
-        // AbciInfo JSON string copied from a /abci_info request to tendermint Go v0.34.0-rc5
-        let abci_info_json = r#"
-{
-    "data": "{\"size\":40}",
-    "version": "0.17.0",
-    "app_version": "1",
-    "last_block_height": "2653",
-    "last_block_app_hash": "UAAAAAAAAAA="
-}
-"#;
-        // Old encoding
-        let abci_info_old: AbciInfo = serde_json::from_str(abci_info_json).unwrap();
-
-        // New encoding
-        let abci_info_new: FakeAbciInfo = serde_json::from_str(abci_info_json).unwrap();
-
-        assert_eq!(abci_info_old.data, abci_info_new.data);
-        assert_eq!(abci_info_old.version, abci_info_new.version);
-        assert_eq!(abci_info_old.app_version, abci_info_new.app_version);
-        assert_eq!(
-            abci_info_old.last_block_height,
-            abci_info_new.last_block_height
-        );
-        assert_eq!(
-            abci_info_old.last_block_app_hash,
-            abci_info_new.last_block_app_hash
-        );
     }
 
     /// `/abci_query` endpoint

@@ -56,7 +56,10 @@ pub trait VerificationPredicates: Send {
         ensure!(
             light_block.signed_header.header().next_validators_hash == next_validators_hash,
             VerificationError::InvalidNextValidatorSet {
-                header_next_validators_hash: light_block.signed_header.header().next_validators_hash,
+                header_next_validators_hash: light_block
+                    .signed_header
+                    .header()
+                    .next_validators_hash,
                 next_validators_hash,
             }
         );
@@ -234,7 +237,11 @@ pub fn verify(
     now: Time,
 ) -> Result<(), VerificationError> {
     // Ensure the latest trusted header hasn't expired
-    vp.is_within_trust_period(&trusted.signed_header.header(), options.trusting_period, now)?;
+    vp.is_within_trust_period(
+        &trusted.signed_header.header(),
+        options.trusting_period,
+        now,
+    )?;
 
     // Ensure the header isn't from a future time
     vp.is_header_from_past(&untrusted.signed_header.header(), options.clock_drift, now)?;

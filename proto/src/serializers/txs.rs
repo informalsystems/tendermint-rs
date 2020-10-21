@@ -7,7 +7,7 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let value_vec_hexstring = Option::<Vec::<String>>::deserialize(deserializer)?;
+    let value_vec_hexstring = Option::<Vec<String>>::deserialize(deserializer)?;
     if value_vec_hexstring.is_none() {
         return Ok(Vec::new());
     }
@@ -26,7 +26,7 @@ where
 }
 
 /// Serialize from Vec<Vec<u8>> into transactions
-pub fn serialize<S>(value: &Vec<Vec<u8>>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize<S>(value: &[Vec<u8>], serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -34,6 +34,9 @@ where
         let whatevs: Option<Vec<u8>> = None;
         return whatevs.serialize(serializer);
     }
-    let value_hexstring: Result<Vec<String>, S::Error> = value.into_iter().map(|v| String::from_utf8(hex::encode_upper(v)).map_err(serde::ser::Error::custom)).collect();
+    let value_hexstring: Result<Vec<String>, S::Error> = value
+        .iter()
+        .map(|v| String::from_utf8(hex::encode_upper(v)).map_err(serde::ser::Error::custom))
+        .collect();
     value_hexstring?.serialize(serializer)
 }

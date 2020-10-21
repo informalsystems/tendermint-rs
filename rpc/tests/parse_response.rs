@@ -40,7 +40,16 @@ fn block() {
     assert_eq!(response.block.header().height.value(), 10);
     assert_eq!(response.block.data().iter().len(), 0);
     assert_eq!(response.block.evidence().iter().len(), 0);
-    assert_eq!(response.block.last_commit().as_ref().unwrap().signatures.len(), 1);
+    assert_eq!(
+        response
+            .block
+            .last_commit()
+            .as_ref()
+            .unwrap()
+            .signatures
+            .len(),
+        1
+    );
 }
 
 #[test]

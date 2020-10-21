@@ -152,7 +152,7 @@ impl<'de> Deserialize<'de> for Hash {
 impl Serialize for Hash {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(
-            &String::from_utf8(hex::encode_upper(Vec::<u8>::from(self.clone())))
+            &String::from_utf8(hex::encode_upper(Vec::<u8>::from(*self)))
                 .map_err(serde::ser::Error::custom)?,
         )
     }

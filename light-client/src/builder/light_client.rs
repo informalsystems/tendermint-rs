@@ -134,7 +134,7 @@ impl LightClientBuilder<NoTrustedState> {
         let trusted_state = self
             .light_store
             .latest_trusted_or_verified()
-            .ok_or_else(|| error::Kind::NoTrustedStateInStore)?;
+            .ok_or(error::Kind::NoTrustedStateInStore)?;
 
         self.trust_light_block(trusted_state)
     }
@@ -157,7 +157,9 @@ impl LightClientBuilder<NoTrustedState> {
             });
         }
 
-        let header_hash = self.hasher.hash_header(&trusted_state.signed_header.header());
+        let header_hash = self
+            .hasher
+            .hash_header(&trusted_state.signed_header.header());
 
         if header_hash != trusted_hash {
             bail!(error::Kind::HashMismatch {

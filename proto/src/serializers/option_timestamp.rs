@@ -24,7 +24,9 @@ pub fn serialize<S>(value: &Option<Timestamp>, serializer: S) -> Result<S::Ok, S
 where
     S: Serializer,
 {
-    let value = value.as_ref().ok_or(S::Error::custom("no time found"))?;
+    let value = value
+        .as_ref()
+        .ok_or_else(|| S::Error::custom("no time found"))?;
     if value.nanos < 0 {
         return Err(S::Error::custom("invalid nanoseconds in time"));
     }
@@ -57,7 +59,6 @@ fn to_rfc3999(t: DateTime<Utc>) -> String {
 mod test {
     use crate::google::protobuf::Timestamp;
     use serde::{Deserialize, Serialize};
-    use serde_json;
 
     // The Go code with which the following timestamps were tested is as
     // follows:

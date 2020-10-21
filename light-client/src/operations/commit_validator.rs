@@ -55,7 +55,7 @@ impl CommitValidator for ProdCommitValidator {
     ) -> Result<(), VerificationError> {
         // TODO: `self.commit.block_id` cannot be zero in the same way as in Go
         //       Clarify if this another encoding related issue
-        if signed_header.commit().signatures.len() == 0 {
+        if signed_header.commit().signatures.is_empty() {
             bail!(VerificationError::ImplementationSpecific(
                 "no signatures for commit".to_string()
             ));
