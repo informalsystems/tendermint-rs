@@ -4,7 +4,7 @@
   "result": {
     "block_id": {
       "hash": "D00C415348A1FCA98A9F6E811804E69DE2C5865A2F057C275552C8F57B427052",
-      "parts": {
+      "part_set_header": {
         "total": 1,
         "hash": "5C67DA0F82C5D66C862808EFA9FEFA2FEF08F32DB5FE87EFF7B2C5A56F83AA07"
       }
@@ -20,7 +20,7 @@
         "time": "2020-03-15T16:56:30.934369Z",
         "last_block_id": {
           "hash": "",
-          "parts": {
+          "part_set_header": {
             "total": 0,
             "hash": ""
           }
@@ -46,7 +46,7 @@
         "round": 0,
         "block_id": {
           "hash": "",
-          "parts": {
+          "part_set_header": {
             "total": 0,
             "hash": ""
           }

@@ -5,7 +5,7 @@ use crate::types::{Header, ValidatorSet};
 use tendermint::{merkle, Hash};
 
 /// Hashing for headers and validator sets
-pub trait Hasher: Send {
+pub trait Hasher: Send + Sync {
     /// Hash the given header
     fn hash_header(&self, header: &Header) -> Hash;
 
