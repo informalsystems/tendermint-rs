@@ -12,7 +12,7 @@ use std::convert::TryInto;
 /// improve performance by picking a next block that has already been fetched.
 #[contract_trait]
 #[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
-pub trait Scheduler: Send {
+pub trait Scheduler: Send + Sync {
     /// Decides what block to verify next.
     ///
     /// ## Precondition
@@ -31,7 +31,7 @@ pub trait Scheduler: Send {
 }
 
 #[contract_trait]
-impl<F: Send + Clone> Scheduler for F
+impl<F: Send + Sync> Scheduler for F
 where
     F: Fn(&dyn LightStore, Height, Height) -> Height,
 {
