@@ -54,7 +54,6 @@ pub struct BlockId {
     #[serde(with = "crate::serializers::bytes::hexstring")]
     pub hash: std::vec::Vec<u8>,
     #[prost(message, optional, tag="2")]
-    #[serde(rename = "parts")]
     pub part_set_header: ::std::option::Option<PartSetHeader>,
 }
 // --------------------------------
@@ -141,6 +140,7 @@ pub struct Vote {
     #[prost(int64, tag="2")]
     pub height: i64,
     #[prost(int32, tag="3")]
+    #[serde(with = "crate::serializers::from_str")]
     pub round: i32,
     /// zero if vote is nil.
     #[prost(message, optional, tag="4")]
@@ -150,6 +150,7 @@ pub struct Vote {
     #[prost(bytes, tag="6")]
     pub validator_address: std::vec::Vec<u8>,
     #[prost(int32, tag="7")]
+    #[serde(with = "crate::serializers::from_str")]
     pub validator_index: i32,
     #[prost(bytes, tag="8")]
     pub signature: std::vec::Vec<u8>,

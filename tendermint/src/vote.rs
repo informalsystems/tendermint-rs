@@ -17,13 +17,10 @@ use crate::{Error, Kind::*};
 use bytes::BufMut;
 use ed25519::Signature as ed25519Signature;
 use ed25519::SIGNATURE_LENGTH as ed25519SignatureLength;
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Vote as RawVote;
 use tendermint_proto::{DomainType, Error as DomainTypeError};
-use {
-    crate::serializers,
-    serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer},
-};
 
 use crate::signature::Signature::Ed25519;
 
@@ -32,20 +29,20 @@ use crate::signature::Signature::Ed25519;
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#vote>
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(try_from = "RawVote", into = "RawVote")]
 pub struct Vote {
     /// Type of vote (prevote or precommit)
-    #[serde(rename = "type")]
     pub vote_type: Type,
 
     /// Block height
     pub height: block::Height,
 
     /// Round
-    #[serde(with = "serializers::from_str")]
+    //#[serde(with = "serializers::from_str")]
     pub round: block::Round,
 
     /// Block ID
-    #[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
+    //#[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
     pub block_id: Option<block::Id>,
 
     /// Timestamp
@@ -55,7 +52,7 @@ pub struct Vote {
     pub validator_address: account::Id,
 
     /// Validator index
-    #[serde(with = "serializers::from_str")]
+    //#[serde(with = "serializers::from_str")]
     pub validator_index: ValidatorIndex,
 
     /// Signature
@@ -75,7 +72,12 @@ impl TryFrom<RawVote> for Vote {
             vote_type: value.r#type.try_into()?,
             height: value.height.try_into()?,
             round: value.round.try_into()?,
-            block_id: value.block_id.map(TryInto::try_into).transpose()?,
+            // block_id can be nil in the Go implementation
+            block_id: value
+                .block_id
+                .map(TryInto::try_into)
+                .transpose()?
+                .filter(|i| i != &block::Id::default()),
             timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
             validator_address: value.validator_address.try_into()?,
             validator_index: value.validator_index.try_into()?,

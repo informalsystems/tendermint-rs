@@ -12,7 +12,7 @@
 //! This example shows how to serialize Vec<u8> into different types of strings:
 //! ```ignore
 //! use serde::{Serialize, Deserialize};
-//! use tendermint_proto::serializers;
+//! use crate::serializers;
 //!
 //! #[derive(Serialize, Deserialize)]
 //! struct ByteTypes {

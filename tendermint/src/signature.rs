@@ -1,7 +1,6 @@
 //! Cryptographic (a.k.a. digital) signatures
 
 pub use ed25519::{Signature as Ed25519Signature, SIGNATURE_LENGTH as ED25519_SIGNATURE_SIZE};
-use signature::Signature as SignatureTrait;
 pub use signature::{Signer, Verifier};
 
 #[cfg(feature = "secp256k1")]
@@ -86,10 +85,7 @@ impl<'de> Deserialize<'de> for Signature {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
             .map_err(D::Error::custom)?;
-
-        Ed25519Signature::from_bytes(&bytes)
-            .map(Into::into)
-            .map_err(D::Error::custom)
+        Signature::try_from(bytes).map_err(D::Error::custom)
     }
 }
 

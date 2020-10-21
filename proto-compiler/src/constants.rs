@@ -10,7 +10,6 @@ const BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::base64s
 const TIMESTAMP: &str = r#"#[serde(with = "crate::serializers::option_timestamp")]"#;
 const VEC_SKIP_IF_EMPTY: &str =
     r#"#[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]"#;
-const RENAME_PARTS: &str = r#"#[serde(rename = "parts")]"#;
 const NULLABLEVECARRAY: &str = r#"#[serde(with = "crate::serializers::txs")]"#;
 const NULLABLE: &str = r#"#[serde(with = "crate::serializers::nullable")]"#;
 
@@ -67,7 +66,6 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     ),
     // Block customizations
     (".tendermint.types.BlockID.hash", HEXSTRING),
-    (".tendermint.types.BlockID.part_set_header", RENAME_PARTS), // https://github.com/tendermint/tendermint/issues/5522
     (".tendermint.types.PartSetHeader.hash", HEXSTRING),
     (".tendermint.types.Header.height", QUOTED),
     (".tendermint.types.Header.time", TIMESTAMP),
@@ -86,6 +84,8 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.CommitSig.validator_address", HEXSTRING),
     (".tendermint.types.CommitSig.timestamp", TIMESTAMP),
     (".tendermint.types.CommitSig.signature", BASE64STRING),
+    (".tendermint.types.Vote.round", QUOTED),
+    (".tendermint.types.Vote.validator_index", QUOTED),
 
     // Let's implement these one-by-one for now. If it becomes cumbersome, we can return to relative paths.
     //("app_version", FROM_STR),
