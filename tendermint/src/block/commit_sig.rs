@@ -3,15 +3,13 @@
 use crate::{account, Signature, Time};
 use crate::{Error, Kind};
 use num_traits::ToPrimitive;
-use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::BlockIdFlag;
 use tendermint_proto::types::CommitSig as RawCommitSig;
 
 /// CommitSig represents a signature of a validator.
 /// It's a part of the Commit and can be used to reconstruct the vote set given the validator set.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(try_from = "RawCommitSig", into = "RawCommitSig")]
+#[derive(Clone, Debug, PartialEq)]
 pub enum CommitSig {
     /// no vote was received from a validator.
     BlockIDFlagAbsent,

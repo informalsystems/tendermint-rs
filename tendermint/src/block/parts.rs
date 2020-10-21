@@ -4,7 +4,6 @@ use crate::hash::Algorithm;
 use crate::hash::SHA256_HASH_SIZE;
 use crate::Hash;
 use crate::{Error, Kind};
-use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint_proto::types::{
     CanonicalPartSetHeader as RawCanonicalPartSetHeader, PartSetHeader as RawPartSetHeader,
@@ -12,15 +11,13 @@ use tendermint_proto::types::{
 use tendermint_proto::DomainType;
 
 /// Block parts header
-#[derive(
-    Serialize, Deserialize, Clone, Copy, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord,
-)]
+#[derive(Clone, Copy, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Header {
     /// Number of parts in this block
-    pub total: u32,
+    total: u32,
 
     /// Hash of the parts set header,
-    pub hash: Hash,
+    hash: Hash,
 }
 
 impl DomainType<RawPartSetHeader> for Header {}
@@ -72,8 +69,28 @@ impl From<Header> for RawCanonicalPartSetHeader {
 }
 
 impl Header {
-    /// Create a new parts header
-    pub fn new(total: u32, hash: Hash) -> Self {
-        Header { total, hash }
+    /// constructor
+    pub fn new(total: u32, hash: Hash) -> Result<Self, Error> {
+        if total == 0 && hash != Hash::None {
+            return Err(Kind::InvalidPartSetHeader
+                .context("zero total with existing hash")
+                .into());
+        }
+        if total != 0 && hash == Hash::None {
+            return Err(Kind::InvalidPartSetHeader
+                .context("non-zero total with empty hash")
+                .into());
+        }
+        Ok(Header { total, hash })
+    }
+
+    /// Get hash
+    pub fn hash(&self) -> &Hash {
+        &self.hash
+    }
+
+    /// Get total
+    pub fn total(&self) -> &u32 {
+        &self.total
     }
 }

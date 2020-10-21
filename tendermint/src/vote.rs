@@ -17,7 +17,7 @@ use crate::{Error, Kind::*};
 use bytes::BufMut;
 use ed25519::Signature as ed25519Signature;
 use ed25519::SIGNATURE_LENGTH as ed25519SignatureLength;
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Vote as RawVote;
 use tendermint_proto::{DomainType, Error as DomainTypeError};
@@ -240,18 +240,5 @@ impl TryFrom<i32> for Type {
 impl From<Type> for i32 {
     fn from(value: Type) -> Self {
         value as i32
-    }
-}
-
-impl Serialize for Type {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        i32::from(*self).serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for Type {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let byte = i32::deserialize(deserializer)?;
-        Type::try_from(byte).map_err(|_| D::Error::custom(format!("invalid vote type: {}", byte)))
     }
 }

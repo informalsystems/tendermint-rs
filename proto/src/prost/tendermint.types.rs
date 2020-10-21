@@ -219,6 +219,7 @@ pub struct LightBlock {
     pub validator_set: ::std::option::Option<ValidatorSet>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct BlockMeta {
     #[prost(message, optional, tag="1")]
     pub block_id: ::std::option::Option<BlockId>,

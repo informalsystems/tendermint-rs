@@ -32,7 +32,7 @@ use tendermint_proto::DomainType;
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#block>
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
-#[serde(try_from = "RawBlock", into = "RawBlock")]
+#[serde(try_from = "RawBlock", into = "RawBlock")] // Used by RPC /block endpoint
 pub struct Block {
     /// Block header
     header: Header,

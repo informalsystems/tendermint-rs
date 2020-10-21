@@ -10,7 +10,7 @@ use tendermint_proto::types::Data as RawData;
 
 /// Transactions are arbitrary byte arrays whose contents are validated by the
 /// underlying Tendermint application.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)] // Custom serde serialization used by RPC /broadcast_tx_async endpoint
 pub struct Transaction(Vec<u8>);
 
 impl From<Vec<u8>> for Transaction {
@@ -69,7 +69,7 @@ impl Serialize for Transaction {
 /// transactions are arbitrary byte arrays.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#data>
-#[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Data {
     txs: Option<Vec<Transaction>>,
 }

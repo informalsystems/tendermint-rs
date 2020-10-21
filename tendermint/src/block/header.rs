@@ -2,7 +2,6 @@
 
 use crate::merkle::simple_hash_from_byte_vectors;
 use crate::{account, block, chain, AppHash, Error, Hash, Kind, Time};
-use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
@@ -13,8 +12,7 @@ use tendermint_proto::DomainType;
 /// previous block, and the results returned by the application.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#header>
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-#[serde(try_from = "RawHeader", into = "RawHeader")]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Header {
     /// Header version
     pub version: Version,
@@ -200,8 +198,7 @@ impl Header {
 /// application.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#version>
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-#[serde(try_from = "RawConsensusVersion", into = "RawConsensusVersion")]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Version {
     /// Block version
     pub block: u64,
@@ -234,7 +231,7 @@ impl From<Version> for RawConsensusVersion {
 
 #[cfg(test)]
 mod tests {
-    use super::{Header, Version};
+    use super::Header;
     use crate::hash::Algorithm;
     use crate::test::test_serialization_roundtrip;
     use crate::Hash;
@@ -259,11 +256,4 @@ mod tests {
         assert_eq!(expected_hash, header.hash());
     }
 
-    #[test]
-    fn empty_header_version_app_field() {
-        let json_data = r#"{"block": "11"}"#;
-        let version: Version = serde_json::from_str(json_data).unwrap();
-        assert_eq!(11, version.block);
-        assert_eq!(0, version.app);
-    }
 }

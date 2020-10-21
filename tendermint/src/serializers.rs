@@ -51,5 +51,4 @@ mod tests;
 
 mod custom;
 pub use custom::null_as_default;
-pub use custom::parse_non_empty_block_id;
 pub use custom::parse_non_empty_hash;

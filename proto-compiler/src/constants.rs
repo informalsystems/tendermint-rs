@@ -49,6 +49,7 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.CanonicalPartSetHeader", SERIALIZED),
     (".tendermint.types.Validator", SERIALIZED),
     (".tendermint.types.CanonicalVote", SERIALIZED),
+    (".tendermint.types.BlockMeta", SERIALIZED),
 ];
 
 /// Custom field attributes applied on top of protobuf fields in (a) struct(s)
