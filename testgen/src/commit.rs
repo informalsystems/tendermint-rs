@@ -110,7 +110,7 @@ impl Generator<block::Commit> for Commit {
         let block_header = header.generate()?;
         let block_id = block::Id {
             hash: block_header.hash(),
-            parts: PartSetHeader::default(),
+            part_set_header: PartSetHeader::default(),
         };
         let votes = match &self.votes {
             None => self.clone().generate_default_votes().votes.unwrap(),
