@@ -17,7 +17,7 @@
             "time": "2020-09-14T16:33:56.21191421Z",
             "last_block_id": {
               "hash": "192C18392B93AE4C03F477C96D8B84C5390BB86E3E88662B336C9DE070ADF02F",
-              "parts": {
+              "part_set_header": {
                 "total": 1,
                 "hash": "ACD43137746F0AFF53A6EBCA7C8D03B80F9F96D5542E3679F65855A66FA76E2B"
               }
@@ -43,7 +43,7 @@
             "round": 0,
             "block_id": {
               "hash": "192C18392B93AE4C03F477C96D8B84C5390BB86E3E88662B336C9DE070ADF02F",
-              "parts": {
+              "part_set_header": {
                 "total": 1,
                 "hash": "ACD43137746F0AFF53A6EBCA7C8D03B80F9F96D5542E3679F65855A66FA76E2B"
               }

@@ -39,7 +39,7 @@ impl fmt::Display for VotingPowerTally {
 /// Computes the voting power in a commit against a validator set.
 ///
 /// This trait provides default implementation of some helper functions.
-pub trait VotingPowerCalculator: Send {
+pub trait VotingPowerCalculator: Send + Sync {
     /// Compute the total voting power in a validator set
     fn total_power_of(&self, validator_set: &ValidatorSet) -> u64 {
         validator_set
