@@ -141,6 +141,7 @@ pub struct Vote {
     #[prost(enumeration="SignedMsgType", tag="1")]
     pub r#type: i32,
     #[prost(int64, tag="2")]
+    #[serde(with = "crate::serializers::from_str")]
     pub height: i64,
     #[prost(int32, tag="3")]
     #[serde(with = "crate::serializers::from_str")]
@@ -149,13 +150,16 @@ pub struct Vote {
     #[prost(message, optional, tag="4")]
     pub block_id: ::std::option::Option<BlockId>,
     #[prost(message, optional, tag="5")]
+    #[serde(with = "crate::serializers::option_timestamp")]
     pub timestamp: ::std::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(bytes, tag="6")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub validator_address: std::vec::Vec<u8>,
     #[prost(int32, tag="7")]
     #[serde(with = "crate::serializers::from_str")]
     pub validator_index: i32,
     #[prost(bytes, tag="8")]
+    #[serde(with = "crate::serializers::bytes::base64string")]
     pub signature: std::vec::Vec<u8>,
 }
 /// Commit contains the evidence that a block was committed by a set of validators.
@@ -170,6 +174,7 @@ pub struct Commit {
     #[prost(message, optional, tag="3")]
     pub block_id: ::std::option::Option<BlockId>,
     #[prost(message, repeated, tag="4")]
+    #[serde(with = "crate::serializers::nullable")]
     pub signatures: ::std::vec::Vec<CommitSig>,
 }
 /// CommitSig is a part of the Vote included in a Commit.
@@ -371,6 +376,7 @@ pub struct LightClientAttackEvidence {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 #[derive(::serde::Deserialize, ::serde::Serialize)]
+#[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]
 pub struct Evidence {
     #[prost(oneof="evidence::Sum", tags="1, 2")]
     pub sum: ::std::option::Option<evidence::Sum>,
@@ -378,10 +384,14 @@ pub struct Evidence {
 pub mod evidence {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[serde(tag = "type", content = "value")]
+    #[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]
     pub enum Sum {
         #[prost(message, tag="1")]
+        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
         DuplicateVoteEvidence(super::DuplicateVoteEvidence),
         #[prost(message, tag="2")]
+        #[serde(rename = "tendermint/LightClientAttackEvidence")]
         LightClientAttackEvidence(super::LightClientAttackEvidence),
     }
 }

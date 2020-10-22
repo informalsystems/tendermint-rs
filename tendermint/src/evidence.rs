@@ -116,7 +116,8 @@ impl ConflictingHeadersEvidence {
 /// Evidence data is a wrapper for a list of `Evidence`.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidencedata>
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "RawEvidenceData", into = "RawEvidenceData")]
 pub struct Data {
     evidence: Option<Vec<Evidence>>,
 }

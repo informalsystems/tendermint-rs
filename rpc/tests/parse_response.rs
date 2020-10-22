@@ -89,7 +89,7 @@ fn first_block() {
 
     assert_eq!(response.block.header().version.block, 10);
     assert_eq!(response.block.header().chain_id.as_str(), EXAMPLE_CHAIN);
-    assert_eq!(response.block.header().height.value(), 10);
+    assert_eq!(response.block.header().height.value(), 1);
     assert!(response.block.header().last_block_id.is_none());
 
     assert_eq!(response.block.data().iter().len(), 0);

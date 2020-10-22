@@ -5,9 +5,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
 where
     D: Deserializer<'de>,
-    T: Deserialize<'de> + Default,
+    T: Deserialize<'de> + Default + PartialEq,
 {
-    Ok(Some(T::deserialize(deserializer)?))
+    Ok(Some(T::deserialize(deserializer)?).filter(|t| t != &T::default()))
 }
 
 /// Serialize Option<T>

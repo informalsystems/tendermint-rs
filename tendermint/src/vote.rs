@@ -38,11 +38,9 @@ pub struct Vote {
     pub height: block::Height,
 
     /// Round
-    //#[serde(with = "serializers::from_str")]
     pub round: block::Round,
 
     /// Block ID
-    //#[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
     pub block_id: Option<block::Id>,
 
     /// Timestamp
@@ -52,7 +50,6 @@ pub struct Vote {
     pub validator_address: account::Id,
 
     /// Validator index
-    //#[serde(with = "serializers::from_str")]
     pub validator_index: ValidatorIndex,
 
     /// Signature
@@ -164,7 +161,7 @@ impl Default for Vote {
             height: Default::default(),
             round: Default::default(),
             block_id: None,
-            timestamp: None,
+            timestamp: Some(Time::unix_epoch()),
             validator_address: account::Id::new([0; account::LENGTH]),
             validator_index: ValidatorIndex::try_from(0_i32).unwrap(),
             signature: Ed25519(ed25519Signature::new([0; ed25519SignatureLength])),

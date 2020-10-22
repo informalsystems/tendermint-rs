@@ -124,6 +124,7 @@ impl FromStr for Id {
     }
 }
 
+// Todo: Can I remove custom serialization?
 impl<'de> Deserialize<'de> for Id {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

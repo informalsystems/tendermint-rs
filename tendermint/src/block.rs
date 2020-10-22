@@ -31,8 +31,8 @@ use tendermint_proto::DomainType;
 /// evidence of malfeasance (i.e. signing conflicting votes).
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#block>
+// Default serialization - all fields serialize; used by /block endpoint
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
-#[serde(try_from = "RawBlock", into = "RawBlock")] // Used by RPC /block endpoint
 pub struct Block {
     /// Block header
     header: Header,
@@ -44,6 +44,7 @@ pub struct Block {
     evidence: evidence::Data,
 
     /// Last commit
+    #[serde(with = "crate::serializers::optional")]
     last_commit: Option<Commit>,
 }
 
@@ -99,10 +100,14 @@ impl Block {
         last_commit: Option<Commit>,
     ) -> Result<Self, Error> {
         if last_commit.is_none() && header.height.value() != 1 {
-            return Err(Kind::InvalidBlock.into());
+            return Err(Kind::InvalidBlock
+                .context("last_commit is empty on non-first block")
+                .into());
         }
         if last_commit.is_some() && header.height.value() == 1 {
-            return Err(Kind::InvalidBlock.into());
+            return Err(Kind::InvalidBlock
+                .context("last_commit is filled on first block")
+                .into());
         }
         Ok(Block {
             header,
