@@ -660,8 +660,8 @@
 			}
 		]
 	},
-	"witnesses": [
-		{
+		"witnesses": [
+			{
 			"type": "com.tendermint/MockProvider",
 			"value": {
 				"chain_id": "test-chain-01",

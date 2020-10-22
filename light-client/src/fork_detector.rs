@@ -5,12 +5,12 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::{Error, ErrorExt, ErrorKind},
+    errors::{Error, ErrorKind},
     operations::{Hasher, ProdHasher},
     state::State,
     store::memory::MemoryStore,
     supervisor::Instance,
-    types::{LightBlock, PeerId, Status},
+    types::{LightBlock, PeerId},
 };
 
 /// Result of fork detection
@@ -45,7 +45,7 @@ pub trait ForkDetector: Send {
     fn detect_forks(
         &self,
         verified_block: &LightBlock,
-        trusted_block: &LightBlock,
+        //trusted_block: &LightBlock,
         primary: &Instance,
         witnesses: Vec<&Instance>,
     ) -> Result<ForkDetection, Error>;
@@ -85,7 +85,7 @@ impl ForkDetector for ProdForkDetector {
     fn detect_forks(
         &self,
         verified_block: &LightBlock,
-        trusted_block: &LightBlock,
+     //   trusted_block: &LightBlock,
         primary: &Instance,
         witnesses: Vec<&Instance>,
     ) -> Result<ForkDetection, Error> {
@@ -94,7 +94,6 @@ impl ForkDetector for ProdForkDetector {
             .hash_header(&verified_block.signed_header.header);
 
         let mut forks = Vec::with_capacity(witnesses.len());
-
 
         for witness in witnesses {
             let mut state = State::new(MemoryStore::new());
@@ -109,85 +108,42 @@ impl ForkDetector for ProdForkDetector {
                 // Hashes match, continue with next witness, if any.
                 continue;
             }
+        
+            // //cross-checking 
+            let verified_height = verified_block.height();
 
-            state
-                .light_store
-                .insert(trusted_block.clone(), Status::Verified);
+            let mut primary_trace=primary.state.get_trace(verified_height);
+            primary_trace.reverse();            
 
-            state
-                .light_store
-                .insert(witness_block.clone(), Status::Unverified);
-
-            let result = witness
+        
+            for i in primary_trace {          
+              
+                let (new_witness_block, _) = witness
                 .light_client
-                .verify_to_target(verified_block.height(), &mut state);
+                .get_or_fetch_block(i.height(), &mut state)?;
 
-                    
-            match result {
-                Ok(_) => { 
-
-                    //iterate over the verification trace. 
-                    
-                    let verified_height = verified_block.height();
-
-                    let mut primary_trace=primary.state.get_trace(verified_height);
-                    primary_trace.reverse();
-
-                    //let mut trusted_height = trusted_block.height();
-
-                    //remove initial trusted_height from sorted state 
-
-                    for i in primary_trace {          
-                                               
-                        let witness_verif_block= state.light_store.get(i.height(), Status::Verified);
-                    
-                            if let Some(witness_verif_block) = witness_verif_block{
-
-                                let witness_hash = self.hasher.hash_header(&witness_verif_block.signed_header.header);
+                let new_witness_hash = self.hasher.hash_header(&new_witness_block.signed_header.header);
                         
-                                let primary_hash = self.hasher.hash_header(&i.signed_header.header);
+                let new_primary_hash = self.hasher.hash_header(&i.signed_header.header);
 
 
-                                if primary_hash == witness_hash { 
-                                  // Hashes match, continue with next height, if any.
-                                   //trusted_height = *i; 
-                                    continue;
-                                 }
-                            }
-                        
-                        
-                        //TODO Assume in the store as verified. Otherwise some error should be here.                 
-            
-                       
-                       
-                        //TODO add trusted_height to Fork 
-                        forks.push(Fork::Forked {
-                            primary: verified_block.clone(),
-                            witness: witness_block.clone(),
-                        }); 
-                    }
-
-                },
-                Err(e) if e.kind().has_expired() => {
-                    //compute the first witness 
+                if new_primary_hash != new_witness_hash { 
                     forks.push(Fork::Forked {
                         primary: verified_block.clone(),
-                        witness: witness_block,
-                    });
+                        witness: witness_block.clone(),
+                   });      
+                    // Hashes match, continue with next height, if any.
+                    //trusted_height = *i; 
+                   // continue;
                 }
-                Err(e) if e.kind().is_timeout() => {
-                    forks.push(Fork::Timeout(witness_block.provider, e.kind().clone()))
-                }
-                Err(e) => forks.push(Fork::Faulty(witness_block, e.kind().clone())),
+    
+                    
             }
         }
-
         if forks.is_empty() {
             Ok(ForkDetection::NotDetected)
         } else {
             Ok(ForkDetection::Detected(forks))
         }
     }
-
- 
 }

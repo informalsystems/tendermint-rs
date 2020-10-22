@@ -8,6 +8,7 @@ use crate::bail;
 use crate::errors::{Error, ErrorKind};
 use crate::evidence::EvidenceReporter;
 use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
+//use crate::attack_detector::{Attack, AttackDetection, AttackkDetector};
 use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
@@ -123,6 +124,8 @@ pub struct Supervisor {
     /// An instance of the fork detector
     fork_detector: Box<dyn ForkDetector>,
     /// Reporter of fork evidence
+    //attack_detector:Box<dyn AttackDetector>,
+    /// Reporter of attack evidence 
     evidence_reporter: Box<dyn EvidenceReporter>,
     /// Channel through which to reply to `Handle`s
     sender: channel::Sender<HandleInput>,
@@ -214,12 +217,12 @@ impl Supervisor {
         match verdict {
             // Verification succeeded, let's perform fork detection
             Ok(verified_block) => {
-                let trusted_block = primary
-                    .latest_trusted()
-                    .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
+                // let trusted_block = primary
+                //     .latest_trusted()
+                //     .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
 
                 // Perform fork detection with the highest verified block and the trusted block.
-                let outcome = self.detect_forks(&verified_block, &trusted_block)?;
+                let outcome = self.detect_forks(&verified_block)?;
 
                 match outcome {
                     // There was a fork or a faulty peer
@@ -307,7 +310,7 @@ impl Supervisor {
     fn detect_forks(
         &self,
         verified_block: &LightBlock,
-        trusted_block: &LightBlock,
+        //trusted_block: &LightBlock,
     ) -> Result<ForkDetection, Error> {
         if self.peers.witnesses_ids().is_empty() {
             bail!(ErrorKind::NoWitnesses);
@@ -323,7 +326,7 @@ impl Supervisor {
         let primary = self.peers.primary();
 
         self.fork_detector
-            .detect_forks(verified_block,  &trusted_block, primary, witnesses)
+            .detect_forks(verified_block,primary, witnesses)
     }
 
     /// Run the supervisor event loop in the same thread.
