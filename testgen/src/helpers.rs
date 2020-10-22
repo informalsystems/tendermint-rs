@@ -4,7 +4,7 @@ use serde::de::DeserializeOwned;
 use simple_error::*;
 use std::io::{self, Read};
 use tendermint::{
-    amino_types, public_key,
+    chain, public_key,
     signature::{Signature, Verifier},
     vote, Time,
 };
@@ -42,9 +42,9 @@ pub fn read_stdin() -> Result<String, SimpleError> {
     }
 }
 
-pub fn get_vote_sign_bytes(chain_id: &str, vote: &vote::Vote) -> Vec<u8> {
+pub fn get_vote_sign_bytes(chain_id: chain::Id, vote: &vote::Vote) -> Vec<u8> {
     let signed_vote = vote::SignedVote::new(
-        amino_types::vote::Vote::from(vote),
+        vote.clone(),
         chain_id,
         vote.validator_address,
         vote.signature,

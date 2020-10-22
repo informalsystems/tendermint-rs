@@ -5,7 +5,7 @@
     "block_meta": {
       "block_id": {
         "hash": "17E077714CE817C0DB3118D21EA060B2A16D9F07CB08AB603292F797FFD7F361",
-        "parts": {
+        "part_set_header": {
           "total": "1",
           "hash": "1ED5B68A21D82D091C25D535F52C2D47419162618245C60D69B162A366F97A45"
         }
@@ -22,7 +22,7 @@
         "total_txs": "0",
         "last_block_id": {
           "hash": "08150B2F0F9D873C5446D77BF10EF1FD33A6C3FDE03BB76CC99F3A047A7A93CB",
-          "parts": {
+          "part_set_header": {
             "total": "1",
             "hash": "EF93CDE980C98BD4720ADA7984121B4E0E153B004BB94E583809281C576FFAB1"
           }
@@ -51,7 +51,7 @@
         "total_txs": "0",
         "last_block_id": {
           "hash": "08150B2F0F9D873C5446D77BF10EF1FD33A6C3FDE03BB76CC99F3A047A7A93CB",
-          "parts": {
+          "part_set_header": {
             "total": "1",
             "hash": "EF93CDE980C98BD4720ADA7984121B4E0E153B004BB94E583809281C576FFAB1"
           }
@@ -75,7 +75,7 @@
       "last_commit": {
         "block_id": {
           "hash": "08150B2F0F9D873C5446D77BF10EF1FD33A6C3FDE03BB76CC99F3A047A7A93CB",
-          "parts": {
+          "part_set_header": {
             "total": "1",
             "hash": "EF93CDE980C98BD4720ADA7984121B4E0E153B004BB94E583809281C576FFAB1"
           }
@@ -87,7 +87,7 @@
             "round": "0",
             "block_id": {
               "hash": "",
-              "parts": {
+              "part_set_header": {
                 "total": "0",
                 "hash": ""
               }
@@ -103,7 +103,7 @@
             "round": "0",
             "block_id": {
               "hash": "08150B2F0F9D873C5446D77BF10EF1FD33A6C3FDE03BB76CC99F3A047A7A93CB",
-              "parts": {
+              "part_set_header": {
                 "total": "1",
                 "hash": "EF93CDE980C98BD4720ADA7984121B4E0E153B004BB94E583809281C576FFAB1"
               }

@@ -3,7 +3,7 @@ use serde::Deserialize;
 use simple_error::*;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
-use tendermint::block;
+use tendermint::block::{self, parts::Header as PartSetHeader};
 
 use crate::validator::sort_validators;
 use crate::{helpers::*, Generator, Header, Validator, Vote};
@@ -108,7 +108,10 @@ impl Generator<block::Commit> for Commit {
             Some(h) => h,
         };
         let block_header = header.generate()?;
-        let block_id = block::Id::new(block_header.hash(), None);
+        let block_id = block::Id {
+            hash: block_header.hash(),
+            part_set_header: PartSetHeader::new(1, block_header.hash()),
+        };
         let votes = match &self.votes {
             None => self.clone().generate_default_votes().votes.unwrap(),
             Some(vs) => vs.to_vec(),
@@ -124,7 +127,7 @@ impl Generator<block::Commit> for Commit {
             let vote = v.generate()?;
             Ok(block::CommitSig::BlockIDFlagCommit {
                 validator_address: vote.validator_address,
-                timestamp: vote.timestamp,
+                timestamp: vote.timestamp.unwrap(),
                 signature: vote.signature,
             })
         };
@@ -197,7 +200,7 @@ mod tests {
                 } => {
                     let block_vote = votes[i].generate().unwrap();
                     let sign_bytes =
-                        get_vote_sign_bytes(block_header.chain_id.as_str(), &block_vote);
+                        get_vote_sign_bytes(block_header.chain_id.clone(), &block_vote);
                     assert!(!verify_signature(
                         &valset2[i].get_public_key().unwrap(),
                         &sign_bytes,

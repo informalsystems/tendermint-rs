@@ -2,8 +2,9 @@ use crate::{helpers::*, validator::generate_validators, Generator, Validator};
 use gumdrop::Options;
 use serde::Deserialize;
 use simple_error::*;
+use std::convert::TryFrom;
 use std::str::FromStr;
-use tendermint::{block, chain, validator};
+use tendermint::{block, chain, validator, AppHash};
 
 #[derive(Debug, Options, Deserialize, Clone)]
 pub struct Header {
@@ -127,9 +128,12 @@ impl Generator<block::Header> for Header {
             tendermint::Time::now()
         };
         let header = block::Header {
-            version: block::header::Version { block: 0, app: 0 },
+            // block version in Tendermint-go is hardcoded with value 11
+            // so we do the same with MBT for now for compatibility
+            version: block::header::Version { block: 11, app: 0 },
             chain_id,
-            height: block::Height(self.height.unwrap_or(1)),
+            height: block::Height::try_from(self.height.unwrap_or(1))
+                .map_err(|_| SimpleError::new("height out of bounds"))?,
             time,
             last_block_id: None,
             last_commit_hash: None,
@@ -137,7 +141,7 @@ impl Generator<block::Header> for Header {
             validators_hash: valset.hash(),
             next_validators_hash: next_valset.hash(),
             consensus_hash: valset.hash(), // TODO: currently not clear how to produce a valid hash
-            app_hash: vec![],
+            app_hash: AppHash::from_hex_upper("").unwrap(),
             last_results_hash: None,
             evidence_hash: None,
             proposer_address,

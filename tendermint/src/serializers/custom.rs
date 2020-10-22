@@ -27,14 +27,14 @@ where
     D: Deserializer<'de>,
 {
     #[derive(Deserialize)]
-    struct Parts {
-        total: u64,
+    struct PartSetHeader {
+        total: u32,
         hash: String,
     }
     #[derive(Deserialize)]
     struct BlockId {
         hash: String,
-        parts: Parts,
+        part_set_header: PartSetHeader,
     }
     if let Some(tmp_id) = <Option<BlockId>>::deserialize(deserializer)? {
         if tmp_id.hash.is_empty() {
@@ -43,14 +43,10 @@ where
             Ok(Some(block::Id {
                 hash: Hash::from_str(&tmp_id.hash)
                     .map_err(|err| D::Error::custom(format!("{}", err)))?,
-                parts: if tmp_id.parts.hash.is_empty() {
-                    None
-                } else {
-                    Some(block::parts::Header {
-                        total: tmp_id.parts.total,
-                        hash: Hash::from_str(&tmp_id.parts.hash)
-                            .map_err(|err| D::Error::custom(format!("{}", err)))?,
-                    })
+                part_set_header: block::parts::Header {
+                    total: tmp_id.part_set_header.total,
+                    hash: Hash::from_str(&tmp_id.part_set_header.hash)
+                        .map_err(|err| D::Error::custom(format!("{}", err)))?,
                 },
             }))
         }

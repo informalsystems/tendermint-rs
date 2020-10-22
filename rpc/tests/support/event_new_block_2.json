@@ -2,7 +2,7 @@
   "jsonrpc": "2.0",
   "id": "06c893ae-2c80-4a42-8332-8380bf24fcde",
   "result": {
-    "query": "tm.event='NewBlock'",
+    "query": "tm.event = 'NewBlock'",
     "data": {
       "type": "tendermint/event/NewBlock",
       "value": {
@@ -17,7 +17,7 @@
             "time": "2020-09-14T16:33:55.21191421Z",
             "last_block_id": {
               "hash": "F30A71F2409FB15AACAEDB6CC122DFA2525BEE9CAE521721B06BFDCA291B8D56",
-              "parts": {
+              "part_set_header": {
                 "total": 1,
                 "hash": "A514FF7C92EBDF19F8D9B953E4B4BAC8627A50350048BD885D22747CE7F5A01C"
               }
@@ -43,7 +43,7 @@
             "round": 0,
             "block_id": {
               "hash": "F30A71F2409FB15AACAEDB6CC122DFA2525BEE9CAE521721B06BFDCA291B8D56",
-              "parts": {
+              "part_set_header": {
                 "total": 1,
                 "hash": "A514FF7C92EBDF19F8D9B953E4B4BAC8627A50350048BD885D22747CE7F5A01C"
               }

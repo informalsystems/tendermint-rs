@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client"
-version    = "0.16.0"
+version    = "0.17.0-rc1"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -27,15 +27,14 @@ rpc-client = ["tendermint-rpc/http-client"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 
 [dependencies]
-tendermint = { version = "0.16.0", path = "../tendermint" }
-tendermint-rpc = { version = "0.16.0", path = "../rpc", default-features = false }
+tendermint = { version = "0.17.0-rc1", path = "../tendermint" }
+tendermint-rpc = { version = "0.17.0-rc1", path = "../rpc", default-features = false }
 
 anomaly = { version = "0.2.0", features = ["serializer"] }
 contracts = "0.4.0"
 crossbeam-channel = "0.4.2"
 derive_more = "0.99.5"
 futures = "0.3.4"
-prost-amino = "0.6.0"
 serde = "1.0.106"
 serde_cbor = "0.11.1"
 serde_derive = "1.0.106"

@@ -10,7 +10,7 @@ pub struct Request {
     /// Height of the block to request.
     ///
     /// If no height is provided, it will fetch results for the latest block.
-    height: Option<block::Height>,
+    pub height: Option<block::Height>,
 }
 
 impl Request {
