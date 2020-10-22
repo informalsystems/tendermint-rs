@@ -1,13 +1,12 @@
 //! Hash functions and their outputs
 
 use crate::error::{Error, Kind};
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
 use std::{
     fmt::{self, Debug, Display},
     str::FromStr,
 };
-use subtle_encoding::{hex, Encoding, Hex};
+use subtle_encoding::{/* hex, */ Encoding, Hex};
 use tendermint_proto::DomainType;
 
 /// Output size for the SHA-256 hash function
@@ -141,23 +140,6 @@ impl FromStr for Hash {
     }
 }
 
-impl<'de> Deserialize<'de> for Hash {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let hex_string = String::deserialize(deserializer)?;
-        let hex_bytes = hex::decode(hex_string).map_err(|e| D::Error::custom(format!("{}", e)))?;
-        Ok(Self::try_from(hex_bytes).map_err(|e| D::Error::custom(format!("{}", e)))?)
-    }
-}
-
-impl Serialize for Hash {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(
-            &String::from_utf8(hex::encode_upper(Vec::<u8>::from(*self)))
-                .map_err(serde::ser::Error::custom)?,
-        )
-    }
-}
-
 /// AppHash is usually a SHA256 hash, but in reality it can be any kind of data
 #[derive(Clone)]
 pub struct AppHash(Vec<u8>);
@@ -227,22 +209,5 @@ impl FromStr for AppHash {
 
     fn from_str(s: &str) -> Result<Self, Error> {
         Self::from_hex_upper(s)
-    }
-}
-
-impl<'de> Deserialize<'de> for AppHash {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let hex_string = String::deserialize(deserializer)?;
-        let hex_bytes = hex::decode(hex_string).map_err(|e| D::Error::custom(format!("{}", e)))?;
-        Ok(Self::try_from(hex_bytes).map_err(|e| D::Error::custom(format!("{}", e)))?)
-    }
-}
-
-impl Serialize for AppHash {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(
-            &String::from_utf8(hex::encode_upper(Vec::<u8>::from(self.clone())))
-                .map_err(serde::ser::Error::custom)?,
-        )
     }
 }

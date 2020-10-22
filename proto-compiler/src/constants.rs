@@ -12,10 +12,13 @@ const VEC_SKIP_IF_EMPTY: &str =
     r#"#[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]"#;
 const NULLABLEVECARRAY: &str = r#"#[serde(with = "crate::serializers::txs")]"#;
 const NULLABLE: &str = r#"#[serde(with = "crate::serializers::nullable")]"#;
+const RENAME_POWER_QUOTED: &str = r#"#[serde(alias = "power", with = "crate::serializers::from_str")]"#;
+const RENAME_PUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeyEd25519", with = "crate::serializers::bytes::base64string")]"#;
 
 /// Predefined custom attributes for message annotations
 const PRIMITIVE_ENUM: &str = r#"#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]"#;
 const SERIALIZED: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"#;
+const TYPE_TAG: &str = r#"#[serde(tag = "type", content = "value")]"#;
 
 /// Custom type attributes applied on top of protobuf structs
 /// The first item in the tuple defines the message where the annotation should apply and
@@ -43,6 +46,7 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.CommitSig", SERIALIZED),
     (".tendermint.types.ValidatorSet", SERIALIZED),
     (".tendermint.crypto.PublicKey", SERIALIZED),
+    (".tendermint.crypto.PublicKey.sum", TYPE_TAG),
 
     (".tendermint.abci.ResponseInfo", SERIALIZED),
     (".tendermint.types.CanonicalBlockID", SERIALIZED),
@@ -65,7 +69,7 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.abci.ResponseInfo.last_block_app_hash",
         VEC_SKIP_IF_EMPTY,
     ),
-    // Block customizations
+    (".tendermint.abci.ResponseInfo.app_version", QUOTED),
     (".tendermint.types.BlockID.hash", HEXSTRING),
     (".tendermint.types.PartSetHeader.hash", HEXSTRING),
     (".tendermint.types.Header.height", QUOTED),
@@ -87,9 +91,15 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.CommitSig.signature", BASE64STRING),
     (".tendermint.types.Vote.round", QUOTED),
     (".tendermint.types.Vote.validator_index", QUOTED),
+    (".tendermint.types.Validator.address", HEXSTRING),
+    (".tendermint.types.Validator.voting_power", RENAME_POWER_QUOTED), // https://github.com/tendermint/tendermint/issues/5549
+    (".tendermint.types.Validator.proposer_priority", QUOTED_WITH_DEFAULT), // Default is for /genesis deserialization
+    (".tendermint.types.BlockMeta.block_size", QUOTED),
+    (".tendermint.types.BlockMeta.num_txs", QUOTED),
+    (".tendermint.crypto.PublicKey.sum.ed25519", RENAME_PUBKEY),
+
 
     // Let's implement these one-by-one for now. If it becomes cumbersome, we can return to relative paths.
-    //("app_version", FROM_STR),
     //("round", FROM_STR),
     //("data_hash", HEXSTRING),
 ];

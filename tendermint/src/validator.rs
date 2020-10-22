@@ -1,32 +1,89 @@
 //! Tendermint validators
 
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use subtle_encoding::base64;
 
-use crate::{account, hash::Hash, merkle, vote, Error, PublicKey, Signature};
+use crate::{account, hash::Hash, merkle, vote, Error, Kind, PublicKey, Signature};
 
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::SimpleValidator as RawSimpleValidator;
+use tendermint_proto::types::Validator as RawValidator;
+use tendermint_proto::types::ValidatorSet as RawValidatorSet;
 use tendermint_proto::DomainType;
 
 /// Validator set contains a vector of validators
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Set {
-    #[serde(deserialize_with = "parse_vals")]
     validators: Vec<Info>,
+
+    proposer: Option<Info>,
+
+    total_voting_power: vote::Power,
+}
+
+impl DomainType<RawValidatorSet> for Set {}
+
+impl TryFrom<RawValidatorSet> for Set {
+    type Error = Error;
+
+    fn try_from(value: RawValidatorSet) -> Result<Self, Self::Error> {
+        let unsorted_validators_result: Result<Vec<Info>, Error> = value
+            .validators
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect();
+        Ok(Self::new(
+            unsorted_validators_result?,
+            value.proposer.map(TryInto::try_into).transpose()?,
+            value.total_voting_power.try_into()?,
+        ))
+    }
+}
+
+impl From<Set> for RawValidatorSet {
+    fn from(value: Set) -> Self {
+        RawValidatorSet {
+            validators: value.validators.into_iter().map(Into::into).collect(),
+            proposer: value.proposer.map(Into::into),
+            total_voting_power: value.total_voting_power.into(),
+        }
+    }
 }
 
 impl Set {
-    /// Create a new validator set.
-    /// vals is mutable so it can be sorted by address.
-    pub fn new(mut vals: Vec<Info>) -> Set {
-        Self::sort_validators(&mut vals);
-        Set { validators: vals }
+    /// constructor
+    pub fn new(
+        validators: Vec<Info>,
+        proposer: Option<Info>,
+        total_voting_power: vote::Power,
+    ) -> Set {
+        let mut validators = validators;
+        Self::sort_validators(&mut validators);
+        Set {
+            validators,
+            proposer,
+            total_voting_power,
+        }
+    }
+
+    /// Convenience constructor for cases where there is no proposer
+    pub fn new_simple(validators: Vec<Info>) -> Set {
+        Self::new(validators, None, vote::Power::default())
     }
 
     /// Get Info of the underlying validators.
     pub fn validators(&self) -> &Vec<Info> {
         &self.validators
+    }
+
+    /// Get proposer
+    pub fn proposer(&self) -> &Option<Info> {
+        &self.proposer
+    }
+
+    /// Get total voting power
+    pub fn total_voting_power(&self) -> &vote::Power {
+        &self.total_voting_power
     }
 
     /// Sort the validators according to the current Tendermint requirements
@@ -62,20 +119,9 @@ impl Set {
     }
 }
 
-// TODO: maybe add a type (with an Option<Vec<Info>> field) instead
-// for light client integration tests only
-fn parse_vals<'de, D>(d: D) -> Result<Vec<Info>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let mut vals: Vec<Info> =
-        Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or_default())?;
-    Set::sort_validators(&mut vals);
-    Ok(vals)
-}
-
 /// Validator information
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+// Todo: Remove address and make it into a function that generates it on the fly from pub_key.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Info {
     /// Validator account address
     pub address: account::Id,
@@ -84,11 +130,35 @@ pub struct Info {
     pub pub_key: PublicKey,
 
     /// Validator voting power
-    #[serde(alias = "power")]
     pub voting_power: vote::Power,
 
     /// Validator proposer priority
-    pub proposer_priority: Option<ProposerPriority>,
+    #[serde(skip)]
+    pub proposer_priority: ProposerPriority,
+}
+
+impl TryFrom<RawValidator> for Info {
+    type Error = Error;
+
+    fn try_from(value: RawValidator) -> Result<Self, Self::Error> {
+        Ok(Info {
+            address: value.address.try_into()?,
+            pub_key: value.pub_key.ok_or(Kind::MissingPublicKey)?.try_into()?,
+            voting_power: value.voting_power.try_into()?,
+            proposer_priority: value.proposer_priority.try_into()?,
+        })
+    }
+}
+
+impl From<Info> for RawValidator {
+    fn from(value: Info) -> Self {
+        RawValidator {
+            address: value.address.into(),
+            pub_key: Some(value.pub_key.into()),
+            voting_power: value.voting_power.into(),
+            proposer_priority: value.proposer_priority.into(),
+        }
+    }
 }
 
 impl Info {
@@ -121,12 +191,10 @@ impl Info {
             address: account::Id::from(pk),
             pub_key: pk,
             voting_power: vp,
-            proposer_priority: None,
+            proposer_priority: ProposerPriority::default(),
         }
     }
 }
-
-impl DomainType<RawSimpleValidator> for SimpleValidator {}
 
 /// SimpleValidator is the form of the validator used for computing the Merkle tree.
 /// It does not include the address, as that is redundant with the pubkey,
@@ -138,8 +206,10 @@ pub struct SimpleValidator {
     /// Public key
     pub pub_key: Option<tendermint_proto::crypto::PublicKey>,
     /// Voting power
-    pub voting_power: i64,
+    pub voting_power: vote::Power,
 }
+
+impl DomainType<RawSimpleValidator> for SimpleValidator {}
 
 impl TryFrom<RawSimpleValidator> for SimpleValidator {
     type Error = Error;
@@ -147,7 +217,7 @@ impl TryFrom<RawSimpleValidator> for SimpleValidator {
     fn try_from(value: RawSimpleValidator) -> Result<Self, Self::Error> {
         Ok(SimpleValidator {
             pub_key: value.pub_key,
-            voting_power: value.voting_power,
+            voting_power: value.voting_power.try_into()?,
         })
     }
 }
@@ -156,7 +226,7 @@ impl From<SimpleValidator> for RawSimpleValidator {
     fn from(value: SimpleValidator) -> Self {
         RawSimpleValidator {
             pub_key: value.pub_key,
-            voting_power: value.voting_power,
+            voting_power: value.voting_power.into(),
         }
     }
 }
@@ -167,10 +237,10 @@ impl From<&Info> for SimpleValidator {
         SimpleValidator {
             pub_key: Some(tendermint_proto::crypto::PublicKey {
                 sum: Some(tendermint_proto::crypto::public_key::Sum::Ed25519(
-                    info.pub_key.to_bytes(),
+                    info.pub_key.to_vec(),
                 )),
             }),
-            voting_power: info.voting_power.value() as i64,
+            voting_power: info.voting_power,
         }
     }
 }
@@ -183,19 +253,14 @@ impl Info {
     }
 }
 
+// Todo: Is there more knowledge/restrictions about proposerPriority?
 /// Proposer priority
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Default)]
 pub struct ProposerPriority(i64);
 
-impl ProposerPriority {
-    /// Create a new Priority
-    pub fn new(p: i64) -> ProposerPriority {
-        ProposerPriority(p)
-    }
-
-    /// Get the current proposer priority
-    pub fn value(self) -> i64 {
-        self.0
+impl From<i64> for ProposerPriority {
+    fn from(value: i64) -> Self {
+        ProposerPriority(value)
     }
 }
 
@@ -205,19 +270,10 @@ impl From<ProposerPriority> for i64 {
     }
 }
 
-impl<'de> Deserialize<'de> for ProposerPriority {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Ok(ProposerPriority(
-            String::deserialize(deserializer)?
-                .parse()
-                .map_err(|e| D::Error::custom(format!("{}", e)))?,
-        ))
-    }
-}
-
-impl Serialize for ProposerPriority {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.0.to_string().serialize(serializer)
+impl ProposerPriority {
+    /// Get the current proposer priority
+    pub fn value(self) -> i64 {
+        self.0
     }
 }
 
@@ -269,7 +325,7 @@ mod tests {
     // make a validator
     fn make_validator(pk: Vec<u8>, vp: u64) -> Info {
         let pk = PublicKey::from_raw_ed25519(&pk).unwrap();
-        Info::new(pk, vote::Power::new(vp))
+        Info::new(pk, vote::Power::try_from(vp).unwrap())
     }
 
     #[test]
@@ -324,7 +380,7 @@ mod tests {
             22, 57, 84, 71, 122, 200, 169, 192, 252, 41, 148, 223, 180,
         ];
 
-        let val_set = Set::new(vec![v1, v2, v3]);
+        let val_set = Set::new_simple(vec![v1, v2, v3]);
         let hash = val_set.hash();
         assert_eq!(hash_expect, hash.as_bytes().to_vec());
 

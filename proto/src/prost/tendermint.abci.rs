@@ -216,6 +216,7 @@ pub struct ResponseInfo {
     #[prost(string, tag="2")]
     pub version: std::string::String,
     #[prost(uint64, tag="3")]
+    #[serde(with = "crate::serializers::from_str")]
     pub app_version: u64,
     #[prost(int64, tag="4")]
     #[serde(with = "crate::serializers::from_str")]

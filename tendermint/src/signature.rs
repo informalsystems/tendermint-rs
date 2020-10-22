@@ -7,9 +7,7 @@ pub use signature::{Signer, Verifier};
 pub use k256::ecdsa::Signature as Secp256k1;
 
 use crate::{Error, Kind};
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
-use subtle_encoding::base64;
 use tendermint_proto::DomainType;
 
 /// Signatures
@@ -78,22 +76,6 @@ impl AsRef<[u8]> for Signature {
 impl From<Ed25519Signature> for Signature {
     fn from(pk: Ed25519Signature) -> Signature {
         Signature::Ed25519(pk)
-    }
-}
-
-impl<'de> Deserialize<'de> for Signature {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
-            .map_err(D::Error::custom)?;
-        Signature::try_from(bytes).map_err(D::Error::custom)
-    }
-}
-
-impl Serialize for Signature {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        String::from_utf8(base64::encode(self.as_ref()))
-            .unwrap()
-            .serialize(serializer)
     }
 }
 

@@ -121,7 +121,7 @@ impl Eq for Id {}
 
 impl Serialize for Id {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.0.as_str().serialize(serializer)
+        self.to_string().serialize(serializer)
     }
 }
 

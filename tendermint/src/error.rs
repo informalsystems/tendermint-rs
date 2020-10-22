@@ -152,6 +152,14 @@ pub enum Kind {
     /// Invalid BlockIdFlag
     #[error("invalid block id flag")]
     BlockIdFlag,
+
+    /// Negative voting power
+    #[error("negative power")]
+    NegativePower,
+
+    /// Missing Public Key
+    #[error("missing public key")]
+    MissingPublicKey,
 }
 
 impl Kind {

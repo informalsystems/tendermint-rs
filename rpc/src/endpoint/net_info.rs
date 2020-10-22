@@ -92,7 +92,7 @@ pub struct Monitor {
     pub active: bool,
 
     /// When the monitor started
-    #[serde(rename = "Start")]
+    #[serde(rename = "Start", with = "serializers::time")]
     pub start: Time,
 
     /// Duration of this monitor

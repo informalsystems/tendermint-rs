@@ -156,7 +156,7 @@ mod rpc {
     #[tokio::test]
     #[ignore]
     async fn genesis() {
-        let genesis = localhost_rpc_client().genesis().await.unwrap();
+        let genesis = localhost_rpc_client().genesis().await.unwrap(); // https://github.com/tendermint/tendermint/issues/5549
 
         assert_eq!(
             genesis.consensus_params.validator.pub_key_types[0].to_string(),

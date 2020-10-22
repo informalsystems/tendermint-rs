@@ -27,7 +27,7 @@ pub const LENGTH: usize = 20;
 
 /// Account IDs
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct Id([u8; LENGTH]);
+pub struct Id([u8; LENGTH]); // JSON custom serialization for priv_validator_key.json
 
 impl DomainType<Vec<u8>> for Id {}
 
@@ -120,13 +120,7 @@ impl FromStr for Id {
             .or_else(|_| hex::decode(s))
             .map_err(|_| Kind::Parse)?;
 
-        if bytes.len() != LENGTH {
-            return Err(Kind::Parse.into());
-        }
-
-        let mut result_bytes = [0u8; LENGTH];
-        result_bytes.copy_from_slice(&bytes);
-        Ok(Id(result_bytes))
+        Ok(bytes.try_into()?)
     }
 }
 
@@ -148,7 +142,10 @@ impl<'de> Deserialize<'de> for Id {
 
 impl Serialize for Id {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.to_string().serialize(serializer)
+        serializer.serialize_str(
+            &String::from_utf8(hex::encode_upper(Vec::<u8>::from(*self)))
+                .map_err(serde::ser::Error::custom)?,
+        )
     }
 }
 

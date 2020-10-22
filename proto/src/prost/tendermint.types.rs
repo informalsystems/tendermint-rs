@@ -12,12 +12,15 @@ pub struct ValidatorSet {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Validator {
     #[prost(bytes, tag="1")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub address: std::vec::Vec<u8>,
     #[prost(message, optional, tag="2")]
     pub pub_key: ::std::option::Option<super::crypto::PublicKey>,
     #[prost(int64, tag="3")]
+    #[serde(alias = "power", with = "crate::serializers::from_str")]
     pub voting_power: i64,
     #[prost(int64, tag="4")]
+    #[serde(with = "crate::serializers::from_str", default)]
     pub proposer_priority: i64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -224,10 +227,12 @@ pub struct BlockMeta {
     #[prost(message, optional, tag="1")]
     pub block_id: ::std::option::Option<BlockId>,
     #[prost(int64, tag="2")]
+    #[serde(with = "crate::serializers::from_str")]
     pub block_size: i64,
     #[prost(message, optional, tag="3")]
     pub header: ::std::option::Option<Header>,
     #[prost(int64, tag="4")]
+    #[serde(with = "crate::serializers::from_str")]
     pub num_txs: i64,
 }
 /// TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree.

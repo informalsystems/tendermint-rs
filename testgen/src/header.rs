@@ -86,9 +86,9 @@ impl Generator<block::Header> for Header {
         } else {
             Validator::new("a").generate().unwrap().address
         };
-        let valset = validator::Set::new(vals);
+        let valset = validator::Set::new_simple(vals);
         let next_valset = match &self.next_validators {
-            Some(next_vals) => validator::Set::new(generate_validators(next_vals)?),
+            Some(next_vals) => validator::Set::new_simple(generate_validators(next_vals)?),
             None => valset.clone(),
         };
         let chain_id = match chain::Id::from_str(

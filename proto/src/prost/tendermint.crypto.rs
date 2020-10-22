@@ -55,8 +55,10 @@ pub struct PublicKey {
 pub mod public_key {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[serde(tag = "type", content = "value")]
     pub enum Sum {
         #[prost(bytes, tag="1")]
+        #[serde(rename = "tendermint/PubKeyEd25519", with = "crate::serializers::bytes::base64string")]
         Ed25519(std::vec::Vec<u8>),
     }
 }

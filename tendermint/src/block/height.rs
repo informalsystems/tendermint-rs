@@ -113,7 +113,7 @@ impl<'de> Deserialize<'de> for Height {
 
 impl Serialize for Height {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.to_string().serialize(serializer)
+        i64::from(*self).to_string().serialize(serializer)
     }
 }
 

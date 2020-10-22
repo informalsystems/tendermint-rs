@@ -16,8 +16,10 @@ pub enum VerificationError {
     #[error("header from the future: header_time={header_time} now={now}")]
     HeaderFromTheFuture {
         /// Time in the header
+        #[serde(with = "tendermint::serializers::time")]
         header_time: Time,
         /// Current time
+        #[serde(with = "tendermint::serializers::time")]
         now: Time,
     },
 
@@ -52,8 +54,10 @@ pub enum VerificationError {
     #[error("invalid commit value: header_hash={header_hash} commit_hash={commit_hash}")]
     InvalidCommitValue {
         /// Header hash
+        #[serde(with = "tendermint::serializers::hash")]
         header_hash: Hash,
         /// Commit hash
+        #[serde(with = "tendermint::serializers::hash")]
         commit_hash: Hash,
     },
 
@@ -61,8 +65,10 @@ pub enum VerificationError {
     #[error("invalid next validator set: header_next_validators_hash={header_next_validators_hash} next_validators_hash={next_validators_hash}")]
     InvalidNextValidatorSet {
         /// Next validator set hash
+        #[serde(with = "tendermint::serializers::hash")]
         header_next_validators_hash: Hash,
         /// Validator set hash
+        #[serde(with = "tendermint::serializers::hash")]
         next_validators_hash: Hash,
     },
 
@@ -70,8 +76,10 @@ pub enum VerificationError {
     #[error("invalid validator set: header_validators_hash={header_validators_hash} validators_hash={validators_hash}")]
     InvalidValidatorSet {
         /// Hash of validator set stored in header
+        #[serde(with = "tendermint::serializers::hash")]
         header_validators_hash: Hash,
         /// Actual hash of validator set in header
+        #[serde(with = "tendermint::serializers::hash")]
         validators_hash: Hash,
     },
 

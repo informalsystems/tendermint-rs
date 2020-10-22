@@ -127,9 +127,11 @@ pub struct LatestStatus {
     /// The latest height we are trusting.
     pub height: Option<u64>,
     /// The latest block hash we are trusting.
+    #[serde(with = "tendermint::serializers::option_hash")]
     pub block_hash: Option<Hash>,
     /// The latest validator set we are trusting.
     /// Note that this potentially did not yet sign a header yet.
+    #[serde(with = "tendermint::serializers::option_hash")]
     pub valset_hash: Option<Hash>,
     /// The list of fullnodes we are connected to, primary and witnesses.
     pub connected_nodes: Vec<PeerId>,

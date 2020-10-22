@@ -157,7 +157,7 @@ mod prod {
             let res = block_on(task, self.peer_id, self.timeout)?;
 
             match res {
-                Ok(response) => Ok(TMValidatorSet::new(response.validators)),
+                Ok(response) => Ok(TMValidatorSet::new_simple(response.validators)),
                 Err(err) => Err(IoError::RpcError(err)),
             }
         }

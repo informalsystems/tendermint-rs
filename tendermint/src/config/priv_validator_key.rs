@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
 
 /// Validator private key
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)] // JSON custom serialization for priv_validator_key.json
 pub struct PrivValidatorKey {
     /// Address
     pub address: account::Id,
