@@ -72,8 +72,11 @@ impl TryFrom<RawCommitSig> for CommitSig {
         if value.block_id_flag == BlockIdFlag::Absent.to_i32().unwrap() {
             if value.timestamp.is_some() {
                 let timestamp = value.timestamp.unwrap();
-                if timestamp.nanos != 0 || timestamp.seconds != 0 {
-                    return Err(Kind::InvalidTimestamp.into());
+                // 0001-01-01T00:00:00.000Z translates to EPOCH-62135596800 seconds
+                if timestamp.nanos != 0 || timestamp.seconds != -62135596800 {
+                    return Err(Kind::InvalidTimestamp
+                        .context("absent commitsig has non-zero timestamp")
+                        .into());
                 }
             }
             if !value.signature.is_empty() {
@@ -83,7 +86,9 @@ impl TryFrom<RawCommitSig> for CommitSig {
         }
         if value.block_id_flag == BlockIdFlag::Commit.to_i32().unwrap() {
             if value.signature.is_empty() {
-                return Err(Kind::InvalidSignature.into());
+                return Err(Kind::InvalidSignature
+                    .context("regular commitsig has no signature")
+                    .into());
             }
             if value.validator_address.is_empty() {
                 return Err(Kind::InvalidValidatorAddress.into());
@@ -96,7 +101,9 @@ impl TryFrom<RawCommitSig> for CommitSig {
         }
         if value.block_id_flag == BlockIdFlag::Nil.to_i32().unwrap() {
             if value.signature.is_empty() {
-                return Err(Kind::InvalidSignature.into());
+                return Err(Kind::InvalidSignature
+                    .context("nil commitsig has no signature")
+                    .into());
             }
             if value.validator_address.is_empty() {
                 return Err(Kind::InvalidValidatorAddress.into());

@@ -103,6 +103,8 @@ mod test {
             "2020-09-14T16:33:00Z",
             "2020-09-14T16:33:00.1Z",
             "2020-09-14T16:33:00.211914212Z",
+            "1970-01-01T00:00:00Z",
+            "0001-01-01T00:00:00Z",
         ];
         for timestamp in test_timestamps {
             let json = "{\"timestamp\":\"".to_owned() + timestamp + "\"}";

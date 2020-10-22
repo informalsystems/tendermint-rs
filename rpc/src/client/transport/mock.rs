@@ -21,6 +21,7 @@ use std::collections::HashMap;
 ///     "response": {
 ///       "data": "GaiaApp",
 ///       "version": "0.17.0",
+///       "app_version": "1",
 ///       "last_block_height": "488120",
 ///       "last_block_app_hash": "2LnCw0fN+Zq/gs5SOuya/GRHUmtWftAqAkTUuoxl4g4="
 ///     }
