@@ -14,7 +14,7 @@
             },
             "chain_id": "test-chain-01",
             "height": "2",
-            "time": "2019-11-02T15:04:10Z",
+            "time": "2019-11-02T15:04:10.000Z",
             "last_block_id": {
                 "hash": "15F15EF50BDE2018F4B129A827F90C18222C757770C8295EB8EE7BF50E761BC0",
                 "part_set_header": {
@@ -46,25 +46,25 @@
             {
                 "block_id_flag": 1,
                 "validator_address": "",
-                "timestamp": "0001-01-01T00:00:00Z",
+                "timestamp": "0001-01-01T00:00:00.000Z",
                 "signature": null
             },
             {
                 "block_id_flag": 1,
                 "validator_address": "",
-                "timestamp": "0001-01-01T00:00:00Z",
+                "timestamp": "0001-01-01T00:00:00.000Z",
                 "signature": null
             },
             {
                 "block_id_flag": 1,
                 "validator_address": "",
-                "timestamp": "0001-01-01T00:00:00Z",
+                "timestamp": "0001-01-01T00:00:00.000Z",
                 "signature": null
             },
             {
                 "block_id_flag": 1,
                 "validator_address": "",
-                "timestamp": "0001-01-01T00:00:00Z",
+                "timestamp": "0001-01-01T00:00:00.000Z",
                 "signature": null
             }
             ]
@@ -117,6 +117,7 @@
                 },
                 "voting_power": "50",
                 "proposer_priority": "-100"
-        }
+        },
+        "total_voting_power": "0"
     }
 }

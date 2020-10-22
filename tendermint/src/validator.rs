@@ -131,7 +131,7 @@ pub struct Info {
 
     /// Validator voting power
     // Compatibility with genesis.json https://github.com/tendermint/tendermint/issues/5549
-    #[serde(alias = "power")]
+    #[serde(alias = "power", alias = "total_voting_power")]
     pub voting_power: vote::Power,
 
     /// Validator proposer priority

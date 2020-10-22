@@ -14,7 +14,7 @@
             },
             "chain_id": "test-chain-01",
             "height": "2",
-            "time": "2019-11-02T15:04:10Z",
+            "time": "2019-11-02T15:04:10.000Z",
             "last_block_id": {
                 "hash": "15F15EF50BDE2018F4B129A827F90C18222C757770C8295EB8EE7BF50E761BC0",
                 "part_set_header": {
@@ -46,25 +46,25 @@
                 {
                     "block_id_flag": 2,
                     "validator_address": "04D58F15E56D6531CED6FFEFB17512E30AD8F219",
-                    "timestamp": "2019-11-02T15:04:15Z",
+                    "timestamp": "2019-11-02T15:04:15.000Z",
                     "signature": "npKW0Wt38LG9JXIOJyupzgncY6wvi1iwVWWckDCpnMgMZZnIeOEdYTRH56GhpfZj6Z4kWeMTAxfhwx7ExLbaBA=="
                 },
                 {
                     "block_id_flag": 2,
                     "validator_address": "06C9F55B64064F2FC983A2A3BA5BFE8085E4CD7F",
-                    "timestamp": "2019-11-02T15:04:15Z",
+                    "timestamp": "2019-11-02T15:04:15.000Z",
                     "signature": "jN2a8IWqdPDg2ZLZCk0FDHX3l9oX0TsckFL9/Z4BDpXPGVG9/lyj3aHThNYpNWcJT4hz9UW8/U4pRQQYQoRQCw=="
                 },
                 {
                     "block_id_flag": 2,
                     "validator_address": "074D8A3973885CD484ED4904DC82ED812773C5BA",
-                    "timestamp": "2019-11-02T15:04:15Z",
+                    "timestamp": "2019-11-02T15:04:15.000Z",
                     "signature": "rfPPOWofI2P51ESkzLEHMM+Z3iZ2abKaivVVSSjsuuLB1tvOW8lQiC0oUEl7S2G9L3Y/Yu29lQLQu7yb+Mn6AQ=="
                 },
                 {
                     "block_id_flag": 2,
                     "validator_address": "0859D2467F0DA63744B220E6E270DD3F0EEAC10E",
-                    "timestamp": "2019-11-02T15:04:15Z",
+                    "timestamp": "2019-11-02T15:04:15.000Z",
                     "signature": "vaLghdhDZfypNK++4hrHDteVJtZXC+A/WGMtW4h9NORg95E5t/rkx/ACCgO6T+5n45EHHOqVimH8RqXCHvvtAA=="
                 }
             ]
@@ -117,6 +117,7 @@
             },
             "voting_power": "50",
             "proposer_priority": "-100"
-        }
+        },
+        "total_voting_power": "0"
     }
 }
