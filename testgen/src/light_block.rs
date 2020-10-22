@@ -87,7 +87,7 @@ impl LightBlock {
 
     pub fn new_default(validators: &[Validator], height: u64) -> Self {
         let header = Header::new(validators)
-            .height(height.clone())
+            .height(height)
             .chain_id("test-chain")
             .next_validators(validators)
             .time(height); // just wanted to initialize time with some value

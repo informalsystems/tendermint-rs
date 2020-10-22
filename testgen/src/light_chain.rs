@@ -3,6 +3,8 @@ use crate::Validator;
 use tendermint::block::Height;
 use tendermint::chain::Info;
 
+use std::convert::TryFrom;
+
 pub struct LightChain {
     pub info: Info,
     pub light_blocks: Vec<LightBlock>,
@@ -25,12 +27,16 @@ impl LightChain {
             light_blocks.push(testgen_light_block.next());
         }
 
+        let id = light_blocks[0]
+            .chain_id()
+            .parse()
+            .unwrap();
+        let height = Height::try_from(num)
+            .expect("failed to convert from u64 to Height");
+
         let info = Info {
-            id: light_blocks[0]
-                .chain_id()
-                .parse()
-                .unwrap(),
-            height: Height::from(num),
+            id,
+            height,
             // TODO: figure how to add this
             last_block_id: None,
             // TODO: Not sure yet what this time means
@@ -49,7 +55,8 @@ impl LightChain {
         let new_light_block = last_light_block.next();
         self.light_blocks.push(new_light_block.clone());
 
-        self.info.height = Height(new_light_block.height());
+        self.info.height = Height::try_from(new_light_block.height())
+            .expect("failed to convert from u64 to Height");
 
         new_light_block
     }
@@ -82,12 +89,12 @@ mod tests {
         let advance_1 = light_chain.advance_chain();
 
         assert_eq!(2, advance_1.height());
-        assert_eq!(2, light_chain.info.height.0);
+        assert_eq!(2, light_chain.info.height.value());
 
         let advance_2 = light_chain.advance_chain();
 
         assert_eq!(3, advance_2.height());
-        assert_eq!(3, light_chain.info.height.0);
+        assert_eq!(3, light_chain.info.height.value());
     }
 
     #[test]
