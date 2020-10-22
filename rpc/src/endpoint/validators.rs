@@ -7,7 +7,7 @@ use tendermint::{block, validator};
 /// List validators for a specific block
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
-    height: block::Height,
+    pub height: block::Height,
 }
 
 impl Request {

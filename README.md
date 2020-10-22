@@ -5,7 +5,7 @@
 [![Build Status][build-image]][build-link]
 [![Audit Status][audit-image]][audit-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
-![Rust 1.44+][rustc-image]
+![Rust Stable][rustc-image]
 
 [Tendermint] in Rust with [TLA+ specifications](/docs/spec).
 
@@ -14,9 +14,9 @@ for Byzantine fault tolerant applications written in any programming language.
 
 ## Requirements
 
-Tested with Rust 1.44+, may work on older version.
+Tested against the latest stable version of Rust. May work with older versions.
 
-Compatible with the v0.33 series of [Tendermint Core][Tendermint].
+Compatible with the v0.34 series of [Tendermint Core][Tendermint].
 
 ## Documentation
 
@@ -108,7 +108,7 @@ limitations under the License.
 [audit-link]: https://github.com/informalsystems/tendermint-rs/actions?query=workflow%3AAudit-Check
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
 [license-link]: https://github.com/interchainio/tendermint-rs/blob/master/LICENSE
-[rustc-image]: https://img.shields.io/badge/rustc-1.44+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
 
 [//]: # (general links)
 
