@@ -49,7 +49,7 @@ pub struct Id {
     /// PartSetHeader in protobuf is defined as never nil using the gogoproto
     /// annotations. This does not translate to Rust, but we can indicate this
     /// in the DomainType.
-    pub parts: PartSetHeader,
+    pub part_set_header: PartSetHeader,
 }
 
 impl DomainType<RawBlockId> for Id {}
@@ -63,7 +63,7 @@ impl TryFrom<RawBlockId> for Id {
         }
         Ok(Self {
             hash: value.hash.try_into()?,
-            parts: value.part_set_header.unwrap().try_into()?,
+            part_set_header: value.part_set_header.unwrap().try_into()?,
         })
     }
 }
@@ -85,7 +85,7 @@ impl From<Id> for RawBlockId {
         } else {
             RawBlockId {
                 hash: value.hash.into(),
-                part_set_header: Some(value.parts.into()),
+                part_set_header: Some(value.part_set_header.into()),
             }
         }
     }
@@ -100,7 +100,7 @@ impl TryFrom<RawCanonicalBlockId> for Id {
         }
         Ok(Self {
             hash: value.hash.try_into()?,
-            parts: value.part_set_header.unwrap().try_into()?,
+            part_set_header: value.part_set_header.unwrap().try_into()?,
         })
     }
 }
@@ -109,7 +109,7 @@ impl From<Id> for RawCanonicalBlockId {
     fn from(value: Id) -> Self {
         RawCanonicalBlockId {
             hash: value.hash.as_bytes().to_vec(),
-            part_set_header: Some(value.parts.into()),
+            part_set_header: Some(value.part_set_header.into()),
         }
     }
 }
@@ -137,7 +137,7 @@ impl FromStr for Id {
     fn from_str(s: &str) -> Result<Self, Error> {
         Ok(Self {
             hash: Hash::from_hex_upper(Algorithm::Sha256, s)?,
-            parts: PartSetHeader::default(),
+            part_set_header: PartSetHeader::default(),
         })
     }
 }

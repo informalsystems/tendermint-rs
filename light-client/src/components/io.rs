@@ -53,12 +53,12 @@ impl IoError {
 }
 
 /// Interface for fetching light blocks from a full node, typically via the RPC client.
-pub trait Io: Send {
+pub trait Io: Send + Sync {
     /// Fetch a light block at the given height from a peer
     fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError>;
 }
 
-impl<F: Send> Io for F
+impl<F: Send + Sync> Io for F
 where
     F: Fn(AtHeight) -> Result<LightBlock, IoError>,
 {
