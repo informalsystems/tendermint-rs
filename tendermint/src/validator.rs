@@ -130,6 +130,8 @@ pub struct Info {
     pub pub_key: PublicKey,
 
     /// Validator voting power
+    // Compatibility with genesis.json https://github.com/tendermint/tendermint/issues/5549
+    #[serde(alias = "power")]
     pub voting_power: vote::Power,
 
     /// Validator proposer priority
