@@ -5,7 +5,7 @@
 
 #![deny(warnings, trivial_casts, trivial_numeric_casts, unused_import_braces)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/tendermint-proto/0.2.0")]
+#![doc(html_root_url = "https://docs.rs/tendermint-proto/0.17.0-rc1")]
 
 // Built-in prost_types with slight customization to enable JSON-encoding
 pub mod google {

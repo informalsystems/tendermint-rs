@@ -3,7 +3,7 @@
 use crate::types::Time;
 
 /// Abstracts over the current time.
-pub trait Clock: Send {
+pub trait Clock: Send + Sync {
     /// Get the current time.
     fn now(&self) -> Time;
 }

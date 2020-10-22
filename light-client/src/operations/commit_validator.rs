@@ -10,7 +10,7 @@ use crate::{
 use tendermint::block::CommitSig;
 
 /// Validates the commit associated with a header against a validator set
-pub trait CommitValidator: Send {
+pub trait CommitValidator: Send + Sync {
     /// Perform basic validation
     fn validate(
         &self,

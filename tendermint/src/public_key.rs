@@ -129,6 +129,9 @@ impl PublicKey {
                     )
                     .into()
                 }),
+                Signature::None => {
+                    Err(format_err!(error::Kind::SignatureInvalid, "missing signature").into())
+                }
             },
             #[cfg(feature = "secp256k1")]
             PublicKey::Secp256k1(_) => fail!(

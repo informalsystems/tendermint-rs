@@ -12,18 +12,18 @@ use tendermint::serializers;
 pub struct Request {
     /// Path to the data
     #[serde(skip_serializing_if = "Option::is_none")]
-    path: Option<Path>,
+    pub path: Option<Path>,
 
     /// Data to query
     #[serde(with = "serializers::bytes::hexstring")]
-    data: Vec<u8>,
+    pub data: Vec<u8>,
 
     /// Block height
     #[serde(skip_serializing_if = "Option::is_none")]
-    height: Option<block::Height>,
+    pub height: Option<block::Height>,
 
     /// Include proof in response
-    prove: bool,
+    pub prove: bool,
 }
 
 impl Request {

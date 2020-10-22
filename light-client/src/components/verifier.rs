@@ -44,7 +44,7 @@ impl From<Result<(), VerificationError>> for Verdict {
 /// ## Implements
 /// - [TMBC-VAL-CONTAINS-CORR.1]
 /// - [TMBC-VAL-COMMIT.1]
-pub trait Verifier: Send {
+pub trait Verifier: Send + Sync {
     /// Perform the verification.
     fn verify(
         &self,
