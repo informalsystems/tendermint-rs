@@ -62,6 +62,14 @@ impl LightChain {
             .into_iter()
             .find(|lb| lb.height() == target_height)
     }
+
+    /// fetches the latest block from LightChain
+    pub fn latest_block(&self) -> LightBlock {
+        self.light_blocks
+            .last()
+            .expect("cannot find last light block")
+            .clone()
+    }
 }
 
 #[cfg(test)]
@@ -71,10 +79,15 @@ mod tests {
     #[test]
     fn test_advance_chain() {
         let mut light_chain = LightChain::default_with_length(1);
-        let new_light_block = light_chain.advance_chain();
+        let advance_1 = light_chain.advance_chain();
 
-        assert_eq!(2, new_light_block.height());
+        assert_eq!(2, advance_1.height());
         assert_eq!(2, light_chain.info.height.0);
+
+        let advance_2 = light_chain.advance_chain();
+
+        assert_eq!(3, advance_2.height());
+        assert_eq!(3, light_chain.info.height.0);
     }
 
     #[test]
@@ -86,5 +99,16 @@ mod tests {
         light_chain.advance_chain();
         let second_block = light_chain.block(2);
         assert_eq!(2, second_block.unwrap().height());
+    }
+
+    #[test]
+    fn test_latest_block() {
+        let mut light_chain = LightChain::default_with_length(1);
+        let first_block = light_chain.latest_block();
+        assert_eq!(1, first_block.height());
+
+        light_chain.advance_chain();
+        let second_block = light_chain.latest_block();
+        assert_eq!(2, second_block.height());
     }
 }
