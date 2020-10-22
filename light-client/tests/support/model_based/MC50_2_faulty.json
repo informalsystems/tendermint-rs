@@ -1,0 +1,9 @@
+{
+  "description": "Tests for 50 validators, target height 2, with faulty primary",
+  "model": "MC50_2_faulty.tla",
+  "timeout": 150,
+  "tests": [
+    "TestSuccess",
+    "TestFailure"
+  ]
+}

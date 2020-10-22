@@ -19,6 +19,7 @@
     "TestMoreThanTwoThirdsValsetChanges",
     "TestTwoThirdsValsetChanges",
     "TestNonMonotonicHeight",
-    "TestEmptyCommit"
+    "TestEmptyCommitEmptyValset",
+    "TestEmptyCommitNonEmptyValset"
   ]
 }

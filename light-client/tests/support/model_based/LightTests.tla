@@ -95,10 +95,23 @@ TestNonMonotonicHeight ==
        /\ history[s].current.Commits /= ({} <: {STRING})
        /\ history[s].current.Commits \subseteq  history[s].current.header.VS
 
-TestEmptyCommit ==
+TestEmptyCommitEmptyValset ==
     /\ \E s \in DOMAIN history :
        \* this is wrong
        /\ history[s].current.Commits = ({} <: {STRING})
+       /\ Valset(s) = ({} <: {STRING})
+       \* everything else is correct
+       /\ history[s].current.header /= history[s].verified.header
+       /\ history[s].current.header.height > history[s].verified.header.height
+       /\ history[s].current.header.time > history[s].verified.header.time
+       /\ history[s].current.header.time < history[s].now
+       /\ history[s].verified.header.time + TRUSTING_PERIOD > history[s].now
+
+TestEmptyCommitNonEmptyValset ==
+    /\ \E s \in DOMAIN history :
+       \* this is wrong
+       /\ history[s].current.Commits = ({} <: {STRING})
+       /\ Valset(s) /= ({} <: {STRING})
        \* everything else is correct
        /\ history[s].current.header /= history[s].verified.header
        /\ history[s].current.header.height > history[s].verified.header.height

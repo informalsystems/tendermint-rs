@@ -11,35 +11,35 @@ TRUE
 State2 ==
 /\ Faulty = {"n2"}
 /\ blockchain = 1
-    :> [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    :> [NextVS |-> { "n10", "n2", "n3", "n8" },
       VS |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       height |-> 1,
       lastCommit |-> {},
       time |-> 1]
   @@ 2
-    :> [NextVS |-> { "n1", "n6", "n9" },
-      VS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    :> [NextVS |-> { "n8", "n9" },
+      VS |-> { "n10", "n2", "n3", "n8" },
       height |-> 2,
-      lastCommit |-> { "n1", "n2", "n4", "n6", "n7", "n8", "n9" },
+      lastCommit |-> { "n1", "n2", "n4", "n5", "n6", "n7", "n9" },
       time |-> 2]
   @@ 3
-    :> [NextVS |-> { "n10", "n3", "n4", "n5", "n7", "n8", "n9" },
-      VS |-> { "n1", "n6", "n9" },
+    :> [NextVS |-> { "n1", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
+      VS |-> { "n8", "n9" },
       height |-> 3,
-      lastCommit |-> { "n10", "n2", "n3", "n6", "n9" },
+      lastCommit |-> { "n10", "n3", "n8" },
       time |-> 3]
   @@ 4
     :> [NextVS |->
         { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
-      VS |-> { "n10", "n3", "n4", "n5", "n7", "n8", "n9" },
+      VS |-> { "n1", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       height |-> 4,
-      lastCommit |-> { "n1", "n6", "n9" },
+      lastCommit |-> { "n8", "n9" },
       time |-> 4]
 /\ fetchedLightBlocks = 1
     :> [Commits |->
         { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       header |->
-        [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+        [NextVS |-> { "n10", "n2", "n3", "n8" },
           VS |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
           height |-> 1,
           lastCommit |-> {},
@@ -49,7 +49,7 @@ State2 ==
         [Commits |->
             { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
           header |->
-            [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+            [NextVS |-> { "n10", "n2", "n3", "n8" },
               VS |->
                 { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
               height |-> 1,
@@ -61,7 +61,7 @@ State2 ==
         [Commits |->
             { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
           header |->
-            [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+            [NextVS |-> { "n10", "n2", "n3", "n8" },
               VS |->
                 { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
               height |-> 1,
@@ -69,7 +69,7 @@ State2 ==
               time |-> 1]]]
 /\ latestVerified = [Commits |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
   header |->
-    [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    [NextVS |-> { "n10", "n2", "n3", "n8" },
       VS |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       height |-> 1,
       lastCommit |-> {},
@@ -80,7 +80,7 @@ State2 ==
 /\ nprobes = 0
 /\ prevCurrent = [Commits |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
   header |->
-    [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    [NextVS |-> { "n10", "n2", "n3", "n8" },
       VS |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       height |-> 1,
       lastCommit |-> {},
@@ -89,7 +89,7 @@ State2 ==
 /\ prevVerdict = "SUCCESS"
 /\ prevVerified = [Commits |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
   header |->
-    [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    [NextVS |-> { "n10", "n2", "n3", "n8" },
       VS |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       height |-> 1,
       lastCommit |-> {},
@@ -101,53 +101,53 @@ State2 ==
 State3 ==
 /\ Faulty = {"n2"}
 /\ blockchain = 1
-    :> [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    :> [NextVS |-> { "n10", "n2", "n3", "n8" },
       VS |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       height |-> 1,
       lastCommit |-> {},
       time |-> 1]
   @@ 2
-    :> [NextVS |-> { "n1", "n6", "n9" },
-      VS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    :> [NextVS |-> { "n8", "n9" },
+      VS |-> { "n10", "n2", "n3", "n8" },
       height |-> 2,
-      lastCommit |-> { "n1", "n2", "n4", "n6", "n7", "n8", "n9" },
+      lastCommit |-> { "n1", "n2", "n4", "n5", "n6", "n7", "n9" },
       time |-> 2]
   @@ 3
-    :> [NextVS |-> { "n10", "n3", "n4", "n5", "n7", "n8", "n9" },
-      VS |-> { "n1", "n6", "n9" },
+    :> [NextVS |-> { "n1", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
+      VS |-> { "n8", "n9" },
       height |-> 3,
-      lastCommit |-> { "n10", "n2", "n3", "n6", "n9" },
+      lastCommit |-> { "n10", "n3", "n8" },
       time |-> 3]
   @@ 4
     :> [NextVS |->
         { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
-      VS |-> { "n10", "n3", "n4", "n5", "n7", "n8", "n9" },
+      VS |-> { "n1", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       height |-> 4,
-      lastCommit |-> { "n1", "n6", "n9" },
+      lastCommit |-> { "n8", "n9" },
       time |-> 4]
 /\ fetchedLightBlocks = 1
     :> [Commits |->
         { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       header |->
-        [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+        [NextVS |-> { "n10", "n2", "n3", "n8" },
           VS |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
           height |-> 1,
           lastCommit |-> {},
           time |-> 1]]
   @@ 3
-    :> [Commits |-> { "n1", "n6", "n9" },
+    :> [Commits |-> { "n8", "n9" },
       header |->
-        [NextVS |-> { "n10", "n3", "n4", "n5", "n7", "n8", "n9" },
-          VS |-> { "n1", "n6", "n9" },
+        [NextVS |-> { "n1", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
+          VS |-> { "n8", "n9" },
           height |-> 3,
-          lastCommit |-> { "n10", "n2", "n3", "n6", "n9" },
+          lastCommit |-> { "n10", "n3", "n8" },
           time |-> 3]]
 /\ history = 0
     :> [current |->
         [Commits |->
             { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
           header |->
-            [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+            [NextVS |-> { "n10", "n2", "n3", "n8" },
               VS |->
                 { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
               height |-> 1,
@@ -159,7 +159,7 @@ State3 ==
         [Commits |->
             { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
           header |->
-            [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+            [NextVS |-> { "n10", "n2", "n3", "n8" },
               VS |->
                 { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
               height |-> 1,
@@ -167,12 +167,12 @@ State3 ==
               time |-> 1]]]
   @@ 1
     :> [current |->
-        [Commits |-> { "n1", "n6", "n9" },
+        [Commits |-> { "n8", "n9" },
           header |->
-            [NextVS |-> { "n10", "n3", "n4", "n5", "n7", "n8", "n9" },
-              VS |-> { "n1", "n6", "n9" },
+            [NextVS |-> { "n1", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
+              VS |-> { "n8", "n9" },
               height |-> 3,
-              lastCommit |-> { "n10", "n2", "n3", "n6", "n9" },
+              lastCommit |-> { "n10", "n3", "n8" },
               time |-> 3]],
       now |-> 1400,
       verdict |-> "NOT_ENOUGH_TRUST",
@@ -180,7 +180,7 @@ State3 ==
         [Commits |->
             { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
           header |->
-            [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+            [NextVS |-> { "n10", "n2", "n3", "n8" },
               VS |->
                 { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
               height |-> 1,
@@ -188,7 +188,7 @@ State3 ==
               time |-> 1]]]
 /\ latestVerified = [Commits |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
   header |->
-    [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    [NextVS |-> { "n10", "n2", "n3", "n8" },
       VS |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       height |-> 1,
       lastCommit |-> {},
@@ -197,18 +197,18 @@ State3 ==
 /\ nextHeight = 2
 /\ now = 1400
 /\ nprobes = 1
-/\ prevCurrent = [Commits |-> { "n1", "n6", "n9" },
+/\ prevCurrent = [Commits |-> { "n8", "n9" },
   header |->
-    [NextVS |-> { "n10", "n3", "n4", "n5", "n7", "n8", "n9" },
-      VS |-> { "n1", "n6", "n9" },
+    [NextVS |-> { "n1", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
+      VS |-> { "n8", "n9" },
       height |-> 3,
-      lastCommit |-> { "n10", "n2", "n3", "n6", "n9" },
+      lastCommit |-> { "n10", "n3", "n8" },
       time |-> 3]]
 /\ prevNow = 1400
 /\ prevVerdict = "NOT_ENOUGH_TRUST"
 /\ prevVerified = [Commits |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
   header |->
-    [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    [NextVS |-> { "n10", "n2", "n3", "n8" },
       VS |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       height |-> 1,
       lastCommit |-> {},
@@ -220,61 +220,61 @@ State3 ==
 State4 ==
 /\ Faulty = {"n2"}
 /\ blockchain = 1
-    :> [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    :> [NextVS |-> { "n10", "n2", "n3", "n8" },
       VS |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       height |-> 1,
       lastCommit |-> {},
       time |-> 1]
   @@ 2
-    :> [NextVS |-> { "n1", "n6", "n9" },
-      VS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    :> [NextVS |-> { "n8", "n9" },
+      VS |-> { "n10", "n2", "n3", "n8" },
       height |-> 2,
-      lastCommit |-> { "n1", "n2", "n4", "n6", "n7", "n8", "n9" },
+      lastCommit |-> { "n1", "n2", "n4", "n5", "n6", "n7", "n9" },
       time |-> 2]
   @@ 3
-    :> [NextVS |-> { "n10", "n3", "n4", "n5", "n7", "n8", "n9" },
-      VS |-> { "n1", "n6", "n9" },
+    :> [NextVS |-> { "n1", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
+      VS |-> { "n8", "n9" },
       height |-> 3,
-      lastCommit |-> { "n10", "n2", "n3", "n6", "n9" },
+      lastCommit |-> { "n10", "n3", "n8" },
       time |-> 3]
   @@ 4
     :> [NextVS |->
         { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
-      VS |-> { "n10", "n3", "n4", "n5", "n7", "n8", "n9" },
+      VS |-> { "n1", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       height |-> 4,
-      lastCommit |-> { "n1", "n6", "n9" },
+      lastCommit |-> { "n8", "n9" },
       time |-> 4]
 /\ fetchedLightBlocks = 1
     :> [Commits |->
         { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       header |->
-        [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+        [NextVS |-> { "n10", "n2", "n3", "n8" },
           VS |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
           height |-> 1,
           lastCommit |-> {},
           time |-> 1]]
   @@ 2
-    :> [Commits |-> { "n10", "n2", "n3", "n4", "n6" },
+    :> [Commits |-> { "n10", "n2", "n3", "n8" },
       header |->
-        [NextVS |-> { "n1", "n6", "n9" },
-          VS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+        [NextVS |-> { "n8", "n9" },
+          VS |-> { "n10", "n2", "n3", "n8" },
           height |-> 2,
-          lastCommit |-> { "n1", "n2", "n4", "n6", "n7", "n8", "n9" },
+          lastCommit |-> { "n1", "n2", "n4", "n5", "n6", "n7", "n9" },
           time |-> 2]]
   @@ 3
-    :> [Commits |-> { "n1", "n6", "n9" },
+    :> [Commits |-> { "n8", "n9" },
       header |->
-        [NextVS |-> { "n10", "n3", "n4", "n5", "n7", "n8", "n9" },
-          VS |-> { "n1", "n6", "n9" },
+        [NextVS |-> { "n1", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
+          VS |-> { "n8", "n9" },
           height |-> 3,
-          lastCommit |-> { "n10", "n2", "n3", "n6", "n9" },
+          lastCommit |-> { "n10", "n3", "n8" },
           time |-> 3]]
 /\ history = 0
     :> [current |->
         [Commits |->
             { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
           header |->
-            [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+            [NextVS |-> { "n10", "n2", "n3", "n8" },
               VS |->
                 { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
               height |-> 1,
@@ -286,7 +286,7 @@ State4 ==
         [Commits |->
             { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
           header |->
-            [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+            [NextVS |-> { "n10", "n2", "n3", "n8" },
               VS |->
                 { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
               height |-> 1,
@@ -294,12 +294,12 @@ State4 ==
               time |-> 1]]]
   @@ 1
     :> [current |->
-        [Commits |-> { "n1", "n6", "n9" },
+        [Commits |-> { "n8", "n9" },
           header |->
-            [NextVS |-> { "n10", "n3", "n4", "n5", "n7", "n8", "n9" },
-              VS |-> { "n1", "n6", "n9" },
+            [NextVS |-> { "n1", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
+              VS |-> { "n8", "n9" },
               height |-> 3,
-              lastCommit |-> { "n10", "n2", "n3", "n6", "n9" },
+              lastCommit |-> { "n10", "n3", "n8" },
               time |-> 3]],
       now |-> 1400,
       verdict |-> "NOT_ENOUGH_TRUST",
@@ -307,7 +307,7 @@ State4 ==
         [Commits |->
             { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
           header |->
-            [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+            [NextVS |-> { "n10", "n2", "n3", "n8" },
               VS |->
                 { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
               height |-> 1,
@@ -315,12 +315,12 @@ State4 ==
               time |-> 1]]]
   @@ 2
     :> [current |->
-        [Commits |-> { "n10", "n2", "n3", "n4", "n6" },
+        [Commits |-> { "n10", "n2", "n3", "n8" },
           header |->
-            [NextVS |-> { "n1", "n6", "n9" },
-              VS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+            [NextVS |-> { "n8", "n9" },
+              VS |-> { "n10", "n2", "n3", "n8" },
               height |-> 2,
-              lastCommit |-> { "n1", "n2", "n4", "n6", "n7", "n8", "n9" },
+              lastCommit |-> { "n1", "n2", "n4", "n5", "n6", "n7", "n9" },
               time |-> 2]],
       now |-> 1400,
       verdict |-> "SUCCESS",
@@ -328,35 +328,35 @@ State4 ==
         [Commits |->
             { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
           header |->
-            [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+            [NextVS |-> { "n10", "n2", "n3", "n8" },
               VS |->
                 { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
               height |-> 1,
               lastCommit |-> {},
               time |-> 1]]]
-/\ latestVerified = [Commits |-> { "n10", "n2", "n3", "n4", "n6" },
+/\ latestVerified = [Commits |-> { "n10", "n2", "n3", "n8" },
   header |->
-    [NextVS |-> { "n1", "n6", "n9" },
-      VS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    [NextVS |-> { "n8", "n9" },
+      VS |-> { "n10", "n2", "n3", "n8" },
       height |-> 2,
-      lastCommit |-> { "n1", "n2", "n4", "n6", "n7", "n8", "n9" },
+      lastCommit |-> { "n1", "n2", "n4", "n5", "n6", "n7", "n9" },
       time |-> 2]]
 /\ lightBlockStatus = 1 :> "StateVerified" @@ 2 :> "StateVerified" @@ 3 :> "StateUnverified"
 /\ nextHeight = 3
 /\ now = 1400
 /\ nprobes = 2
-/\ prevCurrent = [Commits |-> { "n10", "n2", "n3", "n4", "n6" },
+/\ prevCurrent = [Commits |-> { "n10", "n2", "n3", "n8" },
   header |->
-    [NextVS |-> { "n1", "n6", "n9" },
-      VS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    [NextVS |-> { "n8", "n9" },
+      VS |-> { "n10", "n2", "n3", "n8" },
       height |-> 2,
-      lastCommit |-> { "n1", "n2", "n4", "n6", "n7", "n8", "n9" },
+      lastCommit |-> { "n1", "n2", "n4", "n5", "n6", "n7", "n9" },
       time |-> 2]]
 /\ prevNow = 1400
 /\ prevVerdict = "SUCCESS"
 /\ prevVerified = [Commits |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
   header |->
-    [NextVS |-> { "n10", "n2", "n3", "n4", "n6", "n9" },
+    [NextVS |-> { "n10", "n2", "n3", "n8" },
       VS |-> { "n1", "n10", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9" },
       height |-> 1,
       lastCommit |-> {},
@@ -370,12 +370,12 @@ InvariantViolation ==
     /\ BMC!Skolem((\E s1$2 \in DOMAIN history:
       BMC!Skolem((\E s2$2 \in DOMAIN history:
         s2$2 = s1$2 + 1
-          /\ LET t_2s == history[s1$2]["current"]["header"]["VS"] IN
-          BMC!Skolem((\E t_2q \in t_2s:
-            BMC!Skolem((\E t_2r \in t_2s: ~(t_2q = t_2r)))))
+          /\ LET t_2w == history[s1$2]["current"]["header"]["VS"] IN
+          BMC!Skolem((\E t_2u \in t_2w:
+            BMC!Skolem((\E t_2v \in t_2w: ~(t_2u = t_2v)))))
           /\ Cardinality(history[s2$2]["current"]["header"]["VS"])
             = 2 * Cardinality(history[s1$2]["current"]["header"]["VS"])))))
 
 ================================================================================
-\* Created by Apalache on Thu Oct 15 12:42:09 CEST 2020
+\* Created by Apalache on Thu Oct 22 13:13:54 CEST 2020
 \* https://github.com/informalsystems/apalache

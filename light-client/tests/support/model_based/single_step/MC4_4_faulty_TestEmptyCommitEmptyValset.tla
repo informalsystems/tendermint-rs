@@ -9,7 +9,7 @@ TRUE
 (* Transition 0 to State2 *)
 
 State2 ==
-/\ Faulty = {"n2"}
+/\ Faulty = {}
 /\ blockchain = 1
     :> [NextVS |-> {"n3"},
       VS |-> { "n1", "n2", "n3", "n4" },
@@ -20,25 +20,25 @@ State2 ==
     :> [NextVS |-> { "n1", "n3" },
       VS |-> {"n3"},
       height |-> 2,
-      lastCommit |-> { "n1", "n2", "n3", "n4" },
+      lastCommit |-> { "n1", "n2", "n3" },
       time |-> 2]
   @@ 3
-    :> [NextVS |-> { "n3", "n4" },
+    :> [NextVS |-> { "n1", "n2" },
       VS |-> { "n1", "n3" },
       height |-> 3,
       lastCommit |-> {"n3"},
       time |-> 3]
   @@ 4
-    :> [NextVS |-> {"n1"},
-      VS |-> { "n3", "n4" },
+    :> [NextVS |-> {"n2"},
+      VS |-> { "n1", "n2" },
       height |-> 4,
       lastCommit |-> { "n1", "n3" },
       time |-> 4]
   @@ 5
     :> [NextVS |-> { "n1", "n2", "n3", "n4" },
-      VS |-> {"n1"},
+      VS |-> {"n2"},
       height |-> 5,
-      lastCommit |-> { "n3", "n4" },
+      lastCommit |-> { "n1", "n2" },
       time |-> 5]
 /\ fetchedLightBlocks = 1
     :> [Commits |-> { "n1", "n2", "n3", "n4" },
@@ -99,7 +99,7 @@ State2 ==
 (* Transition 5 to State3 *)
 
 State3 ==
-/\ Faulty = {"n2"}
+/\ Faulty = {}
 /\ blockchain = 1
     :> [NextVS |-> {"n3"},
       VS |-> { "n1", "n2", "n3", "n4" },
@@ -110,32 +110,40 @@ State3 ==
     :> [NextVS |-> { "n1", "n3" },
       VS |-> {"n3"},
       height |-> 2,
-      lastCommit |-> { "n1", "n2", "n3", "n4" },
+      lastCommit |-> { "n1", "n2", "n3" },
       time |-> 2]
   @@ 3
-    :> [NextVS |-> { "n3", "n4" },
+    :> [NextVS |-> { "n1", "n2" },
       VS |-> { "n1", "n3" },
       height |-> 3,
       lastCommit |-> {"n3"},
       time |-> 3]
   @@ 4
-    :> [NextVS |-> {"n1"},
-      VS |-> { "n3", "n4" },
+    :> [NextVS |-> {"n2"},
+      VS |-> { "n1", "n2" },
       height |-> 4,
       lastCommit |-> { "n1", "n3" },
       time |-> 4]
   @@ 5
     :> [NextVS |-> { "n1", "n2", "n3", "n4" },
-      VS |-> {"n1"},
+      VS |-> {"n2"},
       height |-> 5,
-      lastCommit |-> { "n3", "n4" },
+      lastCommit |-> { "n1", "n2" },
       time |-> 5]
 /\ fetchedLightBlocks = 1
-    :> [Commits |-> {"n2"},
+    :> [Commits |-> { "n1", "n2", "n3", "n4" },
+      header |->
+        [NextVS |-> {"n3"},
+          VS |-> { "n1", "n2", "n3", "n4" },
+          height |-> 1,
+          lastCommit |-> {},
+          time |-> 1]]
+  @@ 4
+    :> [Commits |-> {},
       header |->
         [NextVS |-> { "n1", "n2", "n4" },
-          VS |-> {"n2"},
-          height |-> 1,
+          VS |-> {},
+          height |-> 4,
           lastCommit |-> { "n1", "n2", "n3", "n4" },
           time |-> 2]]
 /\ history = 0
@@ -159,11 +167,11 @@ State3 ==
               time |-> 1]]]
   @@ 1
     :> [current |->
-        [Commits |-> {"n2"},
+        [Commits |-> {},
           header |->
             [NextVS |-> { "n1", "n2", "n4" },
-              VS |-> {"n2"},
-              height |-> 1,
+              VS |-> {},
+              height |-> 4,
               lastCommit |-> { "n1", "n2", "n3", "n4" },
               time |-> 2]],
       now |-> 1400,
@@ -187,11 +195,11 @@ State3 ==
 /\ nextHeight = 4
 /\ now = 1400
 /\ nprobes = 1
-/\ prevCurrent = [Commits |-> {"n2"},
+/\ prevCurrent = [Commits |-> {},
   header |->
     [NextVS |-> { "n1", "n2", "n4" },
-      VS |-> {"n2"},
-      height |-> 1,
+      VS |-> {},
+      height |-> 4,
       lastCommit |-> { "n1", "n2", "n3", "n4" },
       time |-> 2]]
 /\ prevNow = 1400
@@ -209,19 +217,18 @@ State3 ==
 
 InvariantViolation ==
   BMC!Skolem((\E s$2 \in DOMAIN history:
-      history[s$2]["current"]["header"]["height"]
-          <= history[s$2]["verified"]["header"]["height"]
+      history[s$2]["current"]["Commits"] = {} <: {STRING}
+        /\ history[s$2]["current"]["header"]["VS"] = {} <: {STRING}
         /\ ~(history[s$2]["current"]["header"]
           = history[s$2]["verified"]["header"])
+        /\ history[s$2]["current"]["header"]["height"]
+          > history[s$2]["verified"]["header"]["height"]
         /\ history[s$2]["current"]["header"]["time"]
           > history[s$2]["verified"]["header"]["time"]
         /\ history[s$2]["current"]["header"]["time"] < history[s$2]["now"]
         /\ history[s$2]["verified"]["header"]["time"] + 1400
-          > history[s$2]["now"]
-        /\ ~(history[s$2]["current"]["Commits"] = {} <: {STRING})
-        /\ history[s$2]["current"]["Commits"]
-          \subseteq history[s$2]["current"]["header"]["VS"]))
+          > history[s$2]["now"]))
 
 ================================================================================
-\* Created by Apalache on Thu Oct 22 13:28:23 CEST 2020
+\* Created by Apalache on Thu Oct 22 14:32:41 CEST 2020
 \* https://github.com/informalsystems/apalache

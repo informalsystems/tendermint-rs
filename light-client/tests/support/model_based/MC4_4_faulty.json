@@ -3,7 +3,6 @@
   "model": "MC4_4_faulty.tla",
   "timeout": 60,
   "tests": [
-    "TestSuccess",
     "TestFailure",
     "Test2NotEnoughTrustSuccess",
     "Test2NotEnoughTrustFailure",
@@ -21,6 +20,7 @@
     "TestLessThanThirdValsetChanges",
     "TestOneThirdValsetChanges",
     "TestNonMonotonicHeight",
-    "TestEmptyCommit"
+    "TestEmptyCommitEmptyValset",
+    "TestEmptyCommitNonEmptyValset"
   ]
 }
