@@ -113,19 +113,16 @@ impl LightBlock {
     // TODO: figure how to represent the currently ignored details in header
     // TODO: and commit like last_block_id and other hashes
     pub fn next(&self) -> Self {
-        let header = self.header
-            .as_ref()
-            .expect("header is missing")
-            .next();
+        let header = self.header.as_ref().expect("header is missing").next();
 
         let commit = Commit::new(header.clone(), 1);
 
-        Self{
+        Self {
             header: Some(header),
             commit: Some(commit),
             validators: self.validators.clone(),
             next_validators: self.next_validators.clone(),
-            provider: self.provider.clone()
+            provider: self.provider.clone(),
         }
     }
 
@@ -234,13 +231,13 @@ pub fn generate_signed_header(
 }
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
 
     #[test]
     fn test_next() {
         let validators = Validator::new("val-1");
-        let light_block_1 = LightBlock::new_default(&[validators],1);
+        let light_block_1 = LightBlock::new_default(&[validators], 1);
         let light_block_2 = light_block_1.next();
 
         assert_eq!(2, light_block_2.height());

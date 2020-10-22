@@ -27,12 +27,8 @@ impl LightChain {
             light_blocks.push(testgen_light_block.next());
         }
 
-        let id = light_blocks[0]
-            .chain_id()
-            .parse()
-            .unwrap();
-        let height = Height::try_from(num)
-            .expect("failed to convert from u64 to Height");
+        let id = light_blocks[0].chain_id().parse().unwrap();
+        let height = Height::try_from(num).expect("failed to convert from u64 to Height");
 
         let info = Info {
             id,
