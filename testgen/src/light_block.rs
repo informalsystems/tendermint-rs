@@ -87,8 +87,11 @@ impl LightBlock {
 
     pub fn new_default(validators: &[Validator], height: u64) -> Self {
         let header = Header::new(validators)
-            .height(height)
-            .chain_id("test-chain");
+            .height(height.clone())
+            .chain_id("test-chain")
+            .next_validators(validators)
+            .time(height); // just wanted to initialize time with some value
+
         let commit = Commit::new(header.clone(), 1);
 
         Self {
@@ -106,21 +109,44 @@ impl LightBlock {
     );
     set_option!(provider, String);
 
-    /// Produces a subsequent testgen light block to the supplied one
-    // TODO: figure how to represent the currently ignored details in header and commit like last_block_id and other hashes
+    /// Produces a subsequent, i.e. at (height+1), light block to the supplied one
+    // TODO: figure how to represent the currently ignored details in header
+    // TODO: and commit like last_block_id and other hashes
     pub fn next(&self) -> Self {
-        let validators = self
-            .validators
+        let header = self.header
             .as_ref()
-            .expect("validator array is missing");
-        let height = self
-            .header
+            .expect("header is missing")
+            .next();
+
+        let commit = Commit::new(header.clone(), 1);
+
+        Self{
+            header: Some(header),
+            commit: Some(commit),
+            validators: self.validators.clone(),
+            next_validators: self.next_validators.clone(),
+            provider: self.provider.clone()
+        }
+    }
+
+    /// returns the height of LightBlock's header
+    pub fn height(&self) -> u64 {
+        self.header
             .as_ref()
             .expect("header is missing")
             .height
-            .expect("height is missing")
-            + 1;
-        LightBlock::new_default(validators.as_ref(), height)
+            .expect("header height is missing")
+    }
+
+    /// returns the chain_id of LightBlock's header
+    pub fn chain_id(&self) -> String {
+        self.header
+            .as_ref()
+            .expect("header is missing")
+            .chain_id
+            .as_ref()
+            .expect("chain_id is missing")
+            .to_string()
     }
 }
 

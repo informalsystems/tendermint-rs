@@ -18,7 +18,7 @@ impl LightChain {
     pub fn default_with_length(num: u64) -> Self {
         let vals = Validator::new("val-1");
         let testgen_light_block = LightBlock::new_default(&[vals], 1);
-        let mut light_blocks = Vec::new();
+        let mut light_blocks: Vec<LightBlock> = vec![testgen_light_block.clone()];
 
         for _i in 2..num {
             // add "next" light block to the vector
@@ -27,12 +27,7 @@ impl LightChain {
 
         let info = Info {
             id: light_blocks[0]
-                .header
-                .as_ref()
-                .unwrap()
-                .chain_id
-                .as_ref()
-                .expect("missing chain id")
+                .chain_id()
                 .parse()
                 .unwrap(),
             height: Height::from(num),
@@ -44,55 +39,32 @@ impl LightChain {
         Self::new(info, light_blocks)
     }
 
-    pub fn advance_chain(&mut self) -> Self {
-        let new_light_block = self
+    /// expects at least one LightBlock in the Chain
+    pub fn advance_chain(&mut self) -> LightBlock {
+        let last_light_block = self
             .light_blocks
             .last()
-            .expect("Cannot find testgen light block")
-            .next();
-        let advanced_light_blocks = &mut self.light_blocks;
-        advanced_light_blocks.push(new_light_block);
+            .expect("Cannot find testgen light block");
 
-        let height = self.info.height.value() + 1;
+        let new_light_block = last_light_block.next();
+        self.light_blocks.push(new_light_block.clone());
 
-        let info = Info {
-            id: self.info.id,
-            height: Height::from(height),
-            // TODO: figure how to add this
-            last_block_id: None,
-            // TODO: Not sure yet what this time means
-            time: None,
-        };
+        self.info.height = Height(new_light_block.height());
 
-        Self::new(info, advanced_light_blocks.to_owned())
+        new_light_block
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tendermint::block::Height;
 
     #[test]
     fn test_advance_chain() {
-        let vals = Validator::new("val-1");
-        let light_blocks = vec![LightBlock::new_default(&[vals], 1)];
-        let info = Info {
-            id: light_blocks[0]
-                .header
-                .as_ref()
-                .unwrap()
-                .chain_id
-                .as_ref()
-                .expect("missing chain id")
-                .parse()
-                .unwrap(),
-            height: Height::from(1 as u32),
-            last_block_id: None,
-            time: None,
-        };
-        let advanced_light_chain = LightChain::new(info, light_blocks).advance_chain();
+        let mut light_chain = LightChain::default_with_length(1);
+        let new_light_block = light_chain.advance_chain();
 
-        assert_eq!(2, advanced_light_chain.info.height.value());
+        assert_eq!(2, new_light_block.height());
+        assert_eq!(2, light_chain.info.height.0);
     }
 }
