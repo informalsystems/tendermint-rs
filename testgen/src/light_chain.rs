@@ -53,6 +53,15 @@ impl LightChain {
 
         new_light_block
     }
+
+    /// fetches a block from LightChain at a certain height
+    /// it returns None if a block does not exist for the target_height
+    pub fn block(&self, target_height: u64) -> Option<LightBlock> {
+        self.light_blocks
+            .clone()
+            .into_iter()
+            .find(|lb| lb.height() == target_height)
+    }
 }
 
 #[cfg(test)]
@@ -66,5 +75,16 @@ mod tests {
 
         assert_eq!(2, new_light_block.height());
         assert_eq!(2, light_chain.info.height.0);
+    }
+
+    #[test]
+    fn test_block() {
+        let mut light_chain = LightChain::default_with_length(1);
+        let first_block = light_chain.block(1);
+        assert_eq!(1, first_block.unwrap().height());
+
+        light_chain.advance_chain();
+        let second_block = light_chain.block(2);
+        assert_eq!(2, second_block.unwrap().height());
     }
 }
