@@ -232,3 +232,21 @@ pub fn generate_signed_header(
 
     Ok(SignedHeader { header, commit })
 }
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+
+    #[test]
+    fn test_next() {
+        let validators = Validator::new("val-1");
+        let light_block_1 = LightBlock::new_default(&[validators],1);
+        let light_block_2 = light_block_1.next();
+
+        assert_eq!(2, light_block_2.height());
+
+        let light_block_3 = light_block_2.next();
+
+        assert_eq!(3, light_block_3.height());
+    }
+}
