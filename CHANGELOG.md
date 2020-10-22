@@ -1,3 +1,12 @@
+## Unreleased
+
+### BUG FIXES:
+
+- `[light-client]` Fix bug where a commit with only absent signatures would be
+  deemed valid instead of invalid ([#652])
+
+[#652]: https://github.com/informalsystems/tendermint-rs/pull/652
+
 ## v0.17.0-rc1
 
 *Oct 15, 2020*
