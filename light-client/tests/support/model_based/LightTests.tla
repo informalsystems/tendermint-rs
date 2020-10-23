@@ -119,6 +119,25 @@ TestEmptyCommitNonEmptyValset ==
        /\ history[s].current.header.time < history[s].now
        /\ history[s].verified.header.time + TRUSTING_PERIOD > history[s].now
 
+TestLessThanTwoThirdsCommit ==
+    /\ \E s \in DOMAIN history :
+       \* this is wrong
+       LET CMS == history[s].current.Commits
+           UVS == history[s].current.header.VS
+           TVS == history[s].verified.header.VS
+       IN
+       /\ history[s].current.header.height > history[s].verified.header.height + 1
+       /\ CMS /= ({} <: {STRING})
+       /\ CMS \subseteq UVS
+       /\ 3 * Cardinality(CMS) < 2 * Cardinality(UVS)
+       /\ 3 * Cardinality(CMS \intersect TVS) < Cardinality(TVS)
+       \* everything else is correct
+       /\ history[s].current.header /= history[s].verified.header
+       /\ history[s].current.header.height > history[s].verified.header.height
+       /\ history[s].current.header.time > history[s].verified.header.time
+       /\ history[s].current.header.time < history[s].now
+       /\ history[s].verified.header.time + TRUSTING_PERIOD > history[s].now
+
 \* Time-related tests
 
 \* Test an execution where a header is received from the future
