@@ -53,18 +53,22 @@ impl CommitValidator for ProdCommitValidator {
         signed_header: &SignedHeader,
         validator_set: &ValidatorSet,
     ) -> Result<(), VerificationError> {
-        // TODO: `self.commit.block_id` cannot be zero in the same way as in Go
-        //       Clarify if this another encoding related issue
-        if signed_header.commit.signatures.len() == 0 {
+        let signatures = &signed_header.commit.signatures;
+
+        // Check the the commit contains at least one non-absent signature.
+        // See https://github.com/informalsystems/tendermint-rs/issues/650
+        let has_present_signatures = signatures.iter().any(|cs| !cs.is_absent());
+        if !has_present_signatures {
             bail!(VerificationError::ImplementationSpecific(
                 "no signatures for commit".to_string()
             ));
         }
 
-        if signed_header.commit.signatures.len() != validator_set.validators().len() {
+        // Check that that the number of signatures matches the number of validators.
+        if signatures.len() != validator_set.validators().len() {
             bail!(VerificationError::ImplementationSpecific(format!(
                 "pre-commit length: {} doesn't match validator length: {}",
-                signed_header.commit.signatures.len(),
+                signatures.len(),
                 validator_set.validators().len()
             )));
         }
