@@ -1,12 +1,14 @@
 //! Hash functions and their outputs
 
 use crate::error::{Error, Kind};
+use serde::de::Error as _;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
 use std::{
     fmt::{self, Debug, Display},
     str::FromStr,
 };
-use subtle_encoding::{/* hex, */ Encoding, Hex};
+use subtle_encoding::{Encoding, Hex};
 use tendermint_proto::DomainType;
 
 /// Output size for the SHA-256 hash function
@@ -137,6 +139,25 @@ impl FromStr for Hash {
 
     fn from_str(s: &str) -> Result<Self, Error> {
         Self::from_hex_upper(Algorithm::Sha256, s)
+    }
+}
+
+// Serialization is used in light-client config
+impl<'de> Deserialize<'de> for Hash {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let hex = String::deserialize(deserializer)?;
+
+        if hex.is_empty() {
+            Err(D::Error::custom("empty hash"))
+        } else {
+            Ok(Self::from_str(&hex).map_err(|e| D::Error::custom(format!("{}", e)))?)
+        }
+    }
+}
+
+impl Serialize for Hash {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.to_string().serialize(serializer)
     }
 }
 
