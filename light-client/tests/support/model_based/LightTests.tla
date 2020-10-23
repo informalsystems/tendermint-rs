@@ -31,8 +31,10 @@ NextTest ==
 
 \* Some useful operators for writing tests
 
-Valset(st) == history[st].current.header.VS
-
+LightBlock(st) == history[st].current
+Height(st) == history[st].current.header.height
+ValSet(st) == LightBlock(st).header.VS
+ValCommits(st) == LightBlock(st).Commits
 
 \* Test an execution that finishes with failure
 TestFailure ==
@@ -99,7 +101,7 @@ TestEmptyCommitEmptyValset ==
     /\ \E s \in DOMAIN history :
        \* this is wrong
        /\ history[s].current.Commits = ({} <: {STRING})
-       /\ Valset(s) = ({} <: {STRING})
+       /\ ValSet(s) = ({} <: {STRING})
        \* everything else is correct
        /\ history[s].current.header /= history[s].verified.header
        /\ history[s].current.header.height > history[s].verified.header.height
@@ -111,7 +113,7 @@ TestEmptyCommitNonEmptyValset ==
     /\ \E s \in DOMAIN history :
        \* this is wrong
        /\ history[s].current.Commits = ({} <: {STRING})
-       /\ Valset(s) /= ({} <: {STRING})
+       /\ ValSet(s) /= ({} <: {STRING})
        \* everything else is correct
        /\ history[s].current.header /= history[s].verified.header
        /\ history[s].current.header.height > history[s].verified.header.height
@@ -164,92 +166,109 @@ TestHalfValsetChanges ==
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
     /\ \E s1, s2 \in DOMAIN history :
         /\ s2 = s1 + 1
-        /\ Cardinality(Valset(s1)) >= 3
-        /\ 2 * Cardinality(Valset(s1) \intersect Valset(s2)) < Cardinality(Valset(s1))
+        /\ Cardinality(ValSet(s1)) >= 3
+        /\ 2 * Cardinality(ValSet(s1) \intersect ValSet(s2)) < Cardinality(ValSet(s1))
 
 TestHalfValsetChangesVerdictSuccess ==
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
     /\ \E s1, s2 \in DOMAIN history :
         /\ s2 = s1 + 1
         /\ history[s2].verdict = "SUCCESS"
-        /\ Cardinality(Valset(s1)) >= 3
-        /\ 2 * Cardinality(Valset(s1) \intersect Valset(s2)) < Cardinality(Valset(s1))
+        /\ Cardinality(ValSet(s1)) >= 3
+        /\ 2 * Cardinality(ValSet(s1) \intersect ValSet(s2)) < Cardinality(ValSet(s1))
 
 TestHalfValsetChangesVerdictNotEnoughTrust ==
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
     /\ \E s1, s2 \in DOMAIN history :
         /\ s2 = s1 + 1
         /\ history[s2].verdict = "NOT_ENOUGH_TRUST"
-        /\ Cardinality(Valset(s1)) >= 3
-        /\ 2 * Cardinality(Valset(s1) \intersect Valset(s2)) < Cardinality(Valset(s1))
+        /\ Cardinality(ValSet(s1)) >= 3
+        /\ 2 * Cardinality(ValSet(s1) \intersect ValSet(s2)) < Cardinality(ValSet(s1))
 
 TestValsetDoubles ==
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
     /\ \E s1, s2 \in DOMAIN history :
         /\ s2 = s1 + 1
-        /\ Cardinality(Valset(s1)) >= 2
-        /\ Cardinality(Valset(s2)) = 2 * Cardinality(Valset(s1))
+        /\ Cardinality(ValSet(s1)) >= 2
+        /\ Cardinality(ValSet(s2)) = 2 * Cardinality(ValSet(s1))
 
 TestValsetHalves ==
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
     /\ \E s1, s2 \in DOMAIN history :
         /\ s2 = s1 + 1
-        /\ Cardinality(Valset(s1)) >= 4
-        /\ Cardinality(Valset(s1)) = 2 * Cardinality(Valset(s2))
+        /\ Cardinality(ValSet(s1)) >= 4
+        /\ Cardinality(ValSet(s1)) = 2 * Cardinality(ValSet(s2))
 
 TestValsetChangesFully ==
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
     /\ \E s1, s2 \in DOMAIN history :
         /\ s2 = s1 + 1
-        /\ Cardinality(Valset(s1)) >= 2
-        /\ Valset(s1) \intersect Valset(s2) = ({} <: {STRING})
+        /\ Cardinality(ValSet(s1)) >= 2
+        /\ ValSet(s1) \intersect ValSet(s2) = ({} <: {STRING})
 
 TestLessThanThirdValsetChanges ==
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
     /\ \E s1, s2 \in DOMAIN history :
         /\ s2 = s1 + 1
-        /\ Cardinality(Valset(s1)) >= 4
-        /\ Valset(s2) /= Valset(s1)
-        /\ 3 * Cardinality(Valset(s2) \ Valset(s1)) < Cardinality(Valset(s1))
+        /\ Cardinality(ValSet(s1)) >= 4
+        /\ ValSet(s2) /= ValSet(s1)
+        /\ 3 * Cardinality(ValSet(s2) \ ValSet(s1)) < Cardinality(ValSet(s1))
 
 TestMoreThanTwoThirdsValsetChanges ==
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
     /\ \E s1, s2 \in DOMAIN history :
         /\ s2 = s1 + 1
-        /\ Cardinality(Valset(s1)) >= 4
-        /\ 3 * Cardinality(Valset(s2) \ Valset(s1)) > 2 * Cardinality(Valset(s1))
+        /\ Cardinality(ValSet(s1)) >= 4
+        /\ 3 * Cardinality(ValSet(s2) \ ValSet(s1)) > 2 * Cardinality(ValSet(s1))
 
 TestOneThirdValsetChanges ==
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
     /\ \E s1, s2 \in DOMAIN history :
         /\ s2 = s1 + 1
-        /\ Cardinality(Valset(s1)) >= 3
-        /\ 3 * Cardinality(Valset(s2) \ Valset(s1)) = Cardinality(Valset(s1))
+        /\ Cardinality(ValSet(s1)) >= 3
+        /\ 3 * Cardinality(ValSet(s2) \ ValSet(s1)) = Cardinality(ValSet(s1))
 
 TestTwoThirdsValsetChanges ==
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
     /\ \E s1, s2 \in DOMAIN history :
         /\ s2 = s1 + 1
-        /\ Cardinality(Valset(s1)) >= 3
-        /\ 3 * Cardinality(Valset(s2) \ Valset(s1)) = 2 * Cardinality(Valset(s1))
+        /\ Cardinality(ValSet(s1)) >= 3
+        /\ 3 * Cardinality(ValSet(s2) \ ValSet(s1)) = 2 * Cardinality(ValSet(s1))
+
+TestLessThanTwoThirdsSign ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s \in DOMAIN history :
+       /\ history[s].verified.header.time + TRUSTING_PERIOD > history[s].now
+       \* this is wrong
+       /\ \E commits \in SUBSET AllNodes:
+          \E block \in BC!LightBlocks:
+              /\ 3 * Cardinality(commits) < 2 * Cardinality(ValSet(s))
+              /\ CopyLightBlockFromChain(block, Height(s))
+              /\ LightBlock(s) = [ block EXCEPT !.Commits = commits]
+
+TestMoreThanTwoThirdsSign ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s \in DOMAIN history :
+        3 * Cardinality(ValCommits(s)) >= 2 * Cardinality(ValSet(s))
+
 
 ============================================================================
 
-\* When Apalache is fixed to work with operator params, we should rewrite the validator set tests as shown below
+ \* When Apalache is fixed to work with operator params, we should rewrite the validator set tests as shown below
 
 \* A configurable test for two neighbor valsets
 TestNeighborValsets(test(_,_)) ==
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
     /\ \E s1, s2 \in DOMAIN history :
         /\ s2 = s1 + 1
-        /\ test(Valset(s1), Valset(s2))
+        /\ test(ValSet(s1), ValSet(s2))
 
 \* A configurable test for two neighbor valsets and expected verdict
 TestNeighborValsetsVerdict(test(_,_), want_verdict) ==
     /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
     /\ \E s1, s2 \in DOMAIN history :
         /\ s2 = s1 + 1
-        /\ test(Valset(s1), Valset(s2))
+        /\ test(ValSet(s1), ValSet(s2))
         /\ history[s2].verdict = want_verdict
 
 HalfValsetChanges(vs1, vs2) ==

@@ -3,25 +3,10 @@
   "model": "MC4_4_faulty.tla",
   "timeout": 60,
   "tests": [
-    "TestFailure",
-    "Test2NotEnoughTrustSuccess",
-    "Test2NotEnoughTrustFailure",
-    "Test3NotEnoughTrustSuccess",
-    "Test3NotEnoughTrustFailure",
-    "TestValsetDifferentAllSteps",
-    "TestHeaderFromFuture",
-    "TestUntrustedBeforeTrusted",
-    "TestHalfValsetChanges",
-    "TestHalfValsetChangesVerdictSuccess",
-    "TestHalfValsetChangesVerdictNotEnoughTrust",
-    "TestValsetDoubles",
-    "TestValsetHalves",
-    "TestValsetChangesFully",
-    "TestLessThanThirdValsetChanges",
-    "TestOneThirdValsetChanges",
-    "TestNonMonotonicHeight",
     "TestEmptyCommitEmptyValset",
     "TestEmptyCommitNonEmptyValset",
-    "TestLessThanTwoThirdsCommit"
+    "TestLessThanTwoThirdsCommit",
+    "TestLessThanTwoThirdsSign",
+    "TestMoreThanTwoThirdsSign"
   ]
 }
