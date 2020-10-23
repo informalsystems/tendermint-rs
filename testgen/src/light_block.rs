@@ -173,17 +173,17 @@ impl Generator<TMLightBlock> for LightBlock {
             generate_signed_header(header, commit).expect("Could not generate signed header");
 
         let validators = match &self.validators {
-            None => validator::Set::new(generate_validators(
+            None => validator::Set::new_simple(generate_validators(
                 header
                     .validators
                     .as_ref()
                     .expect("missing validators in header"),
             )?),
-            Some(vals) => validator::Set::new(generate_validators(vals)?),
+            Some(vals) => validator::Set::new_simple(generate_validators(vals)?),
         };
 
         let next_validators = match &self.next_validators {
-            Some(next_vals) => validator::Set::new(generate_validators(next_vals)?),
+            Some(next_vals) => validator::Set::new_simple(generate_validators(next_vals)?),
             None => validators.clone(),
         };
 
@@ -215,7 +215,7 @@ pub fn generate_signed_header(
         Ok(c) => c,
     };
 
-    Ok(SignedHeader { header, commit })
+    Ok(SignedHeader::new(header, commit).unwrap())
 }
 
 pub fn default_peer_id() -> PeerId {
@@ -248,7 +248,7 @@ mod tests {
             .generate()
             .unwrap()
             .signed_header
-            .header
+            .header()
             .height
             .into();
 
