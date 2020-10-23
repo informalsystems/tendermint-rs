@@ -73,9 +73,6 @@ impl CommitValidator for ProdCommitValidator {
             )));
         }
 
-        // TODO: `commit.block_id` cannot be zero in the same way as in Go
-        //        Clarify if this another encoding related issue
-
         Ok(())
     }
 
