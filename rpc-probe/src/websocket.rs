@@ -302,9 +302,12 @@ impl WebSocketClientDriver {
             )))?;
             return Ok(());
         }
-        if let Some(r) = wrapper.get("result") {
-            let _ = response_tx.send(Ok(r.clone()))?;
-            return Ok(());
+        if let Some(result) = wrapper.get("result") {
+            if let Some(response) = result.get("response") {
+                let _ = response_tx.send(Ok(response.clone()))?;
+                return Ok(());
+            }
+            error!("Missing \"response\" field in RPC response");
         }
         Ok(())
     }
