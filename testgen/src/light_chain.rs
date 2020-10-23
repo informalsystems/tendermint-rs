@@ -1,5 +1,4 @@
 use crate::light_block::LightBlock;
-use crate::Validator;
 use tendermint::block::Height;
 use tendermint::chain::Info;
 
@@ -18,8 +17,7 @@ impl LightChain {
     // TODO: make this fn more usable
     // TODO: like how does someone generate a chain with different validators at each height
     pub fn default_with_length(num: u64) -> Self {
-        let vals = Validator::new("val-1");
-        let testgen_light_block = LightBlock::new_default(&[vals], 1);
+        let testgen_light_block = LightBlock::new_default(1);
         let mut light_blocks: Vec<LightBlock> = vec![testgen_light_block.clone()];
 
         for _i in 2..num {
