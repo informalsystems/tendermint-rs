@@ -3,9 +3,9 @@
 ### BUG FIXES:
 
 - `[light-client]` Fix bug where a commit with only absent signatures would be
-  deemed valid instead of invalid ([#652])
+  deemed valid instead of invalid ([#650])
 
-[#652]: https://github.com/informalsystems/tendermint-rs/pull/652
+[#652]: https://github.com/informalsystems/tendermint-rs/issues/650
 
 ## v0.17.0-rc1
 
