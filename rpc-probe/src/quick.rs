@@ -4,8 +4,8 @@ use crate::error::Result;
 use crate::messages::request_wrapper;
 use crate::opts::GeneralOptions;
 use crate::websocket::WebSocketClient;
+use log::info;
 use serde_json::json;
-use tracing::info;
 
 /// Execute a quick probe against a live Tendermint node using the given
 /// options.

@@ -7,6 +7,8 @@ mod websocket;
 
 use crate::opts::GeneralOptions;
 use crate::quick::quick_probe;
+use log::LevelFilter;
+use simple_logger::SimpleLogger;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -35,6 +37,12 @@ enum Command {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opts = Opts::from_args();
+    let log_level = if opts.general.verbose {
+        LevelFilter::Debug
+    } else {
+        LevelFilter::Info
+    };
+    SimpleLogger::new().with_level(log_level).init().unwrap();
     match opts.cmd {
         Command::Quick => quick_probe(opts.general).await.map_err(Into::into),
     }

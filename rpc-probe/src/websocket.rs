@@ -13,11 +13,11 @@ use async_tungstenite::tungstenite::protocol::CloseFrame;
 use async_tungstenite::tungstenite::Message;
 use async_tungstenite::WebSocketStream;
 use futures::{SinkExt, StreamExt};
+use log::{debug, error};
 use serde_json::json;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use tokio::sync::mpsc;
-use tracing::{debug, error};
 
 #[derive(Debug, Clone)]
 pub struct WebSocketClient {
