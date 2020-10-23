@@ -52,6 +52,3 @@ pub mod option_timestamp;
 pub mod optional;
 pub mod time_duration;
 pub mod txs;
-
-mod custom;
-pub use custom::null_as_default;

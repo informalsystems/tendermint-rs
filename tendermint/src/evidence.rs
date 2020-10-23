@@ -4,11 +4,14 @@ use crate::{block::signed_header::SignedHeader, serializers, Error, Kind, Vote};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::slice;
+use tendermint_proto::google::protobuf::Duration as RawDuration;
 use tendermint_proto::types::evidence::Sum as RawSum;
 use tendermint_proto::types::evidence::Sum;
 use tendermint_proto::types::DuplicateVoteEvidence as RawDuplicateVoteEvidence;
 use tendermint_proto::types::Evidence as RawEvidence;
 use tendermint_proto::types::EvidenceData as RawEvidenceData;
+use tendermint_proto::types::EvidenceParams as RawEvidenceParams;
+use tendermint_proto::DomainType;
 
 /// Evidence of malfeasance by validators (i.e. signing conflicting votes).
 /// encoded using an Amino prefix. There is currently only a single type of
@@ -186,16 +189,81 @@ pub struct Params {
 
     /// Max age duration
     pub max_age_duration: Duration,
+
+    /// Max bytes
+    #[serde(with = "serializers::from_str")]
+    pub max_bytes: i64,
+}
+
+impl DomainType<RawEvidenceParams> for Params {}
+
+impl TryFrom<RawEvidenceParams> for Params {
+    type Error = Error;
+
+    fn try_from(value: RawEvidenceParams) -> Result<Self, Self::Error> {
+        Ok(Self {
+            max_age_num_blocks: value
+                .max_age_num_blocks
+                .try_into()
+                .map_err(|_| Self::Error::from(Kind::NegativeMaxAgeNum))?,
+            max_age_duration: value
+                .max_age_duration
+                .ok_or(Kind::MissingMaxAgeDuration)?
+                .try_into()?,
+            max_bytes: value.max_bytes,
+        })
+    }
+}
+
+impl From<Params> for RawEvidenceParams {
+    fn from(value: Params) -> Self {
+        Self {
+            // Todo: Implement proper domain types so this becomes infallible
+            max_age_num_blocks: value.max_age_num_blocks.try_into().unwrap(),
+            max_age_duration: Some(value.max_age_duration.into()),
+            max_bytes: value.max_bytes,
+        }
+    }
 }
 
 /// Duration is a wrapper around std::time::Duration
 /// essentially, to keep the usages look cleaner
 /// i.e. you can avoid using serde annotations everywhere
+/// Todo: harmonize google::protobuf::Duration, std::time::Duration and this. Too many structs.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct Duration(#[serde(with = "serializers::time_duration")] pub std::time::Duration);
 
 impl From<Duration> for std::time::Duration {
     fn from(d: Duration) -> std::time::Duration {
         d.0
+    }
+}
+
+impl DomainType<RawDuration> for Duration {}
+
+impl TryFrom<RawDuration> for Duration {
+    type Error = Error;
+
+    fn try_from(value: RawDuration) -> Result<Self, Self::Error> {
+        Ok(Self(std::time::Duration::new(
+            value
+                .seconds
+                .try_into()
+                .map_err(|_| Self::Error::from(Kind::IntegerOverflow))?,
+            value
+                .nanos
+                .try_into()
+                .map_err(|_| Self::Error::from(Kind::IntegerOverflow))?,
+        )))
+    }
+}
+
+impl From<Duration> for RawDuration {
+    fn from(value: Duration) -> Self {
+        // Todo: make the struct into a proper domaintype so this becomes infallible.
+        Self {
+            seconds: value.0.as_secs() as i64,
+            nanos: value.0.subsec_nanos() as i32,
+        }
     }
 }

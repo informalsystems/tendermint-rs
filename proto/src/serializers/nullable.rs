@@ -17,10 +17,7 @@ where
     T: Default + PartialEq + Serialize,
 {
     if value == &T::default() {
-        // Todo: Cleanup if works.
-        //let whatevs: Option<T> = None;
         return serializer.serialize_none();
-        //return whatevs.serialize(serializer);
     }
     value.serialize(serializer)
 }

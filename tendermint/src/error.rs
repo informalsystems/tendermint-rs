@@ -160,6 +160,22 @@ pub enum Kind {
     /// Missing Public Key
     #[error("missing public key")]
     MissingPublicKey,
+
+    /// Invalid validator parameters
+    #[error("invalid validator parameters")]
+    InvalidValidatorParams,
+
+    /// Invalid version parameters
+    #[error("invalid version parameters")]
+    InvalidVersionParams,
+
+    /// Negative max_age_num_blocks in Evidence parameters
+    #[error("negative max_age_num_blocks")]
+    NegativeMaxAgeNum,
+
+    /// Missing max_age_duration in evidence parameters
+    #[error("missing max_age_duration")]
+    MissingMaxAgeDuration,
 }
 
 impl Kind {
