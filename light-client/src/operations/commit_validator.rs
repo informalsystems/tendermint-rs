@@ -57,8 +57,8 @@ impl CommitValidator for ProdCommitValidator {
 
         // Check the the commit contains at least on non-absent signature.
         // See https://github.com/informalsystems/tendermint-rs/issues/650
-        let has_non_absent_signatures = signatures.iter().any(|cs| !cs.is_absent());
-        if !has_non_absent_signatures {
+        let has_present_signatures = signatures.iter().any(|cs| !cs.is_absent());
+        if !has_present_signatures {
             bail!(VerificationError::ImplementationSpecific(
                 "no signatures for commit".to_string()
             ));
