@@ -49,6 +49,22 @@ impl Header {
     set_option!(height, u64);
     set_option!(time, u64);
     set_option!(proposer, usize);
+
+    pub fn next(&self) -> Self {
+        let height = self.height.expect("Missing previous header's height");
+        let time = self.time.unwrap_or(height); // if no time is found, then we simple correspond it to the header height
+        let validators = self.validators.clone().expect("Missing validators");
+        let next_validators = self.next_validators.clone().unwrap_or(validators);
+
+        Self {
+            validators: Some(next_validators.clone()),
+            next_validators: Some(next_validators),
+            chain_id: self.chain_id.clone(),
+            height: Some(height + 1),
+            time: Some(time + 1),
+            proposer: self.proposer, // TODO: proposer must be incremented
+        }
+    }
 }
 
 impl std::str::FromStr for Header {
