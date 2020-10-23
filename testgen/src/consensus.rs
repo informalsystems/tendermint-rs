@@ -17,6 +17,6 @@ pub fn default_consensus_params() -> consensus::Params {
         validator: consensus::params::ValidatorParams {
             pub_key_types: vec![Algorithm::Ed25519],
         },
-        version: VersionParams::new(0),
+        version: VersionParams::default(),
     }
 }

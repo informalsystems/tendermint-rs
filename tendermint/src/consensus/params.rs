@@ -22,6 +22,7 @@ pub struct Params {
     pub validator: ValidatorParams,
 
     /// Version parameters
+    #[serde(skip)] // Todo: FIXME kvstore /genesis returns '{}' instead of '{app_version: "0"}'
     pub version: VersionParams,
 }
 
@@ -103,9 +104,11 @@ impl From<ValidatorParams> for RawValidatorParams {
 }
 
 /// Version Parameters
-#[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
-#[serde(transparent)]
-pub struct VersionParams(#[serde(with = "crate::serializers::from_str")] u64);
+#[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, Default)]
+pub struct VersionParams {
+    #[serde(with = "crate::serializers::from_str")]
+    app_version: u64,
+}
 
 impl DomainType<RawVersionParams> for VersionParams {}
 
@@ -113,25 +116,16 @@ impl TryFrom<RawVersionParams> for VersionParams {
     type Error = Error;
 
     fn try_from(value: RawVersionParams) -> Result<Self, Self::Error> {
-        Ok(Self(value.app_version))
+        Ok(Self {
+            app_version: value.app_version,
+        })
     }
 }
 
 impl From<VersionParams> for RawVersionParams {
     fn from(value: VersionParams) -> Self {
         RawVersionParams {
-            app_version: value.value(),
+            app_version: value.app_version,
         }
-    }
-}
-
-impl VersionParams {
-    /// constructor
-    pub fn new(value: u64) -> Self {
-        VersionParams(value)
-    }
-    /// Getter
-    pub fn value(&self) -> u64 {
-        self.0
     }
 }
