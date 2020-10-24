@@ -48,6 +48,7 @@ pub struct TestBisection<LB> {
     pub primary: Provider<LB>,
     pub witnesses: Vec<WitnessProvider<LB>>,
     pub height_to_verify: HeightStr,
+    #[serde(with = "tendermint::serializers::time")]
     pub now: Time,
     pub expected_output: Option<String>,
     pub expected_num_of_bisections: usize,

@@ -272,7 +272,10 @@ impl Tester {
             Ok(test_case) => Tester::capture_test(|| {
                 test(test_case);
             }),
-            Err(_) => ParseError,
+            Err(e) => {
+                dbg!(e);
+                ParseError
+            }
         };
         self.tests.push(Test {
             name: name.to_string(),
