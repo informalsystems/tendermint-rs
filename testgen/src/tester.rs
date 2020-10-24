@@ -1,6 +1,7 @@
 use crate::helpers::*;
 use crate::tester::TestResult::{Failure, ParseError, ReadError, Success};
 use serde::de::DeserializeOwned;
+use simple_error::SimpleError;
 use std::{
     fs::{self, DirEntry},
     io::Write,
@@ -9,7 +10,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 use tempfile::TempDir;
-use simple_error::SimpleError;
 
 /// A test environment, which is essentially a wrapper around some directory,
 /// with some utility functions operating relative to that directory.
@@ -273,7 +273,7 @@ impl Tester {
             Ok(test_case) => Tester::capture_test(|| {
                 test(test_case);
             }),
-            Err(e) => ParseError(e)
+            Err(e) => ParseError(e),
         };
         self.tests.push(Test {
             name: name.to_string(),
@@ -334,8 +334,10 @@ impl Tester {
     }
 
     fn parse_error(&mut self, path: &str) {
-        self.results_for("")
-            .push((path.to_string(), TestResult::ParseError(SimpleError::new("no error"))))
+        self.results_for("").push((
+            path.to_string(),
+            TestResult::ParseError(SimpleError::new("no error")),
+        ))
     }
 
     pub fn successful_tests(&self, test: &str) -> Vec<String> {
@@ -390,7 +392,10 @@ impl Tester {
         let mut results = Vec::new();
         for Test { name, test } in &self.tests {
             match test(path, input) {
-                TestResult::ParseError(e) => {println!("ERROR {}: {}", path, e.as_str()); continue},
+                TestResult::ParseError(e) => {
+                    println!("ERROR {}: {}", path, e.as_str());
+                    continue;
+                }
                 res => results.push((name.to_string(), path, res)),
             }
         }

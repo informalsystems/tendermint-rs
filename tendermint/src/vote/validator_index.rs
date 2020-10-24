@@ -85,6 +85,9 @@ impl FromStr for ValidatorIndex {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        ValidatorIndex::try_from(s.parse::<u32>().map_err(|_| Kind::Parse.context("validator index decode"))?)
+        ValidatorIndex::try_from(
+            s.parse::<u32>()
+                .map_err(|_| Kind::Parse.context("validator index decode"))?,
+        )
     }
 }

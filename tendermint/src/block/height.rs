@@ -100,7 +100,10 @@ impl FromStr for Height {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Height::try_from(s.parse::<u64>().map_err(|_| Kind::Parse.context("height decode"))?)
+        Height::try_from(
+            s.parse::<u64>()
+                .map_err(|_| Kind::Parse.context("height decode"))?,
+        )
     }
 }
 
