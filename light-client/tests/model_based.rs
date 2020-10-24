@@ -45,6 +45,7 @@ pub struct SingleStepTestCase {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlockVerdict {
     block: AnonLightBlock,
+    #[serde(with = "tendermint::serializers::time")]
     now: Time,
     verdict: LiteVerdict,
 }

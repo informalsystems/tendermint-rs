@@ -118,7 +118,7 @@ impl FromStr for Id {
         // Accept either upper or lower case hex
         let bytes = hex::decode_upper(s)
             .or_else(|_| hex::decode(s))
-            .map_err(|_| Kind::Parse)?;
+            .map_err(|_| Kind::Parse.context("account id decode"))?;
 
         Ok(bytes.try_into()?)
     }

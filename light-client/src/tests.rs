@@ -38,6 +38,7 @@ pub struct Initial {
     pub signed_header: SignedHeader,
     pub next_validator_set: ValidatorSet,
     pub trusting_period: DurationStr,
+    #[serde(with = "tendermint::serializers::time")]
     pub now: Time,
 }
 

@@ -66,7 +66,7 @@ impl Hash {
                     h.copy_from_slice(bytes);
                     Ok(Hash::Sha256(h))
                 } else {
-                    Err(Kind::Parse.into())
+                    Err(Kind::Parse.context(format!("hash invalid length: {}", bytes.len())).into())
                 }
             }
         }

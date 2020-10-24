@@ -33,7 +33,7 @@ impl TryFrom<String> for Id {
         for byte in value.as_bytes() {
             match byte {
                 b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' => (),
-                _ => return Err(Kind::Parse.into()),
+                _ => return Err(Kind::Parse.context("chain id charset").into()),
             }
         }
 

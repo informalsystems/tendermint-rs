@@ -87,7 +87,7 @@ impl FromStr for Round {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Round::try_from(s.parse::<u32>().map_err(|_| Kind::Parse)?)
+        Round::try_from(s.parse::<u32>().map_err(|_| Kind::Parse.context("round decode"))?)
     }
 }
 
