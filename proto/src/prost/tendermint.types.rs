@@ -57,6 +57,7 @@ pub struct BlockId {
     #[serde(with = "crate::serializers::bytes::hexstring")]
     pub hash: std::vec::Vec<u8>,
     #[prost(message, optional, tag="2")]
+    #[serde(alias = "parts")]
     pub part_set_header: ::std::option::Option<PartSetHeader>,
 }
 // --------------------------------
@@ -409,6 +410,7 @@ pub struct CanonicalBlockId {
     #[prost(bytes, tag="1")]
     pub hash: std::vec::Vec<u8>,
     #[prost(message, optional, tag="2")]
+    #[serde(alias = "parts")]
     pub part_set_header: ::std::option::Option<CanonicalPartSetHeader>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]

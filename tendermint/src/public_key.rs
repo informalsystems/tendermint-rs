@@ -62,13 +62,15 @@ impl DomainType<RawPublicKey> for PublicKey {}
 impl TryFrom<RawPublicKey> for PublicKey {
     type Error = Error;
 
-    /// TryFrom Ed25519 key
     fn try_from(value: RawPublicKey) -> Result<Self, Self::Error> {
-        let Sum::Ed25519(b) = &value
+        let sum = &value
             .sum
             .ok_or_else(|| format_err!(error::Kind::InvalidKey, "empty sum"))?;
-        Self::from_raw_ed25519(b)
-            .ok_or_else(|| format_err!(error::Kind::InvalidKey, "malformed key").into())
+        match sum {
+            Sum::Ed25519(b) => Self::from_raw_ed25519(b)
+                .ok_or_else(|| format_err!(error::Kind::InvalidKey, "malformed key").into()),
+            Sum::Secp256k1(_) => panic!("secp256k1 PublicKey unimplemented"),
+        }
     }
 }
 
