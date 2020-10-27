@@ -54,7 +54,7 @@ impl From<Commit> for RawCommit {
             block_id: Some(value.block_id.into()),
             signatures: value.signatures.into_iter().map(Into::into).collect(),
             hash: vec![],
-            bit_array: None
+            bit_array: None,
         }
     }
 }
