@@ -1,6 +1,6 @@
 /// Tendermint protobuf version
 pub const TENDERMINT_REPO: &str = "https://github.com/tendermint/tendermint";
-pub const TENDERMINT_COMMITISH: &str = "tags/v0.34.0-rc5";
+pub const TENDERMINT_COMMITISH: &str = "tags/v0.34.0-rc4";
 
 /// Predefined custom attributes for message annotations
 const PRIMITIVE_ENUM: &str = r#"#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]"#;
@@ -25,6 +25,7 @@ const RENAME_LIGHTCLIENTATTACK: &str =
     r#"#[serde(rename = "tendermint/LightClientAttackEvidence")]"#;
 const EVIDENCE_VARIANT: &str = r#"#[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]"#;
 const ALIAS_PARTS: &str = r#"#[serde(alias = "parts")]"#;
+const DEFAULT: &str = r#"#[serde(default)]"#;
 
 /// Custom type attributes applied on top of protobuf structs
 /// The first item in the tuple defines the message where the annotation should apply and
@@ -32,6 +33,8 @@ const ALIAS_PARTS: &str = r#"#[serde(alias = "parts")]"#;
 /// The first item is a path as defined in the prost_build::Config::btree_map here:
 /// https://docs.rs/prost-build/0.6.1/prost_build/struct.Config.html#method.btree_map
 pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
+    (".tendermint.libs.bits.BitArray", SERIALIZED),
+    (".tendermint.types.EvidenceParams", SERIALIZED),
     (".tendermint.types.BlockIDFlag", PRIMITIVE_ENUM),
     (".tendermint.types.Block", SERIALIZED),
     (".tendermint.types.Data", SERIALIZED),
@@ -68,6 +71,13 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
 /// The first item is a path as defined in the prost_build::Config::btree_map here:
 /// https://docs.rs/prost-build/0.6.1/prost_build/struct.Config.html#method.btree_map
 pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
+    (
+        ".tendermint.types.EvidenceParams.max_num",
+        QUOTED_WITH_DEFAULT,
+    ),
+    (".tendermint.types.Data.hash", DEFAULT),
+    (".tendermint.types.EvidenceData.hash", DEFAULT),
+    (".tendermint.types.Commit.hash", DEFAULT),
     (".tendermint.abci.ResponseInfo.last_block_height", QUOTED),
     (".tendermint.version.Consensus.block", QUOTED),
     (".tendermint.version.Consensus.app", QUOTED_WITH_DEFAULT),

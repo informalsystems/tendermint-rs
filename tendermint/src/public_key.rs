@@ -69,7 +69,6 @@ impl TryFrom<RawPublicKey> for PublicKey {
         match sum {
             Sum::Ed25519(b) => Self::from_raw_ed25519(b)
                 .ok_or_else(|| format_err!(error::Kind::InvalidKey, "malformed key").into()),
-            Sum::Secp256k1(_) => panic!("secp256k1 PublicKey unimplemented"),
         }
     }
 }

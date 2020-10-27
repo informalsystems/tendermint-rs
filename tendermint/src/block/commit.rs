@@ -53,6 +53,8 @@ impl From<Commit> for RawCommit {
             round: value.round.into(),
             block_id: Some(value.block_id.into()),
             signatures: value.signatures.into_iter().map(Into::into).collect(),
+            hash: vec![],
+            bit_array: None
         }
     }
 }

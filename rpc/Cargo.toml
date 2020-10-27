@@ -35,7 +35,8 @@ websocket-client = [
   "tokio/macros",
   "tokio/stream",
   "tokio/sync",
-  "tokio/time"
+  "tokio/time",
+  "tracing"
 ]
 
 [dependencies]
@@ -57,3 +58,4 @@ futures = { version = "0.3", optional = true }
 http = { version = "0.2", optional = true }
 hyper = { version = "0.13", optional = true }
 tokio = { version = "0.2", optional = true }
+tracing = { version = "0.1", optional = true }

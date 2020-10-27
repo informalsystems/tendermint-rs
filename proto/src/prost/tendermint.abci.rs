@@ -7,7 +7,7 @@
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
-    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14")]
+    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15")]
     pub value: ::std::option::Option<request::Value>,
 }
 pub mod request {
@@ -20,26 +20,28 @@ pub mod request {
         #[prost(message, tag="3")]
         Info(super::RequestInfo),
         #[prost(message, tag="4")]
-        InitChain(super::RequestInitChain),
+        SetOption(super::RequestSetOption),
         #[prost(message, tag="5")]
-        Query(super::RequestQuery),
+        InitChain(super::RequestInitChain),
         #[prost(message, tag="6")]
-        BeginBlock(super::RequestBeginBlock),
+        Query(super::RequestQuery),
         #[prost(message, tag="7")]
-        CheckTx(super::RequestCheckTx),
+        BeginBlock(super::RequestBeginBlock),
         #[prost(message, tag="8")]
-        DeliverTx(super::RequestDeliverTx),
+        CheckTx(super::RequestCheckTx),
         #[prost(message, tag="9")]
-        EndBlock(super::RequestEndBlock),
+        DeliverTx(super::RequestDeliverTx),
         #[prost(message, tag="10")]
-        Commit(super::RequestCommit),
+        EndBlock(super::RequestEndBlock),
         #[prost(message, tag="11")]
-        ListSnapshots(super::RequestListSnapshots),
+        Commit(super::RequestCommit),
         #[prost(message, tag="12")]
-        OfferSnapshot(super::RequestOfferSnapshot),
+        ListSnapshots(super::RequestListSnapshots),
         #[prost(message, tag="13")]
-        LoadSnapshotChunk(super::RequestLoadSnapshotChunk),
+        OfferSnapshot(super::RequestOfferSnapshot),
         #[prost(message, tag="14")]
+        LoadSnapshotChunk(super::RequestLoadSnapshotChunk),
+        #[prost(message, tag="15")]
         ApplySnapshotChunk(super::RequestApplySnapshotChunk),
     }
 }
@@ -59,6 +61,14 @@ pub struct RequestInfo {
     pub block_version: u64,
     #[prost(uint64, tag="3")]
     pub p2p_version: u64,
+}
+/// nondeterministic
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RequestSetOption {
+    #[prost(string, tag="1")]
+    pub key: std::string::String,
+    #[prost(string, tag="2")]
+    pub value: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestInitChain {
@@ -156,7 +166,7 @@ pub struct RequestApplySnapshotChunk {
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
-    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15")]
+    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16")]
     pub value: ::std::option::Option<response::Value>,
 }
 pub mod response {
@@ -171,26 +181,28 @@ pub mod response {
         #[prost(message, tag="4")]
         Info(super::ResponseInfo),
         #[prost(message, tag="5")]
-        InitChain(super::ResponseInitChain),
+        SetOption(super::ResponseSetOption),
         #[prost(message, tag="6")]
-        Query(super::ResponseQuery),
+        InitChain(super::ResponseInitChain),
         #[prost(message, tag="7")]
-        BeginBlock(super::ResponseBeginBlock),
+        Query(super::ResponseQuery),
         #[prost(message, tag="8")]
-        CheckTx(super::ResponseCheckTx),
+        BeginBlock(super::ResponseBeginBlock),
         #[prost(message, tag="9")]
-        DeliverTx(super::ResponseDeliverTx),
+        CheckTx(super::ResponseCheckTx),
         #[prost(message, tag="10")]
-        EndBlock(super::ResponseEndBlock),
+        DeliverTx(super::ResponseDeliverTx),
         #[prost(message, tag="11")]
-        Commit(super::ResponseCommit),
+        EndBlock(super::ResponseEndBlock),
         #[prost(message, tag="12")]
-        ListSnapshots(super::ResponseListSnapshots),
+        Commit(super::ResponseCommit),
         #[prost(message, tag="13")]
-        OfferSnapshot(super::ResponseOfferSnapshot),
+        ListSnapshots(super::ResponseListSnapshots),
         #[prost(message, tag="14")]
-        LoadSnapshotChunk(super::ResponseLoadSnapshotChunk),
+        OfferSnapshot(super::ResponseOfferSnapshot),
         #[prost(message, tag="15")]
+        LoadSnapshotChunk(super::ResponseLoadSnapshotChunk),
+        #[prost(message, tag="16")]
         ApplySnapshotChunk(super::ResponseApplySnapshotChunk),
     }
 }
@@ -224,6 +236,17 @@ pub struct ResponseInfo {
     #[prost(bytes, tag="5")]
     #[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]
     pub last_block_app_hash: std::vec::Vec<u8>,
+}
+/// nondeterministic
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ResponseSetOption {
+    #[prost(uint32, tag="1")]
+    pub code: u32,
+    /// bytes data = 2;
+    #[prost(string, tag="3")]
+    pub log: std::string::String,
+    #[prost(string, tag="4")]
+    pub info: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseInitChain {

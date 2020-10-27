@@ -95,7 +95,7 @@ impl From<RawData> for Data {
 impl From<Data> for RawData {
     fn from(value: Data) -> Self {
         if value.txs.is_none() {
-            return RawData { txs: vec![] };
+            return RawData { txs: vec![], hash: vec![] };
         }
         RawData {
             txs: value
@@ -104,6 +104,7 @@ impl From<Data> for RawData {
                 .iter()
                 .map(|tx| tx.clone().into())
                 .collect(),
+            hash: vec![]
         }
     }
 }

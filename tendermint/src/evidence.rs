@@ -148,6 +148,7 @@ impl From<Data> for RawEvidenceData {
                 .into_iter()
                 .map(Into::into)
                 .collect(),
+            hash: vec![],
         }
     }
 }
@@ -191,8 +192,8 @@ pub struct Params {
     pub max_age_duration: Duration,
 
     /// Max bytes
-    #[serde(with = "serializers::from_str")]
-    pub max_bytes: i64,
+    #[serde(default)]
+    pub max_num: i64,
 }
 
 impl DomainType<RawEvidenceParams> for Params {}
@@ -210,7 +211,7 @@ impl TryFrom<RawEvidenceParams> for Params {
                 .max_age_duration
                 .ok_or(Kind::MissingMaxAgeDuration)?
                 .try_into()?,
-            max_bytes: value.max_bytes,
+            max_num: value.max_num as i64,
         })
     }
 }
@@ -221,7 +222,7 @@ impl From<Params> for RawEvidenceParams {
             // Todo: Implement proper domain types so this becomes infallible
             max_age_num_blocks: value.max_age_num_blocks.try_into().unwrap(),
             max_age_duration: Some(value.max_age_duration.into()),
-            max_bytes: value.max_bytes,
+            max_num: value.max_num as u32,
         }
     }
 }
