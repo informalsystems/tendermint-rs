@@ -140,7 +140,7 @@ impl StartCmd {
         let light_store = SledStore::new(db);
 
         let builder = LightClientBuilder::prod(
-            light_config.peer_id,
+            light_config.address.clone(),
             rpc_client,
             Box::new(light_store),
             options,
@@ -170,16 +170,12 @@ impl StartCmd {
         let builder = SupervisorBuilder::new();
 
         let primary_instance = self.make_instance(primary_conf, options, Some(timeout))?;
-        let builder = builder.primary(
-            primary_conf.peer_id,
-            primary_conf.address.clone(),
-            primary_instance,
-        );
+        let builder = builder.primary(primary_conf.address.clone(), primary_instance);
 
         let mut witnesses = Vec::with_capacity(witness_confs.len());
         for witness_conf in witness_confs {
             let instance = self.make_instance(witness_conf, options, Some(timeout))?;
-            witnesses.push((witness_conf.peer_id, witness_conf.address.clone(), instance));
+            witnesses.push((witness_conf.address.clone(), instance));
         }
 
         let builder = builder

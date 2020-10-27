@@ -3,9 +3,8 @@ use std::time::Duration;
 use tendermint::net;
 
 use crate::builder::error::{self, Error};
-use crate::peer_list::{PeerList, PeerListBuilder};
+use crate::peer_list::PeerListBuilder;
 use crate::supervisor::Instance;
-use crate::types::PeerId;
 
 #[cfg(feature = "rpc-client")]
 use {
@@ -20,8 +19,7 @@ pub struct Done;
 /// Builder for the [`Supervisor`]
 #[must_use]
 pub struct SupervisorBuilder<State> {
-    instances: PeerListBuilder<Instance>,
-    addresses: PeerListBuilder<net::Address>,
+    instances: PeerListBuilder<net::Address, Instance>,
     evidence_reporting_timeout: Option<Duration>,
     #[allow(dead_code)]
     state: State,
@@ -32,7 +30,6 @@ impl<Current> SupervisorBuilder<Current> {
     fn with_state<Next>(self, state: Next) -> SupervisorBuilder<Next> {
         SupervisorBuilder {
             instances: self.instances,
-            addresses: self.addresses,
             evidence_reporting_timeout: self.evidence_reporting_timeout,
             state,
         }
@@ -56,7 +53,6 @@ impl SupervisorBuilder<Init> {
     pub fn new() -> Self {
         Self {
             instances: PeerListBuilder::default(),
-            addresses: PeerListBuilder::default(),
             evidence_reporting_timeout: None,
             state: Init,
         }
@@ -65,12 +61,10 @@ impl SupervisorBuilder<Init> {
     /// Set the primary [`Instance`].
     pub fn primary(
         mut self,
-        peer_id: PeerId,
         address: net::Address,
         instance: Instance,
     ) -> SupervisorBuilder<HasPrimary> {
-        self.instances.primary(peer_id, instance);
-        self.addresses.primary(peer_id, address);
+        self.instances.primary(address, instance);
 
         self.with_state(HasPrimary)
     }
@@ -78,14 +72,8 @@ impl SupervisorBuilder<Init> {
 
 impl SupervisorBuilder<HasPrimary> {
     /// Add a witness [`Instance`].
-    pub fn witness(
-        mut self,
-        peer_id: PeerId,
-        address: net::Address,
-        instance: Instance,
-    ) -> SupervisorBuilder<Done> {
-        self.instances.witness(peer_id, instance);
-        self.addresses.witness(peer_id, address);
+    pub fn witness(mut self, address: net::Address, instance: Instance) -> SupervisorBuilder<Done> {
+        self.instances.witness(address, instance);
 
         self.with_state(Done)
     }
@@ -93,16 +81,15 @@ impl SupervisorBuilder<HasPrimary> {
     /// Add multiple witnesses at once.
     pub fn witnesses(
         mut self,
-        witnesses: impl IntoIterator<Item = (PeerId, net::Address, Instance)>,
+        witnesses: impl IntoIterator<Item = (net::Address, Instance)>,
     ) -> Result<SupervisorBuilder<Done>, Error> {
         let mut iter = witnesses.into_iter().peekable();
         if iter.peek().is_none() {
             return Err(error::Kind::EmptyWitnessList.into());
         }
 
-        for (peer_id, address, instance) in iter {
-            self.instances.witness(peer_id, instance);
-            self.addresses.witness(peer_id, address);
+        for (address, instance) in iter {
+            self.instances.witness(address, instance);
         }
 
         Ok(self.with_state(Done))
@@ -115,18 +102,11 @@ impl SupervisorBuilder<Done> {
     #[cfg(feature = "rpc-client")]
     pub fn build_prod(self) -> Supervisor {
         let timeout = self.evidence_reporting_timeout;
-        let (instances, addresses) = self.inner();
 
         Supervisor::new(
-            instances,
+            self.instances.build(),
             ProdForkDetector::default(),
-            ProdEvidenceReporter::new(addresses.into_values(), timeout),
+            ProdEvidenceReporter::new(timeout),
         )
-    }
-
-    /// Get the underlying list of instances and addresses.
-    #[must_use]
-    pub fn inner(self) -> (PeerList<Instance>, PeerList<net::Address>) {
-        (self.instances.build(), self.addresses.build())
     }
 }

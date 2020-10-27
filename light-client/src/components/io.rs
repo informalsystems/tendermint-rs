@@ -77,8 +77,9 @@ mod prod {
     use std::time::Duration;
 
     use crate::bail;
-    use crate::types::PeerId;
     use crate::utils::block_on;
+
+    use tendermint::net;
 
     use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
     use tendermint::validator::Set as TMValidatorSet;
@@ -87,7 +88,7 @@ mod prod {
     /// light blocks from full nodes via RPC.
     #[derive(Clone, Debug)]
     pub struct ProdIo {
-        peer_id: PeerId,
+        address: net::Address,
         rpc_client: rpc::HttpClient,
         timeout: Option<Duration>,
     }
@@ -104,7 +105,7 @@ mod prod {
                 signed_header,
                 validator_set,
                 next_validator_set,
-                self.peer_id,
+                self.address.clone(),
             );
 
             Ok(light_block)
@@ -113,16 +114,14 @@ mod prod {
 
     impl ProdIo {
         /// Constructs a new ProdIo component.
-        ///
-        /// A peer map which maps peer IDS to their network address must be supplied.
         pub fn new(
-            peer_id: PeerId,
+            address: net::Address,
             rpc_client: rpc::HttpClient, /* TODO(thane): Generalize over client transport
                                           * (instead of using HttpClient directly) */
             timeout: Option<Duration>,
         ) -> Self {
             Self {
-                peer_id,
+                address,
                 rpc_client,
                 timeout,
             }

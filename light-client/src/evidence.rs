@@ -1,19 +1,15 @@
 //! Fork evidence data structures and interfaces.
 
-use crate::{components::io::IoError, types::PeerId};
+use crate::components::io::IoError;
 
-use tendermint::abci::transaction::Hash;
-
-use contracts::contract_trait;
+use tendermint::{abci::transaction::Hash, net};
 
 pub use tendermint::evidence::Evidence;
 
 /// Interface for reporting evidence to full nodes, typically via the RPC client.
-#[contract_trait]
-#[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
 pub trait EvidenceReporter: Send + Sync {
     /// Report evidence to all connected full nodes.
-    fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError>;
+    fn report(&self, e: Evidence, provider: net::Address) -> Result<Hash, IoError>;
 }
 
 #[cfg(feature = "rpc-client")]
@@ -24,8 +20,7 @@ mod prod {
     use super::*;
     use crate::utils::block_on;
 
-    use contracts::pre;
-    use std::{collections::HashMap, time::Duration};
+    use std::time::Duration;
 
     use tendermint_rpc as rpc;
     use tendermint_rpc::Client;
@@ -34,15 +29,12 @@ mod prod {
     /// nodes via RPC.
     #[derive(Clone, Debug)]
     pub struct ProdEvidenceReporter {
-        peer_map: HashMap<PeerId, tendermint::net::Address>,
         timeout: Option<Duration>,
     }
 
-    #[contract_trait]
     impl EvidenceReporter for ProdEvidenceReporter {
-        #[pre(self.peer_map.contains_key(&peer))]
-        fn report(&self, e: Evidence, peer: PeerId) -> Result<Hash, IoError> {
-            let client = self.rpc_client_for(peer)?;
+        fn report(&self, e: Evidence, address: net::Address) -> Result<Hash, IoError> {
+            let client = self.rpc_client_for(address)?;
 
             let res = block_on(
                 self.timeout,
@@ -60,17 +52,12 @@ mod prod {
         /// Constructs a new ProdEvidenceReporter component.
         ///
         /// A peer map which maps peer IDS to their network address must be supplied.
-        pub fn new(
-            peer_map: HashMap<PeerId, tendermint::net::Address>,
-            timeout: Option<Duration>,
-        ) -> Self {
-            Self { peer_map, timeout }
+        pub fn new(timeout: Option<Duration>) -> Self {
+            Self { timeout }
         }
 
-        #[pre(self.peer_map.contains_key(&peer))]
-        fn rpc_client_for(&self, peer: PeerId) -> Result<rpc::HttpClient, IoError> {
-            let peer_addr = self.peer_map.get(&peer).unwrap().to_owned();
-            Ok(rpc::HttpClient::new(peer_addr).map_err(IoError::from)?)
+        fn rpc_client_for(&self, address: net::Address) -> Result<rpc::HttpClient, IoError> {
+            Ok(rpc::HttpClient::new(address).map_err(IoError::from)?)
         }
     }
 }

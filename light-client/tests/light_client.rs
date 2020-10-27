@@ -28,7 +28,7 @@ struct BisectionTestResult {
 }
 
 fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
-    let primary = default_peer_id();
+    let primary = default_peer_address();
     let untrusted_height = tc.height_to_verify;
     let trust_threshold = tc.trust_options.trust_level;
     let trusting_period = tc.trust_options.period;

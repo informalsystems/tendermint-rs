@@ -1,3 +1,4 @@
+use tendermint::net;
 use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
@@ -10,7 +11,7 @@ use tendermint_light_client::{
     state::State,
     store::LightStore,
     supervisor::{Handle, Instance, Supervisor},
-    types::{LightBlock, PeerId, Status, Time},
+    types::{LightBlock, Status, Time},
 };
 
 use std::collections::HashMap;
@@ -25,7 +26,12 @@ use tendermint_testgen::Tester;
 
 const TEST_FILES_PATH: &str = "./tests/support/";
 
-fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: Time) -> Instance {
+fn make_instance(
+    address: net::Address,
+    trust_options: TrustOptions,
+    io: MockIo,
+    now: Time,
+) -> Instance {
     let trusted_height = trust_options.height;
     let trusted_state = io
         .fetch_light_block(AtHeight::At(trusted_height))
@@ -49,14 +55,14 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
     let clock = MockClock { now };
     let scheduler = scheduler::basic_bisecting_schedule;
 
-    let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, io);
+    let light_client = LightClient::new(address, options, clock, scheduler, verifier, io);
 
     Instance::new(light_client, state)
 }
 
 fn run_multipeer_test(tc: TestBisection<AnonLightBlock>) {
     let tc: TestBisection<LightBlock> = tc.into();
-    let primary = tc.primary.lite_blocks[0].provider;
+    let primary = tc.primary.lite_blocks[0].provider.clone();
 
     println!(
         "Running Test Case: {}\nwith Primary Peer: {:?}",
@@ -69,17 +75,29 @@ fn run_multipeer_test(tc: TestBisection<AnonLightBlock>) {
     };
 
     let io = MockIo::new(tc.primary.chain_id, tc.primary.lite_blocks);
-    let primary_instance = make_instance(primary, tc.trust_options.clone(), io.clone(), tc.now);
+    let primary_instance = make_instance(
+        primary.clone(),
+        tc.trust_options.clone(),
+        io.clone(),
+        tc.now,
+    );
 
     let mut peer_list = PeerList::builder();
     peer_list.primary(primary, primary_instance);
 
     for provider in tc.witnesses.into_iter() {
-        let peer_id = provider.value.lite_blocks[0].provider;
-        println!("Witness: {}", peer_id);
+        let address = provider.value.lite_blocks[0].provider.clone();
+        println!("Witness: {}", address);
+
         let io = MockIo::new(provider.value.chain_id, provider.value.lite_blocks);
-        let instance = make_instance(peer_id, tc.trust_options.clone(), io.clone(), tc.now);
-        peer_list.witness(peer_id, instance);
+        let instance = make_instance(
+            address.clone(),
+            tc.trust_options.clone(),
+            io.clone(),
+            tc.now,
+        );
+
+        peer_list.witness(address, instance);
     }
 
     let supervisor = Supervisor::new(

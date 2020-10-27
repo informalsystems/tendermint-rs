@@ -1,6 +1,6 @@
 //! DSL for building a light client [`Instance`]
 
-use tendermint::{block::Height, Hash};
+use tendermint::{block::Height, net, Hash};
 
 use crate::bail;
 use crate::builder::error::{self, Error};
@@ -14,7 +14,7 @@ use crate::predicates::VerificationPredicates;
 use crate::state::{State, VerificationTrace};
 use crate::store::LightStore;
 use crate::supervisor::Instance;
-use crate::types::{LightBlock, PeerId, Status};
+use crate::types::{LightBlock, Status};
 
 #[cfg(feature = "rpc-client")]
 use {
@@ -33,7 +33,7 @@ pub struct HasTrustedState;
 /// Builder for a light client [`Instance`]
 #[must_use]
 pub struct LightClientBuilder<State> {
-    peer_id: PeerId,
+    address: net::Address,
     options: Options,
     io: Box<dyn Io>,
     clock: Box<dyn Clock>,
@@ -51,7 +51,7 @@ impl<Current> LightClientBuilder<Current> {
     /// Private method to move from one state to another
     fn with_state<Next>(self, state: Next) -> LightClientBuilder<Next> {
         LightClientBuilder {
-            peer_id: self.peer_id,
+            address: self.address,
             options: self.options,
             io: self.io,
             clock: self.clock,
@@ -69,17 +69,17 @@ impl LightClientBuilder<NoTrustedState> {
     /// Initialize a builder for a production (non-mock) light client.
     #[cfg(feature = "rpc-client")]
     pub fn prod(
-        peer_id: PeerId,
+        address: net::Address,
         rpc_client: rpc::HttpClient,
         light_store: Box<dyn LightStore>,
         options: Options,
         timeout: Option<Duration>,
     ) -> Self {
         Self::custom(
-            peer_id,
+            address.clone(),
             options,
             light_store,
-            Box::new(ProdIo::new(peer_id, rpc_client, timeout)),
+            Box::new(ProdIo::new(address, rpc_client, timeout)),
             Box::new(ProdHasher),
             Box::new(SystemClock),
             Box::new(ProdVerifier::default()),
@@ -91,7 +91,7 @@ impl LightClientBuilder<NoTrustedState> {
     /// Initialize a builder for a custom light client, by providing all dependencies upfront.
     #[allow(clippy::too_many_arguments)]
     pub fn custom(
-        peer_id: PeerId,
+        address: net::Address,
         options: Options,
         light_store: Box<dyn LightStore>,
         io: Box<dyn Io>,
@@ -102,7 +102,7 @@ impl LightClientBuilder<NoTrustedState> {
         predicates: Box<dyn VerificationPredicates>,
     ) -> Self {
         Self {
-            peer_id,
+            address,
             hasher,
             io,
             verifier,
@@ -203,7 +203,7 @@ impl LightClientBuilder<HasTrustedState> {
         };
 
         let light_client = LightClient::from_boxed(
-            self.peer_id,
+            self.address,
             self.options,
             self.clock,
             self.scheduler,

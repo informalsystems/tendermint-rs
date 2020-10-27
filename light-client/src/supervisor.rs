@@ -2,7 +2,10 @@
 
 use crossbeam_channel as channel;
 
-use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
+use tendermint::{
+    evidence::{ConflictingHeadersEvidence, Evidence},
+    net,
+};
 
 use crate::bail;
 use crate::errors::{Error, ErrorKind};
@@ -11,7 +14,7 @@ use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
 use crate::light_client::LightClient;
 use crate::peer_list::PeerList;
 use crate::state::State;
-use crate::types::{Height, LatestStatus, LightBlock, PeerId, Status};
+use crate::types::{Height, LatestStatus, LightBlock, Status};
 
 /// Provides an interface to the supervisor for use in downstream code.
 pub trait Handle: Send + Sync {
@@ -119,7 +122,7 @@ impl Instance {
 /// ```
 pub struct Supervisor {
     /// List of peers and their instances (primary, witnesses, full and faulty nodes)
-    peers: PeerList<Instance>,
+    peers: PeerList<net::Address, Instance>,
     /// An instance of the fork detector
     fork_detector: Box<dyn ForkDetector>,
     /// Reporter of fork evidence
@@ -144,7 +147,7 @@ static_assertions::assert_impl_all!(Supervisor: Send);
 impl Supervisor {
     /// Constructs a new supevisor from the given list of peers and fork detector instance.
     pub fn new(
-        peers: PeerList<Instance>,
+        peers: PeerList<net::Address, Instance>,
         fork_detector: impl ForkDetector + 'static,
         evidence_reporter: impl EvidenceReporter + 'static,
     ) -> Self {
@@ -177,9 +180,9 @@ impl Supervisor {
     /// Return latest trusted status summary.
     fn latest_status(&mut self) -> LatestStatus {
         let latest_trusted = self.peers.primary().latest_trusted();
-        let mut connected_nodes: Vec<PeerId> = Vec::new();
-        connected_nodes.push(self.peers.primary_id());
-        connected_nodes.append(&mut self.peers.witnesses_ids().iter().copied().collect());
+        let mut connected_nodes: Vec<net::Address> = Vec::new();
+        connected_nodes.push(self.peers.primary_id().clone());
+        connected_nodes.append(&mut self.peers.witnesses_ids().iter().cloned().collect());
 
         match latest_trusted {
             Some(trusted) => LatestStatus::new(
@@ -255,7 +258,7 @@ impl Supervisor {
         }
     }
 
-    fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<PeerId>, Error> {
+    fn process_forks(&mut self, forks: Vec<Fork>) -> Result<Vec<net::Address>, Error> {
         let mut forked = Vec::with_capacity(forks.len());
 
         for fork in forks {
@@ -263,10 +266,10 @@ impl Supervisor {
                 // An actual fork was detected, report evidence and record forked peer.
                 // TODO: also report to primary
                 Fork::Forked { primary, witness } => {
-                    let provider = witness.provider;
+                    let provider = &witness.provider;
                     self.report_evidence(provider, &primary, &witness)?;
 
-                    forked.push(provider);
+                    forked.push(provider.clone());
                 }
                 // A witness has timed out, remove it from the peer list.
                 Fork::Timeout(provider, _error) => {
@@ -287,7 +290,7 @@ impl Supervisor {
     /// Report the given evidence of a fork.
     fn report_evidence(
         &mut self,
-        provider: PeerId,
+        provider: &net::Address,
         primary: &LightBlock,
         witness: &LightBlock,
     ) -> Result<(), Error> {
@@ -296,8 +299,9 @@ impl Supervisor {
             witness.signed_header.clone(),
         );
 
+        let evidence = Evidence::ConflictingHeaders(Box::new(evidence));
         self.evidence_reporter
-            .report(Evidence::ConflictingHeaders(Box::new(evidence)), provider)
+            .report(evidence, provider.clone())
             .map_err(ErrorKind::Io)?;
 
         Ok(())

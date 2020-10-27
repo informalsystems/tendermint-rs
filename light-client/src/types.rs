@@ -9,6 +9,7 @@ use tendermint::{
         header::Header as TMHeader, signed_header::SignedHeader as TMSignedHeader,
         Commit as TMCommit,
     },
+    net,
     trust_threshold::TrustThresholdFraction,
     validator::Info as TMValidatorInfo,
     validator::Set as TMValidatorSet,
@@ -90,8 +91,8 @@ pub struct LightBlock {
     /// Validator set at the next block height
     #[serde(rename = "next_validator_set")]
     pub next_validators: ValidatorSet,
-    /// The peer ID of the node that provided this block
-    pub provider: PeerId,
+    /// The address of the node that provided this block
+    pub provider: net::Address,
 }
 
 impl LightBlock {
@@ -100,7 +101,7 @@ impl LightBlock {
         signed_header: SignedHeader,
         validators: ValidatorSet,
         next_validators: ValidatorSet,
-        provider: PeerId,
+        provider: net::Address,
     ) -> LightBlock {
         Self {
             signed_header,
@@ -132,7 +133,7 @@ pub struct LatestStatus {
     /// Note that this potentially did not yet sign a header yet.
     pub valset_hash: Option<Hash>,
     /// The list of fullnodes we are connected to, primary and witnesses.
-    pub connected_nodes: Vec<PeerId>,
+    pub connected_nodes: Vec<net::Address>,
 }
 
 impl LatestStatus {
@@ -141,7 +142,7 @@ impl LatestStatus {
         height: Option<u64>,
         block_hash: Option<Hash>,
         valset_hash: Option<Hash>,
-        connected_nodes: Vec<PeerId>,
+        connected_nodes: Vec<net::Address>,
     ) -> Self {
         Self {
             height,

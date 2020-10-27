@@ -2,13 +2,15 @@
 
 use serde::{Deserialize, Serialize};
 
+use tendermint::net;
+
 use crate::{
     errors::{Error, ErrorExt, ErrorKind},
     operations::{Hasher, ProdHasher},
     state::State,
     store::memory::MemoryStore,
     supervisor::Instance,
-    types::{LightBlock, PeerId, Status},
+    types::{LightBlock, Status},
 };
 
 /// Result of fork detection
@@ -33,7 +35,7 @@ pub enum Fork {
     /// The node has been deemed faulty for this `LightBlock`
     Faulty(LightBlock, ErrorKind),
     /// The node has timed out
-    Timeout(PeerId, ErrorKind),
+    Timeout(net::Address, ErrorKind),
 }
 
 /// Interface for a fork detector

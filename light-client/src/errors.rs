@@ -7,11 +7,13 @@ use crossbeam_channel as crossbeam;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use tendermint::net;
+
 use crate::{
     components::io::IoError,
     light_client::Options,
     predicates::errors::VerificationError,
-    types::{Height, LightBlock, PeerId, Status},
+    types::{Height, LightBlock, Status},
 };
 
 /// An error raised by this library
@@ -42,7 +44,7 @@ pub enum ErrorKind {
 
     /// A fork has been detected between some peers
     #[error("fork detected peers={0:?}")]
-    ForkDetected(Vec<PeerId>),
+    ForkDetected(Vec<net::Address>),
 
     /// No initial trusted state
     #[error("no initial trusted state")]

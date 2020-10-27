@@ -80,7 +80,6 @@ fn main() {
 }
 
 fn make_instance(
-    peer_id: PeerId,
     addr: tendermint::net::Address,
     db_path: impl AsRef<Path>,
     opts: &SyncOpts,
@@ -88,15 +87,14 @@ fn make_instance(
     let db = sled::open(db_path)?;
 
     let light_store = SledStore::new(db);
-    let rpc_client = rpc::HttpClient::new(addr).unwrap();
+    let rpc_client = rpc::HttpClient::new(addr.clone()).unwrap();
     let options = light_client::Options {
         trust_threshold: TrustThreshold::default(),
         trusting_period: Duration::from_secs(36000),
         clock_drift: Duration::from_secs(1),
     };
 
-    let builder =
-        LightClientBuilder::prod(peer_id, rpc_client, Box::new(light_store), options, None);
+    let builder = LightClientBuilder::prod(addr, rpc_client, Box::new(light_store), options, None);
 
     let builder = if let (Some(height), Some(hash)) = (opts.trusted_height, opts.trusted_hash) {
         builder.trust_primary_at(height, hash)
@@ -117,12 +115,12 @@ fn sync_cmd(opts: SyncOpts) -> Result<(), BoxError> {
     let primary_path = opts.db_path.join(primary.to_string());
     let witness_path = opts.db_path.join(witness.to_string());
 
-    let primary_instance = make_instance(primary, primary_addr.clone(), primary_path, &opts)?;
-    let witness_instance = make_instance(witness, witness_addr.clone(), witness_path, &opts)?;
+    let primary_instance = make_instance(primary_addr.clone(), primary_path, &opts)?;
+    let witness_instance = make_instance(witness_addr.clone(), witness_path, &opts)?;
 
     let supervisor = SupervisorBuilder::new()
-        .primary(primary, primary_addr, primary_instance)
-        .witness(witness, witness_addr, witness_instance)
+        .primary(primary_addr, primary_instance)
+        .witness(witness_addr, witness_instance)
         .build_prod();
 
     let handle = supervisor.handle();

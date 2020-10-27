@@ -7,13 +7,15 @@ use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use std::{fmt, time::Duration};
 
+use tendermint::net;
+
 use crate::components::{clock::Clock, io::*, scheduler::*, verifier::*};
 use crate::contracts::*;
 use crate::{
     bail,
     errors::{Error, ErrorKind},
     state::State,
-    types::{Height, LightBlock, PeerId, Status, TrustThreshold},
+    types::{Height, LightBlock, Status, TrustThreshold},
 };
 
 /// Verification parameters
@@ -49,8 +51,8 @@ pub struct Options {
 /// correct for the duration of the trusted period.  The fault-tolerant read operation
 /// is designed for this security model.
 pub struct LightClient {
-    /// The peer id of the peer this client is connected to
-    pub peer: PeerId,
+    /// The address of the node that this client is connected to
+    pub address: net::Address,
     /// Options for this light client
     pub options: Options,
     clock: Box<dyn Clock>,
@@ -62,7 +64,7 @@ pub struct LightClient {
 impl fmt::Debug for LightClient {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("LightClient")
-            .field("peer", &self.peer)
+            .field("address", &self.address)
             .field("options", &self.options)
             .finish()
     }
@@ -71,7 +73,7 @@ impl fmt::Debug for LightClient {
 impl LightClient {
     /// Constructs a new light client
     pub fn new(
-        peer: PeerId,
+        address: net::Address,
         options: Options,
         clock: impl Clock + 'static,
         scheduler: impl Scheduler + 'static,
@@ -79,7 +81,7 @@ impl LightClient {
         io: impl Io + 'static,
     ) -> Self {
         Self {
-            peer,
+            address,
             options,
             clock: Box::new(clock),
             scheduler: Box::new(scheduler),
@@ -90,7 +92,7 @@ impl LightClient {
 
     /// Constructs a new light client from boxed components
     pub fn from_boxed(
-        peer: PeerId,
+        address: net::Address,
         options: Options,
         clock: Box<dyn Clock>,
         scheduler: Box<dyn Scheduler>,
@@ -98,7 +100,7 @@ impl LightClient {
         io: Box<dyn Io>,
     ) -> Self {
         Self {
-            peer,
+            address,
             options,
             clock,
             scheduler,
@@ -247,7 +249,7 @@ impl LightClient {
     ///
     /// ## Postcondition
     /// - The provider of block that is returned matches the given peer.
-    #[post(ret.as_ref().map(|(lb, _)| lb.provider == self.peer).unwrap_or(true))]
+    #[post(ret.as_ref().map(|(lb, _)| lb.provider == self.address).unwrap_or(true))]
     pub fn get_or_fetch_block(
         &self,
         height: Height,

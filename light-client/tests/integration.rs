@@ -19,7 +19,7 @@ use tendermint_light_client::{
     store::memory::MemoryStore,
     store::LightStore,
     supervisor::{Handle, Instance},
-    types::{PeerId, Status, TrustThreshold},
+    types::{Status, TrustThreshold},
 };
 
 use tendermint::abci::transaction::Hash as TxHash;
@@ -28,20 +28,21 @@ use tendermint_rpc as rpc;
 
 use std::time::Duration;
 
-fn make_instance(
-    peer_id: PeerId,
-    options: light_client::Options,
-    address: net::Address,
-) -> Instance {
-    let rpc_client = rpc::HttpClient::new(address).unwrap();
-    let io = ProdIo::new(peer_id, rpc_client.clone(), Some(Duration::from_secs(2)));
+fn make_instance(options: light_client::Options, address: net::Address) -> Instance {
+    let rpc_client = rpc::HttpClient::new(address.clone()).unwrap();
+    let io = ProdIo::new(
+        address.clone(),
+        rpc_client.clone(),
+        Some(Duration::from_secs(2)),
+    );
+
     let latest_block = io.fetch_light_block(AtHeight::Highest).unwrap();
 
     let mut light_store = Box::new(MemoryStore::new());
     light_store.insert(latest_block, Status::Trusted);
 
     LightClientBuilder::prod(
-        peer_id,
+        address,
         rpc_client,
         light_store,
         options,
@@ -54,9 +55,8 @@ fn make_instance(
 
 struct TestEvidenceReporter;
 
-#[contracts::contract_trait]
 impl EvidenceReporter for TestEvidenceReporter {
-    fn report(&self, evidence: Evidence, peer: PeerId) -> Result<TxHash, IoError> {
+    fn report(&self, evidence: Evidence, peer: net::Address) -> Result<TxHash, IoError> {
         panic!(
             "unexpected fork detected for peer {} with evidence: {:?}",
             peer, evidence
@@ -67,15 +67,13 @@ impl EvidenceReporter for TestEvidenceReporter {
 #[test]
 #[ignore]
 fn sync() {
-    let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
-    let witness: PeerId = "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF".parse().unwrap();
-
     // Because our CI infrastructure can only spawn a single Tendermint node at the moment,
     // we run this test against this very node as both the primary and witness.
     // In a production environment, one should make sure that the primary and witness are
     // different nodes, and check that the configured peer IDs match the ones returned
     // by the nodes.
-    let node_address: tendermint::net::Address = "tcp://127.0.0.1:26657".parse().unwrap();
+    let primary_addr: tendermint::net::Address = "tcp://127.0.0.1:26657".parse().unwrap();
+    let witness_addr: tendermint::net::Address = "tcp://localhost:26657".parse().unwrap();
 
     let options = light_client::Options {
         trust_threshold: TrustThreshold {
@@ -86,12 +84,12 @@ fn sync() {
         clock_drift: Duration::from_secs(5 * 60),      // 5 minutes
     };
 
-    let primary_instance = make_instance(primary, options, node_address.clone());
-    let witness_instance = make_instance(witness, options, node_address.clone());
+    let primary_instance = make_instance(options, primary_addr.clone());
+    let witness_instance = make_instance(options, witness_addr.clone());
 
     let supervisor = SupervisorBuilder::new()
-        .primary(primary, node_address.clone(), primary_instance)
-        .witness(witness, node_address, witness_instance)
+        .primary(primary_addr, primary_instance)
+        .witness(witness_addr, witness_instance)
         .build_prod();
 
     let handle = supervisor.handle();

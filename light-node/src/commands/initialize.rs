@@ -84,7 +84,7 @@ fn initialize_subjectively(
     let rpc_client = rpc::HttpClient::new(config.address.clone()).map_err(|e| e.to_string())?;
 
     let builder = LightClientBuilder::prod(
-        config.peer_id,
+        config.address.clone(),
         rpc_client,
         Box::new(light_store),
         node_config.clone().into(),

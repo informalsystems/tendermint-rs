@@ -1,9 +1,15 @@
 //! Utilities and datatypes for use in tests.
 
-use crate::types::{Height, LightBlock, PeerId, SignedHeader, Time, TrustThreshold, ValidatorSet};
+use std::collections::HashMap;
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
+
 use tendermint::abci::transaction::Hash;
+use tendermint::block::Height as HeightStr;
+use tendermint::evidence::{Duration as DurationStr, Evidence};
+use tendermint::net;
+
 use tendermint_rpc as rpc;
 
 use crate::components::clock::Clock;
@@ -13,11 +19,7 @@ use crate::errors::Error;
 use crate::evidence::EvidenceReporter;
 use crate::light_client::{LightClient, Options};
 use crate::state::State;
-use contracts::contract_trait;
-use std::collections::HashMap;
-use std::time::Duration;
-use tendermint::block::Height as HeightStr;
-use tendermint::evidence::{Duration as DurationStr, Evidence};
+use crate::types::{Height, LightBlock, SignedHeader, Time, TrustThreshold, ValidatorSet};
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TestCases<LB> {
@@ -139,9 +141,8 @@ impl Io for MockIo {
 #[derive(Clone, Debug, Default)]
 pub struct MockEvidenceReporter;
 
-#[contract_trait]
 impl EvidenceReporter for MockEvidenceReporter {
-    fn report(&self, _e: Evidence, _peer: PeerId) -> Result<Hash, IoError> {
+    fn report(&self, _e: Evidence, _peer: net::Address) -> Result<Hash, IoError> {
         Ok(Hash::new([0; 32]))
     }
 }
@@ -166,7 +167,7 @@ pub fn verify_single(
         trusted_state.signed_header,
         trusted_state.next_validators.clone(),
         trusted_state.next_validators,
-        default_peer_id(),
+        default_peer_address(),
     );
 
     let options = Options {
@@ -205,12 +206,12 @@ pub struct AnonLightBlock {
     pub validators: ValidatorSet,
     #[serde(rename = "next_validator_set")]
     pub next_validators: ValidatorSet,
-    #[serde(default = "default_peer_id")]
-    pub provider: PeerId,
+    #[serde(default = "default_peer_address")]
+    pub provider: net::Address,
 }
 
-pub fn default_peer_id() -> PeerId {
-    "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap()
+pub fn default_peer_address() -> net::Address {
+    "tcp://example.com:26656".parse().unwrap()
 }
 
 impl From<AnonLightBlock> for LightBlock {
@@ -261,16 +262,17 @@ impl From<WitnessProvider<AnonLightBlock>> for WitnessProvider<LightBlock> {
     }
 }
 
-pub fn peer_id_at(count: usize) -> PeerId {
-    let peer_ids: Vec<PeerId> = vec![
-        "ADBEEFC0FFEEFACADEBADFADADE0BEFEEDC0C0AD".parse().unwrap(),
-        "BADFADBEEFC0FFEEFACADEAD0BEFEEDC0C0ADEAD".parse().unwrap(),
-        "CADEEDC0C0ADEADBEEFBADFADAD0BEFEC0FFEEFA".parse().unwrap(),
-        "D0BEFEEDC0C0ADEABADFADADBEEFC0FFEEFACADE".parse().unwrap(),
-        "EEFC0FFEEFACADEBADFADAD0BEFEEDC0C0ADEADB".parse().unwrap(),
-        "FC0FFEEFABAC0C0ADEADDFBEEADAD0BEFEEDCADE".parse().unwrap(),
+pub fn peer_address_at(count: usize) -> net::Address {
+    let peer_ids: Vec<net::Address> = vec![
+        "tcp://example.com:26651".parse().unwrap(),
+        "tcp://example.com:26652".parse().unwrap(),
+        "tcp://example.com:26653".parse().unwrap(),
+        "tcp://example.com:26654".parse().unwrap(),
+        "tcp://example.com:26665".parse().unwrap(),
+        "tcp://example.com:26657".parse().unwrap(),
     ];
-    peer_ids[count]
+
+    peer_ids[count].clone()
 }
 
 impl From<TestBisection<AnonLightBlock>> for TestBisection<LightBlock> {
@@ -280,7 +282,7 @@ impl From<TestBisection<AnonLightBlock>> for TestBisection<LightBlock> {
 
         for (count, provider) in witnesses.iter_mut().enumerate() {
             for lb in provider.value.lite_blocks.iter_mut() {
-                lb.provider = peer_id_at(count);
+                lb.provider = peer_address_at(count);
             }
         }
 
