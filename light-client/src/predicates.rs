@@ -24,7 +24,7 @@ impl VerificationPredicates for ProdPredicates {}
 ///
 /// This enables test implementations to only override a single method rather than
 /// have to re-define every predicate.
-pub trait VerificationPredicates: Send {
+pub trait VerificationPredicates: Send + Sync {
     /// Compare the provided validator_set_hash against the hash produced from hashing the validator
     /// set.
     fn validator_sets_match(
@@ -261,6 +261,13 @@ pub fn verify(
         &trusted.signed_header.header,
     )?;
 
+    // Verify that more than 2/3 of the validators correctly committed the block.
+    vp.has_sufficient_signers_overlap(
+        &untrusted.signed_header,
+        &untrusted.validators,
+        voting_power_calculator,
+    )?;
+
     let trusted_next_height = trusted.height().increment();
 
     if untrusted.height() == trusted_next_height {
@@ -284,13 +291,6 @@ pub fn verify(
             voting_power_calculator,
         )?;
     }
-
-    // Verify that more than 2/3 of the validators correctly committed the block.
-    vp.has_sufficient_signers_overlap(
-        &untrusted.signed_header,
-        &untrusted.validators,
-        voting_power_calculator,
-    )?;
 
     Ok(())
 }

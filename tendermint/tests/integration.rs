@@ -95,7 +95,12 @@ mod rpc {
         );
         assert_eq!(
             computed_data_hash,
-            block_info.block.header.data_hash.unwrap().as_bytes()
+            block_info
+                .block
+                .header
+                .data_hash
+                .unwrap_or_default()
+                .as_bytes()
         );
     }
 

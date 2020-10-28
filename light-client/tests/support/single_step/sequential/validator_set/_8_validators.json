@@ -12,7 +12,7 @@
 				"time": "2019-11-02T15:04:00Z",
 				"last_block_id": {
 					"hash": "",
-					"parts": {
+					"part_set_header": {
 						"total": "0",
 						"hash": ""
 					}
@@ -32,7 +32,7 @@
 				"round": "1",
 				"block_id": {
 					"hash": "1CD820382BADFE9F39B17798A4EAFB356F692C14DE2704CF827D0AAC33E9778E",
-					"parts": {
+					"part_set_header": {
 						"total": "1",
 						"hash": "CBB0495230B716FAD25E815C2766B059A7C2D7D31126ABCB76EE8FA2509C778E"
 					}
@@ -190,7 +190,7 @@
 					"time": "2019-11-02T15:04:10Z",
 					"last_block_id": {
 						"hash": "1CD820382BADFE9F39B17798A4EAFB356F692C14DE2704CF827D0AAC33E9778E",
-						"parts": {
+						"part_set_header": {
 							"total": "1",
 							"hash": "CBB0495230B716FAD25E815C2766B059A7C2D7D31126ABCB76EE8FA2509C778E"
 						}
@@ -210,7 +210,7 @@
 					"round": "1",
 					"block_id": {
 						"hash": "B71EBFEE6DA7660E16700C517B2C4BDAE902E0C64711FBE5CE14B27F9B27BAB6",
-						"parts": {
+						"part_set_header": {
 							"total": "1",
 							"hash": "E48F3D3AEE914F0CD55E616CA8513142A35BE45DCD6C5E7EAA0798B747C42147"
 						}
