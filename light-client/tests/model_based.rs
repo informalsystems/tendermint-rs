@@ -342,7 +342,21 @@ fn fuzz_single_step_test(
             "  > running static model-based single-step test: {}",
             &tc.description
         ));
-        single_step_test(tc, _env, _root_env, output_env);
+
+        // TODO: Talk to Greg about ser/de once serialization updates are merged
+        // serialize
+        let serialized = serde_json::to_string(&tc);
+        assert!(serialized.is_ok(), "serialization error {}", serialized.err().unwrap());
+
+        //deserialize
+        let serialized = serialized.unwrap();
+
+        let deserialized = serde_json::from_str::<SingleStepTestCase>(&serialized);
+        assert!(deserialized.is_ok(), "deserialization error {}", deserialized.err().unwrap());
+        let deserialized = deserialized.unwrap();
+
+        // test
+        single_step_test(deserialized, _env, _root_env, output_env);
         Some(())
     };
     run_test(tc.clone());
