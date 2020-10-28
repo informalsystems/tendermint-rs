@@ -21,6 +21,7 @@ pub struct Genesis<AppState = serde_json::Value> {
     pub consensus_params: consensus::Params,
 
     /// Validators
+    #[serde(default)]
     pub validators: Vec<validator::Info>,
 
     /// App hash
