@@ -1,11 +1,17 @@
 ## Unreleased
 
+### IMPROVEMENTS
+
+- `[light-client]` Change type of `provider` field in `LightBlock` from
+  `tendermint::node::Id` to `tendermint::net::Address` ([#485])
+
 ### BUG FIXES:
 
 - `[light-client]` Fix bug where a commit with only absent signatures would be
   deemed valid instead of invalid ([#650])
 
 [#652]: https://github.com/informalsystems/tendermint-rs/issues/650
+[#485]: https://github.com/informalsystems/tendermint-rs/issues/485
 
 ## v0.17.0-rc1
 
