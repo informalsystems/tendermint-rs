@@ -8,7 +8,8 @@ members = [
     "rpc",
     "rpc-probe",
     "tendermint",
-    "testgen"
+    "testgen",
+    "wasm-client",
 ]
 
 exclude = [

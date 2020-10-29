@@ -1,5 +1,7 @@
 //! Provides an interface and default implementation of the `Verifier` component
 
+use serde::{Serialize, Deserialize};
+
 use crate::predicates as preds;
 use crate::{
     errors::ErrorExt,
@@ -14,7 +16,7 @@ use preds::{errors::VerificationError, ProdPredicates, VerificationPredicates};
 
 /// Represents the result of the verification performed by the
 /// verifier component.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Verdict {
     /// Verification succeeded, the block is valid.
     Success,
