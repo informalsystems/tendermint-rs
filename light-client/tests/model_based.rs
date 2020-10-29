@@ -177,7 +177,7 @@ impl SingleStepTestFuzzer for HeaderLastBlockIdFuzzer {
         // TODO!
         input.block.signed_header.header.last_block_id = Some(tendermint::block::Id {
             hash: Self::random_hash(),
-            parts: Default::default(),
+            part_set_header: Default::default(),
         });
         String::from("header last_block_id")
     }
@@ -299,7 +299,7 @@ impl SingleStepTestFuzzer for CommitBlockIdFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> String {
         input.block.signed_header.commit.block_id = tendermint::block::Id {
             hash: Self::random_hash(),
-            parts: Default::default(),
+            part_set_header: Default::default(),
         };
         String::from("commit block_id")
     }
