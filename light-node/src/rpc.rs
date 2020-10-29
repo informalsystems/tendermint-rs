@@ -288,17 +288,18 @@ mod test {
                             "value": "+vlsKpn6ojn+UoTZl+w+fxeqm6xvUfBokTcKfcG3au4="
                     },
                     "voting_power": "50",
-                    "proposer_priority": "0" }
+                    "proposer_priority": "0"
+            }
     },
-    "provider": "9D61B19DEFFD5A60BA844AF492EC2CC44449C569"
+    "provider": "tcp://127.0.0.1:26657"
 }
 "#;
     const STATUS_JSON: &str = r#"
 {
     "block_hash": "5A55D7AF2DF9AE4BF4B46FDABBBAD1B66D37B5E044A4843AB0FB0EBEC3E0422C",
     "connected_nodes": [
-      "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE",
-      "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF"
+      "tcp://127.0.0.1:26657",
+      "tcp://127.0.0.2:26657"
     ],
     "height": 1565,
     "valset_hash": "74F2AC2B6622504D08DD2509E28CE731985CFE4D133C9DB0CB85763EDCA95AA3"

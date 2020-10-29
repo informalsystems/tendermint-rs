@@ -174,7 +174,7 @@ Example output:
         }
       ]
     },
-    "provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE",
+    "provider": "tcp://127.0.0.1:26657",
     "signed_header": {
       "commit": {
         "block_id": {
