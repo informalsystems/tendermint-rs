@@ -2,20 +2,23 @@ use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
 
-use crate::helpers::parse_as;
-use crate::validator::generate_validators;
-use crate::{Commit, Generator, Header, Validator};
 use tendermint::block::signed_header::SignedHeader;
-use tendermint::node::Id as PeerId;
+use tendermint::net;
 use tendermint::validator;
 use tendermint::validator::Set as ValidatorSet;
 
+use crate::helpers::parse_as;
+use crate::validator::generate_validators;
+use crate::{Commit, Generator, Header, Validator};
+
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
+///
 /// NOTE: This struct & associated `impl` below are a copy of light-client's `LightBlock`.
-/// The copy is necessary here to avoid a circular dependency.
-/// Cf. https://github.com/informalsystems/tendermint-rs/issues/605
-/// TODO: fix redundant code without introducing cyclic dependency.
+///       The copy is necessary here to avoid a circular dependency.
+///       cf. https://github.com/informalsystems/tendermint-rs/issues/605
+///
+/// TODO: Fix redundant code without introducing cyclic dependency.
 ///
 /// To convert `TMLightBlock` to the Domain type `LightBlock` used in light-client crate
 /// You'll need to implement the `From` trait like below:
@@ -38,8 +41,8 @@ pub struct TMLightBlock {
     pub validators: ValidatorSet,
     /// Validator set at the next block height
     pub next_validators: ValidatorSet,
-    /// The peer ID of the node that provided this block
-    pub provider: PeerId,
+    /// The network address of the node that provided this block
+    pub provider: net::Address,
 }
 
 /// We use this data structure as a simplistic representation of LightClient's LightBlock
@@ -59,8 +62,10 @@ pub struct LightBlock {
         parse(try_from_str = "parse_as::<Vec<Validator>>")
     )]
     pub next_validators: Option<Vec<Validator>>,
-    #[options(help = "peer id (default: default_peer_id())")]
-    pub provider: Option<PeerId>,
+    #[options(
+        help = "network address of the node that provided the block (default: tcp://127.0.0.1:26657)"
+    )]
+    pub provider: Option<net::Address>,
 }
 
 impl LightBlock {
@@ -96,7 +101,7 @@ impl LightBlock {
             commit: Some(commit),
             validators: Some(validators.to_vec()),
             next_validators: Some(validators.to_vec()),
-            provider: Some(default_peer_id()),
+            provider: Some(default_provider()),
         }
     }
 
@@ -105,7 +110,6 @@ impl LightBlock {
     // TODO: and commit like last_block_id and other hashes
     pub fn next(&self) -> Self {
         let header = self.header.as_ref().expect("header is missing").next();
-
         let commit = Commit::new(header.clone(), 1);
 
         Self {
@@ -113,7 +117,7 @@ impl LightBlock {
             commit: Some(commit),
             validators: self.next_validators.clone(),
             next_validators: self.next_validators.clone(),
-            provider: self.provider,
+            provider: self.provider.clone(),
         }
     }
 
@@ -187,7 +191,7 @@ impl Generator<TMLightBlock> for LightBlock {
             None => validators.clone(),
         };
 
-        let provider = default_peer_id();
+        let provider = default_provider();
 
         let light_block = TMLightBlock {
             signed_header,
@@ -218,8 +222,8 @@ pub fn generate_signed_header(
     Ok(SignedHeader { header, commit })
 }
 
-pub fn default_peer_id() -> PeerId {
-    "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap()
+pub fn default_provider() -> net::Address {
+    "tcp://127.0.0.1:26657".parse().unwrap()
 }
 
 #[cfg(test)]
