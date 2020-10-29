@@ -8,7 +8,7 @@ use tendermint_light_client::{
     tests::{Trusted, *},
     types::{LightBlock, Time, TrustThreshold},
 };
-use tendermint_testgen::{apalache::*, jsonatr::*, Command, Generator, TestEnv, Tester, Validator};
+use tendermint_testgen::{apalache::*, jsonatr::*, Command, Generator, TestEnv, Tester, Validator, LightBlock as TestgenLightBlock};
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteTestKind {
@@ -48,6 +48,7 @@ pub struct SingleStepTestCase {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlockVerdict {
     block: AnonLightBlock,
+    testgen_block: TestgenLightBlock,
     now: Time,
     verdict: LiteVerdict,
 }
