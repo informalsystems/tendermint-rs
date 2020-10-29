@@ -1,5 +1,5 @@
-use git2::build::RepoBuilder;
-use git2::Repository;
+use git2::build::{CheckoutBuilder, RepoBuilder};
+use git2::{AutotagOption, FetchOptions, Repository};
 use std::fs::remove_dir_all;
 use std::fs::{copy, create_dir_all};
 use std::path::PathBuf;
@@ -7,73 +7,83 @@ use walkdir::WalkDir;
 
 /// Clone/open, fetch and check out a specific commitish
 pub fn get_commitish(dir: &PathBuf, url: &str, commitish: &str) {
-    // Open repo
-    let repo = match dir.exists() {
-        false => {
-            println!("  [info] => Cloning {} to {}", url, dir.to_string_lossy());
-            let mut fo = git2::FetchOptions::new();
-            fo.download_tags(git2::AutotagOption::All);
-            RepoBuilder::new()
-                .fetch_options(fo)
-                .clone(url, dir)
-                .unwrap()
-        }
-        true => {
-            println!("  [info] => Opening {}", dir.to_string_lossy());
-            let repo = Repository::open(dir).unwrap();
-            let mut fo = git2::FetchOptions::new();
-            fo.download_tags(git2::AutotagOption::All);
-            let mut remote = repo.find_remote("origin").unwrap();
-            println!("  [info] => Fetching {} for repo", remote.name().unwrap());
-            remote.fetch(&[commitish], Some(&mut fo), None).unwrap();
-            let stats = remote.stats();
-            if stats.local_objects() > 0 {
-                println!(
-                    "  [info] => Received {}/{} objects in {} bytes (used {} local \
-             objects)",
-                    stats.indexed_objects(),
-                    stats.total_objects(),
-                    stats.received_bytes(),
-                    stats.local_objects()
-                );
-            } else {
-                println!(
-                    "  [info] => Received {}/{} objects in {} bytes",
-                    stats.indexed_objects(),
-                    stats.total_objects(),
-                    stats.received_bytes()
-                );
-            }
-            Repository::open(dir).unwrap()
-        }
-    };
-
-    // Check out commitish and fast forward, if necessary
-    let fetch_head = repo.find_reference("FETCH_HEAD").unwrap();
-    let fetch_commit = repo.reference_to_annotated_commit(&fetch_head).unwrap();
-    let analysis = repo.merge_analysis(&[&fetch_commit]).unwrap();
-    if analysis.0.is_up_to_date() {
-        println!("  [info] => repo is up to date");
-    } else if analysis.0.is_fast_forward() {
-        let refname = format!("refs/{}", commitish);
-        let mut lb = repo.find_reference(&refname).unwrap();
-        let name = match lb.name() {
-            Some(s) => s.to_string(),
-            None => String::from_utf8_lossy(lb.name_bytes()).to_string(),
-        };
-        let msg = format!(
-            "  [info] => Fast-Forward: Setting {} to id: {}",
-            name,
-            fetch_commit.id()
-        );
-        println!("{}", msg);
-        lb.set_target(fetch_commit.id(), &msg).unwrap();
-        repo.set_head(&name).unwrap();
-        repo.checkout_head(Some(git2::build::CheckoutBuilder::default().safe()))
-            .unwrap();
+    if dir.exists() {
+        update_and_get_commitish(dir, commitish)
     } else {
-        panic!("  [error] => fast forward not possible ({:?})", analysis.0);
+        clone_and_get_commitish(dir, url, commitish)
     }
+}
+
+fn clone_and_get_commitish(dir: &PathBuf, url: &str, commitish: &str) {
+    println!("  [info] => Cloning {} to {}", url, dir.to_string_lossy());
+
+    let mut fo = FetchOptions::new();
+    fo.download_tags(AutotagOption::All);
+    fo.update_fetchhead(true);
+
+    let mut builder = RepoBuilder::new();
+    builder.fetch_options(fo);
+
+    let repo = builder.clone(url, dir).unwrap();
+    checkout_commitish(&repo, commitish);
+}
+
+fn update_and_get_commitish(dir: &PathBuf, commitish: &str) {
+    println!("  [info] => Opening {}", dir.to_string_lossy());
+    let repo = Repository::open(dir).unwrap();
+
+    let mut fo = git2::FetchOptions::new();
+    fo.download_tags(git2::AutotagOption::All);
+
+    let mut remote = repo.find_remote("origin").unwrap();
+    println!("  [info] => Fetching {} for repo", remote.name().unwrap());
+    remote.fetch(&[commitish], Some(&mut fo), None).unwrap();
+
+    let stats = remote.stats();
+    if stats.local_objects() > 0 {
+        println!(
+            "  [info] => Received {}/{} objects in {} bytes (used {} local \
+     objects)",
+            stats.indexed_objects(),
+            stats.total_objects(),
+            stats.received_bytes(),
+            stats.local_objects()
+        );
+    } else {
+        println!(
+            "  [info] => Received {}/{} objects in {} bytes",
+            stats.indexed_objects(),
+            stats.total_objects(),
+            stats.received_bytes()
+        );
+    }
+
+    checkout_commitish(&repo, commitish);
+}
+
+fn checkout_commitish(repo: &Repository, commitish: &str) {
+    let ref_name = format!("refs/{}", commitish);
+    let commitish_ref = repo.find_reference(&ref_name).unwrap();
+
+    if commitish_ref.is_tag() {
+        println!(
+            "  [info] => Checking out repo in detached HEAD mode at {}",
+            commitish
+        );
+        repo.set_head_detached(commitish_ref.target().unwrap())
+            .unwrap();
+    } else if commitish_ref.is_branch() {
+        println!("  [info] => Checking out repo at branch {}", commitish);
+        repo.set_head(&ref_name).unwrap();
+    } else {
+        panic!(
+            "  [error] => Commitish \"{}\" is neither a tag nor a branch",
+            commitish
+        );
+    }
+
+    repo.checkout_head(Some(CheckoutBuilder::new().force()))
+        .unwrap();
 }
 
 /// Copy generated files to target folder
