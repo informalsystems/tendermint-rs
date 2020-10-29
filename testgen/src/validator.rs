@@ -1,12 +1,12 @@
 use crate::{helpers::*, Generator};
 use ed25519_dalek::SecretKey as Ed25519SecretKey;
 use gumdrop::Options;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use simple_error::*;
 use tendermint::consensus::state::Ordering;
 use tendermint::{account, private_key, public_key, public_key::PublicKey, validator, vote};
 
-#[derive(Debug, Options, Deserialize, Clone)]
+#[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Validator {
     #[options(help = "validator id (required; can be passed via STDIN)")]
     pub id: Option<String>,

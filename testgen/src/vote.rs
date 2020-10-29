@@ -1,6 +1,6 @@
 use crate::{helpers::*, Generator, Header, Validator};
 use gumdrop::Options;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use simple_error::*;
 use std::convert::TryFrom;
 use tendermint::{
@@ -10,7 +10,7 @@ use tendermint::{
     vote::ValidatorIndex,
 };
 
-#[derive(Debug, Options, Deserialize, Clone)]
+#[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Vote {
     #[options(
         help = "validator of this vote (required; can be passed via STDIN)",

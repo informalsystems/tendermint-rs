@@ -1,5 +1,5 @@
 use gumdrop::Options;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use simple_error::*;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
@@ -8,7 +8,7 @@ use tendermint::block::{self, parts::Header as PartSetHeader};
 use crate::validator::sort_validators;
 use crate::{helpers::*, Generator, Header, Validator, Vote};
 
-#[derive(Debug, Options, Deserialize, Clone)]
+#[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Commit {
     #[options(help = "header (required)", parse(try_from_str = "parse_as::<Header>"))]
     pub header: Option<Header>,
