@@ -12,7 +12,7 @@ pub fn quick_probe_plan(
     output_path: &Path,
     request_wait: Duration,
 ) -> Result<PlanBuilderWithRequests> {
-    Ok(Plan::new(output_path, request_wait)?
+    Ok(Plan::new_builder(output_path, request_wait)?
         .then(Request::new("health", json!({})))
         .then(Request::new("abci_info", json!({})))
         .then(PlannedRequest::new(

@@ -27,7 +27,11 @@ pub struct Plan {
 }
 
 impl Plan {
-    pub fn new(output_path: &Path, request_wait: Duration) -> Result<PlanBuilderWithPaths> {
+    /// Create a new builder for a plan.
+    ///
+    /// This builder is not useful until you've added at least one request and
+    /// call the `connect` method.
+    pub fn new_builder(output_path: &Path, request_wait: Duration) -> Result<PlanBuilderWithPaths> {
         info!(
             "Saving request and response data to: {}",
             output_path.to_str().unwrap()
