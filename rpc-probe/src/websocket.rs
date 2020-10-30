@@ -13,7 +13,7 @@ use async_tungstenite::tungstenite::protocol::CloseFrame;
 use async_tungstenite::tungstenite::Message;
 use async_tungstenite::WebSocketStream;
 use futures::{SinkExt, StreamExt};
-use log::{debug, error};
+use log::{debug, error, warn};
 use serde_json::json;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -21,7 +21,7 @@ use tokio::sync::mpsc;
 
 #[derive(Debug, Clone)]
 pub struct WebSocketClient {
-    cmd_tx: mpsc::UnboundedSender<DriverCommand>,
+    cmd_tx: DriverCommandTx,
 }
 
 impl WebSocketClient {
@@ -68,9 +68,10 @@ impl WebSocketClient {
 
     async fn send_cmd(&mut self, cmd: DriverCommand) -> Result<()> {
         self.cmd_tx.send(cmd).map_err(|e| {
-            Error::InternalError(
-                "WebSocket driver channel receiving end closed unexpectedly".to_string(),
-            )
+            Error::InternalError(format!(
+                "WebSocket driver channel receiving end closed unexpectedly: {}",
+                e.to_string()
+            ))
         })
     }
 }
@@ -204,9 +205,9 @@ impl WebSocketClientDriver {
             None => return Ok(()),
         };
         let mut disconnected = Vec::new();
-        for (subs_id, mut subs_tx) in subs_for_query {
+        for (subs_id, subs_tx) in subs_for_query {
             if let Err(e) = subs_tx.send(Ok(ev.clone())) {
-                error!(
+                warn!(
                     "Disconnecting subscription with ID {} due to channel send failure: {}",
                     subs_id, e
                 );
@@ -227,7 +228,7 @@ impl WebSocketClientDriver {
                 id,
                 query,
                 subscription_tx,
-                mut response_tx,
+                response_tx,
             } => {
                 self.confirm_pending_subscription(id, wrapper, query, subscription_tx, response_tx)
             }
@@ -255,11 +256,8 @@ impl WebSocketClientDriver {
         subscription_tx: SubscriptionTx,
         response_tx: JsonResultTx,
     ) -> Result<()> {
-        if let Some(e) = wrapper.get("error") {
-            let _ = response_tx.send(Err(Error::Failed(
-                "subscribe".to_string(),
-                serde_json::to_string_pretty(e).unwrap(),
-            )))?;
+        if wrapper.get("error").is_some() {
+            let _ = response_tx.send(Err(Error::Failed("subscribe".to_string(), wrapper)))?;
             return Ok(());
         }
         if let Some(r) = wrapper.get("result") {
@@ -295,20 +293,11 @@ impl WebSocketClientDriver {
         wrapper: serde_json::Value,
         response_tx: JsonResultTx,
     ) -> Result<()> {
-        if let Some(e) = wrapper.get("error") {
-            let _ = response_tx.send(Err(Error::Failed(
-                method,
-                serde_json::to_string_pretty(e).unwrap(),
-            )))?;
+        if wrapper.get("error").is_some() {
+            let _ = response_tx.send(Err(Error::Failed(method, wrapper)))?;
             return Ok(());
         }
-        if let Some(result) = wrapper.get("result") {
-            if let Some(response) = result.get("response") {
-                let _ = response_tx.send(Ok(response.clone()))?;
-                return Ok(());
-            }
-            error!("Missing \"response\" field in RPC response");
-        }
+        let _ = response_tx.send(Ok(wrapper))?;
         Ok(())
     }
 

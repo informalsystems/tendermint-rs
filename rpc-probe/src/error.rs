@@ -1,8 +1,6 @@
 //! Errors relating to the RPC probe's operations.
 
 use thiserror::Error;
-use tokio::sync::mpsc::error::SendError;
-use tokio::task::JoinError;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -20,8 +18,14 @@ pub enum Error {
     #[error("malformed RPC response: {0}")]
     MalformedResponse(String),
 
-    #[error("{0} request failed: {1}")]
-    Failed(String, String),
+    #[error("\"{0}\" request failed with response: {1}")]
+    Failed(String, serde_json::Value),
+
+    #[error("invalid parameter value: {0}")]
+    InvalidParamValue(String),
+
+    #[error("I/O error: {0}")]
+    IoError(String),
 }
 
 impl From<async_tungstenite::tungstenite::Error> for Error {
@@ -54,5 +58,11 @@ impl From<tokio::task::JoinError> for Error {
             "failed while waiting for async task to join: {}",
             e
         ))
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Self::IoError(e.to_string())
     }
 }
