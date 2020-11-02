@@ -29,6 +29,8 @@ pub struct Vote {
     pub time: Option<u64>,
     #[options(help = "commit round (default: from commit)")]
     pub round: Option<u32>,
+    #[options(help = "to indicate if the vote is nil; produces a 'BlockIfFlagNil' if set, otherwise 'BlockIdFlagCommit' (default)")]
+    pub is_nil: Option<()>,
 }
 
 impl Vote {
@@ -41,6 +43,7 @@ impl Vote {
             height: None,
             time: None,
             round: None,
+            is_nil: None,
         }
     }
     set_option!(index, u16);
@@ -68,6 +71,7 @@ impl Generator<vote::Vote> for Vote {
             height: self.height.or(default.height),
             time: self.time.or(default.time),
             round: self.round.or(default.round),
+            is_nil: self.is_nil.or(default.is_nil),
         }
     }
 
@@ -83,9 +87,13 @@ impl Generator<vote::Vote> for Vote {
         let signer = validator.get_private_key()?;
         let block_validator = validator.generate()?;
         let block_header = header.generate()?;
-        let block_id = block::Id {
-            hash: block_header.hash(),
-            part_set_header: PartSetHeader::new(1, block_header.hash()),
+        let block_id = if self.is_nil.is_some() {
+            None
+        } else {
+            Some(block::Id {
+                hash: block_header.hash(),
+                part_set_header: PartSetHeader::new(1, block_header.hash()),
+            })
         };
         let validator_index = match self.index {
             Some(i) => i,
@@ -115,7 +123,7 @@ impl Generator<vote::Vote> for Vote {
             },
             height: block_header.height,
             round: block::Round::try_from(self.round.unwrap_or(1)).unwrap(),
-            block_id: Some(block_id),
+            block_id,
             timestamp: Some(timestamp),
             validator_address: block_validator.address,
             validator_index: ValidatorIndex::try_from(validator_index as u32).unwrap(),
