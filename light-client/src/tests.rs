@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 use tendermint::block::Height as HeightStr;
 use tendermint::evidence::{Duration as DurationStr, Evidence};
+use tendermint_testgen::light_block::TMLightBlock;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TestCases<LB> {
@@ -212,6 +213,17 @@ pub struct AnonLightBlock {
 pub fn default_peer_id() -> PeerId {
     "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap()
 }
+
+impl From<TMLightBlock> for AnonLightBlock {
+         fn from(tm_lb: TMLightBlock) -> Self {
+             Self {
+                 signed_header: tm_lb.signed_header,
+                 validators: tm_lb.validators,
+                 next_validators: tm_lb.next_validators,
+                 provider: tm_lb.provider,
+             }
+         }
+     }
 
 impl From<AnonLightBlock> for LightBlock {
     fn from(alb: AnonLightBlock) -> Self {
