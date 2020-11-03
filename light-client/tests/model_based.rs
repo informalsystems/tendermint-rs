@@ -17,8 +17,10 @@ use tendermint_testgen::{
     Tester,
     Validator,
     LightBlock as TestgenLightBlock,
-    Vote
+    Vote,
+    validator::generate_validators
 };
+use tendermint_light_client::types::ValidatorSet;
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteTestKind {
@@ -215,9 +217,17 @@ impl SingleStepTestFuzzer for HeaderDataHashFuzzer {
 
 struct HeaderValHashFuzzer {}
 impl SingleStepTestFuzzer for HeaderValHashFuzzer {
-    // TODO: rehash header and produce commit with changed header to make this fuzzing meaningful
     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
-        input.block.signed_header.header.validators_hash = Self::random_hash();
+        let vals = [
+            Validator::new("1"),
+            Validator::new("2"),
+            Validator::new("3")
+        ];
+        let valset = ValidatorSet::new(
+            generate_validators(&vals).unwrap()
+        );
+
+        input.block.validators = valset;
         (String::from("header validators_hash"), true)
     }
 }
