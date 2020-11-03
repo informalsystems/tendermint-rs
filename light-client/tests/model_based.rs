@@ -21,6 +21,7 @@ use tendermint_testgen::{
     validator::generate_validators
 };
 use tendermint_light_client::types::ValidatorSet;
+use tendermint::block::CommitSigs;
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteTestKind {
@@ -400,6 +401,32 @@ impl SingleStepTestFuzzer for ValidatorSetFuzzer {
     }
 }
 
+struct SignaturesFuzzer {}
+impl SingleStepTestFuzzer for SignaturesFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
+        let header = input.testgen_block.header.clone().unwrap();
+        let mut commit = input.testgen_block.commit.clone().unwrap();
+        let mut votes = commit.votes.clone().unwrap();
+
+        let mut rng = rand::thread_rng();
+        let random_num: u32 = rng.gen();
+        if random_num%2 == 0 {
+            let faulty_val = Validator::new("faulty");
+            let vote = Vote::new(faulty_val, header);
+
+            votes.push(vote);
+            commit.votes = Some(votes);
+
+            input.block.signed_header.commit = commit.generate().unwrap().into();
+        } else {
+            let commitsigs = CommitSigs::new(vec![]);
+            input.block.signed_header.commit.signatures = commitsigs;
+        }
+
+        (String::from("signatures"), true)
+    }
+}
+
 fn single_step_test(
     tc: SingleStepTestCase,
     _env: &TestEnv,
@@ -497,6 +524,7 @@ fn fuzz_single_step_test(
     CommitSigFuzzer::fuzz(&tc).and_then(run_test);
     VoteSignatureFuzzer::fuzz(&tc).and_then(run_test);
     ValidatorSetFuzzer::fuzz(&tc).and_then(run_test);
+    SignaturesFuzzer::fuzz(&tc).and_then(run_test);
 }
 
 fn model_based_test(
