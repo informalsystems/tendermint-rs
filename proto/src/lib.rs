@@ -85,6 +85,7 @@ mod tendermint {
     }
 }
 
+pub use prost_types as well_known_types;
 pub use tendermint::*;
 
 mod domaintype;
