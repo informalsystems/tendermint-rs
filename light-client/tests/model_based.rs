@@ -314,9 +314,15 @@ impl SingleStepTestFuzzer for CommitSigFuzzer {
         let mut votes = input.testgen_block.commit.clone().unwrap().votes.unwrap();
         if votes.len() > 3 {
             votes[0].is_nil = Some(());
-            input.testgen_block.commit.clone().unwrap().votes = Some(votes);
+
+            // change the vote to nil
+            let mut commit = input.testgen_block.commit.clone().unwrap();
+            commit.votes = Some(votes);
+            input.testgen_block.commit = Some(commit);
+
             let light_block = input.testgen_block.generate().unwrap();
             input.block = light_block.into();
+
             (String::from("commit sig type"), false)
         }
         else {
@@ -325,6 +331,23 @@ impl SingleStepTestFuzzer for CommitSigFuzzer {
     }
 }
 
+struct VoteSignatureFuzzer {}
+// Replaces test `wrong_vote_signature.json`
+impl SingleStepTestFuzzer for VoteSignatureFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
+        let mut commit = input.testgen_block.commit.clone().unwrap();
+        let mut header = commit.header.clone().unwrap();
+
+        let h: u64 = commit.clone().header.unwrap().height.unwrap();
+        header.height = Some(h+3);
+        commit.header = Some(header);
+
+        input.testgen_block.commit = Some(commit);
+        input.block = input.testgen_block.generate().unwrap().into();
+
+        (String::from("vote signature"), true)
+    }
+}
 
 fn single_step_test(
     tc: SingleStepTestCase,
@@ -421,6 +444,7 @@ fn fuzz_single_step_test(
     CommitRoundFuzzer::fuzz(&tc).and_then(run_test);
     CommitBlockIdFuzzer::fuzz(&tc).and_then(run_test);
     CommitSigFuzzer::fuzz(&tc).and_then(run_test);
+    VoteSignatureFuzzer::fuzz(&tc).and_then(run_test);
 }
 
 fn model_based_test(
