@@ -234,9 +234,17 @@ impl SingleStepTestFuzzer for HeaderValHashFuzzer {
 
 struct HeaderNextValHashFuzzer {}
 impl SingleStepTestFuzzer for HeaderNextValHashFuzzer {
-    // TODO: rehash header and produce commit with changed header to make this fuzzing meaningful
     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
-        input.block.signed_header.header.next_validators_hash = Self::random_hash();
+        let vals = [
+            Validator::new("1"),
+            Validator::new("2"),
+            Validator::new("3")
+        ];
+        let valset = ValidatorSet::new(
+            generate_validators(&vals).unwrap()
+        );
+
+        input.block.next_validators = valset;
         (String::from("header next_validators_hash"), true)
     }
 }
