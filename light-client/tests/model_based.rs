@@ -380,17 +380,21 @@ impl SingleStepTestFuzzer for VoteSignatureFuzzer {
 struct ValidatorSetFuzzer {}
 impl SingleStepTestFuzzer for ValidatorSetFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
-        let header = input.testgen_block.header.clone().unwrap();
         let mut commit = input.testgen_block.commit.clone().unwrap();
-        let mut votes = commit.votes.clone().unwrap();
+        let mut header = commit.header.clone().unwrap();
+        let mut validators = header.validators.unwrap();
 
+        validators.pop();
         let faulty_val = Validator::new("faulty");
-        let vote = Vote::new(faulty_val, header);
+        validators.push(faulty_val);
 
-        votes.push(vote);
-        commit.votes = Some(votes);
+        header.validators = Some(validators);
+        commit.header = Some(header);
+
+        commit.votes = None;
 
         input.block.signed_header.commit = commit.generate().unwrap().into();
+        input.block.signed_header.commit.block_id.hash = input.block.signed_header.header.hash();
 
         (String::from("validator set"), true)
     }
