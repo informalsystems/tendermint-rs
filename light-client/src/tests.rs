@@ -215,15 +215,15 @@ pub fn default_peer_id() -> PeerId {
 }
 
 impl From<TMLightBlock> for AnonLightBlock {
-         fn from(tm_lb: TMLightBlock) -> Self {
-             Self {
-                 signed_header: tm_lb.signed_header,
-                 validators: tm_lb.validators,
-                 next_validators: tm_lb.next_validators,
-                 provider: tm_lb.provider,
-             }
-         }
-     }
+    fn from(tm_lb: TMLightBlock) -> Self {
+        Self {
+            signed_header: tm_lb.signed_header,
+            validators: tm_lb.validators,
+            next_validators: tm_lb.next_validators,
+            provider: tm_lb.provider,
+        }
+    }
+}
 
 impl From<AnonLightBlock> for LightBlock {
     fn from(alb: AnonLightBlock) -> Self {

@@ -3,25 +3,17 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
 use std::time::Duration;
+use tendermint::block::CommitSigs;
 use tendermint_light_client::components::verifier::Verdict;
+use tendermint_light_client::types::ValidatorSet;
 use tendermint_light_client::{
     tests::{Trusted, *},
     types::{LightBlock, Time, TrustThreshold},
 };
 use tendermint_testgen::{
-    apalache::*,
-    jsonatr::*,
-    Command,
-    Generator,
-    TestEnv,
-    Tester,
-    Validator,
-    LightBlock as TestgenLightBlock,
-    Vote,
-    validator::generate_validators
+    apalache::*, jsonatr::*, validator::generate_validators, Command, Generator,
+    LightBlock as TestgenLightBlock, TestEnv, Tester, Validator, Vote,
 };
-use tendermint_light_client::types::ValidatorSet;
-use tendermint::block::CommitSigs;
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteTestKind {
@@ -222,11 +214,9 @@ impl SingleStepTestFuzzer for HeaderValHashFuzzer {
         let vals = [
             Validator::new("1"),
             Validator::new("2"),
-            Validator::new("3")
+            Validator::new("3"),
         ];
-        let valset = ValidatorSet::new(
-            generate_validators(&vals).unwrap()
-        );
+        let valset = ValidatorSet::new(generate_validators(&vals).unwrap());
 
         input.block.validators = valset;
         (String::from("header validators_hash"), true)
@@ -239,11 +229,9 @@ impl SingleStepTestFuzzer for HeaderNextValHashFuzzer {
         let vals = [
             Validator::new("1"),
             Validator::new("2"),
-            Validator::new("3")
+            Validator::new("3"),
         ];
-        let valset = ValidatorSet::new(
-            generate_validators(&vals).unwrap()
-        );
+        let valset = ValidatorSet::new(generate_validators(&vals).unwrap());
 
         input.block.next_validators = valset;
         (String::from("header next_validators_hash"), true)
@@ -353,8 +341,7 @@ impl SingleStepTestFuzzer for CommitSigFuzzer {
             input.block = light_block.into();
 
             (String::from("commit sig type"), false)
-        }
-        else {
+        } else {
             (String::from("nothing"), false)
         }
     }
@@ -368,7 +355,7 @@ impl SingleStepTestFuzzer for VoteSignatureFuzzer {
         let mut header = commit.header.clone().unwrap();
 
         let h: u64 = commit.clone().header.unwrap().height.unwrap();
-        header.height = Some(h+3);
+        header.height = Some(h + 3);
         commit.header = Some(header);
 
         input.testgen_block.commit = Some(commit);
@@ -410,7 +397,7 @@ impl SingleStepTestFuzzer for SignaturesFuzzer {
 
         let mut rng = rand::thread_rng();
         let random_num: u32 = rng.gen();
-        if random_num%2 == 0 {
+        if random_num % 2 == 0 {
             let faulty_val = Validator::new("faulty");
             let vote = Vote::new(faulty_val, header);
 
@@ -488,13 +475,21 @@ fn fuzz_single_step_test(
         // TODO: Talk to Greg about ser/de once serialization updates are merged
         // serialize
         let serialized = serde_json::to_string(&tc);
-        assert!(serialized.is_ok(), "serialization error {}", serialized.err().unwrap());
+        assert!(
+            serialized.is_ok(),
+            "serialization error {}",
+            serialized.err().unwrap()
+        );
 
         //deserialize
         let serialized = serialized.unwrap();
 
         let deserialized = serde_json::from_str::<SingleStepTestCase>(&serialized);
-        assert!(deserialized.is_ok(), "deserialization error {}", deserialized.err().unwrap());
+        assert!(
+            deserialized.is_ok(),
+            "deserialization error {}",
+            deserialized.err().unwrap()
+        );
         let deserialized = deserialized.unwrap();
 
         // test

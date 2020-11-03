@@ -1,6 +1,6 @@
 use crate::{helpers::*, Generator, Header, Validator};
 use gumdrop::Options;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use simple_error::*;
 use std::convert::TryFrom;
 use tendermint::{
@@ -29,7 +29,9 @@ pub struct Vote {
     pub time: Option<u64>,
     #[options(help = "commit round (default: from commit)")]
     pub round: Option<u32>,
-    #[options(help = "to indicate if the vote is nil; produces a 'BlockIfFlagNil' if set, otherwise 'BlockIdFlagCommit' (default)")]
+    #[options(
+        help = "to indicate if the vote is nil; produces a 'BlockIfFlagNil' if set, otherwise 'BlockIdFlagCommit' (default)"
+    )]
     pub is_nil: Option<()>,
 }
 
