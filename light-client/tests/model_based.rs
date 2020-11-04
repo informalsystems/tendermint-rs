@@ -122,14 +122,17 @@ impl SingleStepTestFuzzer for HeaderVersionFuzzer {
     // TODO: Either add this check in verification or remove this test because otherwise there's no point of it
     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
         let mut rng = rand::thread_rng();
-        let mut block = input.block.signed_header.header.version.block;
-        while block == input.block.signed_header.header.version.block {
+
+        let version = &input.block.signed_header.header.version;
+        let mut block = version.block;
+        while block == version.block {
             block = rng.gen();
         }
-        let mut app = input.block.signed_header.header.version.app;
-        while app == input.block.signed_header.header.version.app {
+        let mut app = version.app;
+        while app == version.app {
             app = rng.gen();
         }
+
         input.block.signed_header.header.version =
             tendermint::block::header::Version { block, app };
         (String::from("header version"), true)
