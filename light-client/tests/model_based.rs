@@ -371,19 +371,19 @@ impl SingleStepTestFuzzer for ValidatorSetFuzzer {
         let mut header = commit.header.clone().unwrap();
         let mut validators = header.validators.unwrap();
 
-        // TODO: pop only if it is non-empty
-        validators.pop();
-        let faulty_val = Validator::new("faulty");
-        // TODO: add faulty val to the beginning of the vec
-        validators.push(faulty_val);
+        if !validators.is_empty(){
 
-        header.validators = Some(validators);
-        commit.header = Some(header);
+            let faulty_val = Validator::new("faulty");
+            validators[0] = faulty_val;
 
-        commit.votes = None;
+            header.validators = Some(validators);
+            commit.header = Some(header);
 
-        input.block.signed_header.commit = commit.generate().unwrap();
-        input.block.signed_header.commit.block_id.hash = input.block.signed_header.header.hash();
+            commit.votes = None;
+
+            input.block.signed_header.commit = commit.generate().unwrap();
+            input.block.signed_header.commit.block_id.hash = input.block.signed_header.header.hash();
+        }
 
         (String::from("validator set"), true)
     }
