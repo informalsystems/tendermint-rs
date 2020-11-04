@@ -43,7 +43,7 @@ pub struct TMLightBlock {
 }
 
 /// We use this data structure as a simplistic representation of LightClient's LightBlock
-#[derive(Debug, Options, Deserialize, Clone)]
+#[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct LightBlock {
     #[options(help = "header (required)", parse(try_from_str = "parse_as::<Header>"))]
     pub header: Option<Header>,

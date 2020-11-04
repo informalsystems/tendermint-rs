@@ -29,6 +29,12 @@
           "validator_set": "$block | block_validators | ids_to_validator_set",
           "next_validator_set": "$block | block_next_validators | ids_to_validator_set"
         },
+        "testgen_block": {
+          "header": "$block | block_to_header",
+          "commit": "$block | block_to_commit",
+          "validators": "$block | block_validators | ids_to_testgen_validators",
+          "next_validators": "$block | block_next_validators | ids_to_testgen_validators"
+        },
         "now": "$..[?(@.key.str == 'now')].value | unwrap | tendermint_time",
         "verdict": "$..[?(@.key.str == 'verdict')].value.str | unwrap"
       }
