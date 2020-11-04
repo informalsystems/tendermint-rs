@@ -5,7 +5,7 @@
         "response": {
             "log": "exists",
             "height": "1",
-            "proof": {
+            "proofOps": {
                 "ops": [
                     {
                         "type": "iavl:v",
