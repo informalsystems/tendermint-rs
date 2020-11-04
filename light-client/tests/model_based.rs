@@ -303,7 +303,7 @@ struct CommitRoundFuzzer {}
 impl SingleStepTestFuzzer for CommitRoundFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
         let mut rng = rand::thread_rng();
-        let r: u32 = input.block.signed_header.commit.round.into();
+        let r: u32 = input.block.signed_header.commit.round;
         let mut round: u32 = rng.gen();
         while round == r {
             round = rng.gen();
@@ -381,7 +381,7 @@ impl SingleStepTestFuzzer for ValidatorSetFuzzer {
 
         commit.votes = None;
 
-        input.block.signed_header.commit = commit.generate().unwrap().into();
+        input.block.signed_header.commit = commit.generate().unwrap();
         input.block.signed_header.commit.block_id.hash = input.block.signed_header.header.hash();
 
         (String::from("validator set"), true)
@@ -404,7 +404,7 @@ impl SingleStepTestFuzzer for SignaturesFuzzer {
             votes.push(vote);
             commit.votes = Some(votes);
 
-            input.block.signed_header.commit = commit.generate().unwrap().into();
+            input.block.signed_header.commit = commit.generate().unwrap();
         } else {
             let commitsigs = CommitSigs::new(vec![]);
             input.block.signed_header.commit.signatures = commitsigs;
