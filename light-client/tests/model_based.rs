@@ -296,6 +296,7 @@ impl SingleStepTestFuzzer for HeaderProposerAddressFuzzer {
     }
 }
 
+#[allow(dead_code)] // TODO: Remove when we enable this fuzzer
 struct CommitHeightFuzzer {}
 impl SingleStepTestFuzzer for CommitHeightFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
@@ -310,6 +311,7 @@ impl SingleStepTestFuzzer for CommitHeightFuzzer {
     }
 }
 
+#[allow(dead_code)] // TODO: Remove when we enable this fuzzer
 struct CommitRoundFuzzer {}
 impl SingleStepTestFuzzer for CommitRoundFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
