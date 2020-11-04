@@ -23,7 +23,7 @@ pub struct Params {
 
     /// Version parameters
     #[serde(skip)] // Todo: FIXME kvstore /genesis returns '{}' instead of '{app_version: "0"}'
-    pub version: VersionParams,
+    pub version: Option<VersionParams>,
 }
 
 impl DomainType<RawParams> for Params {}
@@ -41,8 +41,9 @@ impl TryFrom<RawParams> for Params {
                 .try_into()?,
             version: value
                 .version
-                .ok_or(Kind::InvalidVersionParams)?
-                .try_into()?,
+                .map(TryFrom::try_from)
+                .transpose()
+                .map_err(|_| Kind::InvalidVersionParams)?,
         })
     }
 }
@@ -53,7 +54,7 @@ impl From<Params> for RawParams {
             block: Some(value.block.into()),
             evidence: Some(value.evidence.into()),
             validator: Some(value.validator.into()),
-            version: Some(value.version.into()),
+            version: value.version.map(From::from),
         }
     }
 }
