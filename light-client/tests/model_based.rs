@@ -330,15 +330,14 @@ impl SingleStepTestFuzzer for CommitSigFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
         let mut votes = input.testgen_block.commit.clone().unwrap().votes.unwrap();
         if votes.len() > 3 {
+
             votes[0].is_nil = Some(());
 
             // change the vote to nil
             let mut commit = input.testgen_block.commit.clone().unwrap();
             commit.votes = Some(votes);
-            input.testgen_block.commit = Some(commit);
 
-            let light_block = input.testgen_block.generate().unwrap();
-            input.block = light_block.into();
+            input.block.signed_header.commit = commit.generate().unwrap();
 
             (String::from("commit sig type"), false)
         } else {
@@ -372,8 +371,10 @@ impl SingleStepTestFuzzer for ValidatorSetFuzzer {
         let mut header = commit.header.clone().unwrap();
         let mut validators = header.validators.unwrap();
 
+        // TODO: pop only if it is non-empty
         validators.pop();
         let faulty_val = Validator::new("faulty");
+        // TODO: add faulty val to the beginning of the vec
         validators.push(faulty_val);
 
         header.validators = Some(validators);

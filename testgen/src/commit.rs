@@ -125,11 +125,19 @@ impl Generator<block::Commit> for Commit {
         let all_vals = sort_validators(&all_vals);
         let vote_to_sig = |v: &Vote| -> Result<block::CommitSig, SimpleError> {
             let vote = v.generate()?;
-            Ok(block::CommitSig::BlockIDFlagCommit {
-                validator_address: vote.validator_address,
-                timestamp: vote.timestamp.unwrap(),
-                signature: vote.signature,
-            })
+            if vote.block_id == None {
+                Ok(block::CommitSig::BlockIDFlagNil {
+                    validator_address: vote.validator_address,
+                    timestamp: vote.timestamp.unwrap(),
+                    signature: vote.signature,
+                })
+            } else {
+                Ok(block::CommitSig::BlockIDFlagCommit {
+                    validator_address: vote.validator_address,
+                    timestamp: vote.timestamp.unwrap(),
+                    signature: vote.signature,
+                })
+            }
         };
         let val_to_sig = |val: &Validator| -> Result<block::CommitSig, SimpleError> {
             let vote = votes
