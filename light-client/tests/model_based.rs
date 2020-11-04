@@ -11,9 +11,18 @@ use tendermint_light_client::{
     types::{LightBlock, Time, TrustThreshold},
 };
 use tendermint_testgen::{
-    apalache::*, jsonatr::*, validator::generate_validators, Command, Generator,
-    LightBlock as TestgenLightBlock, TestEnv, Tester, Validator, Vote,
+    apalache::*, jsonatr::*, light_block::TMLightBlock, validator::generate_validators, Command,
+    Generator, LightBlock as TestgenLightBlock, TestEnv, Tester, Validator, Vote,
 };
+
+fn testgen_to_anon(tm_lb: TMLightBlock) -> AnonLightBlock {
+    AnonLightBlock {
+        signed_header: tm_lb.signed_header,
+        validators: tm_lb.validators,
+        next_validators: tm_lb.next_validators,
+        provider: tm_lb.provider,
+    }
+}
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum LiteTestKind {
@@ -332,7 +341,6 @@ impl SingleStepTestFuzzer for CommitSigFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
         let mut votes = input.testgen_block.commit.clone().unwrap().votes.unwrap();
         if votes.len() > 3 {
-
             votes[0].is_nil = Some(());
 
             // change the vote to nil
@@ -360,7 +368,7 @@ impl SingleStepTestFuzzer for VoteSignatureFuzzer {
         commit.header = Some(header);
 
         input.testgen_block.commit = Some(commit);
-        input.block = input.testgen_block.generate().unwrap().into();
+        input.block = testgen_to_anon(input.testgen_block.generate().unwrap());
 
         (String::from("vote signature"), true)
     }
@@ -373,8 +381,7 @@ impl SingleStepTestFuzzer for ValidatorSetFuzzer {
         let mut header = commit.header.clone().unwrap();
         let mut validators = header.validators.unwrap();
 
-        if !validators.is_empty(){
-
+        if !validators.is_empty() {
             let faulty_val = Validator::new("faulty");
             validators[0] = faulty_val;
 
@@ -384,7 +391,8 @@ impl SingleStepTestFuzzer for ValidatorSetFuzzer {
             commit.votes = None;
 
             input.block.signed_header.commit = commit.generate().unwrap();
-            input.block.signed_header.commit.block_id.hash = input.block.signed_header.header.hash();
+            input.block.signed_header.commit.block_id.hash =
+                input.block.signed_header.header.hash();
         }
 
         (String::from("validator set"), true)

@@ -29,7 +29,6 @@ secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 [dependencies]
 tendermint = { version = "0.17.0-rc1", path = "../tendermint" }
 tendermint-rpc = { version = "0.17.0-rc1", path = "../rpc", default-features = false }
-tendermint-testgen = { path = "../testgen"}
 
 anomaly = { version = "0.2.0", features = ["serializer"] }
 contracts = "0.4.0"
@@ -45,7 +44,8 @@ thiserror = "1.0.15"
 tokio = "0.2.20"
 
 [dev-dependencies]
+tendermint-testgen = { path = "../testgen"}
+
 serde_json = "1.0.51"
 gumdrop = "0.8.0"
-tendermint-testgen = { path = "../testgen"}
 rand = "0.7.3"
