@@ -29,6 +29,11 @@ fn abci_query() {
         .response;
 
     assert_eq!(response.height.value(), 1);
+    assert!(response.proof.is_some());
+    let proof = response.proof.unwrap();
+    assert_eq!(proof.ops.len(), 2);
+    assert_eq!(proof.ops[0].field_type, "iavl:v");
+    assert_eq!(proof.ops[1].field_type, "multistore");
 }
 
 #[test]
