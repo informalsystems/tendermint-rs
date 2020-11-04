@@ -74,7 +74,9 @@ trait SingleStepTestFuzzer {
         None
     }
 
-    /// Fuzzes the input block and returns the description of what was changed
+    /// Fuzzes the input block and returns the pair consisting of:
+    ///    - the description of what has been changed
+    ///    - whether the verdict should be changed to `Invalid`
     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool);
 
     /// Get a random hash value
