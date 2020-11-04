@@ -30,7 +30,7 @@ pub struct Vote {
     #[options(help = "commit round (default: from commit)")]
     pub round: Option<u32>,
     #[options(
-        help = "to indicate if the vote is nil; produces a 'BlockIfFlagNil' if set, otherwise 'BlockIdFlagCommit' (default)"
+        help = "to indicate if the vote is nil; produces a 'BlockIdFlagNil' if set, otherwise 'BlockIdFlagCommit' (default)"
     )]
     pub is_nil: Option<()>,
 }
