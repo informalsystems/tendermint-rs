@@ -151,7 +151,14 @@ TestHeaderFromFuture ==
 \* Test an execution where the untrusted header time is before the trusted header time
 TestUntrustedBeforeTrusted ==
     /\ \E s \in DOMAIN history :
-       history[s].current.header.time < history[s].verified.header.time
+        LET CMS == history[s].current.Commits
+            UVS == history[s].current.header.VS
+        IN
+        /\ history[s].current.header.time < history[s].verified.header.time
+        /\ history[s].now < history[s].verified.header.time + TRUSTING_PERIOD
+        /\ CMS /= ({} <: {STRING})
+        /\ UVS /= ({} <: {STRING})
+        /\ Cardinality(CMS) < Cardinality(UVS)
 
 \* Test an execution where a header is outside the trusting period
 TestHeaderNotWithinTrustingPeriod ==
