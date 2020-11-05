@@ -56,7 +56,7 @@ impl TryFrom<RawBlock> for Block {
     fn try_from(value: RawBlock) -> Result<Self, Self::Error> {
         let header: Header = value.header.ok_or(Kind::MissingHeader)?.try_into()?;
         // if last_commit is Commit::Default, it is considered nil by Go.
-        let last_commit: Option<Commit> = value
+        let last_commit = value
             .last_commit
             .map(TryInto::try_into)
             .transpose()?
