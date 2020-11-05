@@ -7,6 +7,7 @@
     "TestEmptyCommitNonEmptyValset",
     "TestLessThanTwoThirdsCommit",
     "TestLessThanTwoThirdsSign",
-    "TestMoreThanTwoThirdsSign"
+    "TestMoreThanTwoThirdsSign",
+    "TestHeaderNotWithinTrustingPeriod"
   ]
 }

@@ -152,6 +152,12 @@ TestUntrustedBeforeTrusted ==
     /\ \E s \in DOMAIN history :
        history[s].current.header.time < history[s].verified.header.time
 
+\* Test an execution where a header is outside the trusting period
+TestHeaderNotWithinTrustingPeriod ==
+    /\ Cardinality(DOMAIN fetchedLightBlocks) = TARGET_HEIGHT
+    /\ \E s \in DOMAIN history :
+       /\ history[s].now > history[s].verified.header.time + TRUSTING_PERIOD
+       /\ history[s].current.header.time < history[s].now
 
 \* Validator set tests
 
