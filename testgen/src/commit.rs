@@ -1,5 +1,5 @@
 use gumdrop::Options;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use simple_error::*;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
@@ -9,7 +9,7 @@ use crate::validator::sort_validators;
 use crate::{helpers::*, Generator, Header, Validator, Vote};
 use std::convert::TryFrom;
 
-#[derive(Debug, Options, Deserialize, Clone)]
+#[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Commit {
     #[options(help = "header (required)", parse(try_from_str = "parse_as::<Header>"))]
     pub header: Option<Header>,
@@ -126,11 +126,19 @@ impl Generator<block::Commit> for Commit {
         let all_vals = sort_validators(&all_vals);
         let vote_to_sig = |v: &Vote| -> Result<block::CommitSig, SimpleError> {
             let vote = v.generate()?;
-            Ok(block::CommitSig::BlockIDFlagCommit {
-                validator_address: vote.validator_address,
-                timestamp: vote.timestamp.unwrap(),
-                signature: vote.signature,
-            })
+            if vote.block_id == None {
+                Ok(block::CommitSig::BlockIDFlagNil {
+                    validator_address: vote.validator_address,
+                    timestamp: vote.timestamp.unwrap(),
+                    signature: vote.signature,
+                })
+            } else {
+                Ok(block::CommitSig::BlockIDFlagCommit {
+                    validator_address: vote.validator_address,
+                    timestamp: vote.timestamp.unwrap(),
+                    signature: vote.signature,
+                })
+            }
         };
         let val_to_sig = |val: &Validator| -> Result<block::CommitSig, SimpleError> {
             let vote = votes

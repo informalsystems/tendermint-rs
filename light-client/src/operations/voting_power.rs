@@ -109,7 +109,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
         validator_set: &ValidatorSet,
         trust_threshold: TrustThreshold,
     ) -> Result<VotingPowerTally, VerificationError> {
-        let signatures = &signed_header.commit().signatures;
+        let signatures = &signed_header.commit.signatures;
 
         let mut tallied_voting_power = 0_u64;
         let mut seen_validators = HashSet::new();
@@ -119,7 +119,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
             if let Some(vote) = non_absent_vote(
                 signature,
                 ValidatorIndex::try_from(idx).unwrap(),
-                &signed_header.commit(),
+                &signed_header.commit,
             ) {
                 Some((signature, vote))
             } else {
@@ -144,7 +144,7 @@ impl VotingPowerCalculator for ProdVotingPowerCalculator {
 
             let signed_vote = SignedVote::new(
                 vote.clone(),
-                signed_header.header().chain_id.clone(),
+                signed_header.header.chain_id.clone(),
                 vote.validator_address,
                 vote.signature,
             );

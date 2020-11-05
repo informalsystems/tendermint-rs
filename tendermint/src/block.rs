@@ -35,17 +35,17 @@ use tendermint_proto::DomainType;
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct Block {
     /// Block header
-    header: Header,
+    pub header: Header,
 
     /// Transaction data
-    data: transaction::Data,
+    pub data: transaction::Data,
 
     /// Evidence of malfeasance
-    evidence: evidence::Data,
+    pub evidence: evidence::Data,
 
     /// Last commit
     #[serde(with = "crate::serializers::optional")]
-    last_commit: Option<Commit>,
+    pub last_commit: Option<Commit>,
 }
 
 impl DomainType<RawBlock> for Block {}
@@ -115,25 +115,5 @@ impl Block {
             evidence,
             last_commit,
         })
-    }
-
-    /// Get header
-    pub fn header(&self) -> &Header {
-        &self.header
-    }
-
-    /// Get data
-    pub fn data(&self) -> &transaction::Data {
-        &self.data
-    }
-
-    /// Get evidence
-    pub fn evidence(&self) -> &evidence::Data {
-        &self.evidence
-    }
-
-    /// Get last commit
-    pub fn last_commit(&self) -> &Option<Commit> {
-        &self.last_commit
     }
 }

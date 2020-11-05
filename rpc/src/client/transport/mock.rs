@@ -143,10 +143,7 @@ mod test {
         assert_eq!(Height::from(488120_u32), abci_info.last_block_height);
 
         let block = client.block(Height::from(10_u32)).await.unwrap().block;
-        assert_eq!(Height::from(10_u32), block.header().height);
-        assert_eq!(
-            "cosmoshub-2".parse::<Id>().unwrap(),
-            block.header().chain_id
-        );
+        assert_eq!(Height::from(10_u32), block.header.height);
+        assert_eq!("cosmoshub-2".parse::<Id>().unwrap(), block.header.chain_id);
     }
 }

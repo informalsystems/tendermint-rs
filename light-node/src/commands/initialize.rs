@@ -76,7 +76,7 @@ fn initialize_subjectively(
     if let Some(trusted_state) = light_store.latest_trusted_or_verified() {
         status_warn!(
             "already existing trusted or verified state of height {} in database: {:?}",
-            trusted_state.signed_header.header().height,
+            trusted_state.signed_header.header.height,
             config.db_path
         );
     }

@@ -53,7 +53,7 @@ impl CommitValidator for ProdCommitValidator {
         signed_header: &SignedHeader,
         validator_set: &ValidatorSet,
     ) -> Result<(), VerificationError> {
-        let signatures = &signed_header.commit().signatures;
+        let signatures = &signed_header.commit.signatures;
 
         // Check the the commit contains at least one non-absent signature.
         // See https://github.com/informalsystems/tendermint-rs/issues/650
@@ -87,7 +87,7 @@ impl CommitValidator for ProdCommitValidator {
         signed_header: &SignedHeader,
         validator_set: &ValidatorSet,
     ) -> Result<(), VerificationError> {
-        for commit_sig in signed_header.commit().signatures.iter() {
+        for commit_sig in signed_header.commit.signatures.iter() {
             let validator_address = match commit_sig {
                 CommitSig::BlockIDFlagAbsent => continue,
                 CommitSig::BlockIDFlagCommit {

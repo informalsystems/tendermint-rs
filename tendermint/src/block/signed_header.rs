@@ -11,9 +11,9 @@ use tendermint_proto::types::SignedHeader as RawSignedHeader;
 #[serde(try_from = "RawSignedHeader", into = "RawSignedHeader")] // used by RPC /commit endpoint
 pub struct SignedHeader {
     /// Block header
-    header: block::Header,
+    pub header: block::Header,
     /// Commit containing signatures for the header
-    commit: block::Commit,
+    pub commit: block::Commit,
 }
 
 impl TryFrom<RawSignedHeader> for SignedHeader {
@@ -36,19 +36,11 @@ impl From<SignedHeader> for RawSignedHeader {
 }
 
 impl SignedHeader {
-    /// constructor
+    /// Constructor.
     pub fn new(header: block::Header, commit: block::Commit) -> Result<Self, Error> {
         if header.height != commit.height {
             return Err(Kind::InvalidSignedHeader.into());
         }
         Ok(Self { header, commit })
-    }
-    /// Get header
-    pub fn header(&self) -> &block::Header {
-        &self.header
-    }
-    /// Get commit
-    pub fn commit(&self) -> &block::Commit {
-        &self.commit
     }
 }

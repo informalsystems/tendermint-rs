@@ -80,15 +80,15 @@ mod rpc {
             .await
             .unwrap();
 
-        assert!(block_info.block.last_commit().is_none());
-        assert_eq!(block_info.block.header().height.value(), height);
+        assert!(block_info.block.last_commit.is_none());
+        assert_eq!(block_info.block.header.height.value(), height);
 
         // Check for empty merkle root.
         // See: https://github.com/informalsystems/tendermint-rs/issues/562
         let computed_data_hash = simple_hash_from_byte_vectors(
             block_info
                 .block
-                .data()
+                .data
                 .iter()
                 .map(|t| t.to_owned().into())
                 .collect(),
@@ -97,7 +97,7 @@ mod rpc {
             computed_data_hash,
             block_info
                 .block
-                .header()
+                .header
                 .data_hash
                 .unwrap_or_default()
                 .as_bytes()
@@ -144,11 +144,11 @@ mod rpc {
             .await
             .unwrap();
 
-        assert_eq!(commit_info.signed_header.header().height.value(), height);
+        assert_eq!(commit_info.signed_header.header.height.value(), height);
         assert_eq!(commit_info.canonical, true);
         assert_eq!(
-            commit_info.signed_header.header().hash(),
-            commit_info.signed_header.commit().block_id.hash
+            commit_info.signed_header.header.hash(),
+            commit_info.signed_header.commit.block_id.hash
         );
     }
 

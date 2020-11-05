@@ -1,12 +1,12 @@
 use crate::{helpers::*, validator::generate_validators, Generator, Validator};
 use gumdrop::Options;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use simple_error::*;
 use std::convert::TryFrom;
 use std::str::FromStr;
 use tendermint::{block, chain, validator, AppHash};
 
-#[derive(Debug, Options, Deserialize, Clone)]
+#[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Header {
     #[options(
         help = "validators (required), encoded as array of 'validator' parameters",
