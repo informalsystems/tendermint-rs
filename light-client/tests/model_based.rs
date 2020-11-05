@@ -64,7 +64,7 @@ fn single_step_test(
         tc.initial.signed_header.clone(),
         tc.initial.next_validator_set.clone(),
     );
-    let clock_drift = Duration::from_secs(1);
+    let clock_drift = Duration::from_secs(0);
     let trusting_period: Duration = tc.initial.trusting_period.into();
     for (i, input) in tc.input.iter().enumerate() {
         output_env.logln(&format!("    > step {}, expecting {:?}", i, input.verdict));

@@ -145,7 +145,8 @@ TestLessThanTwoThirdsCommit ==
 \* Test an execution where a header is received from the future
 TestHeaderFromFuture ==
     /\ \E s \in DOMAIN history :
-       history[s].now < history[s].current.header.time
+       /\ history[s].now < history[s].current.header.time
+       /\ history[s].now < history[s].verified.header.time + TRUSTING_PERIOD
 
 \* Test an execution where the untrusted header time is before the trusted header time
 TestUntrustedBeforeTrusted ==
