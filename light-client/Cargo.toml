@@ -44,6 +44,8 @@ thiserror = "1.0.15"
 tokio = "0.2.20"
 
 [dev-dependencies]
+tendermint-testgen = { path = "../testgen"}
+
 serde_json = "1.0.51"
 gumdrop = "0.8.0"
-tendermint-testgen = { path = "../testgen"}
+rand = "0.7.3"
