@@ -9,8 +9,20 @@
     "Test2NotEnoughTrustFailure",
     "Test3NotEnoughTrustSuccess",
     "Test3NotEnoughTrustFailure",
-    "TestValsetDifferentAllSteps",
+    "TestNonMonotonicHeight",
     "TestHeaderFromFuture",
-    "TestUntrustedBeforeTrusted"
+    "TestUntrustedBeforeTrusted",
+    "TestHeaderNotWithinTrustingPeriod",
+    "TestValsetDifferentAllSteps",
+    "TestHalfValsetChanges",
+    "TestHalfValsetChangesVerdictSuccess",
+    "TestHalfValsetChangesVerdictNotEnoughTrust",
+    "TestValsetDoubles",
+    "TestValsetHalves",
+    "TestValsetChangesFully",
+    "TestLessThanThirdValsetChanges",
+    "TestOneThirdValsetChanges",
+    "TestLessThanTwoThirdsSign",
+    "TestMoreThanTwoThirdsSign"
   ]
 }

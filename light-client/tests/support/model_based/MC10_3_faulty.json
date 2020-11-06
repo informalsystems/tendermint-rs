@@ -1,0 +1,26 @@
+{
+  "description": "Tests for 10 validators, target height 3, with faulty primary",
+  "model": "MC10_3_faulty.tla",
+  "timeout": 150,
+  "tests": [
+    "TestSuccess",
+    "TestFailure",
+    "TestNonMonotonicHeight",
+    "TestHeaderFromFuture",
+    "TestUntrustedBeforeTrusted",
+    "TestHeaderNotWithinTrustingPeriod",
+    "TestValsetDifferentAllSteps",
+    "TestHalfValsetChanges",
+    "TestHalfValsetChangesVerdictSuccess",
+    "TestHalfValsetChangesVerdictNotEnoughTrust",
+    "TestValsetDoubles",
+    "TestValsetHalves",
+    "TestValsetChangesFully",
+    "TestLessThanThirdValsetChanges",
+    "TestMoreThanTwoThirdsValsetChanges",
+    "TestOneThirdValsetChanges",
+    "TestTwoThirdsValsetChanges",
+    "TestLessThanTwoThirdsSign",
+    "TestMoreThanTwoThirdsSign"
+  ]
+}
