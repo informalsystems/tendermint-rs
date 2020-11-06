@@ -97,6 +97,9 @@ TestNonMonotonicHeight ==
        /\ history[s].current.Commits /= ({} <: {STRING})
        /\ history[s].current.Commits \subseteq  history[s].current.header.VS
 
+(*
+Following three tests have been disabled for now,
+please refer issue: https://github.com/informalsystems/tendermint-rs/issues/659
 TestEmptyCommitEmptyValset ==
     /\ \E s \in DOMAIN history :
        \* this is wrong
@@ -139,7 +142,7 @@ TestLessThanTwoThirdsCommit ==
        /\ history[s].current.header.time > history[s].verified.header.time
        /\ history[s].current.header.time < history[s].now
        /\ history[s].verified.header.time + TRUSTING_PERIOD > history[s].now
-
+*)
 \* Time-related tests
 
 \* Test an execution where a header is received from the future
