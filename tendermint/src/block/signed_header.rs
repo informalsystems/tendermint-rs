@@ -44,4 +44,14 @@ impl SignedHeader {
         }
         Ok(Self { header, commit })
     }
+
+    /// Get header
+    pub fn header(&self) -> &block::Header {
+        &self.header
+    }
+
+    /// Get commit
+    pub fn commit(&self) -> &block::Commit {
+        &self.commit
+    }
 }

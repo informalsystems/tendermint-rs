@@ -117,4 +117,24 @@ impl Block {
             last_commit,
         })
     }
+
+    /// Get header
+    pub fn header(&self) -> &Header {
+        &self.header
+    }
+
+    /// Get data
+    pub fn data(&self) -> &transaction::Data {
+        &self.data
+    }
+
+    /// Get evidence
+    pub fn evidence(&self) -> &evidence::Data {
+        &self.evidence
+    }
+
+    /// Get last commit
+    pub fn last_commit(&self) -> &Option<Commit> {
+        &self.last_commit
+    }
 }
