@@ -230,7 +230,7 @@ impl SingleStepTestFuzzer for HeaderValHashFuzzer {
             Validator::new("2"),
             Validator::new("3"),
         ];
-        let valset = ValidatorSet::new(generate_validators(&vals).unwrap(), None, 0_u32.into());
+        let valset = ValidatorSet::new_simple(generate_validators(&vals).unwrap());
 
         input.block.validators = valset;
         (String::from("header validators_hash"), true)
@@ -245,7 +245,7 @@ impl SingleStepTestFuzzer for HeaderNextValHashFuzzer {
             Validator::new("2"),
             Validator::new("3"),
         ];
-        let valset = ValidatorSet::new(generate_validators(&vals).unwrap(), None, 0_u32.into());
+        let valset = ValidatorSet::new_simple(generate_validators(&vals).unwrap());
 
         input.block.next_validators = valset;
         (String::from("header next_validators_hash"), true)
