@@ -11,8 +11,8 @@ use tendermint_light_client::{
     light_client::{LightClient, Options},
     state::State,
     store::{memory::MemoryStore, LightStore},
-    tests::{Trusted, *},
-    types::{LightBlock, Status, TrustThreshold},
+    tests::*,
+    types::{LightBlock, Status},
 };
 
 use std::convert::TryInto;
