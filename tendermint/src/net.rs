@@ -62,10 +62,10 @@ impl FromStr for Address {
 
     fn from_str(addr: &str) -> Result<Self, Error> {
         if addr.starts_with(TCP_PREFIX) {
-            Self::parse_tcp_addr(&addr[TCP_PREFIX.len()..])
+            Self::parse_tcp_addr(&addr.strip_prefix(TCP_PREFIX).unwrap())
         } else if addr.starts_with(UNIX_PREFIX) {
             Ok(Address::Unix {
-                path: PathBuf::from(&addr[UNIX_PREFIX.len()..]),
+                path: PathBuf::from(&addr.strip_prefix(UNIX_PREFIX).unwrap()),
             })
         } else if addr.contains("://") {
             // The only supported URI prefixes are `tcp://` and `unix://`

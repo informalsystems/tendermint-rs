@@ -5,7 +5,9 @@ pub use ed25519_dalek::PublicKey as Ed25519;
 pub use k256::EncodedPoint as Secp256k1;
 
 mod pub_key_request;
+mod pub_key_response;
 pub use pub_key_request::PubKeyRequest;
+pub use pub_key_response::PubKeyResponse;
 
 use crate::{
     error::{self, Error},
@@ -18,19 +20,23 @@ use std::convert::TryFrom;
 use std::{cmp::Ordering, fmt, ops::Deref, str::FromStr};
 use subtle_encoding::{base64, bech32, hex};
 use tendermint_proto::crypto::public_key::Sum;
-use tendermint_proto::privval::PubKeyResponse as RawPubKeyResponse;
+use tendermint_proto::crypto::PublicKey as RawPublicKey;
 use tendermint_proto::DomainType;
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
 // github.com/tendermint/tendermint/crypto.PubKey
 // While this is meant to be used with different key-types, it currently only uses a PubKeyEd25519
 // version.
-// TODO(ismail): make this more generic (by modifying prost and adding a trait for PubKey)
+// TODO: make this more generic
 
+// Warning: the custom serialization implemented here does not use TryFrom<RawPublicKey>.
+//          it should only be used to read/write the priva_validator_key.json.
+//          All changes to the serialization should check both the JSON and protobuf conversions.
+// Todo: Merge JSON serialization with #[serde(try_from = "RawPublicKey", into = "RawPublicKey)]
 /// Public keys allowed in Tendermint protocols
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
-#[serde(tag = "type", content = "value")]
+#[serde(tag = "type", content = "value")] // JSON custom serialization for priv_validator_key.json
 pub enum PublicKey {
     /// Ed25519 keys
     #[serde(
@@ -51,36 +57,32 @@ pub enum PublicKey {
     Secp256k1(Secp256k1),
 }
 
-impl DomainType<RawPubKeyResponse> for PublicKey {}
+impl DomainType<RawPublicKey> for PublicKey {}
 
-impl TryFrom<RawPubKeyResponse> for PublicKey {
+impl TryFrom<RawPublicKey> for PublicKey {
     type Error = Error;
 
-    fn try_from(value: RawPubKeyResponse) -> Result<Self, Self::Error> {
-        let Sum::Ed25519(b) = &value
-            .pub_key
-            .ok_or_else(|| format_err!(error::Kind::InvalidKey, "empty pubkey"))?
+    fn try_from(value: RawPublicKey) -> Result<Self, Self::Error> {
+        let sum = &value
             .sum
             .ok_or_else(|| format_err!(error::Kind::InvalidKey, "empty sum"))?;
-        Ed25519::from_bytes(b)
-            .map(Into::into)
-            .map_err(|_| format_err!(error::Kind::InvalidKey, "malformed key").into())
+        match sum {
+            Sum::Ed25519(b) => Self::from_raw_ed25519(b)
+                .ok_or_else(|| format_err!(error::Kind::InvalidKey, "malformed key").into()),
+        }
     }
 }
 
-impl From<PublicKey> for RawPubKeyResponse {
+impl From<PublicKey> for RawPublicKey {
     fn from(value: PublicKey) -> Self {
         match value {
-            PublicKey::Ed25519(ref pk) => RawPubKeyResponse {
-                pub_key: Some(tendermint_proto::crypto::PublicKey {
-                    sum: Some(tendermint_proto::crypto::public_key::Sum::Ed25519(
-                        pk.as_bytes().to_vec(),
-                    )),
-                }),
-                error: None,
+            PublicKey::Ed25519(ref pk) => RawPublicKey {
+                sum: Some(tendermint_proto::crypto::public_key::Sum::Ed25519(
+                    pk.as_bytes().to_vec(),
+                )),
             },
             #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(_) => panic!("secp256k1 PubKeyResponse unimplemented"),
+            PublicKey::Secp256k1(_) => panic!("secp256k1 PublicKey unimplemented"),
         }
     }
 }
@@ -150,7 +152,7 @@ impl PublicKey {
     }
 
     /// Get a vector containing the byte serialization of this key
-    pub fn to_bytes(self) -> Vec<u8> {
+    pub fn to_vec(self) -> Vec<u8> {
         self.as_bytes().to_vec()
     }
 
@@ -349,8 +351,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{PublicKey, TendermintKey};
-    use crate::public_key::PublicKey::Ed25519;
-    pub use ed25519_dalek::PublicKey as Ed25519PublicKey;
+    use crate::public_key::PubKeyResponse;
     use subtle_encoding::hex;
     use tendermint_proto::DomainType;
 
@@ -457,16 +458,19 @@ mod tests {
             0x1a, 0x68, 0xf7, 0x7, 0x51, 0x1a,
         ];
 
-        let msg = Ed25519(
-            Ed25519PublicKey::from_bytes(&[
-                215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58, 14, 225,
-                114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
-            ])
-            .unwrap(),
-        );
+        let msg = PubKeyResponse {
+            pub_key: Some(
+                PublicKey::from_raw_ed25519(&[
+                    215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58, 14,
+                    225, 114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
+                ])
+                .unwrap(),
+            ),
+            error: None,
+        };
         let got = msg.encode_vec().unwrap();
 
         assert_eq!(got, encoded);
-        assert_eq!(PublicKey::decode_vec(&encoded).unwrap(), msg);
+        assert_eq!(PubKeyResponse::decode_vec(&encoded).unwrap(), msg);
     }
 }

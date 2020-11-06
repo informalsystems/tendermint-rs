@@ -1,12 +1,12 @@
 use crate::{helpers::*, validator::generate_validators, Generator, Validator};
 use gumdrop::Options;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use simple_error::*;
 use std::convert::TryFrom;
 use std::str::FromStr;
 use tendermint::{block, chain, validator, AppHash};
 
-#[derive(Debug, Options, Deserialize, Clone)]
+#[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Header {
     #[options(
         help = "validators (required), encoded as array of 'validator' parameters",
@@ -102,9 +102,9 @@ impl Generator<block::Header> for Header {
         } else {
             Validator::new("a").generate().unwrap().address
         };
-        let valset = validator::Set::new(vals);
+        let valset = validator::Set::new_simple(vals);
         let next_valset = match &self.next_validators {
-            Some(next_vals) => validator::Set::new(generate_validators(next_vals)?),
+            Some(next_vals) => validator::Set::new_simple(generate_validators(next_vals)?),
             None => valset.clone(),
         };
         let chain_id = match chain::Id::from_str(

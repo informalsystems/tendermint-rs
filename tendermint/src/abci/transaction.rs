@@ -6,26 +6,26 @@ pub use self::hash::Hash;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::{fmt, slice};
 use subtle_encoding::base64;
+use tendermint_proto::types::Data as RawData;
 
 /// Transactions are arbitrary byte arrays whose contents are validated by the
 /// underlying Tendermint application.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)] // Custom serde serialization used by RPC /broadcast_tx_async endpoint
 pub struct Transaction(Vec<u8>);
 
+impl From<Vec<u8>> for Transaction {
+    fn from(value: Vec<u8>) -> Self {
+        Transaction(value)
+    }
+}
+
+impl From<Transaction> for Vec<u8> {
+    fn from(value: Transaction) -> Self {
+        value.0
+    }
+}
+
 impl Transaction {
-    /// Create a new raw transaction from a byte vector
-    pub fn new<V>(into_vec: V) -> Transaction
-    where
-        V: Into<Vec<u8>>,
-    {
-        Transaction(into_vec.into())
-    }
-
-    /// Convert this transaction into a byte vector
-    pub fn into_vec(self) -> Vec<u8> {
-        self.0
-    }
-
     /// Borrow the contents of this transaction as a byte slice
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_slice()
@@ -53,7 +53,7 @@ impl<'de> Deserialize<'de> for Transaction {
         let bytes = base64::decode(String::deserialize(deserializer)?.as_bytes())
             .map_err(|e| D::Error::custom(format!("{}", e)))?;
 
-        Ok(Self::new(bytes))
+        Ok(Self::from(bytes))
     }
 }
 
@@ -69,27 +69,50 @@ impl Serialize for Transaction {
 /// transactions are arbitrary byte arrays.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#data>
-#[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "RawData", into = "RawData")]
 pub struct Data {
     txs: Option<Vec<Transaction>>,
 }
 
-impl Data {
-    /// Create a new transaction data collection
-    pub fn new<I>(into_transactions: I) -> Data
-    where
-        I: Into<Vec<Transaction>>,
-    {
+impl From<RawData> for Data {
+    fn from(value: RawData) -> Self {
+        if value.txs.is_empty() {
+            return Data::default();
+        }
         Data {
-            txs: Some(into_transactions.into()),
+            txs: Some(
+                value
+                    .txs
+                    .iter()
+                    .map(|tx| Transaction::from(tx.clone()))
+                    .collect(),
+            ),
         }
     }
+}
 
-    /// Convert this collection into a vector
-    pub fn into_vec(self) -> Vec<Transaction> {
-        self.txs.unwrap_or_default()
+impl From<Data> for RawData {
+    fn from(value: Data) -> Self {
+        if value.txs.is_none() {
+            return RawData {
+                txs: vec![],
+                hash: vec![],
+            };
+        }
+        RawData {
+            txs: value
+                .txs
+                .unwrap_or_default()
+                .iter()
+                .map(|tx| tx.clone().into())
+                .collect(),
+            hash: vec![],
+        }
     }
+}
 
+impl Data {
     /// Iterate over the transactions in the collection
     pub fn iter(&self) -> slice::Iter<'_, Transaction> {
         self.as_ref().iter()
@@ -108,7 +131,7 @@ mod tests {
 
     #[test]
     fn upper_hex_serialization() {
-        let tx = Transaction::new(vec![0xFF, 0x01, 0xFE, 0x02]);
+        let tx = Transaction::from(vec![0xFF, 0x01, 0xFE, 0x02]);
         let tx_hex = format!("{:X}", &tx);
         assert_eq!(&tx_hex, "FF01FE02");
     }

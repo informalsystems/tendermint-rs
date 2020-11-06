@@ -12,6 +12,7 @@
             "hash": "5E97E2B494BF58C02BE385AE80F08A7DDBFAE922ED0363C892D17DB549DAF4AA"
           }
         },
+        "block_size": "573",
         "header": {
           "version": {
             "block": "10",
@@ -38,7 +39,8 @@
           "last_results_hash": "",
           "evidence_hash": "",
           "proposer_address": "E800740C68C81B30345C3AE2BA638FA56FF67EEF"
-        }
+        },
+        "num_txs": "0"
       },
       {
         "block_id": {
@@ -48,6 +50,7 @@
             "hash": "99043B16957F2BFF5C1A24B290AD44CBCD95B0DC164E18063FA566240B7B3AFC"
           }
         },
+        "block_size": "573",
         "header": {
           "version": {
             "block": "10",
@@ -74,7 +77,8 @@
           "last_results_hash": "",
           "evidence_hash": "",
           "proposer_address": "C2356622B495725961B5B201A382DD57CD3305EC"
-        }
+        },
+        "num_txs": "0"
       },
       {
         "block_id": {
@@ -84,6 +88,7 @@
             "hash": "C5FAA5B7738D7010CA712FBC2B2355605D388990DE0FDE731A854FE279325C1A"
           }
         },
+        "block_size": "573",
         "header": {
           "version": {
             "block": "10",
@@ -110,7 +115,8 @@
           "last_results_hash": "6E340B9CFFB37A989CA544E6BB780A2C78901D3FB33738768511A30617AFA01D",
           "evidence_hash": "",
           "proposer_address": "9C17C94F7313BB4D6E064287BEEDE5D3888E8855"
-        }
+        },
+        "num_txs": "0"
       },
       {
         "block_id": {
@@ -120,6 +126,7 @@
             "hash": "842ADFA93717FDBE551BDAB96BED2E50D67FCA216421C97DE1A47BC61FF50E58"
           }
         },
+        "block_size": "573",
         "header": {
           "version": {
             "block": "10",
@@ -146,7 +153,8 @@
           "last_results_hash": "",
           "evidence_hash": "",
           "proposer_address": "9C17C94F7313BB4D6E064287BEEDE5D3888E8855"
-        }
+        },
+        "num_txs": "0"
       },
       {
         "block_id": {
@@ -156,6 +164,7 @@
             "hash": "3E5A9C4ACC1C217DAEBD68E29B99B013603D2902BF974F9695FCA08E1E4E8867"
           }
         },
+        "block_size": "573",
         "header": {
           "version": {
             "block": "10",
@@ -182,7 +191,8 @@
           "last_results_hash": "",
           "evidence_hash": "",
           "proposer_address": "9C17C94F7313BB4D6E064287BEEDE5D3888E8855"
-        }
+        },
+        "num_txs": "0"
       },
       {
         "block_id": {
@@ -192,6 +202,7 @@
             "hash": "21ED492846DFF04D65E445A56C38AAAE6151F0099B09C9FC9498EF154C46A8AD"
           }
         },
+        "block_size": "573",
         "header": {
           "version": {
             "block": "10",
@@ -218,7 +229,8 @@
           "last_results_hash": "",
           "evidence_hash": "",
           "proposer_address": "2B19594437F1920B5AF6461FAB81AEC99790FEB1"
-        }
+        },
+        "num_txs": "0"
       },
       {
         "block_id": {
@@ -228,6 +240,7 @@
             "hash": "2B51E708767543A566AA1FDBC279E06FB59C3F7658D2389DCAF389A95242E623"
           }
         },
+        "block_size": "573",
         "header": {
           "version": {
             "block": "10",
@@ -254,7 +267,8 @@
           "last_results_hash": "",
           "evidence_hash": "",
           "proposer_address": "2199EAE894CA391FA82F01C2C614BFEB103D056C"
-        }
+        },
+        "num_txs": "0"
       },
       {
         "block_id": {
@@ -264,6 +278,7 @@
             "hash": "529D1FFB543793F8B999AC4E801C8A14CA2DC6E873DC7759945C4B960CAC77DC"
           }
         },
+        "block_size": "573",
         "header": {
           "version": {
             "block": "10",
@@ -290,7 +305,8 @@
           "last_results_hash": "",
           "evidence_hash": "",
           "proposer_address": "064CF05857B556FED63AC32821FF904312D0F2C8"
-        }
+        },
+        "num_txs": "0"
       },
       {
         "block_id": {
@@ -300,6 +316,7 @@
             "hash": "3D4BB2D494CF343011AF2ADE01D6CC88BE6FE26CE5756840931507554BF64F0B"
           }
         },
+        "block_size": "573",
         "header": {
           "version": {
             "block": "10",
@@ -326,7 +343,8 @@
           "last_results_hash": "",
           "evidence_hash": "",
           "proposer_address": "02A248C86C78ED6A824D510A8B7AA4C1D290D2DC"
-        }
+        },
+        "num_txs": "0"
       },
       {
         "block_id": {
@@ -336,6 +354,7 @@
             "hash": "E110DA5AEC7F6D8285F2F8A5CE732D8995E6B35C7B685BA819D3CBD903CB2330"
           }
         },
+        "block_size": "573",
         "header": {
           "version": {
             "block": "10",
@@ -362,7 +381,8 @@
           "last_results_hash": "",
           "evidence_hash": "",
           "proposer_address": "064CF05857B556FED63AC32821FF904312D0F2C8"
-        }
+        },
+        "num_txs": "0"
       }
     ]
   }

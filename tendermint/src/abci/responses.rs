@@ -50,7 +50,7 @@ pub struct DeliverTx {
     pub code: Code,
 
     /// ABCI application data
-    #[serde(deserialize_with = "serializers::null_as_default")]
+    #[serde(with = "serializers::nullable")]
     pub data: Data,
 
     /// ABCI log data (nondeterministic)

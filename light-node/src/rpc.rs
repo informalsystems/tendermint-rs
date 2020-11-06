@@ -258,7 +258,8 @@ mod test {
                     },
                     "voting_power": "50",
                     "proposer_priority": "-50"
-            }
+            },
+            "total_voting_power": "0"
     },
     "next_validator_set": {
             "validators": [
@@ -288,7 +289,9 @@ mod test {
                             "value": "+vlsKpn6ojn+UoTZl+w+fxeqm6xvUfBokTcKfcG3au4="
                     },
                     "voting_power": "50",
-                    "proposer_priority": "0" }
+                    "proposer_priority": "0"
+            },
+            "total_voting_power": "0"
     },
     "provider": "9D61B19DEFFD5A60BA844AF492EC2CC44449C569"
 }

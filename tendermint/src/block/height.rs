@@ -100,7 +100,10 @@ impl FromStr for Height {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Height::try_from(s.parse::<u64>().map_err(|_| Kind::Parse)?)
+        Height::try_from(
+            s.parse::<u64>()
+                .map_err(|_| Kind::Parse.context("height decode"))?,
+        )
     }
 }
 
@@ -113,7 +116,7 @@ impl<'de> Deserialize<'de> for Height {
 
 impl Serialize for Height {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.to_string().serialize(serializer)
+        i64::from(*self).to_string().serialize(serializer)
     }
 }
 

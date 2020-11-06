@@ -5,17 +5,18 @@ use crate::error::{Error, Kind};
 use chrono::{DateTime, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 
-use prost_types::Timestamp;
 use std::convert::TryFrom;
 use std::fmt;
 use std::ops::{Add, Sub};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tendermint_proto::google::protobuf::Timestamp;
 use tendermint_proto::DomainType;
 
 /// Tendermint timestamps
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#time>
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(try_from = "Timestamp", into = "Timestamp")]
 pub struct Time(DateTime<Utc>);
 
 impl DomainType<Timestamp> for Time {}
@@ -24,7 +25,13 @@ impl TryFrom<Timestamp> for Time {
     type Error = anomaly::BoxError;
 
     fn try_from(value: Timestamp) -> Result<Self, Self::Error> {
-        Ok(SystemTime::try_from(value)
+        // prost_types::Timestamp has a SystemTime converter but
+        // tendermint_proto::Timestamp can be JSON-encoded
+        let prost_value = prost_types::Timestamp {
+            seconds: value.seconds,
+            nanos: value.nanos,
+        };
+        Ok(SystemTime::try_from(prost_value)
             .map_err(|e| {
                 Kind::OutOfRange.context(format!("time before EPOCH by {} seconds", e.as_secs()))
             })?
@@ -34,7 +41,13 @@ impl TryFrom<Timestamp> for Time {
 
 impl From<Time> for Timestamp {
     fn from(value: Time) -> Self {
-        Timestamp::from(value.to_system_time().unwrap())
+        // prost_types::Timestamp has a SystemTime converter but
+        // tendermint_proto::Timestamp can be JSON-encoded
+        let prost_value = prost_types::Timestamp::from(value.to_system_time().unwrap());
+        Timestamp {
+            seconds: prost_value.seconds,
+            nanos: prost_value.nanos,
+        }
     }
 }
 

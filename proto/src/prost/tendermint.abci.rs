@@ -73,7 +73,7 @@ pub struct RequestSetOption {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestInitChain {
     #[prost(message, optional, tag="1")]
-    pub time: ::std::option::Option<::prost_types::Timestamp>,
+    pub time: ::std::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(string, tag="2")]
     pub chain_id: std::string::String,
     #[prost(message, optional, tag="3")]
@@ -221,16 +221,20 @@ pub struct ResponseEcho {
 pub struct ResponseFlush {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct ResponseInfo {
     #[prost(string, tag="1")]
     pub data: std::string::String,
     #[prost(string, tag="2")]
     pub version: std::string::String,
     #[prost(uint64, tag="3")]
+    #[serde(with = "crate::serializers::from_str")]
     pub app_version: u64,
     #[prost(int64, tag="4")]
+    #[serde(with = "crate::serializers::from_str")]
     pub last_block_height: i64,
     #[prost(bytes, tag="5")]
+    #[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]
     pub last_block_app_hash: std::vec::Vec<u8>,
 }
 /// nondeterministic
@@ -505,17 +509,17 @@ pub struct VoteInfo {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Evidence {
-    #[prost(string, tag="1")]
-    pub r#type: std::string::String,
+    #[prost(enumeration="EvidenceType", tag="1")]
+    pub r#type: i32,
     /// The offending validator
     #[prost(message, optional, tag="2")]
     pub validator: ::std::option::Option<Validator>,
-    /// The height when the offense occurred 
+    /// The height when the offense occurred
     #[prost(int64, tag="3")]
     pub height: i64,
     /// The corresponding time where the offense occurred
     #[prost(message, optional, tag="4")]
-    pub time: ::std::option::Option<::prost_types::Timestamp>,
+    pub time: ::std::option::Option<super::super::google::protobuf::Timestamp>,
     /// Total voting power of the validator set in case the ABCI application does
     /// not store historical validators.
     /// https://github.com/tendermint/tendermint/issues/4581
@@ -548,4 +552,11 @@ pub struct Snapshot {
 pub enum CheckTxType {
     New = 0,
     Recheck = 1,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum EvidenceType {
+    Unknown = 0,
+    DuplicateVote = 1,
+    LightClientAttack = 2,
 }

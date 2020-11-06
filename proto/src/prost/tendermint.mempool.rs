@@ -1,7 +1,7 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Tx {
-    #[prost(bytes, tag="1")]
-    pub tx: std::vec::Vec<u8>,
+pub struct Txs {
+    #[prost(bytes, repeated, tag="1")]
+    pub txs: ::std::vec::Vec<std::vec::Vec<u8>>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Message {
@@ -12,6 +12,6 @@ pub mod message {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
         #[prost(message, tag="1")]
-        Tx(super::Tx),
+        Txs(super::Txs),
     }
 }
