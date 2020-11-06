@@ -24,9 +24,7 @@
     "TestValsetHalves",
     "TestValsetChangesFully",
     "TestLessThanThirdValsetChanges",
-    "TestMoreThanTwoThirdsValsetChanges",
     "TestOneThirdValsetChanges",
-    "TestTwoThirdsValsetChanges",
     "TestLessThanTwoThirdsSign",
     "TestMoreThanTwoThirdsSign"
   ]

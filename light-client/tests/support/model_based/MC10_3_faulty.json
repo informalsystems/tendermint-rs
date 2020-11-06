@@ -5,10 +5,6 @@
   "tests": [
     "TestSuccess",
     "TestFailure",
-    "Test2NotEnoughTrustSuccess",
-    "Test2NotEnoughTrustFailure",
-    "Test3NotEnoughTrustSuccess",
-    "Test3NotEnoughTrustFailure",
     "TestNonMonotonicHeight",
     "TestEmptyCommitEmptyValset",
     "TestEmptyCommitNonEmptyValset",
