@@ -85,51 +85,6 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
     }
 }
 
-fn single_step_test(tc: TestCase<AnonLightBlock>) {
-    let tc: TestCase<LightBlock> = tc.into();
-    let mut latest_trusted = Trusted::new(
-        tc.initial.signed_header.clone(),
-        tc.initial.next_validator_set.clone(),
-    );
-
-    let expects_err = match &tc.expected_output {
-        Some(eo) => eo.eq("error"),
-        None => false,
-    };
-
-    // For testing, it makes it easier to have smaller clock drift
-    // Same is done in Go - clock_drift is set to 1 sec for these tests
-    // Once we switch to the proposer based timestamps, it will probably be a consensus parameter
-    let clock_drift = Duration::from_secs(1);
-
-    let trusting_period: Duration = tc.initial.trusting_period.into();
-    let now = tc.initial.now;
-
-    for input in tc.input.iter() {
-        match verify_single(
-            latest_trusted.clone(),
-            input.clone(),
-            TrustThreshold::default(),
-            trusting_period,
-            clock_drift,
-            now,
-        ) {
-            Ok(new_state) => {
-                let expected_state = input;
-
-                assert_eq!(new_state.height(), expected_state.height());
-                assert_eq!(&new_state, expected_state);
-                assert!(!expects_err);
-
-                latest_trusted = Trusted::new(new_state.signed_header, new_state.next_validators);
-            }
-            Err(_) => {
-                assert!(expects_err);
-            }
-        }
-    }
-}
-
 fn bisection_test(tc: TestBisection<AnonLightBlock>) {
     let tc: TestBisection<LightBlock> = tc.into();
     let expect_error = match &tc.expected_output {
@@ -185,14 +140,6 @@ fn bisection_lower_test(tc: TestBisection<AnonLightBlock>) {
             ),
         },
     }
-}
-
-#[test]
-fn run_single_step_tests() {
-    let mut tester = Tester::new("single_step", TEST_FILES_PATH);
-    tester.add_test("single-step test", single_step_test);
-    tester.run_foreach_in_dir("single_step");
-    tester.finalize();
 }
 
 #[test]
