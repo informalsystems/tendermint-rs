@@ -12,12 +12,13 @@ use tendermint_proto::DomainType;
 
 /// Block parts header
 #[derive(Clone, Copy, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub struct Header {
     /// Number of parts in this block
-    total: u32,
+    pub total: u32,
 
     /// Hash of the parts set header,
-    hash: Hash,
+    pub hash: Hash,
 }
 
 impl DomainType<RawPartSetHeader> for Header {}
@@ -82,15 +83,5 @@ impl Header {
                 .into());
         }
         Ok(Header { total, hash })
-    }
-
-    /// Get hash
-    pub fn hash(&self) -> &Hash {
-        &self.hash
-    }
-
-    /// Get total
-    pub fn total(&self) -> &u32 {
-        &self.total
     }
 }

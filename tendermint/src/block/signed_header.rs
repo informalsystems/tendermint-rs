@@ -9,6 +9,7 @@ use tendermint_proto::types::SignedHeader as RawSignedHeader;
 /// Signed block headers
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "RawSignedHeader", into = "RawSignedHeader")] // used by RPC /commit endpoint
+#[non_exhaustive]
 pub struct SignedHeader {
     /// Block header
     pub header: block::Header,

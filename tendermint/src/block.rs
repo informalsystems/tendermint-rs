@@ -33,6 +33,7 @@ use tendermint_proto::DomainType;
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#block>
 // Default serialization - all fields serialize; used by /block endpoint
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct Block {
     /// Block header
     pub header: Header,
