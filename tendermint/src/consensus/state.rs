@@ -1,7 +1,6 @@
 //! Tendermint consensus state
 
 pub use crate::block;
-use serde::{Deserialize, Serialize};
 pub use std::{cmp::Ordering, fmt};
 
 /// Placeholder string to show when block ID is absent. Syntax from:
@@ -9,7 +8,7 @@ pub use std::{cmp::Ordering, fmt};
 pub const NIL_PLACEHOLDER: &str = "<nil>";
 
 /// Tendermint consensus state
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct State {
     /// Current block height
     pub height: block::Height,

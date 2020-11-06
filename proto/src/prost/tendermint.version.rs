@@ -12,9 +12,12 @@ pub struct App {
 /// including all blockchain data structures and the rules of the application's
 /// state transition machine.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Consensus {
     #[prost(uint64, tag="1")]
+    #[serde(with = "crate::serializers::from_str")]
     pub block: u64,
     #[prost(uint64, tag="2")]
+    #[serde(with = "crate::serializers::from_str", default)]
     pub app: u64,
 }

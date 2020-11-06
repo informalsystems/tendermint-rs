@@ -1,6 +1,7 @@
 use crate::helpers::*;
 use crate::tester::TestResult::{Failure, ParseError, ReadError, Success};
 use serde::de::DeserializeOwned;
+use simple_error::SimpleError;
 use std::{
     fs::{self, DirEntry},
     io::Write,
@@ -146,7 +147,7 @@ impl TestEnv {
 #[derive(Debug, Clone)]
 pub enum TestResult {
     ReadError,
-    ParseError,
+    ParseError(SimpleError),
     Success,
     Failure { message: String, location: String },
 }
@@ -207,7 +208,7 @@ impl TestResult {
         matches!(self, TestResult::ReadError)
     }
     pub fn is_parseerror(&self) -> bool {
-        matches!(self, TestResult::ParseError)
+        matches!(self, TestResult::ParseError(_))
     }
 }
 
@@ -235,7 +236,7 @@ impl Tester {
     where
         F: FnOnce() + UnwindSafe,
     {
-        let test_result = Arc::new(Mutex::new(ParseError));
+        let test_result = Arc::new(Mutex::new(ParseError(SimpleError::new("no error"))));
         let old_hook = panic::take_hook();
         panic::set_hook({
             let result = test_result.clone();
@@ -272,7 +273,7 @@ impl Tester {
             Ok(test_case) => Tester::capture_test(|| {
                 test(test_case);
             }),
-            Err(_) => ParseError,
+            Err(e) => ParseError(e),
         };
         self.tests.push(Test {
             name: name.to_string(),
@@ -297,7 +298,7 @@ impl Tester {
                 test(test_case, &env, &test_env, &output_env);
                 fs::remove_dir_all(&env.current_dir()).unwrap();
             }),
-            Err(_) => ParseError,
+            Err(e) => ParseError(e),
         };
         self.tests.push(Test {
             name: name.to_string(),
@@ -333,8 +334,10 @@ impl Tester {
     }
 
     fn parse_error(&mut self, path: &str) {
-        self.results_for("")
-            .push((path.to_string(), TestResult::ParseError))
+        self.results_for("").push((
+            path.to_string(),
+            TestResult::ParseError(SimpleError::new("no error")),
+        ))
     }
 
     pub fn successful_tests(&self, test: &str) -> Vec<String> {
@@ -377,7 +380,7 @@ impl Tester {
         let mut tests = Vec::new();
         if let Some(results) = self.results.get("") {
             for (path, res) in results {
-                if let ParseError = res {
+                if let ParseError(_) = res {
                     tests.push(path.clone())
                 }
             }
@@ -389,7 +392,10 @@ impl Tester {
         let mut results = Vec::new();
         for Test { name, test } in &self.tests {
             match test(path, input) {
-                TestResult::ParseError => continue,
+                TestResult::ParseError(e) => {
+                    println!("ERROR {}: {}", path, e.as_str());
+                    continue;
+                }
                 res => results.push((name.to_string(), path, res)),
             }
         }

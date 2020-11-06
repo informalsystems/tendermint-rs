@@ -21,7 +21,7 @@ pub trait TrustThreshold: Copy + Clone + Debug + Serialize + DeserializeOwned {
 /// voting power signed (in other words at least one honest validator signed).
 /// Some clients might require more than +1/3 and can implement their own
 /// [`TrustThreshold`] which can be passed into all relevant methods.
-#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TrustThresholdFraction {
     /// Numerator of the trust threshold fraction
     #[serde(with = "serializers::from_str")]

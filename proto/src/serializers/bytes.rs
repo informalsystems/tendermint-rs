@@ -22,7 +22,7 @@ pub mod hexstring {
         S: Serializer,
         T: AsRef<[u8]>,
     {
-        let hex_bytes = hex::encode(value.as_ref());
+        let hex_bytes = hex::encode_upper(value.as_ref());
         let hex_string = String::from_utf8(hex_bytes).map_err(serde::ser::Error::custom)?;
         serializer.serialize_str(&hex_string)
     }
@@ -54,13 +54,39 @@ pub mod base64string {
     }
 }
 
+/// Serialize into Option<base64string>, deserialize from Option<base64string>
+pub mod option_base64string {
+    use serde::{Deserialize, Deserializer, Serializer};
+    use subtle_encoding::base64;
+
+    /// Deserialize Option<base64string> into Vec<u8> or null
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let string = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+        base64::decode(&string).map_err(serde::de::Error::custom)
+    }
+
+    /// Serialize from T into Option<base64string>
+    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: AsRef<[u8]>,
+    {
+        let base64_bytes = base64::encode(value.as_ref());
+        let base64_string = String::from_utf8(base64_bytes).map_err(serde::ser::Error::custom)?;
+        serializer.serialize_str(&base64_string)
+    }
+}
+
 /// Serialize into string, deserialize from string
-pub(crate) mod string {
+pub mod string {
     use serde::{Deserialize, Deserializer, Serializer};
 
     /// Deserialize string into Vec<u8>
     #[allow(dead_code)]
-    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -70,7 +96,7 @@ pub(crate) mod string {
 
     /// Serialize from T into string
     #[allow(dead_code)]
-    pub(crate) fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
         T: AsRef<[u8]>,

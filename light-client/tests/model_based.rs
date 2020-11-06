@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
 use std::time::Duration;
-use tendermint::block::CommitSigs;
 use tendermint_light_client::components::verifier::Verdict;
 use tendermint_light_client::types::ValidatorSet;
 use tendermint_light_client::{
@@ -63,6 +62,7 @@ pub struct SingleStepTestCase {
 pub struct BlockVerdict {
     block: AnonLightBlock,
     testgen_block: TestgenLightBlock,
+    #[serde(with = "tendermint::serializers::time")]
     now: Time,
     verdict: LiteVerdict,
 }
@@ -230,7 +230,7 @@ impl SingleStepTestFuzzer for HeaderValHashFuzzer {
             Validator::new("2"),
             Validator::new("3"),
         ];
-        let valset = ValidatorSet::new(generate_validators(&vals).unwrap());
+        let valset = ValidatorSet::new_simple(generate_validators(&vals).unwrap());
 
         input.block.validators = valset;
         (String::from("header validators_hash"), true)
@@ -245,7 +245,7 @@ impl SingleStepTestFuzzer for HeaderNextValHashFuzzer {
             Validator::new("2"),
             Validator::new("3"),
         ];
-        let valset = ValidatorSet::new(generate_validators(&vals).unwrap());
+        let valset = ValidatorSet::new_simple(generate_validators(&vals).unwrap());
 
         input.block.next_validators = valset;
         (String::from("header next_validators_hash"), true)
@@ -319,12 +319,12 @@ struct CommitRoundFuzzer {}
 impl SingleStepTestFuzzer for CommitRoundFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
         let mut rng = rand::thread_rng();
-        let r: u32 = input.block.signed_header.commit.round;
+        let r: u32 = input.block.signed_header.commit.round.value();
         let mut round: u32 = rng.gen();
         while round == r {
             round = rng.gen();
         }
-        input.block.signed_header.commit.round = round;
+        input.block.signed_header.commit.round = (round as u16).into();
         (format!("commit round from {} into {}", r, round), true)
     }
 }
@@ -425,8 +425,7 @@ impl SingleStepTestFuzzer for SignaturesFuzzer {
 
             input.block.signed_header.commit = commit.generate().unwrap();
         } else {
-            let commitsigs = CommitSigs::new(vec![]);
-            input.block.signed_header.commit.signatures = commitsigs;
+            input.block.signed_header.commit.signatures = vec![];
         }
 
         (String::from("signatures"), true)
@@ -630,6 +629,7 @@ fn model_based_test_batch(batch: ApalacheTestBatch) -> Vec<(String, String)> {
 const TEST_DIR: &str = "./tests/support/model_based";
 
 #[test]
+#[ignore]
 fn run_model_based_single_step_tests() {
     let mut tester = Tester::new("test_run", TEST_DIR);
     tester.add_test_with_env("static model-based single-step test", fuzz_single_step_test);

@@ -47,28 +47,18 @@ pub struct ProofOps {
 }
 /// PublicKey defines the keys available for use with Tendermint Validators
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct PublicKey {
     #[prost(oneof="public_key::Sum", tags="1")]
     pub sum: ::std::option::Option<public_key::Sum>,
 }
 pub mod public_key {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(::serde::Deserialize, ::serde::Serialize)]
+    #[serde(tag = "type", content = "value")]
     pub enum Sum {
         #[prost(bytes, tag="1")]
-        Ed25519(std::vec::Vec<u8>),
-    }
-}
-/// PrivateKey defines the keys available for use with Tendermint Validators
-/// WARNING PrivateKey is used for internal purposes only
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PrivateKey {
-    #[prost(oneof="private_key::Sum", tags="1")]
-    pub sum: ::std::option::Option<private_key::Sum>,
-}
-pub mod private_key {
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Sum {
-        #[prost(bytes, tag="1")]
+        #[serde(rename = "tendermint/PubKeyEd25519", with = "crate::serializers::bytes::base64string")]
         Ed25519(std::vec::Vec<u8>),
     }
 }

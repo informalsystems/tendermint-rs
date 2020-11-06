@@ -25,6 +25,7 @@ use std::str::FromStr;
 use tendermint::net;
 use tokio::net::TcpStream;
 use tokio::time::{Duration, Instant};
+use tracing::debug;
 
 // WebSocket connection times out if we haven't heard anything at all from the
 // server in this long.
@@ -309,7 +310,9 @@ impl WebSocketClientDriver {
             Ok(ev) => {
                 self.router.publish(ev).await;
             }
-            Err(_) => {
+            Err(e) => {
+                debug!("Received incoming JSON:\n{}", msg);
+                debug!("error {:?}", e);
                 if let Ok(wrapper) =
                     serde_json::from_str::<response::Wrapper<GenericJSONResponse>>(&msg)
                 {

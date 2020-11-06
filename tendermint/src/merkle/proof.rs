@@ -1,7 +1,13 @@
 //! Merkle proofs
+use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
+
+use tendermint_proto::crypto::ProofOp as RawProofOp;
+use tendermint_proto::crypto::ProofOps as RawProofOps;
+use tendermint_proto::DomainType;
 
 use crate::serializers;
-use serde::{Deserialize, Serialize};
+use crate::Error;
 
 /// Proof is Merkle proof defined by the list of ProofOps
 /// <https://github.com/tendermint/tendermint/blob/c8483531d8e756f7fbb812db1dd16d841cdf298a/crypto/merkle/merkle.proto#L26>
@@ -26,6 +32,50 @@ pub struct ProofOp {
     /// Actual data
     #[serde(default, with = "serializers::bytes::base64string")]
     pub data: Vec<u8>,
+}
+
+impl DomainType<RawProofOp> for ProofOp {}
+
+impl TryFrom<RawProofOp> for ProofOp {
+    type Error = Error;
+
+    fn try_from(value: RawProofOp) -> Result<Self, Self::Error> {
+        Ok(Self {
+            field_type: value.r#type,
+            key: value.key,
+            data: value.data,
+        })
+    }
+}
+
+impl From<ProofOp> for RawProofOp {
+    fn from(value: ProofOp) -> Self {
+        RawProofOp {
+            r#type: value.field_type,
+            key: value.key,
+            data: value.data,
+        }
+    }
+}
+
+impl DomainType<RawProofOps> for Proof {}
+
+impl TryFrom<RawProofOps> for Proof {
+    type Error = Error;
+
+    fn try_from(value: RawProofOps) -> Result<Self, Self::Error> {
+        let ops: Result<Vec<ProofOp>, _> = value.ops.into_iter().map(ProofOp::try_from).collect();
+
+        Ok(Self { ops: ops? })
+    }
+}
+
+impl From<Proof> for RawProofOps {
+    fn from(value: Proof) -> Self {
+        let ops: Vec<RawProofOp> = value.ops.into_iter().map(RawProofOp::from).collect();
+
+        RawProofOps { ops }
+    }
 }
 
 #[cfg(test)]

@@ -173,7 +173,7 @@ impl LightClient {
             let trusted_state = state
                 .light_store
                 .latest_trusted_or_verified()
-                .ok_or_else(|| ErrorKind::NoInitialTrustedState)?;
+                .ok_or(ErrorKind::NoInitialTrustedState)?;
 
             if target_height < trusted_state.height() {
                 bail!(ErrorKind::TargetLowerThanTrustedState {

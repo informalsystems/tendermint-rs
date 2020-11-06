@@ -3,6 +3,7 @@ use ed25519_dalek::SecretKey as Ed25519SecretKey;
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
+use std::convert::TryFrom;
 use tendermint::consensus::state::Ordering;
 use tendermint::{account, private_key, public_key, public_key::PublicKey, validator, vote};
 
@@ -13,7 +14,7 @@ pub struct Validator {
     #[options(help = "voting power of this validator (default: 0)", meta = "POWER")]
     pub voting_power: Option<u64>,
     #[options(
-        help = "proposer priority of this validator (default: none)",
+        help = "proposer priority of this validator (default: 0)",
         meta = "PRIORITY"
     )]
     pub proposer_priority: Option<i64>,
@@ -107,8 +108,10 @@ impl Generator<validator::Info> for Validator {
         let info = validator::Info {
             address: account::Id::from(keypair.public),
             pub_key: PublicKey::from(keypair.public),
-            voting_power: vote::Power::new(self.voting_power.unwrap_or(0)),
-            proposer_priority: self.proposer_priority.map(validator::ProposerPriority::new),
+            voting_power: vote::Power::try_from(self.voting_power.unwrap_or(0)).unwrap(),
+            proposer_priority: validator::ProposerPriority::from(
+                self.proposer_priority.unwrap_or_default(),
+            ),
         };
         Ok(info)
     }
@@ -143,8 +146,8 @@ mod tests {
 
     // make a validator from a pubkey, a voting power, and a proposer priority
     fn make_validator(pk: PublicKey, vp: u64, pp: Option<i64>) -> validator::Info {
-        let mut info = validator::Info::new(pk, vote::Power::new(vp));
-        info.proposer_priority = pp.map(validator::ProposerPriority::new);
+        let mut info = validator::Info::new(pk, vote::Power::try_from(vp).unwrap());
+        info.proposer_priority = validator::ProposerPriority::from(pp.unwrap_or_default());
         info
     }
 
@@ -184,13 +187,13 @@ mod tests {
 
         let mut block_val = val.generate().unwrap();
 
-        block_val.voting_power = vote::Power::new(30);
+        block_val.voting_power = vote::Power::from(30_u32);
         assert_ne!(val.generate().unwrap(), block_val);
 
         let val = val.voting_power(30);
         assert_eq!(val.generate().unwrap(), block_val);
 
-        block_val.proposer_priority = Some(validator::ProposerPriority::new(1000));
+        block_val.proposer_priority = validator::ProposerPriority::from(1000);
         assert_ne!(val.generate().unwrap(), block_val);
 
         let val = val.proposer_priority(1000);

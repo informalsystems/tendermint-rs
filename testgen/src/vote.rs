@@ -94,7 +94,7 @@ impl Generator<vote::Vote> for Vote {
         } else {
             Some(block::Id {
                 hash: block_header.hash(),
-                part_set_header: PartSetHeader::new(1, block_header.hash()),
+                part_set_header: PartSetHeader::new(1, block_header.hash()).unwrap(),
             })
         };
         let validator_index = match self.index {

@@ -216,7 +216,7 @@ impl Supervisor {
             Ok(verified_block) => {
                 let trusted_block = primary
                     .latest_trusted()
-                    .ok_or_else(|| ErrorKind::NoTrustedState(Status::Trusted))?;
+                    .ok_or(ErrorKind::NoTrustedState(Status::Trusted))?;
 
                 // Perform fork detection with the highest verified block and the trusted block.
                 let outcome = self.detect_forks(&verified_block, &trusted_block)?;

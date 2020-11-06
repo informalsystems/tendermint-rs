@@ -1,5 +1,14 @@
 ## Unreleased
 
+### BREAKING CHANGES:
+
+- `[tendermint]` - Direct serialization capabilities have been removed from the
+  domain types. They are temporarily available in the `protos` crate. **NB:
+  this is unstable and is planned to change again in v0.17.0-rc3**. ([#639])
+- `[tendermint]` - Work has started on making it compulsory to construct domain
+  types by way of their constructors to ensure validity. This work is scheduled
+  for completion in v0.17.0-rc3. ([#639])
+
 ### BUG FIXES:
 
 - `[light-client]` Fix bug where a commit with only absent signatures would be
@@ -9,6 +18,7 @@
 
 [#650]: https://github.com/informalsystems/tendermint-rs/issues/650
 [#652]: https://github.com/informalsystems/tendermint-rs/pulls/652
+[#639]: https://github.com/informalsystems/tendermint-rs/pull/639
 
 ## v0.17.0-rc1
 

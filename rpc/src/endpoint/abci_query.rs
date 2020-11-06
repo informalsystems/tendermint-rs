@@ -85,6 +85,7 @@ pub struct AbciQuery {
     pub value: Vec<u8>,
 
     /// Proof (might be explicit null)
+    #[serde(alias = "proofOps")]
     pub proof: Option<Proof>,
 
     /// Block height

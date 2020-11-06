@@ -117,6 +117,7 @@
                 },
                 "voting_power": "50",
                 "proposer_priority": "-100"
-        }
+        },
+        "total_voting_power": "0"
     }
 }
