@@ -4,8 +4,11 @@
 
 - `[light-client]` Fix bug where a commit with only absent signatures would be
   deemed valid instead of invalid ([#650])
+- `[light-client]` Revert a change introduced in [#652] that would enable DoS attacks,
+  where full nodes could spam the light client with massive commits (eg. 10k validators).
 
-[#652]: https://github.com/informalsystems/tendermint-rs/issues/650
+[#650]: https://github.com/informalsystems/tendermint-rs/issues/650
+[#652]: https://github.com/informalsystems/tendermint-rs/pulls/652
 
 ## v0.17.0-rc1
 
