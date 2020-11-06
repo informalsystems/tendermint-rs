@@ -345,7 +345,10 @@ struct CommitSigFuzzer {}
 impl SingleStepTestFuzzer for CommitSigFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
         let mut votes = input.testgen_block.commit.clone().unwrap().votes.unwrap();
-        if votes.len() > 3 {
+        let validators_len = input.testgen_block.validators.clone().unwrap().len();
+        let enough_votes = votes.len() > 3;
+        let enough_vp = 7 * votes.len() > 6 * validators_len;
+        if enough_votes && enough_vp{
             votes[0].is_nil = Some(());
 
             // change the vote to nil
