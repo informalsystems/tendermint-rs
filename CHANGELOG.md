@@ -16,9 +16,15 @@
 - `[light-client]` Revert a change introduced in [#652] that would enable DoS attacks,
   where full nodes could spam the light client with massive commits (eg. 10k validators).
 
+### FEATURES:
+
+- `[tendermint/proto-compiler]` Protobuf structs generator now also accepts commit IDs from the Tendermint Go repository ([#660])
+
+
 [#650]: https://github.com/informalsystems/tendermint-rs/issues/650
 [#652]: https://github.com/informalsystems/tendermint-rs/pulls/652
 [#639]: https://github.com/informalsystems/tendermint-rs/pull/639
+[#660]: https://github.com/informalsystems/tendermint-rs/issues/660
 
 ## v0.17.0-rc1
 
