@@ -1,4 +1,4 @@
-//! Serialize/deserialize Option<T> type.
+//! Serialize/deserialize `nil`able type into T, where nil turns into the default impl.
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Deserialize Option<T>

@@ -10,8 +10,7 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<Time, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let timestamp = tendermint_proto::serializers::option_timestamp::deserialize(deserializer)?
-        .ok_or_else(|| serde::de::Error::custom(&""))?;
+    let timestamp = tendermint_proto::serializers::timestamp::deserialize(deserializer)?;
     Time::try_from(timestamp).map_err(serde::de::Error::custom)
 }
 
@@ -21,5 +20,5 @@ where
     S: Serializer,
 {
     let timestamp: Timestamp = value.clone().into();
-    tendermint_proto::serializers::option_timestamp::serialize(&Some(timestamp), serializer)
+    tendermint_proto::serializers::timestamp::serialize(&timestamp, serializer)
 }

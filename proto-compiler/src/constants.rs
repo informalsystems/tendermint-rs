@@ -18,7 +18,7 @@ const QUOTED: &str = r#"#[serde(with = "crate::serializers::from_str")]"#;
 const QUOTED_WITH_DEFAULT: &str = r#"#[serde(with = "crate::serializers::from_str", default)]"#;
 const HEXSTRING: &str = r#"#[serde(with = "crate::serializers::bytes::hexstring")]"#;
 const BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::base64string")]"#;
-const TIMESTAMP: &str = r#"#[serde(with = "crate::serializers::option_timestamp")]"#;
+const OPTIONAL: &str = r#"#[serde(with = "crate::serializers::optional")]"#;
 const VEC_SKIP_IF_EMPTY: &str =
     r#"#[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]"#;
 const NULLABLEVECARRAY: &str = r#"#[serde(with = "crate::serializers::txs")]"#;
@@ -50,7 +50,6 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.Vote", SERIALIZED),
     (".tendermint.types.BlockID", SERIALIZED),
     (".tendermint.types.PartSetHeader", SERIALIZED),
-    (".google.protobuf.Timestamp", SERIALIZED),
     (".tendermint.types.LightClientAttackEvidence", SERIALIZED),
     (".tendermint.types.LightBlock", SERIALIZED),
     (".tendermint.types.SignedHeader", SERIALIZED),
@@ -100,7 +99,7 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     ),
     (".tendermint.types.PartSetHeader.hash", HEXSTRING),
     (".tendermint.types.Header.height", QUOTED),
-    (".tendermint.types.Header.time", TIMESTAMP),
+    (".tendermint.types.Header.time", OPTIONAL),
     (".tendermint.types.Header.last_commit_hash", HEXSTRING),
     (".tendermint.types.Header.data_hash", HEXSTRING),
     (".tendermint.types.Header.validators_hash", HEXSTRING),
@@ -115,14 +114,14 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.Commit.height", QUOTED),
     (".tendermint.types.Commit.signatures", NULLABLE),
     (".tendermint.types.CommitSig.validator_address", HEXSTRING),
-    (".tendermint.types.CommitSig.timestamp", TIMESTAMP),
+    (".tendermint.types.CommitSig.timestamp", OPTIONAL),
     (".tendermint.types.CommitSig.signature", BASE64STRING),
     (".tendermint.types.Vote.round", QUOTED),
     (".tendermint.types.Vote.height", QUOTED),
     (".tendermint.types.Vote.validator_index", QUOTED),
     (".tendermint.types.Vote.validator_address", HEXSTRING),
     (".tendermint.types.Vote.signature", BASE64STRING),
-    (".tendermint.types.Vote.timestamp", TIMESTAMP),
+    (".tendermint.types.Vote.timestamp", OPTIONAL),
     (".tendermint.types.Validator.address", HEXSTRING),
     (
         ".tendermint.types.Validator.voting_power",
