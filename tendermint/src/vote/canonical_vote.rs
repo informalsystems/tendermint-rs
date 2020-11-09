@@ -43,18 +43,14 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
             // CanonicalVote uses sfixed64, Vote uses int32. They translate to u64 vs i32 in Rust.
             return Err(IntegerOverflow.into());
         }
-        // The JSON encoding says, if the Hash is empty in BlockId, the BlockId should be empty.
-        let block_id =
-            if value.block_id.is_some() && value.block_id.clone().unwrap().hash.is_empty() {
-                None
-            } else {
-                value.block_id.map(TryInto::try_into).transpose()?
-            };
+        // If the Hash is empty in BlockId, the BlockId should be empty.
+        // See: https://github.com/informalsystems/tendermint-rs/issues/663
+        let block_id = value.block_id.filter(|i| !i.hash.is_empty());
         Ok(CanonicalVote {
             vote_type: value.r#type.try_into()?,
             height: value.height.try_into()?,
             round: (value.round as i32).try_into()?,
-            block_id,
+            block_id: block_id.map(TryInto::try_into).transpose()?,
             timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
             chain_id: ChainId::try_from(value.chain_id)?,
         })
@@ -63,19 +59,14 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
 
 impl From<CanonicalVote> for RawCanonicalVote {
     fn from(value: CanonicalVote) -> Self {
-        // The JSON encoding says, if the Hash is empty in BlockId, the BlockId should be empty.
-        // Todo: Does the protobuf encoding have the same rule?
-        let block_id =
-            if value.block_id.is_some() && value.block_id.clone().unwrap().hash.is_empty() {
-                None
-            } else {
-                value.block_id.map(Into::into)
-            };
+        // If the Hash is empty in BlockId, the BlockId should be empty.
+        // See: https://github.com/informalsystems/tendermint-rs/issues/663
+        let block_id = value.block_id.filter(|i| i != &block::Id::default());
         RawCanonicalVote {
             r#type: value.vote_type.into(),
             height: value.height.into(),
             round: value.round.value().into(),
-            block_id,
+            block_id: block_id.map(Into::into),
             timestamp: value.timestamp.map(Into::into),
             chain_id: value.chain_id.to_string(),
         }
