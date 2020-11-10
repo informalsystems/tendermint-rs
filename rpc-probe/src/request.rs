@@ -1,12 +1,10 @@
 //! Messages for interacting with the Tendermint RPC.
 
-use crate::error::Result;
 use crate::utils::uuid_v4;
-use crate::websocket::WebSocketClient;
 use serde_json::json;
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Request {
     /// The JSON-RPC request method.
     pub method: String,
@@ -25,7 +23,7 @@ impl Request {
         }
     }
 
-    pub fn wrapper(&self) -> serde_json::Value {
+    pub fn as_json(&self) -> serde_json::Value {
         json!({
             "jsonrpc": "2.0",
             "id": self.id,
@@ -33,15 +31,11 @@ impl Request {
             "params": self.params,
         })
     }
-
-    pub async fn execute(&self, client: &mut WebSocketClient) -> Result<serde_json::Value> {
-        client.request(self.wrapper()).await
-    }
 }
 
 impl fmt::Display for Request {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let wrapper = self.wrapper();
+        let wrapper = self.as_json();
         write!(f, "{}", serde_json::to_string_pretty(&wrapper).unwrap())
     }
 }

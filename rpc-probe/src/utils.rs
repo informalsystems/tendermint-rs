@@ -1,6 +1,8 @@
 //! Utility methods.
 
+use crate::error::Result;
 use getrandom::getrandom;
+use std::path::Path;
 use subtle_encoding::{base64, hex};
 
 pub fn uuid_v4() -> String {
@@ -22,4 +24,24 @@ pub fn encode_kvpair(key: &str, value: &str) -> String {
 
 pub fn hex_string(s: &str) -> String {
     String::from_utf8(hex::encode(s.as_bytes())).unwrap()
+}
+
+pub async fn write_json(base_path: &Path, name: &str, v: &serde_json::Value) -> Result<()> {
+    let path = base_path.join(format!("{}.json", name));
+    tokio::fs::write(path, serde_json::to_string_pretty(v).unwrap()).await?;
+    Ok(())
+}
+
+/// Sanitizes the given string such that it's acceptable to be used as a
+/// filename.
+pub fn sanitize(s: &str) -> String {
+    s.chars()
+        .map(|c| match c {
+            'a'..='z' | 'A'..='Z' | '0'..='9' => c,
+            _ => '_',
+        })
+        .fold(String::new(), |mut a, b| {
+            a.push(b);
+            a
+        })
 }

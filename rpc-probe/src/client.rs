@@ -7,6 +7,7 @@
 
 use crate::error::{Error, Result};
 use crate::subscription::{SubscriptionRx, SubscriptionTx};
+use crate::utils::uuid_v4;
 use async_tungstenite::tokio::{connect_async, ConnectStream};
 use async_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 use async_tungstenite::tungstenite::protocol::CloseFrame;
@@ -20,24 +21,21 @@ use std::collections::HashMap;
 use tokio::sync::mpsc;
 
 #[derive(Debug, Clone)]
-pub struct WebSocketClient {
+pub struct Client {
     cmd_tx: DriverCommandTx,
 }
 
-impl WebSocketClient {
-    pub async fn new(url: &str) -> Result<(Self, WebSocketClientDriver)> {
+impl Client {
+    pub async fn new(url: &str) -> Result<(Self, ClientDriver)> {
         let (stream, _response) = connect_async(url).await?;
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
-        Ok((
-            WebSocketClient { cmd_tx },
-            WebSocketClientDriver::new(stream, cmd_rx),
-        ))
+        Ok((Client { cmd_tx }, ClientDriver::new(stream, cmd_rx)))
     }
 
-    pub async fn request(&mut self, wrapper: serde_json::Value) -> Result<serde_json::Value> {
+    pub async fn request(&mut self, wrapper: &serde_json::Value) -> Result<serde_json::Value> {
         let (response_tx, mut response_rx) = mpsc::unbounded_channel();
         self.send_cmd(DriverCommand::Request {
-            wrapper,
+            wrapper: wrapper.clone(),
             response_tx,
         })
         .await?;
@@ -46,20 +44,59 @@ impl WebSocketClient {
         })?
     }
 
-    pub async fn subscribe(&mut self, id: String, query: String) -> Result<SubscriptionRx> {
+    pub async fn subscribe(
+        &mut self,
+        id: &str,
+        query: &str,
+    ) -> Result<(SubscriptionRx, serde_json::Value)> {
         let (subscription_tx, subscription_rx) = mpsc::unbounded_channel();
         let (response_tx, mut response_rx) = mpsc::unbounded_channel();
         self.send_cmd(DriverCommand::Subscribe {
-            id,
-            query,
+            id: id.to_owned(),
+            query: query.to_owned(),
             subscription_tx,
             response_tx,
         })
         .await?;
-        let _ = response_rx.recv().await.ok_or_else(|| {
+        let response = response_rx.recv().await.ok_or_else(|| {
             Error::InternalError("internal channel communication problem".to_string())
-        })?;
-        Ok(subscription_rx)
+        })??;
+        Ok((subscription_rx, response))
+    }
+
+    /// Blocks the current async task until the blockchain reaches *at least*
+    /// the given target height.
+    pub async fn wait_for_height(&mut self, h: u64) -> Result<()> {
+        let (mut subs, _) = self.subscribe(&uuid_v4(), "tm.event = 'NewBlock'").await?;
+        while let Some(result) = subs.next().await {
+            let resp = result?;
+            // TODO(thane): Find a more readable way of getting this value.
+            let height = resp
+                .get("result")
+                .unwrap()
+                .get("data")
+                .unwrap()
+                .get("value")
+                .unwrap()
+                .get("block")
+                .unwrap()
+                .get("header")
+                .unwrap()
+                .get("height")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_owned()
+                .parse::<u64>()
+                .unwrap();
+            if height >= h {
+                return Ok(());
+            }
+        }
+        Err(Error::InternalError(format!(
+            "subscription terminated before we could reach target height of {}",
+            h
+        )))
     }
 
     pub async fn close(&mut self) -> Result<()> {
@@ -96,14 +133,14 @@ enum DriverCommand {
 }
 
 #[derive(Debug)]
-pub struct WebSocketClientDriver {
+pub struct ClientDriver {
     stream: WebSocketStream<ConnectStream>,
     cmd_rx: DriverCommandRx,
     subscribers: HashMap<String, HashMap<String, SubscriptionTx>>,
     pending_commands: HashMap<String, DriverCommand>,
 }
 
-impl WebSocketClientDriver {
+impl ClientDriver {
     fn new(stream: WebSocketStream<ConnectStream>, cmd_rx: DriverCommandRx) -> Self {
         Self {
             stream,
@@ -260,8 +297,8 @@ impl WebSocketClientDriver {
             let _ = response_tx.send(Err(Error::Failed("subscribe".to_string(), wrapper)))?;
             return Ok(());
         }
-        if let Some(r) = wrapper.get("result") {
-            return self.add_subscriber(id, query, subscription_tx, response_tx, r.clone());
+        if wrapper.get("result").is_some() {
+            return self.add_subscriber(id, query, subscription_tx, response_tx, wrapper);
         }
         error!("Missing result and error fields in wrapper response");
         Ok(())

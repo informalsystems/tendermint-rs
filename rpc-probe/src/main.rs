@@ -1,10 +1,11 @@
+mod client;
 mod error;
+mod kvstore;
 mod plan;
 mod quick;
 mod request;
 mod subscription;
 mod utils;
-mod websocket;
 
 use crate::quick::quick_probe_plan;
 use log::LevelFilter;
@@ -49,11 +50,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     SimpleLogger::new().with_level(log_level).init().unwrap();
 
-    let (plan, driver) = quick_probe_plan(&opts.output, Duration::from_millis(opts.request_wait))?
-        .connect(&opts.addr)
+    quick_probe_plan(&opts.output, Duration::from_millis(opts.request_wait))?
+        .execute(&opts.addr)
         .await?;
-    let driver_handle = tokio::spawn(async move { driver.run().await });
-    plan.execute_and_close().await?;
-    driver_handle.await??;
     Ok(())
 }
