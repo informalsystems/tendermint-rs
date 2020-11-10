@@ -2,10 +2,10 @@
 
 ### BREAKING CHANGES:
 
-- `[tendermint]` - Direct serialization capabilities have been removed from the
+- `[tendermint]` Direct serialization capabilities have been removed from the
   domain types. They are temporarily available in the `protos` crate. **NB:
   this is unstable and is planned to change again in v0.17.0-rc3**. ([#639])
-- `[tendermint]` - Work has started on making it compulsory to construct domain
+- `[tendermint]` Work has started on making it compulsory to construct domain
   types by way of their constructors to ensure validity. This work is scheduled
   for completion in v0.17.0-rc3. ([#639])
 
@@ -22,10 +22,17 @@
 
 - `[tendermint/proto-compiler]` Protobuf structs generator now also accepts commit IDs from the Tendermint Go repository ([#660])
 
+### IMPROVEMENTS:
+
+- `[rpc]` A new RPC probe (in the `rpc-probe` directory) has been added to
+  facilitate quick, pre-scripted interactions with a Tendermint node (via its
+  WebSocket endpoint). This aims to help improve testing and compatibility
+  between Tendermint in Go and Rust. ([#653])
 
 [#650]: https://github.com/informalsystems/tendermint-rs/issues/650
 [#652]: https://github.com/informalsystems/tendermint-rs/pulls/652
 [#639]: https://github.com/informalsystems/tendermint-rs/pull/639
+[#653]: https://github.com/informalsystems/tendermint-rs/pull/653
 [#660]: https://github.com/informalsystems/tendermint-rs/issues/660
 [#665]: https://github.com/informalsystems/tendermint-rs/issues/665
 
