@@ -69,18 +69,21 @@ impl SubscriptionRouter {
         subs_for_query.insert(id.to_string(), tx);
     }
 
-    /// Returns the number of active subscriptions for the given query.
-    pub fn num_subscriptions_for_query(&self, query: impl ToString) -> usize {
-        self.subscriptions
-            .get(&query.to_string())
-            .map(|subs_for_query| subs_for_query.len())
-            .unwrap_or(0)
-    }
-
     /// Removes all the subscriptions relating to the given query.
     pub fn remove_by_query(&mut self, query: impl ToString) -> usize {
         self.subscriptions
             .remove(&query.to_string())
+            .map(|subs_for_query| subs_for_query.len())
+            .unwrap_or(0)
+    }
+}
+
+#[cfg(feature = "websocket-client")]
+impl SubscriptionRouter {
+    /// Returns the number of active subscriptions for the given query.
+    pub fn num_subscriptions_for_query(&self, query: impl ToString) -> usize {
+        self.subscriptions
+            .get(&query.to_string())
             .map(|subs_for_query| subs_for_query.len())
             .unwrap_or(0)
     }

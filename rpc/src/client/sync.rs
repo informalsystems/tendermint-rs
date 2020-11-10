@@ -39,6 +39,7 @@ pub struct ChannelRx<T>(mpsc::UnboundedReceiver<T>);
 impl<T> ChannelRx<T> {
     /// Wait indefinitely until we receive a value from the channel (or the
     /// channel is closed).
+    #[allow(dead_code)]
     pub async fn recv(&mut self) -> Option<T> {
         self.0.recv().await
     }
