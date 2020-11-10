@@ -75,7 +75,7 @@ pub struct Header {
     #[serde(with = "crate::serializers::from_str")]
     pub height: i64,
     #[prost(message, optional, tag="4")]
-    #[serde(with = "crate::serializers::option_timestamp")]
+    #[serde(with = "crate::serializers::optional")]
     pub time: ::std::option::Option<super::super::google::protobuf::Timestamp>,
     /// prev block info
     #[prost(message, optional, tag="5")]
@@ -155,7 +155,7 @@ pub struct Vote {
     #[prost(message, optional, tag="4")]
     pub block_id: ::std::option::Option<BlockId>,
     #[prost(message, optional, tag="5")]
-    #[serde(with = "crate::serializers::option_timestamp")]
+    #[serde(with = "crate::serializers::optional")]
     pub timestamp: ::std::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(bytes, tag="6")]
     #[serde(with = "crate::serializers::bytes::hexstring")]
@@ -197,7 +197,7 @@ pub struct CommitSig {
     #[serde(with = "crate::serializers::bytes::hexstring")]
     pub validator_address: std::vec::Vec<u8>,
     #[prost(message, optional, tag="3")]
-    #[serde(with = "crate::serializers::option_timestamp")]
+    #[serde(with = "crate::serializers::optional")]
     pub timestamp: ::std::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(bytes, tag="4")]
     #[serde(with = "crate::serializers::bytes::base64string")]

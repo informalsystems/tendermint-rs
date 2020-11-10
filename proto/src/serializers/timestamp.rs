@@ -1,38 +1,52 @@
-//! Serialize/deserialize Option<Timestamp> type from and into string:
+//! Serialize/deserialize Timestamp type from and into string:
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::google::protobuf::Timestamp;
 use chrono::{DateTime, Datelike, LocalResult, TimeZone, Timelike, Utc};
 use serde::ser::Error;
 
+/// Helper struct to serialize and deserialize Timestamp into an RFC3339-compatible string
+/// This is required because the serde `with` attribute is only available to fields of a struct but
+/// not the whole struct.
+#[derive(Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Rfc3339(#[serde(with = "crate::serializers::timestamp")] Timestamp);
+impl From<Timestamp> for Rfc3339 {
+    fn from(value: Timestamp) -> Self {
+        Rfc3339(value)
+    }
+}
+impl From<Rfc3339> for Timestamp {
+    fn from(value: Rfc3339) -> Self {
+        value.0
+    }
+}
+
 /// Deserialize string into Timestamp
-pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Timestamp>, D::Error>
+pub fn deserialize<'de, D>(deserializer: D) -> Result<Timestamp, D::Error>
 where
     D: Deserializer<'de>,
 {
     let value_string = String::deserialize(deserializer)?;
     let value_datetime = DateTime::parse_from_rfc3339(value_string.as_str())
         .map_err(|e| D::Error::custom(format!("{}", e)))?;
-    Ok(Some(Timestamp {
+    Ok(Timestamp {
         seconds: value_datetime.timestamp(),
         nanos: value_datetime.timestamp_subsec_nanos() as i32,
-    }))
+    })
 }
 
 /// Serialize from Timestamp into string
-pub fn serialize<S>(value: &Option<Timestamp>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize<S>(value: &Timestamp, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    let value = value
-        .as_ref()
-        .ok_or_else(|| S::Error::custom("no time found"))?;
     if value.nanos < 0 {
         return Err(S::Error::custom("invalid nanoseconds in time"));
     }
     match Utc.timestamp_opt(value.seconds, value.nanos as u32) {
         LocalResult::None => Err(S::Error::custom("invalid time")),
-        LocalResult::Single(t) => Ok(to_rfc3999(t)),
+        LocalResult::Single(t) => Ok(to_rfc3339_custom(t)),
         LocalResult::Ambiguous(_, _) => Err(S::Error::custom("ambiguous time")),
     }?
     .serialize(serializer)
@@ -41,7 +55,7 @@ where
 // Due to incompatibilities between the way that `chrono` serializes timestamps
 // and the way that Go does for RFC3339, we unfortunately need to define our
 // own timestamp serialization mechanism.
-fn to_rfc3999(t: DateTime<Utc>) -> String {
+fn to_rfc3339_custom(t: DateTime<Utc>) -> String {
     let nanos = format!(".{}", t.nanosecond());
     format!(
         "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}{}Z",
@@ -95,8 +109,7 @@ mod test {
     fn json_timestamp_precision() {
         #[derive(Serialize, Deserialize)]
         struct TimestampWrapper {
-            #[serde(with = "crate::serializers::option_timestamp")]
-            timestamp: Option<Timestamp>,
+            timestamp: Timestamp,
         }
         let test_timestamps = vec![
             "2020-09-14T16:33:54.21191421Z",

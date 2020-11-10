@@ -11,7 +11,6 @@ use tendermint_proto::google::protobuf::Timestamp;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Genesis<AppState = serde_json::Value> {
     /// Time of genesis
-    #[serde(with = "crate::serializers::time")]
     pub genesis_time: Time,
 
     /// Chain ID
