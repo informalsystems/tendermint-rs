@@ -26,6 +26,12 @@ pub enum Error {
 
     #[error("I/O error: {0}")]
     IoError(String),
+
+    #[error("unexpected success response")]
+    UnexpectedSuccess,
+
+    #[error("unexpected error response: {0}")]
+    UnexpectedError(String),
 }
 
 impl From<async_tungstenite::tungstenite::Error> for Error {

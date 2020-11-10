@@ -149,6 +149,8 @@ pub struct PlannedInteraction {
     min_height: Option<u64>,
     // Wait this much time before executing this interaction.
     pre_wait: Option<Duration>,
+    // Whether or not we expect an error from this interaction.
+    expect_error: bool,
 }
 
 impl PlannedInteraction {
@@ -159,6 +161,7 @@ impl PlannedInteraction {
             timeout: None,
             min_height: None,
             pre_wait: None,
+            expect_error: false,
         }
     }
 
@@ -180,6 +183,11 @@ impl PlannedInteraction {
 
     pub fn with_pre_wait(mut self, wait: Duration) -> Self {
         self.pre_wait = Some(wait);
+        self
+    }
+
+    pub fn expect_error(mut self) -> Self {
+        self.expect_error = true;
         self
     }
 }
@@ -319,10 +327,24 @@ async fn execute_interaction(
         }
         match inner_interaction.interaction {
             Interaction::Request(request) => {
-                execute_request(client, config, &inner_interaction.name, request).await
+                execute_request(
+                    client,
+                    config,
+                    &inner_interaction.name,
+                    inner_interaction.expect_error,
+                    request,
+                )
+                .await
             }
             Interaction::Subscription(subs) => {
-                execute_subscription(client, config, &inner_interaction.name, subs).await
+                execute_subscription(
+                    client,
+                    config,
+                    &inner_interaction.name,
+                    inner_interaction.expect_error,
+                    subs,
+                )
+                .await
             }
         }
     };
@@ -336,14 +358,27 @@ async fn execute_request(
     client: &mut Client,
     config: &PlanConfig,
     name: &str,
+    expect_error: bool,
     request: Request,
 ) -> Result<()> {
     let request_json = request.as_json();
     write_json(&config.out_path, name, &request_json).await?;
     let response_json = match client.request(&request_json).await {
-        Ok(r) => r,
+        Ok(r) => {
+            if expect_error {
+                return Err(Error::UnexpectedSuccess);
+            }
+            r
+        }
         Err(e) => match e {
-            Error::Failed(_, r) => r,
+            Error::Failed(_, r) => {
+                if !expect_error {
+                    return Err(Error::UnexpectedError(
+                        serde_json::to_string_pretty(&r).unwrap(),
+                    ));
+                }
+                r
+            }
             _ => return Err(e),
         },
     };
@@ -354,6 +389,7 @@ async fn execute_subscription(
     client: &mut Client,
     config: &PlanConfig,
     name: &str,
+    expect_error: bool,
     subs: PlannedSubscription,
 ) -> Result<()> {
     let request_json = subs.subscription.as_json();
@@ -361,11 +397,23 @@ async fn execute_subscription(
 
     let (mut subs_rx, response_json) =
         match client.subscribe(&uuid_v4(), &subs.subscription.query).await {
-            Ok(r) => r,
+            Ok(r) => {
+                if expect_error {
+                    return Err(Error::UnexpectedSuccess);
+                }
+                r
+            }
             Err(e) => match e {
                 // We want to capture subscription failures (e.g. malformed
                 // queries).
-                Error::Failed(_, r) => return write_json(&config.in_path, name, &r).await,
+                Error::Failed(_, r) => {
+                    if !expect_error {
+                        return Err(Error::UnexpectedError(
+                            serde_json::to_string_pretty(&r).unwrap(),
+                        ));
+                    }
+                    return write_json(&config.in_path, name, &r).await;
+                }
                 _ => return Err(e),
             },
         };

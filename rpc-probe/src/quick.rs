@@ -15,8 +15,7 @@ pub fn quick_probe_plan(output_path: &Path, request_wait: Duration) -> Result<Pl
             in_series(vec![
                 abci_info(),
                 abci_query("non_existent_key").with_name("abci_query_with_non_existent_key"),
-                // Should give us an error
-                block(0).with_name("block_at_height_0"),
+                block(0).with_name("block_at_height_0").expect_error(),
                 block(1).with_name("block_at_height_1"),
                 block(10)
                     .with_min_height(10)
@@ -31,7 +30,9 @@ pub fn quick_probe_plan(output_path: &Path, request_wait: Duration) -> Result<Pl
                 net_info(),
                 status(),
                 subscribe("tm.event = 'NewBlock'").with_name("subscribe_newblock"),
-                subscribe("malformed query").with_name("subscribe_malformed"),
+                subscribe("malformed query")
+                    .with_name("subscribe_malformed")
+                    .expect_error(),
             ]),
             // Here we subscribe to receive incoming transaction events, and we
             // simultaneously send a sequential bunch of transactions.
