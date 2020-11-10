@@ -25,6 +25,7 @@
 //! traits.
 //!
 //! [`Client`]: trait.Client.html
+//! [`SubscriptionClient`]: trait.SubscriptionClient.html
 //! [`HttpClient`]: struct.HttpClient.html
 //! [`Event`]: event/struct.Event.html
 //! [`WebSocketClient`]: struct.WebSocketClient.html
