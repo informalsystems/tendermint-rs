@@ -64,10 +64,10 @@ impl FromStr for Hash {
         // Accept either upper or lower case hex
         let bytes = hex::decode_upper(s)
             .or_else(|_| hex::decode(s))
-            .map_err(|_| Kind::Parse)?;
+            .map_err(|_| Kind::Parse.context("hash decode"))?;
 
         if bytes.len() != LENGTH {
-            return Err(Kind::Parse.into());
+            return Err(Kind::Parse.context("hash length").into());
         }
 
         let mut result_bytes = [0u8; LENGTH];

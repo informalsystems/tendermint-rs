@@ -1,5 +1,4 @@
 use crate::error::{Error, Kind};
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryInto;
 use std::{
     convert::TryFrom,
@@ -86,19 +85,9 @@ impl FromStr for ValidatorIndex {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        ValidatorIndex::try_from(s.parse::<u32>().map_err(|_| Kind::Parse)?)
-    }
-}
-
-impl<'de> Deserialize<'de> for ValidatorIndex {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Ok(Self::from_str(&String::deserialize(deserializer)?)
-            .map_err(|e| D::Error::custom(format!("{}", e)))?)
-    }
-}
-
-impl Serialize for ValidatorIndex {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.to_string().serialize(serializer)
+        ValidatorIndex::try_from(
+            s.parse::<u32>()
+                .map_err(|_| Kind::Parse.context("validator index decode"))?,
+        )
     }
 }

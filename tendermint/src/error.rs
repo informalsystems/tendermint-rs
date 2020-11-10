@@ -65,9 +65,13 @@ pub enum Kind {
     #[error("invalid hash: expected hash size to be 32 bytes")]
     InvalidHashSize,
 
-    /// No timestamp in vote
+    /// No timestamp in vote or block header
     #[error("no timestamp")]
     NoTimestamp,
+
+    /// Invalid timestamp
+    #[error("invalid timestamp")]
+    InvalidTimestamp,
 
     /// Invalid account ID length
     #[error("invalid account ID length")]
@@ -96,6 +100,82 @@ pub enum Kind {
     /// Invalid PartSetHeader
     #[error("invalid part set header")]
     InvalidPartSetHeader,
+
+    /// Missing Header in Block
+    #[error("missing header field")]
+    MissingHeader,
+
+    /// Missing Data in Block
+    #[error("missing data field")]
+    MissingData,
+
+    /// Missing Evidence in Block
+    #[error("missing evidence field")]
+    MissingEvidence,
+
+    /// Invalid Block
+    #[error("invalid block")]
+    InvalidBlock,
+
+    /// Invalid first Block
+    #[error("invalid first block")]
+    InvalidFirstBlock,
+
+    /// Missing Version field
+    #[error("missing version")]
+    MissingVersion,
+
+    /// Invalid Header
+    #[error("invalid header")]
+    InvalidHeader,
+
+    /// Invalid first Header
+    #[error("invalid first header")]
+    InvalidFirstHeader,
+
+    /// Invalid signature in CommitSig
+    #[error("invalid signature")]
+    InvalidSignature,
+
+    /// Invalid validator address in CommitSig
+    #[error("invalid validator address")]
+    InvalidValidatorAddress,
+
+    /// Invalid Signed Header
+    #[error("invalid signed header")]
+    InvalidSignedHeader,
+
+    /// Invalid Evidence
+    #[error("invalid evidence")]
+    InvalidEvidence,
+
+    /// Invalid BlockIdFlag
+    #[error("invalid block id flag")]
+    BlockIdFlag,
+
+    /// Negative voting power
+    #[error("negative power")]
+    NegativePower,
+
+    /// Missing Public Key
+    #[error("missing public key")]
+    MissingPublicKey,
+
+    /// Invalid validator parameters
+    #[error("invalid validator parameters")]
+    InvalidValidatorParams,
+
+    /// Invalid version parameters
+    #[error("invalid version parameters")]
+    InvalidVersionParams,
+
+    /// Negative max_age_num_blocks in Evidence parameters
+    #[error("negative max_age_num_blocks")]
+    NegativeMaxAgeNum,
+
+    /// Missing max_age_duration in evidence parameters
+    #[error("missing max_age_duration")]
+    MissingMaxAgeDuration,
 }
 
 impl Kind {

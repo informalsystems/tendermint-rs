@@ -124,7 +124,8 @@
 						},
 						"voting_power": "50",
 						"proposer_priority": "-150"
-					}
+					},
+					"total_voting_power": "0"
 				},
 				"next_validator_set": {
 					"validators": [
@@ -173,7 +174,8 @@
 						},
 						"voting_power": "50",
 						"proposer_priority": "-100"
-					}
+					},
+					"total_voting_power": "0"
 				}
 			},
 			{
@@ -288,7 +290,8 @@
 						},
 						"voting_power": "50",
 						"proposer_priority": "-100"
-					}
+					},
+					"total_voting_power": "0"
 				},
 				"next_validator_set": {
 					"validators": [
@@ -337,7 +340,8 @@
 						},
 						"voting_power": "50",
 						"proposer_priority": "-150"
-					}
+					},
+					"total_voting_power": "0"
 				}
 			},
 			{
@@ -452,7 +456,8 @@
 						},
 						"voting_power": "50",
 						"proposer_priority": "-100"
-					}
+					},
+					"total_voting_power": "0"
 				},
 				"next_validator_set": {
 					"validators": [
@@ -501,7 +506,8 @@
 						},
 						"voting_power": "50",
 						"proposer_priority": "-150"
-					}
+					},
+					"total_voting_power": "0"
 				}
 			},
 			{
@@ -616,7 +622,8 @@
 						},
 						"voting_power": "50",
 						"proposer_priority": "-100"
-					}
+					},
+					"total_voting_power": "0"
 				},
 				"next_validator_set": {
 					"validators": [
@@ -665,7 +672,8 @@
 						},
 						"voting_power": "50",
 						"proposer_priority": "-150"
-					}
+					},
+					"total_voting_power": "0"
 				}
 			},
 			{
@@ -780,7 +788,8 @@
 						},
 						"voting_power": "50",
 						"proposer_priority": "-100"
-					}
+					},
+					"total_voting_power": "0"
 				},
 				"next_validator_set": {
 					"validators": [
@@ -829,7 +838,8 @@
 						},
 						"voting_power": "50",
 						"proposer_priority": "-150"
-					}
+					},
+					"total_voting_power": "0"
 				}
 			},
 			{
@@ -944,7 +954,8 @@
 						},
 						"voting_power": "50",
 						"proposer_priority": "-100"
-					}
+					},
+					"total_voting_power": "0"
 				},
 				"next_validator_set": {
 					"validators": [
@@ -993,7 +1004,8 @@
 						},
 						"voting_power": "50",
 						"proposer_priority": "-150"
-					}
+					},
+					"total_voting_power": "0"
 				}
 			}
 		]
@@ -1116,7 +1128,8 @@
 								},
 								"voting_power": "50",
 								"proposer_priority": "-150"
-							}
+							},
+							"total_voting_power": "0"
 						},
 						"next_validator_set": {
 							"validators": [
@@ -1165,7 +1178,8 @@
 								},
 								"voting_power": "50",
 								"proposer_priority": "-100"
-							}
+							},
+							"total_voting_power": "0"
 						}
 					},
 					{
@@ -1280,7 +1294,8 @@
 								},
 								"voting_power": "50",
 								"proposer_priority": "-100"
-							}
+							},
+							"total_voting_power": "0"
 						},
 						"next_validator_set": {
 							"validators": [
@@ -1329,7 +1344,8 @@
 								},
 								"voting_power": "50",
 								"proposer_priority": "-150"
-							}
+							},
+							"total_voting_power": "0"
 						}
 					},
 					{
@@ -1444,7 +1460,8 @@
 								},
 								"voting_power": "50",
 								"proposer_priority": "-100"
-							}
+							},
+							"total_voting_power": "0"
 						},
 						"next_validator_set": {
 							"validators": [
@@ -1493,7 +1510,8 @@
 								},
 								"voting_power": "50",
 								"proposer_priority": "-150"
-							}
+							},
+							"total_voting_power": "0"
 						}
 					},
 					{
@@ -1608,7 +1626,8 @@
 								},
 								"voting_power": "50",
 								"proposer_priority": "-100"
-							}
+							},
+							"total_voting_power": "0"
 						},
 						"next_validator_set": {
 							"validators": [
@@ -1657,7 +1676,8 @@
 								},
 								"voting_power": "50",
 								"proposer_priority": "-150"
-							}
+							},
+							"total_voting_power": "0"
 						}
 					},
 					{
@@ -1772,7 +1792,8 @@
 								},
 								"voting_power": "50",
 								"proposer_priority": "-100"
-							}
+							},
+							"total_voting_power": "0"
 						},
 						"next_validator_set": {
 							"validators": [
@@ -1821,7 +1842,8 @@
 								},
 								"voting_power": "50",
 								"proposer_priority": "-150"
-							}
+							},
+							"total_voting_power": "0"
 						}
 					},
 					{
@@ -1936,7 +1958,8 @@
 								},
 								"voting_power": "50",
 								"proposer_priority": "-100"
-							}
+							},
+							"total_voting_power": "0"
 						},
 						"next_validator_set": {
 							"validators": [
@@ -1985,7 +2008,8 @@
 								},
 								"voting_power": "50",
 								"proposer_priority": "-150"
-							}
+							},
+							"total_voting_power": "0"
 						}
 					}
 				]

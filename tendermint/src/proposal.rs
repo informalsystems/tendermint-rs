@@ -139,14 +139,15 @@ mod tests {
                     "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFADEADBEEFDEADBEEFBAFBAFBAFBAFBAFA",
                 )
                 .unwrap(),
-                part_set_header: Header {
-                    total: 65535,
-                    hash: Hash::from_hex_upper(
+                part_set_header: Header::new(
+                    65535,
+                    Hash::from_hex_upper(
                         Algorithm::Sha256,
                         "0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF",
                     )
                     .unwrap(),
-                },
+                )
+                .unwrap(),
             }),
             timestamp: Some(dt.into()),
             signature: Signature::Ed25519(Ed25519Signature::new([0; ED25519_SIGNATURE_SIZE])),
@@ -225,14 +226,15 @@ mod tests {
                     "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFADEADBEEFDEADBEEFBAFBAFBAFBAFBAFA",
                 )
                 .unwrap(),
-                part_set_header: Header {
-                    total: 65535,
-                    hash: Hash::from_hex_upper(
+                part_set_header: Header::new(
+                    65535,
+                    Hash::from_hex_upper(
                         Algorithm::Sha256,
                         "0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF",
                     )
                     .unwrap(),
-                },
+                )
+                .unwrap(),
             }),
             signature: Signature::Ed25519(Ed25519Signature::new([0; ED25519_SIGNATURE_SIZE])),
         };

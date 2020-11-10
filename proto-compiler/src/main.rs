@@ -1,36 +1,69 @@
-use std::fs::remove_dir_all;
-use std::fs::{copy, create_dir_all};
-use walkdir::WalkDir;
+use std::env::var;
+use std::path::PathBuf;
+use tempdir::TempDir;
+
+mod functions;
+use functions::{copy_files, find_proto_files, get_commitish};
+
+mod constants;
+use constants::{
+    CUSTOM_FIELD_ATTRIBUTES, CUSTOM_TYPE_ATTRIBUTES, TENDERMINT_COMMITISH, TENDERMINT_REPO,
+};
 
 fn main() {
-    let tendermint_proto_path = "../proto/src/prost";
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let target_dir = root.join("../proto/src/prost");
+    let out_dir = var("OUT_DIR")
+        .map(PathBuf::from)
+        .or_else(|_| TempDir::new("tendermint_proto_out").map(|d| d.into_path()))
+        .unwrap();
+    let tendermint_dir = var("TENDERMINT_DIR").unwrap_or_else(|_| "target/tendermint".to_string());
 
-    // Remove old compiled files
-    remove_dir_all(tendermint_proto_path).unwrap_or_default();
-    create_dir_all(tendermint_proto_path).unwrap();
+    println!(
+        "[info] => Fetching {} at {} into {}",
+        TENDERMINT_REPO, TENDERMINT_COMMITISH, tendermint_dir
+    );
+    get_commitish(
+        &PathBuf::from(&tendermint_dir),
+        TENDERMINT_REPO,
+        TENDERMINT_COMMITISH,
+    ); // This panics if it fails.
 
-    // Copy new compiled files (prost does not use folder structures)
-    let err: Vec<std::io::Error> = WalkDir::new(env!("OUT_DIR"))
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
-        .map(|e| {
-            copy(
-                e.path(),
-                std::path::Path::new(&format!(
-                    "{}/{}",
-                    tendermint_proto_path,
-                    &e.file_name().to_os_string().to_str().unwrap()
-                )),
-            )
-        })
-        .filter_map(|e| e.err())
-        .collect();
+    let proto_paths = [format!("{}/proto", tendermint_dir)];
+    let proto_includes_paths = [
+        format!("{}/proto", tendermint_dir),
+        format!("{}/third_party/proto", tendermint_dir),
+    ];
+    // List available proto files
+    let protos = find_proto_files(proto_paths.to_vec());
+    // List available paths for dependencies
+    let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
-    if !err.is_empty() {
-        for e in err {
-            dbg!(e);
-        }
-        panic!("error while copying compiled files")
+    // Compile proto files with added annotations, exchange prost_types to our own
+    let mut pb = prost_build::Config::new();
+    pb.out_dir(&out_dir);
+    for type_attribute in CUSTOM_TYPE_ATTRIBUTES {
+        pb.type_attribute(type_attribute.0, type_attribute.1);
     }
+    for field_attribute in CUSTOM_FIELD_ATTRIBUTES {
+        pb.field_attribute(field_attribute.0, field_attribute.1);
+    }
+    pb.compile_well_known_types();
+    // The below in-place path redirection removes the Duration and Timestamp structs from
+    // google.protobuf.rs. We replace them with our own versions that have valid doctest comments.
+    // See also https://github.com/danburkert/prost/issues/374 .
+    pb.extern_path(
+        ".google.protobuf.Duration",
+        "super::super::google::protobuf::Duration",
+    );
+    pb.extern_path(
+        ".google.protobuf.Timestamp",
+        "super::super::google::protobuf::Timestamp",
+    );
+    println!("[info] => Creating structs.");
+    pb.compile_protos(&protos, &includes).unwrap();
+
+    println!("[info] => Removing old structs and copying new structs.");
+    copy_files(out_dir, target_dir); // This panics if it fails.
+    println!("[info] => Done!");
 }

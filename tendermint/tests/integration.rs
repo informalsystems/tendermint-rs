@@ -90,7 +90,7 @@ mod rpc {
                 .block
                 .data
                 .iter()
-                .map(|t| t.to_owned().into_vec())
+                .map(|t| t.to_owned().into())
                 .collect(),
         );
         assert_eq!(
@@ -156,7 +156,7 @@ mod rpc {
     #[tokio::test]
     #[ignore]
     async fn genesis() {
-        let genesis = localhost_rpc_client().genesis().await.unwrap();
+        let genesis = localhost_rpc_client().genesis().await.unwrap(); // https://github.com/tendermint/tendermint/issues/5549
 
         assert_eq!(
             genesis.consensus_params.validator.pub_key_types[0].to_string(),
@@ -236,7 +236,7 @@ mod rpc {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
                 let tx = format!("tx{}={}", tx_count, val);
                 rpc_client
-                    .broadcast_tx_async(Transaction::new(tx.as_bytes()))
+                    .broadcast_tx_async(Transaction::from(tx.into_bytes()))
                     .await
                     .unwrap();
             }
@@ -311,7 +311,7 @@ mod rpc {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
                 let tx = format!("tx{}={}", tx_count, val);
                 rpc_client
-                    .broadcast_tx_async(Transaction::new(tx.as_bytes()))
+                    .broadcast_tx_async(Transaction::from(tx.into_bytes()))
                     .await
                     .unwrap();
                 tokio::time::delay_for(Duration::from_millis(100)).await;

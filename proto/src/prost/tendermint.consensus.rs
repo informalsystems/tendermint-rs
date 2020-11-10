@@ -139,7 +139,7 @@ pub struct MsgInfo {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TimeoutInfo {
     #[prost(message, optional, tag="1")]
-    pub duration: ::std::option::Option<::prost_types::Duration>,
+    pub duration: ::std::option::Option<super::super::google::protobuf::Duration>,
     #[prost(int64, tag="2")]
     pub height: i64,
     #[prost(int32, tag="3")]
@@ -176,7 +176,7 @@ pub mod wal_message {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TimedWalMessage {
     #[prost(message, optional, tag="1")]
-    pub time: ::std::option::Option<::prost_types::Timestamp>,
+    pub time: ::std::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(message, optional, tag="2")]
     pub msg: ::std::option::Option<WalMessage>,
 }

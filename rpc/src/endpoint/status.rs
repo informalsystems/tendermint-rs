@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use tendermint::{block, node, serializers, validator, Hash, Time};
+use tendermint::{block, node, validator, AppHash, Hash, Time};
 
 /// Node status request
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -37,12 +37,12 @@ impl crate::Response for Response {}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncInfo {
     /// Latest block hash
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
-    pub latest_block_hash: Option<Hash>,
+    #[serde(with = "tendermint::serializers::hash")]
+    pub latest_block_hash: Hash,
 
     /// Latest app hash
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
-    pub latest_app_hash: Option<Hash>,
+    #[serde(with = "tendermint::serializers::apphash")]
+    pub latest_app_hash: AppHash,
 
     /// Latest block height
     pub latest_block_height: block::Height,

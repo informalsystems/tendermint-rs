@@ -118,10 +118,11 @@ mod tests {
             timestamp: Some(dt.into()),
             block_id: Some(BlockId {
                 hash: Hash::try_from(b"DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA".to_vec()).unwrap(),
-                part_set_header: Header {
-                    total: 1_000_000,
-                    hash: Hash::try_from(b"0022446688AACCEE1133557799BBDDFF".to_vec()).unwrap(),
-                },
+                part_set_header: Header::new(
+                    1_000_000,
+                    Hash::try_from(b"0022446688AACCEE1133557799BBDDFF".to_vec()).unwrap(),
+                )
+                .unwrap(),
             }),
             validator_address: AccountId::try_from(vec![
                 0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
@@ -198,7 +199,8 @@ mod tests {
         // SignBytes are encoded using MarshalBinary and not MarshalBinaryBare
         cv.encode_length_delimited(&mut got).unwrap();
         let want = vec![
-            0xe, 0x8, 0x1, 0x11, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x32, 0x1, 0x41,
+            0x10, 0x8, 0x1, 0x11, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2a, 0x0, 0x32, 0x1,
+            0x41,
         ]; // Todo: Get these bytes from Go. During protobuf upgrade we didn't get to generate them.
         assert_eq!(got, want);
 
@@ -218,6 +220,8 @@ mod tests {
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
                 0x19, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
+                0x2a, // (field_number << 3) | wire_type
+                0x0,  // timestamp
                 0x32, // (field_number << 3) | wire_type
                 // remaining fields (chain ID):
                 0x1, 0x41,
@@ -242,6 +246,8 @@ mod tests {
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // height
                 0x19, // (field_number << 3) | wire_type
                 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,  // round
+                0x2a, // (field_number << 3) | wire_type
+                0x0,  // timestamp
                 0x32, // (field_number << 3) | wire_type
                 // remaining fields (chain ID):
                 0x1, 0x41,
@@ -268,15 +274,12 @@ mod tests {
                 hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
                     .unwrap(), //Hash::new(Algorithm::Sha256,
                 // b"hash".to_vec().as_slice()).unwrap(),
-                part_set_header: Header {
-                    total: 1_000_000,
-                    hash: Hash::from_hex_upper(
-                        Algorithm::Sha256,
-                        "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA",
-                    )
-                    .unwrap(), /* Hash::new(Algorithm::Sha256,
-                                * b"parts_hash".to_vec().as_slice()).unwrap(), */
-                },
+                part_set_header: Header::new(
+                    1_000_000,
+                    Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
+                        .unwrap(),
+                )
+                .unwrap(),
             }),
             // signature: None,
             signature: Signature::try_from(vec![
@@ -334,14 +337,12 @@ mod tests {
             block_id: Some(BlockId {
                 hash: Hash::from_hex_upper(Algorithm::Sha256, "DEADBEEFDEADBEEFBAFBAFBAFBAFBAFA")
                     .unwrap(),
-                part_set_header: Header {
-                    total: 1_000_000,
-                    hash: Hash::from_hex_upper(
-                        Algorithm::Sha256,
-                        "0022446688AACCEE1133557799BBDDFF",
-                    )
-                    .unwrap(),
-                },
+                part_set_header: Header::new(
+                    1_000_000,
+                    Hash::from_hex_upper(Algorithm::Sha256, "0022446688AACCEE1133557799BBDDFF")
+                        .unwrap(),
+                )
+                .unwrap(),
             }),
             signature: Signature::try_from(vec![1; ED25519_SIGNATURE_SIZE]).unwrap(),
         };

@@ -28,6 +28,7 @@ pub const PREFIX_LENGTH: usize = 10;
 #[derive(
     Serialize, Deserialize, Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord,
 )]
+#[serde(try_from = "RawBlockId", into = "RawBlockId")]
 pub struct Id {
     /// The block's main hash is the Merkle root of all the fields in the
     /// block header.
@@ -59,7 +60,9 @@ impl TryFrom<RawBlockId> for Id {
 
     fn try_from(value: RawBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(Kind::InvalidPartSetHeader.into());
+            return Err(Kind::InvalidPartSetHeader
+                .context("part_set_header is None")
+                .into());
         }
         Ok(Self {
             hash: value.hash.try_into()?,
@@ -96,7 +99,9 @@ impl TryFrom<RawCanonicalBlockId> for Id {
 
     fn try_from(value: RawCanonicalBlockId) -> Result<Self, Self::Error> {
         if value.part_set_header.is_none() {
-            return Err(Kind::InvalidPartSetHeader.into());
+            return Err(Kind::InvalidPartSetHeader
+                .context("part_set_header is None")
+                .into());
         }
         Ok(Self {
             hash: value.hash.try_into()?,

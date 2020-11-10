@@ -5,10 +5,12 @@ pub struct List {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Info {
-    #[prost(bool, tag="1")]
-    pub committed: bool,
-    #[prost(int64, tag="2")]
-    pub priority: i64,
-    #[prost(message, optional, tag="3")]
+    #[prost(message, optional, tag="1")]
     pub evidence: ::std::option::Option<super::types::Evidence>,
+    #[prost(message, optional, tag="2")]
+    pub time: ::std::option::Option<super::super::google::protobuf::Timestamp>,
+    #[prost(message, repeated, tag="3")]
+    pub validators: ::std::vec::Vec<super::types::Validator>,
+    #[prost(int64, tag="4")]
+    pub total_voting_power: i64,
 }

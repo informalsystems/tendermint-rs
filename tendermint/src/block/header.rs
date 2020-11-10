@@ -1,10 +1,10 @@
 //! Block headers
 
 use crate::merkle::simple_hash_from_byte_vectors;
-use crate::serializers;
-use crate::{account, block, chain, AppHash, Hash, Time};
+use crate::{account, block, chain, AppHash, Error, Hash, Kind, Time};
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
+use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
 use tendermint_proto::DomainType;
 
@@ -14,6 +14,7 @@ use tendermint_proto::DomainType;
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#header>
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(try_from = "RawHeader", into = "RawHeader")]
 pub struct Header {
     /// Header version
     pub version: Version,
@@ -28,15 +29,12 @@ pub struct Header {
     pub time: Time,
 
     /// Previous block info
-    #[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
     pub last_block_id: Option<block::Id>,
 
     /// Commit from validators from the last block
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
     pub last_commit_hash: Option<Hash>,
 
     /// Merkle root of transaction hashes
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
     pub data_hash: Option<Hash>,
 
     /// Validators for the current block
@@ -52,15 +50,112 @@ pub struct Header {
     pub app_hash: AppHash,
 
     /// Root hash of all results from the txs from the previous block
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
     pub last_results_hash: Option<Hash>,
 
     /// Hash of evidence included in the block
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
     pub evidence_hash: Option<Hash>,
 
     /// Original proposer of the block
     pub proposer_address: account::Id,
+}
+
+impl DomainType<RawHeader> for Header {}
+
+impl TryFrom<RawHeader> for Header {
+    type Error = Error;
+
+    fn try_from(value: RawHeader) -> Result<Self, Self::Error> {
+        // If last block id is unfilled, it is considered nil by Go.
+        let last_block_id = value
+            .last_block_id
+            .map(TryInto::try_into)
+            .transpose()?
+            .filter(|l| l != &block::Id::default());
+        let last_commit_hash = if value.last_commit_hash.is_empty() {
+            None
+        } else {
+            Some(value.last_commit_hash.try_into()?)
+        };
+        let last_results_hash = if value.last_results_hash.is_empty() {
+            None
+        } else {
+            Some(value.last_results_hash.try_into()?)
+        };
+        let height: block::Height = value.height.try_into()?;
+
+        // Todo: fix domain logic
+        //if last_block_id.is_none() && height.value() != 1 {
+        //    return Err(Kind::InvalidHeader.context("last_block_id is null on non-first
+        // height").into());
+        //}
+        if last_block_id.is_some() && height.value() == 1 {
+            return Err(Kind::InvalidFirstHeader
+                .context("last_block_id is not null on first height")
+                .into());
+        }
+        //if last_commit_hash.is_none() && height.value() != 1 {
+        //    return Err(Kind::InvalidHeader.context("last_commit_hash is null on non-first
+        // height").into());
+        //}
+        //if height.value() == 1 && last_commit_hash.is_some() &&
+        // last_commit_hash.as_ref().unwrap() != simple_hash_from_byte_vectors(Vec::new()) {
+        //    return Err(Kind::InvalidFirstHeader.context("last_commit_hash is not empty Merkle tree
+        // on first height").into());
+        //}
+        //if last_results_hash.is_none() && height.value() != 1 {
+        //    return Err(Kind::InvalidHeader.context("last_results_hash is null on non-first
+        // height").into());
+        //}
+        //if last_results_hash.is_some() && height.value() == 1 {
+        //    return Err(Kind::InvalidFirstHeader.context("last_results_hash is not ull on first
+        // height").into());
+        //}
+        Ok(Header {
+            version: value.version.ok_or(Kind::MissingVersion)?.try_into()?,
+            chain_id: value.chain_id.try_into()?,
+            height,
+            time: value.time.ok_or(Kind::NoTimestamp)?.try_into()?,
+            last_block_id,
+            last_commit_hash,
+            data_hash: if value.data_hash.is_empty() {
+                None
+            } else {
+                Some(value.data_hash.try_into()?)
+            },
+            validators_hash: value.validators_hash.try_into()?,
+            next_validators_hash: value.next_validators_hash.try_into()?,
+            consensus_hash: value.consensus_hash.try_into()?,
+            app_hash: value.app_hash.try_into()?,
+            last_results_hash,
+            evidence_hash: if value.evidence_hash.is_empty() {
+                None
+            } else {
+                Some(value.evidence_hash.try_into()?)
+            }, // Todo: Is it illegal to have evidence of wrongdoing in the first block?
+            proposer_address: value.proposer_address.try_into()?,
+        })
+    }
+}
+
+impl From<Header> for RawHeader {
+    fn from(value: Header) -> Self {
+        RawHeader {
+            version: Some(value.version.into()),
+            chain_id: value.chain_id.into(),
+            height: value.height.into(),
+            time: Some(value.time.into()),
+            last_block_id: value.last_block_id.map(Into::into),
+            last_commit_hash: value.last_commit_hash.unwrap_or_default().into(),
+            data_hash: value.data_hash.unwrap_or_default().into(),
+            validators_hash: value.validators_hash.into(),
+            next_validators_hash: value.next_validators_hash.into(),
+            consensus_hash: value.consensus_hash.into(),
+            app_hash: value.app_hash.into(),
+            last_results_hash: value.last_results_hash.unwrap_or_default().into(),
+            evidence_hash: value.evidence_hash.unwrap_or_default().into(),
+            proposer_address: value.proposer_address.into(),
+        }
+    }
 }
 
 impl Header {
@@ -105,17 +200,12 @@ impl Header {
 /// application.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#version>
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Version {
     /// Block version
-    #[serde(with = "serializers::from_str")]
     pub block: u64,
 
     /// App version
-    ///
-    /// If this field is not supplied when deserializing from JSON, it is set
-    /// to `Default::default()` for `u64` (i.e. 0).
-    #[serde(with = "serializers::from_str", default)]
     pub app: u64,
 }
 
@@ -143,7 +233,7 @@ impl From<Version> for RawConsensusVersion {
 
 #[cfg(test)]
 mod tests {
-    use super::{Header, Version};
+    use super::Header;
     use crate::hash::Algorithm;
     use crate::test::test_serialization_roundtrip;
     use crate::Hash;
@@ -166,13 +256,5 @@ mod tests {
         ))
         .unwrap();
         assert_eq!(expected_hash, header.hash());
-    }
-
-    #[test]
-    fn empty_header_version_app_field() {
-        let json_data = r#"{"block": "11"}"#;
-        let version: Version = serde_json::from_str(json_data).unwrap();
-        assert_eq!(11, version.block);
-        assert_eq!(0, version.app);
     }
 }

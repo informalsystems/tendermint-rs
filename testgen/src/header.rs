@@ -1,12 +1,12 @@
 use crate::{helpers::*, validator::generate_validators, Generator, Validator};
 use gumdrop::Options;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use simple_error::*;
 use std::convert::TryFrom;
 use std::str::FromStr;
 use tendermint::{block, chain, validator, AppHash};
 
-#[derive(Debug, Options, Deserialize, Clone)]
+#[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Header {
     #[options(
         help = "validators (required), encoded as array of 'validator' parameters",
@@ -49,6 +49,22 @@ impl Header {
     set_option!(height, u64);
     set_option!(time, u64);
     set_option!(proposer, usize);
+
+    pub fn next(&self) -> Self {
+        let height = self.height.expect("Missing previous header's height");
+        let time = self.time.unwrap_or(height); // if no time is found, then we simple correspond it to the header height
+        let validators = self.validators.clone().expect("Missing validators");
+        let next_validators = self.next_validators.clone().unwrap_or(validators);
+
+        Self {
+            validators: Some(next_validators.clone()),
+            next_validators: Some(next_validators),
+            chain_id: self.chain_id.clone(),
+            height: Some(height + 1),
+            time: Some(time + 1),
+            proposer: self.proposer, // TODO: proposer must be incremented
+        }
+    }
 }
 
 impl std::str::FromStr for Header {
@@ -86,9 +102,9 @@ impl Generator<block::Header> for Header {
         } else {
             Validator::new("a").generate().unwrap().address
         };
-        let valset = validator::Set::new(vals);
+        let valset = validator::Set::new_simple(vals);
         let next_valset = match &self.next_validators {
-            Some(next_vals) => validator::Set::new(generate_validators(next_vals)?),
+            Some(next_vals) => validator::Set::new_simple(generate_validators(next_vals)?),
             None => valset.clone(),
         };
         let chain_id = match chain::Id::from_str(
@@ -106,7 +122,9 @@ impl Generator<block::Header> for Header {
             tendermint::Time::now()
         };
         let header = block::Header {
-            version: block::header::Version { block: 0, app: 0 },
+            // block version in Tendermint-go is hardcoded with value 11
+            // so we do the same with MBT for now for compatibility
+            version: block::header::Version { block: 11, app: 0 },
             chain_id,
             height: block::Height::try_from(self.height.unwrap_or(1))
                 .map_err(|_| SimpleError::new("height out of bounds"))?,
