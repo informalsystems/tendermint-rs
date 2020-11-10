@@ -86,3 +86,48 @@ impl CanonicalVote {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::vote::canonical_vote::CanonicalVote;
+    use crate::vote::Type;
+    use std::convert::TryFrom;
+    use tendermint_proto::google::protobuf::Timestamp;
+    use tendermint_proto::types::CanonicalBlockId as RawCanonicalBlockId;
+    use tendermint_proto::types::CanonicalPartSetHeader as RawCanonicalPartSetHeader;
+    use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
+
+    #[test]
+    fn canonical_vote_domain_checks() {
+        // RawCanonicalVote with edge cases to test domain knowledge
+        // block_id with empty hash should decode to None
+        // timestamp at EPOCH is still considered valid time
+        let proto_cp = RawCanonicalVote {
+            r#type: 1,
+            height: 2,
+            round: 4,
+            block_id: Some(RawCanonicalBlockId {
+                hash: vec![],
+                part_set_header: Some(RawCanonicalPartSetHeader {
+                    total: 1,
+                    hash: vec![1],
+                }),
+            }),
+            timestamp: Some(Timestamp {
+                seconds: 0,
+                nanos: 0,
+            }),
+            chain_id: "testchain".to_string(),
+        };
+        let cp = CanonicalVote::try_from(proto_cp).unwrap();
+        assert_eq!(cp.vote_type, Type::Prevote);
+        assert!(cp.block_id.is_none());
+        assert!(cp.timestamp.is_some());
+
+        // No timestamp is not acceptable
+        // See: https://github.com/informalsystems/tendermint-rs/issues/649
+        let mut proto_cp: RawCanonicalVote = cp.into();
+        proto_cp.timestamp = None;
+        assert!(CanonicalVote::try_from(proto_cp).is_err());
+    }
+}

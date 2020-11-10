@@ -95,3 +95,39 @@ impl CanonicalProposal {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::proposal::canonical_proposal::CanonicalProposal;
+    use crate::proposal::Type;
+    use std::convert::TryFrom;
+    use tendermint_proto::types::CanonicalBlockId as RawCanonicalBlockId;
+    use tendermint_proto::types::CanonicalPartSetHeader as RawCanonicalPartSetHeader;
+    use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
+
+    #[test]
+    fn canonical_proposal_domain_checks() {
+        // RawCanonicalProposal with edge cases to test domain knowledge
+        // pol_round = -1 should decode to None
+        // block_id with empty hash should decode to None
+        let proto_cp = RawCanonicalProposal {
+            r#type: 32,
+            height: 2,
+            round: 4,
+            pol_round: -1,
+            block_id: Some(RawCanonicalBlockId {
+                hash: vec![],
+                part_set_header: Some(RawCanonicalPartSetHeader {
+                    total: 1,
+                    hash: vec![1],
+                }),
+            }),
+            timestamp: None,
+            chain_id: "testchain".to_string(),
+        };
+        let cp = CanonicalProposal::try_from(proto_cp).unwrap();
+        assert_eq!(cp.msg_type, Type::Proposal);
+        assert!(cp.pol_round.is_none());
+        assert!(cp.block_id.is_none());
+    }
+}

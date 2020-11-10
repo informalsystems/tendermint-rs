@@ -211,6 +211,86 @@ mod tests {
     }
 
     #[test]
+    // Test proposal encoding with a malformed block ID which is considered null in Go.
+    fn test_encoding_with_emtpy_block_id() {
+        let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
+        let proposal = Proposal {
+            msg_type: Type::Proposal,
+            height: Height::from(12345_u32),
+            round: Round::from(23456_u16),
+            pol_round: None,
+            block_id: Some(BlockId {
+                hash: Hash::from_hex_upper(Algorithm::Sha256, "").unwrap(),
+                part_set_header: Header::new(
+                    65535,
+                    Hash::from_hex_upper(
+                        Algorithm::Sha256,
+                        "0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF",
+                    )
+                    .unwrap(),
+                )
+                .unwrap(),
+            }),
+            timestamp: Some(dt.into()),
+            signature: Signature::Ed25519(Ed25519Signature::new([0; ED25519_SIGNATURE_SIZE])),
+        };
+
+        let mut got = vec![];
+
+        let request = SignProposalRequest {
+            proposal,
+            chain_id: ChainId::from_str("test_chain_id").unwrap(),
+        };
+
+        let _have = request.to_signable_bytes(&mut got);
+
+        // the following vector is generated via:
+        /*
+            import (
+                "encoding/hex"
+                "fmt"
+                prototypes "github.com/tendermint/tendermint/proto/tendermint/types"
+                "github.com/tendermint/tendermint/types"
+                "strings"
+                "time"
+            )
+
+            func proposalSerialize() {
+                stamp, _ := time.Parse(time.RFC3339Nano, "2018-02-11T07:09:22.765Z")
+                block_hash, _ := hex.DecodeString("")
+                part_hash, _ := hex.DecodeString("0022446688AACCEE1133557799BBDDFF0022446688AACCEE1133557799BBDDFF")
+                proposal := &types.Proposal{
+                    Type:     prototypes.SignedMsgType(prototypes.ProposalType),
+                    Height:   12345,
+                    Round:    23456,
+                    POLRound: -1,
+                    BlockID: types.BlockID{
+                        Hash: block_hash,
+                        PartSetHeader: types.PartSetHeader{
+                            Hash:  part_hash,
+                            Total: 65535,
+                        },
+                    },
+                    Timestamp: stamp,
+                }
+                signBytes := types.ProposalSignBytes("test_chain_id", proposal.ToProto())
+                fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v", signBytes), " "), ", "))
+            }
+        */
+
+        let want = vec![
+            102, 8, 32, 17, 57, 48, 0, 0, 0, 0, 0, 0, 25, 160, 91, 0, 0, 0, 0, 0, 0, 32, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 1, 42, 40, 18, 38, 8, 255, 255, 3, 18, 32, 0, 34,
+            68, 102, 136, 170, 204, 238, 17, 51, 85, 119, 153, 187, 221, 255, 0, 34, 68, 102, 136,
+            170, 204, 238, 17, 51, 85, 119, 153, 187, 221, 255, 50, 12, 8, 162, 216, 255, 211, 5,
+            16, 192, 242, 227, 236, 2, 58, 13, 116, 101, 115, 116, 95, 99, 104, 97, 105, 110, 95,
+            105, 100,
+        ];
+
+        assert_eq!(got, want)
+    }
+
+    #[test]
     fn test_deserialization() {
         let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
         let proposal = Proposal {
