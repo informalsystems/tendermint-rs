@@ -80,7 +80,8 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 /// ## Examples
 ///
 /// ```rust,ignore
-/// use tendermint_rpc::{WebSocketClient, SubscriptionClient};
+/// use tendermint::abci::Transaction;
+/// use tendermint_rpc::{WebSocketClient, SubscriptionClient, Client};
 /// use tendermint_rpc::query::EventType;
 /// use futures::StreamExt;
 ///
@@ -91,6 +92,11 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 ///         .unwrap();
 ///     let driver_handle = tokio::spawn(async move { driver.run().await });
 ///
+///     // Standard client functionality
+///     let tx = format!("some-key=some-value");
+///     client.broadcast_tx_async(Transaction::from(tx.into_bytes())).await.unwrap();
+///
+///     // Subscription functionality
 ///     let mut subs = client.subscribe(EventType::NewBlock.into())
 ///         .await
 ///         .unwrap();
@@ -103,7 +109,7 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 ///         println!("Got event: {:?}", ev);
 ///         ev_count -= 1;
 ///         if ev_count < 0 {
-///             break
+///             break;
 ///         }
 ///     }
 ///
@@ -165,13 +171,12 @@ impl Client for WebSocketClient {
         let id = wrapper.id().clone().to_string();
         let wrapped_request = wrapper.into_json();
         let (response_tx, mut response_rx) = unbounded();
-        self.cmd_tx
-            .send(DriverCommand::SimpleRequest(SimpleRequestCommand {
-                id,
-                wrapped_request,
-                response_tx,
-            }))
-            .await?;
+        self.send_cmd(DriverCommand::SimpleRequest(SimpleRequestCommand {
+            id,
+            wrapped_request,
+            response_tx,
+        }))
+        .await?;
         let response = response_rx.recv().await.ok_or_else(|| {
             Error::client_internal_error("failed to hear back from WebSocket driver".to_string())
         })??;
@@ -260,9 +265,9 @@ struct SimpleRequestCommand {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct GenericJSONResponse(serde_json::Value);
+struct GenericJsonResponse(serde_json::Value);
 
-impl Response for GenericJSONResponse {}
+impl Response for GenericJsonResponse {}
 
 /// Drives the WebSocket connection for a `WebSocketClient` instance.
 ///
@@ -424,7 +429,7 @@ impl WebSocketClientDriver {
             return Ok(());
         }
 
-        let wrapper = match serde_json::from_str::<response::Wrapper<GenericJSONResponse>>(&msg) {
+        let wrapper = match serde_json::from_str::<response::Wrapper<GenericJsonResponse>>(&msg) {
             Ok(w) => w,
             Err(e) => {
                 error!(
@@ -437,9 +442,7 @@ impl WebSocketClientDriver {
         };
         let id = wrapper.id().to_string();
         if let Some(pending_cmd) = self.pending_commands.remove(&id) {
-            return self
-                .confirm_pending_command(pending_cmd, wrapper.into_result())
-                .await;
+            return self.confirm_pending_command(pending_cmd, msg).await;
         };
         // We ignore incoming messages whose ID we don't recognize (could be
         // relating to a fire-and-forget unsubscribe request - see the
@@ -468,21 +471,17 @@ impl WebSocketClientDriver {
     async fn confirm_pending_command(
         &mut self,
         pending_cmd: DriverCommand,
-        result: Result<GenericJSONResponse>,
+        response: String,
     ) -> Result<()> {
         match pending_cmd {
             DriverCommand::Subscribe(cmd) => {
                 let (id, query, subscription_tx, mut response_tx) =
                     (cmd.id, cmd.query, cmd.subscription_tx, cmd.response_tx);
                 self.router.add(id, query, subscription_tx);
-                response_tx.send(result.map(|_| ())).await
+                response_tx.send(Ok(())).await
             }
-            DriverCommand::Unsubscribe(mut cmd) => cmd.response_tx.send(result.map(|_| ())).await,
-            DriverCommand::SimpleRequest(mut cmd) => {
-                cmd.response_tx
-                    .send(result.map(|v| serde_json::to_string(&v).unwrap()))
-                    .await
-            }
+            DriverCommand::Unsubscribe(mut cmd) => cmd.response_tx.send(Ok(())).await,
+            DriverCommand::SimpleRequest(mut cmd) => cmd.response_tx.send(Ok(response)).await,
             _ => Ok(()),
         }
     }
