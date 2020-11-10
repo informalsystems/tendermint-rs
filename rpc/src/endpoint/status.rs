@@ -46,7 +46,6 @@ pub struct SyncInfo {
     pub latest_block_height: block::Height,
 
     /// Latest block time
-    #[serde(with = "tendermint::serializers::time")]
     pub latest_block_time: Time,
 
     /// Are we catching up?
