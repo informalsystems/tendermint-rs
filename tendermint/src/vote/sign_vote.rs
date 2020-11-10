@@ -193,6 +193,85 @@ mod tests {
     }
 
     #[test]
+    // Test vote encoding with a malformed block_id (no hash) which is considered nil in Go.
+    fn test_vote_encoding_with_empty_block_id() {
+        let dt = "2017-12-25T03:00:01.234Z".parse::<DateTime<Utc>>().unwrap();
+        let vote = Vote {
+            vote_type: Type::Prevote,
+            height: Height::from(12345_u32),
+            round: Round::from(2_u16),
+            timestamp: Some(dt.into()),
+            block_id: Some(BlockId {
+                hash: Hash::try_from(b"".to_vec()).unwrap(),
+                part_set_header: Header::new(
+                    1_000_000,
+                    Hash::try_from(b"0022446688AACCEE1133557799BBDDFF".to_vec()).unwrap(),
+                )
+                .unwrap(),
+            }),
+            validator_address: AccountId::try_from(vec![
+                0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21, 0xf2, 0x48, 0x2a, 0xf4,
+                0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35,
+            ])
+            .unwrap(),
+            validator_index: ValidatorIndex::try_from(56789).unwrap(),
+            signature: Signature::try_from(vec![
+                130u8, 246, 183, 50, 153, 248, 28, 57, 51, 142, 55, 217, 194, 24, 134, 212, 233,
+                100, 211, 10, 24, 174, 179, 117, 41, 65, 141, 134, 149, 239, 65, 174, 217, 42, 6,
+                184, 112, 17, 7, 97, 255, 221, 252, 16, 60, 144, 30, 212, 167, 39, 67, 35, 118,
+                192, 133, 130, 193, 115, 32, 206, 152, 91, 173, 10,
+            ])
+            .unwrap(),
+        };
+
+        let request = SignVoteRequest {
+            vote,
+            chain_id: ChainId::from_str("test_chain_id").unwrap(),
+        };
+
+        let got = request.to_signable_vec().unwrap();
+
+        // the following vector is generated via:
+        /*
+           import (
+               "fmt"
+               prototypes "github.com/tendermint/tendermint/proto/tendermint/types"
+               "github.com/tendermint/tendermint/types"
+               "strings"
+               "time"
+           )
+           func voteSerialize() {
+               stamp, _ := time.Parse(time.RFC3339Nano, "2017-12-25T03:00:01.234Z")
+               vote := &types.Vote{
+                   Type:      prototypes.PrevoteType, // pre-vote
+                   Height:    12345,
+                   Round:     2,
+                   Timestamp: stamp,
+                   BlockID: types.BlockID{
+                       Hash: []byte(""),
+                       PartSetHeader: types.PartSetHeader{
+                           Total: 1000000,
+                           Hash:  []byte("0022446688AACCEE1133557799BBDDFF"),
+                       },
+                   },
+                   ValidatorAddress: []byte{0xa3, 0xb2, 0xcc, 0xdd, 0x71, 0x86, 0xf1, 0x68, 0x5f, 0x21,
+                       0xf2, 0x48, 0x2a, 0xf4, 0xfb, 0x34, 0x46, 0xa8, 0x4b, 0x35}, ValidatorIndex: 56789}
+               signBytes := types.VoteSignBytes("test_chain_id", vote.ToProto())
+               fmt.Println(strings.Join(strings.Split(fmt.Sprintf("%v", signBytes), " "), ", "))
+           }
+        */
+
+        let want = vec![
+            90, 8, 1, 17, 57, 48, 0, 0, 0, 0, 0, 0, 25, 2, 0, 0, 0, 0, 0, 0, 0, 34, 40, 18, 38, 8,
+            192, 132, 61, 18, 32, 48, 48, 50, 50, 52, 52, 54, 54, 56, 56, 65, 65, 67, 67, 69, 69,
+            49, 49, 51, 51, 53, 53, 55, 55, 57, 57, 66, 66, 68, 68, 70, 70, 42, 11, 8, 177, 211,
+            129, 210, 5, 16, 128, 157, 202, 111, 50, 13, 116, 101, 115, 116, 95, 99, 104, 97, 105,
+            110, 95, 105, 100,
+        ];
+        assert_eq!(got, want);
+    }
+
+    #[test]
     fn test_sign_bytes_compatibility() {
         let cv = CanonicalVote::new(Vote::default(), ChainId::try_from("A").unwrap());
         let mut got = vec![];

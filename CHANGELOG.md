@@ -15,8 +15,10 @@
   deemed valid instead of invalid ([#650])
 - `[light-client]` Revert a change introduced in [#652] that would enable DoS attacks,
   where full nodes could spam the light client with massive commits (eg. 10k validators).
-- `[tendermint]` (Since RC1) Time serialization fix (part of [#665])
-- `[tendermint-proto]` (Since RC1) Timestamp serialization fix (part of [#665])
+- `[tendermint]` (Since v0.17.0-rc1) CanonicalBlockId is now correctly decoded to `None`
+  in `CanonicalVote` and `CanonicalProposal` when its hash is empty.
+- `[tendermint]` (Since v0.17.0-rc1) Time serialization fix (part of [#665])
+- `[tendermint-proto]` (Since v0.17.0-rc1) Timestamp serialization fix (part of [#665])
 
 ### FEATURES:
 
@@ -27,6 +29,7 @@
 [#652]: https://github.com/informalsystems/tendermint-rs/pulls/652
 [#639]: https://github.com/informalsystems/tendermint-rs/pull/639
 [#660]: https://github.com/informalsystems/tendermint-rs/issues/660
+[#663]: https://github.com/informalsystems/tendermint-rs/issues/663
 [#665]: https://github.com/informalsystems/tendermint-rs/issues/665
 
 ## v0.17.0-rc1
