@@ -69,7 +69,7 @@ cargo run -- --request-wait 100
 By default, all request and response JSON-RPC messages will be written into a
 folder called `probe-results` in the `rpc-probe` directory.
 
-For example, the `probe-results/responses/abci_info.json` file (returned by the
+For example, the `probe-results/incoming/abci_info.json` file (returned by the
 [`abci_info`] RPC request) could look something like:
 
 ```json
