@@ -22,10 +22,15 @@
 
 - `[tendermint/proto-compiler]` Protobuf structs generator now also accepts commit IDs from the Tendermint Go repository ([#660])
 
+### IMPROVEMENTS:
+
+- `[rpc]` The `WebSocketClient` now adds support for all remaining RPC requests
+  by way of implementing the `Client` trait ([#646])
 
 [#650]: https://github.com/informalsystems/tendermint-rs/issues/650
 [#652]: https://github.com/informalsystems/tendermint-rs/pulls/652
 [#639]: https://github.com/informalsystems/tendermint-rs/pull/639
+[#646]: https://github.com/informalsystems/tendermint-rs/pull/646
 [#660]: https://github.com/informalsystems/tendermint-rs/issues/660
 [#665]: https://github.com/informalsystems/tendermint-rs/issues/665
 
