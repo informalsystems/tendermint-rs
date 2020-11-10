@@ -16,10 +16,8 @@ pub enum VerificationError {
     #[error("header from the future: header_time={header_time} now={now}")]
     HeaderFromTheFuture {
         /// Time in the header
-        #[serde(with = "tendermint::serializers::time")]
         header_time: Time,
         /// Current time
-        #[serde(with = "tendermint::serializers::time")]
         now: Time,
     },
 
