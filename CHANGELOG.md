@@ -15,7 +15,8 @@
   deemed valid instead of invalid ([#650])
 - `[light-client]` Revert a change introduced in [#652] that would enable DoS attacks,
   where full nodes could spam the light client with massive commits (eg. 10k validators).
-- `[tendermint]` (Since RC1) CanonicalBlockId is now correctly decoded to `None` in `CanonicalVote` and `CanonicalProposal`.
+- `[tendermint]` (Since v0.17.0-rc1) CanonicalBlockId is now correctly decoded to `None`
+  in `CanonicalVote` and `CanonicalProposal` when its hash is empty.
 
 ### FEATURES:
 
