@@ -62,7 +62,6 @@ pub struct SingleStepTestCase {
 pub struct BlockVerdict {
     block: AnonLightBlock,
     testgen_block: TestgenLightBlock,
-    #[serde(with = "tendermint::serializers::time")]
     now: Time,
     verdict: LiteVerdict,
 }
