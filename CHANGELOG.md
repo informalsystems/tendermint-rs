@@ -28,6 +28,7 @@
 [#639]: https://github.com/informalsystems/tendermint-rs/pull/639
 [#660]: https://github.com/informalsystems/tendermint-rs/issues/660
 [#665]: https://github.com/informalsystems/tendermint-rs/issues/665
+
 ## v0.17.0-rc1
 
 *Oct 15, 2020*
