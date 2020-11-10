@@ -212,7 +212,7 @@ mod tests {
 
     #[test]
     // Test proposal encoding with a malformed block ID which is considered null in Go.
-    fn test_encoding_with_emtpy_block_id() {
+    fn test_encoding_with_empty_block_id() {
         let dt = "2018-02-11T07:09:22.765Z".parse::<DateTime<Utc>>().unwrap();
         let proposal = Proposal {
             msg_type: Type::Proposal,
