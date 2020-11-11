@@ -12,7 +12,8 @@ data structures) and our serialization types. See [#654] for the ongoing work
 on this front.
 
 **NB**: more breaking changes are anticipated for the v0.17.0-rc3 release in
-terms of our data structures and serialization approach.
+terms of our data structures and serialization approach. We would generally
+recommend waiting until v0.17.0-rc3 to upgrade.
 
 ### BREAKING CHANGES:
 
