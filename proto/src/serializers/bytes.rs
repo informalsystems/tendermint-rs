@@ -1,4 +1,5 @@
 //! Serialize/deserialize bytes (Vec<u8>) type
+use serde::{Deserialize, Serialize};
 
 /// Serialize into hexstring, deserialize from hexstring
 pub mod hexstring {
@@ -106,3 +107,8 @@ pub mod string {
         serializer.serialize_str(&string)
     }
 }
+
+/// Helper struct to serialize/deserialize Base64-encoded strings into Vec<u8> bytestream.
+#[derive(Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Base64(#[serde(with = "crate::serializers::bytes::base64string")] pub Vec<u8>);
