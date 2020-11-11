@@ -1,5 +1,31 @@
 ## Unreleased
 
+### IMPROVEMENTS:
+
+- `[rpc]` A new RPC probe (in the `rpc-probe` directory) has been added to
+  facilitate quick, pre-scripted interactions with a Tendermint node (via its
+  WebSocket endpoint). This aims to help improve testing and compatibility
+  between Tendermint in Go and Rust. ([#653])
+
+[#653]: https://github.com/informalsystems/tendermint-rs/pull/653
+
+## v0.17.0-rc2
+
+*Nov 11, 2020*
+
+The primary focal points for this release are supporting [ibc-rs] and 
+increasing compatibility with
+[Tendermint v0.34.0](https://github.com/tendermint/tendermint/blob/master/UPGRADING.md#v0340).
+
+We are also progressively refactoring the codebase to facilitate a clearer 
+separation between our domain types (where we want to ensure correctness of the
+data structures) and our serialization types. See [#654] for the ongoing work
+on this front.
+
+**NB**: more breaking changes are anticipated for the v0.17.0-rc3 release in
+terms of our data structures and serialization approach. We would generally
+recommend waiting until v0.17.0-rc3 to upgrade.
+
 ### BREAKING CHANGES:
 
 - `[tendermint]` Direct serialization capabilities have been removed from the
@@ -15,26 +41,23 @@
   deemed valid instead of invalid ([#650])
 - `[light-client]` Revert a change introduced in [#652] that would enable DoS attacks,
   where full nodes could spam the light client with massive commits (eg. 10k validators).
-- `[tendermint]` (Since RC1) Time serialization fix (part of [#665])
-- `[tendermint-proto]` (Since RC1) Timestamp serialization fix (part of [#665])
+- `[tendermint]` (Since v0.17.0-rc1) CanonicalBlockId is now correctly decoded to `None`
+  in `CanonicalVote` and `CanonicalProposal` when its hash is empty.
+- `[tendermint]` (Since v0.17.0-rc1) Time serialization fix (part of [#665])
+- `[tendermint-proto]` (Since v0.17.0-rc1) Timestamp serialization fix (part of [#665])
 
 ### FEATURES:
 
 - `[tendermint/proto-compiler]` Protobuf structs generator now also accepts commit IDs from the Tendermint Go repository ([#660])
 
-### IMPROVEMENTS:
-
-- `[rpc]` A new RPC probe (in the `rpc-probe` directory) has been added to
-  facilitate quick, pre-scripted interactions with a Tendermint node (via its
-  WebSocket endpoint). This aims to help improve testing and compatibility
-  between Tendermint in Go and Rust. ([#653])
-
+[#639]: https://github.com/informalsystems/tendermint-rs/pull/639
 [#650]: https://github.com/informalsystems/tendermint-rs/issues/650
 [#652]: https://github.com/informalsystems/tendermint-rs/pulls/652
-[#639]: https://github.com/informalsystems/tendermint-rs/pull/639
-[#653]: https://github.com/informalsystems/tendermint-rs/pull/653
+[#654]: https://github.com/informalsystems/tendermint-rs/issues/654
 [#660]: https://github.com/informalsystems/tendermint-rs/issues/660
+[#663]: https://github.com/informalsystems/tendermint-rs/issues/663
 [#665]: https://github.com/informalsystems/tendermint-rs/issues/665
+[ibc-rs]: https://github.com/informalsystems/ibc-rs/
 
 ## v0.17.0-rc1
 
