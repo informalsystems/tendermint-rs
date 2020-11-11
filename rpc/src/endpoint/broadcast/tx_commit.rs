@@ -59,6 +59,7 @@ pub struct TxResult {
     pub code: Code,
 
     /// Data
+    #[serde(with = "tendermint_proto::serializers::optional")]
     pub data: Option<Data>,
 
     /// Log

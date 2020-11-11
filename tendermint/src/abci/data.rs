@@ -30,7 +30,7 @@ impl TryFrom<Base64> for Data {
     type Error = Error;
 
     fn try_from(value: Base64) -> Result<Self, Self::Error> {
-        value.try_into()
+        value.0.try_into()
     }
 }
 
