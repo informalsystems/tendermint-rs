@@ -1,11 +1,25 @@
-## Unreleased
+## v0.17.0-rc2
+
+*Nov 11, 2020*
+
+The primary focal points for this release are supporting [ibc-rs] and 
+increasing compatibility with
+[Tendermint v0.34.0](https://github.com/tendermint/tendermint/blob/master/UPGRADING.md#v0340).
+
+We are also progressively refactoring the codebase to facilitate a clearer 
+separation between our domain types (where we want to ensure correctness of the
+data structures) and our serialization types. See [#654] for the ongoing work
+on this front.
+
+**NB**: more breaking changes are anticipated for the v0.17.0-rc3 release in
+terms of our data structures and serialization approach.
 
 ### BREAKING CHANGES:
 
-- `[tendermint]` - Direct serialization capabilities have been removed from the
+- `[tendermint]` Direct serialization capabilities have been removed from the
   domain types. They are temporarily available in the `protos` crate. **NB:
   this is unstable and is planned to change again in v0.17.0-rc3**. ([#639])
-- `[tendermint]` - Work has started on making it compulsory to construct domain
+- `[tendermint]` Work has started on making it compulsory to construct domain
   types by way of their constructors to ensure validity. This work is scheduled
   for completion in v0.17.0-rc3. ([#639])
 
@@ -28,9 +42,11 @@
 [#650]: https://github.com/informalsystems/tendermint-rs/issues/650
 [#652]: https://github.com/informalsystems/tendermint-rs/pulls/652
 [#639]: https://github.com/informalsystems/tendermint-rs/pull/639
+[#654]: https://github.com/informalsystems/tendermint-rs/issues/654
 [#660]: https://github.com/informalsystems/tendermint-rs/issues/660
 [#663]: https://github.com/informalsystems/tendermint-rs/issues/663
 [#665]: https://github.com/informalsystems/tendermint-rs/issues/665
+[ibc-rs]: https://github.com/informalsystems/ibc-rs/
 
 ## v0.17.0-rc1
 
