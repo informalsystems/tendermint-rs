@@ -1,11 +1,35 @@
 ## Unreleased
 
+### IMPROVEMENTS:
+
+- `[rpc]` The `WebSocketClient` now adds support for all remaining RPC requests
+  by way of implementing the `Client` trait ([#646])
+  
+[#646]: https://github.com/informalsystems/tendermint-rs/pull/646
+
+## v0.17.0-rc2
+
+*Nov 11, 2020*
+
+The primary focal points for this release are supporting [ibc-rs] and 
+increasing compatibility with
+[Tendermint v0.34.0](https://github.com/tendermint/tendermint/blob/master/UPGRADING.md#v0340).
+
+We are also progressively refactoring the codebase to facilitate a clearer 
+separation between our domain types (where we want to ensure correctness of the
+data structures) and our serialization types. See [#654] for the ongoing work
+on this front.
+
+**NB**: more breaking changes are anticipated for the v0.17.0-rc3 release in
+terms of our data structures and serialization approach. We would generally
+recommend waiting until v0.17.0-rc3 to upgrade.
+
 ### BREAKING CHANGES:
 
-- `[tendermint]` - Direct serialization capabilities have been removed from the
+- `[tendermint]` Direct serialization capabilities have been removed from the
   domain types. They are temporarily available in the `protos` crate. **NB:
   this is unstable and is planned to change again in v0.17.0-rc3**. ([#639])
-- `[tendermint]` - Work has started on making it compulsory to construct domain
+- `[tendermint]` Work has started on making it compulsory to construct domain
   types by way of their constructors to ensure validity. This work is scheduled
   for completion in v0.17.0-rc3. ([#639])
 
@@ -15,24 +39,23 @@
   deemed valid instead of invalid ([#650])
 - `[light-client]` Revert a change introduced in [#652] that would enable DoS attacks,
   where full nodes could spam the light client with massive commits (eg. 10k validators).
-- `[tendermint]` (Since RC1) Time serialization fix (part of [#665])
-- `[tendermint-proto]` (Since RC1) Timestamp serialization fix (part of [#665])
+- `[tendermint]` (Since v0.17.0-rc1) CanonicalBlockId is now correctly decoded to `None`
+  in `CanonicalVote` and `CanonicalProposal` when its hash is empty.
+- `[tendermint]` (Since v0.17.0-rc1) Time serialization fix (part of [#665])
+- `[tendermint-proto]` (Since v0.17.0-rc1) Timestamp serialization fix (part of [#665])
 
 ### FEATURES:
 
 - `[tendermint/proto-compiler]` Protobuf structs generator now also accepts commit IDs from the Tendermint Go repository ([#660])
 
-### IMPROVEMENTS:
-
-- `[rpc]` The `WebSocketClient` now adds support for all remaining RPC requests
-  by way of implementing the `Client` trait ([#646])
-
+[#639]: https://github.com/informalsystems/tendermint-rs/pull/639
 [#650]: https://github.com/informalsystems/tendermint-rs/issues/650
 [#652]: https://github.com/informalsystems/tendermint-rs/pulls/652
-[#639]: https://github.com/informalsystems/tendermint-rs/pull/639
-[#646]: https://github.com/informalsystems/tendermint-rs/pull/646
+[#654]: https://github.com/informalsystems/tendermint-rs/issues/654
 [#660]: https://github.com/informalsystems/tendermint-rs/issues/660
+[#663]: https://github.com/informalsystems/tendermint-rs/issues/663
 [#665]: https://github.com/informalsystems/tendermint-rs/issues/665
+[ibc-rs]: https://github.com/informalsystems/ibc-rs/
 
 ## v0.17.0-rc1
 

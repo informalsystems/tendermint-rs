@@ -43,18 +43,14 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
             // CanonicalVote uses sfixed64, Vote uses int32. They translate to u64 vs i32 in Rust.
             return Err(IntegerOverflow.into());
         }
-        // The JSON encoding says, if the Hash is empty in BlockId, the BlockId should be empty.
-        let block_id =
-            if value.block_id.is_some() && value.block_id.clone().unwrap().hash.is_empty() {
-                None
-            } else {
-                value.block_id.map(TryInto::try_into).transpose()?
-            };
+        // If the Hash is empty in BlockId, the BlockId should be empty.
+        // See: https://github.com/informalsystems/tendermint-rs/issues/663
+        let block_id = value.block_id.filter(|i| !i.hash.is_empty());
         Ok(CanonicalVote {
             vote_type: value.r#type.try_into()?,
             height: value.height.try_into()?,
             round: (value.round as i32).try_into()?,
-            block_id,
+            block_id: block_id.map(TryInto::try_into).transpose()?,
             timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
             chain_id: ChainId::try_from(value.chain_id)?,
         })
@@ -63,19 +59,14 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
 
 impl From<CanonicalVote> for RawCanonicalVote {
     fn from(value: CanonicalVote) -> Self {
-        // The JSON encoding says, if the Hash is empty in BlockId, the BlockId should be empty.
-        // Todo: Does the protobuf encoding have the same rule?
-        let block_id =
-            if value.block_id.is_some() && value.block_id.clone().unwrap().hash.is_empty() {
-                None
-            } else {
-                value.block_id.map(Into::into)
-            };
+        // If the Hash is empty in BlockId, the BlockId should be empty.
+        // See: https://github.com/informalsystems/tendermint-rs/issues/663
+        let block_id = value.block_id.filter(|i| i != &block::Id::default());
         RawCanonicalVote {
             r#type: value.vote_type.into(),
             height: value.height.into(),
             round: value.round.value().into(),
-            block_id,
+            block_id: block_id.map(Into::into),
             timestamp: value.timestamp.map(Into::into),
             chain_id: value.chain_id.to_string(),
         }
@@ -93,5 +84,50 @@ impl CanonicalVote {
             timestamp: vote.timestamp,
             chain_id,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::vote::canonical_vote::CanonicalVote;
+    use crate::vote::Type;
+    use std::convert::TryFrom;
+    use tendermint_proto::google::protobuf::Timestamp;
+    use tendermint_proto::types::CanonicalBlockId as RawCanonicalBlockId;
+    use tendermint_proto::types::CanonicalPartSetHeader as RawCanonicalPartSetHeader;
+    use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
+
+    #[test]
+    fn canonical_vote_domain_checks() {
+        // RawCanonicalVote with edge cases to test domain knowledge
+        // block_id with empty hash should decode to None
+        // timestamp at EPOCH is still considered valid time
+        let proto_cp = RawCanonicalVote {
+            r#type: 1,
+            height: 2,
+            round: 4,
+            block_id: Some(RawCanonicalBlockId {
+                hash: vec![],
+                part_set_header: Some(RawCanonicalPartSetHeader {
+                    total: 1,
+                    hash: vec![1],
+                }),
+            }),
+            timestamp: Some(Timestamp {
+                seconds: 0,
+                nanos: 0,
+            }),
+            chain_id: "testchain".to_string(),
+        };
+        let cp = CanonicalVote::try_from(proto_cp).unwrap();
+        assert_eq!(cp.vote_type, Type::Prevote);
+        assert!(cp.block_id.is_none());
+        assert!(cp.timestamp.is_some());
+
+        // No timestamp is not acceptable
+        // See: https://github.com/informalsystems/tendermint-rs/issues/649
+        let mut proto_cp: RawCanonicalVote = cp.into();
+        proto_cp.timestamp = None;
+        assert!(CanonicalVote::try_from(proto_cp).is_err());
     }
 }

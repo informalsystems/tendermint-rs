@@ -25,6 +25,10 @@ pub const PREFIX_LENGTH: usize = 10;
 ///
 /// Default implementation is an empty Id as defined by the Go implementation in
 /// https://github.com/tendermint/tendermint/blob/1635d1339c73ae6a82e062cd2dc7191b029efa14/types/block.go#L1204 .
+///
+/// If the Hash is empty in BlockId, the BlockId should be empty (encoded to None).
+/// This is implemented outside of this struct. Use the Default trait to check for an empty BlockId.
+/// See: https://github.com/informalsystems/tendermint-rs/issues/663
 #[derive(
     Serialize, Deserialize, Copy, Clone, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord,
 )]
