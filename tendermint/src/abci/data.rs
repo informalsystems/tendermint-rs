@@ -15,7 +15,7 @@ impl TryFrom<Vec<u8>> for Data {
     type Error = Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        // Todo: Are there any restriction on the incoming data?
+        // Todo: Are there any restrictions on the incoming data?
         Ok(Self(value))
     }
 }
