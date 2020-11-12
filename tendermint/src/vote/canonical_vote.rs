@@ -4,7 +4,7 @@ use crate::{Error, Kind::*};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::CanonicalVote as RawCanonicalVote;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// CanonicalVote is used for protobuf encoding a Vote
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -30,7 +30,7 @@ pub struct CanonicalVote {
     pub chain_id: ChainId,
 }
 
-impl DomainType<RawCanonicalVote> for CanonicalVote {}
+impl Protobuf<RawCanonicalVote> for CanonicalVote {}
 
 impl TryFrom<RawCanonicalVote> for CanonicalVote {
     type Error = Error;

@@ -6,8 +6,8 @@ use std::convert::{TryFrom, TryInto};
 use tendermint_proto::privval::RemoteSignerError;
 use tendermint_proto::privval::SignProposalRequest as RawSignProposalRequest;
 use tendermint_proto::privval::SignedProposalResponse as RawSignedProposalResponse;
-use tendermint_proto::DomainType;
 use tendermint_proto::Error as DomainTypeError;
+use tendermint_proto::Protobuf;
 
 /// SignProposalRequest is a request to sign a proposal
 #[derive(Clone, PartialEq, Debug)]
@@ -18,8 +18,8 @@ pub struct SignProposalRequest {
     pub chain_id: ChainId,
 }
 
-impl DomainType<RawSignProposalRequest> for SignProposalRequest {}
-impl DomainType<RawSignedProposalResponse> for SignedProposalResponse {}
+impl Protobuf<RawSignProposalRequest> for SignProposalRequest {}
+impl Protobuf<RawSignedProposalResponse> for SignedProposalResponse {}
 
 impl TryFrom<RawSignProposalRequest> for SignProposalRequest {
     type Error = Error;

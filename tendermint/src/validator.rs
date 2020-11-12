@@ -9,7 +9,7 @@ use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::SimpleValidator as RawSimpleValidator;
 use tendermint_proto::types::Validator as RawValidator;
 use tendermint_proto::types::ValidatorSet as RawValidatorSet;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Validator set contains a vector of validators
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -21,7 +21,7 @@ pub struct Set {
     total_voting_power: vote::Power,
 }
 
-impl DomainType<RawValidatorSet> for Set {}
+impl Protobuf<RawValidatorSet> for Set {}
 
 impl TryFrom<RawValidatorSet> for Set {
     type Error = Error;
@@ -211,7 +211,7 @@ pub struct SimpleValidator {
     pub voting_power: vote::Power,
 }
 
-impl DomainType<RawSimpleValidator> for SimpleValidator {}
+impl Protobuf<RawSimpleValidator> for SimpleValidator {}
 
 impl TryFrom<RawSimpleValidator> for SimpleValidator {
     type Error = Error;

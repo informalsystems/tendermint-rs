@@ -2,7 +2,7 @@ use crate::chain::Id as ChainId;
 use crate::Error;
 use std::convert::TryFrom;
 use tendermint_proto::privval::PubKeyRequest as RawPubKeyRequest;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// PubKeyRequest requests the consensus public key from the remote signer.
 #[derive(Clone, PartialEq, Debug)]
@@ -11,7 +11,7 @@ pub struct PubKeyRequest {
     pub chain_id: ChainId,
 }
 
-impl DomainType<RawPubKeyRequest> for PubKeyRequest {}
+impl Protobuf<RawPubKeyRequest> for PubKeyRequest {}
 
 impl TryFrom<RawPubKeyRequest> for PubKeyRequest {
     type Error = Error;
@@ -36,7 +36,7 @@ mod tests {
     use super::PubKeyRequest;
     use crate::chain::Id as ChainId;
     use std::str::FromStr;
-    use tendermint_proto::DomainType;
+    use tendermint_proto::Protobuf;
 
     #[test]
     fn test_empty_pubkey_msg() {

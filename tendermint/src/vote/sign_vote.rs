@@ -5,8 +5,8 @@ use bytes::BufMut;
 use std::convert::TryFrom;
 use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
 use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
-use tendermint_proto::DomainType;
 use tendermint_proto::Error as DomainTypeError;
+use tendermint_proto::Protobuf;
 
 /// SignVoteRequest is a request to sign a vote
 #[derive(Clone, PartialEq, Debug)]
@@ -17,7 +17,7 @@ pub struct SignVoteRequest {
     pub chain_id: chain::Id,
 }
 
-impl DomainType<RawSignVoteRequest> for SignVoteRequest {}
+impl Protobuf<RawSignVoteRequest> for SignVoteRequest {}
 
 impl TryFrom<RawSignVoteRequest> for SignVoteRequest {
     type Error = Error;
@@ -67,7 +67,7 @@ pub struct SignedVoteResponse {
     pub error: Option<RemoteSignerError>,
 }
 
-impl DomainType<RawSignedVoteResponse> for SignedVoteResponse {}
+impl Protobuf<RawSignedVoteResponse> for SignedVoteResponse {}
 
 impl TryFrom<RawSignedVoteResponse> for SignedVoteResponse {
     type Error = Error;
@@ -106,7 +106,7 @@ mod tests {
     use chrono::{DateTime, Utc};
     use std::convert::TryFrom;
     use std::str::FromStr;
-    use tendermint_proto::DomainType;
+    use tendermint_proto::Protobuf;
 
     #[test]
     fn test_vote_serialization() {

@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 
 use tendermint_proto::crypto::ProofOp as RawProofOp;
 use tendermint_proto::crypto::ProofOps as RawProofOps;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use crate::serializers;
 use crate::Error;
@@ -34,7 +34,7 @@ pub struct ProofOp {
     pub data: Vec<u8>,
 }
 
-impl DomainType<RawProofOp> for ProofOp {}
+impl Protobuf<RawProofOp> for ProofOp {}
 
 impl TryFrom<RawProofOp> for ProofOp {
     type Error = Error;
@@ -58,7 +58,7 @@ impl From<ProofOp> for RawProofOp {
     }
 }
 
-impl DomainType<RawProofOps> for Proof {}
+impl Protobuf<RawProofOps> for Proof {}
 
 impl TryFrom<RawProofOps> for Proof {
     type Error = Error;

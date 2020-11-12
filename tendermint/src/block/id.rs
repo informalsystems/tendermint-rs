@@ -13,7 +13,7 @@ use tendermint_proto::types::{
     BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId,
     PartSetHeader as RawPartSetHeader,
 };
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Length of a block ID prefix displayed for debugging purposes
 pub const PREFIX_LENGTH: usize = 10;
@@ -57,7 +57,7 @@ pub struct Id {
     pub part_set_header: PartSetHeader,
 }
 
-impl DomainType<RawBlockId> for Id {}
+impl Protobuf<RawBlockId> for Id {}
 
 impl TryFrom<RawBlockId> for Id {
     type Error = Error;
