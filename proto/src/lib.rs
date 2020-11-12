@@ -135,31 +135,30 @@ pub mod serializers;
 ///
 /// impl Protobuf<MyRawType> for MyDomainType {}
 ///
-/// fn main() {
-///     // Simulate an incoming valid raw message
-///     let valid_raw = MyRawType { a: 1, b: "Hello!".to_owned() };
-///     let mut valid_raw_bytes: Vec<u8> = Vec::new();
-///     valid_raw.encode(&mut valid_raw_bytes).unwrap();
-///     assert!(!valid_raw_bytes.is_empty());
 ///
-///     // Try to decode the simulated incoming message
-///     let valid_domain = MyDomainType::decode(valid_raw_bytes.clone().as_ref()).unwrap();
-///     assert_eq!(1, valid_domain.a);
-///     assert_eq!("Hello!".to_owned(), valid_domain.b);
+/// // Simulate an incoming valid raw message
+/// let valid_raw = MyRawType { a: 1, b: "Hello!".to_owned() };
+/// let mut valid_raw_bytes: Vec<u8> = Vec::new();
+/// valid_raw.encode(&mut valid_raw_bytes).unwrap();
+/// assert!(!valid_raw_bytes.is_empty());
 ///
-///     // Encode it to compare the serialized form to what we received
-///     let mut valid_domain_bytes: Vec<u8> = Vec::new();
-///     valid_domain.encode(&mut valid_domain_bytes).unwrap();
-///     assert_eq!(valid_raw_bytes, valid_domain_bytes);
+/// // Try to decode the simulated incoming message
+/// let valid_domain = MyDomainType::decode(valid_raw_bytes.clone().as_ref()).unwrap();
+/// assert_eq!(1, valid_domain.a);
+/// assert_eq!("Hello!".to_owned(), valid_domain.b);
 ///
-///     // Simulate an incoming invalid raw message
-///     let invalid_raw = MyRawType { a: 0, b: "Hello!".to_owned() };
-///     let mut invalid_raw_bytes: Vec<u8> = Vec::new();
-///     invalid_raw.encode(&mut invalid_raw_bytes).unwrap();
+/// // Encode it to compare the serialized form to what we received
+/// let mut valid_domain_bytes: Vec<u8> = Vec::new();
+/// valid_domain.encode(&mut valid_domain_bytes).unwrap();
+/// assert_eq!(valid_raw_bytes, valid_domain_bytes);
 ///
-///     // We expect a validation error here
-///     assert!(MyDomainType::decode(invalid_raw_bytes.as_ref()).is_err());
-/// }
+/// // Simulate an incoming invalid raw message
+/// let invalid_raw = MyRawType { a: 0, b: "Hello!".to_owned() };
+/// let mut invalid_raw_bytes: Vec<u8> = Vec::new();
+/// invalid_raw.encode(&mut invalid_raw_bytes).unwrap();
+///
+/// // We expect a validation error here
+/// assert!(MyDomainType::decode(invalid_raw_bytes.as_ref()).is_err());
 /// ```
 pub trait Protobuf<T: Message + From<Self> + Default>
 where
