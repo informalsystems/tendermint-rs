@@ -183,8 +183,8 @@ fn broadcast_tx_commit() {
     .unwrap();
 
     assert_eq!(
-        response.deliver_tx.data.unwrap().as_ref().to_vec(),
-        vec![
+        response.deliver_tx.data.unwrap().value(),
+        &vec![
             10, 22, 10, 20, 99, 111, 110, 110, 101, 99, 116, 105, 111, 110, 95, 111, 112, 101, 110,
             95, 105, 110, 105, 116
         ]

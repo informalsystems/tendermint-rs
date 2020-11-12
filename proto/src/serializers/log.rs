@@ -11,7 +11,14 @@ where
     // This has the added side-effect that it consumes escaped quotes in sub-structs,
     // deserializing them properly as Value.
     let incoming_string = String::deserialize(deserializer)?;
-    serde_json::Value::from_str(&incoming_string).map_err(|e| D::Error::custom(format!("{}", e)))
+    if incoming_string.is_empty() {
+        return Ok(serde_json::Value::Null);
+    }
+    // Try to deserialize as-is (usually sequence/array) or as string with extra quotes.
+    serde_json::Value::from_str(&incoming_string).or_else(|e| {
+        serde_json::Value::from_str(&format!("\"{}\"", incoming_string))
+            .map_err(|_| D::Error::custom(format!("{}", e)))
+    })
 }
 
 /// Serialize from serde_json::Value into string
@@ -19,7 +26,6 @@ pub fn serialize<S>(value: &serde_json::Value, serializer: S) -> Result<S::Ok, S
 where
     S: Serializer,
 {
-    // Todo: Re-add quote escapes?
     value.to_string().serialize(serializer)
 }
 

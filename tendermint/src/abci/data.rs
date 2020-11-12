@@ -1,6 +1,4 @@
-use crate::Error;
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
 use tendermint_proto::serializers::bytes::Base64;
 
 /// ABCI transaction data.
@@ -8,15 +6,12 @@ use tendermint_proto::serializers::bytes::Base64;
 /// Transactions are opaque binary blobs which are validated according to
 /// application-specific rules.
 #[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
-#[serde(try_from = "Base64", into = "Base64")]
+#[serde(from = "Base64", into = "Base64")]
 pub struct Data(Vec<u8>);
 
-impl TryFrom<Vec<u8>> for Data {
-    type Error = Error;
-
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        // Todo: Are there any restrictions on the incoming data?
-        Ok(Self(value))
+impl From<Vec<u8>> for Data {
+    fn from(value: Vec<u8>) -> Self {
+        Self(value)
     }
 }
 
@@ -26,11 +21,9 @@ impl From<Data> for Vec<u8> {
     }
 }
 
-impl TryFrom<Base64> for Data {
-    type Error = Error;
-
-    fn try_from(value: Base64) -> Result<Self, Self::Error> {
-        value.0.try_into()
+impl From<Base64> for Data {
+    fn from(value: Base64) -> Self {
+        value.0.into()
     }
 }
 
@@ -40,16 +33,16 @@ impl From<Data> for Base64 {
     }
 }
 
-impl AsRef<[u8]> for Data {
-    fn as_ref(&self) -> &[u8] {
-        self.0.as_ref()
+impl Data {
+    /// Get value
+    pub fn value(&self) -> &Vec<u8> {
+        &self.0
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::abci::Data;
-    use std::convert::TryFrom;
 
     #[test]
     fn test_deserialization() {
@@ -71,7 +64,7 @@ mod tests {
 
     #[test]
     fn test_serialization() {
-        let mydata: Data = Data::try_from(vec![1, 2, 3, 4]).unwrap();
+        let mydata: Data = vec![1, 2, 3, 4].into();
         let json = serde_json::to_string(&mydata).unwrap();
         assert_eq!(json, "\"AQIDBA==\"");
     }
