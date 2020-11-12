@@ -155,7 +155,6 @@ fn broadcast_tx_sync() {
     .unwrap();
 
     assert_eq!(response.code, Code::Ok);
-
     assert_eq!(
         &response.hash.to_string(),
         "88D4266FD4E6338D13B845FCF289579D209C897823B9217DA3E161936F031589"
@@ -170,7 +169,6 @@ fn broadcast_tx_sync_int() {
     .unwrap();
 
     assert_eq!(response.code, Code::Ok);
-
     assert_eq!(
         &response.hash.to_string(),
         "88D4266FD4E6338D13B845FCF289579D209C897823B9217DA3E161936F031589"
@@ -185,8 +183,15 @@ fn broadcast_tx_commit() {
     .unwrap();
 
     assert_eq!(
+        response.deliver_tx.data.unwrap().as_ref().to_vec(),
+        vec![
+            10, 22, 10, 20, 99, 111, 110, 110, 101, 99, 116, 105, 111, 110, 95, 111, 112, 101, 110,
+            95, 105, 110, 105, 116
+        ]
+    );
+    assert_eq!(
         &response.hash.to_string(),
-        "88D4266FD4E6338D13B845FCF289579D209C897823B9217DA3E161936F031589"
+        "EFA00D85332A8197CF290E4724BAC877EA93DDFE547A561828BAE45A29BF1DAD"
     );
 }
 
