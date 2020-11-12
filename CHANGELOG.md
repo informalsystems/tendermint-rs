@@ -1,3 +1,12 @@
+## Unreleased
+
+### BREAKING CHANGES:
+
+- `[tendermint-proto]` The `DomainType` trait has now been renamed to
+  `Protobuf` to clarify its purpose throughout the codebase. ([#672])
+
+[#672]: https://github.com/informalsystems/tendermint-rs/pull/672
+
 ## v0.17.0-rc2
 
 *Nov 11, 2020*
