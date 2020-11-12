@@ -26,7 +26,14 @@ pub fn serialize<S>(value: &serde_json::Value, serializer: S) -> Result<S::Ok, S
 where
     S: Serializer,
 {
-    value.to_string().serialize(serializer)
+    // Remove extra quotes that might have been added during deserialization.
+    if value.is_string() {
+        let v = value.to_string();
+        let v = v.strip_prefix(r#"""#).unwrap_or(&v);
+        v.strip_suffix(r#"""#).unwrap_or(&v).serialize(serializer)
+    } else {
+        value.to_string().serialize(serializer)
+    }
 }
 
 /// Helper struct to serialize/deserialize log messages
