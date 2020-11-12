@@ -47,6 +47,7 @@
 pub mod bytes;
 pub mod evidence;
 pub mod from_str;
+pub mod log;
 pub mod nullable;
 pub mod optional;
 pub mod time_duration;

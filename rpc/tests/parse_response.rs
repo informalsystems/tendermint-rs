@@ -110,7 +110,7 @@ fn block_results() {
 
     let validator_updates = response.validator_updates;
     let deliver_tx = response.txs_results.unwrap();
-    let log_json = &deliver_tx[0].log.parse_json().unwrap();
+    let log_json = deliver_tx[0].log.value();
     let log_json_value = &log_json.as_array().as_ref().unwrap()[0];
 
     assert_eq!(log_json_value["msg_index"].as_str().unwrap(), "0");
