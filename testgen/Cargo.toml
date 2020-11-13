@@ -1,9 +1,17 @@
 [package]
 name = "tendermint-testgen"
 version = "0.17.0-rc2"
-authors = ["Andrey Kuprianov <andrey@informal.systems>"]
+authors = ["Andrey Kuprianov <andrey@informal.systems>", "Shivani Joshi <shivani@informal.systems>"]
 edition = "2018"
-publish = false
+readme  = "README.md"
+license    = "Apache-2.0"
+homepage   = "https://www.tendermint.com/"
+repository = "https://github.com/informalsystems/tendermint-rs/tree/master/testgen"
+description = """
+    tendermint-testgen is a library and a small binary utility for generating 
+    tendermint datastructures from minimal input (for testing purposes only).
+    The library also contains some functionality to simplify running test batches.
+    """
 
 [dependencies]
 tendermint = { version = "0.17.0-rc2", path = "../tendermint" }
