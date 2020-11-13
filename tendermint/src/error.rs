@@ -176,10 +176,6 @@ pub enum Kind {
     /// Missing max_age_duration in evidence parameters
     #[error("missing max_age_duration")]
     MissingMaxAgeDuration,
-
-    /// Invalid log
-    #[error("invalid log")]
-    InvalidLog,
 }
 
 impl Kind {
