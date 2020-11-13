@@ -165,72 +165,83 @@ where
     Self: Sized + Clone + TryFrom<T>,
     <Self as TryFrom<T>>::Error: Into<BoxError>,
 {
-    /// Encodes the DomainType into a buffer.
+    /// Encode into a buffer in Protobuf format.
     ///
-    /// This function replaces the Prost::Message encode() function for DomainTypes.
+    /// Equivalent to [`prost::Message::encode`].
+    ///
+    /// [`prost::Message::encode`]: https://docs.rs/prost/*/prost/trait.Message.html#method.encode
     fn encode<B: BufMut>(&self, buf: &mut B) -> Result<(), Error> {
         T::from(self.clone())
             .encode(buf)
             .map_err(|e| Kind::EncodeMessage.context(e).into())
     }
 
-    /// Encodes the DomainType with a length-delimiter to a buffer.
+    /// Encode with a length-delimiter to a buffer in Protobuf format.
     ///
     /// An error will be returned if the buffer does not have sufficient capacity.
     ///
-    /// This function replaces the Prost::Message encode_length_delimited() function for
-    /// DomainTypes.
+    /// Equivalent to [`prost::Message::encode_length_delimited`].
+    ///
+    /// [`prost::Message::encode_length_delimited`]: https://docs.rs/prost/*/prost/trait.Message.html#method.encode_length_delimited
     fn encode_length_delimited<B: BufMut>(&self, buf: &mut B) -> Result<(), Error> {
         T::from(self.clone())
             .encode_length_delimited(buf)
             .map_err(|e| Kind::EncodeMessage.context(e).into())
     }
 
-    /// Decodes an instance of the message from a buffer and then converts it into DomainType.
+    /// Constructor that attempts to decode an instance from a buffer.
     ///
     /// The entire buffer will be consumed.
     ///
-    /// This function replaces the Prost::Message decode() function for DomainTypes.
+    /// Equivalent to [`prost::Message::decode`] but with additional validation
+    /// prior to constructing the destination type.
+    ///
+    /// [`prost::Message::decode`]: https://docs.rs/prost/*/prost/trait.Message.html#method.decode
     fn decode<B: Buf>(buf: B) -> Result<Self, Error> {
         T::decode(buf).map_or_else(
             |e| Err(Kind::DecodeMessage.context(e).into()),
-            |t| Self::try_from(t).map_err(|e| Kind::TryIntoDomainType.context(e).into()),
+            |t| Self::try_from(t).map_err(|e| Kind::TryFromProtobuf.context(e).into()),
         )
     }
 
-    /// Decodes a length-delimited instance of the message from the buffer.
+    /// Constructor that attempts to decode a length-delimited instance from
+    /// the buffer.
     ///
     /// The entire buffer will be consumed.
     ///
-    /// This function replaces the Prost::Message decode_length_delimited() function for
-    /// DomainTypes.
+    /// Equivalent to [`prost::Message::decode_length_delimited`] but with
+    /// additional validation prior to constructing the destination type.
+    ///
+    /// [`prost::Message::decode_length_delimited`]: https://docs.rs/prost/*/prost/trait.Message.html#method.decode_length_delimited
     fn decode_length_delimited<B: Buf>(buf: B) -> Result<Self, Error> {
         T::decode_length_delimited(buf).map_or_else(
             |e| Err(Kind::DecodeMessage.context(e).into()),
-            |t| Self::try_from(t).map_err(|e| Kind::TryIntoDomainType.context(e).into()),
+            |t| Self::try_from(t).map_err(|e| Kind::TryFromProtobuf.context(e).into()),
         )
     }
 
     /// Returns the encoded length of the message without a length delimiter.
     ///
-    /// This function replaces the Prost::Message encoded_len() function for DomainTypes.
+    /// Equivalent to [`prost::Message::encoded_len`].
+    ///
+    /// [`prost::Message::encoded_len`]: https://docs.rs/prost/*/prost/trait.Message.html#method.encoded_len
     fn encoded_len(&self) -> usize {
         T::from(self.clone()).encoded_len()
     }
 
-    /// Encodes the DomainType into a protobuf-encoded Vec<u8>
+    /// Encodes into a Protobuf-encoded `Vec<u8>`.
     fn encode_vec(&self) -> Result<Vec<u8>, Error> {
         let mut wire = Vec::with_capacity(self.encoded_len());
         self.encode(&mut wire).map(|_| wire)
     }
 
-    /// Decodes a protobuf-encoded instance of the message from a Vec<u8> and then converts it into
-    /// DomainType.
+    /// Constructor that attempts to decode a Protobuf-encoded instance from a
+    /// `Vec<u8>` (or equivalent).
     fn decode_vec(v: &[u8]) -> Result<Self, Error> {
         Self::decode(v)
     }
 
-    /// Encodes the DomainType with a length-delimiter to a Vec<u8> protobuf-encoded message.
+    /// Encode with a length-delimiter to a `Vec<u8>` Protobuf-encoded message.
     fn encode_length_delimited_vec(&self) -> Result<Vec<u8>, Error> {
         let len = self.encoded_len();
         let lenu64 = len.try_into().map_err(|e| Kind::EncodeMessage.context(e))?;
@@ -238,8 +249,8 @@ where
         self.encode_length_delimited(&mut wire).map(|_| wire)
     }
 
-    /// Decodes a protobuf-encoded instance of the message with a length-delimiter from a Vec<u8>
-    /// and then converts it into DomainType.
+    /// Constructor that attempts to decode a Protobuf-encoded instance with a
+    /// length-delimiter from a `Vec<u8>` or equivalent.
     fn decode_length_delimited_vec(v: &[u8]) -> Result<Self, Error> {
         Self::decode_length_delimited(v)
     }

@@ -5,14 +5,14 @@ use tendermint_proto::Protobuf;
 
 impl Protobuf<RawBlockId> for BlockId {}
 
-// Example implementation of a protobuf struct using DomainType.
+// Example implementation of a protobuf struct using Protobuf.
 #[derive(Clone, Debug)]
 pub struct BlockId {
     hash: String,
     part_set_header_exists: bool,
 }
 
-// DomainTypes MUST have the TryFrom trait to convert from RawTypes.
+// Domain types MUST have the TryFrom trait to convert from Protobuf messages.
 impl TryFrom<RawBlockId> for BlockId {
     type Error = &'static str;
 
@@ -25,7 +25,7 @@ impl TryFrom<RawBlockId> for BlockId {
     }
 }
 
-// DomainTypes MUST be able to convert to RawTypes without errors using the From trait.
+// Domain types MUST be able to convert to Protobuf messages without errors using the From trait.
 impl From<BlockId> for RawBlockId {
     fn from(value: BlockId) -> Self {
         RawBlockId {
@@ -49,7 +49,7 @@ impl PartialEq for BlockId {
 }
 
 #[test]
-pub fn domaintype_struct_example() {
+pub fn protobuf_struct_example() {
     let my_domain_type = BlockId {
         hash: "Hello world!".to_string(),
         part_set_header_exists: false,
@@ -68,7 +68,7 @@ pub fn domaintype_struct_example() {
 }
 
 #[test]
-pub fn domaintype_struct_length_delimited_example() {
+pub fn protobuf_struct_length_delimited_example() {
     let my_domain_type = BlockId {
         hash: "Hello world!".to_string(),
         part_set_header_exists: false,
@@ -87,7 +87,7 @@ pub fn domaintype_struct_length_delimited_example() {
 }
 
 #[test]
-pub fn domaintype_struct_conveniences_example() {
+pub fn protobuf_struct_conveniences_example() {
     let my_domain_type = BlockId {
         hash: "Hello world!".to_string(),
         part_set_header_exists: false,

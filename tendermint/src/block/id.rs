@@ -53,7 +53,7 @@ pub struct Id {
     ///
     /// PartSetHeader in protobuf is defined as never nil using the gogoproto
     /// annotations. This does not translate to Rust, but we can indicate this
-    /// in the DomainType.
+    /// in the domain type.
     pub part_set_header: PartSetHeader,
 }
 
