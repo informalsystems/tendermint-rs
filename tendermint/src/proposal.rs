@@ -17,7 +17,7 @@ use crate::{Error, Kind};
 use bytes::BufMut;
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Proposal as RawProposal;
-use tendermint_proto::{Error as DomainTypeError, Protobuf};
+use tendermint_proto::{Error as ProtobufError, Protobuf};
 
 /// Proposal
 #[derive(Clone, PartialEq, Debug)]
@@ -83,7 +83,7 @@ impl Proposal {
         &self,
         chain_id: ChainId,
         sign_bytes: &mut B,
-    ) -> Result<bool, DomainTypeError>
+    ) -> Result<bool, ProtobufError>
     where
         B: BufMut,
     {
@@ -92,7 +92,7 @@ impl Proposal {
     }
 
     /// Create signable vector from Proposal.
-    pub fn to_signable_vec(&self, chain_id: ChainId) -> Result<Vec<u8>, DomainTypeError> {
+    pub fn to_signable_vec(&self, chain_id: ChainId) -> Result<Vec<u8>, ProtobufError> {
         CanonicalProposal::new(self.clone(), chain_id).encode_length_delimited_vec()
     }
 

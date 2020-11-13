@@ -5,7 +5,7 @@ use bytes::BufMut;
 use std::convert::TryFrom;
 use tendermint_proto::privval::SignedVoteResponse as RawSignedVoteResponse;
 use tendermint_proto::privval::{RemoteSignerError, SignVoteRequest as RawSignVoteRequest};
-use tendermint_proto::Error as DomainTypeError;
+use tendermint_proto::Error as ProtobufError;
 use tendermint_proto::Protobuf;
 
 /// SignVoteRequest is a request to sign a vote
@@ -44,7 +44,7 @@ impl From<SignVoteRequest> for RawSignVoteRequest {
 
 impl SignVoteRequest {
     /// Create signable bytes from Vote.
-    pub fn to_signable_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, DomainTypeError>
+    pub fn to_signable_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, ProtobufError>
     where
         B: BufMut,
     {
@@ -53,7 +53,7 @@ impl SignVoteRequest {
     }
 
     /// Create signable vector from Vote.
-    pub fn to_signable_vec(&self) -> Result<Vec<u8>, DomainTypeError> {
+    pub fn to_signable_vec(&self) -> Result<Vec<u8>, ProtobufError> {
         self.vote.to_signable_vec(self.chain_id.clone())
     }
 }

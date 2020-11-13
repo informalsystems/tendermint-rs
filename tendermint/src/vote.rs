@@ -20,7 +20,7 @@ use ed25519::SIGNATURE_LENGTH as ed25519SignatureLength;
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Vote as RawVote;
-use tendermint_proto::{Error as DomainTypeError, Protobuf};
+use tendermint_proto::{Error as ProtobufError, Protobuf};
 
 use crate::signature::Signature::Ed25519;
 
@@ -125,7 +125,7 @@ impl Vote {
         &self,
         chain_id: ChainId,
         sign_bytes: &mut B,
-    ) -> Result<bool, DomainTypeError>
+    ) -> Result<bool, ProtobufError>
     where
         B: BufMut,
     {
@@ -134,7 +134,7 @@ impl Vote {
     }
 
     /// Create signable vector from Vote.
-    pub fn to_signable_vec(&self, chain_id: ChainId) -> Result<Vec<u8>, DomainTypeError> {
+    pub fn to_signable_vec(&self, chain_id: ChainId) -> Result<Vec<u8>, ProtobufError> {
         CanonicalVote::new(self.clone(), chain_id).encode_length_delimited_vec()
     }
 
