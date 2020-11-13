@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
 use std::fmt;
+use std::fmt::Display;
 
 /// ABCI log data
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
