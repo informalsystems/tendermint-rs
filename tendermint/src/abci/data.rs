@@ -1,13 +1,12 @@
 use serde::{Deserialize, Serialize};
-use tendermint_proto::serializers::bytes::Base64;
 
 /// ABCI transaction data.
 ///
 /// Transactions are opaque binary blobs which are validated according to
 /// application-specific rules.
 #[derive(Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
-#[serde(from = "Base64", into = "Base64")]
-pub struct Data(Vec<u8>);
+#[serde(transparent)]
+pub struct Data(#[serde(with = "crate::serializers::bytes::base64string")] Vec<u8>);
 
 impl From<Vec<u8>> for Data {
     fn from(value: Vec<u8>) -> Self {
@@ -18,18 +17,6 @@ impl From<Vec<u8>> for Data {
 impl From<Data> for Vec<u8> {
     fn from(value: Data) -> Self {
         value.0
-    }
-}
-
-impl From<Base64> for Data {
-    fn from(value: Base64) -> Self {
-        value.0.into()
-    }
-}
-
-impl From<Data> for Base64 {
-    fn from(value: Data) -> Self {
-        Self(value.into())
     }
 }
 
