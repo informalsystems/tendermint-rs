@@ -15,7 +15,6 @@ mod rpc {
 
     use futures::StreamExt;
     use std::convert::TryFrom;
-    use std::str::FromStr;
     use subtle_encoding::base64;
     use tendermint::abci::Log;
     use tendermint::abci::{Code, Transaction};
@@ -60,7 +59,7 @@ mod rpc {
             .unwrap();
 
         assert_eq!(abci_query.code, Code::Ok);
-        assert_eq!(abci_query.log, Log::from_str("does not exist").unwrap());
+        assert_eq!(abci_query.log, Log::new("does not exist".to_string()));
         assert_eq!(abci_query.info, String::new());
         assert_eq!(abci_query.index, 0);
         assert_eq!(&abci_query.key, &Vec::<u8>::new());

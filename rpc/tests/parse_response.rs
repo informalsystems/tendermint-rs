@@ -3,6 +3,7 @@
 use std::{fs, path::PathBuf};
 use tendermint::abci::Code;
 
+use std::str::FromStr;
 use tendermint_rpc::{self as rpc, endpoint, Response};
 
 const EXAMPLE_APP: &str = "GaiaApp";
@@ -111,10 +112,10 @@ fn block_results() {
     let validator_updates = response.validator_updates;
     let deliver_tx = response.txs_results.unwrap();
     let log_json = deliver_tx[0].log.value();
-    let log_json_value = &log_json.as_array().as_ref().unwrap()[0];
+    let log_json_value = serde_json::Value::from_str(log_json.as_str()).unwrap();
 
-    assert_eq!(log_json_value["msg_index"].as_str().unwrap(), "0");
-    assert_eq!(log_json_value["success"].as_bool().unwrap(), true);
+    assert_eq!(log_json_value[0]["msg_index"].as_str().unwrap(), "0");
+    assert_eq!(log_json_value[0]["success"].as_bool().unwrap(), true);
 
     assert_eq!(deliver_tx[0].gas_wanted.value(), 200_000);
     assert_eq!(deliver_tx[0].gas_used.value(), 105_662);
