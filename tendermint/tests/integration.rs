@@ -59,7 +59,7 @@ mod rpc {
             .unwrap();
 
         assert_eq!(abci_query.code, Code::Ok);
-        assert_eq!(abci_query.log, Log::new("does not exist".to_string()));
+        assert_eq!(abci_query.log, Log::from("does not exist"));
         assert_eq!(abci_query.info, String::new());
         assert_eq!(abci_query.index, 0);
         assert_eq!(&abci_query.key, &Vec::<u8>::new());
