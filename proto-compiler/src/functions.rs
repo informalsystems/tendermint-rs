@@ -1,7 +1,7 @@
 use git2::build::{CheckoutBuilder, RepoBuilder};
 use git2::{AutotagOption, Commit, FetchOptions, Oid, Reference, Repository};
-use std::fs::remove_dir_all;
-use std::fs::{copy, create_dir_all};
+use std::fs::{copy, create_dir_all, remove_dir_all, File};
+use std::io::Write;
 use std::path::PathBuf;
 use walkdir::WalkDir;
 
@@ -33,7 +33,7 @@ fn clone_new(dir: &PathBuf, url: &str) -> Repository {
     builder.clone(url, dir).unwrap()
 }
 
-fn fetch_existing<'a>(dir: &PathBuf, url: &str) -> Repository {
+fn fetch_existing(dir: &PathBuf, url: &str) -> Repository {
     println!(
         "  [info] => Fetching from {} into existing {} folder",
         url,
@@ -145,13 +145,13 @@ fn find_reference_or_commit<'a>(
 }
 
 /// Copy generated files to target folder
-pub fn copy_files(src_dir: PathBuf, target_dir: PathBuf) {
+pub fn copy_files(src_dir: &PathBuf, target_dir: &PathBuf) {
     // Remove old compiled files
-    remove_dir_all(&target_dir).unwrap_or_default();
-    create_dir_all(&target_dir).unwrap();
+    remove_dir_all(target_dir).unwrap_or_default();
+    create_dir_all(target_dir).unwrap();
 
     // Copy new compiled files (prost does not use folder structures)
-    let errors = WalkDir::new(&src_dir)
+    let errors = WalkDir::new(src_dir)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
@@ -194,4 +194,46 @@ pub fn find_proto_files(proto_paths: Vec<String>) -> Vec<PathBuf> {
         );
     }
     protos
+}
+
+/// Create tendermint.rs with library information
+pub fn generate_tendermint_lib(prost_dir: &PathBuf, tendermint_lib_target: &PathBuf) {
+    let file_names = WalkDir::new(prost_dir)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            e.file_type().is_file()
+                && e.file_name().to_str().unwrap().starts_with("tendermint.")
+                && e.file_name().to_str().unwrap().ends_with(".rs")
+        })
+        .map(|d| d.file_name().to_str().unwrap().to_string())
+        .collect::<Vec<_>>();
+    let mut content =
+        String::from("//! Tendermint-proto auto-generated sub-modules for Tendermint\n\n");
+    let tab = "    ".to_string();
+    for file_name in file_names {
+        let parts: Vec<_> = file_name.split('.').collect();
+        // Cut the first item "tendermint" and the last item "rs".
+        let file_parts_range = 1..parts.len() - 1;
+        for i in file_parts_range.clone() {
+            content = format!("{}{}pub mod {} {{\n", content, tab.repeat(i - 1), parts[i]);
+        }
+        content = format!(
+            "{}{}include!(\"prost/{}\");\n",
+            content,
+            tab.repeat(file_parts_range.end - file_parts_range.start),
+            file_name
+        );
+        for i in file_parts_range.clone() {
+            content = format!(
+                "{}{}}}\n",
+                content,
+                tab.repeat(file_parts_range.end - file_parts_range.start - i)
+            );
+        }
+    }
+    let mut file =
+        File::create(tendermint_lib_target).expect("tendermint library file create failed");
+    file.write_all(content.as_bytes())
+        .expect("tendermint library file write failed");
 }
