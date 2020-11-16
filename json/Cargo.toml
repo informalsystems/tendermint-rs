@@ -1,0 +1,21 @@
+[package]
+name = "tendermint-json"
+version = "0.17.0-rc2"
+authors = ["Thane Thomson <thane@informal.systems>"]
+edition = "2018"
+readme = "README.md"
+license = "Apache-2.0"
+homepage   = "https://www.tendermint.com/"
+repository = "https://github.com/informalsystems/tendermint-rs/tree/master/json"
+description = """
+    tendermint-json contains representations of all Tendermint data structures
+    such that they can be serialized/deserialized to/from JSON (and other
+    formats supported by serde).
+    """
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1", features = [ "derive" ] }
+serde_bytes = "0.11"
+serde_json = "1"
+subtle-encoding = "0.5"

@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "json",
     "light-client",
     "light-node",
     "proto",
