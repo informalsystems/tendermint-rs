@@ -144,6 +144,7 @@ impl Sub<Duration> for Time {
     }
 }
 
+// TODO(thane): Check if we can remove this.
 /// Parse [`Time`] from a type
 pub trait ParseTimestamp {
     /// Parse [`Time`], or return an [`Error`] if parsing failed
