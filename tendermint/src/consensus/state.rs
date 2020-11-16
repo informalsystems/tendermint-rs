@@ -1,6 +1,7 @@
 //! Tendermint consensus state
 
 pub use crate::block;
+use serde::{Deserialize, Serialize};
 pub use std::{cmp::Ordering, fmt};
 
 /// Placeholder string to show when block ID is absent. Syntax from:
@@ -8,7 +9,9 @@ pub use std::{cmp::Ordering, fmt};
 pub const NIL_PLACEHOLDER: &str = "<nil>";
 
 /// Tendermint consensus state
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+// Serde serialization for KMS state file read/write.
+// https://github.com/informalsystems/tendermint-rs/issues/675
+#[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
 pub struct State {
     /// Current block height
     pub height: block::Height,
@@ -20,6 +23,7 @@ pub struct State {
     pub step: i8,
 
     /// Block ID being proposed (if available)
+    #[serde(with = "tendermint_proto::serializers::optional")]
     pub block_id: Option<block::Id>,
 }
 

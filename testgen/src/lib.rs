@@ -1,3 +1,10 @@
+//! `tendermint-testgen` is a small utility for producing Tendermint data
+//! structures from minimal input (for testing purposes only).
+//!
+//! See the [repository] for details.
+//!
+//! [repository]: https://github.com/informalsystems/tendermint-rs/tree/master/testgen
+
 #[macro_use]
 pub mod helpers;
 
