@@ -208,29 +208,39 @@ pub fn generate_tendermint_lib(prost_dir: &PathBuf, tendermint_lib_target: &Path
         })
         .map(|d| d.file_name().to_str().unwrap().to_string())
         .collect::<Vec<_>>();
+
     let mut content =
-        String::from("//! Tendermint-proto auto-generated sub-modules for Tendermint\n\n");
-    let tab = "    ".to_string();
+        String::from("//! Tendermint-proto auto-generated sub-modules for Tendermint\n");
+
     for file_name in file_names {
-        let parts: Vec<_> = file_name.split('.').collect();
-        // Cut the first item "tendermint" and the last item "rs".
-        let file_parts_range = 1..parts.len() - 1;
-        for i in file_parts_range.clone() {
-            content = format!("{}{}pub mod {} {{\n", content, tab.repeat(i - 1), parts[i]);
-        }
-        content = format!(
-            "{}{}include!(\"prost/{}\");\n",
-            content,
-            tab.repeat(file_parts_range.end - file_parts_range.start),
+        let parts: Vec<_> = file_name
+            .strip_prefix("tendermint.")
+            .unwrap()
+            .strip_suffix(".rs")
+            .unwrap()
+            .split('.')
+            .rev()
+            .collect();
+
+        let tab = "    ".to_string();
+        let mut tab_count = parts.len();
+
+        let mut inner_content = format!(
+            "{}include!(\"prost/{}\");",
+            tab.repeat(tab_count),
             file_name
         );
-        for i in file_parts_range.clone() {
-            content = format!(
-                "{}{}}}\n",
-                content,
-                tab.repeat(file_parts_range.end - file_parts_range.start - i)
-            );
+
+        for part in parts {
+            tab_count = tab_count - 1;
+            let tabs = tab.repeat(tab_count);
+            //{tabs} pub mod {part} {
+            //{inner_content}
+            //{tabs} }
+            inner_content = format!("{}pub mod {} {{\n{}\n{}}}", tabs, part, inner_content, tabs);
         }
+
+        content = format!("{}\n{}\n", content, inner_content);
     }
     let mut file =
         File::create(tendermint_lib_target).expect("tendermint library file create failed");
