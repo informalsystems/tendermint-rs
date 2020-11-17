@@ -16,6 +16,9 @@ set -euo pipefail
 # Use custom local Docker image:
 # DOCKER_PULL=0 TENDERMINT_IMAGE=a1c86c07867e ./run-with-docker.sh
 #
+# Override local tmp folder (it has to exist):
+# TMP_DIR=/tmp/tendermint ./run-with-docker.sh
+#
 # ###
 #
 # rpc-probe input parameter examples:
@@ -23,10 +26,10 @@ set -euo pipefail
 # Verbose output:
 # ./run-with-docker.sh -v
 #
-# Override output directory (default: "probe-results")
+# Override output directory (default: "probe-results"):
 # ./run-with-docker.sh --output "my-other-probe-results"
 #
-# Change request wait times when probing (default: 1000)
+# Change request wait times when probing (default: 1000):
 # ./run-with-docker.sh --request-wait 2000
 
 DEFAULT_TENDERMINT_IMAGE="tendermint/tendermint:${TENDERMINT_TAG:-latest}"
