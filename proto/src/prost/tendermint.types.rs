@@ -35,6 +35,7 @@ pub struct SimpleValidator {
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct PartSetHeader {
     #[prost(uint32, tag="1")]
+    #[serde(with = "crate::serializers::from_str")]
     pub total: u32,
     #[prost(bytes, tag="2")]
     #[serde(with = "crate::serializers::bytes::hexstring")]

@@ -97,6 +97,7 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.types.CanonicalBlockID.part_set_header",
         ALIAS_PARTS,
     ),
+    (".tendermint.types.PartSetHeader.total", QUOTED),
     (".tendermint.types.PartSetHeader.hash", HEXSTRING),
     (".tendermint.types.Header.height", QUOTED),
     (".tendermint.types.Header.time", OPTIONAL),

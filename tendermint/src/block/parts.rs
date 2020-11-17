@@ -4,6 +4,7 @@ use crate::hash::Algorithm;
 use crate::hash::SHA256_HASH_SIZE;
 use crate::Hash;
 use crate::{Error, Kind};
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint_proto::types::{
     CanonicalPartSetHeader as RawCanonicalPartSetHeader, PartSetHeader as RawPartSetHeader,
@@ -11,7 +12,10 @@ use tendermint_proto::types::{
 use tendermint_proto::DomainType;
 
 /// Block parts header
-#[derive(Clone, Copy, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(
+    Clone, Copy, Debug, Default, Hash, Eq, PartialEq, PartialOrd, Ord, Deserialize, Serialize,
+)]
+#[serde(try_from = "RawPartSetHeader", into = "RawPartSetHeader")] // Used by KMS state file
 #[non_exhaustive]
 pub struct Header {
     /// Number of parts in this block
