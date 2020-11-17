@@ -5,7 +5,6 @@ use abscissa_core::{
     application::{self, AppCell},
     config, trace, Application, EntryPoint, FrameworkError, StandardPaths,
 };
-use abscissa_tokio::TokioComponent;
 
 /// Application state
 pub static APPLICATION: AppCell<LightNodeApp> = AppCell::new();
@@ -83,8 +82,7 @@ impl Application for LightNodeApp {
     /// beyond the default ones provided by the framework, this is the place
     /// to do so.
     fn register_components(&mut self, command: &Self::Cmd) -> Result<(), FrameworkError> {
-        let mut components = self.framework_components(command)?;
-        components.push(Box::new(TokioComponent::new()?));
+        let components = self.framework_components(command)?;
         self.state.components.register(components)
     }
 

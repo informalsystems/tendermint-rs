@@ -4,8 +4,11 @@
 //! convenience methods. We also only implement unbounded channels at present.
 //! In future, if RPC consumers need it, we will implement bounded channels.
 
+use std::pin::Pin;
+
 use crate::{Error, Result};
 use futures::task::{Context, Poll};
+use futures::Stream;
 use tokio::sync::mpsc;
 
 /// Constructor for an unbounded channel.
@@ -43,7 +46,19 @@ impl<T> ChannelRx<T> {
         self.0.recv().await
     }
 
-    pub fn poll_recv(&mut self, cx: &mut Context<'_>) -> Poll<Option<T>> {
-        self.0.poll_recv(cx)
+    /// Pinning is structural for the underlying channel.
+    /// As such we can project the underlying channel as a pinned value.
+    ///
+    /// See https://doc.rust-lang.org/std/pin/index.html#pinning-is-structural-for-field
+    fn pin_get(self: Pin<&mut Self>) -> Pin<&mut mpsc::UnboundedReceiver<T>> {
+        unsafe { self.map_unchecked_mut(|s| &mut s.0) }
+    }
+}
+
+impl<T> Stream for ChannelRx<T> {
+    type Item = T;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        self.pin_get().poll_next(cx)
     }
 }

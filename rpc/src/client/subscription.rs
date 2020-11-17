@@ -69,8 +69,8 @@ pub struct Subscription {
 impl Stream for Subscription {
     type Item = Result<Event>;
 
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        self.event_rx.poll_recv(cx)
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        self.pin_get_event_rx().poll_next(cx)
     }
 }
 
@@ -107,6 +107,14 @@ impl Subscription {
                 "failed to hear back from subscription termination request".to_string(),
             )
         })?
+    }
+
+    /// Pinning is structural for the underlying channels.
+    /// As such we can project the underlying channel as a pinned value.
+    ///
+    /// See https://doc.rust-lang.org/std/pin/index.html#pinning-is-structural-for-field
+    fn pin_get_event_rx(self: Pin<&mut Self>) -> Pin<&mut ChannelRx<Result<Event>>> {
+        unsafe { self.map_unchecked_mut(|s| &mut s.event_rx) }
     }
 }
 
@@ -509,7 +517,7 @@ mod test {
     }
 
     async fn must_recv<T>(ch: &mut ChannelRx<T>, timeout_ms: u64) -> T {
-        let mut delay = time::delay_for(Duration::from_millis(timeout_ms));
+        let mut delay = time::sleep(Duration::from_millis(timeout_ms));
         tokio::select! {
             _ = &mut delay, if !delay.is_elapsed() => panic!("timed out waiting for recv"),
             Some(v) = ch.recv() => v,
@@ -520,7 +528,7 @@ mod test {
     where
         T: std::fmt::Debug,
     {
-        let mut delay = time::delay_for(Duration::from_millis(timeout_ms));
+        let mut delay = time::sleep(Duration::from_millis(timeout_ms));
         tokio::select! {
             _ = &mut delay, if !delay.is_elapsed() => (),
             Some(v) = ch.recv() => panic!("got unexpected result from channel: {:?}", v),

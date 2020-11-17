@@ -43,6 +43,10 @@ pub enum IoError {
     /// Task timed out.
     #[error("task timed out after {} ms", .0.as_millis())]
     Timeout(Duration),
+
+    /// Failed to initialize runtime
+    #[error("failed to initialize runtime")]
+    Runtime,
 }
 
 impl IoError {
