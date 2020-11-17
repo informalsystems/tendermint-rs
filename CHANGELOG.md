@@ -4,8 +4,10 @@
 
 - `[tendermint]` (Since v0.17.0-rc2) Fix abci::Data serialization to base64-encoded string. ([#667])
 - `[tendermint]` (Since v0.17.0-rc2) Simplify abci::Log serialization ([#667])
+- `[tendermint]` (Since v0.17.0-rc2) consensus::State backwards compatibility for deserialization ([#679])
 
 [#667]: https://github.com/informalsystems/tendermint-rs/issues/667
+[#679]: https://github.com/informalsystems/tendermint-rs/issues/679
 
 ## v0.17.0-rc2
 
