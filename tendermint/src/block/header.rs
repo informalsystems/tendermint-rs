@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -59,7 +59,7 @@ pub struct Header {
     pub proposer_address: account::Id,
 }
 
-impl DomainType<RawHeader> for Header {}
+impl Protobuf<RawHeader> for Header {}
 
 impl TryFrom<RawHeader> for Header {
     type Error = Error;
@@ -209,7 +209,7 @@ pub struct Version {
     pub app: u64,
 }
 
-impl DomainType<RawConsensusVersion> for Version {}
+impl Protobuf<RawConsensusVersion> for Version {}
 
 impl TryFrom<RawConsensusVersion> for Version {
     type Error = anomaly::BoxError;

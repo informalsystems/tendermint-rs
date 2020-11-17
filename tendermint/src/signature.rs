@@ -8,7 +8,7 @@ pub use k256::ecdsa::Signature as Secp256k1;
 
 use crate::{Error, Kind};
 use std::convert::TryFrom;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Signatures
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -21,7 +21,7 @@ pub enum Signature {
            * outside the scope of this enum. */
 }
 
-impl DomainType<Vec<u8>> for Signature {}
+impl Protobuf<Vec<u8>> for Signature {}
 
 impl TryFrom<Vec<u8>> for Signature {
     type Error = Error;

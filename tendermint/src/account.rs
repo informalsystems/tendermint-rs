@@ -20,7 +20,7 @@ use crate::public_key::Secp256k1;
 #[cfg(feature = "secp256k1")]
 use ripemd160::Ripemd160;
 use std::convert::TryFrom;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Size of an  account ID in bytes
 pub const LENGTH: usize = 20;
@@ -29,7 +29,7 @@ pub const LENGTH: usize = 20;
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Id([u8; LENGTH]); // JSON custom serialization for priv_validator_key.json
 
-impl DomainType<Vec<u8>> for Id {}
+impl Protobuf<Vec<u8>> for Id {}
 
 impl TryFrom<Vec<u8>> for Id {
     type Error = Error;

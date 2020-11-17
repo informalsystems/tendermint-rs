@@ -13,7 +13,7 @@ use tendermint_proto::types::{
     BlockId as RawBlockId, CanonicalBlockId as RawCanonicalBlockId,
     PartSetHeader as RawPartSetHeader,
 };
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Length of a block ID prefix displayed for debugging purposes
 pub const PREFIX_LENGTH: usize = 10;
@@ -53,11 +53,11 @@ pub struct Id {
     ///
     /// PartSetHeader in protobuf is defined as never nil using the gogoproto
     /// annotations. This does not translate to Rust, but we can indicate this
-    /// in the DomainType.
+    /// in the domain type.
     pub part_set_header: PartSetHeader,
 }
 
-impl DomainType<RawBlockId> for Id {}
+impl Protobuf<RawBlockId> for Id {}
 
 impl TryFrom<RawBlockId> for Id {
     type Error = Error;

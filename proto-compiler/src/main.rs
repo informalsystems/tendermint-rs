@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use tempdir::TempDir;
 
 mod functions;
-use functions::{copy_files, find_proto_files, get_commitish};
+use functions::{copy_files, find_proto_files, generate_tendermint_lib, get_commitish};
 
 mod constants;
 use constants::{
@@ -12,6 +12,7 @@ use constants::{
 
 fn main() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let tendermint_lib_target = root.join("../proto/src/tendermint.rs");
     let target_dir = root.join("../proto/src/prost");
     let out_dir = var("OUT_DIR")
         .map(PathBuf::from)
@@ -64,6 +65,8 @@ fn main() {
     pb.compile_protos(&protos, &includes).unwrap();
 
     println!("[info] => Removing old structs and copying new structs.");
-    copy_files(out_dir, target_dir); // This panics if it fails.
+    copy_files(&out_dir, &target_dir); // This panics if it fails.
+    generate_tendermint_lib(&out_dir, &tendermint_lib_target);
+
     println!("[info] => Done!");
 }

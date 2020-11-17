@@ -2,7 +2,7 @@
 
 use crate::{Error, Kind};
 use std::convert::{TryFrom, TryInto};
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 use {
     crate::serializers,
     serde::{Deserialize, Serialize},
@@ -21,7 +21,7 @@ pub struct Size {
     pub max_gas: i64,
 }
 
-impl DomainType<RawSize> for Size {}
+impl Protobuf<RawSize> for Size {}
 
 impl TryFrom<RawSize> for Size {
     type Error = Error;

@@ -1,11 +1,23 @@
 ## Unreleased
 
+### BREAKING CHANGES:
+
+- `[tendermint-proto]` The `DomainType` trait has now been renamed to
+  `Protobuf` to clarify its purpose throughout the codebase. ([#672])
+
+### BUG FIXES:
+
+- `[tendermint]` (Since v0.17.0-rc2) Fix abci::Data serialization to base64-encoded string. ([#667])
+- `[tendermint]` (Since v0.17.0-rc2) Simplify abci::Log serialization ([#667])
+
 ### IMPROVEMENTS:
 
 - `[rpc]` The `WebSocketClient` now adds support for all remaining RPC requests
   by way of implementing the `Client` trait ([#646])
-  
+
 [#646]: https://github.com/informalsystems/tendermint-rs/pull/646
+[#667]: https://github.com/informalsystems/tendermint-rs/issues/667
+[#672]: https://github.com/informalsystems/tendermint-rs/pull/672  
 
 ## v0.17.0-rc2
 
@@ -48,9 +60,10 @@ recommend waiting until v0.17.0-rc3 to upgrade.
 
 - `[tendermint/proto-compiler]` Protobuf structs generator now also accepts commit IDs from the Tendermint Go repository ([#660])
 
-[#639]: https://github.com/informalsystems/tendermint-rs/pull/639
+
 [#650]: https://github.com/informalsystems/tendermint-rs/issues/650
 [#652]: https://github.com/informalsystems/tendermint-rs/pulls/652
+[#639]: https://github.com/informalsystems/tendermint-rs/pull/639
 [#654]: https://github.com/informalsystems/tendermint-rs/issues/654
 [#660]: https://github.com/informalsystems/tendermint-rs/issues/660
 [#663]: https://github.com/informalsystems/tendermint-rs/issues/663

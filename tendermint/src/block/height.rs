@@ -6,7 +6,7 @@ use std::{
     fmt::{self, Debug, Display},
     str::FromStr,
 };
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Block height for a particular chain (i.e. number of blocks created since
 /// the chain began)
@@ -15,7 +15,7 @@ use tendermint_proto::DomainType;
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Height(u64);
 
-impl DomainType<i64> for Height {}
+impl Protobuf<i64> for Height {}
 
 impl TryFrom<i64> for Height {
     type Error = Error;
