@@ -1,5 +1,10 @@
 ## Unreleased
 
+### BREAKING CHANGES:
+
+- `[tendermint-proto]` The `DomainType` trait has now been renamed to
+  `Protobuf` to clarify its purpose throughout the codebase. ([#672])
+
 ### BUG FIXES:
 
 - `[tendermint]` (Since v0.17.0-rc2) Fix abci::Data serialization to base64-encoded string. ([#667])
@@ -7,6 +12,7 @@
 - `[tendermint]` (Since v0.17.0-rc2) consensus::State backwards compatibility for deserialization ([#679])
 
 [#667]: https://github.com/informalsystems/tendermint-rs/issues/667
+[#672]: https://github.com/informalsystems/tendermint-rs/pull/672
 [#679]: https://github.com/informalsystems/tendermint-rs/issues/679
 
 ## v0.17.0-rc2

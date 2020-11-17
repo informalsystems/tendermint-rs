@@ -9,7 +9,7 @@ use std::{
     hash::{Hash, Hasher},
     str::{self, FromStr},
 };
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Maximum length of a `chain::Id` name. Matches `MaxChainIDLen` from:
 /// <https://github.com/tendermint/tendermint/blob/develop/types/genesis.go>
@@ -20,7 +20,7 @@ pub const MAX_LENGTH: usize = 50;
 #[derive(Clone)]
 pub struct Id(String);
 
-impl DomainType<String> for Id {}
+impl Protobuf<String> for Id {}
 
 impl TryFrom<String> for Id {
     type Error = Error;

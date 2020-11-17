@@ -9,7 +9,7 @@ use std::{
     str::FromStr,
 };
 use subtle_encoding::{Encoding, Hex};
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Output size for the SHA-256 hash function
 pub const SHA256_HASH_SIZE: usize = 32;
@@ -30,7 +30,7 @@ pub enum Hash {
     None,
 }
 
-impl DomainType<Vec<u8>> for Hash {}
+impl Protobuf<Vec<u8>> for Hash {}
 
 /// Default conversion from Vec<u8> is SHA256 Hash or None
 impl TryFrom<Vec<u8>> for Hash {
@@ -167,7 +167,7 @@ impl Serialize for Hash {
 #[derive(Clone)]
 pub struct AppHash(Vec<u8>);
 
-impl DomainType<Vec<u8>> for AppHash {}
+impl Protobuf<Vec<u8>> for AppHash {}
 
 impl TryFrom<Vec<u8>> for AppHash {
     type Error = Error;

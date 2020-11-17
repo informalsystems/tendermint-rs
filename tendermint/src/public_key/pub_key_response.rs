@@ -1,7 +1,7 @@
 use crate::{Error, PublicKey};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::privval::{PubKeyResponse as RawPubKeyResponse, RemoteSignerError};
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// PubKeyResponse
 #[derive(Clone, PartialEq, Debug)]
@@ -14,7 +14,7 @@ pub struct PubKeyResponse {
     pub error: Option<RemoteSignerError>,
 }
 
-impl DomainType<RawPubKeyResponse> for PubKeyResponse {}
+impl Protobuf<RawPubKeyResponse> for PubKeyResponse {}
 
 impl TryFrom<RawPubKeyResponse> for PubKeyResponse {
     type Error = Error;

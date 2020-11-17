@@ -9,7 +9,7 @@ use std::convert::TryFrom;
 use tendermint_proto::types::{
     CanonicalPartSetHeader as RawCanonicalPartSetHeader, PartSetHeader as RawPartSetHeader,
 };
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Block parts header
 #[derive(
@@ -25,7 +25,7 @@ pub struct Header {
     pub hash: Hash,
 }
 
-impl DomainType<RawPartSetHeader> for Header {}
+impl Protobuf<RawPartSetHeader> for Header {}
 
 impl TryFrom<RawPartSetHeader> for Header {
     type Error = Error;
