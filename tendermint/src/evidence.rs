@@ -11,7 +11,7 @@ use tendermint_proto::types::DuplicateVoteEvidence as RawDuplicateVoteEvidence;
 use tendermint_proto::types::Evidence as RawEvidence;
 use tendermint_proto::types::EvidenceData as RawEvidenceData;
 use tendermint_proto::types::EvidenceParams as RawEvidenceParams;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Evidence of malfeasance by validators (i.e. signing conflicting votes).
 /// encoded using an Amino prefix. There is currently only a single type of
@@ -196,7 +196,7 @@ pub struct Params {
     pub max_num: i64,
 }
 
-impl DomainType<RawEvidenceParams> for Params {}
+impl Protobuf<RawEvidenceParams> for Params {}
 
 impl TryFrom<RawEvidenceParams> for Params {
     type Error = Error;
@@ -240,7 +240,7 @@ impl From<Duration> for std::time::Duration {
     }
 }
 
-impl DomainType<RawDuration> for Duration {}
+impl Protobuf<RawDuration> for Duration {}
 
 impl TryFrom<RawDuration> for Duration {
     type Error = Error;

@@ -21,7 +21,7 @@ use std::{cmp::Ordering, fmt, ops::Deref, str::FromStr};
 use subtle_encoding::{base64, bech32, hex};
 use tendermint_proto::crypto::public_key::Sum;
 use tendermint_proto::crypto::PublicKey as RawPublicKey;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 // Note:On the golang side this is generic in the sense that it could everything that implements
 // github.com/tendermint/tendermint/crypto.PubKey
@@ -57,7 +57,7 @@ pub enum PublicKey {
     Secp256k1(Secp256k1),
 }
 
-impl DomainType<RawPublicKey> for PublicKey {}
+impl Protobuf<RawPublicKey> for PublicKey {}
 
 impl TryFrom<RawPublicKey> for PublicKey {
     type Error = Error;
@@ -353,7 +353,7 @@ mod tests {
     use super::{PublicKey, TendermintKey};
     use crate::public_key::PubKeyResponse;
     use subtle_encoding::hex;
-    use tendermint_proto::DomainType;
+    use tendermint_proto::Protobuf;
 
     const EXAMPLE_CONSENSUS_KEY: &str =
         "4A25C6640A1F72B9C975338294EF51B6D1C33158BB6ECBA69FBC3FB5A33C9DCE";

@@ -17,7 +17,7 @@ use crate::{Error, Kind};
 use bytes::BufMut;
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Proposal as RawProposal;
-use tendermint_proto::{DomainType, Error as DomainTypeError};
+use tendermint_proto::{Error as ProtobufError, Protobuf};
 
 /// Proposal
 #[derive(Clone, PartialEq, Debug)]
@@ -38,7 +38,7 @@ pub struct Proposal {
     pub signature: Signature,
 }
 
-impl DomainType<RawProposal> for Proposal {}
+impl Protobuf<RawProposal> for Proposal {}
 
 impl TryFrom<RawProposal> for Proposal {
     type Error = Error;
@@ -83,7 +83,7 @@ impl Proposal {
         &self,
         chain_id: ChainId,
         sign_bytes: &mut B,
-    ) -> Result<bool, DomainTypeError>
+    ) -> Result<bool, ProtobufError>
     where
         B: BufMut,
     {
@@ -92,7 +92,7 @@ impl Proposal {
     }
 
     /// Create signable vector from Proposal.
-    pub fn to_signable_vec(&self, chain_id: ChainId) -> Result<Vec<u8>, DomainTypeError> {
+    pub fn to_signable_vec(&self, chain_id: ChainId) -> Result<Vec<u8>, ProtobufError> {
         CanonicalProposal::new(self.clone(), chain_id).encode_length_delimited_vec()
     }
 
@@ -123,7 +123,7 @@ mod tests {
     use crate::{proposal::Type, Proposal, Signature};
     use chrono::{DateTime, Utc};
     use std::str::FromStr;
-    use tendermint_proto::DomainType;
+    use tendermint_proto::Protobuf;
 
     #[test]
     fn test_serialization() {

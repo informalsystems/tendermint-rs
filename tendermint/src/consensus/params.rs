@@ -7,7 +7,7 @@ use std::convert::{TryFrom, TryInto};
 use tendermint_proto::abci::ConsensusParams as RawParams;
 use tendermint_proto::types::ValidatorParams as RawValidatorParams;
 use tendermint_proto::types::VersionParams as RawVersionParams;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Tendermint consensus parameters
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
@@ -26,7 +26,7 @@ pub struct Params {
     pub version: Option<VersionParams>,
 }
 
-impl DomainType<RawParams> for Params {}
+impl Protobuf<RawParams> for Params {}
 
 impl TryFrom<RawParams> for Params {
     type Error = Error;
@@ -66,7 +66,7 @@ pub struct ValidatorParams {
     pub pub_key_types: Vec<public_key::Algorithm>,
 }
 
-impl DomainType<RawValidatorParams> for ValidatorParams {}
+impl Protobuf<RawValidatorParams> for ValidatorParams {}
 
 impl TryFrom<RawValidatorParams> for ValidatorParams {
     type Error = Error;
@@ -111,7 +111,7 @@ pub struct VersionParams {
     app_version: u64,
 }
 
-impl DomainType<RawVersionParams> for VersionParams {}
+impl Protobuf<RawVersionParams> for VersionParams {}
 
 impl TryFrom<RawVersionParams> for VersionParams {
     type Error = Error;

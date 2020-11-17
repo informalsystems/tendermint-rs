@@ -2,7 +2,7 @@ use crate::{Error, Kind};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Types of proposals
 #[repr(u8)]
@@ -12,7 +12,7 @@ pub enum Type {
     Proposal = 32,
 }
 
-impl DomainType<i32> for Type {}
+impl Protobuf<i32> for Type {}
 
 impl TryFrom<i32> for Type {
     type Error = Error;
