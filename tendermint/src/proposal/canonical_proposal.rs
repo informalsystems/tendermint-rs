@@ -7,7 +7,7 @@ use crate::Time;
 use crate::{Error, Kind};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::CanonicalProposal as RawCanonicalProposal;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// CanonicalProposal for signing
 #[derive(Clone, PartialEq)]
@@ -28,7 +28,7 @@ pub struct CanonicalProposal {
     pub chain_id: ChainId,
 }
 
-impl DomainType<RawCanonicalProposal> for CanonicalProposal {}
+impl Protobuf<RawCanonicalProposal> for CanonicalProposal {}
 
 impl TryFrom<RawCanonicalProposal> for CanonicalProposal {
     type Error = Error;

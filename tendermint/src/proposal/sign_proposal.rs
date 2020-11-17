@@ -6,8 +6,8 @@ use std::convert::{TryFrom, TryInto};
 use tendermint_proto::privval::RemoteSignerError;
 use tendermint_proto::privval::SignProposalRequest as RawSignProposalRequest;
 use tendermint_proto::privval::SignedProposalResponse as RawSignedProposalResponse;
-use tendermint_proto::DomainType;
-use tendermint_proto::Error as DomainTypeError;
+use tendermint_proto::Error as ProtobufError;
+use tendermint_proto::Protobuf;
 
 /// SignProposalRequest is a request to sign a proposal
 #[derive(Clone, PartialEq, Debug)]
@@ -18,8 +18,8 @@ pub struct SignProposalRequest {
     pub chain_id: ChainId,
 }
 
-impl DomainType<RawSignProposalRequest> for SignProposalRequest {}
-impl DomainType<RawSignedProposalResponse> for SignedProposalResponse {}
+impl Protobuf<RawSignProposalRequest> for SignProposalRequest {}
+impl Protobuf<RawSignedProposalResponse> for SignedProposalResponse {}
 
 impl TryFrom<RawSignProposalRequest> for SignProposalRequest {
     type Error = Error;
@@ -46,7 +46,7 @@ impl From<SignProposalRequest> for RawSignProposalRequest {
 
 impl SignProposalRequest {
     /// Create signable bytes from Proposal.
-    pub fn to_signable_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, DomainTypeError>
+    pub fn to_signable_bytes<B>(&self, sign_bytes: &mut B) -> Result<bool, ProtobufError>
     where
         B: BufMut,
     {
@@ -55,7 +55,7 @@ impl SignProposalRequest {
     }
 
     /// Create signable vector from Proposal.
-    pub fn to_signable_vec(&self) -> Result<Vec<u8>, DomainTypeError> {
+    pub fn to_signable_vec(&self) -> Result<Vec<u8>, ProtobufError> {
         self.proposal.to_signable_vec(self.chain_id.clone())
     }
 }

@@ -25,7 +25,7 @@ use crate::{abci::transaction, evidence, Error, Kind};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::Block as RawBlock;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Blocks consist of a header, transactions, votes (the commit), and a list of
 /// evidence of malfeasance (i.e. signing conflicting votes).
@@ -49,7 +49,7 @@ pub struct Block {
     pub last_commit: Option<Commit>,
 }
 
-impl DomainType<RawBlock> for Block {}
+impl Protobuf<RawBlock> for Block {}
 
 impl TryFrom<RawBlock> for Block {
     type Error = Error;

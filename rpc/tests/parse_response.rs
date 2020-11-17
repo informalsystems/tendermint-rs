@@ -3,6 +3,7 @@
 use std::{fs, path::PathBuf};
 use tendermint::abci::Code;
 
+use std::str::FromStr;
 use tendermint_rpc::{self as rpc, endpoint, Response};
 
 const EXAMPLE_APP: &str = "GaiaApp";
@@ -110,11 +111,11 @@ fn block_results() {
 
     let validator_updates = response.validator_updates;
     let deliver_tx = response.txs_results.unwrap();
-    let log_json = &deliver_tx[0].log.parse_json().unwrap();
-    let log_json_value = &log_json.as_array().as_ref().unwrap()[0];
+    let log_json = deliver_tx[0].log.value();
+    let log_json_value = serde_json::Value::from_str(log_json.as_str()).unwrap();
 
-    assert_eq!(log_json_value["msg_index"].as_str().unwrap(), "0");
-    assert_eq!(log_json_value["success"].as_bool().unwrap(), true);
+    assert_eq!(log_json_value[0]["msg_index"].as_str().unwrap(), "0");
+    assert_eq!(log_json_value[0]["success"].as_bool().unwrap(), true);
 
     assert_eq!(deliver_tx[0].gas_wanted.value(), 200_000);
     assert_eq!(deliver_tx[0].gas_used.value(), 105_662);
@@ -155,7 +156,6 @@ fn broadcast_tx_sync() {
     .unwrap();
 
     assert_eq!(response.code, Code::Ok);
-
     assert_eq!(
         &response.hash.to_string(),
         "88D4266FD4E6338D13B845FCF289579D209C897823B9217DA3E161936F031589"
@@ -170,7 +170,6 @@ fn broadcast_tx_sync_int() {
     .unwrap();
 
     assert_eq!(response.code, Code::Ok);
-
     assert_eq!(
         &response.hash.to_string(),
         "88D4266FD4E6338D13B845FCF289579D209C897823B9217DA3E161936F031589"
@@ -185,8 +184,15 @@ fn broadcast_tx_commit() {
     .unwrap();
 
     assert_eq!(
+        response.deliver_tx.data.unwrap().value(),
+        &vec![
+            10, 22, 10, 20, 99, 111, 110, 110, 101, 99, 116, 105, 111, 110, 95, 111, 112, 101, 110,
+            95, 105, 110, 105, 116
+        ]
+    );
+    assert_eq!(
         &response.hash.to_string(),
-        "88D4266FD4E6338D13B845FCF289579D209C897823B9217DA3E161936F031589"
+        "EFA00D85332A8197CF290E4724BAC877EA93DDFE547A561828BAE45A29BF1DAD"
     );
 }
 
