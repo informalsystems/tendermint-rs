@@ -11,6 +11,14 @@
 - `[tendermint]` (Since v0.17.0-rc2) Simplify abci::Log serialization ([#667])
 - `[tendermint]` (Since v0.17.0-rc2) consensus::State backwards compatibility for deserialization ([#679])
 
+### IMPROVEMENTS:
+
+- `[rpc]` A new RPC probe (in the `rpc-probe` directory) has been added to
+  facilitate quick, pre-scripted interactions with a Tendermint node (via its
+  WebSocket endpoint). This aims to help improve testing and compatibility
+  between Tendermint in Go and Rust. ([#653])
+
+[#653]: https://github.com/informalsystems/tendermint-rs/pull/653
 [#667]: https://github.com/informalsystems/tendermint-rs/issues/667
 [#672]: https://github.com/informalsystems/tendermint-rs/pull/672
 [#679]: https://github.com/informalsystems/tendermint-rs/issues/679
