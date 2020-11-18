@@ -41,7 +41,7 @@ serde_derive = "1.0.106"
 sled = "0.34.3"
 static_assertions = "1.1.0"
 thiserror = "1.0.15"
-tokio = "0.3"
+tokio = { version = "0.3", features = ["rt", "rt-multi-thread"] }
 
 [dev-dependencies]
 tendermint-testgen = { path = "../testgen"}
