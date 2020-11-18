@@ -11,7 +11,10 @@ where
     F::Output: Send,
 {
     std::thread::spawn(move || {
-        let rt = tokio::runtime::Runtime::new().unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
 
         if let Some(timeout) = timeout {
             let task = async { tokio::time::timeout(timeout, f).await };
