@@ -202,3 +202,18 @@ where
         Self::decode_length_delimited(v)
     }
 }
+
+/// Convenience extension to Prost's [`Message`] trait.
+///
+/// [`Message`]: https://docs.rs/prost/*/prost/trait.Message.html
+pub trait MessageExt: Message + Sized {
+    /// Attempt to encode the message directly to a `Vec<u8>`.
+    fn to_vec(&self) -> Result<Vec<u8>, Error> {
+        let mut bytes = Vec::with_capacity(self.encoded_len());
+        self.encode(&mut bytes)
+            .map_err(|e| Kind::EncodeMessage.context(e))?;
+        Ok(bytes)
+    }
+}
+
+impl<M: Message> MessageExt for M {}

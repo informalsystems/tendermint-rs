@@ -1,7 +1,8 @@
+use prost::Message;
 use std::convert::TryFrom;
 use tendermint_proto::types::BlockId as RawBlockId;
 use tendermint_proto::types::PartSetHeader as RawPartSetHeader;
-use tendermint_proto::Protobuf;
+use tendermint_proto::{MessageExt, Protobuf};
 
 impl Protobuf<RawBlockId> for BlockId {}
 
@@ -108,4 +109,13 @@ pub fn protobuf_struct_conveniences_example() {
     );
     let new_domain_type = BlockId::decode_length_delimited_vec(&wire).unwrap();
     assert_eq!(my_domain_type, new_domain_type);
+}
+
+#[test]
+pub fn message_ext_example() {
+    let wire: Vec<u8> = vec![
+        10, 12, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 33,
+    ];
+    let raw_block_id: RawBlockId = Message::decode(wire.as_ref()).unwrap();
+    assert_eq!(wire, raw_block_id.to_vec().unwrap());
 }
