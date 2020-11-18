@@ -11,6 +11,7 @@ use async_trait::async_trait;
 use futures::task::{Context, Poll};
 use futures::Stream;
 use getrandom::getrandom;
+use pin_project::pin_project;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::pin::Pin;
@@ -53,14 +54,19 @@ pub trait SubscriptionClient {
 /// ```
 ///
 /// [`Event`]: ./event/struct.Event.html
+#[pin_project]
 #[derive(Debug)]
 pub struct Subscription {
     /// The query for which events will be produced.
     pub query: Query,
+
     /// The ID of this subscription (automatically assigned).
     pub id: SubscriptionId,
+
     // Our internal result event receiver for this subscription.
+    #[pin]
     event_rx: ChannelRx<Result<Event>>,
+
     // Allows us to interact with the subscription driver (exclusively to
     // terminate this subscription).
     cmd_tx: ChannelTx<SubscriptionDriverCmd>,
@@ -70,7 +76,7 @@ impl Stream for Subscription {
     type Item = Result<Event>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        self.pin_get_event_rx().poll_next(cx)
+        self.project().event_rx.poll_next(cx)
     }
 }
 
@@ -107,14 +113,6 @@ impl Subscription {
                 "failed to hear back from subscription termination request".to_string(),
             )
         })?
-    }
-
-    /// Pinning is structural for the underlying channels.
-    /// As such we can project the underlying channel as a pinned value.
-    ///
-    /// See https://doc.rust-lang.org/std/pin/index.html#pinning-is-structural-for-field
-    fn pin_get_event_rx(self: Pin<&mut Self>) -> Pin<&mut ChannelRx<Result<Event>>> {
-        unsafe { self.map_unchecked_mut(|s| &mut s.event_rx) }
     }
 }
 

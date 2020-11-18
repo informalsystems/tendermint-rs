@@ -60,6 +60,7 @@ futures = { version = "0.3", optional = true }
 http = { version = "0.2", optional = true }
 tokio = { version = "0.3", optional = true }
 tracing = { version = "0.1", optional = true }
+pin-project = "1.0.1"
 
 [dependencies.hyper]
 version = "0.14.0-dev"

@@ -6,10 +6,12 @@
 
 use std::pin::Pin;
 
-use crate::{Error, Result};
 use futures::task::{Context, Poll};
 use futures::Stream;
+use pin_project::pin_project;
 use tokio::sync::mpsc;
+
+use crate::{Error, Result};
 
 /// Constructor for an unbounded channel.
 pub fn unbounded<T>() -> (ChannelTx<T>, ChannelRx<T>) {
@@ -36,8 +38,9 @@ impl<T> ChannelTx<T> {
 }
 
 /// Receiver interface for a channel.
+#[pin_project]
 #[derive(Debug)]
-pub struct ChannelRx<T>(mpsc::UnboundedReceiver<T>);
+pub struct ChannelRx<T>(#[pin] mpsc::UnboundedReceiver<T>);
 
 impl<T> ChannelRx<T> {
     /// Wait indefinitely until we receive a value from the channel (or the
@@ -45,20 +48,12 @@ impl<T> ChannelRx<T> {
     pub async fn recv(&mut self) -> Option<T> {
         self.0.recv().await
     }
-
-    /// Pinning is structural for the underlying channel.
-    /// As such we can project the underlying channel as a pinned value.
-    ///
-    /// See https://doc.rust-lang.org/std/pin/index.html#pinning-is-structural-for-field
-    fn pin_get(self: Pin<&mut Self>) -> Pin<&mut mpsc::UnboundedReceiver<T>> {
-        unsafe { self.map_unchecked_mut(|s| &mut s.0) }
-    }
 }
 
 impl<T> Stream for ChannelRx<T> {
     type Item = T;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        self.pin_get().poll_next(cx)
+        self.project().0.poll_next(cx)
     }
 }
