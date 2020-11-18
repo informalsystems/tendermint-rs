@@ -5,6 +5,7 @@ members = [
     "light-node",
     "proto",
     "rpc",
+    "rpc-probe",
     "tendermint",
     "testgen"
 ]
