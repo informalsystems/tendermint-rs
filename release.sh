@@ -1,4 +1,36 @@
 #!/bin/bash
+
+# release.sh will hopefully allow us to publish all of the necessary crates in
+# this repo in the right order, along with a few checks and balances to try to
+# avoid mistakes. It is assumed that only one person will be releasing all
+# crates at the same time.
+#
+# For each crate, it will:
+# 1. Run `cargo publish --dry-run` for that crate
+# 2. List all files in the package with `cargo package --list`
+# 3. Prompt the user as to whether to publish or not
+# 4. Publish the package with `cargo publish` (no dry run)
+#
+# It has a default set of crates it will publish, which can be overridden by
+# way of command line arguments:
+#
+#   # Release all packages, prompting for each package as to whether to publish
+#   ./release.sh
+#
+#   # Just release the proto and tendermint crates, but nothing else
+#   ./release.sh proto tendermint
+#
+# Once it publishes a crate, it will create a file at
+# /tmp/tendermint-rs-release/${TODAY}/${CRATE}, where ${TODAY} is today's date
+# and ${CRATE} is the name of the crate that was successfully published.
+#
+# Prior to publishing a crate, it checks whether this file is present before
+# attempting to publish it. If it's present, it will ask if you really want to
+# publish it again. Of course, this is pretty dumb, and doesn't cater for
+# instances where multiple people could publish the crates on the same day, and
+# instances where someone reboots their machine or wipes their /tmp folder
+# between runs.
+
 set -e
 
 ARGS="$@"
