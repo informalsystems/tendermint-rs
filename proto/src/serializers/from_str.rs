@@ -1,6 +1,6 @@
 //! Serialize and deserialize any `T` that implements [[std::str::FromStr]]
-//! and [[std::fmt::Display]] from or into string. Note this be used for
-//! all primitive data types (e.g. .
+//! and [[std::fmt::Display]] from or into string. Note this can be used for
+//! all primitive data types.
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Deserialize string into T
