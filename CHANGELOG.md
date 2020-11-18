@@ -4,6 +4,9 @@
 
 - `[tendermint-proto]` The `DomainType` trait has now been renamed to
   `Protobuf` to clarify its purpose throughout the codebase. ([#672])
+- `[tendermint-rpc, tendermint-light-client]` Upgrade Tokio to version 0.3.0 ([#683])
+  - Upgrade `hyper` to `v0.14-dev`
+  - Upgrade `async-tungstenite` to `v0.10`
 
 ### BUG FIXES:
 
@@ -12,6 +15,7 @@
 
 [#667]: https://github.com/informalsystems/tendermint-rs/issues/667
 [#672]: https://github.com/informalsystems/tendermint-rs/pull/672
+[#683]: https://github.com/informalsystems/tendermint-rs/issues/683
 
 
 ## v0.17.0-rc2
