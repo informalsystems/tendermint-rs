@@ -1,4 +1,9 @@
-## Unreleased
+## v0.17.0-rc3
+
+*Nov 18, 2020*
+
+This release candidate focuses primarily on small but important fixes to our
+serialization infrastructure.
 
 ### BREAKING CHANGES:
 
