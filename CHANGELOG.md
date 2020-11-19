@@ -1,3 +1,11 @@
+## Unreleased
+
+### IMPROVEMENTS:
+
+- `[light-client]` Only require Tokio when `rpc-client` feature is enabled ([#425])
+
+[#425]: https://github.com/informalsystems/tendermint-rs/issues/425
+
 ## v0.17.0-rc3
 
 *Nov 18, 2020*
