@@ -11,7 +11,6 @@
     "Test3NotEnoughTrustFailure",
     "TestNonMonotonicHeight",
     "TestHeaderFromFuture",
-    "TestUntrustedBeforeTrusted",
     "TestHeaderNotWithinTrustingPeriod",
     "TestValsetDifferentAllSteps",
     "TestHalfValsetChanges",

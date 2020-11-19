@@ -7,7 +7,6 @@
     "TestFailure",
     "TestNonMonotonicHeight",
     "TestHeaderFromFuture",
-    "TestUntrustedBeforeTrusted",
     "TestHeaderNotWithinTrustingPeriod",
     "TestValsetDifferentAllSteps",
     "TestHalfValsetChanges",
@@ -20,7 +19,6 @@
     "TestMoreThanTwoThirdsValsetChanges",
     "TestOneThirdValsetChanges",
     "TestTwoThirdsValsetChanges",
-    "TestLessThanTwoThirdsSign",
     "TestMoreThanTwoThirdsSign"
   ]
 }
