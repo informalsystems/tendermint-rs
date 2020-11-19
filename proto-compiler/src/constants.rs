@@ -25,6 +25,7 @@ const NULLABLEVECARRAY: &str = r#"#[serde(with = "crate::serializers::txs")]"#;
 const NULLABLE: &str = r#"#[serde(with = "crate::serializers::nullable")]"#;
 const ALIAS_POWER_QUOTED: &str =
     r#"#[serde(alias = "power", with = "crate::serializers::from_str")]"#;
+const PART_SET_HEADER_TOTAL: &str = r#"#[serde(with = "crate::serializers::part_set_header_total")]"#;
 const RENAME_PUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeyEd25519", with = "crate::serializers::bytes::base64string")]"#;
 const RENAME_DUPLICATEVOTE: &str = r#"#[serde(rename = "tendermint/DuplicateVoteEvidence")]"#;
 const RENAME_LIGHTCLIENTATTACK: &str =
@@ -97,6 +98,7 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.types.CanonicalBlockID.part_set_header",
         ALIAS_PARTS,
     ),
+    (".tendermint.types.PartSetHeader.total", PART_SET_HEADER_TOTAL),
     (".tendermint.types.PartSetHeader.hash", HEXSTRING),
     (".tendermint.types.Header.height", QUOTED),
     (".tendermint.types.Header.time", OPTIONAL),

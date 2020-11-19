@@ -67,6 +67,8 @@ impl PartialOrd for State {
 mod tests {
     use super::State;
     use crate::block;
+    use crate::Hash;
+    use std::str::FromStr;
 
     #[test]
     fn state_ord_test() {
@@ -102,5 +104,63 @@ mod tests {
         assert!(older < old);
         assert!(oldest < older);
         assert!(oldest < new);
+    }
+
+    #[test]
+    fn state_deser_update_null_test() {
+        // Testing that block_id == null is correctly deserialized.
+        let state_json_string = r#"{
+            "height": "5",
+            "round": "1",
+            "step": 6,
+            "block_id": null
+        }"#;
+        let state: State = State {
+            height: block::Height::from(5_u32),
+            round: block::Round::from(1_u16),
+            step: 6,
+            block_id: None,
+        };
+        let state_from_json: State = serde_json::from_str(state_json_string).unwrap();
+        assert_eq!(state_from_json, state);
+    }
+
+    #[test]
+    fn state_deser_update_total_test() {
+        // Testing, if total is correctly deserialized from string.
+        // Note that we use 'parts' to test backwards compatibility.
+        let state_json_string = r#"{
+            "height": "5",
+            "round": "1",
+            "step": 6,
+            "block_id": {
+              "hash": "1234567890123456789012345678901234567890123456789012345678901234",
+              "parts": {
+                  "total": "1",
+                  "hash": "1234567890123456789012345678901234567890123456789012345678901234"
+              }
+            }
+        }"#;
+        let state: State = State {
+            height: block::Height::from(5_u32),
+            round: block::Round::from(1_u16),
+            step: 6,
+            block_id: Some(block::Id {
+                hash: Hash::from_str(
+                    "1234567890123456789012345678901234567890123456789012345678901234",
+                )
+                .unwrap(),
+                part_set_header: block::parts::Header::new(
+                    1,
+                    Hash::from_str(
+                        "1234567890123456789012345678901234567890123456789012345678901234",
+                    )
+                    .unwrap(),
+                )
+                .unwrap(),
+            }),
+        };
+        let state_from_json: State = serde_json::from_str(state_json_string).unwrap();
+        assert_eq!(state_from_json, state);
     }
 }
