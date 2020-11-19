@@ -140,7 +140,8 @@
       "kind": "INLINE",
       "source": {
         "validators": "$ | ifelse(ids_to_validators,empty_array)",
-        "proposer": "$ | ifelse(first_validator,fixed_validator)"
+        "proposer": "$ | ifelse(first_validator,fixed_validator)",
+        "total_voting_power": "0"
       }
     },
     {
