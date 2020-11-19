@@ -11,6 +11,7 @@ use async_trait::async_trait;
 use futures::task::{Context, Poll};
 use futures::Stream;
 use getrandom::getrandom;
+use pin_project::pin_project;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::pin::Pin;
@@ -53,14 +54,19 @@ pub trait SubscriptionClient {
 /// ```
 ///
 /// [`Event`]: ./event/struct.Event.html
+#[pin_project]
 #[derive(Debug)]
 pub struct Subscription {
     /// The query for which events will be produced.
     pub query: Query,
+
     /// The ID of this subscription (automatically assigned).
     pub id: SubscriptionId,
+
     // Our internal result event receiver for this subscription.
+    #[pin]
     event_rx: ChannelRx<Result<Event>>,
+
     // Allows us to interact with the subscription driver (exclusively to
     // terminate this subscription).
     cmd_tx: ChannelTx<SubscriptionDriverCmd>,
@@ -69,8 +75,8 @@ pub struct Subscription {
 impl Stream for Subscription {
     type Item = Result<Event>;
 
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        self.event_rx.poll_recv(cx)
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        self.project().event_rx.poll_next(cx)
     }
 }
 
@@ -509,7 +515,7 @@ mod test {
     }
 
     async fn must_recv<T>(ch: &mut ChannelRx<T>, timeout_ms: u64) -> T {
-        let mut delay = time::delay_for(Duration::from_millis(timeout_ms));
+        let mut delay = time::sleep(Duration::from_millis(timeout_ms));
         tokio::select! {
             _ = &mut delay, if !delay.is_elapsed() => panic!("timed out waiting for recv"),
             Some(v) = ch.recv() => v,
@@ -520,7 +526,7 @@ mod test {
     where
         T: std::fmt::Debug,
     {
-        let mut delay = time::delay_for(Duration::from_millis(timeout_ms));
+        let mut delay = time::sleep(Duration::from_millis(timeout_ms));
         tokio::select! {
             _ = &mut delay, if !delay.is_elapsed() => (),
             Some(v) = ch.recv() => panic!("got unexpected result from channel: {:?}", v),

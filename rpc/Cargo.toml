@@ -31,6 +31,8 @@ websocket-client = [
   "async-trait",
   "async-tungstenite",
   "futures",
+  "tokio/rt",
+  "tokio/rt-multi-thread",
   "tokio/fs",
   "tokio/macros",
   "tokio/stream",
@@ -53,9 +55,15 @@ uuid = { version = "0.8", default-features = false }
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
 
 async-trait = { version = "0.1", optional = true }
-async-tungstenite = { version="0.8", features = ["tokio-runtime"], optional = true }
+async-tungstenite = { version = "0.10", features = ["tokio-runtime"], optional = true }
 futures = { version = "0.3", optional = true }
 http = { version = "0.2", optional = true }
-hyper = { version = "0.13", optional = true }
-tokio = { version = "0.2", optional = true }
+tokio = { version = "0.3", optional = true }
 tracing = { version = "0.1", optional = true }
+pin-project = "1.0.1"
+
+[dependencies.hyper]
+version = "0.14.0-dev"
+git = "https://github.com/hyperium/hyper/"
+rev = "2a19ab74ed69bc776da25544e98979c9fb6e1834"
+optional = true
