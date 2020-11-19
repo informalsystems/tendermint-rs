@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
 use std::time::Duration;
+use tendermint::validator::Set;
 use tendermint_light_client::components::verifier::Verdict;
 use tendermint_light_client::types::ValidatorSet;
 use tendermint_light_client::{
@@ -13,7 +14,6 @@ use tendermint_testgen::{
     apalache::*, jsonatr::*, light_block::TMLightBlock, validator::generate_validators, Command,
     Generator, LightBlock as TestgenLightBlock, TestEnv, Tester, Validator, Vote,
 };
-use tendermint::validator::Set;
 
 fn testgen_to_anon(tm_lb: TMLightBlock) -> AnonLightBlock {
     AnonLightBlock {
