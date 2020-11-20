@@ -1,19 +1,19 @@
 //! `SecretConnection`: Transport layer encryption for Tendermint P2P connections.
 
+mod amino_types;
 mod kdf;
 mod nonce;
 mod protocol;
 mod public_key;
 
-pub use self::{
-    kdf::Kdf, nonce::Nonce, protocol::Version, public_key::PublicKey,
-};
+pub use self::{kdf::Kdf, nonce::Nonce, protocol::Version, public_key::PublicKey};
 use crate::error::Error;
 use chacha20poly1305::{
     aead::{generic_array::GenericArray, AeadInPlace, NewAead},
     ChaCha20Poly1305,
 };
 use ed25519_dalek::{self as ed25519, Signer, Verifier};
+use eyre::{Result, WrapErr};
 use merlin::Transcript;
 use rand_core::OsRng;
 use std::{
@@ -26,7 +26,6 @@ use std::{
 use subtle::ConstantTimeEq;
 use tendermint_proto as proto;
 use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
-use eyre::{Result, WrapErr};
 
 /// Size of the MAC tag
 pub const TAG_SIZE: usize = 16;
@@ -37,13 +36,6 @@ pub const DATA_MAX_SIZE: usize = 1024;
 /// 4 + 1024 == 1028 total frame size
 const DATA_LEN_SIZE: usize = 4;
 const TOTAL_FRAME_SIZE: usize = DATA_MAX_SIZE + DATA_LEN_SIZE;
-
-/// Generate a Secret Connection key at the given path
-// pub fn generate_key(path: impl AsRef<Path>) -> Result<(), Error> {
-//     let mut secret_key = Zeroizing::new([0u8; SECRET_KEY_LENGTH]);
-//     OsRng.fill_bytes(&mut *secret_key);
-//     key_utils::write_base64_secret(path, &*secret_key)
-// }
 
 /// Encrypted connection between peers in a Tendermint network
 pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
@@ -194,7 +186,8 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     /// Decrypt AEAD authenticated data
     fn decrypt(&self, ciphertext: &[u8], out: &mut [u8]) -> Result<usize> {
         if ciphertext.len() < TAG_SIZE {
-            return Err(Error::CryptoError).wrap_err("ciphertext must be at least as long as a Poly1305 tag");
+            return Err(Error::CryptoError)
+                .wrap_err("ciphertext must be at least as long as a Poly1305 tag");
         }
 
         // Split ChaCha20 ciphertext from the Poly1305 tag

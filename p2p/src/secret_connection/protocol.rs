@@ -1,15 +1,17 @@
 //! Secret Connection Protocol: message framing and versioning
 
+use super::amino_types;
 use crate::error::Error;
-use eyre::{Result, WrapErr};
 use ed25519_dalek as ed25519;
+use eyre::{Result, WrapErr};
 use prost::Message as _;
+use prost_amino::Message as _;
 use std::convert::TryInto;
 use tendermint_proto as proto;
 use x25519_dalek::PublicKey as EphemeralPublic;
 
 /// Size of an X25519 or Ed25519 public key
-// const PUBLIC_KEY_SIZE: usize = 32;
+const PUBLIC_KEY_SIZE: usize = 32;
 
 /// Protocol version (based on the Tendermint version)
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -17,38 +19,79 @@ use x25519_dalek::PublicKey as EphemeralPublic;
 pub enum Version {
     /// Tendermint v0.34
     V0_34,
+
+    /// Tendermint v0.33
+    V0_33,
+
+    /// Pre-Tendermint v0.33
+    Legacy,
 }
 
 impl Version {
     /// Does this version of Secret Connection use a transcript hash
     pub fn has_transcript(self) -> bool {
-        true
+        self != Version::Legacy
+    }
+
+    /// Are messages encoded using Protocol Buffers?
+    pub fn is_protobuf(self) -> bool {
+        match self {
+            Version::V0_34 => true,
+            Version::V0_33 | Version::Legacy => false,
+        }
     }
 
     /// Encode the initial handshake message (i.e. first one sent by both peers)
     pub fn encode_initial_handshake(self, eph_pubkey: &EphemeralPublic) -> Vec<u8> {
-        // Equivalent Go implementation:
-        // https://github.com/tendermint/tendermint/blob/9e98c74/p2p/conn/secret_connection.go#L307-L312
-        // TODO(tarcieri): proper protobuf framing
-        let mut buf = Vec::new();
-        buf.extend_from_slice(&[0x22, 0x0a, 0x20]);
-        buf.extend_from_slice(eph_pubkey.as_bytes());
-        buf
+        if self.is_protobuf() {
+            // Equivalent Go implementation:
+            // https://github.com/tendermint/tendermint/blob/9e98c74/p2p/conn/secret_connection.go#L307-L312
+            // TODO(tarcieri): proper protobuf framing
+            let mut buf = Vec::new();
+            buf.extend_from_slice(&[0x22, 0x0a, 0x20]);
+            buf.extend_from_slice(eph_pubkey.as_bytes());
+            buf
+        } else {
+            // Legacy Amino encoded handshake message
+            // Equivalent Go implementation:
+            // https://github.com/tendermint/tendermint/blob/013b9ce/p2p/conn/secret_connection.go#L213-L217
+            //
+            // Note: this is not regular protobuf encoding but raw length prefixed amino encoding;
+            // amino prefixes with the total length, and the raw bytes array's length, too:
+            let mut buf = Vec::new();
+            buf.push(PUBLIC_KEY_SIZE as u8 + 1);
+            buf.push(PUBLIC_KEY_SIZE as u8);
+            buf.extend_from_slice(eph_pubkey.as_bytes());
+            buf
+        }
     }
 
     /// Decode the initial handshake message
     pub fn decode_initial_handshake(self, bytes: &[u8]) -> Result<EphemeralPublic> {
-        // Equivalent Go implementation:
-        // https://github.com/tendermint/tendermint/blob/9e98c74/p2p/conn/secret_connection.go#L315-L323
-        // TODO(tarcieri): proper protobuf framing
-        if bytes.len() != 34 || bytes[..2] != [0x0a, 0x20] {
-            return Err(Error::ProtocolError).wrap_err(
-                "malformed handshake message (protocol version mismatch?)"
-            );
-        }
+        let eph_pubkey = if self.is_protobuf() {
+            // Equivalent Go implementation:
+            // https://github.com/tendermint/tendermint/blob/9e98c74/p2p/conn/secret_connection.go#L315-L323
+            // TODO(tarcieri): proper protobuf framing
+            if bytes.len() != 34 || bytes[..2] != [0x0a, 0x20] {
+                return Err(Error::ProtocolError)
+                    .wrap_err("malformed handshake message (protocol version mismatch?)");
+            }
 
-        let eph_pubkey_bytes: [u8; 32] = bytes[2..].try_into().unwrap();
-        let eph_pubkey = EphemeralPublic::from(eph_pubkey_bytes);
+            let eph_pubkey_bytes: [u8; 32] = bytes[2..].try_into().unwrap();
+            EphemeralPublic::from(eph_pubkey_bytes)
+        } else {
+            // Equivalent Go implementation:
+            // https://github.com/tendermint/tendermint/blob/013b9ce/p2p/conn/secret_connection.go#L220-L225
+            //
+            // Check that the length matches what we expect and the length prefix is correct
+            if bytes.len() != 33 || bytes[0] != 32 {
+                return Err(Error::ProtocolError)
+                    .wrap_err("malformed handshake message (protocol version mismatch?)");
+            }
+
+            let eph_pubkey_bytes: [u8; 32] = bytes[1..].try_into().unwrap();
+            EphemeralPublic::from(eph_pubkey_bytes)
+        };
 
         // Reject the key if it is of low order
         if is_low_order_point(&eph_pubkey) {
@@ -64,6 +107,7 @@ impl Version {
         pub_key: &ed25519::PublicKey,
         signature: &ed25519::Signature,
     ) -> Vec<u8> {
+        if self.is_protobuf() {
             // Protobuf `AuthSigMessage`
             let pub_key = proto::crypto::PublicKey {
                 sum: Some(proto::crypto::public_key::Sum::Ed25519(
@@ -80,24 +124,55 @@ impl Version {
             msg.encode_length_delimited(&mut buf)
                 .expect("couldn't encode AuthSigMessage proto");
             buf
+        } else {
+            // TODO(tarcieri): proper protobuf message
+            // Legacy Amino encoded `AuthSigMessage`
+            let msg = amino_types::AuthSigMessage {
+                pub_key: pub_key.as_ref().to_vec(),
+                sig: signature.as_ref().to_vec(),
+            };
+
+            let mut buf = Vec::new();
+            msg.encode_length_delimited(&mut buf)
+                .expect("encode_auth_signature failed");
+            buf
+        }
     }
 
     /// Get the length of the auth message response for this protocol version
     pub fn auth_sig_msg_response_len(self) -> usize {
-        // 32 + 64 + (proto overhead = 1 prefix + 2 fields + 2 lengths + total length)
-        103
+        if self.is_protobuf() {
+            // 32 + 64 + (proto overhead = 1 prefix + 2 fields + 2 lengths + total length)
+            103
+        } else {
+            // 32 + 64 + (amino overhead = 2 fields + 2 lengths + 4 prefix bytes + total length)
+            106
+        }
     }
 
     /// Decode signature message which authenticates the handshake
     pub fn decode_auth_signature(self, bytes: &[u8]) -> Result<proto::p2p::AuthSigMessage> {
-        // Parse Protobuf-encoded `AuthSigMessage`
-        proto::p2p::AuthSigMessage::decode_length_delimited(bytes).map_err(|_| {
-            return Error::ProtocolError.into()
-            // FIXME: return proper error
-            // .wrap_err_with(|| format!(
-            //         "malformed handshake message (protocol version mismatch?): {}",
-            //         e))
-        })
+        if self.is_protobuf() {
+            // Parse Protobuf-encoded `AuthSigMessage`
+            proto::p2p::AuthSigMessage::decode_length_delimited(bytes).map_err(|_| {
+                return Error::ProtocolError.into();
+                // FIXME: return proper error
+                // .wrap_err_with(|| format!(
+                //         "malformed handshake message (protocol version mismatch?): {}",
+                //         e))
+            })
+        } else {
+            // Legacy Amino encoded `AuthSigMessage`
+            let amino_msg = amino_types::AuthSigMessage::decode_length_delimited(bytes)?;
+            let pub_key = proto::crypto::PublicKey {
+                sum: Some(proto::crypto::public_key::Sum::Ed25519(amino_msg.pub_key)),
+            };
+
+            Ok(proto::p2p::AuthSigMessage {
+                pub_key: Some(pub_key),
+                sig: amino_msg.sig,
+            })
+        }
     }
 }
 
