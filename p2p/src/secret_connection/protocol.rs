@@ -3,7 +3,7 @@
 use super::amino_types;
 use crate::error::Error;
 use ed25519_dalek as ed25519;
-use eyre::{Result, WrapErr};
+use eyre::{Result, Report, WrapErr};
 use prost::Message as _;
 use prost_amino::Message as _;
 use std::convert::TryInto;
@@ -154,12 +154,9 @@ impl Version {
     pub fn decode_auth_signature(self, bytes: &[u8]) -> Result<proto::p2p::AuthSigMessage> {
         if self.is_protobuf() {
             // Parse Protobuf-encoded `AuthSigMessage`
-            proto::p2p::AuthSigMessage::decode_length_delimited(bytes).map_err(|_| {
-                return Error::ProtocolError.into();
-                // FIXME: return proper error
-                // .wrap_err_with(|| format!(
-                //         "malformed handshake message (protocol version mismatch?): {}",
-                //         e))
+            proto::p2p::AuthSigMessage::decode_length_delimited(bytes).map_err(|e| {
+                let message = format!("malformed handshake message (protocol version mismatch?): {}", e);
+                return Report::new(Error::ProtocolError).wrap_err(message)
             })
         } else {
             // Legacy Amino encoded `AuthSigMessage`

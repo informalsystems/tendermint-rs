@@ -187,7 +187,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
     fn decrypt(&self, ciphertext: &[u8], out: &mut [u8]) -> Result<usize> {
         if ciphertext.len() < TAG_SIZE {
             return Err(Error::CryptoError)
-                .wrap_err("ciphertext must be at least as long as a Poly1305 tag");
+                .wrap_err_with(|| format!("ciphertext must be at least as long as a MAC tag {}", TAG_SIZE));
         }
 
         // Split ChaCha20 ciphertext from the Poly1305 tag
