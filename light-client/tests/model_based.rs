@@ -493,7 +493,7 @@ fn single_step_test(
     }
 }
 
-fn fuzz_single_step_test(
+fn _fuzz_single_step_test(
     tc: SingleStepTestCase,
     _env: &TestEnv,
     _root_env: &TestEnv,
