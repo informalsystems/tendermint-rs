@@ -66,5 +66,5 @@ pin-project = "1.0.1"
 version = "0.14.0-dev"
 git = "https://github.com/hyperium/hyper/"
 rev = "121c33132c0950aaa422848cdc43f6691ddf5785"
-features = ["full"]
+features = ["client", "http2", "runtime"]
 optional = true
