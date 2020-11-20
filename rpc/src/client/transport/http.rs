@@ -19,7 +19,7 @@ use tendermint::net;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let mut client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+///     let client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap())
 ///         .unwrap();
 ///
 ///     let abci_info = client.abci_info()
@@ -41,7 +41,7 @@ pub struct HttpClient {
 
 #[async_trait]
 impl Client for HttpClient {
-    async fn perform<R>(&mut self, request: R) -> Result<R::Response>
+    async fn perform<R>(&self, request: R) -> Result<R::Response>
     where
         R: SimpleRequest,
     {

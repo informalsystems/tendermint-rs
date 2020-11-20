@@ -186,7 +186,7 @@ mod rpc {
     #[tokio::test]
     #[ignore]
     async fn subscription_interface() {
-        let (mut client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+        let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
         let driver_handle = tokio::spawn(async move { driver.run().await });
@@ -203,7 +203,7 @@ mod rpc {
             }
         }
 
-        client.close().await.unwrap();
+        client.close().unwrap();
         let _ = driver_handle.await.unwrap();
     }
 
@@ -219,7 +219,7 @@ mod rpc {
     }
 
     async fn simple_transaction_subscription() {
-        let (mut client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+        let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
         let driver_handle = tokio::spawn(async move { driver.run().await });
@@ -232,7 +232,7 @@ mod rpc {
 
         // We can clone the WebSocket client, because it's just a handle to the
         // driver.
-        let mut inner_client = client.clone();
+        let inner_client = client.clone();
         tokio::spawn(async move {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
                 let tx = format!("tx{}={}", tx_count, val);
@@ -284,12 +284,12 @@ mod rpc {
             }
         }
 
-        client.close().await.unwrap();
+        client.close().unwrap();
         let _ = driver_handle.await.unwrap();
     }
 
     async fn concurrent_subscriptions() {
-        let (mut client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+        let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
         let driver_handle = tokio::spawn(async move { driver.run().await });
@@ -303,7 +303,7 @@ mod rpc {
         let broadcast_tx_values = expected_tx_values.clone();
         let mut expected_new_blocks = 5_i32;
 
-        let mut inner_client = client.clone();
+        let inner_client = client.clone();
         tokio::spawn(async move {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
                 let tx = format!("tx{}={}", tx_count, val);
@@ -345,7 +345,7 @@ mod rpc {
             }
         }
 
-        client.close().await.unwrap();
+        client.close().unwrap();
         let _ = driver_handle.await.unwrap();
     }
 }

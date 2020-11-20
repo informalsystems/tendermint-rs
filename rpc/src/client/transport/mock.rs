@@ -1,6 +1,7 @@
 //! Mock client implementation for use in testing.
 
-use crate::client::sync::unbounded;
+use crate::client::subscription::SubscriptionTx;
+use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
 use crate::client::transport::router::SubscriptionRouter;
 use crate::event::Event;
 use crate::query::Query;
@@ -34,22 +35,26 @@ use std::collections::HashMap;
 /// async fn main() {
 ///     let matcher = MockRequestMethodMatcher::default()
 ///         .map(Method::AbciInfo, Ok(ABCI_INFO_RESPONSE.to_string()));
-///     let mut client = MockClient::new(matcher);
+///     let (client, driver) = MockClient::new(matcher);
+///     let driver_hdl = tokio::spawn(async move { driver.run().await });
 ///
 ///     let abci_info = client.abci_info().await.unwrap();
 ///     println!("Got mock ABCI info: {:?}", abci_info);
 ///     assert_eq!("GaiaApp".to_string(), abci_info.data);
+///
+///     client.close();
+///     driver_hdl.await.unwrap();
 /// }
 /// ```
 #[derive(Debug)]
 pub struct MockClient<M: MockRequestMatcher> {
     matcher: M,
-    router: SubscriptionRouter,
+    driver_tx: ChannelTx<DriverCommand>,
 }
 
 #[async_trait]
 impl<M: MockRequestMatcher> Client for MockClient<M> {
-    async fn perform<R>(&mut self, request: R) -> Result<R::Response>
+    async fn perform<R>(&self, request: R) -> Result<R::Response>
     where
         R: Request,
     {
@@ -61,32 +66,117 @@ impl<M: MockRequestMatcher> Client for MockClient<M> {
 
 impl<M: MockRequestMatcher> MockClient<M> {
     /// Create a new mock RPC client using the given request matcher.
-    pub fn new(matcher: M) -> Self {
-        Self {
-            matcher,
-            router: SubscriptionRouter::default(),
-        }
+    pub fn new(matcher: M) -> (Self, MockClientDriver) {
+        let (driver_tx, driver_rx) = unbounded();
+        (
+            Self { matcher, driver_tx },
+            MockClientDriver::new(driver_rx),
+        )
     }
 
     /// Publishes the given event to all subscribers whose query exactly
     /// matches that of the event.
-    pub async fn publish(&mut self, ev: &Event) {
-        let _ = self.router.publish(ev).await;
+    pub fn publish(&self, ev: &Event) {
+        self.driver_tx
+            .send(DriverCommand::Publish(Box::new(ev.clone())))
+            .unwrap();
+    }
+
+    /// Signal to the mock client's driver to terminate.
+    pub fn close(self) {
+        self.driver_tx.send(DriverCommand::Terminate).unwrap();
     }
 }
 
 #[async_trait]
 impl<M: MockRequestMatcher> SubscriptionClient for MockClient<M> {
-    async fn subscribe(&mut self, query: Query) -> Result<Subscription> {
+    async fn subscribe(&self, query: Query) -> Result<Subscription> {
         let id = uuid_str();
         let (subs_tx, subs_rx) = unbounded();
-        self.router.add(id.clone(), query.clone(), subs_tx);
+        let (result_tx, mut result_rx) = unbounded();
+        self.driver_tx.send(DriverCommand::Subscribe {
+            id: id.clone(),
+            query: query.clone(),
+            subscription_tx: subs_tx,
+            result_tx,
+        })?;
+        result_rx.recv().await.unwrap()?;
         Ok(Subscription::new(id, query, subs_rx))
     }
 
-    async fn unsubscribe(&mut self, query: Query) -> Result<()> {
+    async fn unsubscribe(&self, query: Query) -> Result<()> {
+        let (result_tx, mut result_rx) = unbounded();
+        self.driver_tx
+            .send(DriverCommand::Unsubscribe { query, result_tx })?;
+        result_rx.recv().await.unwrap()
+    }
+}
+
+#[derive(Debug)]
+pub enum DriverCommand {
+    Subscribe {
+        id: String,
+        query: Query,
+        subscription_tx: SubscriptionTx,
+        result_tx: ChannelTx<Result<()>>,
+    },
+    Unsubscribe {
+        query: Query,
+        result_tx: ChannelTx<Result<()>>,
+    },
+    Publish(Box<Event>),
+    Terminate,
+}
+
+#[derive(Debug)]
+pub struct MockClientDriver {
+    router: SubscriptionRouter,
+    rx: ChannelRx<DriverCommand>,
+}
+
+impl MockClientDriver {
+    pub fn new(rx: ChannelRx<DriverCommand>) -> Self {
+        Self {
+            router: SubscriptionRouter::default(),
+            rx,
+        }
+    }
+
+    pub async fn run(mut self) -> Result<()> {
+        loop {
+            tokio::select! {
+            Some(cmd) = self.rx.recv() => match cmd {
+                    DriverCommand::Subscribe { id, query, subscription_tx, result_tx } => {
+                        self.subscribe(id, query, subscription_tx, result_tx);
+                    }
+                    DriverCommand::Unsubscribe { query, result_tx } => {
+                        self.unsubscribe(query, result_tx);
+                    }
+                    DriverCommand::Publish(event) => self.publish(event.as_ref()),
+                    DriverCommand::Terminate => return Ok(()),
+                }
+            }
+        }
+    }
+
+    fn subscribe(
+        &mut self,
+        id: String,
+        query: Query,
+        subscription_tx: SubscriptionTx,
+        result_tx: ChannelTx<Result<()>>,
+    ) {
+        self.router.add(id, query, subscription_tx);
+        result_tx.send(Ok(())).unwrap();
+    }
+
+    fn unsubscribe(&mut self, query: Query, result_tx: ChannelTx<Result<()>>) {
         self.router.remove_by_query(query);
-        Ok(())
+        result_tx.send(Ok(())).unwrap();
+    }
+
+    fn publish(&mut self, event: &Event) {
+        self.router.publish(event);
     }
 }
 
@@ -169,7 +259,8 @@ mod test {
         let matcher = MockRequestMethodMatcher::default()
             .map(Method::AbciInfo, Ok(abci_info_fixture))
             .map(Method::Block, Ok(block_fixture));
-        let mut client = MockClient::new(matcher);
+        let (client, driver) = MockClient::new(matcher);
+        let driver_hdl = tokio::spawn(async move { driver.run().await });
 
         let abci_info = client.abci_info().await.unwrap();
         assert_eq!("GaiaApp".to_string(), abci_info.data);
@@ -178,11 +269,16 @@ mod test {
         let block = client.block(Height::from(10_u32)).await.unwrap().block;
         assert_eq!(Height::from(10_u32), block.header.height);
         assert_eq!("cosmoshub-2".parse::<Id>().unwrap(), block.header.chain_id);
+
+        client.close();
+        driver_hdl.await.unwrap().unwrap();
     }
 
     #[tokio::test]
     async fn mock_subscription_client() {
-        let mut client = MockClient::new(MockRequestMethodMatcher::default());
+        let (client, driver) = MockClient::new(MockRequestMethodMatcher::default());
+        let driver_hdl = tokio::spawn(async move { driver.run().await });
+
         let event1 = read_event("event_new_block_1").await;
         let event2 = read_event("event_new_block_2").await;
         let event3 = read_event("event_new_block_3").await;
@@ -197,7 +293,7 @@ mod test {
         let subs1_events = subs1.take(3);
         let subs2_events = subs2.take(3);
         for ev in &events {
-            client.publish(ev).await;
+            client.publish(ev);
         }
 
         // Here each subscription's channel is drained.
@@ -210,5 +306,8 @@ mod test {
         for i in 0..3 {
             assert!(events[i].eq(subs1_events[i].as_ref().unwrap()));
         }
+
+        client.close();
+        driver_hdl.await.unwrap().unwrap();
     }
 }

@@ -27,7 +27,7 @@ pub fn unbounded<T>() -> (ChannelTx<T>, ChannelRx<T>) {
 pub struct ChannelTx<T>(mpsc::UnboundedSender<T>);
 
 impl<T> ChannelTx<T> {
-    pub async fn send(&mut self, value: T) -> Result<()> {
+    pub fn send(&self, value: T) -> Result<()> {
         self.0.send(value).map_err(|e| {
             Error::client_internal_error(format!(
                 "failed to send message to internal channel: {}",

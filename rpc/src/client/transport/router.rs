@@ -23,7 +23,7 @@ impl SubscriptionRouter {
     /// event is relevant. At present, it matches purely based on the query
     /// associated with the event, and only queries that exactly match that of
     /// the event's.
-    pub async fn publish(&mut self, ev: &Event) -> PublishResult {
+    pub fn publish(&mut self, ev: &Event) -> PublishResult {
         let subs_for_query = match self.subscriptions.get_mut(&ev.query) {
             Some(s) => s,
             None => return PublishResult::NoSubscribers,
@@ -33,7 +33,7 @@ impl SubscriptionRouter {
         // us to safely stop tracking the subscription.
         let mut disconnected = HashSet::new();
         for (id, event_tx) in subs_for_query {
-            if let Err(e) = event_tx.send(Ok(ev.clone())).await {
+            if let Err(e) = event_tx.send(Ok(ev.clone())) {
                 disconnected.insert(id.clone());
                 debug!(
                     "Automatically disconnecting subscription with ID {} for query \"{}\" due to failure to publish to it: {}",
@@ -163,7 +163,7 @@ mod test {
 
         let mut ev = read_event("event_new_block_1").await;
         ev.query = "query1".into();
-        router.publish(&ev).await;
+        router.publish(&ev);
 
         let subs1_ev = must_recv(&mut subs1_event_rx, 500).await.unwrap();
         let subs2_ev = must_recv(&mut subs2_event_rx, 500).await.unwrap();
@@ -172,7 +172,7 @@ mod test {
         assert_eq!(ev, subs2_ev);
 
         ev.query = "query2".into();
-        router.publish(&ev).await;
+        router.publish(&ev);
 
         must_not_recv(&mut subs1_event_rx, 50).await;
         must_not_recv(&mut subs2_event_rx, 50).await;

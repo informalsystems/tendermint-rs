@@ -17,7 +17,7 @@ use std::pin::Pin;
 #[async_trait]
 pub trait SubscriptionClient {
     /// `/subscribe`: subscribe to receive events produced by the given query.
-    async fn subscribe(&mut self, query: Query) -> Result<Subscription>;
+    async fn subscribe(&self, query: Query) -> Result<Subscription>;
 
     /// `/unsubscribe`: unsubscribe from events relating to the given query.
     ///
@@ -30,7 +30,7 @@ pub trait SubscriptionClient {
     /// [`Subscription`]: struct.Subscription.html
     /// [`Query`]: struct.Query.html
     /// [`select_all`]: https://docs.rs/futures/*/futures/stream/fn.select_all.html
-    async fn unsubscribe(&mut self, query: Query) -> Result<()>;
+    async fn unsubscribe(&self, query: Query) -> Result<()>;
 }
 
 pub(crate) type SubscriptionTx = ChannelTx<Result<Event>>;

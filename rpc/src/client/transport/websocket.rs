@@ -87,7 +87,7 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let (mut client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+///     let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
 ///         .await
 ///         .unwrap();
 ///     let driver_handle = tokio::spawn(async move { driver.run().await });
@@ -114,7 +114,7 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 ///     }
 ///
 ///     // Signal to the driver to terminate.
-///     client.close().await.unwrap();
+///     client.close().unwrap();
 ///     // Await the driver's termination to ensure proper connection closure.
 ///     let _ = driver_handle.await.unwrap();
 /// }
@@ -149,21 +149,21 @@ impl WebSocketClient {
         Ok((Self { cmd_tx }, driver))
     }
 
-    async fn send_cmd(&mut self, cmd: DriverCommand) -> Result<()> {
-        self.cmd_tx.send(cmd).await.map_err(|e| {
+    fn send_cmd(&self, cmd: DriverCommand) -> Result<()> {
+        self.cmd_tx.send(cmd).map_err(|e| {
             Error::client_internal_error(format!("failed to send command to client driver: {}", e))
         })
     }
 
     /// Signals to the driver that it must terminate.
-    pub async fn close(mut self) -> Result<()> {
-        self.send_cmd(DriverCommand::Terminate).await
+    pub fn close(self) -> Result<()> {
+        self.send_cmd(DriverCommand::Terminate)
     }
 }
 
 #[async_trait]
 impl Client for WebSocketClient {
-    async fn perform<R>(&mut self, request: R) -> Result<R::Response>
+    async fn perform<R>(&self, request: R) -> Result<R::Response>
     where
         R: SimpleRequest,
     {
@@ -175,8 +175,7 @@ impl Client for WebSocketClient {
             id,
             wrapped_request,
             response_tx,
-        }))
-        .await?;
+        }))?;
         let response = response_rx.recv().await.ok_or_else(|| {
             Error::client_internal_error("failed to hear back from WebSocket driver".to_string())
         })??;
@@ -186,7 +185,7 @@ impl Client for WebSocketClient {
 
 #[async_trait]
 impl SubscriptionClient for WebSocketClient {
-    async fn subscribe(&mut self, query: Query) -> Result<Subscription> {
+    async fn subscribe(&self, query: Query) -> Result<Subscription> {
         let (subscription_tx, subscription_rx) = unbounded();
         let (response_tx, mut response_rx) = unbounded();
         // By default we use UUIDs to differentiate subscriptions
@@ -196,8 +195,7 @@ impl SubscriptionClient for WebSocketClient {
             query: query.to_string(),
             subscription_tx,
             response_tx,
-        }))
-        .await?;
+        }))?;
         // Make sure our subscription request went through successfully.
         let _ = response_rx.recv().await.ok_or_else(|| {
             Error::client_internal_error("failed to hear back from WebSocket driver".to_string())
@@ -205,13 +203,12 @@ impl SubscriptionClient for WebSocketClient {
         Ok(Subscription::new(id, query, subscription_rx))
     }
 
-    async fn unsubscribe(&mut self, query: Query) -> Result<()> {
+    async fn unsubscribe(&self, query: Query) -> Result<()> {
         let (response_tx, mut response_rx) = unbounded();
         self.send_cmd(DriverCommand::Unsubscribe(UnsubscribeCommand {
             query: query.to_string(),
             response_tx,
-        }))
-        .await?;
+        }))?;
         let _ = response_rx.recv().await.ok_or_else(|| {
             Error::client_internal_error("failed to hear back from WebSocket driver".to_string())
         })??;
@@ -353,15 +350,15 @@ impl WebSocketClientDriver {
         .await
     }
 
-    async fn subscribe(&mut self, mut cmd: SubscribeCommand) -> Result<()> {
+    async fn subscribe(&mut self, cmd: SubscribeCommand) -> Result<()> {
         // If we already have an active subscription for the given query,
         // there's no need to initiate another one. Just add this subscription
         // to the router.
         if self.router.num_subscriptions_for_query(cmd.query.clone()) > 0 {
-            let (id, query, subscription_tx, mut response_tx) =
+            let (id, query, subscription_tx, response_tx) =
                 (cmd.id, cmd.query, cmd.subscription_tx, cmd.response_tx);
             self.router.add(id, query, subscription_tx);
-            return response_tx.send(Ok(())).await;
+            return response_tx.send(Ok(()));
         }
 
         // Otherwise, we need to initiate a subscription request.
@@ -370,7 +367,7 @@ impl WebSocketClientDriver {
             subscribe::Request::new(cmd.query.clone()),
         );
         if let Err(e) = self.send_request(wrapper).await {
-            cmd.response_tx.send(Err(e.clone())).await?;
+            cmd.response_tx.send(Err(e.clone()))?;
             return Err(e);
         }
         self.pending_commands
@@ -378,14 +375,14 @@ impl WebSocketClientDriver {
         Ok(())
     }
 
-    async fn unsubscribe(&mut self, mut cmd: UnsubscribeCommand) -> Result<()> {
+    async fn unsubscribe(&mut self, cmd: UnsubscribeCommand) -> Result<()> {
         // Terminate all subscriptions for this query immediately. This
         // prioritizes acknowledgement of the caller's wishes over networking
         // problems.
         if self.router.remove_by_query(cmd.query.clone()) == 0 {
             // If there were no subscriptions for this query, respond
             // immediately.
-            cmd.response_tx.send(Ok(())).await?;
+            cmd.response_tx.send(Ok(()))?;
             return Ok(());
         }
 
@@ -394,7 +391,7 @@ impl WebSocketClientDriver {
         let wrapper = Wrapper::new(unsubscribe::Request::new(cmd.query.clone()));
         let req_id = wrapper.id().clone();
         if let Err(e) = self.send_request(wrapper).await {
-            cmd.response_tx.send(Err(e.clone())).await?;
+            cmd.response_tx.send(Err(e.clone()))?;
             return Err(e);
         }
         self.pending_commands
@@ -402,12 +399,12 @@ impl WebSocketClientDriver {
         Ok(())
     }
 
-    async fn simple_request(&mut self, mut cmd: SimpleRequestCommand) -> Result<()> {
+    async fn simple_request(&mut self, cmd: SimpleRequestCommand) -> Result<()> {
         if let Err(e) = self
             .send_msg(Message::Text(cmd.wrapped_request.clone()))
             .await
         {
-            cmd.response_tx.send(Err(e.clone())).await?;
+            cmd.response_tx.send(Err(e.clone()))?;
             return Err(e);
         }
         self.pending_commands
@@ -451,7 +448,7 @@ impl WebSocketClientDriver {
     }
 
     async fn publish_event(&mut self, ev: Event) {
-        if let PublishResult::AllDisconnected = self.router.publish(&ev).await {
+        if let PublishResult::AllDisconnected = self.router.publish(&ev) {
             debug!(
                 "All subscribers for query \"{}\" have disconnected. Unsubscribing from query...",
                 ev.query
@@ -475,13 +472,13 @@ impl WebSocketClientDriver {
     ) -> Result<()> {
         match pending_cmd {
             DriverCommand::Subscribe(cmd) => {
-                let (id, query, subscription_tx, mut response_tx) =
+                let (id, query, subscription_tx, response_tx) =
                     (cmd.id, cmd.query, cmd.subscription_tx, cmd.response_tx);
                 self.router.add(id, query, subscription_tx);
-                response_tx.send(Ok(())).await
+                response_tx.send(Ok(()))
             }
-            DriverCommand::Unsubscribe(mut cmd) => cmd.response_tx.send(Ok(())).await,
-            DriverCommand::SimpleRequest(mut cmd) => cmd.response_tx.send(Ok(response)).await,
+            DriverCommand::Unsubscribe(cmd) => cmd.response_tx.send(Ok(())),
+            DriverCommand::SimpleRequest(cmd) => cmd.response_tx.send(Ok(response)),
             _ => Ok(()),
         }
     }
@@ -553,12 +550,12 @@ mod test {
             }
         }
 
-        async fn publish_event(&mut self, ev: Event) -> Result<()> {
-            self.event_tx.send(ev).await
+        fn publish_event(&mut self, ev: Event) -> Result<()> {
+            self.event_tx.send(ev)
         }
 
-        async fn terminate(mut self) -> Result<()> {
-            self.terminate_tx.send(Ok(())).await.unwrap();
+        async fn terminate(self) -> Result<()> {
+            self.terminate_tx.send(Ok(())).unwrap();
             self.driver_hdl.await.unwrap()
         }
     }
@@ -588,7 +585,7 @@ mod test {
         async fn run(mut self) -> Result<()> {
             loop {
                 tokio::select! {
-                    Some(ev) = self.event_rx.recv() => self.publish_event(ev).await,
+                    Some(ev) = self.event_rx.recv() => self.publish_event(ev),
                     Some(res) = self.listener.next() => self.handle_incoming(res.unwrap()).await,
                     Some(res) = self.terminate_rx.recv() => {
                         self.terminate().await;
@@ -600,9 +597,9 @@ mod test {
 
         // Publishes the given event to all subscribers for the query relating
         // to the event.
-        async fn publish_event(&mut self, ev: Event) {
+        fn publish_event(&mut self, ev: Event) {
             for handler in &mut self.handlers {
-                handler.publish_event(ev.clone()).await;
+                handler.publish_event(ev.clone());
             }
         }
 
@@ -644,12 +641,12 @@ mod test {
             }
         }
 
-        async fn publish_event(&mut self, ev: Event) {
-            let _ = self.event_tx.send(ev).await;
+        fn publish_event(&mut self, ev: Event) {
+            let _ = self.event_tx.send(ev);
         }
 
-        async fn terminate(mut self) -> Result<()> {
-            self.terminate_tx.send(Ok(())).await?;
+        async fn terminate(self) -> Result<()> {
+            self.terminate_tx.send(Ok(()))?;
             self.driver_hdl.await.unwrap()
         }
     }
@@ -820,7 +817,7 @@ mod test {
         println!("Starting WebSocket server...");
         let mut server = TestServer::new("127.0.0.1:0").await;
         println!("Creating client RPC WebSocket connection...");
-        let (mut client, driver) = WebSocketClient::new(server.node_addr.clone())
+        let (client, driver) = WebSocketClient::new(server.node_addr.clone())
             .await
             .unwrap();
         let driver_handle = tokio::spawn(async move { driver.run().await });
@@ -843,13 +840,13 @@ mod test {
         println!("Publishing events");
         // Publish the events from this context
         for ev in &test_events {
-            server.publish_event(ev.clone()).await.unwrap();
+            server.publish_event(ev.clone()).unwrap();
         }
 
         println!("Collecting results from subscription...");
         let collected_results = subs_collector_hdl.await.unwrap();
 
-        client.close().await.unwrap();
+        client.close().unwrap();
         server.terminate().await.unwrap();
         let _ = driver_handle.await.unwrap();
         println!("Closed client and terminated server");
