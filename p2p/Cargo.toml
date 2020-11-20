@@ -1,0 +1,33 @@
+[package]
+name       = "p2p"
+version    = "0.1.0"
+edition    = "2018"
+license    = "Apache-2.0"
+repository = "https://github.com/informalsystems/tendermint-rs"
+readme     = "README.md"
+keywords   = ["p2p", "tendermint", "cosmos"]
+authors    = [
+  "Tony Arcieri <tony@iqlusion.io>",
+  "Ismail Khoffi <Ismail.Khoffi@gmail.com>"
+]
+
+description = """
+    The Tendermint P2P stack.
+    """
+
+[dependencies]
+chacha20poly1305 = "0.7"
+ed25519-dalek = "1"
+eyre = "0.6"
+hkdf = "0.10.0"
+merlin = "2"
+prost = "0.6"
+rand_core = { version = "0.5", features = ["std"] }
+sha2 = "0.9"
+subtle = "2"
+subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
+tendermint = { version = "=0.17.0-rc3", features = ["secp256k1"] }
+tendermint-proto = "=0.17.0-rc3"
+thiserror = "1"
+x25519-dalek = "1.1"
+zeroize = "1"
