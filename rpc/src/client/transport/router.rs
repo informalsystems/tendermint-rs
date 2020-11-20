@@ -128,7 +128,7 @@ mod test {
     }
 
     async fn must_recv<T>(ch: &mut ChannelRx<T>, timeout_ms: u64) -> T {
-        let mut delay = time::delay_for(Duration::from_millis(timeout_ms));
+        let mut delay = time::sleep(Duration::from_millis(timeout_ms));
         tokio::select! {
             _ = &mut delay, if !delay.is_elapsed() => panic!("timed out waiting for recv"),
             Some(v) = ch.recv() => v,
@@ -139,7 +139,7 @@ mod test {
     where
         T: std::fmt::Debug,
     {
-        let mut delay = time::delay_for(Duration::from_millis(timeout_ms));
+        let mut delay = time::sleep(Duration::from_millis(timeout_ms));
         tokio::select! {
             _ = &mut delay, if !delay.is_elapsed() => (),
             Some(v) = ch.recv() => panic!("got unexpected result from channel: {:?}", v),

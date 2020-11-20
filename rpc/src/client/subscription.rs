@@ -7,6 +7,7 @@ use crate::Result;
 use async_trait::async_trait;
 use futures::task::{Context, Poll};
 use futures::Stream;
+use pin_project::pin_project;
 use std::pin::Pin;
 
 /// A client that exclusively provides [`Event`] subscription capabilities,
@@ -62,6 +63,7 @@ pub(crate) type SubscriptionRx = ChannelRx<Result<Event>>;
 /// ```
 ///
 /// [`Event`]: ./event/struct.Event.html
+#[pin_project]
 #[derive(Debug)]
 pub struct Subscription {
     // A unique identifier for this subscription.
@@ -69,14 +71,15 @@ pub struct Subscription {
     // The query for which events will be produced.
     query: Query,
     // Our internal result event receiver for this subscription.
+    #[pin]
     rx: SubscriptionRx,
 }
 
 impl Stream for Subscription {
     type Item = Result<Event>;
 
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        self.rx.poll_recv(cx)
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        self.project().rx.poll_next(cx)
     }
 }
 

@@ -1,4 +1,6 @@
 //! Serialize/deserialize Option<T> type where T has a serializer/deserializer.
+//! Use `null` if the received value equals the Default implementation.
+// Todo: Rename this serializer to something like "default_eq_none" to mirror its purpose better.
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Deserialize Option<T>
@@ -7,7 +9,7 @@ where
     D: Deserializer<'de>,
     T: Deserialize<'de> + Default + PartialEq,
 {
-    Ok(Some(T::deserialize(deserializer)?).filter(|t| t != &T::default()))
+    Ok(Option::<T>::deserialize(deserializer)?.filter(|t| t != &T::default()))
 }
 
 /// Serialize Option<T>

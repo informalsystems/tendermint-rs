@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint"
-version    = "0.17.0-rc2" # Also update `html_root_url` in lib.rs and
+version    = "0.17.0-rc3" # Also update `html_root_url` in lib.rs and
                       # depending crates (rpc, light-node, ..) when bumping this
 license    = "Apache-2.0"
 homepage   = "https://www.tendermint.com/"
@@ -53,7 +53,7 @@ signature = "1.2"
 subtle = "2"
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
 thiserror = "1"
-tendermint-proto = { version = "0.17.0-rc2", path = "../proto" }
+tendermint-proto = { version = "0.17.0-rc3", path = "../proto" }
 toml = { version = "0.5" }
 zeroize = { version = "1.1", features = ["zeroize_derive"] }
 
@@ -61,8 +61,8 @@ k256 = { version = "0.5", optional = true, features = ["ecdsa"] }
 ripemd160 = { version = "0.9", optional = true }
 
 [dev-dependencies]
-tendermint-rpc = { path = "../rpc", features = [ "http-client", "websocket-client" ] }
-tokio = { version = "0.2", features = [ "macros" ] }
+tendermint-rpc = { path = "../rpc", features = ["http-client", "websocket-client"] }
+tokio = { version = "0.3", features = ["macros"] }
 
 [features]
 secp256k1 = ["k256", "ripemd160"]

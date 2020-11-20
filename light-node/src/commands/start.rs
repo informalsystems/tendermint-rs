@@ -1,8 +1,6 @@
 //! `start` subcommand - start the light node.
 
-use std::process;
-
-use crate::application::{app_config, APPLICATION};
+use crate::application::app_config;
 use crate::config::{LightClientConfig, LightNodeConfig};
 use crate::rpc;
 use crate::rpc::Server;
@@ -44,42 +42,37 @@ pub struct StartCmd {
 impl Runnable for StartCmd {
     /// Start the application.
     fn run(&self) {
-        if let Err(err) = abscissa_tokio::run(&APPLICATION, async {
-            if let Err(e) = StartCmd::assert_init_was_run() {
+        if let Err(e) = StartCmd::assert_init_was_run() {
+            status_err!(&e);
+            panic!(e);
+        }
+
+        let supervisor = match self.construct_supervisor() {
+            Ok(supervisor) => supervisor,
+            Err(e) => {
                 status_err!(&e);
                 panic!(e);
             }
+        };
 
-            let supervisor = match self.construct_supervisor() {
-                Ok(supervisor) => supervisor,
-                Err(e) => {
-                    status_err!(&e);
-                    panic!(e);
+        let rpc_handler = supervisor.handle();
+        StartCmd::start_rpc_server(rpc_handler);
+
+        let handle = supervisor.handle();
+        std::thread::spawn(|| supervisor.run());
+
+        loop {
+            match handle.verify_to_highest() {
+                Ok(light_block) => {
+                    status_info!("synced to block:", light_block.height().to_string());
                 }
-            };
-
-            let rpc_handler = supervisor.handle();
-            StartCmd::start_rpc_server(rpc_handler);
-
-            let handle = supervisor.handle();
-            std::thread::spawn(|| supervisor.run());
-
-            loop {
-                match handle.verify_to_highest() {
-                    Ok(light_block) => {
-                        status_info!("synced to block:", light_block.height().to_string());
-                    }
-                    Err(err) => {
-                        status_err!("sync failed: {}", err);
-                    }
+                Err(err) => {
+                    status_err!("sync failed: {}", err);
                 }
-
-                // TODO(liamsi): use ticks and make this configurable:
-                std::thread::sleep(Duration::from_millis(800));
             }
-        }) {
-            status_err!("Unexpected error while running application: {}", err);
-            process::exit(1);
+
+            // TODO(liamsi): use ticks and make this configurable:
+            std::thread::sleep(Duration::from_millis(800));
         }
     }
 }

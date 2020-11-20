@@ -304,7 +304,7 @@ impl WebSocketClientDriver {
     pub async fn run(mut self) -> Result<()> {
         let mut ping_interval =
             tokio::time::interval_at(Instant::now().add(PING_INTERVAL), PING_INTERVAL);
-        let mut recv_timeout = tokio::time::delay_for(PING_INTERVAL);
+        let mut recv_timeout = tokio::time::sleep(PING_INTERVAL);
         loop {
             tokio::select! {
                 Some(res) = self.stream.next() => match res {

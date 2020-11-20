@@ -250,7 +250,7 @@ mod rpc {
         let mut cur_tx_id = 0_u32;
 
         while !expected_tx_values.is_empty() {
-            let mut delay = tokio::time::delay_for(Duration::from_secs(3));
+            let mut delay = tokio::time::sleep(Duration::from_secs(3));
             tokio::select! {
                 Some(res) = subs.next() => {
                     let ev = res.unwrap();
@@ -311,7 +311,7 @@ mod rpc {
                     .broadcast_tx_async(Transaction::from(tx.into_bytes()))
                     .await
                     .unwrap();
-                tokio::time::delay_for(Duration::from_millis(100)).await;
+                tokio::time::sleep(Duration::from_millis(100)).await;
             }
         });
 
@@ -324,7 +324,7 @@ mod rpc {
         );
 
         while expected_new_blocks > 0 && !expected_tx_values.is_empty() {
-            let mut timeout = tokio::time::delay_for(Duration::from_secs(3));
+            let mut timeout = tokio::time::sleep(Duration::from_secs(3));
             tokio::select! {
                 Some(res) = combined_subs.next() => {
                     let ev: Event = res.unwrap();

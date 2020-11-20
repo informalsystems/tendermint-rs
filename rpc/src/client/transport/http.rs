@@ -3,7 +3,7 @@
 use crate::client::transport::utils::get_tcp_host_port;
 use crate::{Client, Response, Result, SimpleRequest};
 use async_trait::async_trait;
-use bytes::buf::BufExt;
+use hyper::body::Buf;
 use hyper::header;
 use tendermint::net;
 
