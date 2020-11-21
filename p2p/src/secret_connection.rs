@@ -67,8 +67,6 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         let (local_eph_pubkey, local_eph_privkey) = gen_eph_keys();
 
         // Write local ephemeral pubkey and receive one too.
-        // NOTE: every 32-byte string is accepted as a Curve25519 public key
-        // (see DJB's Curve25519 paper: http://cr.yp.to/ecdh/curve25519-20060209.pdf)
         let remote_eph_pubkey =
             share_eph_pubkey(&mut io_handler, &local_eph_pubkey, protocol_version)?;
 
@@ -85,7 +83,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         // - https://github.com/tendermint/kms/issues/142
         // - https://eprint.iacr.org/2019/526.pdf
         if shared_secret.as_bytes().ct_eq(&[0x00; 32]).unwrap_u8() == 1 {
-            return Err(Error::InvalidKey).wrap_err("low-order points found");
+            return Err(Error::InvalidKey).wrap_err("low-order points found (potential MitM attack!)");
         }
 
         // Sort by lexical order.
