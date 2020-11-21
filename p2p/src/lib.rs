@@ -1,8 +1,4 @@
-//! p2p
-//!
 //! The Tendermint P2P stack.
-
-// Tip: Deny warnings with `RUSTFLAGS="-D warnings"` environment variable in CI
 
 #![forbid(unsafe_code)]
 #![deny(
