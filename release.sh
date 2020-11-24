@@ -33,43 +33,49 @@
 
 set -e
 
-ARGS="$@"
-TODAY=$(date +%Y-%m-%d)
-TMP_RELEASE_FOLDER="/tmp/tendermint-rs-release/${TODAY}"
-mkdir -p "${TMP_RELEASE_FOLDER}"
-
 # A space-separated list of all the crates we want to publish, in the order in
 # which they must be published. It's important to respect this order, since
 # each subsequent crate depends on one or more of the preceding ones.
-DEFAULT_CRATES="proto tendermint rpc light-client light-node testgen"
+DEFAULT_CRATES="tendermint-proto tendermint tendermint-rpc tendermint-light-client tendermint-light-node tendermint-testgen"
 
 # Allows us to override the crates we want to publish.
-CRATES=${ARGS:-${DEFAULT_CRATES}}
-read -ra CRATES_ARR <<< "${CRATES}"
+CRATES=${*:-${DEFAULT_CRATES}}
+
+get_manifest_path() {
+  cargo metadata --format-version 1 | jq -r '.packages[]|select(.name == "'"${1}"'")|.manifest_path'
+}
+
+get_local_version() {
+  cargo metadata --format-version 1 | jq -r '.packages[]|select(.name == "'"${1}"'")|.version'
+}
+
+check_version_online() {
+  curl -s "https://crates.io/api/v1/crates/${1}" | jq -r '.versions[]|select(.num == "'"${2}"'").updated_at'
+}
 
 publish() {
   echo "Publishing crate $1..."
-  cargo publish --manifest-path "$1/Cargo.toml"
+  cargo publish --manifest-path "$(get_manifest_path "${1}")"
   echo ""
-
-  # Remember that we've published this crate today
-  touch "${TMP_RELEASE_FOLDER}/$1"
 }
 
 publish_dry_run() {
   echo "Attempting dry run of publishing crate $1..."
-  cargo publish --dry-run --manifest-path "$1/Cargo.toml"
+  cargo publish --dry-run --manifest-path "$(get_manifest_path "${1}")"
 }
 
 list_package_files() {
-  cargo package --list --manifest-path "$1/Cargo.toml"
+  cargo package --list --manifest-path "$(get_manifest_path "${1}")"
 }
 
 echo "Attempting to publish crate(s): ${CRATES}"
 
-for crate in "${CRATES_ARR[@]}"; do
-  if [ -f "${TMP_RELEASE_FOLDER}/${crate}" ]; then
-    echo "Crate \"${crate}\" has already been published today."
+for crate in ${CRATES}; do
+  VERSION="$(get_local_version "${crate}")"
+  ONLINE_DATE="$(check_version_online "${crate}" "${VERSION}")"
+  echo "${crate} version number: ${VERSION}"
+  if [ -n "${ONLINE_DATE}" ]; then
+    echo "${crate} ${VERSION} has already been published at ${ONLINE_DATE}."
     read -rp "Do you want to publish again? (type YES to publish, anything else to skip) " answer
     case $answer in
       YES ) ;;
