@@ -1,14 +1,17 @@
 //! Secret Connection Protocol: message framing and versioning
 
-use super::amino_types;
-use crate::error::Error;
+use std::convert::TryInto;
+
 use ed25519_dalek as ed25519;
 use eyre::{Report, Result, WrapErr};
 use prost::Message as _;
 use prost_amino::Message as _;
-use std::convert::TryInto;
-use tendermint_proto as proto;
 use x25519_dalek::PublicKey as EphemeralPublic;
+
+use tendermint_proto as proto;
+
+use super::amino_types;
+use crate::error::Error;
 
 /// Size of an X25519 or Ed25519 public key
 const PUBLIC_KEY_SIZE: usize = 32;

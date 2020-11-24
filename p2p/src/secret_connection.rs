@@ -1,13 +1,13 @@
 //! `SecretConnection`: Transport layer encryption for Tendermint P2P connections.
 
-mod amino_types;
-mod kdf;
-mod nonce;
-mod protocol;
-mod public_key;
+use std::{
+    cmp,
+    convert::{TryFrom, TryInto},
+    io::{self, Read, Write},
+    marker::{Send, Sync},
+    slice,
+};
 
-pub use self::{kdf::Kdf, nonce::Nonce, protocol::Version, public_key::PublicKey};
-use crate::error::Error;
 use chacha20poly1305::{
     aead::{generic_array::GenericArray, AeadInPlace, NewAead},
     ChaCha20Poly1305,
@@ -16,16 +16,19 @@ use ed25519_dalek::{self as ed25519, Signer, Verifier};
 use eyre::{Result, WrapErr};
 use merlin::Transcript;
 use rand_core::OsRng;
-use std::{
-    cmp,
-    convert::{TryFrom, TryInto},
-    io::{self, Read, Write},
-    marker::{Send, Sync},
-    slice,
-};
 use subtle::ConstantTimeEq;
-use tendermint_proto as proto;
 use x25519_dalek::{EphemeralSecret, PublicKey as EphemeralPublic};
+
+use tendermint_proto as proto;
+
+pub use self::{kdf::Kdf, nonce::Nonce, protocol::Version, public_key::PublicKey};
+use crate::error::Error;
+
+mod amino_types;
+mod kdf;
+mod nonce;
+mod protocol;
+mod public_key;
 
 /// Size of the MAC tag
 pub const TAG_SIZE: usize = 16;
@@ -83,7 +86,8 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         // - https://github.com/tendermint/kms/issues/142
         // - https://eprint.iacr.org/2019/526.pdf
         if shared_secret.as_bytes().ct_eq(&[0x00; 32]).unwrap_u8() == 1 {
-            return Err(Error::InvalidKey).wrap_err("low-order points found (potential MitM attack!)");
+            return Err(Error::InvalidKey)
+                .wrap_err("low-order points found (potential MitM attack!)");
         }
 
         // Sort by lexical order.

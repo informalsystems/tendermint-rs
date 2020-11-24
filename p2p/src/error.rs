@@ -1,6 +1,5 @@
 //! Error types
 
-pub use eyre::{Report, Result};
 use thiserror::Error;
 
 /// Kinds of errors
