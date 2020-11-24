@@ -18,6 +18,7 @@ const QUOTED: &str = r#"#[serde(with = "crate::serializers::from_str")]"#;
 const QUOTED_WITH_DEFAULT: &str = r#"#[serde(with = "crate::serializers::from_str", default)]"#;
 const HEXSTRING: &str = r#"#[serde(with = "crate::serializers::bytes::hexstring")]"#;
 const BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::base64string")]"#;
+const VEC_BASE64STRING: &str = r#"#[serde(with = "crate::serializers::bytes::vec_base64string")]"#;
 const OPTIONAL: &str = r#"#[serde(with = "crate::serializers::optional")]"#;
 const VEC_SKIP_IF_EMPTY: &str =
     r#"#[serde(skip_serializing_if = "Vec::is_empty", with = "serde_bytes")]"#;
@@ -25,7 +26,8 @@ const NULLABLEVECARRAY: &str = r#"#[serde(with = "crate::serializers::txs")]"#;
 const NULLABLE: &str = r#"#[serde(with = "crate::serializers::nullable")]"#;
 const ALIAS_POWER_QUOTED: &str =
     r#"#[serde(alias = "power", with = "crate::serializers::from_str")]"#;
-const PART_SET_HEADER_TOTAL: &str = r#"#[serde(with = "crate::serializers::part_set_header_total")]"#;
+const PART_SET_HEADER_TOTAL: &str =
+    r#"#[serde(with = "crate::serializers::part_set_header_total")]"#;
 const RENAME_PUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeyEd25519", with = "crate::serializers::bytes::base64string")]"#;
 const RENAME_DUPLICATEVOTE: &str = r#"#[serde(rename = "tendermint/DuplicateVoteEvidence")]"#;
 const RENAME_LIGHTCLIENTATTACK: &str =
@@ -69,6 +71,8 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.CanonicalVote", SERIALIZED),
     (".tendermint.types.BlockMeta", SERIALIZED),
     (".tendermint.types.Evidence", EVIDENCE_VARIANT),
+    (".tendermint.types.TxProof", SERIALIZED),
+    (".tendermint.crypto.Proof", SERIALIZED),
 ];
 
 /// Custom field attributes applied on top of protobuf fields in (a) struct(s)
@@ -98,7 +102,10 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.types.CanonicalBlockID.part_set_header",
         ALIAS_PARTS,
     ),
-    (".tendermint.types.PartSetHeader.total", PART_SET_HEADER_TOTAL),
+    (
+        ".tendermint.types.PartSetHeader.total",
+        PART_SET_HEADER_TOTAL,
+    ),
     (".tendermint.types.PartSetHeader.hash", HEXSTRING),
     (".tendermint.types.Header.height", QUOTED),
     (".tendermint.types.Header.time", OPTIONAL),
@@ -144,4 +151,10 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".tendermint.types.Evidence.sum.light_client_attack_evidence",
         RENAME_LIGHTCLIENTATTACK,
     ),
+    (".tendermint.types.TxProof.data", BASE64STRING),
+    (".tendermint.types.TxProof.root_hash", HEXSTRING),
+    (".tendermint.crypto.Proof.index", QUOTED),
+    (".tendermint.crypto.Proof.total", QUOTED),
+    (".tendermint.crypto.Proof.aunts", VEC_BASE64STRING),
+    (".tendermint.crypto.Proof.leaf_hash", BASE64STRING),
 ];

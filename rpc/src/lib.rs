@@ -53,6 +53,7 @@ pub mod error;
 pub mod event;
 mod id;
 mod method;
+mod order;
 pub mod query;
 pub mod request;
 pub mod response;
@@ -60,6 +61,6 @@ mod result;
 mod version;
 
 pub use self::{
-    error::Error, id::Id, method::Method, request::Request, response::Response, result::Result,
-    version::Version,
+    error::Error, id::Id, method::Method, order::Order, request::Request, response::Response,
+    result::Result, version::Version,
 };

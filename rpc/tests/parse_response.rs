@@ -295,3 +295,46 @@ fn jsonrpc_error() {
         panic!("expected error, got {:?}", result)
     }
 }
+
+#[test]
+fn tx_search_no_prove() {
+    let response =
+        endpoint::tx_search::Response::from_string(&read_json_fixture("tx_search_no_prove"))
+            .unwrap();
+
+    assert_eq!(8, response.total_count);
+    assert_eq!(8, response.txs.len());
+    assert_eq!(
+        "9F28904F9C0F3AB74A81CBA48E39124DA1C680B47FBFCBA0126870DB722BCC30",
+        response.txs[0].hash.to_string()
+    );
+    assert_eq!(11, response.txs[0].height.value());
+    assert!(response.txs[0].proof.is_none());
+}
+
+#[test]
+fn tx_search_with_prove() {
+    let response =
+        endpoint::tx_search::Response::from_string(&read_json_fixture("tx_search_with_prove"))
+            .unwrap();
+
+    assert_eq!(8, response.total_count);
+    assert_eq!(8, response.txs.len());
+    assert_eq!(
+        "9F28904F9C0F3AB74A81CBA48E39124DA1C680B47FBFCBA0126870DB722BCC30",
+        response.txs[0].hash.to_string()
+    );
+    assert_eq!(11, response.txs[0].height.value());
+    let proof = response.txs[0].proof.as_ref().unwrap();
+    assert_eq!(
+        vec![97, 115, 121, 110, 99, 45, 107, 101, 121, 61, 118, 97, 108, 117, 101],
+        proof.data
+    );
+    assert_eq!(
+        vec![
+            245, 70, 67, 176, 5, 16, 101, 200, 125, 163, 26, 101, 69, 49, 182, 95, 155, 87, 56, 15,
+            155, 243, 51, 47, 245, 188, 167, 88, 69, 103, 38, 140
+        ],
+        proof.root_hash
+    );
+}

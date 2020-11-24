@@ -11,17 +11,17 @@
 mod rpc {
     use std::cmp::min;
 
-    use tendermint_rpc::{Client, HttpClient, Id, SubscriptionClient, WebSocketClient};
+    use tendermint_rpc::{Client, HttpClient, Id, Order, SubscriptionClient, WebSocketClient};
 
     use futures::StreamExt;
     use std::convert::TryFrom;
-    use subtle_encoding::base64;
     use tendermint::abci::Log;
     use tendermint::abci::{Code, Transaction};
     use tendermint::block::Height;
     use tendermint::merkle::simple_hash_from_byte_vectors;
-    use tendermint_rpc::event::{Event, EventData};
-    use tendermint_rpc::query::EventType;
+    use tendermint_rpc::endpoint::tx_search::ResultTx;
+    use tendermint_rpc::event::{Event, EventData, TxInfo};
+    use tendermint_rpc::query::{EventType, Query};
     use tokio::time::Duration;
 
     /// Get the address of the local node
@@ -216,6 +216,7 @@ mod rpc {
         // other and one of them will (incorrectly) fail.
         simple_transaction_subscription().await;
         concurrent_subscriptions().await;
+        tx_search().await;
     }
 
     async fn simple_transaction_subscription() {
@@ -256,24 +257,21 @@ mod rpc {
                     //println!("Got event: {:?}", ev);
                     let next_val = expected_tx_values.remove(0);
                     match ev.data {
-                        EventData::Tx { tx_result } => match base64::decode(tx_result.tx) {
-                            Ok(decoded_tx) => match String::from_utf8(decoded_tx) {
-                                Ok(decoded_tx_str) => {
-                                    let decoded_tx_split = decoded_tx_str
-                                        .split('=')
-                                        .map(|s| s.to_string())
-                                        .collect::<Vec<String>>();
-                                    assert_eq!(2, decoded_tx_split.len());
+                        EventData::Tx { tx_result } => match String::from_utf8(tx_result.tx) {
+                            Ok(decoded_tx_str) => {
+                                let decoded_tx_split = decoded_tx_str
+                                    .split('=')
+                                    .map(|s| s.to_string())
+                                    .collect::<Vec<String>>();
+                                assert_eq!(2, decoded_tx_split.len());
 
-                                    let key = decoded_tx_split.get(0).unwrap();
-                                    let val = decoded_tx_split.get(1).unwrap();
-                                    println!("Got tx: {}={}", key, val);
-                                    assert_eq!(format!("tx{}", cur_tx_id), *key);
-                                    assert_eq!(next_val, *val);
-                                }
-                                Err(e) => panic!("Failed to convert decoded tx to string: {}", e),
-                            },
-                            Err(e) => panic!("Failed to base64 decode tx from event: {}", e),
+                                let key = decoded_tx_split.get(0).unwrap();
+                                let val = decoded_tx_split.get(1).unwrap();
+                                println!("Got tx: {}={}", key, val);
+                                assert_eq!(format!("tx{}", cur_tx_id), *key);
+                                assert_eq!(next_val, *val);
+                            }
+                            Err(e) => panic!("Failed to convert decoded tx to string: {}", e),
                         },
                         _ => panic!("Unexpected event type: {:?}", ev),
                     }
@@ -350,5 +348,76 @@ mod rpc {
 
         subs_client.close().await.unwrap();
         let _ = driver_handle.await.unwrap();
+    }
+
+    async fn tx_search() {
+        let rpc_client = localhost_rpc_client();
+        let (mut subs_client, driver) =
+            WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+                .await
+                .unwrap();
+        let driver_handle = tokio::spawn(async move { driver.run().await });
+
+        let tx_info = broadcast_tx(
+            &rpc_client,
+            &mut subs_client,
+            "tx_search_key",
+            "tx_search_value",
+        )
+        .await
+        .unwrap();
+
+        let res = rpc_client
+            .tx_search(
+                Query::eq("tx.height", tx_info.height),
+                true,
+                1,
+                1,
+                Order::Ascending,
+            )
+            .await
+            .unwrap();
+        assert!(res.total_count > 0);
+        // We don't have more than 1 page of results
+        assert_eq!(res.total_count as usize, res.txs.len());
+        // Find our transaction
+        let txs = res
+            .txs
+            .iter()
+            .filter(|tx| tx.height.value() == (tx_info.height as u64))
+            .collect::<Vec<&ResultTx>>();
+        assert_eq!(1, txs.len());
+        assert_eq!(tx_info.tx, txs[0].tx.as_bytes());
+
+        subs_client.close().await.unwrap();
+        driver_handle.await.unwrap().unwrap();
+    }
+
+    async fn broadcast_tx(
+        http_client: &HttpClient,
+        websocket_client: &mut WebSocketClient,
+        key: &str,
+        value: &str,
+    ) -> Result<TxInfo, tendermint_rpc::Error> {
+        let tx = format!("{}={}", key, value);
+        let mut subs = websocket_client.subscribe(EventType::Tx.into()).await?;
+        let _ = http_client
+            .broadcast_tx_async(Transaction::from(tx.clone().into_bytes()))
+            .await?;
+        let mut timeout = tokio::time::sleep(Duration::from_secs(3));
+        tokio::select! {
+            Some(res) = subs.next() => {
+                let ev = res?;
+                match ev.data {
+                    EventData::Tx { tx_result } => {
+                        // Make sure we have the right transaction here
+                        assert_eq!(tx, String::from_utf8(tx_result.clone().tx).unwrap());
+                        Ok(tx_result)
+                    },
+                    _ => panic!("Unexpected event: {:?}", ev),
+                }
+            }
+            _ = &mut timeout => panic!("Timed out waiting for transaction"),
+        }
     }
 }

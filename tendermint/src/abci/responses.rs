@@ -60,11 +60,11 @@ pub struct DeliverTx {
     pub info: Info,
 
     /// Amount of gas wanted
-    #[serde(rename = "gasWanted")]
+    #[serde(default, rename = "gasWanted")]
     pub gas_wanted: Gas,
 
     /// Amount of gas used
-    #[serde(rename = "gasUsed")]
+    #[serde(default, rename = "gasUsed")]
     pub gas_used: Gas,
 
     /// Events
