@@ -77,9 +77,6 @@ pub mod vec_base64string {
         S: Serializer,
         T: AsRef<[u8]>,
     {
-        // let base64_bytes = base64::encode(value.as_ref());
-        // let base64_string = String::from_utf8(base64_bytes).map_err(serde::ser::Error::custom)?;
-        // serializer.serialize_str(&base64_string)
         let base64_strings = value
             .iter()
             .map(|v| {
