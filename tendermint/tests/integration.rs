@@ -404,7 +404,7 @@ mod rpc {
         let _ = http_client
             .broadcast_tx_async(Transaction::from(tx.clone().into_bytes()))
             .await?;
-        let mut timeout = tokio::time::sleep(Duration::from_secs(3));
+        let mut timeout = tokio::time::delay_for(Duration::from_secs(3));
         tokio::select! {
             Some(res) = subs.next() => {
                 let ev = res?;
