@@ -19,8 +19,6 @@ pub struct Request {
 
 impl Request {
     /// Constructor.
-    ///
-    /// A `tx_search` request, at a minimum, requires a query to construct.
     pub fn new(
         query: impl ToString,
         prove: bool,
