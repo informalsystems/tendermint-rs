@@ -1,18 +1,11 @@
 ## Unreleased
 
-### BREAKING CHANGES
-
-- `[tendermint-rpc, tendermint-light-client]` Upgrade Tokio to version 0.3.0 ([#683])
-  - Upgrade `hyper` to `v0.14-dev`
-  - Upgrade `async-tungstenite` to `v0.10`
-
 ### IMPROVEMENTS:
 
 - `[light-client]` Only require Tokio when `rpc-client` feature is enabled ([#425])
 - `[rpc]` Support for the `tx_search` RPC endpoint has been added ([#701])
 
 [#425]: https://github.com/informalsystems/tendermint-rs/issues/425
-[#683]: https://github.com/informalsystems/tendermint-rs/issues/683
 [#701]: https://github.com/informalsystems/tendermint-rs/pull/701
 
 ## v0.17.0-rc3
