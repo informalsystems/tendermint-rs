@@ -1,11 +1,5 @@
 ## Unreleased
 
-### BREAKING CHANGES
-
-- `[tendermint-rpc, tendermint-light-client]` Upgrade Tokio to version 0.3.0 ([#683])
-  - Upgrade `hyper` to `v0.14-dev`
-  - Upgrade `async-tungstenite` to `v0.10`
-
 ### IMPROVEMENTS:
 
 - `[light-client]` Only require Tokio when `rpc-client` feature is enabled ([#425])
@@ -14,7 +8,6 @@
 
 [#425]: https://github.com/informalsystems/tendermint-rs/issues/425
 [#646]: https://github.com/informalsystems/tendermint-rs/pull/646
-[#683]: https://github.com/informalsystems/tendermint-rs/issues/683
 
 
 ## v0.17.0-rc3
@@ -46,7 +39,6 @@ serialization infrastructure.
 [#667]: https://github.com/informalsystems/tendermint-rs/issues/667
 [#672]: https://github.com/informalsystems/tendermint-rs/pull/672
 [#679]: https://github.com/informalsystems/tendermint-rs/issues/679
-[#672]: https://github.com/informalsystems/tendermint-rs/pull/672  
 
 ## v0.17.0-rc2
 

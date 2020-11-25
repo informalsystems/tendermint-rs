@@ -27,7 +27,7 @@ So, for the model-based test to run, the programs `apalache-mc`, `jsonatr`,
 `tendermint-testgen`, and `timeout`
 should be present in your `PATH`. The easiest way to run Apalache is by 
 [using a Docker image](https://github.com/informalsystems/apalache/blob/unstable/docs/manual.md#useDocker); 
-to run the latter two you need to locally clone the repositories, and then, 
+to run `jsonatr` and `tendermint-testgen` you need to locally clone the repositories, and then, 
 after building them, just add their `target/debug` directories into your `PATH`. 
 If any of the programs is not found, execution of a model-based test will be skipped.
 
