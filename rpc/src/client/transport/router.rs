@@ -2,6 +2,7 @@
 
 use crate::client::subscription::SubscriptionTx;
 use crate::event::Event;
+use std::borrow::BorrowMut;
 use std::collections::{HashMap, HashSet};
 use tracing::debug;
 
@@ -32,7 +33,7 @@ impl SubscriptionRouter {
         // that the receiver end of the channel has been dropped, which allows
         // us to safely stop tracking the subscription.
         let mut disconnected = HashSet::new();
-        for (id, event_tx) in subs_for_query {
+        for (id, event_tx) in subs_for_query.borrow_mut() {
             if let Err(e) = event_tx.send(Ok(ev.clone())) {
                 disconnected.insert(id.clone());
                 debug!(
@@ -41,10 +42,6 @@ impl SubscriptionRouter {
                 );
             }
         }
-        // Obtain a mutable reference because the previous reference was
-        // consumed in the above for loop. We should panic if there are no
-        // longer any subscriptions for this query.
-        let subs_for_query = self.subscriptions.get_mut(&ev.query).unwrap();
         for id in disconnected {
             subs_for_query.remove(&id);
         }
