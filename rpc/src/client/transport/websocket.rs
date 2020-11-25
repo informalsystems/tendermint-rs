@@ -439,7 +439,7 @@ impl WebSocketClientDriver {
         };
         let id = wrapper.id().to_string();
         if let Some(pending_cmd) = self.pending_commands.remove(&id) {
-            return self.confirm_pending_command(pending_cmd, msg).await;
+            return self.respond_to_pending_command(pending_cmd, msg).await;
         };
         // We ignore incoming messages whose ID we don't recognize (could be
         // relating to a fire-and-forget unsubscribe request - see the
@@ -465,7 +465,7 @@ impl WebSocketClientDriver {
         }
     }
 
-    async fn confirm_pending_command(
+    async fn respond_to_pending_command(
         &mut self,
         pending_cmd: DriverCommand,
         response: String,
