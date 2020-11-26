@@ -42,7 +42,7 @@ pub struct Initial {
 }
 
 #[derive(Deserialize, Clone, Debug)]
-pub struct TestBisection<LB> {
+pub struct LightClientTest<LB> {
     pub description: String,
     pub trust_options: TrustOptions,
     pub primary: Provider<LB>,

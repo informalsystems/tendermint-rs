@@ -725,4 +725,5 @@ fn run_model_based_single_step_tests() {
     tester.add_test_batch(model_based_test_batch);
     tester.run_foreach_in_dir("");
     tester.finalize();
+   // tester.finalize();
 }

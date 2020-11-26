@@ -7,7 +7,7 @@ use tendermint_light_client::{
         scheduler,
         verifier::ProdVerifier,
     },
-    errors::{Error, ErrorKind},
+    errors::Error,
     light_client::{LightClient, Options},
     operations::ProdHasher,
     state::State,
@@ -16,7 +16,6 @@ use tendermint_light_client::{
     types::{LightBlock, Status},
 };
 
-use std::convert::TryInto;
 use tendermint_testgen::light_block::default_peer_id;
 use tendermint_testgen::Tester;
 
@@ -29,7 +28,7 @@ struct BisectionTestResult {
     new_states: Result<Vec<LightBlock>, Error>,
 }
 
-fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
+fn run_test(tc: LightClientTest<LightBlock>) -> BisectionTestResult {
     let primary = default_peer_id();
     let untrusted_height = tc.height_to_verify;
     let trust_threshold = tc.trust_options.trust_level;
@@ -89,13 +88,13 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
     }
 }
 
-fn bisection_test(tc: TestBisection<LightBlock>) {
+fn forward_test(tc: LightClientTest<LightBlock>) {
     let expect_error = match &tc.expected_output {
         Some(eo) => eo.eq("error"),
         None => false,
     };
 
-    let test_result = run_bisection_test(tc);
+    let test_result = run_test(tc);
     let expected_state = test_result.untrusted_light_block;
 
     match test_result.new_states {
@@ -113,42 +112,25 @@ fn bisection_test(tc: TestBisection<LightBlock>) {
     }
 }
 
-/// Test that the light client fails with `ErrorKind::TargetLowerThanTrustedState`
-/// when the target height is lower than the last trusted state height.
+/// Test that the light client succeeds when the target height is
+/// lower than the last trusted state height.
 ///
-/// To do this, we override increment the trusted height by 1
-/// and set the target height to `trusted_height - 1`, then run
-/// the bisection test as normal. We then assert that we get the expected error.
-fn bisection_lower_test(mut tc: TestBisection<LightBlock>) {
-    let mut trusted_height = tc.trust_options.height;
+/// To do this, we swap the trusted and target heights,
+/// and run the standard forward test.
+/// We then assert that we get the expected error.
+fn backward_test(mut tc: LightClientTest<LightBlock>) {
+    let trusted_height = tc.trust_options.height;
+    tc.trust_options.height = tc.height_to_verify;
+    tc.height_to_verify = trusted_height;
 
-    if trusted_height.value() <= 1 {
-        tc.trust_options.height = trusted_height.increment();
-        trusted_height = trusted_height.increment();
-    }
-
-    tc.height_to_verify = (trusted_height.value() - 1).try_into().unwrap();
-
-    let test_result = run_bisection_test(tc);
-    match test_result.new_states {
-        Ok(_) => {
-            panic!("test unexpectedly succeeded, expected TargetLowerThanTrustedState error");
-        }
-        Err(e) => match e.kind() {
-            ErrorKind::TargetLowerThanTrustedState { .. } => (),
-            kind => panic!(
-                "unexpected error, expected: TargetLowerThanTrustedState, got: {}",
-                kind
-            ),
-        },
-    }
+    forward_test(tc)
 }
 
 #[test]
-fn run_bisection_tests() {
-    let mut tester = Tester::new("bisection", TEST_FILES_PATH);
-    tester.add_test("bisection test", bisection_test);
-    tester.add_test("bisection lower test", bisection_lower_test);
+fn run_tests() {
+    let mut tester = Tester::new("light client verification", TEST_FILES_PATH);
+    tester.add_test("forward verification with bisection", forward_test);
+    tester.add_test("backward sequential verification", backward_test);
     tester.run_foreach_in_dir("bisection/single_peer");
     tester.finalize();
 }

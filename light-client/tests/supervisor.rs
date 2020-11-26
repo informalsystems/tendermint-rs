@@ -19,7 +19,7 @@ use std::time::Duration;
 
 use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::tests::{
-    MockClock, MockEvidenceReporter, MockIo, TestBisection, TrustOptions,
+    LightClientTest, MockClock, MockEvidenceReporter, MockIo, TrustOptions,
 };
 
 use tendermint_testgen::Tester;
@@ -56,7 +56,7 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
     Instance::new(light_client, state)
 }
 
-fn run_multipeer_test(tc: TestBisection<LightBlock>) {
+fn run_multipeer_test(tc: LightClientTest<LightBlock>) {
     let primary = tc.primary.lite_blocks[0].provider;
 
     println!(
