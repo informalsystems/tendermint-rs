@@ -3,8 +3,10 @@
 ### IMPROVEMENTS:
 
 - `[light-client]` Only require Tokio when `rpc-client` feature is enabled ([#425])
+- `[tendermint]` (Since v0.17.0-rc3) Bech32 encoding fix ([#690])
 
 [#425]: https://github.com/informalsystems/tendermint-rs/issues/425
+[#690]: https://github.com/informalsystems/tendermint-rs/issues/690
 
 ## v0.17.0-rc3
 
