@@ -158,85 +158,8 @@ impl LightClient {
         target_height: Height,
         state: &mut State,
     ) -> Result<LightBlock, Error> {
-        // Let's first look in the store to see whether we have already successfully verified this
-        // block.
-        if let Some(light_block) = state.light_store.get_trusted_or_verified(target_height) {
-            return Ok(light_block);
-        }
-
-        let mut current_height = target_height;
-
-        loop {
-            let now = self.clock.now();
-
-            // Get the latest trusted state
-            let trusted_state = state
-                .light_store
-                .latest_trusted_or_verified()
-                .ok_or(ErrorKind::NoInitialTrustedState)?;
-
-            if target_height < trusted_state.height() {
-                bail!(ErrorKind::TargetLowerThanTrustedState {
-                    target_height,
-                    trusted_height: trusted_state.height()
-                });
-            }
-
-            // Check invariant [LCV-INV-TP.1]
-            if !is_within_trust_period(&trusted_state, self.options.trusting_period, now) {
-                bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
-                    trusted_state: Box::new(trusted_state),
-                    options: self.options,
-                });
-            }
-
-            // Log the current height as a dependency of the block at the target height
-            state.trace_block(target_height, current_height);
-
-            // If the trusted state is now at a height equal to the target height, we are done.
-            // [LCV-DIST-LIFE.1]
-            if target_height == trusted_state.height() {
-                return Ok(trusted_state);
-            }
-
-            // Fetch the block at the current height from the light store if already present,
-            // or from the primary peer otherwise.
-            let (current_block, status) = self.get_or_fetch_block(current_height, state)?;
-
-            // Validate and verify the current block
-            let verdict = self
-                .verifier
-                .verify(&current_block, &trusted_state, &self.options, now);
-
-            match verdict {
-                Verdict::Success => {
-                    // Verification succeeded, add the block to the light store with
-                    // the `Verified` status or higher if already trusted.
-                    let new_status = Status::most_trusted(Status::Verified, status);
-                    state.light_store.update(&current_block, new_status);
-                }
-                Verdict::Invalid(e) => {
-                    // Verification failed, add the block to the light store with `Failed` status,
-                    // and abort.
-                    state.light_store.update(&current_block, Status::Failed);
-
-                    bail!(ErrorKind::InvalidLightBlock(e))
-                }
-                Verdict::NotEnoughTrust(_) => {
-                    // The current block cannot be trusted because of a missing overlap in the
-                    // validator sets. Add the block to the light store with
-                    // the `Unverified` status. This will engage bisection in an
-                    // attempt to raise the height of the highest trusted state
-                    // until there is enough overlap.
-                    state.light_store.update(&current_block, Status::Unverified);
-                }
-            }
-
-            // Compute the next height to fetch and verify
-            current_height =
-                self.scheduler
-                    .schedule(state.light_store.as_ref(), current_height, target_height);
-        }
+        let (light_block, _) = self.get_or_fetch_block(target_height, state)?;
+        Ok(light_block)
     }
 
     /// Look in the light store for a block from the given peer at the given height,
