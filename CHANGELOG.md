@@ -3,8 +3,12 @@
 ### IMPROVEMENTS:
 
 - `[light-client]` Only require Tokio when `rpc-client` feature is enabled ([#425])
+- `[rpc]` The `WebSocketClient` now adds support for all remaining RPC requests
+  by way of implementing the `Client` trait ([#646])
 
 [#425]: https://github.com/informalsystems/tendermint-rs/issues/425
+[#646]: https://github.com/informalsystems/tendermint-rs/pull/646
+
 
 ## v0.17.0-rc3
 

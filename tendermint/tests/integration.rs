@@ -186,7 +186,7 @@ mod rpc {
     #[tokio::test]
     #[ignore]
     async fn subscription_interface() {
-        let (mut client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+        let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
         let driver_handle = tokio::spawn(async move { driver.run().await });
@@ -203,7 +203,7 @@ mod rpc {
             }
         }
 
-        client.close().await.unwrap();
+        client.close().unwrap();
         let _ = driver_handle.await.unwrap();
     }
 
@@ -219,23 +219,24 @@ mod rpc {
     }
 
     async fn simple_transaction_subscription() {
-        let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
-        let (mut subs_client, driver) =
-            WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
-                .await
-                .unwrap();
+        let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+            .await
+            .unwrap();
         let driver_handle = tokio::spawn(async move { driver.run().await });
-        let mut subs = subs_client.subscribe(EventType::Tx.into()).await.unwrap();
+        let mut subs = client.subscribe(EventType::Tx.into()).await.unwrap();
         // We use Id::uuid_v4() here as a quick hack to generate a random value.
         let mut expected_tx_values = (0..10_u32)
             .map(|_| Id::uuid_v4().to_string())
             .collect::<Vec<String>>();
         let broadcast_tx_values = expected_tx_values.clone();
 
+        // We can clone the WebSocket client, because it's just a handle to the
+        // driver.
+        let inner_client = client.clone();
         tokio::spawn(async move {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
                 let tx = format!("tx{}={}", tx_count, val);
-                rpc_client
+                inner_client
                     .broadcast_tx_async(Transaction::from(tx.into_bytes()))
                     .await
                     .unwrap();
@@ -283,22 +284,17 @@ mod rpc {
             }
         }
 
-        subs_client.close().await.unwrap();
+        client.close().unwrap();
         let _ = driver_handle.await.unwrap();
     }
 
     async fn concurrent_subscriptions() {
-        let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
-        let (mut subs_client, driver) =
-            WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
-                .await
-                .unwrap();
-        let driver_handle = tokio::spawn(async move { driver.run().await });
-        let new_block_subs = subs_client
-            .subscribe(EventType::NewBlock.into())
+        let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
-        let tx_subs = subs_client.subscribe(EventType::Tx.into()).await.unwrap();
+        let driver_handle = tokio::spawn(async move { driver.run().await });
+        let new_block_subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
+        let tx_subs = client.subscribe(EventType::Tx.into()).await.unwrap();
 
         // We use Id::uuid_v4() here as a quick hack to generate a random value.
         let mut expected_tx_values = (0..10_u32)
@@ -307,10 +303,11 @@ mod rpc {
         let broadcast_tx_values = expected_tx_values.clone();
         let mut expected_new_blocks = 5_i32;
 
+        let inner_client = client.clone();
         tokio::spawn(async move {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
                 let tx = format!("tx{}={}", tx_count, val);
-                rpc_client
+                inner_client
                     .broadcast_tx_async(Transaction::from(tx.into_bytes()))
                     .await
                     .unwrap();
@@ -348,7 +345,7 @@ mod rpc {
             }
         }
 
-        subs_client.close().await.unwrap();
+        client.close().unwrap();
         let _ = driver_handle.await.unwrap();
     }
 }

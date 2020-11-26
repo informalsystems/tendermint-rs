@@ -1,13 +1,11 @@
 //! Tendermint RPC client.
 
 mod subscription;
-pub use subscription::{Subscription, SubscriptionClient, SubscriptionId};
+pub use subscription::{Subscription, SubscriptionClient};
 pub mod sync;
 
 mod transport;
-pub use transport::mock::{
-    MockClient, MockRequestMatcher, MockRequestMethodMatcher, MockSubscriptionClient,
-};
+pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
 
 #[cfg(feature = "http-client")]
 pub use transport::http::HttpClient;
@@ -15,7 +13,7 @@ pub use transport::http::HttpClient;
 pub use transport::websocket::{WebSocketClient, WebSocketClientDriver};
 
 use crate::endpoint::*;
-use crate::{Request, Result};
+use crate::{Result, SimpleRequest};
 use async_trait::async_trait;
 use tendermint::abci::{self, Transaction};
 use tendermint::block::Height;
@@ -164,5 +162,5 @@ pub trait Client {
     /// Perform a request against the RPC endpoint
     async fn perform<R>(&self, request: R) -> Result<R::Response>
     where
-        R: Request;
+        R: SimpleRequest;
 }
