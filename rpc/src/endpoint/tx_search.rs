@@ -44,6 +44,8 @@ impl crate::Request for Request {
     }
 }
 
+impl crate::SimpleRequest for Request {}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
     pub txs: Vec<ResultTx>,
