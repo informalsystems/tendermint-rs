@@ -208,6 +208,7 @@ impl LightClientBuilder<HasTrustedState> {
             self.clock,
             self.scheduler,
             self.verifier,
+            self.hasher,
             self.io,
         );
 

@@ -11,7 +11,7 @@ use crate::{
     components::io::IoError,
     light_client::Options,
     predicates::errors::VerificationError,
-    types::{Height, LightBlock, PeerId, Status},
+    types::{Hash, Height, LightBlock, PeerId, Status},
 };
 
 /// An error raised by this library
@@ -77,6 +77,19 @@ pub enum ErrorKind {
     /// Verification failed for a light block
     #[error("invalid light block: {0}")]
     InvalidLightBlock(#[source] VerificationError),
+
+    /// Hash mismatch between two adjacent headers
+    #[error("hash mismatch between two adjacent headers: {h1} != {h2}")]
+    InvalidAdjacentHeaders {
+        /// Hash #1
+        h1: Hash,
+        /// Hash #2
+        h2: Hash,
+    },
+
+    /// Missing last_block_id field for header at given height
+    #[error("missing last_block_id for header at height {0}")]
+    MissingLastBlockId(Height),
 
     /// Internal channel disconnected
     #[error("internal channel disconnected")]

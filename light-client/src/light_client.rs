@@ -5,15 +5,18 @@
 use contracts::*;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
-use std::{fmt, time::Duration};
+use std::{convert::TryFrom, fmt, time::Duration};
 
-use crate::components::{clock::Clock, io::*, scheduler::*, verifier::*};
 use crate::contracts::*;
 use crate::{
     bail,
     errors::{Error, ErrorKind},
     state::State,
     types::{Height, LightBlock, PeerId, Status, TrustThreshold},
+};
+use crate::{
+    components::{clock::Clock, io::*, scheduler::*, verifier::*},
+    operations::Hasher,
 };
 
 /// Verification parameters
@@ -56,6 +59,7 @@ pub struct LightClient {
     clock: Box<dyn Clock>,
     scheduler: Box<dyn Scheduler>,
     verifier: Box<dyn Verifier>,
+    hasher: Box<dyn Hasher>,
     io: Box<dyn Io>,
 }
 
@@ -76,6 +80,7 @@ impl LightClient {
         clock: impl Clock + 'static,
         scheduler: impl Scheduler + 'static,
         verifier: impl Verifier + 'static,
+        hasher: impl Hasher + 'static,
         io: impl Io + 'static,
     ) -> Self {
         Self {
@@ -84,6 +89,7 @@ impl LightClient {
             clock: Box::new(clock),
             scheduler: Box::new(scheduler),
             verifier: Box::new(verifier),
+            hasher: Box::new(hasher),
             io: Box::new(io),
         }
     }
@@ -95,6 +101,7 @@ impl LightClient {
         clock: Box<dyn Clock>,
         scheduler: Box<dyn Scheduler>,
         verifier: Box<dyn Verifier>,
+        hasher: Box<dyn Hasher>,
         io: Box<dyn Io>,
     ) -> Self {
         Self {
@@ -103,6 +110,7 @@ impl LightClient {
             clock,
             scheduler,
             verifier,
+            hasher,
             io,
         }
     }
@@ -158,12 +166,34 @@ impl LightClient {
         target_height: Height,
         state: &mut State,
     ) -> Result<LightBlock, Error> {
-        // Let's first look in the store to see whether we have already successfully verified this
-        // block.
+        // Let's first look in the store to see whether
+        // we have already successfully verified this block.
         if let Some(light_block) = state.light_store.get_trusted_or_verified(target_height) {
             return Ok(light_block);
         }
 
+        // Get the latest trusted height
+        let trusted_height = state
+            .light_store
+            .latest_trusted_or_verified()
+            .map(|lb| lb.height())
+            .ok_or(ErrorKind::NoInitialTrustedState)?;
+
+        if target_height >= trusted_height {
+            // Perform forward verification with bisection
+            self.verify_bisection(target_height, state)
+        } else {
+            // Perform sequential backward verification
+            self.verify_backwards(target_height, state)
+        }
+    }
+
+    /// Perform forward verification with bisection
+    fn verify_bisection(
+        &self,
+        target_height: Height,
+        state: &mut State,
+    ) -> Result<LightBlock, Error> {
         let mut current_height = target_height;
 
         loop {
@@ -237,6 +267,81 @@ impl LightClient {
                 self.scheduler
                     .schedule(state.light_store.as_ref(), current_height, target_height);
         }
+    }
+
+    /// Perform sequential backward verification
+    fn verify_backwards(
+        &self,
+        target_height: Height,
+        state: &mut State,
+    ) -> Result<LightBlock, Error> {
+        let trusted = state
+            .light_store
+            .latest_trusted_or_verified()
+            .ok_or(ErrorKind::NoInitialTrustedState)?;
+
+        let now = self.clock.now();
+        if !is_within_trust_period(&trusted, self.options.trusting_period, now) {
+            bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
+                trusted_state: Box::new(trusted),
+                options: self.options,
+            });
+        }
+
+        let (untrusted, _status) = self.get_or_fetch_block(target_height, state)?;
+
+        let mut old = trusted.clone();
+
+        let trusted_height = trusted.height().value();
+        let untrusted_height = untrusted.height().value();
+        let heights =
+            ((trusted_height - 1)..untrusted_height).map(|h| Height::try_from(h).unwrap());
+
+        for height in heights {
+            let (current, _status) = self.get_or_fetch_block(height, state)?;
+
+            let last_block_id = old
+                .signed_header
+                .header
+                .last_block_id
+                .ok_or_else(|| ErrorKind::MissingLastBlockId(old.height()))?;
+
+            let current_hash = self.hasher.hash_header(&current.signed_header.header);
+
+            if current_hash != last_block_id.hash {
+                bail!(ErrorKind::InvalidAdjacentHeaders {
+                    h1: current_hash,
+                    h2: last_block_id.hash
+                });
+            }
+
+            old = current;
+        }
+
+        let last_block_id = old
+            .signed_header
+            .header
+            .last_block_id
+            .ok_or_else(|| ErrorKind::MissingLastBlockId(old.height()))?;
+
+        let untrusted_hash = self.hasher.hash_header(&untrusted.signed_header.header);
+
+        if untrusted_hash != last_block_id.hash {
+            bail!(ErrorKind::InvalidAdjacentHeaders {
+                h1: untrusted_hash,
+                h2: last_block_id.hash
+            });
+        }
+
+        let now = self.clock.now();
+        if !is_within_trust_period(&trusted, self.options.trusting_period, now) {
+            bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
+                trusted_state: Box::new(trusted),
+                options: self.options,
+            });
+        }
+
+        Ok(untrusted)
     }
 
     /// Look in the light store for a block from the given peer at the given height,
