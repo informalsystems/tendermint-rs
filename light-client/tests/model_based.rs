@@ -231,7 +231,7 @@ impl SingleStepTestFuzzer for HeaderValHashFuzzer {
             Validator::new("2"),
             Validator::new("3"),
         ];
-        let valset = ValidatorSet::new_simple(generate_validators(&vals).unwrap());
+        let valset = ValidatorSet::without_proposer(generate_validators(&vals).unwrap());
 
         input.block.validators = valset;
         (String::from("header validators_hash"), true)
@@ -246,7 +246,7 @@ impl SingleStepTestFuzzer for HeaderNextValHashFuzzer {
             Validator::new("2"),
             Validator::new("3"),
         ];
-        let valset = ValidatorSet::new_simple(generate_validators(&vals).unwrap());
+        let valset = ValidatorSet::without_proposer(generate_validators(&vals).unwrap());
 
         input.block.next_validators = valset;
         (String::from("header next_validators_hash"), true)
@@ -452,10 +452,10 @@ fn single_step_test(
         // Below is a temporary work around to get rid of bug-gy validator sorting
         // which was making all the tests fail
         let current_vals = input.block.validators.clone();
-        let current_resorted = Set::new_simple(current_vals.validators().to_vec());
+        let current_resorted = Set::without_proposer(current_vals.validators().to_vec());
 
         let current_next_vals = input.block.next_validators.clone();
-        let current_next_resorted = Set::new_simple(current_next_vals.validators().to_vec());
+        let current_next_resorted = Set::without_proposer(current_next_vals.validators().to_vec());
 
         let mut mutated_block = input.block.clone();
         mutated_block.validators = current_resorted;
