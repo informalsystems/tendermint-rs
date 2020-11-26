@@ -25,7 +25,15 @@ all-features = true
 
 [features]
 default = []
-http-client = [ "async-trait", "futures", "http", "hyper", "tokio/fs", "tokio/macros" ]
+http-client = [
+  "async-trait",
+  "futures",
+  "http",
+  "hyper",
+  "tokio/fs",
+  "tokio/macros",
+  "tracing"
+]
 secp256k1 = [ "tendermint/secp256k1" ]
 websocket-client = [
   "async-trait",
