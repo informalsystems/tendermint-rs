@@ -367,7 +367,7 @@ mod rpc {
 
         let res = rpc_client
             .tx_search(
-                Query::eq("tx.height", tx_info.height),
+                Query::eq("app.key", "tx_search_key"),
                 true,
                 1,
                 1,
