@@ -358,11 +358,11 @@ mod rpc {
                 .unwrap();
         let driver_handle = tokio::spawn(async move { driver.run().await });
 
+        let tx = "tx_search_key=tx_search_value".to_string();
         let tx_info = broadcast_tx(
             &rpc_client,
             &mut subs_client,
-            "tx_search_key",
-            "tx_search_value",
+            Transaction::from(tx.into_bytes()),
         )
         .await
         .unwrap();
@@ -396,22 +396,19 @@ mod rpc {
     async fn broadcast_tx(
         http_client: &HttpClient,
         websocket_client: &mut WebSocketClient,
-        key: &str,
-        value: &str,
+        tx: Transaction,
     ) -> Result<TxInfo, tendermint_rpc::Error> {
-        let tx = format!("{}={}", key, value);
         let mut subs = websocket_client.subscribe(EventType::Tx.into()).await?;
-        let _ = http_client
-            .broadcast_tx_async(Transaction::from(tx.clone().into_bytes()))
-            .await?;
+        let _ = http_client.broadcast_tx_async(tx.clone()).await?;
         let mut timeout = tokio::time::delay_for(Duration::from_secs(3));
         tokio::select! {
             Some(res) = subs.next() => {
                 let ev = res?;
                 match ev.data {
                     EventData::Tx { tx_result } => {
+                        let tx_result_bytes: &[u8] = tx_result.tx.as_ref();
                         // Make sure we have the right transaction here
-                        assert_eq!(tx, String::from_utf8(tx_result.clone().tx).unwrap());
+                        assert_eq!(tx.as_bytes(), tx_result_bytes);
                         Ok(tx_result)
                     },
                     _ => panic!("Unexpected event: {:?}", ev),
