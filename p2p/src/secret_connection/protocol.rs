@@ -5,12 +5,17 @@ use std::convert::TryInto;
 use ed25519_dalek as ed25519;
 use eyre::{Report, Result, WrapErr};
 use prost::Message as _;
+
+#[cfg(feature = "amino")]
 use prost_amino::Message as _;
+
 use x25519_dalek::PublicKey as EphemeralPublic;
 
 use tendermint_proto as proto;
 
+#[cfg(feature = "amino")]
 use super::amino_types;
+
 use crate::error::Error;
 
 /// Size of an X25519 or Ed25519 public key
@@ -128,17 +133,7 @@ impl Version {
                 .expect("couldn't encode AuthSigMessage proto");
             buf
         } else {
-            // TODO(tarcieri): proper protobuf message
-            // Legacy Amino encoded `AuthSigMessage`
-            let msg = amino_types::AuthSigMessage {
-                pub_key: pub_key.as_ref().to_vec(),
-                sig: signature.as_ref().to_vec(),
-            };
-
-            let mut buf = Vec::new();
-            msg.encode_length_delimited(&mut buf)
-                .expect("encode_auth_signature failed");
-            buf
+            self.encode_auth_signature_amino(pub_key, signature)
         }
     }
 
@@ -165,17 +160,54 @@ impl Version {
                 return Report::new(Error::ProtocolError).wrap_err(message);
             })
         } else {
-            // Legacy Amino encoded `AuthSigMessage`
-            let amino_msg = amino_types::AuthSigMessage::decode_length_delimited(bytes)?;
-            let pub_key = proto::crypto::PublicKey {
-                sum: Some(proto::crypto::public_key::Sum::Ed25519(amino_msg.pub_key)),
-            };
-
-            Ok(proto::p2p::AuthSigMessage {
-                pub_key: Some(pub_key),
-                sig: amino_msg.sig,
-            })
+            self.decode_auth_signature_amino(bytes)
         }
+    }
+
+    #[cfg(feature = "amino")]
+    fn encode_auth_signature_amino(
+        self,
+        pub_key: &ed25519::PublicKey,
+        signature: &ed25519::Signature,
+    ) -> Vec<u8> {
+        // Legacy Amino encoded `AuthSigMessage`
+        let msg = amino_types::AuthSigMessage {
+            pub_key: pub_key.as_ref().to_vec(),
+            sig: signature.as_ref().to_vec(),
+        };
+
+        let mut buf = Vec::new();
+        msg.encode_length_delimited(&mut buf)
+            .expect("encode_auth_signature failed");
+        buf
+    }
+
+    #[cfg(not(feature = "amino"))]
+    fn encode_auth_signature_amino(
+        self,
+        _: &ed25519::PublicKey,
+        _: &ed25519::Signature,
+    ) -> Vec<u8> {
+        panic!("attempted to encode auth signature using amino, but 'amino' feature is not present")
+    }
+
+    #[cfg(feature = "amino")]
+    fn decode_auth_signature_amino(self, bytes: &[u8]) -> Result<proto::p2p::AuthSigMessage> {
+        // Legacy Amino encoded `AuthSigMessage`
+        let amino_msg = amino_types::AuthSigMessage::decode_length_delimited(bytes)?;
+        let pub_key = proto::crypto::PublicKey {
+            sum: Some(proto::crypto::public_key::Sum::Ed25519(amino_msg.pub_key)),
+        };
+
+        Ok(proto::p2p::AuthSigMessage {
+            pub_key: Some(pub_key),
+            sig: amino_msg.sig,
+        })
+    }
+
+    #[cfg(not(feature = "amino"))]
+    fn decode_auth_signature_amino(self, _: &[u8]) -> Result<proto::p2p::AuthSigMessage> {
+        panic!("attempted to decode auth signature using amino, but 'amino' feature is not present")
     }
 }
 

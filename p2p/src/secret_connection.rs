@@ -24,7 +24,9 @@ use tendermint_proto as proto;
 pub use self::{kdf::Kdf, nonce::Nonce, protocol::Version, public_key::PublicKey};
 use crate::error::Error;
 
+#[cfg(feature = "amino")]
 mod amino_types;
+
 mod kdf;
 mod nonce;
 mod protocol;

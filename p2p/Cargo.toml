@@ -22,9 +22,6 @@ eyre = "0.6"
 hkdf = "0.10.0"
 merlin = "2"
 prost = "0.6"
-prost-amino = "0.6"
-prost-amino-derive = "0.6"
-prost-derive = "0.6"
 rand_core = { version = "0.5", features = ["std"] }
 sha2 = "0.9"
 subtle = "2"
@@ -36,3 +33,10 @@ zeroize = "1"
 # path dependencies
 tendermint = { path = "../tendermint", version = "=0.17.0-rc3" }
 tendermint-proto = { path = "../proto", version = "=0.17.0-rc3" }
+
+# optional dependencies
+prost-amino = { version = "0.6", optional = true }
+prost-amino-derive = { version = "0.6", optional = true }
+
+[features]
+amino = ["prost-amino", "prost-amino-derive"]
