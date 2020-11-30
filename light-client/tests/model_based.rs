@@ -14,6 +14,8 @@ use tendermint_testgen::{
     apalache::*, jsonatr::*, light_block::TMLightBlock, validator::generate_validators, Command,
     Generator, LightBlock as TestgenLightBlock, TestEnv, Tester, Validator, Vote,
 };
+use serde_json::Error;
+use serde::de::DeserializeOwned;
 
 fn testgen_to_anon(tm_lb: TMLightBlock) -> AnonLightBlock {
     AnonLightBlock {
@@ -45,6 +47,8 @@ pub enum LiteVerdict {
     /// passed block verification, but the validator set is too different to verify it
     #[serde(rename = "NOT_ENOUGH_TRUST")]
     NotEnoughTrust,
+    #[serde(rename = "PARSE_ERROR")]
+    ParseError,
 }
 
 /// A single-step test case is a test for `Verifier::verify()` function.
@@ -74,7 +78,7 @@ trait SingleStepTestFuzzer {
         if let Some((i, input)) = Self::fuzzable_input(&mut fuzz) {
             let (what, invalid_verdict) = Self::fuzz_input(input);
             if invalid_verdict {
-                input.verdict = LiteVerdict::Invalid;
+                input.verdict = LiteVerdict::ParseError;
             }
             fuzz.input.truncate(i + 1);
             fuzz.description = format!("Fuzzed {} for {}", what, &fuzz.description);
@@ -433,6 +437,25 @@ impl SingleStepTestFuzzer for SignaturesFuzzer {
     }
 }
 
+fn serde_roundtrip<T>(value: &T) -> Result<T, Error>
+where
+    T: Serialize + DeserializeOwned,
+{
+    // serialize
+    let serialized = serde_json::to_string(value);
+    assert!(
+        serialized.is_ok(),
+        "serialization error {}",
+        serialized.err().unwrap()
+    );
+
+    //deserialize
+    let serialized = serialized.unwrap();
+
+    let deserialized = serde_json::from_str::<T>(&serialized);
+    deserialized
+}
+
 fn single_step_test(
     tc: SingleStepTestCase,
     _env: &TestEnv,
@@ -445,47 +468,64 @@ fn single_step_test(
     );
     let clock_drift = Duration::from_secs(0);
     let trusting_period: Duration = tc.initial.trusting_period.into();
+
     for (i, input) in tc.input.iter().enumerate() {
         output_env.logln(&format!("    > step {}, expecting {:?}", i, input.verdict));
 
-        // ------------------->
-        // Below is a temporary work around to get rid of bug-gy validator sorting
-        // which was making all the tests fail
-        let current_vals = input.block.validators.clone();
-        let current_resorted = Set::new_simple(current_vals.validators().to_vec());
+        let deserialized = serde_roundtrip(input);
 
-        let current_next_vals = input.block.next_validators.clone();
-        let current_next_resorted = Set::new_simple(current_next_vals.validators().to_vec());
+        if input.verdict == LiteVerdict::ParseError {
+            assert!(
+                deserialized.is_err(),
+                "deserialization of invalid data did not fail!!",
+            );
+        } else {
+            // Check that the data is still valid after possible fuzzing
+            assert!(
+                deserialized.is_ok(),
+                "deserialization failure: {}",
+                deserialized.err().unwrap()
+            );
 
-        let mut mutated_block = input.block.clone();
-        mutated_block.validators = current_resorted;
-        mutated_block.next_validators = current_next_resorted;
-        // ------------------->
+            // ------------------->
+            // Below is a temporary work around to get rid of bug-gy validator sorting
+            // which was making all the tests fail
+            let current_vals = input.block.validators.clone();
+            let current_resorted = Set::new_simple(current_vals.validators().to_vec());
 
-        let now = input.now;
-        match verify_single(
-            latest_trusted.clone(),
-            mutated_block.clone().into(),
-            TrustThreshold::default(),
-            trusting_period,
-            clock_drift,
-            now,
-        ) {
-            Ok(new_state) => {
-                assert_eq!(input.verdict, LiteVerdict::Success);
-                let expected_state: LightBlock = mutated_block.clone().into();
-                assert_eq!(new_state, expected_state);
-                latest_trusted = Trusted::new(new_state.signed_header, new_state.next_validators);
-            }
-            Err(e) => {
-                output_env.logln(&format!("      > lite: {:?}", e));
-                match e {
-                    Verdict::Invalid(_) => assert_eq!(input.verdict, LiteVerdict::Invalid),
-                    Verdict::NotEnoughTrust(_) => {
-                        assert_eq!(input.verdict, LiteVerdict::NotEnoughTrust)
-                    }
-                    Verdict::Success => {
-                        panic!("verify_single() returned error with Verdict::Success")
+            let current_next_vals = input.block.next_validators.clone();
+            let current_next_resorted = Set::new_simple(current_next_vals.validators().to_vec());
+
+            let mut mutated_block = input.block.clone();
+            mutated_block.validators = current_resorted;
+            mutated_block.next_validators = current_next_resorted;
+            // ------------------->
+
+            let now = input.now;
+            match verify_single(
+                latest_trusted.clone(),
+                mutated_block.clone().into(),
+                TrustThreshold::default(),
+                trusting_period,
+                clock_drift,
+                now,
+            ) {
+                Ok(new_state) => {
+                    assert_eq!(input.verdict, LiteVerdict::Success);
+                    let expected_state: LightBlock = mutated_block.clone().into();
+                    assert_eq!(new_state, expected_state);
+                    latest_trusted = Trusted::new(new_state.signed_header, new_state.next_validators);
+                }
+                Err(e) => {
+                    output_env.logln(&format!("      > lite: {:?}", e));
+                    match e {
+                        Verdict::Invalid(_) => assert_eq!(input.verdict, LiteVerdict::Invalid),
+                        Verdict::NotEnoughTrust(_) => {
+                            assert_eq!(input.verdict, LiteVerdict::NotEnoughTrust)
+                        }
+                        Verdict::Success => {
+                            panic!("verify_single() returned error with Verdict::Success")
+                        }
                     }
                 }
             }
@@ -493,7 +533,7 @@ fn single_step_test(
     }
 }
 
-fn _fuzz_single_step_test(
+fn fuzz_single_step_test(
     tc: SingleStepTestCase,
     _env: &TestEnv,
     _root_env: &TestEnv,
@@ -506,56 +546,38 @@ fn _fuzz_single_step_test(
             &tc.description
         ));
 
-        // TODO: Talk to Greg about ser/de once serialization updates are merged
-        // serialize
-        let serialized = serde_json::to_string(&tc);
-        assert!(
-            serialized.is_ok(),
-            "serialization error {}",
-            serialized.err().unwrap()
-        );
-
-        //deserialize
-        let serialized = serialized.unwrap();
-
-        let deserialized = serde_json::from_str::<SingleStepTestCase>(&serialized);
-        assert!(
-            deserialized.is_ok(),
-            "deserialization error {}",
-            deserialized.err().unwrap()
-        );
-        let deserialized = deserialized.unwrap();
+        // let deserialized = deserialized.unwrap();
 
         // test
-        single_step_test(deserialized, _env, _root_env, output_env);
+        single_step_test(tc, _env, _root_env, output_env);
         Some(())
     };
     run_test(tc.clone());
-    HeaderVersionFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderChainIdFuzzer::fuzz(&tc).and_then(run_test);
+    // HeaderVersionFuzzer::fuzz(&tc).and_then(run_test);
+    // HeaderChainIdFuzzer::fuzz(&tc).and_then(run_test);
     HeaderHeightFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderTimeFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderLastBlockIdFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderLastCommitHashFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderDataHashFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderValHashFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderNextValHashFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderConsensusHashFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderAppHashFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderLastResultsHashFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderEvidenceHashFuzzer::fuzz(&tc).and_then(run_test);
-    HeaderProposerAddressFuzzer::fuzz(&tc).and_then(run_test);
+    // HeaderTimeFuzzer::fuzz(&tc).and_then(run_test);
+    // HeaderLastBlockIdFuzzer::fuzz(&tc).and_then(run_test);
+    // HeaderLastCommitHashFuzzer::fuzz(&tc).and_then(run_test);
+    // HeaderDataHashFuzzer::fuzz(&tc).and_then(run_test);
+    // HeaderValHashFuzzer::fuzz(&tc).and_then(run_test);
+    // HeaderNextValHashFuzzer::fuzz(&tc).and_then(run_test);
+    // HeaderConsensusHashFuzzer::fuzz(&tc).and_then(run_test);
+    // HeaderAppHashFuzzer::fuzz(&tc).and_then(run_test);
+    // HeaderLastResultsHashFuzzer::fuzz(&tc).and_then(run_test);
+    // HeaderEvidenceHashFuzzer::fuzz(&tc).and_then(run_test);
+    // HeaderProposerAddressFuzzer::fuzz(&tc).and_then(run_test);
     // The two tests below fail -- seems that there is not enough validation between the header and
     // the commit
     // Commenting them for now - see issue #637
     // TODO: uncomment once we figure a fix!
     // CommitHeightFuzzer::fuzz(&tc).and_then(run_test);
     // CommitRoundFuzzer::fuzz(&tc).and_then(run_test);
-    CommitBlockIdFuzzer::fuzz(&tc).and_then(run_test);
-    CommitSigFuzzer::fuzz(&tc).and_then(run_test);
-    VoteSignatureFuzzer::fuzz(&tc).and_then(run_test);
-    ValidatorSetFuzzer::fuzz(&tc).and_then(run_test);
-    SignaturesFuzzer::fuzz(&tc).and_then(run_test);
+    // CommitBlockIdFuzzer::fuzz(&tc).and_then(run_test);
+    // CommitSigFuzzer::fuzz(&tc).and_then(run_test);
+    // VoteSignatureFuzzer::fuzz(&tc).and_then(run_test);
+    // ValidatorSetFuzzer::fuzz(&tc).and_then(run_test);
+    // SignaturesFuzzer::fuzz(&tc).and_then(run_test);
 }
 
 fn model_based_test(
@@ -649,7 +671,7 @@ fn run_model_based_single_step_tests() {
     let mut tester = Tester::new("test_run", TEST_DIR);
     // Disabled fuzzing for now because more restrictive data structure construction is breaking it
     // Will be fixed in a follow-up PR
-    tester.add_test_with_env("static model-based single-step test", single_step_test);
+    tester.add_test_with_env("static model-based single-step test", fuzz_single_step_test);
     tester.add_test_with_env("full model-based single-step test", model_based_test);
     tester.add_test_batch(model_based_test_batch);
     tester.run_foreach_in_dir("");
