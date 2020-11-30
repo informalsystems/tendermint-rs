@@ -6,9 +6,11 @@
 - `[rpc]` The `WebSocketClient` now adds support for all remaining RPC requests
   by way of implementing the `Client` trait ([#646])
 - `[rpc]` Support for the `tx_search` RPC endpoint has been added ([#701])
+- `[tendermint]` (Since v0.17.0-rc3) Bech32 encoding fix ([#690])
 
 [#425]: https://github.com/informalsystems/tendermint-rs/issues/425
 [#646]: https://github.com/informalsystems/tendermint-rs/pull/646
+[#690]: https://github.com/informalsystems/tendermint-rs/issues/690
 [#701]: https://github.com/informalsystems/tendermint-rs/pull/701
 
 ## v0.17.0-rc3
