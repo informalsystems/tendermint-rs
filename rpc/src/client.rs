@@ -13,7 +13,8 @@ pub use transport::http::HttpClient;
 pub use transport::websocket::{WebSocketClient, WebSocketClientDriver};
 
 use crate::endpoint::*;
-use crate::{Result, SimpleRequest};
+use crate::query::Query;
+use crate::{Order, Result, SimpleRequest};
 use async_trait::async_trait;
 use tendermint::abci::{self, Transaction};
 use tendermint::block::Height;
@@ -157,6 +158,19 @@ pub trait Client {
     /// `/broadcast_evidence`: broadcast an evidence.
     async fn broadcast_evidence(&self, e: Evidence) -> Result<evidence::Response> {
         self.perform(evidence::Request::new(e)).await
+    }
+
+    /// `/tx_search`: search for transactions with their results.
+    async fn tx_search(
+        &self,
+        query: Query,
+        prove: bool,
+        page: u32,
+        per_page: u8,
+        order: Order,
+    ) -> Result<tx_search::Response> {
+        self.perform(tx_search::Request::new(query, prove, page, per_page, order))
+            .await
     }
 
     /// Perform a request against the RPC endpoint

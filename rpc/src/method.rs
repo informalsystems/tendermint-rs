@@ -51,6 +51,9 @@ pub enum Method {
     /// Get node status
     Status,
 
+    /// Search for transactions with their results
+    TxSearch,
+
     /// Get validator info for a block
     Validators,
 
@@ -73,6 +76,7 @@ impl Method {
             Method::Block => "block",
             Method::BlockResults => "block_results",
             Method::Blockchain => "blockchain",
+            Method::BroadcastEvidence => "broadcast_evidence",
             Method::BroadcastTxAsync => "broadcast_tx_async",
             Method::BroadcastTxSync => "broadcast_tx_sync",
             Method::BroadcastTxCommit => "broadcast_tx_commit",
@@ -81,10 +85,10 @@ impl Method {
             Method::Health => "health",
             Method::NetInfo => "net_info",
             Method::Status => "status",
-            Method::Validators => "validators",
             Method::Subscribe => "subscribe",
-            Method::BroadcastEvidence => "broadcast_evidence",
+            Method::TxSearch => "tx_search",
             Method::Unsubscribe => "unsubscribe",
+            Method::Validators => "validators",
         }
     }
 }
@@ -99,6 +103,7 @@ impl FromStr for Method {
             "block" => Method::Block,
             "block_results" => Method::BlockResults,
             "blockchain" => Method::Blockchain,
+            "broadcast_evidence" => Method::BroadcastEvidence,
             "broadcast_tx_async" => Method::BroadcastTxAsync,
             "broadcast_tx_sync" => Method::BroadcastTxSync,
             "broadcast_tx_commit" => Method::BroadcastTxCommit,
@@ -107,10 +112,10 @@ impl FromStr for Method {
             "health" => Method::Health,
             "net_info" => Method::NetInfo,
             "status" => Method::Status,
-            "validators" => Method::Validators,
             "subscribe" => Method::Subscribe,
+            "tx_search" => Method::TxSearch,
             "unsubscribe" => Method::Unsubscribe,
-            "broadcast_evidence" => Method::BroadcastEvidence,
+            "validators" => Method::Validators,
             other => return Err(Error::method_not_found(other)),
         })
     }

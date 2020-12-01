@@ -6,7 +6,7 @@
 //! functionality and different client transports based on which features you
 //! select when using it.
 //!
-//! Two features are provided at present.
+//! Two features are provided at present:
 //!
 //! * `http-client` - Provides [`HttpClient`], which is a basic RPC client that
 //!   interacts with remote Tendermint nodes via **JSON-RPC over HTTP**. This
@@ -51,6 +51,7 @@ pub mod error;
 pub mod event;
 mod id;
 mod method;
+mod order;
 pub mod query;
 pub mod request;
 pub mod response;
@@ -59,6 +60,6 @@ mod utils;
 mod version;
 
 pub use self::{
-    error::Error, id::Id, method::Method, request::Request, request::SimpleRequest,
+    error::Error, id::Id, method::Method, order::Order, request::Request, request::SimpleRequest,
     response::Response, result::Result, version::Version,
 };
