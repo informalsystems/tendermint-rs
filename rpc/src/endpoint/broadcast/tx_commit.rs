@@ -3,6 +3,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use tendermint::abci::responses::Codespace;
+use tendermint::abci::{Event, Gas, Info};
 use tendermint::{
     abci::{transaction, Code, Data, Log, Transaction},
     block,
@@ -65,5 +67,26 @@ pub struct TxResult {
     pub data: Option<Data>,
 
     /// Log
+    #[serde(default)]
     pub log: Log,
+
+    /// ABCI info (nondeterministic)
+    #[serde(default)]
+    pub info: Info,
+
+    /// Amount of gas wanted
+    #[serde(default, rename = "gasWanted")]
+    pub gas_wanted: Gas,
+
+    /// Amount of gas used
+    #[serde(default, rename = "gasUsed")]
+    pub gas_used: Gas,
+
+    /// Events
+    #[serde(default)]
+    pub events: Vec<Event>,
+
+    /// Codespace
+    #[serde(default)]
+    pub codespace: Codespace,
 }
