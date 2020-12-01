@@ -312,7 +312,7 @@ impl SingleStepTestFuzzer for CommitHeightFuzzer {
         while height == h {
             height = rng.gen();
         }
-        input.block.signed_header.commit.height = tendermint::block::Height::try_from(h).unwrap();
+        input.block.signed_header.commit.height = tendermint::block::Height::try_from(height).unwrap();
         (String::from("commit height"), LiteVerdict::ParseError)
     }
 }
@@ -342,97 +342,98 @@ impl SingleStepTestFuzzer for CommitBlockIdFuzzer {
     }
 }
 
-// struct CommitSigFuzzer {}
-// // Replaces test `less_than_one_third_nil_votes.json`
-// impl SingleStepTestFuzzer for CommitSigFuzzer {
-//     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
-//         let mut votes = input.testgen_block.commit.clone().unwrap().votes.unwrap();
-//         let validators_len = input.testgen_block.validators.clone().unwrap().len();
-//         let enough_votes = votes.len() > 3;
-//         let enough_vp = 7 * votes.len() > 6 * validators_len;
-//         if enough_votes && enough_vp {
-//             votes[0].is_nil = Some(());
-//
-//             // change the vote to nil
-//             let mut commit = input.testgen_block.commit.clone().unwrap();
-//             commit.votes = Some(votes);
-//
-//             input.block.signed_header.commit = commit.generate().unwrap();
-//
-//             (String::from("commit sig type"), false)
-//         } else {
-//             (String::from("nothing"), false)
-//         }
-//     }
-// }
-//
-// struct VoteSignatureFuzzer {}
-// // Replaces test `wrong_vote_signature.json`
-// impl SingleStepTestFuzzer for VoteSignatureFuzzer {
-//     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
-//         let mut commit = input.testgen_block.commit.clone().unwrap();
-//         let mut header = commit.header.clone().unwrap();
-//
-//         let h: u64 = commit.clone().header.unwrap().height.unwrap();
-//         header.height = Some(h + 3);
-//         commit.header = Some(header);
-//
-//         input.testgen_block.commit = Some(commit);
-//         input.block = testgen_to_anon(input.testgen_block.generate().unwrap());
-//
-//         (String::from("vote signature"), true)
-//     }
-// }
-//
-// struct ValidatorSetFuzzer {}
-// impl SingleStepTestFuzzer for ValidatorSetFuzzer {
-//     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
-//         let mut commit = input.testgen_block.commit.clone().unwrap();
-//         let mut header = commit.header.clone().unwrap();
-//         let mut validators = header.validators.unwrap();
-//
-//         if !validators.is_empty() {
-//             let faulty_val = Validator::new("faulty");
-//             validators[0] = faulty_val;
-//
-//             header.validators = Some(validators);
-//             commit.header = Some(header);
-//
-//             commit.votes = None;
-//
-//             input.block.signed_header.commit = commit.generate().unwrap();
-//             input.block.signed_header.commit.block_id.hash =
-//                 input.block.signed_header.header.hash();
-//         }
-//
-//         (String::from("validator set"), true)
-//     }
-// }
-//
-// struct SignaturesFuzzer {}
-// impl SingleStepTestFuzzer for SignaturesFuzzer {
-//     fn fuzz_input(input: &mut BlockVerdict) -> (String, bool) {
-//         let header = input.testgen_block.header.clone().unwrap();
-//         let mut commit = input.testgen_block.commit.clone().unwrap();
-//         let mut votes = commit.votes.clone().unwrap();
-//
-//         let mut rng = rand::thread_rng();
-//         let random_num: u32 = rng.gen();
-//         if random_num % 2 == 0 {
-//             let faulty_val = Validator::new("faulty");
-//             let vote = Vote::new(faulty_val, header);
-//
-//             votes.push(vote);
-//             commit.votes = Some(votes);
-//
-//             input.block.signed_header.commit = commit.generate().unwrap();
-//         } else {
-//             input.block.signed_header.commit.signatures = vec![];
-//         }
-//
-//         (String::from("signatures"), true)
-//     }
-// }
+struct CommitSigFuzzer {}
+// Replaces test `less_than_one_third_nil_votes.json`
+impl SingleStepTestFuzzer for CommitSigFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> (String, LiteVerdict) {
+        let mut votes = input.testgen_block.commit.clone().unwrap().votes.unwrap();
+        let validators_len = input.testgen_block.validators.clone().unwrap().len();
+        let enough_votes = votes.len() > 3;
+        let enough_vp = 7 * votes.len() > 6 * validators_len;
+        let verdict = input.clone().verdict;
+        if enough_votes && enough_vp {
+            votes[0].is_nil = Some(());
+
+            // change the vote to nil
+            let mut commit = input.testgen_block.commit.clone().unwrap();
+            commit.votes = Some(votes);
+
+            input.block.signed_header.commit = commit.generate().unwrap();
+
+            (String::from("commit sig type"), verdict)
+        } else {
+            (String::from("nothing"), verdict)
+        }
+    }
+}
+
+struct VoteSignatureFuzzer {}
+// Replaces test `wrong_vote_signature.json`
+impl SingleStepTestFuzzer for VoteSignatureFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> (String, LiteVerdict) {
+        let mut commit = input.testgen_block.commit.clone().unwrap();
+        let mut header = commit.header.clone().unwrap();
+
+        // let h: u64 = commit.clone().header.unwrap().height.unwrap();
+        header.chain_id = Some("wrong".to_string());
+        commit.header = Some(header);
+
+        input.testgen_block.commit = Some(commit);
+        input.block = testgen_to_anon(input.testgen_block.generate().unwrap());
+
+        (String::from("vote signature"), LiteVerdict::Invalid)
+    }
+}
+
+struct ValidatorSetFuzzer {}
+impl SingleStepTestFuzzer for ValidatorSetFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> (String, LiteVerdict) {
+        let mut commit = input.testgen_block.commit.clone().unwrap();
+        let mut header = commit.header.clone().unwrap();
+        let mut validators = header.validators.unwrap();
+
+        if !validators.is_empty() {
+            let faulty_val = Validator::new("faulty");
+            validators[0] = faulty_val;
+
+            header.validators = Some(validators);
+            commit.header = Some(header);
+
+            commit.votes = None;
+
+            input.block.signed_header.commit = commit.generate().unwrap();
+            input.block.signed_header.commit.block_id.hash =
+                input.block.signed_header.header.hash();
+        }
+
+        (String::from("validator set"), LiteVerdict::Invalid)
+    }
+}
+
+struct SignaturesFuzzer {}
+impl SingleStepTestFuzzer for SignaturesFuzzer {
+    fn fuzz_input(input: &mut BlockVerdict) -> (String, LiteVerdict) {
+        let header = input.testgen_block.header.clone().unwrap();
+        let mut commit = input.testgen_block.commit.clone().unwrap();
+        let mut votes = commit.votes.clone().unwrap();
+
+        let mut rng = rand::thread_rng();
+        let random_num: u32 = rng.gen();
+        if random_num % 2 == 0 {
+            let faulty_val = Validator::new("faulty");
+            let vote = Vote::new(faulty_val, header);
+
+            votes.push(vote);
+            commit.votes = Some(votes);
+
+            input.block.signed_header.commit = commit.generate().unwrap();
+        } else {
+            input.block.signed_header.commit.signatures = vec![];
+        }
+
+        (String::from("signatures"), LiteVerdict::Invalid)
+    }
+}
 
 fn serde_roundtrip<T>(value: &T) -> Result<T, Error>
 where
@@ -568,13 +569,13 @@ fn fuzz_single_step_test(
     // the commit
     // Commenting them for now - see issue #637
     // TODO: uncomment once we figure a fix!
-    // CommitHeightFuzzer::fuzz(&tc).and_then(run_test);
+    CommitHeightFuzzer::fuzz(&tc).and_then(run_test);
     // CommitRoundFuzzer::fuzz(&tc).and_then(run_test);
-    // CommitBlockIdFuzzer::fuzz(&tc).and_then(run_test);
-    // CommitSigFuzzer::fuzz(&tc).and_then(run_test);
-    // VoteSignatureFuzzer::fuzz(&tc).and_then(run_test);
-    // ValidatorSetFuzzer::fuzz(&tc).and_then(run_test);
-    // SignaturesFuzzer::fuzz(&tc).and_then(run_test);
+    CommitBlockIdFuzzer::fuzz(&tc).and_then(run_test);
+    CommitSigFuzzer::fuzz(&tc).and_then(run_test);
+    VoteSignatureFuzzer::fuzz(&tc).and_then(run_test);
+    ValidatorSetFuzzer::fuzz(&tc).and_then(run_test);
+    SignaturesFuzzer::fuzz(&tc).and_then(run_test);
 }
 
 fn model_based_test(
