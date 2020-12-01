@@ -143,3 +143,9 @@ impl Display for Codespace {
         write!(f, "{}", self.0)
     }
 }
+
+impl Default for Codespace {
+    fn default() -> Self {
+        Self(String::new())
+    }
+}
