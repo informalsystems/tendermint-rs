@@ -119,6 +119,13 @@ fn block_results() {
 
     assert_eq!(deliver_tx[0].gas_wanted.value(), 200_000);
     assert_eq!(deliver_tx[0].gas_used.value(), 105_662);
+    assert_eq!(deliver_tx[0].events.len(), 1);
+    assert_eq!(deliver_tx[0].events[0].attributes.len(), 3);
+    assert_eq!(deliver_tx[0].events[0].attributes[0].key.as_ref(), "action");
+    assert_eq!(
+        deliver_tx[0].events[0].attributes[0].value.as_ref(),
+        "delegate"
+    );
 
     assert_eq!(validator_updates[0].power.value(), 1_233_243);
 }
@@ -194,6 +201,7 @@ fn broadcast_tx_commit() {
         &response.hash.to_string(),
         "EFA00D85332A8197CF290E4724BAC877EA93DDFE547A561828BAE45A29BF1DAD"
     );
+    assert_eq!(5, response.deliver_tx.events.len());
 }
 
 #[test]
@@ -337,4 +345,10 @@ fn tx_search_with_prove() {
         ],
         proof.root_hash
     );
+
+    let events = &response.txs[0].tx_result.events;
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0].attributes.len(), 4);
+    assert_eq!(events[0].attributes[0].key.as_ref(), "creator");
+    assert_eq!(events[0].attributes[0].value.as_ref(), "Cosmoshi Netowoko");
 }
