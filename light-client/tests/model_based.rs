@@ -329,6 +329,21 @@ impl SingleStepTestFuzzer for CommitRoundFuzzer {
         input.block.signed_header.commit.round = (round as u16).into();
         (format!("commit round from {} into {}", r, round), LiteVerdict::Invalid)
     }
+
+    fn fuzzable_input(tc: &mut SingleStepTestCase) -> Option<(usize, &mut BlockVerdict)> {
+        let mut index = Vec::new();
+        for (i, input) in tc.input.iter_mut().enumerate() {
+            if input.verdict != LiteVerdict::Invalid && input.verdict != LiteVerdict::NotEnoughTrust{
+                index.push(i);
+                break;
+            }
+        }
+        if index.is_empty() {
+            None
+        } else {
+            Some((index[0], tc.input.get_mut(index[0]).unwrap()))
+        }
+    }
 }
 
 struct CommitBlockIdFuzzer {}
@@ -565,12 +580,8 @@ fn fuzz_single_step_test(
     HeaderLastResultsHashFuzzer::fuzz(&tc).and_then(run_test);
     HeaderEvidenceHashFuzzer::fuzz(&tc).and_then(run_test);
     HeaderProposerAddressFuzzer::fuzz(&tc).and_then(run_test);
-    // The two tests below fail -- seems that there is not enough validation between the header and
-    // the commit
-    // Commenting them for now - see issue #637
-    // TODO: uncomment once we figure a fix!
     CommitHeightFuzzer::fuzz(&tc).and_then(run_test);
-    // CommitRoundFuzzer::fuzz(&tc).and_then(run_test);
+    CommitRoundFuzzer::fuzz(&tc).and_then(run_test);
     CommitBlockIdFuzzer::fuzz(&tc).and_then(run_test);
     CommitSigFuzzer::fuzz(&tc).and_then(run_test);
     VoteSignatureFuzzer::fuzz(&tc).and_then(run_test);
