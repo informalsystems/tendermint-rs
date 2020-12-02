@@ -3,6 +3,8 @@
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 
+use crate::account;
+
 /// Error type
 pub type Error = BoxError;
 
@@ -176,6 +178,10 @@ pub enum Kind {
     /// Missing max_age_duration in evidence parameters
     #[error("missing max_age_duration")]
     MissingMaxAgeDuration,
+
+    /// Proposer not found in validator set
+    #[error("proposer with address '{}' not found in validator set", _0)]
+    ProposerNotFound(account::Id),
 }
 
 impl Kind {

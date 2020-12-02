@@ -40,6 +40,10 @@ pub enum IoError {
     #[error("invalid height: {0}")]
     InvalidHeight(String),
 
+    /// Fetched validator set is invalid
+    #[error("fetched validator set is invalid: {0}")]
+    InvalidValidatorSet(String),
+
     /// Task timed out.
     #[error("task timed out after {} ms", .0.as_millis())]
     Timeout(Duration),
@@ -84,6 +88,7 @@ mod prod {
     use crate::types::PeerId;
     use crate::utils::block_on;
 
+    use tendermint::account::Id as TMAccountId;
     use tendermint::block::signed_header::SignedHeader as TMSignedHeader;
     use tendermint::validator::Set as TMValidatorSet;
 
@@ -100,9 +105,10 @@ mod prod {
         fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, IoError> {
             let signed_header = self.fetch_signed_header(height)?;
             let height = signed_header.header.height;
+            let proposer_address = signed_header.header.proposer_address;
 
-            let validator_set = self.fetch_validator_set(height.into())?;
-            let next_validator_set = self.fetch_validator_set(height.increment().into())?;
+            let validator_set = self.fetch_validator_set(height.into(), Some(proposer_address))?;
+            let next_validator_set = self.fetch_validator_set(height.increment().into(), None)?;
 
             let light_block = LightBlock::new(
                 signed_header,
@@ -147,7 +153,11 @@ mod prod {
             }
         }
 
-        fn fetch_validator_set(&self, height: AtHeight) -> Result<TMValidatorSet, IoError> {
+        fn fetch_validator_set(
+            &self,
+            height: AtHeight,
+            proposer_address: Option<TMAccountId>,
+        ) -> Result<TMValidatorSet, IoError> {
             let height = match height {
                 AtHeight::Highest => bail!(IoError::InvalidHeight(
                     "given height must be greater than 0".to_string()
@@ -156,12 +166,18 @@ mod prod {
             };
 
             let client = self.rpc_client.clone();
-            let res = block_on(self.timeout, async move { client.validators(height).await })?;
+            let response = block_on(self.timeout, async move { client.validators(height).await })?
+                .map_err(IoError::RpcError)?;
 
-            match res {
-                Ok(response) => Ok(TMValidatorSet::new_simple(response.validators)),
-                Err(err) => Err(IoError::RpcError(err)),
-            }
+            let validator_set = match proposer_address {
+                Some(proposer_address) => {
+                    TMValidatorSet::with_proposer(response.validators, proposer_address)
+                        .map_err(|e| IoError::InvalidValidatorSet(e.to_string()))?
+                }
+                None => TMValidatorSet::without_proposer(response.validators),
+            };
+
+            Ok(validator_set)
         }
     }
 }
