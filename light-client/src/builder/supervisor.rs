@@ -15,7 +15,6 @@ use {
 
 pub struct Init;
 pub struct HasPrimary;
-pub struct Done;
 
 /// Builder for the [`Supervisor`]
 #[must_use]
@@ -95,21 +94,14 @@ impl SupervisorBuilder<HasPrimary> {
         mut self,
         witnesses: impl IntoIterator<Item = (PeerId, net::Address, Instance)>,
     ) -> Result<SupervisorBuilder<Done>, Error> {
-        let mut iter = witnesses.into_iter().peekable();
-        if iter.peek().is_none() {
-            return Err(error::Kind::EmptyWitnessList.into());
-        }
-
-        for (peer_id, address, instance) in iter {
+        for (peer_id, address, instance) in witnesses {
             self.instances.witness(peer_id, instance);
             self.addresses.witness(peer_id, address);
         }
 
         Ok(self.with_state(Done))
     }
-}
 
-impl SupervisorBuilder<Done> {
     /// Build a production (non-mock) [`Supervisor`].
     #[must_use]
     #[cfg(feature = "rpc-client")]
