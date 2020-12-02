@@ -173,13 +173,12 @@ impl LightClient {
         }
 
         // Get the latest trusted height
-        let trusted_height = state
+        let trusted_state = state
             .light_store
             .latest_trusted_or_verified()
-            .map(|lb| lb.height())
             .ok_or(ErrorKind::NoInitialTrustedState)?;
 
-        if target_height >= trusted_height {
+        if target_height >= trusted_state.height() {
             // Perform forward verification with bisection
             self.verify_bisection(target_height, state)
         } else {
@@ -275,73 +274,45 @@ impl LightClient {
         target_height: Height,
         state: &mut State,
     ) -> Result<LightBlock, Error> {
-        let trusted = state
+        let root = state
             .light_store
             .latest_trusted_or_verified()
             .ok_or(ErrorKind::NoInitialTrustedState)?;
 
-        let now = self.clock.now();
-        if !is_within_trust_period(&trusted, self.options.trusting_period, now) {
-            bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
-                trusted_state: Box::new(trusted),
-                options: self.options,
-            });
-        }
+        let heights = (target_height.value()..root.height().value())
+            .rev()
+            .map(|h| Height::try_from(h).unwrap());
 
-        let (untrusted, _status) = self.get_or_fetch_block(target_height, state)?;
-
-        let mut old = trusted.clone();
-
-        let trusted_height = trusted.height().value();
-        let untrusted_height = untrusted.height().value();
-        let heights =
-            ((trusted_height - 1)..untrusted_height).map(|h| Height::try_from(h).unwrap());
+        let mut latest = root;
 
         for height in heights {
             let (current, _status) = self.get_or_fetch_block(height, state)?;
 
-            let last_block_id = old
+            let latest_last_block_id = latest
                 .signed_header
                 .header
                 .last_block_id
-                .ok_or_else(|| ErrorKind::MissingLastBlockId(old.height()))?;
+                .ok_or_else(|| ErrorKind::MissingLastBlockId(latest.height()))?;
 
             let current_hash = self.hasher.hash_header(&current.signed_header.header);
 
-            if current_hash != last_block_id.hash {
+            if current_hash != latest_last_block_id.hash {
                 bail!(ErrorKind::InvalidAdjacentHeaders {
                     h1: current_hash,
-                    h2: last_block_id.hash
+                    h2: latest_last_block_id.hash
                 });
             }
 
-            old = current;
+            state.light_store.insert(current.clone(), Status::Trusted);
+            state.light_store.insert(latest.clone(), Status::Trusted);
+
+            latest = current;
+            println!("verified: {}", latest.height());
         }
 
-        let last_block_id = old
-            .signed_header
-            .header
-            .last_block_id
-            .ok_or_else(|| ErrorKind::MissingLastBlockId(old.height()))?;
+        assert_eq!(latest.height(), target_height);
 
-        let untrusted_hash = self.hasher.hash_header(&untrusted.signed_header.header);
-
-        if untrusted_hash != last_block_id.hash {
-            bail!(ErrorKind::InvalidAdjacentHeaders {
-                h1: untrusted_hash,
-                h2: last_block_id.hash
-            });
-        }
-
-        let now = self.clock.now();
-        if !is_within_trust_period(&trusted, self.options.trusting_period, now) {
-            bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
-                trusted_state: Box::new(trusted),
-                options: self.options,
-            });
-        }
-
-        Ok(untrusted)
+        Ok(latest)
     }
 
     /// Look in the light store for a block from the given peer at the given height,
