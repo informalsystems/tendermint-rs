@@ -338,3 +338,17 @@ fn tx_search_with_prove() {
         proof.root_hash
     );
 }
+
+#[test]
+fn consensus_state() {
+    let response =
+        endpoint::consensus_state::Response::from_string(&read_json_fixture("consensus_state"))
+            .unwrap();
+
+    assert_eq!(
+        1262197,
+        response.round_state.height_round_step.height.value()
+    );
+    assert_eq!(0, response.round_state.height_round_step.round.value());
+    assert_eq!(8, response.round_state.height_round_step.step);
+}
