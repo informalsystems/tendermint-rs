@@ -172,13 +172,13 @@ impl LightClient {
             return Ok(light_block);
         }
 
-        // Get the latest trusted height
-        let trusted_state = state
+        // Get the highest trusted state
+        let highest = state
             .light_store
-            .latest_trusted_or_verified()
+            .highest_trusted_or_verified()
             .ok_or(ErrorKind::NoInitialTrustedState)?;
 
-        if target_height >= trusted_state.height() {
+        if target_height >= highest.height() {
             // Perform forward verification with bisection
             self.verify_bisection(target_height, state)
         } else {
@@ -276,8 +276,10 @@ impl LightClient {
     ) -> Result<LightBlock, Error> {
         let root = state
             .light_store
-            .latest_trusted_or_verified()
+            .lowest_trusted_or_verified()
             .ok_or(ErrorKind::NoInitialTrustedState)?;
+
+        assert!(root.height() <= target_height);
 
         let heights = (target_height.value()..root.height().value())
             .rev()
@@ -305,6 +307,7 @@ impl LightClient {
 
             state.light_store.insert(current.clone(), Status::Trusted);
             state.light_store.insert(latest.clone(), Status::Trusted);
+            state.trace_block(latest.height(), current.height());
 
             latest = current;
             println!("verified: {}", latest.height());
