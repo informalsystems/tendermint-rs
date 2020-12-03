@@ -97,19 +97,17 @@ impl<'de> Deserialize<'de> for HeightRoundStep {
     where
         D: Deserializer<'de>,
     {
-        let hrs = String::deserialize(deserializer)?
-            .split('/')
-            .map(String::from)
-            .collect::<Vec<String>>();
+        let s = String::deserialize(deserializer)?;
+        let hrs: Vec<&str> = s.split('/').collect();
         if hrs.len() != 3 {
             return Err(serde::de::Error::custom(format!(
                 "expected 3 components to height/round/step field, but got {}",
                 hrs.len()
             )));
         }
-        let height = Height::from_str(&hrs[0]).map_err(serde::de::Error::custom)?;
-        let round = Round::from_str(&hrs[1]).map_err(serde::de::Error::custom)?;
-        let step = i8::from_str(&hrs[2]).map_err(serde::de::Error::custom)?;
+        let height = Height::from_str(hrs[0]).map_err(serde::de::Error::custom)?;
+        let round = Round::from_str(hrs[1]).map_err(serde::de::Error::custom)?;
+        let step = i8::from_str(hrs[2]).map_err(serde::de::Error::custom)?;
         Ok(Self {
             height,
             round,
