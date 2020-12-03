@@ -61,7 +61,7 @@ pub struct RoundState {
     #[serde(with = "hash::allow_empty")]
     pub valid_block_hash: Hash,
 
-    pub height_vote_set: HeightVoteSet,
+    pub height_vote_set: Vec<RoundVotes>,
 
     pub proposer: ValidatorInfo,
 }
@@ -118,9 +118,6 @@ impl<'de> Deserialize<'de> for HeightRoundStep {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct HeightVoteSet(Vec<RoundVotes>);
-
 /// Details of all votes for a particular consensus round.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoundVotes {
@@ -135,7 +132,7 @@ pub struct RoundVotes {
 }
 
 /// Details of a single vote from a particular consensus round.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum RoundVote {
     Nil,
     Vote(VoteSummary),
@@ -169,7 +166,7 @@ impl<'de> Deserialize<'de> for RoundVote {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct VoteSummary {
     pub validator_index: i32,
     pub validator_address_fingerprint: Fingerprint,
@@ -309,7 +306,7 @@ impl fmt::Display for VoteSummary {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Fingerprint(Vec<u8>);
 
 impl FromStr for Fingerprint {
@@ -330,6 +327,12 @@ impl fmt::Display for Fingerprint {
         let hex_bytes = hex::encode_upper(&self.0);
         let hex_string = String::from_utf8(hex_bytes).unwrap();
         write!(f, "{}", hex_string)
+    }
+}
+
+impl AsRef<[u8]> for Fingerprint {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
     }
 }
 
