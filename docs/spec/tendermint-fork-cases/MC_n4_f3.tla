@@ -6,13 +6,9 @@ VARIABLES
   round, step, decision, lockedValue, lockedRound, validValue, validRound,
   msgsPropose, msgsPrevote, msgsPrecommit, evidence
 
-\* an operator for type annotations
-a <: b == a
-
 INSTANCE TendermintAccDebug3 WITH
   Corr <- {"c1"},
-  Defective <- {"a2", "a3"},
-  Byzantine <- {"f4"},
+  Faulty <- {"f2", "f3", "f4"},
   N <- 4,
   T <- 1,
   ValidValues <- { "v0", "v1" },

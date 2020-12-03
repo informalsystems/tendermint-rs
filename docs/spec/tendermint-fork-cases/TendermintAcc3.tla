@@ -19,21 +19,17 @@
  Having the above assumptions in mind, the specification follows the pseudo-code
  of the Tendermint paper: https://arxiv.org/abs/1807.04938
 
- For the purposes of fork accountability, the faulty processes are partitioned
- into two sets: the Byzantine processes and the defective processes.
- While the Byzantine processes can demonstrate arbitrary behavior, including
- no communication, the defective processes send their messages but deviate
- from the protocol in two ways:
+ Byzantine processes can demonstrate arbitrary behavior, including
+ no communication. We show that if agreement is violated, then the Byzantine
+ processes demonstrate one of the two behaviours:
 
-   - Equivocation: a defective process may send two different values
+   - Equivocation: a Byzantine process may send two different values
      in the same round.
 
-   - Amnesia: a defective process may lock a value, although it has locked
-     another value in the past.
+   - Amnesia: a Byzantine process may lock a value without unlocking
+     the previous value that it has locked in the past.
 
- TODO: as there is no clear difference between Byzantine and Defective processes anymore,
- we will probably merge them together.
-
+ * Version 4. Remove defective processes, fix bugs.
  * Version 3. Modular and parameterized definitions.
  * Version 2. Bugfixes in the spec and an inductive invariant.
  * Version 1. A preliminary specification.
@@ -46,8 +42,7 @@ EXTENDS Integers, FiniteSets
 (********************* PROTOCOL PARAMETERS **********************************)
 CONSTANTS
     Corr,          \* the set of correct processes 
-    Defective,     \* the set of processes that show defects, e.g, amnesia or equivocation
-    Byzantine,     \* the set of Byzantine processes, may be empty
+    Faulty,        \* the set of Byzantine processes, may be empty
     N,             \* the total number of processes: correct, defective, and Byzantine
     T,             \* an upper bound on the number of Byzantine processes
     ValidValues,   \* the set of valid values, proposed both by correct and faulty
@@ -55,10 +50,9 @@ CONSTANTS
     MaxRound,      \* the maximal round number
     Proposer       \* the proposer function from 0..NRounds to 1..N
 
-ASSUME(N = Cardinality(Corr \union Defective \union Byzantine))
+ASSUME(N = Cardinality(Corr \union Faulty))
 
 (*************************** DEFINITIONS ************************************)
-Faulty == Defective \union Byzantine  \* the set of faulty processes
 AllProcs == Corr \union Faulty      \* the set of all processes
 Rounds == 0..MaxRound               \* the set of potential rounds
 NilRound == -1   \* a special value to denote a nil round, outside of Rounds
@@ -384,7 +378,7 @@ AmnesiaBy(p) ==
         /\ AsMsg([type |-> "PRECOMMIT", src |-> p,
                   round |-> r1, id |-> Id(v1)]) \in msgsPrecommit[r1]    
         /\ AsMsg([type |-> "PREVOTE", src |-> p,
-                  round |-> r2, id |-> Id(v2)]) \in msgsPrecommit[r2]
+                  round |-> r2, id |-> Id(v2)]) \in msgsPrevote[r2]
         /\ \A r \in { rnd \in Rounds: r1 <= rnd /\ rnd <= r2 }:
             LET prevotes ==
                 { m \in msgsPrevote[r]:
@@ -411,24 +405,11 @@ Validity ==
  
 \* either agreement holds, or the amnesic processes indeed have amnesia
 AgreementOrAmnesia ==
-    Agreement \/ (\A p \in Defective: AmnesiaBy(p))
+    Agreement \/ (\A p \in Faulty: AmnesiaBy(p))
  
 \* the strong agreement property that also assumes no amnesia
 AgreementNoAmnesia ==
-    Agreement /\ \A p \in Defective: ~AmnesiaBy(p)
-
-(*
-  The protocol safety. Three cases are possible:
-     1. There is no fork, that is, Agreement holds true.
-     2. The amnesic processes have sent equivocal messages.
-     3. The amnesic processes have sent messages that prove amnesia.
-
-  This property seems to be unrealistic. See AgreementOrEquivocationOrAmnesia.
- *)    
-AgreementOrEquivocationOrAmnesiaOld ==
-    \/ Agreement
-    \/ \A p \in Defective: EquivocationBy(p)
-    \/ \A p \in Defective: AmnesiaBy(p)
+    Agreement /\ \A p \in Faulty: ~AmnesiaBy(p)
 
 (*
   The protocol safety. Two cases are possible:
