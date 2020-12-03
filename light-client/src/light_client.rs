@@ -280,7 +280,7 @@ impl LightClient {
             // .lowest_trusted_or_verified() // does not work yet as it might be lower than target_height
             .ok_or(ErrorKind::NoInitialTrustedState)?;
 
-        assert!(root.height() <= target_height);
+        assert!(root.height() >= target_height);
 
         let heights = (target_height.value()..root.height().value())
             .rev()
