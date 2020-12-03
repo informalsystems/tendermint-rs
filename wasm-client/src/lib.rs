@@ -23,12 +23,6 @@ pub enum Error {
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-#[wasm_bindgen]
-pub fn verify(untrusted: &JsValue, trusted: &JsValue, options: &JsValue, now: &JsValue) -> JsValue {
-    let result = verify_inner(untrusted, trusted, options, now);
-    JsValue::from_serde(&result).unwrap()
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 struct Options {
     pub trust_threshold: (u64, u64),
@@ -48,7 +42,12 @@ impl From<Options> for LightOptions {
     }
 }
 
-#[inline]
+#[wasm_bindgen]
+pub fn verify(untrusted: &JsValue, trusted: &JsValue, options: &JsValue, now: &JsValue) -> JsValue {
+    let result = verify_inner(untrusted, trusted, options, now);
+    JsValue::from_serde(&result).unwrap()
+}
+
 fn verify_inner(
     untrusted: &JsValue,
     trusted: &JsValue,
@@ -71,8 +70,17 @@ fn verify_inner(
 
     let now: Time = now.into_serde().map_err(|e| Error::Serde(e.to_string()))?;
 
-    let verifier = ProdVerifier::default();
-    let verdict = verifier.verify(&untrusted, &trusted, &light_options, now);
+    let verdict = do_verify(untrusted, trusted, light_options, now);
 
     Ok(verdict)
+}
+
+fn do_verify(
+    untrusted: LightBlock,
+    trusted: LightBlock,
+    options: LightOptions,
+    now: Time,
+) -> Verdict {
+    let verifier = ProdVerifier::default();
+    verifier.verify(&untrusted, &trusted, &options, now)
 }
