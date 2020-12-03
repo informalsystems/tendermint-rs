@@ -42,6 +42,7 @@ var trusted = {
     }
   },
   "validator_set": {
+    "total_voting_power": "0",
     "validators": [
       {
         "address": "6AE5C701F508EB5B63343858E068C5843F28105F",
@@ -55,6 +56,7 @@ var trusted = {
     ]
   },
   "next_validator_set": {
+    "total_voting_power": "0",
     "validators": [
       {
         "address": "6AE5C701F508EB5B63343858E068C5843F28105F",
@@ -112,6 +114,7 @@ var untrusted = {
     }
   },
   "validator_set": {
+    "total_voting_power": "0",
     "validators": [
       {
         "address": "6AE5C701F508EB5B63343858E068C5843F28105F",
@@ -125,6 +128,7 @@ var untrusted = {
     ]
   },
   "next_validator_set": {
+    "total_voting_power": "0",
     "validators": [
       {
         "address": "C479DB6F37AB9757035CFBE10B687E27668EE7DF",
