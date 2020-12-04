@@ -18,13 +18,12 @@ where
     _state: PhantomData<St>,
 }
 
-impl<Conn, St> From<Conn> for Peer<Conn, St>
+impl<Conn> From<Conn> for Peer<Conn, Connected>
 where
     Conn: Connection,
-    St: State,
 {
-    fn from(connection: Conn) -> Self {
-        Self {
+    fn from(connection: Conn) -> Peer<Conn, Connected> {
+        Peer {
             connection,
             _state: PhantomData,
         }

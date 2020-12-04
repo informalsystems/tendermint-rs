@@ -2,11 +2,13 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
 use crate::peer::{self, Peer};
 
+// TODO(xla): Use actual PeerId type.
+type PeerId = String;
+
 pub struct BindInfo {
     pub addr: SocketAddr,
     pub advertise_addrs: Vec<SocketAddr>,
-    // TODO(xla): Use actual PeerId type.
-    pub peer_id: String,
+    pub peer_id: PeerId,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -15,8 +17,11 @@ pub enum Error {}
 pub trait Connection: Clone {
     type Stream;
 
+    fn advertised_addrs(&self) -> Vec<SocketAddr>;
     fn close(&self) -> Result<(), Error>;
     fn open(&self) -> Result<Self::Stream, Error>;
+    fn peer_id(&self) -> PeerId;
+    fn remote_addr(&self) -> SocketAddr;
 }
 
 pub trait Endpoint {
