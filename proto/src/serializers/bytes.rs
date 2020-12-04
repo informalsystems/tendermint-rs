@@ -42,6 +42,16 @@ pub mod base64string {
         base64::decode(&string).map_err(serde::de::Error::custom)
     }
 
+    /// Deserialize base64string into String
+    pub fn deserialize_to_string<'de, D>(deserializer: D) -> Result<String, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+        String::from_utf8(base64::decode(&s).map_err(serde::de::Error::custom)?)
+            .map_err(serde::de::Error::custom)
+    }
+
     /// Serialize from T into base64string
     pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
