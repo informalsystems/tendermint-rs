@@ -49,8 +49,8 @@ pub struct RoundState {
     #[serde(alias = "height/round/step")]
     pub height_round_step: HeightRoundStep,
 
-    // TODO(thane): Convert to timestamp
-    pub start_time: String,
+    #[serde(with = "tendermint::serializers::time")]
+    pub start_time: Time,
 
     #[serde(with = "hash::allow_empty")]
     pub proposal_block_hash: Hash,
