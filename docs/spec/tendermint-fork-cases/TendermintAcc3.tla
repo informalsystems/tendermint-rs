@@ -192,7 +192,7 @@ InsertProposal(p) ==
   /\ \E v \in ValidValues: 
       LET proposal == IF validValue[p] /= NilValue THEN validValue[p] ELSE v IN
       BroadcastProposal(p, round[p], proposal, validRound[p])
-  /\ evidence' = EmptyMsgSet
+  /\ UNCHANGED evidence
   /\ UNCHANGED <<round, decision, lockedValue, lockedRound,
                  validValue, step, validRound, msgsPrevote, msgsPrecommit>>
 
@@ -204,7 +204,7 @@ UponProposalInPropose(p) ==
         AsMsg([type |-> "PROPOSAL", src |-> Proposer[round[p]],
                round |-> round[p], proposal |-> v, validRound |-> NilRound]) IN
       /\ msg \in msgsPropose[round[p]] \* line 22
-      /\ evidence' = {msg}
+      /\ evidence' = {msg} \union evidence
     /\ LET mid == (* line 23 *)
          IF IsValid(v) /\ (lockedRound[p] = NilRound \/ lockedValue[p] = v)
          THEN Id(v)
@@ -226,7 +226,7 @@ UponProposalInProposeAndPrevote(p) ==
        /\ msg \in msgsPropose[round[p]] \* line 28
        /\ LET PV == { m \in msgsPrevote[vr]: m.id = Id(v) } IN
           /\ Cardinality(PV) >= THRESHOLD2 \* line 28
-          /\ evidence' = PV \union {msg}
+          /\ evidence' = PV \union {msg} \union evidence
     /\ LET mid == (* line 29 *)
          IF IsValid(v) /\ (lockedRound[p] <= vr \/ lockedValue[p] = v)
          THEN Id(v)
@@ -242,7 +242,7 @@ UponQuorumOfPrevotesAny(p) ==
   /\ step[p] = "PREVOTE" \* line 34 and 61
   /\ Cardinality(msgsPrevote[round[p]]) >= THRESHOLD2 \* line 34
   \* multiple messages from a process may trigger this rule (no effect on safety)
-  /\ evidence' = msgsPrevote[round[p]]
+  /\ evidence' = msgsPrevote[round[p]] \union evidence
   /\ BroadcastPrecommit(p, round[p], NilValue)
   /\ step' = [step EXCEPT ![p] = "PRECOMMIT"]
   /\ UNCHANGED <<round, decision, lockedValue, lockedRound,
@@ -258,7 +258,7 @@ UponProposalInPrevoteOrCommitAndPrevote(p) ==
         /\ msg \in msgsPropose[round[p]] \* line 36
         /\ LET PV == { m \in msgsPrevote[round[p]]: m.id = Id(v) } IN
           /\ Cardinality(PV) >= THRESHOLD2 \* line 36
-          /\ evidence' = PV \union {msg}
+          /\ evidence' = PV \union {msg} \union evidence
     /\  IF step[p] = "PREVOTE"
         THEN \* lines 38-41:
           /\ lockedValue' = [lockedValue EXCEPT ![p] = v]
@@ -275,7 +275,7 @@ UponProposalInPrevoteOrCommitAndPrevote(p) ==
 \* lines 47-48 + 65-67 (onTimeoutPrecommit)
 UponQuorumOfPrecommitsAny(p) ==
   /\ Cardinality(msgsPrecommit[round[p]]) >= THRESHOLD2 \* line 47
-  /\ evidence' = msgsPrecommit[round[p]]
+  /\ evidence' = msgsPrecommit[round[p]] \union evidence
   /\ round[p] + 1 \in Rounds
   /\ StartRound(p, round[p] + 1)   
   /\ UNCHANGED <<decision, lockedValue, lockedRound, validValue,
@@ -290,7 +290,7 @@ UponProposalInPrecommitNoDecision(p) ==
        /\ msg \in msgsPropose[r] \* line 49
        /\ LET PV == { m \in msgsPrecommit[r]: m.id = Id(v) } IN
            /\ Cardinality(PV) >= THRESHOLD2 \* line 49
-           /\ evidence' = PV \union {msg}
+           /\ evidence' = PV \union {msg} \union evidence
     /\ decision' = [decision EXCEPT ![p] = v] \* update the decision, line 51
     \* The original algorithm does not have 'DECIDED', but it increments the height.
     \* We introduced 'DECIDED' here to prevent the process from changing its decision.
@@ -314,7 +314,7 @@ OnQuoromOfNilPrevotes(p) ==
   /\ step[p] = "PREVOTE"
   /\ LET PV == { m \in msgsPrevote[round[p]]: m.id = Id(NilValue) } IN
       /\ Cardinality(PV) >= THRESHOLD2 \* line 36
-      /\ evidence' = PV
+      /\ evidence' = PV \union evidence
   /\ BroadcastPrecommit(p, round[p], Id(NilValue))
   /\ step' = [step EXCEPT ![p] = "PREVOTE"]
   /\ UNCHANGED <<round, lockedValue, lockedRound, validValue,
@@ -325,7 +325,7 @@ OnRoundCatchup(p) ==
   \E r \in {rr \in Rounds: rr > round[p]}:
     /\ LET RM == msgsPropose[r] \union msgsPrevote[r] \union msgsPrecommit[r] IN
       /\ Cardinality(RM) >= THRESHOLD1
-      /\ evidence' = RM
+      /\ evidence' = RM \union evidence
     /\ StartRound(p, r)
     /\ UNCHANGED <<decision, lockedValue, lockedRound, validValue,
                    validRound, msgsPropose, msgsPrevote, msgsPrecommit>>
@@ -351,23 +351,20 @@ Next ==
 (**************************** FORK SCENARIOS  ***************************)
 \* a state that has at least one equivocation
 Equivocation ==
-  \E r \in Rounds:
-    \/ \E m1, m2 \in msgsPropose[r]:
-      m1 /= m2 /\ m1.src = m2.src
-    \/ \E m1, m2 \in msgsPrevote[r]:
-      m1 /= m2 /\ m1.src = m2.src
-    \/ \E m1, m2 \in msgsPrecommit[r]:
-      m1 /= m2 /\ m1.src = m2.src
+  \E m1, m2 \in evidence:
+    /\ m1 /= m2
+    /\ m1.src = m2.src
+    /\ m1.round = m2.round
+    /\ m1.type = m2.type
 
-\* equivocation by amnesic processes
+\* equivocation by a process p
 EquivocationBy(p) ==
-  \E r \in Rounds:
-    \/ \E m1, m2 \in msgsPropose[r]:
-      m1.proposal /= m2.proposal /\ m1.src = p /\ m2.src = p
-    \/ \E m1, m2 \in msgsPrevote[r]:
-      m1.id /= m2.id /\ m1.src = p /\ m2.src = p
-    \/ \E m1, m2 \in msgsPrecommit[r]:
-      m1.id /= m2.id /\ m1.src = p /\ m2.src = p
+   \E m1, m2 \in evidence:
+    /\ m1 /= m2
+    /\ m1.src = p
+    /\ m2.src = p
+    /\ m1.round = m2.round
+    /\ m1.type = m2.type
 
 \* amnesic behavior by a process p
 AmnesiaBy(p) ==
@@ -376,13 +373,13 @@ AmnesiaBy(p) ==
       /\ \E v1, v2 \in ValidValues:
         /\ v1 /= v2
         /\ AsMsg([type |-> "PRECOMMIT", src |-> p,
-                  round |-> r1, id |-> Id(v1)]) \in msgsPrecommit[r1]    
+                 round |-> r1, id |-> Id(v1)]) \in evidence
         /\ AsMsg([type |-> "PREVOTE", src |-> p,
-                  round |-> r2, id |-> Id(v2)]) \in msgsPrevote[r2]
-        /\ \A r \in { rnd \in Rounds: r1 <= rnd /\ rnd <= r2 }:
+                 round |-> r2, id |-> Id(v2)]) \in evidence
+        /\ \A r \in { rnd \in Rounds: r1 <= rnd /\ rnd < r2 }:
             LET prevotes ==
-                { m \in msgsPrevote[r]:
-                  m.type = "PREVOTE" /\ m.round = r /\ m.id = Id(v2) }
+                { m \in evidence:
+                    m.type = "PREVOTE" /\ m.round = r /\ m.id = Id(v2) }
             IN
             Cardinality(prevotes) < THRESHOLD2
 
