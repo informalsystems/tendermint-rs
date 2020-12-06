@@ -57,7 +57,7 @@ tendermint-proto = { version = "0.17.0-rc3", path = "../proto" }
 toml = { version = "0.5" }
 zeroize = { version = "1.1", features = ["zeroize_derive"] }
 
-k256 = { version = "0.5", optional = true, features = ["ecdsa"] }
+k256 = { version = "0.6", optional = true, features = ["ecdsa"] }
 ripemd160 = { version = "0.9", optional = true }
 
 [dev-dependencies]
