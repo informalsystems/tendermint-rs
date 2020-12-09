@@ -4,7 +4,7 @@ CONSTANT Proposer \* the proposer function from 0..NRounds to 1..N
 \* the variables declared in TendermintAcc3
 VARIABLES
   round, step, decision, lockedValue, lockedRound, validValue, validRound,
-  msgsPropose, msgsPrevote, msgsPrecommit, evidence
+  msgsPropose, msgsPrevote, msgsPrecommit, evidence, action
 
 INSTANCE TendermintAccDebug3 WITH
   Corr <- {"c1", "c2", "c3"},

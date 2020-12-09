@@ -101,7 +101,8 @@ VARIABLES
   msgsPropose,   \* PROPOSE messages broadcast in the system, Rounds -> Messages
   msgsPrevote,   \* PREVOTE messages broadcast in the system, Rounds -> Messages
   msgsPrecommit, \* PRECOMMIT messages broadcast in the system, Rounds -> Messages
-  evidence \* the messages that were used by the correct processes to make transitions
+  evidence, \* the messages that were used by the correct processes to make transitions
+  action        \* we use this variable to see which action was taken
 
 (* to see a type invariant, check TendermintAccInv3 *)  
  
@@ -152,6 +153,7 @@ Init ==
     /\ BenignRoundsInMessages(msgsPrevote)
     /\ BenignRoundsInMessages(msgsPrecommit)
     /\ evidence = EmptyMsgSet
+    /\ action' = "Init"
 
 (************************ MESSAGE PASSING ********************************)
 BroadcastProposal(pSrc, pRound, pProposal, pValidRound) ==
@@ -194,6 +196,7 @@ InsertProposal(p) ==
       BroadcastProposal(p, round[p], proposal, validRound[p])
   /\ UNCHANGED <<evidence, round, decision, lockedValue, lockedRound,
                 validValue, step, validRound, msgsPrevote, msgsPrecommit>>
+  /\ action' = "InsertProposal"
 
 \* lines 22-27
 UponProposalInPropose(p) ==
@@ -213,6 +216,7 @@ UponProposalInPropose(p) ==
     /\ step' = [step EXCEPT ![p] = "PREVOTE"]
     /\ UNCHANGED <<round, decision, lockedValue, lockedRound,
                    validValue, validRound, msgsPropose, msgsPrecommit>>
+    /\ action' = "UponProposalInPropose"
 
 \* lines 28-33        
 UponProposalInProposeAndPrevote(p) ==
@@ -235,21 +239,22 @@ UponProposalInProposeAndPrevote(p) ==
     /\ step' = [step EXCEPT ![p] = "PREVOTE"]
     /\ UNCHANGED <<round, decision, lockedValue, lockedRound,
                    validValue, validRound, msgsPropose, msgsPrecommit>>
+    /\ action' = "UponProposalInProposeAndPrevote"
                      
  \* lines 34-35 + lines 61-64 (onTimeoutPrevote)
 UponQuorumOfPrevotesAny(p) ==
   /\ step[p] = "PREVOTE" \* line 34 and 61
-  \* count multiple messages from the same process only once
-  /\ LET Voters == { m.src: m \in msgsPrevote[round[p]] } IN
-    /\ Cardinality(Voters) >= THRESHOLD2 \* line 34
-    /\ \E MyEvidence \in SUBSET msgsPrevote[round[p]]:
-      \* add at least one message per voter in the evidence
-      /\ Voters \subseteq { m.src: m \in MyEvidence}
+  /\ \E MyEvidence \in SUBSET msgsPrevote[round[p]]:
+      \* find the unique voters in the evidence
+      LET Voters == { m.src: m \in MyEvidence } IN
+      \* compare the number of the unique voters against the threshold
+      /\ Cardinality(Voters) >= THRESHOLD2 \* line 34
       /\ evidence' = MyEvidence \union evidence
       /\ BroadcastPrecommit(p, round[p], NilValue)
       /\ step' = [step EXCEPT ![p] = "PRECOMMIT"]
       /\ UNCHANGED <<round, decision, lockedValue, lockedRound,
                     validValue, validRound, msgsPropose, msgsPrevote>>
+      /\ action' = "UponQuorumOfPrevotesAny"
                      
 \* lines 36-46
 UponProposalInPrevoteOrCommitAndPrevote(p) ==
@@ -274,20 +279,21 @@ UponProposalInPrevoteOrCommitAndPrevote(p) ==
     /\ validValue' = [validValue EXCEPT ![p] = v]
     /\ validRound' = [validRound EXCEPT ![p] = round[p]]
     /\ UNCHANGED <<round, decision, msgsPropose, msgsPrevote>>
+    /\ action' = "UponProposalInPrevoteOrCommitAndPrevote"
 
 \* lines 47-48 + 65-67 (onTimeoutPrecommit)
 UponQuorumOfPrecommitsAny(p) ==
-  \* count multiple messages from the same process only once
-  LET Committers == { m.src: m \in msgsPrecommit[round[p]] } IN
-  /\ Cardinality(Committers) >= THRESHOLD2 \* line 47
   /\ \E MyEvidence \in SUBSET msgsPrecommit[round[p]]:
-    \* add at least one message per committer in the evidence
-      /\ Committers \subseteq { m.src: m \in MyEvidence}
+      \* find the unique committers in the evidence
+      LET Committers == { m.src: m \in MyEvidence } IN
+      \* compare the number of the unique committers against the threshold
+      /\ Cardinality(Committers) >= THRESHOLD2 \* line 47
       /\ evidence' = MyEvidence \union evidence
       /\ round[p] + 1 \in Rounds
       /\ StartRound(p, round[p] + 1)   
       /\ UNCHANGED <<decision, lockedValue, lockedRound, validValue,
                     validRound, msgsPropose, msgsPrevote, msgsPrecommit>>
+      /\ action' = "UponQuorumOfPrecommitsAny"
                      
 \* lines 49-54        
 UponProposalInPrecommitNoDecision(p) ==
@@ -305,6 +311,7 @@ UponProposalInPrecommitNoDecision(p) ==
        /\ step' = [step EXCEPT ![p] = "DECIDED"]
        /\ UNCHANGED <<round, lockedValue, lockedRound, validValue,
                      validRound, msgsPropose, msgsPrevote, msgsPrecommit>>
+       /\ action' = "UponProposalInPrecommitNoDecision"
                                                           
 \* the actions below are not essential for safety, but added for completeness
 
@@ -316,9 +323,10 @@ OnTimeoutPropose(p) ==
   /\ step' = [step EXCEPT ![p] = "PREVOTE"]
   /\ UNCHANGED <<round, lockedValue, lockedRound, validValue,
                 validRound, decision, evidence, msgsPropose, msgsPrecommit>>
+  /\ action' = "OnTimeoutPropose"
 
 \* lines 44-46
-OnQuoromOfNilPrevotes(p) ==
+OnQuorumOfNilPrevotes(p) ==
   /\ step[p] = "PREVOTE"
   /\ LET PV == { m \in msgsPrevote[round[p]]: m.id = Id(NilValue) } IN
     /\ Cardinality(PV) >= THRESHOLD2 \* line 36
@@ -327,21 +335,20 @@ OnQuoromOfNilPrevotes(p) ==
     /\ step' = [step EXCEPT ![p] = "PREVOTE"]
     /\ UNCHANGED <<round, lockedValue, lockedRound, validValue,
                   validRound, decision, msgsPropose, msgsPrevote>>
+    /\ action' = "OnQuorumOfNilPrevotes"
 
 \* lines 55-56
 OnRoundCatchup(p) ==
   \E r \in {rr \in Rounds: rr > round[p]}:
-    LET RoundMsgs == msgsPropose[r] \union msgsPrevote[r] \union msgsPrecommit[r]
-        Faster == { m.src: m \in RoundMsgs }
-    IN
-    /\ Cardinality(Faster) >= THRESHOLD1
-    /\ \E MyEvidence \in SUBSET RoundMsgs:
-        \* add at least one message per faster sender in the evidence
-        /\ Faster \subseteq { m.src: m \in MyEvidence}
+    LET RoundMsgs == msgsPropose[r] \union msgsPrevote[r] \union msgsPrecommit[r] IN
+    \E MyEvidence \in SUBSET RoundMsgs:
+        LET Faster == { m.src: m \in MyEvidence } IN
+        /\ Cardinality(Faster) >= THRESHOLD1
         /\ evidence' = MyEvidence \union evidence
         /\ StartRound(p, r)
         /\ UNCHANGED <<decision, lockedValue, lockedRound, validValue,
                       validRound, msgsPropose, msgsPrevote, msgsPrecommit>>
+        /\ action' = "OnRoundCatchup"
 
 (*
  * A system transition. In this specificatiom, the system may eventually deadlock,
@@ -358,17 +365,11 @@ Next ==
     \/ UponProposalInPrecommitNoDecision(p)
     \* the actions below are not essential for safety, but added for completeness
     \/ OnTimeoutPropose(p)
-    \/ OnQuoromOfNilPrevotes(p)
+    \/ OnQuorumOfNilPrevotes(p)
     \/ OnRoundCatchup(p) 
+
   
 (**************************** FORK SCENARIOS  ***************************)
-\* a state that has at least one equivocation
-Equivocation ==
-  \E m1, m2 \in evidence:
-    /\ m1 /= m2
-    /\ m1.src = m2.src
-    /\ m1.round = m2.round
-    /\ m1.type = m2.type
 
 \* equivocation by a process p
 EquivocationBy(p) ==
@@ -396,15 +397,11 @@ AmnesiaBy(p) ==
             IN
             Cardinality(prevotes) < THRESHOLD2
 
-\* Exclude the equivocation states, that is,
-\* exclude the equivocal messages by the faulty processes
-InitNoEquivocation ==
-    Init /\ ~Equivocation
-
 (******************************** PROPERTIES  ***************************************)
 
 \* the safety property -- agreement
-Agreement == \A p, q \in Corr:
+Agreement ==
+  \A p, q \in Corr:
     \/ decision[p] = NilValue
     \/ decision[q] = NilValue
     \/ decision[p] = decision[q]
@@ -413,7 +410,7 @@ Agreement == \A p, q \in Corr:
 Validity ==
     \A p \in Corr: decision[p] \in ValidValues \union {NilValue}
  
-\* either agreement holds, or the amnesic processes indeed have amnesia
+\* either agreement holds, or the faulty processes indeed demonstrate amnesia
 AgreementOrAmnesia ==
     Agreement \/ (\A p \in Faulty: AmnesiaBy(p))
  
@@ -437,13 +434,31 @@ AgreementOrEquivocationOrAmnesia ==
 \* appears in the evidence variable.
 NoAmnesia ==
     \A p \in Faulty: ~AmnesiaBy(p)
+
+\* This property is violated. You can check it to see an example of equivocation.
+NoEquivocation ==
+    \A p \in Faulty: ~EquivocationBy(p)
+
+\* This property is violated. You can check it to see an example of agreement.
+\* It is not exactly ~Agreement, as we do not want to see the states where
+\* decision[p] = NilValue
+NoAgreement ==
+  \A p, q \in Corr:
+    (p /= q /\ decision[p] /= NilValue /\ decision[q] /= NilValue)
+        => decision[p] /= decision[q]
  
-\* This property is violated. You can check it to see how amnesic behavior
-\* appears in the evidence variable when Agreement and Equivocation are violated.
+\* We expect this property to be violated. However, the absence of amnesia
+\* is a tough constraint for Apalache. It has not reported a counterexample
+\* for n=4,f=2, length <= 5.
 NoAmnesiaButAgreementOrEquivocation ==
     \/ Agreement
     \/ \A p \in Faulty: EquivocationBy(p)
     \/ \A p \in Faulty: ~AmnesiaBy(p)
+
+\* This property is violated on n=4,f=2, length=4 in less than 10 min.
+\* Two faulty processes may demonstrate amnesia without equivocation.
+AmnesiaImpliesEquivocation ==
+    (\E p \in Faulty: AmnesiaBy(p)) => (\E q \in Faulty: EquivocationBy(q))
 
 (*
   This property is violated. You can check it to see that all correct processes

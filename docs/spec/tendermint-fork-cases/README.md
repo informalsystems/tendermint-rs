@@ -19,30 +19,32 @@
  Having the above assumptions in mind, the specification follows the pseudo-code
  of the Tendermint paper: https://arxiv.org/abs/1807.04938
 
- For the purposes of fork accountability, the faulty processes are partitioned
- into two sets: the Byzantine processes and the defective processes.
- While the Byzantine processes can demonstrate arbitrary behavior, including
- no communication, the defective processes send their messages but deviate
- from the protocol in two ways:
+ Byzantine processes can demonstrate arbitrary behavior, including
+ no communication. However, we have to show that under the collective evidence
+ collected by the correct processes, at least `f+1` Byzantine processes demonstrate
+ one of the following behaviors:
 
-   - Equivocation: a defective process may send two different values
+   - Equivocation: a Byzantine process sends two different values
      in the same round.
 
-   - Amnesia: a defective process may lock a value, although it has locked
+   - Amnesia: a Byzantine process locks a value, although it has locked
      another value in the past.
 
 # TLA+ modules
  
  - [TendermintAcc3](TendermintAcc3.tla) is the protocol specification,
 
- - [TendermintAccDebug3](TendermintAccDebug3.tla) contains the useful definitions
-   for debugging the protocol specification with TLC and Apalache,
-
  - [TendermintAccInv3](TendermintAccInv3.tla) contains an inductive invariant
    for establishing the protocol safety as well as the forking cases,
 
  - `MC_n<n>_f<f>`, e.g., [MC_n4_f1](MC_n4_f1.tla), contains fixed constants
-   for model checking with Apalache
+   for model checking with Apalache,
+
+ - [TendermintAccTrace3](TendermintAccTrace3.tla) shows how to restrict the execution
+   space to a fixed sequence of actions (e.g., to instantiate a counterexample),
+
+ - [TendermintAccDebug3](TendermintAccDebug3.tla) contains the useful definitions
+   for debugging the protocol specification with TLC and Apalache.
 
 # Reasoning about fork scenarios
 
@@ -85,9 +87,9 @@ THEOREM AgreementOrFork ==
 
 # Model checking results   
 
-Check the report on [model checking with Apalache](./results/001indinv-apalache-report.md).
+**TODO: re-run the whole set of experiments for the deliverable**
 
-TODO: re-run the experiments with the updates introduced during the dev session.
+Check the report on [model checking with Apalache](./results/001indinv-apalache-report.md).
 
 # Running the experiments
 
