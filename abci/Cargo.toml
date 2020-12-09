@@ -1,0 +1,15 @@
+[package]
+name = "tendermint-abci"
+version = "0.17.0-rc3"
+authors = ["Thane Thomson <thane@informal.systems>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-trait = "0.1"
+eyre = "0.6"
+futures = "0.3"
+pin-project = "1"
+tendermint-proto = { version = "0.17.0-rc3", path = "../proto" }
+thiserror = "1"
