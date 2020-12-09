@@ -3,7 +3,6 @@
 mod application;
 mod protocol;
 mod result;
-mod server;
 
 pub use application::Application;
 pub use protocol::tsp::TspStream;
