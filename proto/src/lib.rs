@@ -21,6 +21,7 @@ mod error;
 use anomaly::BoxError;
 use bytes::{Buf, BufMut};
 pub use error::{Error, Kind};
+pub use prost;
 use prost::encoding::encoded_len_varint;
 use prost::Message;
 use std::convert::{TryFrom, TryInto};
