@@ -6,9 +6,10 @@ edition = "2018"
 publish = false
 
 [dependencies]
-walkdir     = { version = "2.3" }
-prost-build = { version = "0.6" }
-git2        = { version = "0.13" }
-tempdir     = { version = "0.3" }
+walkdir         = { version = "2.3" }
+prost-build     = { version = "0.6" }
+git2            = { version = "0.13" }
+tempdir         = { version = "0.3" }
+subtle-encoding = { version = "0.5" }
 
 [workspace]

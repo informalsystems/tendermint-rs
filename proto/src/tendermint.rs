@@ -63,3 +63,8 @@ pub mod rpc {
         include!("prost/tendermint.rpc.grpc.rs");
     }
 }
+
+pub mod meta {
+    pub const REPOSITORY: &str = "https://github.com/tendermint/tendermint";
+    pub const COMMITISH: &str = "d7d0ffea13c60c98b812d243ba5a2c375f341c15";
+}
