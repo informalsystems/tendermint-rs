@@ -1,5 +1,5 @@
 //! Supervisor and Handle implementation.
-
+#![allow(dead_code)]
 use crossbeam_channel as channel;
 
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
@@ -214,7 +214,7 @@ impl Supervisor {
         match verdict {
             // Verification succeeded, let's perform fork detection
             Ok(verified_block) => {
-                let trusted_block = primary
+                let _trusted_block = primary
                     .latest_trusted()
                     .ok_or(ErrorKind::NoTrustedState(Status::Trusted))?;
 

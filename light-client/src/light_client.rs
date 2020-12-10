@@ -1,6 +1,7 @@
 //! Light client implementation as per the [Core Verification specification][1].
 //!
 //! [1]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md
+#![allow(dead_code)]
 
 use contracts::*;
 use derive_more::Display;
@@ -8,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::{fmt, time::Duration};
 
 use crate::components::{clock::Clock, io::*, scheduler::*, verifier::*};
-use crate::contracts::*;
+// use crate::contracts::*;
 use crate::{
     bail,
     errors::{Error, ErrorKind},

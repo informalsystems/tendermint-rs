@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 #![deny(
-    warnings,
+    //warnings,
     missing_docs,
     trivial_casts,
     trivial_numeric_casts,

@@ -108,12 +108,12 @@ mod prod {
             let proposer_address = signed_header.header.proposer_address;
 
             let validator_set = self.fetch_validator_set(height.into(), Some(proposer_address))?;
-            let next_validator_set = self.fetch_validator_set(height.increment().into(), None)?;
+            // let next_validator_set = self.fetch_validator_set(height.increment().into(), None)?;
 
             let light_block = LightBlock::new(
                 signed_header,
+                validator_set.clone(),
                 validator_set,
-                next_validator_set,
                 self.peer_id,
             );
 
