@@ -65,14 +65,30 @@ mod tests {
     #[test]
     fn test_validator_set() {
         let valset1 = ValidatorSet::new(vec!["a", "b", "c"]).generate().unwrap();
-        let vals = vec![
+        let vals1 = vec![
             Validator::new("a"),
             Validator::new("b"),
             Validator::new("c"),
             ];
-        let valset2 = validator::Set::new_simple(generate_validators(&vals).unwrap());
+        let valset2 = validator::Set::new_simple(generate_validators(&vals1).unwrap());
 
-        assert_eq!(valset1, valset2);
+        assert_eq!(valset1.hash(), valset2.hash());
+
+        let valset3 = ValidatorSet::new(vec!["b", "c", "a"]).generate().unwrap();
+
+        assert_eq!(valset1.hash(), valset3.hash());
+
+        let valset4 = ValidatorSet::new(vec!["c", "a"]).generate().unwrap();
+
+        assert_ne!(valset4.hash(), valset3.hash());
+
+        let vals2 = vec![
+            Validator::new("a").voting_power(100),
+            Validator::new("b"),
+            Validator::new("c"),
+        ];
+        let valset5 = validator::Set::new_simple(generate_validators(&vals2).unwrap());
+        assert_ne!(valset2.hash(), valset5.hash());
     }
 
 }
