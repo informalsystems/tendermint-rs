@@ -5,8 +5,7 @@ labels: bug
 ---
 <!--
 
-Please give us an overview of what went wrong, and what you expected to have
-happen instead.
+Please give us an overview of what went wrong, and what you expected to happen instead.
 
 -->
 
