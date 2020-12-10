@@ -1,9 +1,8 @@
 //! `/unsubscribe` endpoint JSON-RPC wrapper
 
 use serde::{Deserialize, Serialize};
-use std::io::Read;
 
-/// Subscription request for events.
+/// Request to unsubscribe from events relating to a given query.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
     pub query: String,
@@ -28,17 +27,4 @@ impl crate::Request for Request {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {}
 
-/// Unsubscribe does not have a meaningful response at the moment.
-impl crate::Response for Response {
-    /// We throw away response data JSON string so swallow errors and return
-    /// the empty Response
-    fn from_string(_response: impl AsRef<[u8]>) -> Result<Self, crate::Error> {
-        Ok(Response {})
-    }
-
-    /// We throw away responses in `unsubscribe` to swallow errors from the
-    /// `io::Reader` and provide the Response
-    fn from_reader(_reader: impl Read) -> Result<Self, crate::Error> {
-        Ok(Response {})
-    }
-}
+impl crate::Response for Response {}

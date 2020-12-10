@@ -10,7 +10,7 @@ use zeroize::Zeroizing;
 /// Private keys as parsed from configuration files
 #[derive(Serialize, Deserialize)]
 #[non_exhaustive]
-#[serde(tag = "type", content = "value")]
+#[serde(tag = "type", content = "value")] // JSON custom serialization for priv_validator_key.json
 pub enum PrivateKey {
     /// Ed25519 keys
     #[serde(

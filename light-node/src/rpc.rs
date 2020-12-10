@@ -34,7 +34,7 @@ where
 }
 
 mod sealed {
-    use jsonrpc_core::futures::future::{self, Future, FutureResult};
+    use jsonrpc_core::futures::future::{self, FutureResult};
     use jsonrpc_core::types::Error;
     use jsonrpc_derive::rpc;
 
@@ -152,10 +152,26 @@ mod test {
 
             Ok(Some(block))
         }
+
         fn latest_status(&self) -> Result<LatestStatus, Error> {
             let status: LatestStatus = serde_json::from_str(STATUS_JSON).unwrap();
 
             Ok(status)
+        }
+
+        fn verify_to_highest(&self) -> Result<LightBlock, Error> {
+            todo!()
+        }
+
+        fn verify_to_target(
+            &self,
+            _height: tendermint::block::Height,
+        ) -> Result<LightBlock, Error> {
+            todo!()
+        }
+
+        fn terminate(&self) -> Result<(), Error> {
+            todo!()
         }
     }
 
@@ -172,7 +188,7 @@ mod test {
                     "time": "2019-11-02T15:04:00Z",
                     "last_block_id": {
                             "hash": "",
-                            "parts": {
+                            "part_set_header": {
                                     "total": 0,
                                     "hash": ""
                             }
@@ -192,7 +208,7 @@ mod test {
                     "round": 1,
                     "block_id": {
                             "hash": "76B0FB738138A2C934300D7B23C280B65965D7427DA4D5414B41C75EBC4AD4C3",
-                            "parts": {
+                            "part_set_header": {
                                     "total": 1,
                                     "hash": "073CE26981DF93820595E602CE63B810BC8F1003D6BB28DEDFF5B2F4F09811A1"
                             }
@@ -242,7 +258,8 @@ mod test {
                     },
                     "voting_power": "50",
                     "proposer_priority": "-50"
-            }
+            },
+            "total_voting_power": "0"
     },
     "next_validator_set": {
             "validators": [
@@ -272,7 +289,9 @@ mod test {
                             "value": "+vlsKpn6ojn+UoTZl+w+fxeqm6xvUfBokTcKfcG3au4="
                     },
                     "voting_power": "50",
-                    "proposer_priority": "0" }
+                    "proposer_priority": "0"
+            },
+            "total_voting_power": "0"
     },
     "provider": "9D61B19DEFFD5A60BA844AF492EC2CC44449C569"
 }

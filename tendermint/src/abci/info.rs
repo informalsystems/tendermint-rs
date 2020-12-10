@@ -16,3 +16,9 @@ impl Display for Info {
         write!(f, "{}", self.0)
     }
 }
+
+impl Default for Info {
+    fn default() -> Self {
+        Self(String::new())
+    }
+}

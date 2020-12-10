@@ -1,0 +1,984 @@
+{
+  "description": "MC4_4_faulty_TestValsetDifferentAllSteps.json",
+  "initial": {
+    "signed_header": {
+      "header": {
+        "version": {
+          "block": "11",
+          "app": "0"
+        },
+        "chain_id": "test-chain",
+        "height": "1",
+        "time": "1970-01-01T00:00:01Z",
+        "last_block_id": null,
+        "last_commit_hash": "",
+        "data_hash": "",
+        "validators_hash": "5A69ACB73672274A2C020C7FAE539B2086D30F3B7E5B168A8031A21931FCA07D",
+        "next_validators_hash": "5F7419DA4B1BCFC2D2EB8C663405D9FF67DDE3BF88DB0A8A5D579E6FF1AD814E",
+        "consensus_hash": "5A69ACB73672274A2C020C7FAE539B2086D30F3B7E5B168A8031A21931FCA07D",
+        "app_hash": "",
+        "last_results_hash": "",
+        "evidence_hash": "",
+        "proposer_address": "0616A636E7D0579A632EC37ED3C3F2B7E8522A0A"
+      },
+      "commit": {
+        "height": "1",
+        "round": 1,
+        "block_id": {
+          "hash": "F7DC6F348F04E01EC7DEA4348A3BFA2F0D7533900986EA66F6006C70BDD52D2E",
+          "part_set_header": {
+            "total": 1,
+            "hash": "F7DC6F348F04E01EC7DEA4348A3BFA2F0D7533900986EA66F6006C70BDD52D2E"
+          }
+        },
+        "signatures": [
+          {
+            "block_id_flag": 2,
+            "validator_address": "0616A636E7D0579A632EC37ED3C3F2B7E8522A0A",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "S5wM4flAsMJ7uGSGduppmUqDeFZBUBFKkp+LTy249+AgM3oup9ULs7eUzNiwjhV4gWnPnLJ91m6IZ3s047xzAg=="
+          },
+          {
+            "block_id_flag": 2,
+            "validator_address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "ZLOGEO5mgrVoTpFA5DLMLX0ggBWnWLWmMF5tAorZC732T+oR2u2USAvGhkZtpM73WN3NUp04aVHInGMsYtz9Dg=="
+          },
+          {
+            "block_id_flag": 2,
+            "validator_address": "81D85BE9567F7069A4760C663062E66660DADF34",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "Lwa9l7+dJci4+mXD9ZsvLnbX0TuzWYIjfj9vU51rAftFRGEig7DHToufWaMfjwGMN53WrG72YfHAXxBigWaBBg=="
+          },
+          {
+            "block_id_flag": 2,
+            "validator_address": "C479DB6F37AB9757035CFBE10B687E27668EE7DF",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "SSHBm3HdeyC1fgPqjTp647mRGxaCKA/GGraM0UFcuXv3mUjfjowL8CNjthJHgXIQCmYdF0HDwLZb1SCvWFe0Aw=="
+          }
+        ],
+        "hash": [],
+        "bit_array": null
+      }
+    },
+    "next_validator_set": {
+      "validators": [
+        {
+          "address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+          "pub_key": {
+            "type": "tendermint/PubKeyEd25519",
+            "value": "GQEC/HB4sDBAVhHtUzyv4yct9ZGnudaP209QQBSTfSQ="
+          },
+          "voting_power": "50"
+        },
+        {
+          "address": "81D85BE9567F7069A4760C663062E66660DADF34",
+          "pub_key": {
+            "type": "tendermint/PubKeyEd25519",
+            "value": "Lk4zm2cJO4FpzXFF9WUV9NzOLfr5jV+ps7EhwUDKlZM="
+          },
+          "voting_power": "50"
+        },
+        {
+          "address": "0616A636E7D0579A632EC37ED3C3F2B7E8522A0A",
+          "pub_key": {
+            "type": "tendermint/PubKeyEd25519",
+            "value": "kwd8trZ8t5ASwgUbBEAnDq49nRRrrKvt2onhS4JSfQM="
+          },
+          "voting_power": "50"
+        }
+      ],
+      "proposer": {
+        "address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+        "pub_key": {
+          "type": "tendermint/PubKeyEd25519",
+          "value": "GQEC/HB4sDBAVhHtUzyv4yct9ZGnudaP209QQBSTfSQ="
+        },
+        "voting_power": "50"
+      },
+      "total_voting_power": "0"
+    },
+    "trusting_period": "1400000000000",
+    "now": "2020-11-18T12:39:59.160570319Z"
+  },
+  "input": [
+    {
+      "block": {
+        "signed_header": {
+          "header": {
+            "version": {
+              "block": "11",
+              "app": "0"
+            },
+            "chain_id": "test-chain",
+            "height": "4",
+            "time": "1970-01-01T00:23:17Z",
+            "last_block_id": null,
+            "last_commit_hash": "",
+            "data_hash": "",
+            "validators_hash": "C4DFBC98F77BE756D7EB3B475471189E82F7760DD111754AA2A25CF548AE6EF8",
+            "next_validators_hash": "F6AF3B9193F2672E2E3830EC49F0D7E527291DEDA4326EDB7A6FB812BE8F3251",
+            "consensus_hash": "C4DFBC98F77BE756D7EB3B475471189E82F7760DD111754AA2A25CF548AE6EF8",
+            "app_hash": "",
+            "last_results_hash": "",
+            "evidence_hash": "",
+            "proposer_address": "81D85BE9567F7069A4760C663062E66660DADF34"
+          },
+          "commit": {
+            "height": "4",
+            "round": 1,
+            "block_id": {
+              "hash": "B4EB9ABF520969F2EEA85D4EFAF790B108A66AE5E414E99EFCADF15DFF7768F1",
+              "part_set_header": {
+                "total": 1,
+                "hash": "B4EB9ABF520969F2EEA85D4EFAF790B108A66AE5E414E99EFCADF15DFF7768F1"
+              }
+            },
+            "signatures": [
+              {
+                "block_id_flag": 2,
+                "validator_address": "81D85BE9567F7069A4760C663062E66660DADF34",
+                "timestamp": "1970-01-01T00:23:17Z",
+                "signature": "sWDhpZfkSHRQhXRuYBAL+5V8fLebatFDu3m/zZd7I7r2UL2S3IyJyKCMR/QiutV3t+7vhuiRgcd/eVlFNbbUDA=="
+              },
+              {
+                "block_id_flag": 2,
+                "validator_address": "C479DB6F37AB9757035CFBE10B687E27668EE7DF",
+                "timestamp": "1970-01-01T00:23:17Z",
+                "signature": "JAhM/LipVI0mYCdrDXKuqzu8qy1E2gb5lu2JgWLK9PFRdT7vG1g7j2WWu2i+E8OH0+Bu0p4wAXrNMpD/qpBjDQ=="
+              }
+            ],
+            "hash": [],
+            "bit_array": null
+          }
+        },
+        "validator_set": {
+          "validators": [
+            {
+              "address": "81D85BE9567F7069A4760C663062E66660DADF34",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "Lk4zm2cJO4FpzXFF9WUV9NzOLfr5jV+ps7EhwUDKlZM="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "C479DB6F37AB9757035CFBE10B687E27668EE7DF",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "3wf60CidQcsIO7TksXzEZsJefMUFF73k6nP1YeEo9to="
+              },
+              "voting_power": "50"
+            }
+          ],
+          "proposer": {
+            "address": "81D85BE9567F7069A4760C663062E66660DADF34",
+            "pub_key": {
+              "type": "tendermint/PubKeyEd25519",
+              "value": "Lk4zm2cJO4FpzXFF9WUV9NzOLfr5jV+ps7EhwUDKlZM="
+            },
+            "voting_power": "50"
+          },
+          "total_voting_power": "0"
+        },
+        "next_validator_set": {
+          "validators": [
+            {
+              "address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "GQEC/HB4sDBAVhHtUzyv4yct9ZGnudaP209QQBSTfSQ="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "81D85BE9567F7069A4760C663062E66660DADF34",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "Lk4zm2cJO4FpzXFF9WUV9NzOLfr5jV+ps7EhwUDKlZM="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "C479DB6F37AB9757035CFBE10B687E27668EE7DF",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "3wf60CidQcsIO7TksXzEZsJefMUFF73k6nP1YeEo9to="
+              },
+              "voting_power": "50"
+            }
+          ],
+          "proposer": {
+            "address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+            "pub_key": {
+              "type": "tendermint/PubKeyEd25519",
+              "value": "GQEC/HB4sDBAVhHtUzyv4yct9ZGnudaP209QQBSTfSQ="
+            },
+            "voting_power": "50"
+          },
+          "total_voting_power": "0"
+        },
+        "provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+      },
+      "testgen_block": {
+        "header": {
+          "validators": [
+            {
+              "id": "n2",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n3",
+              "voting_power": 50,
+              "proposer_priority": null
+            }
+          ],
+          "next_validators": [
+            {
+              "id": "n1",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n2",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n3",
+              "voting_power": 50,
+              "proposer_priority": null
+            }
+          ],
+          "chain_id": null,
+          "height": 4,
+          "time": 1397,
+          "proposer": null
+        },
+        "commit": {
+          "header": {
+            "validators": [
+              {
+                "id": "n2",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n3",
+                "voting_power": 50,
+                "proposer_priority": null
+              }
+            ],
+            "next_validators": [
+              {
+                "id": "n1",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n2",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n3",
+                "voting_power": 50,
+                "proposer_priority": null
+              }
+            ],
+            "chain_id": null,
+            "height": 4,
+            "time": 1397,
+            "proposer": null
+          },
+          "votes": [
+            {
+              "validator": {
+                "id": "n2",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n1",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 4,
+                "time": 1397,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            },
+            {
+              "validator": {
+                "id": "n3",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n1",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 4,
+                "time": 1397,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            }
+          ],
+          "round": null
+        },
+        "validators": [
+          {
+            "id": "n2",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n3",
+            "voting_power": 50,
+            "proposer_priority": null
+          }
+        ],
+        "next_validators": [
+          {
+            "id": "n1",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n2",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n3",
+            "voting_power": 50,
+            "proposer_priority": null
+          }
+        ],
+        "provider": null
+      },
+      "now": "1970-01-01T00:23:18Z",
+      "verdict": "NOT_ENOUGH_TRUST"
+    },
+    {
+      "block": {
+        "signed_header": {
+          "header": {
+            "version": {
+              "block": "11",
+              "app": "0"
+            },
+            "chain_id": "test-chain",
+            "height": "2",
+            "time": "1970-01-01T00:00:03Z",
+            "last_block_id": null,
+            "last_commit_hash": "",
+            "data_hash": "",
+            "validators_hash": "5F7419DA4B1BCFC2D2EB8C663405D9FF67DDE3BF88DB0A8A5D579E6FF1AD814E",
+            "next_validators_hash": "75E6DD63C2DC2B58FE0ED82792EAB369C4308C7EC16B69446382CC4B41D46068",
+            "consensus_hash": "5F7419DA4B1BCFC2D2EB8C663405D9FF67DDE3BF88DB0A8A5D579E6FF1AD814E",
+            "app_hash": "",
+            "last_results_hash": "",
+            "evidence_hash": "",
+            "proposer_address": "0616A636E7D0579A632EC37ED3C3F2B7E8522A0A"
+          },
+          "commit": {
+            "height": "2",
+            "round": 1,
+            "block_id": {
+              "hash": "DC6423F0A94819BEC9BB3BC17BC1989178FD8B7840F8C840765C38E83101A48F",
+              "part_set_header": {
+                "total": 1,
+                "hash": "DC6423F0A94819BEC9BB3BC17BC1989178FD8B7840F8C840765C38E83101A48F"
+              }
+            },
+            "signatures": [
+              {
+                "block_id_flag": 2,
+                "validator_address": "0616A636E7D0579A632EC37ED3C3F2B7E8522A0A",
+                "timestamp": "1970-01-01T00:00:03Z",
+                "signature": "cAVaXlbtdbncdLo350CCysS2PXwpQAXjVKG7RLw984AIv/RBbV4cBtdLORQmBDHKCtBpZV0jVw+zlDvas1ItCw=="
+              },
+              {
+                "block_id_flag": 2,
+                "validator_address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+                "timestamp": "1970-01-01T00:00:03Z",
+                "signature": "+plbHmYEG6GM/chfMeolBzVhYVbB86fX6W9alig36uxqyaExz4oqxkEMx6d5ZpwqcrYTZN867F1MGQU/kEaJAg=="
+              },
+              {
+                "block_id_flag": 2,
+                "validator_address": "81D85BE9567F7069A4760C663062E66660DADF34",
+                "timestamp": "1970-01-01T00:00:03Z",
+                "signature": "ZgUe1B71rQ8qks5ruiEbDbPdnc43TLlEgnKGxOAtSyKV0rhYoHHfAAxaddcwEE07Wign3Ilc7KRBDASXvwDzAg=="
+              }
+            ],
+            "hash": [],
+            "bit_array": null
+          }
+        },
+        "validator_set": {
+          "validators": [
+            {
+              "address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "GQEC/HB4sDBAVhHtUzyv4yct9ZGnudaP209QQBSTfSQ="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "81D85BE9567F7069A4760C663062E66660DADF34",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "Lk4zm2cJO4FpzXFF9WUV9NzOLfr5jV+ps7EhwUDKlZM="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "0616A636E7D0579A632EC37ED3C3F2B7E8522A0A",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "kwd8trZ8t5ASwgUbBEAnDq49nRRrrKvt2onhS4JSfQM="
+              },
+              "voting_power": "50"
+            }
+          ],
+          "proposer": {
+            "address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+            "pub_key": {
+              "type": "tendermint/PubKeyEd25519",
+              "value": "GQEC/HB4sDBAVhHtUzyv4yct9ZGnudaP209QQBSTfSQ="
+            },
+            "voting_power": "50"
+          },
+          "total_voting_power": "0"
+        },
+        "next_validator_set": {
+          "validators": [
+            {
+              "address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "GQEC/HB4sDBAVhHtUzyv4yct9ZGnudaP209QQBSTfSQ="
+              },
+              "voting_power": "50"
+            }
+          ],
+          "proposer": {
+            "address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+            "pub_key": {
+              "type": "tendermint/PubKeyEd25519",
+              "value": "GQEC/HB4sDBAVhHtUzyv4yct9ZGnudaP209QQBSTfSQ="
+            },
+            "voting_power": "50"
+          },
+          "total_voting_power": "0"
+        },
+        "provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+      },
+      "testgen_block": {
+        "header": {
+          "validators": [
+            {
+              "id": "n1",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n2",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n4",
+              "voting_power": 50,
+              "proposer_priority": null
+            }
+          ],
+          "next_validators": [
+            {
+              "id": "n1",
+              "voting_power": 50,
+              "proposer_priority": null
+            }
+          ],
+          "chain_id": null,
+          "height": 2,
+          "time": 3,
+          "proposer": null
+        },
+        "commit": {
+          "header": {
+            "validators": [
+              {
+                "id": "n1",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n2",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n4",
+                "voting_power": 50,
+                "proposer_priority": null
+              }
+            ],
+            "next_validators": [
+              {
+                "id": "n1",
+                "voting_power": 50,
+                "proposer_priority": null
+              }
+            ],
+            "chain_id": null,
+            "height": 2,
+            "time": 3,
+            "proposer": null
+          },
+          "votes": [
+            {
+              "validator": {
+                "id": "n1",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n1",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n4",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n1",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 2,
+                "time": 3,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            },
+            {
+              "validator": {
+                "id": "n2",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n1",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n4",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n1",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 2,
+                "time": 3,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            },
+            {
+              "validator": {
+                "id": "n4",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n1",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n4",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n1",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 2,
+                "time": 3,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            }
+          ],
+          "round": null
+        },
+        "validators": [
+          {
+            "id": "n1",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n2",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n4",
+            "voting_power": 50,
+            "proposer_priority": null
+          }
+        ],
+        "next_validators": [
+          {
+            "id": "n1",
+            "voting_power": 50,
+            "proposer_priority": null
+          }
+        ],
+        "provider": null
+      },
+      "now": "1970-01-01T00:23:20Z",
+      "verdict": "SUCCESS"
+    },
+    {
+      "block": {
+        "signed_header": {
+          "header": {
+            "version": {
+              "block": "11",
+              "app": "0"
+            },
+            "chain_id": "test-chain",
+            "height": "3",
+            "time": "1970-01-01T00:00:04Z",
+            "last_block_id": null,
+            "last_commit_hash": "",
+            "data_hash": "",
+            "validators_hash": "75E6DD63C2DC2B58FE0ED82792EAB369C4308C7EC16B69446382CC4B41D46068",
+            "next_validators_hash": "C4DFBC98F77BE756D7EB3B475471189E82F7760DD111754AA2A25CF548AE6EF8",
+            "consensus_hash": "75E6DD63C2DC2B58FE0ED82792EAB369C4308C7EC16B69446382CC4B41D46068",
+            "app_hash": "",
+            "last_results_hash": "",
+            "evidence_hash": "",
+            "proposer_address": "6AE5C701F508EB5B63343858E068C5843F28105F"
+          },
+          "commit": {
+            "height": "3",
+            "round": 1,
+            "block_id": {
+              "hash": "19F5B2123F7970F2DE41019D937FB01ADBE70A7E839BE2CE413A5D1A53BAEB32",
+              "part_set_header": {
+                "total": 1,
+                "hash": "19F5B2123F7970F2DE41019D937FB01ADBE70A7E839BE2CE413A5D1A53BAEB32"
+              }
+            },
+            "signatures": [
+              {
+                "block_id_flag": 2,
+                "validator_address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+                "timestamp": "1970-01-01T00:00:04Z",
+                "signature": "ZFsnQQNCMHtKZw31aHmcnrVavDhYuOgdli43ar+4k4W3mQwfb0Ha8uDDDlLR/jY+DivsgAxLNa+YUdXgH4UmBQ=="
+              }
+            ],
+            "hash": [],
+            "bit_array": null
+          }
+        },
+        "validator_set": {
+          "validators": [
+            {
+              "address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "GQEC/HB4sDBAVhHtUzyv4yct9ZGnudaP209QQBSTfSQ="
+              },
+              "voting_power": "50"
+            }
+          ],
+          "proposer": {
+            "address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+            "pub_key": {
+              "type": "tendermint/PubKeyEd25519",
+              "value": "GQEC/HB4sDBAVhHtUzyv4yct9ZGnudaP209QQBSTfSQ="
+            },
+            "voting_power": "50"
+          },
+          "total_voting_power": "0"
+        },
+        "next_validator_set": {
+          "validators": [
+            {
+              "address": "81D85BE9567F7069A4760C663062E66660DADF34",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "Lk4zm2cJO4FpzXFF9WUV9NzOLfr5jV+ps7EhwUDKlZM="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "C479DB6F37AB9757035CFBE10B687E27668EE7DF",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "3wf60CidQcsIO7TksXzEZsJefMUFF73k6nP1YeEo9to="
+              },
+              "voting_power": "50"
+            }
+          ],
+          "proposer": {
+            "address": "81D85BE9567F7069A4760C663062E66660DADF34",
+            "pub_key": {
+              "type": "tendermint/PubKeyEd25519",
+              "value": "Lk4zm2cJO4FpzXFF9WUV9NzOLfr5jV+ps7EhwUDKlZM="
+            },
+            "voting_power": "50"
+          },
+          "total_voting_power": "0"
+        },
+        "provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+      },
+      "testgen_block": {
+        "header": {
+          "validators": [
+            {
+              "id": "n1",
+              "voting_power": 50,
+              "proposer_priority": null
+            }
+          ],
+          "next_validators": [
+            {
+              "id": "n2",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n3",
+              "voting_power": 50,
+              "proposer_priority": null
+            }
+          ],
+          "chain_id": null,
+          "height": 3,
+          "time": 4,
+          "proposer": null
+        },
+        "commit": {
+          "header": {
+            "validators": [
+              {
+                "id": "n1",
+                "voting_power": 50,
+                "proposer_priority": null
+              }
+            ],
+            "next_validators": [
+              {
+                "id": "n2",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n3",
+                "voting_power": 50,
+                "proposer_priority": null
+              }
+            ],
+            "chain_id": null,
+            "height": 3,
+            "time": 4,
+            "proposer": null
+          },
+          "votes": [
+            {
+              "validator": {
+                "id": "n1",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n1",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 3,
+                "time": 4,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            }
+          ],
+          "round": null
+        },
+        "validators": [
+          {
+            "id": "n1",
+            "voting_power": 50,
+            "proposer_priority": null
+          }
+        ],
+        "next_validators": [
+          {
+            "id": "n2",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n3",
+            "voting_power": 50,
+            "proposer_priority": null
+          }
+        ],
+        "provider": null
+      },
+      "now": "1970-01-01T00:23:20Z",
+      "verdict": "SUCCESS"
+    }
+  ]
+}

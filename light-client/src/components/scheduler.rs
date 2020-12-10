@@ -4,6 +4,7 @@ use contracts::*;
 
 use crate::store::LightStore;
 use crate::types::Height;
+use std::convert::TryInto;
 
 /// The scheduler decides what block to verify next given the current and target heights.
 ///
@@ -11,7 +12,7 @@ use crate::types::Height;
 /// improve performance by picking a next block that has already been fetched.
 #[contract_trait]
 #[allow(missing_docs)] // This is required because of the `contracts` crate (TODO: open/link issue)
-pub trait Scheduler: Send {
+pub trait Scheduler: Send + Sync {
     /// Decides what block to verify next.
     ///
     /// ## Precondition
@@ -30,7 +31,7 @@ pub trait Scheduler: Send {
 }
 
 #[contract_trait]
-impl<F: Send + Clone> Scheduler for F
+impl<F: Send + Sync> Scheduler for F
 where
     F: Fn(&dyn LightStore, Height, Height) -> Height,
 {
@@ -122,5 +123,7 @@ pub fn valid_schedule(
 #[pre(low <= high)]
 #[post(low <= ret && ret <= high)]
 fn midpoint(low: Height, high: Height) -> Height {
-    (low.value() + (high.value() + 1 - low.value()) / 2).into()
+    (low.value() + (high.value() + 1 - low.value()) / 2)
+        .try_into()
+        .unwrap() // Will panic if midpoint is higher than i64::MAX
 }

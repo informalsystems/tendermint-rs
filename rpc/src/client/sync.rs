@@ -4,9 +4,14 @@
 //! convenience methods. We also only implement unbounded channels at present.
 //! In future, if RPC consumers need it, we will implement bounded channels.
 
-use crate::{Error, Result};
+use std::pin::Pin;
+
 use futures::task::{Context, Poll};
+use futures::Stream;
+use pin_project::pin_project;
 use tokio::sync::mpsc;
+
+use crate::{Error, Result};
 
 /// Constructor for an unbounded channel.
 pub fn unbounded<T>() -> (ChannelTx<T>, ChannelRx<T>) {
@@ -22,7 +27,7 @@ pub fn unbounded<T>() -> (ChannelTx<T>, ChannelRx<T>) {
 pub struct ChannelTx<T>(mpsc::UnboundedSender<T>);
 
 impl<T> ChannelTx<T> {
-    pub async fn send(&mut self, value: T) -> Result<()> {
+    pub fn send(&self, value: T) -> Result<()> {
         self.0.send(value).map_err(|e| {
             Error::client_internal_error(format!(
                 "failed to send message to internal channel: {}",
@@ -33,17 +38,23 @@ impl<T> ChannelTx<T> {
 }
 
 /// Receiver interface for a channel.
+#[pin_project]
 #[derive(Debug)]
-pub struct ChannelRx<T>(mpsc::UnboundedReceiver<T>);
+pub struct ChannelRx<T>(#[pin] mpsc::UnboundedReceiver<T>);
 
 impl<T> ChannelRx<T> {
     /// Wait indefinitely until we receive a value from the channel (or the
     /// channel is closed).
+    #[allow(dead_code)]
     pub async fn recv(&mut self) -> Option<T> {
         self.0.recv().await
     }
+}
 
-    pub fn poll_recv(&mut self, cx: &mut Context<'_>) -> Poll<Option<T>> {
-        self.0.poll_recv(cx)
+impl<T> Stream for ChannelRx<T> {
+    type Item = T;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        self.project().0.poll_next(cx)
     }
 }

@@ -5,20 +5,39 @@ See the [repo root] for build status, license, rust version, etc.
 
 # tendermint-rpc
 
-A rust implementation of the core types returned by a Tendermint node's RPC 
-endpoint. 
-These can be used to deserialize JSON-RPC responses.
-All networking related features will be feature guarded to keep the dependencies small 
-in cases where only the core types are needed.
+A Rust implementation of the core types returned by a Tendermint node's RPC 
+endpoint. These can be used to deserialize JSON-RPC responses.
+
+All networking related features will be feature guarded to keep the
+dependencies small in cases where only the core types are needed.
 
 ## Documentation
 
 See documentation on [crates.io][docs-link].
 
-## The `client` Feature
+## Client
 
-Additionally, this crate includes an RPC client implementation to query Tendermint RPC endpoints.
-To keep dependencies small when only the core types are needed, it has to be explicitly enabled via the `client` feature. 
+This crate optionally provides access to different types of RPC client
+functionality and different client transports based on which features you
+select when using it.
+
+Two features are provided at present.
+
+* `http-client` - Provides `HttpClient`, which is a basic RPC client that
+  interacts with remote Tendermint nodes via **JSON-RPC over HTTP**. This
+  client does not provide `Event` subscription functionality. See the
+  [Tendermint RPC] for more details.
+* `websocket-client` - Provides `WebSocketClient`, which provides full
+  client functionality, including general RPC functionality (such as that
+  provided by `HttpClient`) as well as `Event` subscription
+  functionality.
+
+### Mock Clients
+
+Mock clients are included when either of the `http-client` or
+`websocket-client` features are enabled to aid in testing. This includes
+`MockClient`, which implements both `Client` and `SubscriptionClient`
+traits.
 
 ### Related
 
@@ -26,6 +45,42 @@ To keep dependencies small when only the core types are needed, it has to be exp
   
 - RPC endpoints REST interface documentation:
 https://docs.tendermint.com/master/rpc/ 
+
+## Testing
+
+The RPC types are directly tested through the [integration
+tests](./tests/integration.rs). These tests use fixtures taken from running
+Tendermint nodes to ensure compatibility without needing access to a running
+node during testing. All of these fixtures were generated manually, and
+automatic regeneration of the fixtures is [on our roadmap][autogen-fixtures].
+
+To run these tests locally:
+
+```bash
+# From within the rpc crate
+cargo test --all-features
+```
+
+The RPC client is also indirectly tested through the [Tendermint integration
+tests](../tendermint/tests/integration.rs), which happens during
+[CI](../.github/workflows/test.yml). All of these tests require a running
+Tendermint node, and are therefore ignored by default. To run these tests
+locally:
+
+```bash
+# In one terminal, spin up a Tendermint node
+docker pull tendermint/tendermint:latest
+docker run -it --rm -v "/tmp/tendermint:/tendermint" \
+    tendermint/tendermint init
+docker run -it --rm -v "/tmp/tendermint:/tendermint" \
+    -p 26657:26657 \
+    tendermint/tendermint node --proxy_app=kvstore
+
+# In another terminal, run the ignored Tendermint tests to connect to the node
+# running at tcp://127.0.0.1:26657
+cd ../tendermint
+cargo test --all-features -- --ignored
+```
 
 [//]: # (badges)
 
@@ -36,8 +91,10 @@ https://docs.tendermint.com/master/rpc/
 
 [//]: # (general links)
 
-
 [repo root]: https://github.com/informalsystems/tendermint-rs
 [tendermint]: https://github.com/tendermint/tendermint
 [core types]: https://github.com/tendermint/tendermint/blob/8b4a30fada85fccd8f0cb15009344f1cbd8de616/rpc/core/types/responses.go#L1
 [tendermint.rs]: https://crates.io/crates/tendermint
+[Tendermint RPC]: https://docs.tendermint.com/master/rpc/
+[`/subscribe` endpoint]: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
+[autogen-fixtures]: https://github.com/informalsystems/tendermint-rs/issues/612

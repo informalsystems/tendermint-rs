@@ -50,7 +50,7 @@ pub struct DeliverTx {
     pub code: Code,
 
     /// ABCI application data
-    #[serde(deserialize_with = "serializers::null_as_default")]
+    #[serde(with = "serializers::nullable")]
     pub data: Data,
 
     /// ABCI log data (nondeterministic)
@@ -60,11 +60,11 @@ pub struct DeliverTx {
     pub info: Info,
 
     /// Amount of gas wanted
-    #[serde(rename = "gasWanted")]
+    #[serde(default, rename = "gasWanted")]
     pub gas_wanted: Gas,
 
     /// Amount of gas used
-    #[serde(rename = "gasUsed")]
+    #[serde(default, rename = "gasUsed")]
     pub gas_used: Gas,
 
     /// Events
@@ -141,5 +141,11 @@ impl AsRef<str> for Codespace {
 impl Display for Codespace {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl Default for Codespace {
+    fn default() -> Self {
+        Self(String::new())
     }
 }

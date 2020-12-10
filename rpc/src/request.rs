@@ -14,9 +14,19 @@ pub trait Request: Debug + DeserializeOwned + Serialize + Sized + Send {
 
     /// Serialize this request as JSON
     fn into_json(self) -> String {
-        serde_json::to_string_pretty(&Wrapper::new(self)).unwrap()
+        Wrapper::new(self).into_json()
     }
 }
+
+/// Simple JSON-RPC requests which correlate with a single response from the
+/// remote endpoint.
+///
+/// An example of a request which is not simple would be the event subscription
+/// request, which, on success, returns a [`Subscription`] and not just a
+/// simple, singular response.
+///
+/// [`Subscription`]: struct.Subscription.html
+pub trait SimpleRequest: Request {}
 
 /// JSON-RPC request wrapper (i.e. message envelope)
 #[derive(Debug, Deserialize, Serialize)]
@@ -44,11 +54,13 @@ where
     ///
     /// [UUIDv4]: https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)
     pub fn new(request: R) -> Self {
+        Self::new_with_id(Id::uuid_v4(), request)
+    }
+
+    pub(crate) fn new_with_id(id: Id, request: R) -> Self {
         Self {
             jsonrpc: Version::current(),
-            // NB: The WebSocket client relies on this being some kind of UUID,
-            // and will break if it's not.
-            id: Id::uuid_v4(),
+            id,
             method: request.method(),
             params: request,
         }
@@ -60,5 +72,9 @@ where
 
     pub fn params(&self) -> &R {
         &self.params
+    }
+
+    pub fn into_json(self) -> String {
+        serde_json::to_string_pretty(&self).unwrap()
     }
 }

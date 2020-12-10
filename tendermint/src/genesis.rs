@@ -1,7 +1,11 @@
 //! Genesis data
 
 use crate::{chain, consensus, validator, Time};
-use serde::{Deserialize, Serialize};
+use chrono::DateTime;
+use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize};
+use std::convert::TryFrom;
+use tendermint_proto::google::protobuf::Timestamp;
 
 /// Genesis data
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -16,6 +20,7 @@ pub struct Genesis<AppState = serde_json::Value> {
     pub consensus_params: consensus::Params,
 
     /// Validators
+    #[serde(default)]
     pub validators: Vec<validator::Info>,
 
     /// App hash
@@ -25,4 +30,19 @@ pub struct Genesis<AppState = serde_json::Value> {
     /// App state
     #[serde(default)]
     pub app_state: AppState,
+}
+
+/// Deserialize string into Time through Timestamp
+pub fn deserialize_time<'de, D>(deserializer: D) -> Result<Time, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value_string = String::deserialize(deserializer)?;
+    let value_datetime = DateTime::parse_from_rfc3339(value_string.as_str())
+        .map_err(|e| D::Error::custom(format!("{}", e)))?;
+    Ok(Time::try_from(Timestamp {
+        seconds: value_datetime.timestamp(),
+        nanos: value_datetime.timestamp_subsec_nanos() as i32,
+    })
+    .map_err(|e| D::Error::custom(format!("{}", e)))?)
 }

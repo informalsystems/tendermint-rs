@@ -1,10 +1,10 @@
 [package]
 name = "tendermint-proto"
-version = "0.1.0"
+version = "0.17.0-rc3"
 authors = ["Greg Szabo <greg@informal.systems>"]
 edition = "2018"
 license = "Apache-2.0"
-repository = "https://github.com/informalsystems/tendermint-rs/tree/master/tendermint-proto"
+repository = "https://github.com/informalsystems/tendermint-rs/tree/master/proto"
 readme     = "README.md"
 categories = ["cryptography", "cryptography::cryptocurrencies", "database"]
 keywords   = ["blockchain", "tendermint", "proto"]
@@ -16,13 +16,18 @@ description = """
 [package.metadata.docs.rs]
 all-features = true
 
-[features]
-default = ["tendermint-proto-derive"]
-
 [dependencies]
 prost = { version = "0.6" }
 prost-types = { version = "0.6" }
-tendermint-proto-derive = { path = "../proto-derive", optional = true }
 bytes = "0.5"
 anomaly = "0.2"
 thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+subtle-encoding = "0.5"
+serde_bytes = "0.11"
+num-traits = "0.2"
+num-derive = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+serde_json = "1.0"

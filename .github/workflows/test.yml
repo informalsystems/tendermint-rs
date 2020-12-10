@@ -94,12 +94,11 @@ jobs:
           command: test
           args: --all-features --no-fail-fast -p tendermint-testgen
 
-  # Todo: Update the docker image version as soon as Tendermint Core v0.34 is released.
   tendermint-integration:
     runs-on: ubuntu-latest
     services:
       tendermint:
-        image: tendermint/tendermint:latest
+        image: informaldev/tendermint:0.34.0-d7d0ffea
         ports:
           - 26656:26656
           - 26657:26657
@@ -115,12 +114,11 @@ jobs:
           command: test
           args: -p tendermint --test integration --no-fail-fast -- --ignored
 
-  # Todo: Update the docker image version as soon as Tendermint Core v0.34 is released.
   tendermint-light-client-integration:
     runs-on: ubuntu-latest
     services:
       tendermint:
-        image: tendermint/tendermint:latest
+        image: informaldev/tendermint:0.34.0-d7d0ffea
         ports:
           - 26656:26656
           - 26657:26657
@@ -135,6 +133,26 @@ jobs:
         with:
           command: test
           args: -p tendermint-light-client --test integration --no-fail-fast -- --ignored
+
+  tendermint-rpc-integration:
+    runs-on: ubuntu-latest
+    services:
+      tendermint:
+        image: informaldev/tendermint:0.34.0-d7d0ffea
+        ports:
+          - 26656:26656
+          - 26657:26657
+          - 26660:26660
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p tendermint-rpc --no-fail-fast --all-features -- --ignored
 
   integration-latest:
     runs-on: ubuntu-latest

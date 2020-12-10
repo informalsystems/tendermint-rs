@@ -11,10 +11,11 @@ use tendermint_light_client::{
     light_client::{LightClient, Options},
     state::State,
     store::{memory::MemoryStore, LightStore},
-    tests::{Trusted, *},
-    types::{LightBlock, Status, TrustThreshold},
+    tests::*,
+    types::{LightBlock, Status},
 };
 
+use std::convert::TryInto;
 use tendermint_testgen::Tester;
 
 // Link to JSON test files repo:
@@ -50,7 +51,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
 
     let trusted_height = tc.trust_options.height;
     let trusted_state = io
-        .fetch_light_block(primary, AtHeight::At(trusted_height))
+        .fetch_light_block(AtHeight::At(trusted_height))
         .expect("could not 'request' light block");
 
     let mut light_store = MemoryStore::new();
@@ -75,57 +76,12 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
     let result = verify_bisection(untrusted_height, &mut light_client, &mut state);
 
     let untrusted_light_block = io
-        .fetch_light_block(primary, AtHeight::At(untrusted_height))
+        .fetch_light_block(AtHeight::At(untrusted_height))
         .expect("header at untrusted height not found");
 
     BisectionTestResult {
         untrusted_light_block,
         new_states: result,
-    }
-}
-
-fn single_step_test(tc: TestCase<AnonLightBlock>) {
-    let tc: TestCase<LightBlock> = tc.into();
-    let mut latest_trusted = Trusted::new(
-        tc.initial.signed_header.clone(),
-        tc.initial.next_validator_set.clone(),
-    );
-
-    let expects_err = match &tc.expected_output {
-        Some(eo) => eo.eq("error"),
-        None => false,
-    };
-
-    // For testing, it makes it easier to have smaller clock drift
-    // Same is done in Go - clock_drift is set to 1 sec for these tests
-    // Once we switch to the proposer based timestamps, it will probably be a consensus parameter
-    let clock_drift = Duration::from_secs(1);
-
-    let trusting_period: Duration = tc.initial.trusting_period.into();
-    let now = tc.initial.now;
-
-    for input in tc.input.iter() {
-        match verify_single(
-            latest_trusted.clone(),
-            input.clone(),
-            TrustThreshold::default(),
-            trusting_period,
-            clock_drift,
-            now,
-        ) {
-            Ok(new_state) => {
-                let expected_state = input;
-
-                assert_eq!(new_state.height(), expected_state.height());
-                assert_eq!(&new_state, expected_state);
-                assert!(!expects_err);
-
-                latest_trusted = Trusted::new(new_state.signed_header, new_state.next_validators);
-            }
-            Err(_) => {
-                assert!(expects_err);
-            }
-        }
     }
 }
 
@@ -169,7 +125,7 @@ fn bisection_lower_test(tc: TestBisection<AnonLightBlock>) {
         trusted_height = trusted_height.increment();
     }
 
-    tc.height_to_verify = (trusted_height.value() - 1).into();
+    tc.height_to_verify = (trusted_height.value() - 1).try_into().unwrap();
 
     let test_result = run_bisection_test(tc);
     match test_result.new_states {
@@ -184,14 +140,6 @@ fn bisection_lower_test(tc: TestBisection<AnonLightBlock>) {
             ),
         },
     }
-}
-
-#[test]
-fn run_single_step_tests() {
-    let mut tester = Tester::new("single_step", TEST_FILES_PATH);
-    tester.add_test("single-step test", single_step_test);
-    tester.run_foreach_in_dir("single_step");
-    tester.finalize();
 }
 
 #[test]

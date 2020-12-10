@@ -1,15 +1,16 @@
 use crate::{helpers::*, Generator, Header, Validator};
 use gumdrop::Options;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use simple_error::*;
 use std::convert::TryFrom;
 use tendermint::{
-    block,
+    block::{self, parts::Header as PartSetHeader},
     signature::{self, Signature, Signer, ED25519_SIGNATURE_SIZE},
     vote,
+    vote::ValidatorIndex,
 };
 
-#[derive(Debug, Options, Deserialize, Clone)]
+#[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Vote {
     #[options(
         help = "validator of this vote (required; can be passed via STDIN)",
@@ -28,6 +29,10 @@ pub struct Vote {
     pub time: Option<u64>,
     #[options(help = "commit round (default: from commit)")]
     pub round: Option<u32>,
+    #[options(
+        help = "to indicate if the vote is nil; produces a 'BlockIdFlagNil' if set, otherwise 'BlockIdFlagCommit' (default)"
+    )]
+    pub is_nil: Option<()>,
 }
 
 impl Vote {
@@ -40,6 +45,7 @@ impl Vote {
             height: None,
             time: None,
             round: None,
+            is_nil: None,
         }
     }
     set_option!(index, u16);
@@ -67,6 +73,7 @@ impl Generator<vote::Vote> for Vote {
             height: self.height.or(default.height),
             time: self.time.or(default.time),
             round: self.round.or(default.round),
+            is_nil: self.is_nil.or(default.is_nil),
         }
     }
 
@@ -82,7 +89,14 @@ impl Generator<vote::Vote> for Vote {
         let signer = validator.get_private_key()?;
         let block_validator = validator.generate()?;
         let block_header = header.generate()?;
-        let block_id = block::Id::new(block_header.hash(), None);
+        let block_id = if self.is_nil.is_some() {
+            None
+        } else {
+            Some(block::Id {
+                hash: block_header.hash(),
+                part_set_header: PartSetHeader::new(1, block_header.hash()).unwrap(),
+            })
+        };
         let validator_index = match self.index {
             Some(i) => i,
             None => {
@@ -110,17 +124,17 @@ impl Generator<vote::Vote> for Vote {
                 vote::Type::Precommit
             },
             height: block_header.height,
-            round: self.round.unwrap_or(1),
-            block_id: Some(block_id),
-            timestamp,
+            round: block::Round::try_from(self.round.unwrap_or(1)).unwrap(),
+            block_id,
+            timestamp: Some(timestamp),
             validator_address: block_validator.address,
-            validator_index,
+            validator_index: ValidatorIndex::try_from(validator_index as u32).unwrap(),
             signature: Signature::Ed25519(try_with!(
-                signature::Ed25519::try_from(&[0_u8; ED25519_SIGNATURE_SIZE][..]),
+                signature::Ed25519Signature::try_from(&[0_u8; ED25519_SIGNATURE_SIZE][..]),
                 "failed to construct empty ed25519 signature"
             )),
         };
-        let sign_bytes = get_vote_sign_bytes(block_header.chain_id.as_str(), &vote);
+        let sign_bytes = get_vote_sign_bytes(block_header.chain_id, &vote);
         vote.signature = signer.sign(sign_bytes.as_slice()).into();
         Ok(vote)
     }
@@ -159,12 +173,12 @@ mod tests {
 
         assert_eq!(block_vote.validator_address, block_val.address);
         assert_eq!(block_vote.height, block_header.height);
-        assert_eq!(block_vote.round, 2);
-        assert_eq!(block_vote.timestamp, now);
-        assert_eq!(block_vote.validator_index, 1);
+        assert_eq!(block_vote.round.value(), 2);
+        assert_eq!(block_vote.timestamp.unwrap(), now);
+        assert_eq!(block_vote.validator_index.value(), 1);
         assert_eq!(block_vote.vote_type, vote::Type::Precommit);
 
-        let sign_bytes = get_vote_sign_bytes(block_header.chain_id.as_str(), &block_vote);
+        let sign_bytes = get_vote_sign_bytes(block_header.chain_id, &block_vote);
         assert!(!verify_signature(
             &valset1[0].get_public_key().unwrap(),
             &sign_bytes,

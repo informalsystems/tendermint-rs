@@ -7,7 +7,7 @@ use tendermint::{block, block::signed_header::SignedHeader};
 /// Get commit information about a specific block
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
-    height: Option<block::Height>,
+    pub height: Option<block::Height>,
 }
 
 impl Request {
@@ -26,6 +26,8 @@ impl crate::Request for Request {
         crate::Method::Commit
     }
 }
+
+impl crate::SimpleRequest for Request {}
 
 /// Commit responses
 #[derive(Clone, Debug, Deserialize, Serialize)]

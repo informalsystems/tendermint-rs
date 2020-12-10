@@ -10,11 +10,11 @@ use tendermint::block;
 pub struct Request {
     /// First block in the sequence to request info about
     #[serde(rename = "minHeight")]
-    min_height: block::Height,
+    pub min_height: block::Height,
 
     /// Last block in the sequence to request info about
     #[serde(rename = "maxHeight")]
-    max_height: block::Height,
+    pub max_height: block::Height,
 }
 
 impl Request {
@@ -40,6 +40,8 @@ impl crate::Request for Request {
         crate::Method::Blockchain
     }
 }
+
+impl crate::SimpleRequest for Request {}
 
 /// Block responses
 #[derive(Clone, Debug, Deserialize, Serialize)]

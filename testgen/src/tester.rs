@@ -1,6 +1,7 @@
 use crate::helpers::*;
 use crate::tester::TestResult::{Failure, ParseError, ReadError, Success};
 use serde::de::DeserializeOwned;
+use simple_error::SimpleError;
 use std::{
     fs::{self, DirEntry},
     io::Write,
@@ -33,6 +34,10 @@ impl TestEnv {
 
     pub fn current_dir(&self) -> &str {
         &self.current_dir
+    }
+
+    pub fn clear_log(&self) -> Option<()> {
+        fs::remove_file(self.full_path("log")).ok()
     }
 
     pub fn logln(&self, msg: &str) -> Option<()> {
@@ -75,17 +80,42 @@ impl TestEnv {
     /// Returns None if copying was not successful
     pub fn copy_file_from(&self, path: impl AsRef<Path>) -> Option<()> {
         let path = path.as_ref();
+        let new_name = path.file_name()?.to_str()?;
+        self.copy_file_from_as(path, new_name)
+    }
+
+    /// Copy a file from the path outside environment into the environment current dir
+    /// Assigns the file a new_name in the current environment
+    /// Returns None if copying was not successful
+    pub fn copy_file_from_as(&self, path: impl AsRef<Path>, new_name: &str) -> Option<()> {
+        let path = path.as_ref();
         if !path.is_file() {
             return None;
         }
-        let name = path.file_name()?.to_str()?;
-        fs::copy(path, self.full_path(name)).ok().map(|_| ())
+        fs::copy(path, self.full_path(new_name)).ok().map(|_| ())
     }
 
     /// Copy a file from the path relative to the other environment into the environment current dir
     /// Returns None if copying was not successful
     pub fn copy_file_from_env(&self, other: &TestEnv, path: impl AsRef<Path>) -> Option<()> {
         self.copy_file_from(other.full_path(path))
+    }
+
+    /// Copy a file from the path relative to the other environment into the environment current dir
+    /// Assigns the file a new_name in the current environment
+    /// Returns None if copying was not successful
+    pub fn copy_file_from_env_as(
+        &self,
+        other: &TestEnv,
+        path: impl AsRef<Path>,
+        new_name: &str,
+    ) -> Option<()> {
+        self.copy_file_from_as(other.full_path(path), new_name)
+    }
+
+    /// Remove a file from a path relative to the environment current dir
+    pub fn remove_file(&self, rel_path: impl AsRef<Path>) -> Option<()> {
+        fs::remove_file(self.full_path(rel_path)).ok()
     }
 
     /// Convert a relative path to the full path from the test root
@@ -99,10 +129,7 @@ impl TestEnv {
     pub fn rel_path(&self, full_path: impl AsRef<Path>) -> Option<String> {
         match PathBuf::from(full_path.as_ref()).strip_prefix(&self.current_dir) {
             Err(_) => None,
-            Ok(rel_path) => match rel_path.to_str() {
-                None => None,
-                Some(rel_path) => Some(rel_path.to_string()),
-            },
+            Ok(rel_path) => rel_path.to_str().map(|rp| rp.to_string()),
         }
     }
 
@@ -120,7 +147,7 @@ impl TestEnv {
 #[derive(Debug, Clone)]
 pub enum TestResult {
     ReadError,
-    ParseError,
+    ParseError(SimpleError),
     Success,
     Failure { message: String, location: String },
 }
@@ -181,7 +208,7 @@ impl TestResult {
         matches!(self, TestResult::ReadError)
     }
     pub fn is_parseerror(&self) -> bool {
-        matches!(self, TestResult::ParseError)
+        matches!(self, TestResult::ParseError(_))
     }
 }
 
@@ -202,16 +229,14 @@ impl Tester {
 
     pub fn output_env(&self) -> Option<TestEnv> {
         let output_dir = self.root_dir.clone() + "/_" + &self.name;
-        fs::create_dir_all(&output_dir)
-            .ok()
-            .and(TestEnv::new(&output_dir))
+        TestEnv::new(&output_dir)
     }
 
     fn capture_test<F>(test: F) -> TestResult
     where
         F: FnOnce() + UnwindSafe,
     {
-        let test_result = Arc::new(Mutex::new(ParseError));
+        let test_result = Arc::new(Mutex::new(ParseError(SimpleError::new("no error"))));
         let old_hook = panic::take_hook();
         panic::set_hook({
             let result = test_result.clone();
@@ -248,7 +273,7 @@ impl Tester {
             Ok(test_case) => Tester::capture_test(|| {
                 test(test_case);
             }),
-            Err(_) => ParseError,
+            Err(e) => ParseError(e),
         };
         self.tests.push(Test {
             name: name.to_string(),
@@ -270,10 +295,10 @@ impl Tester {
                 let env = TestEnv::new(dir.path().to_str().unwrap()).unwrap();
                 let output_dir = output_env.full_path(path);
                 let output_env = TestEnv::new(output_dir.to_str().unwrap()).unwrap();
-                fs::remove_dir_all(&output_dir).unwrap();
                 test(test_case, &env, &test_env, &output_env);
+                fs::remove_dir_all(&env.current_dir()).unwrap();
             }),
-            Err(_) => ParseError,
+            Err(e) => ParseError(e),
         };
         self.tests.push(Test {
             name: name.to_string(),
@@ -309,8 +334,10 @@ impl Tester {
     }
 
     fn parse_error(&mut self, path: &str) {
-        self.results_for("")
-            .push((path.to_string(), TestResult::ParseError))
+        self.results_for("").push((
+            path.to_string(),
+            TestResult::ParseError(SimpleError::new("no error")),
+        ))
     }
 
     pub fn successful_tests(&self, test: &str) -> Vec<String> {
@@ -353,7 +380,7 @@ impl Tester {
         let mut tests = Vec::new();
         if let Some(results) = self.results.get("") {
             for (path, res) in results {
-                if let ParseError = res {
+                if let ParseError(_) = res {
                     tests.push(path.clone())
                 }
             }
@@ -365,7 +392,9 @@ impl Tester {
         let mut results = Vec::new();
         for Test { name, test } in &self.tests {
             match test(path, input) {
-                TestResult::ParseError => continue,
+                TestResult::ParseError(_) => {
+                    continue;
+                }
                 res => results.push((name.to_string(), path, res)),
             }
         }

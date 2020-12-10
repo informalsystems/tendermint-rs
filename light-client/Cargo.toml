@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client"
-version    = "0.16.0"
+version    = "0.17.0-rc3"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -23,28 +23,29 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["rpc-client"]
-rpc-client = ["tendermint-rpc/client", "tendermint-rpc/transport_http"]
+rpc-client = ["tokio", "tendermint-rpc/http-client"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 
 [dependencies]
-tendermint = { version = "0.16.0", path = "../tendermint" }
-tendermint-rpc = { version = "0.16.0", path = "../rpc", default-features = false }
+tendermint = { version = "0.17.0-rc3", path = "../tendermint" }
+tendermint-rpc = { version = "0.17.0-rc3", path = "../rpc", default-features = false }
 
 anomaly = { version = "0.2.0", features = ["serializer"] }
 contracts = "0.4.0"
 crossbeam-channel = "0.4.2"
 derive_more = "0.99.5"
 futures = "0.3.4"
-prost-amino = "0.6.0"
 serde = "1.0.106"
 serde_cbor = "0.11.1"
 serde_derive = "1.0.106"
 sled = "0.34.3"
 static_assertions = "1.1.0"
 thiserror = "1.0.15"
-tokio = "0.2.20"
+tokio = { version = "0.2", optional = true }
 
 [dev-dependencies]
+tendermint-testgen = { path = "../testgen"}
+
 serde_json = "1.0.51"
 gumdrop = "0.8.0"
-tendermint-testgen = { path = "../testgen"}
+rand = "0.7.3"

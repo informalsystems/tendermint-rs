@@ -1,28 +1,74 @@
 //! Tendermint validators
 
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use subtle_encoding::base64;
 
-use crate::amino_types::message::AminoMessage;
-use crate::{account, hash::Hash, merkle, vote, Error, PublicKey, Signature};
+use crate::{account, hash::Hash, merkle, vote, Error, Kind, PublicKey, Signature};
 
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use tendermint_proto::types::SimpleValidator as RawSimpleValidator;
-use tendermint_proto::DomainType;
+use tendermint_proto::types::Validator as RawValidator;
+use tendermint_proto::types::ValidatorSet as RawValidatorSet;
+use tendermint_proto::Protobuf;
 
 /// Validator set contains a vector of validators
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Set {
-    #[serde(deserialize_with = "parse_vals")]
     validators: Vec<Info>,
+
+    proposer: Option<Info>,
+
+    total_voting_power: vote::Power,
+}
+
+impl Protobuf<RawValidatorSet> for Set {}
+
+impl TryFrom<RawValidatorSet> for Set {
+    type Error = Error;
+
+    fn try_from(value: RawValidatorSet) -> Result<Self, Self::Error> {
+        let unsorted_validators_result: Result<Vec<Info>, Error> = value
+            .validators
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect();
+        Ok(Self::new(
+            unsorted_validators_result?,
+            value.proposer.map(TryInto::try_into).transpose()?,
+            value.total_voting_power.try_into()?,
+        ))
+    }
+}
+
+impl From<Set> for RawValidatorSet {
+    fn from(value: Set) -> Self {
+        RawValidatorSet {
+            validators: value.validators.into_iter().map(Into::into).collect(),
+            proposer: value.proposer.map(Into::into),
+            total_voting_power: value.total_voting_power.into(),
+        }
+    }
 }
 
 impl Set {
-    /// Create a new validator set.
-    /// vals is mutable so it can be sorted by address.
-    pub fn new(mut vals: Vec<Info>) -> Set {
-        Self::sort_validators(&mut vals);
-        Set { validators: vals }
+    /// constructor
+    pub fn new(
+        validators: Vec<Info>,
+        proposer: Option<Info>,
+        total_voting_power: vote::Power,
+    ) -> Set {
+        let mut validators = validators;
+        Self::sort_validators(&mut validators);
+        Set {
+            validators,
+            proposer,
+            total_voting_power,
+        }
+    }
+
+    /// Convenience constructor for cases where there is no proposer
+    pub fn new_simple(validators: Vec<Info>) -> Set {
+        Self::new(validators, None, vote::Power::default())
     }
 
     /// Get Info of the underlying validators.
@@ -30,10 +76,20 @@ impl Set {
         &self.validators
     }
 
+    /// Get proposer
+    pub fn proposer(&self) -> &Option<Info> {
+        &self.proposer
+    }
+
+    /// Get total voting power
+    pub fn total_voting_power(&self) -> &vote::Power {
+        &self.total_voting_power
+    }
+
     /// Sort the validators according to the current Tendermint requirements
-    /// (v. 0.34 -> by validator power, descending)
+    /// (v. 0.34 -> first by validator power, descending, then by address, ascending)
     fn sort_validators(vals: &mut Vec<Info>) {
-        vals.sort_by_key(|v| std::cmp::Reverse(v.voting_power));
+        vals.sort_by_key(|v| (std::cmp::Reverse(v.voting_power), v.address));
     }
 
     /// Returns the validator with the given Id if its in the Set.
@@ -63,20 +119,9 @@ impl Set {
     }
 }
 
-// TODO: maybe add a type (with an Option<Vec<Info>> field) instead
-// for light client integration tests only
-fn parse_vals<'de, D>(d: D) -> Result<Vec<Info>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let mut vals: Vec<Info> =
-        Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or_default())?;
-    Set::sort_validators(&mut vals);
-    Ok(vals)
-}
-
 /// Validator information
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+// Todo: Remove address and make it into a function that generates it on the fly from pub_key.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Info {
     /// Validator account address
     pub address: account::Id,
@@ -85,11 +130,37 @@ pub struct Info {
     pub pub_key: PublicKey,
 
     /// Validator voting power
-    #[serde(alias = "power")]
+    // Compatibility with genesis.json https://github.com/tendermint/tendermint/issues/5549
+    #[serde(alias = "power", alias = "total_voting_power")]
     pub voting_power: vote::Power,
 
     /// Validator proposer priority
-    pub proposer_priority: Option<ProposerPriority>,
+    #[serde(skip)]
+    pub proposer_priority: ProposerPriority,
+}
+
+impl TryFrom<RawValidator> for Info {
+    type Error = Error;
+
+    fn try_from(value: RawValidator) -> Result<Self, Self::Error> {
+        Ok(Info {
+            address: value.address.try_into()?,
+            pub_key: value.pub_key.ok_or(Kind::MissingPublicKey)?.try_into()?,
+            voting_power: value.voting_power.try_into()?,
+            proposer_priority: value.proposer_priority.try_into()?,
+        })
+    }
+}
+
+impl From<Info> for RawValidator {
+    fn from(value: Info) -> Self {
+        RawValidator {
+            address: value.address.into(),
+            pub_key: Some(value.pub_key.into()),
+            voting_power: value.voting_power.into(),
+            proposer_priority: value.proposer_priority.into(),
+        }
+    }
 }
 
 impl Info {
@@ -122,7 +193,7 @@ impl Info {
             address: account::Id::from(pk),
             pub_key: pk,
             voting_power: vp,
-            proposer_priority: None,
+            proposer_priority: ProposerPriority::default(),
         }
     }
 }
@@ -130,16 +201,17 @@ impl Info {
 /// SimpleValidator is the form of the validator used for computing the Merkle tree.
 /// It does not include the address, as that is redundant with the pubkey,
 /// nor the proposer priority, as that changes with every block even if the validator set didn't.
-/// It contains only the pubkey and the voting power, and is amino encoded.
+/// It contains only the pubkey and the voting power.
 /// TODO: currently only works for Ed25519 pubkeys
-#[derive(Clone, PartialEq, DomainType)]
-#[rawtype(RawSimpleValidator)]
+#[derive(Clone, PartialEq)]
 pub struct SimpleValidator {
     /// Public key
     pub pub_key: Option<tendermint_proto::crypto::PublicKey>,
     /// Voting power
-    pub voting_power: i64,
+    pub voting_power: vote::Power,
 }
+
+impl Protobuf<RawSimpleValidator> for SimpleValidator {}
 
 impl TryFrom<RawSimpleValidator> for SimpleValidator {
     type Error = Error;
@@ -147,7 +219,7 @@ impl TryFrom<RawSimpleValidator> for SimpleValidator {
     fn try_from(value: RawSimpleValidator) -> Result<Self, Self::Error> {
         Ok(SimpleValidator {
             pub_key: value.pub_key,
-            voting_power: value.voting_power,
+            voting_power: value.voting_power.try_into()?,
         })
     }
 }
@@ -156,7 +228,7 @@ impl From<SimpleValidator> for RawSimpleValidator {
     fn from(value: SimpleValidator) -> Self {
         RawSimpleValidator {
             pub_key: value.pub_key,
-            voting_power: value.voting_power,
+            voting_power: value.voting_power.into(),
         }
     }
 }
@@ -167,37 +239,30 @@ impl From<&Info> for SimpleValidator {
         SimpleValidator {
             pub_key: Some(tendermint_proto::crypto::PublicKey {
                 sum: Some(tendermint_proto::crypto::public_key::Sum::Ed25519(
-                    info.pub_key.to_bytes(),
+                    info.pub_key.to_vec(),
                 )),
             }),
-            voting_power: info.voting_power.value() as i64,
+            voting_power: info.voting_power,
         }
     }
 }
 
 impl Info {
     /// Returns the bytes to be hashed into the Merkle tree -
-    /// the leaves of the tree. this is an amino encoding of the
-    /// pubkey and voting power, so it includes the pubkey's amino prefix.
+    /// the leaves of the tree.
     pub fn hash_bytes(&self) -> Vec<u8> {
-        let raw_simple_validator: RawSimpleValidator = SimpleValidator::from(self).into();
-        AminoMessage::bytes_vec(&raw_simple_validator)
+        SimpleValidator::from(self).encode_vec().unwrap()
     }
 }
 
+// Todo: Is there more knowledge/restrictions about proposerPriority?
 /// Proposer priority
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Default)]
 pub struct ProposerPriority(i64);
 
-impl ProposerPriority {
-    /// Create a new Priority
-    pub fn new(p: i64) -> ProposerPriority {
-        ProposerPriority(p)
-    }
-
-    /// Get the current proposer priority
-    pub fn value(self) -> i64 {
-        self.0
+impl From<i64> for ProposerPriority {
+    fn from(value: i64) -> Self {
+        ProposerPriority(value)
     }
 }
 
@@ -207,19 +272,10 @@ impl From<ProposerPriority> for i64 {
     }
 }
 
-impl<'de> Deserialize<'de> for ProposerPriority {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Ok(ProposerPriority(
-            String::deserialize(deserializer)?
-                .parse()
-                .map_err(|e| D::Error::custom(format!("{}", e)))?,
-        ))
-    }
-}
-
-impl Serialize for ProposerPriority {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.0.to_string().serialize(serializer)
+impl ProposerPriority {
+    /// Get the current proposer priority
+    pub fn value(self) -> i64 {
+        self.0
     }
 }
 
@@ -271,7 +327,7 @@ mod tests {
     // make a validator
     fn make_validator(pk: Vec<u8>, vp: u64) -> Info {
         let pk = PublicKey::from_raw_ed25519(&pk).unwrap();
-        Info::new(pk, vote::Power::new(vp))
+        Info::new(pk, vote::Power::try_from(vp).unwrap())
     }
 
     #[test]
@@ -326,7 +382,7 @@ mod tests {
             22, 57, 84, 71, 122, 200, 169, 192, 252, 41, 148, 223, 180,
         ];
 
-        let val_set = Set::new(vec![v1, v2, v3]);
+        let val_set = Set::new_simple(vec![v1, v2, v3]);
         let hash = val_set.hash();
         assert_eq!(hash_expect, hash.as_bytes().to_vec());
 

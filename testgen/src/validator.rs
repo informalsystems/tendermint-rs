@@ -1,19 +1,20 @@
 use crate::{helpers::*, Generator};
 use ed25519_dalek::SecretKey as Ed25519SecretKey;
 use gumdrop::Options;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use simple_error::*;
+use std::convert::TryFrom;
 use tendermint::consensus::state::Ordering;
 use tendermint::{account, private_key, public_key, public_key::PublicKey, validator, vote};
 
-#[derive(Debug, Options, Deserialize, Clone)]
+#[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Validator {
     #[options(help = "validator id (required; can be passed via STDIN)")]
     pub id: Option<String>,
     #[options(help = "voting power of this validator (default: 0)", meta = "POWER")]
     pub voting_power: Option<u64>,
     #[options(
-        help = "proposer priority of this validator (default: none)",
+        help = "proposer priority of this validator (default: 0)",
         meta = "PRIORITY"
     )]
     pub proposer_priority: Option<i64>,
@@ -27,6 +28,7 @@ impl Validator {
             proposer_priority: None,
         }
     }
+    // Question: Why do we need this option since we're already initializing id with fn new()??
     set_option!(id, &str, Some(id.to_string()));
     set_option!(voting_power, u64);
     set_option!(proposer_priority, i64);
@@ -115,11 +117,10 @@ impl Generator<validator::Info> for Validator {
         let info = validator::Info {
             address: account::Id::from(keypair.public),
             pub_key: PublicKey::from(keypair.public),
-            voting_power: vote::Power::new(self.voting_power.unwrap_or(0)),
-            proposer_priority: match self.proposer_priority {
-                None => None,
-                Some(p) => Some(validator::ProposerPriority::new(p)),
-            },
+            voting_power: vote::Power::try_from(self.voting_power.unwrap_or(0)).unwrap(),
+            proposer_priority: validator::ProposerPriority::from(
+                self.proposer_priority.unwrap_or_default(),
+            ),
         };
         Ok(info)
     }
@@ -137,7 +138,10 @@ pub fn generate_validators(vals: &[Validator]) -> Result<Vec<validator::Info>, S
 /// A helper function to sort validators according to the Tendermint specs.
 pub fn sort_validators(vals: &[Validator]) -> Vec<Validator> {
     let mut sorted = vals.to_owned();
-    sorted.sort_by_key(|v| v.generate().unwrap().address);
+    sorted.sort_by_key(|v| {
+        let v = v.generate().unwrap();
+        (std::cmp::Reverse(v.voting_power), v.address)
+    });
     sorted
 }
 
@@ -164,11 +168,8 @@ mod tests {
 
     // make a validator from a pubkey, a voting power, and a proposer priority
     fn make_validator(pk: PublicKey, vp: u64, pp: Option<i64>) -> validator::Info {
-        let mut info = validator::Info::new(pk, vote::Power::new(vp));
-        info.proposer_priority = match pp {
-            None => None,
-            Some(pp) => Some(validator::ProposerPriority::new(pp)),
-        };
+        let mut info = validator::Info::new(pk, vote::Power::try_from(vp).unwrap());
+        info.proposer_priority = validator::ProposerPriority::from(pp.unwrap_or_default());
         info
     }
 
@@ -208,13 +209,13 @@ mod tests {
 
         let mut block_val = val.generate().unwrap();
 
-        block_val.voting_power = vote::Power::new(30);
+        block_val.voting_power = vote::Power::from(30_u32);
         assert_ne!(val.generate().unwrap(), block_val);
 
         let val = val.voting_power(30);
         assert_eq!(val.generate().unwrap(), block_val);
 
-        block_val.proposer_priority = Some(validator::ProposerPriority::new(1000));
+        block_val.proposer_priority = validator::ProposerPriority::from(1000);
         assert_ne!(val.generate().unwrap(), block_val);
 
         let val = val.proposer_priority(1000);

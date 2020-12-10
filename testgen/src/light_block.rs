@@ -1,15 +1,37 @@
+use gumdrop::Options;
+use serde::{Deserialize, Serialize};
 use simple_error::*;
 
+use crate::helpers::parse_as;
+use crate::validator::generate_validators;
 use crate::{Commit, Generator, Header, Validator};
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::node::Id as PeerId;
+use tendermint::validator;
 use tendermint::validator::Set as ValidatorSet;
-use crate::validator::generate_validators;
 
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
-#[derive(Clone, Debug, PartialEq)]
-pub struct LightBlock {
+/// NOTE: This struct & associated `impl` below are a copy of light-client's `LightBlock`.
+/// The copy is necessary here to avoid a circular dependency.
+/// Cf. https://github.com/informalsystems/tendermint-rs/issues/605
+/// TODO: fix redundant code without introducing cyclic dependency.
+///
+/// To convert `TMLightBlock` to the Domain type `LightBlock` used in light-client crate
+/// You'll need to implement the `From` trait like below:
+///
+/// impl From<TMLightBlock> for LightBlock {
+///     fn from(tm_lb: TMLightBlock) -> Self {
+///         Self {
+///             signed_header: tm_lb.signed_header,
+///             validators: tm_lb.validators,
+///             next_validators: tm_lb.next_validators,
+///             provider: tm_lb.provider,
+///         }
+///     }
+/// }
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TMLightBlock {
     /// Header and commit of this block
     pub signed_header: SignedHeader,
     /// Validator set at the block height
@@ -20,66 +42,168 @@ pub struct LightBlock {
     pub provider: PeerId,
 }
 
+/// We use this data structure as a simplistic representation of LightClient's LightBlock
+#[derive(Debug, Options, Serialize, Deserialize, Clone)]
+pub struct LightBlock {
+    #[options(help = "header (required)", parse(try_from_str = "parse_as::<Header>"))]
+    pub header: Option<Header>,
+    #[options(help = "commit (required)", parse(try_from_str = "parse_as::<Commit>"))]
+    pub commit: Option<Commit>,
+    #[options(
+        help = "validators (required), encoded as array of 'validator' parameters",
+        parse(try_from_str = "parse_as::<Vec<Validator>>")
+    )]
+    pub validators: Option<Vec<Validator>>,
+    #[options(
+        help = "next validators (default: same as validators), encoded as array of 'validator' parameters",
+        parse(try_from_str = "parse_as::<Vec<Validator>>")
+    )]
+    pub next_validators: Option<Vec<Validator>>,
+    #[options(help = "peer id (default: default_peer_id())")]
+    pub provider: Option<PeerId>,
+}
+
 impl LightBlock {
-    /// Constructs a new light block
-    pub fn new(
-        signed_header: SignedHeader,
-        validators: ValidatorSet,
-        next_validators: ValidatorSet,
-        provider: PeerId,
-    ) -> LightBlock {
+    /// Constructs a new Testgen-specific light block
+    pub fn new(header: Header, commit: Commit) -> Self {
         Self {
-            signed_header,
-            validators,
-            next_validators,
-            provider,
+            header: Some(header),
+            commit: Some(commit),
+            validators: None,
+            next_validators: None,
+            provider: None,
+        }
+    }
+    set_option!(validators, &[Validator], Some(validators.to_vec()));
+    set_option!(
+        next_validators,
+        &[Validator],
+        Some(next_validators.to_vec())
+    );
+
+    pub fn new_default(height: u64) -> Self {
+        let validators = [Validator::new("1"), Validator::new("2")];
+        let header = Header::new(&validators)
+            .height(height)
+            .chain_id("test-chain")
+            .next_validators(&validators)
+            .time(height); // just wanted to initialize time with some value
+
+        let commit = Commit::new(header.clone(), 1);
+
+        Self {
+            header: Some(header),
+            commit: Some(commit),
+            validators: Some(validators.to_vec()),
+            next_validators: Some(validators.to_vec()),
+            provider: Some(default_peer_id()),
         }
     }
 
-    pub fn generate_default(
-        raw_vals: Vec<Validator>,
-        peer_id: PeerId,
-    ) -> Result<LightBlock, SimpleError> {
-        let raw_header = Header::new(&raw_vals);
-        let raw_commit = Commit::new(raw_header.clone(), 1);
+    /// Produces a subsequent, i.e. at (height+1), light block to the supplied one
+    // TODO: figure how to represent the currently ignored details in header
+    // TODO: and commit like last_block_id and other hashes
+    pub fn next(&self) -> Self {
+        let header = self.header.as_ref().expect("header is missing").next();
 
-        LightBlock::generate_with(
-            raw_header,
-            raw_commit,
-            raw_vals,
-            peer_id,
-        )
+        let commit = Commit::new(header.clone(), 1);
+
+        Self {
+            header: Some(header),
+            commit: Some(commit),
+            validators: self.next_validators.clone(),
+            next_validators: self.next_validators.clone(),
+            provider: self.provider,
+        }
     }
 
-    pub fn generate_with(
-        raw_header: Header,
-        raw_commit: Commit,
-        raw_vals: Vec<Validator>,
-        peer_id: PeerId,
-    ) -> Result<LightBlock, SimpleError> {
-        let signed_header = match generate_signed_header_with(raw_header, raw_commit) {
-            Err(e) => bail!("Failed to generate signed header with error: {}", e),
-            Ok(sh) => sh,
-        };
+    /// returns the height of LightBlock's header
+    pub fn height(&self) -> u64 {
+        self.header
+            .as_ref()
+            .expect("header is missing")
+            .height
+            .expect("header height is missing")
+    }
 
-        let validators = match generate_validators(&raw_vals) {
-            Err(e) => bail!("Failed to generate validators with error: {}", e),
-            Ok(vals) => vals,
-        };
-        let validator_set = ValidatorSet::new(validators);
+    /// returns the chain_id of LightBlock's header
+    pub fn chain_id(&self) -> String {
+        self.header
+            .as_ref()
+            .expect("header is missing")
+            .chain_id
+            .as_ref()
+            .expect("chain_id is missing")
+            .to_string()
+    }
+}
 
-        let light_block = LightBlock::new(
-            signed_header,
-            validator_set.clone(),
-            validator_set,
-            peer_id);
+impl std::str::FromStr for LightBlock {
+    type Err = SimpleError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let light_block = match parse_as::<LightBlock>(s) {
+            Ok(input) => input,
+            Err(_) => LightBlock::new(parse_as::<Header>(s)?, Commit::from_str(s)?),
+        };
         Ok(light_block)
     }
 }
 
-pub fn generate_signed_header_with(
-    raw_header: Header,
-    raw_commit: Commit,
+impl Generator<TMLightBlock> for LightBlock {
+    fn merge_with_default(self, default: Self) -> Self {
+        Self {
+            header: self.header.or(default.header),
+            commit: self.commit.or(default.commit),
+            validators: self.validators.or(default.validators),
+            next_validators: self.next_validators.or(default.next_validators),
+            provider: self.provider.or(default.provider),
+        }
+    }
+
+    fn generate(&self) -> Result<TMLightBlock, SimpleError> {
+        let header = match &self.header {
+            None => bail!("header is missing"),
+            Some(h) => h,
+        };
+        let commit = match &self.commit {
+            None => bail!("commit is missing"),
+            Some(c) => c,
+        };
+        let signed_header =
+            generate_signed_header(header, commit).expect("Could not generate signed header");
+
+        let validators = match &self.validators {
+            None => validator::Set::new_simple(generate_validators(
+                header
+                    .validators
+                    .as_ref()
+                    .expect("missing validators in header"),
+            )?),
+            Some(vals) => validator::Set::new_simple(generate_validators(vals)?),
+        };
+
+        let next_validators = match &self.next_validators {
+            Some(next_vals) => validator::Set::new_simple(generate_validators(next_vals)?),
+            None => validators.clone(),
+        };
+
+        let provider = default_peer_id();
+
+        let light_block = TMLightBlock {
+            signed_header,
+            validators,
+            next_validators,
+            provider,
+        };
+
+        Ok(light_block)
+    }
+}
+
+/// A helper function to generate SignedHeader used by TMLightBlock
+pub fn generate_signed_header(
+    raw_header: &Header,
+    raw_commit: &Commit,
 ) -> Result<SignedHeader, SimpleError> {
     let header = match raw_header.generate() {
         Err(e) => bail!("Failed to generate header with error: {}", e),
@@ -91,14 +215,59 @@ pub fn generate_signed_header_with(
         Ok(c) => c,
     };
 
-    Ok(SignedHeader { header, commit })
+    Ok(SignedHeader::new(header, commit).unwrap())
 }
 
-pub fn generate_default_signed_header(
-    raw_vals: Vec<Validator>
-) -> Result<SignedHeader, SimpleError> {
-    let raw_header = Header::new(&raw_vals);
-    let raw_commit = Commit::new(raw_header.clone(), 1);
+pub fn default_peer_id() -> PeerId {
+    "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap()
+}
 
-    generate_signed_header_with(raw_header, raw_commit)
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_light_block() {
+        let light_block_1 = LightBlock::new_default(1);
+        let light_block_2 = LightBlock::new_default(1);
+
+        assert_eq!(light_block_1.generate(), light_block_2.generate());
+
+        let validators = [Validator::new("10"), Validator::new("20")];
+
+        let light_block_3 = LightBlock::new_default(1).validators(&validators);
+
+        assert_ne!(light_block_2.generate(), light_block_3.generate());
+
+        let light_block_4 = LightBlock::new_default(4).validators(&validators);
+
+        assert_ne!(light_block_3.generate(), light_block_4.generate());
+
+        let light_block_5 = light_block_3.next();
+        let lb_5_height: u64 = light_block_5
+            .generate()
+            .unwrap()
+            .signed_header
+            .header
+            .height
+            .into();
+
+        assert_eq!(2, lb_5_height);
+
+        let header_6 = Header::new(&validators)
+            .next_validators(&validators)
+            .height(10)
+            .time(10)
+            .chain_id("test-chain");
+        let commit_6 = Commit::new(header_6.clone(), 1);
+        let light_block_6 = LightBlock::new(header_6.clone(), commit_6);
+
+        let header_7 = header_6.next();
+        let commit_7 = Commit::new(header_7.clone(), 1);
+        let light_block_7 = LightBlock::new(header_7, commit_7);
+
+        assert_eq!(light_block_7.height(), 11);
+        assert_eq!(light_block_7.chain_id(), "test-chain");
+        assert_ne!(light_block_6.generate(), light_block_7.generate());
+    }
 }

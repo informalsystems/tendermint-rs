@@ -1,5 +1,10 @@
 ------------------------ MODULE Blockchain_A_1 -----------------------------
 (*
+
+ * This specification is not maintained anymore. The most recent version can be found at:
+
+ * https://github.com/tendermint/spec/tree/master/rust-spec/lightclient/verification
+
   This is a high-level specification of Tendermint blockchain
   that is designed specifically for the light client.
   Validators have the voting power of one. If you like to model various

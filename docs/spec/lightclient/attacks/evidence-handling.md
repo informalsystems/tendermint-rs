@@ -1,3 +1,9 @@
+# Disclaimer
+
+This specification is not maintained. See
+[tendermint/spec](https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/)
+for the most recent version.
+
 
 # Light client attacks
 

@@ -7,7 +7,7 @@ use tendermint::{block, validator};
 /// List validators for a specific block
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
-    height: block::Height,
+    pub height: block::Height,
 }
 
 impl Request {
@@ -24,6 +24,8 @@ impl crate::Request for Request {
         crate::Method::Validators
     }
 }
+
+impl crate::SimpleRequest for Request {}
 
 /// Validator responses
 #[derive(Clone, Debug, Deserialize, Serialize)]

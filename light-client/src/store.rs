@@ -4,8 +4,10 @@
 //! - a transient, in-memory implementation for testing purposes
 //! - a persistent, on-disk, sled-backed implementation for production
 
-use crate::std_ext;
+use std::fmt::Debug;
+
 use crate::types::{Height, LightBlock, Status};
+use crate::utils::std_ext;
 
 pub mod memory;
 pub mod sled;
@@ -18,7 +20,7 @@ pub mod sled;
 ///
 /// ## Implements
 /// - [LCV-DIST-STORE.1]
-pub trait LightStore: std::fmt::Debug + Send {
+pub trait LightStore: Debug + Send + Sync {
     /// Get the light block at the given height with the given status, or return `None` otherwise.
     fn get(&self, height: Height, status: Status) -> Option<LightBlock>;
 

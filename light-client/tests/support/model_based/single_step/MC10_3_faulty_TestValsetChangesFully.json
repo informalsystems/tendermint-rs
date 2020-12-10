@@ -1,0 +1,1422 @@
+{
+  "description": "MC10_3_faulty_TestValsetChangesFully.json",
+  "initial": {
+    "signed_header": {
+      "header": {
+        "version": {
+          "block": "11",
+          "app": "0"
+        },
+        "chain_id": "test-chain",
+        "height": "1",
+        "time": "1970-01-01T00:00:01Z",
+        "last_block_id": null,
+        "last_commit_hash": "",
+        "data_hash": "",
+        "validators_hash": "5C805BF3F94032D94639182AAC38872547ACE84871022EC9B68E8E8B946E691D",
+        "next_validators_hash": "02158955D6D6E3E29CE8E67487829E8019FEB601861A8B621D6AE3F8A709C44D",
+        "consensus_hash": "5C805BF3F94032D94639182AAC38872547ACE84871022EC9B68E8E8B946E691D",
+        "app_hash": "",
+        "last_results_hash": "",
+        "evidence_hash": "",
+        "proposer_address": "0616A636E7D0579A632EC37ED3C3F2B7E8522A0A"
+      },
+      "commit": {
+        "height": "1",
+        "round": 1,
+        "block_id": {
+          "hash": "BAFA5821E2B5AEE05231E7559F26474389D4AB0ED1EB0638003378F7CC457F0B",
+          "part_set_header": {
+            "total": 1,
+            "hash": "BAFA5821E2B5AEE05231E7559F26474389D4AB0ED1EB0638003378F7CC457F0B"
+          }
+        },
+        "signatures": [
+          {
+            "block_id_flag": 2,
+            "validator_address": "0616A636E7D0579A632EC37ED3C3F2B7E8522A0A",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "LZlABwW3ncMmz7w7JQt4hBVyx+QENeumlmZbykCGwbdyBpQBmegpM9vO0WC4M5wqpPi/86s386u3KAUk9ecbBA=="
+          },
+          {
+            "block_id_flag": 2,
+            "validator_address": "5CC93DA93D8C513DFB5B1CA972AD472EDBD0D4F8",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "AbPMa+gBxM7JhQHjl9ahYl6+oL7dtXSYor77Glg244oTXHxQjDqUV/953IVn3BevbMkiKbZRCTkjFB4Kn2N7Dw=="
+          },
+          {
+            "block_id_flag": 2,
+            "validator_address": "6AE5C701F508EB5B63343858E068C5843F28105F",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "AU5TIMmP5orncg/p/+4z2l+HPh++wBHPeNv/uw3PPBF/gS1hgtoNhoKAu0IS40YMNv7oPcyKqQQUNwlHBIkXDQ=="
+          },
+          {
+            "block_id_flag": 2,
+            "validator_address": "81D85BE9567F7069A4760C663062E66660DADF34",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "Ty4QXyujEcPau45m7imAO51UvSobAh6mZitRnS+6ULbi9xfD7ov9rd8R+36Qg5m0RxzbZn7wM9jI+98r2rjPAg=="
+          },
+          {
+            "block_id_flag": 2,
+            "validator_address": "89813D501FB36796F5BEEC2E8B6A48FFEFF45595",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "0j4pjjHw+2OUEfanwWkINNXFSqoobOgnsLY+kF1IwGfdPQF5aMHHNple6Yw5kZ/Pgems8rCeN6CagvSP9mIlAg=="
+          },
+          {
+            "block_id_flag": 2,
+            "validator_address": "8CEBC3AA7D2C6E71F7385EC0E1BC182938724C0A",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "J2JvciwkjtXLCA4Bu1dkJarYF5tiB+UEWoE1XswBLFdYmAresPGgVob0aTTZN+KMpPci+XzC9t8j6u9uOSvMCw=="
+          },
+          {
+            "block_id_flag": 2,
+            "validator_address": "8FB58C7333B5BE046834BE2B6426A0B6D268167A",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "zQkCA01CqIN3MkprbFdTu/OCfiqC8lryacY9isYETBx6RXAvS6M6YwGksseFrM87IsRMaqqHhSzyC/cKXFz2CQ=="
+          },
+          {
+            "block_id_flag": 2,
+            "validator_address": "C479DB6F37AB9757035CFBE10B687E27668EE7DF",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "7LItXW6xvldY8qMQFbC1hS70jkTn5KKNE241SJ3BRDfZmJcqZ5shVt9KBufrEm8ilGeBtt+pSPr9Eiqdm00UCA=="
+          },
+          {
+            "block_id_flag": 2,
+            "validator_address": "D3E01BA109EB39DC5537FC1AD493DC51696099C2",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "27idRzBumD4FyB4k+7ck2pxmdgBAw7T/JJYMz9ajKTuuFhLyt60ANwTWBGrJdFVVJA21xKjBSiVyoGmLjvFVAg=="
+          },
+          {
+            "block_id_flag": 2,
+            "validator_address": "EAC805939208F7851F6517652FBFF87D9CBD455A",
+            "timestamp": "1970-01-01T00:00:01Z",
+            "signature": "nDxFgOpBSwnBTEvptS4bAvXAuluvrhiqB4eZgb6RXc/YlXzQKJXpDHKy8kdJhTP5WHfVzVunMkCI1JZKE25jCw=="
+          }
+        ],
+        "hash": [],
+        "bit_array": null
+      }
+    },
+    "next_validator_set": {
+      "validators": [
+        {
+          "address": "EAC805939208F7851F6517652FBFF87D9CBD455A",
+          "pub_key": {
+            "type": "tendermint/PubKeyEd25519",
+            "value": "KnxmZvSDBv86GS7gm1kAHa2i2WXmu+MVkpD/jeybV/Q="
+          },
+          "voting_power": "50"
+        }
+      ],
+      "proposer": {
+        "address": "EAC805939208F7851F6517652FBFF87D9CBD455A",
+        "pub_key": {
+          "type": "tendermint/PubKeyEd25519",
+          "value": "KnxmZvSDBv86GS7gm1kAHa2i2WXmu+MVkpD/jeybV/Q="
+        },
+        "voting_power": "50"
+      },
+      "total_voting_power": "0"
+    },
+    "trusting_period": "1400000000000",
+    "now": "2020-11-18T13:58:17.160570789Z"
+  },
+  "input": [
+    {
+      "block": {
+        "signed_header": {
+          "header": {
+            "version": {
+              "block": "11",
+              "app": "0"
+            },
+            "chain_id": "test-chain",
+            "height": "3",
+            "time": "1970-01-01T00:00:03Z",
+            "last_block_id": null,
+            "last_commit_hash": "",
+            "data_hash": "",
+            "validators_hash": "ADE5B5D8F593E13F9B63A53A67C46BEA7E40A9461FFC1A0A71F695B6BD68CC1E",
+            "next_validators_hash": "F65E5AE0DEBF2D7BDDA395EF906EDD97D1A142CA29266252F45E9526EF667B9E",
+            "consensus_hash": "ADE5B5D8F593E13F9B63A53A67C46BEA7E40A9461FFC1A0A71F695B6BD68CC1E",
+            "app_hash": "",
+            "last_results_hash": "",
+            "evidence_hash": "",
+            "proposer_address": "0616A636E7D0579A632EC37ED3C3F2B7E8522A0A"
+          },
+          "commit": {
+            "height": "3",
+            "round": 1,
+            "block_id": {
+              "hash": "CA1E7083BB9DF57D2DB542C9B8197A06FF75DC8C308535A4BD4FC623FC611B20",
+              "part_set_header": {
+                "total": 1,
+                "hash": "CA1E7083BB9DF57D2DB542C9B8197A06FF75DC8C308535A4BD4FC623FC611B20"
+              }
+            },
+            "signatures": [
+              {
+                "block_id_flag": 2,
+                "validator_address": "0616A636E7D0579A632EC37ED3C3F2B7E8522A0A",
+                "timestamp": "1970-01-01T00:00:03Z",
+                "signature": "5Ieo75tQOYjykW54IM/03fJvbXB5i4tJhgwDUe9Y3P3QKbUl5wWTYwQY+UsJq4TXj2pMEqShr8r/Iq7sULfDCQ=="
+              },
+              {
+                "block_id_flag": 2,
+                "validator_address": "5CC93DA93D8C513DFB5B1CA972AD472EDBD0D4F8",
+                "timestamp": "1970-01-01T00:00:03Z",
+                "signature": "HAu1Fz+Dw4nHN/u9Na8MCXSWSCVGOqD39Sk0v6SesGqcLQZAbLXxr6fwUnMyXF2+qVO7Lq4DMVhrKZnCZH1NAg=="
+              },
+              {
+                "block_id_flag": 2,
+                "validator_address": "81D85BE9567F7069A4760C663062E66660DADF34",
+                "timestamp": "1970-01-01T00:00:03Z",
+                "signature": "+YrAiQ3UMcBl6MhRgqbnT1KdbPb+AefQUkc3Ea3f83r/tT7dIPBDd58iFiMwcfb6itLnZif44ZqFnNfLTGfRBQ=="
+              },
+              {
+                "block_id_flag": 2,
+                "validator_address": "89813D501FB36796F5BEEC2E8B6A48FFEFF45595",
+                "timestamp": "1970-01-01T00:00:03Z",
+                "signature": "SUWaz1jfKWY1Iq9aiXKZIZwU5J0Aq3Itmhws/AFTirkW5lyWyGsHk3wjJscdbGcTpyc6EP1WlvYdZdW3F1SrBQ=="
+              },
+              {
+                "block_id_flag": 2,
+                "validator_address": "8CEBC3AA7D2C6E71F7385EC0E1BC182938724C0A",
+                "timestamp": "1970-01-01T00:00:03Z",
+                "signature": "xBq0GCZ/JH/7eZYHjkGUlHX/0BPIc3lb44zwkM9M6z7aezT1HYyQd2KcVH9W+ndRzSXhtyJqNMQ+8zOi/FcrBA=="
+              },
+              {
+                "block_id_flag": 2,
+                "validator_address": "C479DB6F37AB9757035CFBE10B687E27668EE7DF",
+                "timestamp": "1970-01-01T00:00:03Z",
+                "signature": "Sy0Ri61SR0j+ZvOcjTe10CkzZTiX/u7XnCchiqij5p69jpW7P9I2jElKPXeMTm+MkRRupx+U9rW591zK1PeGDw=="
+              },
+              {
+                "block_id_flag": 2,
+                "validator_address": "D3E01BA109EB39DC5537FC1AD493DC51696099C2",
+                "timestamp": "1970-01-01T00:00:03Z",
+                "signature": "uJuQL9QRrVCB93OEoiqgHPdDJFXVZRMghClK+DTbWEbdvA8ut3MWUV5Essi3Mq+AZlroxZfBNj7pqykvjqNFAw=="
+              }
+            ],
+            "hash": [],
+            "bit_array": null
+          }
+        },
+        "validator_set": {
+          "validators": [
+            {
+              "address": "81D85BE9567F7069A4760C663062E66660DADF34",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "Lk4zm2cJO4FpzXFF9WUV9NzOLfr5jV+ps7EhwUDKlZM="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "C479DB6F37AB9757035CFBE10B687E27668EE7DF",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "3wf60CidQcsIO7TksXzEZsJefMUFF73k6nP1YeEo9to="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "0616A636E7D0579A632EC37ED3C3F2B7E8522A0A",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "kwd8trZ8t5ASwgUbBEAnDq49nRRrrKvt2onhS4JSfQM="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "D3E01BA109EB39DC5537FC1AD493DC51696099C2",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "rzORQgLg90Tc4xBKwEsvgMZQS6yxvhzvZB3B/zbDW0A="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "89813D501FB36796F5BEEC2E8B6A48FFEFF45595",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "VV0Fv/VdsyNrvfi+Kh+ld2pVHLZdNJLztUwJSKis/WI="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "5CC93DA93D8C513DFB5B1CA972AD472EDBD0D4F8",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "+b3DF2I8j3TrDePELV4L4ssCLIoq34BBp0RyU/QmmYY="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "8CEBC3AA7D2C6E71F7385EC0E1BC182938724C0A",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "6mYEZ5I4fKC1goMotZ3yTYH19SAvSrD+hpIsVxLxPWQ="
+              },
+              "voting_power": "50"
+            }
+          ],
+          "proposer": {
+            "address": "81D85BE9567F7069A4760C663062E66660DADF34",
+            "pub_key": {
+              "type": "tendermint/PubKeyEd25519",
+              "value": "Lk4zm2cJO4FpzXFF9WUV9NzOLfr5jV+ps7EhwUDKlZM="
+            },
+            "voting_power": "50"
+          },
+          "total_voting_power": "0"
+        },
+        "next_validator_set": {
+          "validators": [
+            {
+              "address": "EAC805939208F7851F6517652FBFF87D9CBD455A",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "KnxmZvSDBv86GS7gm1kAHa2i2WXmu+MVkpD/jeybV/Q="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "C479DB6F37AB9757035CFBE10B687E27668EE7DF",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "3wf60CidQcsIO7TksXzEZsJefMUFF73k6nP1YeEo9to="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "D3E01BA109EB39DC5537FC1AD493DC51696099C2",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "rzORQgLg90Tc4xBKwEsvgMZQS6yxvhzvZB3B/zbDW0A="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "8FB58C7333B5BE046834BE2B6426A0B6D268167A",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "x+WPfQQNWVCyH1qcBEoS6beOqg/wvv0BNks5Lotb28c="
+              },
+              "voting_power": "50"
+            }
+          ],
+          "proposer": {
+            "address": "EAC805939208F7851F6517652FBFF87D9CBD455A",
+            "pub_key": {
+              "type": "tendermint/PubKeyEd25519",
+              "value": "KnxmZvSDBv86GS7gm1kAHa2i2WXmu+MVkpD/jeybV/Q="
+            },
+            "voting_power": "50"
+          },
+          "total_voting_power": "0"
+        },
+        "provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+      },
+      "testgen_block": {
+        "header": {
+          "validators": [
+            {
+              "id": "n2",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n3",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n4",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n5",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n6",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n7",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n9",
+              "voting_power": 50,
+              "proposer_priority": null
+            }
+          ],
+          "next_validators": [
+            {
+              "id": "n10",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n3",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n5",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n8",
+              "voting_power": 50,
+              "proposer_priority": null
+            }
+          ],
+          "chain_id": null,
+          "height": 3,
+          "time": 3,
+          "proposer": null
+        },
+        "commit": {
+          "header": {
+            "validators": [
+              {
+                "id": "n2",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n3",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n4",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n5",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n6",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n7",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n9",
+                "voting_power": 50,
+                "proposer_priority": null
+              }
+            ],
+            "next_validators": [
+              {
+                "id": "n10",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n3",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n5",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n8",
+                "voting_power": 50,
+                "proposer_priority": null
+              }
+            ],
+            "chain_id": null,
+            "height": 3,
+            "time": 3,
+            "proposer": null
+          },
+          "votes": [
+            {
+              "validator": {
+                "id": "n2",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n4",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n6",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n7",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n9",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n10",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n8",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 3,
+                "time": 3,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            },
+            {
+              "validator": {
+                "id": "n3",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n4",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n6",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n7",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n9",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n10",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n8",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 3,
+                "time": 3,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            },
+            {
+              "validator": {
+                "id": "n4",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n4",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n6",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n7",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n9",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n10",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n8",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 3,
+                "time": 3,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            },
+            {
+              "validator": {
+                "id": "n5",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n4",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n6",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n7",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n9",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n10",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n8",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 3,
+                "time": 3,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            },
+            {
+              "validator": {
+                "id": "n6",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n4",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n6",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n7",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n9",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n10",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n8",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 3,
+                "time": 3,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            },
+            {
+              "validator": {
+                "id": "n7",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n4",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n6",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n7",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n9",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n10",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n8",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 3,
+                "time": 3,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            },
+            {
+              "validator": {
+                "id": "n9",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n4",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n6",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n7",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n9",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n10",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n8",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 3,
+                "time": 3,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            }
+          ],
+          "round": null
+        },
+        "validators": [
+          {
+            "id": "n2",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n3",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n4",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n5",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n6",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n7",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n9",
+            "voting_power": 50,
+            "proposer_priority": null
+          }
+        ],
+        "next_validators": [
+          {
+            "id": "n10",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n3",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n5",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n8",
+            "voting_power": 50,
+            "proposer_priority": null
+          }
+        ],
+        "provider": null
+      },
+      "now": "1970-01-01T00:23:18Z",
+      "verdict": "NOT_ENOUGH_TRUST"
+    },
+    {
+      "block": {
+        "signed_header": {
+          "header": {
+            "version": {
+              "block": "11",
+              "app": "0"
+            },
+            "chain_id": "test-chain",
+            "height": "2",
+            "time": "1970-01-01T00:00:02Z",
+            "last_block_id": null,
+            "last_commit_hash": "",
+            "data_hash": "",
+            "validators_hash": "02158955D6D6E3E29CE8E67487829E8019FEB601861A8B621D6AE3F8A709C44D",
+            "next_validators_hash": "ADE5B5D8F593E13F9B63A53A67C46BEA7E40A9461FFC1A0A71F695B6BD68CC1E",
+            "consensus_hash": "02158955D6D6E3E29CE8E67487829E8019FEB601861A8B621D6AE3F8A709C44D",
+            "app_hash": "",
+            "last_results_hash": "",
+            "evidence_hash": "",
+            "proposer_address": "EAC805939208F7851F6517652FBFF87D9CBD455A"
+          },
+          "commit": {
+            "height": "2",
+            "round": 1,
+            "block_id": {
+              "hash": "4778EC591039896F0155DC757FE3B113AB89CB9CFC263E87ABA9769462C356AA",
+              "part_set_header": {
+                "total": 1,
+                "hash": "4778EC591039896F0155DC757FE3B113AB89CB9CFC263E87ABA9769462C356AA"
+              }
+            },
+            "signatures": [
+              {
+                "block_id_flag": 2,
+                "validator_address": "EAC805939208F7851F6517652FBFF87D9CBD455A",
+                "timestamp": "1970-01-01T00:00:02Z",
+                "signature": "zgcbh9x/FdC6ADCv7VHC5pbDEqQoUwxxDq6qqnwDmvRHPOSxNZFeMxAJmOoHyPyckbt5I2e2KyEVyRUZKi8CBw=="
+              }
+            ],
+            "hash": [],
+            "bit_array": null
+          }
+        },
+        "validator_set": {
+          "validators": [
+            {
+              "address": "EAC805939208F7851F6517652FBFF87D9CBD455A",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "KnxmZvSDBv86GS7gm1kAHa2i2WXmu+MVkpD/jeybV/Q="
+              },
+              "voting_power": "50"
+            }
+          ],
+          "proposer": {
+            "address": "EAC805939208F7851F6517652FBFF87D9CBD455A",
+            "pub_key": {
+              "type": "tendermint/PubKeyEd25519",
+              "value": "KnxmZvSDBv86GS7gm1kAHa2i2WXmu+MVkpD/jeybV/Q="
+            },
+            "voting_power": "50"
+          },
+          "total_voting_power": "0"
+        },
+        "next_validator_set": {
+          "validators": [
+            {
+              "address": "81D85BE9567F7069A4760C663062E66660DADF34",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "Lk4zm2cJO4FpzXFF9WUV9NzOLfr5jV+ps7EhwUDKlZM="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "C479DB6F37AB9757035CFBE10B687E27668EE7DF",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "3wf60CidQcsIO7TksXzEZsJefMUFF73k6nP1YeEo9to="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "0616A636E7D0579A632EC37ED3C3F2B7E8522A0A",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "kwd8trZ8t5ASwgUbBEAnDq49nRRrrKvt2onhS4JSfQM="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "D3E01BA109EB39DC5537FC1AD493DC51696099C2",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "rzORQgLg90Tc4xBKwEsvgMZQS6yxvhzvZB3B/zbDW0A="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "89813D501FB36796F5BEEC2E8B6A48FFEFF45595",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "VV0Fv/VdsyNrvfi+Kh+ld2pVHLZdNJLztUwJSKis/WI="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "5CC93DA93D8C513DFB5B1CA972AD472EDBD0D4F8",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "+b3DF2I8j3TrDePELV4L4ssCLIoq34BBp0RyU/QmmYY="
+              },
+              "voting_power": "50"
+            },
+            {
+              "address": "8CEBC3AA7D2C6E71F7385EC0E1BC182938724C0A",
+              "pub_key": {
+                "type": "tendermint/PubKeyEd25519",
+                "value": "6mYEZ5I4fKC1goMotZ3yTYH19SAvSrD+hpIsVxLxPWQ="
+              },
+              "voting_power": "50"
+            }
+          ],
+          "proposer": {
+            "address": "81D85BE9567F7069A4760C663062E66660DADF34",
+            "pub_key": {
+              "type": "tendermint/PubKeyEd25519",
+              "value": "Lk4zm2cJO4FpzXFF9WUV9NzOLfr5jV+ps7EhwUDKlZM="
+            },
+            "voting_power": "50"
+          },
+          "total_voting_power": "0"
+        },
+        "provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+      },
+      "testgen_block": {
+        "header": {
+          "validators": [
+            {
+              "id": "n10",
+              "voting_power": 50,
+              "proposer_priority": null
+            }
+          ],
+          "next_validators": [
+            {
+              "id": "n2",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n3",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n4",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n5",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n6",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n7",
+              "voting_power": 50,
+              "proposer_priority": null
+            },
+            {
+              "id": "n9",
+              "voting_power": 50,
+              "proposer_priority": null
+            }
+          ],
+          "chain_id": null,
+          "height": 2,
+          "time": 2,
+          "proposer": null
+        },
+        "commit": {
+          "header": {
+            "validators": [
+              {
+                "id": "n10",
+                "voting_power": 50,
+                "proposer_priority": null
+              }
+            ],
+            "next_validators": [
+              {
+                "id": "n2",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n3",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n4",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n5",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n6",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n7",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              {
+                "id": "n9",
+                "voting_power": 50,
+                "proposer_priority": null
+              }
+            ],
+            "chain_id": null,
+            "height": 2,
+            "time": 2,
+            "proposer": null
+          },
+          "votes": [
+            {
+              "validator": {
+                "id": "n10",
+                "voting_power": 50,
+                "proposer_priority": null
+              },
+              "index": null,
+              "header": {
+                "validators": [
+                  {
+                    "id": "n10",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "next_validators": [
+                  {
+                    "id": "n2",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n3",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n4",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n5",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n6",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n7",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  },
+                  {
+                    "id": "n9",
+                    "voting_power": 50,
+                    "proposer_priority": null
+                  }
+                ],
+                "chain_id": null,
+                "height": 2,
+                "time": 2,
+                "proposer": null
+              },
+              "prevote": null,
+              "height": null,
+              "time": null,
+              "round": null,
+              "is_nil": null
+            }
+          ],
+          "round": null
+        },
+        "validators": [
+          {
+            "id": "n10",
+            "voting_power": 50,
+            "proposer_priority": null
+          }
+        ],
+        "next_validators": [
+          {
+            "id": "n2",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n3",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n4",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n5",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n6",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n7",
+            "voting_power": 50,
+            "proposer_priority": null
+          },
+          {
+            "id": "n9",
+            "voting_power": 50,
+            "proposer_priority": null
+          }
+        ],
+        "provider": null
+      },
+      "now": "1970-01-01T00:23:20Z",
+      "verdict": "SUCCESS"
+    }
+  ]
+}

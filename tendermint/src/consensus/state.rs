@@ -1,30 +1,29 @@
 //! Tendermint consensus state
 
 pub use crate::block;
+use serde::{Deserialize, Serialize};
 pub use std::{cmp::Ordering, fmt};
-use {
-    crate::serializers,
-    serde::{Deserialize, Serialize},
-};
 
 /// Placeholder string to show when block ID is absent. Syntax from:
 /// <https://tendermint.com/docs/spec/consensus/consensus.html>
 pub const NIL_PLACEHOLDER: &str = "<nil>";
 
 /// Tendermint consensus state
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
+// Serde serialization for KMS state file read/write.
+// https://github.com/informalsystems/tendermint-rs/issues/675
+#[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
 pub struct State {
     /// Current block height
     pub height: block::Height,
 
     /// Current consensus round
-    #[serde(with = "serializers::from_str")]
-    pub round: i64,
+    pub round: block::Round,
 
     /// Current consensus step
     pub step: i8,
 
     /// Block ID being proposed (if available)
+    #[serde(with = "tendermint_proto::serializers::optional")]
     pub block_id: Option<block::Id>,
 }
 
@@ -68,33 +67,35 @@ impl PartialOrd for State {
 mod tests {
     use super::State;
     use crate::block;
+    use crate::Hash;
+    use std::str::FromStr;
 
     #[test]
     fn state_ord_test() {
         let new = State {
-            height: block::Height::from(9001u64),
-            round: 0,
+            height: block::Height::from(9001_u32),
+            round: block::Round::default(),
             step: 0,
             block_id: None,
         };
 
         let old = State {
-            height: block::Height::from(1001u64),
-            round: 1,
+            height: block::Height::from(1001_u32),
+            round: block::Round::from(1_u16),
             step: 0,
             block_id: None,
         };
 
         let older = State {
-            height: block::Height::from(1001u64),
-            round: 0,
+            height: block::Height::from(1001_u32),
+            round: block::Round::default(),
             step: 0,
             block_id: None,
         };
 
         let oldest = State {
             height: block::Height::default(),
-            round: 0,
+            round: block::Round::default(),
             step: 0,
             block_id: None,
         };
@@ -103,5 +104,63 @@ mod tests {
         assert!(older < old);
         assert!(oldest < older);
         assert!(oldest < new);
+    }
+
+    #[test]
+    fn state_deser_update_null_test() {
+        // Testing that block_id == null is correctly deserialized.
+        let state_json_string = r#"{
+            "height": "5",
+            "round": "1",
+            "step": 6,
+            "block_id": null
+        }"#;
+        let state: State = State {
+            height: block::Height::from(5_u32),
+            round: block::Round::from(1_u16),
+            step: 6,
+            block_id: None,
+        };
+        let state_from_json: State = serde_json::from_str(state_json_string).unwrap();
+        assert_eq!(state_from_json, state);
+    }
+
+    #[test]
+    fn state_deser_update_total_test() {
+        // Testing, if total is correctly deserialized from string.
+        // Note that we use 'parts' to test backwards compatibility.
+        let state_json_string = r#"{
+            "height": "5",
+            "round": "1",
+            "step": 6,
+            "block_id": {
+              "hash": "1234567890123456789012345678901234567890123456789012345678901234",
+              "parts": {
+                  "total": "1",
+                  "hash": "1234567890123456789012345678901234567890123456789012345678901234"
+              }
+            }
+        }"#;
+        let state: State = State {
+            height: block::Height::from(5_u32),
+            round: block::Round::from(1_u16),
+            step: 6,
+            block_id: Some(block::Id {
+                hash: Hash::from_str(
+                    "1234567890123456789012345678901234567890123456789012345678901234",
+                )
+                .unwrap(),
+                part_set_header: block::parts::Header::new(
+                    1,
+                    Hash::from_str(
+                        "1234567890123456789012345678901234567890123456789012345678901234",
+                    )
+                    .unwrap(),
+                )
+                .unwrap(),
+            }),
+        };
+        let state_from_json: State = serde_json::from_str(state_json_string).unwrap();
+        assert_eq!(state_from_json, state);
     }
 }

@@ -1,13 +1,12 @@
 //! Block headers
 
-use crate::amino_types::{message::AminoMessage, BlockId};
 use crate::merkle::simple_hash_from_byte_vectors;
-use crate::serializers;
-use crate::{account, block, chain, Hash, Time};
-use prost_types::Timestamp;
+use crate::{account, block, chain, AppHash, Error, Hash, Kind, Time};
 use serde::{Deserialize, Serialize};
-use tendermint_proto::types::BlockId as RawBlockId;
+use std::convert::{TryFrom, TryInto};
+use tendermint_proto::types::Header as RawHeader;
 use tendermint_proto::version::Consensus as RawConsensusVersion;
+use tendermint_proto::Protobuf;
 
 /// Block `Header` values contain metadata about the block and about the
 /// consensus, as well as commitments to the data in the current block, the
@@ -15,6 +14,7 @@ use tendermint_proto::version::Consensus as RawConsensusVersion;
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#header>
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(try_from = "RawHeader", into = "RawHeader")]
 pub struct Header {
     /// Header version
     pub version: Version,
@@ -29,15 +29,12 @@ pub struct Header {
     pub time: Time,
 
     /// Previous block info
-    #[serde(deserialize_with = "serializers::parse_non_empty_block_id")]
     pub last_block_id: Option<block::Id>,
 
     /// Commit from validators from the last block
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
     pub last_commit_hash: Option<Hash>,
 
     /// Merkle root of transaction hashes
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
     pub data_hash: Option<Hash>,
 
     /// Validators for the current block
@@ -50,19 +47,115 @@ pub struct Header {
     pub consensus_hash: Hash,
 
     /// State after txs from the previous block
-    #[serde(with = "serializers::bytes::hexstring")]
-    pub app_hash: Vec<u8>,
+    pub app_hash: AppHash,
 
     /// Root hash of all results from the txs from the previous block
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
     pub last_results_hash: Option<Hash>,
 
     /// Hash of evidence included in the block
-    #[serde(deserialize_with = "serializers::parse_non_empty_hash")]
     pub evidence_hash: Option<Hash>,
 
     /// Original proposer of the block
     pub proposer_address: account::Id,
+}
+
+impl Protobuf<RawHeader> for Header {}
+
+impl TryFrom<RawHeader> for Header {
+    type Error = Error;
+
+    fn try_from(value: RawHeader) -> Result<Self, Self::Error> {
+        // If last block id is unfilled, it is considered nil by Go.
+        let last_block_id = value
+            .last_block_id
+            .map(TryInto::try_into)
+            .transpose()?
+            .filter(|l| l != &block::Id::default());
+        let last_commit_hash = if value.last_commit_hash.is_empty() {
+            None
+        } else {
+            Some(value.last_commit_hash.try_into()?)
+        };
+        let last_results_hash = if value.last_results_hash.is_empty() {
+            None
+        } else {
+            Some(value.last_results_hash.try_into()?)
+        };
+        let height: block::Height = value.height.try_into()?;
+
+        // Todo: fix domain logic
+        //if last_block_id.is_none() && height.value() != 1 {
+        //    return Err(Kind::InvalidHeader.context("last_block_id is null on non-first
+        // height").into());
+        //}
+        if last_block_id.is_some() && height.value() == 1 {
+            return Err(Kind::InvalidFirstHeader
+                .context("last_block_id is not null on first height")
+                .into());
+        }
+        //if last_commit_hash.is_none() && height.value() != 1 {
+        //    return Err(Kind::InvalidHeader.context("last_commit_hash is null on non-first
+        // height").into());
+        //}
+        //if height.value() == 1 && last_commit_hash.is_some() &&
+        // last_commit_hash.as_ref().unwrap() != simple_hash_from_byte_vectors(Vec::new()) {
+        //    return Err(Kind::InvalidFirstHeader.context("last_commit_hash is not empty Merkle tree
+        // on first height").into());
+        //}
+        //if last_results_hash.is_none() && height.value() != 1 {
+        //    return Err(Kind::InvalidHeader.context("last_results_hash is null on non-first
+        // height").into());
+        //}
+        //if last_results_hash.is_some() && height.value() == 1 {
+        //    return Err(Kind::InvalidFirstHeader.context("last_results_hash is not ull on first
+        // height").into());
+        //}
+        Ok(Header {
+            version: value.version.ok_or(Kind::MissingVersion)?.try_into()?,
+            chain_id: value.chain_id.try_into()?,
+            height,
+            time: value.time.ok_or(Kind::NoTimestamp)?.try_into()?,
+            last_block_id,
+            last_commit_hash,
+            data_hash: if value.data_hash.is_empty() {
+                None
+            } else {
+                Some(value.data_hash.try_into()?)
+            },
+            validators_hash: value.validators_hash.try_into()?,
+            next_validators_hash: value.next_validators_hash.try_into()?,
+            consensus_hash: value.consensus_hash.try_into()?,
+            app_hash: value.app_hash.try_into()?,
+            last_results_hash,
+            evidence_hash: if value.evidence_hash.is_empty() {
+                None
+            } else {
+                Some(value.evidence_hash.try_into()?)
+            }, // Todo: Is it illegal to have evidence of wrongdoing in the first block?
+            proposer_address: value.proposer_address.try_into()?,
+        })
+    }
+}
+
+impl From<Header> for RawHeader {
+    fn from(value: Header) -> Self {
+        RawHeader {
+            version: Some(value.version.into()),
+            chain_id: value.chain_id.into(),
+            height: value.height.into(),
+            time: Some(value.time.into()),
+            last_block_id: value.last_block_id.map(Into::into),
+            last_commit_hash: value.last_commit_hash.unwrap_or_default().into(),
+            data_hash: value.data_hash.unwrap_or_default().into(),
+            validators_hash: value.validators_hash.into(),
+            next_validators_hash: value.next_validators_hash.into(),
+            consensus_hash: value.consensus_hash.into(),
+            app_hash: value.app_hash.into(),
+            last_results_hash: value.last_results_hash.unwrap_or_default().into(),
+            evidence_hash: value.evidence_hash.unwrap_or_default().into(),
+            proposer_address: value.proposer_address.into(),
+        }
+    }
 }
 
 impl Header {
@@ -73,82 +166,59 @@ impl Header {
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/block.go#L393
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
 
-        let raw_consensus_version: RawConsensusVersion = self.version.clone().into();
-
-        let mut fields_bytes: Vec<Vec<u8>> = Vec::with_capacity(16);
-        fields_bytes.push(AminoMessage::bytes_vec(&raw_consensus_version));
-        fields_bytes.push(encode_bytes(self.chain_id.as_bytes()));
-        fields_bytes.push(encode_varint(self.height.value()));
-        fields_bytes.push(AminoMessage::bytes_vec(&Timestamp::from(
-            self.time.to_system_time().unwrap(),
-        )));
-        match &self.last_block_id {
-            None => {
-                let raw_block_id: RawBlockId = BlockId::new(vec![], None).into();
-                AminoMessage::bytes_vec(&raw_block_id);
-            }
-            Some(id) => {
-                let raw_block_id: RawBlockId = BlockId::from(id).into();
-                AminoMessage::bytes_vec(&raw_block_id);
-            }
-        }
-        fields_bytes.push(self.last_commit_hash.as_ref().map_or(vec![], encode_hash));
-        fields_bytes.push(self.data_hash.as_ref().map_or(vec![], encode_hash));
-        fields_bytes.push(encode_hash(&self.validators_hash));
-        fields_bytes.push(encode_hash(&self.next_validators_hash));
-        fields_bytes.push(encode_hash(&self.consensus_hash));
-        fields_bytes.push(encode_bytes(&self.app_hash));
-        fields_bytes.push(self.last_results_hash.as_ref().map_or(vec![], encode_hash));
-        fields_bytes.push(self.evidence_hash.as_ref().map_or(vec![], encode_hash));
-        fields_bytes.push(encode_bytes(self.proposer_address.as_bytes()));
+        let mut fields_bytes: Vec<Vec<u8>> = Vec::with_capacity(14);
+        fields_bytes.push(self.version.encode_vec().unwrap());
+        fields_bytes.push(self.chain_id.encode_vec().unwrap());
+        fields_bytes.push(self.height.encode_vec().unwrap());
+        fields_bytes.push(self.time.encode_vec().unwrap());
+        fields_bytes.push(self.last_block_id.unwrap_or_default().encode_vec().unwrap());
+        fields_bytes.push(
+            self.last_commit_hash
+                .unwrap_or_default()
+                .encode_vec()
+                .unwrap(),
+        );
+        fields_bytes.push(self.data_hash.unwrap_or_default().encode_vec().unwrap());
+        fields_bytes.push(self.validators_hash.encode_vec().unwrap());
+        fields_bytes.push(self.next_validators_hash.encode_vec().unwrap());
+        fields_bytes.push(self.consensus_hash.encode_vec().unwrap());
+        fields_bytes.push(self.app_hash.encode_vec().unwrap());
+        fields_bytes.push(
+            self.last_results_hash
+                .unwrap_or_default()
+                .encode_vec()
+                .unwrap(),
+        );
+        fields_bytes.push(self.evidence_hash.unwrap_or_default().encode_vec().unwrap());
+        fields_bytes.push(self.proposer_address.encode_vec().unwrap());
 
         Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
     }
-}
-
-fn encode_bytes(bytes: &[u8]) -> Vec<u8> {
-    let bytes_len = bytes.len();
-    if bytes_len > 0 {
-        let mut encoded = vec![];
-        prost::encode_length_delimiter(bytes_len, &mut encoded).unwrap();
-        encoded.append(&mut bytes.to_vec());
-        encoded
-    } else {
-        vec![]
-    }
-}
-
-fn encode_hash(hash: &Hash) -> Vec<u8> {
-    encode_bytes(hash.as_bytes())
-}
-
-fn encode_varint(val: u64) -> Vec<u8> {
-    let mut val_enc = vec![];
-    prost::encoding::encode_varint(val, &mut val_enc);
-    val_enc
 }
 
 /// `Version` contains the protocol version for the blockchain and the
 /// application.
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#version>
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Version {
     /// Block version
-    #[serde(with = "serializers::from_str")]
     pub block: u64,
 
     /// App version
-    #[serde(with = "serializers::from_str")]
     pub app: u64,
 }
 
-impl From<RawConsensusVersion> for Version {
-    fn from(value: RawConsensusVersion) -> Self {
-        Version {
+impl Protobuf<RawConsensusVersion> for Version {}
+
+impl TryFrom<RawConsensusVersion> for Version {
+    type Error = anomaly::BoxError;
+
+    fn try_from(value: RawConsensusVersion) -> Result<Self, Self::Error> {
+        Ok(Version {
             block: value.block,
             app: value.app,
-        }
+        })
     }
 }
 
@@ -164,11 +234,27 @@ impl From<Version> for RawConsensusVersion {
 #[cfg(test)]
 mod tests {
     use super::Header;
+    use crate::hash::Algorithm;
     use crate::test::test_serialization_roundtrip;
+    use crate::Hash;
 
     #[test]
     fn serialization_roundtrip() {
         let json_data = include_str!("../../tests/support/serialization/block/header.json");
         test_serialization_roundtrip::<Header>(json_data);
+    }
+
+    #[test]
+    fn header_hashing() {
+        let expected_hash = Hash::from_hex_upper(
+            Algorithm::Sha256,
+            "F30A71F2409FB15AACAEDB6CC122DFA2525BEE9CAE521721B06BFDCA291B8D56",
+        )
+        .unwrap();
+        let header: Header = serde_json::from_str(include_str!(
+            "../../tests/support/serialization/block/header_with_known_hash.json"
+        ))
+        .unwrap();
+        assert_eq!(expected_hash, header.hash());
     }
 }

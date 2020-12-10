@@ -51,7 +51,7 @@ In order to achieve this, we need:
 
 The entities in the diagram below are described in the following subsections.
 
-![](assets/rpc-client-erd.png)
+![RPC client ERD](assets/rpc-client-erd.png)
 
 ### `Event`
 
@@ -183,7 +183,7 @@ entity diagram above).
 pub type Result<R> = std::result::Result<R, Error>;
 
 #[async_trait]
-pub trait Client: ClosableClient {
+pub trait Client {
     /// `/abci_info`: get information about the ABCI application.
     async fn abci_info(&self) -> Result<abci_info::AbciInfo>;
 
@@ -216,26 +216,9 @@ WebSocket connection to provide subscription functionality (the
 
 ```rust
 #[async_trait]
-pub trait SubscriptionClient: ClosableClient {
+pub trait SubscriptionClient {
     /// `/subscribe`: subscribe to receive events produced by the given query.
-    async fn subscribe(&mut self, query: String) -> Result<Subscription>;
-}
-```
-
-#### `ClosableClient`
-
-This is not really a client in and of itself, but a trait that both the `Client`
-and `SubscriptionClient` need to implement. The reason for this common trait is
-that, depending on the transport layer, both types of clients may need a `close`
-method to gracefully terminate the client. An example of this would be when we
-implement a `WebSocketClient` that implements both the `Client` and
-`SubscriptionClient` traits simultaneously.
-
-```rust
-#[async_trait]
-pub trait ClosableClient {
-    /// Attempt to gracefully terminate the client.
-    async fn close(self) -> Result<()>;
+    async fn subscribe(&mut self, query: Query) -> Result<Subscription>;
 }
 ```
 
@@ -244,7 +227,7 @@ pub trait ClosableClient {
 We envisage 2 distinct client implementations at this point:
 
 * `HttpClient`, which only implements [`Client`](#client) (over HTTP).
-* `WebSocketClient`, which only implements
+* `WebSocketClient`, which will implement [`Client`](#client) and
   [`SubscriptionClient`](#subscriptionclient) (over a WebSocket connection).
 
 #### Handle-Driver Concurrency Model
@@ -262,6 +245,12 @@ driver, whereas a WebSocket connection would.
 In cases where a driver is necessary, the client implementation would have to
 become a **handle** to the driver, facilitating communication with it across
 asynchronous tasks.
+
+A rough sketch of the interaction model between the different components
+envisaged to make up the subscription subsystem is shown in the following
+sequence diagram.
+
+![RPC client concurrency model](./assets/rpc-client-concurrency.png)
 
 ### `Query`
 
@@ -334,19 +323,23 @@ pub enum EventType {
     ValidatorSetUpdates,
 }
 
-pub struct Condition {
-    key: String,
-    op: Operation,
-}
-
-pub enum Operation {
-    Eq(Operand),
-    Lt(Operand),
-    Lte(Operand),
-    Gt(Operand),
-    Gte(Operand),
-    Contains(Operand),
-    Exists,
+// A condition specifies a key (first parameter) and, depending on the
+// operation, an value which is an operand of some kind.
+pub enum Condition {
+    // Equals
+    Eq(String, Operand),
+    // Less than
+    Lt(String, Operand),
+    // Less than or equal to
+    Lte(String, Operand),
+    // Greater than
+    Gt(String, Operand),
+    // Greater than or equal to
+    Gte(String, Operand),
+    // Contains (to check if a key contains a certain sub-string)
+    Contains(String, String),
+    // Exists (to check if a key exists)
+    Exists(String),
 }
 
 // According to https://docs.tendermint.com/master/rpc/#/Websocket/subscribe,
@@ -357,12 +350,88 @@ pub enum Operation {
 // operand types to the `Operand` enum, as this would improve ergonomics.
 pub enum Operand {
     String(String),
-    Integer(i64),
+    Signed(i64),
+    Unsigned(u64),
     Float(f64),
     Date(chrono::Date),
     DateTime(chrono::DateTime),
 }
 ```
+
+### Subscription Tracking and Routing
+
+Internally, a `SubscriptionRouter` is proposed that uses a `HashMap` to keep
+track of all of the queries relating to a particular client.
+
+```rust
+pub struct SubscriptionRouter {
+    // A map of queries -> (map of subscription IDs -> result event tx channels)
+    subscriptions: HashMap<String, HashMap<String, SubscriptionTx>>,
+}
+```
+
+At present, Tendermint includes the ID of the subscription relating to a
+particular event in the JSON-RPC message, and so this data structure is optimal
+for such a configuration. This will necessarily change if Tendermint's WebSocket
+server [drops subscription IDs from events][tendermint-2949], which is likely if
+we want to conform more strictly to the [JSON-RPC standard for
+notifications][jsonrpc-notifications].
+
+### Handling Mixed Events and Responses
+
+Since a full client needs to implement both the `Client` and
+`SubscriptionClient` traits, for certain transports (like a WebSocket
+connection) we could end up receiving a mixture of events from subscriptions
+and responses to RPC requests. To disambiguate these different types of 
+incoming messages, a simple mechanism is proposed for the
+`WebSocketClientDriver` that keeps track of pending requests and only matures
+them once it receives its corresponding response.
+
+```rust
+pub struct WebSocketClientDriver {
+    // ...
+
+    // Commands we've received but have not yet completed, indexed by their ID.
+    // A Terminate command is executed immediately.
+    pending_commands: HashMap<String, DriverCommand>,
+}
+
+// The different types of requests that the WebSocketClient can send to its
+// driver.
+//
+// Each of SubscribeCommand, UnsubscribeCommand and SimpleRequestCommand keep
+// a response channel that allows for the driver to send a response later on
+// when it receives a relevant one.
+enum DriverCommand {
+    // Initiate a subscription request.
+    Subscribe(SubscribeCommand),
+    // Initiate an unsubscribe request.
+    Unsubscribe(UnsubscribeCommand),
+    // For non-subscription-related requests.
+    SimpleRequest(SimpleRequestCommand),
+    Terminate,
+}
+```
+
+IDs of outgoing requests are randomly generated [UUIDv4] strings.
+
+The logic here is as follows:
+
+1. A call is made to `WebSocketClient::subscribe` or
+   `WebSocketClient::perform`.
+2. The client sends the relevant `DriverCommand` to its driver via its internal
+   communication channel.
+3. The driver receives the command, sends the relevant simple or subscription
+   request, and keeps track of the command in its `pending_commands` member
+   along with its ID. This allows the driver to continue handling outgoing 
+   requests and incoming responses in the meantime.
+4. If the driver receives a JSON-RPC message whose ID corresponds to an ID in
+   its `pending_commands` member, it assumes that response is relevant to that
+   command and sends back to the original caller by way of a channel stored in
+   one of the `SubscribeCommand`, `UnsubscribeCommand` or
+   `SimpleRequestCommand` structs. Failures are also communicated through this
+   same mechanism.
+5. The pending command is evicted from the `pending_commands` member.
 
 ## Status
 
@@ -407,4 +476,6 @@ None
 [async-drop]: https://internals.rust-lang.org/t/asynchronous-destructors/11127
 [tokio-mpsc]: https://docs.rs/tokio/*/tokio/sync/mpsc/index.html
 [futures-stream-mod]: https://docs.rs/futures/*/futures/stream/index.html
-
+[tendermint-2949]: https://github.com/tendermint/tendermint/issues/2949
+[jsonrpc-notifications]: https://www.jsonrpc.org/specification#notification
+[UUIDv4]: https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)

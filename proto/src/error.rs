@@ -1,9 +1,9 @@
-//! This module defines the various errors that be raised during DomainType conversions.
+//! This module defines the various errors that be raised during Protobuf conversions.
 
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 
-/// An error that can be raised by the DomainType conversions.
+/// An error that can be raised by the Protobuf conversions.
 pub type Error = anomaly::Error<Kind>;
 
 /// Various kinds of errors that can be raised.
@@ -11,7 +11,7 @@ pub type Error = anomaly::Error<Kind>;
 pub enum Kind {
     /// TryFrom Prost Message failed during decoding
     #[error("error converting message type into domain type")]
-    TryIntoDomainType,
+    TryFromProtobuf,
 
     /// encoding prost Message into buffer failed
     #[error("error encoding message into buffer")]

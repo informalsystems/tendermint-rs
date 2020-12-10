@@ -3,9 +3,10 @@
 members = [
     "light-client",
     "light-node",
+    "p2p",
     "proto",
-    "proto-derive",
     "rpc",
+    "rpc-probe",
     "tendermint",
     "testgen"
 ]

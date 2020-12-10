@@ -88,11 +88,30 @@ impl LightClient {
         }
     }
 
+    /// Constructs a new light client from boxed components
+    pub fn from_boxed(
+        peer: PeerId,
+        options: Options,
+        clock: Box<dyn Clock>,
+        scheduler: Box<dyn Scheduler>,
+        verifier: Box<dyn Verifier>,
+        io: Box<dyn Io>,
+    ) -> Self {
+        Self {
+            peer,
+            options,
+            clock,
+            scheduler,
+            verifier,
+            io,
+        }
+    }
+
     /// Attempt to update the light client to the highest block of the primary node.
     ///
     /// Note: This function delegates the actual work to `verify_to_target`.
     pub fn verify_to_highest(&mut self, state: &mut State) -> Result<LightBlock, Error> {
-        let target_block = match self.io.fetch_light_block(self.peer, AtHeight::Highest) {
+        let target_block = match self.io.fetch_light_block(AtHeight::Highest) {
             Ok(last_block) => last_block,
             Err(io_error) => bail!(ErrorKind::Io(io_error)),
         };
@@ -154,7 +173,7 @@ impl LightClient {
             let trusted_state = state
                 .light_store
                 .latest_trusted_or_verified()
-                .ok_or_else(|| ErrorKind::NoInitialTrustedState)?;
+                .ok_or(ErrorKind::NoInitialTrustedState)?;
 
             if target_height < trusted_state.height() {
                 bail!(ErrorKind::TargetLowerThanTrustedState {
@@ -242,7 +261,7 @@ impl LightClient {
 
         let block = self
             .io
-            .fetch_light_block(self.peer, AtHeight::At(height))
+            .fetch_light_block(AtHeight::At(height))
             .map_err(ErrorKind::Io)?;
 
         state.light_store.insert(block.clone(), Status::Unverified);

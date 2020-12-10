@@ -19,13 +19,36 @@ use subtle_encoding::hex;
 use crate::public_key::Secp256k1;
 #[cfg(feature = "secp256k1")]
 use ripemd160::Ripemd160;
+use std::convert::TryFrom;
+use tendermint_proto::Protobuf;
 
 /// Size of an  account ID in bytes
 pub const LENGTH: usize = 20;
 
 /// Account IDs
 #[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct Id([u8; LENGTH]);
+pub struct Id([u8; LENGTH]); // JSON custom serialization for priv_validator_key.json
+
+impl Protobuf<Vec<u8>> for Id {}
+
+impl TryFrom<Vec<u8>> for Id {
+    type Error = Error;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        if value.len() != LENGTH {
+            return Err(Kind::InvalidAccountIdLength.into());
+        }
+        let mut slice: [u8; LENGTH] = [0; LENGTH];
+        slice.copy_from_slice(&value[..]);
+        Ok(Id(slice))
+    }
+}
+
+impl From<Id> for Vec<u8> {
+    fn from(value: Id) -> Self {
+        value.as_bytes().to_vec()
+    }
+}
 
 impl Id {
     /// Create a new account ID from raw bytes
@@ -95,18 +118,13 @@ impl FromStr for Id {
         // Accept either upper or lower case hex
         let bytes = hex::decode_upper(s)
             .or_else(|_| hex::decode(s))
-            .map_err(|_| Kind::Parse)?;
+            .map_err(|_| Kind::Parse.context("account id decode"))?;
 
-        if bytes.len() != LENGTH {
-            return Err(Kind::Parse.into());
-        }
-
-        let mut result_bytes = [0u8; LENGTH];
-        result_bytes.copy_from_slice(&bytes);
-        Ok(Id(result_bytes))
+        Ok(bytes.try_into()?)
     }
 }
 
+// Todo: Can I remove custom serialization?
 impl<'de> Deserialize<'de> for Id {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -125,7 +143,10 @@ impl<'de> Deserialize<'de> for Id {
 
 impl Serialize for Id {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        self.to_string().serialize(serializer)
+        serializer.serialize_str(
+            &String::from_utf8(hex::encode_upper(Vec::<u8>::from(*self)))
+                .map_err(serde::ser::Error::custom)?,
+        )
     }
 }
 

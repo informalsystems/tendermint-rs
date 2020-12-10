@@ -106,6 +106,12 @@
       "source": "$ | map(id_to_validator) | map(tendermint_validator)"
     },
     {
+      "name": "ids_to_testgen_validators",
+      "description": "transform a non-empty array of identifiers into `Tendermint-testgen validators`",
+      "kind": "INLINE",
+      "source": "$ | map(id_to_validator)"
+    },
+    {
       "name": "empty_array",
       "description": "just an empty array",
       "kind": "INLINE",
@@ -134,7 +140,8 @@
       "kind": "INLINE",
       "source": {
         "validators": "$ | ifelse(ids_to_validators,empty_array)",
-        "proposer": "$ | ifelse(first_validator,fixed_validator)"
+        "proposer": "$ | ifelse(first_validator,fixed_validator)",
+        "total_voting_power": "0"
       }
     },
     {
