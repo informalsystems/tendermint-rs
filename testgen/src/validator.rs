@@ -33,15 +33,6 @@ impl Validator {
     set_option!(voting_power, u64);
     set_option!(proposer_priority, i64);
 
-    pub fn from_str_vec(ids: Vec<&str>) -> Vec<Validator> {
-        let mut vals: Vec<Validator> = Vec::new();
-
-        for id in ids {
-            vals.push(Validator::new(id))
-        }
-        vals
-    }
-
     /// Get private key for this validator companion.
     pub fn get_private_key(&self) -> Result<private_key::Ed25519, SimpleError> {
         let id = match &self.id {
@@ -143,19 +134,6 @@ pub fn sort_validators(vals: &[Validator]) -> Vec<Validator> {
         (std::cmp::Reverse(v.voting_power), v.address)
     });
     sorted
-}
-
-/// A helper function to generate validator set from a list of validator ids.
-pub fn generate_validator_set(
-    val_ids: Vec<&str>,
-) -> Result<(validator::Set, Vec<Validator>), SimpleError> {
-    let vals = Validator::from_str_vec(val_ids);
-
-    let validators = match generate_validators(&vals) {
-        Err(e) => bail!("Failed to generate validators with error: {}", e),
-        Ok(v) => v,
-    };
-    Ok((validator::Set::new(validators), vals))
 }
 
 #[cfg(test)]

@@ -82,7 +82,7 @@ impl LightBlock {
     );
 
     pub fn new_default(height: u64) -> Self {
-        let validators = [Validator::new("1"), Validator::new("2")];
+        let validators = [Validator::new("1").voting_power(50), Validator::new("2").voting_power(50)];
         let header = Header::new(&validators)
             .height(height)
             .chain_id("test-chain")

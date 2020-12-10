@@ -19,7 +19,6 @@ pub mod time;
 pub mod validator;
 pub mod validator_set;
 pub mod vote;
-pub mod light_block;
 
 pub use commit::Commit;
 pub use generator::Generator;
@@ -30,7 +29,6 @@ pub use time::Time;
 pub use validator::Validator;
 pub use validator_set::ValidatorSet;
 pub use vote::Vote;
-pub use light_block::LightBlock;
 
 /// Helpers for organizing and running the tests
 pub mod apalache;

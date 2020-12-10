@@ -303,11 +303,12 @@ mod tests {
 
     use tendermint_testgen::{
         light_block::{
-            LightBlock as TestGenLightBlock,
-            generate_default_signed_header
+            LightBlock as TestgenLightBlock,
+            TMLightBlock
         },
-        validator::generate_validator_set,
-        Validator, Header, Generator};
+        Validator, 
+        ValidatorSet,
+        Header, Generator};
 
     use crate::predicates::{
         errors::VerificationError,
@@ -315,13 +316,13 @@ mod tests {
         VerificationPredicates
     };
 
-    use crate::tests::default_peer_id;
     use crate::operations::{ProdHasher, Hasher, ProdCommitValidator, ProdVotingPowerCalculator};
     use crate::types::{LightBlock, TrustThreshold};
-    use tendermint::block::{CommitSigs, CommitSig};
+    use tendermint::block::CommitSig;
+    use tendermint::validator::Set;
 
-    impl From<TestGenLightBlock> for LightBlock {
-        fn from(lb: TestGenLightBlock) -> Self {
+    impl From<TMLightBlock> for LightBlock {
+        fn from(lb: TMLightBlock) -> Self {
             LightBlock {
                 signed_header: lb.signed_header,
                 validators: lb.validators,
@@ -490,100 +491,83 @@ mod tests {
 
     #[test]
     fn test_validator_sets_match() {
-        let val = vec![Validator::new("val-1")];
-        let light_block = TestGenLightBlock::generate_default(
-            val,
-            default_peer_id()
+        let mut light_block: LightBlock = TestgenLightBlock::new_default(1)
+            .generate()
+            .unwrap()
+            .into();
+
+        let bad_validator_set = ValidatorSet::new(vec!["bad-val"]).generate().unwrap();
+
+        let vp = ProdPredicates::default();
+        let hasher = ProdHasher::default();
+
+        // Test positive case
+        // 1. For predicate: validator_sets_match
+        let val_sets_match_ok = vp.validator_sets_match(
+            &light_block,
+            &hasher
         );
 
-        let bad_val_set_result = generate_validator_set(vec!["bad-val"]);
+        assert!(val_sets_match_ok.is_ok());
 
-        match (light_block, bad_val_set_result) {
-            (
-                Ok(lb),
-                Ok((bad_validator_set, _))
-            )=> {
+        // 2. For predicate: next_validator_sets_match
+        let next_val_sets_match_ok = vp.next_validators_match(
+            &light_block,
+            &hasher
+        );
 
-                let mut light_block: LightBlock = lb.into();
-                let vp = ProdPredicates::default();
-                let hasher = ProdHasher::default();
+        assert!(next_val_sets_match_ok.is_ok());
 
-                // Test positive case
-                // 1. For predicate: validator_sets_match
-                let val_sets_match_ok = vp.validator_sets_match(
-                    &light_block,
-                    &hasher
-                );
+        // Test negative case
+        // 1. For predicate: validator_sets_match
+        light_block.validators = bad_validator_set.clone();
 
-                assert!(val_sets_match_ok.is_ok());
+        let val_sets_match_err = vp.validator_sets_match(
+            &light_block,
+            &hasher
+        );
 
-                // 2. For predicate: next_validator_sets_match
-                let next_val_sets_match_ok = vp.next_validators_match(
-                    &light_block,
-                    &hasher
-                );
+        // ensure it fails
+        assert!(val_sets_match_err.is_err());
 
-                assert!(next_val_sets_match_ok.is_ok());
+        let val_set_error = VerificationError::InvalidValidatorSet {
+            header_validators_hash: light_block.signed_header.header.validators_hash,
+            validators_hash: hasher.hash_validator_set(&light_block.validators)
+        };
 
-                // Test negative case
-                // 1. For predicate: validator_sets_match
-                light_block.validators = bad_validator_set.clone();
+        // ensure it fails with VerificationError::InvalidValidatorSet
+        assert_eq!(val_sets_match_err.err().unwrap(), val_set_error);
 
-                let val_sets_match_err = vp.validator_sets_match(
-                    &light_block,
-                    &hasher
-                );
+        // 2. For predicate: next_validator_sets_match
+        light_block.next_validators = bad_validator_set;
+        let next_val_sets_match_err = vp.next_validators_match(
+            &light_block,
+            &hasher
+        );
 
-                // ensure it fails
-                assert!(val_sets_match_err.is_err());
+        // ensure it fails
+        assert!(next_val_sets_match_err.is_err());
 
-                let val_set_error = VerificationError::InvalidValidatorSet {
-                    header_validators_hash: light_block.signed_header.header.validators_hash,
-                    validators_hash: hasher.hash_validator_set(&light_block.validators)
-                };
+        let next_val_set_error = VerificationError::InvalidNextValidatorSet {
+            header_next_validators_hash: light_block.signed_header.header.next_validators_hash,
+            next_validators_hash: hasher.hash_validator_set(&light_block.next_validators)
+        };
 
-                // ensure it fails with VerificationError::InvalidValidatorSet
-                assert_eq!(val_sets_match_err.err().unwrap(), val_set_error);
+        // ensure it fails with VerificationError::InvalidNextValidatorSet
+        assert_eq!(next_val_sets_match_err.err().unwrap(), next_val_set_error);
 
-                // 2. For predicate: next_validator_sets_match
-                light_block.next_validators = bad_validator_set;
-                let next_val_sets_match_err = vp.next_validators_match(
-                    &light_block,
-                    &hasher
-                );
-
-                // ensure it fails
-                assert!(next_val_sets_match_err.is_err());
-
-                let next_val_set_error = VerificationError::InvalidNextValidatorSet {
-                    header_next_validators_hash: light_block.signed_header.header.next_validators_hash,
-                    next_validators_hash: hasher.hash_validator_set(&light_block.next_validators)
-                };
-
-                // ensure it fails with VerificationError::InvalidNextValidatorSet
-                assert_eq!(next_val_sets_match_err.err().unwrap(), next_val_set_error);
-
-            }
-            (Err(e), _) => println!("Error in generating light block: {}", e),
-            (_, Err(e)) => println!("Error in generating validator set: {}", e),
-        }
 
     }
 
     #[test]
     fn test_header_matches_commit() {
-        let raw_val = vec![Validator::new("val-1")];
-        let signed_header = generate_default_signed_header(raw_val);
+        let mut signed_header = TestgenLightBlock::new_default(1)
+            .generate()
+            .unwrap()
+            .signed_header;
 
-        match signed_header {
-            Ok(mut signed_header) => {
                 let vp = ProdPredicates::default();
                 let hasher = ProdHasher::default();
-
-                // We need to do this because the commit generator does not add BlockId to it currently
-                // It keeps it "empty" because we don't have a way to make parts of the header
-                // TODO: Should be removed once this is fixed in testgen!
-                signed_header.commit.block_id.hash = hasher.hash_header(&signed_header.header);
 
                 // 1. ensure valid signed header verifies
                 let result_ok = vp.header_matches_commit(
@@ -610,22 +594,18 @@ mod tests {
                 };
 
                 assert_eq!(result_err.err().unwrap(), error);
-            }
-            Err(e) => {
-                println!("{}", e);
-            }
-        }
     }
 
     #[test]
     fn test_valid_commit() {
-        let (val_set, raw_vals) = generate_validator_set(vec!["val-1","val-2"])
-            .expect("Error generating validator set");
+        let light_block: LightBlock = TestgenLightBlock::new_default(1)
+            .generate()
+            .unwrap()
+            .into();
 
-        let signed_header = generate_default_signed_header(raw_vals);
+        let mut signed_header = light_block.signed_header;
+        let val_set = light_block.validators;
 
-        match signed_header {
-            Ok(mut signed_header) => {
                 let vp = ProdPredicates::default();
                 let hasher = ProdHasher::default();
                 let commit_validator = ProdCommitValidator::new(hasher);
@@ -642,7 +622,7 @@ mod tests {
 
                 // 2. no commit signatures - must return error
                 let signatures = signed_header.commit.signatures.clone();
-                signed_header.commit.signatures = CommitSigs::default();
+                signed_header.commit.signatures = vec![];
 
                 let mut result_err = vp.valid_commit(
                     &signed_header,
@@ -661,10 +641,8 @@ mod tests {
 
                 // 3. commit.signatures.len() != validator_set.validators().len()
                 // must return error
-                let mut bad_sigs = vec![signatures.clone().into_vec().swap_remove(1)];
-                signed_header.commit.signatures = CommitSigs::new::<Vec<CommitSig>>(
-                    bad_sigs.clone()
-                );
+                let mut bad_sigs = vec![signatures.clone().swap_remove(1)];
+                signed_header.commit.signatures = bad_sigs.clone();
 
                 result_err = vp.valid_commit(
                     &signed_header,
@@ -684,9 +662,7 @@ mod tests {
 
                 // 4. commit.BlockIdFlagAbsent - should be "Ok"
                 bad_sigs.push(CommitSig::BlockIDFlagAbsent);
-                signed_header.commit.signatures = CommitSigs::new::<Vec<CommitSig>>(
-                    bad_sigs
-                );
+                signed_header.commit.signatures = bad_sigs;
                 result_ok = vp.valid_commit(
                     &signed_header,
                     &val_set,
@@ -695,16 +671,21 @@ mod tests {
                 assert!(result_ok.is_ok());
 
                 // 5. faulty signer - must return error
-                let val_set_with_faulty_signer = generate_validator_set(
-                    vec!["val-1", "bad-val"]
-                ).expect("Failed to generate validator set");
+                let mut bad_vals = val_set.validators().clone();
+                bad_vals.pop();
+                bad_vals.push(
+                    Validator::new("bad-val")
+                        .generate()
+                        .expect("Failed to generate validator")
+                );
+                let val_set_with_faulty_signer = Set::new_simple(bad_vals);
 
                 // reset signatures
                 signed_header.commit.signatures = signatures;
 
                 result_err = vp.valid_commit(
                     &signed_header,
-                    &val_set_with_faulty_signer.0,
+                    &val_set_with_faulty_signer,
                     &commit_validator
                 );
                 assert!(result_err.is_err());
@@ -712,73 +693,80 @@ mod tests {
                 error = VerificationError::ImplementationSpecific(format!(
                     "Found a faulty signer ({}) not present in the validator set ({})",
                     signed_header.commit.signatures.iter().last().unwrap().validator_address().unwrap(),
-                    hasher.hash_validator_set(&val_set_with_faulty_signer.0)
+                    hasher.hash_validator_set(&val_set_with_faulty_signer)
                 ));
 
                 // ensure it fails with the expected error (as above)
                 assert_eq!(result_err.err().unwrap(), error);
-
-            }
-            Err(e) => {
-                println!("{}", e);
-            }
-        }
     }
 
-    // Incomplete test!!
-    #[test]
-    fn test_valid_next_validator_set() {
-        let vals = vec![Validator::new("val-1")];
-        let light_block = TestGenLightBlock::generate_default(
-            vals,
-            default_peer_id()
-        );
+    // // Incomplete test!!
+    // #[test]
+    // fn test_valid_next_validator_set() {
+    //     let vals = vec![Validator::new("val-1")];
+    //     let light_block = TMLightBlock::generate_default(
+    //         vals,
+    //         default_peer_id()
+    //     );
+    //
+    //     match light_block {
+    //         Ok(lb) => {
+    //             let vp = ProdPredicates::default();
+    //             let light_block = lb.into();
+    //
+    //             let result_ok = vp.valid_next_validator_set(
+    //                 &light_block,
+    //                 &light_block,
+    //             );
+    //
+    //             assert!(result_ok.is_ok());
+    //         }
+    //         Err(e) => {
+    //             println!("{}", e);
+    //         }
+    //     }
+    // }
+    //
 
-        match light_block {
-            Ok(lb) => {
-                let vp = ProdPredicates::default();
-                let light_block = lb.into();
-
-                let result_ok = vp.valid_next_validator_set(
-                    &light_block,
-                    &light_block,
-                );
-
-                assert!(result_ok.is_ok());
-            }
-            Err(e) => {
-                println!("{}", e);
-            }
-        }
-    }
-
-    // Fails because there's a problem with signatures
     #[test]
     fn test_has_sufficient_validators_overlap() {
-        let (val_set, raw_vals) = generate_validator_set(vec!["val-1"])
-            .expect("Error generating validator set");
-        let signed_header = generate_default_signed_header(raw_vals);
+        let light_block: LightBlock = TestgenLightBlock::new_default(1)
+            .generate()
+            .unwrap()
+            .into();
+        let val_set = light_block.validators;
+        let signed_header = light_block.signed_header;
 
-        match signed_header {
-            Ok(signed_header) => {
-                let vp = ProdPredicates::default();
-                let trust_threshold = TrustThreshold::new(1,3)
-                    .expect("Cannot make trust threshold");
-                let voting_power_calculator = ProdVotingPowerCalculator::default();
+        let vp = ProdPredicates::default();
+        let trust_threshold = TrustThreshold::new(1,3)
+            .expect("Cannot make trust threshold");
+        let voting_power_calculator = ProdVotingPowerCalculator::default();
 
-                let result_ok = vp.has_sufficient_validators_overlap(
-                    &signed_header,
-                    &val_set,
-                    &trust_threshold,
-                    &voting_power_calculator
-                );
+        let result_ok = vp.has_sufficient_validators_overlap(
+            &signed_header,
+            &val_set,
+            &trust_threshold,
+            &voting_power_calculator
+        );
 
-                println!("{:#?}", result_ok.err().unwrap());
-                // assert!(result_ok.is_ok());
-            }
-            Err(e) => {
-                println!("{}", e);
-            }
-        }
+        assert!(result_ok.is_ok());
+
+        let mut vals = val_set.validators().clone();
+        vals.push(Validator::new("extra-val-1").generate().unwrap());
+        vals.push(Validator::new("extra-val-2").generate().unwrap());
+        let bad_valset = Set::new_simple(vals);
+
+        let trust_threshold = TrustThreshold::new(2,3)
+            .expect("Cannot make trust threshold");
+
+        let result_err = vp.has_sufficient_validators_overlap(
+            &signed_header,
+            &bad_valset,
+            &trust_threshold,
+            &voting_power_calculator
+        );
+
+        assert!(result_err.is_err());
+
     }
 }
