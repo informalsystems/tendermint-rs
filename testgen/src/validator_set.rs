@@ -1,15 +1,12 @@
+use crate::{
+    helpers::*,
+    validator::{generate_validators, Validator},
+    Generator,
+};
 use gumdrop::Options;
 use serde::{Deserialize, Serialize};
 use simple_error::*;
-use crate::{
-    validator::{
-        Validator as Validator,
-        generate_validators,
-    },
-    Generator,
-    helpers::*
-};
-use tendermint::{validator};
+use tendermint::validator;
 
 #[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct ValidatorSet {
@@ -26,7 +23,7 @@ impl ValidatorSet {
             .iter()
             .map(|v| Validator::new(v))
             .collect::<Vec<Validator>>();
-        Self{
+        Self {
             validators: Some(validators),
         }
     }
@@ -52,9 +49,7 @@ impl Generator<validator::Set> for ValidatorSet {
 
     fn generate(&self) -> Result<validator::Set, SimpleError> {
         let vals = generate_validators(&self.validators.as_ref().unwrap())?;
-        Ok(
-            validator::Set::new_simple(vals)
-        )
+        Ok(validator::Set::new_simple(vals))
     }
 }
 
@@ -69,7 +64,7 @@ mod tests {
             Validator::new("a"),
             Validator::new("b"),
             Validator::new("c"),
-            ];
+        ];
         let valset2 = validator::Set::new_simple(generate_validators(&vals1).unwrap());
 
         assert_eq!(valset1.hash(), valset2.hash());
@@ -90,5 +85,4 @@ mod tests {
         let valset5 = validator::Set::new_simple(generate_validators(&vals2).unwrap());
         assert_ne!(valset2.hash(), valset5.hash());
     }
-
 }
