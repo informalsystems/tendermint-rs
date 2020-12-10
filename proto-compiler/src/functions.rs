@@ -251,7 +251,7 @@ pub fn generate_tendermint_lib(prost_dir: &PathBuf, tendermint_lib_target: &Path
 
     // Add meta
     content = format!(
-        "{}\npub mod meta {{\n{}pub const REPOSITORY: &str = \"{}\";\n{}pub const COMMITISH: &str = \"{}\";\n}}",
+        "{}\npub mod meta {{\n{}pub const REPOSITORY: &str = \"{}\";\n{}pub const COMMITISH: &str = \"{}\";\n}}\n",
         content,
         tab,
         crate::constants::TENDERMINT_REPO,
