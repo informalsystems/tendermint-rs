@@ -19,6 +19,14 @@ pub trait Stream: Read + Write {
     fn close(&self) -> Result<(), Error>;
 }
 
+pub enum Direction<Conn>
+where
+    Conn: Connection,
+{
+    Incoming(Conn),
+    Outgoing(Conn),
+}
+
 pub trait Connection: Clone {
     type Stream: Stream;
 
@@ -39,8 +47,8 @@ pub trait Endpoint {
 
 pub trait Transport {
     type Connection: Connection;
-    type Endpoint: Endpoint<Connection = <Self as Transport>::Connection>;
-    type Incoming: Iterator<Item = Result<<Self as Transport>::Connection, Error>>;
+    type Endpoint: Endpoint<Connection = Direction<<Self as Transport>::Connection>>;
+    type Incoming: Iterator<Item = Result<Direction<<Self as Transport>::Connection>, Error>>;
 
     fn bind(&self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming), Error>;
     fn shutdown(&self) -> Result<(), Error>;
