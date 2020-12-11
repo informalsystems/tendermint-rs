@@ -1,3 +1,4 @@
+use std::io::{Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
 use crate::peer::{self, Peer};
@@ -14,8 +15,12 @@ pub struct BindInfo {
 #[derive(Debug, thiserror::Error)]
 pub enum Error {}
 
+pub trait Stream: Read + Write {
+    fn close(&self) -> Result<(), Error>;
+}
+
 pub trait Connection: Clone {
-    type Stream;
+    type Stream: Stream;
 
     fn advertised_addrs(&self) -> Vec<SocketAddr>;
     fn close(&self) -> Result<(), Error>;
@@ -73,6 +78,7 @@ where
     St: State,
     T: Transport,
 {
+    #[allow(clippy::new_ret_no_self)]
     fn new(transport: T) -> Protocol<T, Stopped> {
         Protocol {
             transport,

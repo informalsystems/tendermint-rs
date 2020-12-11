@@ -44,8 +44,8 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         // TODO(xla): This is the place where we read bytes from the underlying connection and
         // serialise them into `Message`s. If we can achieve that, that means no matter what
-        // connection is plugged we guarantee proper handling of wire protocol. In turn that means
-        // we assume the interface to be byte streams.
+        // connection is plugged we guarantee proper handling of the wire protocol. In turn that
+        // means we assume the interface to be byte streams.
         //
         // Assumption here is that a unified event/message stream is wanted. An alternative model
         // would be to have specialised streams where the messages are typed, similar to the idea
