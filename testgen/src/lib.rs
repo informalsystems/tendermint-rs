@@ -17,6 +17,7 @@ pub mod light_block;
 pub mod light_chain;
 pub mod time;
 pub mod validator;
+pub mod validator_set;
 pub mod vote;
 
 pub use commit::Commit;
@@ -26,6 +27,7 @@ pub use light_block::LightBlock;
 pub use light_chain::LightChain;
 pub use time::Time;
 pub use validator::Validator;
+pub use validator_set::ValidatorSet;
 pub use vote::Vote;
 
 /// Helpers for organizing and running the tests
