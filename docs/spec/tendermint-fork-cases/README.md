@@ -91,8 +91,6 @@ THEOREM AgreementOrFork ==
 
 # Model checking results   
 
-**TODO: re-run the whole set of experiments for the deliverable**
-
 Check the report on [model checking with Apalache](./results/001indinv-apalache-report.md).
 
 To run the model checking experiments, use the script:
