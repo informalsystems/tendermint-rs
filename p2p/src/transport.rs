@@ -24,6 +24,7 @@ pub trait Connection: Clone {
 
     fn advertised_addrs(&self) -> Vec<SocketAddr>;
     fn close(&self) -> Result<(), Error>;
+    fn local_addr(&self) -> SocketAddr;
     fn open(&self) -> Result<Self::Stream, Error>;
     fn peer_id(&self) -> PeerId;
     fn remote_addr(&self) -> SocketAddr;
