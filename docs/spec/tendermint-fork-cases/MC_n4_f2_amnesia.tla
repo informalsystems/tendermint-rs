@@ -15,7 +15,7 @@ VARIABLE
 \* old apalache annotations, fix with the new release
 a <: b == a  
 
-INSTANCE TendermintAccTrace3 WITH
+INSTANCE TendermintAccTrace_004_draft WITH
   Corr <- {"c1", "c2"},
   Faulty <- {"f3", "f4"},
   N <- 4,

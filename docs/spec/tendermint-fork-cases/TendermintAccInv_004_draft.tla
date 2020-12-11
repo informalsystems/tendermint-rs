@@ -1,4 +1,4 @@
-------------------------- MODULE TendermintAccInv3 ----------------------------
+------------------- MODULE TendermintAccInv_004_draft --------------------------
 (*
  An inductive invariant for TendermintAcc3, which capture the forked
  and non-forked cases.

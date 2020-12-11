@@ -6,7 +6,7 @@ VARIABLES
   round, step, decision, lockedValue, lockedRound, validValue, validRound,
   msgsPropose, msgsPrevote, msgsPrecommit, evidence, action
 
-INSTANCE TendermintAccDebug3 WITH
+INSTANCE TendermintAccDebug_004_draft WITH
   Corr <- {"c1"},
   Faulty <- {"f2", "f3", "f4"},
   N <- 4,

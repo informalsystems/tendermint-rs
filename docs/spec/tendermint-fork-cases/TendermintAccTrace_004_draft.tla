@@ -1,4 +1,4 @@
------------------------ MODULE TendermintAccTrace3 -----------------------------
+------------------ MODULE TendermintAccTrace_004_draft -------------------------
 (*
   When Apalache is running too slow and we have an idea of a counterexample,
   we use this module to restrict the behaviors only to certain actions.

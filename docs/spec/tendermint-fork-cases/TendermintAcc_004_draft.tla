@@ -1,4 +1,4 @@
------------------------------ MODULE TendermintAcc3 ---------------------------
+-------------------- MODULE TendermintAcc_004_draft ---------------------------
 (*
  A TLA+ specification of a simplified Tendermint consensus, tuned for
  fork accountability. The simplifications are as follows:

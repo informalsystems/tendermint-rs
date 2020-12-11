@@ -1,4 +1,4 @@
------------------------ MODULE TendermintAccDebug3 -----------------------------
+------------------ MODULE TendermintAccDebug_004_draft -------------------------
 (*
  A few definitions that we use for debugging TendermintAcc3, which do not belong
  to the specification itself.

@@ -32,24 +32,28 @@
 
 # TLA+ modules
  
- - [TendermintAcc3](TendermintAcc3.tla) is the protocol specification,
+ - [TendermintAcc_004_draft](TendermintAcc_004_draft.tla) is the protocol
+   specification,
 
- - [TendermintAccInv3](TendermintAccInv3.tla) contains an inductive invariant
-   for establishing the protocol safety as well as the forking cases,
+ - [TendermintAccInv_004_draft](TendermintAccInv_004_draft.tla) contains an
+   inductive invariant for establishing the protocol safety as well as the
+   forking cases,
 
  - `MC_n<n>_f<f>`, e.g., [MC_n4_f1](MC_n4_f1.tla), contains fixed constants
    for model checking with Apalache,
 
- - [TendermintAccTrace3](TendermintAccTrace3.tla) shows how to restrict the execution
-   space to a fixed sequence of actions (e.g., to instantiate a counterexample),
+ - [TendermintAccTrace_004_draft](TendermintAccTrace_004_draft.tla) shows how
+   to restrict the execution space to a fixed sequence of actions (e.g., to
+   instantiate a counterexample),
 
- - [TendermintAccDebug3](TendermintAccDebug3.tla) contains the useful definitions
-   for debugging the protocol specification with TLC and Apalache.
+ - [TendermintAccDebug_004_draft](TendermintAccDebug_004_draft.tla) contains
+   the useful definitions for debugging the protocol specification with TLC and
+   Apalache.
 
 # Reasoning about fork scenarios
 
 The theorem statements can be found in
-[TendermintAccInv3.tla](TendermintAccInv3.tla).
+[TendermintAccInv_004_draft.tla](TendermintAccInv_004_draft.tla).
 
 First, we would like to show that `TypedInv` is an inductive invariant.
 Formally, the statement looks as follows:
@@ -82,7 +86,7 @@ Third, in the general case, we either have no fork, or two fork scenarios:
 
 ```tla
 THEOREM AgreementOrFork ==
-    ~FaultyQuorum /\ TypedInv => AgreementOrEquivocationOrAmnesia
+    ~FaultyQuorum /\ TypedInv => Accountability
 ```
 
 # Model checking results   
@@ -91,17 +95,13 @@ THEOREM AgreementOrFork ==
 
 Check the report on [model checking with Apalache](./results/001indinv-apalache-report.md).
 
-# Running the experiments
-
-Run the experiments by using the script:
+To run the model checking experiments, use the script:
 
 ```console
 ./run.sh
 ```
 
-This script assumes that apalache builds are available in:
-
- * `~/devl/apalache-card` contains the build for the branch `ik/card`,
- * `~/devl/apalache-unstable` contains the build for branch `unstable`.
+This script assumes that the apalache build is available in
+`~/devl/apalache-unstable`.
 
 
