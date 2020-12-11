@@ -8,7 +8,7 @@
  Igor Konnov, 2020.
  *)
 
-EXTENDS TendermintAccInv3
+EXTENDS TendermintAccInv_004_draft
 
 \* make them parameters?
 NFaultyProposals == 0   \* the number of injected faulty PROPOSE messages

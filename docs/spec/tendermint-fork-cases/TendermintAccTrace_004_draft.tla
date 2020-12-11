@@ -9,7 +9,7 @@
   Igor Konnov, 2020.
  *)
 
-EXTENDS Sequences, Apalache, TendermintAcc3
+EXTENDS Sequences, Apalache, TendermintAcc_004_draft
 
 \* a sequence of action names that should appear in the given order,
 \* excluding "Init"

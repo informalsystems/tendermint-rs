@@ -9,7 +9,7 @@
  Igor Konnov, 2020.
  *)
 
-EXTENDS TendermintAcc3
+EXTENDS TendermintAcc_004_draft
   
 (************************** TYPE INVARIANT ***********************************)
 (* first, we define the sets of all potential messages *)
