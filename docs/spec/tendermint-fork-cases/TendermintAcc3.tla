@@ -366,7 +366,7 @@ Next ==
     \* the actions below are not essential for safety, but added for completeness
     \/ OnTimeoutPropose(p)
     \/ OnQuorumOfNilPrevotes(p)
-    \/ OnRoundCatchup(p) 
+    \/ OnRoundCatchup(p)
 
   
 (**************************** FORK SCENARIOS  ***************************)
@@ -409,26 +409,20 @@ Agreement ==
 \* the protocol validity
 Validity ==
     \A p \in Corr: decision[p] \in ValidValues \union {NilValue}
- 
-\* either agreement holds, or the faulty processes indeed demonstrate amnesia
-AgreementOrAmnesia ==
-    Agreement \/ (\A p \in Faulty: AmnesiaBy(p))
- 
-\* the strong agreement property that also assumes no amnesia
-AgreementNoAmnesia ==
-    Agreement /\ \A p \in Faulty: ~AmnesiaBy(p)
 
 (*
   The protocol safety. Two cases are possible:
      1. There is no fork, that is, Agreement holds true.
      2. A subset of faulty processes demonstrates equivocation or amnesia.
  *)
-AgreementOrEquivocationOrAmnesia ==
+Accountability ==
     \/ Agreement
     \/ \E Detectable \in SUBSET Faulty:
-        /\ Cardinality(Detectable) = THRESHOLD1
+        /\ Cardinality(Detectable) >= THRESHOLD1
         /\ \A p \in Detectable:
             EquivocationBy(p) \/ AmnesiaBy(p)
+
+(****************** FALSE INVARIANTS TO PRODUCE EXAMPLES ***********************)
  
 \* This property is violated. You can check it to see how amnesic behavior
 \* appears in the evidence variable.
@@ -447,13 +441,19 @@ NoAgreement ==
     (p /= q /\ decision[p] /= NilValue /\ decision[q] /= NilValue)
         => decision[p] /= decision[q]
  
-\* We expect this property to be violated. However, the absence of amnesia
+\* Either agreement holds, or the faulty processes indeed demonstrate amnesia.
+\* This property is violated. A counterexample should demonstrate equivocation.
+AgreementOrAmnesia ==
+    Agreement \/ (\A p \in Faulty: AmnesiaBy(p))
+ 
+\* We expect this property to be violated. It shows us a protocol run,
+\* where one faulty process demonstrates amnesia without equivocation.
+\* However, the absence of amnesia
 \* is a tough constraint for Apalache. It has not reported a counterexample
 \* for n=4,f=2, length <= 5.
-NoAmnesiaButAgreementOrEquivocation ==
-    \/ Agreement
-    \/ \A p \in Faulty: EquivocationBy(p)
-    \/ \A p \in Faulty: ~AmnesiaBy(p)
+ShowMeAmnesiaWithoutEquivocation ==
+    (~Agreement /\ \E p \in Faulty: ~EquivocationBy(p))
+        => \A p \in Faulty: ~AmnesiaBy(p)
 
 \* This property is violated on n=4,f=2, length=4 in less than 10 min.
 \* Two faulty processes may demonstrate amnesia without equivocation.

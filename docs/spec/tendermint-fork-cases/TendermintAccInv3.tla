@@ -184,15 +184,23 @@ AllIfSentPrevoteThenReceivedProposalOrTwoThirds ==
 IfSentPrecommitThenReceivedTwoThirds ==
   \A r \in Rounds:
     \A mpc \in msgsPrecommit[r]:
-      \/ mpc.src \in Faulty
-      \/ /\ mpc.src \in Corr
-         /\ \/ /\ mpc.id \in ValidValues
-             /\ LET PV ==
+      mpc.src \in Corr =>
+         \/ /\ mpc.id \in ValidValues
+            /\ LET PV ==
                    { m \in msgsPrevote[r] \intersect evidence: m.id = mpc.id }
                IN
                Cardinality(PV) >= THRESHOLD2
-            \/ /\ mpc.id = NilValue
-               /\ Cardinality(msgsPrevote[r]) >= THRESHOLD2
+         \/ /\ mpc.id = NilValue
+            /\ Cardinality(msgsPrevote[r]) >= THRESHOLD2
+
+\* if a correct process has sent a precommit message in a round, it should
+\* have sent a prevote
+IfSentPrecommitThenSentPrevote ==
+  \A r \in Rounds:
+    \A mpc \in msgsPrecommit[r]:
+      mpc.src \in Corr =>
+        \E m \in msgsPrevote[r]:
+          m.src = mpc.src
 
 \* there is a locked round if a only if there is a locked value
 LockedRoundIffLockedValue(p) ==
@@ -216,13 +224,13 @@ AllIfLockedRoundThenSentCommit ==
 \* a process always locks the latest round, for which it has sent a PRECOMMIT
 LatestPrecommitHasLockedRound(p) ==
   LET pPrecommits ==
-    {mm \in evidence: mm.src = p /\ mm.type = "PRECOMMIT"}
+    {mm \in UNION { msgsPrecommit[r]: r \in Rounds }: mm.src = p /\ mm.id /= NilValue }
   IN
   pPrecommits /= {} <: {MT}
     => LET latest ==
          CHOOSE m \in pPrecommits:
            \A m2 \in pPrecommits:
-             m2.round < m.round
+             m2.round <= m.round
        IN
        /\ lockedRound[p] = latest.round
        /\ lockedValue[p] = latest.id
@@ -264,12 +272,12 @@ Senders(M) == { m.src: m \in M }
 PrecommitsLockValue ==
   \A r \in Rounds:
     \A v \in ValidValues \union {NilValue}:
-      \/ LET Precommits ==  {m \in msgsPrecommit[r] \intersect evidence: m.id = v}
+      \/ LET Precommits ==  {m \in msgsPrecommit[r]: m.id = v}
         IN
         Cardinality(Senders(Precommits)) < THRESHOLD1
       \/ \A fr \in { rr \in Rounds: rr > r }:  \* future rounds
           \A w \in (ValuesOrNil) \ {v}:
-            LET Prevotes == {m \in msgsPrevote[fr] \intersect evidence: m.id = w}
+            LET Prevotes == {m \in msgsPrevote[fr]: m.id = w}
             IN
             Cardinality(Senders(Prevotes)) < THRESHOLD2
     
@@ -286,6 +294,7 @@ Inv ==
     /\ AllIfLockedRoundThenSentCommit
     /\ AllLatestPrecommitHasLockedRound
     /\ AllIfSentPrevoteThenReceivedProposalOrTwoThirds
+    /\ IfSentPrecommitThenSentPrevote
     /\ IfSentPrecommitThenReceivedTwoThirds
     /\ AllNoEquivocationByCorrect
     /\ PrecommitsLockValue
@@ -355,7 +364,7 @@ THEOREM AgreementWhenLessThanThirdFaulty ==
  equivocation by Faulty, or amnesia by Faulty.
  *)
 THEOREM AgreementOrFork ==
-    ~FaultyQuorum /\ TypedInv => AgreementOrEquivocationOrAmnesia
+    ~FaultyQuorum /\ TypedInv => Accountability
 
 =============================================================================    
  
