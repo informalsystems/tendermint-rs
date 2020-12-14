@@ -1,4 +1,4 @@
-------------------------- MODULE TendermintAccInv3 ----------------------------
+------------------- MODULE TendermintAccInv_004_draft --------------------------
 (*
  An inductive invariant for TendermintAcc3, which capture the forked
  and non-forked cases.
@@ -9,28 +9,28 @@
  Igor Konnov, 2020.
  *)
 
-EXTENDS TendermintAcc3
+EXTENDS TendermintAcc_004_draft
   
 (************************** TYPE INVARIANT ***********************************)
 (* first, we define the sets of all potential messages *)
 AllProposals == 
-  [type: {"PROPOSAL"},
-   src: AllProcs,
-   round: Rounds,
-   proposal: ValuesOrNil,
-   validRound: RoundsOrNil] <: {MT}
+  SetOfMsgs([type: {"PROPOSAL"},
+             src: AllProcs,
+             round: Rounds,
+             proposal: ValuesOrNil,
+             validRound: RoundsOrNil])
   
 AllPrevotes ==
-  [type: {"PREVOTE"},
-   src: AllProcs,
-   round: Rounds,
-   id: ValuesOrNil] <: {MT}
+  SetOfMsgs([type: {"PREVOTE"},
+             src: AllProcs,
+             round: Rounds,
+             id: ValuesOrNil])
 
 AllPrecommits ==
-  [type: {"PRECOMMIT"},
-   src: AllProcs,
-   round: Rounds,
-   id: ValuesOrNil] <: {MT}
+  SetOfMsgs([type: {"PRECOMMIT"},
+             src: AllProcs,
+             round: Rounds,
+             id: ValuesOrNil])
 
 (* the standard type invariant -- importantly, it is inductive *)
 TypeOK ==
@@ -48,8 +48,31 @@ TypeOK ==
     /\ msgsPrecommit \in [Rounds -> SUBSET AllPrecommits]
     /\ BenignRoundsInMessages(msgsPrecommit)
     /\ evidence \in SUBSET (AllProposals \union AllPrevotes \union AllPrecommits)
+    /\ action \in {
+        "Init",
+        "InsertProposal",
+        "UponProposalInPropose",
+        "UponProposalInProposeAndPrevote",
+        "UponQuorumOfPrevotesAny",
+        "UponProposalInPrevoteOrCommitAndPrevote",
+        "UponQuorumOfPrecommitsAny",
+        "UponProposalInPrecommitNoDecision",
+        "OnTimeoutPropose",
+        "OnQuorumOfNilPrevotes",
+        "OnRoundCatchup"
+     }
 
 (************************** INDUCTIVE INVARIANT *******************************)
+EvidenceContainsMessages ==
+    \* evidence contains only the messages from:
+    \* msgsPropose, msgsPrevote, and msgsPrecommit
+  \A m \in evidence:
+    LET r == m.round
+        t == m.type
+    IN
+    CASE t = "PROPOSAL" -> m \in msgsPropose[r]
+      [] t = "PREVOTE" -> m \in msgsPrevote[r]
+      [] OTHER -> m \in msgsPrecommit[r]
 
 NoFutureMessagesForLargerRounds(p) ==
   \* a correct process does not send messages for the future rounds
@@ -63,9 +86,9 @@ NoFutureMessagesForCurrentRound(p) ==
   LET r == round[p] IN
     /\ Proposer[r] = p \/ \A m \in msgsPropose[r]: m.src /= p
     /\ \/ step[p] \in {"PREVOTE", "PRECOMMIT", "DECIDED"}
-       \/ \A m \in msgsPrevote[r]: m.src /= p
+      \/ \A m \in msgsPrevote[r]: m.src /= p
     /\ \/ step[p] \in {"PRECOMMIT", "DECIDED"}
-       \/ \A m \in msgsPrecommit[r]: m.src /= p
+      \/ \A m \in msgsPrecommit[r]: m.src /= p
           
 \* the correct processes never send future messages
 AllNoFutureMessagesSent ==
@@ -104,23 +127,27 @@ AllIfInDecidedThenValidDecision ==
 IfInDecidedThenReceivedProposal(p) ==
   step[p] = "DECIDED" =>
     \E r \in Rounds: \* r is not necessarily round[p]
-      /\ \E m \in msgsPropose[r]:
+      /\ \E m \in msgsPropose[r] \intersect evidence:
           /\ m.src = Proposer[r]
           /\ m.proposal = decision[p]
           \* not inductive: /\ m.src \in Corr => (m.validRound <= r)
           
 AllIfInDecidedThenReceivedProposal ==
-  \A p \in Corr: IfInDecidedThenReceivedProposal(p)          
+  \A p \in Corr:
+    IfInDecidedThenReceivedProposal(p)          
 
 \* a decided process has received two-thirds of precommit messages
 IfInDecidedThenReceivedTwoThirds(p) ==
   step[p] = "DECIDED" =>
     \E r \in Rounds:
-      LET PV == { m \in msgsPrecommit[r]: m.id = decision[p] } IN
-        Cardinality(PV) >= THRESHOLD2
+      LET PV ==
+        { m \in msgsPrecommit[r] \intersect evidence: m.id = decision[p] }
+      IN
+      Cardinality(PV) >= THRESHOLD2
         
 AllIfInDecidedThenReceivedTwoThirds ==
-  \A p \in Corr: IfInDecidedThenReceivedTwoThirds(p)        
+  \A p \in Corr:
+    IfInDecidedThenReceivedTwoThirds(p)        
 
 \* for a round r, there is proposal by the round proposer for a valid round vr
 ProposalInRound(r, proposedVal, vr) ==
@@ -130,7 +157,7 @@ ProposalInRound(r, proposedVal, vr) ==
     /\ m.validRound = vr
 
 TwoThirdsPrevotes(vr, v) ==
-  LET PV == { mm \in msgsPrevote[vr]: mm.id = v } IN
+  LET PV == { mm \in msgsPrevote[vr] \intersect evidence: mm.id = v } IN
   Cardinality(PV) >= THRESHOLD2
 
 \* if a process sends a PREVOTE, then there are three possibilities:
@@ -157,22 +184,33 @@ AllIfSentPrevoteThenReceivedProposalOrTwoThirds ==
 IfSentPrecommitThenReceivedTwoThirds ==
   \A r \in Rounds:
     \A mpc \in msgsPrecommit[r]:
-      \/ mpc.src \in Faulty
-      \/ /\ mpc.src \in Corr
-         /\ \/ /\ mpc.id \in ValidValues
-               /\ LET PV == { m \in msgsPrevote[r]: m.id = mpc.id } IN
-                  Cardinality(PV) >= THRESHOLD2
-            \/ /\ mpc.id = NilValue
-               /\ Cardinality(msgsPrevote[r]) >= THRESHOLD2
+      mpc.src \in Corr =>
+         \/ /\ mpc.id \in ValidValues
+            /\ LET PV ==
+                   { m \in msgsPrevote[r] \intersect evidence: m.id = mpc.id }
+               IN
+               Cardinality(PV) >= THRESHOLD2
+         \/ /\ mpc.id = NilValue
+            /\ Cardinality(msgsPrevote[r]) >= THRESHOLD2
+
+\* if a correct process has sent a precommit message in a round, it should
+\* have sent a prevote
+IfSentPrecommitThenSentPrevote ==
+  \A r \in Rounds:
+    \A mpc \in msgsPrecommit[r]:
+      mpc.src \in Corr =>
+        \E m \in msgsPrevote[r]:
+          m.src = mpc.src
 
 \* there is a locked round if a only if there is a locked value
 LockedRoundIffLockedValue(p) ==
   (lockedRound[p] = NilRound) <=> (lockedValue[p] = NilValue)
   
 AllLockedRoundIffLockedValue ==
-  \A p \in Corr: LockedRoundIffLockedValue(p)
+  \A p \in Corr:
+    LockedRoundIffLockedValue(p)
             
-\* when a process locked a round, it should have seen a precommit on a locked value
+\* when a process locked a round, it must have sent a precommit on the locked value.
 IfLockedRoundThenSentCommit(p) ==
   lockedRound[p] /= NilRound
     => \E r \in { rr \in Rounds: rr <= round[p] }:
@@ -180,16 +218,19 @@ IfLockedRoundThenSentCommit(p) ==
          m.src = p /\ m.id = lockedValue[p]
          
 AllIfLockedRoundThenSentCommit ==
-  \A p \in Corr: IfLockedRoundThenSentCommit(p)
+  \A p \in Corr:
+    IfLockedRoundThenSentCommit(p)
          
 \* a process always locks the latest round, for which it has sent a PRECOMMIT
 LatestPrecommitHasLockedRound(p) ==
-  LET pPrecommits == {mm \in UNION { msgsPrecommit[r]: r \in Rounds }: mm.src = p } IN
+  LET pPrecommits ==
+    {mm \in UNION { msgsPrecommit[r]: r \in Rounds }: mm.src = p /\ mm.id /= NilValue }
+  IN
   pPrecommits /= {} <: {MT}
     => LET latest ==
          CHOOSE m \in pPrecommits:
            \A m2 \in pPrecommits:
-             m2.round < m.round
+             m2.round <= m.round
        IN
        /\ lockedRound[p] = latest.round
        /\ lockedValue[p] = latest.id
@@ -231,13 +272,18 @@ Senders(M) == { m.src: m \in M }
 PrecommitsLockValue ==
   \A r \in Rounds:
     \A v \in ValidValues \union {NilValue}:
-      \/ Cardinality(Senders({m \in msgsPrecommit[r]: m.id = v})) < THRESHOLD1
+      \/ LET Precommits ==  {m \in msgsPrecommit[r]: m.id = v}
+        IN
+        Cardinality(Senders(Precommits)) < THRESHOLD1
       \/ \A fr \in { rr \in Rounds: rr > r }:  \* future rounds
-           \A w \in (ValuesOrNil) \ {v}:
-            Cardinality(Senders({m \in msgsPrevote[fr]: m.id = w})) < THRESHOLD2
+          \A w \in (ValuesOrNil) \ {v}:
+            LET Prevotes == {m \in msgsPrevote[fr]: m.id = w}
+            IN
+            Cardinality(Senders(Prevotes)) < THRESHOLD2
     
 \* a combination of all lemmas
 Inv ==
+    /\ EvidenceContainsMessages
     /\ AllNoFutureMessagesSent
     /\ AllIfInPrevoteThenSentPrevote
     /\ AllIfInPrecommitThenSentPrecommit
@@ -248,6 +294,7 @@ Inv ==
     /\ AllIfLockedRoundThenSentCommit
     /\ AllLatestPrecommitHasLockedRound
     /\ AllIfSentPrevoteThenReceivedProposalOrTwoThirds
+    /\ IfSentPrecommitThenSentPrevote
     /\ IfSentPrecommitThenReceivedTwoThirds
     /\ AllNoEquivocationByCorrect
     /\ PrecommitsLockValue
@@ -313,11 +360,11 @@ THEOREM AgreementWhenLessThanThirdFaulty ==
 
 (*
  In a more general case, when there are less than 2/3 faulty processes,
- there is either no fork, or two scenarios exist:
- equivocation by Amnesic, or amnesia by Amnesic.
+ there is either Agreement (no fork), or two scenarios exist:
+ equivocation by Faulty, or amnesia by Faulty.
  *)
 THEOREM AgreementOrFork ==
-    ~FaultyQuorum /\ TypedInv => AgreementOrEquivocationOrAmnesia
+    ~FaultyQuorum /\ TypedInv => Accountability
 
 =============================================================================    
  

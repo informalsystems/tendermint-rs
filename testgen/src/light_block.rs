@@ -82,7 +82,10 @@ impl LightBlock {
     );
 
     pub fn new_default(height: u64) -> Self {
-        let validators = [Validator::new("1"), Validator::new("2")];
+        let validators = [
+            Validator::new("1").voting_power(50),
+            Validator::new("2").voting_power(50),
+        ];
         let header = Header::new(&validators)
             .height(height)
             .chain_id("test-chain")
@@ -173,17 +176,17 @@ impl Generator<TMLightBlock> for LightBlock {
             generate_signed_header(header, commit).expect("Could not generate signed header");
 
         let validators = match &self.validators {
-            None => validator::Set::new_simple(generate_validators(
+            None => validator::Set::without_proposer(generate_validators(
                 header
                     .validators
                     .as_ref()
                     .expect("missing validators in header"),
             )?),
-            Some(vals) => validator::Set::new_simple(generate_validators(vals)?),
+            Some(vals) => validator::Set::without_proposer(generate_validators(vals)?),
         };
 
         let next_validators = match &self.next_validators {
-            Some(next_vals) => validator::Set::new_simple(generate_validators(next_vals)?),
+            Some(next_vals) => validator::Set::without_proposer(generate_validators(next_vals)?),
             None => validators.clone(),
         };
 

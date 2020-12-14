@@ -10,6 +10,7 @@
   key/value pairs decoded from base64, where previously tag key/value pairs
   were Base64-encoded ([#717])
 - `[tendermint]` (Since v0.17.0-rc3) Bech32 encoding fix ([#690])
+- `[tendermint, light-client]` Specify the proposer in the validator set of fetched light blocks ([#705])
 - `[tendermint-proto]` (Since v0.17.0-rc3) Upgrade protobuf definitions to Tendermint Go v0.34.0 ([#737])
 
 [#425]: https://github.com/informalsystems/tendermint-rs/issues/425
@@ -17,6 +18,7 @@
 [#690]: https://github.com/informalsystems/tendermint-rs/issues/690
 [#701]: https://github.com/informalsystems/tendermint-rs/pull/701
 [#717]: https://github.com/informalsystems/tendermint-rs/issues/717
+[#705]: https://github.com/informalsystems/tendermint-rs/issues/705
 [#737]: https://github.com/informalsystems/tendermint-rs/pull/737
 
 ## v0.17.0-rc3
