@@ -199,6 +199,8 @@ impl AsRef<[Evidence]> for Data {
 
 /// Evidence collection parameters
 #[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
+// Todo: This struct is ready to be converted through tendermint_proto::types::EvidenceParams.
+// https://github.com/informalsystems/tendermint-rs/issues/741
 pub struct Params {
     /// Maximum allowed age for evidence to be collected
     #[serde(with = "serializers::from_str")]
@@ -208,7 +210,7 @@ pub struct Params {
     pub max_age_duration: Duration,
 
     /// Max bytes
-    #[serde(default)]
+    #[serde(with = "serializers::from_str", default)]
     pub max_bytes: i64,
 }
 
@@ -247,6 +249,7 @@ impl From<Params> for RawEvidenceParams {
 /// essentially, to keep the usages look cleaner
 /// i.e. you can avoid using serde annotations everywhere
 /// Todo: harmonize google::protobuf::Duration, std::time::Duration and this. Too many structs.
+/// https://github.com/informalsystems/tendermint-rs/issues/741
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct Duration(#[serde(with = "serializers::time_duration")] pub std::time::Duration);
 
