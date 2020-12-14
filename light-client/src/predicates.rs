@@ -330,159 +330,140 @@ mod tests {
 
     #[test]
     fn test_is_monotonic_bft_time() {
-    let val = vec![Validator::new("val-1")];
-    let header_one = Header::new(&val)
-        .generate();
-    let header_two = Header::new(&val)
-        .generate();
+        let val = vec![Validator::new("val-1")];
+        let header_one = Header::new(&val)
+            .generate()
+            .unwrap();
+        let header_two = Header::new(&val)
+            .generate()
+            .unwrap();
 
-    match (header_one, header_two) {
-        (Ok(header_one), Ok(header_two)) => {
-            let vp = ProdPredicates::default();
+        let vp = ProdPredicates::default();
 
-            // 1. ensure valid header verifies
-            let result_ok = vp.is_monotonic_bft_time(
-                &header_two,
-                &header_one);
-            assert!(result_ok.is_ok());
+        // 1. ensure valid header verifies
+        let result_ok = vp.is_monotonic_bft_time(
+            &header_two,
+            &header_one);
+        assert!(result_ok.is_ok());
 
-            // 2. ensure header with non-monotonic bft time fails
-            let result_err = vp.is_monotonic_bft_time(
-                &header_one,
-                &header_two);
-            assert!(result_err.is_err());
+        // 2. ensure header with non-monotonic bft time fails
+        let result_err = vp.is_monotonic_bft_time(
+            &header_one,
+            &header_two);
+        assert!(result_err.is_err());
 
-            // 3. expect to error with: VerificationError::NonMonotonicBftTime
-            let error = VerificationError::NonMonotonicBftTime {
-                header_bft_time: header_one.time,
-                trusted_header_bft_time: header_two.time,
-            };
-            assert_eq!(result_err.err().unwrap(), error);
-
-        }
-        _ => println!("Error in generating header")
-    }
-
+        // 3. expect to error with: VerificationError::NonMonotonicBftTime
+        let error = VerificationError::NonMonotonicBftTime {
+            header_bft_time: header_one.time,
+            trusted_header_bft_time: header_two.time,
+        };
+        assert_eq!(result_err.err().unwrap(), error);
 }
 
     #[test]
     fn test_is_monotonic_height() {
         let val = vec![Validator::new("val-1")];
         let header_one = Header::new(&val)
-            .generate();
+            .generate()
+            .unwrap();
         let header_two = Header::new(&val)
             .height(2)
-            .generate();
+            .generate()
+            .unwrap();
 
-        match (header_one, header_two) {
-            (Ok(header_one), Ok(header_two)) => {
-                let vp = ProdPredicates::default();
+        let vp = ProdPredicates::default();
 
-                // 1. ensure valid header verifies
-                let result_ok = vp.is_monotonic_height(
-                    &header_two,
-                    &header_one);
-                assert!(result_ok.is_ok());
+        // 1. ensure valid header verifies
+        let result_ok = vp.is_monotonic_height(
+            &header_two,
+            &header_one);
+        assert!(result_ok.is_ok());
 
-                // 2. ensure header with non-monotonic height fails
-                let result_err = vp.is_monotonic_height(
-                    &header_one,
-                    &header_two);
-                assert!(result_err.is_err());
+        // 2. ensure header with non-monotonic height fails
+        let result_err = vp.is_monotonic_height(
+            &header_one,
+            &header_two);
+        assert!(result_err.is_err());
 
-                // 3. expect to error with: VerificationError::NonMonotonicBftTime
-                let error = VerificationError::NonIncreasingHeight {
-                    got: header_one.height,
-                    expected: header_two.height.increment(),
-                };
-                assert_eq!(result_err.err().unwrap(), error);
-
-            }
-            _ => println!("Error in generating header")
-        }
-
+        // 3. expect to error with: VerificationError::NonMonotonicBftTime
+        let error = VerificationError::NonIncreasingHeight {
+            got: header_one.height,
+            expected: header_two.height.increment(),
+        };
+        assert_eq!(result_err.err().unwrap(), error);
     }
 
     #[test]
     fn test_is_within_trust_period() {
         let val = Validator::new("val-1");
-        let header = Header::new(&[val]).generate();
+        let header = Header::new(&[val])
+            .generate()
+            .unwrap();
 
-        match header {
-            Ok(header) => {
-                let vp = ProdPredicates::default();
+        let vp = ProdPredicates::default();
 
-                // 1. ensure valid header verifies
-                let mut trusting_period = Duration::new(1000,0);
-                let now = Time::now();
+        // 1. ensure valid header verifies
+        let mut trusting_period = Duration::new(1000,0);
+        let now = Time::now();
 
-                let result_ok = vp.is_within_trust_period(
-                    &header.clone(),
-                    trusting_period,
-                    now
-                );
-                assert!(result_ok.is_ok());
+        let result_ok = vp.is_within_trust_period(
+            &header.clone(),
+            trusting_period,
+            now
+        );
+        assert!(result_ok.is_ok());
 
-                // 2. ensure header outside trusting period fails
-                trusting_period = Duration::new(0,1);
+        // 2. ensure header outside trusting period fails
+        trusting_period = Duration::new(0,1);
 
-                let result_err = vp.is_within_trust_period(
-                    &header,
-                    trusting_period,
-                    now,
-                );
-                assert!(result_err.is_err());
+        let result_err = vp.is_within_trust_period(
+            &header,
+            trusting_period,
+            now,
+        );
+        assert!(result_err.is_err());
 
-                // 3. ensure it fails with: VerificationError::NotWithinTrustPeriod
-                let expires_at = header.time + trusting_period;
-                let error = VerificationError::NotWithinTrustPeriod { expires_at, now };
-                assert_eq!(result_err.err().unwrap(), error);
-
-            }
-            Err(e) => println!("Error in generating header: {}", e)
-        }
-
+        // 3. ensure it fails with: VerificationError::NotWithinTrustPeriod
+        let expires_at = header.time + trusting_period;
+        let error = VerificationError::NotWithinTrustPeriod { expires_at, now };
+        assert_eq!(result_err.err().unwrap(), error);
     }
 
     #[test]
     fn test_is_header_from_past() {
         let val = Validator::new("val-1");
-        let header = Header::new(&[val]).generate();
+        let header = Header::new(&[val])
+            .generate()
+            .unwrap();
 
-        match header {
-            Ok(header) => {
-                let vp = ProdPredicates::default();
-                let one_second = Duration::new(1,0);
+        let vp = ProdPredicates::default();
+        let one_second = Duration::new(1,0);
 
-                // 1. ensure valid header verifies
-                let result_ok = vp.is_header_from_past(
-                    &header,
-                    one_second,
-                    Time::now());
+        // 1. ensure valid header verifies
+        let result_ok = vp.is_header_from_past(
+            &header,
+            one_second,
+            Time::now());
 
-                assert!(result_ok.is_ok());
+        assert!(result_ok.is_ok());
 
-                // 2. ensure it fails if header is from a future time
-                let now = Time::now().sub(one_second * 15);
-                let result_err = vp.is_header_from_past(
-                    &header,
-                    one_second,
-                    now,
-                );
+        // 2. ensure it fails if header is from a future time
+        let now = Time::now().sub(one_second * 15);
+        let result_err = vp.is_header_from_past(
+            &header,
+            one_second,
+            now,
+        );
 
-                assert!(result_err.is_err());
+        assert!(result_err.is_err());
 
-                // 3. ensure it fails with: VerificationError::HeaderFromTheFuture
-                let error = VerificationError::HeaderFromTheFuture {
-                    header_time: header.time,
-                    now,
-                };
+        // 3. ensure it fails with: VerificationError::HeaderFromTheFuture
+        let error = VerificationError::HeaderFromTheFuture {
+            header_time: header.time,
+            now,
+        };
 
-                assert_eq!(result_err.err().unwrap(), error);
-
-            }
-            Err(e) => println!("Error in generating header: {}", e)
-        }
+        assert_eq!(result_err.err().unwrap(), error);
     }
 
     #[test]
@@ -561,34 +542,34 @@ mod tests {
             .unwrap()
             .signed_header;
 
-                let vp = ProdPredicates::default();
-                let hasher = ProdHasher::default();
+        let vp = ProdPredicates::default();
+        let hasher = ProdHasher::default();
 
-                // 1. ensure valid signed header verifies
-                let result_ok = vp.header_matches_commit(
-                    &signed_header,
-                    &hasher
-                );
+        // 1. ensure valid signed header verifies
+        let result_ok = vp.header_matches_commit(
+            &signed_header,
+            &hasher
+        );
 
-                assert!(result_ok.is_ok());
+        assert!(result_ok.is_ok());
 
-                // 2. ensure invalid signed header fails
-                signed_header.commit.block_id.hash = "15F15EF50BDE2018F4B129A827F90C18222C757770C8295EB8EE7BF50E761BC0".parse().unwrap();
-                let result_err = vp.header_matches_commit(
-                    &signed_header,
-                    &hasher
-                );
+        // 2. ensure invalid signed header fails
+        signed_header.commit.block_id.hash = "15F15EF50BDE2018F4B129A827F90C18222C757770C8295EB8EE7BF50E761BC0".parse().unwrap();
+        let result_err = vp.header_matches_commit(
+            &signed_header,
+            &hasher
+        );
 
-                assert!(result_err.is_err());
+        assert!(result_err.is_err());
 
-                // 3. ensure it fails with: VerificationError::InvalidCommitValue
-                let header_hash = hasher.hash_header(&signed_header.header);
-                let error = VerificationError::InvalidCommitValue {
-                    header_hash,
-                    commit_hash: signed_header.commit.block_id.hash,
-                };
+        // 3. ensure it fails with: VerificationError::InvalidCommitValue
+        let header_hash = hasher.hash_header(&signed_header.header);
+        let error = VerificationError::InvalidCommitValue {
+            header_hash,
+            commit_hash: signed_header.commit.block_id.hash,
+        };
 
-                assert_eq!(result_err.err().unwrap(), error);
+        assert_eq!(result_err.err().unwrap(), error);
     }
 
     #[test]
@@ -601,98 +582,98 @@ mod tests {
         let mut signed_header = light_block.signed_header;
         let val_set = light_block.validators;
 
-                let vp = ProdPredicates::default();
-                let hasher = ProdHasher::default();
-                let commit_validator = ProdCommitValidator::new(hasher);
+        let vp = ProdPredicates::default();
+        let hasher = ProdHasher::default();
+        let commit_validator = ProdCommitValidator::new(hasher);
 
-                // Test scenarios -->
-                // 1. valid commit - must result "Ok"
-                let mut result_ok = vp.valid_commit(
-                    &signed_header,
-                    &val_set,
-                    &commit_validator
-                );
+        // Test scenarios -->
+        // 1. valid commit - must result "Ok"
+        let mut result_ok = vp.valid_commit(
+            &signed_header,
+            &val_set,
+            &commit_validator
+        );
 
-                assert!(result_ok.is_ok());
+        assert!(result_ok.is_ok());
 
-                // 2. no commit signatures - must return error
-                let signatures = signed_header.commit.signatures.clone();
-                signed_header.commit.signatures = vec![];
+        // 2. no commit signatures - must return error
+        let signatures = signed_header.commit.signatures.clone();
+        signed_header.commit.signatures = vec![];
 
-                let mut result_err = vp.valid_commit(
-                    &signed_header,
-                    &val_set,
-                    &commit_validator
-                );
-                assert!(result_err.is_err());
+        let mut result_err = vp.valid_commit(
+            &signed_header,
+            &val_set,
+            &commit_validator
+        );
+        assert!(result_err.is_err());
 
-                let mut error = VerificationError::ImplementationSpecific(
-                        "no signatures for commit".to_string()
-                );
+        let mut error = VerificationError::ImplementationSpecific(
+                "no signatures for commit".to_string()
+        );
 
-                // ensure it fails with:
-                // VerificationError::ImplementationSpecific("no signatures for commit")
-                assert_eq!(result_err.err().unwrap(), error);
+        // ensure it fails with:
+        // VerificationError::ImplementationSpecific("no signatures for commit")
+        assert_eq!(result_err.err().unwrap(), error);
 
-                // 3. commit.signatures.len() != validator_set.validators().len()
-                // must return error
-                let mut bad_sigs = vec![signatures.clone().swap_remove(1)];
-                signed_header.commit.signatures = bad_sigs.clone();
+        // 3. commit.signatures.len() != validator_set.validators().len()
+        // must return error
+        let mut bad_sigs = vec![signatures.clone().swap_remove(1)];
+        signed_header.commit.signatures = bad_sigs.clone();
 
-                result_err = vp.valid_commit(
-                    &signed_header,
-                    &val_set,
-                    &commit_validator
-                );
-                assert!(result_err.is_err());
+        result_err = vp.valid_commit(
+            &signed_header,
+            &val_set,
+            &commit_validator
+        );
+        assert!(result_err.is_err());
 
-                error = VerificationError::ImplementationSpecific(format!(
-                    "pre-commit length: {} doesn't match validator length: {}",
-                    signed_header.commit.signatures.len(),
-                    val_set.validators().len()
-                ));
+        error = VerificationError::ImplementationSpecific(format!(
+            "pre-commit length: {} doesn't match validator length: {}",
+            signed_header.commit.signatures.len(),
+            val_set.validators().len()
+        ));
 
-                // ensure it fails with the expected error (as above)
-                assert_eq!(result_err.err().unwrap(), error);
+        // ensure it fails with the expected error (as above)
+        assert_eq!(result_err.err().unwrap(), error);
 
-                // 4. commit.BlockIdFlagAbsent - should be "Ok"
-                bad_sigs.push(CommitSig::BlockIDFlagAbsent);
-                signed_header.commit.signatures = bad_sigs;
-                result_ok = vp.valid_commit(
-                    &signed_header,
-                    &val_set,
-                    &commit_validator
-                );
-                assert!(result_ok.is_ok());
+        // 4. commit.BlockIdFlagAbsent - should be "Ok"
+        bad_sigs.push(CommitSig::BlockIDFlagAbsent);
+        signed_header.commit.signatures = bad_sigs;
+        result_ok = vp.valid_commit(
+            &signed_header,
+            &val_set,
+            &commit_validator
+        );
+        assert!(result_ok.is_ok());
 
-                // 5. faulty signer - must return error
-                let mut bad_vals = val_set.validators().clone();
-                bad_vals.pop();
-                bad_vals.push(
-                    Validator::new("bad-val")
-                        .generate()
-                        .expect("Failed to generate validator")
-                );
-                let val_set_with_faulty_signer = Set::new_simple(bad_vals);
+        // 5. faulty signer - must return error
+        let mut bad_vals = val_set.validators().clone();
+        bad_vals.pop();
+        bad_vals.push(
+            Validator::new("bad-val")
+                .generate()
+                .expect("Failed to generate validator")
+        );
+        let val_set_with_faulty_signer = Set::new_simple(bad_vals);
 
-                // reset signatures
-                signed_header.commit.signatures = signatures;
+        // reset signatures
+        signed_header.commit.signatures = signatures;
 
-                result_err = vp.valid_commit(
-                    &signed_header,
-                    &val_set_with_faulty_signer,
-                    &commit_validator
-                );
-                assert!(result_err.is_err());
+        result_err = vp.valid_commit(
+            &signed_header,
+            &val_set_with_faulty_signer,
+            &commit_validator
+        );
+        assert!(result_err.is_err());
 
-                error = VerificationError::ImplementationSpecific(format!(
-                    "Found a faulty signer ({}) not present in the validator set ({})",
-                    signed_header.commit.signatures.iter().last().unwrap().validator_address().unwrap(),
-                    hasher.hash_validator_set(&val_set_with_faulty_signer)
-                ));
+        error = VerificationError::ImplementationSpecific(format!(
+            "Found a faulty signer ({}) not present in the validator set ({})",
+            signed_header.commit.signatures.iter().last().unwrap().validator_address().unwrap(),
+            hasher.hash_validator_set(&val_set_with_faulty_signer)
+        ));
 
-                // ensure it fails with the expected error (as above)
-                assert_eq!(result_err.err().unwrap(), error);
+        // ensure it fails with the expected error (as above)
+        assert_eq!(result_err.err().unwrap(), error);
     }
 
     #[test]
