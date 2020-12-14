@@ -11,17 +11,17 @@
 mod rpc {
     use std::cmp::min;
 
-    use tendermint_rpc::{Client, HttpClient, Id, SubscriptionClient, WebSocketClient};
+    use tendermint_rpc::{Client, HttpClient, Id, Order, SubscriptionClient, WebSocketClient};
 
     use futures::StreamExt;
     use std::convert::TryFrom;
-    use subtle_encoding::base64;
     use tendermint::abci::Log;
     use tendermint::abci::{Code, Transaction};
     use tendermint::block::Height;
     use tendermint::merkle::simple_hash_from_byte_vectors;
-    use tendermint_rpc::event::{Event, EventData};
-    use tendermint_rpc::query::EventType;
+    use tendermint_rpc::endpoint::tx_search::ResultTx;
+    use tendermint_rpc::event::{Event, EventData, TxInfo};
+    use tendermint_rpc::query::{EventType, Query};
     use tokio::time::Duration;
 
     /// Get the address of the local node
@@ -186,7 +186,7 @@ mod rpc {
     #[tokio::test]
     #[ignore]
     async fn subscription_interface() {
-        let (mut client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+        let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
         let driver_handle = tokio::spawn(async move { driver.run().await });
@@ -203,7 +203,7 @@ mod rpc {
             }
         }
 
-        client.close().await.unwrap();
+        client.close().unwrap();
         let _ = driver_handle.await.unwrap();
     }
 
@@ -216,26 +216,28 @@ mod rpc {
         // other and one of them will (incorrectly) fail.
         simple_transaction_subscription().await;
         concurrent_subscriptions().await;
+        tx_search().await;
     }
 
     async fn simple_transaction_subscription() {
-        let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
-        let (mut subs_client, driver) =
-            WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
-                .await
-                .unwrap();
+        let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+            .await
+            .unwrap();
         let driver_handle = tokio::spawn(async move { driver.run().await });
-        let mut subs = subs_client.subscribe(EventType::Tx.into()).await.unwrap();
+        let mut subs = client.subscribe(EventType::Tx.into()).await.unwrap();
         // We use Id::uuid_v4() here as a quick hack to generate a random value.
         let mut expected_tx_values = (0..10_u32)
             .map(|_| Id::uuid_v4().to_string())
             .collect::<Vec<String>>();
         let broadcast_tx_values = expected_tx_values.clone();
 
+        // We can clone the WebSocket client, because it's just a handle to the
+        // driver.
+        let inner_client = client.clone();
         tokio::spawn(async move {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
                 let tx = format!("tx{}={}", tx_count, val);
-                rpc_client
+                inner_client
                     .broadcast_tx_async(Transaction::from(tx.into_bytes()))
                     .await
                     .unwrap();
@@ -256,24 +258,21 @@ mod rpc {
                     //println!("Got event: {:?}", ev);
                     let next_val = expected_tx_values.remove(0);
                     match ev.data {
-                        EventData::Tx { tx_result } => match base64::decode(tx_result.tx) {
-                            Ok(decoded_tx) => match String::from_utf8(decoded_tx) {
-                                Ok(decoded_tx_str) => {
-                                    let decoded_tx_split = decoded_tx_str
-                                        .split('=')
-                                        .map(|s| s.to_string())
-                                        .collect::<Vec<String>>();
-                                    assert_eq!(2, decoded_tx_split.len());
+                        EventData::Tx { tx_result } => match String::from_utf8(tx_result.tx) {
+                            Ok(decoded_tx_str) => {
+                                let decoded_tx_split = decoded_tx_str
+                                    .split('=')
+                                    .map(|s| s.to_string())
+                                    .collect::<Vec<String>>();
+                                assert_eq!(2, decoded_tx_split.len());
 
-                                    let key = decoded_tx_split.get(0).unwrap();
-                                    let val = decoded_tx_split.get(1).unwrap();
-                                    println!("Got tx: {}={}", key, val);
-                                    assert_eq!(format!("tx{}", cur_tx_id), *key);
-                                    assert_eq!(next_val, *val);
-                                }
-                                Err(e) => panic!("Failed to convert decoded tx to string: {}", e),
-                            },
-                            Err(e) => panic!("Failed to base64 decode tx from event: {}", e),
+                                let key = decoded_tx_split.get(0).unwrap();
+                                let val = decoded_tx_split.get(1).unwrap();
+                                println!("Got tx: {}={}", key, val);
+                                assert_eq!(format!("tx{}", cur_tx_id), *key);
+                                assert_eq!(next_val, *val);
+                            }
+                            Err(e) => panic!("Failed to convert decoded tx to string: {}", e),
                         },
                         _ => panic!("Unexpected event type: {:?}", ev),
                     }
@@ -283,22 +282,17 @@ mod rpc {
             }
         }
 
-        subs_client.close().await.unwrap();
+        client.close().unwrap();
         let _ = driver_handle.await.unwrap();
     }
 
     async fn concurrent_subscriptions() {
-        let rpc_client = HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap();
-        let (mut subs_client, driver) =
-            WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
-                .await
-                .unwrap();
-        let driver_handle = tokio::spawn(async move { driver.run().await });
-        let new_block_subs = subs_client
-            .subscribe(EventType::NewBlock.into())
+        let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
             .unwrap();
-        let tx_subs = subs_client.subscribe(EventType::Tx.into()).await.unwrap();
+        let driver_handle = tokio::spawn(async move { driver.run().await });
+        let new_block_subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
+        let tx_subs = client.subscribe(EventType::Tx.into()).await.unwrap();
 
         // We use Id::uuid_v4() here as a quick hack to generate a random value.
         let mut expected_tx_values = (0..10_u32)
@@ -307,10 +301,11 @@ mod rpc {
         let broadcast_tx_values = expected_tx_values.clone();
         let mut expected_new_blocks = 5_i32;
 
+        let inner_client = client.clone();
         tokio::spawn(async move {
             for (tx_count, val) in broadcast_tx_values.into_iter().enumerate() {
                 let tx = format!("tx{}={}", tx_count, val);
-                rpc_client
+                inner_client
                     .broadcast_tx_async(Transaction::from(tx.into_bytes()))
                     .await
                     .unwrap();
@@ -348,7 +343,76 @@ mod rpc {
             }
         }
 
-        subs_client.close().await.unwrap();
+        client.close().unwrap();
         let _ = driver_handle.await.unwrap();
+    }
+
+    async fn tx_search() {
+        let rpc_client = localhost_rpc_client();
+        let (mut subs_client, driver) =
+            WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+                .await
+                .unwrap();
+        let driver_handle = tokio::spawn(async move { driver.run().await });
+
+        let tx = "tx_search_key=tx_search_value".to_string();
+        let tx_info = broadcast_tx(
+            &rpc_client,
+            &mut subs_client,
+            Transaction::from(tx.into_bytes()),
+        )
+        .await
+        .unwrap();
+        println!("Got tx_info: {:?}", tx_info);
+
+        let res = rpc_client
+            .tx_search(
+                Query::eq("app.key", "tx_search_key"),
+                true,
+                1,
+                1,
+                Order::Ascending,
+            )
+            .await
+            .unwrap();
+        assert!(res.total_count > 0);
+        // We don't have more than 1 page of results
+        assert_eq!(res.total_count as usize, res.txs.len());
+        // Find our transaction
+        let txs = res
+            .txs
+            .iter()
+            .filter(|tx| tx.height.value() == (tx_info.height as u64))
+            .collect::<Vec<&ResultTx>>();
+        assert_eq!(1, txs.len());
+        assert_eq!(tx_info.tx, txs[0].tx.as_bytes());
+
+        subs_client.close().unwrap();
+        driver_handle.await.unwrap().unwrap();
+    }
+
+    async fn broadcast_tx(
+        http_client: &HttpClient,
+        websocket_client: &mut WebSocketClient,
+        tx: Transaction,
+    ) -> Result<TxInfo, tendermint_rpc::Error> {
+        let mut subs = websocket_client.subscribe(EventType::Tx.into()).await?;
+        let _ = http_client.broadcast_tx_async(tx.clone()).await?;
+        let mut timeout = tokio::time::delay_for(Duration::from_secs(3));
+        tokio::select! {
+            Some(res) = subs.next() => {
+                let ev = res?;
+                match ev.data {
+                    EventData::Tx { tx_result } => {
+                        let tx_result_bytes: &[u8] = tx_result.tx.as_ref();
+                        // Make sure we have the right transaction here
+                        assert_eq!(tx.as_bytes(), tx_result_bytes);
+                        Ok(tx_result)
+                    },
+                    _ => panic!("Unexpected event: {:?}", ev),
+                }
+            }
+            _ = &mut timeout => panic!("Timed out waiting for transaction"),
+        }
     }
 }

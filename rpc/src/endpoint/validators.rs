@@ -25,6 +25,8 @@ impl crate::Request for Request {
     }
 }
 
+impl crate::SimpleRequest for Request {}
+
 /// Validator responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {

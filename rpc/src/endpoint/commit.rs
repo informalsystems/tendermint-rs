@@ -27,6 +27,8 @@ impl crate::Request for Request {
     }
 }
 
+impl crate::SimpleRequest for Request {}
+
 /// Commit responses
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {

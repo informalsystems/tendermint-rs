@@ -86,3 +86,23 @@ pub fn status() -> PlannedInteraction {
 pub fn subscribe(query: &str) -> PlannedInteraction {
     PlannedSubscription::new(query).into()
 }
+
+pub fn tx_search(
+    query: &str,
+    prove: bool,
+    page: u32,
+    per_page: u8,
+    order_by: &str,
+) -> PlannedInteraction {
+    Request::new(
+        "tx_search",
+        json!({
+            "query": query,
+            "prove": prove,
+            "page": format!("{}", page),
+            "per_page": format!("{}", per_page),
+            "order_by": order_by,
+        }),
+    )
+    .into()
+}

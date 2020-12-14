@@ -253,10 +253,13 @@ pub struct BlockMeta {
 }
 /// TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree.
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct TxProof {
     #[prost(bytes, tag="1")]
+    #[serde(with = "crate::serializers::bytes::hexstring")]
     pub root_hash: std::vec::Vec<u8>,
     #[prost(bytes, tag="2")]
+    #[serde(with = "crate::serializers::bytes::base64string")]
     pub data: std::vec::Vec<u8>,
     #[prost(message, optional, tag="3")]
     pub proof: ::std::option::Option<super::crypto::Proof>,

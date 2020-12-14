@@ -1,12 +1,17 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Proof {
     #[prost(int64, tag="1")]
+    #[serde(with = "crate::serializers::from_str")]
     pub total: i64,
     #[prost(int64, tag="2")]
+    #[serde(with = "crate::serializers::from_str")]
     pub index: i64,
     #[prost(bytes, tag="3")]
+    #[serde(with = "crate::serializers::bytes::base64string")]
     pub leaf_hash: std::vec::Vec<u8>,
     #[prost(bytes, repeated, tag="4")]
+    #[serde(with = "crate::serializers::bytes::vec_base64string")]
     pub aunts: ::std::vec::Vec<std::vec::Vec<u8>>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]

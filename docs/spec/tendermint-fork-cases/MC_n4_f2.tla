@@ -4,15 +4,11 @@ CONSTANT Proposer \* the proposer function from 0..NRounds to 1..N
 \* the variables declared in TendermintAcc3
 VARIABLES
   round, step, decision, lockedValue, lockedRound, validValue, validRound,
-  msgsPropose, msgsPrevote, msgsPrecommit, evidence
+  msgsPropose, msgsPrevote, msgsPrecommit, evidence, action
 
-\* an operator for type annotations
-a <: b == a
-
-INSTANCE TendermintAccDebug3 WITH
+INSTANCE TendermintAccDebug_004_draft WITH
   Corr <- {"c1", "c2"},
-  Defective <- {"f3"},
-  Byzantine <- {"f4"},
+  Faulty <- {"f3", "f4"},
   N <- 4,
   T <- 1,
   ValidValues <- { "v0", "v1" },

@@ -13,5 +13,6 @@ pub mod health;
 pub mod net_info;
 pub mod status;
 pub mod subscribe;
+pub mod tx_search;
 pub mod unsubscribe;
 pub mod validators;

@@ -27,10 +27,8 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          command: build
-          args: --workspace --all-targets
+          command: build-all
 
-  # At the time of writing `--no-default-features` does not work with the `-p` flag, hence we avoid the Cargo GitHub Action.
   light-client-wasm:
     runs-on: ubuntu-latest
     steps:
@@ -40,7 +38,9 @@ jobs:
           toolchain: stable
           override: true
           target: wasm32-unknown-unknown
-      - name: Build Tendermint for WASM
-        run: cd tendermint && cargo build --target wasm32-unknown-unknown --release --no-default-features
-      - name: Build Light Client for WASM
-        run: cd light-client && cargo build --target wasm32-unknown-unknown --release --no-default-features
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build-wasm-tendermint
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build-wasm-light-client

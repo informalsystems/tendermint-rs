@@ -3,8 +3,19 @@
 ### IMPROVEMENTS:
 
 - `[light-client]` Only require Tokio when `rpc-client` feature is enabled ([#425])
+- `[rpc]` The `WebSocketClient` now adds support for all remaining RPC requests
+  by way of implementing the `Client` trait ([#646])
+- `[rpc]` Support for the `tx_search` RPC endpoint has been added ([#701])
+- `[rpc]` Responses that include events now automatically have their tag
+  key/value pairs decoded from base64, where previously tag key/value pairs
+  were Base64-encoded ([#717])
+- `[tendermint]` (Since v0.17.0-rc3) Bech32 encoding fix ([#690])
 
 [#425]: https://github.com/informalsystems/tendermint-rs/issues/425
+[#646]: https://github.com/informalsystems/tendermint-rs/pull/646
+[#690]: https://github.com/informalsystems/tendermint-rs/issues/690
+[#701]: https://github.com/informalsystems/tendermint-rs/pull/701
+[#717]: https://github.com/informalsystems/tendermint-rs/issues/717
 
 ## v0.17.0-rc3
 
