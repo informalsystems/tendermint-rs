@@ -738,7 +738,7 @@ mod tests {
         let signed_header = light_block.signed_header;
 
         let vp = ProdPredicates::default();
-        let trust_threshold = TrustThreshold::new(1,3)
+        let mut trust_threshold = TrustThreshold::new(1,3)
             .expect("Cannot make trust threshold");
         let voting_power_calculator = ProdVotingPowerCalculator::default();
 
@@ -752,11 +752,10 @@ mod tests {
         assert!(result_ok.is_ok());
 
         let mut vals = val_set.validators().clone();
-        vals.push(Validator::new("extra-val-1").generate().unwrap());
-        vals.push(Validator::new("extra-val-2").generate().unwrap());
+        vals.push(Validator::new("extra-val").voting_power(100).generate().unwrap());
         let bad_valset = Set::new_simple(vals);
 
-        let trust_threshold = TrustThreshold::new(2,3)
+        trust_threshold = TrustThreshold::new(2,3)
             .expect("Cannot make trust threshold");
 
         let result_err = vp.has_sufficient_validators_overlap(
