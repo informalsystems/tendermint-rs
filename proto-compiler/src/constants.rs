@@ -29,14 +29,13 @@ const ALIAS_POWER_QUOTED: &str =
 const PART_SET_HEADER_TOTAL: &str =
     r#"#[serde(with = "crate::serializers::part_set_header_total")]"#;
 const RENAME_EDPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeyEd25519", with = "crate::serializers::bytes::base64string")]"#;
-// Todo: The rename to tendermint/PubKeySecp256k1 is a guess. Check Go source code or specs.
 const RENAME_SECPPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeySecp256k1", with = "crate::serializers::bytes::base64string")]"#;
+const SECP_FEATURE_GUARD: &str = r#"#[cfg(feature = "secp256k1")]"#;
 const RENAME_DUPLICATEVOTE: &str = r#"#[serde(rename = "tendermint/DuplicateVoteEvidence")]"#;
 const RENAME_LIGHTCLIENTATTACK: &str =
     r#"#[serde(rename = "tendermint/LightClientAttackEvidence")]"#;
 const EVIDENCE_VARIANT: &str = r#"#[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]"#;
 const ALIAS_PARTS: &str = r#"#[serde(alias = "parts")]"#;
-const DEFAULT: &str = r#"#[serde(default)]"#;
 
 /// Custom type attributes applied on top of protobuf structs
 /// The first item in the tuple defines the message where the annotation should apply and
@@ -143,6 +142,7 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.BlockMeta.num_txs", QUOTED),
     (".tendermint.crypto.PublicKey.sum.ed25519", RENAME_EDPUBKEY),
     (".tendermint.crypto.PublicKey.sum.secp256k1", RENAME_SECPPUBKEY),
+    (".tendermint.crypto.PublicKey.sum.secp256k1", SECP_FEATURE_GUARD),
     (
         ".tendermint.types.Evidence.sum.duplicate_vote_evidence",
         RENAME_DUPLICATEVOTE,
