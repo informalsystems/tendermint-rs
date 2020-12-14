@@ -301,14 +301,10 @@ mod tests {
     use tendermint::Time;
     use std::ops::Sub;
 
-    use tendermint_testgen::{
-        light_block::{
-            LightBlock as TestgenLightBlock,
-            TMLightBlock
-        },
-        Validator, 
-        ValidatorSet,
-        Header, Generator};
+    use tendermint_testgen::{light_block::{
+        LightBlock as TestgenLightBlock,
+        TMLightBlock
+    }, Validator, ValidatorSet, Header, Generator, Commit};
 
     use crate::predicates::{
         errors::VerificationError,
@@ -316,7 +312,7 @@ mod tests {
         VerificationPredicates
     };
 
-    use crate::operations::{ProdHasher, Hasher, ProdCommitValidator, ProdVotingPowerCalculator};
+    use crate::operations::{ProdHasher, Hasher, ProdCommitValidator, ProdVotingPowerCalculator, VotingPowerTally};
     use crate::types::{LightBlock, TrustThreshold};
     use tendermint::block::CommitSig;
     use tendermint::validator::Set;
@@ -700,72 +696,106 @@ mod tests {
                 assert_eq!(result_err.err().unwrap(), error);
     }
 
-    // // Incomplete test!!
-    // #[test]
-    // fn test_valid_next_validator_set() {
-    //     let vals = vec![Validator::new("val-1")];
-    //     let light_block = TMLightBlock::generate_default(
-    //         vals,
-    //         default_peer_id()
-    //     );
-    //
-    //     match light_block {
-    //         Ok(lb) => {
-    //             let vp = ProdPredicates::default();
-    //             let light_block = lb.into();
-    //
-    //             let result_ok = vp.valid_next_validator_set(
-    //                 &light_block,
-    //                 &light_block,
-    //             );
-    //
-    //             assert!(result_ok.is_ok());
-    //         }
-    //         Err(e) => {
-    //             println!("{}", e);
-    //         }
-    //     }
-    // }
-    //
-
     #[test]
-    fn test_has_sufficient_validators_overlap() {
-        let light_block: LightBlock = TestgenLightBlock::new_default(1)
+    fn test_valid_next_validator_set() {
+        let test_lb1 = TestgenLightBlock::new_default(1);
+        let light_block1: LightBlock = test_lb1
             .generate()
             .unwrap()
             .into();
-        let val_set = light_block.validators;
-        let signed_header = light_block.signed_header;
+
+        let light_block2: LightBlock = test_lb1.next()
+            .generate()
+            .unwrap()
+            .into();
 
         let vp = ProdPredicates::default();
-        let mut trust_threshold = TrustThreshold::new(1,3)
-            .expect("Cannot make trust threshold");
-        let voting_power_calculator = ProdVotingPowerCalculator::default();
 
-        let result_ok = vp.has_sufficient_validators_overlap(
-            &signed_header,
-            &val_set,
-            &trust_threshold,
-            &voting_power_calculator
+        // Test scenarios -->
+        // 1. next_validator_set hash matches
+        let result_ok = vp.valid_next_validator_set(
+            &light_block1,
+            &light_block2,
         );
 
         assert!(result_ok.is_ok());
 
-        let mut vals = val_set.validators().clone();
-        vals.push(Validator::new("extra-val").voting_power(100).generate().unwrap());
-        let bad_valset = Set::new_simple(vals);
+        // 2. next_validator_set hash doesn't match
+        let vals = &[
+            Validator::new("new-1"),
+            Validator::new("new-2")
+        ];
+        let header = Header::new(vals);
+        let commit = Commit::new(header.clone(), 1);
 
-        trust_threshold = TrustThreshold::new(2,3)
-            .expect("Cannot make trust threshold");
+        let light_block3: LightBlock = TestgenLightBlock::new(header, commit)
+            .generate()
+            .unwrap()
+            .into();
 
-        let result_err = vp.has_sufficient_validators_overlap(
-            &signed_header,
-            &bad_valset,
-            &trust_threshold,
-            &voting_power_calculator
+        let result_err = vp.valid_next_validator_set(
+            &light_block3,
+            &light_block2,
         );
 
         assert!(result_err.is_err());
 
+        let error = VerificationError::InvalidNextValidatorSet {
+            header_next_validators_hash: light_block3.signed_header.header.validators_hash,
+            next_validators_hash: light_block2.signed_header.header.next_validators_hash,
+        };
+
+        // ensure it fails with the expected error (as above)
+        assert_eq!(result_err.err().unwrap(), error);
     }
+
+
+    // #[test]
+    // fn test_has_sufficient_validators_overlap() {
+    //     let light_block: LightBlock = TestgenLightBlock::new_default(1)
+    //         .generate()
+    //         .unwrap()
+    //         .into();
+    //     let val_set = light_block.validators;
+    //     let signed_header = light_block.signed_header;
+    //
+    //     let vp = ProdPredicates::default();
+    //     let mut trust_threshold = TrustThreshold::new(1,3)
+    //         .expect("Cannot make trust threshold");
+    //     let voting_power_calculator = ProdVotingPowerCalculator::default();
+    //
+    //     // Test scenarios -->
+    //     // 1. > trust_threshold validators overlap
+    //     let result_ok = vp.has_sufficient_validators_overlap(
+    //         &signed_header,
+    //         &val_set,
+    //         &trust_threshold,
+    //         &voting_power_calculator
+    //     );
+    //
+    //     assert!(result_ok.is_ok());
+    //
+    //     // 2. < trust_threshold validators overlap
+    //     let mut vals = val_set.validators().clone();
+    //     vals.push(Validator::new("extra-val").voting_power(100).generate().unwrap());
+    //     let bad_valset = Set::new_simple(vals);
+    //
+    //     trust_threshold = TrustThreshold::new(2,3)
+    //         .expect("Cannot make trust threshold");
+    //
+    //     let result_err = vp.has_sufficient_validators_overlap(
+    //         &signed_header,
+    //         &bad_valset,
+    //         &trust_threshold,
+    //         &voting_power_calculator
+    //     );
+    //
+    //     assert!(result_err.is_err());
+    //
+    //     let error = VerificationError::NotEnoughTrust(VotingPowerTally{
+    //         total: 200,
+    //         tallied: 100,
+    //         trust_threshold,
+    //     });
+    // }
 }
