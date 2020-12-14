@@ -134,10 +134,6 @@ pub struct Data {
     #[prost(bytes, repeated, tag="1")]
     #[serde(with = "crate::serializers::txs")]
     pub txs: ::std::vec::Vec<std::vec::Vec<u8>>,
-    /// Volatile
-    #[prost(bytes, tag="2")]
-    #[serde(default)]
-    pub hash: std::vec::Vec<u8>,
 }
 /// Vote represents a prevote, precommit, or commit vote from validators for
 /// consensus.
@@ -182,11 +178,6 @@ pub struct Commit {
     #[prost(message, repeated, tag="4")]
     #[serde(with = "crate::serializers::nullable")]
     pub signatures: ::std::vec::Vec<CommitSig>,
-    #[prost(bytes, tag="5")]
-    #[serde(default)]
-    pub hash: std::vec::Vec<u8>,
-    #[prost(message, optional, tag="6")]
-    pub bit_array: ::std::option::Option<super::libs::bits::BitArray>,
 }
 /// CommitSig is a part of the Vote included in a Commit.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -342,13 +333,12 @@ pub struct EvidenceParams {
     /// attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
     #[prost(message, optional, tag="2")]
     pub max_age_duration: ::std::option::Option<super::super::google::protobuf::Duration>,
-    /// This sets the maximum number of evidence that can be committed in a single block.
-    /// and should fall comfortably under the max block bytes when we consider the size of
-    /// each evidence (See MaxEvidenceBytes). The maximum number is MaxEvidencePerBlock.
-    /// Default is 50
-    #[prost(uint32, tag="3")]
+    /// This sets the maximum size of total evidence in bytes that can be committed in a single block.
+    /// and should fall comfortably under the max block bytes.
+    /// Default is 1048576 or 1MB
+    #[prost(int64, tag="3")]
     #[serde(with = "crate::serializers::from_str", default)]
-    pub max_num: u32,
+    pub max_bytes: i64,
 }
 /// ValidatorParams restrict the public key types validators can use.
 /// NOTE: uses ABCI pubkey naming, not Amino names.
@@ -373,24 +363,6 @@ pub struct HashedParams {
     #[prost(int64, tag="2")]
     pub block_max_gas: i64,
 }
-/// DuplicateVoteEvidence contains evidence a validator signed two conflicting
-/// votes.
-#[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-pub struct DuplicateVoteEvidence {
-    #[prost(message, optional, tag="1")]
-    pub vote_a: ::std::option::Option<Vote>,
-    #[prost(message, optional, tag="2")]
-    pub vote_b: ::std::option::Option<Vote>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-#[derive(::serde::Deserialize, ::serde::Serialize)]
-pub struct LightClientAttackEvidence {
-    #[prost(message, optional, tag="1")]
-    pub conflicting_block: ::std::option::Option<LightBlock>,
-    #[prost(int64, tag="2")]
-    pub common_height: i64,
-}
 #[derive(Clone, PartialEq, ::prost::Message)]
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 #[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]
@@ -412,16 +384,42 @@ pub mod evidence {
         LightClientAttackEvidence(super::LightClientAttackEvidence),
     }
 }
-/// EvidenceData contains any evidence of malicious wrong-doing by validators
+/// DuplicateVoteEvidence contains evidence of a validator signed two conflicting votes.
 #[derive(Clone, PartialEq, ::prost::Message)]
 #[derive(::serde::Deserialize, ::serde::Serialize)]
-pub struct EvidenceData {
+pub struct DuplicateVoteEvidence {
+    #[prost(message, optional, tag="1")]
+    pub vote_a: ::std::option::Option<Vote>,
+    #[prost(message, optional, tag="2")]
+    pub vote_b: ::std::option::Option<Vote>,
+    #[prost(int64, tag="3")]
+    pub total_voting_power: i64,
+    #[prost(int64, tag="4")]
+    pub validator_power: i64,
+    #[prost(message, optional, tag="5")]
+    pub timestamp: ::std::option::Option<super::super::google::protobuf::Timestamp>,
+}
+/// LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client.
+#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+pub struct LightClientAttackEvidence {
+    #[prost(message, optional, tag="1")]
+    pub conflicting_block: ::std::option::Option<LightBlock>,
+    #[prost(int64, tag="2")]
+    pub common_height: i64,
+    #[prost(message, repeated, tag="3")]
+    pub byzantine_validators: ::std::vec::Vec<Validator>,
+    #[prost(int64, tag="4")]
+    pub total_voting_power: i64,
+    #[prost(message, optional, tag="5")]
+    pub timestamp: ::std::option::Option<super::super::google::protobuf::Timestamp>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
+pub struct EvidenceList {
     #[prost(message, repeated, tag="1")]
     #[serde(with = "crate::serializers::nullable")]
     pub evidence: ::std::vec::Vec<Evidence>,
-    #[prost(bytes, tag="2")]
-    #[serde(default)]
-    pub hash: std::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 #[derive(::serde::Deserialize, ::serde::Serialize)]
@@ -487,7 +485,7 @@ pub struct Block {
     #[prost(message, optional, tag="2")]
     pub data: ::std::option::Option<Data>,
     #[prost(message, optional, tag="3")]
-    pub evidence: ::std::option::Option<EvidenceData>,
+    pub evidence: ::std::option::Option<EvidenceList>,
     #[prost(message, optional, tag="4")]
     pub last_commit: ::std::option::Option<Commit>,
 }

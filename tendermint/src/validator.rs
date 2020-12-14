@@ -255,12 +255,17 @@ impl From<SimpleValidator> for RawSimpleValidator {
 /// Info -> SimpleValidator
 impl From<&Info> for SimpleValidator {
     fn from(info: &Info) -> SimpleValidator {
+        let sum = match &info.pub_key {
+            PublicKey::Ed25519(pk) => Some(tendermint_proto::crypto::public_key::Sum::Ed25519(
+                pk.as_bytes().to_vec(),
+            )),
+            #[cfg(feature = "secp256k1")]
+            PublicKey::Secp256k1(pk) => Some(tendermint_proto::crypto::public_key::Sum::Secp256k1(
+                pk.as_bytes().to_vec(),
+            )),
+        };
         SimpleValidator {
-            pub_key: Some(tendermint_proto::crypto::PublicKey {
-                sum: Some(tendermint_proto::crypto::public_key::Sum::Ed25519(
-                    info.pub_key.to_vec(),
-                )),
-            }),
+            pub_key: Some(tendermint_proto::crypto::PublicKey { sum }),
             voting_power: info.voting_power,
         }
     }

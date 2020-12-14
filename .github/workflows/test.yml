@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       tendermint:
-        image: informaldev/tendermint:0.34.0-d7d0ffea
+        image: informaldev/tendermint:0.34.0
         ports:
           - 26656:26656
           - 26657:26657
@@ -118,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       tendermint:
-        image: informaldev/tendermint:0.34.0-d7d0ffea
+        image: informaldev/tendermint:0.34.0
         ports:
           - 26656:26656
           - 26657:26657
@@ -138,7 +138,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       tendermint:
-        image: informaldev/tendermint:0.34.0-d7d0ffea
+        image: informaldev/tendermint:0.34.0
         ports:
           - 26656:26656
           - 26657:26657
