@@ -486,6 +486,7 @@ mod tests {
     }
 
     #[test]
+    // NOTE: tests both current valset and next valset
     fn test_validator_sets_match() {
         let mut light_block: LightBlock = TestgenLightBlock::new_default(1)
             .generate()
@@ -551,8 +552,6 @@ mod tests {
 
         // ensure it fails with VerificationError::InvalidNextValidatorSet
         assert_eq!(next_val_sets_match_err.err().unwrap(), next_val_set_error);
-
-
     }
 
     #[test]
@@ -797,6 +796,49 @@ mod tests {
             trust_threshold,
         });
 
+        // ensure it fails with the expected error (as above)
+        assert_eq!(result_err.err().unwrap(), error);
+    }
+
+    #[test]
+    fn test_has_sufficient_signers_overlap() {
+        let mut light_block: LightBlock = TestgenLightBlock::new_default(2)
+            .generate()
+            .unwrap()
+            .into();
+
+        let vp = ProdPredicates::default();
+        let voting_power_calculator = ProdVotingPowerCalculator::default();
+
+        // Test scenarios -->
+        // 1. +2/3 validators sign
+        let result_ok = vp.has_sufficient_signers_overlap(
+            &light_block.signed_header,
+            &light_block.validators,
+            &voting_power_calculator,
+        );
+
+        assert!(result_ok.is_ok());
+
+        // 1. less than 2/3 validators sign
+        light_block.signed_header.commit.signatures.pop();
+
+        let result_err = vp.has_sufficient_signers_overlap(
+            &light_block.signed_header,
+            &light_block.validators,
+            &voting_power_calculator,
+        );
+
+        assert!(result_err.is_err());
+
+        let trust_threshold = TrustThreshold::TWO_THIRDS;
+        let error = VerificationError::InsufficientSignersOverlap(VotingPowerTally{
+            total: 100,
+            tallied: 50,
+            trust_threshold
+        });
+
+        // ensure it fails with the expected error (as above)
         assert_eq!(result_err.err().unwrap(), error);
     }
 }
