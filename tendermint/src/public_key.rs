@@ -69,6 +69,9 @@ impl TryFrom<RawPublicKey> for PublicKey {
         match sum {
             Sum::Ed25519(b) => Self::from_raw_ed25519(b)
                 .ok_or_else(|| format_err!(error::Kind::InvalidKey, "malformed key").into()),
+            #[cfg(feature = "secp256k1")]
+            Sum::Secp256k1(b) => Self::from_raw_secp256k1(b)
+                .ok_or_else(|| format_err!(error::Kind::InvalidKey, "malformed key").into()),
         }
     }
 }
@@ -82,7 +85,11 @@ impl From<PublicKey> for RawPublicKey {
                 )),
             },
             #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(_) => panic!("secp256k1 PublicKey unimplemented"),
+            PublicKey::Secp256k1(ref pk) => RawPublicKey {
+                sum: Some(tendermint_proto::crypto::public_key::Sum::Secp256k1(
+                    pk.as_bytes().to_vec(),
+                )),
+            },
         }
     }
 }

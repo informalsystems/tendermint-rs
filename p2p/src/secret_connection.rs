@@ -141,6 +141,12 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
                 proto::crypto::public_key::Sum::Ed25519(ref bytes) => {
                     ed25519::PublicKey::from_bytes(bytes).ok()
                 }
+                proto::crypto::public_key::Sum::Secp256k1(_) => {
+                    //Todo
+                    //use tendermint::public_key::Secp256k1;
+                    //Secp256k1::from_bytes(bytes).ok()
+                    panic!("secp256k1 public key not implemented");
+                }
             })
             .ok_or(Error::CryptoError)?;
 

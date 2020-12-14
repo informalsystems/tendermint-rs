@@ -337,6 +337,7 @@ pub struct EvidenceParams {
     /// and should fall comfortably under the max block bytes.
     /// Default is 1048576 or 1MB
     #[prost(int64, tag="3")]
+    #[serde(with = "crate::serializers::from_str", default)]
     pub max_bytes: i64,
 }
 /// ValidatorParams restrict the public key types validators can use.
@@ -414,8 +415,10 @@ pub struct LightClientAttackEvidence {
     pub timestamp: ::std::option::Option<super::super::google::protobuf::Timestamp>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct EvidenceList {
     #[prost(message, repeated, tag="1")]
+    #[serde(with = "crate::serializers::nullable")]
     pub evidence: ::std::vec::Vec<Evidence>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]

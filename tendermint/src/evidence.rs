@@ -1,6 +1,6 @@
 //! Evidence of malfeasance by validators (i.e. signing conflicting votes).
 
-use crate::{block::signed_header::SignedHeader, serializers, Error, Kind, Vote};
+use crate::{block::signed_header::SignedHeader, serializers, Error, Kind, Vote, vote::Power, Time};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::slice;
@@ -9,7 +9,7 @@ use tendermint_proto::types::evidence::Sum as RawSum;
 use tendermint_proto::types::evidence::Sum;
 use tendermint_proto::types::DuplicateVoteEvidence as RawDuplicateVoteEvidence;
 use tendermint_proto::types::Evidence as RawEvidence;
-use tendermint_proto::types::EvidenceData as RawEvidenceData;
+use tendermint_proto::types::EvidenceList as RawEvidenceList;
 use tendermint_proto::types::EvidenceParams as RawEvidenceParams;
 use tendermint_proto::Protobuf;
 
@@ -62,6 +62,9 @@ impl From<Evidence> for RawEvidence {
 pub struct DuplicateVoteEvidence {
     vote_a: Vote,
     vote_b: Vote,
+    total_voting_power: Power,
+    validator_power: Power,
+    timestamp: Time,
 }
 
 impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
@@ -71,6 +74,9 @@ impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
         Ok(Self {
             vote_a: value.vote_a.ok_or(Kind::MissingEvidence)?.try_into()?,
             vote_b: value.vote_b.ok_or(Kind::MissingEvidence)?.try_into()?,
+            total_voting_power: value.total_voting_power.try_into()?,
+            validator_power: value.validator_power.try_into()?,
+            timestamp: value.timestamp.ok_or(Kind::MissingTimestamp)?.try_into()?
         })
     }
 }
@@ -80,6 +86,9 @@ impl From<DuplicateVoteEvidence> for RawDuplicateVoteEvidence {
         RawDuplicateVoteEvidence {
             vote_a: Some(value.vote_a.into()),
             vote_b: Some(value.vote_b.into()),
+            total_voting_power: value.total_voting_power.into(),
+            validator_power: value.total_voting_power.into(),
+            timestamp: Some(value.timestamp.into())
         }
     }
 }
@@ -91,7 +100,7 @@ impl DuplicateVoteEvidence {
             return Err(Kind::InvalidEvidence.into());
         }
         // Todo: make more assumptions about what is considered a valid evidence for duplicate vote
-        Ok(Self { vote_a, vote_b })
+        Ok(Self { vote_a, vote_b, total_voting_power: Default::default(), validator_power: Default::default(), timestamp: Time::now() })
     }
     /// Get votes
     pub fn votes(&self) -> (&Vote, &Vote) {
@@ -120,14 +129,14 @@ impl ConflictingHeadersEvidence {
 ///
 /// <https://github.com/tendermint/spec/blob/d46cd7f573a2c6a2399fcab2cde981330aa63f37/spec/core/data_structures.md#evidencedata>
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[serde(try_from = "RawEvidenceData", into = "RawEvidenceData")]
+#[serde(try_from = "RawEvidenceList", into = "RawEvidenceList")]
 pub struct Data {
     evidence: Option<Vec<Evidence>>,
 }
 
-impl TryFrom<RawEvidenceData> for Data {
+impl TryFrom<RawEvidenceList> for Data {
     type Error = Error;
-    fn try_from(value: RawEvidenceData) -> Result<Self, Self::Error> {
+    fn try_from(value: RawEvidenceList) -> Result<Self, Self::Error> {
         if value.evidence.is_empty() {
             return Ok(Self { evidence: None });
         }
@@ -139,16 +148,15 @@ impl TryFrom<RawEvidenceData> for Data {
     }
 }
 
-impl From<Data> for RawEvidenceData {
+impl From<Data> for RawEvidenceList {
     fn from(value: Data) -> Self {
-        RawEvidenceData {
+        RawEvidenceList {
             evidence: value
                 .evidence
                 .unwrap_or_default()
                 .into_iter()
                 .map(Into::into)
                 .collect(),
-            hash: vec![],
         }
     }
 }
@@ -193,7 +201,7 @@ pub struct Params {
 
     /// Max bytes
     #[serde(default)]
-    pub max_num: i64,
+    pub max_bytes: i64,
 }
 
 impl Protobuf<RawEvidenceParams> for Params {}
@@ -211,7 +219,7 @@ impl TryFrom<RawEvidenceParams> for Params {
                 .max_age_duration
                 .ok_or(Kind::MissingMaxAgeDuration)?
                 .try_into()?,
-            max_num: value.max_num as i64,
+            max_bytes: value.max_bytes,
         })
     }
 }
@@ -222,7 +230,7 @@ impl From<Params> for RawEvidenceParams {
             // Todo: Implement proper domain types so this becomes infallible
             max_age_num_blocks: value.max_age_num_blocks.try_into().unwrap(),
             max_age_duration: Some(value.max_age_duration.into()),
-            max_num: value.max_num as u32,
+            max_bytes: value.max_bytes,
         }
     }
 }

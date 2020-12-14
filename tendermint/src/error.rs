@@ -113,6 +113,10 @@ pub enum Kind {
     #[error("missing evidence field")]
     MissingEvidence,
 
+    /// Missing Timestamp in Block
+    #[error("missing timestamp field")]
+    MissingTimestamp,
+
     /// Invalid Block
     #[error("invalid block")]
     InvalidBlock,
