@@ -30,11 +30,12 @@ impl TryFrom<RawValidatorSet> for Set {
             .into_iter()
             .map(TryInto::try_into)
             .collect();
-        Ok(Self::new(
-            unsorted_validators_result?,
-            value.proposer.map(TryInto::try_into).transpose()?,
-            Some(value.total_voting_power.try_into()?),
-        ))
+
+        Ok(Self {
+            validators: unsorted_validators_result?,
+            proposer: value.proposer.map(TryInto::try_into).transpose()?,
+            total_voting_power: value.total_voting_power.try_into()?,
+        })
     }
 }
 
@@ -50,23 +51,17 @@ impl From<Set> for RawValidatorSet {
 
 impl Set {
     /// Constructor
-    pub fn new(
-        validators: Vec<Info>,
-        proposer: Option<Info>,
-        total_voting_power: Option<vote::Power>,
-    ) -> Set {
+    pub fn new(validators: Vec<Info>, proposer: Option<Info>) -> Set {
         let mut validators = validators;
         Self::sort_validators(&mut validators);
 
         // Compute the total voting power
-        let total_voting_power = total_voting_power.unwrap_or_else(|| {
-            validators
-                .iter()
-                .map(|v| v.voting_power.value())
-                .sum::<u64>()
-                .try_into()
-                .unwrap()
-        });
+        let total_voting_power = validators
+            .iter()
+            .map(|v| v.voting_power.value())
+            .sum::<u64>()
+            .try_into()
+            .unwrap();
 
         Set {
             validators,
@@ -77,7 +72,7 @@ impl Set {
 
     /// Convenience constructor for cases where there is no proposer
     pub fn without_proposer(validators: Vec<Info>) -> Set {
-        Self::new(validators, None, None)
+        Self::new(validators, None)
     }
 
     /// Convenience constructor for cases where there is a proposer
@@ -94,7 +89,7 @@ impl Set {
 
         // Create the validator set with the given proposer.
         // This is required by IBC on-chain validation.
-        Ok(Self::new(validators, Some(proposer), None))
+        Ok(Self::new(validators, Some(proposer)))
     }
 
     /// Get Info of the underlying validators.
