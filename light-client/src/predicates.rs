@@ -579,7 +579,7 @@ mod tests {
                 .generate()
                 .expect("Failed to generate validator"),
         );
-        let val_set_with_faulty_signer = Set::new_simple(bad_vals);
+        let val_set_with_faulty_signer = Set::without_proposer(bad_vals);
 
         // reset signatures
         signed_header.commit.signatures = signatures;
@@ -675,7 +675,7 @@ mod tests {
                 .generate()
                 .unwrap(),
         );
-        let bad_valset = Set::new_simple(vals);
+        let bad_valset = Set::without_proposer(vals);
 
         trust_threshold = TrustThreshold::new(2, 3).expect("Cannot make trust threshold");
 
