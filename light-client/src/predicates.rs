@@ -749,53 +749,54 @@ mod tests {
         assert_eq!(result_err.err().unwrap(), error);
     }
 
+    #[test]
+    fn test_has_sufficient_validators_overlap() {
+        let light_block: LightBlock = TestgenLightBlock::new_default(1)
+            .generate()
+            .unwrap()
+            .into();
+        let val_set = light_block.validators;
+        let signed_header = light_block.signed_header;
 
-    // #[test]
-    // fn test_has_sufficient_validators_overlap() {
-    //     let light_block: LightBlock = TestgenLightBlock::new_default(1)
-    //         .generate()
-    //         .unwrap()
-    //         .into();
-    //     let val_set = light_block.validators;
-    //     let signed_header = light_block.signed_header;
-    //
-    //     let vp = ProdPredicates::default();
-    //     let mut trust_threshold = TrustThreshold::new(1,3)
-    //         .expect("Cannot make trust threshold");
-    //     let voting_power_calculator = ProdVotingPowerCalculator::default();
-    //
-    //     // Test scenarios -->
-    //     // 1. > trust_threshold validators overlap
-    //     let result_ok = vp.has_sufficient_validators_overlap(
-    //         &signed_header,
-    //         &val_set,
-    //         &trust_threshold,
-    //         &voting_power_calculator
-    //     );
-    //
-    //     assert!(result_ok.is_ok());
-    //
-    //     // 2. < trust_threshold validators overlap
-    //     let mut vals = val_set.validators().clone();
-    //     vals.push(Validator::new("extra-val").voting_power(100).generate().unwrap());
-    //     let bad_valset = Set::new_simple(vals);
-    //
-    //     trust_threshold = TrustThreshold::new(2,3)
-    //         .expect("Cannot make trust threshold");
-    //
-    //     let result_err = vp.has_sufficient_validators_overlap(
-    //         &signed_header,
-    //         &bad_valset,
-    //         &trust_threshold,
-    //         &voting_power_calculator
-    //     );
-    //
-    //     assert!(result_err.is_err());
-    //
-    //     let error = VerificationError::NotEnoughTrust(VotingPowerTally{
-    //         total: 200,
-    //         tallied: 100,
-    //         trust_threshold,
-    //     });
-    // }
+        let vp = ProdPredicates::default();
+        let mut trust_threshold = TrustThreshold::new(1,3)
+            .expect("Cannot make trust threshold");
+        let voting_power_calculator = ProdVotingPowerCalculator::default();
+
+        // Test scenarios -->
+        // 1. > trust_threshold validators overlap
+        let result_ok = vp.has_sufficient_validators_overlap(
+            &signed_header,
+            &val_set,
+            &trust_threshold,
+            &voting_power_calculator
+        );
+
+        assert!(result_ok.is_ok());
+
+        // 2. < trust_threshold validators overlap
+        let mut vals = val_set.validators().clone();
+        vals.push(Validator::new("extra-val").voting_power(100).generate().unwrap());
+        let bad_valset = Set::new_simple(vals);
+
+        trust_threshold = TrustThreshold::new(2,3)
+            .expect("Cannot make trust threshold");
+
+        let result_err = vp.has_sufficient_validators_overlap(
+            &signed_header,
+            &bad_valset,
+            &trust_threshold,
+            &voting_power_calculator
+        );
+
+        assert!(result_err.is_err());
+
+        let error = VerificationError::NotEnoughTrust(VotingPowerTally{
+            total: 200,
+            tallied: 100,
+            trust_threshold,
+        });
+
+        assert_eq!(result_err.err().unwrap(), error);
+    }
 }
