@@ -1,6 +1,8 @@
 //! Evidence of malfeasance by validators (i.e. signing conflicting votes).
 
-use crate::{block::signed_header::SignedHeader, serializers, Error, Kind, Vote, vote::Power, Time};
+use crate::{
+    block::signed_header::SignedHeader, serializers, vote::Power, Error, Kind, Time, Vote,
+};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::slice;
@@ -76,7 +78,7 @@ impl TryFrom<RawDuplicateVoteEvidence> for DuplicateVoteEvidence {
             vote_b: value.vote_b.ok_or(Kind::MissingEvidence)?.try_into()?,
             total_voting_power: value.total_voting_power.try_into()?,
             validator_power: value.validator_power.try_into()?,
-            timestamp: value.timestamp.ok_or(Kind::MissingTimestamp)?.try_into()?
+            timestamp: value.timestamp.ok_or(Kind::MissingTimestamp)?.try_into()?,
         })
     }
 }
@@ -88,7 +90,7 @@ impl From<DuplicateVoteEvidence> for RawDuplicateVoteEvidence {
             vote_b: Some(value.vote_b.into()),
             total_voting_power: value.total_voting_power.into(),
             validator_power: value.total_voting_power.into(),
-            timestamp: Some(value.timestamp.into())
+            timestamp: Some(value.timestamp.into()),
         }
     }
 }
@@ -100,7 +102,13 @@ impl DuplicateVoteEvidence {
             return Err(Kind::InvalidEvidence.into());
         }
         // Todo: make more assumptions about what is considered a valid evidence for duplicate vote
-        Ok(Self { vote_a, vote_b, total_voting_power: Default::default(), validator_power: Default::default(), timestamp: Time::now() })
+        Ok(Self {
+            vote_a,
+            vote_b,
+            total_voting_power: Default::default(),
+            validator_power: Default::default(),
+            timestamp: Time::now(),
+        })
     }
     /// Get votes
     pub fn votes(&self) -> (&Vote, &Vote) {
