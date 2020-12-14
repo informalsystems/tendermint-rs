@@ -67,7 +67,6 @@ pub mod public_key {
         Ed25519(std::vec::Vec<u8>),
         #[prost(bytes, tag="2")]
         #[serde(rename = "tendermint/PubKeySecp256k1", with = "crate::serializers::bytes::base64string")]
-        #[cfg(feature = "secp256k1")]
         Secp256k1(std::vec::Vec<u8>),
     }
 }

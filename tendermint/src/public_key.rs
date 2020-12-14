@@ -66,13 +66,17 @@ impl TryFrom<RawPublicKey> for PublicKey {
         let sum = &value
             .sum
             .ok_or_else(|| format_err!(error::Kind::InvalidKey, "empty sum"))?;
-        match sum {
-            Sum::Ed25519(b) => Self::from_raw_ed25519(b)
-                .ok_or_else(|| format_err!(error::Kind::InvalidKey, "malformed key").into()),
-            #[cfg(feature = "secp256k1")]
-            Sum::Secp256k1(b) => Self::from_raw_secp256k1(b)
-                .ok_or_else(|| format_err!(error::Kind::InvalidKey, "malformed key").into()),
+        if let Sum::Ed25519(b) = sum {
+            return Self::from_raw_ed25519(b).ok_or_else(|| {
+                format_err!(error::Kind::InvalidKey, "malformed ed25519 key").into()
+            });
         }
+        #[cfg(feature = "secp256k1")]
+        if let Sum::Secp256k1(b) = sum {
+            return Self::from_raw_secp256k1(b)
+                .ok_or_else(|| format_err!(error::Kind::InvalidKey, "malformed key").into());
+        }
+        Err(format_err!(error::Kind::InvalidKey, "not an ed25519 key").into())
     }
 }
 
