@@ -15,9 +15,7 @@ use tendermint_proto::Protobuf;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Set {
     validators: Vec<Info>,
-
     proposer: Option<Info>,
-
     total_voting_power: vote::Power,
 }
 
@@ -35,7 +33,7 @@ impl TryFrom<RawValidatorSet> for Set {
         Ok(Self::new(
             unsorted_validators_result?,
             value.proposer.map(TryInto::try_into).transpose()?,
-            value.total_voting_power.try_into()?,
+            Some(value.total_voting_power.try_into()?),
         ))
     }
 }
@@ -51,14 +49,25 @@ impl From<Set> for RawValidatorSet {
 }
 
 impl Set {
-    /// constructor
+    /// Constructor
     pub fn new(
         validators: Vec<Info>,
         proposer: Option<Info>,
-        total_voting_power: vote::Power,
+        total_voting_power: Option<vote::Power>,
     ) -> Set {
         let mut validators = validators;
         Self::sort_validators(&mut validators);
+
+        // Compute the total voting power
+        let total_voting_power = total_voting_power.unwrap_or_else(|| {
+            validators
+                .iter()
+                .map(|v| v.voting_power.value())
+                .sum::<u64>()
+                .try_into()
+                .unwrap()
+        });
+
         Set {
             validators,
             proposer,
@@ -67,8 +76,25 @@ impl Set {
     }
 
     /// Convenience constructor for cases where there is no proposer
-    pub fn new_simple(validators: Vec<Info>) -> Set {
-        Self::new(validators, None, vote::Power::default())
+    pub fn without_proposer(validators: Vec<Info>) -> Set {
+        Self::new(validators, None, None)
+    }
+
+    /// Convenience constructor for cases where there is a proposer
+    pub fn with_proposer(
+        validators: Vec<Info>,
+        proposer_address: account::Id,
+    ) -> Result<Self, Error> {
+        // Get the proposer.
+        let proposer = validators
+            .iter()
+            .find(|v| v.address == proposer_address)
+            .cloned()
+            .ok_or(Kind::ProposerNotFound(proposer_address))?;
+
+        // Create the validator set with the given proposer.
+        // This is required by IBC on-chain validation.
+        Ok(Self::new(validators, Some(proposer), None))
     }
 
     /// Get Info of the underlying validators.
@@ -82,8 +108,8 @@ impl Set {
     }
 
     /// Get total voting power
-    pub fn total_voting_power(&self) -> &vote::Power {
-        &self.total_voting_power
+    pub fn total_voting_power(&self) -> vote::Power {
+        self.total_voting_power
     }
 
     /// Sort the validators according to the current Tendermint requirements
@@ -109,13 +135,6 @@ impl Set {
             .collect();
 
         Hash::Sha256(merkle::simple_hash_from_byte_vectors(validator_bytes))
-    }
-
-    /// Compute the total voting power within this validator set
-    pub fn total_power(&self) -> u64 {
-        self.validators().iter().fold(0u64, |total, val_info| {
-            total + val_info.voting_power.value()
-        })
     }
 }
 
@@ -387,7 +406,7 @@ mod tests {
             22, 57, 84, 71, 122, 200, 169, 192, 252, 41, 148, 223, 180,
         ];
 
-        let val_set = Set::new_simple(vec![v1, v2, v3]);
+        let val_set = Set::without_proposer(vec![v1, v2, v3]);
         let hash = val_set.hash();
         assert_eq!(hash_expect, hash.as_bytes().to_vec());
 
@@ -404,7 +423,7 @@ mod tests {
         assert_eq!(val_set.validator(v3.address).unwrap(), v3);
         assert_eq!(val_set.validator(not_in_set.address), None);
         assert_eq!(
-            val_set.total_power(),
+            val_set.total_voting_power().value(),
             148_151_478_422_287_875 + 158_095_448_483_785_107 + 770_561_664_770_006_272
         );
     }

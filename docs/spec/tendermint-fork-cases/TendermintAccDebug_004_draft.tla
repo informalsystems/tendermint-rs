@@ -1,4 +1,4 @@
------------------------ MODULE TendermintAccDebug3 -----------------------------
+------------------ MODULE TendermintAccDebug_004_draft -------------------------
 (*
  A few definitions that we use for debugging TendermintAcc3, which do not belong
  to the specification itself.
@@ -8,7 +8,7 @@
  Igor Konnov, 2020.
  *)
 
-EXTENDS TendermintAccInv3
+EXTENDS TendermintAccInv_004_draft
 
 \* make them parameters?
 NFaultyProposals == 0   \* the number of injected faulty PROPOSE messages

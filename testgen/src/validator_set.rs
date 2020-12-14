@@ -49,7 +49,7 @@ impl Generator<validator::Set> for ValidatorSet {
 
     fn generate(&self) -> Result<validator::Set, SimpleError> {
         let vals = generate_validators(&self.validators.as_ref().unwrap())?;
-        Ok(validator::Set::new_simple(vals))
+        Ok(validator::Set::without_proposer(vals))
     }
 }
 
@@ -65,7 +65,7 @@ mod tests {
             Validator::new("b"),
             Validator::new("c"),
         ];
-        let valset2 = validator::Set::new_simple(generate_validators(&vals1).unwrap());
+        let valset2 = validator::Set::without_proposer(generate_validators(&vals1).unwrap());
 
         assert_eq!(valset1.hash(), valset2.hash());
 
@@ -82,7 +82,7 @@ mod tests {
             Validator::new("b"),
             Validator::new("c"),
         ];
-        let valset5 = validator::Set::new_simple(generate_validators(&vals2).unwrap());
+        let valset5 = validator::Set::without_proposer(generate_validators(&vals2).unwrap());
         assert_ne!(valset2.hash(), valset5.hash());
     }
 }
