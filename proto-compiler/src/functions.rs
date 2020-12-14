@@ -3,6 +3,7 @@ use git2::{AutotagOption, Commit, FetchOptions, Oid, Reference, Repository};
 use std::fs::{copy, create_dir_all, remove_dir_all, File};
 use std::io::Write;
 use std::path::PathBuf;
+use subtle_encoding::hex;
 use walkdir::WalkDir;
 
 /// Clone or open+fetch a repository and check out a specific commitish
@@ -121,9 +122,14 @@ fn find_reference_or_commit<'a>(
         tried_origin = true;
         if try_reference.is_err() {
             // Remote branch not found, last chance: try as a commit ID
+            // Note: Oid::from_str() currently does an incorrect conversion and cuts the second half of the ID.
+            // We are falling back on Oid::from_bytes() for now.
+            let commitish_vec =
+                hex::decode(commitish).unwrap_or_else(|_| hex::decode_upper(commitish).unwrap());
             return (
                 None,
-                repo.find_commit(Oid::from_str(commitish).unwrap()).unwrap(),
+                repo.find_commit(Oid::from_bytes(commitish_vec.as_slice()).unwrap())
+                    .unwrap(),
             );
         }
     }
@@ -211,6 +217,7 @@ pub fn generate_tendermint_lib(prost_dir: &PathBuf, tendermint_lib_target: &Path
 
     let mut content =
         String::from("//! Tendermint-proto auto-generated sub-modules for Tendermint\n");
+    let tab = "    ".to_string();
 
     for file_name in file_names {
         let parts: Vec<_> = file_name
@@ -222,7 +229,6 @@ pub fn generate_tendermint_lib(prost_dir: &PathBuf, tendermint_lib_target: &Path
             .rev()
             .collect();
 
-        let tab = "    ".to_string();
         let mut tab_count = parts.len();
 
         let mut inner_content = format!(
@@ -242,6 +248,17 @@ pub fn generate_tendermint_lib(prost_dir: &PathBuf, tendermint_lib_target: &Path
 
         content = format!("{}\n{}\n", content, inner_content);
     }
+
+    // Add meta
+    content = format!(
+        "{}\npub mod meta {{\n{}pub const REPOSITORY: &str = \"{}\";\n{}pub const COMMITISH: &str = \"{}\";\n}}\n",
+        content,
+        tab,
+        crate::constants::TENDERMINT_REPO,
+        tab,
+        crate::constants::TENDERMINT_COMMITISH,
+    );
+
     let mut file =
         File::create(tendermint_lib_target).expect("tendermint library file create failed");
     file.write_all(content.as_bytes())
