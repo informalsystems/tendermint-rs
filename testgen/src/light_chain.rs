@@ -9,26 +9,6 @@ pub struct LightChain {
     pub light_blocks: Vec<LightBlock>,
 }
 
-impl Default for LightChain {
-    fn default() -> Self {
-        let initial_block = LightBlock::new_default(1);
-
-        let id = initial_block.chain_id().parse().unwrap();
-        let height = initial_block.height().try_into().unwrap();
-
-        let info = Info {
-            id,
-            height,
-            // no last block id for the initial block
-            last_block_id: None,
-            // TODO: Not sure yet what this time means
-            time: None,
-        };
-
-        Self::new(info, vec![initial_block])
-    }
-}
-
 impl LightChain {
     pub fn new(info: Info, light_blocks: Vec<LightBlock>) -> Self {
         LightChain { info, light_blocks }
@@ -37,11 +17,32 @@ impl LightChain {
     // TODO: make this fn more usable
     // TODO: like how does someone generate a chain with different validators at each height
     pub fn default_with_length(num: u64) -> Self {
-        let mut light_chain = Self::default();
+        let mut last_block = LightBlock::new_default(1);
+        let mut light_blocks: Vec<LightBlock> = vec![last_block.clone()];
+
         for _i in 2..=num {
-            light_chain.advance_chain();
+            // add "next" light block to the vector
+            last_block = last_block.next();
+            light_blocks.push(last_block.clone());
         }
-        light_chain
+
+        let id = last_block.chain_id().parse().unwrap();
+        let height = last_block.height().try_into().unwrap();
+        let last_block_hash = last_block.header.map(|h| h.generate().unwrap().hash());
+        let last_block_id = last_block_hash.map(|hash| block::Id {
+            hash,
+            part_set_header: Default::default(),
+        });
+
+        let info = Info {
+            id,
+            height,
+            last_block_id,
+            // TODO: Not sure yet what this time means
+            time: None,
+        };
+
+        Self::new(info, light_blocks)
     }
 
     /// expects at least one LightBlock in the Chain
