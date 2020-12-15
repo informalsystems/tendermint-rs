@@ -16,6 +16,7 @@ use tendermint_light_client::{
 };
 
 use std::convert::TryInto;
+use tendermint_testgen::light_block::default_peer_id;
 use tendermint_testgen::Tester;
 
 // Link to JSON test files repo:
@@ -85,8 +86,7 @@ fn run_bisection_test(tc: TestBisection<LightBlock>) -> BisectionTestResult {
     }
 }
 
-fn bisection_test(tc: TestBisection<AnonLightBlock>) {
-    let tc: TestBisection<LightBlock> = tc.into();
+fn bisection_test(tc: TestBisection<LightBlock>) {
     let expect_error = match &tc.expected_output {
         Some(eo) => eo.eq("error"),
         None => false,
@@ -116,8 +116,7 @@ fn bisection_test(tc: TestBisection<AnonLightBlock>) {
 /// To do this, we override increment the trusted height by 1
 /// and set the target height to `trusted_height - 1`, then run
 /// the bisection test as normal. We then assert that we get the expected error.
-fn bisection_lower_test(tc: TestBisection<AnonLightBlock>) {
-    let mut tc: TestBisection<LightBlock> = tc.into();
+fn bisection_lower_test(mut tc: TestBisection<LightBlock>) {
     let mut trusted_height = tc.trust_options.height;
 
     if trusted_height.value() <= 1 {

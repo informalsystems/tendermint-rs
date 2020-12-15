@@ -176,8 +176,9 @@
 						"proposer_priority": "-100"
 					},
 					"total_voting_power": "0"
-				}
-			},
+						},
+						"provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+					},
 			{
 				"signed_header": {
 					"header": {
@@ -342,8 +343,9 @@
 						"proposer_priority": "-150"
 					},
 					"total_voting_power": "0"
-				}
-			},
+						},
+						"provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+					},
 			{
 				"signed_header": {
 					"header": {
@@ -508,8 +510,9 @@
 						"proposer_priority": "-150"
 					},
 					"total_voting_power": "0"
-				}
-			},
+						},
+						"provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+					},
 			{
 				"signed_header": {
 					"header": {
@@ -674,8 +677,9 @@
 						"proposer_priority": "-150"
 					},
 					"total_voting_power": "0"
-				}
-			},
+						},
+						"provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+					},
 			{
 				"signed_header": {
 					"header": {
@@ -840,8 +844,9 @@
 						"proposer_priority": "-150"
 					},
 					"total_voting_power": "0"
-				}
-			},
+						},
+						"provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+					},
 			{
 				"signed_header": {
 					"header": {
@@ -1006,8 +1011,9 @@
 						"proposer_priority": "-150"
 					},
 					"total_voting_power": "0"
-				}
-			}
+						},
+						"provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+					}
 		]
 	},
 	"witnesses": [
@@ -1180,7 +1186,8 @@
 								"proposer_priority": "-100"
 							},
 							"total_voting_power": "0"
-						}
+						},
+						"provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
 					},
 					{
 						"signed_header": {
@@ -1346,7 +1353,8 @@
 								"proposer_priority": "-150"
 							},
 							"total_voting_power": "0"
-						}
+						},
+						"provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
 					},
 					{
 						"signed_header": {
@@ -1512,7 +1520,8 @@
 								"proposer_priority": "-150"
 							},
 							"total_voting_power": "0"
-						}
+						},
+						"provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
 					},
 					{
 						"signed_header": {
@@ -1678,7 +1687,8 @@
 								"proposer_priority": "-150"
 							},
 							"total_voting_power": "0"
-						}
+						},
+						"provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
 					},
 					{
 						"signed_header": {
@@ -1844,7 +1854,8 @@
 								"proposer_priority": "-150"
 							},
 							"total_voting_power": "0"
-						}
+						},
+						"provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
 					},
 					{
 						"signed_header": {
@@ -2010,7 +2021,8 @@
 								"proposer_priority": "-150"
 							},
 							"total_voting_power": "0"
-						}
+						},
+						"provider": "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
 					}
 				]
 			}
