@@ -170,4 +170,3 @@ pub fn verify_bisection(
         .verify_to_target(untrusted_height, state)
         .map(|_| state.get_trace(untrusted_height))
 }
-

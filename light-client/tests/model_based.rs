@@ -12,11 +12,11 @@ use tendermint_light_client::{
     tests::*,
     types::{LightBlock, Time, TrustThreshold},
 };
+use tendermint_testgen::light_block::default_peer_id;
 use tendermint_testgen::{
     apalache::*, jsonatr::*, light_block::TMLightBlock, validator::generate_validators, Command,
     Generator, LightBlock as TestgenLightBlock, TestEnv, Tester, Validator, Vote,
 };
-use tendermint_testgen::light_block::default_peer_id;
 
 fn testgen_to_lb(tm_lb: TMLightBlock) -> LightBlock {
     LightBlock {
@@ -516,7 +516,7 @@ fn single_step_test(
         tc.initial.signed_header,
         tc.initial.next_validator_set.clone(),
         tc.initial.next_validator_set,
-        default_peer_id()
+        default_peer_id(),
     );
     let clock_drift = Duration::from_secs(0);
     let trusting_period: Duration = tc.initial.trusting_period.into();
@@ -557,7 +557,7 @@ fn single_step_test(
             let now = input.now;
             match verify_single(
                 latest_trusted.clone(),
-                mutated_block.clone().into(),
+                mutated_block.clone(),
                 TrustThreshold::default(),
                 trusting_period,
                 clock_drift,
@@ -565,14 +565,14 @@ fn single_step_test(
             ) {
                 Ok(new_state) => {
                     assert_eq!(input.verdict, LiteVerdict::Success);
-                    let expected_state: LightBlock = mutated_block.clone().into();
+                    let expected_state: LightBlock = mutated_block.clone();
                     assert_eq!(new_state, expected_state);
                     latest_trusted = LightBlock::new(
-                            new_state.signed_header,
-                            new_state.validators,
-                            new_state.next_validators,
-                            new_state.provider,
-                        );
+                        new_state.signed_header,
+                        new_state.validators,
+                        new_state.next_validators,
+                        new_state.provider,
+                    );
                 }
                 Err(e) => {
                     output_env.logln(&format!("      > lite: {:?}", e));

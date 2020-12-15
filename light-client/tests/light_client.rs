@@ -16,8 +16,8 @@ use tendermint_light_client::{
 };
 
 use std::convert::TryInto;
-use tendermint_testgen::Tester;
 use tendermint_testgen::light_block::default_peer_id;
+use tendermint_testgen::Tester;
 
 // Link to JSON test files repo:
 // https://github.com/informalsystems/conformance-tests
