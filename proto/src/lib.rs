@@ -22,6 +22,7 @@ use anomaly::BoxError;
 use bytes::{Buf, BufMut};
 pub use error::{Error, Kind};
 use prost::encoding::encoded_len_varint;
+pub use prost::encoding::{decode_varint, encode_varint};
 use prost::Message;
 use std::convert::{TryFrom, TryInto};
 
