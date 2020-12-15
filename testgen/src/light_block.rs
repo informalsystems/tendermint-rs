@@ -5,10 +5,10 @@ use simple_error::*;
 use crate::helpers::parse_as;
 use crate::validator::generate_validators;
 use crate::{Commit, Generator, Header, Validator};
-use tendermint::block::signed_header::SignedHeader;
 use tendermint::node::Id as PeerId;
 use tendermint::validator;
 use tendermint::validator::Set as ValidatorSet;
+use tendermint::{block::signed_header::SignedHeader, Hash};
 
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
@@ -138,6 +138,14 @@ impl LightBlock {
             .as_ref()
             .expect("chain_id is missing")
             .to_string()
+    }
+
+    /// returns the last_block_id hash of LightBlock's header
+    pub fn last_block_id_hash(&self) -> Option<Hash> {
+        self.header
+            .as_ref()
+            .expect("header is missing")
+            .last_block_id_hash
     }
 }
 
