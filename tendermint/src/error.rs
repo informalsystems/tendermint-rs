@@ -196,6 +196,14 @@ pub enum Kind {
     /// Proposer not found in validator set
     #[error("proposer with address '{}' not found in validator set", _0)]
     ProposerNotFound(account::Id),
+
+    /// ABCI request is missing its inner value property.
+    #[error("malformed ABCI request: request is missing its inner value")]
+    MissingAbciRequestValue,
+
+    /// ABCI response is missing its inner value property.
+    #[error("malformed ABCI response: response is missing its inner value")]
+    MissingAbciResponseValue,
 }
 
 impl Kind {

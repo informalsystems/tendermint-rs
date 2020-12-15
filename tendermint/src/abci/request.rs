@@ -1,0 +1,55 @@
+//! ABCI requests.
+
+mod echo;
+pub use echo::Echo;
+
+use crate::{Error, Kind};
+use std::convert::{TryFrom, TryInto};
+use tendermint_proto::abci::request::Value;
+use tendermint_proto::abci::Request as RawRequest;
+use tendermint_proto::Protobuf;
+
+/// ABCI request wrapper.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Request {
+    /// Request that the ABCI server echo a specific message back to the client.
+    Echo(Echo),
+}
+
+impl Protobuf<RawRequest> for Request {}
+
+impl TryFrom<RawRequest> for Request {
+    type Error = Error;
+
+    fn try_from(raw: RawRequest) -> Result<Self, Self::Error> {
+        let value = raw.value.ok_or(Kind::MissingAbciRequestValue)?;
+        Ok(match value {
+            Value::Echo(raw_req) => Self::Echo(raw_req.try_into()?),
+            _ => unimplemented!(),
+            // Value::Flush(_) => {}
+            // Value::Info(_) => {}
+            // Value::SetOption(_) => {}
+            // Value::InitChain(_) => {}
+            // Value::Query(_) => {}
+            // Value::BeginBlock(_) => {}
+            // Value::CheckTx(_) => {}
+            // Value::DeliverTx(_) => {}
+            // Value::EndBlock(_) => {}
+            // Value::Commit(_) => {}
+            // Value::ListSnapshots(_) => {}
+            // Value::OfferSnapshot(_) => {}
+            // Value::LoadSnapshotChunk(_) => {}
+            // Value::ApplySnapshotChunk(_) => {}
+        })
+    }
+}
+
+impl From<Request> for RawRequest {
+    fn from(request: Request) -> Self {
+        Self {
+            value: Some(match request {
+                Request::Echo(req) => Value::Echo(req.into()),
+            }),
+        }
+    }
+}

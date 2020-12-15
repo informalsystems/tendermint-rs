@@ -13,6 +13,8 @@ mod gas;
 mod info;
 mod log;
 mod path;
+pub mod request;
+pub mod response;
 pub mod responses;
 pub mod tag;
 pub mod transaction;
