@@ -17,9 +17,9 @@ description = """
 all-features = true
 
 [dependencies]
-prost = { version = "0.6" }
+prost = { git = "https://github.com/danburkert/prost", rev = "423f5ec5bd165a7007a388edfb2b485d5bbf40c7" }
 prost-types = { version = "0.6" }
-bytes = "0.5"
+bytes = "0.6"
 anomaly = "0.2"
 thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"] }
