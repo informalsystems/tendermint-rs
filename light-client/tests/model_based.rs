@@ -9,16 +9,17 @@ use tendermint::validator::Set;
 use tendermint_light_client::components::verifier::Verdict;
 use tendermint_light_client::types::ValidatorSet;
 use tendermint_light_client::{
-    tests::{Trusted, *},
+    tests::*,
     types::{LightBlock, Time, TrustThreshold},
 };
 use tendermint_testgen::{
     apalache::*, jsonatr::*, light_block::TMLightBlock, validator::generate_validators, Command,
     Generator, LightBlock as TestgenLightBlock, TestEnv, Tester, Validator, Vote,
 };
+use tendermint_testgen::light_block::default_peer_id;
 
-fn testgen_to_anon(tm_lb: TMLightBlock) -> AnonLightBlock {
-    AnonLightBlock {
+fn testgen_to_lb(tm_lb: TMLightBlock) -> LightBlock {
+    LightBlock {
         signed_header: tm_lb.signed_header,
         validators: tm_lb.validators,
         next_validators: tm_lb.next_validators,
@@ -65,7 +66,7 @@ pub struct SingleStepTestCase {
 /// A LiteBlock together with the time when it's being checked, and the expected verdict
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlockVerdict {
-    block: AnonLightBlock,
+    block: LightBlock,
     testgen_block: TestgenLightBlock,
     now: Time,
     verdict: LiteVerdict,
@@ -429,7 +430,7 @@ impl SingleStepTestFuzzer for VoteSignatureFuzzer {
         commit.header = Some(header);
 
         input.testgen_block.commit = Some(commit);
-        input.block = testgen_to_anon(input.testgen_block.generate().unwrap());
+        input.block = testgen_to_lb(input.testgen_block.generate().unwrap());
 
         (String::from("vote signature"), LiteVerdict::Invalid)
     }
@@ -516,7 +517,7 @@ fn single_step_test(
         tc.initial.next_validator_set.clone(),
         tc.initial.next_validator_set,
         default_peer_id()
-    )
+    );
     let clock_drift = Duration::from_secs(0);
     let trusting_period: Duration = tc.initial.trusting_period.into();
 
