@@ -511,10 +511,12 @@ fn single_step_test(
     _root_env: &TestEnv,
     output_env: &TestEnv,
 ) {
-    let mut latest_trusted = Trusted::new(
-        tc.initial.signed_header.clone(),
+    let mut latest_trusted = LightBlock::new(
+        tc.initial.signed_header,
         tc.initial.next_validator_set.clone(),
-    );
+        tc.initial.next_validator_set,
+        default_peer_id()
+    )
     let clock_drift = Duration::from_secs(0);
     let trusting_period: Duration = tc.initial.trusting_period.into();
 
@@ -564,8 +566,12 @@ fn single_step_test(
                     assert_eq!(input.verdict, LiteVerdict::Success);
                     let expected_state: LightBlock = mutated_block.clone().into();
                     assert_eq!(new_state, expected_state);
-                    latest_trusted =
-                        Trusted::new(new_state.signed_header, new_state.next_validators);
+                    latest_trusted = LightBlock::new(
+                            new_state.signed_header,
+                            new_state.validators,
+                            new_state.next_validators,
+                            new_state.provider,
+                        );
                 }
                 Err(e) => {
                     output_env.logln(&format!("      > lite: {:?}", e));

@@ -18,7 +18,6 @@ use std::collections::HashMap;
 use std::time::Duration;
 use tendermint::block::Height as HeightStr;
 use tendermint::evidence::{Duration as DurationStr, Evidence};
-use tendermint_testgen::light_block::default_peer_id;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TestCases<LB> {
@@ -71,21 +70,6 @@ pub struct TrustOptions {
     pub height: HeightStr,
     pub hash: Hash,
     pub trust_level: TrustThreshold,
-}
-
-#[derive(Deserialize, Clone, Debug)]
-pub struct Trusted {
-    pub signed_header: SignedHeader,
-    pub next_validators: ValidatorSet,
-}
-
-impl Trusted {
-    pub fn new(signed_header: SignedHeader, next_validators: ValidatorSet) -> Self {
-        Self {
-            signed_header,
-            next_validators,
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -154,7 +138,7 @@ impl MockEvidenceReporter {
 }
 
 pub fn verify_single(
-    trusted_state: Trusted,
+    trusted_state: LightBlock,
     input: LightBlock,
     trust_threshold: TrustThreshold,
     trusting_period: Duration,
@@ -162,13 +146,6 @@ pub fn verify_single(
     now: Time,
 ) -> Result<LightBlock, Verdict> {
     let verifier = ProdVerifier::default();
-
-    let trusted_state = LightBlock::new(
-        trusted_state.signed_header,
-        trusted_state.next_validators.clone(),
-        trusted_state.next_validators,
-        default_peer_id(),
-    );
 
     let options = Options {
         trust_threshold,

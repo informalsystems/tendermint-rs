@@ -18,7 +18,7 @@ use std::time::Duration;
 
 use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::tests::{
-    AnonLightBlock, MockClock, MockEvidenceReporter, MockIo, TestBisection, TrustOptions,
+    MockClock, MockEvidenceReporter, MockIo, TestBisection, TrustOptions,
 };
 
 use tendermint_testgen::Tester;
