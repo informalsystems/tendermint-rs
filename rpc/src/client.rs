@@ -118,7 +118,7 @@ pub trait Client {
         self.perform(commit::Request::new(height.into())).await
     }
 
-    /// `/consensus_state`: get current consensus state (UNSTABLE)
+    /// `/consensus_state`: get current consensus state
     async fn consensus_state(&self) -> Result<consensus_state::Response> {
         self.perform(consensus_state::Request::new()).await
     }
