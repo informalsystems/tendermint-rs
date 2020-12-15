@@ -4,6 +4,7 @@ use anomaly::{BoxError, Context};
 use thiserror::Error;
 
 use crate::account;
+use crate::vote;
 
 /// Error type
 pub type Error = BoxError;
@@ -162,6 +163,15 @@ pub enum Kind {
     /// Negative voting power
     #[error("negative power")]
     NegativePower,
+
+    /// Mismatch between raw voting power and computed one in validator set
+    #[error("mismatch between raw voting power ({raw}) and computed one ({computed})")]
+    RawVotingPowerMismatch {
+        /// raw voting power
+        raw: vote::Power,
+        /// computed voting power
+        computed: vote::Power,
+    },
 
     /// Missing Public Key
     #[error("missing public key")]

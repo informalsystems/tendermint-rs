@@ -25,22 +25,26 @@ impl TryFrom<RawValidatorSet> for Set {
     type Error = Error;
 
     fn try_from(value: RawValidatorSet) -> Result<Self, Self::Error> {
-        let mut validators = value
+        let validators = value
             .validators
             .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<Vec<_>, _>>()?;
 
-        Self::sort_validators(&mut validators);
-
         let proposer = value.proposer.map(TryInto::try_into).transpose()?;
-        let total_voting_power = value.total_voting_power.try_into()?;
+        let validator_set = Self::new(validators, proposer);
 
-        Ok(Self {
-            validators,
-            proposer,
-            total_voting_power,
-        })
+        // Ensure that the raw voting power matches the computed one
+        let raw_voting_power = value.total_voting_power.try_into()?;
+        if raw_voting_power != validator_set.total_voting_power() {
+            return Err(Kind::RawVotingPowerMismatch {
+                raw: raw_voting_power,
+                computed: validator_set.total_voting_power(),
+            }
+            .into());
+        }
+
+        Ok(validator_set)
     }
 }
 

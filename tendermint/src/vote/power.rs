@@ -1,13 +1,21 @@
 //! Voting power
 
+use std::convert::{TryFrom, TryInto};
+use std::fmt;
+
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{Error, Kind};
-use std::convert::{TryFrom, TryInto};
 
 /// Voting power
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Default)]
 pub struct Power(u64);
+
+impl fmt::Display for Power {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.value())
+    }
+}
 
 impl TryFrom<i64> for Power {
     type Error = Error;
