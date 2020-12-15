@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 use tendermint::block::Height as HeightStr;
 use tendermint::evidence::{Duration as DurationStr, Evidence};
+use tendermint_testgen::light_block::default_peer_id;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TestCases<LB> {
@@ -193,106 +194,3 @@ pub fn verify_bisection(
         .map(|_| state.get_trace(untrusted_height))
 }
 
-// -----------------------------------------------------------------------------
-// Everything below is a temporary workaround for the lack of `provider` field
-// in the light blocks serialized in the JSON fixtures.
-// -----------------------------------------------------------------------------
-
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub struct AnonLightBlock {
-    pub signed_header: SignedHeader,
-    #[serde(rename = "validator_set")]
-    pub validators: ValidatorSet,
-    #[serde(rename = "next_validator_set")]
-    pub next_validators: ValidatorSet,
-    #[serde(default = "default_peer_id")]
-    pub provider: PeerId,
-}
-
-pub fn default_peer_id() -> PeerId {
-    "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap()
-}
-
-impl From<AnonLightBlock> for LightBlock {
-    fn from(alb: AnonLightBlock) -> Self {
-        Self {
-            signed_header: alb.signed_header,
-            validators: alb.validators,
-            next_validators: alb.next_validators,
-            provider: alb.provider,
-        }
-    }
-}
-
-impl From<TestCase<AnonLightBlock>> for TestCase<LightBlock> {
-    fn from(tc: TestCase<AnonLightBlock>) -> Self {
-        Self {
-            description: tc.description,
-            initial: tc.initial,
-            input: tc.input.into_iter().map(Into::into).collect(),
-            expected_output: tc.expected_output,
-        }
-    }
-}
-
-impl From<TestCases<AnonLightBlock>> for TestCases<LightBlock> {
-    fn from(tc: TestCases<AnonLightBlock>) -> Self {
-        Self {
-            batch_name: tc.batch_name,
-            test_cases: tc.test_cases.into_iter().map(Into::into).collect(),
-        }
-    }
-}
-
-impl From<Provider<AnonLightBlock>> for Provider<LightBlock> {
-    fn from(p: Provider<AnonLightBlock>) -> Self {
-        Self {
-            chain_id: p.chain_id,
-            lite_blocks: p.lite_blocks.into_iter().map(Into::into).collect(),
-        }
-    }
-}
-
-impl From<WitnessProvider<AnonLightBlock>> for WitnessProvider<LightBlock> {
-    fn from(p: WitnessProvider<AnonLightBlock>) -> Self {
-        Self {
-            value: p.value.into(),
-        }
-    }
-}
-
-pub fn peer_id_at(count: usize) -> PeerId {
-    let peer_ids: Vec<PeerId> = vec![
-        "ADBEEFC0FFEEFACADEBADFADADE0BEFEEDC0C0AD".parse().unwrap(),
-        "BADFADBEEFC0FFEEFACADEAD0BEFEEDC0C0ADEAD".parse().unwrap(),
-        "CADEEDC0C0ADEADBEEFBADFADAD0BEFEC0FFEEFA".parse().unwrap(),
-        "D0BEFEEDC0C0ADEABADFADADBEEFC0FFEEFACADE".parse().unwrap(),
-        "EEFC0FFEEFACADEBADFADAD0BEFEEDC0C0ADEADB".parse().unwrap(),
-        "FC0FFEEFABAC0C0ADEADDFBEEADAD0BEFEEDCADE".parse().unwrap(),
-    ];
-    peer_ids[count]
-}
-
-impl From<TestBisection<AnonLightBlock>> for TestBisection<LightBlock> {
-    fn from(tb: TestBisection<AnonLightBlock>) -> Self {
-        let mut witnesses: Vec<WitnessProvider<LightBlock>> =
-            tb.witnesses.into_iter().map(Into::into).collect();
-
-        for (count, provider) in witnesses.iter_mut().enumerate() {
-            for lb in provider.value.lite_blocks.iter_mut() {
-                lb.provider = peer_id_at(count);
-            }
-        }
-
-        Self {
-            description: tb.description,
-            trust_options: tb.trust_options,
-            primary: tb.primary.into(),
-            witnesses,
-            height_to_verify: tb.height_to_verify,
-            now: tb.now,
-            expected_output: tb.expected_output,
-            expected_num_of_bisections: tb.expected_num_of_bisections,
-        }
-    }
-}
