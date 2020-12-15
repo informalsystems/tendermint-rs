@@ -1,0 +1,36 @@
+{
+  "body": {
+    "messages": [
+      {
+        "@type": "/cosmos.bank.v1beta1.MsgSend",
+        "from_address": "cosmos1cww3sjp5lc4jglur6ghspszycmdx29q3kvhfce",
+        "to_address": "cosmos1tq6x50vpdmlcmcdvxjcu42crluv9de5h8wp63r",
+        "amount": [
+          {
+            "denom": "uatom",
+            "amount": "1000000"
+          }
+        ]
+      }
+    ],
+    "memo": "c0_to_c1_transaction",
+    "timeout_height": "0",
+    "extension_options": [],
+    "non_critical_extension_options": []
+  },
+  "auth_info": {
+    "signer_infos": [],
+    "fee": {
+      "amount": [
+        {
+          "denom": "uatom",
+          "amount": "40000000000"
+        }
+      ],
+      "gas_limit": "200000",
+      "payer": "",
+      "granter": ""
+    }
+  },
+  "signatures": []
+}

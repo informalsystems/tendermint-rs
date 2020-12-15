@@ -6,7 +6,7 @@ pub const TENDERMINT_REPO: &str = "https://github.com/tendermint/tendermint";
 // Tag: v0.34.0-rc4
 // Branch: master
 // Commit ID (full length): d7d0ffea13c60c98b812d243ba5a2c375f341c15
-pub const TENDERMINT_COMMITISH: &str = "d7d0ffea13c60c98b812d243ba5a2c375f341c15";
+pub const TENDERMINT_COMMITISH: &str = "v0.34.0";
 
 /// Predefined custom attributes for message annotations
 const PRIMITIVE_ENUM: &str = r#"#[derive(::num_derive::FromPrimitive, ::num_derive::ToPrimitive)]"#;
@@ -28,13 +28,13 @@ const ALIAS_POWER_QUOTED: &str =
     r#"#[serde(alias = "power", with = "crate::serializers::from_str")]"#;
 const PART_SET_HEADER_TOTAL: &str =
     r#"#[serde(with = "crate::serializers::part_set_header_total")]"#;
-const RENAME_PUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeyEd25519", with = "crate::serializers::bytes::base64string")]"#;
+const RENAME_EDPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeyEd25519", with = "crate::serializers::bytes::base64string")]"#;
+const RENAME_SECPPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeySecp256k1", with = "crate::serializers::bytes::base64string")]"#;
 const RENAME_DUPLICATEVOTE: &str = r#"#[serde(rename = "tendermint/DuplicateVoteEvidence")]"#;
 const RENAME_LIGHTCLIENTATTACK: &str =
     r#"#[serde(rename = "tendermint/LightClientAttackEvidence")]"#;
 const EVIDENCE_VARIANT: &str = r#"#[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]"#;
 const ALIAS_PARTS: &str = r#"#[serde(alias = "parts")]"#;
-const DEFAULT: &str = r#"#[serde(default)]"#;
 
 /// Custom type attributes applied on top of protobuf structs
 /// The first item in the tuple defines the message where the annotation should apply and
@@ -47,7 +47,7 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.BlockIDFlag", PRIMITIVE_ENUM),
     (".tendermint.types.Block", SERIALIZED),
     (".tendermint.types.Data", SERIALIZED),
-    (".tendermint.types.EvidenceData", SERIALIZED),
+    (".tendermint.types.EvidenceList", SERIALIZED),
     (".tendermint.types.Evidence", SERIALIZED),
     (".tendermint.types.DuplicateVoteEvidence", SERIALIZED),
     (".tendermint.types.Vote", SERIALIZED),
@@ -82,12 +82,9 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
 /// https://docs.rs/prost-build/0.6.1/prost_build/struct.Config.html#method.btree_map
 pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (
-        ".tendermint.types.EvidenceParams.max_num",
+        ".tendermint.types.EvidenceParams.max_bytes",
         QUOTED_WITH_DEFAULT,
     ),
-    (".tendermint.types.Data.hash", DEFAULT),
-    (".tendermint.types.EvidenceData.hash", DEFAULT),
-    (".tendermint.types.Commit.hash", DEFAULT),
     (".tendermint.abci.ResponseInfo.last_block_height", QUOTED),
     (".tendermint.version.Consensus.block", QUOTED),
     (".tendermint.version.Consensus.app", QUOTED_WITH_DEFAULT),
@@ -119,7 +116,7 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.Header.evidence_hash", HEXSTRING),
     (".tendermint.types.Header.proposer_address", HEXSTRING),
     (".tendermint.types.Data.txs", NULLABLEVECARRAY),
-    (".tendermint.types.EvidenceData.evidence", NULLABLE),
+    (".tendermint.types.EvidenceList.evidence", NULLABLE),
     (".tendermint.types.Commit.height", QUOTED),
     (".tendermint.types.Commit.signatures", NULLABLE),
     (".tendermint.types.CommitSig.validator_address", HEXSTRING),
@@ -142,7 +139,8 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     ), // Default is for /genesis deserialization
     (".tendermint.types.BlockMeta.block_size", QUOTED),
     (".tendermint.types.BlockMeta.num_txs", QUOTED),
-    (".tendermint.crypto.PublicKey.sum.ed25519", RENAME_PUBKEY),
+    (".tendermint.crypto.PublicKey.sum.ed25519", RENAME_EDPUBKEY),
+    (".tendermint.crypto.PublicKey.sum.secp256k1", RENAME_SECPPUBKEY),
     (
         ".tendermint.types.Evidence.sum.duplicate_vote_evidence",
         RENAME_DUPLICATEVOTE,

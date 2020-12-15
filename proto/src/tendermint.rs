@@ -8,10 +8,6 @@ pub mod abci {
     include!("prost/tendermint.abci.rs");
 }
 
-pub mod evidence {
-    include!("prost/tendermint.evidence.rs");
-}
-
 pub mod store {
     include!("prost/tendermint.store.rs");
 }
@@ -66,5 +62,5 @@ pub mod rpc {
 
 pub mod meta {
     pub const REPOSITORY: &str = "https://github.com/tendermint/tendermint";
-    pub const COMMITISH: &str = "d7d0ffea13c60c98b812d243ba5a2c375f341c15";
+    pub const COMMITISH: &str = "v0.34.0";
 }
