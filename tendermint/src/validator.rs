@@ -25,16 +25,21 @@ impl TryFrom<RawValidatorSet> for Set {
     type Error = Error;
 
     fn try_from(value: RawValidatorSet) -> Result<Self, Self::Error> {
-        let unsorted_validators_result: Result<Vec<Info>, Error> = value
+        let mut validators = value
             .validators
             .into_iter()
             .map(TryInto::try_into)
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Self::sort_validators(&mut validators);
+
+        let proposer = value.proposer.map(TryInto::try_into).transpose()?;
+        let total_voting_power = value.total_voting_power.try_into()?;
 
         Ok(Self {
-            validators: unsorted_validators_result?,
-            proposer: value.proposer.map(TryInto::try_into).transpose()?,
-            total_voting_power: value.total_voting_power.try_into()?,
+            validators,
+            proposer,
+            total_voting_power,
         })
     }
 }
