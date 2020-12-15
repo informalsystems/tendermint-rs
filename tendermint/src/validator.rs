@@ -56,8 +56,7 @@ impl From<Set> for RawValidatorSet {
 
 impl Set {
     /// Constructor
-    pub fn new(validators: Vec<Info>, proposer: Option<Info>) -> Set {
-        let mut validators = validators;
+    pub fn new(mut validators: Vec<Info>, proposer: Option<Info>) -> Set {
         Self::sort_validators(&mut validators);
 
         // Compute the total voting power
