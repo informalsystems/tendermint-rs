@@ -1,4 +1,29 @@
-## Unreleased
+## v0.17.0
+
+*Dec 17, 2020*
+
+This release is a significant breaking upgrade from v0.16.0 that primarily
+targets compatibility with
+[Tendermint v0.34](https://github.com/tendermint/tendermint/blob/master/UPGRADING.md#v0340).
+
+To highlight some of the major changes over the course of 3 release candidates
+and this release, we have:
+
+* Provided Tendermint v0.34.0 compatibility.
+* Supported the development of [ibc-rs](https://github.com/informalsystems/ibc-rs/).
+* Improved our model-based testing to provide complex test cases for the
+  [Light Client](https://github.com/informalsystems/tendermint-rs/tree/master/light-client#testing).
+* Refactored our serialization infrastructure to remove all Amino types and
+  ensure Protobuf compatibility. This includes a lot of work towards clearly
+  separating our domain types from their serialization types.
+* Started work towards offering a WASM-based Tendermint Light Client.
+* Introduced a WebSocket-based RPC client for interacting with the
+  [Tendermint RPC](https://docs.tendermint.com/master/rpc/), including event
+  subscription.
+
+Please see the release notes for each of the v0.17.0 release candidates from
+the past few months, as well as the crate documentation, for further specific
+details.
 
 ### IMPROVEMENTS:
 
