@@ -118,6 +118,11 @@ pub trait Client {
         self.perform(commit::Request::new(height.into())).await
     }
 
+    /// `/consensus_state`: get current consensus state
+    async fn consensus_state(&self) -> Result<consensus_state::Response> {
+        self.perform(consensus_state::Request::new()).await
+    }
+
     /// `/validators`: get validators a given height.
     async fn validators<H>(&self, height: H) -> Result<validators::Response>
     where

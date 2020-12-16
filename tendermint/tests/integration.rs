@@ -24,7 +24,6 @@ mod rpc {
     use tendermint_rpc::query::{EventType, Query};
     use tokio::time::Duration;
 
-    /// Get the address of the local node
     pub fn localhost_rpc_client() -> HttpClient {
         HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap()
     }
@@ -150,6 +149,14 @@ mod rpc {
             commit_info.signed_header.header.hash(),
             commit_info.signed_header.commit.block_id.hash
         );
+    }
+
+    /// `/consensus_state` endpoint
+    #[tokio::test]
+    #[ignore]
+    async fn consensus_state() {
+        // TODO(thane): Test more than just the deserialization.
+        localhost_rpc_client().consensus_state().await.unwrap();
     }
 
     /// `/genesis` endpoint
