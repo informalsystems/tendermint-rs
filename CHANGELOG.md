@@ -27,6 +27,8 @@ details.
 
 ### IMPROVEMENTS:
 
+The following improvements are included since v0.17.0-rc3:
+
 - `[light-client]` Only require Tokio when `rpc-client` feature is enabled ([#425])
 - `[rpc]` The `WebSocketClient` now adds support for all remaining RPC requests
   by way of implementing the `Client` trait ([#646])
