@@ -276,7 +276,7 @@ impl LightClient {
     ) -> Result<LightBlock, Error> {
         let root = state
             .light_store
-            .latest_trusted_or_verified()
+            .highest_trusted_or_verified()
             // .lowest_trusted_or_verified() // does not work yet as it might be lower than target_height
             .ok_or(ErrorKind::NoInitialTrustedState)?;
 

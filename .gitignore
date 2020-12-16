@@ -14,3 +14,6 @@ Cargo.lock
 
 # RPC probe results
 /rpc-probe/probe-results/
+
+# Proptest regressions dumps
+**/*.proptest-regressions

@@ -4,6 +4,7 @@ use tendermint::chain::Info;
 
 use std::convert::{TryFrom, TryInto};
 
+#[derive(Clone, Debug)]
 pub struct LightChain {
     pub info: Info,
     pub light_blocks: Vec<LightBlock>,
