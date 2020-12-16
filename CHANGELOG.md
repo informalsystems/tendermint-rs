@@ -16,6 +16,8 @@ and this release, we have:
 * Refactored our serialization infrastructure to remove all Amino types and
   ensure Protobuf compatibility. This includes a lot of work towards clearly
   separating our domain types from their serialization types.
+* Started work on our [P2P layer] towards the eventual goal of implementing a
+  Tendermint full node.
 * Started work towards offering a WASM-based Tendermint Light Client.
 * Introduced a WebSocket-based RPC client for interacting with the
   [Tendermint RPC](https://docs.tendermint.com/master/rpc/), including event
@@ -51,6 +53,7 @@ The following improvements are included since v0.17.0-rc3:
 [#737]: https://github.com/informalsystems/tendermint-rs/pull/737
 [#739]: https://github.com/informalsystems/tendermint-rs/issues/739
 [#745]: https://github.com/informalsystems/tendermint-rs/issues/745
+[P2P layer]: https://github.com/informalsystems/tendermint-rs/tree/master/p2p
 
 ## v0.17.0-rc3
 
