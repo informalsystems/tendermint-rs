@@ -1,0 +1,2 @@
+[alias]
+kvstore-test = "test --manifest-path kvstore-test/Cargo.toml --features docker"
