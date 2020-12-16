@@ -17,6 +17,7 @@ repository:
 - [Forking](#forking) - fork the repo to make pull requests
 - [Changelog](#changelog) - changes must be recorded in the changelog
 - [Pull Requests](#pull-requests) - what makes a good pull request
+- [Releases](#releases) - how our release process looks
 
 ## Decision Making
 
