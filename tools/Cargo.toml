@@ -1,0 +1,8 @@
+[workspace]
+# This virtual workspace is here for the different IDEs to easily parse the tools folder.
+# Most of the tools need to be run from their own folder or using the `--manifest-path` option,
+# because their features (like the `--features` flag) is not supported in a virtual workspace.
+
+members = [
+    "kvstore-test"
+]

@@ -1,0 +1,22 @@
+[env]
+CONTAINER_NAME = "kvstore-test"
+DOCKER_IMAGE = "informaldev/tendermint:0.34.0"
+HOST_RPC_PORT = 26657
+
+[tasks.docker-up]
+script = '''
+docker rm --force ${CONTAINER_NAME} 2> /dev/null
+docker run --name ${CONTAINER_NAME} --rm --publish 26657:${HOST_RPC_PORT} --detach ${DOCKER_IMAGE}
+sleep 1
+'''
+
+[tasks.test]
+args = ["test-all-features"]
+
+[tasks.docker-down]
+command = "docker"
+args = ["stop", "${CONTAINER_NAME}"]
+
+[tasks.default]
+clear = true
+dependencies = ["docker-up", "test", "docker-down"]
