@@ -100,10 +100,10 @@ fn run_ok_test(tc: TestCase) {
     assert_eq!(result.unwrap().height(), target_height);
 }
 
-fn run_bad_test(tc: TestCase) {
-    let result = run_test(tc);
-    assert!(result.is_err());
-}
+// fn run_bad_test(tc: TestCase) {
+//     let result = run_test(tc);
+//     assert!(result.is_err());
+// }
 
 use proptest::prelude::*;
 
@@ -120,12 +120,12 @@ fn testcase(max: u32) -> impl Strategy<Value = TestCase> {
     })
 }
 
-fn mutate(tc: &mut TestCase) {
-    let trusted = &mut tc.chain.light_blocks[tc.trusted_height.value() as usize - 1];
-    if let Some(header) = trusted.header.as_mut() {
-        header.last_block_id_hash = None;
-    }
-}
+// fn mutate(tc: &mut TestCase) {
+//     let trusted = &mut tc.chain.light_blocks[tc.trusted_height.value() as usize - 1];
+//     if let Some(header) = trusted.header.as_mut() {
+//         header.last_block_id_hash = None;
+//     }
+// }
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(20))]
@@ -140,14 +140,14 @@ proptest! {
         println!();
     }
 
-    #[test]
-    fn bad(mut tc in testcase(100)) {
-        mutate(&mut tc);
-        println!("===========================================");
-        println!("length: {} | trusted: {} | target: {}", tc.length, tc.trusted_height, tc.target_height);
-        println!("-------------------------------------------");
-        run_bad_test(tc);
-        println!("===========================================");
-        println!();
-    }
+    // #[test]
+    // fn bad(mut tc in testcase(100)) {
+    //     mutate(&mut tc);
+    //     println!("===========================================");
+    //     println!("length: {} | trusted: {} | target: {}", tc.length, tc.trusted_height, tc.target_height);
+    //     println!("-------------------------------------------");
+    //     run_bad_test(tc);
+    //     println!("===========================================");
+    //     println!();
+    // }
 }
