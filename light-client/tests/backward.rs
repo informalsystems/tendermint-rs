@@ -1,6 +1,7 @@
 use std::{collections::HashMap, time::Duration};
 
 use tendermint::Time;
+
 use tendermint_light_client::{
     components::{
         io::{AtHeight, Io},
@@ -32,10 +33,10 @@ fn testgen_to_lb(tm_lb: TGLightBlock) -> LightBlock {
 
 #[derive(Clone, Debug)]
 struct TestCase {
-    target_height: Height,
-    trusted_height: Height,
     length: u32,
     chain: LightChain,
+    target_height: Height,
+    trusted_height: Height,
 }
 
 fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
@@ -87,21 +88,21 @@ fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
     (light_client, state)
 }
 
-fn run_test(tc: TestCase) -> Result<LightBlock, Error> {
+fn verify(tc: TestCase) -> Result<LightBlock, Error> {
     let (light_client, mut state) = make(tc.chain, tc.trusted_height);
     light_client.verify_to_target(tc.target_height, &mut state)
 }
 
-fn run_ok_test(tc: TestCase) {
+fn ok_test(tc: TestCase) {
     let target_height = tc.target_height;
-    let result = run_test(tc);
+    let result = verify(tc);
 
     assert!(result.is_ok());
     assert_eq!(result.unwrap().height(), target_height);
 }
 
-// fn run_bad_test(tc: TestCase) {
-//     let result = run_test(tc);
+// fn bad_test(tc: TestCase) {
+//     let result = verify(tc);
 //     assert!(result.is_err());
 // }
 
@@ -127,17 +128,51 @@ fn testcase(max: u32) -> impl Strategy<Value = TestCase> {
 //     }
 // }
 
+fn run_test(tc: TestCase, run: impl FnOnce(TestCase)) {
+    println!("===========================================");
+    println!(
+        "length: {} | trusted: {} | target: {}",
+        tc.length, tc.trusted_height, tc.target_height
+    );
+    println!("-------------------------------------------");
+    run(tc);
+    println!("===========================================");
+    println!();
+}
+
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(20))]
+    #![proptest_config(ProptestConfig::with_cases(5))]
 
     #[test]
-    fn ok(tc in testcase(100)) {
-        println!("===========================================");
-        println!("length: {} | trusted: {} | target: {}", tc.length, tc.trusted_height, tc.target_height);
-        println!("-------------------------------------------");
-        run_ok_test(tc);
-        println!("===========================================");
-        println!();
+    fn prop_target_equal_trusted_first_block(mut tc in testcase(100)) {
+        tc.target_height = 1_u32.into();
+        tc.trusted_height = 1_u32.into();
+        run_test(tc, ok_test)
+    }
+
+    #[test]
+    fn prop_target_equal_trusted_last_block(mut tc in testcase(100)) {
+        tc.target_height = tc.length.into();
+        tc.trusted_height = tc.length.into();
+        run_test(tc, ok_test)
+    }
+
+    #[test]
+    fn prop_target_equal_trusted(mut tc in testcase(100)) {
+        tc.target_height = tc.trusted_height;
+        run_test(tc, ok_test)
+    }
+
+    #[test]
+    fn prop_two_ends(mut tc in testcase(100)) {
+        tc.target_height = 1_u32.into();
+        tc.trusted_height = tc.length.into();
+        run_test(tc, ok_test)
+    }
+
+    #[test]
+    fn prop_target_less_than_trusted(tc in testcase(100)) {
+        run_test(tc, ok_test)
     }
 
     // #[test]
