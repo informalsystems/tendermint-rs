@@ -116,8 +116,6 @@ documentation, for further details.
   where full nodes could spam the light client with massive commits (eg. 10k validators).
 - `[rpc]` Correctly handles control and keep-alive messages ([#516], [#590])
 - `[rpc]` More robust handling of concurrency issues ([#311], [#313])
-- `[tendermint]` CanonicalBlockId is now correctly decoded to `None`
-  in `CanonicalVote` and `CanonicalProposal` when its hash is empty.
 - `[tendermint]` Time serialization fix (part of [#665])
 - `[tendermint]` Fix abci::Data serialization to base64-encoded string. ([#667])
 - `[tendermint]` Simplify abci::Log serialization ([#667])
