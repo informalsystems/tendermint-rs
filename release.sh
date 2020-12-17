@@ -88,7 +88,7 @@ for crate in ${CRATES}; do
   echo ""
   read -rp "Are you sure you want to publish crate \"${crate}\"? (type YES to publish, anything else to exit) " answer
   case $answer in
-    YES ) publish "${crate}"; break;;
+    YES ) publish "${crate}";;
     * ) echo "Terminating"; exit;;
   esac
 done
