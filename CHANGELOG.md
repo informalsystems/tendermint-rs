@@ -97,7 +97,6 @@ documentation, for further details.
   key/value pairs decoded from base64, where previously tag key/value pairs
   were Base64-encoded ([#717])
 - `[rpc]` Support for the `consensus_state` RPC endpoint has been added ([#719])
-- `[tendermint]` Bech32 encoding fix ([#690])
 - `[tendermint]` Remove `total_voting_power` parameter from `validator::Set::new` ([#739])
 - `[tendermint, rpc, light-client]` Crates now compile to WASM on the
   `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#463])
