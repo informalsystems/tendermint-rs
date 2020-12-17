@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-p2p"
-version    = "0.17.0-rc3"
+version    = "0.17.0"
 edition    = "2018"
 license    = "Apache-2.0"
 repository = "https://github.com/informalsystems/tendermint-rs"
@@ -31,8 +31,8 @@ x25519-dalek = "1.1"
 zeroize = "1"
 
 # path dependencies
-tendermint = { path = "../tendermint", version = "=0.17.0-rc3" }
-tendermint-proto = { path = "../proto", version = "=0.17.0-rc3" }
+tendermint = { path = "../tendermint", version = "0.17.0" }
+tendermint-proto = { path = "../proto", version = "0.17.0" }
 
 # optional dependencies
 prost-amino = { version = "0.6", optional = true }

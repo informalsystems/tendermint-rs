@@ -2,7 +2,7 @@
 
 use crate::error::{Error, Kind};
 
-use chrono::{DateTime, SecondsFormat, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use std::convert::TryFrom;
@@ -11,6 +11,7 @@ use std::ops::{Add, Sub};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tendermint_proto::google::protobuf::Timestamp;
+use tendermint_proto::serializers::timestamp;
 use tendermint_proto::Protobuf;
 
 /// Tendermint timestamps
@@ -78,7 +79,7 @@ impl Time {
 
     /// Return an RFC 3339 and ISO 8601 date and time string with 6 subseconds digits and Z.
     pub fn to_rfc3339(&self) -> String {
-        self.0.to_rfc3339_opts(SecondsFormat::Nanos, true)
+        timestamp::to_rfc3339_custom(&self.0)
     }
 
     /// Convert [`Time`] to [`SystemTime`]

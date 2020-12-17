@@ -112,7 +112,7 @@ impl Instance {
 ///         Err(e) => {
 ///             println!("[error] sync failed: {}", e);
 ///         }
-///     });
+///     };
 ///
 ///     std::thread::sleep(Duration::from_millis(800));
 /// }

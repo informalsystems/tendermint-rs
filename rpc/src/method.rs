@@ -39,6 +39,9 @@ pub enum Method {
     /// Get commit info for a block
     Commit,
 
+    /// Get consensus state
+    ConsensusState,
+
     /// Get genesis file
     Genesis,
 
@@ -81,6 +84,7 @@ impl Method {
             Method::BroadcastTxSync => "broadcast_tx_sync",
             Method::BroadcastTxCommit => "broadcast_tx_commit",
             Method::Commit => "commit",
+            Method::ConsensusState => "consensus_state",
             Method::Genesis => "genesis",
             Method::Health => "health",
             Method::NetInfo => "net_info",
@@ -108,6 +112,7 @@ impl FromStr for Method {
             "broadcast_tx_sync" => Method::BroadcastTxSync,
             "broadcast_tx_commit" => Method::BroadcastTxCommit,
             "commit" => Method::Commit,
+            "consensus_state" => Method::ConsensusState,
             "genesis" => Method::Genesis,
             "health" => Method::Health,
             "net_info" => Method::NetInfo,

@@ -17,6 +17,7 @@ repository:
 - [Forking](#forking) - fork the repo to make pull requests
 - [Changelog](#changelog) - changes must be recorded in the changelog
 - [Pull Requests](#pull-requests) - what makes a good pull request
+- [Releases](#releases) - how our release process looks
 
 ## Decision Making
 
@@ -156,3 +157,31 @@ Pull requests should aim to be small and self contained to facilitate quick
 review and merging. Larger change sets should be broken up across multiple PRs.
 Commits should be concise but informative, and moderately clean. Commits will be squashed into a
 single commit for the PR with all the commit messages.
+
+## Releases
+
+Our release process is as follows:
+
+1. Update the [changelog](#changelog) to reflect and summarize all changes in
+   the release.
+2. Push this to a branch `release/vX.Y.Z` according to the version number of
+   the anticipated release (e.g. `release/v0.17.0`) and open a **draft PR**.
+3. Bump all relevant versions in the codebase to the new version and push these
+   changes to the release PR. This includes:
+   1. All `Cargo.toml` files (making sure dependencies' versions are updated
+      too).
+   2. All crates' `lib.rs` files documentation references' `html_root_url`
+      parameters must point to the new version.
+4. Run `cargo doc --all-features --open` locally to double-check that all the
+   documentation compiles and seems up-to-date and coherent. Fix any potential
+   issues here and push them to the release PR.
+5. Mark the PR as **Ready for Review** and incorporate feedback on the release.
+6. Once approved, run the [`release.sh`] script. Fix any problems that may
+   arise during this process and push the changes to the release PR.
+   This step requires the appropriate privileges to push crates to [crates.io].
+7. Once all crates have been successfully released, merge the PR to `master`
+   and tag the repo at the new version (e.g. `v0.17.0`).
+
+[CHANGELOG.md]: https://github.com/informalsystems/tendermint-rs/blob/master/CHANGELOG.md
+[`release.sh`]: https://github.com/informalsystems/tendermint-rs/blob/master/release.sh
+[crates.io]: https://crates.io

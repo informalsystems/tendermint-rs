@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use simple_error::*;
 use std::convert::TryFrom;
 use std::str::FromStr;
-use tendermint::{block, chain, validator, AppHash};
+use tendermint::{block, chain, validator, AppHash, Hash};
 
 #[derive(Debug, Options, Serialize, Deserialize, Clone)]
 pub struct Header {
@@ -26,6 +26,8 @@ pub struct Header {
     pub time: Option<u64>,
     #[options(help = "proposer index (default: 0)")]
     pub proposer: Option<usize>,
+    #[options(help = "last block id hash (default: Hash::None)")]
+    pub last_block_id_hash: Option<Hash>,
 }
 
 impl Header {
@@ -37,6 +39,7 @@ impl Header {
             height: None,
             time: None,
             proposer: None,
+            last_block_id_hash: None,
         }
     }
     set_option!(validators, &[Validator], Some(validators.to_vec()));
@@ -49,12 +52,16 @@ impl Header {
     set_option!(height, u64);
     set_option!(time, u64);
     set_option!(proposer, usize);
+    set_option!(last_block_id_hash, Hash);
 
     pub fn next(&self) -> Self {
         let height = self.height.expect("Missing previous header's height");
         let time = self.time.unwrap_or(height); // if no time is found, then we simple correspond it to the header height
         let validators = self.validators.clone().expect("Missing validators");
         let next_validators = self.next_validators.clone().unwrap_or(validators);
+
+        let prev_header = self.generate().unwrap();
+        let last_block_id_hash = prev_header.hash();
 
         Self {
             validators: Some(next_validators.clone()),
@@ -63,6 +70,7 @@ impl Header {
             height: Some(height + 1),
             time: Some(time + 1),
             proposer: self.proposer, // TODO: proposer must be incremented
+            last_block_id_hash: Some(last_block_id_hash),
         }
     }
 }
@@ -87,6 +95,7 @@ impl Generator<block::Header> for Header {
             height: self.height.or(default.height),
             time: self.time.or(default.time),
             proposer: self.proposer.or(default.proposer),
+            last_block_id_hash: self.last_block_id_hash.or(default.last_block_id_hash),
         }
     }
 
@@ -116,11 +125,18 @@ impl Generator<block::Header> for Header {
             Ok(id) => id,
             Err(_) => bail!("failed to construct header's chain_id"),
         };
+
         let time = if let Some(t) = self.time {
             get_time(t)
         } else {
             tendermint::Time::now()
         };
+
+        let last_block_id = self.last_block_id_hash.map(|hash| block::Id {
+            hash,
+            part_set_header: Default::default(),
+        });
+
         let header = block::Header {
             // block version in Tendermint-go is hardcoded with value 11
             // so we do the same with MBT for now for compatibility
@@ -129,7 +145,7 @@ impl Generator<block::Header> for Header {
             height: block::Height::try_from(self.height.unwrap_or(1))
                 .map_err(|_| SimpleError::new("height out of bounds"))?,
             time,
-            last_block_id: None,
+            last_block_id,
             last_commit_hash: None,
             data_hash: None,
             validators_hash: valset.hash(),

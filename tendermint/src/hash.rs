@@ -163,6 +163,29 @@ impl Serialize for Hash {
     }
 }
 
+/// Serialization/deserialization for `Hash` that allows for empty hashes.
+pub mod allow_empty {
+    use super::*;
+
+    /// Serialize [`Hash`](crate::hash::Hash) into a string.
+    pub fn serialize<S>(value: &Hash, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        value.to_string().serialize(serializer)
+    }
+
+    /// Deserialize [`Hash`](crate::hash::Hash) from a string, allowing for
+    /// empty hashes.
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Hash, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let hex = String::deserialize(deserializer)?;
+        Hash::from_str(&hex).map_err(serde::de::Error::custom)
+    }
+}
+
 /// AppHash is usually a SHA256 hash, but in reality it can be any kind of data
 #[derive(Clone)]
 pub struct AppHash(Vec<u8>);

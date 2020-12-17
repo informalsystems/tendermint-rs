@@ -46,16 +46,18 @@ where
     }
     match Utc.timestamp_opt(value.seconds, value.nanos as u32) {
         LocalResult::None => Err(S::Error::custom("invalid time")),
-        LocalResult::Single(t) => Ok(to_rfc3339_custom(t)),
+        LocalResult::Single(t) => Ok(to_rfc3339_custom(&t)),
         LocalResult::Ambiguous(_, _) => Err(S::Error::custom("ambiguous time")),
     }?
     .serialize(serializer)
 }
 
-// Due to incompatibilities between the way that `chrono` serializes timestamps
-// and the way that Go does for RFC3339, we unfortunately need to define our
-// own timestamp serialization mechanism.
-fn to_rfc3339_custom(t: DateTime<Utc>) -> String {
+/// Serialization helper for converting a `DateTime<Utc>` object to a string.
+///
+/// Due to incompatibilities between the way that `chrono` serializes timestamps
+/// and the way that Go does for RFC3339, we unfortunately need to define our
+/// own timestamp serialization mechanism.
+pub fn to_rfc3339_custom(t: &DateTime<Utc>) -> String {
     let nanos = format!(".{}", t.nanosecond());
     format!(
         "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}{}Z",
