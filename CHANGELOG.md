@@ -53,8 +53,6 @@ documentation, for further details.
   domain types. ([#639])
 - `[tendermint]` Work has started on making it compulsory to construct domain
   types by way of their constructors to ensure validity. ([#639])
-- `[tendermint-proto]` The `DomainType` trait has now been renamed to
-  `Protobuf` to clarify its purpose throughout the codebase. ([#672])
 
 ### FEATURES:
 
