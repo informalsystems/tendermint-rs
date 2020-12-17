@@ -38,7 +38,7 @@ documentation, for further details.
   `websocket-client` feature. Subscriptions are exposed using unbounded
   channels. ([#516])
 - `[tendermint]` Removed all traces of Amino, including `amino_types` modules.
-  All types are now `DomainType`s implementing Protobuf-encoding using Prost.
+  All types are now "domain types" implementing the `Protobuf` trait for Protobuf-encoding using Prost.
   ([#504], [#535], [#536], [#585])
 - `[tendermint]` Protocol breaking changes for compatibility with Tendermint
   Core v0.34 (and the Cosmos Stargate release) ([#305]):
