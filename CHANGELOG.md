@@ -134,6 +134,7 @@ documentation, for further details.
 [#414]: https://github.com/informalsystems/tendermint-rs/issues/414
 [#498]: https://github.com/informalsystems/tendermint-rs/issues/498
 [#463]: https://github.com/informalsystems/tendermint-rs/issues/463
+[#490]: https://github.com/informalsystems/tendermint-rs/issues/490
 [#496]: https://github.com/informalsystems/tendermint-rs/issues/496
 [#502]: https://github.com/informalsystems/tendermint-rs/issues/502
 [#504]: https://github.com/informalsystems/tendermint-rs/issues/504
@@ -151,6 +152,7 @@ documentation, for further details.
 [#585]: https://github.com/informalsystems/tendermint-rs/issues/585
 [#590]: https://github.com/informalsystems/tendermint-rs/issues/590
 [#603]: https://github.com/informalsystems/tendermint-rs/pull/603
+[#613]: https://github.com/informalsystems/tendermint-rs/pull/613
 [#636]: https://github.com/informalsystems/tendermint-rs/pull/636
 [#639]: https://github.com/informalsystems/tendermint-rs/pull/639
 [#650]: https://github.com/informalsystems/tendermint-rs/issues/650
