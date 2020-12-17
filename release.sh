@@ -68,6 +68,25 @@ list_package_files() {
   cargo package --list --manifest-path "$(get_manifest_path "${1}")"
 }
 
+wait_until_available() {
+  echo "Waiting for crate ${1} to become available via crates.io..."
+  for retry in {1..5}; do
+    ONLINE_DATE="$(check_version_online "${1}" "${2}")"
+    if [ -n "${ONLINE_DATE}" ]; then
+      echo "Crate ${crate} is now available online"
+      break
+    else
+      if [ "${retry}" == 5 ]; then
+        echo "ERROR: Crate should have become available by now"
+        exit 1
+      else
+        echo "Not available just yet. Waiting a few seconds..."
+        sleep 5
+      fi
+    fi
+  done
+}
+
 echo "Attempting to publish crate(s): ${CRATES}"
 
 for crate in ${CRATES}; do
@@ -91,4 +110,6 @@ for crate in ${CRATES}; do
     YES ) publish "${crate}";;
     * ) echo "Terminating"; exit;;
   esac
+
+  wait_until_available "${crate}" "${VERSION}"
 done
