@@ -69,9 +69,10 @@ documentation, for further details.
 - `[spec]` English spec of light client attacks and evidence required to
   correctly handle them ([#526])
 - `[tendermint]` Implement `fmt::UpperHex` for `Transaction` ([#613])
+- `[tendermint/proto-compiler]` Protobuf structs generator now also accepts
+  commit IDs from the Tendermint Go repository ([#660])
 - `[testgen]` Various features and improvements to support model-based testing with
   the [Apalache model checker] ([#414])
-- `[tendermint/proto-compiler]` Protobuf structs generator now also accepts commit IDs from the Tendermint Go repository ([#660])
 
 ### IMPROVEMENTS:
 
@@ -98,10 +99,10 @@ documentation, for further details.
   key/value pairs decoded from base64, where previously tag key/value pairs
   were Base64-encoded ([#717])
 - `[rpc]` Support for the `consensus_state` RPC endpoint has been added ([#719])
-- `[tendermint, rpc, light-client]` Crates now compile to WASM on the
-  `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#463])
 - `[tendermint]` Bech32 encoding fix ([#690])
 - `[tendermint]` Remove `total_voting_power` parameter from `validator::Set::new` ([#739])
+- `[tendermint, rpc, light-client]` Crates now compile to WASM on the
+  `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#463])
 - `[tendermint, light-client]` Specify the proposer in the validator set of fetched light blocks ([#705])
 - `[tendermint-proto]` Upgrade protobuf definitions to Tendermint Go v0.34.0 ([#737])
 - `[testgen]` Compute `last_block_id` hash when generating a `LightChain` ([#745])
@@ -112,12 +113,12 @@ documentation, for further details.
 
 ### BUG FIXES:
 
-- `[rpc]` Correctly handles control and keep-alive messages ([#516], [#590])
-- `[rpc]` More robust handling of concurrency issues ([#311], [#313])
 - `[light-client]` Fix bug where a commit with only absent signatures would be
   deemed valid instead of invalid ([#650])
 - `[light-client]` Revert a change introduced in [#652] that would enable DoS attacks,
   where full nodes could spam the light client with massive commits (eg. 10k validators).
+- `[rpc]` Correctly handles control and keep-alive messages ([#516], [#590])
+- `[rpc]` More robust handling of concurrency issues ([#311], [#313])
 - `[tendermint]` CanonicalBlockId is now correctly decoded to `None`
   in `CanonicalVote` and `CanonicalProposal` when its hash is empty.
 - `[tendermint]` Time serialization fix (part of [#665])
