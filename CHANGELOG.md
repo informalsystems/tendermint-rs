@@ -116,11 +116,6 @@ documentation, for further details.
   where full nodes could spam the light client with massive commits (eg. 10k validators).
 - `[rpc]` Correctly handles control and keep-alive messages ([#516], [#590])
 - `[rpc]` More robust handling of concurrency issues ([#311], [#313])
-- `[tendermint]` Time serialization fix (part of [#665])
-- `[tendermint]` Fix abci::Data serialization to base64-encoded string. ([#667])
-- `[tendermint]` Simplify abci::Log serialization ([#667])
-- `[tendermint]` consensus::State backwards compatibility for deserialization ([#679])
-- `[tendermint-proto]` Timestamp serialization fix (part of [#665])
 
 [ibc-rs]: https://github.com/informalsystems/ibc-rs/
 [#305]: https://github.com/informalsystems/tendermint-rs/issues/305
