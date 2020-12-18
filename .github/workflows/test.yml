@@ -94,47 +94,7 @@ jobs:
           command: test-all-features
           args: -p tendermint-testgen
 
-  tendermint-integration:
-    runs-on: ubuntu-latest
-    services:
-      tendermint:
-        image: informaldev/tendermint:0.34.0
-        ports:
-          - 26656:26656
-          - 26657:26657
-          - 26660:26660
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p tendermint --test integration --no-fail-fast -- --ignored
-
-  tendermint-light-client-integration:
-    runs-on: ubuntu-latest
-    services:
-      tendermint:
-        image: informaldev/tendermint:0.34.0
-        ports:
-          - 26656:26656
-          - 26657:26657
-          - 26660:26660
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p tendermint-light-client --test integration --no-fail-fast -- --ignored
-
-  tendermint-rpc-integration:
+  kvstore-integration-stable:
     runs-on: ubuntu-latest
     services:
       tendermint:
@@ -152,9 +112,9 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test-all-features
-          args: -p tendermint-rpc -- --ignored
+          args: --manifest-path tools/kvstore-test/Cargo.toml
 
-  integration-latest:
+  kvstore-integration-latest:
     runs-on: ubuntu-latest
     services:
       tendermint:
@@ -173,8 +133,8 @@ jobs:
         # Don't fail CI due to integration failures on unstable/unreleased versions
         continue-on-error: true
         with:
-          command: test
-          args: -p tendermint --test integration --no-fail-fast -- --ignored
+          command: test-all-features
+          args: --manifest-path tools/kvstore-test/Cargo.toml
 
   nightly-coverage:
     runs-on: ubuntu-latest
