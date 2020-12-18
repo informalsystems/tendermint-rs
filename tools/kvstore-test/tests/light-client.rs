@@ -1,11 +1,17 @@
 //! Light Client integration tests.
 //!
-//! These are all ignored by default, since they test against running
-//! `tendermint node --proxy_app=kvstore`. They can be run using:
-//!
-//! ```
-//! cargo test -- --ignored
-//! ```
+/// If you have a kvstore app running on 127.0.0.1:26657,
+/// these can be run using:
+///
+///     cargo test
+///
+/// Or else, if you have docker installed, you can tell the tests to run an endpoint,
+/// by running:
+///
+///     cargo make
+///
+/// (Make sure you install cargo-make using `cargo install cargo-make` first.)
+///
 
 use tendermint_light_client::{
     builder::LightClientBuilder,
@@ -65,7 +71,6 @@ impl EvidenceReporter for TestEvidenceReporter {
 }
 
 #[test]
-#[ignore]
 fn sync() {
     let primary: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
     let witness: PeerId = "CEFEEDBADFADAD0C0CEEFACADE0ADEADBEEFC0FF".parse().unwrap();

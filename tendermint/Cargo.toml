@@ -60,9 +60,5 @@ zeroize = { version = "1.1", features = ["zeroize_derive"] }
 k256 = { version = "0.7", optional = true, features = ["ecdsa"] }
 ripemd160 = { version = "0.9", optional = true }
 
-[dev-dependencies]
-tendermint-rpc = { path = "../rpc", features = [ "http-client", "websocket-client" ] }
-tokio = { version = "0.2", features = [ "macros" ] }
-
 [features]
 secp256k1 = ["k256", "ripemd160"]

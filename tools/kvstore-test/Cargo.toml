@@ -1,0 +1,17 @@
+[package]
+name = "kvstore-test"
+version = "0.1.0"
+authors = ["Greg Szabo <greg@philosobear.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[dev-dependencies]
+futures = "0.3"
+tendermint = { version = "0.17.0", path = "../../tendermint" }
+tendermint-light-client = { version = "0.17.0", path = "../../light-client" }
+tendermint-rpc = { version = "0.17.0", path = "../../rpc", features = [ "http-client", "websocket-client" ] }
+tokio = { version = "0.2", features = [ "macros" ] }
+contracts = "0.4.0"
