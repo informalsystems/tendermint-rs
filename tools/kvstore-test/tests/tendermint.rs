@@ -152,7 +152,6 @@ mod rpc {
 
     /// `/consensus_state` endpoint
     #[tokio::test]
-    #[ignore]
     async fn consensus_state() {
         // TODO(thane): Test more than just the deserialization.
         localhost_rpc_client().consensus_state().await.unwrap();
