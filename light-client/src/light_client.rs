@@ -311,7 +311,7 @@ impl LightClient {
             state.trace_block(latest.height(), current.height());
 
             latest = current;
-            println!("verified: {}", latest.height());
+            // println!("verified: {}", latest.height());
         }
 
         assert_eq!(latest.height(), target_height);
