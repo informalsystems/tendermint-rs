@@ -19,10 +19,12 @@ use ed25519::Signature as ed25519Signature;
 use ed25519::SIGNATURE_LENGTH as ed25519SignatureLength;
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
+use std::fmt;
 use tendermint_proto::types::Vote as RawVote;
 use tendermint_proto::{Error as ProtobufError, Protobuf};
 
 use crate::signature::Signature::Ed25519;
+use std::str::FromStr;
 
 /// Votes are signed messages from validators for a particular block which
 /// include information about the validator signing it.
@@ -237,5 +239,27 @@ impl TryFrom<i32> for Type {
 impl From<Type> for i32 {
     fn from(value: Type) -> Self {
         value as i32
+    }
+}
+
+impl fmt::Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let id = match self {
+            Type::Prevote => "Prevote",
+            Type::Precommit => "Precommit",
+        };
+        write!(f, "{}", id)
+    }
+}
+
+impl FromStr for Type {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Prevote" => Ok(Self::Prevote),
+            "Precommit" => Ok(Self::Precommit),
+            _ => Err(InvalidMessageType.into()),
+        }
     }
 }

@@ -4,6 +4,8 @@ use std::{fs, path::PathBuf};
 use tendermint::abci::Code;
 
 use std::str::FromStr;
+use tendermint::vote;
+use tendermint_rpc::endpoint::consensus_state::RoundVote;
 use tendermint_rpc::{self as rpc, endpoint, Response};
 
 const EXAMPLE_APP: &str = "GaiaApp";
@@ -351,4 +353,74 @@ fn tx_search_with_prove() {
     assert_eq!(events[0].attributes.len(), 4);
     assert_eq!(events[0].attributes[0].key.as_ref(), "creator");
     assert_eq!(events[0].attributes[0].value.as_ref(), "Cosmoshi Netowoko");
+}
+
+#[test]
+fn consensus_state() {
+    let response =
+        endpoint::consensus_state::Response::from_string(&read_json_fixture("consensus_state"))
+            .unwrap();
+
+    let hrs = &response.round_state.height_round_step;
+    assert_eq!(hrs.height.value(), 1262197);
+    assert_eq!(hrs.round.value(), 0);
+    assert_eq!(hrs.step, 8);
+
+    let hvs = &response.round_state.height_vote_set;
+    assert_eq!(hvs.len(), 1);
+    assert_eq!(hvs[0].round, 0);
+    assert_eq!(hvs[0].prevotes.len(), 2);
+    match &hvs[0].prevotes[0] {
+        RoundVote::Vote(summary) => {
+            assert_eq!(summary.validator_index, 0);
+            assert_eq!(
+                summary.validator_address_fingerprint.as_ref(),
+                vec![0, 0, 1, 228, 67, 253]
+            );
+            assert_eq!(summary.height.value(), 1262197);
+            assert_eq!(summary.round.value(), 0);
+            assert_eq!(summary.vote_type, vote::Type::Prevote);
+            assert_eq!(
+                summary.block_id_hash_fingerprint.as_ref(),
+                vec![99, 74, 218, 241, 244, 2]
+            );
+            assert_eq!(
+                summary.signature_fingerprint.as_ref(),
+                vec![123, 185, 116, 225, 186, 64]
+            );
+            assert_eq!(
+                summary.timestamp.to_rfc3339(),
+                "2019-08-01T11:52:35.513572509Z"
+            );
+        }
+        _ => panic!("unexpected round vote type: {:?}", hvs[0].prevotes[0]),
+    }
+    assert_eq!(hvs[0].prevotes[1], RoundVote::Nil);
+    assert_eq!(hvs[0].precommits.len(), 2);
+    match &hvs[0].precommits[0] {
+        RoundVote::Vote(summary) => {
+            assert_eq!(summary.validator_index, 5);
+            assert_eq!(
+                summary.validator_address_fingerprint.as_ref(),
+                vec![24, 199, 141, 19, 92, 157]
+            );
+            assert_eq!(summary.height.value(), 1262197);
+            assert_eq!(summary.round.value(), 0);
+            assert_eq!(summary.vote_type, vote::Type::Precommit);
+            assert_eq!(
+                summary.block_id_hash_fingerprint.as_ref(),
+                vec![99, 74, 218, 241, 244, 2]
+            );
+            assert_eq!(
+                summary.signature_fingerprint.as_ref(),
+                vec![139, 94, 255, 254, 171, 205]
+            );
+            assert_eq!(
+                summary.timestamp.to_rfc3339(),
+                "2019-08-01T11:52:36.25600005Z"
+            );
+        }
+        _ => panic!("unexpected round vote type: {:?}", hvs[0].precommits[0]),
+    }
+    assert_eq!(hvs[0].precommits[1], RoundVote::Nil);
 }
