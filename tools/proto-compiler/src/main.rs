@@ -12,13 +12,14 @@ use constants::{
 
 fn main() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let tendermint_lib_target = root.join("../proto/src/tendermint.rs");
-    let target_dir = root.join("../proto/src/prost");
+    let tendermint_lib_target = root.join("../../proto/src/tendermint.rs");
+    let target_dir = root.join("../../proto/src/prost");
     let out_dir = var("OUT_DIR")
         .map(PathBuf::from)
         .or_else(|_| TempDir::new("tendermint_proto_out").map(|d| d.into_path()))
         .unwrap();
-    let tendermint_dir = var("TENDERMINT_DIR").unwrap_or_else(|_| "target/tendermint".to_string());
+    let tendermint_dir = var("TENDERMINT_DIR")
+        .unwrap_or_else(|_| format!("{}/../target/tendermint", env!("CARGO_MANIFEST_DIR")));
 
     println!(
         "[info] => Fetching {} at {} into {}",

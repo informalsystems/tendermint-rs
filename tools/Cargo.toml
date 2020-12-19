@@ -1,5 +1,6 @@
 [workspace]
 
 members = [
-    "kvstore-test"
+    "kvstore-test",
+    "proto-compiler"
 ]
