@@ -22,6 +22,8 @@ use tendermint_testgen::{
     Generator, LightChain,
 };
 
+use proptest::prelude::*;
+
 fn testgen_to_lb(tm_lb: TGLightBlock) -> LightBlock {
     LightBlock {
         signed_header: tm_lb.signed_header,
@@ -93,20 +95,23 @@ fn verify(tc: TestCase) -> Result<LightBlock, Error> {
     light_client.verify_to_target(tc.target_height, &mut state)
 }
 
-fn ok_test(tc: TestCase) {
+fn ok_test(tc: TestCase) -> Result<(), TestCaseError> {
     let target_height = tc.target_height;
     let result = verify(tc);
 
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap().height(), target_height);
+    prop_assert!(result.is_ok());
+    prop_assert_eq!(result.unwrap().height(), target_height);
+
+    Ok(())
 }
 
-// fn bad_test(tc: TestCase) {
+// fn bad_test(tc: TestCase) -> Result<(), TestCaseError> {
 //     let result = verify(tc);
-//     assert!(result.is_err());
-// }
 
-use proptest::prelude::*;
+//     prop_assert!(result.is_err());
+
+//     Ok(())
+// }
 
 fn testcase(max: u32) -> impl Strategy<Value = TestCase> {
     (1..=max).prop_flat_map(move |length| {
@@ -128,18 +133,6 @@ fn testcase(max: u32) -> impl Strategy<Value = TestCase> {
 //     }
 // }
 
-fn run_test(tc: TestCase, run: impl FnOnce(TestCase)) {
-    println!("===========================================");
-    println!(
-        "length: {} | trusted: {} | target: {}",
-        tc.length, tc.trusted_height, tc.target_height
-    );
-    println!("-------------------------------------------");
-    run(tc);
-    println!("===========================================");
-    println!();
-}
-
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(5))]
 
@@ -147,42 +140,37 @@ proptest! {
     fn prop_target_equal_trusted_first_block(mut tc in testcase(100)) {
         tc.target_height = 1_u32.into();
         tc.trusted_height = 1_u32.into();
-        run_test(tc, ok_test)
+        ok_test(tc)?;
     }
 
     #[test]
     fn prop_target_equal_trusted_last_block(mut tc in testcase(100)) {
         tc.target_height = tc.length.into();
         tc.trusted_height = tc.length.into();
-        run_test(tc, ok_test)
+        ok_test(tc)?;
     }
 
     #[test]
     fn prop_target_equal_trusted(mut tc in testcase(100)) {
         tc.target_height = tc.trusted_height;
-        run_test(tc, ok_test)
+        ok_test(tc)?;
     }
 
     #[test]
     fn prop_two_ends(mut tc in testcase(100)) {
         tc.target_height = 1_u32.into();
         tc.trusted_height = tc.length.into();
-        run_test(tc, ok_test)
+        ok_test(tc)?;
     }
 
     #[test]
     fn prop_target_less_than_trusted(tc in testcase(100)) {
-        run_test(tc, ok_test)
+        ok_test(tc)?;
     }
 
     // #[test]
     // fn bad(mut tc in testcase(100)) {
     //     mutate(&mut tc);
-    //     println!("===========================================");
-    //     println!("length: {} | trusted: {} | target: {}", tc.length, tc.trusted_height, tc.target_height);
-    //     println!("-------------------------------------------");
-    //     run_bad_test(tc);
-    //     println!("===========================================");
-    //     println!();
+    //     bad_test(tc)?;
     // }
 }
