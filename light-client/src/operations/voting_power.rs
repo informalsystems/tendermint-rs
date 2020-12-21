@@ -223,9 +223,10 @@ fn non_absent_vote(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tendermint_testgen::{LightBlock as TestgenLightBlock, Generator};
+    use tendermint_testgen::{LightBlock as TestgenLightBlock, Generator, Vote, ValidatorSet, Header, Commit};
     use crate::types::LightBlock;
     use tendermint::trust_threshold::TrustThresholdFraction;
+    use tendermint_testgen::light_block::generate_signed_header;
 
     #[test]
     fn test_empty_signatures() {
@@ -258,5 +259,81 @@ mod tests {
 
         // ensure the result matches the expected result
         assert_eq!(expected_result, result_ok.ok().unwrap());
+    }
+
+    #[test]
+    fn test_all_signatures_absent() {
+    let vp_calculator = ProdVotingPowerCalculator::default();
+    let trust_threshold = TrustThreshold::default();
+
+    let mut testgen_lb = TestgenLightBlock::new_default(10);
+    let mut commit = testgen_lb.commit.clone().unwrap();
+    // an empty vector of votes translates into all absent signatures
+    commit.votes = Some(vec![]);
+    testgen_lb.commit = Some(commit);
+    let light_block: LightBlock = testgen_lb
+        .generate()
+        .unwrap()
+        .into();
+
+    let result_ok = vp_calculator.voting_power_in(
+        &light_block.signed_header,
+        &light_block.validators,
+        trust_threshold
+    );
+
+    // ensure the result is "Ok"
+    assert!(result_ok.is_ok());
+
+    let expected_result = VotingPowerTally {
+        total: 100,
+        tallied: 0,
+        trust_threshold: TrustThresholdFraction {
+            numerator: 1,
+            denominator: 3
+        }
+    };
+
+    // ensure the result matches the expected result
+    assert_eq!(expected_result, result_ok.ok().unwrap());
+}
+
+    #[test]
+    fn test_all_signatures_nil() {
+        let vp_calculator = ProdVotingPowerCalculator::default();
+        let trust_threshold = TrustThreshold::default();
+
+        let validator_set = ValidatorSet::new(vec!["a", "b", "c"]);
+        let vals = validator_set.clone().validators.unwrap();
+        let header = Header::new(&vals);
+        let votes = vec![
+            Vote::new(vals[0].clone(), header.clone()).is_nil(true),
+            Vote::new(vals[1].clone(), header.clone()).is_nil(true),
+            Vote::new(vals[2].clone(), header.clone()).is_nil(true),
+        ];
+        let commit = Commit::new_with_votes(header.clone(), 1, votes);
+        let signed_header = generate_signed_header(&header, &commit).unwrap();
+        let valset = validator_set.generate().unwrap();
+
+        let result_ok = vp_calculator.voting_power_in(
+            &signed_header,
+            &valset,
+            trust_threshold
+        );
+
+        // ensure the result is "Ok"
+        assert!(result_ok.is_ok());
+
+        let expected_result = VotingPowerTally {
+            total: 150,
+            tallied: 0,
+            trust_threshold: TrustThresholdFraction {
+                numerator: 1,
+                denominator: 3
+            }
+        };
+
+        // ensure the result matches the expected result
+        assert_eq!(result_ok.ok().unwrap(), expected_result);
     }
 }
