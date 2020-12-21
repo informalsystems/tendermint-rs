@@ -183,7 +183,7 @@ pub fn copy_files(src_dir: &PathBuf, target_dir: &PathBuf) {
 }
 
 /// Walk through the list of directories and gather all *.proto files
-pub fn find_proto_files(proto_paths: Vec<String>) -> Vec<PathBuf> {
+pub fn find_proto_files(proto_paths: Vec<PathBuf>) -> Vec<PathBuf> {
     let mut protos: Vec<PathBuf> = vec![];
     for proto_path in &proto_paths {
         protos.append(
