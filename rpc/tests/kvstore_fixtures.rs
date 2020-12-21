@@ -1,6 +1,5 @@
 //! Tendermint kvstore RPC endpoint testing.
 
-use serde_json;
 use std::str::FromStr;
 use std::{fs, path::PathBuf};
 use subtle_encoding::{base64, hex};
@@ -289,10 +288,7 @@ fn incoming_fixtures() {
                 let result = endpoint::abci_info::Response::from_string(content).unwrap();
                 assert_eq!(result.response.app_version, 1);
                 assert_eq!(result.response.data, "{\"size\":0}");
-                assert_eq!(
-                    result.response.last_block_app_hash,
-                    "AAAAAAAAAAA=".as_bytes()
-                );
+                assert_eq!(result.response.last_block_app_hash, b"AAAAAAAAAAA=");
                 assert_eq!(result.response.version, "0.17.0");
             }
             "abci_query_with_existing_key" => {
@@ -333,18 +329,8 @@ fn incoming_fixtures() {
             }
             "block_at_height_1" => {
                 let result = endpoint::block::Response::from_string(content).unwrap();
-                assert!(result
-                    .block
-                    .data
-                    .iter()
-                    .collect::<Vec<&tendermint::abci::Transaction>>()
-                    .is_empty());
-                assert!(result
-                    .block
-                    .evidence
-                    .iter()
-                    .collect::<Vec<&tendermint::evidence::Evidence>>()
-                    .is_empty());
+                assert!(result.block.data.iter().next().is_none());
+                assert!(result.block.evidence.iter().next().is_none());
                 assert!(result.block.header.app_hash.value().is_empty());
                 assert_eq!(result.block.header.chain_id.as_str(), CHAIN_ID);
                 assert!(!result.block.header.consensus_hash.is_empty());
@@ -384,18 +370,8 @@ fn incoming_fixtures() {
             }
             "block_at_height_10" => {
                 let result = endpoint::block::Response::from_string(content).unwrap();
-                assert!(result
-                    .block
-                    .data
-                    .iter()
-                    .collect::<Vec<&tendermint::abci::Transaction>>()
-                    .is_empty());
-                assert!(result
-                    .block
-                    .evidence
-                    .iter()
-                    .collect::<Vec<&tendermint::evidence::Evidence>>()
-                    .is_empty());
+                assert!(result.block.data.iter().next().is_none());
+                assert!(result.block.evidence.iter().next().is_none());
                 assert_eq!(result.block.header.app_hash.value(), [0u8; 8]);
                 assert_eq!(result.block.header.chain_id.as_str(), CHAIN_ID);
                 assert!(!result.block.header.consensus_hash.is_empty());
@@ -781,16 +757,8 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b
-                        .data
-                        .iter()
-                        .collect::<Vec<&tendermint::abci::Transaction>>()
-                        .is_empty());
-                    assert!(b
-                        .evidence
-                        .iter()
-                        .collect::<Vec<&tendermint::evidence::Evidence>>()
-                        .is_empty());
+                    assert!(b.data.iter().next().is_none());
+                    assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
                     assert!(!b.header.consensus_hash.is_empty());
@@ -844,16 +812,8 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b
-                        .data
-                        .iter()
-                        .collect::<Vec<&tendermint::abci::Transaction>>()
-                        .is_empty());
-                    assert!(b
-                        .evidence
-                        .iter()
-                        .collect::<Vec<&tendermint::evidence::Evidence>>()
-                        .is_empty());
+                    assert!(b.data.iter().next().is_none());
+                    assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
                     assert!(!b.header.consensus_hash.is_empty());
@@ -907,16 +867,8 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b
-                        .data
-                        .iter()
-                        .collect::<Vec<&tendermint::abci::Transaction>>()
-                        .is_empty());
-                    assert!(b
-                        .evidence
-                        .iter()
-                        .collect::<Vec<&tendermint::evidence::Evidence>>()
-                        .is_empty());
+                    assert!(b.data.iter().next().is_none());
+                    assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
                     assert!(!b.header.consensus_hash.is_empty());
@@ -970,16 +922,8 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b
-                        .data
-                        .iter()
-                        .collect::<Vec<&tendermint::abci::Transaction>>()
-                        .is_empty());
-                    assert!(b
-                        .evidence
-                        .iter()
-                        .collect::<Vec<&tendermint::evidence::Evidence>>()
-                        .is_empty());
+                    assert!(b.data.iter().next().is_none());
+                    assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
                     assert!(!b.header.consensus_hash.is_empty());
@@ -1033,16 +977,8 @@ fn incoming_fixtures() {
                 } = result.data
                 {
                     let b = block.unwrap();
-                    assert!(b
-                        .data
-                        .iter()
-                        .collect::<Vec<&tendermint::abci::Transaction>>()
-                        .is_empty());
-                    assert!(b
-                        .evidence
-                        .iter()
-                        .collect::<Vec<&tendermint::evidence::Evidence>>()
-                        .is_empty());
+                    assert!(b.data.iter().next().is_none());
+                    assert!(b.evidence.iter().next().is_none());
                     assert!(!b.header.app_hash.value().is_empty());
                     assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
                     assert!(!b.header.consensus_hash.is_empty());
