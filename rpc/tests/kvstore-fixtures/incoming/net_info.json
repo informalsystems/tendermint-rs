@@ -1,0 +1,12 @@
+{
+  "id": "3476e14b-4058-44ba-b0c2-14c238854472",
+  "jsonrpc": "2.0",
+  "result": {
+    "listeners": [
+      "Listener(@)"
+    ],
+    "listening": true,
+    "n_peers": "0",
+    "peers": []
+  }
+}

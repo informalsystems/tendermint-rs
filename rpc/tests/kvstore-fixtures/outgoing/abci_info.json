@@ -1,0 +1,6 @@
+{
+  "id": "cf4f9a18-e20b-4ca9-881b-7c2294bade5e",
+  "jsonrpc": "2.0",
+  "method": "abci_info",
+  "params": null
+}

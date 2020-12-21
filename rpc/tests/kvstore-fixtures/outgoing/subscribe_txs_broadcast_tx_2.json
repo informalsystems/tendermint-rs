@@ -1,0 +1,8 @@
+{
+  "id": "d40c609e-5a98-4ab3-86e2-5ac77627a85b",
+  "jsonrpc": "2.0",
+  "method": "broadcast_tx_async",
+  "params": {
+    "tx": "dHgyPXZhbHVl"
+  }
+}

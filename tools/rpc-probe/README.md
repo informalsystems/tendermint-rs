@@ -12,15 +12,16 @@ can be used in testing in other crates.
 To run this probe locally, you will need:
 
 * The Rust toolchain (latest stable)
+  * Additionally: `cargo-make`
 * Docker
 
 ## Usage (with Docker)
 
-From the root of the tendermint.rs repository:
+From the root of the tools folder:
 
 ```bash
 cd rpc-probe
-./run-with-docker.sh
+cargo make
 ```
 
 This will:
@@ -36,7 +37,7 @@ This will:
 To run a specific version of Tendermint, simply:
 
 ```bash
-TENDERMINT_TAG="v0.33.8" ./run-with-docker.sh
+DOCKER_IMAGE="informaldev/tendermint:v0.34.0" cargo make
 ```
 
 ## Usage (without Docker)
@@ -67,9 +68,9 @@ cargo run -- --request-wait 100
 ## Output
 
 By default, all request and response JSON-RPC messages will be written into a
-folder called `probe-results` in the `rpc-probe` directory.
+folder called `kvstore-fixtures` in the `rpc/tests` directory.
 
-For example, the `probe-results/incoming/abci_info.json` file (returned by the
+For example, the `rpc/tests/incoming/abci_info.json` file (returned by the
 [`abci_info`] RPC request) could look something like:
 
 ```json

@@ -23,6 +23,7 @@ pub struct Request {
     pub height: Option<block::Height>,
 
     /// Include proof in response
+    #[serde(default)]
     pub prove: bool,
 }
 

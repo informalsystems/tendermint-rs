@@ -28,7 +28,7 @@ struct Opts {
     pub addr: String,
 
     /// The output path in which to store the received responses.
-    #[structopt(default_value = "probe-results", parse(from_os_str), short, long)]
+    #[structopt(default_value = "<rpc tests folder>", parse(from_os_str), short, long)]
     pub output: PathBuf,
 
     /// How long to wait between requests, in milliseconds.
@@ -50,7 +50,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     SimpleLogger::new().with_level(log_level).init().unwrap();
 
-    quick_probe_plan(&opts.output, Duration::from_millis(opts.request_wait))?
+    let output = if opts.output.to_str().unwrap() == "<rpc tests folder>" {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("..")
+            .join("rpc")
+            .join("tests")
+            .join("kvstore-fixtures")
+    } else {
+        opts.output
+    };
+
+    quick_probe_plan(&output, Duration::from_millis(opts.request_wait))?
         .execute(&opts.addr)
         .await?;
     Ok(())
