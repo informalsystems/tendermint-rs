@@ -220,6 +220,10 @@ fn non_absent_vote(
     })
 }
 
+// The below unit tests replaces the static voting power test files
+// see https://github.com/informalsystems/tendermint-rs/pull/383
+// This is essentially to remove the heavy dependency on MBT
+// TODO: We plan to add Lightweight MBT for `voting_power_in` in the near future
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -227,6 +231,15 @@ mod tests {
     use crate::types::LightBlock;
     use tendermint::trust_threshold::TrustThresholdFraction;
     use tendermint_testgen::light_block::generate_signed_header;
+
+    const EXPECTED_RESULT: VotingPowerTally =  VotingPowerTally {
+            total: 100,
+            tallied: 0,
+            trust_threshold: TrustThresholdFraction {
+            numerator: 1,
+            denominator: 3
+        }
+    };
 
     #[test]
     fn test_empty_signatures() {
@@ -248,17 +261,8 @@ mod tests {
         // ensure the result is "Ok"
         assert!(result_ok.is_ok());
 
-        let expected_result = VotingPowerTally {
-            total: 100,
-            tallied: 0,
-            trust_threshold: TrustThresholdFraction {
-                numerator: 1,
-                denominator: 3
-            }
-        };
-
         // ensure the result matches the expected result
-        assert_eq!(result_ok.ok().unwrap(), expected_result);
+        assert_eq!(result_ok.ok().unwrap(), EXPECTED_RESULT);
     }
 
     #[test]
@@ -285,17 +289,8 @@ mod tests {
     // ensure the result is "Ok"
     assert!(result_ok.is_ok());
 
-    let expected_result = VotingPowerTally {
-        total: 100,
-        tallied: 0,
-        trust_threshold: TrustThresholdFraction {
-            numerator: 1,
-            denominator: 3
-        }
-    };
-
     // ensure the result matches the expected result
-    assert_eq!(result_ok.ok().unwrap(), expected_result);
+    assert_eq!(result_ok.ok().unwrap(), EXPECTED_RESULT);
 }
 
     #[test]
@@ -303,13 +298,12 @@ mod tests {
         let vp_calculator = ProdVotingPowerCalculator::default();
         let trust_threshold = TrustThreshold::default();
 
-        let validator_set = ValidatorSet::new(vec!["a", "b", "c"]);
+        let validator_set = ValidatorSet::new(vec!["a", "b"]);
         let vals = validator_set.clone().validators.unwrap();
         let header = Header::new(&vals);
         let votes = vec![
             TestgenVote::new(vals[0].clone(), header.clone()).is_nil(true),
             TestgenVote::new(vals[1].clone(), header.clone()).is_nil(true),
-            TestgenVote::new(vals[2].clone(), header.clone()).is_nil(true),
         ];
         let commit = Commit::new_with_votes(header.clone(), 1, votes);
         let signed_header = generate_signed_header(&header, &commit).unwrap();
@@ -324,17 +318,8 @@ mod tests {
         // ensure the result is "Ok"
         assert!(result_ok.is_ok());
 
-        let expected_result = VotingPowerTally {
-            total: 150,
-            tallied: 0,
-            trust_threshold: TrustThresholdFraction {
-                numerator: 1,
-                denominator: 3
-            }
-        };
-
         // ensure the result matches the expected result
-        assert_eq!(result_ok.ok().unwrap(), expected_result);
+        assert_eq!(result_ok.ok().unwrap(), EXPECTED_RESULT);
     }
 
     #[test]
@@ -395,5 +380,29 @@ mod tests {
         // ensure the result produces an InvalidSignature error
         let err_str = format!("{:?}", result_err.err().unwrap());
         assert!(err_str.contains("InvalidSignature"));
+    }
+
+    #[test]
+    fn test_signatures_from_diff_valset() {
+        let vp_calculator = ProdVotingPowerCalculator::default();
+        let trust_threshold = TrustThreshold::default();
+
+        let mut light_block: LightBlock = TestgenLightBlock::new_default(10)
+            .generate()
+            .unwrap()
+            .into();
+        light_block.validators = ValidatorSet::new(vec!["bad-val1", "bad-val2"]).generate().unwrap();
+
+        let result_ok = vp_calculator.voting_power_in(
+            &light_block.signed_header,
+            &light_block.validators,
+            trust_threshold
+        );
+
+        // ensure the result is "Ok"
+        assert!(result_ok.is_ok());
+
+        // ensure the result matches the expected result
+        assert_eq!(result_ok.ok().unwrap(), EXPECTED_RESULT);
     }
 }
