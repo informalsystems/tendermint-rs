@@ -56,7 +56,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .join("..")
             .join("rpc")
             .join("tests")
-            .join("kvstore-fixtures")
+            .join("kvstore_fixtures")
     } else {
         opts.output
     };

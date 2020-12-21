@@ -1,8 +1,0 @@
-{
-  "id": "4960eda3-b8a3-415f-982d-55d4c7ee41c0",
-  "jsonrpc": "2.0",
-  "method": "subscribe",
-  "params": {
-    "query": "tm.event = 'Tx'"
-  }
-}

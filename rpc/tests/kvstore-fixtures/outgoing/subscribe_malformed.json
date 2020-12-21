@@ -1,8 +1,0 @@
-{
-  "id": "e7f3c1f7-027d-4009-b65b-18bb65bbbd0c",
-  "jsonrpc": "2.0",
-  "method": "subscribe",
-  "params": {
-    "query": "malformed query"
-  }
-}
