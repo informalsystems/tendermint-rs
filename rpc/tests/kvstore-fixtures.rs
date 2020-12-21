@@ -1,10 +1,9 @@
 //! Tendermint kvstore RPC endpoint testing.
 
 use serde_json;
+use std::str::FromStr;
 use std::{fs, path::PathBuf};
 use subtle_encoding::{base64, hex};
-use tendermint::hash::Algorithm;
-use tendermint::Hash;
 use tendermint_rpc::{endpoint, error::Code, request::Wrapper as RequestWrapper, Order, Response};
 use walkdir::WalkDir;
 
@@ -267,8 +266,8 @@ fn outgoing_fixtures() {
 #[test]
 fn incoming_fixtures() {
     let empty_merkle_root_hash = Some(
-        Hash::from_hex_upper(
-            Algorithm::Sha256,
+        tendermint::Hash::from_hex_upper(
+            tendermint::hash::Algorithm::Sha256,
             "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
         )
         .unwrap(),
@@ -608,7 +607,6 @@ fn incoming_fixtures() {
             }
             "commit_at_height_10" => {
                 let result = endpoint::commit::Response::from_string(content).unwrap();
-                assert!(result.canonical);
                 assert!(!result.signed_header.commit.block_id.hash.is_empty());
                 assert_eq!(result.signed_header.commit.height.value(), 10);
                 assert_eq!(result.signed_header.commit.round.value(), 0);
@@ -717,82 +715,652 @@ fn incoming_fixtures() {
                 assert_eq!(result.n_peers, 0);
                 assert!(result.peers.is_empty());
             }
-            // Todo: fill in assertions from here. Currently only JSON deserialization is checked.
             "status" => {
-                let _result = endpoint::status::Response::from_string(content).unwrap();
+                let result = endpoint::status::Response::from_string(content).unwrap();
+                assert_eq!(
+                    result.node_info.listen_addr.to_net_address().unwrap(),
+                    tendermint::net::Address::from_str("tcp://0.0.0.0:26656").unwrap()
+                );
+                assert_eq!(result.node_info.moniker.to_string(), "dockernode");
+                assert_eq!(result.node_info.network.to_string(), CHAIN_ID);
+                assert_eq!(
+                    result.node_info.other.rpc_address,
+                    tendermint::net::Address::from_str("tcp://0.0.0.0:26657").unwrap()
+                );
+                assert_eq!(
+                    result.node_info.other.tx_index,
+                    tendermint::node::info::TxIndexStatus::On
+                );
+                assert_eq!(
+                    result.node_info.protocol_version,
+                    tendermint::node::info::ProtocolVersionInfo {
+                        p2p: 8,
+                        block: 11,
+                        app: 1
+                    }
+                );
+                assert_eq!(result.node_info.version.to_string(), "v0.34.0");
+                assert!(!result.sync_info.catching_up);
+                assert_eq!(result.sync_info.latest_app_hash.value(), [0; 8]);
+                assert!(!result.sync_info.latest_block_hash.is_empty());
+                assert!(
+                    result
+                        .sync_info
+                        .latest_block_time
+                        .duration_since(informal_epoch)
+                        .unwrap()
+                        .as_secs()
+                        > 0
+                );
+                assert!(result.validator_info.pub_key.ed25519().is_some());
+                assert_eq!(result.validator_info.voting_power.value(), 10);
             }
             "subscribe_malformed" => {
-                let _result = endpoint::subscribe::Response::from_string(content)
+                let result = endpoint::subscribe::Response::from_string(content)
                     .err()
                     .unwrap();
+                assert_eq!(result.code(), Code::InternalError);
+                assert_eq!(result.message(), "Internal error");
+                assert_eq!(result.data().unwrap(),"failed to parse query: \nparse error near PegText (line 1 symbol 2 - line 1 symbol 11):\n\"malformed\"\n");
             }
             "subscribe_newblock" => {
-                let _result = endpoint::subscribe::Response::from_string(content)
+                let result = endpoint::subscribe::Response::from_string(content)
                     .err()
                     .unwrap();
+                assert_eq!(result.code(), Code::ParseError);
+                assert_eq!(result.message(), "Parse error. Invalid JSON");
+                assert_eq!(
+                    result.data().unwrap(),
+                    "missing field `jsonrpc` at line 1 column 2"
+                );
             }
             "subscribe_newblock_0" => {
-                let _result = endpoint::subscribe::Response::from_string(content).unwrap();
+                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                if let tendermint_rpc::event::EventData::NewBlock {
+                    block,
+                    result_begin_block,
+                    result_end_block,
+                } = result.data
+                {
+                    let b = block.unwrap();
+                    assert!(b
+                        .data
+                        .iter()
+                        .collect::<Vec<&tendermint::abci::Transaction>>()
+                        .is_empty());
+                    assert!(b
+                        .evidence
+                        .iter()
+                        .collect::<Vec<&tendermint::evidence::Evidence>>()
+                        .is_empty());
+                    assert!(!b.header.app_hash.value().is_empty());
+                    assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
+                    assert!(!b.header.consensus_hash.is_empty());
+                    assert_eq!(b.header.data_hash, empty_merkle_root_hash);
+                    assert_eq!(b.header.evidence_hash, empty_merkle_root_hash);
+                    assert!(b.header.last_block_id.is_some());
+                    assert!(b.header.last_commit_hash.is_some());
+                    assert!(b.header.last_results_hash.is_some());
+                    assert!(!b.header.next_validators_hash.is_empty());
+                    assert_ne!(
+                        b.header.proposer_address.as_bytes(),
+                        [0u8; tendermint::account::LENGTH]
+                    );
+                    assert!(
+                        b.header
+                            .time
+                            .duration_since(informal_epoch)
+                            .unwrap()
+                            .as_secs()
+                            > 0
+                    );
+                    assert!(!b.header.validators_hash.is_empty());
+                    assert_eq!(
+                        b.header.version,
+                        tendermint::block::header::Version { block: 11, app: 1 }
+                    );
+                    let last_commit = b.last_commit.unwrap();
+                    assert!(!last_commit.block_id.hash.is_empty());
+                    assert!(!last_commit.block_id.part_set_header.hash.is_empty());
+                    assert_eq!(last_commit.block_id.part_set_header.total, 1);
+                    assert_eq!(last_commit.round.value(), 0);
+                    assert_eq!(last_commit.signatures.len(), 1);
+                    assert!(last_commit.signatures[0].is_commit());
+                    assert!(last_commit.signatures[0].validator_address().is_some());
+                    assert!(result_begin_block.unwrap().tags.is_empty());
+                    let reb = result_end_block.unwrap();
+                    assert!(reb.validator_updates.is_empty());
+                    assert!(reb.consensus_param_updates.is_none());
+                    assert!(reb.tags.is_empty());
+                } else {
+                    panic!("not a newblock");
+                }
+                assert_eq!(result.query, "tm.event = 'NewBlock'");
             }
             "subscribe_newblock_1" => {
-                let _result = endpoint::subscribe::Response::from_string(content).unwrap();
+                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                if let tendermint_rpc::event::EventData::NewBlock {
+                    block,
+                    result_begin_block,
+                    result_end_block,
+                } = result.data
+                {
+                    let b = block.unwrap();
+                    assert!(b
+                        .data
+                        .iter()
+                        .collect::<Vec<&tendermint::abci::Transaction>>()
+                        .is_empty());
+                    assert!(b
+                        .evidence
+                        .iter()
+                        .collect::<Vec<&tendermint::evidence::Evidence>>()
+                        .is_empty());
+                    assert!(!b.header.app_hash.value().is_empty());
+                    assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
+                    assert!(!b.header.consensus_hash.is_empty());
+                    assert_eq!(b.header.data_hash, empty_merkle_root_hash);
+                    assert_eq!(b.header.evidence_hash, empty_merkle_root_hash);
+                    assert!(b.header.last_block_id.is_some());
+                    assert!(b.header.last_commit_hash.is_some());
+                    assert!(b.header.last_results_hash.is_some());
+                    assert!(!b.header.next_validators_hash.is_empty());
+                    assert_ne!(
+                        b.header.proposer_address.as_bytes(),
+                        [0u8; tendermint::account::LENGTH]
+                    );
+                    assert!(
+                        b.header
+                            .time
+                            .duration_since(informal_epoch)
+                            .unwrap()
+                            .as_secs()
+                            > 0
+                    );
+                    assert!(!b.header.validators_hash.is_empty());
+                    assert_eq!(
+                        b.header.version,
+                        tendermint::block::header::Version { block: 11, app: 1 }
+                    );
+                    let last_commit = b.last_commit.unwrap();
+                    assert!(!last_commit.block_id.hash.is_empty());
+                    assert!(!last_commit.block_id.part_set_header.hash.is_empty());
+                    assert_eq!(last_commit.block_id.part_set_header.total, 1);
+                    assert_eq!(last_commit.round.value(), 0);
+                    assert_eq!(last_commit.signatures.len(), 1);
+                    assert!(last_commit.signatures[0].is_commit());
+                    assert!(last_commit.signatures[0].validator_address().is_some());
+                    assert!(result_begin_block.unwrap().tags.is_empty());
+                    let reb = result_end_block.unwrap();
+                    assert!(reb.validator_updates.is_empty());
+                    assert!(reb.consensus_param_updates.is_none());
+                    assert!(reb.tags.is_empty());
+                } else {
+                    panic!("not a newblock");
+                }
+                assert_eq!(result.query, "tm.event = 'NewBlock'");
             }
             "subscribe_newblock_2" => {
-                let _result = endpoint::subscribe::Response::from_string(content).unwrap();
+                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                if let tendermint_rpc::event::EventData::NewBlock {
+                    block,
+                    result_begin_block,
+                    result_end_block,
+                } = result.data
+                {
+                    let b = block.unwrap();
+                    assert!(b
+                        .data
+                        .iter()
+                        .collect::<Vec<&tendermint::abci::Transaction>>()
+                        .is_empty());
+                    assert!(b
+                        .evidence
+                        .iter()
+                        .collect::<Vec<&tendermint::evidence::Evidence>>()
+                        .is_empty());
+                    assert!(!b.header.app_hash.value().is_empty());
+                    assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
+                    assert!(!b.header.consensus_hash.is_empty());
+                    assert_eq!(b.header.data_hash, empty_merkle_root_hash);
+                    assert_eq!(b.header.evidence_hash, empty_merkle_root_hash);
+                    assert!(b.header.last_block_id.is_some());
+                    assert!(b.header.last_commit_hash.is_some());
+                    assert!(b.header.last_results_hash.is_some());
+                    assert!(!b.header.next_validators_hash.is_empty());
+                    assert_ne!(
+                        b.header.proposer_address.as_bytes(),
+                        [0u8; tendermint::account::LENGTH]
+                    );
+                    assert!(
+                        b.header
+                            .time
+                            .duration_since(informal_epoch)
+                            .unwrap()
+                            .as_secs()
+                            > 0
+                    );
+                    assert!(!b.header.validators_hash.is_empty());
+                    assert_eq!(
+                        b.header.version,
+                        tendermint::block::header::Version { block: 11, app: 1 }
+                    );
+                    let last_commit = b.last_commit.unwrap();
+                    assert!(!last_commit.block_id.hash.is_empty());
+                    assert!(!last_commit.block_id.part_set_header.hash.is_empty());
+                    assert_eq!(last_commit.block_id.part_set_header.total, 1);
+                    assert_eq!(last_commit.round.value(), 0);
+                    assert_eq!(last_commit.signatures.len(), 1);
+                    assert!(last_commit.signatures[0].is_commit());
+                    assert!(last_commit.signatures[0].validator_address().is_some());
+                    assert!(result_begin_block.unwrap().tags.is_empty());
+                    let reb = result_end_block.unwrap();
+                    assert!(reb.validator_updates.is_empty());
+                    assert!(reb.consensus_param_updates.is_none());
+                    assert!(reb.tags.is_empty());
+                } else {
+                    panic!("not a newblock");
+                }
+                assert_eq!(result.query, "tm.event = 'NewBlock'");
             }
             "subscribe_newblock_3" => {
-                let _result = endpoint::subscribe::Response::from_string(content).unwrap();
+                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                if let tendermint_rpc::event::EventData::NewBlock {
+                    block,
+                    result_begin_block,
+                    result_end_block,
+                } = result.data
+                {
+                    let b = block.unwrap();
+                    assert!(b
+                        .data
+                        .iter()
+                        .collect::<Vec<&tendermint::abci::Transaction>>()
+                        .is_empty());
+                    assert!(b
+                        .evidence
+                        .iter()
+                        .collect::<Vec<&tendermint::evidence::Evidence>>()
+                        .is_empty());
+                    assert!(!b.header.app_hash.value().is_empty());
+                    assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
+                    assert!(!b.header.consensus_hash.is_empty());
+                    assert_eq!(b.header.data_hash, empty_merkle_root_hash);
+                    assert_eq!(b.header.evidence_hash, empty_merkle_root_hash);
+                    assert!(b.header.last_block_id.is_some());
+                    assert!(b.header.last_commit_hash.is_some());
+                    assert!(b.header.last_results_hash.is_some());
+                    assert!(!b.header.next_validators_hash.is_empty());
+                    assert_ne!(
+                        b.header.proposer_address.as_bytes(),
+                        [0u8; tendermint::account::LENGTH]
+                    );
+                    assert!(
+                        b.header
+                            .time
+                            .duration_since(informal_epoch)
+                            .unwrap()
+                            .as_secs()
+                            > 0
+                    );
+                    assert!(!b.header.validators_hash.is_empty());
+                    assert_eq!(
+                        b.header.version,
+                        tendermint::block::header::Version { block: 11, app: 1 }
+                    );
+                    let last_commit = b.last_commit.unwrap();
+                    assert!(!last_commit.block_id.hash.is_empty());
+                    assert!(!last_commit.block_id.part_set_header.hash.is_empty());
+                    assert_eq!(last_commit.block_id.part_set_header.total, 1);
+                    assert_eq!(last_commit.round.value(), 0);
+                    assert_eq!(last_commit.signatures.len(), 1);
+                    assert!(last_commit.signatures[0].is_commit());
+                    assert!(last_commit.signatures[0].validator_address().is_some());
+                    assert!(result_begin_block.unwrap().tags.is_empty());
+                    let reb = result_end_block.unwrap();
+                    assert!(reb.validator_updates.is_empty());
+                    assert!(reb.consensus_param_updates.is_none());
+                    assert!(reb.tags.is_empty());
+                } else {
+                    panic!("not a newblock");
+                }
+                assert_eq!(result.query, "tm.event = 'NewBlock'");
             }
             "subscribe_newblock_4" => {
-                let _result = endpoint::subscribe::Response::from_string(content).unwrap();
+                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                if let tendermint_rpc::event::EventData::NewBlock {
+                    block,
+                    result_begin_block,
+                    result_end_block,
+                } = result.data
+                {
+                    let b = block.unwrap();
+                    assert!(b
+                        .data
+                        .iter()
+                        .collect::<Vec<&tendermint::abci::Transaction>>()
+                        .is_empty());
+                    assert!(b
+                        .evidence
+                        .iter()
+                        .collect::<Vec<&tendermint::evidence::Evidence>>()
+                        .is_empty());
+                    assert!(!b.header.app_hash.value().is_empty());
+                    assert_eq!(b.header.chain_id.as_str(), CHAIN_ID);
+                    assert!(!b.header.consensus_hash.is_empty());
+                    assert_eq!(b.header.data_hash, empty_merkle_root_hash);
+                    assert_eq!(b.header.evidence_hash, empty_merkle_root_hash);
+                    assert!(b.header.last_block_id.is_some());
+                    assert!(b.header.last_commit_hash.is_some());
+                    assert!(b.header.last_results_hash.is_some());
+                    assert!(!b.header.next_validators_hash.is_empty());
+                    assert_ne!(
+                        b.header.proposer_address.as_bytes(),
+                        [0u8; tendermint::account::LENGTH]
+                    );
+                    assert!(
+                        b.header
+                            .time
+                            .duration_since(informal_epoch)
+                            .unwrap()
+                            .as_secs()
+                            > 0
+                    );
+                    assert!(!b.header.validators_hash.is_empty());
+                    assert_eq!(
+                        b.header.version,
+                        tendermint::block::header::Version { block: 11, app: 1 }
+                    );
+                    let last_commit = b.last_commit.unwrap();
+                    assert!(!last_commit.block_id.hash.is_empty());
+                    assert!(!last_commit.block_id.part_set_header.hash.is_empty());
+                    assert_eq!(last_commit.block_id.part_set_header.total, 1);
+                    assert_eq!(last_commit.round.value(), 0);
+                    assert_eq!(last_commit.signatures.len(), 1);
+                    assert!(last_commit.signatures[0].is_commit());
+                    assert!(last_commit.signatures[0].validator_address().is_some());
+                    assert!(result_begin_block.unwrap().tags.is_empty());
+                    let reb = result_end_block.unwrap();
+                    assert!(reb.validator_updates.is_empty());
+                    assert!(reb.consensus_param_updates.is_none());
+                    assert!(reb.tags.is_empty());
+                } else {
+                    panic!("not a newblock");
+                }
+                assert_eq!(result.query, "tm.event = 'NewBlock'");
             }
             "subscribe_txs" => {
-                let _result = endpoint::subscribe::Response::from_string(content).unwrap();
+                assert!(endpoint::subscribe::Response::from_string(content).is_ok());
             }
             "subscribe_txs_0" => {
-                let _result = endpoint::subscribe::Response::from_string(content).unwrap();
+                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let height;
+                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
+                    height = tx_result.height;
+                    assert!(tx_result.result.log.is_none());
+                    assert!(tx_result.result.gas_wanted.is_none());
+                    assert!(tx_result.result.gas_used.is_none());
+                    assert_eq!(tx_result.result.events.len(), 1);
+                    assert_eq!(tx_result.result.events[0].event_type, "app");
+                    for attr in &tx_result.result.events[0].attributes {
+                        match attr.key.as_str() {
+                            "Y3JlYXRvcg==" => assert_eq!(attr.value, "Q29zbW9zaGkgTmV0b3dva28="),
+                            "a2V5" => assert_eq!(attr.value, "dHgw"),
+                            "aW5kZXhfa2V5" => assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw=="),
+                            "bm9pbmRleF9rZXk=" => {
+                                assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw==")
+                            }
+                            _ => panic!("unknown attribute found {}", attr.key),
+                        }
+                    }
+                    assert_eq!(tx_result.tx, base64::decode("dHgwPXZhbHVl").unwrap());
+                } else {
+                    panic!("not a tx");
+                }
+                for (k, v) in result.events.unwrap() {
+                    assert_eq!(v.len(), 1);
+                    match k.as_str() {
+                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
+                        "app.index_key" => assert_eq!(v[0], "index is working"),
+                        "app.key" => assert_eq!(v[0], "tx0"),
+                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
+                        "tm.event" => assert_eq!(v[0], "Tx"),
+                        "tx.hash" => assert_eq!(v[0].len(), 64),
+                        "tx.height" => assert_eq!(v[0], height.to_string()),
+                        _ => panic!("unknown event found {}", k),
+                    }
+                }
+                assert_eq!(result.query, "tm.event = 'Tx'");
             }
             "subscribe_txs_1" => {
-                let _result = endpoint::subscribe::Response::from_string(content).unwrap();
-            }
-            "subscribe_txs_3" => {
-                let _result = endpoint::subscribe::Response::from_string(content).unwrap();
+                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let height;
+                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
+                    height = tx_result.height;
+                    assert!(tx_result.result.log.is_none());
+                    assert!(tx_result.result.gas_wanted.is_none());
+                    assert!(tx_result.result.gas_used.is_none());
+                    assert_eq!(tx_result.result.events.len(), 1);
+                    assert_eq!(tx_result.result.events[0].event_type, "app");
+                    for attr in &tx_result.result.events[0].attributes {
+                        match attr.key.as_str() {
+                            "Y3JlYXRvcg==" => assert_eq!(attr.value, "Q29zbW9zaGkgTmV0b3dva28="),
+                            "a2V5" => assert_eq!(attr.value, "dHgx"),
+                            "aW5kZXhfa2V5" => assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw=="),
+                            "bm9pbmRleF9rZXk=" => {
+                                assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw==")
+                            }
+                            _ => panic!("unknown attribute found {}", attr.key),
+                        }
+                    }
+                    assert_eq!(tx_result.tx, base64::decode("dHgxPXZhbHVl").unwrap());
+                } else {
+                    panic!("not a tx");
+                }
+                for (k, v) in result.events.unwrap() {
+                    assert_eq!(v.len(), 1);
+                    match k.as_str() {
+                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
+                        "app.index_key" => assert_eq!(v[0], "index is working"),
+                        "app.key" => assert_eq!(v[0], "tx1"),
+                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
+                        "tm.event" => assert_eq!(v[0], "Tx"),
+                        "tx.hash" => assert_eq!(v[0].len(), 64),
+                        "tx.height" => assert_eq!(v[0], height.to_string()),
+                        _ => panic!("unknown event found {}", k),
+                    }
+                }
+                assert_eq!(result.query, "tm.event = 'Tx'");
             }
             "subscribe_txs_2" => {
-                let _result = endpoint::subscribe::Response::from_string(content).unwrap();
+                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let height;
+                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
+                    height = tx_result.height;
+                    assert!(tx_result.result.log.is_none());
+                    assert!(tx_result.result.gas_wanted.is_none());
+                    assert!(tx_result.result.gas_used.is_none());
+                    assert_eq!(tx_result.result.events.len(), 1);
+                    assert_eq!(tx_result.result.events[0].event_type, "app");
+                    for attr in &tx_result.result.events[0].attributes {
+                        match attr.key.as_str() {
+                            "Y3JlYXRvcg==" => assert_eq!(attr.value, "Q29zbW9zaGkgTmV0b3dva28="),
+                            "a2V5" => assert_eq!(attr.value, "dHgy"),
+                            "aW5kZXhfa2V5" => assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw=="),
+                            "bm9pbmRleF9rZXk=" => {
+                                assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw==")
+                            }
+                            _ => panic!("unknown attribute found {}", attr.key),
+                        }
+                    }
+                    assert_eq!(tx_result.tx, base64::decode("dHgyPXZhbHVl").unwrap());
+                } else {
+                    panic!("not a tx");
+                }
+                for (k, v) in result.events.unwrap() {
+                    assert_eq!(v.len(), 1);
+                    match k.as_str() {
+                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
+                        "app.index_key" => assert_eq!(v[0], "index is working"),
+                        "app.key" => assert_eq!(v[0], "tx2"),
+                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
+                        "tm.event" => assert_eq!(v[0], "Tx"),
+                        "tx.hash" => assert_eq!(v[0].len(), 64),
+                        "tx.height" => assert_eq!(v[0], height.to_string()),
+                        _ => panic!("unknown event found {}", k),
+                    }
+                }
+                assert_eq!(result.query, "tm.event = 'Tx'");
+            }
+            "subscribe_txs_3" => {
+                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let height;
+                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
+                    height = tx_result.height;
+                    assert!(tx_result.result.log.is_none());
+                    assert!(tx_result.result.gas_wanted.is_none());
+                    assert!(tx_result.result.gas_used.is_none());
+                    assert_eq!(tx_result.result.events.len(), 1);
+                    assert_eq!(tx_result.result.events[0].event_type, "app");
+                    for attr in &tx_result.result.events[0].attributes {
+                        match attr.key.as_str() {
+                            "Y3JlYXRvcg==" => assert_eq!(attr.value, "Q29zbW9zaGkgTmV0b3dva28="),
+                            "a2V5" => assert_eq!(attr.value, "dHgz"),
+                            "aW5kZXhfa2V5" => assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw=="),
+                            "bm9pbmRleF9rZXk=" => {
+                                assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw==")
+                            }
+                            _ => panic!("unknown attribute found {}", attr.key),
+                        }
+                    }
+                    assert_eq!(tx_result.tx, base64::decode("dHgzPXZhbHVl").unwrap());
+                } else {
+                    panic!("not a tx");
+                }
+                for (k, v) in result.events.unwrap() {
+                    assert_eq!(v.len(), 1);
+                    match k.as_str() {
+                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
+                        "app.index_key" => assert_eq!(v[0], "index is working"),
+                        "app.key" => assert_eq!(v[0], "tx3"),
+                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
+                        "tm.event" => assert_eq!(v[0], "Tx"),
+                        "tx.hash" => assert_eq!(v[0].len(), 64),
+                        "tx.height" => assert_eq!(v[0], height.to_string()),
+                        _ => panic!("unknown event found {}", k),
+                    }
+                }
+                assert_eq!(result.query, "tm.event = 'Tx'");
             }
             "subscribe_txs_4" => {
-                let _result = endpoint::subscribe::Response::from_string(content).unwrap();
+                let result = tendermint_rpc::event::Event::from_string(content).unwrap();
+                let height;
+                if let tendermint_rpc::event::EventData::Tx { tx_result } = result.data {
+                    height = tx_result.height;
+                    assert!(tx_result.result.log.is_none());
+                    assert!(tx_result.result.gas_wanted.is_none());
+                    assert!(tx_result.result.gas_used.is_none());
+                    assert_eq!(tx_result.result.events.len(), 1);
+                    assert_eq!(tx_result.result.events[0].event_type, "app");
+                    for attr in &tx_result.result.events[0].attributes {
+                        match attr.key.as_str() {
+                            "Y3JlYXRvcg==" => assert_eq!(attr.value, "Q29zbW9zaGkgTmV0b3dva28="),
+                            "a2V5" => assert_eq!(attr.value, "dHg0"),
+                            "aW5kZXhfa2V5" => assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw=="),
+                            "bm9pbmRleF9rZXk=" => {
+                                assert_eq!(attr.value, "aW5kZXggaXMgd29ya2luZw==")
+                            }
+                            _ => panic!("unknown attribute found {}", attr.key),
+                        }
+                    }
+                    assert_eq!(tx_result.tx, base64::decode("dHg0PXZhbHVl").unwrap());
+                } else {
+                    panic!("not a tx");
+                }
+                for (k, v) in result.events.unwrap() {
+                    assert_eq!(v.len(), 1);
+                    match k.as_str() {
+                        "app.creator" => assert_eq!(v[0], "Cosmoshi Netowoko"),
+                        "app.index_key" => assert_eq!(v[0], "index is working"),
+                        "app.key" => assert_eq!(v[0], "tx4"),
+                        "app.noindex_key" => assert_eq!(v[0], "index is working"),
+                        "tm.event" => assert_eq!(v[0], "Tx"),
+                        "tx.hash" => assert_eq!(v[0].len(), 64),
+                        "tx.height" => assert_eq!(v[0], height.to_string()),
+                        _ => panic!("unknown event found {}", k),
+                    }
+                }
+                assert_eq!(result.query, "tm.event = 'Tx'");
             }
             "subscribe_txs_broadcast_tx_0" => {
-                let _result =
-                    endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
+                let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
+                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert!(result.data.value().is_empty());
+                assert_ne!(
+                    result.hash,
+                    tendermint::abci::transaction::Hash::new([0; 32])
+                );
+                assert!(result.log.value().is_empty());
             }
             "subscribe_txs_broadcast_tx_1" => {
-                let _result =
-                    endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
+                let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
+                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert!(result.data.value().is_empty());
+                assert_ne!(
+                    result.hash,
+                    tendermint::abci::transaction::Hash::new([0; 32])
+                );
+                assert!(result.log.value().is_empty());
             }
             "subscribe_txs_broadcast_tx_2" => {
-                let _result =
-                    endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
+                let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
+                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert!(result.data.value().is_empty());
+                assert_ne!(
+                    result.hash,
+                    tendermint::abci::transaction::Hash::new([0; 32])
+                );
+                assert!(result.log.value().is_empty());
             }
             "subscribe_txs_broadcast_tx_3" => {
-                let _result =
-                    endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
+                let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
+                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert!(result.data.value().is_empty());
+                assert_ne!(
+                    result.hash,
+                    tendermint::abci::transaction::Hash::new([0; 32])
+                );
+                assert!(result.log.value().is_empty());
             }
             "subscribe_txs_broadcast_tx_4" => {
-                let _result =
-                    endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
+                let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
+                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert!(result.data.value().is_empty());
+                assert_ne!(
+                    result.hash,
+                    tendermint::abci::transaction::Hash::new([0; 32])
+                );
+                assert!(result.log.value().is_empty());
             }
             "subscribe_txs_broadcast_tx_5" => {
-                let _result =
-                    endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
+                let result = endpoint::broadcast::tx_async::Response::from_string(content).unwrap();
+                assert_eq!(result.code, tendermint::abci::Code::Ok);
+                assert!(result.data.value().is_empty());
+                assert_ne!(
+                    result.hash,
+                    tendermint::abci::transaction::Hash::new([0; 32])
+                );
+                assert!(result.log.value().is_empty());
             }
             "tx_search_no_prove" => {
-                let _result = endpoint::tx_search::Response::from_string(content).unwrap();
+                let result = endpoint::tx_search::Response::from_string(content).unwrap();
+                assert_eq!(result.total_count as usize, result.txs.len());
+                // Todo: possibly go through search results
             }
             "tx_search_with_prove" => {
-                let _result = endpoint::tx_search::Response::from_string(content).unwrap();
+                let result = endpoint::tx_search::Response::from_string(content).unwrap();
+                assert_eq!(result.total_count as usize, result.txs.len());
+                // Todo: possibly go through search results
             }
             _ => {
                 panic!("cannot parse file name: {}", file_name);
