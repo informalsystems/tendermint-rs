@@ -362,7 +362,33 @@ mod tests {
             trust_threshold
         );
 
-        println!("{:#?}", result_err);
+        // ensure the result is "Err"
+        assert!(result_err.is_err());
+
+        // ensure the result produces an InvalidSignature error
+        let err_str = format!("{:?}", result_err.err().unwrap());
+        assert!(err_str.contains("InvalidSignature"));
+    }
+
+    #[test]
+    fn test_all_signatures_invalid() {
+        let vp_calculator = ProdVotingPowerCalculator::default();
+        let trust_threshold = TrustThreshold::default();
+
+        let mut testgen_lb = TestgenLightBlock::new_default(10);
+        let header = testgen_lb.header.unwrap().chain_id("bad-chain");
+        testgen_lb.header = Some(header);
+        let light_block: LightBlock = testgen_lb
+            .generate()
+            .unwrap()
+            .into();
+
+        let result_err = vp_calculator.voting_power_in(
+            &light_block.signed_header,
+            &light_block.validators,
+            trust_threshold
+        );
+
         // ensure the result is "Err"
         assert!(result_err.is_err());
 
