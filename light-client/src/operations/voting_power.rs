@@ -296,8 +296,8 @@ mod tests {
         let vals = validator_set.clone().validators.unwrap();
         let header = Header::new(&vals);
         let votes = vec![
-            TestgenVote::new(vals[0].clone(), header.clone()).is_nil(true),
-            TestgenVote::new(vals[1].clone(), header.clone()).is_nil(true),
+            TestgenVote::new(vals[0].clone(), header.clone()).nil(true),
+            TestgenVote::new(vals[1].clone(), header.clone()).nil(true),
         ];
         let commit = Commit::new_with_votes(header.clone(), 1, votes);
         let signed_header = generate_signed_header(&header, &commit).unwrap();

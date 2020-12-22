@@ -131,32 +131,21 @@ fn outgoing_fixtures() {
                         .unwrap();
                 assert_eq!(wrapped.params().height.unwrap().value(), 10);
             }
-            "consensus_state" => {
-                assert!(
-                    serde_json::from_str::<RequestWrapper<endpoint::consensus_state::Request>>(
-                        &content
-                    )
+            "consensus_state" => assert!(serde_json::from_str::<
+                RequestWrapper<endpoint::consensus_state::Request>,
+            >(&content)
+            .is_ok()),
+            "genesis" => assert!(
+                serde_json::from_str::<RequestWrapper<endpoint::genesis::Request>>(&content)
                     .is_ok()
-                )
-            }
-            "genesis" => {
-                assert!(
-                    serde_json::from_str::<RequestWrapper<endpoint::genesis::Request>>(&content)
-                        .is_ok()
-                )
-            }
-            "net_info" => {
-                assert!(
-                    serde_json::from_str::<RequestWrapper<endpoint::net_info::Request>>(&content)
-                        .is_ok()
-                )
-            }
-            "status" => {
-                assert!(
-                    serde_json::from_str::<RequestWrapper<endpoint::status::Request>>(&content)
-                        .is_ok()
-                )
-            }
+            ),
+            "net_info" => assert!(serde_json::from_str::<
+                RequestWrapper<endpoint::net_info::Request>,
+            >(&content)
+            .is_ok()),
+            "status" => assert!(
+                serde_json::from_str::<RequestWrapper<endpoint::status::Request>>(&content).is_ok()
+            ),
             "subscribe_malformed" => {
                 let wrapped =
                     serde_json::from_str::<RequestWrapper<endpoint::subscribe::Request>>(&content)
