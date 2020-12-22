@@ -7,7 +7,7 @@ use crate::utils::{encode_kvpair, hex_string};
 use serde_json::json;
 
 pub fn abci_info() -> PlannedInteraction {
-    Request::new("abci_info", json!({})).into()
+    Request::new("abci_info", json!(null)).into()
 }
 
 pub fn abci_query(key: &str) -> PlannedInteraction {
@@ -72,19 +72,19 @@ pub fn commit(height: u64) -> PlannedInteraction {
 }
 
 pub fn consensus_state() -> PlannedInteraction {
-    Request::new("consensus_state", json!({})).into()
+    Request::new("consensus_state", json!(null)).into()
 }
 
 pub fn genesis() -> PlannedInteraction {
-    Request::new("genesis", json!({})).into()
+    Request::new("genesis", json!(null)).into()
 }
 
 pub fn net_info() -> PlannedInteraction {
-    Request::new("net_info", json!({})).into()
+    Request::new("net_info", json!(null)).into()
 }
 
 pub fn status() -> PlannedInteraction {
-    Request::new("status", json!({})).into()
+    Request::new("status", json!(null)).into()
 }
 
 pub fn subscribe(query: &str) -> PlannedInteraction {

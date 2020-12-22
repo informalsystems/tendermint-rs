@@ -59,6 +59,7 @@ tendermint-proto = { version = "0.17.0", path = "../proto" }
 thiserror = "1"
 uuid = { version = "0.8", default-features = false }
 subtle-encoding = { version = "0.5", features = ["bech32-preview"] }
+walkdir = "2.3"
 
 async-trait = { version = "0.1", optional = true }
 async-tungstenite = { version = "0.9", features = ["tokio-runtime"], optional = true }

@@ -11,8 +11,37 @@ use crate::quick::quick_probe_plan;
 use log::LevelFilter;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
+use std::str::FromStr;
 use structopt::StructOpt;
 use tokio::time::Duration;
+
+// Set default value of `--output` to rpc crate test folder
+#[derive(Debug)]
+struct OutputPathBuf(pub PathBuf);
+impl Default for OutputPathBuf {
+    fn default() -> Self {
+        Self(
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("..")
+                .join("..")
+                .join("rpc")
+                .join("tests")
+                .join("kvstore_fixtures"),
+        )
+    }
+}
+impl FromStr for OutputPathBuf {
+    type Err = structopt::clap::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(PathBuf::from(s)))
+    }
+}
+impl ToString for OutputPathBuf {
+    fn to_string(&self) -> String {
+        self.0.to_str().unwrap_or("").to_string()
+    }
+}
 
 #[derive(Debug, StructOpt)]
 /// A utility application that primarily aims to assist in testing
@@ -28,8 +57,8 @@ struct Opts {
     pub addr: String,
 
     /// The output path in which to store the received responses.
-    #[structopt(default_value = "probe-results", parse(from_os_str), short, long)]
-    pub output: PathBuf,
+    #[structopt(default_value, short, long)]
+    pub output: OutputPathBuf,
 
     /// How long to wait between requests, in milliseconds.
     #[structopt(default_value = "1000", long)]
@@ -50,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     SimpleLogger::new().with_level(log_level).init().unwrap();
 
-    quick_probe_plan(&opts.output, Duration::from_millis(opts.request_wait))?
+    quick_probe_plan(&opts.output.0, Duration::from_millis(opts.request_wait))?
         .execute(&opts.addr)
         .await?;
     Ok(())
