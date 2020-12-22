@@ -54,6 +54,7 @@ impl Vote {
     set_option!(height, u64);
     set_option!(time, u64);
     set_option!(round, u32);
+    set_option!(is_nil, bool, if is_nil { Some(()) } else { None });
 }
 
 impl std::str::FromStr for Vote {
