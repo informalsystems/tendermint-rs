@@ -261,9 +261,6 @@ mod tests {
             trust_threshold,
         );
 
-        // ensure the result is "Ok"
-        assert!(result_ok.is_ok());
-
         // ensure the result matches the expected result
         assert_eq!(result_ok.unwrap(), EXPECTED_RESULT);
     }
