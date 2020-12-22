@@ -167,7 +167,7 @@ impl Serialize for Hash {
 pub mod allow_empty {
     use super::*;
 
-    /// Serialize [`Hash`] into a string.
+    /// Serialize [`Hash`](crate::hash::Hash) into a string.
     pub fn serialize<S>(value: &Hash, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -175,7 +175,8 @@ pub mod allow_empty {
         value.to_string().serialize(serializer)
     }
 
-    /// Deserialize [`Hash`] from a string, allowing for empty hashes.
+    /// Deserialize [`Hash`](crate::hash::Hash) from a string, allowing for
+    /// empty hashes.
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Hash, D::Error>
     where
         D: Deserializer<'de>,

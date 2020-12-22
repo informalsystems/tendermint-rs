@@ -1,0 +1,17 @@
+{
+  "id": "fbd10e8a-a975-4e47-8f9a-97646da4cb38",
+  "jsonrpc": "2.0",
+  "result": {
+    "response": {
+      "code": 0,
+      "codespace": "",
+      "height": "14",
+      "index": "0",
+      "info": "",
+      "key": "bm9uX2V4aXN0ZW50X2tleQ==",
+      "log": "does not exist",
+      "proofOps": null,
+      "value": null
+    }
+  }
+}

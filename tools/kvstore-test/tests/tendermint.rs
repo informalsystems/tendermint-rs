@@ -1,13 +1,19 @@
 //! Integration tests
 
-/// RPC integration tests.
+/// tendermint kvstore RPC integration tests.
 ///
-/// These are all ignored by default, since they test against running
-/// `tendermint node --proxy_app=kvstore`. They can be run using:
+/// If you have a kvstore app running on 127.0.0.1:26657,
+/// these can be run using:
 ///
-/// ```
-/// cargo test -- --ignored
-/// ```
+///     cargo test
+///
+/// Or else, if you have docker installed, you can tell the tests to run an endpoint,
+/// by running:
+///
+///     cargo make
+///
+/// (Make sure you install cargo-make using `cargo install cargo-make` first.)
+///
 mod rpc {
     use std::cmp::min;
 
@@ -30,7 +36,6 @@ mod rpc {
 
     /// `/health` endpoint
     #[tokio::test]
-    #[ignore]
     async fn health() {
         let result = localhost_rpc_client().health().await;
 
@@ -39,7 +44,6 @@ mod rpc {
 
     /// `/abci_info` endpoint
     #[tokio::test]
-    #[ignore]
     async fn abci_info() {
         let abci_info = localhost_rpc_client().abci_info().await.unwrap();
 
@@ -49,7 +53,6 @@ mod rpc {
 
     /// `/abci_query` endpoint
     #[tokio::test]
-    #[ignore]
     async fn abci_query() {
         let key = "unpopulated_key".parse().unwrap();
         let abci_query = localhost_rpc_client()
@@ -71,7 +74,6 @@ mod rpc {
 
     /// `/block` endpoint
     #[tokio::test]
-    #[ignore]
     async fn block() {
         let height = 1u64;
         let block_info = localhost_rpc_client()
@@ -105,7 +107,6 @@ mod rpc {
 
     /// `/block_results` endpoint
     #[tokio::test]
-    #[ignore]
     async fn block_results() {
         let height = 1u64;
         let block_results = localhost_rpc_client()
@@ -119,7 +120,6 @@ mod rpc {
 
     /// `/blockchain` endpoint
     #[tokio::test]
-    #[ignore]
     async fn blockchain() {
         let max_height = 10u64;
         let blockchain_info = localhost_rpc_client()
@@ -135,7 +135,6 @@ mod rpc {
 
     /// `/commit` endpoint
     #[tokio::test]
-    #[ignore]
     async fn commit() {
         let height = 1u64;
         let commit_info = localhost_rpc_client()
@@ -153,7 +152,6 @@ mod rpc {
 
     /// `/consensus_state` endpoint
     #[tokio::test]
-    #[ignore]
     async fn consensus_state() {
         // TODO(thane): Test more than just the deserialization.
         localhost_rpc_client().consensus_state().await.unwrap();
@@ -161,7 +159,6 @@ mod rpc {
 
     /// `/genesis` endpoint
     #[tokio::test]
-    #[ignore]
     async fn genesis() {
         let genesis = localhost_rpc_client().genesis().await.unwrap(); // https://github.com/tendermint/tendermint/issues/5549
 
@@ -173,7 +170,6 @@ mod rpc {
 
     /// `/net_info` endpoint integration test
     #[tokio::test]
-    #[ignore]
     async fn net_info() {
         let net_info = localhost_rpc_client().net_info().await.unwrap();
 
@@ -182,7 +178,6 @@ mod rpc {
 
     /// `/status` endpoint integration test
     #[tokio::test]
-    #[ignore]
     async fn status_integration() {
         let status = localhost_rpc_client().status().await.unwrap();
 
@@ -191,7 +186,6 @@ mod rpc {
     }
 
     #[tokio::test]
-    #[ignore]
     async fn subscription_interface() {
         let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
             .await
@@ -215,7 +209,6 @@ mod rpc {
     }
 
     #[tokio::test]
-    #[ignore]
     async fn transaction_subscription() {
         // We run these sequentially wrapped within a single test to ensure
         // that Tokio doesn't execute them simultaneously. If they are executed
@@ -258,7 +251,7 @@ mod rpc {
         let mut cur_tx_id = 0_u32;
 
         while !expected_tx_values.is_empty() {
-            let mut delay = tokio::time::delay_for(Duration::from_secs(3));
+            let mut delay = tokio::time::delay_for(Duration::from_secs(5));
             tokio::select! {
                 Some(res) = subs.next() => {
                     let ev = res.unwrap();
@@ -329,7 +322,7 @@ mod rpc {
         );
 
         while expected_new_blocks > 0 && !expected_tx_values.is_empty() {
-            let mut timeout = tokio::time::delay_for(Duration::from_secs(3));
+            let mut timeout = tokio::time::delay_for(Duration::from_secs(5));
             tokio::select! {
                 Some(res) = combined_subs.next() => {
                     let ev: Event = res.unwrap();

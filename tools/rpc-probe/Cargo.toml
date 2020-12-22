@@ -1,6 +1,6 @@
 [package]
 name = "tendermint-rpc-probe"
-version = "0.17.0-rc3"
+version = "0.17.0"
 authors = ["Thane Thomson <thane@informal.systems>"]
 edition = "2018"
 license    = "Apache-2.0"

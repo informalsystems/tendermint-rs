@@ -1,0 +1,68 @@
+{
+  "id": "4ce9362f-4166-4557-a8dd-4b6b5a5ace50",
+  "jsonrpc": "2.0",
+  "result": {
+    "data": {
+      "type": "tendermint/event/Tx",
+      "value": {
+        "TxResult": {
+          "height": "25",
+          "result": {
+            "events": [
+              {
+                "attributes": [
+                  {
+                    "index": true,
+                    "key": "Y3JlYXRvcg==",
+                    "value": "Q29zbW9zaGkgTmV0b3dva28="
+                  },
+                  {
+                    "index": true,
+                    "key": "a2V5",
+                    "value": "dHgz"
+                  },
+                  {
+                    "index": true,
+                    "key": "aW5kZXhfa2V5",
+                    "value": "aW5kZXggaXMgd29ya2luZw=="
+                  },
+                  {
+                    "index": false,
+                    "key": "bm9pbmRleF9rZXk=",
+                    "value": "aW5kZXggaXMgd29ya2luZw=="
+                  }
+                ],
+                "type": "app"
+              }
+            ]
+          },
+          "tx": "dHgzPXZhbHVl"
+        }
+      }
+    },
+    "events": {
+      "app.creator": [
+        "Cosmoshi Netowoko"
+      ],
+      "app.index_key": [
+        "index is working"
+      ],
+      "app.key": [
+        "tx3"
+      ],
+      "app.noindex_key": [
+        "index is working"
+      ],
+      "tm.event": [
+        "Tx"
+      ],
+      "tx.hash": [
+        "73117D6A783E4A37C1D9AD48744AD9FCC0D094C48AB8322FA11CD901C5174CFD"
+      ],
+      "tx.height": [
+        "25"
+      ]
+    },
+    "query": "tm.event = 'Tx'"
+  }
+}

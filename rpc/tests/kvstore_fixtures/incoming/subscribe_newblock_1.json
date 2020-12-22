@@ -1,0 +1,73 @@
+{
+  "id": "19228bf5-c042-4f98-8901-e271e38f1f68",
+  "jsonrpc": "2.0",
+  "result": {
+    "data": {
+      "type": "tendermint/event/NewBlock",
+      "value": {
+        "block": {
+          "data": {
+            "txs": []
+          },
+          "evidence": {
+            "evidence": []
+          },
+          "header": {
+            "app_hash": "0600000000000000",
+            "chain_id": "dockerchain",
+            "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+            "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "height": "18",
+            "last_block_id": {
+              "hash": "EE802862B5FF1E544AFD3A4223A629491415E715086649E0613CE75165F0B631",
+              "parts": {
+                "hash": "DE69ACA137D3532B315838044E98EB7B31445C4EB508E7A81A838CA7A75CAE36",
+                "total": 1
+              }
+            },
+            "last_commit_hash": "CC5D6D940F59DC13C3542DD9C6F2B427BC2B97DB1CA47D91EB5244E5B428471D",
+            "last_results_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+            "next_validators_hash": "518FD4E4CCE99DB15463EA5EBAD3B2BEE1030C31D53065F2FD7C53F8A7BC3E7C",
+            "proposer_address": "ABAF73F9A1D15E78CA39C1E066E07D3F3B3BAFAF",
+            "time": "2020-12-21T07:06:04.7048212Z",
+            "validators_hash": "518FD4E4CCE99DB15463EA5EBAD3B2BEE1030C31D53065F2FD7C53F8A7BC3E7C",
+            "version": {
+              "app": "1",
+              "block": "11"
+            }
+          },
+          "last_commit": {
+            "block_id": {
+              "hash": "EE802862B5FF1E544AFD3A4223A629491415E715086649E0613CE75165F0B631",
+              "parts": {
+                "hash": "DE69ACA137D3532B315838044E98EB7B31445C4EB508E7A81A838CA7A75CAE36",
+                "total": 1
+              }
+            },
+            "height": "17",
+            "round": 0,
+            "signatures": [
+              {
+                "block_id_flag": 2,
+                "signature": "N8IW1teDCJWYk7Q/yQufJQtTE9aXP6Wj5kdnQ66x+nJmi4KFTdZFAQTsuu7Ck2KL8iNSGQXyudz4tdV2hxRqDA==",
+                "timestamp": "2020-12-21T07:06:04.7048212Z",
+                "validator_address": "ABAF73F9A1D15E78CA39C1E066E07D3F3B3BAFAF"
+              }
+            ]
+          }
+        },
+        "result_begin_block": {},
+        "result_end_block": {
+          "validator_updates": null
+        }
+      }
+    },
+    "events": {
+      "tm.event": [
+        "NewBlock"
+      ]
+    },
+    "query": "tm.event = 'NewBlock'"
+  }
+}

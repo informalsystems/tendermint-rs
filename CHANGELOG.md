@@ -2,138 +2,43 @@
 
 ### IMPROVEMENTS:
 
-- `[light-client]` Only require Tokio when `rpc-client` feature is enabled ([#425])
-- `[rpc]` The `WebSocketClient` now adds support for all remaining RPC requests
-  by way of implementing the `Client` trait ([#646])
-- `[rpc]` Support for the `tx_search` RPC endpoint has been added ([#701])
-- `[rpc]` Responses that include events now automatically have their tag
-  key/value pairs decoded from base64, where previously tag key/value pairs
-  were Base64-encoded ([#717])
-- `[tendermint]` (Since v0.17.0-rc3) Bech32 encoding fix ([#690])
-- `[tendermint, light-client]` Specify the proposer in the validator set of fetched light blocks ([#705])
-- `[tendermint-proto]` (Since v0.17.0-rc3) Upgrade protobuf definitions to Tendermint Go v0.34.0 ([#737])
-- `[tendermint]` Remove `total_voting_power` parameter from `validator::Set::new` ([#739])
-- `[testgen]` Compute `last_block_id` hash when generating a `LightChain` ([#745])
+* `[rpc, tools]` The RPC probe has been moved into the `tools` folder and can
+  now be easily executed against a Tendermint node running the kvstore app by
+  way of [cargo make]. `tendermint-rpc` test coverage has been expanded here
+  too. ([#758])
 
-[#425]: https://github.com/informalsystems/tendermint-rs/issues/425
-[#646]: https://github.com/informalsystems/tendermint-rs/pull/646
-[#690]: https://github.com/informalsystems/tendermint-rs/issues/690
-[#701]: https://github.com/informalsystems/tendermint-rs/pull/701
-[#717]: https://github.com/informalsystems/tendermint-rs/issues/717
-[#705]: https://github.com/informalsystems/tendermint-rs/issues/705
-[#737]: https://github.com/informalsystems/tendermint-rs/pull/737
-[#739]: https://github.com/informalsystems/tendermint-rs/issues/739
-[#745]: https://github.com/informalsystems/tendermint-rs/issues/745
+[#758]: https://github.com/informalsystems/tendermint-rs/pull/758
+[cargo make]: https://github.com/sagiegurari/cargo-make
 
-## v0.17.0-rc3
+## v0.17.0
 
-*Nov 18, 2020*
+*Dec 17, 2020*
 
-This release candidate focuses primarily on small but important fixes to our
-serialization infrastructure.
+This release is a significant breaking upgrade from v0.16.0 that primarily
+targets compatibility with
+[Tendermint v0.34](https://github.com/tendermint/tendermint/blob/master/UPGRADING.md#v0340)
+and the [Cosmos Stargate release](https://stargate.cosmos.network/).
 
-### BREAKING CHANGES:
+To highlight some of the major changes over the course of 3 release candidates
+and this release, we have:
 
-- `[tendermint-proto]` The `DomainType` trait has now been renamed to
-  `Protobuf` to clarify its purpose throughout the codebase. ([#672])
+* Provided Tendermint v0.34.0 compatibility.
+* Supported the development of [ibc-rs](https://github.com/informalsystems/ibc-rs/).
+* Improved our model-based testing to provide complex test cases for the
+  [Light Client](https://github.com/informalsystems/tendermint-rs/tree/master/light-client#testing).
+* Refactored our serialization infrastructure to remove all Amino types and
+  ensure Protobuf compatibility (see the [proto crate](./proto)). This includes
+  a lot of work towards clearly separating our domain types from their
+  serialization types.
+* Started work on our [P2P layer] towards the eventual goal of implementing a
+  Tendermint full node.
+* Started work towards offering a WASM-based Tendermint Light Client.
+* Introduced a WebSocket-based RPC client for interacting with the
+  [Tendermint RPC](https://docs.tendermint.com/master/rpc/), including event
+  subscription.
 
-### BUG FIXES:
-
-- `[tendermint]` (Since v0.17.0-rc2) Fix abci::Data serialization to base64-encoded string. ([#667])
-- `[tendermint]` (Since v0.17.0-rc2) Simplify abci::Log serialization ([#667])
-- `[tendermint]` (Since v0.17.0-rc2) consensus::State backwards compatibility for deserialization ([#679])
-
-### IMPROVEMENTS:
-
-- `[rpc]` A new RPC probe (in the `rpc-probe` directory) has been added to
-  facilitate quick, pre-scripted interactions with a Tendermint node (via its
-  WebSocket endpoint). This aims to help improve testing and compatibility
-  between Tendermint in Go and Rust. ([#653])
-
-[#653]: https://github.com/informalsystems/tendermint-rs/pull/653
-[#667]: https://github.com/informalsystems/tendermint-rs/issues/667
-[#672]: https://github.com/informalsystems/tendermint-rs/pull/672
-[#679]: https://github.com/informalsystems/tendermint-rs/issues/679
-
-## v0.17.0-rc2
-
-*Nov 11, 2020*
-
-The primary focal points for this release are supporting [ibc-rs] and 
-increasing compatibility with
-[Tendermint v0.34.0](https://github.com/tendermint/tendermint/blob/master/UPGRADING.md#v0340).
-
-We are also progressively refactoring the codebase to facilitate a clearer 
-separation between our domain types (where we want to ensure correctness of the
-data structures) and our serialization types. See [#654] for the ongoing work
-on this front.
-
-**NB**: more breaking changes are anticipated for the v0.17.0-rc3 release in
-terms of our data structures and serialization approach. We would generally
-recommend waiting until v0.17.0-rc3 to upgrade.
-
-### BREAKING CHANGES:
-
-- `[tendermint]` Direct serialization capabilities have been removed from the
-  domain types. They are temporarily available in the `protos` crate. **NB:
-  this is unstable and is planned to change again in v0.17.0-rc3**. ([#639])
-- `[tendermint]` Work has started on making it compulsory to construct domain
-  types by way of their constructors to ensure validity. This work is scheduled
-  for completion in v0.17.0-rc3. ([#639])
-
-### BUG FIXES:
-
-- `[light-client]` Fix bug where a commit with only absent signatures would be
-  deemed valid instead of invalid ([#650])
-- `[light-client]` Revert a change introduced in [#652] that would enable DoS attacks,
-  where full nodes could spam the light client with massive commits (eg. 10k validators).
-- `[tendermint]` (Since v0.17.0-rc1) CanonicalBlockId is now correctly decoded to `None`
-  in `CanonicalVote` and `CanonicalProposal` when its hash is empty.
-- `[tendermint]` (Since v0.17.0-rc1) Time serialization fix (part of [#665])
-- `[tendermint-proto]` (Since v0.17.0-rc1) Timestamp serialization fix (part of [#665])
-
-### FEATURES:
-
-- `[tendermint/proto-compiler]` Protobuf structs generator now also accepts commit IDs from the Tendermint Go repository ([#660])
-
-
-[#650]: https://github.com/informalsystems/tendermint-rs/issues/650
-[#652]: https://github.com/informalsystems/tendermint-rs/pulls/652
-[#639]: https://github.com/informalsystems/tendermint-rs/pull/639
-[#654]: https://github.com/informalsystems/tendermint-rs/issues/654
-[#660]: https://github.com/informalsystems/tendermint-rs/issues/660
-[#663]: https://github.com/informalsystems/tendermint-rs/issues/663
-[#665]: https://github.com/informalsystems/tendermint-rs/issues/665
-[ibc-rs]: https://github.com/informalsystems/ibc-rs/
-
-## v0.17.0-rc1
-
-*Oct 15, 2020*
-
-This release is primarily about upgrading for compatibility with 
-[Tendermint Core
-v0.34](https://github.com/tendermint/tendermint/blob/master/UPGRADING.md#v0340)
-and the [Cosmos Stargate release](https://stargate.cosmos.network/). 
-The heart of that work was replacing amino serialization with Protocol Buffers - 
-see the new [proto crate](./proto) for all protobuf files and generated types. 
-The protobuf files were duplicated from [Tendermint
-Core](https://github.com/tendermint/tendermint/tree/v0.34.0-rc5/proto/tendermint).
-
-To improve developer ergonomics and reduce future impact on the codebase from
-serialization, the generated protobuf types are not used directly in public
-APIs; rather, we introduce the notion of `DomainTypes` for each type to be used
-in Rust APIs, and implement conversions to and from the
-corresponding generated protobuf type for binary serialization.
-
-Other improvements in this release include a new and improved WebSocket client,
-a new light-client initialization API,
-and the introduction of Model Based Testing for the light client, which allows
-us to automatically generate complex tests for the light client based on a
-formal model of the protocol in TLA+.
-
-Since this is a pretty big release with many breaking changes, we currently aim
-to ship additional release candidates where the focus will be on additional
-testing and greater compatibility with dependent projects.
+Please see the following detailed release notes, as well as the crate
+documentation, for further details.
 
 ### BREAKING CHANGES:
 
@@ -144,19 +49,22 @@ testing and greater compatibility with dependent projects.
   WebSocketClient for more robust event subscriptions. It can be enabled with the
   `websocket-client` feature. Subscriptions are exposed using unbounded
   channels. ([#516])
-  
-- `[tendermint]` Removed all trace of Amino, including `amino_types` modules. 
-   All types are now `DomainType`s implementing Protobuf-encoding using Prost. 
-   ([#504], [#535], [#536], [#585])
-
-- `[tendermint]` Protocol breaking changes for compatibility with Tendermint Core v0.34 (and the Cosmos Stargate release) ([#305]):
-    - Validators are now sorted by voting power (descending) 
+- `[tendermint]` Removed all traces of Amino, including `amino_types` modules.
+  All types are now "domain types" implementing the `Protobuf` trait for Protobuf-encoding using Prost.
+  ([#504], [#535], [#536], [#585])
+- `[tendermint]` Protocol breaking changes for compatibility with Tendermint
+  Core v0.34 (and the Cosmos Stargate release) ([#305]):
+  - Validators are now sorted by voting power (descending)
     and address (ascending). ([#506])
-    - Remove PubKey field from DuplicateVoteEvidence ([#502])
-    - Fix hash of empty Merkle tree to comply with RFC6962 ([#498])
-    - All binary encoding is done via protobuf3 instead of amino 
-   ([#504], [#535], [#536], [#585])
-    - Various updates to JSON encoding ([#505])
+  - Remove PubKey field from DuplicateVoteEvidence ([#502])
+  - Fix hash of empty Merkle tree to comply with RFC6962 ([#498])
+  - All binary encoding is done via protobuf3 instead of amino
+    ([#504], [#535], [#536], [#585])
+  - Various updates to JSON encoding ([#505])
+- `[tendermint]` Direct serialization capabilities have been removed from the
+  domain types. ([#639])
+- `[tendermint]` Work has started on making it compulsory to construct domain
+  types by way of their constructors to ensure validity. ([#639])
 
 ### FEATURES:
 
@@ -165,60 +73,78 @@ testing and greater compatibility with dependent projects.
 - `[rpc]` The subscription client interface provides a structured `Query`
   mechanism to help ensure compile-time validity of subscription queries. ([#584])
 - `[rpc]` Support unsubscribing from events ([#516])
-  mechanism to help ensure compile-time validity of subscription queries. ([#584])
 - `[spec]` TLA+ for the Tendermint consensus algorithm including proof
   forks can only be caused by +1/3 Byzantine validators
   committing equivocation or amnesia attacks. ([#496])
 - `[spec]` English spec of light client attacks and evidence required to
   correctly handle them ([#526])
 - `[tendermint]` Implement `fmt::UpperHex` for `Transaction` ([#613])
-- `[testgen]` Various features and improvements to support model-based testing with 
-    the [Apalache model checker] ([#414])
+- `[tendermint/proto-compiler]` Protobuf structs generator now also accepts
+  commit IDs from the Tendermint Go repository ([#660])
+- `[testgen]` Various features and improvements to support model-based testing with
+  the [Apalache model checker] ([#414])
 
 ### IMPROVEMENTS:
 
 - [`light-client]` Start using model-based testing to test Light Client
   executions against traces emitted from the TLA+ model ([#414])
+- `[light-client]` Only require Tokio when `rpc-client` feature is enabled ([#425])
 - `[rpc]` A `WebSocketClient` is now provided to facilitate event
   subscription for a limited range of RPC events over a WebSocket connection.
   See the [Tendermint `/subscribe` endpoint's](https://docs.tendermint.com/master/rpc/#/Websocket/subscribe)
-  and the `tendermint-rpc` crate's docs for more details.
-  To access this struct you need to enable both the `client`, `subscription`
-  and `transport_websocket` features when using the `tendermint-rpc` crate.
-  ([#516])
+  and the `tendermint-rpc` crate's docs for more details ([#516])
 - `[rpc]` The subscription client interface provides a structured `Query`
   mechanism to help ensure compile-time validity of subscription queries.
   See the crate docs and [#584] for details.
 - `[rpc]` The RPC request and response types' fields are now all publicly
   accessible ([#636]).
-
-- `[tendermint | rpc | light-client]` Crates now compile to WASM on the `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#463])
-- Dependency updates: 
-    - Update sled to 0.34 ([#490])
-    - Update k256 to v0.5 ([#578])
-    - Remove tai64 crate  ([#603])
+- `[rpc]` A new RPC probe (in the `rpc-probe` directory) has been added to
+  facilitate quick, pre-scripted interactions with a Tendermint node (via its
+  WebSocket endpoint). This aims to help improve testing and compatibility
+  between Tendermint in Go and Rust. ([#653])
+- `[rpc]` The `WebSocketClient` now adds support for all remaining RPC requests
+  by way of implementing the `Client` trait ([#646])
+- `[rpc]` Support for the `tx_search` RPC endpoint has been added ([#701])
+- `[rpc]` Responses that include events now automatically have their tag
+  key/value pairs decoded from base64, where previously tag key/value pairs
+  were Base64-encoded ([#717])
+- `[rpc]` Support for the `consensus_state` RPC endpoint has been added ([#719])
+- `[tendermint]` Remove `total_voting_power` parameter from `validator::Set::new` ([#739])
+- `[tendermint, rpc, light-client]` Crates now compile to WASM on the
+  `wasm32-unknown-unknown` and `wasm32-wasi` targets ([#463])
+- `[tendermint, light-client]` Specify the proposer in the validator set of fetched light blocks ([#705])
+- `[tendermint-proto]` Upgrade protobuf definitions to Tendermint Go v0.34.0 ([#737])
+- `[testgen]` Compute `last_block_id` hash when generating a `LightChain` ([#745])
+- Dependency updates:
+  - Update sled to 0.34 ([#490])
+  - Update k256 to v0.7 ([#752])
+  - Remove tai64 crate  ([#603])
 
 ### BUG FIXES:
 
+- `[light-client]` Fix bug where a commit with only absent signatures would be
+  deemed valid instead of invalid ([#650])
+- `[light-client]` Revert a change introduced in [#652] that would enable DoS attacks,
+  where full nodes could spam the light client with massive commits (eg. 10k validators).
 - `[rpc]` Correctly handles control and keep-alive messages ([#516], [#590])
 - `[rpc]` More robust handling of concurrency issues ([#311], [#313])
 
-
-
+[ibc-rs]: https://github.com/informalsystems/ibc-rs/
 [#305]: https://github.com/informalsystems/tendermint-rs/issues/305
 [#311]: https://github.com/informalsystems/tendermint-rs/issues/311
 [#313]: https://github.com/informalsystems/tendermint-rs/issues/313
 [#414]: https://github.com/informalsystems/tendermint-rs/issues/414
-[#524]: https://github.com/informalsystems/tendermint-rs/issues/524
-[#526]: https://github.com/informalsystems/tendermint-rs/issues/526
 [#498]: https://github.com/informalsystems/tendermint-rs/issues/498
 [#463]: https://github.com/informalsystems/tendermint-rs/issues/463
+[#490]: https://github.com/informalsystems/tendermint-rs/issues/490
 [#496]: https://github.com/informalsystems/tendermint-rs/issues/496
 [#502]: https://github.com/informalsystems/tendermint-rs/issues/502
 [#504]: https://github.com/informalsystems/tendermint-rs/issues/504
 [#505]: https://github.com/informalsystems/tendermint-rs/issues/505
 [#506]: https://github.com/informalsystems/tendermint-rs/issues/506
 [#516]: https://github.com/informalsystems/tendermint-rs/pull/516
+[#524]: https://github.com/informalsystems/tendermint-rs/issues/524
+[#526]: https://github.com/informalsystems/tendermint-rs/issues/526
 [#535]: https://github.com/informalsystems/tendermint-rs/issues/535
 [#536]: https://github.com/informalsystems/tendermint-rs/issues/536
 [#547]: https://github.com/informalsystems/tendermint-rs/issues/547
@@ -228,7 +154,32 @@ testing and greater compatibility with dependent projects.
 [#585]: https://github.com/informalsystems/tendermint-rs/issues/585
 [#590]: https://github.com/informalsystems/tendermint-rs/issues/590
 [#603]: https://github.com/informalsystems/tendermint-rs/pull/603
+[#613]: https://github.com/informalsystems/tendermint-rs/pull/613
 [#636]: https://github.com/informalsystems/tendermint-rs/pull/636
+[#639]: https://github.com/informalsystems/tendermint-rs/pull/639
+[#650]: https://github.com/informalsystems/tendermint-rs/issues/650
+[#652]: https://github.com/informalsystems/tendermint-rs/pulls/652
+[#654]: https://github.com/informalsystems/tendermint-rs/issues/654
+[#660]: https://github.com/informalsystems/tendermint-rs/issues/660
+[#663]: https://github.com/informalsystems/tendermint-rs/issues/663
+[#665]: https://github.com/informalsystems/tendermint-rs/issues/665
+[#653]: https://github.com/informalsystems/tendermint-rs/pull/653
+[#667]: https://github.com/informalsystems/tendermint-rs/issues/667
+[#672]: https://github.com/informalsystems/tendermint-rs/pull/672
+[#679]: https://github.com/informalsystems/tendermint-rs/issues/679
+[#425]: https://github.com/informalsystems/tendermint-rs/issues/425
+[#646]: https://github.com/informalsystems/tendermint-rs/pull/646
+[#690]: https://github.com/informalsystems/tendermint-rs/issues/690
+[#701]: https://github.com/informalsystems/tendermint-rs/pull/701
+[#705]: https://github.com/informalsystems/tendermint-rs/issues/705
+[#717]: https://github.com/informalsystems/tendermint-rs/issues/717
+[#719]: https://github.com/informalsystems/tendermint-rs/pull/719
+[#737]: https://github.com/informalsystems/tendermint-rs/pull/737
+[#739]: https://github.com/informalsystems/tendermint-rs/issues/739
+[#745]: https://github.com/informalsystems/tendermint-rs/issues/745
+[#752]: https://github.com/informalsystems/tendermint-rs/pull/752
+[P2P layer]: https://github.com/informalsystems/tendermint-rs/tree/master/p2p
+
 
 ## v0.16.0
 

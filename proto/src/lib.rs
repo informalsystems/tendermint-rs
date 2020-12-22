@@ -3,7 +3,7 @@
 #![deny(warnings, trivial_casts, trivial_numeric_casts, unused_import_braces)]
 #![allow(clippy::large_enum_variant)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/tendermint-proto/0.17.0-rc3")]
+#![doc(html_root_url = "https://docs.rs/tendermint-proto/0.17.0")]
 
 // Built-in prost_types with slight customization to enable JSON-encoding
 pub mod google {

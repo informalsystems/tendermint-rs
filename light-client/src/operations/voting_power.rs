@@ -261,11 +261,8 @@ mod tests {
             trust_threshold,
         );
 
-        // ensure the result is "Ok"
-        assert!(result_ok.is_ok());
-
         // ensure the result matches the expected result
-        assert_eq!(result_ok.ok().unwrap(), EXPECTED_RESULT);
+        assert_eq!(result_ok.unwrap(), EXPECTED_RESULT);
     }
 
     #[test]
@@ -286,11 +283,8 @@ mod tests {
             trust_threshold,
         );
 
-        // ensure the result is "Ok"
-        assert!(result_ok.is_ok());
-
         // ensure the result matches the expected result
-        assert_eq!(result_ok.ok().unwrap(), EXPECTED_RESULT);
+        assert_eq!(result_ok.unwrap(), EXPECTED_RESULT);
     }
 
     #[test]
@@ -311,11 +305,8 @@ mod tests {
 
         let result_ok = vp_calculator.voting_power_in(&signed_header, &valset, trust_threshold);
 
-        // ensure the result is "Ok"
-        assert!(result_ok.is_ok());
-
         // ensure the result matches the expected result
-        assert_eq!(result_ok.ok().unwrap(), EXPECTED_RESULT);
+        assert_eq!(result_ok.unwrap(), EXPECTED_RESULT);
     }
 
     #[test]
@@ -340,12 +331,11 @@ mod tests {
             trust_threshold,
         );
 
-        // ensure the result is "Err"
-        assert!(result_err.is_err());
-
-        // ensure the result produces an InvalidSignature error
-        let err_str = format!("{:?}", result_err.err().unwrap());
-        assert!(err_str.contains("InvalidSignature"));
+        let err = result_err.err().unwrap();
+        match err {
+            VerificationError::InvalidSignature { .. } => {}
+            _ => panic!("unexpected error: {:?}", err),
+        }
     }
 
     #[test]
@@ -364,12 +354,11 @@ mod tests {
             trust_threshold,
         );
 
-        // ensure the result is "Err"
-        assert!(result_err.is_err());
-
-        // ensure the result produces an InvalidSignature error
-        let err_str = format!("{:?}", result_err.err().unwrap());
-        assert!(err_str.contains("InvalidSignature"));
+        let err = result_err.err().unwrap();
+        match err {
+            VerificationError::InvalidSignature { .. } => {}
+            _ => panic!("unexpected error: {:?}", err),
+        }
     }
 
     #[test]
@@ -391,10 +380,7 @@ mod tests {
             trust_threshold,
         );
 
-        // ensure the result is "Ok"
-        assert!(result_ok.is_ok());
-
         // ensure the result matches the expected result
-        assert_eq!(result_ok.ok().unwrap(), EXPECTED_RESULT);
+        assert_eq!(result_ok.unwrap(), EXPECTED_RESULT);
     }
 }

@@ -1,0 +1,8 @@
+{
+  "id": "6eaad3fa-2aa7-4c41-99e1-33e76acd1353",
+  "jsonrpc": "2.0",
+  "method": "broadcast_tx_commit",
+  "params": {
+    "tx": "Y29tbWl0LWtleT12YWx1ZQ=="
+  }
+}

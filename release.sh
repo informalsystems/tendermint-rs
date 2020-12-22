@@ -36,7 +36,7 @@ set -e
 # A space-separated list of all the crates we want to publish, in the order in
 # which they must be published. It's important to respect this order, since
 # each subsequent crate depends on one or more of the preceding ones.
-DEFAULT_CRATES="tendermint-proto tendermint tendermint-rpc tendermint-light-client tendermint-light-node tendermint-testgen"
+DEFAULT_CRATES="tendermint-proto tendermint tendermint-rpc tendermint-p2p tendermint-light-client tendermint-light-node tendermint-testgen"
 
 # Allows us to override the crates we want to publish.
 CRATES=${*:-${DEFAULT_CRATES}}
@@ -68,6 +68,25 @@ list_package_files() {
   cargo package --list --manifest-path "$(get_manifest_path "${1}")"
 }
 
+wait_until_available() {
+  echo "Waiting for crate ${1} to become available via crates.io..."
+  for retry in {1..5}; do
+    ONLINE_DATE="$(check_version_online "${1}" "${2}")"
+    if [ -n "${ONLINE_DATE}" ]; then
+      echo "Crate ${crate} is now available online"
+      break
+    else
+      if [ "${retry}" == 5 ]; then
+        echo "ERROR: Crate should have become available by now"
+        exit 1
+      else
+        echo "Not available just yet. Waiting a few seconds..."
+        sleep 5
+      fi
+    fi
+  done
+}
+
 echo "Attempting to publish crate(s): ${CRATES}"
 
 for crate in ${CRATES}; do
@@ -88,7 +107,9 @@ for crate in ${CRATES}; do
   echo ""
   read -rp "Are you sure you want to publish crate \"${crate}\"? (type YES to publish, anything else to exit) " answer
   case $answer in
-    YES ) publish "${crate}"; break;;
+    YES ) publish "${crate}";;
     * ) echo "Terminating"; exit;;
   esac
+
+  wait_until_available "${crate}" "${VERSION}"
 done
