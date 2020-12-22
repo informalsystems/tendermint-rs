@@ -286,8 +286,6 @@ mod tests {
             trust_threshold,
         );
 
-        // ensure the result is "Ok"
-        assert!(result_ok.is_ok());
 
         // ensure the result matches the expected result
         assert_eq!(result_ok.unwrap(), EXPECTED_RESULT);
@@ -311,8 +309,6 @@ mod tests {
 
         let result_ok = vp_calculator.voting_power_in(&signed_header, &valset, trust_threshold);
 
-        // ensure the result is "Ok"
-        assert!(result_ok.is_ok());
 
         // ensure the result matches the expected result
         assert_eq!(result_ok.unwrap(), EXPECTED_RESULT);
@@ -389,8 +385,6 @@ mod tests {
             trust_threshold,
         );
 
-        // ensure the result is "Ok"
-        assert!(result_ok.is_ok());
 
         // ensure the result matches the expected result
         assert_eq!(result_ok.unwrap(), EXPECTED_RESULT);
