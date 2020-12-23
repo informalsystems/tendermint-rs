@@ -402,7 +402,7 @@ impl SingleStepTestFuzzer for CommitSigFuzzer {
         let enough_vp = 7 * votes.len() > 6 * validators_len;
         let verdict = input.clone().verdict;
         if enough_votes && enough_vp {
-            votes[0].is_nil = Some(());
+            votes[0].nil = Some(());
 
             // change the vote to nil
             let mut commit = input.testgen_block.commit.clone().unwrap();

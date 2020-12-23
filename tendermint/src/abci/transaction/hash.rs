@@ -13,7 +13,7 @@ use subtle_encoding::hex;
 pub const LENGTH: usize = 32;
 
 /// Trannsaction hashes
-#[derive(Copy, Clone, Hash)]
+#[derive(Copy, Clone, Hash, PartialEq)]
 pub struct Hash([u8; LENGTH]);
 
 impl Hash {

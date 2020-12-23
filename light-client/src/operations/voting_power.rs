@@ -220,75 +220,167 @@ fn non_absent_vote(
     })
 }
 
+// The below unit tests replaces the static voting power test files
+// see https://github.com/informalsystems/tendermint-rs/pull/383
+// This is essentially to remove the heavy dependency on MBT
+// TODO: We plan to add Lightweight MBT for `voting_power_in` in the near future
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde::Deserialize;
-    use std::fs;
-    use std::path::Path;
+    use crate::types::LightBlock;
+    use tendermint::trust_threshold::TrustThresholdFraction;
+    use tendermint_testgen::light_block::generate_signed_header;
+    use tendermint_testgen::{
+        Commit, Generator, Header, LightBlock as TestgenLightBlock, ValidatorSet,
+        Vote as TestgenVote,
+    };
 
-    const TEST_FILES_PATH: &str = "./tests/support/voting_power/";
+    const EXPECTED_RESULT: VotingPowerTally = VotingPowerTally {
+        total: 100,
+        tallied: 0,
+        trust_threshold: TrustThresholdFraction {
+            numerator: 1,
+            denominator: 3,
+        },
+    };
 
     #[test]
-    fn json_testcases() {
-        run_all_tests();
-    }
-
-    #[derive(Debug, Deserialize)]
-    enum TestResult {
-        Ok { total: u64, tallied: u64 },
-        Err { error_type: String },
-    }
-
-    #[derive(Debug, Deserialize)]
-    struct TestCase {
-        description: String,
-        result: TestResult,
-        signed_header: SignedHeader,
-        validator_set: ValidatorSet,
-    }
-
-    fn read_json_fixture(file: impl AsRef<Path>) -> String {
-        fs::read_to_string(file).unwrap()
-    }
-
-    fn read_test_case(file_path: impl AsRef<Path>) -> TestCase {
-        serde_json::from_str(read_json_fixture(file_path).as_str()).unwrap()
-    }
-
-    fn run_all_tests() {
-        for entry in fs::read_dir(TEST_FILES_PATH).unwrap() {
-            let entry = entry.unwrap();
-            let tc = read_test_case(entry.path());
-            let name = entry.file_name().to_string_lossy().to_string();
-            run_test(tc, name);
-        }
-    }
-
-    fn run_test(tc: TestCase, file: String) {
-        println!("- Test '{}' in {}", tc.description, file);
-
-        let calculator = ProdVotingPowerCalculator::default();
+    fn test_empty_signatures() {
+        let vp_calculator = ProdVotingPowerCalculator::default();
         let trust_threshold = TrustThreshold::default();
 
-        let tally =
-            calculator.voting_power_in(&tc.signed_header, &tc.validator_set, trust_threshold);
+        let mut light_block: LightBlock = TestgenLightBlock::new_default(10)
+            .generate()
+            .unwrap()
+            .into();
+        light_block.signed_header.commit.signatures = vec![];
 
-        match tc.result {
-            TestResult::Ok { total, tallied } => {
-                assert!(tally.is_ok(), "unexpected error");
-                let tally = tally.unwrap();
-                assert_eq!(tally.total, total);
-                assert_eq!(tally.tallied, tallied);
-            }
-            TestResult::Err { error_type } => {
-                assert!(tally.is_err());
-                let err = tally.err().unwrap();
-                let err_str = format!("{:?}", err);
-                assert!(err_str.contains(&error_type));
-            }
+        let result_ok = vp_calculator.voting_power_in(
+            &light_block.signed_header,
+            &light_block.validators,
+            trust_threshold,
+        );
+
+        // ensure the result matches the expected result
+        assert_eq!(result_ok.unwrap(), EXPECTED_RESULT);
+    }
+
+    #[test]
+    fn test_all_signatures_absent() {
+        let vp_calculator = ProdVotingPowerCalculator::default();
+        let trust_threshold = TrustThreshold::default();
+
+        let mut testgen_lb = TestgenLightBlock::new_default(10);
+        let mut commit = testgen_lb.commit.clone().unwrap();
+        // an empty vector of votes translates into all absent signatures
+        commit.votes = Some(vec![]);
+        testgen_lb.commit = Some(commit);
+        let light_block: LightBlock = testgen_lb.generate().unwrap().into();
+
+        let result_ok = vp_calculator.voting_power_in(
+            &light_block.signed_header,
+            &light_block.validators,
+            trust_threshold,
+        );
+
+        // ensure the result matches the expected result
+        assert_eq!(result_ok.unwrap(), EXPECTED_RESULT);
+    }
+
+    #[test]
+    fn test_all_signatures_nil() {
+        let vp_calculator = ProdVotingPowerCalculator::default();
+        let trust_threshold = TrustThreshold::default();
+
+        let validator_set = ValidatorSet::new(vec!["a", "b"]);
+        let vals = validator_set.clone().validators.unwrap();
+        let header = Header::new(&vals);
+        let votes = vec![
+            TestgenVote::new(vals[0].clone(), header.clone()).nil(true),
+            TestgenVote::new(vals[1].clone(), header.clone()).nil(true),
+        ];
+        let commit = Commit::new_with_votes(header.clone(), 1, votes);
+        let signed_header = generate_signed_header(&header, &commit).unwrap();
+        let valset = validator_set.generate().unwrap();
+
+        let result_ok = vp_calculator.voting_power_in(&signed_header, &valset, trust_threshold);
+
+        // ensure the result matches the expected result
+        assert_eq!(result_ok.unwrap(), EXPECTED_RESULT);
+    }
+
+    #[test]
+    fn test_one_invalid_signature() {
+        let vp_calculator = ProdVotingPowerCalculator::default();
+        let trust_threshold = TrustThreshold::default();
+
+        let mut testgen_lb = TestgenLightBlock::new_default(10);
+        let mut commit = testgen_lb.commit.clone().unwrap();
+        let mut votes = commit.votes.unwrap();
+        let vote = votes.pop().unwrap();
+        let header = vote.clone().header.unwrap().chain_id("bad-chain");
+        votes.push(vote.header(header));
+
+        commit.votes = Some(votes);
+        testgen_lb.commit = Some(commit);
+        let light_block: LightBlock = testgen_lb.generate().unwrap().into();
+
+        let result_err = vp_calculator.voting_power_in(
+            &light_block.signed_header,
+            &light_block.validators,
+            trust_threshold,
+        );
+
+        let err = result_err.err().unwrap();
+        match err {
+            VerificationError::InvalidSignature { .. } => {}
+            _ => panic!("unexpected error: {:?}", err),
         }
+    }
 
-        println!("  => SUCCESS");
+    #[test]
+    fn test_all_signatures_invalid() {
+        let vp_calculator = ProdVotingPowerCalculator::default();
+        let trust_threshold = TrustThreshold::default();
+
+        let mut testgen_lb = TestgenLightBlock::new_default(10);
+        let header = testgen_lb.header.unwrap().chain_id("bad-chain");
+        testgen_lb.header = Some(header);
+        let light_block: LightBlock = testgen_lb.generate().unwrap().into();
+
+        let result_err = vp_calculator.voting_power_in(
+            &light_block.signed_header,
+            &light_block.validators,
+            trust_threshold,
+        );
+
+        let err = result_err.err().unwrap();
+        match err {
+            VerificationError::InvalidSignature { .. } => {}
+            _ => panic!("unexpected error: {:?}", err),
+        }
+    }
+
+    #[test]
+    fn test_signatures_from_diff_valset() {
+        let vp_calculator = ProdVotingPowerCalculator::default();
+        let trust_threshold = TrustThreshold::default();
+
+        let mut light_block: LightBlock = TestgenLightBlock::new_default(10)
+            .generate()
+            .unwrap()
+            .into();
+        light_block.validators = ValidatorSet::new(vec!["bad-val1", "bad-val2"])
+            .generate()
+            .unwrap();
+
+        let result_ok = vp_calculator.voting_power_in(
+            &light_block.signed_header,
+            &light_block.validators,
+            trust_threshold,
+        );
+
+        // ensure the result matches the expected result
+        assert_eq!(result_ok.unwrap(), EXPECTED_RESULT);
     }
 }

@@ -32,7 +32,7 @@ pub struct Vote {
     #[options(
         help = "to indicate if the vote is nil; produces a 'BlockIdFlagNil' if set, otherwise 'BlockIdFlagCommit' (default)"
     )]
-    pub is_nil: Option<()>,
+    pub nil: Option<()>,
 }
 
 impl Vote {
@@ -45,7 +45,7 @@ impl Vote {
             height: None,
             time: None,
             round: None,
-            is_nil: None,
+            nil: None,
         }
     }
     set_option!(index, u16);
@@ -54,6 +54,7 @@ impl Vote {
     set_option!(height, u64);
     set_option!(time, u64);
     set_option!(round, u32);
+    set_option!(nil, bool, if nil { Some(()) } else { None });
 }
 
 impl std::str::FromStr for Vote {
@@ -73,7 +74,7 @@ impl Generator<vote::Vote> for Vote {
             height: self.height.or(default.height),
             time: self.time.or(default.time),
             round: self.round.or(default.round),
-            is_nil: self.is_nil.or(default.is_nil),
+            nil: self.nil.or(default.nil),
         }
     }
 
@@ -89,7 +90,7 @@ impl Generator<vote::Vote> for Vote {
         let signer = validator.get_private_key()?;
         let block_validator = validator.generate()?;
         let block_header = header.generate()?;
-        let block_id = if self.is_nil.is_some() {
+        let block_id = if self.nil.is_some() {
             None
         } else {
             Some(block::Id {

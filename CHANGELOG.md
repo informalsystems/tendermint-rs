@@ -1,3 +1,15 @@
+## Unreleased
+
+### IMPROVEMENTS:
+
+* `[rpc, tools]` The RPC probe has been moved into the `tools` folder and can
+  now be easily executed against a Tendermint node running the kvstore app by
+  way of [cargo make]. `tendermint-rpc` test coverage has been expanded here
+  too. ([#758])
+
+[#758]: https://github.com/informalsystems/tendermint-rs/pull/758
+[cargo make]: https://github.com/sagiegurari/cargo-make
+
 ## v0.17.0
 
 *Dec 17, 2020*

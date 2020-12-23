@@ -14,14 +14,14 @@ pub struct ValidatorSet {
         parse(try_from_str = "parse_as::<Vec<Validator>>"),
         help = "validators (required)"
     )]
-    validators: Option<Vec<Validator>>,
+    pub validators: Option<Vec<Validator>>,
 }
 
 impl ValidatorSet {
     pub fn new(ids: Vec<&str>) -> Self {
         let validators = ids
             .iter()
-            .map(|v| Validator::new(v))
+            .map(|v| Validator::new(v).voting_power(50))
             .collect::<Vec<Validator>>();
         Self {
             validators: Some(validators),
@@ -61,9 +61,9 @@ mod tests {
     fn test_validator_set() {
         let valset1 = ValidatorSet::new(vec!["a", "b", "c"]).generate().unwrap();
         let vals1 = vec![
-            Validator::new("a"),
-            Validator::new("b"),
-            Validator::new("c"),
+            Validator::new("a").voting_power(50),
+            Validator::new("b").voting_power(50),
+            Validator::new("c").voting_power(50),
         ];
         let valset2 = validator::Set::without_proposer(generate_validators(&vals1).unwrap());
 
