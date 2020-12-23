@@ -1,6 +1,6 @@
 [package]
 name = "tendermint-abci"
-version = "0.17.0-rc3"
+version = "0.17.0"
 authors = ["Thane Thomson <thane@informal.systems>"]
 edition = "2018"
 
@@ -16,8 +16,8 @@ bytes = "0.6"
 eyre = "0.6"
 futures = "0.3"
 log = "0.4"
-tendermint = { version = "0.17.0-rc3", path = "../tendermint" }
-tendermint-proto = { version = "0.17.0-rc3", path = "../proto" }
+tendermint = { version = "0.17.0", path = "../tendermint" }
+tendermint-proto = { version = "0.17.0", path = "../proto" }
 thiserror = "1.0"
 
 tokio = { version = "0.3", features = [ "macros", "net", "rt", "sync" ], optional = true }
