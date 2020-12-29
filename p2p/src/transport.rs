@@ -6,6 +6,9 @@ use crate::peer::{self, Peer};
 // TODO(xla): Use actual PeerId type.
 type PeerId = String;
 
+// TODO(xla): Use actual PublicKey type.
+type PublicKey = String;
+
 pub struct BindInfo {
     pub addr: SocketAddr,
     pub advertise_addrs: Vec<SocketAddr>,
@@ -34,7 +37,7 @@ pub trait Connection: Clone {
     fn close(&self) -> Result<(), Error>;
     fn local_addr(&self) -> SocketAddr;
     fn open(&self) -> Result<Self::Stream, Error>;
-    fn peer_id(&self) -> PeerId;
+    fn public_key(&self) -> PublicKey;
     fn remote_addr(&self) -> SocketAddr;
 }
 
