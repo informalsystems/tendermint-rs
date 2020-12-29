@@ -3,20 +3,20 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
 use crate::peer::{self, Peer};
 
-// TODO(xla): Use actual PeerId type.
-type PeerId = String;
-
 // TODO(xla): Use actual PublicKey type.
 type PublicKey = String;
 
 pub struct BindInfo {
     pub addr: SocketAddr,
     pub advertise_addrs: Vec<SocketAddr>,
-    pub peer_id: PeerId,
+    pub public_key: PublicKey,
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum Error {}
+pub enum Error {
+    #[error("accept stream terminated, listener likely gone")]
+    AcceptTerminated,
+}
 
 pub trait Stream: Read + Write {
     fn close(&self) -> Result<(), Error>;
@@ -94,12 +94,11 @@ impl<T> Protocol<T, Stopped>
 where
     T: Transport,
 {
-    fn start(self) -> Result<Protocol<T, Running<T::Endpoint, T::Incoming>>, Error> {
-        let (endpoint, incoming) = self.transport.bind(BindInfo {
-            addr: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 0)),
-            advertise_addrs: vec![],
-            peer_id: "1234abcd".to_string(),
-        })?;
+    fn start(
+        self,
+        bind_info: BindInfo,
+    ) -> Result<Protocol<T, Running<T::Endpoint, T::Incoming>>, Error> {
+        let (endpoint, incoming) = self.transport.bind(bind_info)?;
 
         Ok(Protocol {
             transport: self.transport,
@@ -116,9 +115,10 @@ where
     I: Iterator<Item = Result<E::Connection, Error>>,
 {
     fn accept(&mut self) -> Result<Peer<E::Connection, peer::Connected>, Error> {
-        let connection = self.state.incoming.next().unwrap()?;
-
-        Ok(Peer::from(connection))
+        match self.state.incoming.next() {
+            Some(res) => Ok(Peer::from(res?)),
+            None => Err(Error::AcceptTerminated),
+        }
     }
 
     fn connect(&self) -> Result<Peer<E::Connection, peer::Connected>, Error> {
