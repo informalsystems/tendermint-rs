@@ -57,23 +57,14 @@ pub trait Transport {
     fn shutdown(&self) -> Result<(), Error>;
 }
 
-trait State {}
+trait State: private::Sealed {}
 struct Stopped;
 impl State for Stopped {}
-struct Running<E, I>
-where
-    E: Endpoint,
-    I: Iterator<Item = Result<E::Connection, Error>>,
-{
+struct Running<E, I> {
     endpoint: E,
     incoming: I,
 }
-impl<E, I> State for Running<E, I>
-where
-    E: Endpoint,
-    I: Iterator<Item = Result<E::Connection, Error>>,
-{
-}
+impl<E, I> State for Running<E, I> {}
 
 struct Protocol<T, St>
 where
@@ -144,4 +135,15 @@ where
             state: Stopped {},
         })
     }
+}
+
+mod private {
+    use super::{Running, Stopped};
+    /// Constraint for [sealed traits] under the `transport` module hierarchy.
+    ///
+    /// [sealed traits]: https://rust-lang.github.io/api-guidelines/future-proofing.html#sealed-traits-protect-against-downstream-implementations-c-sealed
+    pub trait Sealed {}
+
+    impl Sealed for Stopped {}
+    impl<E, I> Sealed for Running<E, I> {}
 }

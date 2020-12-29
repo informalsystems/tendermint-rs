@@ -2,12 +2,12 @@
 
 #![forbid(unsafe_code)]
 #![deny(
+    nonstandard_style,
+    rust_2018_idioms,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
-    unused_qualifications,
-    rust_2018_idioms,
-    nonstandard_style
+    unused_qualifications
 )]
 #![doc(
     html_root_url = "https://docs.rs/tendermint-p2p/0.1.0",

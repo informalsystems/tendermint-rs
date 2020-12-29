@@ -7,7 +7,7 @@ pub enum Error {}
 
 pub enum Message {}
 
-pub trait State {}
+pub trait State: private::Sealed {}
 pub enum Disconnected {}
 impl State for Disconnected {}
 pub enum Connected {}
@@ -56,4 +56,16 @@ where
         // there is a need for finer grained control.
         None
     }
+}
+
+mod private {
+    use super::{Connected, Disconnected};
+
+    /// Constraint for [sealed traits] under the `transport` module hierarchy.
+    ///
+    /// [sealed traits]: https://rust-lang.github.io/api-guidelines/future-proofing.html#sealed-traits-protect-against-downstream-implementations-c-sealed
+    pub trait Sealed {}
+
+    impl Sealed for Disconnected {}
+    impl Sealed for Connected {}
 }
