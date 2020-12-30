@@ -1,84 +1,81 @@
 use std::collections::HashMap;
 
 use eyre::Result;
+use flume::{Receiver, Sender};
 
-use crate::transport::{Connection, StreamId};
+use crate::transport::{Connection, Direction, StreamId};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {}
 
 pub enum Message {}
 
+struct Stream {
+    recv: Receiver<Message>,
+    send: Sender<Message>,
+}
+
 pub trait State: private::Sealed {}
 
-pub struct Disconnected {}
-impl State for Disconnected {}
-
-pub struct Connected {}
-impl State for Connected {}
-
-pub struct Running<S> {
-    streams: HashMap<StreamId, S>,
+pub struct Disconnected<Conn> {
+    connection: Direction<Conn>,
 }
-impl<S> State for Running<S> {}
+impl<Conn> State for Disconnected<Conn> {}
+
+pub struct Connected<Conn> {
+    connection: Direction<Conn>,
+}
+impl<Conn> State for Connected<Conn> {}
+
+pub struct Running<Conn> {
+    connection: Direction<Conn>,
+}
+impl<Conn> State for Running<Conn> {}
 
 pub struct Stopped {
     error: Option<Error>,
 }
 impl State for Stopped {}
 
-pub struct Peer<Conn, St>
+pub struct Peer<St>
 where
     St: State,
 {
-    connection: Conn,
-
-    _state: St,
+    state: St,
 }
 
-impl<Conn> From<Conn> for Peer<Conn, Connected> {
-    fn from(connection: Conn) -> Peer<Conn, Connected> {
+impl<Conn> From<Direction<Conn>> for Peer<Connected<Conn>> {
+    fn from(connection: Direction<Conn>) -> Peer<Connected<Conn>> {
         Peer {
-            connection,
-
-            _state: Connected {},
+            state: Connected { connection },
         }
     }
 }
 
-impl<Conn> Peer<Conn, Connected>
+impl<Conn> Peer<Connected<Conn>>
 where
     Conn: Connection,
 {
-    fn run(
-        self,
-        stream_ids: Vec<StreamId>,
-    ) -> Result<Peer<Conn, Running<<Conn as Connection>::Stream>>> {
-        let streams = HashMap::new();
-
-        for id in &stream_ids {
-            let stream = self.connection.open_bidirectional(id)?;
-        }
-
+    fn run(self, stream_ids: Vec<StreamId>) -> Result<Peer<Running<Conn>>> {
         Ok(Peer {
-            connection: self.connection,
-
-            _state: Running { streams },
+            state: Running {
+                connection: self.state.connection,
+            },
         })
     }
 
-    fn stop(self) -> Result<Peer<Conn, Stopped>> {
-        self.connection.close()?;
+    fn stop(self) -> Result<Peer<Stopped>> {
+        match self.state.connection {
+            Direction::Incoming(conn) | Direction::Outgoing(conn) => conn.close()?,
+        }
 
         Ok(Peer {
-            connection: self.connection,
-
-            _state: Stopped { error: None },
+            state: Stopped { error: None },
         })
     }
 }
 
-impl<Conn> Peer<Conn, Running<<Conn as Connection>::Stream>>
+impl<Conn> Peer<Running<Conn>>
 where
     Conn: Connection,
 {
@@ -87,21 +84,18 @@ where
         todo!()
     }
 
-    fn stop(self) -> Result<Peer<Conn, Stopped>> {
-        self.connection.close()?;
+    fn stop(self) -> Result<Peer<Stopped>> {
+        match self.state.connection {
+            Direction::Incoming(conn) | Direction::Outgoing(conn) => conn.close()?,
+        }
 
         Ok(Peer {
-            connection: self.connection,
-
-            _state: Stopped { error: None },
+            state: Stopped { error: None },
         })
     }
 }
 
-impl<Conn> Iterator for Peer<Conn, Running<<Conn as Connection>::Stream>>
-where
-    Conn: Connection,
-{
+impl<Conn> Iterator for Peer<Running<Conn>> {
     type Item = Result<Message, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -130,8 +124,8 @@ mod private {
     /// [sealed traits]: https://rust-lang.github.io/api-guidelines/future-proofing.html#sealed-traits-protect-against-downstream-implementations-c-sealed
     pub trait Sealed {}
 
-    impl Sealed for Connected {}
-    impl Sealed for Disconnected {}
-    impl<S> Sealed for Running<S> {}
+    impl<Conn> Sealed for Connected<Conn> {}
+    impl<Conn> Sealed for Disconnected<Conn> {}
+    impl<Conn> Sealed for Running<Conn> {}
     impl Sealed for Stopped {}
 }

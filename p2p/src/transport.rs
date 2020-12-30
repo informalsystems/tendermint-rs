@@ -21,30 +21,27 @@ pub enum Error {
     AcceptTerminated,
 }
 
-pub trait Stream: Read + Write {
-    fn close(&self) -> Result<(), Error>;
-}
-
 pub enum StreamId {
     Pex,
 }
 
-pub enum Direction<Conn>
-where
-    Conn: Connection,
-{
+pub enum Direction<Conn> {
     Incoming(Conn),
     Outgoing(Conn),
 }
 
-pub trait Connection: Clone {
+pub trait Connection: Drop {
     type Error: 'static + fmt::Display + std::error::Error + Send + Sync;
-    type Stream: Stream;
+    type Read: Read;
+    type Write: Write;
 
     fn advertised_addrs(&self) -> Vec<SocketAddr>;
     fn close(&self) -> Result<()>;
     fn local_addr(&self) -> SocketAddr;
-    fn open_bidirectional(&self, stream_id: &StreamId) -> Result<Self::Stream, Self::Error>;
+    fn open_bidirectional(
+        &self,
+        stream_id: &StreamId,
+    ) -> Result<(Self::Read, Self::Write), Self::Error>;
     fn public_key(&self) -> PublicKey;
     fn remote_addr(&self) -> SocketAddr;
 }
@@ -58,8 +55,8 @@ pub trait Endpoint {
 
 pub trait Transport {
     type Connection: Connection;
-    type Endpoint: Endpoint<Connection = Direction<<Self as Transport>::Connection>>;
-    type Incoming: Iterator<Item = Result<Direction<<Self as Transport>::Connection>>>;
+    type Endpoint: Endpoint<Connection = <Self as Transport>::Connection>;
+    type Incoming: Iterator<Item = Result<<Self as Transport>::Connection>>;
 
     fn bind(&self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)>;
     fn shutdown(&self) -> Result<(), Error>;
@@ -119,17 +116,17 @@ where
     E::Connection: Connection,
     I: Iterator<Item = Result<E::Connection, Error>>,
 {
-    fn accept(&mut self) -> Result<Peer<E::Connection, peer::Connected>> {
+    fn accept(&mut self) -> Result<Peer<peer::Connected<E::Connection>>> {
         match self.state.incoming.next() {
-            Some(res) => Ok(Peer::from(res?)),
+            Some(res) => Ok(Peer::from(Direction::Incoming(res?))),
             None => Err(eyre!("accept stream terminated, listener likely gone")),
         }
     }
 
-    fn connect(&self) -> Result<Peer<E::Connection, peer::Connected>> {
+    fn connect(&self) -> Result<Peer<peer::Connected<E::Connection>>> {
         let connection = self.state.endpoint.connect()?;
 
-        Ok(Peer::from(connection))
+        Ok(Peer::from(Direction::Outgoing(connection)))
     }
 
     fn stop(self) -> Result<Protocol<T, Stopped>, Error> {
