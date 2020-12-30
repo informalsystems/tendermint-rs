@@ -1,26 +1,18 @@
 use std::collections::HashMap;
+use std::thread;
 
 use eyre::Result;
-use flume::{Receiver, Sender};
+use flume::{self, Receiver, Sender};
 
+use crate::message;
 use crate::transport::{Connection, Direction, StreamId};
+
+pub type PeerId = String;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {}
 
-pub enum Message {}
-
-struct Stream {
-    recv: Receiver<Message>,
-    send: Sender<Message>,
-}
-
 pub trait State: private::Sealed {}
-
-pub struct Disconnected<Conn> {
-    connection: Direction<Conn>,
-}
-impl<Conn> State for Disconnected<Conn> {}
 
 pub struct Connected<Conn> {
     connection: Direction<Conn>,
@@ -29,6 +21,7 @@ impl<Conn> State for Connected<Conn> {}
 
 pub struct Running<Conn> {
     connection: Direction<Conn>,
+    receiver: Receiver<message::Receive>,
 }
 impl<Conn> State for Running<Conn> {}
 
@@ -57,9 +50,34 @@ where
     Conn: Connection,
 {
     fn run(self, stream_ids: Vec<StreamId>) -> Result<Peer<Running<Conn>>> {
+        // FIXME(xla): No queue should be unbounded, backpressure should be finley tuned and/or
+        // tunable.
+        let (receive_sender, receiver) = flume::unbounded::<message::Receive>();
+
+        for stream_id in &stream_ids {
+            let (read, write) = match &self.state.connection {
+                Direction::Incoming(conn) | Direction::Outgoing(conn) => {
+                    conn.open_bidirectional(stream_id)?
+                }
+            };
+            let sender = receive_sender.clone();
+
+            thread::spawn(move || {
+                loop {
+                    // Read bytes
+                    // Deserialize into typed message
+                    // send on receiver_send
+                    sender
+                        .send(message::Receive::Pex(message::PexReceive::Noop))
+                        .expect("send failed");
+                }
+            });
+        }
+
         Ok(Peer {
             state: Running {
                 connection: self.state.connection,
+                receiver,
             },
         })
     }
@@ -79,7 +97,7 @@ impl<Conn> Peer<Running<Conn>>
 where
     Conn: Connection,
 {
-    fn send(&self, message: Message) -> Result<()> {
+    fn send(&self, message: message::Send) -> Result<()> {
         // TODO(xla): Map message to stream id.
         todo!()
     }
@@ -96,7 +114,7 @@ where
 }
 
 impl<Conn> Iterator for Peer<Running<Conn>> {
-    type Item = Result<Message, Error>;
+    type Item = Result<message::Receive, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // TODO(xla): This is the place where we read bytes from the underlying connection and
@@ -117,7 +135,7 @@ impl<Conn> Iterator for Peer<Running<Conn>> {
 }
 
 mod private {
-    use super::{Connected, Disconnected, Running, Stopped};
+    use super::{Connected, Running, Stopped};
 
     /// Constraint for [sealed traits] under the `transport` module hierarchy.
     ///
@@ -125,7 +143,6 @@ mod private {
     pub trait Sealed {}
 
     impl<Conn> Sealed for Connected<Conn> {}
-    impl<Conn> Sealed for Disconnected<Conn> {}
     impl<Conn> Sealed for Running<Conn> {}
     impl Sealed for Stopped {}
 }

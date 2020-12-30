@@ -15,6 +15,7 @@
 )]
 
 pub mod error;
+pub mod message;
 pub mod peer;
 pub mod secret_connection;
 pub mod supervisor;
