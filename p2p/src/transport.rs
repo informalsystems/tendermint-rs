@@ -1,5 +1,8 @@
+use std::fmt;
 use std::io::{Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+
+use eyre::{eyre, Result};
 
 use crate::peer::{self, Peer};
 
@@ -22,6 +25,10 @@ pub trait Stream: Read + Write {
     fn close(&self) -> Result<(), Error>;
 }
 
+pub enum StreamId {
+    Pex,
+}
+
 pub enum Direction<Conn>
 where
     Conn: Connection,
@@ -31,12 +38,13 @@ where
 }
 
 pub trait Connection: Clone {
+    type Error: 'static + fmt::Display + std::error::Error + Send + Sync;
     type Stream: Stream;
 
     fn advertised_addrs(&self) -> Vec<SocketAddr>;
-    fn close(&self) -> Result<(), Error>;
+    fn close(&self) -> Result<()>;
     fn local_addr(&self) -> SocketAddr;
-    fn open(&self) -> Result<Self::Stream, Error>;
+    fn open_bidirectional(&self, stream_id: &StreamId) -> Result<Self::Stream, Self::Error>;
     fn public_key(&self) -> PublicKey;
     fn remote_addr(&self) -> SocketAddr;
 }
@@ -44,16 +52,16 @@ pub trait Connection: Clone {
 pub trait Endpoint {
     type Connection;
 
-    fn connect(&self) -> Result<Self::Connection, Error>;
+    fn connect(&self) -> Result<Self::Connection>;
     fn listen_addrs(&self) -> SocketAddr;
 }
 
 pub trait Transport {
     type Connection: Connection;
     type Endpoint: Endpoint<Connection = Direction<<Self as Transport>::Connection>>;
-    type Incoming: Iterator<Item = Result<Direction<<Self as Transport>::Connection>, Error>>;
+    type Incoming: Iterator<Item = Result<Direction<<Self as Transport>::Connection>>>;
 
-    fn bind(&self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming), Error>;
+    fn bind(&self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)>;
     fn shutdown(&self) -> Result<(), Error>;
 }
 
@@ -94,10 +102,7 @@ impl<T> Protocol<T, Stopped>
 where
     T: Transport,
 {
-    fn start(
-        self,
-        bind_info: BindInfo,
-    ) -> Result<Protocol<T, Running<T::Endpoint, T::Incoming>>, Error> {
+    fn start(self, bind_info: BindInfo) -> Result<Protocol<T, Running<T::Endpoint, T::Incoming>>> {
         let (endpoint, incoming) = self.transport.bind(bind_info)?;
 
         Ok(Protocol {
@@ -114,14 +119,14 @@ where
     E::Connection: Connection,
     I: Iterator<Item = Result<E::Connection, Error>>,
 {
-    fn accept(&mut self) -> Result<Peer<E::Connection, peer::Connected>, Error> {
+    fn accept(&mut self) -> Result<Peer<E::Connection, peer::Connected>> {
         match self.state.incoming.next() {
             Some(res) => Ok(Peer::from(res?)),
-            None => Err(Error::AcceptTerminated),
+            None => Err(eyre!("accept stream terminated, listener likely gone")),
         }
     }
 
-    fn connect(&self) -> Result<Peer<E::Connection, peer::Connected>, Error> {
+    fn connect(&self) -> Result<Peer<E::Connection, peer::Connected>> {
         let connection = self.state.endpoint.connect()?;
 
         Ok(Peer::from(connection))
