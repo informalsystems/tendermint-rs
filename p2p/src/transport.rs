@@ -21,6 +21,7 @@ pub enum Error {
     AcceptTerminated,
 }
 
+#[derive(Clone, Copy, Hash, Eq, PartialEq)]
 pub enum StreamId {
     Pex,
 }

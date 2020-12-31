@@ -22,6 +22,7 @@ impl<Conn> State for Connected<Conn> {}
 pub struct Running<Conn> {
     connection: Direction<Conn>,
     receiver: Receiver<message::Receive>,
+    senders: HashMap<StreamId, Sender<Box<dyn message::Outgoing>>>,
 }
 impl<Conn> State for Running<Conn> {}
 
@@ -52,7 +53,8 @@ where
     fn run(self, stream_ids: Vec<StreamId>) -> Result<Peer<Running<Conn>>> {
         // FIXME(xla): No queue should be unbounded, backpressure should be finley tuned and/or
         // tunable.
-        let (receive_sender, receiver) = flume::unbounded::<message::Receive>();
+        let (receive_tx, receiver) = flume::unbounded::<message::Receive>();
+        let mut senders = HashMap::new();
 
         for stream_id in &stream_ids {
             let (read, write) = match &self.state.connection {
@@ -60,24 +62,53 @@ where
                     conn.open_bidirectional(stream_id)?
                 }
             };
-            let sender = receive_sender.clone();
+
+            {
+                let tx = receive_tx.clone();
+
+                thread::spawn(move || {
+                    loop {
+                        // Read bytes
+                        // Deserialize into typed message
+                        // send on receiver_send
+
+                        // End the read loop when all receivers are gone.
+                        if tx
+                            .send(message::Receive::Pex(message::PexReceive::Noop))
+                            .is_err()
+                        {
+                            break;
+                        }
+                    }
+                });
+            }
+
+            let (write_tx, write_rx) = flume::unbounded();
 
             thread::spawn(move || {
                 loop {
-                    // Read bytes
-                    // Deserialize into typed message
-                    // send on receiver_send
-                    sender
-                        .send(message::Receive::Pex(message::PexReceive::Noop))
-                        .expect("send failed");
+                    let res = write_rx.recv();
+
+                    // The only error possible is a disconnection.
+                    if res.is_err() {
+                        break;
+                    }
+
+                    let msg = res.unwrap();
+
+                    // Serialise message
+                    // write bytes
                 }
             });
+
+            senders.insert(*stream_id, write_tx);
         }
 
         Ok(Peer {
             state: Running {
                 connection: self.state.connection,
                 receiver,
+                senders,
             },
         })
     }
