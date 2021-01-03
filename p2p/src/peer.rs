@@ -4,10 +4,11 @@ use std::thread;
 use eyre::Result;
 use flume::{self, Receiver, Sender};
 
+use tendermint::node;
+use tendermint::public_key::PublicKey;
+
 use crate::message;
 use crate::transport::{Connection, Direction, StreamId};
-
-pub type PeerId = String;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {}
@@ -31,16 +32,30 @@ pub struct Stopped {
 }
 impl State for Stopped {}
 
-pub struct Peer<St>
-where
-    St: State,
-{
+pub struct Peer<St> {
+    pub id: node::Id,
+
     state: St,
 }
 
-impl<Conn> From<Direction<Conn>> for Peer<Connected<Conn>> {
+impl<Conn> From<Direction<Conn>> for Peer<Connected<Conn>>
+where
+    Conn: Connection,
+{
     fn from(connection: Direction<Conn>) -> Peer<Connected<Conn>> {
+        let pk = match &connection {
+            Direction::Incoming(conn) => conn.public_key(),
+            Direction::Outgoing(conn) => conn.public_key(),
+        };
+
+        let id = match pk {
+            PublicKey::Ed25519(ed25519) => node::Id::from(ed25519),
+            _ => panic!(),
+        };
+
         Peer {
+            id,
+
             state: Connected { connection },
         }
     }
@@ -50,7 +65,7 @@ impl<Conn> Peer<Connected<Conn>>
 where
     Conn: Connection,
 {
-    fn run(self, stream_ids: Vec<StreamId>) -> Result<Peer<Running<Conn>>> {
+    pub fn run(self, stream_ids: Vec<StreamId>) -> Result<Peer<Running<Conn>>> {
         // FIXME(xla): No queue should be unbounded, backpressure should be finley tuned and/or
         // tunable.
         let (receive_tx, receiver) = flume::unbounded::<message::Receive>();
@@ -105,6 +120,8 @@ where
         }
 
         Ok(Peer {
+            id: self.id,
+
             state: Running {
                 connection: self.state.connection,
                 receiver,
@@ -119,6 +136,8 @@ where
         }
 
         Ok(Peer {
+            id: self.id,
+
             state: Stopped { error: None },
         })
     }
@@ -128,40 +147,21 @@ impl<Conn> Peer<Running<Conn>>
 where
     Conn: Connection,
 {
-    fn send(&self, message: message::Send) -> Result<()> {
+    pub fn send(&self, message: message::Send) -> Result<()> {
         // TODO(xla): Map message to stream id.
         todo!()
     }
 
-    fn stop(self) -> Result<Peer<Stopped>> {
+    pub fn stop(self) -> Result<Peer<Stopped>> {
         match self.state.connection {
             Direction::Incoming(conn) | Direction::Outgoing(conn) => conn.close()?,
         }
 
         Ok(Peer {
+            id: self.id,
+
             state: Stopped { error: None },
         })
-    }
-}
-
-impl<Conn> Iterator for Peer<Running<Conn>> {
-    type Item = Result<message::Receive, Error>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        // TODO(xla): This is the place where we read bytes from the underlying connection and
-        // serialise them into `Message`s. If we can achieve that, that means no matter what
-        // connection is plugged we guarantee proper handling of the wire protocol. In turn that
-        // means we assume the interface to be byte streams.
-        //
-        // Assumption here is that a unified event/message stream is wanted. An alternative model
-        // would be to have specialised streams where the messages are typed, similar to the idea
-        // of channelIded packets in the existing MConn.
-        //
-        // To decide what the right surface area is, there needs to be some exploration into the
-        // upper layer of peer management and coordination (Supervisor?). Which should inform if
-        // there is a need for finer grained control.
-
-        None
     }
 }
 

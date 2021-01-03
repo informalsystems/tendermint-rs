@@ -1,13 +1,12 @@
 use std::fmt;
 use std::io::{Read, Write};
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::net::SocketAddr;
+
+use tendermint::public_key::PublicKey;
 
 use eyre::{eyre, Result};
 
 use crate::peer::{self, Peer};
-
-// TODO(xla): Use actual PublicKey type.
-type PublicKey = String;
 
 pub struct BindInfo {
     pub addr: SocketAddr,
@@ -15,11 +14,7 @@ pub struct BindInfo {
     pub public_key: PublicKey,
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("accept stream terminated, listener likely gone")]
-    AcceptTerminated,
-}
+pub struct ConnectInfo {}
 
 #[derive(Clone, Copy, Hash, Eq, PartialEq)]
 pub enum StreamId {
@@ -31,7 +26,7 @@ pub enum Direction<Conn> {
     Outgoing(Conn),
 }
 
-pub trait Connection: Drop {
+pub trait Connection: Drop + Send {
     type Error: 'static + fmt::Display + std::error::Error + Send + Sync;
     type Read: Read;
     type Write: Write;
@@ -47,48 +42,40 @@ pub trait Connection: Drop {
     fn remote_addr(&self) -> SocketAddr;
 }
 
-pub trait Endpoint {
+pub trait Endpoint: Drop + Send {
     type Connection;
 
-    fn connect(&self) -> Result<Self::Connection>;
+    fn connect(&self, info: ConnectInfo) -> Result<Self::Connection>;
     fn listen_addrs(&self) -> SocketAddr;
 }
 
 pub trait Transport {
     type Connection: Connection;
     type Endpoint: Endpoint<Connection = <Self as Transport>::Connection>;
-    type Incoming: Iterator<Item = Result<<Self as Transport>::Connection>>;
+    type Incoming: Iterator<Item = Result<<Self as Transport>::Connection>> + Send;
 
     fn bind(&self, bind_info: BindInfo) -> Result<(Self::Endpoint, Self::Incoming)>;
-    fn shutdown(&self) -> Result<(), Error>;
+    fn shutdown(&self) -> Result<()>;
 }
 
-trait State: private::Sealed {}
-struct Stopped;
+pub trait State: private::Sealed {}
+pub struct Stopped;
 impl State for Stopped {}
-struct Running<E, I> {
+pub struct Running<E, I> {
     endpoint: E,
     incoming: I,
 }
 impl<E, I> State for Running<E, I> {}
 
-struct Protocol<T, St>
-where
-    St: State,
-    T: Transport,
-{
+pub struct Protocol<T, St> {
     transport: T,
 
     state: St,
 }
 
-impl<T, St> Protocol<T, St>
-where
-    St: State,
-    T: Transport,
-{
+impl<T, St> Protocol<T, St> {
     #[allow(clippy::new_ret_no_self)]
-    fn new(transport: T) -> Protocol<T, Stopped> {
+    pub fn new(transport: T) -> Protocol<T, Stopped> {
         Protocol {
             transport,
             state: Stopped,
@@ -100,7 +87,10 @@ impl<T> Protocol<T, Stopped>
 where
     T: Transport,
 {
-    fn start(self, bind_info: BindInfo) -> Result<Protocol<T, Running<T::Endpoint, T::Incoming>>> {
+    pub fn start(
+        self,
+        bind_info: BindInfo,
+    ) -> Result<Protocol<T, Running<T::Endpoint, T::Incoming>>> {
         let (endpoint, incoming) = self.transport.bind(bind_info)?;
 
         Ok(Protocol {
@@ -115,22 +105,22 @@ where
     T: Transport,
     E: Endpoint,
     E::Connection: Connection,
-    I: Iterator<Item = Result<E::Connection, Error>>,
+    I: Iterator<Item = Result<E::Connection>>,
 {
-    fn accept(&mut self) -> Result<Peer<peer::Connected<E::Connection>>> {
+    pub fn accept(&mut self) -> Result<Peer<peer::Connected<E::Connection>>> {
         match self.state.incoming.next() {
             Some(res) => Ok(Peer::from(Direction::Incoming(res?))),
             None => Err(eyre!("accept stream terminated, listener likely gone")),
         }
     }
 
-    fn connect(&self) -> Result<Peer<peer::Connected<E::Connection>>> {
-        let connection = self.state.endpoint.connect()?;
+    pub fn connect(&self, info: ConnectInfo) -> Result<Peer<peer::Connected<E::Connection>>> {
+        let connection = self.state.endpoint.connect(info)?;
 
         Ok(Peer::from(Direction::Outgoing(connection)))
     }
 
-    fn stop(self) -> Result<Protocol<T, Stopped>, Error> {
+    pub fn stop(self) -> Result<Protocol<T, Stopped>> {
         self.transport.shutdown()?;
 
         Ok(Protocol {
