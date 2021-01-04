@@ -22,7 +22,7 @@ impl<Conn> State for Connected<Conn> {}
 
 pub struct Running<Conn> {
     connection: Direction<Conn>,
-    receiver: Receiver<message::Receive>,
+    pub receiver: Receiver<message::Receive>,
     senders: HashMap<StreamId, Sender<Box<dyn message::Outgoing>>>,
 }
 impl<Conn> State for Running<Conn> {}
@@ -35,7 +35,7 @@ impl State for Stopped {}
 pub struct Peer<St> {
     pub id: node::Id,
 
-    state: St,
+    pub state: St,
 }
 
 impl<Conn> From<Direction<Conn>> for Peer<Connected<Conn>>

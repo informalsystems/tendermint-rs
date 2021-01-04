@@ -34,6 +34,7 @@ enum Internal<Conn> {
     Accepted(Conn),
     Command(Command),
     Connected(Conn),
+    Receive(node::Id, message::Receive),
 }
 
 pub struct Supervisor {
@@ -90,13 +91,25 @@ impl Supervisor {
                 connected: HashMap::new(),
                 stopped: HashMap::new(),
             };
-            loop {
-                let selector = flume::Selector::new()
-                    .recv(&accepted_rx, |accepted| accepted.unwrap())
-                    .recv(&commands, |res| Internal::Command(res.unwrap()))
-                    .recv(&connected_rx, |connected| connected.unwrap());
 
-                let _commands = state.transition(selector.wait());
+            loop {
+                let input = {
+                    let mut selector = flume::Selector::new()
+                        .recv(&accepted_rx, |accepted| accepted.unwrap())
+                        .recv(&commands, |res| Internal::Command(res.unwrap()))
+                        .recv(&connected_rx, |connected| connected.unwrap());
+
+                    for (id, peer) in &state.connected {
+                        let id = *id;
+                        selector = selector.recv(&peer.state.receiver, |res| {
+                            Internal::Receive(id, res.unwrap())
+                        });
+                    }
+
+                    selector.wait()
+                };
+
+                let _commands = state.transition(input);
             }
         });
 
