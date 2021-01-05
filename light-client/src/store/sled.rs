@@ -2,6 +2,8 @@
 
 pub mod utils;
 
+use std::path::Path;
+
 use crate::{
     store::sled::utils::*,
     types::{Height, LightBlock},
@@ -26,7 +28,12 @@ pub struct SledStore {
 }
 
 impl SledStore {
-    /// Create a new persistent store from a sled database
+    /// Open a sled database and create a new persistent store from it.
+    pub fn open(db: impl AsRef<Path>) -> Result<Self, sled::Error> {
+        Ok(Self::new(sled::open(db)?))
+    }
+
+    /// Create a new persistent store from a sled database that is already open.
     pub fn new(db: SledDb) -> Self {
         Self {
             db,
