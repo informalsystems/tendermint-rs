@@ -285,10 +285,12 @@ mod tests {
 
         // with proper (fixed size) height and round (Precommit):
         {
-            let mut vt_precommit = Vote::default();
-            vt_precommit.height = Height::from(1_u32);
-            vt_precommit.round = Round::from(1_u16);
-            vt_precommit.vote_type = Type::Precommit; // precommit
+            let vt_precommit = Vote {
+                height: Height::from(1_u32),
+                round: Round::from(1_u16),
+                vote_type: Type::Precommit,
+                ..Default::default()
+            };
             println!("{:?}", vt_precommit);
             let cv_precommit = CanonicalVote::new(vt_precommit, ChainId::try_from("A").unwrap());
             let got = cv_precommit.encode_vec().unwrap();
@@ -309,10 +311,12 @@ mod tests {
         }
         // with proper (fixed size) height and round (Prevote):
         {
-            let mut vt_prevote = Vote::default();
-            vt_prevote.height = Height::from(1_u32);
-            vt_prevote.round = Round::from(1_u16);
-            vt_prevote.vote_type = Type::Prevote;
+            let vt_prevote = Vote {
+                height: Height::from(1_u32),
+                round: Round::from(1_u16),
+                vote_type: Type::Prevote,
+                ..Default::default()
+            };
 
             let cv_prevote = CanonicalVote::new(vt_prevote, ChainId::try_from("A").unwrap());
 
