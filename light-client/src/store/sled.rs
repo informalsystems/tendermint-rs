@@ -76,9 +76,7 @@ impl LightStore for SledStore {
     }
 
     fn latest(&self, status: Status) -> Option<LightBlock> {
-        self.db(status)
-            .iter(&self.db)
-            .max_by(|first, second| first.height().cmp(&second.height()))
+        self.db(status).iter().next_back()
     }
 
     fn all(&self, status: Status) -> Box<dyn Iterator<Item = LightBlock>> {

@@ -99,31 +99,28 @@ where
     }
 }
 
-// TODO: The test below is currently disabled because it fails on CI as we don't have
-// access to `/tmp`. Need to figure out how to specify a proper temp dir.
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempdir::TempDir;
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::types::Height;
+    #[test]
+    fn iter_next_back_returns_highest_height() {
+        let tmp_dir = TempDir::new("tendermint_light_client_sled_test").unwrap();
+        let db = sled::open(tmp_dir).unwrap();
+        let kv = HeightIndexedDb::new(db.open_tree("light_store/verified").unwrap());
 
-//     #[test]
-//     fn iter_next_back_returns_highest_height() {
-//         const DB_PATH: &str = "/tmp/tendermint_light_client_sled_test/";
-//         std::fs::remove_dir_all(DB_PATH).unwrap();
-//         let db = sled::open(DB_PATH).unwrap();
-//         let kv: KeyValueDb<Height, Height> = key_value("light_store/verified");
+        for i in 1..=1000_u32 {
+            kv.insert(i.into(), &i).unwrap();
+        }
 
-//         kv.insert(&db, &1, &1).unwrap();
-//         kv.insert(&db, &589473798493, &589473798493).unwrap();
-//         kv.insert(&db, &12342425, &12342425).unwrap();
-//         kv.insert(&db, &4, &4).unwrap();
+        for i in (1000..=2000_u32).rev() {
+            kv.insert(i.into(), &i).unwrap();
+        }
 
-//         let mut iter = kv.iter(&db);
-//         assert_eq!(iter.next_back(), Some(589473798493));
-//         assert_eq!(iter.next_back(), Some(12342425));
-//         assert_eq!(iter.next_back(), Some(4));
-//         assert_eq!(iter.next_back(), Some(1));
-//         assert_eq!(iter.next_back(), None);
-//     }
-// }
+        let mut iter = kv.iter();
+        for i in (1..=2000_u32).rev() {
+            assert_eq!(iter.next_back(), Some(i));
+        }
+    }
+}
