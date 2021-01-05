@@ -2,7 +2,7 @@
 
 pub mod utils;
 
-use ::sled::Db as SledDb;
+use std::path::Path;
 
 use crate::{
     store::sled::utils::HeightIndexedDb,
@@ -23,12 +23,17 @@ pub struct SledStore {
     verified_db: HeightIndexedDb<LightBlock>,
     trusted_db: HeightIndexedDb<LightBlock>,
     failed_db: HeightIndexedDb<LightBlock>,
-    db: SledDb,
+    db: sled::Db,
 }
 
 impl SledStore {
-    /// Create a new persistent store from a sled database
-    pub fn new(db: SledDb) -> Self {
+    /// Open a sled database and create a new persistent store from it.
+    pub fn open(db: impl AsRef<Path>) -> Result<Self, sled::Error> {
+        Ok(Self::new(sled::open(db)?))
+    }
+
+    /// Create a new persistent store from a sled database that is already open.
+    pub fn new(db: sled::Db) -> Self {
         Self {
             unverified_db: HeightIndexedDb::new(db.open_tree(UNVERIFIED).unwrap()),
             verified_db: HeightIndexedDb::new(db.open_tree(VERIFIED).unwrap()),
