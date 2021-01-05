@@ -68,10 +68,8 @@ fn initialize_subjectively(
     config: &LightClientConfig,
     timeout: Option<Duration>,
 ) -> Result<Instance, String> {
-    let db = sled::open(config.db_path.clone())
+    let light_store = SledStore::open(config.db_path.clone())
         .map_err(|e| format!("could not open database: {}", e))?;
-
-    let light_store = SledStore::new(db);
 
     if let Some(trusted_state) = light_store.latest_trusted_or_verified() {
         status_warn!(

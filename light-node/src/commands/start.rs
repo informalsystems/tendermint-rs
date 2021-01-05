@@ -97,9 +97,9 @@ impl config::Override<LightNodeConfig> for StartCmd {
 impl StartCmd {
     fn assert_init_was_run() -> Result<(), String> {
         let db_path = app_config().light_clients.first().unwrap().db_path.clone();
-        let db = sled::open(db_path).map_err(|e| format!("could not open database: {}", e))?;
+        let primary_store =
+            SledStore::open(db_path).map_err(|e| format!("could not open database: {}", e))?;
 
-        let primary_store = SledStore::new(db);
         if primary_store.latest_trusted_or_verified().is_none() {
             return Err("no trusted or verified state in store for primary, please initialize with the `initialize` subcommand first".to_string());
         }
@@ -128,9 +128,9 @@ impl StartCmd {
             .map_err(|e| format!("failed to create HTTP client: {}", e))?;
 
         let db_path = light_config.db_path.clone();
-        let db = sled::open(db_path).map_err(|e| format!("could not open database: {}", e))?;
 
-        let light_store = SledStore::new(db);
+        let light_store =
+            SledStore::open(db_path).map_err(|e| format!("could not open database: {}", e))?;
 
         let builder = LightClientBuilder::prod(
             light_config.peer_id,

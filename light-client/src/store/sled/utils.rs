@@ -12,41 +12,40 @@ use crate::types::Height;
 /// Provides a view over the database for storing key/value pairs at the given prefix.
 #[derive(Clone, Debug)]
 pub struct HeightIndexedDb<V> {
-    prefix: Vec<u8>,
+    tree: sled::Tree,
     marker: PhantomData<V>,
 }
 
 impl<V> HeightIndexedDb<V> {
-    /// Create a view over the database for storing key/value pairs at the given prefix.
-    pub fn new(prefix: impl Into<Vec<u8>>) -> Self {
+    /// Create a view over the database for storing key/value pairs within the given `Tree`
+    pub fn new(tree: sled::Tree) -> Self {
         Self {
-            prefix: prefix.into(),
+            tree,
             marker: PhantomData,
         }
     }
+}
+
+fn key_bytes(height: Height) -> [u8; 8] {
+    // we need to store the height in big-endian form for
+    // sled's iterators and ordered operations to work properly.
+    // See https://github.com/spacejam/sled#a-note-on-lexicographic-ordering-and-endianness
+    height.value().to_be_bytes()
 }
 
 impl<V> HeightIndexedDb<V>
 where
     V: Serialize + DeserializeOwned,
 {
-    fn prefixed_key(&self, height: Height) -> Vec<u8> {
-        // we need to store the height in big-endian form for
-        // sled's iterators and ordered operations to work properly.
-        // See https://github.com/spacejam/sled#a-note-on-lexicographic-ordering-and-endianness
-        let key = height.value().to_be_bytes();
-
-        let mut prefix_bytes = self.prefix.clone();
-        prefix_bytes.extend(&key);
-        prefix_bytes
-    }
-
     /// Get the value associated with a height within this view in the given sled database.
-    pub fn get(&self, db: &sled::Db, height: Height) -> Result<Option<V>, Error> {
-        let key_bytes = self.prefixed_key(height);
-        let value_bytes = db.get(key_bytes).map_err(|e| ErrorKind::Store.context(e))?;
+    pub fn get(&self, height: Height) -> Result<Option<V>, Error> {
+        let key = key_bytes(height);
+        let bytes = self
+            .tree
+            .get(key)
+            .map_err(|e| ErrorKind::Store.context(e))?;
 
-        match value_bytes {
+        match bytes {
             Some(bytes) => {
                 let value =
                     serde_cbor::from_slice(&bytes).map_err(|e| ErrorKind::Store.context(e))?;
@@ -57,40 +56,44 @@ where
     }
 
     /// Check whether there exists a height within this view in the given sled database.
-    pub fn contains_key(&self, db: &sled::Db, height: Height) -> Result<bool, Error> {
-        let key_bytes = self.prefixed_key(height);
+    pub fn contains_key(&self, height: Height) -> Result<bool, Error> {
+        let key = key_bytes(height);
 
-        let exists = db
-            .contains_key(key_bytes)
+        let exists = self
+            .tree
+            .contains_key(key)
             .map_err(|e| ErrorKind::Store.context(e))?;
 
         Ok(exists)
     }
 
     /// Insert a value associated with a height within this view in the given sled database.
-    pub fn insert(&self, db: &sled::Db, height: Height, value: &V) -> Result<(), Error> {
-        let key_bytes = self.prefixed_key(height);
-        let value_bytes = serde_cbor::to_vec(&value).map_err(|e| ErrorKind::Store.context(e))?;
+    pub fn insert(&self, height: Height, value: &V) -> Result<(), Error> {
+        let key = key_bytes(height);
+        let bytes = serde_cbor::to_vec(&value).map_err(|e| ErrorKind::Store.context(e))?;
 
-        db.insert(key_bytes, value_bytes)
+        self.tree
+            .insert(key, bytes)
             .map_err(|e| ErrorKind::Store.context(e))?;
 
         Ok(())
     }
 
     /// Remove the value associated with a key within this view in the given sled database.
-    pub fn remove(&self, db: &sled::Db, height: Height) -> Result<(), Error> {
-        let key_bytes = self.prefixed_key(height);
+    pub fn remove(&self, height: Height) -> Result<(), Error> {
+        let key = key_bytes(height);
 
-        db.remove(key_bytes)
+        self.tree
+            .remove(key)
             .map_err(|e| ErrorKind::Store.context(e))?;
 
         Ok(())
     }
 
     /// Iterate over all values within this view in the given sled database.
-    pub fn iter(&self, db: &sled::Db) -> impl DoubleEndedIterator<Item = V> {
-        db.iter()
+    pub fn iter(&self) -> impl DoubleEndedIterator<Item = V> {
+        self.tree
+            .iter()
             .flatten()
             .map(|(_, v)| serde_cbor::from_slice(&v))
             .flatten()

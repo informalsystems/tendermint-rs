@@ -2,7 +2,7 @@
 
 pub mod utils;
 
-use ::sled::Db as SledDb;
+use std::path::Path;
 
 use crate::{
     store::sled::utils::HeightIndexedDb,
@@ -19,7 +19,7 @@ const FAILED_PREFIX: &str = "light_store/failed";
 /// Persistent store backed by an on-disk `sled` database.
 #[derive(Debug, Clone)]
 pub struct SledStore {
-    db: SledDb,
+    db: sled::Db,
     unverified_db: HeightIndexedDb<LightBlock>,
     verified_db: HeightIndexedDb<LightBlock>,
     trusted_db: HeightIndexedDb<LightBlock>,
@@ -27,15 +27,21 @@ pub struct SledStore {
 }
 
 impl SledStore {
+    /// Open a sled database and build new persistent store from it
+    pub fn open(path: impl AsRef<Path>) -> sled::Result<Self> {
+        let db = sled::open(path)?;
+        Self::new(db)
+    }
+
     /// Create a new persistent store from a sled database
-    pub fn new(db: SledDb) -> Self {
-        Self {
+    pub fn new(db: sled::Db) -> sled::Result<Self> {
+        Ok(Self {
+            unverified_db: HeightIndexedDb::new(db.open_tree(UNVERIFIED_PREFIX)?),
+            verified_db: HeightIndexedDb::new(db.open_tree(VERIFIED_PREFIX)?),
+            trusted_db: HeightIndexedDb::new(db.open_tree(TRUSTED_PREFIX)?),
+            failed_db: HeightIndexedDb::new(db.open_tree(FAILED_PREFIX)?),
             db,
-            unverified_db: HeightIndexedDb::new(UNVERIFIED_PREFIX),
-            verified_db: HeightIndexedDb::new(VERIFIED_PREFIX),
-            trusted_db: HeightIndexedDb::new(TRUSTED_PREFIX),
-            failed_db: HeightIndexedDb::new(FAILED_PREFIX),
-        }
+        })
     }
 
     fn db(&self, status: Status) -> &HeightIndexedDb<LightBlock> {
@@ -50,7 +56,7 @@ impl SledStore {
 
 impl LightStore for SledStore {
     fn get(&self, height: Height, status: Status) -> Option<LightBlock> {
-        self.db(status).get(&self.db, height).ok().flatten()
+        self.db(status).get(height).ok().flatten()
     }
 
     fn update(&mut self, light_block: &LightBlock, status: Status) {
@@ -58,30 +64,30 @@ impl LightStore for SledStore {
 
         for other in Status::iter() {
             if status != *other {
-                self.db(*other).remove(&self.db, height).ok();
+                self.db(*other).remove(height).ok();
             }
         }
 
-        self.db(status).insert(&self.db, height, light_block).ok();
+        self.db(status).insert(height, light_block).ok();
     }
 
     fn insert(&mut self, light_block: LightBlock, status: Status) {
         self.db(status)
-            .insert(&self.db, light_block.height(), &light_block)
+            .insert(light_block.height(), &light_block)
             .ok();
     }
 
     fn remove(&mut self, height: Height, status: Status) {
-        self.db(status).remove(&self.db, height).ok();
+        self.db(status).remove(height).ok();
     }
 
     fn latest(&self, status: Status) -> Option<LightBlock> {
         self.db(status)
-            .iter(&self.db)
+            .iter()
             .max_by(|first, second| first.height().cmp(&second.height()))
     }
 
     fn all(&self, status: Status) -> Box<dyn Iterator<Item = LightBlock>> {
-        Box::new(self.db(status).iter(&self.db))
+        Box::new(self.db(status).iter())
     }
 }
