@@ -17,9 +17,9 @@ description = """
 all-features = true
 
 [dependencies]
-prost = { version = "0.6" }
-prost-types = { version = "0.6" }
-bytes = "0.5"
+prost = { version = "0.7" }
+prost-types = { version = "0.7" }
+bytes = "1"
 anomaly = "0.2"
 thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"] }
