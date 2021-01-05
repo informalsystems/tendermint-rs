@@ -73,7 +73,7 @@ fn initialize_subjectively(
 
     let light_store = SledStore::new(db);
 
-    if let Some(trusted_state) = light_store.latest_trusted_or_verified() {
+    if let Some(trusted_state) = light_store.highest_trusted_or_verified() {
         status_warn!(
             "already existing trusted or verified state of height {} in database: {:?}",
             trusted_state.signed_header.header.height,

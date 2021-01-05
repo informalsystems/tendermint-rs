@@ -100,7 +100,7 @@ impl StartCmd {
         let db = sled::open(db_path).map_err(|e| format!("could not open database: {}", e))?;
 
         let primary_store = SledStore::new(db);
-        if primary_store.latest_trusted_or_verified().is_none() {
+        if primary_store.highest_trusted_or_verified().is_none() {
             return Err("no trusted or verified state in store for primary, please initialize with the `initialize` subcommand first".to_string());
         }
 

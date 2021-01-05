@@ -133,7 +133,7 @@ impl LightClientBuilder<NoTrustedState> {
     pub fn trust_from_store(self) -> Result<LightClientBuilder<HasTrustedState>, Error> {
         let trusted_state = self
             .light_store
-            .latest_trusted_or_verified()
+            .highest_trusted_or_verified()
             .ok_or(error::Kind::NoTrustedStateInStore)?;
 
         self.trust_light_block(trusted_state)
