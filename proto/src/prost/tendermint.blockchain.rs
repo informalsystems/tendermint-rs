@@ -14,7 +14,7 @@ pub struct NoBlockResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BlockResponse {
     #[prost(message, optional, tag="1")]
-    pub block: ::std::option::Option<super::types::Block>,
+    pub block: ::core::option::Option<super::types::Block>,
 }
 /// StatusRequest requests the status of a peer.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -31,8 +31,9 @@ pub struct StatusResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Message {
     #[prost(oneof="message::Sum", tags="1, 2, 3, 4, 5")]
-    pub sum: ::std::option::Option<message::Sum>,
+    pub sum: ::core::option::Option<message::Sum>,
 }
+/// Nested message and enum types in `Message`.
 pub mod message {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {

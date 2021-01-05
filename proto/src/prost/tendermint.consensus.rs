@@ -23,9 +23,9 @@ pub struct NewValidBlock {
     #[prost(int32, tag="2")]
     pub round: i32,
     #[prost(message, optional, tag="3")]
-    pub block_part_set_header: ::std::option::Option<super::types::PartSetHeader>,
+    pub block_part_set_header: ::core::option::Option<super::types::PartSetHeader>,
     #[prost(message, optional, tag="4")]
-    pub block_parts: ::std::option::Option<super::libs::bits::BitArray>,
+    pub block_parts: ::core::option::Option<super::libs::bits::BitArray>,
     #[prost(bool, tag="5")]
     pub is_commit: bool,
 }
@@ -33,7 +33,7 @@ pub struct NewValidBlock {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proposal {
     #[prost(message, optional, tag="1")]
-    pub proposal: ::std::option::Option<super::types::Proposal>,
+    pub proposal: ::core::option::Option<super::types::Proposal>,
 }
 /// ProposalPOL is sent when a previous proposal is re-proposed.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -43,7 +43,7 @@ pub struct ProposalPol {
     #[prost(int32, tag="2")]
     pub proposal_pol_round: i32,
     #[prost(message, optional, tag="3")]
-    pub proposal_pol: ::std::option::Option<super::libs::bits::BitArray>,
+    pub proposal_pol: ::core::option::Option<super::libs::bits::BitArray>,
 }
 /// BlockPart is sent when gossipping a piece of the proposed block.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -53,13 +53,13 @@ pub struct BlockPart {
     #[prost(int32, tag="2")]
     pub round: i32,
     #[prost(message, optional, tag="3")]
-    pub part: ::std::option::Option<super::types::Part>,
+    pub part: ::core::option::Option<super::types::Part>,
 }
 /// Vote is sent when voting for a proposal (or lack thereof).
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Vote {
     #[prost(message, optional, tag="1")]
-    pub vote: ::std::option::Option<super::types::Vote>,
+    pub vote: ::core::option::Option<super::types::Vote>,
 }
 /// HasVote is sent to indicate that a particular vote has been received.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -83,7 +83,7 @@ pub struct VoteSetMaj23 {
     #[prost(enumeration="super::types::SignedMsgType", tag="3")]
     pub r#type: i32,
     #[prost(message, optional, tag="4")]
-    pub block_id: ::std::option::Option<super::types::BlockId>,
+    pub block_id: ::core::option::Option<super::types::BlockId>,
 }
 /// VoteSetBits is sent to communicate the bit-array of votes seen for the BlockID.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -95,15 +95,16 @@ pub struct VoteSetBits {
     #[prost(enumeration="super::types::SignedMsgType", tag="3")]
     pub r#type: i32,
     #[prost(message, optional, tag="4")]
-    pub block_id: ::std::option::Option<super::types::BlockId>,
+    pub block_id: ::core::option::Option<super::types::BlockId>,
     #[prost(message, optional, tag="5")]
-    pub votes: ::std::option::Option<super::libs::bits::BitArray>,
+    pub votes: ::core::option::Option<super::libs::bits::BitArray>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Message {
     #[prost(oneof="message::Sum", tags="1, 2, 3, 4, 5, 6, 7, 8, 9")]
-    pub sum: ::std::option::Option<message::Sum>,
+    pub sum: ::core::option::Option<message::Sum>,
 }
+/// Nested message and enum types in `Message`.
 pub mod message {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
@@ -131,15 +132,15 @@ pub mod message {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgInfo {
     #[prost(message, optional, tag="1")]
-    pub msg: ::std::option::Option<Message>,
+    pub msg: ::core::option::Option<Message>,
     #[prost(string, tag="2")]
-    pub peer_id: std::string::String,
+    pub peer_id: ::prost::alloc::string::String,
 }
 /// TimeoutInfo internally generated messages which may update the state
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TimeoutInfo {
     #[prost(message, optional, tag="1")]
-    pub duration: ::std::option::Option<super::super::google::protobuf::Duration>,
+    pub duration: ::core::option::Option<super::super::google::protobuf::Duration>,
     #[prost(int64, tag="2")]
     pub height: i64,
     #[prost(int32, tag="3")]
@@ -157,8 +158,9 @@ pub struct EndHeight {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WalMessage {
     #[prost(oneof="wal_message::Sum", tags="1, 2, 3, 4")]
-    pub sum: ::std::option::Option<wal_message::Sum>,
+    pub sum: ::core::option::Option<wal_message::Sum>,
 }
+/// Nested message and enum types in `WALMessage`.
 pub mod wal_message {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Sum {
@@ -176,7 +178,7 @@ pub mod wal_message {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TimedWalMessage {
     #[prost(message, optional, tag="1")]
-    pub time: ::std::option::Option<super::super::google::protobuf::Timestamp>,
+    pub time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(message, optional, tag="2")]
-    pub msg: ::std::option::Option<WalMessage>,
+    pub msg: ::core::option::Option<WalMessage>,
 }
