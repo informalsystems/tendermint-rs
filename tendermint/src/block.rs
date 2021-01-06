@@ -72,10 +72,14 @@ impl TryFrom<RawBlock> for Block {
         //    return Err(Kind::InvalidFirstBlock.context("last_commit is not null on first
         // height").into());
         //}
+
+        let data = value.data.ok_or(Kind::MissingData)?.into();
+        let evidence = value.evidence.ok_or(Kind::MissingEvidence)?.try_into()?;
+
         Ok(Block {
             header,
-            data: value.data.ok_or(Kind::MissingData)?.try_into()?,
-            evidence: value.evidence.ok_or(Kind::MissingEvidence)?.try_into()?,
+            data,
+            evidence,
             last_commit,
         })
     }

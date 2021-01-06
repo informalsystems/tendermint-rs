@@ -82,7 +82,11 @@ impl Hash {
         match alg {
             Algorithm::Sha256 => {
                 let mut h = [0u8; SHA256_HASH_SIZE];
-                Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h)?;
+
+                Hex::upper_case()
+                    .decode_to_slice(s.as_bytes(), &mut h)
+                    .map_err(|e| Kind::InvalidHex.context(e))?;
+
                 Ok(Hash::Sha256(h))
             }
         }
@@ -217,7 +221,9 @@ impl AppHash {
             return Err(Kind::InvalidAppHashLength.into());
         }
         let mut h = vec![0; s.len() / 2];
-        Hex::upper_case().decode_to_slice(s.as_bytes(), &mut h)?;
+        Hex::upper_case()
+            .decode_to_slice(s.as_bytes(), &mut h)
+            .map_err(|e| Kind::InvalidHex.context(e))?;
         Ok(AppHash(h))
     }
 }

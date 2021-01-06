@@ -105,7 +105,7 @@ pub struct TendermintConfig {
 impl TendermintConfig {
     /// Parse Tendermint `config.toml`
     pub fn parse_toml<T: AsRef<str>>(toml_string: T) -> Result<Self, Error> {
-        Ok(toml::from_str(toml_string.as_ref())?)
+        Ok(toml::from_str(toml_string.as_ref()).map_err(|e| Kind::InvalidToml.context(e))?)
     }
 
     /// Load `config.toml` from a file
@@ -131,7 +131,10 @@ impl TendermintConfig {
         let genesis_json = fs::read_to_string(&path)
             .map_err(|e| format_err!(Kind::Parse, "couldn't open {}: {}", path.display(), e))?;
 
-        Ok(serde_json::from_str(genesis_json.as_ref())?)
+        Ok(
+            serde_json::from_str(genesis_json.as_ref())
+                .map_err(|e| Kind::InvalidJson.context(e))?,
+        )
     }
 
     /// Load `node_key.json` file from the configured location

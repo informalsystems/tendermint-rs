@@ -94,8 +94,15 @@ impl TryFrom<RawCommitSig> for CommitSig {
                 return Err(Kind::InvalidValidatorAddress.into());
             }
             return Ok(CommitSig::BlockIDFlagCommit {
-                validator_address: value.validator_address.try_into()?,
-                timestamp: value.timestamp.ok_or(Kind::NoTimestamp)?.try_into()?,
+                validator_address: value
+                    .validator_address
+                    .try_into()
+                    .map_err(|e| Kind::InvalidValidatorAddress.context(e))?,
+                timestamp: value
+                    .timestamp
+                    .ok_or(Kind::NoTimestamp)?
+                    .try_into()
+                    .map_err(|e| Kind::InvalidTimestamp.context(e))?,
                 signature: value.signature.try_into()?,
             });
         }
@@ -110,7 +117,11 @@ impl TryFrom<RawCommitSig> for CommitSig {
             }
             return Ok(CommitSig::BlockIDFlagNil {
                 validator_address: value.validator_address.try_into()?,
-                timestamp: value.timestamp.ok_or(Kind::NoTimestamp)?.try_into()?,
+                timestamp: value
+                    .timestamp
+                    .ok_or(Kind::NoTimestamp)?
+                    .try_into()
+                    .map_err(|e| Kind::InvalidTimestamp.context(e))?,
                 signature: value.signature.try_into()?,
             });
         }

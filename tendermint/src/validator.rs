@@ -169,7 +169,7 @@ impl TryFrom<RawValidator> for Info {
             address: value.address.try_into()?,
             pub_key: value.pub_key.ok_or(Kind::MissingPublicKey)?.try_into()?,
             voting_power: value.voting_power.try_into()?,
-            proposer_priority: value.proposer_priority.try_into()?,
+            proposer_priority: value.proposer_priority.into(),
         })
     }
 }
