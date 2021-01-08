@@ -10,6 +10,13 @@
 [#758]: https://github.com/informalsystems/tendermint-rs/pull/758
 [cargo make]: https://github.com/sagiegurari/cargo-make
 
+### BUG FIXES:
+
+- `[tendermint]` `Time` values were not always formatted properly,
+  causing the light client to sometimes return malformed light blocks. ([#774])
+
+[#774]: https://github.com/informalsystems/tendermint-rs/issue/774
+
 ## v0.17.0
 
 *Dec 17, 2020*
