@@ -112,25 +112,10 @@ fn forward_test(tc: LightClientTest<LightBlock>) {
     }
 }
 
-/// Test that the light client succeeds when the target height is
-/// lower than the last trusted state height.
-///
-/// To do this, we swap the trusted and target heights,
-/// and run the standard forward test.
-/// We then assert that we get the expected error.
-fn backward_test(mut tc: LightClientTest<LightBlock>) {
-    let trusted_height = tc.trust_options.height;
-    tc.trust_options.height = tc.height_to_verify;
-    tc.height_to_verify = trusted_height;
-
-    forward_test(tc)
-}
-
 #[test]
 fn run_tests() {
     let mut tester = Tester::new("light client verification", TEST_FILES_PATH);
     tester.add_test("forward verification with bisection", forward_test);
-    tester.add_test("backward sequential verification", backward_test);
     tester.run_foreach_in_dir("bisection/single_peer");
     tester.finalize();
 }
