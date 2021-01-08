@@ -10,6 +10,12 @@
 [#758]: https://github.com/informalsystems/tendermint-rs/pull/758
 [cargo make]: https://github.com/sagiegurari/cargo-make
 
+### BUG FIXES:
+
+* `[light-client]` Fix potential block ordering problem with sled-based lightstore ([#769])
+
+[#769]: https://github.com/informalsystems/tendermint-rs/issues/769
+
 ## v0.17.0
 
 *Dec 17, 2020*
