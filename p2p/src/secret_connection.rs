@@ -535,7 +535,7 @@ mod test {
     fn test_read_wrie() {
         let (pipe1, pipe2) = pipe::bipipe_buffered();
 
-        let msg = "The Queen's Gambit";
+        const MESSAGE: &str = "The Queen's Gambit";
 
         let sender = thread::spawn(move || {
             let mut csprng = OsRng {};
@@ -543,8 +543,9 @@ mod test {
             let mut conn1 = SecretConnection::new(pipe2, &privkey1, Version::V0_34)
                 .expect("handshake to succeed");
 
-            let res = conn1.write_all(msg.as_bytes());
-            assert_eq!(res.is_ok(), true);
+            conn1
+                .write_all(MESSAGE.as_bytes())
+                .expect("expected to write message");
         });
 
         let receiver = thread::spawn(move || {
@@ -553,9 +554,11 @@ mod test {
             let mut conn2 = SecretConnection::new(pipe1, &privkey2, Version::V0_34)
                 .expect("handshake to succeed");
 
-            let mut buf = [0; 18];
-            conn2.read_exact(&mut buf).expect("expected to read msg");
-            assert_eq!(msg.as_bytes(), &buf);
+            let mut buf = [0; MESSAGE.len()];
+            conn2
+                .read_exact(&mut buf)
+                .expect("expected to read message");
+            assert_eq!(MESSAGE.as_bytes(), &buf);
         });
 
         sender.join().expect("The sender thread has panicked");
