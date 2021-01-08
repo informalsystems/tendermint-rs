@@ -514,14 +514,14 @@ mod test {
         let (pipe1, pipe2) = pipe::bipipe_buffered();
 
         let thread1 = thread::spawn(|| {
-            let mut csprng = OsRng{};
+            let mut csprng = OsRng {};
             let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
             let conn1 = SecretConnection::new(pipe2, &privkey1, Version::V0_34);
             assert_eq!(conn1.is_ok(), true);
         });
 
         let thread2 = thread::spawn(|| {
-            let mut csprng = OsRng{};
+            let mut csprng = OsRng {};
             let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
             let conn2 = SecretConnection::new(pipe1, &privkey2, Version::V0_34);
             assert_eq!(conn2.is_ok(), true);
@@ -538,18 +538,20 @@ mod test {
         let msg = "The Queen's Gambit";
 
         let sender = thread::spawn(move || {
-            let mut csprng = OsRng{};
+            let mut csprng = OsRng {};
             let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let mut conn1 = SecretConnection::new(pipe2, &privkey1, Version::V0_34).expect("handshake to succeed");
+            let mut conn1 = SecretConnection::new(pipe2, &privkey1, Version::V0_34)
+                .expect("handshake to succeed");
 
             let res = conn1.write_all(msg.as_bytes());
             assert_eq!(res.is_ok(), true);
         });
 
         let receiver = thread::spawn(move || {
-            let mut csprng = OsRng{};
+            let mut csprng = OsRng {};
             let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let mut conn2 = SecretConnection::new(pipe1, &privkey2, Version::V0_34).expect("handshake to succeed");
+            let mut conn2 = SecretConnection::new(pipe1, &privkey2, Version::V0_34)
+                .expect("handshake to succeed");
 
             let mut buf = [0; 18];
             conn2.read_exact(&mut buf).expect("expected to read msg");
