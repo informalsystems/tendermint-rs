@@ -83,6 +83,14 @@ impl LightChain {
             .find(|lb| lb.height() == target_height)
     }
 
+    /// fetches a mutable block from LightChain at a certain height
+    /// it returns None if a block does not exist for the target_height
+    pub fn block_mut(&mut self, target_height: u64) -> Option<&mut LightBlock> {
+        self.light_blocks
+            .iter_mut()
+            .find(|lb| lb.height() == target_height)
+    }
+
     /// fetches the latest block from LightChain
     pub fn latest_block(&self) -> &LightBlock {
         self.light_blocks

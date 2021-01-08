@@ -1,6 +1,6 @@
 use std::{collections::HashMap, time::Duration};
 
-use tendermint::Time;
+use tendermint::{hash::Algorithm, Hash, Time};
 
 use tendermint_light_client::{
     components::{
@@ -22,7 +22,7 @@ use tendermint_testgen::{
     Generator, LightChain,
 };
 
-use proptest::prelude::*;
+use proptest::{prelude::*, test_runner::TestRng};
 
 fn testgen_to_lb(tm_lb: TGLightBlock) -> LightBlock {
     LightBlock {
@@ -105,13 +105,11 @@ fn ok_test(tc: TestCase) -> Result<(), TestCaseError> {
     Ok(())
 }
 
-// fn bad_test(tc: TestCase) -> Result<(), TestCaseError> {
-//     let result = verify(tc);
-
-//     prop_assert!(result.is_err());
-
-//     Ok(())
-// }
+fn bad_test(tc: TestCase) -> Result<(), TestCaseError> {
+    let result = verify(tc);
+    prop_assert!(result.is_err());
+    Ok(())
+}
 
 fn testcase(max: u32) -> impl Strategy<Value = TestCase> {
     (1..=max).prop_flat_map(move |length| {
@@ -126,15 +124,90 @@ fn testcase(max: u32) -> impl Strategy<Value = TestCase> {
     })
 }
 
-// fn mutate(tc: &mut TestCase) {
-//     let trusted = &mut tc.chain.light_blocks[tc.trusted_height.value() as usize - 1];
-//     if let Some(header) = trusted.header.as_mut() {
-//         header.last_block_id_hash = None;
-//     }
-// }
+fn remove_last_block_id_hash(mut tc: TestCase, mut rng: TestRng) -> TestCase {
+    let from = tc.target_height.value() + 1;
+    let to = tc.trusted_height.value() + 1;
+    let height = rng.gen_range(from, to);
+
+    dbg!(tc.target_height, tc.trusted_height, height);
+
+    let block = tc.chain.block_mut(height).unwrap();
+
+    if let Some(header) = block.header.as_mut() {
+        header.last_block_id_hash = None;
+    }
+
+    tc
+}
+
+fn corrupt_hash(mut tc: TestCase, mut rng: TestRng) -> TestCase {
+    let from = tc.target_height.value();
+    let to = tc.trusted_height.value();
+    let height = rng.gen_range(from, to);
+
+    dbg!(tc.target_height, tc.trusted_height, height);
+
+    let block = tc.chain.block_mut(height).unwrap();
+
+    if let Some(header) = block.header.as_mut() {
+        header.time = Some(1610105021);
+    }
+
+    tc
+}
+
+fn corrupt_last_block_id_hash(mut tc: TestCase, mut rng: TestRng) -> TestCase {
+    let from = tc.target_height.value() + 1;
+    let to = tc.trusted_height.value() + 1;
+    let height = rng.gen_range(from, to);
+
+    dbg!(tc.target_height, tc.trusted_height, height);
+
+    let block = tc.chain.block_mut(height).unwrap();
+
+    if let Some(header) = block.header.as_mut() {
+        let hash = Hash::from_hex_upper(
+            Algorithm::Sha256,
+            "C68B4CFC7F9AA239F9E0DF7CDEF264DD1CDFE8B73EF04B5600A20111144F42BF",
+        )
+        .unwrap();
+
+        header.last_block_id_hash = Some(hash);
+    }
+
+    tc
+}
+
+fn tc_missing_last_block_id_hash(max: u32) -> impl Strategy<Value = TestCase> {
+    testcase(max)
+        .prop_filter("target == trusted", |tc| {
+            tc.target_height != tc.trusted_height
+        })
+        .prop_perturb(remove_last_block_id_hash)
+}
+
+fn tc_corrupted_last_block_id_hash(max: u32) -> impl Strategy<Value = TestCase> {
+    testcase(max)
+        .prop_filter("target == trusted", |tc| {
+            tc.target_height != tc.trusted_height
+        })
+        .prop_perturb(corrupt_last_block_id_hash)
+}
+
+fn tc_corrupted_hash(max: u32) -> impl Strategy<Value = TestCase> {
+    testcase(max)
+        .prop_filter("target == trusted", |tc| {
+            tc.target_height != tc.trusted_height
+        })
+        .prop_perturb(corrupt_hash)
+}
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(5))]
+    #![proptest_config(ProptestConfig {
+        cases: 20,
+        max_shrink_iters: 0,
+        ..Default::default()
+    })]
 
     #[test]
     fn prop_target_equal_trusted_first_block(mut tc in testcase(100)) {
@@ -168,9 +241,18 @@ proptest! {
         ok_test(tc)?;
     }
 
-    // #[test]
-    // fn bad(mut tc in testcase(100)) {
-    //     mutate(&mut tc);
-    //     bad_test(tc)?;
-    // }
+    #[test]
+    fn missing_last_block_id_hash(tc in tc_missing_last_block_id_hash(100)) {
+        bad_test(tc)?;
+    }
+
+    #[test]
+    fn corrupted_last_block_id_hash(tc in tc_corrupted_last_block_id_hash(100)) {
+        bad_test(tc)?;
+    }
+
+    #[test]
+    fn corrupted_hash(tc in tc_corrupted_hash(100)) {
+        bad_test(tc)?;
+    }
 }
