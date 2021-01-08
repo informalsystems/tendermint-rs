@@ -13,8 +13,11 @@
 ### BUG FIXES:
 
 * `[light-client]` Fix potential block ordering problem with sled-based lightstore ([#769])
+* `[tendermint]` `Time` values were not always formatted properly,
+  causing the light client to sometimes return malformed light blocks ([#774])
 
 [#769]: https://github.com/informalsystems/tendermint-rs/issues/769
+[#774]: https://github.com/informalsystems/tendermint-rs/issue/774
 
 ## v0.17.0
 
