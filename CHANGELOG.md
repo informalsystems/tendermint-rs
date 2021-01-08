@@ -7,7 +7,11 @@
   way of [cargo make]. `tendermint-rpc` test coverage has been expanded here
   too. ([#758])
 
+* `[light-client]` The `sled`-backed lightstore is now feature-guarded under
+   the `lightstore-sled` feature, which is enabled by default for now. ([#772])
+
 [#758]: https://github.com/informalsystems/tendermint-rs/pull/758
+[#772]: https://github.com/informalsystems/tendermint-rs/pull/772
 [cargo make]: https://github.com/sagiegurari/cargo-make
 
 ## v0.17.0
