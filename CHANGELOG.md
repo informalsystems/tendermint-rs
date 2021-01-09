@@ -1,6 +1,6 @@
 ## v0.17.1
 
-*Jan 9, 2020*
+*Jan 9, 2021*
 
 This release primarily focuses on fixing [#774], which is critical to the Light
 Client's correct and reliable operation.
