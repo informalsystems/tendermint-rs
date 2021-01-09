@@ -10,8 +10,8 @@ edition = "2018"
 
 [dev-dependencies]
 futures = "0.3"
-tendermint = { version = "0.17.0", path = "../../tendermint" }
-tendermint-light-client = { version = "0.17.0", path = "../../light-client" }
-tendermint-rpc = { version = "0.17.0", path = "../../rpc", features = [ "http-client", "websocket-client" ] }
+tendermint = { version = "0.17.1", path = "../../tendermint" }
+tendermint-light-client = { version = "0.17.1", path = "../../light-client" }
+tendermint-rpc = { version = "0.17.1", path = "../../rpc", features = [ "http-client", "websocket-client" ] }
 tokio = { version = "0.2", features = [ "macros" ] }
 contracts = "0.4.0"
