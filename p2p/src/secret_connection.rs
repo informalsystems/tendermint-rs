@@ -254,7 +254,11 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         chunk: &[u8],
         sealed_frame: &mut [u8; TAG_SIZE + TOTAL_FRAME_SIZE],
     ) -> Result<()> {
-        debug_assert!(chunk.len() <= TOTAL_FRAME_SIZE - DATA_LEN_SIZE);
+        debug_assert!(chunk.len() > 0, "chunk is empty");
+        debug_assert!(
+            chunk.len() <= TOTAL_FRAME_SIZE - DATA_LEN_SIZE,
+            "chunk is too big! max: DATA_MAX_SIZE"
+        );
         sealed_frame[..DATA_LEN_SIZE].copy_from_slice(&(chunk.len() as u32).to_le_bytes());
         sealed_frame[DATA_LEN_SIZE..DATA_LEN_SIZE + chunk.len()].copy_from_slice(chunk);
 
@@ -506,6 +510,7 @@ mod test {
     use std::thread;
 
     use pipe;
+    use quickcheck::TestResult;
 
     use super::*;
 
@@ -532,7 +537,7 @@ mod test {
     }
 
     #[test]
-    fn test_read_wrie() {
+    fn test_read_write_single_message() {
         let (pipe1, pipe2) = pipe::bipipe_buffered();
 
         const MESSAGE: &str = "The Queen's Gambit";
@@ -563,5 +568,36 @@ mod test {
 
         sender.join().expect("The sender thread has panicked");
         receiver.join().expect("The receiver thread has panicked");
+    }
+
+    #[quickcheck]
+    fn prop_read_what_you_wrote(data: Vec<u8>) -> TestResult {
+        if data.len() == 0 {
+            return TestResult::discard();
+        }
+
+        let data_len = data.len();
+        let data_written = data.to_vec(); // copy because data is moved
+
+        let (pipe1, pipe2) = pipe::bipipe_buffered();
+
+        let thread = thread::spawn(move || {
+            let mut csprng = OsRng {};
+            let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+            let mut conn = SecretConnection::new(pipe2, &privkey1, Version::V0_34)
+                .expect("successful connection");
+            conn.write_all(&data).expect("expected to write data");
+        });
+
+        let mut csprng = OsRng {};
+        let privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+        let mut conn =
+            SecretConnection::new(pipe1, &privkey, Version::V0_34).expect("successful connection");
+
+        let mut data_read = Vec::with_capacity(data_len);
+        conn.read_exact(&mut data_read)
+            .expect("expected to read data");
+
+        TestResult::from_bool(data_written == data_read)
     }
 }

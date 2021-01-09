@@ -29,7 +29,6 @@ subtle-encoding = { version = "0.5" }
 thiserror = "1"
 x25519-dalek = "1.1"
 zeroize = "1"
-pipe = { version = "0.4.0", features = ["bidirectional"] }
 
 # path dependencies
 tendermint = { path = "../tendermint", version = "0.18.1" }
@@ -38,6 +37,11 @@ tendermint-proto = { path = "../proto", version = "0.18.1" }
 # optional dependencies
 prost-amino = { version = "0.6", optional = true }
 prost-amino-derive = { version = "0.6", optional = true }
+
+[dev-dependencies]
+quickcheck = "1"
+quickcheck_macros = "1"
+pipe = { version = "0", features = ["bidirectional"] }
 
 [features]
 amino = ["prost-amino", "prost-amino-derive"]
