@@ -113,10 +113,17 @@ fn run_multipeer_test(
             output_env.logln(&format!("      > bisection: {:?}", e));
 
             match e.kind() {
+                ErrorKind::BisectionFailed(_,_) => assert_eq!(expected_output, BisectionVerdict::BisectionFailed),
+                ErrorKind::NoPrimary => assert_eq!(expected_output, BisectionVerdict::NoPrimary),
+                ErrorKind::NoWitnesses => assert_eq!(expected_output, BisectionVerdict::NoWitnesses),
                 ErrorKind::NoWitnessLeft => assert_eq!(expected_output, BisectionVerdict::NoWitnessLeft),
-                _ => (
-                //todo!
-                )
+                ErrorKind::ForkDetected(_) => assert_eq!(expected_output, BisectionVerdict::ForkDetected),
+                ErrorKind::NoInitialTrustedState => assert_eq!(expected_output, BisectionVerdict::NoInitialTrustedState),
+                ErrorKind::NoTrustedState(_) => assert_eq!(expected_output, BisectionVerdict::NoTrustedState),
+                ErrorKind::TargetLowerThanTrustedState{ target_height, trusted_height } => assert_eq!(expected_output, BisectionVerdict::TargetLowerThanTrustedState),
+                ErrorKind::TrustedStateOutsideTrustingPeriod{ trusted_state, options } => assert_eq!(expected_output, BisectionVerdict::TrustedStateOutsideTrustingPeriod),
+                ErrorKind::InvalidLightBlock(_) => assert_eq!(expected_output, BisectionVerdict::InvalidLightBlock),
+                _ => {/*todo!*/}
             }
         }
     }
