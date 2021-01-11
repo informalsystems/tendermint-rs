@@ -2,5 +2,6 @@
 
 members = [
     "kvstore-test",
-    "proto-compiler"
+    "proto-compiler",
+    "rpc-probe"
 ]

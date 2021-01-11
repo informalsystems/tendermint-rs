@@ -1,0 +1,39 @@
+[env]
+CONTAINER_NAME = "kvstore-rpc-probe"
+DOCKER_IMAGE = "informaldev/tendermint:0.34.0"
+HOST_RPC_PORT = 26657
+CARGO_MAKE_WAIT_MILLISECONDS = 3500
+
+[tasks.default]
+clear = true
+dependencies = [ "docker-up", "wait", "run", "docker-down" ]
+
+[tasks.run]
+command = "cargo"
+args = ["run"]
+
+[tasks.docker-down]
+dependencies = [ "docker-stop", "docker-rm" ]
+
+[tasks.docker-up]
+command = "docker"
+args = ["run", "--name", "${CONTAINER_NAME}", "--rm", "--publish", "26657:${HOST_RPC_PORT}", "--detach", "${DOCKER_IMAGE}"]
+dependencies = ["docker-up-stop-old", "docker-up-rm-old"]
+
+[tasks.docker-stop]
+command = "docker"
+args = ["stop", "${CONTAINER_NAME}"]
+ignore_errors = true
+private = true
+
+[tasks.docker-rm]
+command = "docker"
+args = ["rm", "--force", "${CONTAINER_NAME}"]
+ignore_errors = true
+private = true
+
+[tasks.docker-up-stop-old]
+alias = "docker-stop"
+
+[tasks.docker-up-rm-old]
+alias = "docker-rm"

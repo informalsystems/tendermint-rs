@@ -32,6 +32,7 @@ impl TryFrom<Timestamp> for Time {
             seconds: value.seconds,
             nanos: value.nanos,
         };
+
         Ok(SystemTime::try_from(prost_value)
             .map_err(|e| {
                 Kind::OutOfRange.context(format!("time before EPOCH by {} seconds", e.as_secs()))
@@ -79,7 +80,7 @@ impl Time {
 
     /// Return an RFC 3339 and ISO 8601 date and time string with 6 subseconds digits and Z.
     pub fn to_rfc3339(&self) -> String {
-        timestamp::to_rfc3339_custom(&self.0)
+        timestamp::to_rfc3339_nanos(&self.0)
     }
 
     /// Convert [`Time`] to [`SystemTime`]
@@ -149,4 +150,39 @@ impl Sub<Duration> for Time {
 pub trait ParseTimestamp {
     /// Parse [`Time`], or return an [`Error`] if parsing failed
     fn parse_timestamp(&self) -> Result<Time, Error>;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn serde_roundtrip() {
+        const DATES: &[&str] = &[
+            "2020-09-14T16:33:54.21191421Z",
+            "2020-09-14T16:33:00Z",
+            "2020-09-14T16:33:00.1Z",
+            "2020-09-14T16:33:00.211914212Z",
+            "1970-01-01T00:00:00Z",
+            "2021-01-07T20:25:56.0455760Z",
+            "2021-01-07T20:25:57.039219Z",
+            "2021-01-07T20:25:58.03562100Z",
+            "2021-01-07T20:25:59.000955200Z",
+            "2021-01-07T20:26:04.0121030Z",
+            "2021-01-07T20:26:05.005096Z",
+            "2021-01-07T20:26:09.08488400Z",
+            "2021-01-07T20:26:11.0875340Z",
+            "2021-01-07T20:26:12.078268Z",
+            "2021-01-07T20:26:13.08074100Z",
+            "2021-01-07T20:26:15.079663000Z",
+        ];
+
+        for input in DATES {
+            let initial_time: Time = input.parse().unwrap();
+            let encoded_time = serde_json::to_value(&initial_time).unwrap();
+            let decoded_time = serde_json::from_value(encoded_time.clone()).unwrap();
+
+            assert_eq!(initial_time, decoded_time);
+        }
+    }
 }

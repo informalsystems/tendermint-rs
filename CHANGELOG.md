@@ -1,3 +1,27 @@
+## v0.17.1
+
+*Jan 11, 2021*
+
+This release primarily focuses on fixing [#774], which is critical to the Light
+Client's correct and reliable operation.
+
+### IMPROVEMENTS:
+
+* `[rpc, tools]` The RPC probe has been moved into the `tools` folder and can
+  now be easily executed against a Tendermint node running the kvstore app by
+  way of [cargo make]. `tendermint-rpc` test coverage has been expanded here
+  too. ([#758])
+
+[#758]: https://github.com/informalsystems/tendermint-rs/pull/758
+[cargo make]: https://github.com/sagiegurari/cargo-make
+
+### BUG FIXES:
+
+- `[tendermint]` `Time` values were not always formatted properly,
+  causing the light client to sometimes return malformed light blocks. ([#774])
+
+[#774]: https://github.com/informalsystems/tendermint-rs/issues/774
+
 ## v0.17.0
 
 *Dec 17, 2020*
