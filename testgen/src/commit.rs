@@ -117,13 +117,15 @@ impl Generator<block::Commit> for Commit {
             None => self.clone().generate_default_votes().votes.unwrap(),
             Some(vs) => vs.to_vec(),
         };
+
         let all_vals = header.validators.as_ref().unwrap();
         let mut all_vals: BTreeSet<&Validator> = BTreeSet::from_iter(all_vals);
         let votes_vals: Vec<Validator> =
             votes.iter().map(|v| v.validator.clone().unwrap()).collect();
         all_vals.append(&mut BTreeSet::from_iter(&votes_vals));
-        let all_vals: Vec<Validator> = Vec::from_iter(all_vals.iter().map(|&x| x.clone()));
+        let all_vals: Vec<Validator> = all_vals.iter().map(|&x| x.clone()).collect();
         let all_vals = sort_validators(&all_vals);
+
         let vote_to_sig = |v: &Vote| -> Result<block::CommitSig, SimpleError> {
             let vote = v.generate()?;
             if vote.block_id == None {

@@ -1,6 +1,6 @@
 [package]
 name       = "tendermint-light-client"
-version    = "0.17.0"
+version    = "0.17.1"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -21,14 +21,22 @@ description = """
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+# docs.rs-specific configuration
+[package.metadata.docs.rs]
+# document all features
+all-features = true
+# defines the configuration attribute `docsrs`
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
-default = ["rpc-client"]
+default = ["rpc-client", "lightstore-sled"]
 rpc-client = ["tokio", "tendermint-rpc/http-client"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
+lightstore-sled = ["sled"]
 
 [dependencies]
-tendermint = { version = "0.17.0", path = "../tendermint" }
-tendermint-rpc = { version = "0.17.0", path = "../rpc", default-features = false }
+tendermint = { version = "0.17.1", path = "../tendermint" }
+tendermint-rpc = { version = "0.17.1", path = "../rpc", default-features = false }
 
 anomaly = { version = "0.2.0", features = ["serializer"] }
 contracts = "0.4.0"
@@ -38,7 +46,7 @@ futures = "0.3.4"
 serde = "1.0.106"
 serde_cbor = "0.11.1"
 serde_derive = "1.0.106"
-sled = "0.34.3"
+sled = { version = "0.34.3", optional = true }
 static_assertions = "1.1.0"
 thiserror = "1.0.15"
 tokio = { version = "0.2", optional = true }
