@@ -1,5 +1,21 @@
 ## Unreleased
 
+### BUG FIXES
+
+* `[light-client]` Fix potential block ordering problem with sled-based lightstore ([#769])
+* `[light-client]` The `sled`-backed lightstore is now feature-guarded under
+   the `lightstore-sled` feature, which is enabled by default for now. ([#772])
+
+[#769]: https://github.com/informalsystems/tendermint-rs/issues/769
+[#772]: https://github.com/informalsystems/tendermint-rs/pull/772
+
+## v0.17.1
+
+*Jan 11, 2021*
+
+This release primarily focuses on fixing [#774], which is critical to the Light
+Client's correct and reliable operation.
+
 ### IMPROVEMENTS:
 
 * `[rpc, tools]` The RPC probe has been moved into the `tools` folder and can
@@ -12,12 +28,10 @@
 
 ### BUG FIXES:
 
-* `[light-client]` Fix potential block ordering problem with sled-based lightstore ([#769])
 * `[tendermint]` `Time` values were not always formatted properly,
   causing the light client to sometimes return malformed light blocks ([#774])
 
-[#769]: https://github.com/informalsystems/tendermint-rs/issues/769
-[#774]: https://github.com/informalsystems/tendermint-rs/issue/774
+[#774]: https://github.com/informalsystems/tendermint-rs/issues/774
 
 ## v0.17.0
 
