@@ -1,4 +1,9 @@
-## Unreleased
+## v0.17.1
+
+*Jan 11, 2021*
+
+This release primarily focuses on fixing [#774], which is critical to the Light
+Client's correct and reliable operation.
 
 ### IMPROVEMENTS:
 
@@ -15,7 +20,7 @@
 - `[tendermint]` `Time` values were not always formatted properly,
   causing the light client to sometimes return malformed light blocks. ([#774])
 
-[#774]: https://github.com/informalsystems/tendermint-rs/issue/774
+[#774]: https://github.com/informalsystems/tendermint-rs/issues/774
 
 ## v0.17.0
 
