@@ -85,7 +85,9 @@ fn make_instance(
     db_path: impl AsRef<Path>,
     opts: &SyncOpts,
 ) -> Result<Instance, BoxError> {
-    let light_store = SledStore::open(db_path)?;
+    let db = sled::open(db_path)?;
+
+    let light_store = SledStore::new(db);
     let rpc_client = rpc::HttpClient::new(addr).unwrap();
     let options = light_client::Options {
         trust_threshold: TrustThreshold::default(),
