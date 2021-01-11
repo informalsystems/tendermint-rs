@@ -1,3 +1,12 @@
+## Unreleased
+
+### BUG FIXES
+
+* `[light-client]` The `sled`-backed lightstore is now feature-guarded under
+   the `lightstore-sled` feature, which is enabled by default for now. ([#772])
+
+[#772]: https://github.com/informalsystems/tendermint-rs/pull/772
+
 ## v0.17.1
 
 *Jan 11, 2021*
