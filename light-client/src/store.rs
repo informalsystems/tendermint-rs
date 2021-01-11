@@ -1,6 +1,7 @@
 //! Interface and implementations of the light block store.
 //!
 //! See the `memory` and `sled` modules for:
+//!
 //! - a transient, in-memory implementation for testing purposes
 //! - a persistent, on-disk, sled-backed implementation for production
 
@@ -10,6 +11,9 @@ use crate::types::{Height, LightBlock, Status};
 use crate::utils::std_ext;
 
 pub mod memory;
+
+#[cfg(feature = "lightstore-sled")]
+#[cfg_attr(docsrs, doc(cfg(feature = "lightstore-sled")))]
 pub mod sled;
 
 /// Store for light blocks.
