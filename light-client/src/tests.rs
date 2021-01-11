@@ -19,20 +19,6 @@ use std::time::Duration;
 use tendermint::block::Height as HeightStr;
 use tendermint::evidence::{Duration as DurationStr, Evidence};
 
-#[derive(Deserialize, Clone, Debug)]
-pub struct TestCases<LB> {
-    pub batch_name: String,
-    pub test_cases: Vec<TestCase<LB>>,
-}
-
-#[derive(Deserialize, Clone, Debug)]
-pub struct TestCase<LB> {
-    pub description: String,
-    pub initial: Initial,
-    pub input: Vec<LB>,
-    pub expected_output: Option<String>,
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Initial {
     pub signed_header: SignedHeader,
@@ -46,16 +32,58 @@ pub struct TestBisection<LB> {
     pub description: String,
     pub trust_options: TrustOptions,
     pub primary: Provider<LB>,
-    pub witnesses: Vec<WitnessProvider<LB>>,
+    pub witnesses: Vec<Provider<LB>>,
     pub height_to_verify: HeightStr,
     pub now: Time,
-    pub expected_output: Option<String>,
+    pub expected_output: BisectionVerdict,
     pub expected_num_of_bisections: usize,
 }
 
-#[derive(Deserialize, Clone, Debug)]
-pub struct WitnessProvider<LB> {
-    pub value: Provider<LB>,
+#[derive(Deserialize, Clone, Debug, PartialEq)]
+pub enum BisectionVerdict {
+    /// verified successfully
+    #[serde(rename = "SUCCESS")]
+    Success,
+
+    /// No primary
+    #[serde(rename = "NO_PRIMARY")]
+    NoPrimary,
+
+    /// No witnesses
+    #[serde(rename = "NO_WITNESSES")]
+    NoWitnesses,
+
+    /// No witness left
+    #[serde(rename = "NO_WITNESS_LEFT")]
+    NoWitnessLeft,
+
+    /// A fork has been detected between some peers
+    #[serde(rename = "FORK_DETECTED")]
+    ForkDetected,
+
+    /// No initial trusted state
+    #[serde(rename = "NO_INITIAL_TRUSTED_STATE")]
+    NoInitialTrustedState,
+
+    /// No trusted state
+    #[serde(rename = "NO_TRUSTED_STATE")]
+    NoTrustedState,
+
+    /// Target height for the light client lower than latest trusted state height
+    #[serde(rename = "TARGET_LOWER_THAN_TRUSTED_STATE")]
+    TargetLowerThanTrustedState,
+
+    /// The trusted state is outside of the trusting period
+    #[serde(rename = "TRUSTED_STATE_OUTSIDE_TRUSTING_PERIOD")]
+    TrustedStateOutsideTrustingPeriod,
+
+    /// Bisection failed when reached trusted state
+    #[serde(rename = "BISECTION_FAILED")]
+    BisectionFailed,
+
+    /// Verification failed for a light block
+    #[serde(rename = "INVALID_LIGHT_BLOCK")]
+    InvalidLightBlock,
 }
 
 #[derive(Deserialize, Clone, Debug)]
