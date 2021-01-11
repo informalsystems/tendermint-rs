@@ -17,12 +17,12 @@ Please provide step-by-step instructions as to how to reproduce the problem.
 
 -->
 
-**When can we consider this to be "fixed"?**
+**What's the definition of "done" for this issue?**
 
 <!--
 
-Please describe clear and practical acceptance criteria for this issue (i.e. a
-"definition of done"). Anyone in the team should be able to look at this issue
-and determine whether or not the bug's been fixed.
+Please describe clear and practical acceptance criteria for this issue. Anyone
+in the team should be able to look at this issue and determine whether or not
+the bug's been fixed.
 
 -->
