@@ -12,16 +12,33 @@ use constants::{
 
 fn main() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let tendermint_lib_target = root.join("../proto/src/tendermint.rs");
-    let target_dir = root.join("../proto/src/prost");
+    let tendermint_lib_target = root
+        .join("..")
+        .join("..")
+        .join("proto")
+        .join("src")
+        .join("tendermint.rs");
+    let target_dir = root
+        .join("..")
+        .join("..")
+        .join("proto")
+        .join("src")
+        .join("prost");
     let out_dir = var("OUT_DIR")
         .map(PathBuf::from)
         .or_else(|_| TempDir::new("tendermint_proto_out").map(|d| d.into_path()))
         .unwrap();
-    let tendermint_dir = var("TENDERMINT_DIR").unwrap_or_else(|_| "target/tendermint".to_string());
+    let tendermint_dir = PathBuf::from(var("TENDERMINT_DIR").unwrap_or_else(|_| {
+        root.join("..")
+            .join("target")
+            .join("tendermint")
+            .to_str()
+            .unwrap()
+            .to_string()
+    }));
 
     println!(
-        "[info] => Fetching {} at {} into {}",
+        "[info] => Fetching {} at {} into {:?}",
         TENDERMINT_REPO, TENDERMINT_COMMITISH, tendermint_dir
     );
     get_commitish(
@@ -30,15 +47,13 @@ fn main() {
         TENDERMINT_COMMITISH,
     ); // This panics if it fails.
 
-    let proto_paths = [format!("{}/proto", tendermint_dir)];
-    let proto_includes_paths = [
-        format!("{}/proto", tendermint_dir),
-        format!("{}/third_party/proto", tendermint_dir),
+    let proto_paths = vec![tendermint_dir.join("proto")];
+    let proto_includes_paths = vec![
+        tendermint_dir.join("proto"),
+        tendermint_dir.join("third_party").join("proto"),
     ];
     // List available proto files
-    let protos = find_proto_files(proto_paths.to_vec());
-    // List available paths for dependencies
-    let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
+    let protos = find_proto_files(proto_paths);
 
     // Compile proto files with added annotations, exchange prost_types to our own
     let mut pb = prost_build::Config::new();
@@ -62,7 +77,7 @@ fn main() {
         "super::super::google::protobuf::Timestamp",
     );
     println!("[info] => Creating structs.");
-    pb.compile_protos(&protos, &includes).unwrap();
+    pb.compile_protos(&protos, &proto_includes_paths).unwrap();
 
     println!("[info] => Removing old structs and copying new structs.");
     copy_files(&out_dir, &target_dir); // This panics if it fails.
