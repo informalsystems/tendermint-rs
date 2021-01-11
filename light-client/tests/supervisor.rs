@@ -17,11 +17,10 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use tendermint_light_client::store::memory::MemoryStore;
-use tendermint_light_client::tests::{
-    MockClock, MockEvidenceReporter, MockIo, TestBisection, TrustOptions,
-};
+use tendermint_light_client::tests::{MockClock, MockEvidenceReporter, MockIo, TestBisection, TrustOptions, BisectionVerdict};
 
-use tendermint_testgen::Tester;
+use tendermint_testgen::{Tester, TestEnv};
+use tendermint_light_client::errors::ErrorKind;
 
 const TEST_FILES_PATH: &str = "./tests/support/";
 
@@ -54,7 +53,12 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
     Instance::new(light_client, state)
 }
 
-fn run_multipeer_test(tc: TestBisection<LightBlock>) {
+fn run_multipeer_test(
+    tc: TestBisection<LightBlock>,
+    _env: &TestEnv,
+    _root_env: &TestEnv,
+    output_env: &TestEnv,
+) {
     let primary = tc.primary.lite_blocks[0].provider;
 
     println!(
@@ -62,10 +66,7 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
         tc.description, primary
     );
 
-    let expects_err = match &tc.expected_output {
-        Some(eo) => eo.eq("error"),
-        None => false,
-    };
+    let expected_output = tc.expected_output;
 
     let io = MockIo::new(tc.primary.chain_id, tc.primary.lite_blocks);
     let primary_instance = make_instance(primary, tc.trust_options.clone(), io.clone(), tc.now);
@@ -74,9 +75,9 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
     peer_list.primary(primary, primary_instance);
 
     for provider in tc.witnesses.into_iter() {
-        let peer_id = provider.value.lite_blocks[0].provider;
+        let peer_id = provider.lite_blocks[0].provider;
         println!("Witness: {}", peer_id);
-        let io = MockIo::new(provider.value.chain_id, provider.value.lite_blocks);
+        let io = MockIo::new(provider.chain_id, provider.lite_blocks);
         let instance = make_instance(peer_id, tc.trust_options.clone(), io.clone(), tc.now);
         peer_list.witness(peer_id, instance);
     }
@@ -96,21 +97,27 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
 
     match handle.verify_to_target(target_height) {
         Ok(new_state) => {
+            // Check the verdict
+            assert_eq!(expected_output, BisectionVerdict::Success);
+
             // Check that the expected state and new_state match
-            let untrusted_light_block = io
+            let expected_state = io
                 .fetch_light_block(AtHeight::At(target_height))
                 .expect("header at untrusted height not found");
 
-            let expected_state = untrusted_light_block;
+            // let expected_state = untrusted_light_block;
             assert_eq!(new_state.height(), expected_state.height());
             assert_eq!(new_state, expected_state);
-
-            // Check the verdict
-            assert!(!expects_err);
         }
         Err(e) => {
-            dbg!(e);
-            assert!(expects_err);
+            output_env.logln(&format!("      > bisection: {:?}", e));
+
+            match e.kind() {
+                ErrorKind::NoWitnessLeft => assert_eq!(expected_output, BisectionVerdict::NoWitnessLeft),
+                _ => (
+                //todo!
+                )
+            }
         }
     }
 
@@ -121,7 +128,7 @@ fn run_multipeer_test(tc: TestBisection<LightBlock>) {
 #[test]
 fn run_multipeer_tests() {
     let mut tester = Tester::new("bisection_multi_peer", TEST_FILES_PATH);
-    tester.add_test("multipeer test", run_multipeer_test);
+    tester.add_test_with_env("multipeer test", run_multipeer_test);
     tester.run_foreach_in_dir("bisection/multi_peer");
     tester.finalize();
 }
