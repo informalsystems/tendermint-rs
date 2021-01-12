@@ -10,7 +10,7 @@ use tendermint_proto::abci::Response as RawResponse;
 use tendermint_proto::Protobuf;
 
 /// ABCI response wrapper.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Response {
     /// Echo response.
     Echo(Echo),
@@ -53,3 +53,6 @@ impl From<Response> for RawResponse {
         }
     }
 }
+
+/// The inner type of a [`Response`].
+pub trait ResponseInner: TryFrom<Response, Error = Error> + Into<Response> + Send {}

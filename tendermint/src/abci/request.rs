@@ -3,6 +3,7 @@
 mod echo;
 pub use echo::Echo;
 
+use crate::abci::response::ResponseInner;
 use crate::{Error, Kind};
 use std::convert::{TryFrom, TryInto};
 use tendermint_proto::abci::request::Value;
@@ -10,7 +11,7 @@ use tendermint_proto::abci::Request as RawRequest;
 use tendermint_proto::Protobuf;
 
 /// ABCI request wrapper.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Request {
     /// Request that the ABCI server echo a specific message back to the client.
     Echo(Echo),
@@ -52,4 +53,10 @@ impl From<Request> for RawRequest {
             }),
         }
     }
+}
+
+/// The inner type of a [`Request`].
+pub trait RequestInner: TryFrom<Request, Error = Error> + Into<Request> + Send {
+    /// The corresponding response type for this request.
+    type Response: ResponseInner;
 }

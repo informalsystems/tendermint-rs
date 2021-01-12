@@ -204,6 +204,14 @@ pub enum Kind {
     /// ABCI response is missing its inner value property.
     #[error("malformed ABCI response: response is missing its inner value")]
     MissingAbciResponseValue,
+
+    /// The ABCI request type doesn't match our expectations.
+    #[error("expected ABCI request type {0}, but got {1:?}")]
+    UnexpectedAbciRequestType(String, crate::abci::request::Request),
+
+    /// The ABCI response type doesn't match our expectations.
+    #[error("expected ABCI response type {0}, but got {1:?}")]
+    UnexpectedAbciResponseType(String, crate::abci::response::Response),
 }
 
 impl Kind {
