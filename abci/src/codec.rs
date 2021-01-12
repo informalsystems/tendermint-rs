@@ -16,6 +16,7 @@ pub struct TspEncoder {}
 impl TspEncoder {
     /// Encode the given request to its raw wire-level representation and store
     /// this in the given buffer.
+    #[cfg(feature = "client")]
     pub fn encode_request(request: Request, mut dst: &mut BytesMut) -> Result<()> {
         encode_length_delimited(|mut b| Ok(request.encode(&mut b)?), &mut dst)
     }
@@ -53,6 +54,7 @@ impl TspDecoder {
     ///
     /// Returns `Ok(None)` if we don't yet have enough data to decode a full
     /// response.
+    #[cfg(feature = "client")]
     pub fn decode_response(&mut self, buf: &mut BytesMut) -> Result<Option<Response>> {
         self.read_buf.put(buf);
         decode_length_delimited(&mut self.read_buf, |mut b| Ok(Response::decode(&mut b)?))
@@ -118,6 +120,7 @@ where
     }
 }
 
+#[cfg(feature = "client")]
 #[cfg(test)]
 mod test {
     use super::*;

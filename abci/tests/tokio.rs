@@ -1,12 +1,9 @@
 //! Tokio-based ABCI client/server interaction.
 
-#[cfg(feature = "with-tokio")]
-mod integration {
+#[cfg(all(feature = "with-tokio", feature = "client"))]
+mod tokio_integration {
     use tendermint::abci::request::Echo;
-    use tendermint_abci::client::tokio::TokioClient;
-    use tendermint_abci::client::Client;
-    use tendermint_abci::server::tokio::TokioServer;
-    use tendermint_abci::Application;
+    use tendermint_abci::{Application, Client, TokioClient, TokioServer};
 
     /// Simple echo application for use in testing.
     #[derive(Clone)]
