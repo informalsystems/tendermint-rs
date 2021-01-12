@@ -2,12 +2,10 @@
 
 mod application;
 mod codec;
-mod protocol;
 mod result;
 
-#[cfg(feature = "server")]
-pub use application::Application;
-#[cfg(feature = "server")]
+pub mod client;
 pub mod server;
 
+pub use application::Application;
 pub use result::{Error, Result};

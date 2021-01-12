@@ -67,7 +67,7 @@ fn encode_varint<B: BufMut>(val: u64, mut buf: &mut B) {
 
 fn decode_varint<B: Buf>(mut buf: &mut B) -> Result<u64> {
     let len = tendermint_proto::decode_varint(&mut buf)
-        .map_err(|e| Error::Protobuf(tendermint_proto::Kind::DecodeMessage.into()))?;
+        .map_err(|_| Error::Protobuf(tendermint_proto::Kind::DecodeMessage.into()))?;
     Ok(len >> 1)
 }
 
@@ -133,5 +133,22 @@ mod test {
         let decoded_request = decoder.decode_request(&mut buf).unwrap().unwrap();
 
         assert_eq!(request, decoded_request);
+    }
+
+    #[test]
+    fn multiple_requests() {
+        let requests = (0..5)
+            .map(|r| Request::Echo(Echo::new(format!("Request {}", r))))
+            .collect::<Vec<Request>>();
+        let mut buf = BytesMut::new();
+        requests
+            .iter()
+            .for_each(|request| TspEncoder::encode_request(request.clone(), &mut buf).unwrap());
+
+        let mut decoder = TspDecoder::new();
+        for request in requests {
+            let decoded = decoder.decode_request(&mut buf).unwrap().unwrap();
+            assert_eq!(decoded, request);
+        }
     }
 }

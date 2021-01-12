@@ -18,4 +18,14 @@ pub enum Error {
     #[cfg(feature = "with-tokio")]
     #[error("channel send error: {0}")]
     TokioChannelSend(String),
+
+    #[cfg(feature = "with-tokio")]
+    #[error("failed to obtain UNIX stream path")]
+    CannotObtainUnixStreamPath,
+
+    #[error("Tendermint error")]
+    TendermintError(#[from] tendermint::Error),
+
+    #[error("server stream terminated unexpectedly")]
+    ServerStreamTerminated,
 }
