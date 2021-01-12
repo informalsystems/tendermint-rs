@@ -13,11 +13,13 @@ mod async_std_integration {
         let server_handle = async_std::task::spawn(async move { server.listen().await });
 
         let mut client = AsyncStdClient::connect(server_addr).await.unwrap();
-        let res = client
-            .echo(Echo::new("Hello ABCI!".to_owned()))
-            .await
-            .unwrap();
-        assert_eq!(res.message, "Hello ABCI!");
+        let requests = (0..5)
+            .map(|r| Echo::new(format!("Request {}", r)))
+            .collect::<Vec<Echo>>();
+        for request in &requests {
+            let res = client.echo(request.clone()).await.unwrap();
+            assert_eq!(res.message, request.message);
+        }
 
         term_tx.send(()).await.unwrap();
         server_handle.await.unwrap();
