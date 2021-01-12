@@ -1,25 +1,13 @@
 //! Tokio-based ABCI client/server interaction.
 
-#[cfg(all(feature = "with-tokio", feature = "client"))]
+#[cfg(all(feature = "with-tokio", feature = "client", feature = "echo-app"))]
 mod tokio_integration {
     use tendermint::abci::request::Echo;
-    use tendermint_abci::{Application, Client, TokioClient, TokioServer};
-
-    /// Simple echo application for use in testing.
-    #[derive(Clone)]
-    pub struct EchoApp {}
-
-    impl Default for EchoApp {
-        fn default() -> Self {
-            Self {}
-        }
-    }
-
-    impl Application for EchoApp {}
+    use tendermint_abci::{Client, EchoApp, TokioClient, TokioServer};
 
     #[tokio::test]
     async fn echo() {
-        let app = EchoApp::default();
+        let app = EchoApp::new();
         let (server, term_tx) = TokioServer::bind("127.0.0.1:0", app).await.unwrap();
         let server_addr = server.local_addr();
         let server_handle = tokio::spawn(async move { server.listen().await });

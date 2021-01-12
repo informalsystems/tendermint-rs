@@ -17,7 +17,7 @@ use tokio_util::codec::{Decoder, Encoder, Framed};
 ///
 /// Not thread-safe, because it wraps a single outgoing TCP connection and the
 /// underlying protocol doesn't support multiplexing. To submit requests in
-/// parallel, create multiple TCP connections.
+/// parallel, create multiple client instances.
 pub struct TokioClient {
     stream: Framed<TcpStream, ClientCodec>,
 }

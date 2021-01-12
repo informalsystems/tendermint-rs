@@ -1,5 +1,7 @@
 //! ABCI clients for interacting with ABCI servers.
 
+#[cfg(feature = "with-async-std")]
+pub mod async_std;
 #[cfg(feature = "with-tokio")]
 pub mod tokio;
 

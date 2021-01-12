@@ -1,5 +1,8 @@
 //! `async` ABCI server application interface.
 
+#[cfg(feature = "echo-app")]
+pub mod echo;
+
 use async_trait::async_trait;
 use tendermint::abci::{request, response};
 

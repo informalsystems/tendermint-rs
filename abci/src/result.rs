@@ -11,9 +11,8 @@ pub enum Error {
     #[error("protocol buffers error")]
     Protobuf(#[from] tendermint_proto::Error),
 
-    #[cfg(feature = "with-tokio")]
     #[error("network I/O error")]
-    TokioIo(#[from] tokio::io::Error),
+    NetworkIo(#[from] std::io::Error),
 
     #[cfg(feature = "with-tokio")]
     #[error("channel send error: {0}")]

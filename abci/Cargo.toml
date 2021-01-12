@@ -7,12 +7,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-# By default we assume users of the library will be implementing an ABCI
-# application using Tokio.
-default = [ "with-tokio" ]
 client = []
+echo-app = []
 with-tokio = [ "tokio", "tokio-util" ]
-with-async-std = [ "async-std" ]
+with-async-std = [ "async-channel", "async-std" ]
 
 [dependencies]
 async-trait = "0.1"
@@ -24,6 +22,7 @@ tendermint = { version = "0.17.1", path = "../tendermint" }
 tendermint-proto = { version = "0.17.1", path = "../proto" }
 thiserror = "1.0"
 
-async-std = { version = "1.7", optional = true }
+async-channel = { version = "1.5", optional = true }
+async-std = { version = "1.8", features = [ "attributes" ], optional = true }
 tokio = { version = "0.3", features = [ "macros", "net", "rt", "sync" ], optional = true }
 tokio-util = { version = "0.5", features = [ "codec" ], optional = true }
