@@ -1,7 +1,10 @@
 //! ABCI requests.
 
 mod echo;
+mod info;
+
 pub use echo::Echo;
+pub use info::Info;
 
 use crate::abci::response::ResponseInner;
 use crate::{Error, Kind};
@@ -15,6 +18,8 @@ use tendermint_proto::Protobuf;
 pub enum Request {
     /// Request that the ABCI server echo a specific message back to the client.
     Echo(Echo),
+    /// Return application info.
+    Info(Info),
 }
 
 impl Protobuf<RawRequest> for Request {}
@@ -26,9 +31,9 @@ impl TryFrom<RawRequest> for Request {
         let value = raw.value.ok_or(Kind::MissingAbciRequestValue)?;
         Ok(match value {
             Value::Echo(raw_req) => Self::Echo(raw_req.try_into()?),
+            Value::Info(raw_req) => Self::Info(raw_req.try_into()?),
             _ => unimplemented!(),
             // Value::Flush(_) => {}
-            // Value::Info(_) => {}
             // Value::SetOption(_) => {}
             // Value::InitChain(_) => {}
             // Value::Query(_) => {}
@@ -50,6 +55,7 @@ impl From<Request> for RawRequest {
         Self {
             value: Some(match request {
                 Request::Echo(req) => Value::Echo(req.into()),
+                Request::Info(req) => Value::Info(req.into()),
             }),
         }
     }

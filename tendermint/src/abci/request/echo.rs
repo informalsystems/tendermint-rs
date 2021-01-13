@@ -2,7 +2,7 @@
 
 use crate::abci::request::{Request, RequestInner};
 use crate::abci::response;
-use crate::Error;
+use crate::{Error, Kind};
 use std::convert::TryFrom;
 use tendermint_proto::abci::RequestEcho;
 use tendermint_proto::Protobuf;
@@ -52,7 +52,7 @@ impl TryFrom<Request> for Echo {
     fn try_from(value: Request) -> Result<Self, Self::Error> {
         match value {
             Request::Echo(r) => Ok(r),
-            // _ => Err(Kind::UnexpectedAbciRequestType("Echo".to_owned(), value).into()),
+            _ => Err(Kind::UnexpectedAbciRequestType("Echo".to_owned(), value).into()),
         }
     }
 }

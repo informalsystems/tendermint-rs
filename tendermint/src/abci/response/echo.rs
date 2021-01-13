@@ -1,7 +1,7 @@
 //! ABCI echo response.
 
 use crate::abci::response::{Response, ResponseInner};
-use crate::Error;
+use crate::{Error, Kind};
 use std::convert::TryFrom;
 use tendermint_proto::abci::ResponseEcho;
 use tendermint_proto::Protobuf;
@@ -49,7 +49,7 @@ impl TryFrom<Response> for Echo {
     fn try_from(value: Response) -> Result<Self, Self::Error> {
         match value {
             Response::Echo(res) => Ok(res),
-            // _ => Err(Kind::UnexpectedAbciResponseType("Echo".to_string(), value).into()),
+            _ => Err(Kind::UnexpectedAbciResponseType("Echo".to_owned(), value).into()),
         }
     }
 }

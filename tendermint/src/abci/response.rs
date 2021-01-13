@@ -1,7 +1,10 @@
 //! ABCI responses.
 
 mod echo;
+mod info;
+
 pub use echo::Echo;
+pub use info::Info;
 
 use crate::{Error, Kind};
 use std::convert::{TryFrom, TryInto};
@@ -14,6 +17,8 @@ use tendermint_proto::Protobuf;
 pub enum Response {
     /// Echo response.
     Echo(Echo),
+    /// Application info.
+    Info(Info),
 }
 
 impl Protobuf<RawResponse> for Response {}
@@ -25,9 +30,9 @@ impl TryFrom<RawResponse> for Response {
         let value = raw.value.ok_or(Kind::MissingAbciResponseValue)?;
         Ok(match value {
             Value::Echo(raw_res) => Self::Echo(raw_res.try_into()?),
+            Value::Info(raw_res) => Self::Info(raw_res.try_into()?),
             _ => unimplemented!(),
             // Value::Flush(_) => {}
-            // Value::Info(_) => {}
             // Value::SetOption(_) => {}
             // Value::InitChain(_) => {}
             // Value::Query(_) => {}
@@ -49,6 +54,7 @@ impl From<Response> for RawResponse {
         Self {
             value: Some(match request {
                 Response::Echo(res) => Value::Echo(res.into()),
+                Response::Info(res) => Value::Info(res.into()),
             }),
         }
     }
