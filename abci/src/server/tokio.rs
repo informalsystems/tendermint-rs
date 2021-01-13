@@ -86,6 +86,7 @@ async fn handle_client<A: Application>(stream: TcpStream, app: A) -> Result<()> 
         };
         let response = match request {
             Request::Echo(echo) => Response::Echo(app.echo(echo)),
+            Request::Info(info) => Response::Info(app.info(info)),
         };
         stream.send(response).await?;
     }

@@ -93,6 +93,7 @@ async fn handle_client<A: Application>(mut stream: TcpStream, app: A) -> Result<
             };
             let response = match request {
                 Request::Echo(echo) => Response::Echo(app.echo(echo)),
+                Request::Info(info) => Response::Info(app.info(info)),
             };
             TspEncoder::encode_response(response, &mut write_buf)?;
             stream.write(&write_buf).await?;

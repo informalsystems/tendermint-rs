@@ -19,6 +19,12 @@ pub trait Client {
         self.perform(req).await
     }
 
-    /// Generic method to perform the given request.
+    /// Provide information to the ABCI server about the Tendermint node in
+    /// exchange for information about the application.
+    async fn info(&mut self, req: request::Info) -> Result<response::Info> {
+        self.perform(req).await
+    }
+
+    /// Generic method to perform the given [`Request`].
     async fn perform<R: RequestInner>(&mut self, req: R) -> Result<R::Response>;
 }

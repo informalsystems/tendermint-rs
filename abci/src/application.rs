@@ -12,4 +12,10 @@ pub trait Application: Send + Clone {
     fn echo(&self, req: request::Echo) -> response::Echo {
         response::Echo::new(req.message)
     }
+
+    /// Receive information about the Tendermint node and respond with
+    /// information about the ABCI application.
+    fn info(&self, _req: request::Info) -> response::Info {
+        Default::default()
+    }
 }
