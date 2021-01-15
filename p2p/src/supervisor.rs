@@ -28,6 +28,7 @@ pub enum Event {
     Connected(node::Id, Direction),
     Disconnected(node::Id),
     Message(node::Id, message::Receive),
+    Upgraded(node::Id),
 }
 
 enum Internal<Conn> {
