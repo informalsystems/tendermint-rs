@@ -581,6 +581,7 @@ mod test {
 
         let (pipe1, pipe2) = pipe::bipipe_buffered();
 
+        // 1) write data
         let thread = thread::spawn(move || {
             let mut csprng = OsRng {};
             let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
@@ -594,10 +595,14 @@ mod test {
         let mut conn =
             SecretConnection::new(pipe1, &privkey, Version::V0_34).expect("successful connection");
 
-        let mut data_read = Vec::with_capacity(data_len);
+        // 2) read data
+        let mut data_read = vec![0; data_len];
         conn.read_exact(&mut data_read)
             .expect("expected to read data");
 
+        thread.join().expect("thread has panicked");
+
+        // 3) assert equality
         TestResult::from_bool(data_written == data_read)
     }
 }
