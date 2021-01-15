@@ -7,7 +7,6 @@ members = [
     "proto",
     "rpc",
     "rpc-probe",
-    "seed",
     "tendermint",
     "testgen"
 ]

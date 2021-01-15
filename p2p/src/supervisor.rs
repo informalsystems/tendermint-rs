@@ -35,6 +35,7 @@ enum Internal<Conn> {
     Command(Command),
     Connected(Conn),
     Receive(node::Id, message::Receive),
+    Upgraded(Result<peer::Peer<peer::Running<Conn>>>),
 }
 
 pub struct Supervisor {
@@ -43,7 +44,7 @@ pub struct Supervisor {
 }
 
 impl Supervisor {
-    pub fn run<Conn, T>(transport: T) -> Result<Self>
+    pub fn run<T>(transport: T) -> Result<Self>
     where
         T: transport::Transport + Send + 'static,
     {
@@ -85,9 +86,22 @@ impl Supervisor {
             connected_tx.send(Internal::Connected(conn)).unwrap();
         });
 
+        // UPGRADE
+        let (upgrade_tx, upgrade_rx) =
+            unbounded::<transport::Direction<<T as transport::Transport>::Connection>>();
+        let (upgraded_tx, upgraded_rx) = unbounded();
+        thread::spawn(move || loop {
+            let conn = upgrade_rx.recv().unwrap();
+            let peer = peer::Peer::from(conn);
+
+            upgraded_tx
+                .send(Internal::Upgraded(peer.run(vec![])))
+                .unwrap();
+        });
+
         // MAIN
         thread::spawn(move || {
-            let mut state: State<T> = State {
+            let mut state: State<<T as transport::Transport>::Connection> = State {
                 connected: HashMap::new(),
                 stopped: HashMap::new(),
             };
@@ -97,12 +111,12 @@ impl Supervisor {
                     let mut selector = flume::Selector::new()
                         .recv(&accepted_rx, |accepted| accepted.unwrap())
                         .recv(&commands, |res| Internal::Command(res.unwrap()))
-                        .recv(&connected_rx, |connected| connected.unwrap());
+                        .recv(&connected_rx, |connected| connected.unwrap())
+                        .recv(&upgraded_rx, |upgrade| upgrade.unwrap());
 
                     for (id, peer) in &state.connected {
-                        let id = *id;
-                        selector = selector.recv(&peer.state.receiver, |res| {
-                            Internal::Receive(id, res.unwrap())
+                        selector = selector.recv(&peer.state.receiver, move |res| {
+                            Internal::Receive(*id, res.unwrap())
                         });
                     }
 
@@ -128,31 +142,29 @@ impl Supervisor {
     }
 }
 
-struct State<T>
+struct State<Conn>
 where
-    T: transport::Transport,
+    Conn: transport::Connection,
 {
-    connected:
-        HashMap<node::Id, peer::Peer<peer::Running<<T as transport::Transport>::Connection>>>,
+    connected: HashMap<node::Id, peer::Peer<peer::Running<Conn>>>,
     stopped: HashMap<node::Id, peer::Peer<peer::Stopped>>,
 }
 
-impl<T> State<T>
+impl<Conn> State<Conn>
 where
-    T: transport::Transport,
+    Conn: transport::Connection,
 {
-    fn transition(
-        &mut self,
-        input: Internal<<T as transport::Transport>::Connection>,
-    ) -> Vec<Event> {
+    fn transition(&mut self, input: Internal<Conn>) -> Vec<Event> {
         match input {
             Internal::Accepted(conn) => self.handle_accepted(conn),
             Internal::Command(command) => self.handle_command(command),
             Internal::Connected(conn) => self.handle_connected(conn),
+            Internal::Receive(id, msg) => self.handle_receive(id, msg),
+            Internal::Upgraded(res) => self.handle_upgraded(res),
         }
     }
 
-    fn handle_accepted(&mut self, conn: <T as transport::Transport>::Connection) -> Vec<Event> {
+    fn handle_accepted(&mut self, conn: Conn) -> Vec<Event> {
         // TODO(xla): Separate upgrade procedure into own routine.
         let peer = peer::Peer::from(transport::Direction::Incoming(conn));
         // TODO(xla): Wire up stream (f.k.a channels) configuration.
@@ -184,7 +196,7 @@ where
         }
     }
 
-    fn handle_connected(&mut self, conn: <T as transport::Transport>::Connection) -> Vec<Event> {
+    fn handle_connected(&mut self, conn: Conn) -> Vec<Event> {
         // TODO(xla): Separate upgrade procedure into own routine.
         let peer = peer::Peer::from(transport::Direction::Outgoing(conn));
         // TODO(xla): Wire up stream (f.k.a channels) configuration.
@@ -193,5 +205,13 @@ where
         self.connected.insert(peer.id, peer);
 
         vec![Event::Connected(id, Direction::Outgoing)]
+    }
+
+    fn handle_receive(&self, id: node::Id, msg: message::Receive) -> Vec<Event> {
+        unimplemented!()
+    }
+
+    fn handle_upgraded(&self, res: Result<peer::Peer<peer::Running<Conn>>>) -> Vec<Event> {
+        unimplemented!()
     }
 }
