@@ -315,7 +315,7 @@ impl WebSocketClientDriver {
                     )),
                     Ok(None) => {
                         // Websocket stream is over, let's continue in case
-                        // we still receive commands .
+                        // we still receive commands via the `cmd_rx` channel.
                         continue;
                     },
                     Err(_) => return Err(Error::websocket_error(format!(
