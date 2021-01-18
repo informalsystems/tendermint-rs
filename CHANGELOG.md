@@ -1,10 +1,20 @@
 ## Unreleased
 
+## IMPROVEMENTS:
+
+* `[all]` Update all crates to use the latest version of the following dependencies: ([#764])
+  - `tokio` (`1.0`)
+  - `hyper` (`0.14`)
+  - `prost` (`0.7`)
+  - `bytes` (`1.0`)
+  - `async-tungstenite` (`0.12`)
+
 ### BUG FIXES
 
 * `[light-client]` The `sled`-backed lightstore is now feature-guarded under
    the `lightstore-sled` feature, which is enabled by default for now. ([#772])
 
+[#764]: https://github.com/informalsystems/tendermint-rs/issues/764
 [#772]: https://github.com/informalsystems/tendermint-rs/pull/772
 
 ## v0.17.1
