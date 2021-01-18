@@ -39,7 +39,7 @@ websocket-client = [
   "async-trait",
   "async-tungstenite",
   "futures",
-  "tokio/rt",
+  "tokio/rt-multi-thread",
   "tokio/fs",
   "tokio/macros",
   "tokio/sync",
