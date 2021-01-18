@@ -684,8 +684,8 @@ mod test {
         async fn run(mut self) -> Result<()> {
             loop {
                 tokio::select! {
-                    Some(Ok(msg)) = self.conn.next() => {
-                        if let Some(ret) = self.handle_incoming_msg(msg).await {
+                    Some(msg) = self.conn.next() => {
+                        if let Some(ret) = self.handle_incoming_msg(msg.unwrap()).await {
                             return ret;
                         }
                     }
