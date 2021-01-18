@@ -301,21 +301,27 @@ impl WebSocketClientDriver {
     pub async fn run(mut self) -> Result<()> {
         let mut ping_interval =
             tokio::time::interval_at(Instant::now().add(PING_INTERVAL), PING_INTERVAL);
-        let mut recv_timeout = tokio::time::delay_for(PING_INTERVAL);
+
         loop {
+            let next_msg = tokio::time::timeout(RECV_TIMEOUT, self.stream.next());
+
             tokio::select! {
-                Some(res) = self.stream.next() => match res {
-                    Ok(msg) => {
-                        // Reset the receive timeout every time we successfully
-                        // receive a message from the remote endpoint.
-                        recv_timeout.reset(Instant::now().add(PING_INTERVAL));
+                res = next_msg => match res {
+                    Ok(Some(Ok(msg))) => {
                         self.handle_incoming_msg(msg).await?
                     },
-                    Err(e) => return Err(
-                        Error::websocket_error(
-                            format!("failed to read from WebSocket connection: {}", e),
-                        ),
-                    ),
+                    Ok(Some(Err(e))) => return Err(Error::websocket_error(
+                        format!("failed to read from WebSocket connection: {}", e),
+                    )),
+                    Ok(None) => {
+                        // Websocket stream is over, let's continue in case
+                        // we still receive commands .
+                        continue;
+                    },
+                    Err(_) => return Err(Error::websocket_error(format!(
+                        "reading from WebSocket connection timed out after {} seconds",
+                        RECV_TIMEOUT.as_secs()
+                    ))),
                 },
                 Some(cmd) = self.cmd_rx.recv() => match cmd {
                     DriverCommand::Subscribe(subs_cmd) => self.subscribe(subs_cmd).await?,
@@ -323,13 +329,7 @@ impl WebSocketClientDriver {
                     DriverCommand::SimpleRequest(req_cmd) => self.simple_request(req_cmd).await?,
                     DriverCommand::Terminate => return self.close().await,
                 },
-                _ = ping_interval.next() => self.ping().await?,
-                _ = &mut recv_timeout => {
-                    return Err(Error::websocket_error(format!(
-                        "reading from WebSocket connection timed out after {} seconds",
-                        RECV_TIMEOUT.as_secs()
-                    )));
-                }
+                _ = ping_interval.tick() => self.ping().await?,
             }
         }
     }
@@ -586,7 +586,7 @@ mod test {
             loop {
                 tokio::select! {
                     Some(ev) = self.event_rx.recv() => self.publish_event(ev),
-                    Some(res) = self.listener.next() => self.handle_incoming(res.unwrap()).await,
+                    Ok((stream, _)) = self.listener.accept() => self.handle_incoming(stream).await,
                     Some(res) = self.terminate_rx.recv() => {
                         self.terminate().await;
                         return res;
@@ -678,8 +678,8 @@ mod test {
         async fn run(mut self) -> Result<()> {
             loop {
                 tokio::select! {
-                    Some(res) = self.conn.next() => {
-                        if let Some(ret) = self.handle_incoming_msg(res.unwrap()).await {
+                    Some(Ok(msg)) = self.conn.next() => {
+                        if let Some(ret) = self.handle_incoming_msg(msg).await {
                             return ret;
                         }
                     }

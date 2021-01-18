@@ -1,0 +1,1 @@
+rpc: use rand crate instead of getrandom
