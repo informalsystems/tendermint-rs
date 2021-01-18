@@ -11,15 +11,14 @@ where
     F::Output: Send,
 {
     std::thread::spawn(move || {
-        let mut rt = tokio::runtime::Builder::new()
-            .basic_scheduler()
+        let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .map_err(|_| IoError::Runtime)?;
 
         if let Some(timeout) = timeout {
-            let task = async { tokio::time::timeout(timeout, f).await };
-            rt.block_on(task).map_err(|_| IoError::Timeout(timeout))
+            rt.block_on(tokio::time::timeout(timeout, f))
+                .map_err(|_| IoError::Timeout(timeout))
         } else {
             Ok(rt.block_on(f))
         }
