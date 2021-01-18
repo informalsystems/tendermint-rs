@@ -319,7 +319,7 @@ async fn execute_interaction(
         info!("Executing interaction \"{}\"", inner_interaction.name);
         if let Some(wait) = inner_interaction.pre_wait {
             debug!("Sleeping for {} seconds", wait.as_secs_f64());
-            tokio::time::delay_for(wait).await;
+            tokio::time::sleep(wait).await;
         }
         if let Some(h) = inner_interaction.min_height {
             debug!("Waiting for height {}", h);
@@ -419,7 +419,9 @@ async fn execute_subscription(
         };
     write_json(&config.in_path, name, &response_json).await?;
 
-    let mut timeout = tokio::time::delay_for(subs.max_time);
+    let timeout = tokio::time::sleep(subs.max_time);
+    tokio::pin!(timeout);
+
     let mut event_count = 0_usize;
     loop {
         tokio::select! {

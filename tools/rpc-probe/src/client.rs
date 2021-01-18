@@ -68,7 +68,7 @@ impl Client {
     /// the given target height.
     pub async fn wait_for_height(&mut self, h: u64) -> Result<()> {
         let (mut subs, _) = self.subscribe(&uuid_v4(), "tm.event = 'NewBlock'").await?;
-        while let Some(result) = subs.next().await {
+        while let Some(result) = subs.recv().await {
             let resp = result?;
             // TODO(thane): Find a more readable way of getting this value.
             let height = resp

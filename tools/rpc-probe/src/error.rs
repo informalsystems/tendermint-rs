@@ -40,8 +40,8 @@ impl From<async_tungstenite::tungstenite::Error> for Error {
     }
 }
 
-impl From<tokio::time::Elapsed> for Error {
-    fn from(e: tokio::time::Elapsed) -> Self {
+impl From<tokio::time::error::Elapsed> for Error {
+    fn from(e: tokio::time::error::Elapsed) -> Self {
         Self::Timeout(e.to_string())
     }
 }
