@@ -251,7 +251,9 @@ mod rpc {
         let mut cur_tx_id = 0_u32;
 
         while !expected_tx_values.is_empty() {
-            let mut delay = tokio::time::delay_for(Duration::from_secs(5));
+            let delay = tokio::time::sleep(Duration::from_secs(5));
+            tokio::pin!(delay);
+
             tokio::select! {
                 Some(res) = subs.next() => {
                     let ev = res.unwrap();
@@ -309,7 +311,7 @@ mod rpc {
                     .broadcast_tx_async(Transaction::from(tx.into_bytes()))
                     .await
                     .unwrap();
-                tokio::time::delay_for(Duration::from_millis(100)).await;
+                tokio::time::sleep(Duration::from_millis(100)).await;
             }
         });
 
@@ -322,7 +324,9 @@ mod rpc {
         );
 
         while expected_new_blocks > 0 && !expected_tx_values.is_empty() {
-            let mut timeout = tokio::time::delay_for(Duration::from_secs(5));
+            let timeout = tokio::time::sleep(Duration::from_secs(5));
+            tokio::pin!(timeout);
+
             tokio::select! {
                 Some(res) = combined_subs.next() => {
                     let ev: Event = res.unwrap();
@@ -398,7 +402,10 @@ mod rpc {
     ) -> Result<TxInfo, tendermint_rpc::Error> {
         let mut subs = websocket_client.subscribe(EventType::Tx.into()).await?;
         let _ = http_client.broadcast_tx_async(tx.clone()).await?;
-        let mut timeout = tokio::time::delay_for(Duration::from_secs(3));
+
+        let timeout = tokio::time::sleep(Duration::from_secs(3));
+        tokio::pin!(timeout);
+
         tokio::select! {
             Some(res) = subs.next() => {
                 let ev = res?;
