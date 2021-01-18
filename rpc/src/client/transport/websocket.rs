@@ -589,7 +589,10 @@ mod test {
             loop {
                 tokio::select! {
                     Some(ev) = self.event_rx.recv() => self.publish_event(ev),
-                    Ok((stream, _)) = self.listener.accept() => self.handle_incoming(stream).await,
+                    res = self.listener.accept() => {
+                        let (stream, _) = res.unwrap();
+                        self.handle_incoming(stream).await
+                    }
                     Some(res) = self.terminate_rx.recv() => {
                         self.terminate().await;
                         return res;
