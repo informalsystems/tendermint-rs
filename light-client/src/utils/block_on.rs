@@ -17,8 +17,8 @@ where
             .map_err(|_| IoError::Runtime)?;
 
         if let Some(timeout) = timeout {
-            rt.block_on(tokio::time::timeout(timeout, f))
-                .map_err(|_| IoError::Timeout(timeout))
+            let task = async { tokio::time::timeout(timeout, f).await };
+            rt.block_on(task).map_err(|_| IoError::Timeout(timeout))
         } else {
             Ok(rt.block_on(f))
         }
