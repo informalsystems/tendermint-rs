@@ -17,9 +17,10 @@ use async_trait::async_trait;
 use async_tungstenite::tokio::{connect_async, TokioAdapter};
 use async_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 use async_tungstenite::tungstenite::protocol::CloseFrame;
+use async_tungstenite::tungstenite::Error as TungsteniteError;
 use async_tungstenite::tungstenite::Message;
 use async_tungstenite::WebSocketStream;
-use futures::{SinkExt, StreamExt};
+use futures::{FutureExt, SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -302,26 +303,39 @@ impl WebSocketClientDriver {
         let mut ping_interval =
             tokio::time::interval_at(Instant::now().add(PING_INTERVAL), PING_INTERVAL);
 
+        enum NextMsg {
+            Ok(Message),
+            StreamEnded,
+            Timeout,
+            WebSocketError(TungsteniteError),
+        }
+
         loop {
-            let next_msg = tokio::time::timeout(RECV_TIMEOUT, self.stream.next());
+            let next_msg =
+                tokio::time::timeout(RECV_TIMEOUT, self.stream.next()).map(|res| match res {
+                    Ok(Some(Ok(msg))) => NextMsg::Ok(msg),
+                    Ok(Some(Err(e))) => NextMsg::WebSocketError(e),
+                    Ok(None) => NextMsg::StreamEnded,
+                    Err(_) => NextMsg::Timeout,
+                });
 
             tokio::select! {
                 res = next_msg => match res {
-                    Ok(Some(Ok(msg))) => {
+                    NextMsg::Ok(msg) => {
                         self.handle_incoming_msg(msg).await?
                     },
-                    Ok(Some(Err(e))) => return Err(Error::websocket_error(
-                        format!("failed to read from WebSocket connection: {}", e),
-                    )),
-                    Ok(None) => {
+                    NextMsg::StreamEnded => {
                         // Websocket stream is over, let's continue in case
                         // we still receive commands via the `cmd_rx` channel.
                         continue;
                     },
-                    Err(_) => return Err(Error::websocket_error(format!(
+                    NextMsg::Timeout => return Err(Error::websocket_error(format!(
                         "reading from WebSocket connection timed out after {} seconds",
                         RECV_TIMEOUT.as_secs()
                     ))),
+                    NextMsg::WebSocketError(e) => return Err(Error::websocket_error(
+                        format!("failed to read from WebSocket connection: {}", e),
+                    )),
                 },
                 Some(cmd) = self.cmd_rx.recv() => match cmd {
                     DriverCommand::Subscribe(subs_cmd) => self.subscribe(subs_cmd).await?,
