@@ -5,7 +5,7 @@ use crate::error::{Error, Kind};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use std::convert::TryFrom;
+use std::convert::{Infallible, TryFrom};
 use std::fmt;
 use std::ops::{Add, Sub};
 use std::str::FromStr;
@@ -23,7 +23,7 @@ pub struct Time(DateTime<Utc>);
 impl Protobuf<Timestamp> for Time {}
 
 impl TryFrom<Timestamp> for Time {
-    type Error = anomaly::BoxError;
+    type Error = Infallible;
 
     fn try_from(value: Timestamp) -> Result<Self, Self::Error> {
         // prost_types::Timestamp has a SystemTime converter but
@@ -33,11 +33,7 @@ impl TryFrom<Timestamp> for Time {
             nanos: value.nanos,
         };
 
-        Ok(SystemTime::try_from(prost_value)
-            .map_err(|e| {
-                Kind::OutOfRange.context(format!("time before EPOCH by {} seconds", e.as_secs()))
-            })?
-            .into())
+        Ok(SystemTime::from(prost_value).into())
     }
 }
 
