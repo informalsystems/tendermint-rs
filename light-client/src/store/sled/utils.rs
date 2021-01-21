@@ -105,8 +105,28 @@ mod tests {
     use tempdir::TempDir;
 
     #[test]
+    fn iter_next_returns_lowest_height() {
+        let tmp_dir = TempDir::new("tendermint_light_client_sled_utils_test").unwrap();
+        let db = sled::open(tmp_dir).unwrap();
+        let kv = HeightIndexedDb::new(db.open_tree("light_store/verified").unwrap());
+
+        for i in 1..=1000_u32 {
+            kv.insert(i.into(), &i).unwrap();
+        }
+
+        for i in (1000..=2000_u32).rev() {
+            kv.insert(i.into(), &i).unwrap();
+        }
+
+        let mut iter = kv.iter();
+        for i in 1..=2000_u32 {
+            assert_eq!(iter.next(), Some(i));
+        }
+    }
+
+    #[test]
     fn iter_next_back_returns_highest_height() {
-        let tmp_dir = TempDir::new("tendermint_light_client_sled_test").unwrap();
+        let tmp_dir = TempDir::new("tendermint_light_client_sled_utils_test").unwrap();
         let db = sled::open(tmp_dir).unwrap();
         let kv = HeightIndexedDb::new(db.open_tree("light_store/verified").unwrap());
 

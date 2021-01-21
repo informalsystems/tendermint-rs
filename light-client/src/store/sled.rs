@@ -92,3 +92,58 @@ impl LightStore for SledStore {
         Box::new(self.db(status).iter())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempdir::TempDir;
+    use tendermint_testgen::{light_block::TMLightBlock as TGLightBlock, Generator, LightChain};
+
+    #[test]
+    fn highest_returns_latest_block() {
+        with_blocks(10, |mut db, blocks| {
+            let initial_block = blocks[0].clone();
+            db.insert(initial_block.clone(), Status::Verified);
+            assert_eq!(db.lowest(Status::Verified).as_ref(), Some(&initial_block));
+
+            for block in blocks.into_iter().skip(1) {
+                db.insert(block, Status::Verified);
+                assert_eq!(db.lowest(Status::Verified).as_ref(), Some(&initial_block));
+            }
+        })
+    }
+
+    #[test]
+    fn lowest_returns_earliest_block() {
+        with_blocks(10, |mut db, blocks| {
+            for block in blocks {
+                db.insert(block.clone(), Status::Verified);
+                assert_eq!(db.highest(Status::Verified), Some(block));
+            }
+        })
+    }
+
+    fn with_blocks(height: u64, f: impl FnOnce(SledStore, Vec<LightBlock>)) {
+        let tmp_dir = TempDir::new("tendermint_light_client_sled_test").unwrap();
+        let db = SledStore::open(tmp_dir).unwrap();
+
+        let chain = LightChain::default_with_length(height);
+        let blocks = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap())
+            .map(testgen_to_lb)
+            .collect::<Vec<_>>();
+
+        f(db, blocks)
+    }
+
+    fn testgen_to_lb(tm_lb: TGLightBlock) -> LightBlock {
+        LightBlock {
+            signed_header: tm_lb.signed_header,
+            validators: tm_lb.validators,
+            next_validators: tm_lb.next_validators,
+            provider: tm_lb.provider,
+        }
+    }
+}
