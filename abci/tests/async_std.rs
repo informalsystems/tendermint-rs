@@ -1,6 +1,10 @@
 /// `async-std`-based ABCI client/server interaction.
 
-#[cfg(all(feature = "with-async-std", feature = "client", feature = "echo-app"))]
+#[cfg(all(
+    feature = "runtime-async-std",
+    feature = "client",
+    feature = "echo-app"
+))]
 mod async_std_integration {
     use tendermint::abci::request;
     use tendermint_abci::{AsyncStdClient, AsyncStdServer, Client, EchoApp};

@@ -1,12 +1,11 @@
-//! `async` ABCI server application interface.
+//! ABCI application-related types.
 
 #[cfg(feature = "echo-app")]
 pub mod echo;
 
-use async_trait::async_trait;
 use tendermint::abci::{request, response};
 
-#[async_trait]
+/// ABCI server application interface.
 pub trait Application: Send + Clone {
     /// Request that the ABCI server echo back the same message sent to it.
     fn echo(&self, req: request::Echo) -> response::Echo {

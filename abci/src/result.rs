@@ -14,11 +14,11 @@ pub enum Error {
     #[error("network I/O error")]
     NetworkIo(#[from] std::io::Error),
 
-    #[cfg(feature = "with-tokio")]
+    #[cfg(feature = "runtime-tokio")]
     #[error("channel send error: {0}")]
     TokioChannelSend(String),
 
-    #[cfg(feature = "with-tokio")]
+    #[cfg(feature = "runtime-tokio")]
     #[error("failed to obtain UNIX stream path")]
     CannotObtainUnixStreamPath,
 

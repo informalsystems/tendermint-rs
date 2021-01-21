@@ -1,6 +1,6 @@
 //! Tokio-based ABCI client/server interaction.
 
-#[cfg(all(feature = "with-tokio", feature = "client", feature = "echo-app"))]
+#[cfg(all(feature = "runtime-tokio", feature = "client", feature = "echo-app"))]
 mod tokio_integration {
     use tendermint::abci::request;
     use tendermint_abci::{Client, EchoApp, TokioClient, TokioServer};

@@ -9,8 +9,9 @@ edition = "2018"
 [features]
 client = []
 echo-app = []
-with-tokio = [ "tokio", "tokio-util" ]
-with-async-std = [ "async-channel", "async-std" ]
+runtime-async-std = [ "async-channel", "async-std" ]
+runtime-std = []
+runtime-tokio = [ "tokio", "tokio-util" ]
 
 [dependencies]
 async-trait = "0.1"

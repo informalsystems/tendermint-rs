@@ -1,8 +1,8 @@
 //! ABCI clients for interacting with ABCI servers.
 
-#[cfg(feature = "with-async-std")]
+#[cfg(feature = "runtime-async-std")]
 pub mod async_std;
-#[cfg(feature = "with-tokio")]
+#[cfg(feature = "runtime-tokio")]
 pub mod tokio;
 
 use crate::Result;
