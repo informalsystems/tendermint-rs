@@ -30,6 +30,12 @@ impl Default for EchoApp {
 
 impl Application for EchoApp {
     fn info(&self, _req: request::Info) -> response::Info {
-        response::Info::new(&self.data, &self.version, self.app_version, 1, [])
+        response::Info {
+            data: self.data.clone(),
+            version: self.version.clone(),
+            app_version: self.app_version,
+            last_block_height: 1,
+            last_block_app_hash: vec![],
+        }
     }
 }

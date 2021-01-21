@@ -128,7 +128,9 @@ mod test {
 
     #[test]
     fn single_request() {
-        let request = Request::Echo(Echo::new("Hello TSP!"));
+        let request = Request::Echo(Echo {
+            message: "Hello TSP!".to_owned(),
+        });
         let mut buf = BytesMut::new();
         TspEncoder::encode_request(request.clone(), &mut buf).unwrap();
 
@@ -141,7 +143,11 @@ mod test {
     #[test]
     fn multiple_requests() {
         let requests = (0..5)
-            .map(|r| Request::Echo(Echo::new(format!("Request {}", r))))
+            .map(|r| {
+                Request::Echo(Echo {
+                    message: format!("Request {}", r),
+                })
+            })
             .collect::<Vec<Request>>();
         let mut buf = BytesMut::new();
         requests

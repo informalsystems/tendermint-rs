@@ -10,7 +10,9 @@ use tendermint::abci::{request, response};
 pub trait Application: Send + Clone {
     /// Request that the ABCI server echo back the same message sent to it.
     fn echo(&self, req: request::Echo) -> response::Echo {
-        response::Echo::new(req.message)
+        response::Echo {
+            message: req.message,
+        }
     }
 
     /// Receive information about the Tendermint node and respond with

@@ -10,7 +10,6 @@ use tendermint_proto::Protobuf;
 /// Allows a Tendermint node to provide information about itself to the ABCI
 /// server, in exchange for information about the server.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
 pub struct Info {
     /// Tendermint software semantic version.
     pub version: String,
@@ -22,26 +21,14 @@ pub struct Info {
     pub abci_version: u64,
 }
 
-impl Info {
-    /// Constructor.
-    pub fn new<S: AsRef<str>>(
-        version: S,
-        block_version: u64,
-        p2p_version: u64,
-        abci_version: u64,
-    ) -> Self {
-        Self {
-            version: version.as_ref().to_owned(),
-            block_version,
-            p2p_version,
-            abci_version,
-        }
-    }
-}
-
 impl Default for Info {
     fn default() -> Self {
-        Self::new("", 0, 0, 0)
+        Self {
+            version: "".to_string(),
+            block_version: 0,
+            p2p_version: 0,
+            abci_version: 0,
+        }
     }
 }
 
@@ -51,12 +38,12 @@ impl TryFrom<RequestInfo> for Info {
     type Error = Error;
 
     fn try_from(value: RequestInfo) -> Result<Self, Self::Error> {
-        Ok(Self::new(
-            value.version,
-            value.block_version,
-            value.p2p_version,
-            0,
-        ))
+        Ok(Self {
+            version: value.version,
+            block_version: value.block_version,
+            p2p_version: value.p2p_version,
+            abci_version: 0,
+        })
     }
 }
 

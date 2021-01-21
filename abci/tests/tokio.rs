@@ -14,7 +14,9 @@ mod tokio_integration {
 
         let mut client = TokioClient::connect(server_addr).await.unwrap();
         let requests = (0..5)
-            .map(|r| request::Echo::new(format!("Request {}", r)))
+            .map(|r| request::Echo {
+                message: format!("Request {}", r),
+            })
             .collect::<Vec<request::Echo>>();
         for request in &requests {
             let res = client.echo(request.clone()).await.unwrap();

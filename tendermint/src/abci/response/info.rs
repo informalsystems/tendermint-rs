@@ -9,7 +9,6 @@ use tendermint_proto::Protobuf;
 /// Allows the ABCI app to provide information about itself back to the
 /// Tendermint node.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
 pub struct Info {
     /// Arbitrary (application-specific) information.
     pub data: String,
@@ -23,32 +22,15 @@ pub struct Info {
     pub last_block_app_hash: Vec<u8>,
 }
 
-impl Info {
-    /// Constructor.
-    pub fn new<S, V>(
-        data: S,
-        version: S,
-        app_version: u64,
-        last_block_height: i64,
-        last_block_app_hash: V,
-    ) -> Self
-    where
-        S: AsRef<str>,
-        V: AsRef<[u8]>,
-    {
-        Self {
-            data: data.as_ref().to_owned(),
-            version: version.as_ref().to_owned(),
-            app_version,
-            last_block_height,
-            last_block_app_hash: last_block_app_hash.as_ref().to_vec(),
-        }
-    }
-}
-
 impl Default for Info {
     fn default() -> Self {
-        Self::new("", "", 0, 0, [])
+        Self {
+            data: "".to_string(),
+            version: "".to_string(),
+            app_version: 0,
+            last_block_height: 0,
+            last_block_app_hash: vec![],
+        }
     }
 }
 
@@ -58,13 +40,13 @@ impl TryFrom<ResponseInfo> for Info {
     type Error = Error;
 
     fn try_from(value: ResponseInfo) -> Result<Self, Self::Error> {
-        Ok(Self::new(
-            value.data,
-            value.version,
-            value.app_version,
-            value.last_block_height,
-            value.last_block_app_hash,
-        ))
+        Ok(Self {
+            data: value.data,
+            version: value.version,
+            app_version: value.app_version,
+            last_block_height: value.last_block_height,
+            last_block_app_hash: value.last_block_app_hash,
+        })
     }
 }
 
