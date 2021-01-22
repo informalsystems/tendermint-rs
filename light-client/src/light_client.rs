@@ -136,8 +136,10 @@ impl LightClient {
     ///   communicates with other nodes.
     /// - The Verifier component checks whether a header is valid and checks if a new light block
     ///   should be trusted based on a previously verified light block.
-    /// - The Scheduler component decides which height to try to verify next, in case the current
-    ///   block pass verification but cannot be trusted yet.
+    /// - When doing _forward_ verification, the Scheduler component decides which height to try to
+    ///   verify next, in case the current block pass verification but cannot be trusted yet.
+    /// - When doing _backward_ verification, the Hasher component is used to determine
+    ///   whether the `last_block_id` hash of a block matches the hash of the block right below it.
     ///
     /// ## Implements
     /// - [LCV-DIST-SAFE.1]
@@ -188,7 +190,7 @@ impl LightClient {
         }
     }
 
-    /// Perform forward verification with bisection
+    /// Perform forward verification with bisection.
     fn verify_forward(
         &self,
         target_height: Height,
