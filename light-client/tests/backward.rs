@@ -1,3 +1,5 @@
+#![cfg(feature = "backward-verif")]
+
 use std::{collections::HashMap, time::Duration};
 
 use tendermint::{hash::Algorithm, Hash, Time};

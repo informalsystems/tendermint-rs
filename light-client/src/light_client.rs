@@ -2,26 +2,23 @@
 //!
 //! [1]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md
 
+use std::{fmt, time::Duration};
+
 use contracts::*;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
-use std::{convert::TryFrom, fmt, time::Duration};
 
-use crate::contracts::*;
 use crate::{
     bail,
+    components::{clock::Clock, io::*, scheduler::*, verifier::*},
+    contracts::*,
     errors::{Error, ErrorKind},
+    operations::Hasher,
     state::State,
     types::{Height, LightBlock, PeerId, Status, TrustThreshold},
 };
-use crate::{
-    components::{clock::Clock, io::*, scheduler::*, verifier::*},
-    operations::Hasher,
-};
 
 /// Verification parameters
-///
-/// TODO: Find a better name than `Options`
 #[derive(Copy, Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct Options {
@@ -56,11 +53,15 @@ pub struct LightClient {
     pub peer: PeerId,
     /// Options for this light client
     pub options: Options,
+
     clock: Box<dyn Clock>,
     scheduler: Box<dyn Scheduler>,
     verifier: Box<dyn Verifier>,
-    hasher: Box<dyn Hasher>,
     io: Box<dyn Io>,
+
+    // Only used in verify_backwards when "backward-verif" feature is enabled
+    #[allow(dead_code)]
+    hasher: Box<dyn Hasher>,
 }
 
 impl fmt::Debug for LightClient {
@@ -268,12 +269,31 @@ impl LightClient {
         }
     }
 
-    /// Perform sequential backward verification
+    /// Stub for when "backward-verif" feature is disabled.
+    #[doc(hidden)]
+    #[cfg(not(feature = "backward-verif"))]
+    fn verify_backwards(
+        &self,
+        _target_height: Height,
+        _state: &mut State,
+    ) -> Result<LightBlock, Error> {
+        todo!()
+        // Err(ErrorKind::TargetLowerThanTrustedState {
+        //     target_height,
+        //     trusted_height: trusted_state.height(),
+        // }
+        // .into())
+    }
+
+    /// Perform sequential backward verification.
+    #[cfg(feature = "backward-verif")]
     fn verify_backwards(
         &self,
         target_height: Height,
         state: &mut State,
     ) -> Result<LightBlock, Error> {
+        use std::convert::TryFrom;
+
         let root = state
             .light_store
             .highest_trusted_or_verified()
@@ -311,7 +331,6 @@ impl LightClient {
             state.trace_block(latest.height(), current.height());
 
             latest = current;
-            // println!("verified: {}", latest.height());
         }
 
         assert_eq!(latest.height(), target_height);
