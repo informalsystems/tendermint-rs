@@ -276,15 +276,19 @@ impl LightClient {
     #[cfg(not(feature = "backward-verif"))]
     fn verify_backward(
         &self,
-        _target_height: Height,
-        _state: &mut State,
+        target_height: Height,
+        state: &mut State,
     ) -> Result<LightBlock, Error> {
-        todo!()
-        // Err(ErrorKind::TargetLowerThanTrustedState {
-        //     target_height,
-        //     trusted_height: trusted_state.height(),
-        // }
-        // .into())
+        let trusted_state = state
+            .light_store
+            .highest_trusted_or_verified()
+            .ok_or(ErrorKind::NoInitialTrustedState)?;
+
+        Err(ErrorKind::TargetLowerThanTrustedState {
+            target_height,
+            trusted_height: trusted_state.height(),
+        }
+        .into())
     }
 
     /// Perform sequential backward verification.
@@ -296,19 +300,19 @@ impl LightClient {
     ) -> Result<LightBlock, Error> {
         use std::convert::TryFrom;
 
-        let root = state
+        let trusted_state = state
             .light_store
             .highest_trusted_or_verified()
             // .lowest_trusted_or_verified() // does not work yet as it might be lower than target_height
             .ok_or(ErrorKind::NoInitialTrustedState)?;
 
-        assert!(root.height() >= target_height);
+        assert!(trusted_state.height() >= target_height);
 
-        let heights = (target_height.value()..root.height().value())
+        let heights = (target_height.value()..trusted_state.height().value())
             .rev()
             .map(|h| Height::try_from(h).unwrap());
 
-        let mut latest = root;
+        let mut latest = trusted_state;
 
         for height in heights {
             let (current, _status) = self.get_or_fetch_block(height, state)?;
