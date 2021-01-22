@@ -181,15 +181,15 @@ impl LightClient {
 
         if target_height >= highest.height() {
             // Perform forward verification with bisection
-            self.verify_bisection(target_height, state)
+            self.verify_forward(target_height, state)
         } else {
             // Perform sequential backward verification
-            self.verify_backwards(target_height, state)
+            self.verify_backward(target_height, state)
         }
     }
 
     /// Perform forward verification with bisection
-    fn verify_bisection(
+    fn verify_forward(
         &self,
         target_height: Height,
         state: &mut State,
@@ -272,7 +272,7 @@ impl LightClient {
     /// Stub for when "backward-verif" feature is disabled.
     #[doc(hidden)]
     #[cfg(not(feature = "backward-verif"))]
-    fn verify_backwards(
+    fn verify_backward(
         &self,
         _target_height: Height,
         _state: &mut State,
@@ -287,7 +287,7 @@ impl LightClient {
 
     /// Perform sequential backward verification.
     #[cfg(feature = "backward-verif")]
-    fn verify_backwards(
+    fn verify_backward(
         &self,
         target_height: Height,
         state: &mut State,
