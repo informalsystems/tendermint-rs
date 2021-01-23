@@ -14,9 +14,9 @@ pub enum Error {
     #[error("network I/O error")]
     NetworkIo(#[from] std::io::Error),
 
-    #[cfg(feature = "runtime-tokio")]
+    #[cfg(any(feature = "runtime-tokio", feature = "runtime-async-std"))]
     #[error("channel send error: {0}")]
-    TokioChannelSend(String),
+    ChannelSend(String),
 
     #[cfg(feature = "runtime-tokio")]
     #[error("failed to obtain UNIX stream path")]
@@ -27,4 +27,11 @@ pub enum Error {
 
     #[error("server stream terminated unexpectedly")]
     ServerStreamTerminated,
+
+    #[error("sending end of channel closed unexpectedly")]
+    ChannelSenderClosed,
+
+    #[cfg(feature = "runtime-async-std")]
+    #[error("failed to receive message from channel: {0}")]
+    ChannelRecv(String),
 }

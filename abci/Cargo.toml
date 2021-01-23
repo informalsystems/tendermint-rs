@@ -9,21 +9,23 @@ edition = "2018"
 [features]
 client = []
 echo-app = []
+async = [ "async-trait", "futures", "pin-project" ]
 runtime-async-std = [ "async-channel", "async-std" ]
 runtime-std = []
 runtime-tokio = [ "tokio", "tokio-util" ]
 
 [dependencies]
-async-trait = "0.1"
 bytes = "0.6"
 eyre = "0.6"
-futures = "0.3"
 log = "0.4"
 tendermint = { version = "0.17.1", path = "../tendermint" }
 tendermint-proto = { version = "0.17.1", path = "../proto" }
 thiserror = "1.0"
 
+async-trait = { version = "0.1", optional = true }
 async-channel = { version = "1.5", optional = true }
 async-std = { version = "1.8", features = [ "attributes" ], optional = true }
+futures = { version = "0.3", optional = true }
+pin-project = { version = "1.0", optional = true }
 tokio = { version = "0.3", features = [ "macros", "net", "rt", "sync" ], optional = true }
 tokio-util = { version = "0.5", features = [ "codec" ], optional = true }
