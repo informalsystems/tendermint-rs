@@ -1,8 +1,8 @@
 //! Abstractions for facilitating runtime-independent code.
 
-#[cfg(feature = "runtime-async-std")]
+#[cfg(all(feature = "async", feature = "runtime-async-std"))]
 pub mod async_std;
-#[cfg(feature = "runtime-tokio")]
+#[cfg(all(feature = "async", feature = "runtime-tokio"))]
 pub mod tokio;
 
 pub use crate::runtime::interface::{
