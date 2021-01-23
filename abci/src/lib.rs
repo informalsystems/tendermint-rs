@@ -18,11 +18,6 @@ mod client;
 #[cfg(feature = "client")]
 pub use client::Client;
 
-#[cfg(all(feature = "async", feature = "client", feature = "runtime-tokio"))]
-pub type TokioClient = Client<runtime::tokio::Tokio>;
-#[cfg(all(feature = "async", feature = "client", feature = "runtime-async-std"))]
-pub type AsyncStdClient = Client<runtime::async_std::AsyncStd>;
-
 // Example applications
 #[cfg(feature = "echo-app")]
 pub use application::echo::EchoApp;
@@ -31,6 +26,12 @@ pub use application::echo::EchoApp;
 pub use application::Application;
 pub use result::{Error, Result};
 pub use server::Server;
+
+// Runtime-specific exports
+#[cfg(all(feature = "async", feature = "client", feature = "runtime-tokio"))]
+pub type TokioClient = Client<runtime::tokio::Tokio>;
+#[cfg(all(feature = "async", feature = "client", feature = "runtime-async-std"))]
+pub type AsyncStdClient = Client<runtime::async_std::AsyncStd>;
 
 #[cfg(all(feature = "async", feature = "runtime-tokio"))]
 pub type TokioServer<A> = Server<A, runtime::tokio::Tokio>;
