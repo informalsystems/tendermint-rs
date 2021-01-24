@@ -1,4 +1,4 @@
-//! Tokio-based ABCI client/server integration tests.
+//! Rust standard library-based ABCI client/server integration tests.
 
 #[cfg(all(
     not(feature = "async"),
