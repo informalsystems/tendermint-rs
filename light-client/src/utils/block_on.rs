@@ -11,8 +11,7 @@ where
     F::Output: Send,
 {
     std::thread::spawn(move || {
-        let mut rt = tokio::runtime::Builder::new()
-            .basic_scheduler()
+        let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .map_err(|_| IoError::Runtime)?;

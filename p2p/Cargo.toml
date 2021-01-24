@@ -21,7 +21,7 @@ ed25519-dalek = "1"
 eyre = "0.6"
 hkdf = "0.10.0"
 merlin = "2"
-prost = { git = "https://github.com/danburkert/prost", rev = "423f5ec5bd165a7007a388edfb2b485d5bbf40c7" }
+prost = "0.7"
 rand_core = { version = "0.5", features = ["std"] }
 sha2 = "0.9"
 subtle = "2"

@@ -2,84 +2,50 @@
 //! by taking care of (de)serializing keys and values with the
 //! CBOR binary encoding.
 
-use serde::{de::DeserializeOwned, Serialize};
 use std::marker::PhantomData;
 
+use serde::{de::DeserializeOwned, Serialize};
+
 use crate::errors::{Error, ErrorKind};
-
-/// Provides a view over the database for storing a single value at the given prefix.
-pub fn single<V>(prefix: impl Into<Vec<u8>>) -> SingleDb<V> {
-    SingleDb::new(prefix)
-}
-
-/// Provides a view over the database for storing key/value pairs at the given prefix.
-pub fn key_value<K, V>(prefix: impl Into<Vec<u8>>) -> KeyValueDb<K, V> {
-    KeyValueDb::new(prefix)
-}
-
-/// Provides a view over the database for storing a single value at the given prefix.
-pub struct SingleDb<V>(KeyValueDb<(), V>);
-
-impl<V> SingleDb<V> {
-    /// Create a view over the database for storing a single value at the given prefix.
-    pub fn new(prefix: impl Into<Vec<u8>>) -> Self {
-        Self(KeyValueDb::new(prefix))
-    }
-}
-
-impl<V> SingleDb<V>
-where
-    V: Serialize + DeserializeOwned,
-{
-    /// Get the value associated with this view in the given sled database.
-    pub fn get(&self, db: &sled::Db) -> Result<Option<V>, Error> {
-        self.0.get(&db, &())
-    }
-
-    /// Set a value associated with this view in the given sled database.
-    pub fn set(&self, db: &sled::Db, value: &V) -> Result<(), Error> {
-        self.0.insert(&db, &(), &value)
-    }
-}
+use crate::types::Height;
 
 /// Provides a view over the database for storing key/value pairs at the given prefix.
 #[derive(Clone, Debug)]
-pub struct KeyValueDb<K, V> {
-    prefix: Vec<u8>,
-    marker: PhantomData<(K, V)>,
+pub struct HeightIndexedDb<V> {
+    tree: sled::Tree,
+    marker: PhantomData<V>,
 }
 
-impl<K, V> KeyValueDb<K, V> {
+impl<V> HeightIndexedDb<V> {
     /// Create a view over the database for storing key/value pairs at the given prefix.
-    pub fn new(prefix: impl Into<Vec<u8>>) -> Self {
+    pub fn new(tree: sled::Tree) -> Self {
         Self {
-            prefix: prefix.into(),
+            tree,
             marker: PhantomData,
         }
     }
 }
 
-impl<K, V> KeyValueDb<K, V>
+fn key_bytes(height: Height) -> [u8; 8] {
+    // we need to store the height in big-endian form for
+    // sled's iterators and ordered operations to work properly.
+    // See https://github.com/spacejam/sled#a-note-on-lexicographic-ordering-and-endianness
+    height.value().to_be_bytes()
+}
+
+impl<V> HeightIndexedDb<V>
 where
-    K: Serialize,
     V: Serialize + DeserializeOwned,
 {
-    fn prefixed_key(&self, mut key_bytes: Vec<u8>) -> Vec<u8> {
-        let mut prefix_bytes = self.prefix.clone();
-        prefix_bytes.append(&mut key_bytes);
-        prefix_bytes
-    }
-
-    /// Get the value associated with a key within this view in the given sled database.
-    pub fn get(&self, db: &sled::Db, key: &K) -> Result<Option<V>, Error> {
-        let key_bytes = serde_cbor::to_vec(&key).map_err(|e| ErrorKind::Store.context(e))?;
-        let prefixed_key_bytes = self.prefixed_key(key_bytes);
-
-        let value_bytes = db
-            .get(prefixed_key_bytes)
+    /// Get the value associated with the given height within this tree
+    pub fn get(&self, height: Height) -> Result<Option<V>, Error> {
+        let key = key_bytes(height);
+        let value = self
+            .tree
+            .get(key)
             .map_err(|e| ErrorKind::Store.context(e))?;
 
-        match value_bytes {
+        match value {
             Some(bytes) => {
                 let value =
                     serde_cbor::from_slice(&bytes).map_err(|e| ErrorKind::Store.context(e))?;
@@ -89,76 +55,92 @@ where
         }
     }
 
-    /// Check whether there exists a key within this view in the given sled database.
-    pub fn contains_key(&self, db: &sled::Db, key: &K) -> Result<bool, Error> {
-        let key_bytes = serde_cbor::to_vec(&key).map_err(|e| ErrorKind::Store.context(e))?;
-        let prefixed_key_bytes = self.prefixed_key(key_bytes);
+    /// Check whether there exists a value associated with the given height within this tree
+    pub fn contains_key(&self, height: Height) -> Result<bool, Error> {
+        let key = key_bytes(height);
 
-        let exists = db
-            .contains_key(prefixed_key_bytes)
+        let exists = self
+            .tree
+            .contains_key(key)
             .map_err(|e| ErrorKind::Store.context(e))?;
 
         Ok(exists)
     }
 
-    /// Insert a value associated with a key within this view in the given sled database.
-    pub fn insert(&self, db: &sled::Db, key: &K, value: &V) -> Result<(), Error> {
-        let key_bytes = serde_cbor::to_vec(&key).map_err(|e| ErrorKind::Store.context(e))?;
-        let prefixed_key_bytes = self.prefixed_key(key_bytes);
-        let value_bytes = serde_cbor::to_vec(&value).map_err(|e| ErrorKind::Store.context(e))?;
+    /// Insert a value associated with a height within this tree
+    pub fn insert(&self, height: Height, value: &V) -> Result<(), Error> {
+        let key = key_bytes(height);
+        let bytes = serde_cbor::to_vec(&value).map_err(|e| ErrorKind::Store.context(e))?;
 
-        db.insert(prefixed_key_bytes, value_bytes)
-            .map(|_| ())
+        self.tree
+            .insert(key, bytes)
             .map_err(|e| ErrorKind::Store.context(e))?;
 
         Ok(())
     }
 
-    /// Remove the value associated with a key within this view in the given sled database.
-    pub fn remove(&self, db: &sled::Db, key: &K) -> Result<(), Error> {
-        let key_bytes = serde_cbor::to_vec(&key).map_err(|e| ErrorKind::Store.context(e))?;
-        let prefixed_key_bytes = self.prefixed_key(key_bytes);
+    /// Remove the value associated with a height within this tree
+    pub fn remove(&self, height: Height) -> Result<(), Error> {
+        let key = key_bytes(height);
 
-        db.remove(prefixed_key_bytes)
+        self.tree
+            .remove(key)
             .map_err(|e| ErrorKind::Store.context(e))?;
 
         Ok(())
     }
 
-    /// Iterate over all values within this view in the given sled database.
-    pub fn iter(&self, db: &sled::Db) -> impl DoubleEndedIterator<Item = V> {
-        db.iter()
+    /// Return an iterator over all values within this tree
+    pub fn iter(&self) -> impl DoubleEndedIterator<Item = V> {
+        self.tree
+            .iter()
             .flatten()
-            .map(|(_, v)| serde_cbor::from_slice(&v))
-            .flatten()
+            .flat_map(|(_, v)| serde_cbor::from_slice(&v))
     }
 }
 
-// TODO: The test below is currently disabled because it fails on CI as we don't have
-// access to `/tmp`. Need to figure out how to specify a proper temp dir.
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempdir::TempDir;
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::types::Height;
+    #[test]
+    fn iter_next_returns_lowest_height() {
+        let tmp_dir = TempDir::new("tendermint_light_client_sled_utils_test").unwrap();
+        let db = sled::open(tmp_dir).unwrap();
+        let kv = HeightIndexedDb::new(db.open_tree("light_store/verified").unwrap());
 
-//     #[test]
-//     fn iter_next_back_returns_highest_height() {
-//         const DB_PATH: &str = "/tmp/tendermint_light_client_sled_test/";
-//         std::fs::remove_dir_all(DB_PATH).unwrap();
-//         let db = sled::open(DB_PATH).unwrap();
-//         let kv: KeyValueDb<Height, Height> = key_value("light_store/verified");
+        for i in 1..=1000_u32 {
+            kv.insert(i.into(), &i).unwrap();
+        }
 
-//         kv.insert(&db, &1, &1).unwrap();
-//         kv.insert(&db, &589473798493, &589473798493).unwrap();
-//         kv.insert(&db, &12342425, &12342425).unwrap();
-//         kv.insert(&db, &4, &4).unwrap();
+        for i in (1000..=2000_u32).rev() {
+            kv.insert(i.into(), &i).unwrap();
+        }
 
-//         let mut iter = kv.iter(&db);
-//         assert_eq!(iter.next_back(), Some(589473798493));
-//         assert_eq!(iter.next_back(), Some(12342425));
-//         assert_eq!(iter.next_back(), Some(4));
-//         assert_eq!(iter.next_back(), Some(1));
-//         assert_eq!(iter.next_back(), None);
-//     }
-// }
+        let mut iter = kv.iter();
+        for i in 1..=2000_u32 {
+            assert_eq!(iter.next(), Some(i));
+        }
+    }
+
+    #[test]
+    fn iter_next_back_returns_highest_height() {
+        let tmp_dir = TempDir::new("tendermint_light_client_sled_utils_test").unwrap();
+        let db = sled::open(tmp_dir).unwrap();
+        let kv = HeightIndexedDb::new(db.open_tree("light_store/verified").unwrap());
+
+        for i in 1..=1000_u32 {
+            kv.insert(i.into(), &i).unwrap();
+        }
+
+        for i in (1000..=2000_u32).rev() {
+            kv.insert(i.into(), &i).unwrap();
+        }
+
+        let mut iter = kv.iter();
+        for i in (1..=2000_u32).rev() {
+            assert_eq!(iter.next_back(), Some(i));
+        }
+    }
+}

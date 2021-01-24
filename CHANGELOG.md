@@ -1,11 +1,24 @@
 ## Unreleased
 
+## IMPROVEMENTS:
+
+* `[all]` Update all crates to use the latest version of the following dependencies: ([#764])
+  - `tokio` (`1.0`)
+  - `hyper` (`0.14`)
+  - `prost` (`0.7`)
+  - `bytes` (`1.0`)
+  - `async-tungstenite` (`0.12`)
+
 ### BUG FIXES
 
+* `[light-client]` Fix potential block ordering problem with sled-based lightstore ([#769])
+* `[light-client]` Improve the API of the light store. ([#428])
 * `[light-client]` The `sled`-backed lightstore is now feature-guarded under
-   the `lightstore-sled` feature, which is enabled by default for now. ([#772])
+   the `lightstore-sled` feature, which is enabled by default for now. ([#428])
 
-[#772]: https://github.com/informalsystems/tendermint-rs/pull/772
+[#769]: https://github.com/informalsystems/tendermint-rs/issues/769
+[#764]: https://github.com/informalsystems/tendermint-rs/issues/764
+[#428]: https://github.com/informalsystems/tendermint-rs/issues/428
 
 ## v0.17.1
 
@@ -26,8 +39,8 @@ Client's correct and reliable operation.
 
 ### BUG FIXES:
 
-- `[tendermint]` `Time` values were not always formatted properly,
-  causing the light client to sometimes return malformed light blocks. ([#774])
+* `[tendermint]` `Time` values were not always formatted properly,
+  causing the light client to sometimes return malformed light blocks ([#774])
 
 [#774]: https://github.com/informalsystems/tendermint-rs/issues/774
 

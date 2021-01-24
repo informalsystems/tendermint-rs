@@ -7,15 +7,15 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+async = [ "async-trait", "futures", "pin-project" ]
 client = []
 echo-app = []
-async = [ "async-trait", "futures", "pin-project" ]
 runtime-async-std = [ "async-channel", "async-std" ]
 runtime-std = []
 runtime-tokio = [ "tokio", "tokio-util" ]
 
 [dependencies]
-bytes = "0.6"
+bytes = "1.0"
 eyre = "0.6"
 log = "0.4"
 tendermint = { version = "0.17.1", path = "../tendermint" }
@@ -27,5 +27,5 @@ async-channel = { version = "1.5", optional = true }
 async-std = { version = "1.8", features = [ "attributes" ], optional = true }
 futures = { version = "0.3", optional = true }
 pin-project = { version = "1.0", optional = true }
-tokio = { version = "0.3", features = [ "macros", "net", "rt", "sync" ], optional = true }
-tokio-util = { version = "0.5", features = [ "codec" ], optional = true }
+tokio = { version = "1.0", features = [ "macros", "net", "rt", "sync" ], optional = true }
+tokio-util = { version = "0.6", features = [ "codec" ], optional = true }
