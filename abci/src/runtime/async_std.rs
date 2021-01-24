@@ -323,6 +323,7 @@ impl<T: Send> Receiver<T> for AsyncStdReceiver<T> {
     }
 }
 
+#[cfg(all(feature = "async", feature = "runtime-async-std"))]
 #[cfg(test)]
 mod test {
     use super::*;
