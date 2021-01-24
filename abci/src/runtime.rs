@@ -2,6 +2,8 @@
 
 #[cfg(all(feature = "async", feature = "runtime-async-std"))]
 pub mod async_std;
+#[cfg(all(not(feature = "async"), feature = "runtime-std"))]
+pub mod std;
 #[cfg(all(feature = "async", feature = "runtime-tokio"))]
 pub mod tokio;
 
@@ -31,6 +33,11 @@ mod interface {
     use tendermint::abci::{request, response};
 
     #[async_trait]
+    pub trait TcpStream: Sized + Send {
+        async fn connect(addr: &str) -> Result<Self>;
+    }
+
+    #[async_trait]
     pub trait TcpListener<T: TcpStream>: Sized {
         /// Bind this listener to the given address.
         async fn bind(addr: &str) -> Result<Self>;
@@ -40,11 +47,6 @@ mod interface {
 
         /// Attempt to accept an incoming connection.
         async fn accept(&self) -> Result<(T, SocketAddr)>;
-    }
-
-    #[async_trait]
-    pub trait TcpStream: Sized + Send {
-        async fn connect(addr: &str) -> Result<Self>;
     }
 
     pub trait TaskSpawner {
@@ -97,5 +99,61 @@ mod interface {
 
 #[cfg(not(feature = "async"))]
 mod interface {
-    pub trait Server {}
+    use crate::Result;
+    use std::net::SocketAddr;
+    use tendermint::abci::{request, response};
+
+    pub trait TcpStream: Sized + Send {
+        fn connect(addr: &str) -> Result<Self>;
+    }
+
+    pub trait TcpListener<T: TcpStream>: Sized {
+        /// Bind this listener to the given address.
+        fn bind(addr: &str) -> Result<Self>;
+
+        /// Returns the string representation of this listener's local address.
+        fn local_addr(&self) -> Result<String>;
+
+        /// Attempt to accept an incoming connection.
+        fn accept(&self) -> Result<(T, SocketAddr)>;
+    }
+
+    pub trait TaskSpawner {
+        /// Spawn a task in a separate thread without caring about its result.
+        fn spawn_and_forget<T>(task: T)
+        where
+            T: FnOnce() + Send + 'static,
+            T::Output: Send;
+    }
+
+    pub trait ServerCodec<S: TcpStream>: Iterator<Item = Result<request::Request>> {
+        fn from_tcp_stream(stream: S) -> Self;
+
+        fn send(&mut self, res: response::Response) -> Result<()>;
+    }
+
+    pub trait ClientCodec<S: TcpStream>: Iterator<Item = Result<response::Response>> {
+        fn from_tcp_stream(stream: S) -> Self;
+
+        fn send(&mut self, req: request::Request) -> Result<()>;
+    }
+
+    /// The sending end of a channel.
+    pub trait Sender<T> {
+        fn send(&self, value: T) -> Result<()>;
+    }
+
+    /// The receiving end of a channel.
+    pub trait Receiver<T> {
+        fn recv(&self) -> Result<T>;
+    }
+
+    /// A simple notification channel.
+    pub trait ChannelNotify {
+        type Sender: Sender<()>;
+        type Receiver: Receiver<()>;
+
+        /// Construct an unbounded channel.
+        fn unbounded() -> (Self::Sender, Self::Receiver);
+    }
 }

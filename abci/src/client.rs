@@ -46,3 +46,36 @@ impl<Rt: Runtime> Client<Rt> {
         Ok(res?)
     }
 }
+
+#[cfg(not(feature = "async"))]
+impl<Rt: Runtime> Client<Rt> {
+    pub fn connect<S: AsRef<str>>(addr: S) -> Result<Self> {
+        let stream = Rt::TcpStream::connect(addr.as_ref())?;
+        Ok(Self {
+            codec: Rt::ClientCodec::from_tcp_stream(stream),
+        })
+    }
+
+    /// Request that the ABCI server echo back the message in the given
+    /// request.
+    pub fn echo(&mut self, req: request::Echo) -> Result<response::Echo> {
+        self.perform(req)
+    }
+
+    /// Provide information to the ABCI server about the Tendermint node in
+    /// exchange for information about the application.
+    pub fn info(&mut self, req: request::Info) -> Result<response::Info> {
+        self.perform(req)
+    }
+
+    fn perform<Req: RequestInner>(&mut self, req: Req) -> Result<Req::Response> {
+        self.codec.send(req.into())?;
+        match self.codec.next() {
+            Some(result) => {
+                let res = result?;
+                Ok(res.try_into()?)
+            }
+            None => Err(Error::ServerStreamTerminated),
+        }
+    }
+}
