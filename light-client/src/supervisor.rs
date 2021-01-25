@@ -568,24 +568,22 @@ mod tests {
         assert_eq!(expected_state, new_state);
     }
 
-    // #[test]
-    // fn test_bisection_no_primary() {
-    //     let chain = LightChain::default_with_length(10);
-    //     let primary = chain
-    //         .light_blocks
-    //         .into_iter()
-    //         .map(|lb| lb.generate().unwrap().into())
-    //         .collect::<Vec<LightBlock>>();
-    //
-    //     let witness = change_provider(primary.clone());
-    //
-    //     let peer_list = make_peer_list(primary.clone(), vec![witness], get_time(11));
-    //
-    //     let result = run_bisection_test(peer_list, 10);
-    //
-    //     let expected_state = primary[9].clone();
-    //     let new_state = result.unwrap();
-    //
-    //     assert_eq!(expected_state, new_state);
-    // }
+    #[test]
+    fn test_bisection_no_primary() {
+        let chain = LightChain::default_with_length(10);
+        let witness = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let peer_list = make_peer_list(None, Some(vec![witness]), get_time(11));
+
+        let result = run_bisection_test(peer_list, 10);
+
+        let expected_err = ErrorKind::NoPrimary;
+        let got_err = result.err().unwrap();
+
+        assert_eq!(&expected_err, got_err.kind());
+    }
 }
