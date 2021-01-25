@@ -437,17 +437,16 @@ mod tests {
         tests::{MockClock, MockEvidenceReporter, MockIo, TrustOptions},
         types::Time,
     };
-    use std::{collections::HashMap, time::Duration};
+    use std::{collections::HashMap, convert::TryFrom, time::Duration};
     use tendermint::block::Height;
-    use tendermint_testgen::LightChain;
+    use tendermint::evidence::Duration as DurationStr;
+    use tendermint::trust_threshold::TrustThresholdFraction;
+    use tendermint_testgen::helpers::get_time;
+    use tendermint_testgen::{Generator, LightChain};
 
     pub struct TestBisection {
-        pub trust_options: TrustOptions,
-        pub primary: LightChain,
-        pub witnesses: Vec<LightChain>,
+        pub peer_list: PeerList<Instance>,
         pub height_to_verify: Height,
-        pub now: Time,
-        pub expected_output: Option<String>,
     }
 
     fn make_instance(
@@ -484,67 +483,83 @@ mod tests {
         Instance::new(light_client, state)
     }
 
-    fn run_multipeer_test(tc: TestBisection) {
-        let primary = tc.primary.lite_blocks[0].provider;
-
-        println!(
-            "Running Test Case: {}\nwith Primary Peer: {:?}",
-            tc.description, primary
-        );
-
-        let expects_err = match &tc.expected_output {
-            Some(eo) => eo.eq("error"),
-            None => false,
-        };
-
-        let io = MockIo::new(tc.primary.chain_id, tc.primary.lite_blocks);
-        let primary_instance = make_instance(primary, tc.trust_options.clone(), io.clone(), tc.now);
-
-        let mut peer_list = PeerList::builder();
-        peer_list.primary(primary, primary_instance);
-
-        for provider in tc.witnesses.into_iter() {
-            let peer_id = provider.value.lite_blocks[0].provider;
-            println!("Witness: {}", peer_id);
-            let io = MockIo::new(provider.value.chain_id, provider.value.lite_blocks);
-            let instance = make_instance(peer_id, tc.trust_options.clone(), io.clone(), tc.now);
-            peer_list.witness(peer_id, instance);
-        }
-
+    fn run_bisection_test(tc: TestBisection) -> Result<LightBlock, Error> {
         let supervisor = Supervisor::new(
-            peer_list.build(),
+            tc.peer_list,
             ProdForkDetector::default(),
             MockEvidenceReporter::new(),
         );
-
-        // TODO: Add method to `Handle` to get a copy of the current peer list
 
         let handle = supervisor.handle();
         std::thread::spawn(|| supervisor.run());
 
         let target_height = tc.height_to_verify;
 
-        match handle.verify_to_target(target_height) {
-            Ok(new_state) => {
-                // Check that the expected state and new_state match
-                let untrusted_light_block = io
-                    .fetch_light_block(AtHeight::At(target_height))
-                    .expect("header at untrusted height not found");
+        handle.verify_to_target(target_height)
+    }
 
-                let expected_state = untrusted_light_block;
-                assert_eq!(new_state.height(), expected_state.height());
-                assert_eq!(new_state, expected_state);
+    fn make_peer_list(
+        primary: Vec<LightBlock>,
+        witnesses: Vec<Vec<LightBlock>>,
+        trust_options: TrustOptions,
+        now: Time,
+    ) -> PeerList<Instance> {
+        let io = MockIo::new(
+            primary[0].signed_header.header.chain_id.to_string(),
+            primary.clone(),
+        );
+        let primary_instance = make_instance(primary[0].provider, trust_options.clone(), io, now);
 
-                // Check the verdict
-                assert!(!expects_err);
-            }
-            Err(e) => {
-                dbg!(e);
-                assert!(expects_err);
-            }
+        let mut peer_list = PeerList::builder();
+        peer_list.primary(primary[0].provider, primary_instance);
+
+        for provider in witnesses.into_iter() {
+            let peer_id = provider[0].provider;
+            let io = MockIo::new(
+                provider[0].signed_header.header.chain_id.to_string(),
+                provider,
+            );
+            let instance = make_instance(
+                peer_id,
+                trust_options.clone(),
+                io.clone(),
+                tendermint::Time::now(),
+            );
+            peer_list.witness(peer_id, instance);
+        }
+        peer_list.build()
+    }
+
+    #[test]
+    fn test_bisection_happy_path() {
+        let chain = LightChain::default_with_length(10);
+        let mut blocks = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let primary = blocks.clone();
+        let mut witness: Vec<LightBlock> = Vec::new();
+        for lb in blocks.iter_mut() {
+            lb.provider = "0BEFEEDC0C0ADEADBEBADFADADEFC0FFEEFACADE".parse().unwrap();
+            witness.push(lb.clone());
         }
 
-        // TODO: Check the peer list
-        // TODO: Check we recorded a fork evidence (or not)
+        let trust_options = TrustOptions {
+            period: DurationStr(Duration::new(604800, 0)),
+            height: Height::try_from(1_u64).expect("Error while making height"),
+            trust_level: TrustThresholdFraction::TWO_THIRDS,
+        };
+
+        let peer_list = make_peer_list(primary, vec![witness], trust_options, get_time(11));
+
+        let test = TestBisection {
+            peer_list,
+            height_to_verify: Height::try_from(10_u64).expect("Error while making height"),
+        };
+
+        let result = run_bisection_test(test);
+        assert!(result.is_ok());
     }
 }
