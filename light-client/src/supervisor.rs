@@ -425,6 +425,7 @@ impl Handle for SupervisorHandle {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::components::io::IoError;
     use crate::{
         components::{
             io::{AtHeight, Io},
@@ -441,6 +442,8 @@ mod tests {
     use tendermint::block::Height;
     use tendermint::evidence::Duration as DurationStr;
     use tendermint::trust_threshold::TrustThresholdFraction;
+    use tendermint_rpc as rpc;
+    use tendermint_rpc::error::Code;
     use tendermint_testgen::helpers::get_time;
     use tendermint_testgen::{Generator, LightChain};
 
@@ -582,6 +585,32 @@ mod tests {
         let result = run_bisection_test(peer_list, 10);
 
         let expected_err = ErrorKind::NoWitnesses;
+        let got_err = result.err().unwrap();
+
+        assert_eq!(&expected_err, got_err.kind());
+    }
+
+    #[test]
+    fn test_bisection_io_error() {
+        let chain = LightChain::default_with_length(10);
+        let primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let mut light_blocks = primary.clone();
+        light_blocks.truncate(9);
+        let witness = change_provider(light_blocks);
+
+        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11));
+
+        let result = run_bisection_test(peer_list, 10);
+
+        let expected_err = ErrorKind::Io(IoError::RpcError(rpc::Error::new(
+            Code::InvalidRequest,
+            None,
+        )));
         let got_err = result.err().unwrap();
 
         assert_eq!(&expected_err, got_err.kind());
