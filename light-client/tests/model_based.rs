@@ -593,8 +593,8 @@ fn single_step_test(
 
 fn fuzz_single_step_test(
     tc: SingleStepTestCase,
-    _env: &TestEnv,
-    _root_env: &TestEnv,
+    env: &TestEnv,
+    root_env: &TestEnv,
     output_env: &TestEnv,
 ) {
     output_env.clear_log();
@@ -604,7 +604,7 @@ fn fuzz_single_step_test(
             &tc.description
         ));
 
-        single_step_test(tc, _env, _root_env, output_env);
+        single_step_test(tc, env, root_env, output_env);
         Some(())
     };
     run_test(tc.clone());
@@ -665,6 +665,7 @@ fn model_based_test(
     if !check_program("tendermint-testgen")
         || !check_program("apalache-mc")
         || !check_program("jsonatr")
+        || !check_program("timeout")
     {
         output_env.logln("    failed to find necessary programs; consider adding them to your PATH. skipping the test");
         return;
