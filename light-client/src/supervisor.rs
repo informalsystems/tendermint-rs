@@ -567,4 +567,23 @@ mod tests {
 
         assert_eq!(expected_state, new_state);
     }
+
+    #[test]
+    fn test_bisection_no_witnesses() {
+        let chain = LightChain::default_with_length(10);
+        let primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let peer_list = make_peer_list(Some(primary), None, get_time(11));
+
+        let result = run_bisection_test(peer_list, 10);
+
+        let expected_err = ErrorKind::NoWitnesses;
+        let got_err = result.err().unwrap();
+
+        assert_eq!(&expected_err, got_err.kind());
+    }
 }
