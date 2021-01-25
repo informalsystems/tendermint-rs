@@ -445,7 +445,9 @@ mod tests {
     use tendermint_rpc as rpc;
     use tendermint_rpc::error::Code;
     use tendermint_testgen::helpers::get_time;
-    use tendermint_testgen::{Generator, LightChain};
+    use tendermint_testgen::{
+        Commit, Generator, Header, LightBlock as TestgenLightBlock, LightChain, ValidatorSet,
+    };
 
     fn make_instance(
         peer_id: PeerId,
@@ -550,6 +552,36 @@ mod tests {
         light_blocks
     }
 
+    fn make_conflicting_witness(
+        length: u64,
+        val_ids: Option<Vec<&str>>,
+        chain_id: Option<&str>,
+        provider: Option<&str>,
+    ) -> Vec<LightBlock> {
+        let vals = match val_ids {
+            Some(val_ids) => ValidatorSet::new(val_ids).validators.unwrap(),
+            None => ValidatorSet::new(vec!["1"]).validators.unwrap(),
+        };
+
+        let chain = chain_id.unwrap_or("other-chain");
+
+        let peer_id = provider.unwrap_or("0BEFEEDC0C0ADEADBEBADFADADEFC0FFEEFACADE");
+
+        let header = Header::new(&vals).height(1).chain_id(chain).time(1);
+        let commit = Commit::new(header.clone(), 1);
+        let mut lb = TestgenLightBlock::new(header, commit).provider(peer_id);
+
+        let mut witness: Vec<LightBlock> = vec![lb.generate().unwrap().into()];
+
+        for _ in 1..length {
+            lb = lb.next();
+            let tm_lb = lb.generate().unwrap().into();
+            witness.push(tm_lb);
+        }
+
+        witness
+    }
+
     #[test]
     fn test_bisection_happy_path() {
         let chain = LightChain::default_with_length(10);
@@ -611,6 +643,27 @@ mod tests {
             Code::InvalidRequest,
             None,
         )));
+        let got_err = result.err().unwrap();
+
+        assert_eq!(&expected_err, got_err.kind());
+    }
+
+    #[test]
+    fn test_bisection_no_witness_left() {
+        let chain = LightChain::default_with_length(5);
+        let primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let witness = make_conflicting_witness(5, None, None, None);
+
+        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11));
+
+        let result = run_bisection_test(peer_list, 10);
+
+        let expected_err = ErrorKind::NoWitnessLeft;
         let got_err = result.err().unwrap();
 
         assert_eq!(&expected_err, got_err.kind());
