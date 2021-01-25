@@ -1,0 +1,22 @@
+# tendermint-abci makefile
+#
+# For use with https://github.com/sagiegurari/cargo-make
+
+[tasks.test-std]
+command = "cargo"
+args = ["test", "--features", "client,runtime-std,echo-app"]
+
+[tasks.test-async-std]
+command = "cargo"
+args = ["test", "--features", "async,client,runtime-async-std,echo-app"]
+
+[tasks.test-tokio]
+command = "cargo"
+args = ["test", "--features", "async,client,runtime-tokio,echo-app"]
+
+[tasks.test]
+dependencies = [
+    "test-std",
+    "test-async-std",
+    "test-tokio"
+]
