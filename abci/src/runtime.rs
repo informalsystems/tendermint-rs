@@ -7,6 +7,8 @@ pub mod std;
 #[cfg(all(feature = "async", feature = "runtime-tokio"))]
 pub mod tokio;
 
+// The runtime interface included here depends on whether the `async` feature
+// flag is enabled or not.
 pub use crate::runtime::interface::{
     ChannelNotify, ClientCodec, Receiver, Sender, ServerCodec, TaskSpawner, TcpListener, TcpStream,
 };
