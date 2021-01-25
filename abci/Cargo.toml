@@ -3,8 +3,10 @@ name = "tendermint-abci"
 version = "0.17.1"
 authors = ["Thane Thomson <thane@informal.systems>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = """
+    tendermint-abci provides a framework for building Tendermint applications
+    in Rust.
+    """
 
 [features]
 async = [ "async-trait", "futures", "pin-project" ]
