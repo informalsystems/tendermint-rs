@@ -16,6 +16,14 @@ pub struct Server<App, Rt: Runtime> {
     term_rx: <Rt::ChannelNotify as ChannelNotify>::Receiver,
 }
 
+// Code common to both the async and non-async runtimes.
+impl<App, Rt: Runtime> Server<App, Rt> {
+    /// Get the local address for the server, once bound.
+    pub fn local_addr(&self) -> String {
+        self.local_addr.clone()
+    }
+}
+
 #[cfg(feature = "async")]
 impl<App, Rt> Server<App, Rt>
 where
@@ -42,11 +50,6 @@ where
             },
             term_tx,
         ))
-    }
-
-    /// Get the local address for the server, once bound.
-    pub fn local_addr(&self) -> String {
-        self.local_addr.clone()
     }
 
     /// Start listening for incoming connections.
@@ -121,11 +124,6 @@ where
             listener,
             local_addr,
         })
-    }
-
-    /// Get the local address for the server, once bound.
-    pub fn local_addr(&self) -> String {
-        self.local_addr.clone()
     }
 
     /// Start listening for incoming connections.
