@@ -59,7 +59,7 @@ pub struct LightClient {
     verifier: Box<dyn Verifier>,
     io: Box<dyn Io>,
 
-    // Only used in verify_backwards when "backward-verif" feature is enabled
+    // Only used in verify_backwards when "unstable" feature is enabled
     #[allow(dead_code)]
     hasher: Box<dyn Hasher>,
 }
@@ -271,9 +271,9 @@ impl LightClient {
         }
     }
 
-    /// Stub for when "backward-verif" feature is disabled.
+    /// Stub for when "unstable" feature is disabled.
     #[doc(hidden)]
-    #[cfg(not(feature = "backward-verif"))]
+    #[cfg(not(feature = "unstable"))]
     fn verify_backward(
         &self,
         target_height: Height,
@@ -292,7 +292,7 @@ impl LightClient {
     }
 
     /// Perform sequential backward verification.
-    #[cfg(feature = "backward-verif")]
+    #[cfg(feature = "unstable")]
     fn verify_backward(
         &self,
         target_height: Height,

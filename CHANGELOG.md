@@ -2,10 +2,8 @@
 
 ## FEATURES
 
-* `[light-client]` Add basic support for backward verification,
-  behind a `backward-verif` feature flag. ([#361])
-  Note: This feature is currently unstable and should not be relied on
-        by downstream dependencies.
+* `[light-client]` Add basic support for backward verification, behind a `unstable` feature flag. ([#361])
+  Note: This feature is currently unstable and should not be relied on by downstream dependencies.
 
 ## IMPROVEMENTS:
 

@@ -33,8 +33,7 @@ default = ["rpc-client", "lightstore-sled"]
 rpc-client = ["tokio", "tendermint-rpc/http-client"]
 secp256k1 = ["tendermint/secp256k1", "tendermint-rpc/secp256k1"]
 lightstore-sled = ["sled"]
-backward-verif = []
-unstable = ["backward-verif"]
+unstable = []
 
 [dependencies]
 tendermint = { version = "0.17.1", path = "../tendermint" }

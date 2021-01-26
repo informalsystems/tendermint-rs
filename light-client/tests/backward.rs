@@ -1,4 +1,4 @@
-#![cfg(feature = "backward-verif")]
+#![cfg(feature = "unstable")]
 
 use std::{collections::HashMap, time::Duration};
 
