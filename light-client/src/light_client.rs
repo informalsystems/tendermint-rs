@@ -292,6 +292,23 @@ impl LightClient {
     }
 
     /// Perform sequential backward verification.
+    ///
+    /// Backward verification is implemented by taking a sliding window
+    /// of length two between the trusted state and the target block and
+    /// checking whether the last_block_id hash of the higher block
+    /// matches the computed hash of the lower block.
+    ///
+    /// ## Performance
+    /// The algorithm implemented is very inefficient in case the target
+    /// block is much lower than the highest trusted state.
+    /// For a trusted state at height `T`, and a target block at height `H`,
+    /// it will fetch and check hashes of `T - H` blocks.
+    ///
+    /// ## Stability
+    /// This feature is only available if the `unstable` flag of is enabled.
+    /// If the flag is disabled, then any attempt to verify a block whose
+    /// height is lower than the highest trusted state will result in a
+    /// `TargetLowerThanTrustedState` error.
     #[cfg(feature = "unstable")]
     fn verify_backward(
         &self,
