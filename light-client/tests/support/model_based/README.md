@@ -1,7 +1,7 @@
 ## Light Client model-based testing guide
 
 In this directory you will find the model-based tests for the light client. 
-They are "model-based" because they are based on the formal `TLA+` model of the Light Client: see [Lightclient.tla](Lightclient_002_draft.tla).
+They are "model-based" because they are based on the formal `TLA+` model of the Light Client: see [Lightclient.tla](Lightclient_003_draft.tla).
 The tests themselves are simple `TLA+` assertions, that describe the desired shape of the Light Client execution; 
 see [LightTests.tla](LightTests.tla) for some examples. 
 To be able to specify test assertions we have extended the Light Client model with `history` variable, 
@@ -21,27 +21,42 @@ When you run `cargo test` some machinery will run under the hood, namely:
     performs the translation by executing this [transformation spec](_jsonatr-lib/apalache_to_lite_test.json);
   * [Tendermint Testgen](https://github.com/informalsystems/tendermint-rs/tree/master/testgen)
   takes care of translating abstract values from the model into the concrete implementation values.
-* `timeout` command is used to limit the test execution time; it should be present by default on all Linux distributions, but may be absent on Macs. In that case it can be installed using `brew install coreutils`. 
-  
-So, for the model-based test to run, the programs `apalache-mc`, `jsonatr`, 
-`tendermint-testgen`, and `timeout`
-should be present in your `PATH`. The easiest way to run Apalache is by 
-[using a Docker image](https://github.com/informalsystems/apalache/blob/unstable/docs/manual.md#useDocker); 
-to run `jsonatr` and `tendermint-testgen` you need to locally clone the repositories, and then, 
-after building them, just add their `target/debug` directories into your `PATH`. 
+* `timeout` command is used to limit the test execution time.
+
+So, for the model-based test to run, the programs `apalache-mc`, `jsonatr`,
+and `timeout` should be present in your `PATH`. 
 If any of the programs is not found, execution of a model-based test will be skipped.
 
-Please note that the above programs should be present as executables; e.g. having a Bash `alias` won't be enough. For example, to wrap Apalache docker image into an executable you might create the following executable bash script `apalache-mc`:
+#### Installing Apalache
+
+First, download the latest Apalache's release from [here](https://github.com/informalsystems/apalache/releases).
+Then, unpack it, find the `apalache-pkg-X.Y.Z-full.jar` file, and create an executable bash script named `apalache-mc` with the following content:
 
 ```bash
 #!/bin/bash
-docker run --rm -v $(pwd):/var/apalache apalache/mc $@
-```    
+java -jar apalache-pkg-X.Y.Z-full.jar $@
+```
+
+Please check [Apalache's installation instructions](https://apalache.informal.systems/docs/apalache/installation/index.html) for more details and alternative ways of running Apalache.
+Note that having an `apalache-mc` executable, as shown above, is required. Having a Bash `alias`, as recommended [here](https://apalache.informal.systems/docs/apalache/installation/docker.html#setting-an-alias), won't be enough.
+
+#### Installing `jsonatr`
+
+```bash
+$ git clone https://github.com/informalsystems/jsonatr
+$ cd jsonatr/
+$ cargo install --path .
+```
+
+#### Installing `timeout`
+`timeout` should be present by default on all Linux distributions, but may be absent on Macs. In that case it can be installed using `brew install coreutils`. 
+
+### Running model-based tests
 
 To run your model-based tests, use this command:
  
  ```bash
- $ cargo test -p tendermint-light-client --test model_based -- --nocapture
+$ cargo test -p tendermint-light-client --test model_based -- --nocapture
  ```
 
 The results will be printed to the screen, 
