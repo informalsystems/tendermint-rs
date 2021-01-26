@@ -426,6 +426,7 @@ impl Handle for SupervisorHandle {
 mod tests {
     use super::*;
     use crate::components::io::IoError;
+    use crate::light_client::Options;
     use crate::{
         components::{
             io::{AtHeight, Io},
@@ -433,7 +434,6 @@ mod tests {
             verifier::ProdVerifier,
         },
         fork_detector::ProdForkDetector,
-        light_client,
         store::{memory::MemoryStore, LightStore},
         tests::{MockClock, MockEvidenceReporter, MockIo, TrustOptions},
         types::Time,
@@ -468,7 +468,7 @@ mod tests {
             verification_trace: HashMap::new(),
         };
 
-        let options = light_client::Options {
+        let options = Options {
             trust_threshold: trust_options.trust_level,
             trusting_period: trust_options.period.into(),
             clock_drift: Duration::from_secs(0),
@@ -749,6 +749,33 @@ mod tests {
         assert_eq!(expected_state, &new_state);
 
         // Check that we successfully disconnected from the "faulty" primary node
+        assert!(latest_status
+            .connected_nodes
+            .iter()
+            .find(|&&peer| peer == primary[0].provider)
+            .is_none());
+    }
+
+    #[test]
+    fn test_bisection_trusted_state_outside_trusting_period() {
+        let chain = LightChain::default_with_length(10);
+        let primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let witness = change_provider(primary.clone(), None);
+
+        let peer_list =
+            make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(604801));
+
+        let (_, latest_status) = run_bisection_test(peer_list, 2);
+
+        // In the case where trusted state of a primary peer is outside the trusting period,
+        // the primary node is marked as faulty and replaced with a witness node (if available)
+        // and continues verification
+
         assert!(latest_status
             .connected_nodes
             .iter()
