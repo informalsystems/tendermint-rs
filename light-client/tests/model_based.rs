@@ -662,10 +662,7 @@ fn model_based_test(
         }
         true
     };
-    if !check_program("apalache-mc")
-        || !check_program("jsonatr")
-        || !check_program("timeout")
-    {
+    if !check_program("apalache-mc") || !check_program("jsonatr") || !check_program("timeout") {
         output_env.logln("    failed to find necessary programs; consider adding them to your PATH. skipping the test");
         return;
     }
