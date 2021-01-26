@@ -533,12 +533,7 @@ mod tests {
                     provider[0].signed_header.header.chain_id.to_string(),
                     provider,
                 );
-                let instance = make_instance(
-                    peer_id,
-                    trust_options.clone(),
-                    io.clone(),
-                    tendermint::Time::now(),
-                );
+                let instance = make_instance(peer_id, trust_options.clone(), io.clone(), now);
                 peer_list.witness(peer_id, instance);
             }
         }
@@ -664,6 +659,41 @@ mod tests {
         let result = run_bisection_test(peer_list, 10);
 
         let expected_err = ErrorKind::NoWitnessLeft;
+        let got_err = result.err().unwrap();
+
+        assert_eq!(&expected_err, got_err.kind());
+    }
+
+    #[test]
+    fn test_bisection_fork_detected() {
+        let mut chain = LightChain::default_with_length(5);
+        let primary = chain
+            .light_blocks
+            .clone()
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let mut header = chain.light_blocks[4].header.clone().unwrap();
+        let mut time = header.time.unwrap();
+        time += 3;
+        header.time = Some(time);
+        chain.light_blocks[4].header = Some(header.clone());
+        chain.light_blocks[4].commit = Some(Commit::new(header, 1));
+
+        let witness = change_provider(
+            chain
+                .light_blocks
+                .into_iter()
+                .map(|lb| lb.generate().unwrap().into())
+                .collect::<Vec<LightBlock>>(),
+        );
+
+        let peer_list = make_peer_list(Some(primary), Some(vec![witness.clone()]), get_time(11));
+
+        let result = run_bisection_test(peer_list, 5);
+
+        let expected_err = ErrorKind::ForkDetected(vec![witness[0].provider]);
         let got_err = result.err().unwrap();
 
         assert_eq!(&expected_err, got_err.kind());
