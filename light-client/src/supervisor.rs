@@ -775,6 +775,37 @@ mod tests {
         // In the case where trusted state of a primary peer is outside the trusting period,
         // the primary node is marked as faulty and replaced with a witness node (if available)
         // and continues verification
+        // Check if the node was removed from the list
+
+        assert!(latest_status
+            .connected_nodes
+            .iter()
+            .find(|&&peer| peer == primary[0].provider)
+            .is_none());
+    }
+
+    #[test]
+    fn test_bisection_invalid_light_block() {
+        let chain = LightChain::default_with_length(10);
+        let mut primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        primary[9].signed_header.commit.round = primary[9].signed_header.commit.round.increment();
+
+        let witness = change_provider(primary.clone(), None);
+
+        let peer_list = make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(11));
+
+        let (_, latest_status) = run_bisection_test(peer_list, 10);
+
+        // In the case where a primary peer provides an invalid light block
+        // i.e. verification for the light block failed,
+        // the primary node is marked as faulty and replaced with a witness node (if available)
+        // and continues verification
+        // Check if the node was removed from the list
 
         assert!(latest_status
             .connected_nodes
