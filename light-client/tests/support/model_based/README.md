@@ -28,14 +28,17 @@ So, for the model-based test to run, the programs `apalache-mc`, `jsonatr`,
 If any of the programs is not found, execution of a model-based test will be skipped.
 
 #### Installing Apalache
-The easiest way to run Apalache is by 
-[using a Docker image](https://apalache.informal.systems/docs/apalache/installation/docker.html).
-Please note that having a Bash `alias`, as recommended [here](https://apalache.informal.systems/docs/apalache/installation/docker.html#setting-an-alias), won't be enough. To wrap Apalache docker image into an executable you might create the following executable bash script `apalache-mc`:
+
+First, download the latest Apalache's release from [here](https://github.com/informalsystems/apalache/releases).
+Then, unpack it, find the `apalache-pkg-X.Y.Z-full.jar` file, and create an executable bash script named `apalache-mc` with the following content:
 
 ```bash
 #!/bin/bash
-docker run --rm -v $(pwd):/var/apalache apalache/mc $@
+java -jar apalache-pkg-X.Y.Z-full.jar $@
 ```
+
+Please check [Apalache's installation instructions](https://apalache.informal.systems/docs/apalache/installation/index.html) for more details and alternative ways of running Apalache.
+Note that having an `apalache-mc` executable, as shown above, is required. Thus, having a Bash `alias`, as recommended [here](https://apalache.informal.systems/docs/apalache/installation/docker.html#setting-an-alias), won't be enough.
 
 #### Installing `jsonatr`
 
