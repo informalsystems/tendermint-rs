@@ -1,17 +1,16 @@
 //! Error types
 
 use anomaly::{BoxError, Context};
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::account;
 use crate::vote;
 
 /// Error type
-pub type Error = anomaly::Error<Kind>;
+pub type Error = BoxError;
 
 /// Kinds of errors
-#[derive(Clone, Eq, PartialEq, Debug, Error, Serialize, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Debug, Error)]
 pub enum Kind {
     /// Cryptographic operation failed
     #[error("cryptographic error")]
@@ -197,22 +196,6 @@ pub enum Kind {
     /// Proposer not found in validator set
     #[error("proposer with address '{}' not found in validator set", _0)]
     ProposerNotFound(account::Id),
-
-    /// Invalid TOML
-    #[error("invalid TOML")]
-    InvalidToml,
-
-    /// Invalid JSON
-    #[error("invalid JSON")]
-    InvalidJson,
-
-    /// Invalid date
-    #[error("invalid date")]
-    InvalidDate,
-
-    /// Invalid hex-encoded string
-    #[error("invalid hex-encoded string")]
-    InvalidHex,
 }
 
 impl Kind {

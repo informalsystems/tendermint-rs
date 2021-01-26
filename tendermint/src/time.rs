@@ -5,7 +5,7 @@ use crate::error::{Error, Kind};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use std::convert::TryFrom;
+use std::convert::{Infallible, TryFrom};
 use std::fmt;
 use std::ops::{Add, Sub};
 use std::str::FromStr;
@@ -23,7 +23,7 @@ pub struct Time(DateTime<Utc>);
 impl Protobuf<Timestamp> for Time {}
 
 impl TryFrom<Timestamp> for Time {
-    type Error = Error;
+    type Error = Infallible;
 
     fn try_from(value: Timestamp) -> Result<Self, Self::Error> {
         // prost_types::Timestamp has a SystemTime converter but
@@ -71,11 +71,7 @@ impl Time {
 
     /// Parse [`Time`] from an RFC 3339 date
     pub fn parse_from_rfc3339(s: &str) -> Result<Time, Error> {
-        Ok(Time(
-            DateTime::parse_from_rfc3339(s)
-                .map_err(|e| Kind::InvalidDate.context(e))?
-                .with_timezone(&Utc),
-        ))
+        Ok(Time(DateTime::parse_from_rfc3339(s)?.with_timezone(&Utc)))
     }
 
     /// Return an RFC 3339 and ISO 8601 date and time string with 6 subseconds digits and Z.

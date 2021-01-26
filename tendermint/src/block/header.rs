@@ -212,7 +212,7 @@ pub struct Version {
 impl Protobuf<RawConsensusVersion> for Version {}
 
 impl TryFrom<RawConsensusVersion> for Version {
-    type Error = Error;
+    type Error = anomaly::BoxError;
 
     fn try_from(value: RawConsensusVersion) -> Result<Self, Self::Error> {
         Ok(Version {
