@@ -53,7 +53,7 @@ thiserror = "1.0.15"
 tokio = { version = "1.0", features = ["rt"], optional = true }
 
 [dev-dependencies]
-tendermint-testgen = { path = "../testgen"}
+tendermint-testgen = { path = "../testgen" }
 
 serde_json = "1.0.51"
 gumdrop = "0.8.0"

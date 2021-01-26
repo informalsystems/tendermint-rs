@@ -78,6 +78,8 @@ These tests come in two flavours:
 
 The following command can be used to run only these tests:
 
+TODO: the following runs 0 tests
+
 ```bash
 $ cargo test -p tendermint-light-client --test light_client single_step
 ```
@@ -89,15 +91,16 @@ to the core verification. In MBT, the testing procedure is based on the
 [Light Client formal model](./tests/support/model_based/Lightclient_002_draft.tla),
 and the tests themselves are simple assertions in the modeling language TLA+.
 The current set of [TLA+ tests](./tests/support/model_based/LightTests.tla) is translated
- automatically into the set of [JSON fixtures](./tests/support/model_based/single_step).
- Please refer to the [MBT Guide](./tests/support/model_based/README.md),
- and the [MBT Abstract](./tests/support/model_based/Abstract.md) for further information.
+automatically into the set of [JSON fixtures](./tests/support/model_based/single_step).
 
 The following command can be used to run only these tests:
 
 ```bash
-$ cargo test -p tendermint-light-client --test model_based
+$ cargo test -p tendermint-light-client --test model_based -- --nocapture
 ```
+
+Please refer to the [MBT Guide](./tests/support/model_based/README.md),
+and the [MBT Abstract](./tests/support/model_based/Abstract.md) for further information.
 
 ### Bisection
 
