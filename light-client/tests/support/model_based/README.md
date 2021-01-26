@@ -38,12 +38,12 @@ java -jar apalache-pkg-X.Y.Z-full.jar $@
 ```
 
 Please check [Apalache's installation instructions](https://apalache.informal.systems/docs/apalache/installation/index.html) for more details and alternative ways of running Apalache.
-Note that having an `apalache-mc` executable, as shown above, is required. Thus, having a Bash `alias`, as recommended [here](https://apalache.informal.systems/docs/apalache/installation/docker.html#setting-an-alias), won't be enough.
+Note that having an `apalache-mc` executable, as shown above, is required. Having a Bash `alias`, as recommended [here](https://apalache.informal.systems/docs/apalache/installation/docker.html#setting-an-alias), won't be enough.
 
 #### Installing `jsonatr`
 
 ```bash
-$ git clone https://github.com/informalsystems/jsonart
+$ git clone https://github.com/informalsystems/jsonatr
 $ cd jsonatr/
 $ cargo install --path .
 ```
