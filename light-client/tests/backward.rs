@@ -2,7 +2,7 @@
 
 use std::{collections::HashMap, time::Duration};
 
-use tendermint::{hash::Algorithm, Hash, Time};
+use tendermint::{hash::Algorithm, Hash};
 
 use tendermint_light_client::{
     components::{
