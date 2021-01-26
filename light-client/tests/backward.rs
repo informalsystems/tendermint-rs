@@ -47,7 +47,10 @@ fn make(chain: LightChain, trusted_height: Height) -> (LightClient, State) {
     let primary = default_peer_id();
     let chain_id = "testchain-1".parse().unwrap();
 
-    let clock = MockClock { now: Time::now() };
+    let clock = MockClock {
+        /// Set the current time to be ahead of the latest block in the chain
+        now: tendermint_testgen::helpers::get_time(chain.light_blocks.len() as u64 + 1),
+    };
 
     let options = Options {
         trust_threshold: Default::default(),
@@ -101,7 +104,6 @@ fn ok_test(tc: TestCase) -> Result<(), TestCaseError> {
     let target_height = tc.target_height;
     let result = verify(tc);
 
-    prop_assert!(result.is_ok());
     prop_assert_eq!(result.unwrap().height(), target_height);
 
     Ok(())
