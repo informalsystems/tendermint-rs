@@ -300,18 +300,26 @@ impl LightClient {
     ) -> Result<LightBlock, Error> {
         use std::convert::TryFrom;
 
-        let trusted_state = state
+        let root = state
             .light_store
             .highest_trusted_or_verified()
             .ok_or(ErrorKind::NoInitialTrustedState)?;
 
-        assert!(trusted_state.height() >= target_height);
+        assert!(root.height() >= target_height);
+
+        // Check invariant [LCV-INV-TP.1]
+        if !is_within_trust_period(&root, self.options.trusting_period, self.clock.now()) {
+            bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
+                trusted_state: Box::new(root),
+                options: self.options,
+            });
+        }
 
         // Compute a range of `Height`s from `trusted_height - 1` to `target_height`, inclusive.
-        let range = (target_height.value()..trusted_state.height().value()).rev();
+        let range = (target_height.value()..root.height().value()).rev();
         let heights = range.map(|h| Height::try_from(h).unwrap());
 
-        let mut latest = trusted_state;
+        let mut latest = root;
 
         for height in heights {
             let (current, _status) = self.get_or_fetch_block(height, state)?;
