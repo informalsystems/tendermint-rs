@@ -23,8 +23,8 @@ When you run `cargo test` some machinery will run under the hood, namely:
   takes care of translating abstract values from the model into the concrete implementation values.
 * `timeout` command is used to limit the test execution time.
 
-So, for the model-based test to run, the programs `apalache-mc`, `jsonatr`, 
-`tendermint-testgen`, and `timeout` should be present in your `PATH`. 
+So, for the model-based test to run, the programs `apalache-mc`, `jsonatr`,
+and `timeout` should be present in your `PATH`. 
 If any of the programs is not found, execution of a model-based test will be skipped.
 
 #### Installing Apalache
@@ -46,12 +46,6 @@ Note that having an `apalache-mc` executable, as shown above, is required. Havin
 $ git clone https://github.com/informalsystems/jsonatr
 $ cd jsonatr/
 $ cargo install --path .
-```
-
-#### Installing `tendermint-testgen`
-
-```bash
-$ cargo install tendermint-testgen
 ```
 
 #### Installing `timeout`

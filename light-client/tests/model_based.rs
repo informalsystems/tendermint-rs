@@ -662,8 +662,7 @@ fn model_based_test(
         }
         true
     };
-    if !check_program("tendermint-testgen")
-        || !check_program("apalache-mc")
+    if !check_program("apalache-mc")
         || !check_program("jsonatr")
         || !check_program("timeout")
     {
