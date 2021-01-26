@@ -80,6 +80,7 @@ impl LightBlock {
         &[Validator],
         Some(next_validators.to_vec())
     );
+    set_option!(provider, &str, Some(provider.parse().unwrap()));
 
     pub fn new_default(height: u64) -> Self {
         let validators = [
@@ -198,7 +199,10 @@ impl Generator<TMLightBlock> for LightBlock {
             None => validators.clone(),
         };
 
-        let provider = default_peer_id();
+        let provider = match self.provider {
+            Some(peer) => peer,
+            None => default_peer_id(),
+        };
 
         let light_block = TMLightBlock {
             signed_header,
