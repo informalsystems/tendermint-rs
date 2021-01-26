@@ -818,4 +818,28 @@ mod tests {
             .find(|&&peer| peer == primary[0].provider)
             .is_none());
     }
+
+    #[test]
+    fn test_bisection_target_lower_than_trusted() {
+        let chain = LightChain::default_with_length(10);
+        let primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let witness = change_provider(primary.clone(), None);
+
+        let mut peer_list =
+            make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(11));
+
+        peer_list
+            .get_mut(&primary[0].provider)
+            .expect("could not find instance")
+            .trust_block(&primary[9]);
+
+        let (result, _) = run_bisection_test(peer_list, 2);
+
+        assert!(result.err().unwrap().kind().is_target_lower_than_trusted());
+    }
 }
