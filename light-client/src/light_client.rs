@@ -303,14 +303,13 @@ impl LightClient {
         let trusted_state = state
             .light_store
             .highest_trusted_or_verified()
-            // .lowest_trusted_or_verified() // does not work yet as it might be lower than target_height
             .ok_or(ErrorKind::NoInitialTrustedState)?;
 
         assert!(trusted_state.height() >= target_height);
 
-        let heights = (target_height.value()..trusted_state.height().value())
-            .rev()
-            .map(|h| Height::try_from(h).unwrap());
+        // Compute a range of `Height`s from `trusted_height - 1` to `target_height`, inclusive.
+        let range = (target_height.value()..trusted_state.height().value()).rev();
+        let heights = range.map(|h| Height::try_from(h).unwrap());
 
         let mut latest = trusted_state;
 
@@ -332,6 +331,10 @@ impl LightClient {
                 });
             }
 
+            // `latest` and `current` are linked together by `last_block_id`,
+            // therefore it is not relevant which we verified first.
+            // For consistency, we say that `latest` was verifed using
+            // `current` so that the trace is always pointing down the chain.
             state.light_store.insert(current.clone(), Status::Trusted);
             state.light_store.insert(latest.clone(), Status::Trusted);
             state.trace_block(latest.height(), current.height());
@@ -339,6 +342,7 @@ impl LightClient {
             latest = current;
         }
 
+        // We reached the target height.
         assert_eq!(latest.height(), target_height);
 
         Ok(latest)
