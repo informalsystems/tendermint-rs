@@ -7,6 +7,7 @@ pub use signature::{Signer, Verifier};
 pub use k256::ecdsa::Signature as Secp256k1;
 
 use crate::{Error, Kind};
+use quickcheck::{Arbitrary, Gen};
 use std::convert::TryFrom;
 use tendermint_proto::Protobuf;
 
@@ -48,6 +49,21 @@ impl From<Signature> for Vec<u8> {
 impl Default for Signature {
     fn default() -> Self {
         Signature::None
+    }
+}
+
+impl Arbitrary for Signature {
+    fn arbitrary(g: &mut Gen) -> Self {
+        let mut v = [0; ED25519_SIGNATURE_SIZE];
+        for i in 0..ED25519_SIGNATURE_SIZE {
+            v[i] = Arbitrary::arbitrary(g);
+        }
+        g.choose(&[
+            Signature::Ed25519(Ed25519Signature::new(v)),
+            Signature::None,
+        ])
+        .unwrap()
+        .to_owned()
     }
 }
 

@@ -5,7 +5,8 @@ use crate::error::{Error, Kind};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use std::convert::{Infallible, TryFrom};
+use quickcheck::{Arbitrary, Gen};
+use std::convert::{Infallible, TryFrom, TryInto};
 use std::fmt;
 use std::ops::{Add, Sub};
 use std::str::FromStr;
@@ -46,6 +47,16 @@ impl From<Time> for Timestamp {
             seconds: prost_value.seconds,
             nanos: prost_value.nanos,
         }
+    }
+}
+
+impl Arbitrary for Time {
+    fn arbitrary(g: &mut Gen) -> Self {
+        let t = Timestamp {
+            seconds: Arbitrary::arbitrary(g),
+            nanos: Arbitrary::arbitrary(g),
+        };
+        t.try_into().unwrap()
     }
 }
 

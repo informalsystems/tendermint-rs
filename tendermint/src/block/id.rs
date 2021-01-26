@@ -3,6 +3,7 @@ use crate::{
     error::{Error, Kind},
     hash::{Algorithm, Hash},
 };
+use quickcheck::{Arbitrary, Gen};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::{
@@ -119,6 +120,15 @@ impl From<Id> for RawCanonicalBlockId {
         RawCanonicalBlockId {
             hash: value.hash.as_bytes().to_vec(),
             part_set_header: Some(value.part_set_header.into()),
+        }
+    }
+}
+
+impl Arbitrary for Id {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self {
+            hash: Arbitrary::arbitrary(g),
+            part_set_header: Arbitrary::arbitrary(g),
         }
     }
 }

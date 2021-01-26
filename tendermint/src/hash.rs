@@ -1,6 +1,7 @@
 //! Hash functions and their outputs
 
 use crate::error::{Error, Kind};
+use quickcheck::{Arbitrary, Gen};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
@@ -50,6 +51,23 @@ impl From<Hash> for Vec<u8> {
             Hash::Sha256(s) => s.to_vec(),
             Hash::None => vec![],
         }
+    }
+}
+
+impl Arbitrary for Hash {
+    fn arbitrary(g: &mut Gen) -> Self {
+        // Todo: Test and clean up
+        //let mut arbitrary_g = Gen::new(SHA256_HASH_SIZE);
+        //if arbitrary_g.size() != SHA256_HASH_SIZE {
+        //    panic!("Redo the Hash Arbitrary trait generation with gen_range");
+        //}
+        let mut random_hash: [u8; SHA256_HASH_SIZE] = [0; SHA256_HASH_SIZE];
+        for i in 0..SHA256_HASH_SIZE {
+            random_hash[i] = Arbitrary::arbitrary(g);
+        }
+        g.choose(&[Hash::Sha256(random_hash), Hash::None])
+            .unwrap()
+            .to_owned()
     }
 }
 

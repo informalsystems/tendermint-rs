@@ -1,4 +1,5 @@
 use crate::error::{Error, Kind};
+use quickcheck::{Arbitrary, Gen};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryInto;
 use std::{
@@ -51,6 +52,12 @@ impl From<u16> for Round {
 impl From<u8> for Round {
     fn from(value: u8) -> Self {
         Round(value as u32)
+    }
+}
+
+impl Arbitrary for Round {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self(Arbitrary::arbitrary(g))
     }
 }
 

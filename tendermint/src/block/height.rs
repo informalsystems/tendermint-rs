@@ -1,4 +1,5 @@
 use crate::error::{Error, Kind};
+use quickcheck::{Arbitrary, Gen};
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryInto;
 use std::{
@@ -104,6 +105,12 @@ impl FromStr for Height {
             s.parse::<u64>()
                 .map_err(|_| Kind::Parse.context("height decode"))?,
         )
+    }
+}
+
+impl Arbitrary for Height {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self(Arbitrary::arbitrary(g))
     }
 }
 

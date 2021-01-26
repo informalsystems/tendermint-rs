@@ -17,6 +17,7 @@ use subtle_encoding::hex;
 
 #[cfg(feature = "secp256k1")]
 use crate::public_key::Secp256k1;
+use quickcheck::{Arbitrary, Gen};
 #[cfg(feature = "secp256k1")]
 use ripemd160::Ripemd160;
 use std::convert::TryFrom;
@@ -47,6 +48,16 @@ impl TryFrom<Vec<u8>> for Id {
 impl From<Id> for Vec<u8> {
     fn from(value: Id) -> Self {
         value.as_bytes().to_vec()
+    }
+}
+
+impl Arbitrary for Id {
+    fn arbitrary(g: &mut Gen) -> Self {
+        let mut v = [0; LENGTH];
+        for i in 0..LENGTH {
+            v[i] = Arbitrary::arbitrary(g);
+        }
+        Self::new(v)
     }
 }
 

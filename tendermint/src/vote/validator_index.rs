@@ -1,4 +1,5 @@
 use crate::error::{Error, Kind};
+use quickcheck::{Arbitrary, Gen};
 use std::convert::TryInto;
 use std::{
     convert::TryFrom,
@@ -59,6 +60,14 @@ impl From<ValidatorIndex> for usize {
             .value()
             .try_into()
             .expect("Integer overflow: system usize maximum smaller than i32 maximum")
+    }
+}
+
+impl Arbitrary for ValidatorIndex {
+    fn arbitrary(g: &mut Gen) -> Self {
+        let u: u32 = Arbitrary::arbitrary(g);
+        // Todo: this should fail sometimes
+        u.try_into().unwrap()
     }
 }
 

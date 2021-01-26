@@ -4,6 +4,7 @@ use crate::hash::Algorithm;
 use crate::hash::SHA256_HASH_SIZE;
 use crate::Hash;
 use crate::{Error, Kind};
+use quickcheck::{Arbitrary, Gen};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint_proto::types::{
@@ -69,6 +70,15 @@ impl From<Header> for RawCanonicalPartSetHeader {
         RawCanonicalPartSetHeader {
             total: value.total,
             hash: value.hash.into(),
+        }
+    }
+}
+
+impl Arbitrary for Header {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self {
+            total: Arbitrary::arbitrary(g),
+            hash: Arbitrary::arbitrary(g),
         }
     }
 }

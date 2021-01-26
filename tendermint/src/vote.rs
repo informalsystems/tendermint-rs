@@ -24,6 +24,7 @@ use tendermint_proto::types::Vote as RawVote;
 use tendermint_proto::{Error as ProtobufError, Protobuf};
 
 use crate::signature::Signature::Ed25519;
+use quickcheck::{Arbitrary, Gen};
 use std::str::FromStr;
 
 /// Votes are signed messages from validators for a particular block which
@@ -96,6 +97,21 @@ impl From<Vote> for RawVote {
             validator_address: value.validator_address.into(),
             validator_index: value.validator_index.into(),
             signature: value.signature.into(),
+        }
+    }
+}
+
+impl Arbitrary for Vote {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self {
+            vote_type: Arbitrary::arbitrary(g),
+            height: Arbitrary::arbitrary(g),
+            round: Arbitrary::arbitrary(g),
+            block_id: Arbitrary::arbitrary(g),
+            timestamp: Arbitrary::arbitrary(g),
+            validator_address: account::Id::arbitrary(g),
+            validator_index: ValidatorIndex::arbitrary(g),
+            signature: Arbitrary::arbitrary(g),
         }
     }
 }
@@ -261,5 +277,31 @@ impl FromStr for Type {
             "Precommit" => Ok(Self::Precommit),
             _ => Err(InvalidMessageType.into()),
         }
+    }
+}
+
+impl Arbitrary for Type {
+    fn arbitrary(g: &mut Gen) -> Self {
+        g.choose(&[Type::Prevote, Type::Precommit])
+            .unwrap()
+            .to_owned()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Vote;
+    use quickcheck_macros::quickcheck;
+    use serde_json;
+    use tendermint_proto::Protobuf;
+
+    #[quickcheck]
+    fn vote_protobuf_identity(xs: Vote) -> bool {
+        xs == Vote::decode_vec(&xs.encode_vec().unwrap()).unwrap()
+    }
+
+    #[quickcheck]
+    fn vote_json_identity(xs: Vote) -> bool {
+        xs == serde_json::from_str(serde_json::to_string(&xs).unwrap().as_str()).unwrap()
     }
 }
