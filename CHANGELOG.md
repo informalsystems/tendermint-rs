@@ -1,5 +1,10 @@
 ## Unreleased
 
+## FEATURES
+
+* `[light-client]` Add basic support for backward verification, behind a `unstable` feature flag. ([#361])
+  Note: This feature is currently unstable and should not be relied on by downstream dependencies.
+
 ## IMPROVEMENTS:
 
 * `[all]` Update all crates to use the latest version of the following dependencies: ([#764])
@@ -16,9 +21,10 @@
 * `[light-client]` The `sled`-backed lightstore is now feature-guarded under
    the `lightstore-sled` feature, which is enabled by default for now. ([#428])
 
-[#769]: https://github.com/informalsystems/tendermint-rs/issues/769
-[#764]: https://github.com/informalsystems/tendermint-rs/issues/764
+[#361]: https://github.com/informalsystems/tendermint-rs/issues/361
 [#428]: https://github.com/informalsystems/tendermint-rs/issues/428
+[#764]: https://github.com/informalsystems/tendermint-rs/issues/764
+[#769]: https://github.com/informalsystems/tendermint-rs/issues/769
 
 ## v0.17.1
 
