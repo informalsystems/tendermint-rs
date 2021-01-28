@@ -9,9 +9,10 @@ description = """
     """
 
 [features]
-async = [ "async-trait", "futures", "pin-project" ]
+blocking = []
 client = []
 echo-app = []
+non-blocking = [ "async-trait", "futures", "pin-project" ]
 runtime-async-std = [ "async-channel", "async-std" ]
 runtime-std = []
 runtime-tokio = [ "tokio", "tokio-util" ]

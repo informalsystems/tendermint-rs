@@ -1,23 +1,12 @@
 //! ABCI framework for building applications with Tendermint.
 
 mod application;
-#[cfg(any(
-    feature = "client",
-    feature = "runtime-tokio",
-    feature = "runtime-async-std",
-    feature = "runtime-std",
-))]
-mod codec;
+#[cfg(feature = "client")]
+pub mod client;
+pub mod codec;
 mod result;
 pub mod runtime;
-mod server;
-
-// Client exports
-#[cfg(feature = "client")]
-mod client;
-
-#[cfg(feature = "client")]
-pub use client::Client;
+pub mod server;
 
 // Example applications
 #[cfg(feature = "echo-app")]
@@ -26,19 +15,23 @@ pub use application::echo::EchoApp;
 // Common exports
 pub use application::Application;
 pub use result::{Error, Result};
-pub use server::Server;
 
-// Runtime-specific exports
-#[cfg(all(feature = "async", feature = "client", feature = "runtime-tokio"))]
-pub type TokioClient = Client<runtime::tokio::Tokio>;
-#[cfg(all(feature = "async", feature = "client", feature = "runtime-async-std"))]
-pub type AsyncStdClient = Client<runtime::async_std::AsyncStd>;
-#[cfg(all(not(feature = "async"), feature = "client", feature = "runtime-std"))]
-pub type StdClient = Client<runtime::std::Std>;
+// Runtime-specific convenience exports
+#[cfg(all(feature = "blocking", feature = "runtime-std"))]
+pub use server::blocking::StdServerBuilder;
+#[cfg(all(feature = "non-blocking", feature = "runtime-async-std"))]
+pub use server::non_blocking::AsyncStdServerBuilder;
+#[cfg(all(feature = "non-blocking", feature = "runtime-tokio"))]
+pub use server::non_blocking::TokioServerBuilder;
 
-#[cfg(all(feature = "async", feature = "runtime-tokio"))]
-pub type TokioServer<A> = Server<A, runtime::tokio::Tokio>;
-#[cfg(all(feature = "async", feature = "runtime-async-std"))]
-pub type AsyncStdServer<A> = Server<A, runtime::async_std::AsyncStd>;
-#[cfg(all(not(feature = "async"), feature = "runtime-std"))]
-pub type StdServer<A> = Server<A, runtime::std::Std>;
+#[cfg(feature = "client")]
+mod client_exports {
+    #[cfg(all(feature = "blocking", feature = "runtime-std"))]
+    pub use super::client::blocking::StdClientBuilder;
+    #[cfg(all(feature = "non-blocking", feature = "runtime-async-std"))]
+    pub use super::client::non_blocking::AsyncStdClientBuilder;
+    #[cfg(all(feature = "non-blocking", feature = "runtime-tokio"))]
+    pub use super::client::non_blocking::TokioClientBuilder;
+}
+#[cfg(feature = "client")]
+pub use client_exports::*;

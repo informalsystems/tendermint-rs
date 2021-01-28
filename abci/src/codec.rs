@@ -1,61 +1,109 @@
 //! ABCI codec.
 
+#[cfg(feature = "blocking")]
+pub mod blocking;
+#[cfg(feature = "non-blocking")]
+pub mod non_blocking;
+
 use crate::{Error, Result};
 use bytes::{Buf, BufMut, BytesMut};
 use tendermint::abci::request::Request;
 use tendermint::abci::response::Response;
 use tendermint_proto::Protobuf;
 
+/// The size of the server's read buffer for incoming messages.
+pub const SERVER_READ_BUF_SIZE: usize = 1024 * 1024;
+
+/// The size of the client's read buffer for incoming messages.
+pub const CLIENT_READ_BUF_SIZE: usize = 1024;
+
 // The maximum number of bytes we expect in a varint. We use this to check if
 // we're encountering a decoding error for a varint.
 const MAX_VARINT_LENGTH: usize = 16;
 
-/// Tendermint Socket Protocol encoder.
-pub struct TspEncoder {}
+/// A stateless encoder of `T` into its wire-level representation.
+pub trait Encoder<T> {
+    fn encode(value: T, dst: &mut BytesMut) -> Result<()>;
+}
 
-impl TspEncoder {
-    /// Encode the given request to its raw wire-level representation and store
-    /// this in the given buffer.
-    pub fn encode_request(request: Request, mut dst: &mut BytesMut) -> Result<()> {
-        encode_length_delimited(|mut b| Ok(request.encode(&mut b)?), &mut dst)
-    }
+/// Encodes [`tendermint::abci::Request`]s into their wire-level
+/// representation as per the Tendermint Socket Protocol.
+pub struct RequestEncoder;
 
-    /// Encode the given response to its raw wire-level representation and
-    /// store this in the given buffer.
-    pub fn encode_response(response: Response, mut dst: &mut BytesMut) -> Result<()> {
-        encode_length_delimited(|mut b| Ok(response.encode(&mut b)?), &mut dst)
+impl Encoder<Request> for RequestEncoder {
+    fn encode(value: Request, mut dst: &mut BytesMut) -> Result<()> {
+        encode_length_delimited(|mut b| Ok(value.encode(&mut b)?), &mut dst)
     }
 }
 
-/// Tendermint Socket Protocol decoder.
-pub struct TspDecoder {
+/// Encodes [`tendermint::abci::Response`]s into their wire-level
+/// representation as per the Tendermint Socket Protocol.
+pub struct ResponseEncoder;
+
+impl Encoder<Response> for ResponseEncoder {
+    fn encode(value: Response, mut dst: &mut BytesMut) -> Result<()> {
+        encode_length_delimited(|mut b| Ok(value.encode(&mut b)?), &mut dst)
+    }
+}
+
+/// A potentially stateful decoder of `T` from its wire-level representation.
+pub trait Decoder<T> {
+    fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<T>>;
+}
+
+/// Decodes [`tendermint::abci::Request`]s from their wire-level
+/// representation as per the Tendermint Socket Protocol.
+pub struct RequestDecoder {
     read_buf: BytesMut,
 }
 
-impl TspDecoder {
+impl RequestDecoder {
     /// Constructor.
     pub fn new() -> Self {
         Self {
             read_buf: BytesMut::new(),
         }
     }
+}
 
-    /// Attempt to decode a request from the given buffer.
-    ///
-    /// Returns `Ok(None)` if we don't yet have enough data to decode a full
-    /// request.
-    pub fn decode_request(&mut self, buf: &mut BytesMut) -> Result<Option<Request>> {
+impl Decoder<Request> for RequestDecoder {
+    fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<Request>> {
         self.read_buf.put(buf);
         decode_length_delimited(&mut self.read_buf, |mut b| Ok(Request::decode(&mut b)?))
     }
+}
 
-    /// Attempt to decode a response from the given buffer.
-    ///
-    /// Returns `Ok(None)` if we don't yet have enough data to decode a full
-    /// response.
-    pub fn decode_response(&mut self, buf: &mut BytesMut) -> Result<Option<Response>> {
+impl Default for RequestDecoder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Decodes [`tendermint::abci::Response`]s from their wire-level
+/// representation as per the Tendermint Socket Protocol.
+pub struct ResponseDecoder {
+    read_buf: BytesMut,
+}
+
+impl ResponseDecoder {
+    /// Constructor.
+    pub fn new() -> Self {
+        Self {
+            read_buf: BytesMut::new(),
+        }
+    }
+}
+
+impl Decoder<Response> for ResponseDecoder {
+    fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<Response>> {
         self.read_buf.put(buf);
         decode_length_delimited(&mut self.read_buf, |mut b| Ok(Response::decode(&mut b)?))
+    }
+}
+
+impl Default for ResponseDecoder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -129,10 +177,10 @@ mod test {
             message: "Hello TSP!".to_owned(),
         });
         let mut buf = BytesMut::new();
-        TspEncoder::encode_request(request.clone(), &mut buf).unwrap();
+        RequestEncoder::encode(request.clone(), &mut buf).unwrap();
 
-        let mut decoder = TspDecoder::new();
-        let decoded_request = decoder.decode_request(&mut buf).unwrap().unwrap();
+        let mut decoder = RequestDecoder::new();
+        let decoded_request = decoder.decode(&mut buf).unwrap().unwrap();
 
         assert_eq!(request, decoded_request);
     }
@@ -149,11 +197,11 @@ mod test {
         let mut buf = BytesMut::new();
         requests
             .iter()
-            .for_each(|request| TspEncoder::encode_request(request.clone(), &mut buf).unwrap());
+            .for_each(|request| RequestEncoder::encode(request.clone(), &mut buf).unwrap());
 
-        let mut decoder = TspDecoder::new();
+        let mut decoder = RequestDecoder::new();
         for request in requests {
-            let decoded = decoder.decode_request(&mut buf).unwrap().unwrap();
+            let decoded = decoder.decode(&mut buf).unwrap().unwrap();
             assert_eq!(decoded, request);
         }
     }
