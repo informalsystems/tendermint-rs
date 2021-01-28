@@ -427,6 +427,7 @@ mod tests {
     use super::*;
     use crate::components::io::IoError;
     use crate::light_client::Options;
+    use crate::operations::ProdHasher;
     use crate::{
         components::{
             io::{AtHeight, Io},
@@ -477,8 +478,10 @@ mod tests {
         let verifier = ProdVerifier::default();
         let clock = MockClock { now };
         let scheduler = scheduler::basic_bisecting_schedule;
+        let hasher = ProdHasher::default();
 
-        let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, io);
+        let light_client =
+            LightClient::new(peer_id, options, clock, scheduler, verifier, hasher, io);
 
         Instance::new(light_client, state)
     }
