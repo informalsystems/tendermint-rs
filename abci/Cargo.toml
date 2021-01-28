@@ -9,6 +9,7 @@ edition = "2018"
 [features]
 client = []
 echo-app = []
+kvstore-app = []
 
 [dependencies]
 bytes = "1.0"

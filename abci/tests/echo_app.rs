@@ -1,7 +1,7 @@
 //! Integration tests for ABCI client/server.
 
 #[cfg(all(feature = "client", feature = "echo-app"))]
-mod integration_tests {
+mod echo_app_integration {
     use tendermint_abci::{ClientBuilder, EchoApp, ServerBuilder};
     use tendermint_proto::abci::RequestEcho;
 

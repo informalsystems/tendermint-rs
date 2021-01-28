@@ -17,3 +17,5 @@ pub use server::{Server, ServerBuilder};
 // Example applications
 #[cfg(feature = "echo-app")]
 pub use application::echo::EchoApp;
+#[cfg(feature = "kvstore-app")]
+pub use application::kvstore::{KeyValueStoreApp, KeyValueStoreDriver};

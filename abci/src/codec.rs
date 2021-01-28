@@ -11,9 +11,9 @@ use std::io::{Read, Write};
 use std::marker::PhantomData;
 use tendermint_proto::abci::{Request, Response};
 
-// The maximum number of bytes we expect in a varint. We use this to check if
-// we're encountering a decoding error for a varint.
-const MAX_VARINT_LENGTH: usize = 16;
+/// The maximum number of bytes we expect in a varint. We use this to check if
+/// we're encountering a decoding error for a varint.
+pub const MAX_VARINT_LENGTH: usize = 16;
 
 /// The server receives incoming requests, and sends outgoing responses.
 pub type ServerCodec<S> = Codec<S, Request, Response>;
@@ -163,11 +163,11 @@ where
 
 // encode_varint and decode_varint will be removed once
 // https://github.com/tendermint/tendermint/issues/5783 lands in Tendermint.
-fn encode_varint<B: BufMut>(val: u64, mut buf: &mut B) {
+pub fn encode_varint<B: BufMut>(val: u64, mut buf: &mut B) {
     prost::encoding::encode_varint(val << 1, &mut buf);
 }
 
-fn decode_varint<B: Buf>(mut buf: &mut B) -> Result<u64> {
+pub fn decode_varint<B: Buf>(mut buf: &mut B) -> Result<u64> {
     let len = prost::encoding::decode_varint(&mut buf)?;
     Ok(len >> 1)
 }
