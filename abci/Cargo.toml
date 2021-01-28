@@ -6,10 +6,16 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "kvstore-rs"
+path = "src/application/kvstore/main.rs"
+required-features = [ "binary", "kvstore-app" ]
+
 [features]
 client = []
 echo-app = []
 kvstore-app = []
+binary = [ "env_logger" ]
 
 [dependencies]
 bytes = "1.0"
@@ -18,3 +24,5 @@ log = "0.4"
 prost = "0.7"
 tendermint-proto = { version = "0.17.1", path = "../proto" }
 thiserror = "1.0"
+
+env_logger = { version = "0.8", optional = true }

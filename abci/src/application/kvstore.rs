@@ -2,7 +2,8 @@
 
 use crate::codec::{encode_varint, MAX_VARINT_LENGTH};
 use crate::{Application, Error, Result};
-use log::debug;
+use bytes::BytesMut;
+use log::{debug, info};
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use tendermint_proto::abci::{
@@ -63,9 +64,10 @@ impl KeyValueStoreApp {
 
 impl Application for KeyValueStoreApp {
     fn info(&self, request: RequestInfo) -> ResponseInfo {
-        debug!("Tendermint version: {}", request.version);
-        debug!("Block version: {}", request.block_version);
-        debug!("P2P version: {}", request.p2p_version);
+        debug!(
+            "Got info request. Tendermint version: {}; Block version: {}; P2P version: {}",
+            request.version, request.block_version, request.p2p_version
+        );
 
         let (result_tx, result_rx) = channel();
         channel_send(&self.cmd_tx, Command::GetInfo { result_tx }).unwrap();
@@ -172,6 +174,7 @@ impl Application for KeyValueStoreApp {
         let (result_tx, result_rx) = channel();
         channel_send(&self.cmd_tx, Command::Commit { result_tx }).unwrap();
         let (height, app_hash) = channel_recv(&result_rx).unwrap();
+        info!("Committed height {}", height);
         ResponseCommit {
             data: app_hash,
             retain_height: height - 1,
@@ -205,20 +208,25 @@ impl KeyValueStoreDriver {
                 .cmd_rx
                 .recv()
                 .map_err(|e| Error::ChannelRecv(e.to_string()))?;
-            debug!("Received driver command: {:?}", cmd);
             match cmd {
                 Command::GetInfo { result_tx } => {
                     channel_send(&result_tx, (self.height, self.app_hash.clone()))?
                 }
-                Command::Get { key, result_tx } => channel_send(
-                    &result_tx,
-                    (self.height, self.store.get(&key).map(Clone::clone)),
-                )?,
+                Command::Get { key, result_tx } => {
+                    debug!("Getting value for \"{}\"", key);
+                    channel_send(
+                        &result_tx,
+                        (self.height, self.store.get(&key).map(Clone::clone)),
+                    )?;
+                }
                 Command::Set {
                     key,
                     value,
                     result_tx,
-                } => channel_send(&result_tx, self.store.insert(key, value))?,
+                } => {
+                    debug!("Setting \"{}\" = \"{}\"", key, value);
+                    channel_send(&result_tx, self.store.insert(key, value))?;
+                }
                 Command::Commit { result_tx } => self.commit(result_tx)?,
             }
         }
@@ -227,7 +235,9 @@ impl KeyValueStoreDriver {
     fn commit(&mut self, result_tx: Sender<(i64, Vec<u8>)>) -> Result<()> {
         // As in the Go-based key/value store, simply encode the number of
         // items as the "app hash"
-        encode_varint(self.store.len() as u64, &mut self.app_hash);
+        let mut app_hash = BytesMut::with_capacity(MAX_VARINT_LENGTH);
+        encode_varint(self.store.len() as u64, &mut app_hash);
+        self.app_hash = app_hash.to_vec();
         self.height += 1;
         channel_send(&result_tx, (self.height, self.app_hash.clone()))
     }

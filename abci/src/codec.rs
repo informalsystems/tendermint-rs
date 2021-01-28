@@ -18,6 +18,7 @@ pub const MAX_VARINT_LENGTH: usize = 16;
 /// The server receives incoming requests, and sends outgoing responses.
 pub type ServerCodec<S> = Codec<S, Request, Response>;
 
+#[cfg(feature = "client")]
 /// The client sends outgoing requests, and receives incoming responses.
 pub type ClientCodec<S> = Codec<S, Response, Request>;
 

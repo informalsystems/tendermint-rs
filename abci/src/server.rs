@@ -29,6 +29,7 @@ impl ServerBuilder {
     {
         let listener = TcpListener::bind(addr)?;
         let local_addr = listener.local_addr()?.to_string();
+        info!("ABCI server running at {}", local_addr);
         Ok(Server {
             app,
             listener,
