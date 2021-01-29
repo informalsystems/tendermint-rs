@@ -1,0 +1,80 @@
+[env]
+TENDERMINT_CONTAINER = "abci-test-tendermint"
+TENDERMINT_IMAGE = "informaldev/tendermint:0.34.0"
+KVSTORE_CONTAINER = "abci-test-kvstore"
+KVSTORE_IMAGE = "informaldev/kvstore-rs:0.18.0"
+CARGO_MAKE_WAIT_MILLISECONDS = 3500
+
+[tasks.default]
+clear = true
+dependencies = [
+    "docker-up",
+    "wait",
+    "run",
+    "docker-down"
+]
+
+[tasks.run]
+command = "cargo"
+args = [ "run", "--", "--verbose" ]
+
+[tasks.docker-down]
+dependencies = [ "docker-stop", "docker-rm" ]
+
+[tasks.docker-up]
+dependencies = [ "kvstore-up", "tendermint-up" ]
+
+[tasks.kvstore-up]
+command = "docker"
+args = [
+    "run",
+    "--name", "${KVSTORE_CONTAINER}",
+    "--rm",
+    "--net=host",
+    "--detach",
+    "${KVSTORE_IMAGE}",
+    "--verbose"
+]
+
+[tasks.tendermint-up]
+command = "docker"
+args = [
+    "run",
+    "--name", "${TENDERMINT_CONTAINER}",
+    "--rm",
+    "--net=host",
+    "--detach",
+    "${TENDERMINT_IMAGE}",
+    "node",
+    "--proxy_app", "tcp://127.0.0.1:26658"
+]
+
+[tasks.kvstore-stop]
+command = "docker"
+args = [ "stop", "-t", "3", "${KVSTORE_CONTAINER}" ]
+ignore_errors = true
+private = true
+
+[tasks.tendermint-stop]
+command = "docker"
+args = [ "stop", "${TENDERMINT_CONTAINER}" ]
+ignore_errors = true
+private = true
+
+[tasks.kvstore-rm]
+command = "docker"
+args = [ "rm", "--force", "${KVSTORE_CONTAINER}" ]
+ignore_errors = true
+private = true
+
+[tasks.tendermint-rm]
+command = "docker"
+args = [ "rm", "--force", "${TENDERMINT_CONTAINER}" ]
+ignore_errors = true
+private = true
+
+[tasks.docker-stop]
+dependencies = [ "tendermint-stop", "kvstore-stop" ]
+
+[tasks.docker-rm]
+dependencies = [ "tendermint-rm", "kvstore-rm" ]
