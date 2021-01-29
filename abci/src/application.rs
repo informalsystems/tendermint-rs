@@ -102,6 +102,7 @@ pub trait Application: Send + Clone + 'static {
     /// Executes the relevant application method based on the type of the
     /// request, and produces the corresponding response.
     fn handle(&self, request: Request) -> Response {
+        log::debug!("Incoming request: {:?}", request);
         Response {
             value: Some(match request.value.unwrap() {
                 Value::Echo(req) => response::Value::Echo(self.echo(req)),
