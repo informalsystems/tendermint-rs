@@ -15,7 +15,7 @@ required-features = [ "binary", "kvstore-app" ]
 client = []
 echo-app = []
 kvstore-app = []
-binary = [ "env_logger" ]
+binary = [ "simple_logger", "structopt" ]
 
 [dependencies]
 bytes = "1.0"
@@ -25,4 +25,5 @@ prost = "0.7"
 tendermint-proto = { version = "0.18.0", path = "../proto" }
 thiserror = "1.0"
 
-env_logger = { version = "0.8", optional = true }
+simple_logger = { version = "1.11", optional = true }
+structopt = { version = "0.3", optional = true }
