@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::thread;
 
-use eyre::{eyre, Context, Result};
+use eyre::{eyre, Context, Report, Result};
 use flume::{unbounded, Receiver, Sender};
 
 use tendermint::node;
@@ -10,7 +10,7 @@ use tendermint::public_key::PublicKey;
 
 use crate::message;
 use crate::peer;
-use crate::transport::{self, Endpoint as _};
+use crate::transport::{self, Connection, Endpoint as _};
 
 pub enum Direction {
     Incoming,
@@ -26,17 +26,18 @@ pub enum Command {
 
 pub enum Event {
     Connected(node::Id, Direction),
-    Disconnected(node::Id),
+    Disconnected(node::Id, Report),
     Message(node::Id, message::Receive),
     Upgraded(node::Id),
+    UpgradeFailed(node::Id, Report),
 }
 
-enum Internal<Conn> {
-    Accepted(Conn),
+enum Input<Conn> {
+    Accepted(node::Id, Conn),
     Command(Command),
-    Connected(Conn),
+    Connected(node::Id, Conn),
     Receive(node::Id, message::Receive),
-    Upgraded(Result<peer::Peer<peer::Running<Conn>>>),
+    Upgraded(node::Id, Result<peer::Peer<peer::Running<Conn>>>),
 }
 
 pub struct Supervisor {
@@ -50,7 +51,7 @@ impl Supervisor {
         T: transport::Transport + Send + 'static,
     {
         let (command, commands) = unbounded();
-        let (event, events) = unbounded();
+        let (event_tx, events) = unbounded();
         let supervisor = Self { command, events };
 
         let (endpoint, mut incoming) = transport.bind(transport::BindInfo {
@@ -73,8 +74,12 @@ impl Supervisor {
             accept_rx.recv().unwrap();
 
             let conn = incoming.next().unwrap().unwrap();
+            let id = match conn.public_key() {
+                PublicKey::Ed25519(ed25519) => node::Id::from(ed25519),
+                _ => panic!(),
+            };
 
-            accepted_tx.send(Internal::Accepted(conn)).unwrap();
+            accepted_tx.send(Input::Accepted(id, conn)).unwrap();
         });
 
         // CONNECT
@@ -83,8 +88,12 @@ impl Supervisor {
         thread::spawn(move || loop {
             let info = connect_rx.recv().unwrap();
             let conn = endpoint.connect(info).unwrap();
+            let id = match conn.public_key() {
+                PublicKey::Ed25519(ed25519) => node::Id::from(ed25519),
+                _ => panic!(),
+            };
 
-            connected_tx.send(Internal::Connected(conn)).unwrap();
+            connected_tx.send(Input::Connected(id, conn)).unwrap();
         });
 
         // UPGRADE
@@ -96,7 +105,7 @@ impl Supervisor {
             let peer = peer::Peer::from(conn);
 
             upgraded_tx
-                .send(Internal::Upgraded(peer.run(vec![])))
+                .send(Input::Upgraded(peer.id, peer.run(vec![])))
                 .unwrap();
         });
 
@@ -105,26 +114,29 @@ impl Supervisor {
             let mut state: State<<T as transport::Transport>::Connection> = State {
                 connected: HashMap::new(),
                 stopped: HashMap::new(),
+                upgraded: HashMap::new(),
             };
 
             loop {
                 let input = {
                     let mut selector = flume::Selector::new()
                         .recv(&accepted_rx, |accepted| accepted.unwrap())
-                        .recv(&commands, |res| Internal::Command(res.unwrap()))
+                        .recv(&commands, |res| Input::Command(res.unwrap()))
                         .recv(&connected_rx, |connected| connected.unwrap())
                         .recv(&upgraded_rx, |upgrade| upgrade.unwrap());
 
-                    for (id, peer) in &state.connected {
+                    for (id, peer) in &state.upgraded {
                         selector = selector.recv(&peer.state.receiver, move |res| {
-                            Internal::Receive(*id, res.unwrap())
+                            Input::Receive(*id, res.unwrap())
                         });
                     }
 
                     selector.wait()
                 };
 
-                let _commands = state.transition(input);
+                for event in state.transition(input) {
+                    event_tx.send(event).unwrap();
+                }
             }
         });
 
@@ -145,33 +157,30 @@ impl Supervisor {
 
 struct State<Conn>
 where
-    Conn: transport::Connection,
+    Conn: Connection,
 {
-    connected: HashMap<node::Id, peer::Peer<peer::Running<Conn>>>,
+    connected: HashMap<node::Id, transport::Direction<Conn>>,
     stopped: HashMap<node::Id, peer::Peer<peer::Stopped>>,
+    upgraded: HashMap<node::Id, peer::Peer<peer::Running<Conn>>>,
 }
 
 impl<Conn> State<Conn>
 where
-    Conn: transport::Connection,
+    Conn: Connection,
 {
-    fn transition(&mut self, input: Internal<Conn>) -> Vec<Event> {
+    fn transition(&mut self, input: Input<Conn>) -> Vec<Event> {
         match input {
-            Internal::Accepted(conn) => self.handle_accepted(conn),
-            Internal::Command(command) => self.handle_command(command),
-            Internal::Connected(conn) => self.handle_connected(conn),
-            Internal::Receive(id, msg) => self.handle_receive(id, msg),
-            Internal::Upgraded(res) => self.handle_upgraded(res),
+            Input::Accepted(id, conn) => self.handle_accepted(id, conn),
+            Input::Command(command) => self.handle_command(command),
+            Input::Connected(id, conn) => self.handle_connected(id, conn),
+            Input::Receive(id, msg) => self.handle_receive(id, msg),
+            Input::Upgraded(id, res) => self.handle_upgraded(id, res),
         }
     }
 
-    fn handle_accepted(&mut self, conn: Conn) -> Vec<Event> {
-        // TODO(xla): Separate upgrade procedure into own routine.
-        let peer = peer::Peer::from(transport::Direction::Incoming(conn));
-        // TODO(xla): Wire up stream (f.k.a channels) configuration.
-        let peer = peer.run(vec![]).unwrap();
-        let id = peer.id;
-        self.connected.insert(peer.id, peer);
+    fn handle_accepted(&mut self, id: node::Id, conn: Conn) -> Vec<Event> {
+        self.connected
+            .insert(id, transport::Direction::Incoming(conn));
 
         vec![Event::Connected(id, Direction::Incoming)]
     }
@@ -181,14 +190,17 @@ where
             Command::Accept => vec![],
             Command::Connect(_addr) => vec![],
             Command::Disconnect(id) => {
-                let peer = self.connected.remove(&id).unwrap();
+                let peer = self.upgraded.remove(&id).unwrap();
                 let stopped = peer.stop().unwrap();
                 self.stopped.insert(id, stopped);
 
-                vec![Event::Disconnected(id)]
+                vec![Event::Disconnected(
+                    id,
+                    Report::msg("successfully disconected"),
+                )]
             }
             Command::Msg(peer_id, msg) => {
-                let peer = self.connected.get(&peer_id).unwrap();
+                let peer = self.upgraded.get(&peer_id).unwrap();
 
                 peer.send(msg).unwrap();
 
@@ -197,22 +209,33 @@ where
         }
     }
 
-    fn handle_connected(&mut self, conn: Conn) -> Vec<Event> {
-        // TODO(xla): Separate upgrade procedure into own routine.
-        let peer = peer::Peer::from(transport::Direction::Outgoing(conn));
-        // TODO(xla): Wire up stream (f.k.a channels) configuration.
-        let peer = peer.run(vec![]).unwrap();
-        let id = peer.id;
-        self.connected.insert(peer.id, peer);
+    fn handle_connected(&mut self, id: node::Id, conn: Conn) -> Vec<Event> {
+        self.connected
+            .insert(id, transport::Direction::Outgoing(conn));
 
         vec![Event::Connected(id, Direction::Outgoing)]
     }
 
     fn handle_receive(&self, id: node::Id, msg: message::Receive) -> Vec<Event> {
-        unimplemented!()
+        vec![Event::Message(id, msg)]
     }
 
-    fn handle_upgraded(&self, res: Result<peer::Peer<peer::Running<Conn>>>) -> Vec<Event> {
-        unimplemented!()
+    fn handle_upgraded(
+        &mut self,
+        id: node::Id,
+        res: Result<peer::Peer<peer::Running<Conn>>>,
+    ) -> Vec<Event> {
+        match res {
+            Ok(peer) => {
+                self.upgraded.insert(id, peer);
+
+                vec![Event::Upgraded(id)]
+            }
+            Err(err) => {
+                self.connected.remove(&id);
+
+                vec![Event::UpgradeFailed(id, err)]
+            }
+        }
     }
 }
