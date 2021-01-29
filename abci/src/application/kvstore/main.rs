@@ -15,6 +15,11 @@ struct Opt {
     #[structopt(short, long, default_value = "26658")]
     port: u16,
 
+    /// The default server read buffer size, in bytes, for each incoming client
+    /// connection.
+    #[structopt(short, long, default_value = "1048576")]
+    read_buf_size: usize,
+
     /// Increase output logging verbosity to DEBUG level.
     #[structopt(short, long)]
     verbose: bool,
@@ -38,7 +43,7 @@ fn main() {
         .unwrap();
 
     let (app, driver) = KeyValueStoreApp::new();
-    let server = ServerBuilder::default()
+    let server = ServerBuilder::new(opt.read_buf_size)
         .bind(format!("{}:{}", opt.host, opt.port), app)
         .unwrap();
     std::thread::spawn(move || driver.run());
