@@ -27,79 +27,37 @@ pub trait Application: Send + Clone + 'static {
 
     /// Provide information about the ABCI application.
     fn info(&self, _request: RequestInfo) -> ResponseInfo {
-        ResponseInfo {
-            data: "".to_string(),
-            version: "".to_string(),
-            app_version: 0,
-            last_block_height: 0,
-            last_block_app_hash: vec![],
-        }
+        Default::default()
     }
 
     /// Called once upon genesis.
     fn init_chain(&self, _request: RequestInitChain) -> ResponseInitChain {
-        ResponseInitChain {
-            consensus_params: None,
-            validators: vec![],
-            app_hash: vec![],
-        }
+        Default::default()
     }
 
     /// Query the application for data at the current or past height.
     fn query(&self, _request: RequestQuery) -> ResponseQuery {
-        ResponseQuery {
-            code: 0,
-            log: "".to_string(),
-            info: "".to_string(),
-            index: 0,
-            key: vec![],
-            value: vec![],
-            proof_ops: None,
-            height: 0,
-            codespace: "".to_string(),
-        }
+        Default::default()
     }
 
     /// Check the given transaction before putting it into the local mempool.
     fn check_tx(&self, _request: RequestCheckTx) -> ResponseCheckTx {
-        ResponseCheckTx {
-            code: 0,
-            data: vec![],
-            log: "".to_string(),
-            info: "".to_string(),
-            gas_wanted: 0,
-            gas_used: 0,
-            events: vec![],
-            codespace: "".to_string(),
-        }
+        Default::default()
     }
 
     /// Signals the beginning of a new block, prior to any `DeliverTx` calls.
     fn begin_block(&self, _request: RequestBeginBlock) -> ResponseBeginBlock {
-        ResponseBeginBlock { events: vec![] }
+        Default::default()
     }
 
     /// Apply a transaction to the application's state.
     fn deliver_tx(&self, _request: RequestDeliverTx) -> ResponseDeliverTx {
-        ResponseDeliverTx {
-            code: 0,
-            data: vec![],
-            log: "".to_string(),
-            info: "".to_string(),
-            gas_wanted: 0,
-            gas_used: 0,
-            events: vec![],
-            codespace: "".to_string(),
-        }
+        Default::default()
     }
 
     /// Signals the end of a block.
     fn end_block(&self, _request: RequestEndBlock) -> ResponseEndBlock {
-        ResponseEndBlock {
-            validator_updates: vec![],
-            consensus_param_updates: None,
-            events: vec![],
-        }
+        Default::default()
     }
 
     /// Signals that messages queued on the client should be flushed to the server.
@@ -109,35 +67,28 @@ pub trait Application: Send + Clone + 'static {
 
     /// Commit the current state at the current height.
     fn commit(&self) -> ResponseCommit {
-        ResponseCommit {
-            data: vec![],
-            retain_height: 0,
-        }
+        Default::default()
     }
 
     /// Allows the Tendermint node to request that the application set an
     /// option to a particular value.
     fn set_option(&self, _request: RequestSetOption) -> ResponseSetOption {
-        ResponseSetOption {
-            code: 0,
-            log: "".to_string(),
-            info: "".to_string(),
-        }
+        Default::default()
     }
 
     /// Used during state sync to discover available snapshots on peers.
     fn list_snapshots(&self) -> ResponseListSnapshots {
-        ResponseListSnapshots { snapshots: vec![] }
+        Default::default()
     }
 
     /// Called when bootstrapping the node using state sync.
     fn offer_snapshot(&self, _request: RequestOfferSnapshot) -> ResponseOfferSnapshot {
-        ResponseOfferSnapshot { result: 0 }
+        Default::default()
     }
 
     /// Used during state sync to retrieve chunks of snapshots from peers.
     fn load_snapshot_chunk(&self, _request: RequestLoadSnapshotChunk) -> ResponseLoadSnapshotChunk {
-        ResponseLoadSnapshotChunk { chunk: vec![] }
+        Default::default()
     }
 
     /// Apply the given snapshot chunk to the application's state.
@@ -145,11 +96,7 @@ pub trait Application: Send + Clone + 'static {
         &self,
         _request: RequestApplySnapshotChunk,
     ) -> ResponseApplySnapshotChunk {
-        ResponseApplySnapshotChunk {
-            result: 0,
-            refetch_chunks: vec![],
-            reject_senders: vec![],
-        }
+        Default::default()
     }
 
     /// Executes the relevant application method based on the type of the
