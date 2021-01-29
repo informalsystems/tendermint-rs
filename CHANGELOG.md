@@ -7,7 +7,7 @@ It also introduces experimental support for
 [backward verification][lc-backward-verif] for the Light Client,
 feature-guarded behind the `unstable` feature.
 
-Finally, the Light Client's storage system and its API were improved.
+The Light Client's storage system and its API were also improved.
 
 ### BREAKING CHANGES:
 
