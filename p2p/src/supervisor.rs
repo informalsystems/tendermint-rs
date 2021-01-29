@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::thread;
 
-use eyre::{eyre, Result};
+use eyre::{eyre, Context, Result};
 use flume::{unbounded, Receiver, Sender};
 
 use tendermint::node;
@@ -139,7 +139,7 @@ impl Supervisor {
     }
 
     pub fn command(&self, cmd: Command) -> Result<()> {
-        Ok(self.command.send(cmd).unwrap())
+        self.command.send(cmd).wrap_err("command send failed")
     }
 }
 
