@@ -30,7 +30,7 @@ The Light Client's storage system and its API were also improved.
 * `[light-client]` The `sled`-backed lightstore is now feature-guarded under
    the `lightstore-sled` feature, which is enabled by default for now. ([#428])
 
-[lc-backward-verif]: https://github.com/tendermint/spec/blob/master/spec/light-client/verification.md#the-case-untrustedheaderheight--trustedheaderheight
+[lc-backward-verif]: https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/verification/verification_002_draft.md#part-v---supporting-the-ibc-relayer
 [#361]: https://github.com/informalsystems/tendermint-rs/issues/361
 [#428]: https://github.com/informalsystems/tendermint-rs/issues/428
 [#764]: https://github.com/informalsystems/tendermint-rs/issues/764
