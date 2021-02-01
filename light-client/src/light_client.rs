@@ -2,23 +2,23 @@
 //!
 //! [1]: https://github.com/informalsystems/tendermint-rs/blob/master/docs/spec/lightclient/verification/verification.md
 
+use std::{fmt, time::Duration};
+
 use contracts::*;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
-use std::{fmt, time::Duration};
 
-use crate::components::{clock::Clock, io::*, scheduler::*, verifier::*};
-use crate::contracts::*;
 use crate::{
     bail,
+    components::{clock::Clock, io::*, scheduler::*, verifier::*},
+    contracts::*,
     errors::{Error, ErrorKind},
+    operations::Hasher,
     state::State,
     types::{Height, LightBlock, PeerId, Status, TrustThreshold},
 };
 
 /// Verification parameters
-///
-/// TODO: Find a better name than `Options`
 #[derive(Copy, Clone, Debug, PartialEq, Display, Serialize, Deserialize)]
 #[display(fmt = "{:?}", self)]
 pub struct Options {
@@ -53,10 +53,15 @@ pub struct LightClient {
     pub peer: PeerId,
     /// Options for this light client
     pub options: Options,
+
     clock: Box<dyn Clock>,
     scheduler: Box<dyn Scheduler>,
     verifier: Box<dyn Verifier>,
     io: Box<dyn Io>,
+
+    // Only used in verify_backwards when "unstable" feature is enabled
+    #[allow(dead_code)]
+    hasher: Box<dyn Hasher>,
 }
 
 impl fmt::Debug for LightClient {
@@ -76,6 +81,7 @@ impl LightClient {
         clock: impl Clock + 'static,
         scheduler: impl Scheduler + 'static,
         verifier: impl Verifier + 'static,
+        hasher: impl Hasher + 'static,
         io: impl Io + 'static,
     ) -> Self {
         Self {
@@ -84,6 +90,7 @@ impl LightClient {
             clock: Box::new(clock),
             scheduler: Box::new(scheduler),
             verifier: Box::new(verifier),
+            hasher: Box::new(hasher),
             io: Box::new(io),
         }
     }
@@ -95,6 +102,7 @@ impl LightClient {
         clock: Box<dyn Clock>,
         scheduler: Box<dyn Scheduler>,
         verifier: Box<dyn Verifier>,
+        hasher: Box<dyn Hasher>,
         io: Box<dyn Io>,
     ) -> Self {
         Self {
@@ -103,6 +111,7 @@ impl LightClient {
             clock,
             scheduler,
             verifier,
+            hasher,
             io,
         }
     }
@@ -127,8 +136,10 @@ impl LightClient {
     ///   communicates with other nodes.
     /// - The Verifier component checks whether a header is valid and checks if a new light block
     ///   should be trusted based on a previously verified light block.
-    /// - The Scheduler component decides which height to try to verify next, in case the current
-    ///   block pass verification but cannot be trusted yet.
+    /// - When doing _forward_ verification, the Scheduler component decides which height to try to
+    ///   verify next, in case the current block pass verification but cannot be trusted yet.
+    /// - When doing _backward_ verification, the Hasher component is used to determine
+    ///   whether the `last_block_id` hash of a block matches the hash of the block right below it.
     ///
     /// ## Implements
     /// - [LCV-DIST-SAFE.1]
@@ -158,12 +169,33 @@ impl LightClient {
         target_height: Height,
         state: &mut State,
     ) -> Result<LightBlock, Error> {
-        // Let's first look in the store to see whether we have already successfully verified this
-        // block.
+        // Let's first look in the store to see whether
+        // we have already successfully verified this block.
         if let Some(light_block) = state.light_store.get_trusted_or_verified(target_height) {
             return Ok(light_block);
         }
 
+        // Get the highest trusted state
+        let highest = state
+            .light_store
+            .highest_trusted_or_verified()
+            .ok_or(ErrorKind::NoInitialTrustedState)?;
+
+        if target_height >= highest.height() {
+            // Perform forward verification with bisection
+            self.verify_forward(target_height, state)
+        } else {
+            // Perform sequential backward verification
+            self.verify_backward(target_height, state)
+        }
+    }
+
+    /// Perform forward verification with bisection.
+    fn verify_forward(
+        &self,
+        target_height: Height,
+        state: &mut State,
+    ) -> Result<LightBlock, Error> {
         let mut current_height = target_height;
 
         loop {
@@ -237,6 +269,108 @@ impl LightClient {
                 self.scheduler
                     .schedule(state.light_store.as_ref(), current_height, target_height);
         }
+    }
+
+    /// Stub for when "unstable" feature is disabled.
+    #[doc(hidden)]
+    #[cfg(not(feature = "unstable"))]
+    fn verify_backward(
+        &self,
+        target_height: Height,
+        state: &mut State,
+    ) -> Result<LightBlock, Error> {
+        let trusted_state = state
+            .light_store
+            .highest_trusted_or_verified()
+            .ok_or(ErrorKind::NoInitialTrustedState)?;
+
+        Err(ErrorKind::TargetLowerThanTrustedState {
+            target_height,
+            trusted_height: trusted_state.height(),
+        }
+        .into())
+    }
+
+    /// Perform sequential backward verification.
+    ///
+    /// Backward verification is implemented by taking a sliding window
+    /// of length two between the trusted state and the target block and
+    /// checking whether the last_block_id hash of the higher block
+    /// matches the computed hash of the lower block.
+    ///
+    /// ## Performance
+    /// The algorithm implemented is very inefficient in case the target
+    /// block is much lower than the highest trusted state.
+    /// For a trusted state at height `T`, and a target block at height `H`,
+    /// it will fetch and check hashes of `T - H` blocks.
+    ///
+    /// ## Stability
+    /// This feature is only available if the `unstable` flag of is enabled.
+    /// If the flag is disabled, then any attempt to verify a block whose
+    /// height is lower than the highest trusted state will result in a
+    /// `TargetLowerThanTrustedState` error.
+    #[cfg(feature = "unstable")]
+    fn verify_backward(
+        &self,
+        target_height: Height,
+        state: &mut State,
+    ) -> Result<LightBlock, Error> {
+        use std::convert::TryFrom;
+
+        let root = state
+            .light_store
+            .highest_trusted_or_verified()
+            .ok_or(ErrorKind::NoInitialTrustedState)?;
+
+        assert!(root.height() >= target_height);
+
+        // Check invariant [LCV-INV-TP.1]
+        if !is_within_trust_period(&root, self.options.trusting_period, self.clock.now()) {
+            bail!(ErrorKind::TrustedStateOutsideTrustingPeriod {
+                trusted_state: Box::new(root),
+                options: self.options,
+            });
+        }
+
+        // Compute a range of `Height`s from `trusted_height - 1` to `target_height`, inclusive.
+        let range = (target_height.value()..root.height().value()).rev();
+        let heights = range.map(|h| Height::try_from(h).unwrap());
+
+        let mut latest = root;
+
+        for height in heights {
+            let (current, _status) = self.get_or_fetch_block(height, state)?;
+
+            let latest_last_block_id = latest
+                .signed_header
+                .header
+                .last_block_id
+                .ok_or_else(|| ErrorKind::MissingLastBlockId(latest.height()))?;
+
+            let current_hash = self.hasher.hash_header(&current.signed_header.header);
+
+            if current_hash != latest_last_block_id.hash {
+                bail!(ErrorKind::InvalidAdjacentHeaders {
+                    h1: current_hash,
+                    h2: latest_last_block_id.hash
+                });
+            }
+
+            // `latest` and `current` are linked together by `last_block_id`,
+            // therefore it is not relevant which we verified first.
+            // For consistency, we say that `latest` was verifed using
+            // `current` so that the trace is always pointing down the chain.
+            state.light_store.insert(current.clone(), Status::Trusted);
+            state.light_store.insert(latest.clone(), Status::Trusted);
+            state.trace_block(latest.height(), current.height());
+
+            latest = current;
+        }
+
+        // We reached the target height.
+        assert_eq!(latest.height(), target_height);
+
+        Ok(latest)
     }
 
     /// Look in the light store for a block from the given peer at the given height,

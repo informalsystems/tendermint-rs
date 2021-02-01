@@ -76,10 +76,10 @@ pub trait LightStore: Debug + Send + Sync {
 
     /// Get the light block of lowest height with the trusted or verified status.
     fn lowest_trusted_or_verified(&self) -> Option<LightBlock> {
-        let latest_trusted = self.lowest(Status::Trusted);
-        let latest_verified = self.lowest(Status::Verified);
+        let lowest_trusted = self.lowest(Status::Trusted);
+        let lowest_verified = self.lowest(Status::Verified);
 
-        std_ext::option::select(latest_trusted, latest_verified, |t, v| {
+        std_ext::option::select(lowest_trusted, lowest_verified, |t, v| {
             std_ext::cmp::min_by_key(t, v, |lb| lb.height())
         })
     }

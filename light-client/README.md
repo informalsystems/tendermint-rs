@@ -66,22 +66,14 @@ The Tendermint Light Client is primarily tested through unit tests.
 ### Core Verification
 
 The logic for the core verification of light blocks is entirely self-contained in
-the [`predicates`](./src/predicates.rs) module. This code is exercised in a family
-of tests called `single_step` via a set of [JSON fixtures](./tests/support/single_step)
-which encode an initial trusted state, a target block to verify, and the
-expected result of the core verification algorithm.
-
-These tests come in two flavours:
-
-- `skipping` tests, where there is a gap between the initial trusted state and the target block.
-- `sequential` tests, where there the initial trusted state and the target block are adjacent.
+the [`predicates`](./src/predicates.rs) module.
+This code is exercised through unit tests which test each predicate in isolation
+by giving it a set of data along with the expected outcome of each check.
 
 The following command can be used to run only these tests:
 
-TODO: the following runs 0 tests
-
 ```bash
-$ cargo test -p tendermint-light-client --test light_client single_step
+cargo test -p tendermint-light-client predicates
 ```
 
 #### Model-based tests

@@ -1,6 +1,15 @@
-## Unreleased
+## v0.18.0
 
-## IMPROVEMENTS:
+*Jan 29, 2021*
+
+This release is breaking due to significant dependency updates (see below).
+It also introduces experimental support for
+[backward verification][lc-backward-verif] for the Light Client,
+feature-guarded behind the `unstable` feature.
+
+The Light Client's storage system and its API were also improved.
+
+### BREAKING CHANGES:
 
 * `[all]` Update all crates to use the latest version of the following dependencies: ([#764])
   - `tokio` (`1.0`)
@@ -9,6 +18,11 @@
   - `bytes` (`1.0`)
   - `async-tungstenite` (`0.12`)
 
+### FEATURES
+
+* `[light-client]` Add basic support for backward verification, behind a `unstable` feature flag. ([#361])
+  Note: This feature is currently unstable and should not be relied on by downstream dependencies.
+
 ### BUG FIXES
 
 * `[light-client]` Fix potential block ordering problem with sled-based lightstore ([#769])
@@ -16,9 +30,11 @@
 * `[light-client]` The `sled`-backed lightstore is now feature-guarded under
    the `lightstore-sled` feature, which is enabled by default for now. ([#428])
 
-[#769]: https://github.com/informalsystems/tendermint-rs/issues/769
-[#764]: https://github.com/informalsystems/tendermint-rs/issues/764
+[lc-backward-verif]: https://github.com/tendermint/spec/blob/master/rust-spec/lightclient/verification/verification_002_draft.md#part-v---supporting-the-ibc-relayer
+[#361]: https://github.com/informalsystems/tendermint-rs/issues/361
 [#428]: https://github.com/informalsystems/tendermint-rs/issues/428
+[#764]: https://github.com/informalsystems/tendermint-rs/issues/764
+[#769]: https://github.com/informalsystems/tendermint-rs/issues/769
 
 ## v0.17.1
 
