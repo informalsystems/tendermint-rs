@@ -38,13 +38,19 @@ impl From<Evidence> for EvidenceVariant {
 }
 
 impl From<Sum> for EvidenceVariant {
-    fn from(_: Sum) -> Self {
-        unimplemented!() // Prost adds extra annotations on top of Sum that are not used.
+    fn from(value: Sum) -> Self {
+        match value {
+            Sum::DuplicateVoteEvidence(d) => Self::DuplicateVoteEvidence(d),
+            Sum::LightClientAttackEvidence(l) => Self::LightClientAttackEvidence(l),
+        }
     }
 }
 
 impl From<EvidenceVariant> for Sum {
-    fn from(_: EvidenceVariant) -> Self {
-        unimplemented!() // Prost adds extra annotations on top of Sum that are not used.
+    fn from(value: EvidenceVariant) -> Self {
+        match value {
+            EvidenceVariant::DuplicateVoteEvidence(d) => Self::DuplicateVoteEvidence(d),
+            EvidenceVariant::LightClientAttackEvidence(l) => Self::LightClientAttackEvidence(l),
+        }
     }
 }
