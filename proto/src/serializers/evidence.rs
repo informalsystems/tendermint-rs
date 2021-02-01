@@ -8,6 +8,8 @@ use crate::tendermint::types::Evidence;
 #[derive(Clone, PartialEq, ::serde::Deserialize, ::serde::Serialize)]
 #[serde(tag = "type", content = "value")]
 pub enum EvidenceVariant {
+    /// Provided for when the evidence struct's optional `sum` field is `None`.
+    None,
     #[serde(rename = "tendermint/DuplicateVoteEvidence")]
     DuplicateVoteEvidence(crate::tendermint::types::DuplicateVoteEvidence),
     #[serde(rename = "tendermint/LightClientAttackEvidence")]
@@ -17,11 +19,9 @@ pub enum EvidenceVariant {
 impl From<EvidenceVariant> for Evidence {
     fn from(value: EvidenceVariant) -> Self {
         match value {
-            EvidenceVariant::DuplicateVoteEvidence(d) => Evidence {
-                sum: Some(Sum::DuplicateVoteEvidence(d)),
-            },
-            EvidenceVariant::LightClientAttackEvidence(l) => Evidence {
-                sum: Some(Sum::LightClientAttackEvidence(l)),
+            EvidenceVariant::None => Evidence { sum: None },
+            _ => Evidence {
+                sum: Some(value.into()),
             },
         }
     }
@@ -29,10 +29,9 @@ impl From<EvidenceVariant> for Evidence {
 
 impl From<Evidence> for EvidenceVariant {
     fn from(value: Evidence) -> Self {
-        let sum = value.sum.unwrap(); // Todo: Error handling
-        match sum {
-            Sum::DuplicateVoteEvidence(d) => Self::DuplicateVoteEvidence(d),
-            Sum::LightClientAttackEvidence(l) => Self::LightClientAttackEvidence(l),
+        match value.sum {
+            Some(sum) => sum.into(),
+            None => Self::None,
         }
     }
 }
@@ -49,6 +48,11 @@ impl From<Sum> for EvidenceVariant {
 impl From<EvidenceVariant> for Sum {
     fn from(value: EvidenceVariant) -> Self {
         match value {
+            // This should never be called - should be handled instead in the
+            // `impl From<EvidenceVariant> for Evidence` above.
+            EvidenceVariant::None => {
+                panic!("non-existent evidence cannot be converted into its protobuf representation")
+            }
             EvidenceVariant::DuplicateVoteEvidence(d) => Self::DuplicateVoteEvidence(d),
             EvidenceVariant::LightClientAttackEvidence(l) => Self::LightClientAttackEvidence(l),
         }
