@@ -58,3 +58,17 @@ impl From<EvidenceVariant> for Sum {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    // Minimally reproduce https://github.com/informalsystems/tendermint-rs/issues/782
+    #[test]
+    fn empty_evidence() {
+        let ev = Evidence { sum: None };
+        let ev_json = serde_json::to_string(&ev).unwrap();
+        let ev_deserialized = serde_json::from_str::<Evidence>(&ev_json).unwrap();
+        assert_eq!(ev, ev_deserialized);
+    }
+}
