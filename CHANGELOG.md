@@ -1,3 +1,12 @@
+## Unreleased
+
+### BUG FIXES
+
+* `[tendermint-proto]` Fix panic in evidence serialization in the case where we
+  receive an empty evidence Protobuf structure ([#782])
+
+[#782]: https://github.com/informalsystems/tendermint-rs/issues/782
+
 ## v0.18.0
 
 *Jan 29, 2021*
