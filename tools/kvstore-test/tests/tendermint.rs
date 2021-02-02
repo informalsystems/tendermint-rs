@@ -369,6 +369,10 @@ mod rpc {
         .unwrap();
         println!("Got tx_info: {:?}", tx_info);
 
+        // TODO(thane): Find a better way of accomplishing this. This might
+        //              still be nondeterministic.
+        tokio::time::sleep(Duration::from_millis(500)).await;
+
         let res = rpc_client
             .tx_search(
                 Query::eq("app.key", "tx_search_key"),
