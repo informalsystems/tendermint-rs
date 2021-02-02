@@ -111,8 +111,8 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          command: test-all-features-debug
-          args: --manifest-path tools/kvstore-test/Cargo.toml
+          command: test-all-features
+          args: --manifest-path tools/kvstore-test/Cargo.toml -- --nocapture
         env:
           RUST_LOG: debug
 
