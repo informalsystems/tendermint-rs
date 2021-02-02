@@ -18,7 +18,7 @@ args = ["run", "--name", "${CONTAINER_NAME}", "--rm", "--publish", "26657:${HOST
 dependencies = ["docker-up-stop-old", "docker-up-rm-old"]
 
 [tasks.test]
-args = ["test", "--all-features", "--no-fail-fast", "--", "--nocapture"]
+args = ["test", "--all-features", "--", "--nocapture"]
 
 [tasks.docker-stop]
 command = "docker"
