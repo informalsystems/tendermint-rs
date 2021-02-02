@@ -4,6 +4,11 @@ DOCKER_IMAGE = "informaldev/abci-harness:0.34.0"
 HOST_RPC_PORT = 26657
 CARGO_MAKE_WAIT_MILLISECONDS = 3500
 
+# abci-test infrastructure:
+# cargo make build-linux-abci  - build the ABCI app using Docker (helpful on a Mac)
+# cargo make                   - run the test harness and all tests. Expects a Linux ABCI app already built.
+# cargo make docker-up-debug   - troubleshoot the infra setup (useful to see docker error messages or the kvstore log).
+
 [tasks.default]
 clear = true
 dependencies = [ "docker-up", "wait", "test", "docker-down" ]
@@ -18,6 +23,11 @@ dependencies = [ "docker-stop", "docker-rm" ]
 [tasks.docker-up]
 command = "docker"
 args = ["run", "--name", "${CONTAINER_NAME}", "--rm", "--publish", "26657:${HOST_RPC_PORT}", "--volume", "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/../target/debug:/abci", "--detach", "${DOCKER_IMAGE}", "--verbose" ]
+dependencies = ["docker-up-stop-old", "docker-up-rm-old"]
+
+[tasks.docker-up-debug]
+command = "docker"
+args = ["run", "--name", "${CONTAINER_NAME}", "--rm", "--publish", "26657:${HOST_RPC_PORT}", "--volume", "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/../target/debug:/abci", "${DOCKER_IMAGE}", "--verbose" ]
 dependencies = ["docker-up-stop-old", "docker-up-rm-old"]
 
 [tasks.test]
