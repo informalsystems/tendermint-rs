@@ -3,6 +3,7 @@ CONTAINER_NAME = "kvstore-test"
 DOCKER_IMAGE = "informaldev/tendermint:0.34.0"
 HOST_RPC_PORT = 26657
 CARGO_MAKE_WAIT_MILLISECONDS = 1000
+RUST_LOG = "debug"
 
 [tasks.default]
 clear = true
@@ -17,7 +18,7 @@ args = ["run", "--name", "${CONTAINER_NAME}", "--rm", "--publish", "26657:${HOST
 dependencies = ["docker-up-stop-old", "docker-up-rm-old"]
 
 [tasks.test]
-args = ["test-all-features"]
+args = ["test", "--all-features", "--no-fail-fast", "--", "--nocapture"]
 
 [tasks.docker-stop]
 command = "docker"
