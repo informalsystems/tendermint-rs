@@ -179,6 +179,7 @@ impl Client for WebSocketClient {
         let response = response_rx.recv().await.ok_or_else(|| {
             Error::client_internal_error("failed to hear back from WebSocket driver".to_string())
         })??;
+        tracing::debug!("Incoming response: {}", response);
         R::Response::from_string(response)
     }
 }
