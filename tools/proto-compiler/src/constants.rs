@@ -33,7 +33,7 @@ const RENAME_SECPPUBKEY: &str = r#"#[serde(rename = "tendermint/PubKeySecp256k1"
 const RENAME_DUPLICATEVOTE: &str = r#"#[serde(rename = "tendermint/DuplicateVoteEvidence")]"#;
 const RENAME_LIGHTCLIENTATTACK: &str =
     r#"#[serde(rename = "tendermint/LightClientAttackEvidence")]"#;
-const EVIDENCE_VARIANT: &str = r#"#[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]"#;
+// const EVIDENCE_VARIANT: &str = r#"#[serde(from = "crate::serializers::evidence::EvidenceVariant", into = "crate::serializers::evidence::EvidenceVariant")]"#;
 const ALIAS_PARTS: &str = r#"#[serde(alias = "parts")]"#;
 
 /// Custom type attributes applied on top of protobuf structs
@@ -70,7 +70,7 @@ pub static CUSTOM_TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.Validator", SERIALIZED),
     (".tendermint.types.CanonicalVote", SERIALIZED),
     (".tendermint.types.BlockMeta", SERIALIZED),
-    (".tendermint.types.Evidence", EVIDENCE_VARIANT),
+    // (".tendermint.types.Evidence", EVIDENCE_VARIANT),
     (".tendermint.types.TxProof", SERIALIZED),
     (".tendermint.crypto.Proof", SERIALIZED),
 ];
@@ -140,7 +140,10 @@ pub static CUSTOM_FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".tendermint.types.BlockMeta.block_size", QUOTED),
     (".tendermint.types.BlockMeta.num_txs", QUOTED),
     (".tendermint.crypto.PublicKey.sum.ed25519", RENAME_EDPUBKEY),
-    (".tendermint.crypto.PublicKey.sum.secp256k1", RENAME_SECPPUBKEY),
+    (
+        ".tendermint.crypto.PublicKey.sum.secp256k1",
+        RENAME_SECPPUBKEY,
+    ),
     (
         ".tendermint.types.Evidence.sum.duplicate_vote_evidence",
         RENAME_DUPLICATEVOTE,
