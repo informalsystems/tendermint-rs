@@ -111,8 +111,10 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          command: test-all-features
+          command: test-all-features-debug
           args: --manifest-path tools/kvstore-test/Cargo.toml
+        env:
+          RUST_LOG: debug
 
   kvstore-integration-latest:
     runs-on: ubuntu-latest
