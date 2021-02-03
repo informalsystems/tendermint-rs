@@ -5,7 +5,7 @@ use crossbeam_channel as channel;
 use tendermint::evidence::{ConflictingHeadersEvidence, Evidence};
 
 use crate::bail;
-use crate::errors::{Error, ErrorExt, ErrorKind};
+use crate::errors::{Error, ErrorKind};
 use crate::evidence::EvidenceReporter;
 use crate::fork_detector::{Fork, ForkDetection, ForkDetector};
 use crate::light_client::LightClient;
@@ -246,12 +246,7 @@ impl Supervisor {
                     }
                 }
             }
-            // Verification failed because target height is lower than trusted,
-            // and backward verification is not supported at the moment.
-            // Abort and return the error without swapping primary node.
-            Err(err) if err.kind().is_target_lower_than_trusted() => Err(err),
-
-            // Verification failed for any other reason.
+            // Verification failed
             Err(err) => {
                 // Swap primary, and continue with new primary, if there is any witness left.
                 self.peers.replace_faulty_primary(Some(err))?;

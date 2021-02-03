@@ -129,8 +129,4 @@ impl ErrorExt for VerificationError {
     fn is_timeout(&self) -> bool {
         false
     }
-
-    fn is_target_lower_than_trusted(&self) -> bool {
-        false
-    }
 }

@@ -117,10 +117,6 @@ pub trait ErrorExt {
     /// Whether this error means that a timeout occured when
     /// querying a node.
     fn is_timeout(&self) -> bool;
-
-    /// Whether this error means that the target height to be
-    /// verified is lower than the current trusted state.
-    fn is_target_lower_than_trusted(&self) -> bool;
 }
 
 impl ErrorExt for ErrorKind {
@@ -147,10 +143,6 @@ impl ErrorExt for ErrorKind {
         } else {
             false
         }
-    }
-
-    fn is_target_lower_than_trusted(&self) -> bool {
-        matches!(self, Self::TargetLowerThanTrustedState { .. })
     }
 }
 
