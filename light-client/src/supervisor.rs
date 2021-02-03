@@ -821,7 +821,7 @@ mod tests {
             .find(|&&peer| peer == primary[0].provider)
             .is_none());
     }
-    
+
     #[test]
     fn test_bisection_target_lower_than_trusted() {
         let chain = LightChain::default_with_length(10);
@@ -843,6 +843,9 @@ mod tests {
 
         let (result, _) = run_bisection_test(peer_list, 2);
 
-        assert!(result.err().unwrap().kind().is_target_lower_than_trusted());
+        let expected_state = &primary[1];
+        let new_state = result.unwrap();
+
+        assert_eq!(expected_state, &new_state);
     }
 }
