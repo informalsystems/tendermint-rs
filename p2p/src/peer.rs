@@ -32,7 +32,10 @@ pub struct Stopped {
 }
 impl State for Stopped {}
 
-pub struct Peer<St> {
+pub struct Peer<St>
+where
+    St: private::Sealed,
+{
     pub id: node::Id,
 
     pub state: St,
