@@ -257,7 +257,9 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         debug_assert!(chunk.len() > 0, "chunk is empty");
         debug_assert!(
             chunk.len() <= TOTAL_FRAME_SIZE - DATA_LEN_SIZE,
-            "chunk is too big! max: DATA_MAX_SIZE"
+            "chunk is too big: {}! max: {}",
+            chunk.len(),
+            DATA_MAX_SIZE,
         );
         sealed_frame[..DATA_LEN_SIZE].copy_from_slice(&(chunk.len() as u32).to_le_bytes());
         sealed_frame[DATA_LEN_SIZE..DATA_LEN_SIZE + chunk.len()].copy_from_slice(chunk);
@@ -348,7 +350,7 @@ where
         if chunk_length as usize > DATA_MAX_SIZE {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
-                "chunk_length is greater than DATA_MAX_SIZE",
+                format!("chunk is too big: {}! max: {}", chunk_length, DATA_MAX_SIZE),
             ));
         }
 
@@ -518,22 +520,22 @@ mod test {
     fn test_handshake() {
         let (pipe1, pipe2) = pipe::bipipe_buffered();
 
-        let thread1 = thread::spawn(|| {
+        let peer1 = thread::spawn(|| {
             let mut csprng = OsRng {};
             let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
             let conn1 = SecretConnection::new(pipe2, &privkey1, Version::V0_34);
             assert_eq!(conn1.is_ok(), true);
         });
 
-        let thread2 = thread::spawn(|| {
+        let peer2 = thread::spawn(|| {
             let mut csprng = OsRng {};
             let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
             let conn2 = SecretConnection::new(pipe1, &privkey2, Version::V0_34);
             assert_eq!(conn2.is_ok(), true);
         });
 
-        thread1.join().expect("thread1 has panicked");
-        thread2.join().expect("thread2 has panicked");
+        peer1.join().expect("peer1 thread has panicked");
+        peer2.join().expect("peer2 thread has panicked");
     }
 
     #[test]
@@ -566,8 +568,8 @@ mod test {
             assert_eq!(MESSAGE.as_bytes(), &buf);
         });
 
-        sender.join().expect("The sender thread has panicked");
-        receiver.join().expect("The receiver thread has panicked");
+        sender.join().expect("sender thread has panicked");
+        receiver.join().expect("receiver thread has panicked");
     }
 
     #[quickcheck]
