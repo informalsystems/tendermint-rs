@@ -44,7 +44,7 @@ pub trait Endpoint: Send {
     type Connection;
 
     fn connect(&self, info: ConnectInfo) -> Result<Self::Connection>;
-    fn listen_addrs(&self) -> SocketAddr;
+    fn listen_addrs(&self) -> Vec<SocketAddr>;
 }
 
 pub trait Transport {
