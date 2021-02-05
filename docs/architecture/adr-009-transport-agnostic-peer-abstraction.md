@@ -167,8 +167,6 @@ Proposed
 
 ## Consequences
 
-> This section describes the consequences, after applying the decision. All consequences should be summarized here, not just the "positive" ones.
-
 ### Positive
 
 * Unified way to bootstrap and integrate transports
