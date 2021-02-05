@@ -21,7 +21,7 @@ core domain and transports messages into the rest of the system.
 
 ## Decision
 
-### Trasnport
+### Transport
 
 Wraping the design is the `Transport`. Modelled with the properties of
 a physical network endpoint in mind, which can be bound and stopped. It should
