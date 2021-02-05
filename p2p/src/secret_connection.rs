@@ -42,11 +42,15 @@ pub const DATA_MAX_SIZE: usize = 1024;
 const DATA_LEN_SIZE: usize = 4;
 const TOTAL_FRAME_SIZE: usize = DATA_MAX_SIZE + DATA_LEN_SIZE;
 
-// Handshake states
+/// Handshake states
+
+/// AwaitingEphKey means we're waiting for the remote ephemeral pubkey.
 struct AwaitingEphKey {
     local_privkey: ed25519::Keypair,
     local_eph_privkey: Option<EphemeralSecret>,
 }
+
+/// AwaitingAuthSig means we're waiting for the remote authenticated signature.
 struct AwaitingAuthSig {
     sc_mac: [u8; 32],
     kdf: Kdf,
@@ -55,7 +59,9 @@ struct AwaitingAuthSig {
     local_signature: ed25519::Signature,
 }
 
-pub struct Handshake<S> {
+/// Handshake is a process of establishing the SecretConnection between two peers.
+/// Specification: https://github.com/tendermint/spec/blob/master/spec/p2p/peer.md#authenticated-encryption-handshake
+struct Handshake<S> {
     protocol_version: Version,
     state: S,
 }
@@ -81,6 +87,8 @@ impl Handshake<AwaitingEphKey> {
         )
     }
 
+    /// Performs a Diffie-Hellman key exchange and creates a local signature.
+    /// Transitions Handshake into AwaitingAuthSig state.
     pub fn got_key(
         &mut self,
         remote_eph_pubkey: EphemeralPublic,
@@ -145,6 +153,7 @@ impl Handshake<AwaitingEphKey> {
 }
 
 impl Handshake<AwaitingAuthSig> {
+    /// Returns a verified pubkey of the remote peer.
     pub fn got_signature(&mut self, auth_sig_msg: proto::p2p::AuthSigMessage) -> Result<PublicKey> {
         let remote_pubkey = auth_sig_msg
             .pub_key
@@ -198,6 +207,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         local_privkey: ed25519::Keypair,
         protocol_version: Version,
     ) -> Result<SecretConnection<IoHandler>> {
+        // Start a handshake process.
         let local_pubkey = PublicKey::from(&local_privkey);
         let (mut h, local_eph_pubkey) = Handshake::new(local_privkey, protocol_version);
 
@@ -205,6 +215,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         let remote_eph_pubkey =
             share_eph_pubkey(&mut io_handler, &local_eph_pubkey, protocol_version)?;
 
+        // Compute a local signature (also recv_cipher & send_cipher)
         let mut h = h.got_key(remote_eph_pubkey)?;
 
         let mut sc = SecretConnection {
@@ -218,15 +229,17 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
             remote_pubkey: None,
         };
 
-        // Share (in secret) each other's pubkey & challenge signature
+        // Share (IN SECRET) each other's pubkey & challenge signature
         let auth_sig_msg = match local_pubkey {
             PublicKey::Ed25519(ref pk) => {
                 share_auth_signature(&mut sc, pk, &h.state.local_signature)?
             }
         };
 
+        // Authenticate remote pubkey.
         let remote_pubkey = h.got_signature(auth_sig_msg)?;
 
+        // All good!
         sc.remote_pubkey = Some(remote_pubkey);
         Ok(sc)
     }
