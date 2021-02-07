@@ -88,7 +88,7 @@ impl Handshake<AwaitingEphKey> {
         )
     }
 
-    /// Performs a Diffie-Hellman key exchange and creates a local signature.
+    /// Performs a Diffie-Hellman key agreement and creates a local signature.
     /// Transitions Handshake into AwaitingAuthSig state.
     pub fn got_key(
         &mut self,
@@ -127,8 +127,7 @@ impl Handshake<AwaitingEphKey> {
         transcript.append_message(b"EPHEMERAL_UPPER_PUBLIC_KEY", &high_eph_pubkey_bytes);
         transcript.append_message(b"DH_SECRET", shared_secret.as_bytes());
 
-        // Check if the local ephemeral public key
-        // was the least, lexicographically sorted.
+        // Check if the local ephemeral public key was the least, lexicographically sorted.
         let loc_is_least = local_eph_pubkey_bytes == low_eph_pubkey_bytes;
 
         let kdf = Kdf::derive_secrets_and_challenge(shared_secret.as_bytes(), loc_is_least);
@@ -188,7 +187,7 @@ impl Handshake<AwaitingAuthSig> {
     }
 }
 
-/// Encrypted connection between peers in a Tendermint network
+/// Encrypted connection between peers in a Tendermint network.
 pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
     io_handler: IoHandler,
     protocol_version: Version,
@@ -201,12 +200,12 @@ pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
 }
 
 impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
-    /// Returns authenticated remote pubkey
+    /// Returns the remote pubkey. Panics if there's no key.
     pub fn remote_pubkey(&self) -> PublicKey {
         self.remote_pubkey.expect("remote_pubkey uninitialized")
     }
 
-    /// Performs handshake and returns a new authenticated SecretConnection.
+    /// Performs a handshake and returns a new SecretConnection.
     pub fn new(
         mut io_handler: IoHandler,
         local_privkey: ed25519::Keypair,
@@ -234,7 +233,8 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
             remote_pubkey: None,
         };
 
-        // Share (IN SECRET) each other's pubkey & challenge signature
+        // Share each other's pubkey & challenge signature.
+        // NOTE: the data must be encrypted/decrypted using ciphers.
         let auth_sig_msg = match local_pubkey {
             PublicKey::Ed25519(ref pk) => {
                 share_auth_signature(&mut sc, pk, &h.state.local_signature)?
