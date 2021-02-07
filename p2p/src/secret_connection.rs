@@ -42,6 +42,13 @@ pub const DATA_MAX_SIZE: usize = 1024;
 const DATA_LEN_SIZE: usize = 4;
 const TOTAL_FRAME_SIZE: usize = DATA_MAX_SIZE + DATA_LEN_SIZE;
 
+/// Handshake is a process of establishing the SecretConnection between two peers.
+/// Specification: https://github.com/tendermint/spec/blob/master/spec/p2p/peer.md#authenticated-encryption-handshake
+struct Handshake<S> {
+    protocol_version: Version,
+    state: S,
+}
+
 /// Handshake states
 
 /// AwaitingEphKey means we're waiting for the remote ephemeral pubkey.
@@ -59,14 +66,8 @@ struct AwaitingAuthSig {
     local_signature: ed25519::Signature,
 }
 
-/// Handshake is a process of establishing the SecretConnection between two peers.
-/// Specification: https://github.com/tendermint/spec/blob/master/spec/p2p/peer.md#authenticated-encryption-handshake
-struct Handshake<S> {
-    protocol_version: Version,
-    state: S,
-}
-
 impl Handshake<AwaitingEphKey> {
+    /// Initiate a handshake.
     pub fn new(
         local_privkey: ed25519::Keypair,
         protocol_version: Version,
@@ -93,7 +94,11 @@ impl Handshake<AwaitingEphKey> {
         &mut self,
         remote_eph_pubkey: EphemeralPublic,
     ) -> Result<Handshake<AwaitingAuthSig>> {
-        let local_eph_privkey = self.state.local_eph_privkey.take().unwrap();
+        let local_eph_privkey = self
+            .state
+            .local_eph_privkey
+            .take()
+            .wrap_err("forgot to call Handshake::new?")?;
         let local_eph_pubkey = EphemeralPublic::from(&local_eph_privkey);
 
         // Compute common shared secret.
