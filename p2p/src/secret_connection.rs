@@ -13,7 +13,7 @@ use chacha20poly1305::{
     ChaCha20Poly1305,
 };
 use ed25519_dalek::{self as ed25519, Signer, Verifier};
-use eyre::{Result, WrapErr};
+use eyre::{eyre, Result, WrapErr};
 use merlin::Transcript;
 use rand_core::OsRng;
 use subtle::ConstantTimeEq;
@@ -94,11 +94,10 @@ impl Handshake<AwaitingEphKey> {
         &mut self,
         remote_eph_pubkey: EphemeralPublic,
     ) -> Result<Handshake<AwaitingAuthSig>> {
-        let local_eph_privkey = self
-            .state
-            .local_eph_privkey
-            .take()
-            .wrap_err("forgot to call Handshake::new?")?;
+        let local_eph_privkey = match self.state.local_eph_privkey.take() {
+            Some(key) => key,
+            None => return Err(eyre!("forgot to call Handshake::new?")),
+        };
         let local_eph_pubkey = EphemeralPublic::from(&local_eph_privkey);
 
         // Compute common shared secret.
