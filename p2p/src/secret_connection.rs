@@ -513,6 +513,7 @@ mod test {
 
     use pipe;
     use quickcheck::TestResult;
+    use quickcheck_macros::quickcheck;
 
     use super::*;
 
