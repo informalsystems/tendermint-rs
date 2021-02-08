@@ -34,8 +34,9 @@ where
 }
 
 mod sealed {
-    use jsonrpc_core::futures::future::{self, FutureResult};
+    use jsonrpc_core::futures;
     use jsonrpc_core::types::Error;
+    use jsonrpc_core::{BoxFuture, Result};
     use jsonrpc_derive::rpc;
 
     use tendermint_light_client::supervisor::Handle;
@@ -46,11 +47,11 @@ mod sealed {
     pub trait Rpc {
         /// Returns the latest trusted block.
         #[rpc(name = "state")]
-        fn state(&self) -> FutureResult<Option<LightBlock>, Error>;
+        fn state(&self) -> BoxFuture<Result<Option<LightBlock>>>;
 
         /// Returns the latest status.
         #[rpc(name = "status")]
-        fn status(&self) -> FutureResult<LatestStatus, Error>;
+        fn status(&self) -> BoxFuture<Result<LatestStatus>>;
     }
 
     pub use self::rpc_impl_Rpc::gen_client::Client;
@@ -75,7 +76,7 @@ mod sealed {
     where
         H: Handle + Send + Sync + 'static,
     {
-        fn state(&self) -> FutureResult<Option<LightBlock>, Error> {
+        fn state(&self) -> BoxFuture<Result<Option<LightBlock>>> {
             let res = self.handle.latest_trusted().map_err(|e| {
                 let mut err = Error::internal_error();
                 err.message = e.to_string();
@@ -83,10 +84,10 @@ mod sealed {
                 err
             });
 
-            future::result(res)
+            Box::pin(futures::future::ready(res))
         }
 
-        fn status(&self) -> FutureResult<LatestStatus, Error> {
+        fn status(&self) -> BoxFuture<Result<LatestStatus>> {
             let res = self.handle.latest_status().map_err(|e| {
                 let mut err = Error::internal_error();
                 err.message = e.to_string();
@@ -94,15 +95,13 @@ mod sealed {
                 err
             });
 
-            future::result(res)
+            Box::pin(futures::future::ready(res))
         }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use futures::compat::Future01CompatExt as _;
-    use jsonrpc_core::futures::future::Future;
     use jsonrpc_core::IoHandler;
     use jsonrpc_core_client::transports::local;
     use pretty_assertions::assert_eq;
@@ -117,13 +116,15 @@ mod test {
     #[tokio::test]
     async fn state() {
         let server = Server::new(MockHandle {});
-        let fut = {
+        let have = {
             let mut io = IoHandler::new();
             io.extend_with(server.to_delegate());
             let (client, server) = local::connect::<Client, _, _>(io);
-            client.state().join(server)
+            tokio::select! {
+                result = client.state() => result.unwrap(),
+                _ = server => panic!("server terminated before client state request completed"),
+            }
         };
-        let (have, _) = fut.compat().await.unwrap();
         let want = serde_json::from_str(LIGHTBLOCK_JSON).unwrap();
 
         assert_eq!(have, want);
@@ -132,13 +133,15 @@ mod test {
     #[tokio::test]
     async fn status() {
         let server = Server::new(MockHandle {});
-        let fut = {
+        let have = {
             let mut io = IoHandler::new();
             io.extend_with(server.to_delegate());
             let (client, server) = local::connect::<Client, _, _>(io);
-            client.status().join(server)
+            tokio::select! {
+                result = client.status() => result.unwrap(),
+                _ = server => panic!("server terminated before client status request completed"),
+            }
         };
-        let (have, _) = fut.compat().await.unwrap();
         let want = serde_json::from_str(STATUS_JSON).unwrap();
 
         assert_eq!(have, want);
