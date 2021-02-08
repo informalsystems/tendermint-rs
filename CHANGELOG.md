@@ -1,3 +1,12 @@
+## Unreleased
+
+### BUG FIXES
+
+* `[light-node]` Upgrade `jsonrpc` dependency to v17.0 to fix security
+  vulnerability in `hyper` v0.12.35 ([#803])
+
+[#803]: https://github.com/informalsystems/tendermint-rs/issues/803
+
 ## v0.18.0
 
 *Jan 29, 2021*
