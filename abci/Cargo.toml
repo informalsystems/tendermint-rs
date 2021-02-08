@@ -3,6 +3,10 @@ name = "tendermint-abci"
 version = "0.1.0"
 authors = ["Thane Thomson <thane@informal.systems>"]
 edition = "2018"
+description = """
+    tendermint-abci provides a simple framework with which to build low-level
+    applications on top of Tendermint.
+    """
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
