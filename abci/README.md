@@ -1,4 +1,4 @@
-## tendermint-abci (WIP)
+## tendermint-abci
 
 [![Crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -7,16 +7,31 @@
 [![Apache 2.0 Licensed][license-image]][license-link]
 ![Rust Stable][rustc-image]
 
-ABCI framework for building applications for Tendermint in Rust.
+[ABCI] framework for building low-level applications for Tendermint in Rust.
 
 ## Requirements
 
 - The latest stable version of Rust
 
+## API
+
+At present, this crate only exposes a synchronous, blocking API based on Rust's
+standard library's networking capabilities. `async` client/server support is
+planned in future updates.
+
+The primary trait to be implemented by an ABCI application is the
+[`Application`] trait. One of the core ideas here is that an ABCI application
+must be able to be cloned for use in different threads, since Tendermint opens
+4 connections to the ABCI server. See the [spec][tendermint-abci-spec] for
+details.
+
 ## Examples
 
-A trivial in-memory key/value store application is provided. To run this
-application, from the `tendermint-abci` crate's directory:
+See [`src/application`](./src/application/) for some example applications
+written using this crate.
+
+To run the key/value store example application, from the `tendermint-abci`
+crate's directory:
 
 ```bash
 # Set your logging level through RUST_LOG (e.g. RUST_LOG=info)
@@ -95,3 +110,7 @@ limitations under the License.
 [rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
 
 [//]: # (general links)
+
+[ABCI]: https://docs.tendermint.com/master/spec/abci/
+[`Application`]: ./src/application.rs
+[tendermint-abci-spec]: https://github.com/tendermint/spec/blob/master/spec/abci/abci.md
