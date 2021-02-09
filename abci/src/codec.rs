@@ -68,12 +68,9 @@ where
         loop {
             // Try to decode an incoming message from our buffer first
             match decode_length_delimited::<I>(&mut self.read_buf) {
-                Ok(opt) => {
-                    if let Some(incoming) = opt {
-                        return Some(Ok(incoming));
-                    }
-                }
+                Ok(Some(incoming)) => return Some(Ok(incoming)),
                 Err(e) => return Some(Err(e)),
+                _ => (), // not enough data to decode a message, let's continue.
             }
 
             // If we don't have enough data to decode a message, try to read
