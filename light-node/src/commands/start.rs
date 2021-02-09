@@ -44,14 +44,14 @@ impl Runnable for StartCmd {
     fn run(&self) {
         if let Err(e) = StartCmd::assert_init_was_run() {
             status_err!(&e);
-            panic!(e);
+            panic!("{}", e);
         }
 
         let supervisor = match self.construct_supervisor() {
             Ok(supervisor) => supervisor,
             Err(e) => {
                 status_err!(&e);
-                panic!(e);
+                panic!("{}", e);
             }
         };
 

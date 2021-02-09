@@ -112,7 +112,9 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test-all-features
-          args: --manifest-path tools/kvstore-test/Cargo.toml
+          args: --manifest-path tools/kvstore-test/Cargo.toml -- --nocapture
+        env:
+          RUST_LOG: debug
 
   kvstore-integration-latest:
     runs-on: ubuntu-latest
