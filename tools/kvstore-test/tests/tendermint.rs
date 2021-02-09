@@ -17,10 +17,13 @@
 mod rpc {
     use std::cmp::min;
 
-    use tendermint_rpc::{Client, HttpClient, Id, Order, SubscriptionClient, WebSocketClient};
+    use tendermint_rpc::{
+        Client, HttpClient, Id, Order, SubscriptionClient, WebSocketClient, WebSocketClientDriver,
+    };
 
     use futures::StreamExt;
     use std::convert::TryFrom;
+    use std::sync::atomic::{AtomicU8, Ordering};
     use tendermint::abci::Log;
     use tendermint::abci::{Code, Transaction};
     use tendermint::block::Height;
@@ -30,14 +33,32 @@ mod rpc {
     use tendermint_rpc::query::{EventType, Query};
     use tokio::time::Duration;
 
-    pub fn localhost_rpc_client() -> HttpClient {
+    static LOGGING_INIT: AtomicU8 = AtomicU8::new(0);
+
+    fn init_logging() {
+        // Try to only initialize the logging once
+        if LOGGING_INIT.fetch_add(1, Ordering::SeqCst) == 0 {
+            tracing_subscriber::fmt::init();
+            tracing::info!("Test logging initialized");
+        }
+    }
+
+    pub fn localhost_http_client() -> HttpClient {
+        init_logging();
         HttpClient::new("tcp://127.0.0.1:26657".parse().unwrap()).unwrap()
+    }
+
+    pub async fn localhost_websocket_client() -> (WebSocketClient, WebSocketClientDriver) {
+        init_logging();
+        WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+            .await
+            .unwrap()
     }
 
     /// `/health` endpoint
     #[tokio::test]
     async fn health() {
-        let result = localhost_rpc_client().health().await;
+        let result = localhost_http_client().health().await;
 
         assert!(result.is_ok(), "health check failed");
     }
@@ -45,7 +66,7 @@ mod rpc {
     /// `/abci_info` endpoint
     #[tokio::test]
     async fn abci_info() {
-        let abci_info = localhost_rpc_client().abci_info().await.unwrap();
+        let abci_info = localhost_http_client().abci_info().await.unwrap();
 
         assert_eq!(abci_info.app_version, 1u64);
         assert_eq!(abci_info.data.is_empty(), false);
@@ -55,7 +76,7 @@ mod rpc {
     #[tokio::test]
     async fn abci_query() {
         let key = "unpopulated_key".parse().unwrap();
-        let abci_query = localhost_rpc_client()
+        let abci_query = localhost_http_client()
             .abci_query(Some(key), vec![], None, false)
             .await
             .unwrap();
@@ -76,7 +97,7 @@ mod rpc {
     #[tokio::test]
     async fn block() {
         let height = 1u64;
-        let block_info = localhost_rpc_client()
+        let block_info = localhost_http_client()
             .block(Height::try_from(height).unwrap())
             .await
             .unwrap();
@@ -109,7 +130,7 @@ mod rpc {
     #[tokio::test]
     async fn block_results() {
         let height = 1u64;
-        let block_results = localhost_rpc_client()
+        let block_results = localhost_http_client()
             .block_results(Height::try_from(height).unwrap())
             .await
             .unwrap();
@@ -122,7 +143,7 @@ mod rpc {
     #[tokio::test]
     async fn blockchain() {
         let max_height = 10u64;
-        let blockchain_info = localhost_rpc_client()
+        let blockchain_info = localhost_http_client()
             .blockchain(Height::from(1u32), Height::try_from(max_height).unwrap())
             .await
             .unwrap();
@@ -137,7 +158,7 @@ mod rpc {
     #[tokio::test]
     async fn commit() {
         let height = 1u64;
-        let commit_info = localhost_rpc_client()
+        let commit_info = localhost_http_client()
             .commit(Height::try_from(height).unwrap())
             .await
             .unwrap();
@@ -154,13 +175,13 @@ mod rpc {
     #[tokio::test]
     async fn consensus_state() {
         // TODO(thane): Test more than just the deserialization.
-        localhost_rpc_client().consensus_state().await.unwrap();
+        localhost_http_client().consensus_state().await.unwrap();
     }
 
     /// `/genesis` endpoint
     #[tokio::test]
     async fn genesis() {
-        let genesis = localhost_rpc_client().genesis().await.unwrap(); // https://github.com/tendermint/tendermint/issues/5549
+        let genesis = localhost_http_client().genesis().await.unwrap(); // https://github.com/tendermint/tendermint/issues/5549
 
         assert_eq!(
             genesis.consensus_params.validator.pub_key_types[0].to_string(),
@@ -171,7 +192,7 @@ mod rpc {
     /// `/net_info` endpoint integration test
     #[tokio::test]
     async fn net_info() {
-        let net_info = localhost_rpc_client().net_info().await.unwrap();
+        let net_info = localhost_http_client().net_info().await.unwrap();
 
         assert!(net_info.listening);
     }
@@ -179,7 +200,7 @@ mod rpc {
     /// `/status` endpoint integration test
     #[tokio::test]
     async fn status_integration() {
-        let status = localhost_rpc_client().status().await.unwrap();
+        let status = localhost_http_client().status().await.unwrap();
 
         // For lack of better things to test
         assert_eq!(status.validator_info.voting_power.value(), 10);
@@ -187,9 +208,7 @@ mod rpc {
 
     #[tokio::test]
     async fn subscription_interface() {
-        let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
-            .await
-            .unwrap();
+        let (client, driver) = localhost_websocket_client().await;
         let driver_handle = tokio::spawn(async move { driver.run().await });
         let mut subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
         let mut ev_count = 5_i32;
@@ -220,9 +239,7 @@ mod rpc {
     }
 
     async fn simple_transaction_subscription() {
-        let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
-            .await
-            .unwrap();
+        let (client, driver) = localhost_websocket_client().await;
         let driver_handle = tokio::spawn(async move { driver.run().await });
         let mut subs = client.subscribe(EventType::Tx.into()).await.unwrap();
         // We use Id::uuid_v4() here as a quick hack to generate a random value.
@@ -289,9 +306,7 @@ mod rpc {
     }
 
     async fn concurrent_subscriptions() {
-        let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
-            .await
-            .unwrap();
+        let (client, driver) = localhost_websocket_client().await;
         let driver_handle = tokio::spawn(async move { driver.run().await });
         let new_block_subs = client.subscribe(EventType::NewBlock.into()).await.unwrap();
         let tx_subs = client.subscribe(EventType::Tx.into()).await.unwrap();
@@ -352,11 +367,8 @@ mod rpc {
     }
 
     async fn tx_search() {
-        let rpc_client = localhost_rpc_client();
-        let (mut subs_client, driver) =
-            WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
-                .await
-                .unwrap();
+        let rpc_client = localhost_http_client();
+        let (mut subs_client, driver) = localhost_websocket_client().await;
         let driver_handle = tokio::spawn(async move { driver.run().await });
 
         let tx = "tx_search_key=tx_search_value".to_string();
@@ -368,6 +380,10 @@ mod rpc {
         .await
         .unwrap();
         println!("Got tx_info: {:?}", tx_info);
+
+        // TODO(thane): Find a better way of accomplishing this. This might
+        //              still be nondeterministic.
+        tokio::time::sleep(Duration::from_millis(500)).await;
 
         let res = rpc_client
             .tx_search(
