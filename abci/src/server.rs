@@ -2,9 +2,9 @@
 
 use crate::codec::ServerCodec;
 use crate::{Application, Result};
-use log::{error, info};
 use std::net::{TcpListener, TcpStream, ToSocketAddrs};
 use std::thread;
+use tracing::{error, info};
 
 /// The size of the read buffer for each incoming connection to the ABCI
 /// server.

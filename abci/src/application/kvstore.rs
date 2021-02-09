@@ -3,13 +3,13 @@
 use crate::codec::{encode_varint, MAX_VARINT_LENGTH};
 use crate::{Application, Error, Result};
 use bytes::BytesMut;
-use log::{debug, info};
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use tendermint_proto::abci::{
     Event, EventAttribute, RequestCheckTx, RequestDeliverTx, RequestInfo, RequestQuery,
     ResponseCheckTx, ResponseCommit, ResponseDeliverTx, ResponseInfo, ResponseQuery,
 };
+use tracing::{debug, info};
 
 /// In-memory, hashmap-backed key/value store ABCI application.
 ///

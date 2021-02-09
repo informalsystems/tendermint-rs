@@ -19,15 +19,15 @@ required-features = [ "binary", "kvstore-app" ]
 client = []
 echo-app = []
 kvstore-app = []
-binary = [ "simple_logger", "structopt" ]
+binary = [ "structopt", "tracing-subscriber" ]
 
 [dependencies]
 bytes = "1.0"
 eyre = "0.6"
-log = "0.4"
 prost = "0.7"
 tendermint-proto = { version = "0.18.0", path = "../proto" }
 thiserror = "1.0"
+tracing = "0.1"
 
-simple_logger = { version = "1.11", optional = true }
 structopt = { version = "0.3", optional = true }
+tracing-subscriber = { version = "0.2", optional = true }
