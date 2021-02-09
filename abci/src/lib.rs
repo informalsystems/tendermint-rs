@@ -4,14 +4,17 @@ mod application;
 #[cfg(feature = "client")]
 mod client;
 mod codec;
-mod result;
+mod error;
 mod server;
+
+// Re-exported
+pub use eyre::Result;
 
 // Common exports
 pub use application::Application;
 #[cfg(feature = "client")]
 pub use client::{Client, ClientBuilder};
-pub use result::{Error, Result};
+pub use error::Error;
 pub use server::{Server, ServerBuilder};
 
 // Example applications

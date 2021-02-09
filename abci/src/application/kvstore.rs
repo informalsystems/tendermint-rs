@@ -265,9 +265,10 @@ enum Command {
 
 fn channel_send<T>(tx: &Sender<T>, value: T) -> Result<()> {
     tx.send(value)
-        .map_err(|e| Error::ChannelSend(e.to_string()))
+        .map_err(|e| Error::ChannelSend(e.to_string()).into())
 }
 
 fn channel_recv<T>(rx: &Receiver<T>) -> Result<T> {
-    rx.recv().map_err(|e| Error::ChannelRecv(e.to_string()))
+    rx.recv()
+        .map_err(|e| Error::ChannelRecv(e.to_string()).into())
 }

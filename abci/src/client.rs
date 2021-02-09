@@ -56,10 +56,7 @@ macro_rules! perform {
     ($self:expr, $type:ident, $req:expr) => {
         match $self.perform(request::Value::$type($req))? {
             response::Value::$type(r) => Ok(r),
-            r => Err(Error::UnexpectedServerResponseType(
-                stringify!($type).to_string(),
-                r,
-            )),
+            r => Err(Error::UnexpectedServerResponseType(stringify!($type).to_string(), r).into()),
         }
     };
 }
@@ -153,7 +150,7 @@ impl Client {
             .ok_or(Error::ServerConnectionTerminated)??;
         match res.value {
             Some(value) => Ok(value),
-            None => Err(Error::MalformedServerResponse),
+            None => Err(Error::MalformedServerResponse.into()),
         }
     }
 }
