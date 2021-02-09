@@ -135,14 +135,9 @@ where
     let mut tmp = src.clone().freeze();
     let encoded_len = match decode_varint(&mut tmp) {
         Ok(len) => len,
-        Err(e) => {
-            return if src_len <= MAX_VARINT_LENGTH {
-                // We've potentially only received a partial length delimiter
-                Ok(None)
-            } else {
-                Err(e)
-            };
-        }
+        // We've potentially only received a partial length delimiter
+        Err(_) if src_len <= MAX_VARINT_LENGTH => return Ok(None),
+        Err(e) => return Err(e),
     };
     let remaining = tmp.remaining() as u64;
     if remaining < encoded_len {
