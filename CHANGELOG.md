@@ -1,4 +1,9 @@
-## Unreleased
+## v0.18.1
+
+*Feb 10, 2021*
+
+The main focus for this minor release is fixing the rendering of our
+[`tendermint-light-client` crate documentation][light-client-docs].
 
 ### BUG FIXES
 
@@ -6,11 +11,12 @@
   receive an empty evidence Protobuf structure ([#782])
 * `[tendermint-light-node]` Upgrade `jsonrpc` dependency to v17.0 to fix security
   vulnerability in `hyper` v0.12.35 ([#803])
-* `[tendermint-light-client]` Fix Fix rendering of documentation on docs.rs ([#806])
+* `[tendermint-light-client]` Fix rendering of documentation on docs.rs ([#806])
 
 [#782]: https://github.com/informalsystems/tendermint-rs/issues/782
 [#803]: https://github.com/informalsystems/tendermint-rs/issues/803
 [#806]: https://github.com/informalsystems/tendermint-rs/issues/806
+[light-client-docs]: https://docs.rs/crate/tendermint-light-client/
 
 ## v0.18.0
 
