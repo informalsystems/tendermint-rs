@@ -249,7 +249,7 @@ impl From<Params> for RawEvidenceParams {
 /// essentially, to keep the usages look cleaner
 /// i.e. you can avoid using serde annotations everywhere
 /// Todo: harmonize google::protobuf::Duration, std::time::Duration and this. Too many structs.
-/// https://github.com/informalsystems/tendermint-rs/issues/741
+/// <https://github.com/informalsystems/tendermint-rs/issues/741>
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct Duration(#[serde(with = "serializers::time_duration")] pub std::time::Duration);
 

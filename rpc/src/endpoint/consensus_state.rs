@@ -9,7 +9,7 @@ use subtle_encoding::hex;
 use tendermint::block::{Height, Round};
 use tendermint::{account, hash, vote, Hash, Time};
 
-// From https://github.com/tendermint/tendermint/blob/e820e68acd69737cfb63bc9ccca5f5450a42b5cf/types/vote.go#L16
+// From <https://github.com/tendermint/tendermint/blob/e820e68acd69737cfb63bc9ccca5f5450a42b5cf/types/vote.go#L16>
 const NIL_VOTE_STR: &str = "nil-Vote";
 
 /// Get the current consensus state.
@@ -35,7 +35,7 @@ impl crate::SimpleRequest for Request {}
 
 /// The current consensus state (UNSTABLE).
 ///
-/// Currently based on https://github.com/tendermint/tendermint/blob/e820e68acd69737cfb63bc9ccca5f5450a42b5cf/consensus/types/round_state.go#L97
+/// Currently based on <https://github.com/tendermint/tendermint/blob/e820e68acd69737cfb63bc9ccca5f5450a42b5cf/consensus/types/round_state.go#L97>
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
     pub round_state: RoundState,

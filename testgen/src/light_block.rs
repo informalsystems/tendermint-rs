@@ -14,7 +14,7 @@ use tendermint::{block::signed_header::SignedHeader, Hash};
 /// It records everything the light client needs to know about a block.
 /// NOTE: This struct & associated `impl` below are a copy of light-client's `LightBlock`.
 /// The copy is necessary here to avoid a circular dependency.
-/// Cf. https://github.com/informalsystems/tendermint-rs/issues/605
+/// Cf. <https://github.com/informalsystems/tendermint-rs/issues/605>
 /// TODO: fix redundant code without introducing cyclic dependency.
 ///
 /// To convert `TMLightBlock` to the Domain type `LightBlock` used in light-client crate
