@@ -4,7 +4,7 @@
 //! The deserializer is created for backwards compatibility: `total` was changed from a
 //! string-quoted integer value into an integer value without quotes in Tendermint Core v0.34.0.
 //! This deserializer allows backwards-compatibility by deserializing both ways.
-//! See also: https://github.com/informalsystems/tendermint-rs/issues/679
+//! See also: <https://github.com/informalsystems/tendermint-rs/issues/679>
 use serde::{de::Error, de::Visitor, Deserializer, Serialize, Serializer};
 use std::convert::TryFrom;
 use std::fmt::Formatter;

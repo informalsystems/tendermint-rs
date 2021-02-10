@@ -5,7 +5,8 @@
 #![forbid(unsafe_code)]
 #![doc(html_root_url = "https://docs.rs/tendermint-proto/0.18.0")]
 
-// Built-in prost_types with slight customization to enable JSON-encoding
+/// Built-in prost_types with slight customization to enable JSON-encoding
+#[allow(warnings)]
 pub mod google {
     pub mod protobuf {
         include!("prost/google.protobuf.rs");
@@ -14,6 +15,7 @@ pub mod google {
     }
 }
 
+#[allow(warnings)]
 mod tendermint;
 pub use tendermint::*;
 
