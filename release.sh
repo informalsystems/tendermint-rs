@@ -71,6 +71,7 @@ list_package_files() {
 wait_until_available() {
   echo "Waiting for crate ${1} to become available via crates.io..."
   for retry in {1..5}; do
+    sleep 5
     ONLINE_DATE="$(check_version_online "${1}" "${2}")"
     if [ -n "${ONLINE_DATE}" ]; then
       echo "Crate ${crate} is now available online"
@@ -81,7 +82,6 @@ wait_until_available() {
         exit 1
       else
         echo "Not available just yet. Waiting a few seconds..."
-        sleep 5
       fi
     fi
   done
