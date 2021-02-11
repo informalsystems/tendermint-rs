@@ -24,8 +24,6 @@ pub type ClientCodec<S> = Codec<S, Response, Request>;
 
 /// Allows for iteration over `S` to produce instances of `I`, as well as
 /// sending instances of `O`.
-///
-/// `S` must implement [`std::io::Read`] and [`std::io::Write`].
 pub struct Codec<S, I, O> {
     stream: S,
     // Long-running read buffer
