@@ -512,8 +512,6 @@ mod test {
     use std::thread;
 
     use pipe;
-    use quickcheck::TestResult;
-    use quickcheck_macros::quickcheck;
 
     use super::*;
 
@@ -573,39 +571,29 @@ mod test {
         receiver.join().expect("receiver thread has panicked");
     }
 
-    #[quickcheck]
-    fn prop_read_what_you_wrote(data: Vec<u8>) -> TestResult {
-        if data.len() == 0 {
-            return TestResult::discard();
-        }
-
-        let data_len = data.len();
-        let data_written = data.to_vec(); // copy because data is moved
-
-        let (pipe1, pipe2) = pipe::bipipe_buffered();
-
-        // 1) write data
-        let thread = thread::spawn(move || {
-            let mut csprng = OsRng {};
-            let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-            let mut conn = SecretConnection::new(pipe2, &privkey1, Version::V0_34)
-                .expect("successful connection");
-            conn.write_all(&data).expect("expected to write data");
-        });
-
+    #[test]
+    fn test_evil_peer_shares_invalid_eph_key() {
         let mut csprng = OsRng {};
-        let privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
-        let mut conn =
-            SecretConnection::new(pipe1, &privkey, Version::V0_34).expect("successful connection");
+        let local_privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+        let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
+        let bytes: [u8; 32] = [0; 32];
+        let res = h.got_key(EphemeralPublic::from(bytes));
+        assert_eq!(res.is_err(), true);
+    }
 
-        // 2) read data
-        let mut data_read = vec![0; data_len];
-        conn.read_exact(&mut data_read)
-            .expect("expected to read data");
+    #[test]
+    fn test_evil_peer_shares_invalid_auth_sig() {
+        let mut csprng = OsRng {};
+        let local_privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+        let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
+        let res = h.got_key(EphemeralPublic::from(x25519_dalek::X25519_BASEPOINT_BYTES));
+        assert_eq!(res.is_err(), false);
 
-        thread.join().expect("thread has panicked");
-
-        // 3) assert equality
-        TestResult::from_bool(data_written == data_read)
+        let mut h = res.unwrap();
+        let res = h.got_signature(proto::p2p::AuthSigMessage {
+            pub_key: None,
+            sig: vec![],
+        });
+        assert_eq!(res.is_err(), true);
     }
 }
