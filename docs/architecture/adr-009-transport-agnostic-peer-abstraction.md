@@ -48,13 +48,13 @@ pub trait Endpoint: Send {
     type Connection;
 
     fn connect(&self, info: ConnectInfo) -> Result<Self::Connection>;
-    fn listen_addrs(&self) -> SocketAddr;
+    fn listen_addrs(&self) -> Vec<SocketAddr>;
 }
 ```
 
 Centerpiece of the whole shebang is the `Connection`. It represents a connected
 peer and provides the primitives to get data and send data from a peer. It is
-designed with the outlook to support stream based trasnports down the road.
+designed with the outlook to support stream based transports down the road.
 While being open to enable feature parity with current production installations
 based on tendermint-go's `MConn`.
 
@@ -171,7 +171,7 @@ Proposed
 
 * Unified way to bootstrap and integrate transports
 * Potential for connecting different wire transports in the same process
-* Rest of the domain is simply concerned with `PeerId`s as identity
+* Rest of the domain is simply concerned with `node::Id`s as identity
 
 ### Negative
 
