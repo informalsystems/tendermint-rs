@@ -141,24 +141,35 @@ jobs:
   nightly-coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Install nightly Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           components: llvm-tools-preview
           override: true
-      - uses: actions-rs/cargo@v1
+      - name: Install cargo-llvm-cov
+        uses: actions-rs/cargo@v1
         with:
           command: install
           args: cargo-llvm-cov --version 0.1.0-alpha.2
-      - uses: actions-rs/cargo@v1
+      - name: Install cargo-binutils
+        uses: actions-rs/cargo@v1
         with:
           command: install
           args: cargo-binutils
-      - uses: actions-rs/cargo@v1
+      - name: Install rustfilt demangler
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: rustfilt
+      - name: Clean
+        uses: actions-rs/cargo@v1
         with:
           command: clean
-      - run: cargo llvm-cov --all-features --text > coverage.txt
+      - name: Run test suite with code coverage
+        run: cargo llvm-cov --all-features --text > coverage.txt
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
