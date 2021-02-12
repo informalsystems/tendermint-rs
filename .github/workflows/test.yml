@@ -153,6 +153,10 @@ jobs:
           args: cargo-llvm-cov --version 0.1.0-alpha.2
       - uses: actions-rs/cargo@v1
         with:
+          command: install
+          args: cargo-binutils
+      - uses: actions-rs/cargo@v1
+        with:
           command: clean
       - run: cargo llvm-cov --all-features --text > coverage.txt
       - name: Upload coverage to Codecov
