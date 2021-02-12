@@ -208,7 +208,7 @@ fn tc_corrupted_hash(max: u32) -> impl Strategy<Value = TestCase> {
 
 proptest! {
     #![proptest_config(ProptestConfig {
-        cases: 20,
+        cases: 1,
         max_shrink_iters: 0,
         ..Default::default()
     })]
