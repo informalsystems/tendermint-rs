@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::thread;
 
@@ -32,12 +32,34 @@ pub enum Event {
     UpgradeFailed(node::Id, Report),
 }
 
+enum Internal<Conn> {
+    Accept,
+    Upgrade(transport::Direction<Conn>),
+}
+
 enum Input<Conn> {
     Accepted(node::Id, Conn),
     Command(Command),
     Connected(node::Id, Conn),
     Receive(node::Id, message::Receive),
     Upgraded(node::Id, Result<peer::Peer<peer::Running<Conn>>>),
+}
+
+enum Output<Conn> {
+    Event(Event),
+    Internal(Internal<Conn>),
+}
+
+impl<Conn> From<Event> for Output<Conn> {
+    fn from(event: Event) -> Self {
+        Output::Event(event)
+    }
+}
+
+impl<Conn> From<Internal<Conn>> for Output<Conn> {
+    fn from(internal: Internal<Conn>) -> Self {
+        Output::Internal(internal)
+    }
 }
 
 pub struct Supervisor {
@@ -113,7 +135,7 @@ impl Supervisor {
         thread::spawn(move || {
             let mut state: State<<T as transport::Transport>::Connection> = State {
                 connected: HashMap::new(),
-                stopped: HashMap::new(),
+                stopped: HashSet::new(),
                 upgraded: HashMap::new(),
             };
 
@@ -134,8 +156,14 @@ impl Supervisor {
                     selector.wait()
                 };
 
-                for event in state.transition(input) {
-                    event_tx.send(event).unwrap();
+                for output in state.transition(input) {
+                    match output {
+                        Output::Event(event) => event_tx.send(event).unwrap(),
+                        Output::Internal(internal) => match internal {
+                            Internal::Accept => accept_tx.send(()).unwrap(),
+                            Internal::Upgrade(conn) => upgrade_tx.send(conn).unwrap(),
+                        },
+                    }
                 }
             }
         });
@@ -159,8 +187,8 @@ struct State<Conn>
 where
     Conn: Connection,
 {
-    connected: HashMap<node::Id, transport::Direction<Conn>>,
-    stopped: HashMap<node::Id, peer::Peer<peer::Stopped>>,
+    connected: HashMap<node::Id, Direction>,
+    stopped: HashSet<node::Id>,
     upgraded: HashMap<node::Id, peer::Peer<peer::Running<Conn>>>,
 }
 
@@ -168,7 +196,7 @@ impl<Conn> State<Conn>
 where
     Conn: Connection,
 {
-    fn transition(&mut self, input: Input<Conn>) -> Vec<Event> {
+    fn transition(&mut self, input: Input<Conn>) -> Vec<Output<Conn>> {
         match input {
             Input::Accepted(id, conn) => self.handle_accepted(id, conn),
             Input::Command(command) => self.handle_command(command),
@@ -178,26 +206,32 @@ where
         }
     }
 
-    fn handle_accepted(&mut self, id: node::Id, conn: Conn) -> Vec<Event> {
-        self.connected
-            .insert(id, transport::Direction::Incoming(conn));
+    fn handle_accepted(&mut self, id: node::Id, conn: Conn) -> Vec<Output<Conn>> {
+        // TODO(xla): Ensure we only allow one connection per node. Unless a higher-level protocol
+        // like PEX is taking care of it.
+        self.connected.insert(id, Direction::Incoming);
 
-        vec![Event::Connected(id, Direction::Incoming)]
+        vec![
+            Output::from(Event::Connected(id, Direction::Incoming)),
+            Output::from(Internal::Upgrade(transport::Direction::Incoming(conn))),
+        ]
     }
 
-    fn handle_command(&mut self, command: Command) -> Vec<Event> {
+    fn handle_command(&mut self, command: Command) -> Vec<Output<Conn>> {
         match command {
-            Command::Accept => vec![],
+            Command::Accept => vec![Output::from(Internal::Accept)],
             Command::Connect(_addr) => vec![],
             Command::Disconnect(id) => {
                 let peer = self.upgraded.remove(&id).unwrap();
+                // FIXME(xla): This side-effect handling does not belong here it should be handled
+                // outside of the state machine.
                 let stopped = peer.stop().unwrap();
-                self.stopped.insert(id, stopped);
+                self.stopped.insert(id);
 
-                vec![Event::Disconnected(
+                vec![Output::from(Event::Disconnected(
                     id,
                     Report::msg("successfully disconected"),
-                )]
+                ))]
             }
             Command::Msg(peer_id, msg) => {
                 let peer = self.upgraded.get(&peer_id).unwrap();
@@ -209,32 +243,36 @@ where
         }
     }
 
-    fn handle_connected(&mut self, id: node::Id, conn: Conn) -> Vec<Event> {
-        self.connected
-            .insert(id, transport::Direction::Outgoing(conn));
+    fn handle_connected(&mut self, id: node::Id, conn: Conn) -> Vec<Output<Conn>> {
+        // TODO(xla): Ensure we only allow one connection per node. Unless a higher-level protocol
+        // like PEX is taking care of it.
+        self.connected.insert(id, Direction::Outgoing);
 
-        vec![Event::Connected(id, Direction::Outgoing)]
+        vec![
+            Output::from(Event::Connected(id, Direction::Outgoing)),
+            Output::from(Internal::Upgrade(transport::Direction::Outgoing(conn))),
+        ]
     }
 
-    fn handle_receive(&self, id: node::Id, msg: message::Receive) -> Vec<Event> {
-        vec![Event::Message(id, msg)]
+    fn handle_receive(&self, id: node::Id, msg: message::Receive) -> Vec<Output<Conn>> {
+        vec![Output::from(Event::Message(id, msg))]
     }
 
     fn handle_upgraded(
         &mut self,
         id: node::Id,
         res: Result<peer::Peer<peer::Running<Conn>>>,
-    ) -> Vec<Event> {
+    ) -> Vec<Output<Conn>> {
         match res {
             Ok(peer) => {
                 self.upgraded.insert(id, peer);
 
-                vec![Event::Upgraded(id)]
+                vec![Output::from(Event::Upgraded(id))]
             }
             Err(err) => {
                 self.connected.remove(&id);
 
-                vec![Event::UpgradeFailed(id, err)]
+                vec![Output::from(Event::UpgradeFailed(id, err))]
             }
         }
     }
