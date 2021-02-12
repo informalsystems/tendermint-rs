@@ -143,6 +143,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Install nightly Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -178,5 +180,4 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.txt
-          yml: ./codecov.yml
           fail_ci_if_error: true
