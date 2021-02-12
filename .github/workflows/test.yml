@@ -150,20 +150,23 @@ jobs:
           components: llvm-tools-preview
           override: true
       - name: Install cargo-llvm-cov
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/install@v0.1
         with:
-          command: install
-          args: cargo-llvm-cov --version 0.1.0-alpha.2
+          crate: cargo-llvm-cov
+          version: 0.1.0-alpha.2
+          use-tool-cache: true
       - name: Install cargo-binutils
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/install@v0.1
         with:
-          command: install
-          args: cargo-binutils
+          crate: cargo-binutils
+          version: latest
+          use-tool-cache: true
       - name: Install rustfilt demangler
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/install@v0.1
         with:
-          command: install
-          args: rustfilt
+          crate: rustfilt
+          version: latest
+          use-tool-cache: true
       - name: Clean
         uses: actions-rs/cargo@v1
         with:
