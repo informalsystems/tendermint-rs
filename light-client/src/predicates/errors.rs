@@ -8,7 +8,7 @@ use crate::errors::ErrorExt;
 use crate::operations::voting_power::VotingPowerTally;
 use crate::types::{Hash, Height, Time, Validator, ValidatorAddress};
 
-/// The various errors which can be raised by the verifier component,
+/// The various errors which can be raised by the verifier-web component,
 /// when validating or verifying a light block.
 #[derive(Debug, Clone, Error, PartialEq, Serialize, Deserialize)]
 pub enum VerificationError {

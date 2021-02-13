@@ -11,10 +11,11 @@ use crate::{
     types::{LightBlock, Time},
 };
 use preds::{errors::VerificationError, ProdPredicates, VerificationPredicates};
+use serde::{Deserialize, Serialize};
 
 /// Represents the result of the verification performed by the
-/// verifier component.
-#[derive(Debug)]
+/// verifier-web component.
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Verdict {
     /// Verification succeeded, the block is valid.
     Success,
@@ -35,7 +36,7 @@ impl From<Result<(), VerificationError>> for Verdict {
     }
 }
 
-/// The verifier checks:
+/// The verifier-web checks:
 ///
 /// a) whether a given untrusted light block is valid, and
 /// b) whether a given untrusted light block should be trusted
@@ -55,7 +56,7 @@ pub trait Verifier: Send + Sync {
     ) -> Verdict;
 }
 
-/// Production implementation of the verifier.
+/// Production implementation of the verifier-web.
 ///
 /// For testing purposes, this implementation is parametrized by:
 /// - A set of predicates used to validate a light block
