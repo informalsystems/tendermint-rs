@@ -41,6 +41,11 @@ This should build the example and start a server at http://localhost:8080
 
 ### Step 3: Input your data
 
+When you open up at http://localhost:8080, you should see something like the
+following:
+
+![screenshot1](screenshot1.png)
+
 Copy/paste the JSON representation of a trusted block alongside that of the
 untrusted block you wish to verify into the supplied editors. Configure your
 desired Light Client parameters, as well as the timestamp at which you want to
@@ -48,6 +53,8 @@ check whether the untrusted block is trustworthy, and click the **Verify**
 button.
 
 This will show you the raw JSON object received back from the verifier.
+
+![screenshot2](screenshot2.png)
 
 ## Limitations
 
