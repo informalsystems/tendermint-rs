@@ -14,7 +14,7 @@ use preds::{errors::VerificationError, ProdPredicates, VerificationPredicates};
 use serde::{Deserialize, Serialize};
 
 /// Represents the result of the verification performed by the
-/// verifier-web component.
+/// verifier component.
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Verdict {
     /// Verification succeeded, the block is valid.
@@ -36,7 +36,7 @@ impl From<Result<(), VerificationError>> for Verdict {
     }
 }
 
-/// The verifier-web checks:
+/// The verifier checks:
 ///
 /// a) whether a given untrusted light block is valid, and
 /// b) whether a given untrusted light block should be trusted
@@ -56,7 +56,7 @@ pub trait Verifier: Send + Sync {
     ) -> Verdict;
 }
 
-/// Production implementation of the verifier-web.
+/// Production implementation of the verifier.
 ///
 /// For testing purposes, this implementation is parametrized by:
 /// - A set of predicates used to validate a light block
