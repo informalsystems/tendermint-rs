@@ -152,6 +152,43 @@ pub trait ParseTimestamp {
 mod tests {
     use super::*;
 
+    use chrono::{DateTime, TimeZone, Utc};
+    use proptest::prelude::*;
+
+    prop_compose! {
+        /// An abitrary `chrono::DateTime`
+        fn arb_datetime()(
+            year in 0000..9999i32,
+            day in 1..365u32,
+            hour in 1..23u32,
+            min in 0..59u32,
+            sec in 0..59u32,
+            // This is the max allowed value for nanoseconds (for some reason).
+            // https://github.com/chronotope/chrono/blob/3467172c31188006147585f6ed3727629d642fed/src/naive/time.rs#L385
+            nano in 0..1_999_999_999u32
+        ) -> DateTime<Utc> {
+            Utc.yo(year, day).and_hms_nano(hour, min, sec, nano)
+        }
+    }
+
+    prop_compose! {
+        /// An abitrary `Time`
+        fn arb_time()(d in arb_datetime()) -> Time {
+            Time(d)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn serde_from_value_is_the_inverse_of_to_value(time in arb_time()) {
+            // If `from_value` is the inverse of `to_value`, then it will always
+            // map the JSON `encoded_time` to back to the inital `time`.
+            let encoded_time = serde_json::to_value(&time).unwrap();
+            let decoded_time = serde_json::from_value(encoded_time.clone()).unwrap();
+            assert_eq!(time, decoded_time);
+        }
+    }
+
     #[test]
     fn serde_roundtrip() {
         const DATES: &[&str] = &[
