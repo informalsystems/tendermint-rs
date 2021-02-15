@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc df3f2e8354a952437423936d0fc0139283de652c29c1b00c4d096a8f87effe03 # shrinks to _t = 0
+cc 6bf48a103ccd51a09c319919110535dbf28d553639097516652cab3f5b1b89e5 # shrinks to time = Time(0000-01-01T01:00:00Z)
