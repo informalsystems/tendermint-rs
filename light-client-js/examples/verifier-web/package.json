@@ -20,7 +20,11 @@
     "rust",
     "webpack"
   ],
-  "author": "Ashley Williams <ashley666ashley@gmail.com>",
+  "author": "Informal Systems <hello@informal.systems>",
+  "contributors": [
+    "Romain Ruetschi <romain@informal.systems>",
+    "Thane Thomson <thane@informal.systems>"
+  ],
   "license": "(MIT OR Apache-2.0)",
   "bugs": {
     "url": "https://github.com/rustwasm/create-wasm-app/issues"
