@@ -185,7 +185,7 @@ mod tests {
             // map the JSON `encoded_time` to back to the inital `time`.
             let encoded_time = serde_json::to_value(&time).unwrap();
             let decoded_time = serde_json::from_value(encoded_time.clone()).unwrap();
-            assert_eq!(time, decoded_time);
+            prop_assert_eq!(time, decoded_time);
         }
     }
 
