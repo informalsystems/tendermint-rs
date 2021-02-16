@@ -173,8 +173,70 @@ mod tests {
 
     prop_compose! {
         /// An abitrary `Time`
-        fn arb_time()(d in arb_datetime()) -> Time {
-            Time(d)
+        fn arb_time()(d in arb_datetime()) -> Time { Time(d) }
+    }
+
+    prop_compose! {
+        fn arb_rfc339_time_offset()(
+            sign in "[+-]",
+            hour in 0..23u8,
+            min in 0..59u8,
+        ) -> String {
+            format!("{:}{:0>2}:{:0>2}", sign, hour, min)
+        }
+    }
+
+    fn arb_rfc3339_offset() -> impl Strategy<Value = String> {
+        prop_oneof![arb_rfc339_time_offset(), Just("Z".to_owned())]
+    }
+
+    prop_compose! {
+        fn arb_rfc3339_partial_time()(
+            hour in 0..23u8,
+            min in 0..59u8,
+            sec in 0..60u8, // allows for leap second
+            secfrac in proptest::option::of(0..u64::MAX),
+        ) -> String {
+            let frac = match secfrac {
+                None => "".to_owned(),
+                Some(frac) => format!(".{:}", frac)
+            };
+            format!("{:0>2}:{:0>2}:{:0>2}{:}", hour, min, sec, frac)
+        }
+    }
+
+    prop_compose! {
+        fn arb_rfc3339_full_time()(
+            time in arb_rfc3339_partial_time(),
+            offset in arb_rfc3339_offset()
+        ) -> String {
+            format!("{:}{:}", time, offset)
+        }
+    }
+
+    prop_compose! {
+        fn arb_rfc3339_full_date()(
+            year in 0..9999u16,
+            month in 1..12u8,
+            day in 1..31u8
+        ) -> String {
+            format!("{:0>4}-{:0>2}-{:0>2}", year, month, day)
+        }
+    }
+
+    prop_compose! {
+        /// An aribtrary rfc3339 timestamp
+        ///
+        /// Follows https://tools.ietf.org/html/rfc3339#section-5.6
+        ///
+        /// NOTE: These timestamps are not bound by the restrictions
+        /// (https://tools.ietf.org/html/rfc3339#section-5.7) that ensure valid
+        /// times.
+        fn arb_rfc3339_timestamp()(
+            date in arb_rfc3339_full_date(),
+            time in arb_rfc3339_full_time()
+        ) -> String {
+            format!("{:}T{:}", date, time)
         }
     }
 
@@ -186,6 +248,11 @@ mod tests {
             let encoded_time = serde_json::to_value(&time).unwrap();
             let decoded_time = serde_json::from_value(encoded_time.clone()).unwrap();
             prop_assert_eq!(time, decoded_time);
+        }
+
+        #[test]
+        fn can_parse_rfc_3339_timestamps(stamp in arb_rfc3339_timestamp()) {
+            prop_assert!(stamp.parse::<Time>().is_ok())
         }
     }
 
