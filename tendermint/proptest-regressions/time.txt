@@ -4,6 +4,5 @@
 #
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
-cc df3f2e8354a952437423936d0fc0139283de652c29c1b00c4d096a8f87effe03 # shrinks to _t = 0
 cc 6bf48a103ccd51a09c319919110535dbf28d553639097516652cab3f5b1b89e5 # shrinks to time = Time(0000-01-01T01:00:00Z)
 cc 1a7792654a4240e600d8bb6ccce9d0c036e1cb3f2667af1f50bbaf993163c3af # shrinks to stamp = "0000-02-30T00:00:00-00:00"
