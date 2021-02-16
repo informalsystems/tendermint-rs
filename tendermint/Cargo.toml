@@ -39,6 +39,8 @@ bytes = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 ed25519 = "1"
 ed25519-dalek = { version = "1", features = ["serde"] }
+# TODO(thane): Remove once https://github.com/myrrlyn/funty/issues/3 is fixed
+funty = "=1.1.0"
 futures = "0.3"
 num-traits = "0.2"
 once_cell = "1.3"

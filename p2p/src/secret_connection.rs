@@ -13,7 +13,7 @@ use chacha20poly1305::{
     ChaCha20Poly1305,
 };
 use ed25519_dalek::{self as ed25519, Signer, Verifier};
-use eyre::{Result, WrapErr};
+use eyre::{eyre, Result, WrapErr};
 use merlin::Transcript;
 use rand_core::OsRng;
 use subtle::ConstantTimeEq;
@@ -42,38 +42,63 @@ pub const DATA_MAX_SIZE: usize = 1024;
 const DATA_LEN_SIZE: usize = 4;
 const TOTAL_FRAME_SIZE: usize = DATA_MAX_SIZE + DATA_LEN_SIZE;
 
-/// Encrypted connection between peers in a Tendermint network
-pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
-    io_handler: IoHandler,
+/// Handshake is a process of establishing the SecretConnection between two peers.
+/// Specification: https://github.com/tendermint/spec/blob/master/spec/p2p/peer.md#authenticated-encryption-handshake
+struct Handshake<S> {
     protocol_version: Version,
-    recv_nonce: Nonce,
-    send_nonce: Nonce,
-    recv_cipher: ChaCha20Poly1305,
-    send_cipher: ChaCha20Poly1305,
-    remote_pubkey: Option<PublicKey>,
-    recv_buffer: Vec<u8>,
+    state: S,
 }
 
-impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
-    /// Returns authenticated remote pubkey
-    pub fn remote_pubkey(&self) -> PublicKey {
-        self.remote_pubkey.expect("remote_pubkey uninitialized")
+/// Handshake states
+
+/// AwaitingEphKey means we're waiting for the remote ephemeral pubkey.
+struct AwaitingEphKey {
+    local_privkey: ed25519::Keypair,
+    local_eph_privkey: Option<EphemeralSecret>,
+}
+
+/// AwaitingAuthSig means we're waiting for the remote authenticated signature.
+struct AwaitingAuthSig {
+    sc_mac: [u8; 32],
+    kdf: Kdf,
+    recv_cipher: ChaCha20Poly1305,
+    send_cipher: ChaCha20Poly1305,
+    local_signature: ed25519::Signature,
+}
+
+impl Handshake<AwaitingEphKey> {
+    /// Initiate a handshake.
+    pub fn new(
+        local_privkey: ed25519::Keypair,
+        protocol_version: Version,
+    ) -> (Self, EphemeralPublic) {
+        // Generate an ephemeral key for perfect forward secrecy.
+        let local_eph_privkey = EphemeralSecret::new(&mut OsRng);
+        let local_eph_pubkey = EphemeralPublic::from(&local_eph_privkey);
+
+        (
+            Handshake {
+                protocol_version,
+                state: AwaitingEphKey {
+                    local_privkey,
+                    local_eph_privkey: Some(local_eph_privkey),
+                },
+            },
+            local_eph_pubkey,
+        )
     }
 
-    /// Performs handshake and returns a new authenticated SecretConnection.
-    pub fn new(
-        mut io_handler: IoHandler,
-        local_privkey: &ed25519::Keypair,
-        protocol_version: Version,
-    ) -> Result<SecretConnection<IoHandler>> {
-        let local_pubkey = PublicKey::from(local_privkey);
-
-        // Generate ephemeral keys for perfect forward secrecy.
-        let (local_eph_pubkey, local_eph_privkey) = gen_eph_keys();
-
-        // Write local ephemeral pubkey and receive one too.
-        let remote_eph_pubkey =
-            share_eph_pubkey(&mut io_handler, &local_eph_pubkey, protocol_version)?;
+    /// Performs a Diffie-Hellman key agreement and creates a local signature.
+    /// Transitions Handshake into AwaitingAuthSig state.
+    pub fn got_key(
+        &mut self,
+        remote_eph_pubkey: EphemeralPublic,
+    ) -> Result<Handshake<AwaitingAuthSig>> {
+        let local_eph_privkey = match self.state.local_eph_privkey.take() {
+            Some(key) => key,
+            None => return Err(eyre!("forgot to call Handshake::new?")),
+        };
+        let local_eph_pubkey = EphemeralPublic::from(&local_eph_privkey);
 
         // Compute common shared secret.
         let shared_secret = EphemeralSecret::diffie_hellman(local_eph_privkey, &remote_eph_pubkey);
@@ -101,40 +126,38 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         transcript.append_message(b"EPHEMERAL_UPPER_PUBLIC_KEY", &high_eph_pubkey_bytes);
         transcript.append_message(b"DH_SECRET", shared_secret.as_bytes());
 
-        // Check if the local ephemeral public key
-        // was the least, lexicographically sorted.
+        // Check if the local ephemeral public key was the least, lexicographically sorted.
         let loc_is_least = local_eph_pubkey_bytes == low_eph_pubkey_bytes;
 
         let kdf = Kdf::derive_secrets_and_challenge(shared_secret.as_bytes(), loc_is_least);
-
-        // Construct SecretConnection.
-        let mut sc = SecretConnection {
-            io_handler,
-            protocol_version,
-            recv_buffer: vec![],
-            recv_nonce: Nonce::default(),
-            send_nonce: Nonce::default(),
-            recv_cipher: ChaCha20Poly1305::new(&kdf.recv_secret.into()),
-            send_cipher: ChaCha20Poly1305::new(&kdf.send_secret.into()),
-            remote_pubkey: None,
-        };
 
         let mut sc_mac: [u8; 32] = [0; 32];
 
         transcript.challenge_bytes(b"SECRET_CONNECTION_MAC", &mut sc_mac);
 
         // Sign the challenge bytes for authentication.
-        let local_signature = if protocol_version.has_transcript() {
-            sign_challenge(&sc_mac, local_privkey)?
+        let local_signature = if self.protocol_version.has_transcript() {
+            sign_challenge(&sc_mac, &self.state.local_privkey)?
         } else {
-            sign_challenge(&kdf.challenge, local_privkey)?
+            sign_challenge(&kdf.challenge, &self.state.local_privkey)?
         };
 
-        // Share (in secret) each other's pubkey & challenge signature
-        let auth_sig_msg = match local_pubkey {
-            PublicKey::Ed25519(ref pk) => share_auth_signature(&mut sc, pk, &local_signature)?,
-        };
+        Ok(Handshake {
+            protocol_version: self.protocol_version,
+            state: AwaitingAuthSig {
+                sc_mac,
+                recv_cipher: ChaCha20Poly1305::new(&kdf.recv_secret.into()),
+                send_cipher: ChaCha20Poly1305::new(&kdf.send_secret.into()),
+                kdf,
+                local_signature,
+            },
+        })
+    }
+}
 
+impl Handshake<AwaitingAuthSig> {
+    /// Returns a verified pubkey of the remote peer.
+    pub fn got_signature(&mut self, auth_sig_msg: proto::p2p::AuthSigMessage) -> Result<PublicKey> {
         let remote_pubkey = auth_sig_msg
             .pub_key
             .and_then(|pk| match pk.sum? {
@@ -148,19 +171,80 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         let remote_sig = ed25519::Signature::try_from(auth_sig_msg.sig.as_slice())
             .map_err(|_| Error::CryptoError)?;
 
-        if protocol_version.has_transcript() {
+        if self.protocol_version.has_transcript() {
             remote_pubkey
-                .verify(&sc_mac, &remote_sig)
+                .verify(&self.state.sc_mac, &remote_sig)
                 .map_err(|_| Error::CryptoError)?;
         } else {
             remote_pubkey
-                .verify(&kdf.challenge, &remote_sig)
+                .verify(&self.state.kdf.challenge, &remote_sig)
                 .map_err(|_| Error::CryptoError)?;
         }
 
         // We've authorized.
-        sc.remote_pubkey = Some(remote_pubkey.into());
+        Ok(remote_pubkey.into())
+    }
+}
 
+/// Encrypted connection between peers in a Tendermint network.
+pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
+    io_handler: IoHandler,
+    protocol_version: Version,
+    recv_nonce: Nonce,
+    send_nonce: Nonce,
+    recv_cipher: ChaCha20Poly1305,
+    send_cipher: ChaCha20Poly1305,
+    remote_pubkey: Option<PublicKey>,
+    recv_buffer: Vec<u8>,
+}
+
+impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
+    /// Returns the remote pubkey. Panics if there's no key.
+    pub fn remote_pubkey(&self) -> PublicKey {
+        self.remote_pubkey.expect("remote_pubkey uninitialized")
+    }
+
+    /// Performs a handshake and returns a new SecretConnection.
+    pub fn new(
+        mut io_handler: IoHandler,
+        local_privkey: ed25519::Keypair,
+        protocol_version: Version,
+    ) -> Result<SecretConnection<IoHandler>> {
+        // Start a handshake process.
+        let local_pubkey = PublicKey::from(&local_privkey);
+        let (mut h, local_eph_pubkey) = Handshake::new(local_privkey, protocol_version);
+
+        // Write local ephemeral pubkey and receive one too.
+        let remote_eph_pubkey =
+            share_eph_pubkey(&mut io_handler, &local_eph_pubkey, protocol_version)?;
+
+        // Compute a local signature (also recv_cipher & send_cipher)
+        let mut h = h.got_key(remote_eph_pubkey)?;
+
+        let mut sc = SecretConnection {
+            io_handler,
+            protocol_version,
+            recv_buffer: vec![],
+            recv_nonce: Nonce::default(),
+            send_nonce: Nonce::default(),
+            recv_cipher: h.state.recv_cipher.clone(),
+            send_cipher: h.state.send_cipher.clone(),
+            remote_pubkey: None,
+        };
+
+        // Share each other's pubkey & challenge signature.
+        // NOTE: the data must be encrypted/decrypted using ciphers.
+        let auth_sig_msg = match local_pubkey {
+            PublicKey::Ed25519(ref pk) => {
+                share_auth_signature(&mut sc, pk, &h.state.local_signature)?
+            }
+        };
+
+        // Authenticate remote pubkey.
+        let remote_pubkey = h.got_signature(auth_sig_msg)?;
+
+        // All good!
+        sc.remote_pubkey = Some(remote_pubkey);
         Ok(sc)
     }
 
@@ -170,7 +254,13 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         chunk: &[u8],
         sealed_frame: &mut [u8; TAG_SIZE + TOTAL_FRAME_SIZE],
     ) -> Result<()> {
-        debug_assert!(chunk.len() <= TOTAL_FRAME_SIZE - DATA_LEN_SIZE);
+        debug_assert!(chunk.len() > 0, "chunk is empty");
+        debug_assert!(
+            chunk.len() <= TOTAL_FRAME_SIZE - DATA_LEN_SIZE,
+            "chunk is too big: {}! max: {}",
+            chunk.len(),
+            DATA_MAX_SIZE,
+        );
         sealed_frame[..DATA_LEN_SIZE].copy_from_slice(&(chunk.len() as u32).to_le_bytes());
         sealed_frame[DATA_LEN_SIZE..DATA_LEN_SIZE + chunk.len()].copy_from_slice(chunk);
 
@@ -226,7 +316,7 @@ impl<IoHandler> Read for SecretConnection<IoHandler>
 where
     IoHandler: Read + Write + Send + Sync,
 {
-    // CONTRACT: data smaller than dataMaxSize is read atomically.
+    // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn read(&mut self, data: &mut [u8]) -> io::Result<usize> {
         if !self.recv_buffer.is_empty() {
             let n = cmp::min(data.len(), self.recv_buffer.len());
@@ -260,7 +350,7 @@ where
         if chunk_length as usize > DATA_MAX_SIZE {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
-                "chunk_length is greater than dataMaxSize",
+                format!("chunk is too big: {}! max: {}", chunk_length, DATA_MAX_SIZE),
             ));
         }
 
@@ -281,8 +371,8 @@ impl<IoHandler> Write for SecretConnection<IoHandler>
 where
     IoHandler: Read + Write + Send + Sync,
 {
-    // Writes encrypted frames of `sealedFrameSize`
-    // CONTRACT: data smaller than dataMaxSize is read atomically.
+    // Writes encrypted frames of `TAG_SIZE` + `TOTAL_FRAME_SIZE`
+    // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
         let mut n = 0usize;
         let mut data_copy = &data[..];
@@ -316,13 +406,6 @@ where
     fn flush(&mut self) -> io::Result<()> {
         self.io_handler.flush()
     }
-}
-
-/// Returns pubkey, private key
-fn gen_eph_keys() -> (EphemeralPublic, EphemeralSecret) {
-    let local_privkey = EphemeralSecret::new(&mut OsRng);
-    let local_pubkey = EphemeralPublic::from(&local_privkey);
-    (local_pubkey, local_privkey)
 }
 
 /// Returns remote_eph_pubkey
@@ -421,5 +504,96 @@ mod tests {
         let got_dh = diffie_hellman(local_priv, remote_pub);
 
         assert_eq!(expected_dh, &got_dh);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::thread;
+
+    use pipe;
+
+    use super::*;
+
+    #[test]
+    fn test_handshake() {
+        let (pipe1, pipe2) = pipe::bipipe_buffered();
+
+        let peer1 = thread::spawn(|| {
+            let mut csprng = OsRng {};
+            let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+            let conn1 = SecretConnection::new(pipe2, privkey1, Version::V0_34);
+            assert_eq!(conn1.is_ok(), true);
+        });
+
+        let peer2 = thread::spawn(|| {
+            let mut csprng = OsRng {};
+            let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+            let conn2 = SecretConnection::new(pipe1, privkey2, Version::V0_34);
+            assert_eq!(conn2.is_ok(), true);
+        });
+
+        peer1.join().expect("peer1 thread has panicked");
+        peer2.join().expect("peer2 thread has panicked");
+    }
+
+    #[test]
+    fn test_read_write_single_message() {
+        let (pipe1, pipe2) = pipe::bipipe_buffered();
+
+        const MESSAGE: &str = "The Queen's Gambit";
+
+        let sender = thread::spawn(move || {
+            let mut csprng = OsRng {};
+            let privkey1: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+            let mut conn1 = SecretConnection::new(pipe2, privkey1, Version::V0_34)
+                .expect("handshake to succeed");
+
+            conn1
+                .write_all(MESSAGE.as_bytes())
+                .expect("expected to write message");
+        });
+
+        let receiver = thread::spawn(move || {
+            let mut csprng = OsRng {};
+            let privkey2: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+            let mut conn2 = SecretConnection::new(pipe1, privkey2, Version::V0_34)
+                .expect("handshake to succeed");
+
+            let mut buf = [0; MESSAGE.len()];
+            conn2
+                .read_exact(&mut buf)
+                .expect("expected to read message");
+            assert_eq!(MESSAGE.as_bytes(), &buf);
+        });
+
+        sender.join().expect("sender thread has panicked");
+        receiver.join().expect("receiver thread has panicked");
+    }
+
+    #[test]
+    fn test_evil_peer_shares_invalid_eph_key() {
+        let mut csprng = OsRng {};
+        let local_privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+        let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
+        let bytes: [u8; 32] = [0; 32];
+        let res = h.got_key(EphemeralPublic::from(bytes));
+        assert_eq!(res.is_err(), true);
+    }
+
+    #[test]
+    fn test_evil_peer_shares_invalid_auth_sig() {
+        let mut csprng = OsRng {};
+        let local_privkey: ed25519::Keypair = ed25519::Keypair::generate(&mut csprng);
+        let (mut h, _) = Handshake::new(local_privkey, Version::V0_34);
+        let res = h.got_key(EphemeralPublic::from(x25519_dalek::X25519_BASEPOINT_BYTES));
+        assert_eq!(res.is_err(), false);
+
+        let mut h = res.unwrap();
+        let res = h.got_signature(proto::p2p::AuthSigMessage {
+            pub_key: None,
+            sig: vec![],
+        });
+        assert_eq!(res.is_err(), true);
     }
 }

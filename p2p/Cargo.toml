@@ -38,5 +38,8 @@ tendermint-proto = { path = "../proto", version = "0.18.1" }
 prost-amino = { version = "0.6", optional = true }
 prost-amino-derive = { version = "0.6", optional = true }
 
+[dev-dependencies]
+pipe = { version = "0", features = ["bidirectional"] }
+
 [features]
 amino = ["prost-amino", "prost-amino-derive"]
