@@ -150,19 +150,42 @@ pub trait ParseTimestamp {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryInto;
+
     use super::*;
 
-    use chrono::{DateTime, TimeZone, Utc};
+    use chrono::{DateTime, Datelike, NaiveDate, TimeZone, Timelike, Utc};
     use proptest::prelude::*;
 
+    fn year_zero() -> DateTime<Utc> {
+        Utc.yo(0, 1).and_hms_nano(0, 0, 0, 0)
+    }
+
+    // Via chrono, we get the duration beteween this month and the next, then
+    // count the number of days in that duration.
+    // See https://stackoverflow.com/a/58188385/1187277
+    fn num_days_in_month(year: i32, month: u32) -> u32 {
+        let given_month = NaiveDate::from_ymd(year, month, 1);
+        let next_month = NaiveDate::from_ymd(
+            if let 12 = month { year + 1 } else { year },
+            if let 12 = month { 1 } else { month + 1 },
+            1,
+        );
+        next_month
+            .signed_duration_since(given_month)
+            .num_days()
+            .try_into()
+            .unwrap()
+    }
+
     prop_compose! {
-        /// An abitrary `chrono::DateTime`
-        fn arb_datetime()(
-            year in 0000..9999i32,
-            day in 1..365u32,
-            hour in 1..23u32,
-            min in 0..59u32,
-            sec in 0..59u32,
+        /// An abitrary `chrono::DateTime` that is later than `after`
+        fn arb_datetime(after: DateTime<Utc>)(
+            year in after.year()..9999i32,
+            day in after.day()..365u32,
+            hour in after.hour()..23u32,
+            min in after.minute()..59u32,
+            sec in after.second()..59u32,
             // This is the max allowed value for nanoseconds (for some reason).
             // https://github.com/chronotope/chrono/blob/3467172c31188006147585f6ed3727629d642fed/src/naive/time.rs#L385
             nano in 0..1_999_999_999u32
@@ -172,8 +195,14 @@ mod tests {
     }
 
     prop_compose! {
-        /// An abitrary `Time`
-        fn arb_time()(d in arb_datetime()) -> Time { Time(d) }
+        /// An abitrary `Time` that is `after` `Some(time)`, if given, or
+        /// later than `year_zero()` if `after` is `None`.
+        fn arb_time_from(after: Option<DateTime<Utc>>)
+            (
+                d in arb_datetime(after.unwrap_or(year_zero()))
+            ) -> Time {
+                Time(d)
+            }
     }
 
     prop_compose! {
@@ -194,7 +223,7 @@ mod tests {
         fn arb_rfc3339_partial_time()(
             hour in 0..23u8,
             min in 0..59u8,
-            sec in 0..60u8, // allows for leap second
+            sec in 0..59u8,
             secfrac in proptest::option::of(0..u64::MAX),
         ) -> String {
             let frac = match secfrac {
@@ -215,23 +244,29 @@ mod tests {
     }
 
     prop_compose! {
-        fn arb_rfc3339_full_date()(
-            year in 0..9999u16,
-            month in 1..12u8,
-            day in 1..31u8
-        ) -> String {
-            format!("{:0>4}-{:0>2}-{:0>2}", year, month, day)
+        fn arb_rfc3339_day_of_year_and_month(year: i32, month: u32)
+            (
+                d in 1..num_days_in_month(year, month)
+            ) -> u32 {
+            d
         }
+    }
+
+    prop_compose! {
+        fn arb_rfc3339_full_date()(year in 0..9999i32, month in 1..12u32)
+            (
+                day in arb_rfc3339_day_of_year_and_month(year, month),
+                year in Just(year),
+                month in Just(month),
+            ) -> String {
+                format!("{:0>4}-{:0>2}-{:0>2}", year, month, day)
+            }
     }
 
     prop_compose! {
         /// An aribtrary rfc3339 timestamp
         ///
         /// Follows https://tools.ietf.org/html/rfc3339#section-5.6
-        ///
-        /// NOTE: These timestamps are not bound by the restrictions
-        /// (https://tools.ietf.org/html/rfc3339#section-5.7) that ensure valid
-        /// times.
         fn arb_rfc3339_timestamp()(
             date in arb_rfc3339_full_date(),
             time in arb_rfc3339_full_time()
@@ -240,9 +275,15 @@ mod tests {
         }
     }
 
+    fn the_epoch() -> DateTime<Utc> {
+        let time = Utc.timestamp(0, 0);
+        println!("{:?}", time);
+        time
+    }
+
     proptest! {
         #[test]
-        fn serde_from_value_is_the_inverse_of_to_value(time in arb_time()) {
+        fn serde_from_value_is_the_inverse_of_to_value(time in arb_time_from(Some(the_epoch()))) {
             // If `from_value` is the inverse of `to_value`, then it will always
             // map the JSON `encoded_time` to back to the inital `time`.
             let encoded_time = serde_json::to_value(&time).unwrap();
