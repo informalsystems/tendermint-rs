@@ -41,7 +41,7 @@ impl From<Time> for Timestamp {
     fn from(value: Time) -> Self {
         // prost_types::Timestamp has a SystemTime converter but
         // tendermint_proto::Timestamp can be JSON-encoded
-        let prost_value = prost_types::Timestamp::from(value.to_system_time().unwrap());
+        let prost_value = prost_types::Timestamp::from(SystemTime::from(value));
         Timestamp {
             seconds: prost_value.seconds,
             nanos: prost_value.nanos,
@@ -77,12 +77,6 @@ impl Time {
     /// Return an RFC 3339 and ISO 8601 date and time string with 6 subseconds digits and Z.
     pub fn to_rfc3339(&self) -> String {
         timestamp::to_rfc3339_nanos(&self.0)
-    }
-
-    /// Convert [`Time`] to [`SystemTime`]
-    pub fn to_system_time(&self) -> Result<SystemTime, Error> {
-        let duration_since_epoch = self.duration_since(Self::unix_epoch())?;
-        Ok(UNIX_EPOCH + duration_since_epoch)
     }
 }
 
@@ -120,7 +114,7 @@ impl From<SystemTime> for Time {
 
 impl From<Time> for SystemTime {
     fn from(t: Time) -> SystemTime {
-        t.to_system_time().unwrap()
+        t.0.into()
     }
 }
 
@@ -316,6 +310,17 @@ mod tests {
         #[test]
         fn can_parse_rfc_3339_timestamps(stamp in arb_rfc3339_timestamp()) {
             prop_assert!(stamp.parse::<Time>().is_ok())
+        }
+
+        #[test]
+        fn serde_of_rfc_3339_time_stamps_is_safe(
+            stamp in arb_rfc3339_timestamp()
+        ) {
+            // ser/de of rfc_3339 timestamps is safe if it never panics.
+            let time = stamp.parse::<Time>().unwrap();
+            let json_encoded_time = serde_json::to_value(&time).unwrap();
+            let decoded_time: Time = serde_json::from_value(json_encoded_time.clone()).unwrap();
+            prop_assert_eq!(time, decoded_time);
         }
     }
 
