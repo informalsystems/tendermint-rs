@@ -22,6 +22,8 @@ use tendermint_proto::abci::{
 /// each incoming connection to the ABCI [`Server`]. It is up to the
 /// application developer to manage shared state between these clones of their
 /// application.
+///
+/// [`Server`]: crate::Server
 pub trait Application: Send + Clone + 'static {
     /// Echo back the same message as provided in the request.
     fn echo(&self, request: RequestEcho) -> ResponseEcho {
