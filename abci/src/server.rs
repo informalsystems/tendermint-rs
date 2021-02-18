@@ -1,5 +1,6 @@
 //! ABCI application server interface.
 
+use crate::application::RequestDispatcher;
 use crate::codec::ServerCodec;
 use crate::{Application, Result};
 use std::net::{TcpListener, TcpStream, ToSocketAddrs};

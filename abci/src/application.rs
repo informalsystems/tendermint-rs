@@ -19,8 +19,9 @@ use tendermint_proto::abci::{
 /// An ABCI application.
 ///
 /// Applications are `Send` + `Clone` + `'static` because they are cloned for
-/// each incoming connection to the ABCI server. It is up to the application
-/// developer to manage shared state between these clones of their application.
+/// each incoming connection to the ABCI [`Server`]. It is up to the
+/// application developer to manage shared state between these clones of their
+/// application.
 pub trait Application: Send + Clone + 'static {
     /// Echo back the same message as provided in the request.
     fn echo(&self, request: RequestEcho) -> ResponseEcho {
@@ -102,9 +103,18 @@ pub trait Application: Send + Clone + 'static {
     ) -> ResponseApplySnapshotChunk {
         Default::default()
     }
+}
 
+/// Provides a mechanism for the [`Server`] to execute incoming requests while
+/// expecting the correct response types.
+pub trait RequestDispatcher {
     /// Executes the relevant application method based on the type of the
     /// request, and produces the corresponding response.
+    fn handle(&self, request: Request) -> Response;
+}
+
+// Implement `RequestDispatcher` for all `Application`s.
+impl<A: Application> RequestDispatcher for A {
     fn handle(&self, request: Request) -> Response {
         tracing::debug!("Incoming request: {:?}", request);
         Response {
