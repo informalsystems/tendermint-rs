@@ -154,11 +154,16 @@ mod tests {
 
     use super::*;
 
-    use chrono::{DateTime, Datelike, NaiveDate, TimeZone, Timelike, Utc};
+    use chrono::{DateTime, NaiveDate, TimeZone, Timelike, Utc};
     use proptest::prelude::*;
 
-    fn year_zero() -> DateTime<Utc> {
-        Utc.yo(0, 1).and_hms_nano(0, 0, 0, 0)
+    fn year_zero() -> Time {
+        Utc.yo(0, 1).and_hms_nano(0, 0, 0, 0).into()
+    }
+
+    fn max_time() -> Time {
+        // Later times cannot be handled by chrono
+        Utc.timestamp(7999999999999, 0).into()
     }
 
     // Via chrono, we get the duration beteween this month and the next, then
@@ -178,30 +183,33 @@ mod tests {
             .unwrap()
     }
 
+    type DT = DateTime<Utc>;
+
     prop_compose! {
         /// An abitrary `chrono::DateTime` that is later than `after`
-        fn arb_datetime(after: DateTime<Utc>)(
-            year in after.year()..9999i32,
-            day in after.day()..365u32,
-            hour in after.hour()..23u32,
-            min in after.minute()..59u32,
-            sec in after.second()..59u32,
+        fn arb_datetime(min: Time, max: Time)(
+            // This is near the maximum allowed seconds for a timestamp (for no clear reason I've found documented)
+            // but it is in year 255479, so we should be good for a while.
+            secs in DT::from(min).timestamp()..DT::from(max).timestamp(),
             // This is the max allowed value for nanoseconds (for some reason).
             // https://github.com/chronotope/chrono/blob/3467172c31188006147585f6ed3727629d642fed/src/naive/time.rs#L385
-            nano in 0..1_999_999_999u32
+            // FIXME Logic is not right here, becuase if we're given a start time of 0.1, then 1.0 should be valid, but
+            //       but this will enforce >= 1.1.
+            nano in DT::from(min).nanosecond()..999_999_999u32
         ) -> DateTime<Utc> {
-            Utc.yo(year, day).and_hms_nano(hour, min, sec, nano)
+            println!("Secs {:?}; Nano {:?}", secs, nano);
+            Utc.timestamp(secs, nano)
         }
     }
 
     prop_compose! {
-        /// An abitrary `Time` that is `after` `Some(time)`, if given, or
-        /// later than `year_zero()` if `after` is `None`.
-        fn arb_time_from(after: Option<DateTime<Utc>>)
+        /// An abitrary `Time` that is `betweeon` `min` and `max` `Time`s, if
+        /// given, or between the `year_zero` and `max_time` otherwise.
+        fn arb_time_in_range(min: Option<Time>, max: Option<Time>)
             (
-                d in arb_datetime(after.unwrap_or(year_zero()))
+                d in arb_datetime(min.unwrap_or(year_zero()), max.unwrap_or(max_time()))
             ) -> Time {
-                Time(d)
+                Time::from(d)
             }
     }
 
@@ -275,19 +283,33 @@ mod tests {
         }
     }
 
-    fn the_epoch() -> DateTime<Utc> {
-        let time = Utc.timestamp(0, 0);
-        println!("{:?}", time);
-        time
+    fn min_reasonable_time() -> Time {
+        // Guarantee we'll be good for any time starting from when Delton 3030
+        // was released.
+        DateTime::parse_from_rfc3339("2000-05-23T00:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc)
+            .into()
+    }
+
+    fn max_reasonable_time() -> Time {
+        // Guarantee we'll be good for any time until Deltron Zero arrives.
+        DateTime::parse_from_rfc3339("3030-01-01T00:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc)
+            .into()
     }
 
     proptest! {
         #[test]
-        fn serde_from_value_is_the_inverse_of_to_value(time in arb_time_from(Some(the_epoch()))) {
+        fn serde_from_value_is_the_inverse_of_to_value_within_reasonable_time_range(
+            time in arb_time_in_range(Some(min_reasonable_time()),
+                                      Some(max_reasonable_time()))
+        ) {
             // If `from_value` is the inverse of `to_value`, then it will always
             // map the JSON `encoded_time` to back to the inital `time`.
-            let encoded_time = serde_json::to_value(&time).unwrap();
-            let decoded_time = serde_json::from_value(encoded_time.clone()).unwrap();
+            let json_encoded_time = serde_json::to_value(&time).unwrap();
+            let decoded_time: Time = serde_json::from_value(json_encoded_time.clone()).unwrap();
             prop_assert_eq!(time, decoded_time);
         }
 
