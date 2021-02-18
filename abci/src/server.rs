@@ -7,21 +7,50 @@ use std::thread;
 use tracing::{error, info};
 
 /// The size of the read buffer for each incoming connection to the ABCI
-/// server.
+/// server (1MB).
 pub const DEFAULT_SERVER_READ_BUF_SIZE: usize = 1024 * 1024;
 
 /// Allows us to configure and construct an ABCI server.
+///
+/// ## Example
+///
+/// ```rust
+/// use tendermint_abci::{EchoApp, ServerBuilder, ClientBuilder};
+/// use tendermint_proto::abci::RequestEcho;
+///
+/// let server = ServerBuilder::default()
+///     .bind("127.0.0.1:26658", EchoApp::default())
+///     .unwrap();
+/// let server_addr = server.local_addr();
+/// std::thread::spawn(move || server.listen().unwrap());
+///
+/// let mut client = ClientBuilder::default()
+///     .connect(server_addr)
+///     .unwrap();
+///
+/// let message = String::from("Hello ABCI!");
+/// let response = client.echo(RequestEcho { message: message.clone() }).unwrap();
+/// assert_eq!(response.message, message);
+/// ```
 pub struct ServerBuilder {
     read_buf_size: usize,
 }
 
 impl ServerBuilder {
     /// Builder constructor.
+    ///
+    /// Allows you to specify the read buffer size used when reading chunks of
+    /// incoming data from the client. This needs to be tuned for your
+    /// application.
     pub fn new(read_buf_size: usize) -> Self {
         Self { read_buf_size }
     }
 
     /// Constructor for an ABCI server.
+    ///
+    /// Binds the server to the given address. You must subsequently call the
+    /// [`Server::listen`] method in order for incoming connections' requests
+    /// to be routed to the specified ABCI application.
     pub fn bind<Addr, App>(self, addr: Addr, app: App) -> Result<Server<App>>
     where
         Addr: ToSocketAddrs,
@@ -48,6 +77,11 @@ impl Default for ServerBuilder {
 }
 
 /// A TCP-based server for serving a specific ABCI application.
+///
+/// Each incoming connection is handled in a separate thread. The ABCI
+/// application is cloned for access in each thread. It is up to the
+/// application developer to manage shared state across these different
+/// threads.
 pub struct Server<App> {
     app: App,
     listener: TcpListener,

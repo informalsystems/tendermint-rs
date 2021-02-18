@@ -17,6 +17,10 @@ use tendermint_proto::abci::{
 };
 
 /// An ABCI application.
+///
+/// Applications are `Send` + `Clone` + `'static` because they are cloned for
+/// each incoming connection to the ABCI server. It is up to the application
+/// developer to manage shared state between these clones of their application.
 pub trait Application: Send + Clone + 'static {
     /// Echo back the same message as provided in the request.
     fn echo(&self, request: RequestEcho) -> ResponseEcho {
