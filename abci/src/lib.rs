@@ -1,32 +1,56 @@
-//! ABCI framework for building Tendermint applications in Rust.
+//! ABCI framework for building [Tendermint] applications in Rust.
+//!
+//! [Tendermint]: https://tendermint.com
 //!
 //! ## Example
 //!
-//! The following example shows how to use the trivial [`EchoApp`] to
-//! instantiate an ABCI server.
-//!
-//! **NOTE**: `EchoApp` won't work when coupled with a real Tendermint node, as
-//! it does not implement the minimum ABCI application functionality required
-//! by Tendermint. See the [`KeyValueStoreApp`] for a more functional ABCI
-//! application.
+//! The following example is adapted from our integration test suite to
+//! demonstrate how to instantiate an ABCI application, server and client and
+//! have them interact. In practice, the client interaction will be performed
+//! by a full Tendermint node.
 //!
 //! ```rust
-//! use tendermint_abci::{EchoApp, ServerBuilder, ClientBuilder};
-//! use tendermint_proto::abci::RequestEcho;
+//! use tendermint_abci::{KeyValueStoreApp, ServerBuilder, ClientBuilder};
+//! use tendermint_proto::abci::{RequestEcho, RequestDeliverTx, RequestQuery};
 //!
-//! let server = ServerBuilder::default()
-//!     .bind("127.0.0.1:26658", EchoApp::default())
-//!     .unwrap();
+//! // Create our key/value store application
+//! let (app, driver) = KeyValueStoreApp::new();
+//! // Create our server, binding it to TCP port 26658 on localhost and
+//! // supplying it with our key/value store application
+//! let server = ServerBuilder::default().bind("127.0.0.1:26658", app).unwrap();
 //! let server_addr = server.local_addr();
-//! std::thread::spawn(move || server.listen().unwrap());
 //!
-//! let mut client = ClientBuilder::default()
-//!     .connect(server_addr)
+//! // We want the driver and the server to run in the background while we
+//! // interact with them via the client in the foreground
+//! std::thread::spawn(move || driver.run());
+//! std::thread::spawn(move || server.listen());
+//!
+//! let mut client = ClientBuilder::default().connect(server_addr).unwrap();
+//! let res = client
+//!     .echo(RequestEcho {
+//!         message: "Hello ABCI!".to_string(),
+//!     })
 //!     .unwrap();
+//! assert_eq!(res.message, "Hello ABCI!");
 //!
-//! let message = String::from("Hello ABCI!");
-//! let response = client.echo(RequestEcho { message: message.clone() }).unwrap();
-//! assert_eq!(response.message, message);
+//! // Deliver a transaction and then commit the transaction
+//! client
+//!     .deliver_tx(RequestDeliverTx {
+//!         tx: "test-key=test-value".as_bytes().to_owned(),
+//!     })
+//!     .unwrap();
+//! client.commit().unwrap();
+//!
+//! // We should be able to query for the data we just delivered above
+//! let res = client
+//!     .query(RequestQuery {
+//!         data: "test-key".as_bytes().to_owned(),
+//!         path: "".to_string(),
+//!         height: 0,
+//!         prove: false,
+//!     })
+//!     .unwrap();
+//! assert_eq!(res.value, "test-value".as_bytes().to_owned());
 //! ```
 
 mod application;
