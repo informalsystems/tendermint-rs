@@ -148,26 +148,32 @@ mod tests {
 
     use super::*;
 
+    // TODO(shon) Extract arbitrary generators into own library
+
     use chrono::{DateTime, NaiveDate, TimeZone, Timelike, Utc};
-    use proptest::prelude::*;
+    use proptest::{prelude::*, sample::select};
 
-    fn year_zero() -> Time {
-        Utc.yo(0, 1).and_hms_nano(0, 0, 0, 0).into()
+    // Any higher, and we're at seconds
+    const MAX_NANO_SECS: u32 = 999_999_999u32;
+
+    // With values larger or smaller then these, chrono produces invalid rfc3339
+    // timestamps. See https://github.com/chronotope/chrono/issues/537
+    fn min_time() -> DateTime<Utc> {
+        Utc.timestamp(-9999999999, 0)
     }
 
-    fn max_time() -> Time {
-        // Later times cannot be handled by chrono
-        Utc.timestamp(7999999999999, 0).into()
+    fn max_time() -> DateTime<Utc> {
+        Utc.timestamp(99999999999, 0)
     }
 
-    // Via chrono, we get the duration beteween this month and the next, then
-    // count the number of days in that duration.
-    // See https://stackoverflow.com/a/58188385/1187277
     fn num_days_in_month(year: i32, month: u32) -> u32 {
+        // Using chrono, we get the duration beteween this month and the next,
+        // then count the number of days in that duration.  See
+        // https://stackoverflow.com/a/58188385/1187277
         let given_month = NaiveDate::from_ymd(year, month, 1);
         let next_month = NaiveDate::from_ymd(
-            if let 12 = month { year + 1 } else { year },
-            if let 12 = month { 1 } else { month + 1 },
+            if month == 12 { year + 1 } else { year },
+            if month == 12 { 1 } else { month + 1 },
             1,
         );
         next_month
@@ -177,33 +183,30 @@ mod tests {
             .unwrap()
     }
 
-    type DT = DateTime<Utc>;
-
     prop_compose! {
-        /// An abitrary `chrono::DateTime` that is later than `after`
-        fn arb_datetime(min: Time, max: Time)(
-            // This is near the maximum allowed seconds for a timestamp (for no clear reason I've found documented)
-            // but it is in year 255479, so we should be good for a while.
-            secs in DT::from(min).timestamp()..DT::from(max).timestamp(),
-            // This is the max allowed value for nanoseconds (for some reason).
-            // https://github.com/chronotope/chrono/blob/3467172c31188006147585f6ed3727629d642fed/src/naive/time.rs#L385
-            // FIXME Logic is not right here, becuase if we're given a start time of 0.1, then 1.0 should be valid, but
-            //       but this will enforce >= 1.1.
-            nano in DT::from(min).nanosecond()..999_999_999u32
+        /// An abitrary `chrono::DateTime` that is between `min` and `max`
+        /// DateTimes.
+        fn arb_datetime_in_range(min: DateTime<Utc>, max: DateTime<Utc>)(
+            secs in min.timestamp()..max.timestamp()
+        )(
+            // min mano secods is only relevant if we happen to hit the minimum
+            // seconds on the nose.
+            nano in (if secs == min.timestamp() { min.nanosecond() } else { 0 })..MAX_NANO_SECS,
+            // Make secs in scope
+            secs in Just(secs),
         ) -> DateTime<Utc> {
-            println!("Secs {:?}; Nano {:?}", secs, nano);
+            println!(">> Secs {:?}", secs);
             Utc.timestamp(secs, nano)
         }
     }
 
     prop_compose! {
-        /// An abitrary `Time` that is `betweeon` `min` and `max` `Time`s, if
-        /// given, or between the `year_zero` and `max_time` otherwise.
-        fn arb_time_in_range(min: Option<Time>, max: Option<Time>)
+        /// An abitrary `chrono::DateTime`
+        fn arb_datetime()
             (
-                d in arb_datetime(min.unwrap_or(year_zero()), max.unwrap_or(max_time()))
-            ) -> Time {
-                Time::from(d)
+                d in arb_datetime_in_range(min_time(), max_time())
+            ) -> DateTime<Utc> {
+                d
             }
     }
 
@@ -277,56 +280,9 @@ mod tests {
         }
     }
 
-    fn min_reasonable_time() -> Time {
-        // Guarantee we'll be good for any time starting from when Delton 3030
-        // was released.
-        DateTime::parse_from_rfc3339("2000-05-23T00:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc)
-            .into()
-    }
-
-    fn max_reasonable_time() -> Time {
-        // Guarantee we'll be good for any time until Deltron Zero arrives.
-        DateTime::parse_from_rfc3339("3030-01-01T00:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc)
-            .into()
-    }
-
-    proptest! {
-        #[test]
-        fn serde_from_value_is_the_inverse_of_to_value_within_reasonable_time_range(
-            time in arb_time_in_range(Some(min_reasonable_time()),
-                                      Some(max_reasonable_time()))
-        ) {
-            // If `from_value` is the inverse of `to_value`, then it will always
-            // map the JSON `encoded_time` to back to the inital `time`.
-            let json_encoded_time = serde_json::to_value(&time).unwrap();
-            let decoded_time: Time = serde_json::from_value(json_encoded_time.clone()).unwrap();
-            prop_assert_eq!(time, decoded_time);
-        }
-
-        #[test]
-        fn can_parse_rfc_3339_timestamps(stamp in arb_rfc3339_timestamp()) {
-            prop_assert!(stamp.parse::<Time>().is_ok())
-        }
-
-        #[test]
-        fn serde_of_rfc_3339_time_stamps_is_safe(
-            stamp in arb_rfc3339_timestamp()
-        ) {
-            // ser/de of rfc_3339 timestamps is safe if it never panics.
-            let time = stamp.parse::<Time>().unwrap();
-            let json_encoded_time = serde_json::to_value(&time).unwrap();
-            let decoded_time: Time = serde_json::from_value(json_encoded_time.clone()).unwrap();
-            prop_assert_eq!(time, decoded_time);
-        }
-    }
-
-    #[test]
-    fn serde_roundtrip() {
-        const DATES: &[&str] = &[
+    // We want to make sure that these timestamps specifically get tested.
+    fn particular_rfc3339_timestamps() -> impl Strategy<Value = String> {
+        let strs: Vec<String> = vec![
             "2020-09-14T16:33:54.21191421Z",
             "2020-09-14T16:33:00Z",
             "2020-09-14T16:33:00.1Z",
@@ -343,14 +299,44 @@ mod tests {
             "2021-01-07T20:26:12.078268Z",
             "2021-01-07T20:26:13.08074100Z",
             "2021-01-07T20:26:15.079663000Z",
-        ];
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
 
-        for input in DATES {
-            let initial_time: Time = input.parse().unwrap();
-            let encoded_time = serde_json::to_value(&initial_time).unwrap();
-            let decoded_time = serde_json::from_value(encoded_time.clone()).unwrap();
+        select(strs)
+    }
 
-            assert_eq!(initial_time, decoded_time);
+    proptest! {
+        #[test]
+        fn can_parse_rfc3339_timestamps(stamp in arb_rfc3339_timestamp()) {
+            prop_assert!(stamp.parse::<Time>().is_ok())
+        }
+
+        #[test]
+        fn serde_from_value_is_the_inverse_of_to_value_within_reasonable_time_range(
+            datetime in arb_datetime()
+        ) {
+            // If `from_value` is the inverse of `to_value`, then it will always
+            // map the JSON `encoded_time` to back to the inital `time`.
+            let time: Time = datetime.into();
+            let json_encoded_time = serde_json::to_value(&time).unwrap();
+            let decoded_time: Time = serde_json::from_value(json_encoded_time.clone()).unwrap();
+            prop_assert_eq!(time, decoded_time);
+        }
+
+        #[test]
+        fn serde_of_rfc3339_timestamps_is_safe(
+            stamp in arb_rfc3339_timestamp().boxed().prop_union(particular_rfc3339_timestamps().boxed())
+        ) {
+            // ser/de of rfc3339 timestamps is safe if it never panics.
+            // This differes from the the inverse test in that we are testing on
+            // arbitrarily generated textual timestamps, rather than times in a
+            // range.
+            let time: Time = stamp.parse().unwrap();
+            let json_encoded_time = serde_json::to_value(&time).unwrap();
+            let decoded_time: Time = serde_json::from_value(json_encoded_time.clone()).unwrap();
+            prop_assert_eq!(time, decoded_time);
         }
     }
 }
