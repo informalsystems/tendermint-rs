@@ -327,12 +327,15 @@ mod tests {
 
         #[test]
         fn serde_of_rfc3339_timestamps_is_safe(
-            stamp in arb_rfc3339_timestamp().boxed().prop_union(particular_rfc3339_timestamps().boxed())
+            stamp in prop_oneof![
+                arb_rfc3339_timestamp(),
+                particular_rfc3339_timestamps(),
+            ]
         ) {
             // ser/de of rfc3339 timestamps is safe if it never panics.
             // This differes from the the inverse test in that we are testing on
             // arbitrarily generated textual timestamps, rather than times in a
-            // range.
+            // range. Tho we do incidentally test the inversion as well.
             let time: Time = stamp.parse().unwrap();
             let json_encoded_time = serde_json::to_value(&time).unwrap();
             let decoded_time: Time = serde_json::from_value(json_encoded_time.clone()).unwrap();
