@@ -1,0 +1,20 @@
+[package]
+name = "abci-test"
+version = "0.18.0"
+authors = ["Thane Thomson <thane@informal.systems>"]
+edition = "2018"
+description = """
+    abci-test provides some end-to-end integration testing between
+    tendermint-abci and a full Tendermint node.
+    """
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+futures = "0.3"
+log = "0.4"
+simple_logger = "1.11"
+structopt = "0.3"
+tendermint = { version = "0.18.0", path = "../../tendermint" }
+tendermint-rpc = { version = "0.18.0", path = "../../rpc", features = [ "websocket-client" ] }
+tokio = { version = "1", features = ["full"] }

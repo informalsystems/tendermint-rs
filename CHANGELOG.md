@@ -1,3 +1,12 @@
+##  Unreleased
+
+### FEATURES
+
+* `[tendermint-abci]` Release minimal framework for building ABCI applications
+  in Rust ([#794])
+
+[#794]: https://github.com/informalsystems/tendermint-rs/pull/794
+
 ## v0.18.1
 
 *Feb 10, 2021*
