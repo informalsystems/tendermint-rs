@@ -321,7 +321,7 @@ mod tests {
             // map the JSON `encoded_time` to back to the inital `time`.
             let time: Time = datetime.into();
             let json_encoded_time = serde_json::to_value(&time).unwrap();
-            let decoded_time: Time = serde_json::from_value(json_encoded_time.clone()).unwrap();
+            let decoded_time: Time = serde_json::from_value(json_encoded_time).unwrap();
             prop_assert_eq!(time, decoded_time);
         }
 
@@ -338,7 +338,7 @@ mod tests {
             // range. Tho we do incidentally test the inversion as well.
             let time: Time = stamp.parse().unwrap();
             let json_encoded_time = serde_json::to_value(&time).unwrap();
-            let decoded_time: Time = serde_json::from_value(json_encoded_time.clone()).unwrap();
+            let decoded_time: Time = serde_json::from_value(json_encoded_time).unwrap();
             prop_assert_eq!(time, decoded_time);
         }
     }
