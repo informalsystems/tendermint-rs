@@ -30,6 +30,7 @@ http-client = [
   "futures",
   "http",
   "hyper",
+  "hyper-tls",
   "tokio/fs",
   "tokio/macros",
   "tracing"
@@ -66,6 +67,7 @@ async-tungstenite = { version = "0.12", features = ["tokio-runtime"], optional =
 futures = { version = "0.3", optional = true }
 http = { version = "0.2", optional = true }
 hyper = { version = "0.14", optional = true, features = ["client", "http1", "tcp"] }
+hyper-tls = { version = "0.5", optional = true }
 tokio = { version = "1.0", optional = true }
 tracing = { version = "0.1", optional = true }
 pin-project = "1.0.1"

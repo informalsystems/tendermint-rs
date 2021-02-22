@@ -2,12 +2,16 @@
 
 use async_trait::async_trait;
 use hyper::body::Buf;
-use hyper::header;
+use hyper::{header, Uri};
 
 use tendermint::net;
 
 use crate::client::transport::utils::get_tcp_host_port;
 use crate::{Client, Error, Response, Result, SimpleRequest};
+use hyper::client::connect::Connect;
+use hyper::client::HttpConnector;
+use hyper_tls::HttpsConnector;
+use std::convert::TryInto;
 use std::io::Read;
 
 /// A JSON-RPC/HTTP Tendermint RPC client (implements [`Client`]).
@@ -36,23 +40,71 @@ use std::io::Read;
 /// [`Client`]: trait.Client.html
 /// [`Event`]: ./event/struct.Event.html
 /// [`WebSocketClient`]: struct.WebSocketClient.html
+pub type HttpClient = HyperClient<HttpConnector>;
+
+/// A JSON-RPC/HTTPS (i.e. HTTP/TLS) Tendermint RPC client.
+///
+/// Similar to [`HttpClient`], but allows for connection to the RPC endpoint
+/// via HTTPS.
+pub type HttpsClient = HyperClient<HttpsConnector<HttpConnector>>;
+
+/// A [`hyper`]-based Tendermint RPC client.
+///
+/// Generic over the connector type used for the client.
+///
+/// [`hyper`]: https://hyper.rs/
 #[derive(Debug, Clone)]
-pub struct HttpClient {
-    host: String,
-    port: u16,
+pub struct HyperClient<C> {
+    uri: Uri,
+    inner: hyper::Client<C, hyper::Body>,
 }
 
 #[async_trait]
-impl Client for HttpClient {
+impl<C> Client for HyperClient<C>
+where
+    C: Connect + Clone + Send + Sync + 'static,
+{
     async fn perform<R>(&self, request: R) -> Result<R::Response>
     where
         R: SimpleRequest,
     {
+        let request = self.build_request(request)?;
+        let response = self.inner.request(request).await?;
+        let response_body = response_to_string(response).await?;
+        tracing::debug!("Incoming response: {}", response_body);
+        R::Response::from_string(&response_body)
+    }
+}
+
+impl HyperClient<HttpConnector> {
+    /// Create a new JSON-RPC/HTTP Tendermint RPC client.
+    pub fn new(address: net::Address) -> Result<Self> {
+        let (host, port) = get_tcp_host_port(address)?;
+        Ok(Self {
+            uri: format!("http://{}:{}/", host, port).try_into()?,
+            inner: hyper::Client::new(),
+        })
+    }
+}
+
+impl HyperClient<HttpsConnector<HttpConnector>> {
+    /// Create a new JSON-RPC/HTTPS (i.e. HTTP/TLS) Tendermint RPC client.
+    pub fn new(address: net::Address) -> Result<Self> {
+        let (host, port) = get_tcp_host_port(address)?;
+        Ok(Self {
+            uri: format!("https://{}:{}/", host, port).try_into()?,
+            inner: hyper::Client::builder().build(HttpsConnector::new()),
+        })
+    }
+}
+
+impl<C> HyperClient<C> {
+    fn build_request<R: SimpleRequest>(&self, request: R) -> Result<hyper::Request<hyper::Body>> {
         let request_body = request.into_json();
 
         let mut request = hyper::Request::builder()
             .method("POST")
-            .uri(&format!("http://{}:{}/", self.host, self.port))
+            .uri(&self.uri)
             .body(hyper::Body::from(request_body.into_bytes()))?;
 
         {
@@ -66,23 +118,16 @@ impl Client for HttpClient {
             );
         }
 
-        let http_client = hyper::Client::new();
-        let response = http_client.request(request).await?;
-        let mut response_body = String::new();
-        hyper::body::aggregate(response.into_body())
-            .await?
-            .reader()
-            .read_to_string(&mut response_body)
-            .map_err(|_| Error::client_internal_error("failed to read response body to string"))?;
-        tracing::debug!("Incoming response: {}", response_body);
-        R::Response::from_string(&response_body)
+        Ok(request)
     }
 }
 
-impl HttpClient {
-    /// Create a new JSON-RPC/HTTP Tendermint RPC client.
-    pub fn new(address: net::Address) -> Result<Self> {
-        let (host, port) = get_tcp_host_port(address)?;
-        Ok(HttpClient { host, port })
-    }
+async fn response_to_string(response: hyper::Response<hyper::Body>) -> Result<String> {
+    let mut response_body = String::new();
+    hyper::body::aggregate(response.into_body())
+        .await?
+        .reader()
+        .read_to_string(&mut response_body)
+        .map_err(|_| Error::client_internal_error("failed to read response body to string"))?;
+    Ok(response_body)
 }

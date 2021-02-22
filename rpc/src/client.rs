@@ -8,7 +8,7 @@ mod transport;
 pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
 
 #[cfg(feature = "http-client")]
-pub use transport::http::HttpClient;
+pub use transport::http::{HttpClient, HttpsClient, HyperClient};
 #[cfg(feature = "websocket-client")]
 pub use transport::websocket::{WebSocketClient, WebSocketClientDriver};
 

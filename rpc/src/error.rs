@@ -123,6 +123,13 @@ impl From<hyper::Error> for Error {
     }
 }
 
+#[cfg(feature = "http-client")]
+impl From<http::uri::InvalidUri> for Error {
+    fn from(e: http::uri::InvalidUri) -> Self {
+        Error::http_error(e.to_string())
+    }
+}
+
 #[cfg(feature = "websocket-client")]
 impl From<WSError> for Error {
     fn from(websocket_error: WSError) -> Error {

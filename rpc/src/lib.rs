@@ -42,7 +42,7 @@ pub use client::{
 };
 
 #[cfg(feature = "http-client")]
-pub use client::HttpClient;
+pub use client::{HttpClient, HttpsClient, HyperClient};
 #[cfg(feature = "websocket-client")]
 pub use client::{WebSocketClient, WebSocketClientDriver};
 
