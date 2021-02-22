@@ -10,7 +10,7 @@ use crate::client::transport::utils::get_tcp_host_port;
 use crate::{Client, Error, Response, Result, SimpleRequest};
 use hyper::client::connect::Connect;
 use hyper::client::HttpConnector;
-use hyper_tls::HttpsConnector;
+use hyper_rustls::HttpsConnector;
 use std::convert::TryInto;
 use std::io::Read;
 
@@ -93,7 +93,7 @@ impl HyperClient<HttpsConnector<HttpConnector>> {
         let (host, port) = get_tcp_host_port(address)?;
         Ok(Self {
             uri: format!("https://{}:{}/", host, port).try_into()?,
-            inner: hyper::Client::builder().build(HttpsConnector::new()),
+            inner: hyper::Client::builder().build(HttpsConnector::with_native_roots()),
         })
     }
 }
