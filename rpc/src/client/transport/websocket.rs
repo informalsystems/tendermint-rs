@@ -14,7 +14,7 @@ use crate::{
     SubscriptionClient,
 };
 use async_trait::async_trait;
-use async_tungstenite::tokio::{connect_async, TokioAdapter};
+use async_tungstenite::tokio::{connect_async, connect_async_with_tls_connector, ConnectStream};
 use async_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 use async_tungstenite::tungstenite::protocol::CloseFrame;
 use async_tungstenite::tungstenite::Message;
@@ -25,7 +25,6 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ops::Add;
 use tendermint::net;
-use tokio::net::TcpStream;
 use tokio::time::{Duration, Instant};
 use tracing::{debug, error};
 
@@ -144,6 +143,21 @@ impl WebSocketClient {
         let (host, port) = get_tcp_host_port(address)?;
         let (stream, _response) =
             connect_async(&format!("ws://{}:{}/websocket", &host, port)).await?;
+        let (cmd_tx, cmd_rx) = unbounded();
+        let driver = WebSocketClientDriver::new(stream, cmd_rx);
+        Ok((Self { cmd_tx }, driver))
+    }
+
+    /// Construct a WebSocket client, but over a secure connection.
+    ///
+    /// Works similarly to [`WebSocketClient::new`].
+    pub async fn new_with_tls(address: net::Address) -> Result<(Self, WebSocketClientDriver)> {
+        let (host, port) = get_tcp_host_port(address)?;
+        // Not supplying a connector means async_tungstenite will create the
+        // connector for us.
+        let (stream, _response) =
+            connect_async_with_tls_connector(&format!("wss://{}:{}/websocket", &host, port), None)
+                .await?;
         let (cmd_tx, cmd_rx) = unbounded();
         let driver = WebSocketClientDriver::new(stream, cmd_rx);
         Ok((Self { cmd_tx }, driver))
@@ -271,10 +285,9 @@ impl Response for GenericJsonResponse {}
 ///
 /// This is the primary component responsible for transport-level interaction
 /// with the remote WebSocket endpoint.
-#[derive(Debug)]
 pub struct WebSocketClientDriver {
     // The underlying WebSocket network connection.
-    stream: WebSocketStream<TokioAdapter<TcpStream>>,
+    stream: WebSocketStream<ConnectStream>,
     // Facilitates routing of events to their respective subscriptions.
     router: SubscriptionRouter,
     // How we receive incoming commands from the WebSocketClient.
@@ -285,10 +298,7 @@ pub struct WebSocketClientDriver {
 }
 
 impl WebSocketClientDriver {
-    fn new(
-        stream: WebSocketStream<TokioAdapter<TcpStream>>,
-        cmd_rx: ChannelRx<DriverCommand>,
-    ) -> Self {
+    fn new(stream: WebSocketStream<ConnectStream>, cmd_rx: ChannelRx<DriverCommand>) -> Self {
         Self {
             stream,
             router: SubscriptionRouter::default(),
@@ -516,13 +526,13 @@ mod test {
     use super::*;
     use crate::query::EventType;
     use crate::{request, Id, Method};
-    use async_tungstenite::tokio::accept_async;
+    use async_tungstenite::tokio::{accept_async, TokioAdapter};
     use futures::StreamExt;
     use std::collections::HashMap;
     use std::path::PathBuf;
     use std::str::FromStr;
     use tokio::fs;
-    use tokio::net::TcpListener;
+    use tokio::net::{TcpListener, TcpStream};
     use tokio::task::JoinHandle;
 
     // Interface to a driver that manages all incoming WebSocket connections.
