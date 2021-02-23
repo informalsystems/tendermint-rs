@@ -127,10 +127,12 @@ pub type SecureWebSocketClient = AsyncTungsteniteClient<Secure>;
 
 /// Marker for the [`AsyncTungsteniteClient`] for clients operating over
 /// unsecure connections.
+#[derive(Debug, Clone)]
 pub struct Unsecure;
 
 /// Marker for the [`AsyncTungsteniteClient`] for clients operating over
 /// secure connections.
+#[derive(Debug, Clone)]
 pub struct Secure;
 
 /// An [`async-tungstenite`]-based WebSocket client.
