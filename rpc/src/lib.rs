@@ -8,14 +8,15 @@
 //!
 //! Two features are provided at present:
 //!
-//! * `http-client` - Provides [`HttpClient`], which is a basic RPC client that
-//!   interacts with remote Tendermint nodes via **JSON-RPC over HTTP**. This
-//!   client does not provide [`Event`] subscription functionality. See the
-//!   [Tendermint RPC] for more details.
-//! * `websocket-client` - Provides [`WebSocketClient`], which provides full
-//!   client functionality, including general RPC functionality (such as that
-//!   provided by `HttpClient`) as well as [`Event`] subscription
-//!   functionality.
+//! * `http-client` - Provides [`HttpClient`] and [`HttpsClient`], which are
+//!   basic RPC clients that interact with remote Tendermint nodes via
+//!   **JSON-RPC over HTTP or HTTPS**. This client does not provide
+//!   [`event::Event`] subscription functionality. See the [Tendermint RPC] for
+//!   more details.
+//! * `websocket-client` - Provides [`WebSocketClient`] and
+//!   [`SecureWebSocketClient`], which provide full client functionality,
+//!   including general RPC functionality as well as [`event::Event`]
+//!   subscription functionality.
 //!
 //! ### Mock Clients
 //!
@@ -24,14 +25,8 @@
 //! [`MockClient`], which implements both [`Client`] and [`SubscriptionClient`]
 //! traits.
 //!
-//! [`Client`]: trait.Client.html
-//! [`SubscriptionClient`]: trait.SubscriptionClient.html
-//! [`HttpClient`]: struct.HttpClient.html
-//! [`Event`]: event/struct.Event.html
-//! [`WebSocketClient`]: struct.WebSocketClient.html
 //! [Tendermint RPC]: https://docs.tendermint.com/master/rpc/
 //! [`/subscribe` endpoint]: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
-//! [`MockClient`]: struct.MockClient.html
 
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 mod client;
@@ -41,12 +36,10 @@ pub use client::{
     SubscriptionClient,
 };
 
-#[cfg(feature = "websocket-client")]
-pub use client::{
-    AsyncTungsteniteClient, SecureWebSocketClient, WebSocketClient, WebSocketClientDriver,
-};
 #[cfg(feature = "http-client")]
 pub use client::{HttpClient, HttpsClient, HyperClient};
+#[cfg(feature = "websocket-client")]
+pub use client::{SecureWebSocketClient, WebSocketClient, WebSocketClientDriver};
 
 pub mod endpoint;
 pub mod error;
