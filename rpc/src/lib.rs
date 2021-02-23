@@ -41,10 +41,12 @@ pub use client::{
     SubscriptionClient,
 };
 
+#[cfg(feature = "websocket-client")]
+pub use client::{
+    AsyncTungsteniteClient, SecureWebSocketClient, WebSocketClient, WebSocketClientDriver,
+};
 #[cfg(feature = "http-client")]
 pub use client::{HttpClient, HttpsClient, HyperClient};
-#[cfg(feature = "websocket-client")]
-pub use client::{WebSocketClient, WebSocketClientDriver};
 
 pub mod endpoint;
 pub mod error;

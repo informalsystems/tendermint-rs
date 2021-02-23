@@ -125,12 +125,32 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 /// [`run`]: struct.WebSocketClientDriver.html#method.run
 /// [`Subscription`]: struct.Subscription.html
 /// [tendermint-websocket-ping]: https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L28
+pub type WebSocketClient = AsyncTungsteniteClient<Unsecure>;
+
+/// Similar to [`WebSocketClient`], but facilitates connectivity over TLS.
+pub type SecureWebSocketClient = AsyncTungsteniteClient<Secure>;
+
+/// Marker for the [`AsyncTungsteniteClient`] for clients operating over
+/// unsecure connections.
+pub struct Unsecure;
+
+/// Marker for the [`AsyncTungsteniteClient`] for clients operating over
+/// secure connections.
+pub struct Secure;
+
+/// An [`async-tungstenite`]-based WebSocket client.
+///
+/// Different modes of operation (secure and unsecure) are facilitated by
+/// different variants of this type.
+///
+/// [`async-tungstenite`]: https://crates.io/crates/async-tungstenite
 #[derive(Debug, Clone)]
-pub struct WebSocketClient {
+pub struct AsyncTungsteniteClient<C> {
     cmd_tx: ChannelTx<DriverCommand>,
+    _client_type: std::marker::PhantomData<C>,
 }
 
-impl WebSocketClient {
+impl AsyncTungsteniteClient<Unsecure> {
     /// Construct a WebSocket client. Immediately attempts to open a WebSocket
     /// connection to the node with the given address.
     ///
@@ -145,13 +165,27 @@ impl WebSocketClient {
             connect_async(&format!("ws://{}:{}/websocket", &host, port)).await?;
         let (cmd_tx, cmd_rx) = unbounded();
         let driver = WebSocketClientDriver::new(stream, cmd_rx);
-        Ok((Self { cmd_tx }, driver))
+        Ok((
+            Self {
+                cmd_tx,
+                _client_type: Default::default(),
+            },
+            driver,
+        ))
     }
+}
 
-    /// Construct a WebSocket client, but over a secure connection.
+impl AsyncTungsteniteClient<Secure> {
+    /// Construct a WebSocket client. Immediately attempts to open a WebSocket
+    /// connection to the node with the given address, but over a secure
+    /// connection.
     ///
-    /// Works similarly to [`WebSocketClient::new`].
-    pub async fn new_with_tls(address: net::Address) -> Result<(Self, WebSocketClientDriver)> {
+    /// On success, this returns both a client handle (a `WebSocketClient`
+    /// instance) as well as the WebSocket connection driver. The execution of
+    /// this driver becomes the responsibility of the client owner, and must be
+    /// executed in a separate asynchronous context to the client to ensure it
+    /// doesn't block the client.
+    pub async fn new(address: net::Address) -> Result<(Self, WebSocketClientDriver)> {
         let (host, port) = get_tcp_host_port(address)?;
         // Not supplying a connector means async_tungstenite will create the
         // connector for us.
@@ -160,9 +194,17 @@ impl WebSocketClient {
                 .await?;
         let (cmd_tx, cmd_rx) = unbounded();
         let driver = WebSocketClientDriver::new(stream, cmd_rx);
-        Ok((Self { cmd_tx }, driver))
+        Ok((
+            Self {
+                cmd_tx,
+                _client_type: Default::default(),
+            },
+            driver,
+        ))
     }
+}
 
+impl<C> AsyncTungsteniteClient<C> {
     fn send_cmd(&self, cmd: DriverCommand) -> Result<()> {
         self.cmd_tx.send(cmd).map_err(|e| {
             Error::client_internal_error(format!("failed to send command to client driver: {}", e))
@@ -176,7 +218,10 @@ impl WebSocketClient {
 }
 
 #[async_trait]
-impl Client for WebSocketClient {
+impl<C> Client for AsyncTungsteniteClient<C>
+where
+    C: Send + Sync,
+{
     async fn perform<R>(&self, request: R) -> Result<R::Response>
     where
         R: SimpleRequest,
@@ -199,7 +244,10 @@ impl Client for WebSocketClient {
 }
 
 #[async_trait]
-impl SubscriptionClient for WebSocketClient {
+impl<C> SubscriptionClient for AsyncTungsteniteClient<C>
+where
+    C: Send + Sync,
+{
     async fn subscribe(&self, query: Query) -> Result<Subscription> {
         let (subscription_tx, subscription_rx) = unbounded();
         let (response_tx, mut response_rx) = unbounded();
