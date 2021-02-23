@@ -78,26 +78,34 @@ where
 impl HyperClient<HttpConnector> {
     /// Create a new JSON-RPC/HTTP Tendermint RPC client.
     pub fn new(address: net::Address) -> Result<Self> {
-        let (host, port) = get_tcp_host_port(address)?;
-        Ok(Self {
-            uri: format!("http://{}:{}/", host, port).try_into()?,
-            inner: hyper::Client::new(),
-        })
+        Self::new_with_scheme(address, "http", hyper::Client::new())
     }
 }
 
 impl HyperClient<HttpsConnector<HttpConnector>> {
     /// Create a new JSON-RPC/HTTPS (i.e. HTTP/TLS) Tendermint RPC client.
     pub fn new(address: net::Address) -> Result<Self> {
-        let (host, port) = get_tcp_host_port(address)?;
-        Ok(Self {
-            uri: format!("https://{}:{}/", host, port).try_into()?,
-            inner: hyper::Client::builder().build(HttpsConnector::with_native_roots()),
-        })
+        Self::new_with_scheme(
+            address,
+            "https",
+            hyper::Client::builder().build(HttpsConnector::with_native_roots()),
+        )
     }
 }
 
 impl<C> HyperClient<C> {
+    fn new_with_scheme(
+        address: net::Address,
+        scheme: &str,
+        inner: hyper::Client<C, hyper::Body>,
+    ) -> Result<Self> {
+        let (host, port) = get_tcp_host_port(address)?;
+        Ok(Self {
+            uri: format!("{}://{}:{}/", scheme, host, port).try_into()?,
+            inner,
+        })
+    }
+
     fn build_request<R: SimpleRequest>(&self, request: R) -> Result<hyper::Request<hyper::Body>> {
         let request_body = request.into_json();
 
