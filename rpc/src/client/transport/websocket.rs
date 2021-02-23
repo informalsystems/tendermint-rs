@@ -45,13 +45,13 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 /// (including [`Event`] subscription) over a WebSocket connection.
 ///
 /// The `WebSocketClient` itself is effectively just a handle to its driver
-/// (see the [`new`] method). The driver is the component of the client that
-/// actually interacts with the remote RPC over the WebSocket connection.
-/// The `WebSocketClient` can therefore be cloned into different asynchronous
-/// contexts, effectively allowing for asynchronous access to the driver.
+/// The driver is the component of the client that actually interacts with the
+/// remote RPC over the WebSocket connection. The `WebSocketClient` can
+/// therefore be cloned into different asynchronous contexts, effectively
+/// allowing for asynchronous access to the driver.
 ///
 /// It is the caller's responsibility to spawn an asynchronous task in which to
-/// execute the driver's [`run`] method. See the example below.
+/// execute the [`WebSocketClientDriver::run`] method. See the example below.
 ///
 /// Dropping [`Subscription`]s will automatically terminate them (the
 /// `WebSocketClientDriver` detects a disconnected channel and removes the
@@ -71,7 +71,7 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 ///
 /// The WebSocket client implements a keep-alive mechanism whereby it sends a
 /// PING message to the server every 27 seconds, matching the PING cadence of
-/// the Tendermint server (see [this code](tendermint-websocket-ping) for
+/// the Tendermint server (see [this code][tendermint-websocket-ping] for
 /// details).
 ///
 /// This is not configurable at present.
@@ -119,11 +119,6 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 /// }
 /// ```
 ///
-/// [`Event`]: ./event/struct.Event.html
-/// [`close`]: struct.WebSocketClient.html#method.close
-/// [`new`]: struct.WebSocketClient.html#method.new
-/// [`run`]: struct.WebSocketClientDriver.html#method.run
-/// [`Subscription`]: struct.Subscription.html
 /// [tendermint-websocket-ping]: https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L28
 pub type WebSocketClient = AsyncTungsteniteClient<Unsecure>;
 

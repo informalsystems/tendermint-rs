@@ -16,8 +16,11 @@ use std::io::Read;
 
 /// A JSON-RPC/HTTP Tendermint RPC client (implements [`Client`]).
 ///
-/// Does not provide [`Event`] subscription facilities (see [`WebSocketClient`]
-/// for a client that does provide [`Event`] subscription facilities).
+/// Does not provide [`crate::event::Event`] subscription facilities (see
+/// [`crate::WebSocketClient`] for a client that does).
+///
+/// Does not provide any security. For a JSON-RPC/HTTPS client, see
+/// [`HttpsClient`].
 ///
 /// ## Examples
 ///
@@ -36,10 +39,6 @@ use std::io::Read;
 ///     println!("Got ABCI info: {:?}", abci_info);
 /// }
 /// ```
-///
-/// [`Client`]: trait.Client.html
-/// [`Event`]: ./event/struct.Event.html
-/// [`WebSocketClient`]: struct.WebSocketClient.html
 pub type HttpClient = HyperClient<HttpConnector>;
 
 /// A JSON-RPC/HTTPS (i.e. HTTP/TLS) Tendermint RPC client.
