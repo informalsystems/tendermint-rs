@@ -36,20 +36,20 @@ pub enum Version {
 }
 
 impl Version {
-    /// Does this version of Secret Connection use a transcript hash
+    /// Does this version of the secret connection uses a transcript hash?
     pub fn has_transcript(self) -> bool {
-        self != Version::Legacy
+        self != Self::Legacy
     }
 
     /// Are messages encoded using Protocol Buffers?
-    pub fn is_protobuf(self) -> bool {
+    pub const fn is_protobuf(self) -> bool {
         match self {
-            Version::V0_34 => true,
-            Version::V0_33 | Version::Legacy => false,
+            Self::V0_34 => true,
+            Self::V0_33 | Self::Legacy => false,
         }
     }
 
-    /// Encode the initial handshake message (i.e. first one sent by both peers)
+    /// Encode the initial handshake message (i.e. first one sent by both peers).
     pub fn encode_initial_handshake(self, eph_pubkey: &EphemeralPublic) -> Vec<u8> {
         if self.is_protobuf() {
             // Equivalent Go implementation:
@@ -73,6 +73,9 @@ impl Version {
     }
 
     /// Decode the initial handshake message
+    /// # Errors
+    ///
+    /// Will return `Err` if the remote `EphemeralPublic` is incorrect.
     pub fn decode_initial_handshake(self, bytes: &[u8]) -> Result<EphemeralPublic> {
         let eph_pubkey = if self.is_protobuf() {
             // Equivalent Go implementation:
@@ -83,7 +86,9 @@ impl Version {
                     .wrap_err("malformed handshake message (protocol version mismatch?)");
             }
 
-            let eph_pubkey_bytes: [u8; 32] = bytes[2..].try_into().unwrap();
+            let eph_pubkey_bytes: [u8; 32] = bytes[2..]
+                .try_into()
+                .expect("bytes to contain more than 2 bytes");
             EphemeralPublic::from(eph_pubkey_bytes)
         } else {
             // Equivalent Go implementation:
@@ -95,7 +100,9 @@ impl Version {
                     .wrap_err("malformed handshake message (protocol version mismatch?)");
             }
 
-            let eph_pubkey_bytes: [u8; 32] = bytes[1..].try_into().unwrap();
+            let eph_pubkey_bytes: [u8; 32] = bytes[1..]
+                .try_into()
+                .expect("bytes to contain more than 1 byte");
             EphemeralPublic::from(eph_pubkey_bytes)
         };
 
@@ -147,6 +154,9 @@ impl Version {
     }
 
     /// Decode signature message which authenticates the handshake
+    /// # Errors
+    ///
+    /// Will return `Err` if the remote `AuthSigMessage` is incorrect.
     pub fn decode_auth_signature(self, bytes: &[u8]) -> Result<proto::p2p::AuthSigMessage> {
         if self.is_protobuf() {
             // Parse Protobuf-encoded `AuthSigMessage`

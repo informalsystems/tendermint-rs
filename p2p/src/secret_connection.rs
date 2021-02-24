@@ -42,6 +42,24 @@ pub const DATA_MAX_SIZE: usize = 1024;
 const DATA_LEN_SIZE: usize = 4;
 const TOTAL_FRAME_SIZE: usize = DATA_MAX_SIZE + DATA_LEN_SIZE;
 
+/// The `TryClone` trait indicates that the stream of this type can be cloned and reused between
+/// multiple threads.
+pub trait TryClone {
+    /// Creates a new independently owned handle to the underlying stream.
+    ///
+    /// The returned value is a reference to the same stream that this object references. Both
+    /// handles will read and write the same stream of data, and options set on one stream will be
+    /// propagated to the other stream.
+    ///
+    /// see `TcpStream.try_clone`
+    /// # Errors
+    ///
+    /// Will return `Err` if the operation fails.
+    fn try_clone(&self) -> io::Result<Self>
+    where
+        Self: Sized;
+}
+
 /// Handshake is a process of establishing the SecretConnection between two peers.
 /// Specification: https://github.com/tendermint/spec/blob/master/spec/p2p/peer.md#authenticated-encryption-handshake
 struct Handshake<S> {
@@ -157,7 +175,10 @@ impl Handshake<AwaitingEphKey> {
 
 impl Handshake<AwaitingAuthSig> {
     /// Returns a verified pubkey of the remote peer.
-    pub fn got_signature(&mut self, auth_sig_msg: proto::p2p::AuthSigMessage) -> Result<PublicKey> {
+    pub fn got_signature(
+        &mut self,
+        auth_sig_msg: proto::p2p::AuthSigMessage,
+    ) -> Result<PublicKey> {
         let remote_pubkey = auth_sig_msg
             .pub_key
             .and_then(|pk| match pk.sum? {
@@ -199,6 +220,32 @@ pub struct SecretConnection<IoHandler: Read + Write + Send + Sync> {
 }
 
 impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
+    /// Creates a copy of this `SecretConnection` referencing the same `TcpStream`.
+    /// # Errors
+    ///
+    /// Will return `Err` if the connection is uninitialized or cloning `IoHandler` fails.
+    pub fn try_clone(&self) -> io::Result<Self> {
+        if self.remote_pubkey.is_none() {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "tried to clone uninitialized connection",
+            ));
+        }
+
+        let c = self.io_handler.try_clone()?;
+
+        Ok(Self {
+            io_handler: c,
+            protocol_version: self.protocol_version,
+            recv_nonce: self.recv_nonce.clone(),
+            send_nonce: self.send_nonce.clone(),
+            recv_cipher: self.recv_cipher.clone(),
+            send_cipher: self.send_cipher.clone(),
+            remote_pubkey: self.remote_pubkey,
+            recv_buffer: self.recv_buffer.clone(),
+        })
+    }
+
     /// Returns the remote pubkey. Panics if there's no key.
     pub fn remote_pubkey(&self) -> PublicKey {
         self.remote_pubkey.expect("remote_pubkey uninitialized")
@@ -314,38 +361,43 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
 
 impl<IoHandler> Read for SecretConnection<IoHandler>
 where
-    IoHandler: Read + Write + Send + Sync,
+    IoHandler: Read + Write + Send + Sync + TryClone,
 {
     // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn read(&mut self, data: &mut [u8]) -> io::Result<usize> {
         if !self.recv_buffer.is_empty() {
             let n = cmp::min(data.len(), self.recv_buffer.len());
             data.copy_from_slice(&self.recv_buffer[..n]);
-            let mut leftover_portion = vec![0; self.recv_buffer.len().checked_sub(n).unwrap()];
+            let mut leftover_portion =
+                vec![0; self.recv_buffer.len().checked_sub(n).expect("no overflow")];
             leftover_portion.clone_from_slice(&self.recv_buffer[n..]);
             self.recv_buffer = leftover_portion;
 
             return Ok(n);
         }
 
-        let mut sealed_frame = [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
+        let mut sealed_frame = [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
         self.io_handler.read_exact(&mut sealed_frame)?;
 
         // decrypt the frame
-        let mut frame = [0u8; TOTAL_FRAME_SIZE];
+        let mut frame = [0_u8; TOTAL_FRAME_SIZE];
         let res = self.decrypt(&sealed_frame, &mut frame);
 
         if res.is_err() {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
-                res.err().unwrap().to_string(),
+                res.err().expect("err to not be None").to_string(),
             ));
         }
 
         self.recv_nonce.increment();
         // end decryption
 
-        let chunk_length = u32::from_le_bytes(frame[..4].try_into().unwrap());
+        let chunk_length = u32::from_le_bytes(
+            frame[..4]
+                .try_into()
+                .expect("frame to contain at least 4 bytes"),
+        );
 
         if chunk_length as usize > DATA_MAX_SIZE {
             return Err(io::Error::new(
@@ -356,7 +408,10 @@ where
 
         let mut chunk = vec![0; chunk_length as usize];
         chunk.clone_from_slice(
-            &frame[DATA_LEN_SIZE..(DATA_LEN_SIZE.checked_add(chunk_length as usize).unwrap())],
+            &frame[DATA_LEN_SIZE
+                ..(DATA_LEN_SIZE
+                    .checked_add(chunk_length as usize)
+                    .expect("no overflow"))],
         );
 
         let n = cmp::min(data.len(), chunk.len());
@@ -369,12 +424,12 @@ where
 
 impl<IoHandler> Write for SecretConnection<IoHandler>
 where
-    IoHandler: Read + Write + Send + Sync,
+    IoHandler: Read + Write + Send + Sync + TryClone,
 {
     // Writes encrypted frames of `TAG_SIZE` + `TOTAL_FRAME_SIZE`
     // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
-        let mut n = 0usize;
+        let mut n = 0_usize;
         let mut data_copy = data;
         while !data_copy.is_empty() {
             let chunk: &[u8];
@@ -383,21 +438,21 @@ where
                 data_copy = &data_copy[DATA_MAX_SIZE..];
             } else {
                 chunk = data_copy;
-                data_copy = &[0u8; 0];
+                data_copy = &[0_u8; 0];
             }
-            let sealed_frame = &mut [0u8; TAG_SIZE + TOTAL_FRAME_SIZE];
+            let sealed_frame = &mut [0_u8; TAG_SIZE + TOTAL_FRAME_SIZE];
             let res = self.encrypt(chunk, sealed_frame);
             if res.is_err() {
                 return Err(io::Error::new(
                     io::ErrorKind::Other,
-                    res.err().unwrap().to_string(),
+                    res.err().expect("err to not be None").to_string(),
                 ));
             }
             self.send_nonce.increment();
             // end encryption
 
             self.io_handler.write_all(&sealed_frame[..])?;
-            n = n.checked_add(chunk.len()).unwrap();
+            n = n.checked_add(chunk.len()).expect("no overflow");
         }
 
         Ok(n)
@@ -408,19 +463,17 @@ where
     }
 }
 
-/// Returns remote_eph_pubkey
+/// Sends our pubkey and receives theirs in tandem.
 fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     handler: &mut IoHandler,
     local_eph_pubkey: &EphemeralPublic,
     protocol_version: Version,
 ) -> Result<EphemeralPublic> {
-    // Send our pubkey and receive theirs in tandem.
     // TODO(ismail): on the go side this is done in parallel, here we do send and receive after
-    // each other. thread::spawn would require a static lifetime.
-    // Should still work though.
-    handler.write_all(&protocol_version.encode_initial_handshake(&local_eph_pubkey))?;
+    // each other. thread::spawn would require a static lifetime. Should still work though.
+    handler.write_all(&protocol_version.encode_initial_handshake(local_eph_pubkey))?;
 
-    let mut response_len = 0u8;
+    let mut response_len = 0_u8;
     handler.read_exact(slice::from_mut(&mut response_len))?;
 
     let mut buf = vec![0; response_len as usize];
@@ -428,7 +481,7 @@ fn share_eph_pubkey<IoHandler: Read + Write + Send + Sync>(
     protocol_version.decode_initial_handshake(&buf)
 }
 
-/// Return is of the form lo, hi
+/// Return is of the form lo, hi.
 fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
     if second > first {
         (first, second)
@@ -437,7 +490,7 @@ fn sort32(first: [u8; 32], second: [u8; 32]) -> ([u8; 32], [u8; 32]) {
     }
 }
 
-/// Sign the challenge with the local private key
+/// Signs the challenge with the local private key.
 fn sign_challenge(
     challenge: &[u8; 32],
     local_privkey: &dyn Signer<ed25519::Signature>,
@@ -447,16 +500,17 @@ fn sign_challenge(
         .map_err(|_| Error::CryptoError.into())
 }
 
-// TODO(ismail): change from DecodeError to something more generic
-// this can also fail while writing / sending
-fn share_auth_signature<IoHandler: Read + Write + Send + Sync>(
+/// Sends our authenticated signature and receives theirs in tandem.
+fn share_auth_signature<IoHandler: Read + Write + Send + Sync + TryClone>(
     sc: &mut SecretConnection<IoHandler>,
     pubkey: &ed25519::PublicKey,
     local_signature: &ed25519::Signature,
 ) -> Result<proto::p2p::AuthSigMessage> {
+    // TODO(ismail): change from DecodeError to something more generic this can also fail while writing
+    // sending.
     let buf = sc
         .protocol_version
-        .encode_auth_signature(pubkey, &local_signature);
+        .encode_auth_signature(pubkey, local_signature);
 
     sc.write_all(&buf)?;
 

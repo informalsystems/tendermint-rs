@@ -1,17 +1,24 @@
 use std::io::{Read, Write};
 use std::net::SocketAddr;
-
-use eyre::Result;
+use std::time::Duration;
 
 use tendermint::public_key::PublicKey;
 
+use ed25519_dalek as ed25519;
+use eyre::Result;
+
+pub mod mconnection;
+
 pub struct BindInfo {
     pub addr: SocketAddr,
-    pub advertise_addrs: Vec<SocketAddr>,
-    pub public_key: PublicKey,
+    pub private_key: ed25519::Keypair,
+    pub listen_addrs: Vec<SocketAddr>,
 }
 
-pub struct ConnectInfo {}
+pub struct ConnectInfo {
+    pub addr: SocketAddr,
+    pub timeout: Duration,
+}
 
 #[derive(Clone, Copy, Hash, Eq, PartialEq)]
 pub enum StreamId {
@@ -28,12 +35,11 @@ pub trait Connection: Send {
     type Read: Read;
     type Write: Write;
 
-    fn advertised_addrs(&self) -> Vec<SocketAddr>;
     fn close(&self) -> Result<()>;
     fn local_addr(&self) -> SocketAddr;
     fn open_bidirectional(
         &self,
-        stream_id: &StreamId,
+        stream_id: StreamId,
     ) -> Result<(Self::Read, Self::Write), Self::Error>;
     fn public_key(&self) -> PublicKey;
     fn remote_addr(&self) -> SocketAddr;

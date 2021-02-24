@@ -6,8 +6,11 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
 
+use ed25519_dalek as ed25519;
+use eyre::{eyre, Context, Report, Result};
 use eyre::{Context, Report, Result};
 use flume::{unbounded, Receiver, Sender};
+use rand_core::OsRng;
 
 use tendermint::node;
 

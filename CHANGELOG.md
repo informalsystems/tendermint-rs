@@ -319,8 +319,8 @@ documentation, for further details.
 
 *Aug 31, 2020*
 
-This release is the first release of the [testgen][testgen-dir] utility, 
-a generator for Tendermint types for unit and integration tests and for model-based testing. 
+This release is the first release of the [testgen][testgen-dir] utility,
+a generator for Tendermint types for unit and integration tests and for model-based testing.
 It is a utility for producing tendermint datastructures from minimal input, targeted for testing.
 
 The release also contains various Rust API-breaking changes. It remains compatible with v0.33 of Tendermint Core.
@@ -378,7 +378,7 @@ Together they provide a complete Tendermint light client implementation that per
 and attempts to detect forks across its peers. Complete TLA+ specifications for light client verification are included,
 along with work-in-progress specs for fork detection. The implementation is compatible with v0.33 of Tendermint Core.
 
-Note that both the [light-client][light-client-dir]  and [light-node][light-node-dir] crates are to be considered experimental software that will still undergo a 
+Note that both the [light-client][light-client-dir]  and [light-node][light-node-dir] crates are to be considered experimental software that will still undergo a
 lot of improvements and iterations. The goal of releasing an early version of our Light Client is to make it accessible, to get people use it, and to receive feedback.
 
 An overview of the current design of the light client is provided in [ADR-006]
@@ -394,9 +394,9 @@ and [ADR-007].
 ### FEATURES:
 
 - [light-client] Rewrite and expansion of `lite`, the prior light client
-  verification module, into a new fully-featured `light-client` crate. The crate provides a db, 
+  verification module, into a new fully-featured `light-client` crate. The crate provides a db,
   functions for complete light client verification, peer management, fork detection, and evidence reporting,
-  along with extensive testing. Components are composed via a `Supervisor`, which is run in its own thread, 
+  along with extensive testing. Components are composed via a `Supervisor`, which is run in its own thread,
   and exposes a Handle trait to broker access to underlying state and
   functionality. See the [light-client][light-client-dir] crate for details.
 - [light-node] New binary crate with CLI for running the light client as a daemon,
