@@ -1,12 +1,14 @@
 //! CLI for performing simple interactions against a Tendermint node's RPC.
 
+use futures::StreamExt;
 use std::str::FromStr;
+use std::time::Duration;
 use structopt::StructOpt;
 use tendermint::abci::{Path, Transaction};
 use tendermint::net::Address;
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{
-    Client, Error, HttpClient, HttpsClient, Order, Result, SecureWebSocketClient,
+    Client, Error, HttpClient, HttpsClient, Order, Result, SecureWebSocketClient, Subscription,
     SubscriptionClient, Terminate, WebSocketClient, WebSocketClientDriver,
 };
 use tracing::level_filters::LevelFilter;
@@ -40,7 +42,17 @@ enum Request {
     #[structopt(flatten)]
     ClientRequest(ClientRequest),
     /// Subscribe to receive events produced by a specific query.
-    Subscribe,
+    Subscribe {
+        /// The query against which events will be matched.
+        query: Query,
+        /// The maximum number of events to receive before terminating.
+        #[structopt(long)]
+        max_events: Option<u32>,
+        /// The maximum amount of time (in seconds) to listen for events before
+        /// terminating.
+        #[structopt(long)]
+        max_time: Option<u32>,
+    },
 }
 
 #[derive(Debug, StructOpt)]
@@ -219,7 +231,11 @@ where
 
     let result = match req {
         Request::ClientRequest(r) => client_request(&client, r).await,
-        Request::Subscribe => unimplemented!(),
+        Request::Subscribe {
+            query,
+            max_events,
+            max_time,
+        } => subscription_client_request(&client, query, max_events, max_time).await,
     };
 
     client.terminate()?;
@@ -307,5 +323,68 @@ where
         }
     };
     println!("{}", result);
+    Ok(())
+}
+
+async fn subscription_client_request<C>(
+    client: &C,
+    query: Query,
+    max_events: Option<u32>,
+    max_time: Option<u32>,
+) -> Result<()>
+where
+    C: SubscriptionClient,
+{
+    info!("Creating subcription for query: {}", query);
+    let subs = client.subscribe(query).await?;
+    match max_time {
+        Some(secs) => recv_events_with_timeout(subs, max_events, secs).await,
+        None => recv_events(subs, max_events).await,
+    }
+}
+
+async fn recv_events_with_timeout(
+    mut subs: Subscription,
+    max_events: Option<u32>,
+    timeout_secs: u32,
+) -> Result<()> {
+    let timeout = tokio::time::sleep(Duration::from_secs(timeout_secs as u64));
+    let mut event_count = 0u64;
+    tokio::pin!(timeout);
+    loop {
+        tokio::select! {
+            Some(result) = subs.next() => {
+                let event = result?;
+                println!("{}", serde_json::to_string_pretty(&event)?);
+                event_count += 1;
+                if let Some(me) = max_events {
+                    if event_count >= (me as u64) {
+                        info!("Reached maximum number of events: {}", me);
+                        return Ok(());
+                    }
+                }
+            }
+            _ = &mut timeout => {
+                info!("Reached event receive timeout of {} seconds", timeout_secs);
+                return Ok(())
+            }
+        }
+    }
+}
+
+async fn recv_events(mut subs: Subscription, max_events: Option<u32>) -> Result<()> {
+    let mut event_count = 0u64;
+    while let Some(result) = subs.next().await {
+        let event = result?;
+        println!("{}", serde_json::to_string_pretty(&event)?);
+        event_count += 1;
+        if let Some(me) = max_events {
+            if event_count >= (me as u64) {
+                info!("Reached maximum number of events: {}", me);
+                return Ok(());
+            }
+        }
+    }
+    info!("The server terminated the subscription");
     Ok(())
 }
