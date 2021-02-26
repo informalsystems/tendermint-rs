@@ -137,6 +137,20 @@ impl From<WSError> for Error {
     }
 }
 
+#[cfg(feature = "cli")]
+impl From<serde_json::Error> for Error {
+    fn from(e: serde_json::Error) -> Self {
+        Error::client_internal_error(e.to_string())
+    }
+}
+
+#[cfg(feature = "cli")]
+impl From<tendermint::Error> for Error {
+    fn from(e: tendermint::Error) -> Self {
+        Error::client_internal_error(e.to_string())
+    }
+}
+
 /// Tendermint RPC error codes.
 ///
 /// See `func RPC*Error()` definitions in:

@@ -4,6 +4,7 @@ use crate::client::subscription::SubscriptionTx;
 use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
 use crate::client::transport::router::{PublishResult, SubscriptionRouter};
 use crate::client::transport::utils::get_tcp_host_port;
+use crate::client::Terminate;
 use crate::endpoint::{subscribe, unsubscribe};
 use crate::event::Event;
 use crate::query::Query;
@@ -237,6 +238,12 @@ where
         })??;
         tracing::debug!("Incoming response: {}", response);
         R::Response::from_string(response)
+    }
+}
+
+impl<C> Terminate for AsyncTungsteniteClient<C> {
+    fn terminate(self) -> Result<()> {
+        self.close()
     }
 }
 

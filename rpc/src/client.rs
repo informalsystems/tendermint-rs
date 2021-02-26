@@ -106,8 +106,8 @@ pub trait Client {
         self.perform(broadcast::tx_sync::Request::new(tx)).await
     }
 
-    /// `/broadcast_tx_sync`: broadcast a transaction, returning the response
-    /// from `CheckTx`.
+    /// `/broadcast_tx_commit`: broadcast a transaction, returning the response
+    /// from `DeliverTx`.
     async fn broadcast_tx_commit(&self, tx: Transaction) -> Result<broadcast::tx_commit::Response> {
         self.perform(broadcast::tx_commit::Request::new(tx)).await
     }
@@ -184,4 +184,11 @@ pub trait Client {
     async fn perform<R>(&self, request: R) -> Result<R::Response>
     where
         R: SimpleRequest;
+}
+
+/// Applicable to transports whose connection can/must be terminated.
+// TODO(thane): Replace with a Closeable trait once we can make breaking API changes.
+pub trait Terminate {
+    /// Signal to the underlying transport to terminate.
+    fn terminate(self) -> Result<()>;
 }

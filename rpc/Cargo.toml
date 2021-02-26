@@ -23,8 +23,20 @@ description = """
 [package.metadata.docs.rs]
 all-features = true
 
+[[bin]]
+name = "tendermint-rpc"
+path = "src/client/bin/main.rs"
+required-features = [ "cli" ]
+
 [features]
 default = []
+cli = [
+  "http-client",
+  "structopt",
+  "tracing-subscriber",
+  "url",
+  "websocket-client"
+]
 http-client = [
   "async-trait",
   "futures",
@@ -52,6 +64,10 @@ websocket-client = [
 bytes = "1.0"
 chrono = "0.4"
 getrandom = "0.1"
+# TODO(thane): Use a released version once support for inverted patterns is released.
+#              See https://github.com/kevinmehall/rust-peg/pull/245
+peg = { git = "https://github.com/kevinmehall/rust-peg.git", rev = "ba6019539b2cf80289190cbb9537c94113b6b7d1" }
+pin-project = "1.0.1"
 serde = { version = "1", features = [ "derive" ] }
 serde_bytes = "0.11"
 serde_json = "1"
@@ -68,6 +84,8 @@ futures = { version = "0.3", optional = true }
 http = { version = "0.2", optional = true }
 hyper = { version = "0.14", optional = true, features = ["client", "http1", "tcp"] }
 hyper-rustls = { version = "0.22.1", optional = true }
+structopt = { version = "0.3", optional = true }
 tokio = { version = "1.0", optional = true }
 tracing = { version = "0.1", optional = true }
-pin-project = "1.0.1"
+tracing-subscriber = { version = "0.2", optional = true }
+url = { version = "2.2", optional = true }
