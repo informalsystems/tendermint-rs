@@ -239,6 +239,12 @@ peg::parser! {
         rule datetime() -> &'input str
             = dt:$(date() "T" time()) { dt }
 
+        rule float() -> f64
+            = s:$("-"? ['0'..='9']+ "." ['0'..='9']+) {?
+                f64::from_str(s)
+                    .map_err(|_| "failed to parse as a 64-bit floating point number")
+            }
+
         rule string_op() -> Operand
             = s:string() { Operand::String(s.to_owned()) }
 
@@ -262,11 +268,14 @@ peg::parser! {
                 Ok(Operand::Date(Date::from_utc(naive_date, Utc)))
             }
 
+        rule float_op() -> Operand
+            = f:float() { Operand::Float(f) }
+
         rule tag() -> &'input str
             = $(['a'..='z' | 'A'..='Z'] ['a'..='z' | 'A'..='Z' | '0'..='9' | '_' | '.']*)
 
         rule operand() -> Operand
-            = datetime_op() / date_op() / string_op() / signed_op() / unsigned_op()
+            = datetime_op() / date_op() / string_op() / float_op() / signed_op() / unsigned_op()
 
         rule eq() -> Condition
             = t:tag() _ "=" _ op:operand() { Condition::Eq(t.to_owned(), op) }
@@ -796,6 +805,49 @@ mod test {
                 ))
             )]
         )
+    }
+
+    #[test]
+    fn query_float_parsing() {
+        // Positive floating point number
+        let query = Query::from_str("short.pi = 3.14159").unwrap();
+        assert_eq!(query.conditions.len(), 1);
+        match &query.conditions[0] {
+            Condition::Eq(tag, op) => {
+                assert_eq!(tag, "short.pi");
+                match op {
+                    Operand::Float(f) => {
+                        assert!(floats_eq(*f, std::f64::consts::PI, 5));
+                    }
+                    _ => panic!("unexpected operand: {:?}", op),
+                }
+            }
+            c => panic!("unexpected condition: {:?}", c),
+        }
+
+        // Negative floating point number
+        let query = Query::from_str("short.pi = -3.14159").unwrap();
+        assert_eq!(query.conditions.len(), 1);
+        match &query.conditions[0] {
+            Condition::Eq(tag, op) => {
+                assert_eq!(tag, "short.pi");
+                match op {
+                    Operand::Float(f) => {
+                        assert!(floats_eq(*f, -std::f64::consts::PI, 5));
+                    }
+                    _ => panic!("unexpected operand: {:?}", op),
+                }
+            }
+            c => panic!("unexpected condition: {:?}", c),
+        }
+    }
+
+    // From https://stackoverflow.com/a/41447964/1156132
+    fn floats_eq(a: f64, b: f64, precision: u8) -> bool {
+        let factor = 10.0f64.powi(precision as i32);
+        let a = (a * factor).trunc();
+        let b = (b * factor).trunc();
+        a == b
     }
 
     #[test]
