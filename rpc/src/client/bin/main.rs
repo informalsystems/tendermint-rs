@@ -353,7 +353,14 @@ async fn recv_events_with_timeout(
     tokio::pin!(timeout);
     loop {
         tokio::select! {
-            Some(result) = subs.next() => {
+            result_opt = subs.next() => {
+                let result = match result_opt {
+                    Some(r) => r,
+                    None => {
+                        info!("The server terminated the subscription");
+                        return Ok(());
+                    }
+                };
                 let event = result?;
                 println!("{}", serde_json::to_string_pretty(&event)?);
                 event_count += 1;
