@@ -1,4 +1,4 @@
-//! URL representation for clients.
+//! URL representation for RPC clients.
 
 use crate::{Error, Result};
 use std::convert::TryFrom;
