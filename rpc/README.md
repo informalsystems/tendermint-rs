@@ -21,16 +21,64 @@ This crate optionally provides access to different types of RPC client
 functionality and different client transports based on which features you
 select when using it.
 
-Two features are provided at present.
+Several client-related features are provided at present:
 
-* `http-client` - Provides `HttpClient`, which is a basic RPC client that
-  interacts with remote Tendermint nodes via **JSON-RPC over HTTP**. This
-  client does not provide `Event` subscription functionality. See the
-  [Tendermint RPC] for more details.
-* `websocket-client` - Provides `WebSocketClient`, which provides full
-  client functionality, including general RPC functionality (such as that
-  provided by `HttpClient`) as well as `Event` subscription
-  functionality.
+* `http-client` - Provides `HttpClient` and `HttpsClient`, which are
+  basic RPC clients that interact with remote Tendermint nodes via
+  **JSON-RPC over HTTP or HTTPS**. This client does not provide
+  `Event` subscription functionality. See the [Tendermint RPC] for
+  more details.
+* `websocket-client` - Provides `WebSocketClient` and
+  `SecureWebSocketClient`, which provide full client functionality,
+  including general RPC functionality as well as `Event`
+  subscription functionality.
+
+### CLI
+
+A `tendermint-rpc` console application is provided for testing/experimentation
+purposes. To build this application, from the `rpc` crate's directory:
+
+```bash
+cargo build --bin tendermint-rpc --features cli
+
+# To run directly and show usage information
+cargo run --bin tendermint-rpc --features cli -- --help
+
+# To install the binary to your Cargo binaries path
+# (should be globally accessible)
+cargo install --bin tendermint-rpc --features cli --path .
+```
+
+The application sends its logs to **stderr** and its output to **stdout**, so
+it's relatively easy to capture RPC output.
+
+**Usage examples:** (assuming you've installed the binary)
+
+```bash
+# Check which RPC commands/endpoints are supported.
+tendermint-rpc --help
+
+# Query the status of the Tendermint node bound to tcp://127.0.0.1:26657
+tendermint-rpc status
+
+# Submit a transaction to the key/value store ABCI app via a Tendermint node
+# bound to tcp://127.0.0.1:26657
+tendermint-rpc broadcast-tx-async somekey=somevalue
+
+# Query the value associated with key "somekey" (still assuming a key/value
+# store ABCI app)
+tendermint-rpc abci-query somekey
+
+# Subscribe to receive new blocks (must use the WebSocket endpoint)
+# Prints out all incoming events
+tendermint-rpc -u ws://127.0.0.1:26657 subscribe "tm.event='NewBlock'"
+
+# If you want to execute a number of queries against a specific endpoint and
+# don't feel like re-typing the URL over and over again, just set the
+# TENDERMINT_RPC_URL environment variable
+export TENDERMINT_RPC_URL=ws://127.0.0.1:26657
+tendermint-rpc subscribe "tm.event='Tx'"
+```
 
 ### Mock Clients
 

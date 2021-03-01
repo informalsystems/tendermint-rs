@@ -6,7 +6,7 @@
 //! functionality and different client transports based on which features you
 //! select when using it.
 //!
-//! Two features are provided at present:
+//! Several client-related features are provided at present:
 //!
 //! * `http-client` - Provides [`HttpClient`] and [`HttpsClient`], which are
 //!   basic RPC clients that interact with remote Tendermint nodes via
