@@ -35,7 +35,7 @@ Several client-related features are provided at present:
 ### CLI
 
 A `tendermint-rpc` console application is provided for testing/experimentation
-purposes. To build this application, from the `rpc` crate's directory:
+purposes. To build this application, from the `tendermint-rpc` crate's directory:
 
 ```bash
 cargo build --bin tendermint-rpc --features cli
@@ -77,12 +77,12 @@ tendermint-rpc abci-query somekey
 
 # Subscribe to receive new blocks (must use the WebSocket endpoint)
 # Prints out all incoming events
-tendermint-rpc -u ws://127.0.0.1:26657 subscribe "tm.event='NewBlock'"
+tendermint-rpc -u ws://127.0.0.1:26657/websocket subscribe "tm.event='NewBlock'"
 
 # If you want to execute a number of queries against a specific endpoint and
 # don't feel like re-typing the URL over and over again, just set the
 # TENDERMINT_RPC_URL environment variable
-export TENDERMINT_RPC_URL=ws://127.0.0.1:26657
+export TENDERMINT_RPC_URL=ws://127.0.0.1:26657/websocket
 tendermint-rpc subscribe "tm.event='Tx'"
 ```
 
