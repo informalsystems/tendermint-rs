@@ -9,7 +9,9 @@ use tendermint::net;
 
 /// A JSON-RPC/HTTP Tendermint RPC client (implements [`crate::Client`]).
 ///
-/// Supports both HTTP and HTTPS connections to Tendermint RPC endpoints.
+/// Supports both HTTP and HTTPS connections to Tendermint RPC endpoints, and
+/// allows for the use of HTTP proxies (see [`HttpClient::new_with_proxy`] for
+/// details).
 ///
 /// Does not provide [`crate::event::Event`] subscription facilities (see
 /// [`crate::WebSocketClient`] for a client that does).
@@ -55,6 +57,11 @@ impl HttpClient {
 
     /// Construct a new Tendermint RPC HTTP/S client connecting to the given
     /// URL, but via the specified proxy's URL.
+    ///
+    /// If the RPC endpoint is secured (HTTPS), the proxy will automatically
+    /// attempt to connect using the [HTTP CONNECT] method.
+    ///
+    /// [HTTP CONNECT]: https://en.wikipedia.org/wiki/HTTP_tunnel
     pub fn new_with_proxy<U, P>(url: U, proxy_url: P) -> Result<Self>
     where
         U: TryInto<HttpClientUrl, Error = Error>,
