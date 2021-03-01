@@ -11,7 +11,7 @@ use tendermint_rpc::{
     WebSocketClient,
 };
 use tracing::level_filters::LevelFilter;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 /// CLI for performing simple interactions against a Tendermint node's RPC.
 ///
@@ -30,7 +30,7 @@ struct Opt {
     /// An optional HTTP/S proxy through which to submit requests to the
     /// Tendermint node's RPC endpoint. Only available for HTTP/HTTPS endpoints
     /// (i.e. WebSocket proxies are not supported).
-    #[structopt(long, env = "HTTP_PROXY")]
+    #[structopt(long)]
     proxy_url: Option<Url>,
 
     /// Increase output logging verbosity to DEBUG level.
@@ -158,8 +158,15 @@ async fn main() {
         .with_writer(std::io::stderr)
         .init();
 
+    let proxy_url = match get_http_proxy_url(opt.url.scheme(), opt.proxy_url.clone()) {
+        Ok(u) => u,
+        Err(e) => {
+            error!("Failed to obtain proxy URL: {}", e);
+            std::process::exit(-1);
+        }
+    };
     let result = match opt.url.scheme() {
-        Scheme::Http | Scheme::Https => http_request(opt.url, opt.proxy_url, opt.req).await,
+        Scheme::Http | Scheme::Https => http_request(opt.url, proxy_url, opt.req).await,
         Scheme::WebSocket | Scheme::SecureWebSocket => match opt.proxy_url {
             Some(_) => Err(Error::invalid_params(
                 "proxies are only supported for use with HTTP clients at present",
@@ -170,6 +177,32 @@ async fn main() {
     if let Err(e) = result {
         error!("Failed: {}", e);
         std::process::exit(-1);
+    }
+}
+
+// Retrieve the proxy URL with precedence:
+// 1. If supplied, that's the proxy URL used.
+// 2. If not supplied, but environment variable HTTP_PROXY or HTTPS_PROXY are
+//    supplied, then use the appropriate variable for the URL in question.
+fn get_http_proxy_url(url_scheme: Scheme, proxy_url: Option<Url>) -> Result<Option<Url>> {
+    match proxy_url {
+        Some(u) => Ok(Some(u)),
+        None => match url_scheme {
+            Scheme::Http => std::env::var("HTTP_PROXY").ok(),
+            Scheme::Https => std::env::var("HTTPS_PROXY")
+                .ok()
+                .or_else(|| std::env::var("HTTP_PROXY").ok()),
+            _ => {
+                if std::env::var("HTTP_PROXY").is_ok() || std::env::var("HTTPS_PROXY").is_ok() {
+                    warn!(
+                        "Ignoring HTTP proxy environment variables for non-HTTP client connection"
+                    );
+                }
+                None
+            }
+        }
+        .map(|u| u.parse())
+        .transpose(),
     }
 }
 
