@@ -68,6 +68,13 @@ tendermint-rpc broadcast-tx-async somekey=somevalue
 # store ABCI app)
 tendermint-rpc abci-query somekey
 
+# To use an HTTP/S proxy to access your RPC endpoint
+tendermint-rpc --proxy-url http://yourproxy:8080 abci-query somekey
+
+# To set your HTTP/S proxy for multiple subsequent queries
+export HTTP_PROXY=http://yourproxy:8080
+tendermint-rpc abci-query somekey
+
 # Subscribe to receive new blocks (must use the WebSocket endpoint)
 # Prints out all incoming events
 tendermint-rpc -u ws://127.0.0.1:26657 subscribe "tm.event='NewBlock'"
