@@ -27,6 +27,10 @@ pub trait SubscriptionClient {
     ///
     /// [`select_all`]: https://docs.rs/futures/*/futures/stream/fn.select_all.html
     async fn unsubscribe(&self, query: Query) -> Result<()>;
+
+    /// Subscription clients will usually have long-running underlying
+    /// transports that will need to be closed at some point.
+    fn close(self) -> Result<()>;
 }
 
 pub(crate) type SubscriptionTx = ChannelTx<Result<Event>>;

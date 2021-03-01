@@ -34,7 +34,6 @@ cli = [
   "http-client",
   "structopt",
   "tracing-subscriber",
-  "url",
   "websocket-client"
 ]
 http-client = [
@@ -42,10 +41,12 @@ http-client = [
   "futures",
   "http",
   "hyper",
+  "hyper-proxy",
   "hyper-rustls",
   "tokio/fs",
   "tokio/macros",
-  "tracing"
+  "tracing",
+  "url"
 ]
 secp256k1 = [ "tendermint/secp256k1" ]
 websocket-client = [
@@ -57,7 +58,8 @@ websocket-client = [
   "tokio/macros",
   "tokio/sync",
   "tokio/time",
-  "tracing"
+  "tracing",
+  "url"
 ]
 
 [dependencies]
@@ -83,6 +85,7 @@ async-tungstenite = { version = "0.12", features = ["tokio-runtime", "tokio-rust
 futures = { version = "0.3", optional = true }
 http = { version = "0.2", optional = true }
 hyper = { version = "0.14", optional = true, features = ["client", "http1", "tcp"] }
+hyper-proxy = { version = "0.9", optional = true }
 hyper-rustls = { version = "0.22.1", optional = true }
 structopt = { version = "0.3", optional = true }
 tokio = { version = "1.0", optional = true }

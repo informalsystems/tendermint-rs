@@ -109,6 +109,19 @@ impl Display for Error {
     }
 }
 
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Error::client_internal_error(e.to_string())
+    }
+}
+
+#[cfg(any(feature = "http-client", feature = "websocket-client"))]
+impl From<url::ParseError> for Error {
+    fn from(e: url::ParseError) -> Self {
+        Error::invalid_params(&e.to_string())
+    }
+}
+
 #[cfg(feature = "http-client")]
 impl From<http::Error> for Error {
     fn from(http_error: http::Error) -> Error {

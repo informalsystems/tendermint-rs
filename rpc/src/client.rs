@@ -8,11 +8,9 @@ mod transport;
 pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
 
 #[cfg(feature = "http-client")]
-pub use transport::http::{HttpClient, HttpsClient, HyperClient};
+pub use transport::http::HttpClient;
 #[cfg(feature = "websocket-client")]
-pub use transport::websocket::{
-    AsyncTungsteniteClient, SecureWebSocketClient, WebSocketClient, WebSocketClientDriver,
-};
+pub use transport::websocket::{WebSocketClient, WebSocketClientDriver};
 
 use crate::endpoint::*;
 use crate::query::Query;
@@ -184,11 +182,4 @@ pub trait Client {
     async fn perform<R>(&self, request: R) -> Result<R::Response>
     where
         R: SimpleRequest;
-}
-
-/// Applicable to transports whose connection can/must be terminated.
-// TODO(thane): Replace with a Closeable trait once we can make breaking API changes.
-pub trait Terminate {
-    /// Signal to the underlying transport to terminate.
-    fn terminate(self) -> Result<()>;
 }

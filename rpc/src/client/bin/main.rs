@@ -5,15 +5,13 @@ use std::str::FromStr;
 use std::time::Duration;
 use structopt::StructOpt;
 use tendermint::abci::{Path, Transaction};
-use tendermint::net::Address;
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{
-    Client, Error, HttpClient, HttpsClient, Order, Result, SecureWebSocketClient, Subscription,
-    SubscriptionClient, Terminate, WebSocketClient, WebSocketClientDriver,
+    Client, Error, HttpClient, Order, Result, Scheme, Subscription, SubscriptionClient, Url,
+    WebSocketClient,
 };
 use tracing::level_filters::LevelFilter;
-use tracing::{error, info, warn};
-use url::Url;
+use tracing::{error, info};
 
 /// CLI for performing simple interactions against a Tendermint node's RPC.
 ///
@@ -28,6 +26,12 @@ struct Opt {
         env = "TENDERMINT_RPC_URL"
     )]
     url: Url,
+
+    /// An optional HTTP/S proxy through which to submit requests to the
+    /// Tendermint node's RPC endpoint. Only available for HTTP/HTTPS endpoints
+    /// (i.e. WebSocket proxies are not supported).
+    #[structopt(long, env = "HTTP_PROXY")]
+    proxy_url: Option<Url>,
 
     /// Increase output logging verbosity to DEBUG level.
     #[structopt(short, long)]
@@ -154,31 +158,14 @@ async fn main() {
         .with_writer(std::io::stderr)
         .init();
 
-    let host = match opt.url.host_str() {
-        Some(h) => h,
-        None => {
-            error!("Missing host in URL: {}", opt.url);
-            std::process::exit(-1);
-        }
-    };
-    let port = opt.url.port_or_known_default().unwrap_or(26657);
-    if opt.url.path().len() > 1 {
-        warn!("URL paths are ignored at present: {}", opt.url.path());
-    }
-    let address = Address::Tcp {
-        peer_id: None,
-        host: host.to_owned(),
-        port,
-    };
     let result = match opt.url.scheme() {
-        "http" => http_request(address, opt.req).await,
-        "https" => https_request(address, opt.req).await,
-        "ws" => websocket_request(address, opt.req).await,
-        "wss" => secure_websocket_request(address, opt.req).await,
-        scheme => Err(Error::invalid_params(&format!(
-            "unsupported RPC endpoint scheme: {}",
-            scheme
-        ))),
+        Scheme::Http | Scheme::Https => http_request(opt.url, opt.proxy_url, opt.req).await,
+        Scheme::WebSocket | Scheme::SecureWebSocket => match opt.proxy_url {
+            Some(_) => Err(Error::invalid_params(
+                "proxies are only supported for use with HTTP clients at present",
+            )),
+            None => websocket_request(opt.url, opt.req).await,
+        },
     };
     if let Err(e) = result {
         error!("Failed: {}", e);
@@ -186,47 +173,30 @@ async fn main() {
     }
 }
 
-async fn http_request(address: Address, req: Request) -> Result<()> {
-    info!("Using HTTP client to submit request to: {}", address);
-    let client = HttpClient::new(address)?;
+async fn http_request(url: Url, proxy_url: Option<Url>, req: Request) -> Result<()> {
+    let client = match proxy_url {
+        Some(proxy_url) => {
+            info!(
+                "Using HTTP client with proxy {} to submit request to {}",
+                proxy_url, url
+            );
+            HttpClient::new_with_proxy(url, proxy_url)
+        }
+        None => {
+            info!("Using HTTP client to submit request to: {}", url);
+            HttpClient::new(url)
+        }
+    }?;
+
     match req {
         Request::ClientRequest(r) => client_request(&client, r).await,
         _ => Err(Error::invalid_params("HTTP/S clients do not support subscription capabilities (please use the WebSocket client instead)"))
     }
 }
 
-async fn https_request(address: Address, req: Request) -> Result<()> {
-    info!("Using HTTPS client to submit request to: {}", address);
-    let client = HttpsClient::new(address)?;
-    match req {
-        Request::ClientRequest(r) => client_request(&client, r).await,
-        _ => Err(Error::invalid_params("HTTP/S clients do not support subscription capabilities (please use the WebSocket client instead)"))
-    }
-}
-
-async fn websocket_request(address: Address, req: Request) -> Result<()> {
-    info!("Using WebSocket client to submit request to: {}", address);
-    let (client, driver) = WebSocketClient::new(address).await?;
-    run_websocket_request(client, driver, req).await
-}
-
-async fn secure_websocket_request(address: Address, req: Request) -> Result<()> {
-    info!(
-        "Using secure WebSocket client to submit request to: {}",
-        address
-    );
-    let (client, driver) = SecureWebSocketClient::new(address).await?;
-    run_websocket_request(client, driver, req).await
-}
-
-async fn run_websocket_request<C>(
-    client: C,
-    driver: WebSocketClientDriver,
-    req: Request,
-) -> Result<()>
-where
-    C: Client + SubscriptionClient + Terminate + Sync,
-{
+async fn websocket_request(url: Url, req: Request) -> Result<()> {
+    info!("Using WebSocket client to submit request to: {}", url);
+    let (client, driver) = WebSocketClient::new(url).await?;
     let driver_hdl = tokio::spawn(async move { driver.run().await });
 
     let result = match req {
@@ -238,7 +208,7 @@ where
         } => subscription_client_request(&client, query, max_events, max_time).await,
     };
 
-    client.terminate()?;
+    client.close()?;
     driver_hdl
         .await
         .map_err(|e| Error::client_internal_error(e.to_string()))??;

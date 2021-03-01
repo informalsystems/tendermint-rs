@@ -1,21 +1,18 @@
 //! WebSocket-based clients for accessing Tendermint RPC functionality.
 
 use crate::client::subscription::SubscriptionTx;
-use crate::client::sync::{unbounded, ChannelRx, ChannelTx};
+use crate::client::sync::{ChannelRx, ChannelTx};
 use crate::client::transport::router::{PublishResult, SubscriptionRouter};
-use crate::client::transport::utils::get_tcp_host_port;
-use crate::client::Terminate;
 use crate::endpoint::{subscribe, unsubscribe};
 use crate::event::Event;
 use crate::query::Query;
 use crate::request::Wrapper;
-use crate::utils::uuid_str;
 use crate::{
-    response, Client, Error, Id, Request, Response, Result, SimpleRequest, Subscription,
-    SubscriptionClient,
+    response, Client, Error, Id, Request, Response, Result, Scheme, SimpleRequest, Subscription,
+    SubscriptionClient, Url,
 };
 use async_trait::async_trait;
-use async_tungstenite::tokio::{connect_async, connect_async_with_tls_connector, ConnectStream};
+use async_tungstenite::tokio::ConnectStream;
 use async_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 use async_tungstenite::tungstenite::protocol::CloseFrame;
 use async_tungstenite::tungstenite::Message;
@@ -24,7 +21,9 @@ use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::convert::{TryFrom, TryInto};
 use std::ops::Add;
+use std::str::FromStr;
 use tendermint::net;
 use tokio::time::{Duration, Instant};
 use tracing::{debug, error};
@@ -87,7 +86,7 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let (client, driver) = WebSocketClient::new("tcp://127.0.0.1:26657".parse().unwrap())
+///     let (client, driver) = WebSocketClient::new("ws://127.0.0.1:26657/websocket")
 ///         .await
 ///         .unwrap();
 ///     let driver_handle = tokio::spawn(async move { driver.run().await });
@@ -121,165 +120,318 @@ const PING_INTERVAL: Duration = Duration::from_secs((RECV_TIMEOUT_SECONDS * 9) /
 /// ```
 ///
 /// [tendermint-websocket-ping]: https://github.com/tendermint/tendermint/blob/309e29c245a01825fc9630103311fd04de99fa5e/rpc/jsonrpc/server/ws_handler.go#L28
-pub type WebSocketClient = AsyncTungsteniteClient<Unsecure>;
-
-/// Similar to [`WebSocketClient`], but facilitates connectivity over TLS.
-pub type SecureWebSocketClient = AsyncTungsteniteClient<Secure>;
-
-/// Marker for the [`AsyncTungsteniteClient`] for clients operating over
-/// unsecure connections.
 #[derive(Debug, Clone)]
-pub struct Unsecure;
-
-/// Marker for the [`AsyncTungsteniteClient`] for clients operating over
-/// secure connections.
-#[derive(Debug, Clone)]
-pub struct Secure;
-
-/// An [`async-tungstenite`]-based WebSocket client.
-///
-/// Different modes of operation (secure and unsecure) are facilitated by
-/// different variants of this type.
-///
-/// [`async-tungstenite`]: https://crates.io/crates/async-tungstenite
-#[derive(Debug, Clone)]
-pub struct AsyncTungsteniteClient<C> {
-    cmd_tx: ChannelTx<DriverCommand>,
-    _client_type: std::marker::PhantomData<C>,
+pub struct WebSocketClient {
+    inner: sealed::WebSocketClient,
 }
 
-impl AsyncTungsteniteClient<Unsecure> {
-    /// Construct a WebSocket client. Immediately attempts to open a WebSocket
-    /// connection to the node with the given address.
+impl WebSocketClient {
+    /// Construct a new WebSocket-based client connecting to the given
+    /// Tendermint node's RPC endpoint.
     ///
-    /// On success, this returns both a client handle (a `WebSocketClient`
-    /// instance) as well as the WebSocket connection driver. The execution of
-    /// this driver becomes the responsibility of the client owner, and must be
-    /// executed in a separate asynchronous context to the client to ensure it
-    /// doesn't block the client.
-    pub async fn new(address: net::Address) -> Result<(Self, WebSocketClientDriver)> {
-        let (host, port) = get_tcp_host_port(address)?;
-        let (stream, _response) =
-            connect_async(&format!("ws://{}:{}/websocket", &host, port)).await?;
-        let (cmd_tx, cmd_rx) = unbounded();
-        let driver = WebSocketClientDriver::new(stream, cmd_rx);
-        Ok((
-            Self {
-                cmd_tx,
-                _client_type: Default::default(),
-            },
-            driver,
-        ))
-    }
-}
-
-impl AsyncTungsteniteClient<Secure> {
-    /// Construct a WebSocket client. Immediately attempts to open a WebSocket
-    /// connection to the node with the given address, but over a secure
-    /// connection.
-    ///
-    /// On success, this returns both a client handle (a `WebSocketClient`
-    /// instance) as well as the WebSocket connection driver. The execution of
-    /// this driver becomes the responsibility of the client owner, and must be
-    /// executed in a separate asynchronous context to the client to ensure it
-    /// doesn't block the client.
-    pub async fn new(address: net::Address) -> Result<(Self, WebSocketClientDriver)> {
-        let (host, port) = get_tcp_host_port(address)?;
-        // Not supplying a connector means async_tungstenite will create the
-        // connector for us.
-        let (stream, _response) =
-            connect_async_with_tls_connector(&format!("wss://{}:{}/websocket", &host, port), None)
-                .await?;
-        let (cmd_tx, cmd_rx) = unbounded();
-        let driver = WebSocketClientDriver::new(stream, cmd_rx);
-        Ok((
-            Self {
-                cmd_tx,
-                _client_type: Default::default(),
-            },
-            driver,
-        ))
-    }
-}
-
-impl<C> AsyncTungsteniteClient<C> {
-    fn send_cmd(&self, cmd: DriverCommand) -> Result<()> {
-        self.cmd_tx.send(cmd).map_err(|e| {
-            Error::client_internal_error(format!("failed to send command to client driver: {}", e))
-        })
-    }
-
-    /// Signals to the driver that it must terminate.
-    pub fn close(self) -> Result<()> {
-        self.send_cmd(DriverCommand::Terminate)
+    /// Supports both `ws://` and `wss://` protocols.
+    pub async fn new<U>(url: U) -> Result<(Self, WebSocketClientDriver)>
+    where
+        U: TryInto<WebSocketClientUrl, Error = Error>,
+    {
+        let url = url.try_into()?;
+        let (inner, driver) = if url.0.is_secure() {
+            sealed::WebSocketClient::new_secure(url.0).await?
+        } else {
+            sealed::WebSocketClient::new_unsecure(url.0).await?
+        };
+        Ok((Self { inner }, driver))
     }
 }
 
 #[async_trait]
-impl<C> Client for AsyncTungsteniteClient<C>
-where
-    C: Send + Sync,
-{
-    async fn perform<R>(&self, request: R) -> Result<R::Response>
+impl Client for WebSocketClient {
+    async fn perform<R>(&self, request: R) -> Result<<R as Request>::Response>
     where
         R: SimpleRequest,
     {
-        let wrapper = Wrapper::new(request);
-        let id = wrapper.id().clone().to_string();
-        let wrapped_request = wrapper.into_json();
-        let (response_tx, mut response_rx) = unbounded();
-        self.send_cmd(DriverCommand::SimpleRequest(SimpleRequestCommand {
-            id,
-            wrapped_request,
-            response_tx,
-        }))?;
-        let response = response_rx.recv().await.ok_or_else(|| {
-            Error::client_internal_error("failed to hear back from WebSocket driver".to_string())
-        })??;
-        tracing::debug!("Incoming response: {}", response);
-        R::Response::from_string(response)
-    }
-}
-
-impl<C> Terminate for AsyncTungsteniteClient<C> {
-    fn terminate(self) -> Result<()> {
-        self.close()
+        self.inner.perform(request).await
     }
 }
 
 #[async_trait]
-impl<C> SubscriptionClient for AsyncTungsteniteClient<C>
-where
-    C: Send + Sync,
-{
+impl SubscriptionClient for WebSocketClient {
     async fn subscribe(&self, query: Query) -> Result<Subscription> {
-        let (subscription_tx, subscription_rx) = unbounded();
-        let (response_tx, mut response_rx) = unbounded();
-        // By default we use UUIDs to differentiate subscriptions
-        let id = uuid_str();
-        self.send_cmd(DriverCommand::Subscribe(SubscribeCommand {
-            id: id.to_string(),
-            query: query.to_string(),
-            subscription_tx,
-            response_tx,
-        }))?;
-        // Make sure our subscription request went through successfully.
-        let _ = response_rx.recv().await.ok_or_else(|| {
-            Error::client_internal_error("failed to hear back from WebSocket driver".to_string())
-        })??;
-        Ok(Subscription::new(id, query, subscription_rx))
+        self.inner.subscribe(query).await
     }
 
     async fn unsubscribe(&self, query: Query) -> Result<()> {
-        let (response_tx, mut response_rx) = unbounded();
-        self.send_cmd(DriverCommand::Unsubscribe(UnsubscribeCommand {
-            query: query.to_string(),
-            response_tx,
-        }))?;
-        let _ = response_rx.recv().await.ok_or_else(|| {
-            Error::client_internal_error("failed to hear back from WebSocket driver".to_string())
-        })??;
-        Ok(())
+        self.inner.unsubscribe(query).await
+    }
+
+    fn close(self) -> Result<()> {
+        self.inner.close()
+    }
+}
+
+/// A URL limited to use with WebSocket clients.
+///
+/// Facilitates useful type conversions and inferences.
+#[derive(Debug, Clone)]
+pub struct WebSocketClientUrl(Url);
+
+impl TryFrom<Url> for WebSocketClientUrl {
+    type Error = Error;
+
+    fn try_from(value: Url) -> Result<Self> {
+        match value.scheme() {
+            Scheme::WebSocket | Scheme::SecureWebSocket => Ok(Self(value)),
+            _ => Err(Error::invalid_params(&format!(
+                "cannot use URL {} with WebSocket clients",
+                value
+            ))),
+        }
+    }
+}
+
+impl FromStr for WebSocketClientUrl {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let url: Url = s.parse()?;
+        url.try_into()
+    }
+}
+
+impl TryFrom<&str> for WebSocketClientUrl {
+    type Error = Error;
+
+    fn try_from(value: &str) -> Result<Self> {
+        value.parse()
+    }
+}
+
+impl TryFrom<net::Address> for WebSocketClientUrl {
+    type Error = Error;
+
+    fn try_from(value: net::Address) -> Result<Self> {
+        match value {
+            net::Address::Tcp {
+                peer_id: _,
+                host,
+                port,
+            } => format!("ws://{}:{}/websocket", host, port).parse(),
+            net::Address::Unix { .. } => Err(Error::invalid_params(
+                "only TCP-based node addresses are supported",
+            )),
+        }
+    }
+}
+
+mod sealed {
+    use super::{
+        DriverCommand, SimpleRequestCommand, SubscribeCommand, UnsubscribeCommand,
+        WebSocketClientDriver,
+    };
+    use crate::client::sync::{unbounded, ChannelTx};
+    use crate::query::Query;
+    use crate::request::Wrapper;
+    use crate::utils::uuid_str;
+    use crate::{Error, Response, Result, SimpleRequest, Subscription, Url};
+    use async_tungstenite::tokio::{connect_async, connect_async_with_tls_connector};
+    use tracing::debug;
+
+    /// Marker for the [`AsyncTungsteniteClient`] for clients operating over
+    /// unsecure connections.
+    #[derive(Debug, Clone)]
+    pub struct Unsecure;
+
+    /// Marker for the [`AsyncTungsteniteClient`] for clients operating over
+    /// secure connections.
+    #[derive(Debug, Clone)]
+    pub struct Secure;
+
+    /// An [`async-tungstenite`]-based WebSocket client.
+    ///
+    /// Different modes of operation (secure and unsecure) are facilitated by
+    /// different variants of this type.
+    ///
+    /// [`async-tungstenite`]: https://crates.io/crates/async-tungstenite
+    #[derive(Debug, Clone)]
+    pub struct AsyncTungsteniteClient<C> {
+        cmd_tx: ChannelTx<DriverCommand>,
+        _client_type: std::marker::PhantomData<C>,
+    }
+
+    impl AsyncTungsteniteClient<Unsecure> {
+        /// Construct a WebSocket client. Immediately attempts to open a WebSocket
+        /// connection to the node with the given address.
+        ///
+        /// On success, this returns both a client handle (a `WebSocketClient`
+        /// instance) as well as the WebSocket connection driver. The execution of
+        /// this driver becomes the responsibility of the client owner, and must be
+        /// executed in a separate asynchronous context to the client to ensure it
+        /// doesn't block the client.
+        pub async fn new(url: Url) -> Result<(Self, WebSocketClientDriver)> {
+            let url = url.to_string();
+            debug!("Connecting to unsecure WebSocket endpoint: {}", url);
+            let (stream, _response) = connect_async(url).await?;
+            let (cmd_tx, cmd_rx) = unbounded();
+            let driver = WebSocketClientDriver::new(stream, cmd_rx);
+            Ok((
+                Self {
+                    cmd_tx,
+                    _client_type: Default::default(),
+                },
+                driver,
+            ))
+        }
+    }
+
+    impl AsyncTungsteniteClient<Secure> {
+        /// Construct a WebSocket client. Immediately attempts to open a WebSocket
+        /// connection to the node with the given address, but over a secure
+        /// connection.
+        ///
+        /// On success, this returns both a client handle (a `WebSocketClient`
+        /// instance) as well as the WebSocket connection driver. The execution of
+        /// this driver becomes the responsibility of the client owner, and must be
+        /// executed in a separate asynchronous context to the client to ensure it
+        /// doesn't block the client.
+        pub async fn new(url: Url) -> Result<(Self, WebSocketClientDriver)> {
+            let url = url.to_string();
+            debug!("Connecting to secure WebSocket endpoint: {}", url);
+            // Not supplying a connector means async_tungstenite will create the
+            // connector for us.
+            let (stream, _response) = connect_async_with_tls_connector(url, None).await?;
+            let (cmd_tx, cmd_rx) = unbounded();
+            let driver = WebSocketClientDriver::new(stream, cmd_rx);
+            Ok((
+                Self {
+                    cmd_tx,
+                    _client_type: Default::default(),
+                },
+                driver,
+            ))
+        }
+    }
+
+    impl<C> AsyncTungsteniteClient<C> {
+        fn send_cmd(&self, cmd: DriverCommand) -> Result<()> {
+            self.cmd_tx.send(cmd).map_err(|e| {
+                Error::client_internal_error(format!(
+                    "failed to send command to client driver: {}",
+                    e
+                ))
+            })
+        }
+
+        pub async fn perform<R>(&self, request: R) -> Result<R::Response>
+        where
+            R: SimpleRequest,
+        {
+            let wrapper = Wrapper::new(request);
+            let id = wrapper.id().clone().to_string();
+            let wrapped_request = wrapper.into_json();
+            let (response_tx, mut response_rx) = unbounded();
+            self.send_cmd(DriverCommand::SimpleRequest(SimpleRequestCommand {
+                id,
+                wrapped_request,
+                response_tx,
+            }))?;
+            let response = response_rx.recv().await.ok_or_else(|| {
+                Error::client_internal_error(
+                    "failed to hear back from WebSocket driver".to_string(),
+                )
+            })??;
+            tracing::debug!("Incoming response: {}", response);
+            R::Response::from_string(response)
+        }
+
+        pub async fn subscribe(&self, query: Query) -> Result<Subscription> {
+            let (subscription_tx, subscription_rx) = unbounded();
+            let (response_tx, mut response_rx) = unbounded();
+            // By default we use UUIDs to differentiate subscriptions
+            let id = uuid_str();
+            self.send_cmd(DriverCommand::Subscribe(SubscribeCommand {
+                id: id.to_string(),
+                query: query.to_string(),
+                subscription_tx,
+                response_tx,
+            }))?;
+            // Make sure our subscription request went through successfully.
+            let _ = response_rx.recv().await.ok_or_else(|| {
+                Error::client_internal_error(
+                    "failed to hear back from WebSocket driver".to_string(),
+                )
+            })??;
+            Ok(Subscription::new(id, query, subscription_rx))
+        }
+
+        pub async fn unsubscribe(&self, query: Query) -> Result<()> {
+            let (response_tx, mut response_rx) = unbounded();
+            self.send_cmd(DriverCommand::Unsubscribe(UnsubscribeCommand {
+                query: query.to_string(),
+                response_tx,
+            }))?;
+            let _ = response_rx.recv().await.ok_or_else(|| {
+                Error::client_internal_error(
+                    "failed to hear back from WebSocket driver".to_string(),
+                )
+            })??;
+            Ok(())
+        }
+
+        /// Signals to the driver that it must terminate.
+        pub fn close(self) -> Result<()> {
+            self.send_cmd(DriverCommand::Terminate)
+        }
+    }
+
+    /// Allows us to erase the type signatures associated with the different
+    /// WebSocket client variants.
+    #[derive(Debug, Clone)]
+    pub enum WebSocketClient {
+        Unsecure(AsyncTungsteniteClient<Unsecure>),
+        Secure(AsyncTungsteniteClient<Secure>),
+    }
+
+    impl WebSocketClient {
+        pub async fn new_unsecure(url: Url) -> Result<(Self, WebSocketClientDriver)> {
+            let (client, driver) = AsyncTungsteniteClient::<Unsecure>::new(url).await?;
+            Ok((Self::Unsecure(client), driver))
+        }
+
+        pub async fn new_secure(url: Url) -> Result<(Self, WebSocketClientDriver)> {
+            let (client, driver) = AsyncTungsteniteClient::<Secure>::new(url).await?;
+            Ok((Self::Secure(client), driver))
+        }
+
+        pub async fn perform<R>(&self, request: R) -> Result<R::Response>
+        where
+            R: SimpleRequest,
+        {
+            match self {
+                WebSocketClient::Unsecure(c) => c.perform(request).await,
+                WebSocketClient::Secure(c) => c.perform(request).await,
+            }
+        }
+
+        pub async fn subscribe(&self, query: Query) -> Result<Subscription> {
+            match self {
+                WebSocketClient::Unsecure(c) => c.subscribe(query).await,
+                WebSocketClient::Secure(c) => c.subscribe(query).await,
+            }
+        }
+
+        pub async fn unsubscribe(&self, query: Query) -> Result<()> {
+            match self {
+                WebSocketClient::Unsecure(c) => c.unsubscribe(query).await,
+                WebSocketClient::Secure(c) => c.unsubscribe(query).await,
+            }
+        }
+
+        pub fn close(self) -> Result<()> {
+            match self {
+                WebSocketClient::Unsecure(c) => c.close(),
+                WebSocketClient::Secure(c) => c.close(),
+            }
+        }
     }
 }
 
@@ -576,6 +728,7 @@ impl WebSocketClientDriver {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::client::sync::unbounded;
     use crate::query::EventType;
     use crate::{request, Id, Method};
     use async_tungstenite::tokio::{accept_async, TokioAdapter};
@@ -583,6 +736,7 @@ mod test {
     use std::collections::HashMap;
     use std::path::PathBuf;
     use std::str::FromStr;
+    use tendermint::net;
     use tokio::fs;
     use tokio::net::{TcpListener, TcpStream};
     use tokio::task::JoinHandle;
