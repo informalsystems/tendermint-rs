@@ -21,6 +21,8 @@ use std::str::FromStr;
 ///
 /// ## Examples
 ///
+/// ### Direct construction of queries
+///
 /// ```rust
 /// use tendermint_rpc::query::{Query, EventType};
 ///
@@ -30,8 +32,23 @@ use std::str::FromStr;
 /// let query = Query::from(EventType::Tx).and_eq("tx.hash", "XYZ");
 /// assert_eq!("tm.event = 'Tx' AND tx.hash = 'XYZ'", query.to_string());
 ///
-/// let query = Query::from(EventType::Tx).and_gte("tx.height", 100_i64);
+/// let query = Query::from(EventType::Tx).and_gte("tx.height", 100_u64);
 /// assert_eq!("tm.event = 'Tx' AND tx.height >= 100", query.to_string());
+/// ```
+///
+/// ### Query parsing
+///
+/// ```rust
+/// use tendermint_rpc::query::{Query, EventType};
+///
+/// let query: Query = "tm.event = 'NewBlock'".parse().unwrap();
+/// assert_eq!(query, Query::from(EventType::NewBlock));
+///
+/// let query: Query = "tm.event = 'Tx' AND tx.hash = 'XYZ'".parse().unwrap();
+/// assert_eq!(query, Query::from(EventType::Tx).and_eq("tx.hash", "XYZ"));
+///
+/// let query: Query = "tm.event = 'Tx' AND tx.height >= 100".parse().unwrap();
+/// assert_eq!(query, Query::from(EventType::Tx).and_gte("tx.height", 100_u64));
 /// ```
 ///
 /// [subscribe endpoint documentation]: https://docs.tendermint.com/master/rpc/#/Websocket/subscribe
