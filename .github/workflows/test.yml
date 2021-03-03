@@ -76,9 +76,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - run: cargo test --all-features
-      - run: wasm-pack test --headless --chrome
-      - run: wasm-pack test --headless --firefox
+      - run: wasm-pack test --headless --chrome ./light-client-js/
+      - run: wasm-pack test --headless --firefox ./light-client-js/
   tendermint-light-node:
     runs-on: ubuntu-latest
     steps:
