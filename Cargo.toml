@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "abci",
     "light-client",
     "light-client-js",
     "light-node",
