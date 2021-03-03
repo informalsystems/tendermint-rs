@@ -60,7 +60,7 @@ fn deserialize_params(
 }
 
 /// Errors produced by this crate.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum Error {
     /// A serialization/deserialization error occurred.
@@ -70,7 +70,7 @@ pub enum Error {
 
 // Simplified options supplied from JavaScript.
 #[derive(Debug, Serialize, Deserialize)]
-struct JsOptions {
+pub struct JsOptions {
     pub trust_threshold: (u64, u64),
     pub trusting_period: u64,
     pub clock_drift: u64,
