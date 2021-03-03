@@ -1,3 +1,16 @@
+## Unreleased
+
+### FEATURES
+
+* `[tendermint-light-client-js]` First release of the
+  `tendermint-light-client-js` crate to provide access to Tendermint Light
+  Client functionality from WASM. This only provides access to the `verify`
+  method at present, exclusively provides access to block verification. This
+  does not include network access or the Light Client's bisection algorithm
+  ([#812])
+
+[#812]: https://github.com/informalsystems/tendermint-rs/pull/812
+
 ## v0.18.1
 
 *Feb 10, 2021*
