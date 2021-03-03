@@ -35,9 +35,11 @@ Several client-related features are provided at present:
 ### CLI
 
 A `tendermint-rpc` console application is provided for testing/experimentation
-purposes. To build this application, from the `tendermint-rpc` crate's directory:
+purposes. To build this application:
 
 ```bash
+# From the tendermint-rpc crate's directory
+cd rpc
 cargo build --bin tendermint-rpc --features cli
 
 # To run directly and show usage information
