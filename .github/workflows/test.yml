@@ -69,6 +69,16 @@ jobs:
         with:
           command: test-all-features
           args: -p tendermint-light-client
+  # From https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/continuous-integration.html#github-actions
+  tendermint-light-client-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - run: cargo test --all-features
+      - run: wasm-pack test --headless --chrome
+      - run: wasm-pack test --headless --firefox
   tendermint-light-node:
     runs-on: ubuntu-latest
     steps:

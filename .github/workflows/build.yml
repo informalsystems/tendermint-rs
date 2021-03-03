@@ -29,7 +29,7 @@ jobs:
         with:
           command: build-all
 
-  light-client-wasm:
+  build-light-client-wasm:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
