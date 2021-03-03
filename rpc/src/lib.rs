@@ -40,9 +40,9 @@ pub use client::{
 pub use rpc_url::{Scheme, Url};
 
 #[cfg(feature = "http-client")]
-pub use client::HttpClient;
+pub use client::{HttpClient, HttpClientUrl};
 #[cfg(feature = "websocket-client")]
-pub use client::{WebSocketClient, WebSocketClientDriver};
+pub use client::{WebSocketClient, WebSocketClientDriver, WebSocketClientUrl};
 
 pub mod endpoint;
 pub mod error;

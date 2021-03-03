@@ -8,9 +8,9 @@ mod transport;
 pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
 
 #[cfg(feature = "http-client")]
-pub use transport::http::HttpClient;
+pub use transport::http::{HttpClient, HttpClientUrl};
 #[cfg(feature = "websocket-client")]
-pub use transport::websocket::{WebSocketClient, WebSocketClientDriver};
+pub use transport::websocket::{WebSocketClient, WebSocketClientDriver, WebSocketClientUrl};
 
 use crate::endpoint::*;
 use crate::query::Query;
