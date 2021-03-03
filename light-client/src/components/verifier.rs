@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 /// Represents the result of the verification performed by the
 /// verifier component.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Verdict {
     /// Verification succeeded, the block is valid.
     Success,
