@@ -4,8 +4,13 @@
 
 * `[tendermint-abci]` Release minimal framework for building ABCI applications
   in Rust ([#794])
+  
+### IMPROVEMENTS
+
+* `[tendermint]` IPv6 support has been added for `net::Address` ([#5])
 
 [#794]: https://github.com/informalsystems/tendermint-rs/pull/794
+[#5]: https://github.com/informalsystems/tendermint-rs/issues/5
 
 ## v0.18.1
 
