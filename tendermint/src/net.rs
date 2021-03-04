@@ -20,6 +20,12 @@ pub const TCP_PREFIX: &str = "tcp://";
 pub const UNIX_PREFIX: &str = "unix://";
 
 /// Remote address (TCP or UNIX socket)
+///
+/// For TCP-based addresses, this supports both IPv4 and IPv6 addresses and
+/// hostnames.
+///
+/// If the scheme is not supplied (i.e. `tcp://` or `unix://`) when parsing
+/// from a string, it is assumed to be a TCP address.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Address {
     /// TCP connections
