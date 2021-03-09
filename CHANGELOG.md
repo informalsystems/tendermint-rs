@@ -1,16 +1,23 @@
-##  Unreleased
+## Unreleased
 
 ### FEATURES
 
 * `[tendermint-abci]` Release minimal framework for building ABCI applications
   in Rust ([#794])
-  
+* `[tendermint-light-client-js]` First release of the
+  `tendermint-light-client-js` crate to provide access to Tendermint Light
+  Client functionality from WASM. This only provides access to the `verify`
+  method at present, exclusively provides access to block verification. This
+  does not include network access or the Light Client's bisection algorithm
+  ([#812])
+
 ### IMPROVEMENTS
 
 * `[tendermint]` IPv6 support has been added for `net::Address` ([#5])
 
-[#794]: https://github.com/informalsystems/tendermint-rs/pull/794
 [#5]: https://github.com/informalsystems/tendermint-rs/issues/5
+[#794]: https://github.com/informalsystems/tendermint-rs/pull/794
+[#812]: https://github.com/informalsystems/tendermint-rs/pull/812
 
 ## v0.18.1
 
