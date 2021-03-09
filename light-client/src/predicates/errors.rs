@@ -10,7 +10,7 @@ use crate::types::{Hash, Height, Time, Validator, ValidatorAddress};
 
 /// The various errors which can be raised by the verifier component,
 /// when validating or verifying a light block.
-#[derive(Debug, Clone, Error, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Error, PartialEq, Serialize, Deserialize, Eq)]
 pub enum VerificationError {
     /// The header is from the future
     #[error("header from the future: header_time={header_time} now={now}")]

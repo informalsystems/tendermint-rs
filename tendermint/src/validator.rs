@@ -143,7 +143,7 @@ impl Set {
 
 /// Validator information
 // Todo: Remove address and make it into a function that generates it on the fly from pub_key.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, Eq)]
 pub struct Info {
     /// Validator account address
     pub address: account::Id,

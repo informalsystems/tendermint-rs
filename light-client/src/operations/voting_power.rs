@@ -16,7 +16,7 @@ use tendermint::trust_threshold::TrustThreshold as _;
 use tendermint::vote::{SignedVote, ValidatorIndex, Vote};
 
 /// Tally for the voting power computed by the `VotingPowerCalculator`
-#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize, Eq)]
 pub struct VotingPowerTally {
     /// Total voting power
     pub total: u64,
