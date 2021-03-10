@@ -25,7 +25,7 @@ pub enum Direction<Conn> {
 }
 
 pub trait Connection: Send {
-    type Error: 'static + fmt::Display + std::error::Error + Send + Sync;
+    type Error: std::error::Error + Send + Sync + 'static;
     type Read: Read;
     type Write: Write;
 

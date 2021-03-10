@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::thread;
 
 use eyre::Result;
@@ -37,29 +38,28 @@ where
     St: private::Sealed,
 {
     pub id: node::Id,
-
     pub state: St,
 }
 
-impl<Conn> From<Direction<Conn>> for Peer<Connected<Conn>>
+impl<Conn> TryFrom<Direction<Conn>> for Peer<Connected<Conn>>
 where
     Conn: Connection,
 {
-    fn from(connection: Direction<Conn>) -> Peer<Connected<Conn>> {
+    type Error = &'static str;
+
+    fn try_from(connection: Direction<Conn>) -> Result<Peer<Connected<Conn>>, Self::Error> {
         let pk = match &connection {
             Direction::Incoming(conn) => conn.public_key(),
             Direction::Outgoing(conn) => conn.public_key(),
         };
 
-        let id = match pk {
-            PublicKey::Ed25519(ed25519) => node::Id::from(ed25519),
-            _ => panic!(),
-        };
-
-        Peer {
-            id,
-
-            state: Connected { connection },
+        if let PublicKey::Ed25519(ed25519) = pk {
+            Ok(Peer {
+                id: node::Id::from(ed25519),
+                state: Connected { connection },
+            })
+        } else {
+            Err("unsupported key scheme")
         }
     }
 }
@@ -140,7 +140,6 @@ where
 
         Ok(Peer {
             id: self.id,
-
             state: Stopped { error: None },
         })
     }
@@ -162,7 +161,6 @@ where
 
         Ok(Peer {
             id: self.id,
-
             state: Stopped { error: None },
         })
     }

@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::convert::TryFrom as _;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::thread;
 
@@ -124,7 +125,7 @@ impl Supervisor {
         let (upgraded_tx, upgraded_rx) = unbounded();
         thread::spawn(move || loop {
             let conn = upgrade_rx.recv().unwrap();
-            let peer = peer::Peer::from(conn);
+            let peer = peer::Peer::try_from(conn).unwrap();
 
             upgraded_tx
                 .send(Input::Upgraded(peer.id, peer.run(vec![])))
