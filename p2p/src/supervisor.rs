@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom as _;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::sync::Mutex;
 use std::thread;
 
 use eyre::{eyre, Context, Report, Result};
@@ -20,7 +21,7 @@ pub enum Direction {
 
 pub enum Command {
     Accept,
-    Connect(SocketAddr),
+    Connect(transport::ConnectInfo),
     Disconnect(node::Id),
     Msg(node::Id, message::Send),
 }
@@ -33,34 +34,49 @@ pub enum Event {
     UpgradeFailed(node::Id, Report),
 }
 
-enum Internal<Conn> {
+enum Internal {
     Accept,
-    Upgrade(transport::Direction<Conn>),
+    Connect(transport::ConnectInfo),
+    SendMessage(node::Id, message::Send),
+    Stop(node::Id),
+    Upgrade(node::Id),
 }
 
-enum Input<Conn> {
-    Accepted(node::Id, Conn),
+enum Input {
+    Accepted(node::Id),
     Command(Command),
-    Connected(node::Id, Conn),
+    Connected(node::Id),
     Receive(node::Id, message::Receive),
-    Upgraded(node::Id, Result<peer::Peer<peer::Running<Conn>>>),
+    Stopped(node::Id),
+    Upgraded(node::Id),
+    UpgradeFailed(node::Id, Report),
 }
 
-enum Output<Conn> {
+enum Output {
     Event(Event),
-    Internal(Internal<Conn>),
+    Internal(Internal),
 }
 
-impl<Conn> From<Event> for Output<Conn> {
+impl From<Event> for Output {
     fn from(event: Event) -> Self {
         Output::Event(event)
     }
 }
 
-impl<Conn> From<Internal<Conn>> for Output<Conn> {
-    fn from(internal: Internal<Conn>) -> Self {
+impl From<Internal> for Output {
+    fn from(internal: Internal) -> Self {
         Output::Internal(internal)
     }
+}
+
+struct Accepted<Conn> {
+    conn: Conn,
+    id: node::Id,
+}
+
+struct Connected<Conn> {
+    conn: Conn,
+    id: node::Id,
 }
 
 pub struct Supervisor {
@@ -68,13 +84,23 @@ pub struct Supervisor {
     events: Receiver<Event>,
 }
 
+struct State<Conn> {
+    connected: HashMap<node::Id, transport::Direction<Conn>>,
+    peers: HashMap<node::Id, peer::Peer<peer::Running<Conn>>>,
+}
+
 impl Supervisor {
-    pub fn run<T>(transport: T) -> Result<Self>
+    pub fn run<T, Conn>(transport: T) -> Result<Self>
     where
         T: transport::Transport + Send + 'static,
+        Conn: Connection + Send + 'static,
     {
         let (command, commands) = unbounded();
         let (event_tx, events) = unbounded();
+        let state = Mutex::new(State {
+            connected: HashMap::new(),
+            peers: HashMap::new(),
+        });
         let supervisor = Self { command, events };
 
         let (endpoint, mut incoming) = transport.bind(transport::BindInfo {
@@ -90,9 +116,10 @@ impl Supervisor {
             .unwrap(),
         })?;
 
+        let (input_tx, input_rx) = unbounded();
+
         // ACCEPT
         let (accept_tx, accept_rx) = unbounded::<()>();
-        let (accepted_tx, accepted_rx) = unbounded();
         thread::spawn(move || loop {
             accept_rx.recv().unwrap();
 
@@ -102,12 +129,11 @@ impl Supervisor {
                 _ => panic!(),
             };
 
-            accepted_tx.send(Input::Accepted(id, conn)).unwrap();
+            input_tx.send(Input::Accepted(id)).unwrap();
         });
 
         // CONNECT
-        let (_connect_tx, connect_rx) = unbounded::<transport::ConnectInfo>();
-        let (connected_tx, connected_rx) = unbounded();
+        let (connect_tx, connect_rx) = unbounded::<transport::ConnectInfo>();
         thread::spawn(move || loop {
             let info = connect_rx.recv().unwrap();
             let conn = endpoint.connect(info).unwrap();
@@ -116,39 +142,60 @@ impl Supervisor {
                 _ => panic!(),
             };
 
-            connected_tx.send(Input::Connected(id, conn)).unwrap();
+            input_tx.send(Input::Connected(id)).unwrap();
         });
 
-        // UPGRADE
-        let (upgrade_tx, upgrade_rx) =
-            unbounded::<transport::Direction<<T as transport::Transport>::Connection>>();
-        let (upgraded_tx, upgraded_rx) = unbounded();
-        thread::spawn(move || loop {
-            let conn = upgrade_rx.recv().unwrap();
-            let peer = peer::Peer::try_from(conn).unwrap();
+        // STOP
+        // let (stop_tx, stop_rx) = unbounded
+        // thread::spawn(move || loop {
 
-            upgraded_tx
-                .send(Input::Upgraded(peer.id, peer.run(vec![])))
-                .unwrap();
+        // });
+
+        // UPGRADE
+        let (upgrade_tx, upgrade_rx) = unbounded();
+        thread::spawn(move || loop {
+            let peer_id = upgrade_rx.recv().unwrap();
+            let mut state = state.lock().unwrap();
+
+            if let Some(conn) = state.connected.remove(&peer_id) {
+                let peer = peer::Peer::try_from(conn).unwrap();
+
+                // TODO(xla): Provide actual (possibly configured) list of streams.
+                match peer.run(vec![]) {
+                    Ok(peer) => {
+                        state.peers.insert(peer.id, peer).unwrap();
+
+                        input_tx.send(Input::Upgraded(peer.id)).unwrap();
+                    }
+                    Err(err) => {
+                        input_tx.send(Input::UpgradeFailed(peer_id, err)).unwrap();
+                    }
+                }
+            } else {
+                input_tx
+                    .send(Input::UpgradeFailed(
+                        peer_id,
+                        Report::msg("connection not found"),
+                    ))
+                    .unwrap();
+            }
         });
 
         // MAIN
         thread::spawn(move || {
-            let mut state: State<<T as transport::Transport>::Connection> = State {
+            let mut protocol = Protocol {
                 connected: HashMap::new(),
                 stopped: HashSet::new(),
-                upgraded: HashMap::new(),
+                upgraded: HashSet::new(),
             };
 
             loop {
                 let input = {
                     let mut selector = flume::Selector::new()
-                        .recv(&accepted_rx, |accepted| accepted.unwrap())
                         .recv(&commands, |res| Input::Command(res.unwrap()))
-                        .recv(&connected_rx, |connected| connected.unwrap())
-                        .recv(&upgraded_rx, |upgrade| upgrade.unwrap());
+                        .recv(&input_rx, |input| input.unwrap());
 
-                    for (id, peer) in &state.upgraded {
+                    for (id, peer) in &state.lock().unwrap().peers {
                         selector = selector.recv(&peer.state.receiver, move |res| {
                             Input::Receive(*id, res.unwrap())
                         });
@@ -157,12 +204,15 @@ impl Supervisor {
                     selector.wait()
                 };
 
-                for output in state.transition(input) {
+                for output in protocol.transition(input) {
                     match output {
                         Output::Event(event) => event_tx.send(event).unwrap(),
                         Output::Internal(internal) => match internal {
                             Internal::Accept => accept_tx.send(()).unwrap(),
-                            Internal::Upgrade(conn) => upgrade_tx.send(conn).unwrap(),
+                            Internal::Connect(info) => connect_tx.send(info).unwrap(),
+                            Internal::SendMessage(peer_id, msg) => todo!(),
+                            Internal::Stop(peer_id) => todo!(),
+                            Internal::Upgrade(peer_id) => upgrade_tx.send(peer_id).unwrap(),
                         },
                     }
                 }
@@ -184,97 +234,84 @@ impl Supervisor {
     }
 }
 
-struct State<Conn>
-where
-    Conn: Connection,
-{
+struct Protocol {
     connected: HashMap<node::Id, Direction>,
     stopped: HashSet<node::Id>,
-    upgraded: HashMap<node::Id, peer::Peer<peer::Running<Conn>>>,
+    upgraded: HashSet<node::Id>,
 }
 
-impl<Conn> State<Conn>
-where
-    Conn: Connection,
-{
-    fn transition(&mut self, input: Input<Conn>) -> Vec<Output<Conn>> {
+impl Protocol {
+    fn transition(&mut self, input: Input) -> Vec<Output> {
         match input {
-            Input::Accepted(id, conn) => self.handle_accepted(id, conn),
+            Input::Accepted(id) => self.handle_accepted(id),
             Input::Command(command) => self.handle_command(command),
-            Input::Connected(id, conn) => self.handle_connected(id, conn),
+            Input::Connected(id) => self.handle_connected(id),
             Input::Receive(id, msg) => self.handle_receive(id, msg),
-            Input::Upgraded(id, res) => self.handle_upgraded(id, res),
+            Input::Stopped(id) => self.handle_stopped(id),
+            Input::Upgraded(id) => self.handle_upgraded(id),
+            Input::UpgradeFailed(id, err) => self.handle_upgrade_failed(id, err),
         }
     }
 
-    fn handle_accepted(&mut self, id: node::Id, conn: Conn) -> Vec<Output<Conn>> {
+    fn handle_accepted(&mut self, id: node::Id) -> Vec<Output> {
         // TODO(xla): Ensure we only allow one connection per node. Unless a higher-level protocol
         // like PEX is taking care of it.
         self.connected.insert(id, Direction::Incoming);
 
         vec![
             Output::from(Event::Connected(id, Direction::Incoming)),
-            Output::from(Internal::Upgrade(transport::Direction::Incoming(conn))),
+            Output::from(Internal::Upgrade(id)),
         ]
     }
 
-    fn handle_command(&mut self, command: Command) -> Vec<Output<Conn>> {
+    fn handle_command(&mut self, command: Command) -> Vec<Output> {
         match command {
             Command::Accept => vec![Output::from(Internal::Accept)],
-            Command::Connect(_addr) => vec![],
+            Command::Connect(info) => vec![Output::from(Internal::Connect(info))],
             Command::Disconnect(id) => {
-                let peer = self.upgraded.remove(&id).unwrap();
-                // FIXME(xla): This side-effect handling does not belong here it should be handled
-                // outside of the state machine.
-                let stopped = peer.stop().unwrap();
-                self.stopped.insert(id);
-
-                vec![Output::from(Event::Disconnected(
-                    id,
-                    Report::msg("successfully disconected"),
-                ))]
+                vec![Output::Internal(Internal::Stop(id))]
             }
-            Command::Msg(peer_id, msg) => {
-                let peer = self.upgraded.get(&peer_id).unwrap();
-
-                peer.send(msg).unwrap();
-
-                vec![]
-            }
+            Command::Msg(peer_id, msg) => match self.upgraded.get(&peer_id) {
+                Some(peer_id) => vec![Output::from(Internal::SendMessage(*peer_id, msg))],
+                None => vec![],
+            },
         }
     }
 
-    fn handle_connected(&mut self, id: node::Id, conn: Conn) -> Vec<Output<Conn>> {
+    fn handle_connected(&mut self, id: node::Id) -> Vec<Output> {
         // TODO(xla): Ensure we only allow one connection per node. Unless a higher-level protocol
         // like PEX is taking care of it.
         self.connected.insert(id, Direction::Outgoing);
 
         vec![
             Output::from(Event::Connected(id, Direction::Outgoing)),
-            Output::from(Internal::Upgrade(transport::Direction::Outgoing(conn))),
+            Output::from(Internal::Upgrade(id)),
         ]
     }
 
-    fn handle_receive(&self, id: node::Id, msg: message::Receive) -> Vec<Output<Conn>> {
+    fn handle_receive(&self, id: node::Id, msg: message::Receive) -> Vec<Output> {
         vec![Output::from(Event::Message(id, msg))]
     }
 
-    fn handle_upgraded(
-        &mut self,
-        id: node::Id,
-        res: Result<peer::Peer<peer::Running<Conn>>>,
-    ) -> Vec<Output<Conn>> {
-        match res {
-            Ok(peer) => {
-                self.upgraded.insert(id, peer);
+    fn handle_stopped(&mut self, id: node::Id) -> Vec<Output> {
+        self.upgraded.remove(&id);
+        self.stopped.insert(id);
 
-                vec![Output::from(Event::Upgraded(id))]
-            }
-            Err(err) => {
-                self.connected.remove(&id);
+        vec![Output::from(Event::Disconnected(
+            id,
+            Report::msg("successfully disconected"),
+        ))]
+    }
 
-                vec![Output::from(Event::UpgradeFailed(id, err))]
-            }
-        }
+    fn handle_upgraded(&mut self, id: node::Id) -> Vec<Output> {
+        self.upgraded.insert(id);
+
+        vec![Output::from(Event::Upgraded(id))]
+    }
+
+    fn handle_upgrade_failed(&mut self, id: node::Id, err: Report) -> Vec<Output> {
+        self.connected.remove(&id);
+
+        vec![Output::from(Event::UpgradeFailed(id, err))]
     }
 }

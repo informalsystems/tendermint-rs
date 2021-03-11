@@ -1,10 +1,9 @@
-use std::fmt;
 use std::io::{Read, Write};
 use std::net::SocketAddr;
 
-use tendermint::public_key::PublicKey;
-
 use eyre::Result;
+
+use tendermint::public_key::PublicKey;
 
 pub struct BindInfo {
     pub addr: SocketAddr,
