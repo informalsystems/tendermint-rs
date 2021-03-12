@@ -18,6 +18,11 @@ use tendermint_testgen::{
     Generator, LightBlock as TestgenLightBlock, TestEnv, Tester, Validator, Vote,
 };
 
+use chrono::{DateTime, TimeZone, Timelike, Utc};
+use proptest::prelude::*;
+use std::fs;
+use std::path::{Path, PathBuf};
+
 fn testgen_to_lb(tm_lb: TMLightBlock) -> LightBlock {
     LightBlock {
         signed_header: tm_lb.signed_header,
@@ -716,8 +721,6 @@ fn model_based_test_batch(batch: ApalacheTestBatch) -> Vec<(String, String)> {
     res
 }
 
-const TEST_DIR: &str = "./tests/support/model_based";
-
 #[test]
 fn run_model_based_single_step_tests() {
     let mut tester = Tester::new("test_run", TEST_DIR);
@@ -726,4 +729,126 @@ fn run_model_based_single_step_tests() {
     tester.add_test_batch(model_based_test_batch);
     tester.run_foreach_in_dir("");
     tester.finalize();
+}
+
+// PBT -------->
+
+// Any higher, and we're at seconds
+const MAX_NANO_SECS: u32 = 999_999_999u32;
+
+fn min_time() -> DateTime<Utc> {
+    Utc.timestamp(-9999999999, 0)
+}
+
+fn max_time() -> DateTime<Utc> {
+    Utc.timestamp(99999999999, 0)
+}
+
+prop_compose! {
+    /// An abitrary `chrono::DateTime` that is between `min` and `max`
+    /// DateTimes.
+    fn arb_datetime_in_range(min: DateTime<Utc>, max: DateTime<Utc>)(
+        secs in min.timestamp()..max.timestamp()
+    )(
+        // min mano secods is only relevant if we happen to hit the minimum
+        // seconds on the nose.
+        nano in (if secs == min.timestamp() { min.nanosecond() } else { 0 })..MAX_NANO_SECS,
+        // Make secs in scope
+        secs in Just(secs),
+    ) -> DateTime<Utc> {
+        println!(">> Secs {:?}", secs);
+        Utc.timestamp(secs, nano)
+    }
+}
+
+prop_compose! {
+    /// An abitrary `chrono::DateTime`
+    fn arb_datetime()
+        (
+            d in arb_datetime_in_range(min_time(), max_time())
+        ) -> DateTime<Utc> {
+            d
+        }
+}
+
+prop_compose! {
+    fn arb_test_case(cases: Vec<SingleStepTestCase>)
+    (case_num in 1..cases.len())
+    -> SingleStepTestCase {
+        cases[case_num].clone()
+    }
+}
+
+prop_compose! {
+    fn arb_light_block(cases: Vec<SingleStepTestCase>)
+    (case in arb_test_case(cases))
+    (
+        case in Just(case.clone()),
+        datetime in arb_datetime(),
+        block_num in 1..case.input.len()
+    )
+    -> (BlockVerdict, Initial) {
+        let time: Time = datetime.into();
+        let mut arb_lb = case.input[block_num].clone();
+        arb_lb.block.signed_header.header.time = time;
+        arb_lb.verdict = LiteVerdict::Invalid;
+        (arb_lb, case.initial)
+    }
+}
+
+proptest! {
+ #[test]
+    fn test_fuzzing(case in arb_light_block(fetch_tests())) {
+        let (input, initial) = case;
+
+        let latest_trusted = LightBlock::new(
+            initial.signed_header,
+            initial.next_validator_set.clone(),
+            initial.next_validator_set,
+            default_peer_id(),
+        );
+
+        let clock_drift = Duration::from_secs(0);
+        let trusting_period: Duration = initial.trusting_period.into();
+
+        let now = input.now;
+        let result = verify_single(
+                latest_trusted.clone(),
+                input.block.clone(),
+                TrustThreshold::default(),
+                trusting_period,
+                clock_drift,
+                now,
+            );
+        prop_assert!(result.is_err());
+    }
+}
+
+const TEST_DIR: &str = "./tests/support/model_based/single_step";
+
+fn fetch_tests() -> Vec<SingleStepTestCase> {
+    let paths = fs::read_dir(PathBuf::from(TEST_DIR)).unwrap();
+
+    // let mut paths = paths_all.iter().filter(|&&p| p.ends_with(".json"));
+
+    let mut cases: Vec<SingleStepTestCase> = Vec::new();
+    for file_path in paths {
+        let dir_entry = file_path.unwrap();
+        let fp_str = format!("{}", dir_entry.path().display());
+        if fp_str.ends_with(".json") {
+            println!(
+                "Running light client against 'single-step' test-file: {}",
+                fp_str
+            );
+
+            let case: SingleStepTestCase =
+                serde_json::from_str(read_json_fixture(fp_str).as_str()).unwrap();
+            cases.push(case);
+        }
+    }
+    cases
+}
+
+fn read_json_fixture(file: impl AsRef<Path>) -> String {
+    fs::read_to_string(file).unwrap()
 }
