@@ -781,6 +781,10 @@ prop_compose! {
 }
 
 prop_compose! {
+// This is expected to be more functional
+// Should be arbitrarily fuzzing with more data fields than just time
+// One thought is to make use of prop_oneof! to arbitrarily fuzz with random data fields
+// Basically, we need a better "strategy" on how to fuzz with the complete data structure
     fn arb_light_block(cases: Vec<SingleStepTestCase>)
     (case in arb_test_case(cases))
     (
