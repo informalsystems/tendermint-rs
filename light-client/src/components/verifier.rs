@@ -11,10 +11,11 @@ use crate::{
     types::{LightBlock, Time},
 };
 use preds::{errors::VerificationError, ProdPredicates, VerificationPredicates};
+use serde::{Deserialize, Serialize};
 
 /// Represents the result of the verification performed by the
 /// verifier component.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Verdict {
     /// Verification succeeded, the block is valid.
     Success,

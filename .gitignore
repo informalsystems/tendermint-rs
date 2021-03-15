@@ -17,3 +17,9 @@ Cargo.lock
 
 # Proptest regressions dumps
 **/*.proptest-regressions
+
+# Light Client WASM
+light-client-js/pkg/
+light-client-js/examples/verifier-web/node_modules/
+light-client-js/examples/verifier-web/dist/
+light-client-js/examples/verifier-web/package-lock.json

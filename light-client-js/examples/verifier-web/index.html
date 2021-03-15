@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tendermint Light Client WASM Example</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
+  <style type="text/css">
+    .json-editor {
+      height: 300px;
+    }
+    #verdict-section {
+      visibility: hidden;
+    }
+  </style>
+</head>
+<body>
+<section class="section">
+  <div class="container">
+    <h1 class="title is-2">Tendermint Light Client WASM Example</h1>
+    <p>
+      This example demonstrates how to make use of the
+      <a href="https://github.com/informalsystems/tendermint-rs/tree/master/light-client">Tendermint Light Client</a>
+      WASM build in a simple web application.
+    </p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns">
+      <div class="column">
+        <h4 class="title is-4">Untrusted Block</h4>
+        <div class="json-editor" id="untrusted-block-editor"></div>
+      </div>
+
+      <div class="column">
+        <h4 class="title is-4">Trusted Block</h4>
+        <div class="json-editor" id="trusted-block-editor"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h4 class="title is-4">Options</h4>
+    <div class="columns">
+      <div class="column">
+        <div class="field">
+          <label class="label">Trust threshold:</label>
+          <div class="control">
+            <input class="input" type="text" value="1/3" id="trust-threshold-input">
+          </div>
+          <p class="help">Must be in the format: <b>numerator/denominator</b></p>
+        </div>
+      </div>
+
+      <div class="column">
+        <div class="field">
+          <label class="label">Trusting period:</label>
+            <div class="control">
+              <input class="input" type="text" value="1209600" id="trusting-period-input">
+            </div>
+            <p class="help">A.k.a. "unbonding period", in seconds</p>
+        </div>
+      </div>
+
+      <div class="column">
+        <div class="field">
+          <label class="label">Clock drift:</label>
+          <div class="control">
+            <input class="input" type="text" value="5" id="clock-drift-input">
+          </div>
+          <p class="help">In seconds</p>
+        </div>
+      </div>
+
+      <div class="column">
+        <div class="field">
+          <label class="label">Now:</label>
+          <div class="control">
+            <input class="input" type="text" value="2020-10-21T12:40:04.160328400Z" id="now-input">
+          </div>
+          <p class="help">Timestamp in RFC3339 format for which you want to verify the block</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <button class="button is-large is-primary" id="verify-btn">Verify</button>
+  </div>
+</section>
+
+<section class="section" id="verdict-section">
+  <div class="container">
+    <h4 class="title is-4">Verdict</h4>
+    <pre id="verdict"></pre>
+  </div>
+</section>
+<script src="./bootstrap.js"></script>
+</body>
+</html>
