@@ -731,7 +731,8 @@ fn run_model_based_single_step_tests() {
     tester.finalize();
 }
 
-// PBT -------->
+// PBT based fuzzing -------->
+// All of the prop_compose! below are expected to be in a pbt library
 
 // Any higher, and we're at seconds
 const MAX_NANO_SECS: u32 = 999_999_999u32;
@@ -773,7 +774,7 @@ prop_compose! {
 
 prop_compose! {
     fn arb_test_case(cases: Vec<SingleStepTestCase>)
-    (case_num in 1..cases.len())
+    (case_num in 0..cases.len())
     -> SingleStepTestCase {
         cases[case_num].clone()
     }
@@ -785,7 +786,7 @@ prop_compose! {
     (
         case in Just(case.clone()),
         datetime in arb_datetime(),
-        block_num in 1..case.input.len()
+        block_num in 0..case.input.len()
     )
     -> (BlockVerdict, Initial) {
         let time: Time = datetime.into();
@@ -800,27 +801,41 @@ proptest! {
  #[test]
     fn test_fuzzing(case in arb_light_block(fetch_tests())) {
         let (input, initial) = case;
+        let result = verify(input, initial);
 
-        let latest_trusted = LightBlock::new(
-            initial.signed_header,
-            initial.next_validator_set.clone(),
-            initial.next_validator_set,
-            default_peer_id(),
-        );
+        prop_assert!(result);
+    }
+}
 
-        let clock_drift = Duration::from_secs(0);
-        let trusting_period: Duration = initial.trusting_period.into();
+// This function is mostly redundant and only meant to make the pbt-with-mbt task simpler
+// Next steps could be to find a good way to make use of Tester for this.
+fn verify(input: BlockVerdict, initial: Initial) -> bool {
+    let latest_trusted = LightBlock::new(
+        initial.signed_header,
+        initial.next_validator_set.clone(),
+        initial.next_validator_set,
+        default_peer_id(),
+    );
 
-        let now = input.now;
-        let result = verify_single(
-                latest_trusted.clone(),
-                input.block.clone(),
-                TrustThreshold::default(),
-                trusting_period,
-                clock_drift,
-                now,
-            );
-        prop_assert!(result.is_err());
+    let clock_drift = Duration::from_secs(0);
+    let trusting_period: Duration = initial.trusting_period.into();
+
+    let now = input.now;
+
+    match verify_single(
+        latest_trusted.clone(),
+        input.block.clone(),
+        TrustThreshold::default(),
+        trusting_period,
+        clock_drift,
+        now,
+    ) {
+        Ok(_new_state) => false,
+        Err(e) => match e {
+            Verdict::Invalid(_) => input.verdict == LiteVerdict::Invalid,
+            Verdict::NotEnoughTrust(_) => input.verdict == LiteVerdict::NotEnoughTrust,
+            Verdict::Success => false,
+        },
     }
 }
 
@@ -828,8 +843,6 @@ const TEST_DIR: &str = "./tests/support/model_based/single_step";
 
 fn fetch_tests() -> Vec<SingleStepTestCase> {
     let paths = fs::read_dir(PathBuf::from(TEST_DIR)).unwrap();
-
-    // let mut paths = paths_all.iter().filter(|&&p| p.ends_with(".json"));
 
     let mut cases: Vec<SingleStepTestCase> = Vec::new();
     for file_path in paths {
