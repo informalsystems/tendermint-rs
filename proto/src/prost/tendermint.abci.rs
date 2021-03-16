@@ -7,7 +7,7 @@
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
-    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13")]
+    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14")]
     pub value: ::std::option::Option<request::Value>,
 }
 pub mod request {
@@ -39,6 +39,8 @@ pub mod request {
         LoadSnapshotChunk(super::RequestLoadSnapshotChunk),
         #[prost(message, tag="13")]
         ApplySnapshotChunk(super::RequestApplySnapshotChunk),
+        #[prost(message, tag="14")]
+        PrepareProposal(super::RequestPrepareProposal),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -141,12 +143,19 @@ pub struct RequestApplySnapshotChunk {
     #[prost(string, tag="3")]
     pub sender: std::string::String,
 }
+
+/// Prepare proposal
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RequestPrepareProposal {
+    //FIXME(Ash): add block field
+}
+
 //----------------------------------------
 // Response types
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
-    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14")]
+    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15")]
     pub value: ::std::option::Option<response::Value>,
 }
 pub mod response {
@@ -180,6 +189,8 @@ pub mod response {
         LoadSnapshotChunk(super::ResponseLoadSnapshotChunk),
         #[prost(message, tag="14")]
         ApplySnapshotChunk(super::ResponseApplySnapshotChunk),
+        #[prost(message, tag="15")]
+        PrepareProposal(super::ResponsePrepareProposal),
     }
 }
 /// nondeterministic
@@ -387,6 +398,11 @@ pub mod response_apply_snapshot_chunk {
         RejectSnapshot = 5,
     }
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ResponsePrepareProposal {
+    //FIXME(Ash): add BlockData field
+}
+
 //----------------------------------------
 // Misc.
 
