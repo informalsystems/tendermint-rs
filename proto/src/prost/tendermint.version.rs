@@ -1,6 +1,6 @@
 /// App includes the protocol and software version for the application.
 /// This information is included in ResponseInfo. The App.Protocol can be
-/// updated in ResponseEndBlock.
+/// updated in ResponseFinalizeBlock.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct App {
     #[prost(uint64, tag="1")]

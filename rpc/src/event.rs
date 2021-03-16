@@ -2,10 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tendermint::{
-    abci::responses::{BeginBlock, EndBlock},
-    Block,
-};
+use tendermint::{abci::responses::FinalizeBlock, Block};
 
 use crate::query::EventType;
 use crate::{response::Wrapper, Response};
@@ -13,7 +10,7 @@ use crate::{response::Wrapper, Response};
 /// An incoming event produced by a [`Subscription`].
 ///
 /// [`Subscription`]: ../struct.Subscription.html
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Event {
     /// The query that produced the event.
     pub query: String,
@@ -40,14 +37,13 @@ impl Event {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type", content = "value")]
 pub enum EventData {
     #[serde(alias = "tendermint/event/NewBlock")]
     NewBlock {
         block: Option<Block>,
-        result_begin_block: Option<BeginBlock>,
-        result_end_block: Option<EndBlock>,
+        result_finalize_block: Option<FinalizeBlock>,
     },
     #[serde(alias = "tendermint/event/Tx")]
     Tx {

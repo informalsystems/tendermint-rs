@@ -8,14 +8,12 @@
 //!
 //! Two features are provided at present:
 //!
-//! * `http-client` - Provides [`HttpClient`], which is a basic RPC client that
-//!   interacts with remote Tendermint nodes via **JSON-RPC over HTTP**. This
-//!   client does not provide [`Event`] subscription functionality. See the
-//!   [Tendermint RPC] for more details.
-//! * `websocket-client` - Provides [`WebSocketClient`], which provides full
-//!   client functionality, including general RPC functionality (such as that
-//!   provided by `HttpClient`) as well as [`Event`] subscription
-//!   functionality.
+//! * `http-client` - Provides [`HttpClient`], which is a basic RPC client that interacts with
+//!   remote Tendermint nodes via **JSON-RPC over HTTP**. This client does not provide [`Event`]
+//!   subscription functionality. See the [Tendermint RPC] for more details.
+//! * `websocket-client` - Provides [`WebSocketClient`], which provides full client functionality,
+//!   including general RPC functionality (such as that provided by `HttpClient`) as well as
+//!   [`Event`] subscription functionality.
 //!
 //! ### Mock Clients
 //!

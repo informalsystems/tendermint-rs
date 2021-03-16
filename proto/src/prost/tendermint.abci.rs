@@ -7,7 +7,7 @@
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
-    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15")]
+    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13")]
     pub value: ::std::option::Option<request::Value>,
 }
 pub mod request {
@@ -26,22 +26,18 @@ pub mod request {
         #[prost(message, tag="6")]
         Query(super::RequestQuery),
         #[prost(message, tag="7")]
-        BeginBlock(super::RequestBeginBlock),
+        FinalizeBlock(super::RequestFinalizeBlock),
         #[prost(message, tag="8")]
         CheckTx(super::RequestCheckTx),
         #[prost(message, tag="9")]
-        DeliverTx(super::RequestDeliverTx),
-        #[prost(message, tag="10")]
-        EndBlock(super::RequestEndBlock),
-        #[prost(message, tag="11")]
         Commit(super::RequestCommit),
-        #[prost(message, tag="12")]
+        #[prost(message, tag="10")]
         ListSnapshots(super::RequestListSnapshots),
-        #[prost(message, tag="13")]
+        #[prost(message, tag="11")]
         OfferSnapshot(super::RequestOfferSnapshot),
-        #[prost(message, tag="14")]
+        #[prost(message, tag="12")]
         LoadSnapshotChunk(super::RequestLoadSnapshotChunk),
-        #[prost(message, tag="15")]
+        #[prost(message, tag="13")]
         ApplySnapshotChunk(super::RequestApplySnapshotChunk),
     }
 }
@@ -97,16 +93,9 @@ pub struct RequestQuery {
     pub prove: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RequestBeginBlock {
-    #[prost(bytes, tag="1")]
-    pub hash: std::vec::Vec<u8>,
-    #[prost(message, optional, tag="2")]
-    pub header: ::std::option::Option<super::types::Header>,
-    #[prost(message, optional, tag="3")]
-    pub last_commit_info: ::std::option::Option<LastCommitInfo>,
-    #[prost(message, repeated, tag="4")]
-    pub byzantine_validators: ::std::vec::Vec<Evidence>,
+pub struct RequestFinalizeBlock {
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestCheckTx {
     #[prost(bytes, tag="1")]
@@ -114,16 +103,7 @@ pub struct RequestCheckTx {
     #[prost(enumeration="CheckTxType", tag="2")]
     pub r#type: i32,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RequestDeliverTx {
-    #[prost(bytes, tag="1")]
-    pub tx: std::vec::Vec<u8>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RequestEndBlock {
-    #[prost(int64, tag="1")]
-    pub height: i64,
-}
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestCommit {
 }
@@ -166,7 +146,7 @@ pub struct RequestApplySnapshotChunk {
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
-    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16")]
+    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14")]
     pub value: ::std::option::Option<response::Value>,
 }
 pub mod response {
@@ -187,22 +167,18 @@ pub mod response {
         #[prost(message, tag="7")]
         Query(super::ResponseQuery),
         #[prost(message, tag="8")]
-        BeginBlock(super::ResponseBeginBlock),
+        FinalizeBlock(super::ResponseFinalizeBlock),
         #[prost(message, tag="9")]
         CheckTx(super::ResponseCheckTx),
         #[prost(message, tag="10")]
-        DeliverTx(super::ResponseDeliverTx),
-        #[prost(message, tag="11")]
-        EndBlock(super::ResponseEndBlock),
-        #[prost(message, tag="12")]
         Commit(super::ResponseCommit),
-        #[prost(message, tag="13")]
+        #[prost(message, tag="11")]
         ListSnapshots(super::ResponseListSnapshots),
-        #[prost(message, tag="14")]
+        #[prost(message, tag="12")]
         OfferSnapshot(super::ResponseOfferSnapshot),
-        #[prost(message, tag="15")]
+        #[prost(message, tag="13")]
         LoadSnapshotChunk(super::ResponseLoadSnapshotChunk),
-        #[prost(message, tag="16")]
+        #[prost(message, tag="14")]
         ApplySnapshotChunk(super::ResponseApplySnapshotChunk),
     }
 }
@@ -283,11 +259,6 @@ pub struct ResponseQuery {
     pub codespace: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ResponseBeginBlock {
-    #[prost(message, repeated, tag="1")]
-    pub events: ::std::vec::Vec<Event>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseCheckTx {
     #[prost(uint32, tag="1")]
     pub code: u32,
@@ -309,7 +280,15 @@ pub struct ResponseCheckTx {
     pub codespace: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ResponseDeliverTx {
+pub struct ResponseFinalizeBlock {
+    //FIXME(ash): this should not be optional
+    #[prost(message, optional, tag="1")]
+    pub updates: ::std::option::Option<ConsensusUpdates>,
+    #[prost(message, repeated, tag="2")]
+    pub tx_results: ::std::vec::Vec<ResponseTx>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ResponseTx {
     #[prost(uint32, tag="1")]
     pub code: u32,
     #[prost(bytes, tag="2")]
@@ -330,7 +309,7 @@ pub struct ResponseDeliverTx {
     pub codespace: std::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ResponseEndBlock {
+pub struct ConsensusUpdates {
     #[prost(message, repeated, tag="1")]
     pub validator_updates: ::std::vec::Vec<ValidatorUpdate>,
     #[prost(message, optional, tag="2")]
@@ -442,7 +421,7 @@ pub struct LastCommitInfo {
     pub votes: ::std::vec::Vec<VoteInfo>,
 }
 /// Event allows application developers to attach additional information to
-/// ResponseBeginBlock, ResponseEndBlock, ResponseCheckTx and ResponseDeliverTx.
+/// ResponseFinalizeBlock and ResponseCheckTx.
 /// Later, transactions may be queried using these events.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Event {
@@ -474,7 +453,7 @@ pub struct TxResult {
     #[prost(bytes, tag="3")]
     pub tx: std::vec::Vec<u8>,
     #[prost(message, optional, tag="4")]
-    pub result: ::std::option::Option<ResponseDeliverTx>,
+    pub result: ::std::option::Option<ResponseTx>,
 }
 //----------------------------------------
 // Blockchain Types

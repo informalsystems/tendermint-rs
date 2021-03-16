@@ -4,11 +4,7 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AbciResponses {
     #[prost(message, repeated, tag="1")]
-    pub deliver_txs: ::std::vec::Vec<super::abci::ResponseDeliverTx>,
-    #[prost(message, optional, tag="2")]
-    pub end_block: ::std::option::Option<super::abci::ResponseEndBlock>,
-    #[prost(message, optional, tag="3")]
-    pub begin_block: ::std::option::Option<super::abci::ResponseBeginBlock>,
+    pub finalize_block: ::std::vec::Vec<super::abci::ResponseFinalizeBlock>,
 }
 /// ValidatorsInfo represents the latest validator set, or the last height it changed
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -64,7 +60,7 @@ pub struct State {
     #[prost(int64, tag="9")]
     pub last_height_validators_changed: i64,
     /// Consensus parameters used for validating blocks.
-    /// Changes returned by EndBlock and updated after Commit.
+    /// Changes returned by FinalizeBlock and updated after Commit.
     #[prost(message, optional, tag="10")]
     pub consensus_params: ::std::option::Option<super::types::ConsensusParams>,
     #[prost(int64, tag="11")]
