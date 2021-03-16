@@ -7,7 +7,7 @@
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
-    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14")]
+    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17")]
     pub value: ::std::option::Option<request::Value>,
 }
 pub mod request {
@@ -41,6 +41,12 @@ pub mod request {
         ApplySnapshotChunk(super::RequestApplySnapshotChunk),
         #[prost(message, tag="14")]
         PrepareProposal(super::RequestPrepareProposal),
+        #[prost(message, tag="15")]
+        VerifyHeader(super::RequestVerifyHeader),
+        #[prost(message, tag="16")]
+        ProcessProposal(super::RequestProcessProposal),
+        #[prost(message, tag="17")]
+        RevertProposal(super::RequestRevertProposal),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -150,12 +156,36 @@ pub struct RequestPrepareProposal {
     //FIXME(Ash): add block field
 }
 
+/// Verify header
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RequestVerifyHeader {
+    //FIXME(Ash): add header field
+
+    #[prost(bool, tag="1")]
+    pub is_validator: bool,
+}
+
+/// Verify header
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RequestProcessProposal {
+    //FIXME(Ash): add block field
+}
+
+/// Verify header
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RequestRevertProposal {
+    #[prost(uint64, tag="1")]
+    pub height: u64,
+    #[prost(uint64, tag="2")]
+    pub round: u64,
+}
+
 //----------------------------------------
 // Response types
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
-    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15")]
+    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17")]
     pub value: ::std::option::Option<response::Value>,
 }
 pub mod response {
@@ -191,6 +221,10 @@ pub mod response {
         ApplySnapshotChunk(super::ResponseApplySnapshotChunk),
         #[prost(message, tag="15")]
         PrepareProposal(super::ResponsePrepareProposal),
+        #[prost(message, tag="16")]
+        VerifyHeader(super::ResponseVerifyHeader),
+        #[prost(message, tag="17")]
+        ProcessProposal(super::ResponseProcessProposal),
     }
 }
 /// nondeterministic
@@ -401,6 +435,20 @@ pub mod response_apply_snapshot_chunk {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponsePrepareProposal {
     //FIXME(Ash): add BlockData field
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ResponseVerifyHeader {
+    #[prost(bool, tag="1")]
+    pub accept_header: bool,
+    #[prost(message, repeated, tag="2")]
+    pub evidence: ::std::vec::Vec<Evidence>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ResponseProcessProposal {
+    #[prost(bool, tag="1")]
+    pub accept_block: bool,
+    #[prost(message, repeated, tag="2")]
+    pub evidence: ::std::vec::Vec<Evidence>,
 }
 
 //----------------------------------------
