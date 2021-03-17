@@ -1,10 +1,10 @@
 [package]
 name = "pbt-gen"
 version = "0.1.0"
-authors = ["Shon Feder <shon.feder@gmail.com>"]
+authors = ["Shon Feder <shon@informal.systems>"]
 edition = "2018"
 description = """
-            An internal crate provoding proptest generators used accross our
+            An internal crate providing proptest generators used across our
             crates and not depending on any code internal to those crates.
             """
 
