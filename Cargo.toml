@@ -9,7 +9,8 @@ members = [
     "proto",
     "rpc",
     "tendermint",
-    "testgen"
+    "testgen",
+    "pbt-gen"
 ]
 
 exclude = [

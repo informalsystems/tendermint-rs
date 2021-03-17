@@ -1,0 +1,16 @@
+[package]
+name = "pbt-gen"
+version = "0.1.0"
+authors = ["Shon Feder <shon.feder@gmail.com>"]
+edition = "2018"
+description = """
+            An internal crate provoding proptest generators used accross our
+            crates and not depending on any code internal to those crates.
+            """
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+chrono = { version = "0.4", features = ["serde"] }
+proptest = "0.10.1"
