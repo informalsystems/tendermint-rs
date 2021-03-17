@@ -26,7 +26,7 @@ pub fn min_time() -> DateTime<Utc> {
 /// The most distant time in the future for which chrono produces correct
 /// times from [Utc.timestamp](chrono::Utc.timestamp).
 ///
-/// See https://github.com/chronotope/chrono/issues/537.
+/// See <https://github.com/chronotope/chrono/issues/537>.
 ///
 /// ```
 /// use pbt_gen;
