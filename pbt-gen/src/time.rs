@@ -12,7 +12,7 @@ pub const MAX_NANO_SECS: u32 = 999_999_999u32;
 /// The most distant time in the past for which chrono produces correct
 /// times from [Utc.timestamp](chrono::Utc.timestamp).
 ///
-/// See https://github.com/chronotope/chrono/issues/537.
+/// See <https://github.com/chronotope/chrono/issues/537>.
 ///
 /// ```
 /// use pbt_gen;
