@@ -76,7 +76,7 @@ prop_compose! {
     ///          Utc.ymd(2006, 2, 24).and_hms(0,0,0), // DOD
     ///        ),
     ///     ) {
-    ///       prop_assert!(time_in_butlers_lifespan == time_in_butlers_lifespan)
+    ///       prop_assert!(time_in_luxemburgs_lifespan != time_in_butlers_lifespan)
     ///     }
     /// }
     /// ```
