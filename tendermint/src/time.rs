@@ -145,7 +145,6 @@ pub trait ParseTimestamp {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pbt_gen;
     use proptest::{prelude::*, sample::select};
 
     // We want to make sure that these timestamps specifically get tested.
