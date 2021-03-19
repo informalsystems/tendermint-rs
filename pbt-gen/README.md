@@ -7,5 +7,5 @@ code internal to the various crates of this repository.
 To view the documentation (which includes examples) run
 
 ```sh
-cargo doc --open -p pbt-gen
+cargo doc --open -p tendermint-pbt-gen
 ```

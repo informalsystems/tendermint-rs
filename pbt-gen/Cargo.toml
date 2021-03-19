@@ -1,5 +1,5 @@
 [package]
-name = "pbt-gen"
+name = "tendermint-pbt-gen"
 version = "0.1.0"
 authors = ["Shon Feder <shon@informal.systems>"]
 edition = "2018"
@@ -10,7 +10,13 @@ description = """
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+
+default = ["time"]
+
+time = ["chrono"]
+
 [dependencies]
 
-chrono = { version = "0.4", features = ["serde"] }
+chrono = { version = "0.4", features = ["serde"], optional = true}
 proptest = "0.10.1"

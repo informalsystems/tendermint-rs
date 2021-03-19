@@ -1,5 +1,5 @@
-//! [proptest](https://github.com/AltSysrq/proptest) generators for time-like
-//! objects.
+//! Provides [proptest](https://github.com/AltSysrq/proptest) generators for
+//! time-like objects.
 
 use std::convert::TryInto;
 

@@ -68,4 +68,4 @@ secp256k1 = ["k256", "ripemd160"]
 [dev-dependencies]
 
 proptest = "0.10.1"
-pbt-gen = { path = "../pbt-gen" }
+tendermint-pbt-gen = { path = "../pbt-gen" }

@@ -146,6 +146,7 @@ pub trait ParseTimestamp {
 mod tests {
     use super::*;
     use proptest::{prelude::*, sample::select};
+    use tendermint_pbt_gen as pbt;
 
     // We want to make sure that these timestamps specifically get tested.
     fn particular_rfc3339_timestamps() -> impl Strategy<Value = String> {
@@ -176,13 +177,13 @@ mod tests {
 
     proptest! {
         #[test]
-        fn can_parse_rfc3339_timestamps(stamp in pbt_gen::time::arb_rfc3339_timestamp()) {
+        fn can_parse_rfc3339_timestamps(stamp in pbt::time::arb_rfc3339_timestamp()) {
             prop_assert!(stamp.parse::<Time>().is_ok())
         }
 
         #[test]
         fn serde_from_value_is_the_inverse_of_to_value_within_reasonable_time_range(
-            datetime in pbt_gen::time::arb_datetime()
+            datetime in pbt::time::arb_datetime()
         ) {
             // If `from_value` is the inverse of `to_value`, then it will always
             // map the JSON `encoded_time` to back to the inital `time`.
@@ -195,7 +196,7 @@ mod tests {
         #[test]
         fn serde_of_rfc3339_timestamps_is_safe(
             stamp in prop_oneof![
-                pbt_gen::time::arb_rfc3339_timestamp(),
+                pbt::time::arb_rfc3339_timestamp(),
                 particular_rfc3339_timestamps(),
             ]
         ) {
