@@ -476,7 +476,10 @@ pub struct CanonicalVote {
     pub timestamp: ::std::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(string, tag="6")]
     pub chain_id: std::string::String,
+    #[prost(string, tag="7")]
+    pub unsigned_app_vote_data: std::string::String,
 }
+
 #[derive(Clone, PartialEq, ::prost::Message)]
 #[derive(::serde::Deserialize, ::serde::Serialize)]
 pub struct Block {

@@ -74,8 +74,8 @@ type BlockData = Vec<Transaction>;
 pub struct PrepareProposal {
     /// Tags
     #[serde(default)]
-    //pub blockdata: BlockData,
     pub blockdata: BlockData,
+    //FIXME(Ash): add header field
 }
 
 type Evidence = crate::evidence::Evidence;
@@ -121,6 +121,15 @@ pub struct FinalizeBlock {
     pub updates: EndBlock,
     /// resulting txs from block finalization
     pub tx_results: Vec<DeliverTx>,
+}
+
+/// Extend vote response.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ExtendVote {
+    /// updates resulting from block finalization
+    pub unsigned_app_vote_data: Vec<u8>,
+    /// resulting txs from block finalization
+    pub self_authenticating_app_data: Vec<u8>,
 }
 
 /// Return an empty vec in the event `validator_updates` is `null`

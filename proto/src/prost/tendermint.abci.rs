@@ -7,7 +7,7 @@
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Request {
-    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17")]
+    #[prost(oneof="request::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19")]
     pub value: ::std::option::Option<request::Value>,
 }
 pub mod request {
@@ -47,6 +47,10 @@ pub mod request {
         ProcessProposal(super::RequestProcessProposal),
         #[prost(message, tag="17")]
         RevertProposal(super::RequestRevertProposal),
+        #[prost(message, tag="18")]
+        ExtendVote(super::RequestExtendVote),
+        #[prost(message, tag="19")]
+        VerifyVoteExtension(super::RequestVerifyVoteExtension),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -153,7 +157,7 @@ pub struct RequestApplySnapshotChunk {
 /// Prepare proposal
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestPrepareProposal {
-    //FIXME(Ash): add block field
+    //FIXME(Ash): add block field, unbatched header field
 }
 
 /// Verify header
@@ -180,12 +184,30 @@ pub struct RequestRevertProposal {
     pub round: u64,
 }
 
+/// Extend vote
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RequestExtendVote {
+    #[prost(uint64, tag="1")]
+    pub height: u64,
+    #[prost(uint64, tag="2")]
+    pub round: u64,
+}
+
+/// Verify vote extension
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RequestVerifyVoteExtension {
+    #[prost(bytes, tag="1")]
+    pub signed_app_vote_data: Vec<u8>,
+    #[prost(bytes, tag="2")]
+    pub self_authenticating_app_vote_data: Vec<u8>,
+}
+
 //----------------------------------------
 // Response types
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Response {
-    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17")]
+    #[prost(oneof="response::Value", tags="1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19")]
     pub value: ::std::option::Option<response::Value>,
 }
 pub mod response {
@@ -225,6 +247,10 @@ pub mod response {
         VerifyHeader(super::ResponseVerifyHeader),
         #[prost(message, tag="17")]
         ProcessProposal(super::ResponseProcessProposal),
+        #[prost(message, tag="18")]
+        ExtendVote(super::ResponseExtendVote),
+        #[prost(message, tag="19")]
+        VerifyVoteExtension(super::ResponseVerifyVoteExtension),
     }
 }
 /// nondeterministic
@@ -434,7 +460,7 @@ pub mod response_apply_snapshot_chunk {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponsePrepareProposal {
-    //FIXME(Ash): add BlockData field
+    //FIXME(Ash): add BlockData field, header field
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ResponseVerifyHeader {
@@ -450,7 +476,18 @@ pub struct ResponseProcessProposal {
     #[prost(message, repeated, tag="2")]
     pub evidence: ::std::vec::Vec<Evidence>,
 }
-
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ResponseExtendVote {
+    #[prost(bytes, tag="1")]
+    pub unsigned_app_vote_data: Vec<u8>,
+    #[prost(bytes, tag="2")]
+    pub self_authenticating_app_data: Vec<u8>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ResponseVerifyVoteExtension {
+    #[prost(bool, tag="1")]
+    pub result: bool,
+}
 //----------------------------------------
 // Misc.
 

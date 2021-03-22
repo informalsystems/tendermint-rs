@@ -28,6 +28,9 @@ pub struct CanonicalVote {
 
     /// Chain ID
     pub chain_id: ChainId,
+
+    /// Unsigned app vote data
+    pub unsigned_app_vote_data: String,
 }
 
 impl Protobuf<RawCanonicalVote> for CanonicalVote {}
@@ -53,6 +56,7 @@ impl TryFrom<RawCanonicalVote> for CanonicalVote {
             block_id: block_id.map(TryInto::try_into).transpose()?,
             timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
             chain_id: ChainId::try_from(value.chain_id)?,
+            unsigned_app_vote_data: value.unsigned_app_vote_data,
         })
     }
 }
@@ -69,6 +73,7 @@ impl From<CanonicalVote> for RawCanonicalVote {
             block_id: block_id.map(Into::into),
             timestamp: value.timestamp.map(Into::into),
             chain_id: value.chain_id.to_string(),
+            unsigned_app_vote_data: value.unsigned_app_vote_data,
         }
     }
 }
@@ -83,6 +88,7 @@ impl CanonicalVote {
             block_id: vote.block_id,
             timestamp: vote.timestamp,
             chain_id,
+            unsigned_app_vote_data: "".to_string(),
         }
     }
 }
