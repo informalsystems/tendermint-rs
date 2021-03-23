@@ -1,3 +1,5 @@
+//! Supervision of the p2p machinery managing peers and the flow of data from and to them.
+
 use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom as _;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -15,23 +17,43 @@ use crate::message;
 use crate::peer;
 use crate::transport::{self, Connection, Endpoint as _};
 
+/// Indicates how a [`transport::Connection`] was established.
 pub enum Direction {
+    /// Established by accepting a new connection from the [`transport::Transport`].
     Incoming,
+    /// Established by issuing a connect on the [`transport::Transport`].
     Outgoing,
 }
 
+/// Set of control instructions supported by the [`Supervisor`]. Intended to empower the caller to
+/// instruct when to establish new connections and multiplex messages to peers.
 pub enum Command {
+    /// Accept next incoming connection. As it will unblock the subroutine which is responsible for
+    /// accepting even when no incoming connection is pending, the accept can take place at a
+    /// later point then when the command was issued. Protocols which rely on hard upper bounds
+    /// like the number of concurrently connected peers should issue a disconnect to remedy the
+    /// situation.
     Accept,
+    /// Establishes a new connection to the remote end in [`transport::ConnectInfo`].
     Connect(transport::ConnectInfo),
+    /// Disconnects the [`peer::Peer`] known by [`node::Id`]. This will tear down the entire tree of
+    /// subroutines managing the peer in question.
     Disconnect(node::Id),
+    /// Dispatch the given message to the peer known for [`node::Id`].
     Msg(node::Id, message::Send),
 }
 
+/// Set of significant events in the p2p subsystem.
 pub enum Event {
+    /// A new connection has been established.
     Connected(node::Id, Direction),
+    /// A [`peer::Peer`] has been disconnected.
     Disconnected(node::Id, Report),
+    /// A new [`message::Receive`] from the [`peer::Peer`] has arrived.
     Message(node::Id, message::Receive),
+    /// A connection upgraded successfully to a [`peer::Peer`].
     Upgraded(node::Id),
+    /// An upgrade from failed.
     UpgradeFailed(node::Id, Report),
 }
 
@@ -70,16 +92,9 @@ impl From<Internal> for Output {
     }
 }
 
-struct Accepted<Conn> {
-    conn: Conn,
-    id: node::Id,
-}
-
-struct Connected<Conn> {
-    conn: Conn,
-    id: node::Id,
-}
-
+/// Wrapping a [`transport::Transport`] the `Supervisor` runs the p2p machinery to manage peers over
+/// physical connections. Offering multiplexing of ingress and egress messages and a surface to
+/// empower higher-level protocols to control the behaviour of the p2p substack.
 pub struct Supervisor {
     command_tx: Sender<Command>,
     event_rx: Receiver<Event>,
@@ -91,12 +106,14 @@ struct State<Conn> {
 }
 
 impl Supervisor {
-    /// Wrapping a [`transport::Transport`] this runs the p2p machinery to manage peers over
-    /// physical connections.
+    /// Takes the [`transport::Transport`] and sets up managed subroutines. When the `Supervisor`
+    /// is returned the p2p subsystem has been successfully set up on the given network interface
+    /// (as far as applicable for the transport) so the caller can use the command input and
+    /// consume events.
     ///
     /// # Errors
     ///
-    /// * if the bind of the transport fails
+    /// * If the bind of the transport fails
     #[allow(clippy::too_many_lines)]
     pub fn run<T>(transport: &T) -> Result<Self>
     where
@@ -188,12 +205,13 @@ impl Supervisor {
             thread::spawn(move || loop {
                 let (id, msg) = send_rx.recv().unwrap();
 
-                // TOOD(xla): A missing peer needs to be bubbled up as that indicates there is
-                // a mismatch between the protocol tracked peers and the ones the supervisor holds
-                // onto. Something is afoot and it needs to be reconciled asap.
-                if let Some(peer) = state.lock().unwrap().peers.get(&id) {
+                match state.lock().unwrap().peers.get(&id) {
                     // TODO(xla): Ideally acked that the message passed to the peer.
-                    peer.send(msg).unwrap();
+                    Some(peer) => peer.send(msg).unwrap(),
+                    // TODO(xla): A missing peer needs to be bubbled up as that indicates there is
+                    // a mismatch between the protocol tracked peers and the ones the supervisor holds
+                    // onto. Something is afoot and it needs to be reconciled asap.
+                    None => {}
                 }
             });
         }
@@ -295,13 +313,23 @@ impl Supervisor {
         Ok(supervisor)
     }
 
+    /// Returns the next available message from the underlying channel.
+    ///
+    /// # Errors
+    ///
+    /// * If
     pub fn recv(&self) -> Result<Event> {
-        match self.event_rx.recv() {
-            Ok(msg) => Ok(msg),
-            Err(err) => Err(eyre!("sender disconnected: {}", err)),
-        }
+        self.event_rx
+            .recv()
+            .map_err(|err| eyre!("sender disconnected: {}", err))
     }
 
+    /// Instruct to execute the given [`Command`].
+    ///
+    /// # Errors
+    ///
+    /// * If the underlying channels dropped and the receiver is gone and indicating that the
+    /// handle the caller holds isn't any good anymore and should be dropped entirely.
     pub fn command(&self, cmd: Command) -> Result<()> {
         self.command_tx.send(cmd).wrap_err("command send failed")
     }
