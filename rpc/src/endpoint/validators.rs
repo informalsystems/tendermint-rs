@@ -73,6 +73,7 @@ pub struct Response {
     pub validators: Vec<validator::Info>,
 
     /// Total number of validators for this block height.
+    #[serde(with = "tendermint_proto::serializers::from_str")]
     pub total: i32,
 }
 
