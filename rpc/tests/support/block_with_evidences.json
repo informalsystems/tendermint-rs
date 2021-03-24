@@ -74,7 +74,10 @@
                 "validator_address": "0F1F93CC25A6CFC083F54E4DA26F73B7F24DC85B",
                 "validator_index": "0",
                 "signature": "gT2fdleX4BUzbAuUDazkbJBJ99HX7YgSTml7rumzWAm4hlOWtBGPe9BmkUF6Ypy8kzgMU/0P0D96KxCts5tpCQ=="
-              }
+              },
+              "total_voting_power": 0,
+              "validator_power": 0,
+              "timestamp": "2020-04-28T15:48:20.640286Z"
             }
           }
         ]

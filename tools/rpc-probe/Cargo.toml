@@ -1,0 +1,31 @@
+[package]
+name = "tendermint-rpc-probe"
+version = "0.18.1"
+authors = ["Thane Thomson <thane@informal.systems>"]
+edition = "2018"
+license    = "Apache-2.0"
+homepage   = "https://www.tendermint.com/"
+repository = "https://github.com/informalsystems/tendermint-rs"
+readme     = "README.md"
+
+description = """
+    tendermint-rpc-probe allows us to probe a running Tendermint instance with
+    a given sequence of requests, capturing those requests and/or responses.
+    """
+
+[package.metadata.docs.rs]
+all-features = true
+
+[dependencies]
+async-tungstenite = { version = "0.12", features = [ "tokio-runtime" ] }
+futures = "0.3"
+getrandom = "0.1"
+log = "0.4"
+serde = { version = "1", features = [ "derive" ] }
+serde_json = "1"
+simple_logger = "1.11"
+structopt = "0.3"
+subtle-encoding = "0.5.1"
+thiserror = "1.0"
+tokio = { version = "1.0", features = [ "full" ] }
+uuid = "0.8"

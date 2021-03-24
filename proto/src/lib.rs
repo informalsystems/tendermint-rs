@@ -3,9 +3,10 @@
 #![deny(warnings, trivial_casts, trivial_numeric_casts, unused_import_braces)]
 #![allow(clippy::large_enum_variant)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/tendermint-proto/0.17.0-rc3")]
+#![doc(html_root_url = "https://docs.rs/tendermint-proto/0.18.1")]
 
-// Built-in prost_types with slight customization to enable JSON-encoding
+/// Built-in prost_types with slight customization to enable JSON-encoding
+#[allow(warnings)]
 pub mod google {
     pub mod protobuf {
         include!("prost/google.protobuf.rs");
@@ -14,6 +15,7 @@ pub mod google {
     }
 }
 
+#[allow(warnings)]
 mod tendermint;
 pub use tendermint::*;
 

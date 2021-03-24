@@ -72,7 +72,7 @@ impl Instance {
 
     /// Get the latest trusted block.
     pub fn latest_trusted(&self) -> Option<LightBlock> {
-        self.state.light_store.latest(Status::Trusted)
+        self.state.light_store.highest(Status::Trusted)
     }
 
     /// Trust the given block.
@@ -112,7 +112,7 @@ impl Instance {
 ///         Err(e) => {
 ///             println!("[error] sync failed: {}", e);
 ///         }
-///     });
+///     };
 ///
 ///     std::thread::sleep(Duration::from_millis(800));
 /// }
@@ -419,5 +419,401 @@ impl Handle for SupervisorHandle {
             .map_err(ErrorKind::from)?;
 
         Ok(receiver.recv().map_err(ErrorKind::from)?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::components::io::IoError;
+    use crate::light_client::Options;
+    use crate::operations::ProdHasher;
+    use crate::{
+        components::{
+            io::{AtHeight, Io},
+            scheduler,
+            verifier::ProdVerifier,
+        },
+        fork_detector::ProdForkDetector,
+        store::{memory::MemoryStore, LightStore},
+        tests::{MockClock, MockEvidenceReporter, MockIo, TrustOptions},
+        types::Time,
+    };
+    use std::{collections::HashMap, convert::TryFrom, time::Duration};
+    use tendermint::block::Height;
+    use tendermint::evidence::Duration as DurationStr;
+    use tendermint::trust_threshold::TrustThresholdFraction;
+    use tendermint_rpc as rpc;
+    use tendermint_rpc::error::Code;
+    use tendermint_testgen::helpers::get_time;
+    use tendermint_testgen::{
+        Commit, Generator, Header, LightBlock as TestgenLightBlock, LightChain, ValidatorSet,
+    };
+
+    fn make_instance(
+        peer_id: PeerId,
+        trust_options: TrustOptions,
+        io: MockIo,
+        now: Time,
+    ) -> Instance {
+        let trusted_height = trust_options.height;
+        let trusted_state = io
+            .fetch_light_block(AtHeight::At(trusted_height))
+            .expect("could not 'request' light block");
+
+        let mut light_store = MemoryStore::new();
+        light_store.insert(trusted_state, Status::Trusted);
+
+        let state = State {
+            light_store: Box::new(light_store),
+            verification_trace: HashMap::new(),
+        };
+
+        let options = Options {
+            trust_threshold: trust_options.trust_level,
+            trusting_period: trust_options.period.into(),
+            clock_drift: Duration::from_secs(0),
+        };
+
+        let verifier = ProdVerifier::default();
+        let clock = MockClock { now };
+        let scheduler = scheduler::basic_bisecting_schedule;
+        let hasher = ProdHasher::default();
+
+        let light_client =
+            LightClient::new(peer_id, options, clock, scheduler, verifier, hasher, io);
+
+        Instance::new(light_client, state)
+    }
+
+    fn run_bisection_test(
+        peer_list: PeerList<Instance>,
+        height_to_verify: u64,
+    ) -> (Result<LightBlock, Error>, LatestStatus) {
+        let supervisor = Supervisor::new(
+            peer_list,
+            ProdForkDetector::default(),
+            MockEvidenceReporter::new(),
+        );
+
+        let handle = supervisor.handle();
+        std::thread::spawn(|| supervisor.run());
+
+        let target_height = Height::try_from(height_to_verify).expect("Error while making height");
+
+        (
+            handle.verify_to_target(target_height),
+            handle.latest_status().unwrap(),
+        )
+    }
+
+    fn make_peer_list(
+        primary: Option<Vec<LightBlock>>,
+        witnesses: Option<Vec<Vec<LightBlock>>>,
+        now: Time,
+    ) -> PeerList<Instance> {
+        let trust_options = TrustOptions {
+            period: DurationStr(Duration::new(604800, 0)),
+            height: Height::try_from(1_u64).expect("Error while making height"),
+            trust_level: TrustThresholdFraction::TWO_THIRDS,
+        };
+
+        let mut peer_list = PeerList::builder();
+
+        if let Some(primary) = primary {
+            let io = MockIo::new(
+                primary[0].signed_header.header.chain_id.to_string(),
+                primary.clone(),
+            );
+
+            let primary_instance =
+                make_instance(primary[0].provider, trust_options.clone(), io, now);
+
+            peer_list.primary(primary[0].provider, primary_instance);
+        }
+
+        if let Some(witnesses) = witnesses {
+            for provider in witnesses.into_iter() {
+                let peer_id = provider[0].provider;
+                let io = MockIo::new(
+                    provider[0].signed_header.header.chain_id.to_string(),
+                    provider,
+                );
+                let instance = make_instance(peer_id, trust_options.clone(), io.clone(), now);
+                peer_list.witness(peer_id, instance);
+            }
+        }
+        peer_list.build()
+    }
+
+    fn change_provider(
+        mut light_blocks: Vec<LightBlock>,
+        peer_id: Option<&str>,
+    ) -> Vec<LightBlock> {
+        let provider = peer_id.unwrap_or("0BEFEEDC0C0ADEADBEBADFADADEFC0FFEEFACADE");
+        for lb in light_blocks.iter_mut() {
+            lb.provider = provider.parse().unwrap();
+        }
+        light_blocks
+    }
+
+    fn make_conflicting_witness(
+        length: u64,
+        val_ids: Option<Vec<&str>>,
+        chain_id: Option<&str>,
+        provider: Option<&str>,
+    ) -> Vec<LightBlock> {
+        let vals = match val_ids {
+            Some(val_ids) => ValidatorSet::new(val_ids).validators.unwrap(),
+            None => ValidatorSet::new(vec!["1"]).validators.unwrap(),
+        };
+
+        let chain = chain_id.unwrap_or("other-chain");
+
+        let peer_id = provider.unwrap_or("0BEFEEDC0C0ADEADBEBADFADADEFC0FFEEFACADE");
+
+        let header = Header::new(&vals).height(1).chain_id(chain).time(1);
+        let commit = Commit::new(header.clone(), 1);
+        let mut lb = TestgenLightBlock::new(header, commit).provider(peer_id);
+
+        let mut witness: Vec<LightBlock> = vec![lb.generate().unwrap().into()];
+
+        for _ in 1..length {
+            lb = lb.next();
+            let tm_lb = lb.generate().unwrap().into();
+            witness.push(tm_lb);
+        }
+
+        witness
+    }
+
+    #[test]
+    fn test_bisection_happy_path() {
+        let chain = LightChain::default_with_length(10);
+        let primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let witness = change_provider(primary.clone(), None);
+
+        let peer_list = make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(11));
+
+        let (result, _) = run_bisection_test(peer_list, 10);
+
+        let expected_state = primary[9].clone();
+        let new_state = result.unwrap();
+
+        assert_eq!(expected_state, new_state);
+    }
+
+    #[test]
+    fn test_bisection_no_witnesses() {
+        let chain = LightChain::default_with_length(10);
+        let primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let peer_list = make_peer_list(Some(primary), None, get_time(11));
+
+        let (result, _) = run_bisection_test(peer_list, 10);
+
+        let expected_err = ErrorKind::NoWitnesses;
+        let got_err = result.err().unwrap();
+
+        assert_eq!(&expected_err, got_err.kind());
+    }
+
+    #[test]
+    fn test_bisection_io_error() {
+        let chain = LightChain::default_with_length(10);
+        let primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let mut light_blocks = primary.clone();
+        light_blocks.truncate(9);
+        let witness = change_provider(light_blocks, None);
+
+        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11));
+
+        let (result, _) = run_bisection_test(peer_list, 10);
+
+        let expected_err = ErrorKind::Io(IoError::RpcError(rpc::Error::new(
+            Code::InvalidRequest,
+            None,
+        )));
+        let got_err = result.err().unwrap();
+
+        assert_eq!(&expected_err, got_err.kind());
+    }
+
+    #[test]
+    fn test_bisection_no_witness_left() {
+        let chain = LightChain::default_with_length(5);
+        let primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let witness = make_conflicting_witness(5, None, None, None);
+
+        let peer_list = make_peer_list(Some(primary), Some(vec![witness]), get_time(11));
+
+        let (result, _) = run_bisection_test(peer_list, 10);
+
+        let expected_err = ErrorKind::NoWitnessLeft;
+        let got_err = result.err().unwrap();
+
+        assert_eq!(&expected_err, got_err.kind());
+    }
+
+    #[test]
+    fn test_bisection_fork_detected() {
+        let mut chain = LightChain::default_with_length(5);
+        let primary = chain
+            .light_blocks
+            .clone()
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let mut header = chain.light_blocks[4].header.clone().unwrap();
+        let mut time = header.time.unwrap();
+        time += 3;
+        header.time = Some(time);
+        chain.light_blocks[4].header = Some(header.clone());
+        chain.light_blocks[4].commit = Some(Commit::new(header, 1));
+
+        let witness = change_provider(
+            chain
+                .light_blocks
+                .into_iter()
+                .map(|lb| lb.generate().unwrap().into())
+                .collect::<Vec<LightBlock>>(),
+            None,
+        );
+
+        let peer_list = make_peer_list(Some(primary), Some(vec![witness.clone()]), get_time(11));
+
+        let (result, _) = run_bisection_test(peer_list, 5);
+
+        let expected_err = ErrorKind::ForkDetected(vec![witness[0].provider]);
+        let got_err = result.err().unwrap();
+
+        assert_eq!(&expected_err, got_err.kind());
+    }
+
+    #[test]
+    fn test_bisection_no_initial_trusted_state() {
+        let chain = LightChain::default_with_length(10);
+        let primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let witness1 = change_provider(primary.clone(), None);
+        let witness2 = change_provider(
+            witness1.clone(),
+            Some("EDC0C0ADEADBEBA0BEFEDFADADEFC0FFEEFACADE"),
+        );
+
+        let mut peer_list = make_peer_list(
+            Some(primary.clone()),
+            Some(vec![witness1.clone(), witness2]),
+            get_time(11),
+        );
+        peer_list
+            .get_mut(&primary[0].provider)
+            .expect("cannot find instance")
+            .state
+            .light_store
+            .remove(
+                Height::try_from(1_u64).expect("bad height"),
+                Status::Trusted,
+            );
+
+        let (result, latest_status) = run_bisection_test(peer_list, 10);
+
+        // In the case where there is no initial trusted state found from a primary peer,
+        // the primary node is marked as faulty and replaced with a witness node (if available)
+        // and continues verification
+
+        let expected_state = &witness1[9];
+        let new_state = result.unwrap();
+
+        assert_eq!(expected_state, &new_state);
+
+        // Check that we successfully disconnected from the "faulty" primary node
+        assert!(latest_status
+            .connected_nodes
+            .iter()
+            .find(|&&peer| peer == primary[0].provider)
+            .is_none());
+    }
+
+    #[test]
+    fn test_bisection_trusted_state_outside_trusting_period() {
+        let chain = LightChain::default_with_length(10);
+        let primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        let witness = change_provider(primary.clone(), None);
+
+        let peer_list =
+            make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(604801));
+
+        let (_, latest_status) = run_bisection_test(peer_list, 2);
+
+        // In the case where trusted state of a primary peer is outside the trusting period,
+        // the primary node is marked as faulty and replaced with a witness node (if available)
+        // and continues verification
+        // Check if the node was removed from the list
+
+        assert!(latest_status
+            .connected_nodes
+            .iter()
+            .find(|&&peer| peer == primary[0].provider)
+            .is_none());
+    }
+
+    #[test]
+    fn test_bisection_invalid_light_block() {
+        let chain = LightChain::default_with_length(10);
+        let mut primary = chain
+            .light_blocks
+            .into_iter()
+            .map(|lb| lb.generate().unwrap().into())
+            .collect::<Vec<LightBlock>>();
+
+        primary[9].signed_header.commit.round = primary[9].signed_header.commit.round.increment();
+
+        let witness = change_provider(primary.clone(), None);
+
+        let peer_list = make_peer_list(Some(primary.clone()), Some(vec![witness]), get_time(11));
+
+        let (_, latest_status) = run_bisection_test(peer_list, 10);
+
+        // In the case where a primary peer provides an invalid light block
+        // i.e. verification for the light block failed,
+        // the primary node is marked as faulty and replaced with a witness node (if available)
+        // and continues verification
+        // Check if the node was removed from the list
+
+        assert!(latest_status
+            .connected_nodes
+            .iter()
+            .find(|&&peer| peer == primary[0].provider)
+            .is_none());
     }
 }

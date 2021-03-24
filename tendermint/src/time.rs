@@ -2,15 +2,16 @@
 
 use crate::error::{Error, Kind};
 
-use chrono::{DateTime, SecondsFormat, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use std::convert::TryFrom;
+use std::convert::{Infallible, TryFrom};
 use std::fmt;
 use std::ops::{Add, Sub};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tendermint_proto::google::protobuf::Timestamp;
+use tendermint_proto::serializers::timestamp;
 use tendermint_proto::Protobuf;
 
 /// Tendermint timestamps
@@ -22,7 +23,7 @@ pub struct Time(DateTime<Utc>);
 impl Protobuf<Timestamp> for Time {}
 
 impl TryFrom<Timestamp> for Time {
-    type Error = anomaly::BoxError;
+    type Error = Infallible;
 
     fn try_from(value: Timestamp) -> Result<Self, Self::Error> {
         // prost_types::Timestamp has a SystemTime converter but
@@ -31,11 +32,8 @@ impl TryFrom<Timestamp> for Time {
             seconds: value.seconds,
             nanos: value.nanos,
         };
-        Ok(SystemTime::try_from(prost_value)
-            .map_err(|e| {
-                Kind::OutOfRange.context(format!("time before EPOCH by {} seconds", e.as_secs()))
-            })?
-            .into())
+
+        Ok(SystemTime::from(prost_value).into())
     }
 }
 
@@ -43,7 +41,7 @@ impl From<Time> for Timestamp {
     fn from(value: Time) -> Self {
         // prost_types::Timestamp has a SystemTime converter but
         // tendermint_proto::Timestamp can be JSON-encoded
-        let prost_value = prost_types::Timestamp::from(value.to_system_time().unwrap());
+        let prost_value = prost_types::Timestamp::from(SystemTime::from(value));
         Timestamp {
             seconds: prost_value.seconds,
             nanos: prost_value.nanos,
@@ -78,13 +76,7 @@ impl Time {
 
     /// Return an RFC 3339 and ISO 8601 date and time string with 6 subseconds digits and Z.
     pub fn to_rfc3339(&self) -> String {
-        self.0.to_rfc3339_opts(SecondsFormat::Nanos, true)
-    }
-
-    /// Convert [`Time`] to [`SystemTime`]
-    pub fn to_system_time(&self) -> Result<SystemTime, Error> {
-        let duration_since_epoch = self.duration_since(Self::unix_epoch())?;
-        Ok(UNIX_EPOCH + duration_since_epoch)
+        timestamp::to_rfc3339_nanos(&self.0)
     }
 }
 
@@ -122,7 +114,7 @@ impl From<SystemTime> for Time {
 
 impl From<Time> for SystemTime {
     fn from(t: Time) -> SystemTime {
-        t.to_system_time().unwrap()
+        t.0.into()
     }
 }
 
@@ -148,4 +140,74 @@ impl Sub<Duration> for Time {
 pub trait ParseTimestamp {
     /// Parse [`Time`], or return an [`Error`] if parsing failed
     fn parse_timestamp(&self) -> Result<Time, Error>;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::{prelude::*, sample::select};
+    use tendermint_pbt_gen as pbt;
+
+    // We want to make sure that these timestamps specifically get tested.
+    fn particular_rfc3339_timestamps() -> impl Strategy<Value = String> {
+        let strs: Vec<String> = vec![
+            "2020-09-14T16:33:54.21191421Z",
+            "2020-09-14T16:33:00Z",
+            "2020-09-14T16:33:00.1Z",
+            "2020-09-14T16:33:00.211914212Z",
+            "1970-01-01T00:00:00Z",
+            "2021-01-07T20:25:56.0455760Z",
+            "2021-01-07T20:25:57.039219Z",
+            "2021-01-07T20:25:58.03562100Z",
+            "2021-01-07T20:25:59.000955200Z",
+            "2021-01-07T20:26:04.0121030Z",
+            "2021-01-07T20:26:05.005096Z",
+            "2021-01-07T20:26:09.08488400Z",
+            "2021-01-07T20:26:11.0875340Z",
+            "2021-01-07T20:26:12.078268Z",
+            "2021-01-07T20:26:13.08074100Z",
+            "2021-01-07T20:26:15.079663000Z",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+
+        select(strs)
+    }
+
+    proptest! {
+        #[test]
+        fn can_parse_rfc3339_timestamps(stamp in pbt::time::arb_rfc3339_timestamp()) {
+            prop_assert!(stamp.parse::<Time>().is_ok())
+        }
+
+        #[test]
+        fn serde_from_value_is_the_inverse_of_to_value_within_reasonable_time_range(
+            datetime in pbt::time::arb_datetime()
+        ) {
+            // If `from_value` is the inverse of `to_value`, then it will always
+            // map the JSON `encoded_time` to back to the inital `time`.
+            let time: Time = datetime.into();
+            let json_encoded_time = serde_json::to_value(&time).unwrap();
+            let decoded_time: Time = serde_json::from_value(json_encoded_time).unwrap();
+            prop_assert_eq!(time, decoded_time);
+        }
+
+        #[test]
+        fn serde_of_rfc3339_timestamps_is_safe(
+            stamp in prop_oneof![
+                pbt::time::arb_rfc3339_timestamp(),
+                particular_rfc3339_timestamps(),
+            ]
+        ) {
+            // ser/de of rfc3339 timestamps is safe if it never panics.
+            // This differes from the the inverse test in that we are testing on
+            // arbitrarily generated textual timestamps, rather than times in a
+            // range. Tho we do incidentally test the inversion as well.
+            let time: Time = stamp.parse().unwrap();
+            let json_encoded_time = serde_json::to_value(&time).unwrap();
+            let decoded_time: Time = serde_json::from_value(json_encoded_time).unwrap();
+            prop_assert_eq!(time, decoded_time);
+        }
+    }
 }

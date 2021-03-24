@@ -1,0 +1,13 @@
+[package]
+name = "tendermint-proto-compiler"
+version = "0.1.0"
+authors = ["Greg Szabo <greg@informal.systems>"]
+edition = "2018"
+publish = false
+
+[dependencies]
+walkdir         = { version = "2.3" }
+prost-build     = { version = "0.7" }
+git2            = { version = "0.13" }
+tempdir         = { version = "0.3" }
+subtle-encoding = { version = "0.5" }

@@ -1,0 +1,8 @@
+[workspace]
+
+members = [
+    "abci-test",
+    "kvstore-test",
+    "proto-compiler",
+    "rpc-probe"
+]

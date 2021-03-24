@@ -60,9 +60,11 @@ pub enum EventData {
 /// Transaction result info.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct TxInfo {
-    pub height: String,
+    #[serde(with = "tendermint_proto::serializers::from_str")]
+    pub height: i64,
     pub index: Option<i64>,
-    pub tx: String,
+    #[serde(with = "tendermint_proto::serializers::bytes::base64string")]
+    pub tx: Vec<u8>,
     pub result: TxResult,
 }
 

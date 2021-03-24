@@ -1,14 +1,16 @@
 [workspace]
 
 members = [
+    "abci",
     "light-client",
+    "light-client-js",
     "light-node",
     "p2p",
     "proto",
     "rpc",
-    "rpc-probe",
     "tendermint",
-    "testgen"
+    "testgen",
+    "pbt-gen"
 ]
 
 exclude = [

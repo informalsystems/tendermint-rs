@@ -6,6 +6,7 @@ use tendermint_light_client::{
     },
     fork_detector::ProdForkDetector,
     light_client::{self, LightClient},
+    operations::ProdHasher,
     peer_list::PeerList,
     state::State,
     store::LightStore,
@@ -18,7 +19,7 @@ use std::time::Duration;
 
 use tendermint_light_client::store::memory::MemoryStore;
 use tendermint_light_client::tests::{
-    AnonLightBlock, MockClock, MockEvidenceReporter, MockIo, TestBisection, TrustOptions,
+    LightClientTest, MockClock, MockEvidenceReporter, MockIo, TrustOptions,
 };
 
 use tendermint_testgen::Tester;
@@ -45,17 +46,17 @@ fn make_instance(peer_id: PeerId, trust_options: TrustOptions, io: MockIo, now: 
         clock_drift: Duration::from_secs(10),
     };
 
-    let verifier = ProdVerifier::default();
     let clock = MockClock { now };
+    let verifier = ProdVerifier::default();
+    let hasher = ProdHasher::default();
     let scheduler = scheduler::basic_bisecting_schedule;
 
-    let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, io);
+    let light_client = LightClient::new(peer_id, options, clock, scheduler, verifier, hasher, io);
 
     Instance::new(light_client, state)
 }
 
-fn run_multipeer_test(tc: TestBisection<AnonLightBlock>) {
-    let tc: TestBisection<LightBlock> = tc.into();
+fn run_multipeer_test(tc: LightClientTest<LightBlock>) {
     let primary = tc.primary.lite_blocks[0].provider;
 
     println!(

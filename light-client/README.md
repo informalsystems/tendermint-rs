@@ -66,20 +66,14 @@ The Tendermint Light Client is primarily tested through unit tests.
 ### Core Verification
 
 The logic for the core verification of light blocks is entirely self-contained in
-the [`predicates`](./src/predicates.rs) module. This code is exercised in a family
-of tests called `single_step` via a set of [JSON fixtures](./tests/support/single_step)
-which encode an initial trusted state, a target block to verify, and the
-expected result of the core verification algorithm.
-
-These tests come in two flavours:
-
-- `skipping` tests, where there is a gap between the initial trusted state and the target block.
-- `sequential` tests, where there the initial trusted state and the target block are adjacent.
+the [`predicates`](./src/predicates.rs) module.
+This code is exercised through unit tests which test each predicate in isolation
+by giving it a set of data along with the expected outcome of each check.
 
 The following command can be used to run only these tests:
 
 ```bash
-$ cargo test -p tendermint-light-client --test light_client single_step
+cargo test -p tendermint-light-client predicates
 ```
 
 #### Model-based tests
@@ -89,15 +83,16 @@ to the core verification. In MBT, the testing procedure is based on the
 [Light Client formal model](./tests/support/model_based/Lightclient_002_draft.tla),
 and the tests themselves are simple assertions in the modeling language TLA+.
 The current set of [TLA+ tests](./tests/support/model_based/LightTests.tla) is translated
- automatically into the set of [JSON fixtures](./tests/support/model_based/single_step).
- Please refer to the [MBT Guide](./tests/support/model_based/README.md),
- and the [MBT Abstract](./tests/support/model_based/Abstract.md) for further information.
+automatically into the set of [JSON fixtures](./tests/support/model_based/single_step).
 
 The following command can be used to run only these tests:
 
 ```bash
-$ cargo test -p tendermint-light-client --test model_based
+$ cargo test -p tendermint-light-client --test model_based -- --nocapture
 ```
+
+Please refer to the [MBT Guide](./tests/support/model_based/README.md),
+and the [MBT Abstract](./tests/support/model_based/Abstract.md) for further information.
 
 ### Bisection
 

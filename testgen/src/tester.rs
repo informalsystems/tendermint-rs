@@ -198,15 +198,15 @@ impl TestResult {
     pub fn is_success(&self) -> bool {
         matches!(self, TestResult::Success)
     }
+
     pub fn is_failure(&self) -> bool {
-        matches!(self, TestResult::Failure {
-            message: _,
-            location: _,
-        })
+        matches!(self, TestResult::Failure { .. })
     }
+
     pub fn is_readerror(&self) -> bool {
         matches!(self, TestResult::ReadError)
     }
+
     pub fn is_parseerror(&self) -> bool {
         matches!(self, TestResult::ParseError(_))
     }

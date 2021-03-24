@@ -66,10 +66,17 @@ impl TryFrom<RawPublicKey> for PublicKey {
         let sum = &value
             .sum
             .ok_or_else(|| format_err!(error::Kind::InvalidKey, "empty sum"))?;
-        match sum {
-            Sum::Ed25519(b) => Self::from_raw_ed25519(b)
-                .ok_or_else(|| format_err!(error::Kind::InvalidKey, "malformed key").into()),
+        if let Sum::Ed25519(b) = sum {
+            return Self::from_raw_ed25519(b).ok_or_else(|| {
+                format_err!(error::Kind::InvalidKey, "malformed ed25519 key").into()
+            });
         }
+        #[cfg(feature = "secp256k1")]
+        if let Sum::Secp256k1(b) = sum {
+            return Self::from_raw_secp256k1(b)
+                .ok_or_else(|| format_err!(error::Kind::InvalidKey, "malformed key").into());
+        }
+        Err(format_err!(error::Kind::InvalidKey, "not an ed25519 key").into())
     }
 }
 
@@ -82,7 +89,11 @@ impl From<PublicKey> for RawPublicKey {
                 )),
             },
             #[cfg(feature = "secp256k1")]
-            PublicKey::Secp256k1(_) => panic!("secp256k1 PublicKey unimplemented"),
+            PublicKey::Secp256k1(ref pk) => RawPublicKey {
+                sum: Some(tendermint_proto::crypto::public_key::Sum::Secp256k1(
+                    pk.as_bytes().to_vec(),
+                )),
+            },
         }
     }
 }
@@ -158,7 +169,20 @@ impl PublicKey {
 
     /// Serialize this key as Bech32 with the given human readable prefix
     pub fn to_bech32(self, hrp: &str) -> String {
-        bech32::encode(hrp, self.as_bytes())
+        let backward_compatible_amino_prefixed_pubkey = match self {
+            PublicKey::Ed25519(ref pk) => {
+                let mut key_bytes = vec![0x16, 0x24, 0xDE, 0x64, 0x20];
+                key_bytes.extend(pk.as_bytes());
+                key_bytes
+            }
+            #[cfg(feature = "secp256k1")]
+            PublicKey::Secp256k1(ref pk) => {
+                let mut key_bytes = vec![0xEB, 0x5A, 0xE9, 0x87, 0x21];
+                key_bytes.extend(pk.as_bytes());
+                key_bytes
+            }
+        };
+        bech32::encode(hrp, backward_compatible_amino_prefixed_pubkey)
     }
 
     /// Serialize this key as hexadecimal
@@ -368,17 +392,20 @@ mod tests {
         import (
             "encoding/hex"
             "fmt"
-            "github.com/cosmos/cosmos-sdk/types/bech32"
+            "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+            "github.com/cosmos/cosmos-sdk/types"
         )
 
-        func key_check() {
-            key, _ := hex.DecodeString("4A25C6640A1F72B9C975338294EF51B6D1C33158BB6ECBA69FBC3FB5A33C9DCE")
-            fmt.Println(bech32.ConvertAndEncode("cosmosvalconspub",key))
+        func bech32conspub() {
+            pubBz, _ := hex.DecodeString("4A25C6640A1F72B9C975338294EF51B6D1C33158BB6ECBA69FBC3FB5A33C9DCE")
+            pub := &ed25519.PubKey{Key: pubBz}
+            mustBech32ConsPub := types.MustBech32ifyPubKey(types.Bech32PubKeyTypeConsPub, pub)
+            fmt.Println(mustBech32ConsPub)
         }
          */
         assert_eq!(
             example_key.to_bech32("cosmosvalconspub"),
-            "cosmosvalconspub1fgjuveq2raetnjt4xwpffm63kmguxv2chdhvhf5lhslmtgeunh8q538xyw"
+            "cosmosvalconspub1zcjduepqfgjuveq2raetnjt4xwpffm63kmguxv2chdhvhf5lhslmtgeunh8qmf7exk"
         );
     }
 
@@ -391,21 +418,9 @@ mod tests {
             PublicKey::from_raw_secp256k1(&hex::decode_upper(EXAMPLE_ACCOUNT_KEY).unwrap())
                 .unwrap(),
         );
-        /* Key created from:
-        import (
-            "encoding/hex"
-            "fmt"
-            "github.com/cosmos/cosmos-sdk/types/bech32"
-        )
-
-        func key_check() {
-            key, _ := hex.DecodeString("02A1633CAFCC01EBFB6D78E39F687A1F0995C62FC95F51EAD10A02EE0BE551B5DC")
-            fmt.Println(bech32.ConvertAndEncode("cosmospub",key))
-        }
-         */
         assert_eq!(
             example_key.to_bech32("cosmospub"),
-            "cosmospub1q2skx090esq7h7md0r3e76r6ruyet330e904r6k3pgpwuzl92x6acjw74az"
+            "cosmospub1addwnpepq2skx090esq7h7md0r3e76r6ruyet330e904r6k3pgpwuzl92x6actrt4uq"
         );
     }
 

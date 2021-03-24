@@ -157,7 +157,7 @@ impl Version {
                     "malformed handshake message (protocol version mismatch?): {}",
                     e
                 );
-                return Report::new(Error::ProtocolError).wrap_err(message);
+                Report::new(Error::ProtocolError).wrap_err(message)
             })
         } else {
             self.decode_auth_signature_amino(bytes)

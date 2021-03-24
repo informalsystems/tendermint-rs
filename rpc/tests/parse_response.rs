@@ -4,6 +4,8 @@ use std::{fs, path::PathBuf};
 use tendermint::abci::Code;
 
 use std::str::FromStr;
+use tendermint::vote;
+use tendermint_rpc::endpoint::consensus_state::RoundVote;
 use tendermint_rpc::{self as rpc, endpoint, Response};
 
 const EXAMPLE_APP: &str = "GaiaApp";
@@ -119,6 +121,13 @@ fn block_results() {
 
     assert_eq!(deliver_tx[0].gas_wanted.value(), 200_000);
     assert_eq!(deliver_tx[0].gas_used.value(), 105_662);
+    assert_eq!(deliver_tx[0].events.len(), 1);
+    assert_eq!(deliver_tx[0].events[0].attributes.len(), 3);
+    assert_eq!(deliver_tx[0].events[0].attributes[0].key.as_ref(), "action");
+    assert_eq!(
+        deliver_tx[0].events[0].attributes[0].value.as_ref(),
+        "delegate"
+    );
 
     assert_eq!(validator_updates[0].power.value(), 1_233_243);
 }
@@ -194,6 +203,7 @@ fn broadcast_tx_commit() {
         &response.hash.to_string(),
         "EFA00D85332A8197CF290E4724BAC877EA93DDFE547A561828BAE45A29BF1DAD"
     );
+    assert_eq!(5, response.deliver_tx.events.len());
 }
 
 #[test]
@@ -294,4 +304,123 @@ fn jsonrpc_error() {
     } else {
         panic!("expected error, got {:?}", result)
     }
+}
+
+#[test]
+fn tx_search_no_prove() {
+    let response =
+        endpoint::tx_search::Response::from_string(&read_json_fixture("tx_search_no_prove"))
+            .unwrap();
+
+    assert_eq!(8, response.total_count);
+    assert_eq!(8, response.txs.len());
+    assert_eq!(
+        "9F28904F9C0F3AB74A81CBA48E39124DA1C680B47FBFCBA0126870DB722BCC30",
+        response.txs[0].hash.to_string()
+    );
+    assert_eq!(11, response.txs[0].height.value());
+    assert!(response.txs[0].proof.is_none());
+}
+
+#[test]
+fn tx_search_with_prove() {
+    let response =
+        endpoint::tx_search::Response::from_string(&read_json_fixture("tx_search_with_prove"))
+            .unwrap();
+
+    assert_eq!(8, response.total_count);
+    assert_eq!(8, response.txs.len());
+    assert_eq!(
+        "9F28904F9C0F3AB74A81CBA48E39124DA1C680B47FBFCBA0126870DB722BCC30",
+        response.txs[0].hash.to_string()
+    );
+    assert_eq!(11, response.txs[0].height.value());
+    let proof = response.txs[0].proof.as_ref().unwrap();
+    assert_eq!(
+        vec![97, 115, 121, 110, 99, 45, 107, 101, 121, 61, 118, 97, 108, 117, 101],
+        proof.data
+    );
+    assert_eq!(
+        vec![
+            245, 70, 67, 176, 5, 16, 101, 200, 125, 163, 26, 101, 69, 49, 182, 95, 155, 87, 56, 15,
+            155, 243, 51, 47, 245, 188, 167, 88, 69, 103, 38, 140
+        ],
+        proof.root_hash
+    );
+
+    let events = &response.txs[0].tx_result.events;
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0].attributes.len(), 4);
+    assert_eq!(events[0].attributes[0].key.as_ref(), "creator");
+    assert_eq!(events[0].attributes[0].value.as_ref(), "Cosmoshi Netowoko");
+}
+
+#[test]
+fn consensus_state() {
+    let response =
+        endpoint::consensus_state::Response::from_string(&read_json_fixture("consensus_state"))
+            .unwrap();
+
+    let hrs = &response.round_state.height_round_step;
+    assert_eq!(hrs.height.value(), 1262197);
+    assert_eq!(hrs.round.value(), 0);
+    assert_eq!(hrs.step, 8);
+
+    let hvs = &response.round_state.height_vote_set;
+    assert_eq!(hvs.len(), 1);
+    assert_eq!(hvs[0].round, 0);
+    assert_eq!(hvs[0].prevotes.len(), 2);
+    match &hvs[0].prevotes[0] {
+        RoundVote::Vote(summary) => {
+            assert_eq!(summary.validator_index, 0);
+            assert_eq!(
+                summary.validator_address_fingerprint.as_ref(),
+                vec![0, 0, 1, 228, 67, 253]
+            );
+            assert_eq!(summary.height.value(), 1262197);
+            assert_eq!(summary.round.value(), 0);
+            assert_eq!(summary.vote_type, vote::Type::Prevote);
+            assert_eq!(
+                summary.block_id_hash_fingerprint.as_ref(),
+                vec![99, 74, 218, 241, 244, 2]
+            );
+            assert_eq!(
+                summary.signature_fingerprint.as_ref(),
+                vec![123, 185, 116, 225, 186, 64]
+            );
+            assert_eq!(
+                summary.timestamp.to_rfc3339(),
+                "2019-08-01T11:52:35.513572509Z"
+            );
+        }
+        _ => panic!("unexpected round vote type: {:?}", hvs[0].prevotes[0]),
+    }
+    assert_eq!(hvs[0].prevotes[1], RoundVote::Nil);
+    assert_eq!(hvs[0].precommits.len(), 2);
+    match &hvs[0].precommits[0] {
+        RoundVote::Vote(summary) => {
+            assert_eq!(summary.validator_index, 5);
+            assert_eq!(
+                summary.validator_address_fingerprint.as_ref(),
+                vec![24, 199, 141, 19, 92, 157]
+            );
+            assert_eq!(summary.height.value(), 1262197);
+            assert_eq!(summary.round.value(), 0);
+            assert_eq!(summary.vote_type, vote::Type::Precommit);
+            assert_eq!(
+                summary.block_id_hash_fingerprint.as_ref(),
+                vec![99, 74, 218, 241, 244, 2]
+            );
+            assert_eq!(
+                summary.signature_fingerprint.as_ref(),
+                vec![139, 94, 255, 254, 171, 205]
+            );
+            assert_eq!(
+                summary.timestamp.to_rfc3339(),
+                "2019-08-01T11:52:36.25600005Z"
+            );
+        }
+        _ => panic!("unexpected round vote type: {:?}", hvs[0].precommits[0]),
+    }
+    assert_eq!(hvs[0].precommits[1], RoundVote::Nil);
 }

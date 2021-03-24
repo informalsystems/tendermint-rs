@@ -1,0 +1,40 @@
+{
+  "mode": "block",
+  "tx": {
+    "fee": {
+      "amount": [
+        {
+          "amount": "40000000000",
+          "denom": "uatom"
+        }
+      ],
+      "gas": "200000"
+    },
+    "memo": "c0_to_c1_transaction",
+    "msg": [
+      {
+        "type": "cosmos-sdk/MsgSend",
+        "value": {
+          "amount": [
+            {
+              "amount": "1000000",
+              "denom": "uatom"
+            }
+          ],
+          "from_address": "cosmos1cww3sjp5lc4jglur6ghspszycmdx29q3kvhfce",
+          "to_address": "cosmos1tq6x50vpdmlcmcdvxjcu42crluv9de5h8wp63r"
+        }
+      }
+    ],
+    "signatures": [
+      {
+        "pub_key": {
+          "type": "tendermint/PubKeySecp256k1",
+          "value": "AoUolvpYq/INokTEOAqQKVmAWBGyw9LtgHJLnZIWhArm"
+        },
+        "signature": "aITf5XJwxTFnb8c/mToJSUb+0ZA9PCGlXcqa6vAz8OR8jMT2mGYIpJmgldeZoIQRO9DLYxBormxaD//Dzx+hzg=="
+      }
+    ],
+    "timeout_height": "0"
+  }
+}

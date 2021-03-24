@@ -101,7 +101,7 @@ investigations of Rust's concurrency model and existing frameworks.
 
 Tight mapping between code and formal specification will allow us to more easily reason
 about the correctness of the code, and, with some R&D work, automatically generate tests 
-from the formal specification. It believe this will be helped via ideas like session types,
+from the formal specification. It believes this will be helped via ideas like session types,
 where as much as possible about the system's state and transitions is expressed
 in the type system.
 

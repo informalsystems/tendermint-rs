@@ -1,11 +1,14 @@
 //! HTTP-based transport for Tendermint RPC Client.
 
-use crate::client::transport::utils::get_tcp_host_port;
-use crate::{Client, Response, Result, SimpleRequest};
 use async_trait::async_trait;
-use bytes::buf::ext::BufExt;
+use hyper::body::Buf;
 use hyper::header;
+
 use tendermint::net;
+
+use crate::client::transport::utils::get_tcp_host_port;
+use crate::{Client, Error, Response, Result, SimpleRequest};
+use std::io::Read;
 
 /// A JSON-RPC/HTTP Tendermint RPC client (implements [`Client`]).
 ///
@@ -62,10 +65,17 @@ impl Client for HttpClient {
                     .unwrap(),
             );
         }
-        let http_client = hyper::Client::builder().build_http();
+
+        let http_client = hyper::Client::new();
         let response = http_client.request(request).await?;
-        let response_body = hyper::body::aggregate(response.into_body()).await?;
-        R::Response::from_reader(response_body.reader())
+        let mut response_body = String::new();
+        hyper::body::aggregate(response.into_body())
+            .await?
+            .reader()
+            .read_to_string(&mut response_body)
+            .map_err(|_| Error::client_internal_error("failed to read response body to string"))?;
+        tracing::debug!("Incoming response: {}", response_body);
+        R::Response::from_string(&response_body)
     }
 }
 

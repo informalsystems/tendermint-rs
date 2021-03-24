@@ -1,6 +1,7 @@
 //! Interface and implementations of the light block store.
 //!
 //! See the `memory` and `sled` modules for:
+//!
 //! - a transient, in-memory implementation for testing purposes
 //! - a persistent, on-disk, sled-backed implementation for production
 
@@ -10,6 +11,9 @@ use crate::types::{Height, LightBlock, Status};
 use crate::utils::std_ext;
 
 pub mod memory;
+
+#[cfg(feature = "lightstore-sled")]
+#[cfg_attr(docsrs, doc(cfg(feature = "lightstore-sled")))]
 pub mod sled;
 
 /// Store for light blocks.
@@ -35,7 +39,10 @@ pub trait LightStore: Debug + Send + Sync {
     fn remove(&mut self, height: Height, status: Status);
 
     /// Get the light block of greatest height with the given status.
-    fn latest(&self, status: Status) -> Option<LightBlock>;
+    fn highest(&self, status: Status) -> Option<LightBlock>;
+
+    /// Get the light block of lowest height with the given status.
+    fn lowest(&self, status: Status) -> Option<LightBlock>;
 
     /// Get an iterator of all light blocks with the given status.
     fn all(&self, status: Status) -> Box<dyn Iterator<Item = LightBlock>>;
@@ -58,12 +65,22 @@ pub trait LightStore: Debug + Send + Sync {
     }
 
     /// Get the light block of greatest height with the trusted or verified status.
-    fn latest_trusted_or_verified(&self) -> Option<LightBlock> {
-        let latest_trusted = self.latest(Status::Trusted);
-        let latest_verified = self.latest(Status::Verified);
+    fn highest_trusted_or_verified(&self) -> Option<LightBlock> {
+        let latest_trusted = self.highest(Status::Trusted);
+        let latest_verified = self.highest(Status::Verified);
 
         std_ext::option::select(latest_trusted, latest_verified, |t, v| {
             std_ext::cmp::max_by_key(t, v, |lb| lb.height())
+        })
+    }
+
+    /// Get the light block of lowest height with the trusted or verified status.
+    fn lowest_trusted_or_verified(&self) -> Option<LightBlock> {
+        let lowest_trusted = self.lowest(Status::Trusted);
+        let lowest_verified = self.lowest(Status::Verified);
+
+        std_ext::option::select(lowest_trusted, lowest_verified, |t, v| {
+            std_ext::cmp::min_by_key(t, v, |lb| lb.height())
         })
     }
 

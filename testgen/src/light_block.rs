@@ -5,16 +5,16 @@ use simple_error::*;
 use crate::helpers::parse_as;
 use crate::validator::generate_validators;
 use crate::{Commit, Generator, Header, Validator};
-use tendermint::block::signed_header::SignedHeader;
 use tendermint::node::Id as PeerId;
 use tendermint::validator;
 use tendermint::validator::Set as ValidatorSet;
+use tendermint::{block::signed_header::SignedHeader, Hash};
 
 /// A light block is the core data structure used by the light client.
 /// It records everything the light client needs to know about a block.
 /// NOTE: This struct & associated `impl` below are a copy of light-client's `LightBlock`.
 /// The copy is necessary here to avoid a circular dependency.
-/// Cf. https://github.com/informalsystems/tendermint-rs/issues/605
+/// Cf. <https://github.com/informalsystems/tendermint-rs/issues/605>
 /// TODO: fix redundant code without introducing cyclic dependency.
 ///
 /// To convert `TMLightBlock` to the Domain type `LightBlock` used in light-client crate
@@ -80,9 +80,13 @@ impl LightBlock {
         &[Validator],
         Some(next_validators.to_vec())
     );
+    set_option!(provider, &str, Some(provider.parse().unwrap()));
 
     pub fn new_default(height: u64) -> Self {
-        let validators = [Validator::new("1"), Validator::new("2")];
+        let validators = [
+            Validator::new("1").voting_power(50),
+            Validator::new("2").voting_power(50),
+        ];
         let header = Header::new(&validators)
             .height(height)
             .chain_id("test-chain")
@@ -136,6 +140,14 @@ impl LightBlock {
             .expect("chain_id is missing")
             .to_string()
     }
+
+    /// returns the last_block_id hash of LightBlock's header
+    pub fn last_block_id_hash(&self) -> Option<Hash> {
+        self.header
+            .as_ref()
+            .expect("header is missing")
+            .last_block_id_hash
+    }
 }
 
 impl std::str::FromStr for LightBlock {
@@ -173,21 +185,24 @@ impl Generator<TMLightBlock> for LightBlock {
             generate_signed_header(header, commit).expect("Could not generate signed header");
 
         let validators = match &self.validators {
-            None => validator::Set::new_simple(generate_validators(
+            None => validator::Set::without_proposer(generate_validators(
                 header
                     .validators
                     .as_ref()
                     .expect("missing validators in header"),
             )?),
-            Some(vals) => validator::Set::new_simple(generate_validators(vals)?),
+            Some(vals) => validator::Set::without_proposer(generate_validators(vals)?),
         };
 
         let next_validators = match &self.next_validators {
-            Some(next_vals) => validator::Set::new_simple(generate_validators(next_vals)?),
+            Some(next_vals) => validator::Set::without_proposer(generate_validators(next_vals)?),
             None => validators.clone(),
         };
 
-        let provider = default_peer_id();
+        let provider = match self.provider {
+            Some(peer) => peer,
+            None => default_peer_id(),
+        };
 
         let light_block = TMLightBlock {
             signed_header,

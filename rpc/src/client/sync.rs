@@ -55,6 +55,6 @@ impl<T> Stream for ChannelRx<T> {
     type Item = T;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        self.project().0.poll_next(cx)
+        self.project().0.poll_recv(cx)
     }
 }

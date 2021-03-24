@@ -3,6 +3,9 @@
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 
+use crate::account;
+use crate::vote;
+
 /// Error type
 pub type Error = BoxError;
 
@@ -113,6 +116,10 @@ pub enum Kind {
     #[error("missing evidence field")]
     MissingEvidence,
 
+    /// Missing Timestamp in Block
+    #[error("missing timestamp field")]
+    MissingTimestamp,
+
     /// Invalid Block
     #[error("invalid block")]
     InvalidBlock,
@@ -157,6 +164,15 @@ pub enum Kind {
     #[error("negative power")]
     NegativePower,
 
+    /// Mismatch between raw voting power and computed one in validator set
+    #[error("mismatch between raw voting power ({raw}) and computed one ({computed})")]
+    RawVotingPowerMismatch {
+        /// raw voting power
+        raw: vote::Power,
+        /// computed voting power
+        computed: vote::Power,
+    },
+
     /// Missing Public Key
     #[error("missing public key")]
     MissingPublicKey,
@@ -176,6 +192,10 @@ pub enum Kind {
     /// Missing max_age_duration in evidence parameters
     #[error("missing max_age_duration")]
     MissingMaxAgeDuration,
+
+    /// Proposer not found in validator set
+    #[error("proposer with address '{}' not found in validator set", _0)]
+    ProposerNotFound(account::Id),
 }
 
 impl Kind {
