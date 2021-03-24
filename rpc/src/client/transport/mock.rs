@@ -110,6 +110,10 @@ impl<M: MockRequestMatcher> SubscriptionClient for MockClient<M> {
             .send(DriverCommand::Unsubscribe { query, result_tx })?;
         result_rx.recv().await.unwrap()
     }
+
+    fn close(self) -> Result<()> {
+        Ok(())
+    }
 }
 
 #[derive(Debug)]

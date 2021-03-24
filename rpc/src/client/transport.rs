@@ -2,7 +2,6 @@
 
 pub mod mock;
 mod router;
-mod utils;
 
 #[cfg(feature = "http-client")]
 pub mod http;
