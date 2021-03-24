@@ -2,7 +2,6 @@
 
 use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom as _;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
@@ -82,13 +81,13 @@ enum Output {
 
 impl From<Event> for Output {
     fn from(event: Event) -> Self {
-        Output::Event(event)
+        Self::Event(event)
     }
 }
 
 impl From<Internal> for Output {
     fn from(internal: Internal) -> Self {
-        Output::Internal(internal)
+        Self::Internal(internal)
     }
 }
 
@@ -115,36 +114,23 @@ impl Supervisor {
     ///
     /// * If the bind of the transport fails
     #[allow(clippy::too_many_lines)]
-    pub fn run<T>(transport: &T) -> Result<Self>
+    pub fn run<T>(transport: &T, info: transport::BindInfo) -> Result<Self>
     where
         T: transport::Transport + Send + 'static,
     {
         let (command_tx, command_rx) = unbounded();
         let (event_tx, event_rx) = unbounded();
+        let (input_tx, input_rx) = unbounded();
+        let supervisor = Self {
+            command_tx,
+            event_rx,
+        };
         let state: Arc<Mutex<State<<T as transport::Transport>::Connection>>> =
             Arc::new(Mutex::new(State {
                 connected: HashMap::new(),
                 peers: HashMap::new(),
             }));
-        let supervisor = Self {
-            command_tx,
-            event_rx,
-        };
-
-        let (endpoint, mut incoming) = transport.bind(transport::BindInfo {
-            addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 12345),
-            advertise_addrs: vec![SocketAddr::new(
-                IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
-                12345,
-            )],
-            public_key: PublicKey::from_raw_ed25519(&[
-                215, 90, 152, 1, 130, 177, 10, 183, 213, 75, 254, 211, 201, 100, 7, 58, 14, 225,
-                114, 243, 218, 166, 35, 37, 175, 2, 26, 104, 247, 7, 81, 26,
-            ])
-            .unwrap(),
-        })?;
-
-        let (input_tx, input_rx) = unbounded();
+        let (endpoint, mut incoming) = transport.bind(info)?;
 
         // ACCEPT
         let (accept_tx, accept_rx) = unbounded::<()>();
