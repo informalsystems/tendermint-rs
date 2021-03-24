@@ -8,9 +8,9 @@ mod transport;
 pub use transport::mock::{MockClient, MockRequestMatcher, MockRequestMethodMatcher};
 
 #[cfg(feature = "http-client")]
-pub use transport::http::HttpClient;
+pub use transport::http::{HttpClient, HttpClientUrl};
 #[cfg(feature = "websocket-client")]
-pub use transport::websocket::{WebSocketClient, WebSocketClientDriver};
+pub use transport::websocket::{WebSocketClient, WebSocketClientDriver, WebSocketClientUrl};
 
 use crate::endpoint::*;
 use crate::query::Query;
@@ -104,8 +104,8 @@ pub trait Client {
         self.perform(broadcast::tx_sync::Request::new(tx)).await
     }
 
-    /// `/broadcast_tx_sync`: broadcast a transaction, returning the response
-    /// from `CheckTx`.
+    /// `/broadcast_tx_commit`: broadcast a transaction, returning the response
+    /// from `DeliverTx`.
     async fn broadcast_tx_commit(&self, tx: Transaction) -> Result<broadcast::tx_commit::Response> {
         self.perform(broadcast::tx_commit::Request::new(tx)).await
     }
