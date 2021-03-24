@@ -12,10 +12,13 @@ pub use transport::http::HttpClient;
 #[cfg(feature = "websocket-client")]
 pub use transport::websocket::{WebSocketClient, WebSocketClientDriver};
 
+use crate::endpoint::validators::DEFAULT_VALIDATORS_PER_PAGE;
 use crate::endpoint::*;
+use crate::paging::Paging;
 use crate::query::Query;
 use crate::{Order, Result, SimpleRequest};
 use async_trait::async_trait;
+use std::convert::TryInto;
 use tendermint::abci::{self, Transaction};
 use tendermint::block::Height;
 use tendermint::evidence::Evidence;
@@ -123,12 +126,53 @@ pub trait Client {
         self.perform(consensus_state::Request::new()).await
     }
 
+    // TODO(thane): Simplify once validators endpoint removes pagination.
     /// `/validators`: get validators a given height.
-    async fn validators<H>(&self, height: H) -> Result<validators::Response>
+    async fn validators<H>(&self, height: H, paging: Paging) -> Result<validators::Response>
     where
         H: Into<Height> + Send,
     {
-        self.perform(validators::Request::new(height.into())).await
+        let height = height.into();
+        match paging {
+            Paging::Default => {
+                self.perform(validators::Request::new(Some(height), None, None))
+                    .await
+            }
+            Paging::Specific {
+                page_number,
+                per_page,
+            } => {
+                self.perform(validators::Request::new(
+                    Some(height),
+                    Some(page_number),
+                    Some(per_page),
+                ))
+                .await
+            }
+            Paging::All => {
+                let mut page_num = 1_usize;
+                let mut validators = Vec::new();
+                let per_page = DEFAULT_VALIDATORS_PER_PAGE.try_into()?;
+                loop {
+                    let response = self
+                        .perform(validators::Request::new(
+                            Some(height),
+                            Some(page_num.try_into()?),
+                            Some(per_page),
+                        ))
+                        .await?;
+                    validators.extend(response.validators);
+                    if validators.len() as i32 == response.total {
+                        return Ok(validators::Response::new(
+                            response.block_height,
+                            validators,
+                            response.total,
+                        ));
+                    }
+                    page_num += 1;
+                }
+            }
+        }
     }
 
     /// `/commit`: get the latest block commit

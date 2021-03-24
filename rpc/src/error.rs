@@ -7,6 +7,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Display};
 use thiserror::Error;
 
+// TODO(thane): Differentiate between RPC response errors and internal crate
+//              errors (e.g. domain type-related errors).
 /// Tendermint RPC errors
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Error {
