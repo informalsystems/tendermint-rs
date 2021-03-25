@@ -2,6 +2,9 @@
 
 ### BREAKING CHANGES
 
+* `[tendermint]` The `tendermint::block::CommitSig` enum's members have been
+  renamed to be consistent with Rust's naming conventions (e.g.
+  `BlockIDFlagAbsent` is now renamed to `BlockIdFlagAbsent`).
 * `[tendermint-rpc]` The `SubscriptionClient` trait now requires a `close`
   method, since it assumes that subscription clients will, in general, use
   long-running connections. This should not, however, break any downstream
@@ -11,6 +14,10 @@
   hopefully have minimal impact on projects using the code, but it might
   require some minor code changes in some cases - see the crate docs for more
   details ([#820])
+* `[tendermint-rpc]` The `event::EventData::GenericJSONEvent` member has been
+  renamed to `event::EventData::GenericJsonEvent`.
+* `[tendermint-testgen]` The `TMLightBlock` data structure has been renamed to
+  `TmLightBlock` to be consistent with Rust's naming conventions.
 
 ### FEATURES
 
