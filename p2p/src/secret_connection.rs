@@ -254,7 +254,7 @@ impl<IoHandler: Read + Write + Send + Sync> SecretConnection<IoHandler> {
         chunk: &[u8],
         sealed_frame: &mut [u8; TAG_SIZE + TOTAL_FRAME_SIZE],
     ) -> Result<()> {
-        debug_assert!(chunk.len() > 0, "chunk is empty");
+        debug_assert!(!chunk.is_empty(), "chunk is empty");
         debug_assert!(
             chunk.len() <= TOTAL_FRAME_SIZE - DATA_LEN_SIZE,
             "chunk is too big: {}! max: {}",
@@ -375,7 +375,7 @@ where
     // CONTRACT: data smaller than DATA_MAX_SIZE is read atomically.
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
         let mut n = 0usize;
-        let mut data_copy = &data[..];
+        let mut data_copy = data;
         while !data_copy.is_empty() {
             let chunk: &[u8];
             if DATA_MAX_SIZE < data.len() {
@@ -510,8 +510,6 @@ mod tests {
 #[cfg(test)]
 mod test {
     use std::thread;
-
-    use pipe;
 
     use super::*;
 

@@ -166,31 +166,28 @@ impl Header {
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/block.go#L393
         // https://github.com/tendermint/tendermint/blob/134fe2896275bb926b49743c1e25493f6b24cc31/types/encoding_helper.go#L9:6
 
-        let mut fields_bytes: Vec<Vec<u8>> = Vec::with_capacity(14);
-        fields_bytes.push(self.version.encode_vec().unwrap());
-        fields_bytes.push(self.chain_id.encode_vec().unwrap());
-        fields_bytes.push(self.height.encode_vec().unwrap());
-        fields_bytes.push(self.time.encode_vec().unwrap());
-        fields_bytes.push(self.last_block_id.unwrap_or_default().encode_vec().unwrap());
-        fields_bytes.push(
+        let fields_bytes = vec![
+            self.version.encode_vec().unwrap(),
+            self.chain_id.encode_vec().unwrap(),
+            self.height.encode_vec().unwrap(),
+            self.time.encode_vec().unwrap(),
+            self.last_block_id.unwrap_or_default().encode_vec().unwrap(),
             self.last_commit_hash
                 .unwrap_or_default()
                 .encode_vec()
                 .unwrap(),
-        );
-        fields_bytes.push(self.data_hash.unwrap_or_default().encode_vec().unwrap());
-        fields_bytes.push(self.validators_hash.encode_vec().unwrap());
-        fields_bytes.push(self.next_validators_hash.encode_vec().unwrap());
-        fields_bytes.push(self.consensus_hash.encode_vec().unwrap());
-        fields_bytes.push(self.app_hash.encode_vec().unwrap());
-        fields_bytes.push(
+            self.data_hash.unwrap_or_default().encode_vec().unwrap(),
+            self.validators_hash.encode_vec().unwrap(),
+            self.next_validators_hash.encode_vec().unwrap(),
+            self.consensus_hash.encode_vec().unwrap(),
+            self.app_hash.encode_vec().unwrap(),
             self.last_results_hash
                 .unwrap_or_default()
                 .encode_vec()
                 .unwrap(),
-        );
-        fields_bytes.push(self.evidence_hash.unwrap_or_default().encode_vec().unwrap());
-        fields_bytes.push(self.proposer_address.encode_vec().unwrap());
+            self.evidence_hash.unwrap_or_default().encode_vec().unwrap(),
+            self.proposer_address.encode_vec().unwrap(),
+        ];
 
         Hash::Sha256(simple_hash_from_byte_vectors(fields_bytes))
     }

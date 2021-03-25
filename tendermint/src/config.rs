@@ -221,7 +221,7 @@ impl fmt::Display for LogLevel {
 impl<'de> Deserialize<'de> for LogLevel {
     fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let levels = String::deserialize(deserializer)?;
-        Ok(Self::from_str(&levels).map_err(|e| D::Error::custom(format!("{}", e)))?)
+        Self::from_str(&levels).map_err(|e| D::Error::custom(format!("{}", e)))
     }
 }
 

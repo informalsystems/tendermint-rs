@@ -97,7 +97,7 @@ impl LightStore for SledStore {
 mod tests {
     use super::*;
     use tempdir::TempDir;
-    use tendermint_testgen::{light_block::TMLightBlock as TGLightBlock, Generator, LightChain};
+    use tendermint_testgen::{light_block::TmLightBlock as TGLightBlock, Generator, LightChain};
 
     #[test]
     fn highest_returns_latest_block() {

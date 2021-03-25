@@ -54,7 +54,7 @@ pub enum EventData {
         #[serde(rename = "TxResult")]
         tx_result: TxInfo,
     },
-    GenericJSONEvent(serde_json::Value),
+    GenericJsonEvent(serde_json::Value),
 }
 
 /// Transaction result info.

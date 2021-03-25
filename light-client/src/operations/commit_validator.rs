@@ -89,11 +89,11 @@ impl CommitValidator for ProdCommitValidator {
     ) -> Result<(), VerificationError> {
         for commit_sig in signed_header.commit.signatures.iter() {
             let validator_address = match commit_sig {
-                CommitSig::BlockIDFlagAbsent => continue,
-                CommitSig::BlockIDFlagCommit {
+                CommitSig::BlockIdFlagAbsent => continue,
+                CommitSig::BlockIdFlagCommit {
                     validator_address, ..
                 } => validator_address,
-                CommitSig::BlockIDFlagNil {
+                CommitSig::BlockIdFlagNil {
                     validator_address, ..
                 } => validator_address,
             };

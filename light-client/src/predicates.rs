@@ -302,7 +302,7 @@ mod tests {
     use tendermint::Time;
 
     use tendermint_testgen::{
-        light_block::{LightBlock as TestgenLightBlock, TMLightBlock},
+        light_block::{LightBlock as TestgenLightBlock, TmLightBlock},
         Commit, Generator, Header, Validator, ValidatorSet,
     };
 
@@ -315,8 +315,8 @@ mod tests {
     use tendermint::block::CommitSig;
     use tendermint::validator::Set;
 
-    impl From<TMLightBlock> for LightBlock {
-        fn from(lb: TMLightBlock) -> Self {
+    impl From<TmLightBlock> for LightBlock {
+        fn from(lb: TmLightBlock) -> Self {
             LightBlock {
                 signed_header: lb.signed_header,
                 validators: lb.validators,
@@ -566,7 +566,7 @@ mod tests {
         assert_eq!(result_err.err().unwrap(), error);
 
         // 4. commit.BlockIdFlagAbsent - should be "Ok"
-        bad_sigs.push(CommitSig::BlockIDFlagAbsent);
+        bad_sigs.push(CommitSig::BlockIdFlagAbsent);
         signed_header.commit.signatures = bad_sigs;
         result_ok = vp.valid_commit(&signed_header, &val_set, &commit_validator);
         assert!(result_ok.is_ok());

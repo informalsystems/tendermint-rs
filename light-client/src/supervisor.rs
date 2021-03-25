@@ -177,8 +177,7 @@ impl Supervisor {
     /// Return latest trusted status summary.
     fn latest_status(&mut self) -> LatestStatus {
         let latest_trusted = self.peers.primary().latest_trusted();
-        let mut connected_nodes: Vec<PeerId> = Vec::new();
-        connected_nodes.push(self.peers.primary_id());
+        let mut connected_nodes = vec![self.peers.primary_id()];
         connected_nodes.append(&mut self.peers.witnesses_ids().iter().copied().collect());
 
         match latest_trusted {

@@ -129,13 +129,13 @@ impl Generator<block::Commit> for Commit {
         let vote_to_sig = |v: &Vote| -> Result<block::CommitSig, SimpleError> {
             let vote = v.generate()?;
             if vote.block_id == None {
-                Ok(block::CommitSig::BlockIDFlagNil {
+                Ok(block::CommitSig::BlockIdFlagNil {
                     validator_address: vote.validator_address,
                     timestamp: vote.timestamp.unwrap(),
                     signature: vote.signature,
                 })
             } else {
-                Ok(block::CommitSig::BlockIDFlagCommit {
+                Ok(block::CommitSig::BlockIdFlagCommit {
                     validator_address: vote.validator_address,
                     timestamp: vote.timestamp.unwrap(),
                     signature: vote.signature,
@@ -148,7 +148,7 @@ impl Generator<block::Commit> for Commit {
                 .find(|&vote| vote.validator.as_ref().unwrap() == val);
             match vote {
                 Some(vote) => vote_to_sig(vote),
-                None => Ok(block::CommitSig::BlockIDFlagAbsent),
+                None => Ok(block::CommitSig::BlockIdFlagAbsent),
             }
         };
         let sigs = all_vals
@@ -204,7 +204,7 @@ mod tests {
 
         for (i, sig) in block_commit.signatures.iter().enumerate() {
             match sig {
-                block::CommitSig::BlockIDFlagCommit {
+                block::CommitSig::BlockIdFlagCommit {
                     validator_address: _,
                     timestamp: _,
                     signature,
