@@ -17,11 +17,12 @@ use tendermint::{block::signed_header::SignedHeader, Hash};
 /// Cf. <https://github.com/informalsystems/tendermint-rs/issues/605>
 /// TODO: fix redundant code without introducing cyclic dependency.
 ///
-/// To convert `TMLightBlock` to the Domain type `LightBlock` used in light-client crate
+/// To convert `TmLightBlock` to the Domain type `LightBlock` used in light-client crate
 /// You'll need to implement the `From` trait like below:
 ///
-/// impl From<TMLightBlock> for LightBlock {
-///     fn from(tm_lb: TMLightBlock) -> Self {
+/// ```rust,ignore
+/// impl From<TmLightBlock> for LightBlock {
+///     fn from(tm_lb: TmLightBlock) -> Self {
 ///         Self {
 ///             signed_header: tm_lb.signed_header,
 ///             validators: tm_lb.validators,
@@ -30,8 +31,9 @@ use tendermint::{block::signed_header::SignedHeader, Hash};
 ///         }
 ///     }
 /// }
+/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct TMLightBlock {
+pub struct TmLightBlock {
     /// Header and commit of this block
     pub signed_header: SignedHeader,
     /// Validator set at the block height
@@ -161,7 +163,7 @@ impl std::str::FromStr for LightBlock {
     }
 }
 
-impl Generator<TMLightBlock> for LightBlock {
+impl Generator<TmLightBlock> for LightBlock {
     fn merge_with_default(self, default: Self) -> Self {
         Self {
             header: self.header.or(default.header),
@@ -172,7 +174,7 @@ impl Generator<TMLightBlock> for LightBlock {
         }
     }
 
-    fn generate(&self) -> Result<TMLightBlock, SimpleError> {
+    fn generate(&self) -> Result<TmLightBlock, SimpleError> {
         let header = match &self.header {
             None => bail!("header is missing"),
             Some(h) => h,
@@ -204,7 +206,7 @@ impl Generator<TMLightBlock> for LightBlock {
             None => default_peer_id(),
         };
 
-        let light_block = TMLightBlock {
+        let light_block = TmLightBlock {
             signed_header,
             validators,
             next_validators,
@@ -215,7 +217,7 @@ impl Generator<TMLightBlock> for LightBlock {
     }
 }
 
-/// A helper function to generate SignedHeader used by TMLightBlock
+/// A helper function to generate SignedHeader used by TmLightBlock
 pub fn generate_signed_header(
     raw_header: &Header,
     raw_commit: &Commit,

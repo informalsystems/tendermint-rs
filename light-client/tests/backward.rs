@@ -20,7 +20,7 @@ use tendermint_light_client::{
 };
 
 use tendermint_testgen::{
-    light_block::{default_peer_id, TMLightBlock as TGLightBlock},
+    light_block::{default_peer_id, TmLightBlock as TGLightBlock},
     Generator, LightChain,
 };
 

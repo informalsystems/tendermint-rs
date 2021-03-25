@@ -15,7 +15,7 @@ pub const MAX_NANO_SECS: u32 = 999_999_999u32;
 /// See <https://github.com/chronotope/chrono/issues/537>.
 ///
 /// ```
-/// use pbt_gen;
+/// use tendermint_pbt_gen as pbt_gen;
 ///
 /// assert_eq!(pbt_gen::time::min_time().to_string(), "1653-02-10 06:13:21 UTC".to_string());
 /// ```
@@ -29,7 +29,7 @@ pub fn min_time() -> DateTime<Utc> {
 /// See <https://github.com/chronotope/chrono/issues/537>.
 ///
 /// ```
-/// use pbt_gen;
+/// use tendermint_pbt_gen as pbt_gen;
 ///
 /// assert_eq!(pbt_gen::time::max_time().to_string(), "5138-11-16 09:46:39 UTC".to_string());
 /// ```
@@ -62,7 +62,7 @@ prop_compose! {
     ///
     /// ```
     /// use chrono::{TimeZone, Utc};
-    /// use pbt_gen;
+    /// use tendermint_pbt_gen as pbt_gen;
     /// use proptest::prelude::*;
     ///
     /// proptest!{
