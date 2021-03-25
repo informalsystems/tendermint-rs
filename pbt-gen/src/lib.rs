@@ -14,6 +14,8 @@
 //!
 //! - "time"
 
+pub mod height;
 /// Enabled with the "time" feature:
 #[cfg(feature = "time")]
 pub mod time;
+pub mod validator;

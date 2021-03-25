@@ -29,6 +29,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tendermint::account::Id;
 use tendermint::block::CommitSig;
+use tendermint_pbt_gen::{height::arb_height, time::arb_datetime};
 
 fn testgen_to_lb(tm_lb: TMLightBlock) -> LightBlock {
     LightBlock {
@@ -739,60 +740,6 @@ fn run_model_based_single_step_tests() {
 }
 
 // PBT based fuzzing -------->
-// All of the prop_compose! below are expected to be in a pbt library
-
-// Any higher, and we're at seconds
-const MAX_NANO_SECS: u32 = 999_999_999u32;
-
-fn min_time() -> DateTime<Utc> {
-    Utc.timestamp(-9999999999, 0)
-}
-
-fn max_time() -> DateTime<Utc> {
-    Utc.timestamp(99999999999, 0)
-}
-
-prop_compose! {
-    /// An abitrary `chrono::DateTime` that is between `min` and `max`
-    /// DateTimes.
-    fn arb_datetime_in_range(min: DateTime<Utc>, max: DateTime<Utc>)(
-        secs in min.timestamp()..max.timestamp()
-    )(
-        // min mano secods is only relevant if we happen to hit the minimum
-        // seconds on the nose.
-        nano in (if secs == min.timestamp() { min.nanosecond() } else { 0 })..MAX_NANO_SECS,
-        // Make secs in scope
-        secs in Just(secs),
-    ) -> DateTime<Utc> {
-        println!(">> Secs {:?}", secs);
-        Utc.timestamp(secs, nano)
-    }
-}
-
-prop_compose! {
-    /// An abitrary `chrono::DateTime`
-    fn arb_datetime()
-        (
-            d in arb_datetime_in_range(min_time(), max_time())
-        ) -> DateTime<Utc> {
-            d
-        }
-}
-
-prop_compose! {
-    fn arb_height()
-        (
-        // for now changing this to i64
-        // TODO: ideally it should be u64
-        // see: https://github.com/informalsystems/tendermint-rs/issues/830
-            h in 0..i64::MAX
-        ) -> Height {
-            println!("height = {}", h);
-            let ret = tendermint::block::Height::try_from(h);
-            println!("error: {:#?}", ret);
-            ret.unwrap()
-        }
-}
 
 prop_compose! {
     fn arb_test_case(cases: Vec<SingleStepTestCase>)
