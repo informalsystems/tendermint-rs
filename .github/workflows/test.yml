@@ -156,7 +156,7 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
-      - run: cargo test --lib -p tendermint-abci -p tendermint-light-client -p tendermint-light-node -p tendermint-p2p -p tendermint-proto -p tendermint-rpc -p tendermint -p tendermint-testgen -p tendermint-pbt-gen --all-features
+      - run: cargo test --lib --all-features
         env:
           RUSTFLAGS: '-Zinstrument-coverage'
       - name: Install grcov
