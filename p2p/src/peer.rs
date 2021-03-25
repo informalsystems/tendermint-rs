@@ -2,11 +2,10 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::thread;
 
-use eyre::Result;
+use eyre::{eyre, Report, Result, WrapErr};
 use flume::{self, Receiver, Sender};
 
 use tendermint::node;
-use tendermint::public_key::PublicKey;
 
 use crate::message;
 use crate::transport::{Connection, Direction, StreamId};
@@ -45,22 +44,20 @@ impl<Conn> TryFrom<Direction<Conn>> for Peer<Connected<Conn>>
 where
     Conn: Connection,
 {
-    type Error = &'static str;
+    type Error = Report;
 
     fn try_from(connection: Direction<Conn>) -> Result<Peer<Connected<Conn>>, Self::Error> {
         let pk = match &connection {
-            Direction::Incoming(conn) => conn.public_key(),
-            Direction::Outgoing(conn) => conn.public_key(),
+            Direction::Incoming(conn) | Direction::Outgoing(conn) => conn.public_key(),
         };
 
-        if let PublicKey::Ed25519(ed25519) = pk {
-            Ok(Peer {
-                id: node::Id::from(ed25519),
-                state: Connected { connection },
-            })
-        } else {
-            Err("unsupported key scheme")
-        }
+        let id =
+            node::Id::try_from(pk).map_err(|err| eyre!("unabel to obtain id, got {:?}", err))?;
+
+        Ok(Peer {
+            id,
+            state: Connected { connection },
+        })
     }
 }
 
