@@ -119,11 +119,10 @@ impl Generator<validator::Info> for Validator {
 
 /// A helper function to generate multiple validators at once.
 pub fn generate_validators(vals: &[Validator]) -> Result<Vec<validator::Info>, SimpleError> {
-    let sorted = sort_validators(vals);
-    Ok(sorted
+    sort_validators(vals)
         .iter()
         .map(|v| v.generate())
-        .collect::<Result<Vec<validator::Info>, SimpleError>>()?)
+        .collect::<Result<Vec<validator::Info>, SimpleError>>()
 }
 
 /// A helper function to sort validators according to the Tendermint specs.

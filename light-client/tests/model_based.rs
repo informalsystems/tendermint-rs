@@ -14,11 +14,11 @@ use tendermint_light_client::{
 };
 use tendermint_testgen::light_block::default_peer_id;
 use tendermint_testgen::{
-    apalache::*, jsonatr::*, light_block::TMLightBlock, validator::generate_validators, Command,
+    apalache::*, jsonatr::*, light_block::TmLightBlock, validator::generate_validators, Command,
     Generator, LightBlock as TestgenLightBlock, TestEnv, Tester, Validator, Vote,
 };
 
-fn testgen_to_lb(tm_lb: TMLightBlock) -> LightBlock {
+fn testgen_to_lb(tm_lb: TmLightBlock) -> LightBlock {
     LightBlock {
         signed_header: tm_lb.signed_header,
         validators: tm_lb.validators,
