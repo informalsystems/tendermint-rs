@@ -566,7 +566,7 @@ mod tests {
         assert_eq!(result_err.err().unwrap(), error);
 
         // 4. commit.BlockIdFlagAbsent - should be "Ok"
-        bad_sigs.push(CommitSig::BlockIDFlagAbsent);
+        bad_sigs.push(CommitSig::BlockIdFlagAbsent);
         signed_header.commit.signatures = bad_sigs;
         result_ok = vp.valid_commit(&signed_header, &val_set, &commit_validator);
         assert!(result_ok.is_ok());

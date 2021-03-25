@@ -191,7 +191,7 @@ fn non_absent_vote(
 ) -> Option<Vote> {
     let (validator_address, timestamp, signature, block_id) = match commit_sig {
         CommitSig::BlockIDFlagAbsent { .. } => return None,
-        CommitSig::BlockIDFlagCommit {
+        CommitSig::BlockIdFlagCommit {
             validator_address,
             timestamp,
             signature,
@@ -201,7 +201,7 @@ fn non_absent_vote(
             signature,
             Some(commit.block_id),
         ),
-        CommitSig::BlockIDFlagNil {
+        CommitSig::BlockIdFlagNil {
             validator_address,
             timestamp,
             signature,
