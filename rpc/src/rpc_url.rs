@@ -30,7 +30,8 @@ impl FromStr for Scheme {
 
     fn from_str(s: &str) -> Result<Self> {
         Ok(match s {
-            "http" => Scheme::Http,
+            // TODO(thane): Remove the tcp scheme once we've refactored net::Address.
+            "http" | "tcp" => Scheme::Http,
             "https" => Scheme::Https,
             "ws" => Scheme::WebSocket,
             "wss" => Scheme::SecureWebSocket,
