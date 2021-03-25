@@ -2,7 +2,6 @@
 
 use crate::{Error, Method};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 use subtle_encoding::hex;
@@ -241,17 +240,18 @@ impl FromStr for VoteSummary {
                 e
             ))
         })?;
-        let vote_type_num: Vec<&str> = height_round_type[2].split('(').collect();
-        let vote_type_id = i32::from_str(vote_type_num[0]).map_err(|e| {
+        let vote_type_parts: Vec<&str> = height_round_type[2].split('(').collect();
+        if vote_type_parts.len() != 2 {
+            return Err(Self::Err::client_internal_error(format!(
+                "invalid structure for vote type in consensus state vote summary: {}",
+                height_round_type[2]
+            )));
+        }
+        let vote_type_str = vote_type_parts[1].trim_end_matches(')');
+        let vote_type = vote::Type::from_str(vote_type_str).map_err(|e| {
             Self::Err::client_internal_error(format!(
                 "failed to parse vote type from consensus state vote summary: {} ({})",
-                e, vote_type_num[0],
-            ))
-        })?;
-        let vote_type = vote::Type::try_from(vote_type_id).map_err(|e| {
-            Self::Err::client_internal_error(format!(
-                "failed to parse vote type from consensus state vote summary: {} ({})",
-                e, vote_type_id,
+                e, vote_type_str
             ))
         })?;
         let block_id_hash_fingerprint = Fingerprint::from_str(parts[2]).map_err(|e| {
@@ -344,6 +344,11 @@ pub struct ValidatorInfo {
 mod test {
     use super::*;
 
+    // Cases we've discovered in integration testing where deserialization failed.
+    const DESERIALIZATION_REGRESSIONS: &[&str] = &[
+        "Vote{0:2DA21E474F57 384/00/SIGNED_MSG_TYPE_PREVOTE(Prevote) 8FA9FD23F590 2987C33E8F87 @ 2021-03-25T12:12:03.693870115Z}",
+    ];
+
     #[test]
     fn deserialize_vote_summary() {
         let src = "Vote{0:000001E443FD 1262197/00/1(Prevote) 634ADAF1F402 7BB974E1BA40 @ 2019-08-01T11:52:35.513572509Z}";
@@ -383,5 +388,12 @@ mod test {
             timestamp: Time::parse_from_rfc3339("2019-08-01T11:52:35.513572509Z").unwrap(),
         };
         assert_eq!(summary.to_string(), "Vote{0:000001E443FD 1262197/00/1(Prevote) 634ADAF1F402 7BB974E1BA40 @ 2019-08-01T11:52:35.513572509Z}");
+    }
+
+    #[test]
+    fn deserialization_regressions() {
+        for s in DESERIALIZATION_REGRESSIONS {
+            let _ = VoteSummary::from_str(s).unwrap();
+        }
     }
 }
