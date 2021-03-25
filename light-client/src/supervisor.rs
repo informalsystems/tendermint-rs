@@ -142,7 +142,7 @@ impl std::fmt::Debug for Supervisor {
 static_assertions::assert_impl_all!(Supervisor: Send);
 
 impl Supervisor {
-    /// Constructs a new supervisor from the given list of peers and fork detector instance.
+    /// Constructs a new supevisor from the given list of peers and fork detector instance.
     pub fn new(
         peers: PeerList<Instance>,
         fork_detector: impl ForkDetector + 'static,

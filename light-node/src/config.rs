@@ -41,8 +41,7 @@ pub struct LightNodeConfig {
 pub struct LightClientConfig {
     /// Address of the Tendermint fullnode to connect to and
     /// fetch LightBlock data from.
-    #[serde(with = "tendermint_proto::serializers::from_str")]
-    pub address: tendermint_rpc::Url,
+    pub address: tendermint::net::Address,
     /// PeerID of the same Tendermint fullnode.
     pub peer_id: PeerId,
     /// The data base folder for this instance's store.

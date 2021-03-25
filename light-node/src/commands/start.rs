@@ -5,8 +5,14 @@ use crate::config::{LightClientConfig, LightNodeConfig};
 use crate::rpc;
 use crate::rpc::Server;
 
+use abscissa_core::config;
 use abscissa_core::path::PathBuf;
-use abscissa_core::{config, status_err, status_info, Command, FrameworkError, Options, Runnable};
+use abscissa_core::status_err;
+use abscissa_core::status_info;
+use abscissa_core::Command;
+use abscissa_core::FrameworkError;
+use abscissa_core::Options;
+use abscissa_core::Runnable;
 
 use std::net::SocketAddr;
 use std::ops::Deref;
@@ -119,25 +125,11 @@ impl StartCmd {
         options: light_client::Options,
         timeout: Option<Duration>,
     ) -> Result<Instance, String> {
-        status_info!(
-            "start",
-            "constructing Light Client for peer {}",
-            light_config.peer_id.to_string()
-        );
-        status_info!("start", "RPC address: {}", light_config.address.to_string());
         let rpc_client = tendermint_rpc::HttpClient::new(light_config.address.clone())
             .map_err(|e| format!("failed to create HTTP client: {}", e))?;
 
         let light_store = SledStore::open(&light_config.db_path)
             .map_err(|e| format!("could not open database: {}", e))?;
-
-        status_info!(
-            "start",
-            "highest trusted or verified height: {:?}",
-            light_store
-                .highest_trusted_or_verified()
-                .map(|b| b.signed_header.header.height),
-        );
 
         let builder = LightClientBuilder::prod(
             light_config.peer_id,
@@ -169,12 +161,6 @@ impl StartCmd {
 
         let builder = SupervisorBuilder::new();
 
-        status_info!(
-            "start",
-            "primary: {} @ {}",
-            primary_conf.peer_id,
-            primary_conf.address
-        );
         let primary_instance = self.make_instance(primary_conf, options, Some(timeout))?;
         let builder = builder.primary(
             primary_conf.peer_id,
@@ -187,7 +173,6 @@ impl StartCmd {
             let instance = self.make_instance(witness_conf, options, Some(timeout))?;
             witnesses.push((witness_conf.peer_id, witness_conf.address.clone(), instance));
         }
-        status_info!("start", "{} witness(es)", witnesses.len());
 
         let builder = builder
             .witnesses(witnesses)

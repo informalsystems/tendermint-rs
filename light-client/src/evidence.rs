@@ -34,7 +34,7 @@ mod prod {
     /// nodes via RPC.
     #[derive(Clone, Debug)]
     pub struct ProdEvidenceReporter {
-        peer_map: HashMap<PeerId, tendermint_rpc::Url>,
+        peer_map: HashMap<PeerId, tendermint::net::Address>,
         timeout: Option<Duration>,
     }
 
@@ -61,7 +61,7 @@ mod prod {
         ///
         /// A peer map which maps peer IDS to their network address must be supplied.
         pub fn new(
-            peer_map: HashMap<PeerId, tendermint_rpc::Url>,
+            peer_map: HashMap<PeerId, tendermint::net::Address>,
             timeout: Option<Duration>,
         ) -> Self {
             Self { peer_map, timeout }

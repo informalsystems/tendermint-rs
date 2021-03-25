@@ -43,7 +43,7 @@ struct SyncOpts {
         meta = "ADDR",
         default = "tcp://127.0.0.1:26657"
     )]
-    address: tendermint_rpc::Url,
+    address: tendermint::net::Address,
     #[options(
         help = "height of the initial trusted state (optional if store already initialized)",
         meta = "HEIGHT"
@@ -81,7 +81,7 @@ fn main() {
 
 fn make_instance(
     peer_id: PeerId,
-    addr: tendermint_rpc::Url,
+    addr: tendermint::net::Address,
     db_path: impl AsRef<Path>,
     opts: &SyncOpts,
 ) -> Result<Instance, BoxError> {

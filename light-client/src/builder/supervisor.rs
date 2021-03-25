@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use tendermint::net;
+
 use crate::builder::error::{self, Error};
 use crate::peer_list::{PeerList, PeerListBuilder};
 use crate::supervisor::Instance;
@@ -19,7 +21,7 @@ pub struct Done;
 #[must_use]
 pub struct SupervisorBuilder<State> {
     instances: PeerListBuilder<Instance>,
-    addresses: PeerListBuilder<tendermint_rpc::Url>,
+    addresses: PeerListBuilder<net::Address>,
     evidence_reporting_timeout: Option<Duration>,
     #[allow(dead_code)]
     state: State,
@@ -64,7 +66,7 @@ impl SupervisorBuilder<Init> {
     pub fn primary(
         mut self,
         peer_id: PeerId,
-        address: tendermint_rpc::Url,
+        address: net::Address,
         instance: Instance,
     ) -> SupervisorBuilder<HasPrimary> {
         self.instances.primary(peer_id, instance);
@@ -79,7 +81,7 @@ impl SupervisorBuilder<HasPrimary> {
     pub fn witness(
         mut self,
         peer_id: PeerId,
-        address: tendermint_rpc::Url,
+        address: net::Address,
         instance: Instance,
     ) -> SupervisorBuilder<Done> {
         self.instances.witness(peer_id, instance);
@@ -91,7 +93,7 @@ impl SupervisorBuilder<HasPrimary> {
     /// Add multiple witnesses at once.
     pub fn witnesses(
         mut self,
-        witnesses: impl IntoIterator<Item = (PeerId, tendermint_rpc::Url, Instance)>,
+        witnesses: impl IntoIterator<Item = (PeerId, net::Address, Instance)>,
     ) -> Result<SupervisorBuilder<Done>, Error> {
         let mut iter = witnesses.into_iter().peekable();
         if iter.peek().is_none() {
@@ -124,7 +126,7 @@ impl SupervisorBuilder<Done> {
 
     /// Get the underlying list of instances and addresses.
     #[must_use]
-    pub fn inner(self) -> (PeerList<Instance>, PeerList<tendermint_rpc::Url>) {
+    pub fn inner(self) -> (PeerList<Instance>, PeerList<net::Address>) {
         (self.instances.build(), self.addresses.build())
     }
 }
