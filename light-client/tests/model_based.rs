@@ -5,23 +5,30 @@ use serde_json::Error;
 use std::convert::TryFrom;
 use std::str::FromStr;
 use std::time::Duration;
-use tendermint::validator::Set;
+use tendermint::{
+    signature::{Ed25519Signature, ED25519_SIGNATURE_SIZE},
+    validator::Set,
+    Signature,
+};
 use tendermint_light_client::components::verifier::Verdict;
 use tendermint_light_client::types::ValidatorSet;
 use tendermint_light_client::{
     tests::*,
-    types::{LightBlock, Time, TrustThreshold},
+    types::{Height, LightBlock, Time, TrustThreshold},
 };
 use tendermint_testgen::light_block::default_peer_id;
 use tendermint_testgen::{
     apalache::*, jsonatr::*, light_block::TMLightBlock, validator::generate_validators, Command,
-    Generator, LightBlock as TestgenLightBlock, TestEnv, Tester, Validator, Vote,
+    Commit as TestgenCommit, Generator, LightBlock as TestgenLightBlock, TestEnv, Tester,
+    Validator, ValidatorSet as TestgenValset, Vote,
 };
 
 use chrono::{DateTime, TimeZone, Timelike, Utc};
 use proptest::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
+use tendermint::account::Id;
+use tendermint::block::CommitSig;
 
 fn testgen_to_lb(tm_lb: TMLightBlock) -> LightBlock {
     LightBlock {
@@ -397,7 +404,7 @@ impl SingleStepTestFuzzer for CommitBlockIdFuzzer {
 }
 
 struct CommitSigFuzzer {}
-
+// TODO: why is this here?? can't this case be produced by the model?
 // Replaces test `less_than_one_third_nil_votes.json`
 impl SingleStepTestFuzzer for CommitSigFuzzer {
     fn fuzz_input(input: &mut BlockVerdict) -> (String, LiteVerdict) {
@@ -773,6 +780,21 @@ prop_compose! {
 }
 
 prop_compose! {
+    fn arb_height()
+        (
+        // for now changing this to i64
+        // TODO: ideally it should be u64
+        // see: https://github.com/informalsystems/tendermint-rs/issues/830
+            h in 0..i64::MAX
+        ) -> Height {
+            println!("height = {}", h);
+            let ret = tendermint::block::Height::try_from(h);
+            println!("error: {:#?}", ret);
+            ret.unwrap()
+        }
+}
+
+prop_compose! {
     fn arb_test_case(cases: Vec<SingleStepTestCase>)
     (case_num in 0..cases.len())
     -> SingleStepTestCase {
@@ -790,12 +812,15 @@ prop_compose! {
     (
         case in Just(case.clone()),
         datetime in arb_datetime(),
-        block_num in 0..case.input.len()
+        block_num in 0..case.input.len(),
+        height in arb_height()
     )
     -> (BlockVerdict, Initial) {
         let time: Time = datetime.into();
         let mut arb_lb = case.input[block_num].clone();
+
         arb_lb.block.signed_header.header.time = time;
+        arb_lb.block.signed_header.header.height = height;
         arb_lb.verdict = LiteVerdict::Invalid;
         (arb_lb, case.initial)
     }
