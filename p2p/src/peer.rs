@@ -86,7 +86,6 @@ where
 
                 thread::spawn(move || {
                     loop {
-                        // Read bytes
                         // Deserialize into typed message
                         // send on receiver_send
 

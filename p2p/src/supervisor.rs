@@ -1,6 +1,6 @@
 //! Supervision of the p2p machinery managing peers and the flow of data from and to them.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{hash_map::Entry, HashMap, HashSet};
 use std::convert::TryFrom as _;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -64,16 +64,6 @@ enum Internal {
     Upgrade(node::Id),
 }
 
-enum Input {
-    Accepted(node::Id),
-    Command(Command),
-    Connected(node::Id),
-    Receive(node::Id, message::Receive),
-    Stopped(node::Id, Option<Report>),
-    Upgraded(node::Id),
-    UpgradeFailed(node::Id, Report),
-}
-
 enum Output {
     Event(Event),
     Internal(Internal),
@@ -89,6 +79,17 @@ impl From<Internal> for Output {
     fn from(internal: Internal) -> Self {
         Self::Internal(internal)
     }
+}
+
+enum Input {
+    Accepted(node::Id),
+    Command(Command),
+    Connected(node::Id),
+    DuplicateConnRejected(node::Id, Option<Report>),
+    Receive(node::Id, message::Receive),
+    Stopped(node::Id, Option<Report>),
+    Upgraded(node::Id),
+    UpgradeFailed(node::Id, Report),
 }
 
 /// Wrapping a [`transport::Transport`] the `Supervisor` runs the p2p machinery to manage peers over
@@ -138,23 +139,41 @@ impl Supervisor {
             let input_tx = input_tx.clone();
             let state = state.clone();
             thread::spawn(move || loop {
-                accept_rx.recv().unwrap();
+                if accept_rx.recv().is_err() {
+                    // TODO(xla): The other end is dropped, likely indicating the supervisor was
+                    // torn down. In any case we can't continue, but maybe log.
+                    return;
+                }
 
                 let conn = incoming.next().unwrap().unwrap();
                 let id = match conn.public_key() {
                     PublicKey::Ed25519(ed25519) => node::Id::from(ed25519),
                     _ => panic!(),
                 };
-                // TODO(xla): Define and account for the case where a connection is present for the
-                // id.
-                state
-                    .lock()
-                    .unwrap()
-                    .connected
-                    .insert(id, transport::Direction::Incoming(conn))
-                    .unwrap();
 
-                input_tx.send(Input::Accepted(id)).unwrap();
+                let mut state = state.lock().expect("unable to recover from poisoned lock");
+
+                match state.connected.entry(id) {
+                    Entry::Vacant(entry) => {
+                        entry.insert(transport::Direction::Incoming(conn));
+
+                        if input_tx.send(Input::Accepted(id)).is_err() {
+                            // TODO(xla): The other end dropped, likely due to the supervisor
+                            // gone. In any case we can't continue, but maybe log.
+                            return;
+                        }
+                    }
+                    Entry::Occupied(_entry) => {
+                        if input_tx
+                            .send(Input::DuplicateConnRejected(id, conn.close().err()))
+                            .is_err()
+                        {
+                            // TODO(xla): The other end is dropped, likely indicating the supervisor was
+                            // torn down. In any case we can't continue, but maybe log.
+                            return;
+                        }
+                    }
+                }
             });
         }
 
@@ -165,6 +184,7 @@ impl Supervisor {
             let state = state.clone();
             thread::spawn(move || loop {
                 let info = connect_rx.recv().unwrap();
+
                 let conn = endpoint.connect(info).unwrap();
                 let id = match conn.public_key() {
                     PublicKey::Ed25519(ed25519) => node::Id::from(ed25519),
@@ -191,7 +211,9 @@ impl Supervisor {
             thread::spawn(move || loop {
                 let (id, msg) = send_rx.recv().unwrap();
 
-                match state.lock().unwrap().peers.get(&id) {
+                let state = state.lock().expect("unable to recover from poisoned lock");
+
+                match state.peers.get(&id) {
                     // TODO(xla): Ideally acked that the message passed to the peer.
                     Some(peer) => peer.send(msg).unwrap(),
                     // TODO(xla): A missing peer needs to be bubbled up as that indicates there is
