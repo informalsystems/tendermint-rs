@@ -66,9 +66,7 @@ impl Version {
             //
             // Note: this is not regular protobuf encoding but raw length prefixed amino encoding;
             // amino prefixes with the total length, and the raw bytes array's length, too:
-            let mut buf = Vec::new();
-            buf.push(PUBLIC_KEY_SIZE as u8 + 1);
-            buf.push(PUBLIC_KEY_SIZE as u8);
+            let mut buf = vec![PUBLIC_KEY_SIZE as u8 + 1, PUBLIC_KEY_SIZE as u8];
             buf.extend_from_slice(eph_pubkey.as_bytes());
             buf
         }

@@ -325,7 +325,7 @@ pub struct Update {
 /// then convert to `tendermint::PublicKey` in `deserialize_public_key` below.
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
-enum PK {
+enum Pk {
     /// Ed25519 keys
     #[serde(rename = "ed25519")]
     Ed25519(String),
@@ -335,8 +335,8 @@ fn deserialize_public_key<'de, D>(deserializer: D) -> Result<PublicKey, D::Error
 where
     D: Deserializer<'de>,
 {
-    match &PK::deserialize(deserializer)? {
-        PK::Ed25519(base64_value) => {
+    match &Pk::deserialize(deserializer)? {
+        Pk::Ed25519(base64_value) => {
             let bytes =
                 base64::decode(base64_value).map_err(|e| D::Error::custom(format!("{}", e)))?;
 

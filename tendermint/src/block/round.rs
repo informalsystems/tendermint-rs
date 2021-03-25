@@ -97,8 +97,8 @@ impl FromStr for Round {
 
 impl<'de> Deserialize<'de> for Round {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Ok(Self::from_str(&String::deserialize(deserializer)?)
-            .map_err(|e| D::Error::custom(format!("{}", e)))?)
+        Self::from_str(&String::deserialize(deserializer)?)
+            .map_err(|e| D::Error::custom(format!("{}", e)))
     }
 }
 
