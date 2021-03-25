@@ -159,6 +159,7 @@ jobs:
       - run: cargo test --all-features
         env:
           RUSTFLAGS: '-Zinstrument-coverage'
+          LLVM_PROFILE_FILE: '%m.profraw'
       - name: Install grcov
         run: |
           rustup component add llvm-tools-preview
