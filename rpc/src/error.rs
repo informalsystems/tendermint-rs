@@ -117,7 +117,6 @@ impl From<std::io::Error> for Error {
     }
 }
 
-#[cfg(any(feature = "http-client", feature = "websocket-client"))]
 impl From<url::ParseError> for Error {
     fn from(e: url::ParseError) -> Self {
         Error::invalid_params(&e.to_string())

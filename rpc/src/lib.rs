@@ -30,14 +30,10 @@
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
 mod client;
 #[cfg(any(feature = "http-client", feature = "websocket-client"))]
-mod rpc_url;
-#[cfg(any(feature = "http-client", feature = "websocket-client"))]
 pub use client::{
     Client, MockClient, MockRequestMatcher, MockRequestMethodMatcher, Subscription,
     SubscriptionClient,
 };
-#[cfg(any(feature = "http-client", feature = "websocket-client"))]
-pub use rpc_url::{Scheme, Url};
 
 #[cfg(feature = "http-client")]
 pub use client::{HttpClient, HttpClientUrl};
@@ -55,11 +51,17 @@ pub mod query;
 pub mod request;
 pub mod response;
 mod result;
+mod rpc_url;
 mod utils;
 mod version;
 
-pub use self::{
-    error::Error, id::Id, method::Method, order::Order, paging::PageNumber, paging::Paging,
-    paging::PerPage, request::Request, request::SimpleRequest, response::Response, result::Result,
-    version::Version,
-};
+pub use error::Error;
+pub use id::Id;
+pub use method::Method;
+pub use order::Order;
+pub use paging::{PageNumber, Paging, PerPage};
+pub use request::{Request, SimpleRequest};
+pub use response::Response;
+pub use result::Result;
+pub use rpc_url::{Scheme, Url};
+pub use version::Version;
