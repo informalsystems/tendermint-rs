@@ -146,6 +146,7 @@ jobs:
         with:
           command: test-all-features
           args: --manifest-path tools/kvstore-test/Cargo.toml
+        timeout-minutes: 30
 
   nightly-coverage:
     runs-on: ubuntu-latest
